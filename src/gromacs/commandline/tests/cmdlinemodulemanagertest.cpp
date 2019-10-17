@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,40 +72,34 @@ namespace
  *
  * \ingroup module_commandline
  */
-void disableNice(gmx::CommandLineModuleSettings *settings)
+void disableNice(gmx::CommandLineModuleSettings* settings)
 {
     settings->setDefaultNiceLevel(0);
 }
 
-}       // namespace
+} // namespace
 
 /********************************************************************
  * MockModule
  */
 
-MockModule::MockModule(const char *name, const char *description)
-    : name_(name), descr_(description)
+MockModule::MockModule(const char* name, const char* description) : name_(name), descr_(description)
 {
     using ::testing::_;
     using ::testing::Invoke;
-    ON_CALL(*this, init(_))
-        .WillByDefault(Invoke(&disableNice));
-    ON_CALL(*this, writeHelp(_))
-        .WillByDefault(Invoke(this, &MockModule::checkHelpContext));
+    ON_CALL(*this, init(_)).WillByDefault(Invoke(&disableNice));
+    ON_CALL(*this, writeHelp(_)).WillByDefault(Invoke(this, &MockModule::checkHelpContext));
 }
 
-MockModule::~MockModule()
-{
-}
+MockModule::~MockModule() {}
 
-void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) const
+void MockModule::checkHelpContext(const gmx::CommandLineHelpContext& context) const
 {
     EXPECT_EQ(expectedDisplayName_, context.moduleDisplayName());
 
     gmx::TextLineWrapperSettings settings;
     std::string                  moduleName =
-        context.writerContext().substituteMarkupAndWrapToString(
-                settings, "[THISMODULE]");
+            context.writerContext().substituteMarkupAndWrapToString(settings, "[THISMODULE]");
     EXPECT_EQ(expectedDisplayName_, moduleName);
 }
 
@@ -117,13 +111,10 @@ MockOptionsModule::MockOptionsModule()
 {
     using ::testing::_;
     using ::testing::Invoke;
-    ON_CALL(*this, init(_))
-        .WillByDefault(Invoke(&disableNice));
+    ON_CALL(*this, init(_)).WillByDefault(Invoke(&disableNice));
 }
 
-MockOptionsModule::~MockOptionsModule()
-{
-}
+MockOptionsModule::~MockOptionsModule() {}
 
 /********************************************************************
  * Test fixture for the tests
@@ -131,63 +122,54 @@ MockOptionsModule::~MockOptionsModule()
 
 class CommandLineModuleManagerTestBase::Impl
 {
-    public:
-        Impl(const CommandLine &args, const char *realBinaryName)
-            : programContext_(args.argc(), args.argv()),
-              manager_(realBinaryName, &programContext_)
-        {
-            manager_.setQuiet(true);
-            manager_.setOutputRedirector(&redirector_);
-        }
+public:
+    Impl(const CommandLine& args, const char* realBinaryName) :
+        programContext_(args.argc(), args.argv()),
+        manager_(realBinaryName, &programContext_)
+    {
+        manager_.setQuiet(true);
+        manager_.setOutputRedirector(&redirector_);
+    }
 
-        TestFileOutputRedirector   redirector_;
-        CommandLineProgramContext  programContext_;
-        CommandLineModuleManager   manager_;
+    TestFileOutputRedirector  redirector_;
+    CommandLineProgramContext programContext_;
+    CommandLineModuleManager  manager_;
 };
 
-CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase()
-    : impl_(nullptr)
-{
-}
+CommandLineModuleManagerTestBase::CommandLineModuleManagerTestBase() : impl_(nullptr) {}
 
-CommandLineModuleManagerTestBase::~CommandLineModuleManagerTestBase()
-{
-}
+CommandLineModuleManagerTestBase::~CommandLineModuleManagerTestBase() {}
 
-void CommandLineModuleManagerTestBase::initManager(
-        const CommandLine &args, const char *realBinaryName)
+void CommandLineModuleManagerTestBase::initManager(const CommandLine& args, const char* realBinaryName)
 {
     GMX_RELEASE_ASSERT(impl_ == nullptr, "initManager() called more than once in test");
     impl_.reset(new Impl(args, realBinaryName));
 }
 
-MockModule &
-CommandLineModuleManagerTestBase::addModule(const char *name, const char *description)
+MockModule& CommandLineModuleManagerTestBase::addModule(const char* name, const char* description)
 {
-    MockModule *module = new MockModule(name, description);
+    MockModule* module = new MockModule(name, description);
     manager().addModule(gmx::CommandLineModulePointer(module));
     return *module;
 }
 
-MockOptionsModule &
-CommandLineModuleManagerTestBase::addOptionsModule(const char *name, const char *description)
+MockOptionsModule& CommandLineModuleManagerTestBase::addOptionsModule(const char* name, const char* description)
 {
-    std::unique_ptr<MockOptionsModule>  modulePtr(new MockOptionsModule());
-    MockOptionsModule                  *module = modulePtr.get();
-    gmx::ICommandLineOptionsModule::registerModuleDirect(
-            &manager(), name, description, std::move(modulePtr));
+    std::unique_ptr<MockOptionsModule> modulePtr(new MockOptionsModule());
+    MockOptionsModule*                 module = modulePtr.get();
+    gmx::ICommandLineOptionsModule::registerModuleDirect(&manager(), name, description,
+                                                         std::move(modulePtr));
     return *module;
 }
 
-MockHelpTopic &
-CommandLineModuleManagerTestBase::addHelpTopic(const char *name, const char *title)
+MockHelpTopic& CommandLineModuleManagerTestBase::addHelpTopic(const char* name, const char* title)
 {
-    MockHelpTopic *topic = new MockHelpTopic(name, title, "Help text");
+    MockHelpTopic* topic = new MockHelpTopic(name, title, "Help text");
     manager().addHelpTopic(gmx::HelpTopicPointer(topic));
     return *topic;
 }
 
-CommandLineModuleManager &CommandLineModuleManagerTestBase::manager()
+CommandLineModuleManager& CommandLineModuleManagerTestBase::manager()
 {
     GMX_RELEASE_ASSERT(impl_ != nullptr, "initManager() not called");
     return impl_->manager_;

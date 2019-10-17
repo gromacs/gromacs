@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-int gmx_sans(int argc, char *argv[])
+int gmx_sans(int argc, char* argv[])
 {
-    const char          *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes SANS spectra using Debye formula.",
         "It currently uses topology file (since it need to assigne element for each atom).",
         "[PAR]",
@@ -76,89 +76,87 @@ int gmx_sans(int argc, char *argv[])
         "Note: When using Debye direct method computational cost increases as",
         "1/2 * N * (N - 1) where N is atom number in group of interest.",
         "[PAR]",
-        "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
+        "WARNING: If sq or pr specified this tool can produce large number of files! Up to ",
+        "two times larger than number of frames!"
     };
-    static gmx_bool      bPBC     = TRUE;
-    static gmx_bool      bNORM    = FALSE;
-    static real          binwidth = 0.2, grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
-    static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
-    static real          mcover   = -1;
-    static unsigned int  seed     = 0;
-    static int           nthreads = -1;
+    static gmx_bool bPBC     = TRUE;
+    static gmx_bool bNORM    = FALSE;
+    static real     binwidth = 0.2,
+                grid = 0.05; /* bins shouldn't be smaller then smallest bond (~0.1nm) length */
+    static real         start_q = 0.0, end_q = 2.0, q_step = 0.01;
+    static real         mcover   = -1;
+    static unsigned int seed     = 0;
+    static int          nthreads = -1;
 
-    static const char   *emode[]   = { nullptr, "direct", "mc", nullptr };
-    static const char   *emethod[] = { nullptr, "debye", "fft", nullptr };
+    static const char* emode[]   = { nullptr, "direct", "mc", nullptr };
+    static const char* emethod[] = { nullptr, "debye", "fft", nullptr };
 
-    gmx_neutron_atomic_structurefactors_t    *gnsf;
-    gmx_sans_t                               *gsans;
+    gmx_neutron_atomic_structurefactors_t* gnsf;
+    gmx_sans_t*                            gsans;
 
 #define NPA asize(pa)
 
-    t_pargs                               pa[] = {
-        { "-bin", FALSE, etREAL, {&binwidth},
-          "[HIDDEN]Binwidth (nm)" },
-        { "-mode", FALSE, etENUM, {emode},
-          "Mode for sans spectra calculation" },
-        { "-mcover", FALSE, etREAL, {&mcover},
-          "Monte-Carlo coverage should be -1(default) or (0,1]"},
-        { "-method", FALSE, etENUM, {emethod},
-          "[HIDDEN]Method for sans spectra calculation" },
-        { "-pbc", FALSE, etBOOL, {&bPBC},
+    t_pargs pa[] = {
+        { "-bin", FALSE, etREAL, { &binwidth }, "[HIDDEN]Binwidth (nm)" },
+        { "-mode", FALSE, etENUM, { emode }, "Mode for sans spectra calculation" },
+        { "-mcover",
+          FALSE,
+          etREAL,
+          { &mcover },
+          "Monte-Carlo coverage should be -1(default) or (0,1]" },
+        { "-method", FALSE, etENUM, { emethod }, "[HIDDEN]Method for sans spectra calculation" },
+        { "-pbc",
+          FALSE,
+          etBOOL,
+          { &bPBC },
           "Use periodic boundary conditions for computing distances" },
-        { "-grid", FALSE, etREAL, {&grid},
-          "[HIDDEN]Grid spacing (in nm) for FFTs" },
-        {"-startq", FALSE, etREAL, {&start_q},
-         "Starting q (1/nm) "},
-        {"-endq", FALSE, etREAL, {&end_q},
-         "Ending q (1/nm)"},
-        { "-qstep", FALSE, etREAL, {&q_step},
-          "Stepping in q (1/nm)"},
-        { "-seed",     FALSE, etINT,  {&seed},
-          "Random seed for Monte-Carlo"},
+        { "-grid", FALSE, etREAL, { &grid }, "[HIDDEN]Grid spacing (in nm) for FFTs" },
+        { "-startq", FALSE, etREAL, { &start_q }, "Starting q (1/nm) " },
+        { "-endq", FALSE, etREAL, { &end_q }, "Ending q (1/nm)" },
+        { "-qstep", FALSE, etREAL, { &q_step }, "Stepping in q (1/nm)" },
+        { "-seed", FALSE, etINT, { &seed }, "Random seed for Monte-Carlo" },
 #if GMX_OPENMP
-        { "-nt",  FALSE, etINT, {&nthreads},
-          "Number of threads to start"},
+        { "-nt", FALSE, etINT, { &nthreads }, "Number of threads to start" },
 #endif
     };
-    FILE                                 *fp;
-    const char                           *fnTPX, *fnTRX, *fnDAT = nullptr;
-    t_trxstatus                          *status;
-    t_topology                           *top  = nullptr;
-    gmx_rmpbc_t                           gpbc = nullptr;
-    gmx_bool                              bFFT = FALSE, bDEBYE = FALSE;
-    gmx_bool                              bMC  = FALSE;
-    int                                   ePBC = -1;
-    matrix                                box;
-    rvec                                 *x;
-    int                                   natoms;
-    real                                  t;
-    char                                **grpname = nullptr;
-    int                                  *index   = nullptr;
-    int                                   isize;
-    int                                   i;
-    char                                 *hdr            = nullptr;
-    char                                 *suffix         = nullptr;
-    gmx_radial_distribution_histogram_t  *prframecurrent = nullptr, *pr = nullptr;
-    gmx_static_structurefactor_t         *sqframecurrent = nullptr, *sq = nullptr;
-    gmx_output_env_t                     *oenv;
+    FILE*                                fp;
+    const char *                         fnTPX, *fnTRX, *fnDAT = nullptr;
+    t_trxstatus*                         status;
+    t_topology*                          top  = nullptr;
+    gmx_rmpbc_t                          gpbc = nullptr;
+    gmx_bool                             bFFT = FALSE, bDEBYE = FALSE;
+    gmx_bool                             bMC  = FALSE;
+    int                                  ePBC = -1;
+    matrix                               box;
+    rvec*                                x;
+    int                                  natoms;
+    real                                 t;
+    char**                               grpname = nullptr;
+    int*                                 index   = nullptr;
+    int                                  isize;
+    int                                  i;
+    char*                                hdr            = nullptr;
+    char*                                suffix         = nullptr;
+    gmx_radial_distribution_histogram_t *prframecurrent = nullptr, *pr = nullptr;
+    gmx_static_structurefactor_t *       sqframecurrent = nullptr, *sq = nullptr;
+    gmx_output_env_t*                    oenv;
 
-    std::array<t_filenm, 8>               filenames =
-    { { { efTPR,  "-s",       nullptr,    ffREAD  },
-        { efTRX,  "-f",       nullptr,    ffREAD  },
-        { efNDX,  nullptr,    nullptr,    ffOPTRD },
-        { efDAT,  "-d",       "nsfactor", ffOPTRD },
-        { efXVG,  "-pr",      "pr",       ffWRITE },
-        { efXVG,  "-sq",      "sq",       ffWRITE },
-        { efXVG,  "-prframe", "prframe",  ffOPTWR },
-        { efXVG,  "-sqframe", "sqframe",  ffOPTWR } } };
-    t_filenm                             *fnm = filenames.data();
+    std::array<t_filenm, 8> filenames = { { { efTPR, "-s", nullptr, ffREAD },
+                                            { efTRX, "-f", nullptr, ffREAD },
+                                            { efNDX, nullptr, nullptr, ffOPTRD },
+                                            { efDAT, "-d", "nsfactor", ffOPTRD },
+                                            { efXVG, "-pr", "pr", ffWRITE },
+                                            { efXVG, "-sq", "sq", ffWRITE },
+                                            { efXVG, "-prframe", "prframe", ffOPTWR },
+                                            { efXVG, "-sqframe", "sqframe", ffOPTWR } } };
+    t_filenm*               fnm       = filenames.data();
 
     const auto NFILE = filenames.size();
 
     nthreads = gmx_omp_get_max_threads();
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -178,21 +176,13 @@ int gmx_sans(int argc, char *argv[])
             bDEBYE = TRUE;
             switch (emode[0][0])
             {
-                case 'd':
-                    bMC = FALSE;
-                    break;
-                case 'm':
-                    bMC = TRUE;
-                    break;
-                default:
-                    break;
+                case 'd': bMC = FALSE; break;
+                case 'm': bMC = TRUE; break;
+                default: break;
             }
             break;
-        case 'f':
-            bFFT = TRUE;
-            break;
-        default:
-            break;
+        case 'f': bFFT = TRUE; break;
+        default: break;
     }
 
     if (bDEBYE)
@@ -221,7 +211,8 @@ int gmx_sans(int argc, char *argv[])
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
     gnsf = gmx_neutronstructurefactors_init(fnDAT);
-    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
+    fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n",
+            gnsf->nratoms, fnDAT);
 
     snew(top, 1);
     snew(grpname, 1);
@@ -244,7 +235,8 @@ int gmx_sans(int argc, char *argv[])
     natoms = read_first_x(oenv, &status, fnTRX, &t, &x, box);
     if (natoms != top->atoms.nr)
     {
-        fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n", natoms, top->atoms.nr);
+        fprintf(stderr, "\nWARNING: number of atoms in tpx (%d) and trajectory (%d) do not match\n",
+                natoms, top->atoms.nr);
     }
 
     do
@@ -260,7 +252,8 @@ int gmx_sans(int argc, char *argv[])
             snew(pr, 1);
         }
         /*  realy calc p(r) */
-        prframecurrent = calc_radial_distribution_histogram(gsans, x, box, index, isize, binwidth, bMC, bNORM, mcover, seed);
+        prframecurrent = calc_radial_distribution_histogram(gsans, x, box, index, isize, binwidth,
+                                                            bMC, bNORM, mcover, seed);
         /* copy prframecurrent -> pr and summ up pr->gr[i] */
         /* allocate and/or resize memory for pr->gr[i] and pr->r[i] */
         if (pr->gr == nullptr)
@@ -284,7 +277,7 @@ int gmx_sans(int argc, char *argv[])
         for (i = 0; i < prframecurrent->grn; i++)
         {
             pr->gr[i] += prframecurrent->gr[i];
-            pr->r[i]   = prframecurrent->r[i];
+            pr->r[i] = prframecurrent->r[i];
         }
         /* normalize histo */
         normalize_probability(prframecurrent->grn, prframecurrent->gr);
@@ -301,7 +294,8 @@ int gmx_sans(int argc, char *argv[])
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
             add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()), hdr, "Distance (nm)", "Probability", oenv);
+            fp = xvgropen(opt2fn_null("-prframe", NFILE, fnmdup.data()), hdr, "Distance (nm)",
+                          "Probability", oenv);
             for (i = 0; i < prframecurrent->grn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", prframecurrent->r[i], prframecurrent->gr[i]);
@@ -320,7 +314,8 @@ int gmx_sans(int argc, char *argv[])
             auto fnmdup = filenames;
             sprintf(suffix, "-t%.2f", t);
             add_suffix_to_output_names(fnmdup.data(), NFILE, suffix);
-            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)", "s(q)/s(0)", oenv);
+            fp = xvgropen(opt2fn_null("-sqframe", NFILE, fnmdup.data()), hdr, "q (nm^-1)",
+                          "s(q)/s(0)", oenv);
             for (i = 0; i < sqframecurrent->qn; i++)
             {
                 fprintf(fp, "%10.6f%10.6f\n", sqframecurrent->q[i], sqframecurrent->s[i]);
@@ -337,8 +332,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent->q);
         sfree(sqframecurrent->s);
         sfree(sqframecurrent);
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 
     /* normalize histo */

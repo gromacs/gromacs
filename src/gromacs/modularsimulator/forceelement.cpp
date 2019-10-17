@@ -60,24 +60,23 @@ struct t_graph;
 
 namespace gmx
 {
-ForceElement::ForceElement(
-        StatePropagatorData           *statePropagatorData,
-        EnergyElement                 *energyElement,
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-        bool                           isDynamicBox,
-        FILE                          *fplog,
-        const t_commrec               *cr,
-        const t_inputrec              *inputrec,
-        const MDAtoms                 *mdAtoms,
-        t_nrnb                        *nrnb,
-        t_forcerec                    *fr,
-        t_fcdata                      *fcd,
-        gmx_wallcycle                 *wcycle,
-        MdrunScheduleWorkload         *runScheduleWork,
-        gmx_vsite_t                   *vsite,
-        ImdSession                    *imdSession,
-        pull_t                        *pull_work,
-        gmx_enfrot                    *enforcedRotation) :
+ForceElement::ForceElement(StatePropagatorData*           statePropagatorData,
+                           EnergyElement*                 energyElement,
+                           FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                           bool                           isDynamicBox,
+                           FILE*                          fplog,
+                           const t_commrec*               cr,
+                           const t_inputrec*              inputrec,
+                           const MDAtoms*                 mdAtoms,
+                           t_nrnb*                        nrnb,
+                           t_forcerec*                    fr,
+                           t_fcdata*                      fcd,
+                           gmx_wallcycle*                 wcycle,
+                           MdrunScheduleWorkload*         runScheduleWork,
+                           gmx_vsite_t*                   vsite,
+                           ImdSession*                    imdSession,
+                           pull_t*                        pull_work,
+                           gmx_enfrot*                    enforcedRotation) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -106,66 +105,55 @@ ForceElement::ForceElement(
     lambda_.fill(0);
 }
 
-void ForceElement::scheduleTask(
-        Step step, Time time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+void ForceElement::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
 {
-    unsigned int flags = (
-            GMX_FORCE_STATECHANGED |
-            GMX_FORCE_ALLFORCES |
-            (isDynamicBox_ ? GMX_FORCE_DYNAMICBOX : 0) |
-            (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0) |
-            (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0) |
-            (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0) |
-            (nextNSStep_ == step ? GMX_FORCE_NS : 0));
+    unsigned int flags =
+            (GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES | (isDynamicBox_ ? GMX_FORCE_DYNAMICBOX : 0)
+             | (nextVirialCalculationStep_ == step ? GMX_FORCE_VIRIAL : 0)
+             | (nextEnergyCalculationStep_ == step ? GMX_FORCE_ENERGY : 0)
+             | (nextFreeEnergyCalculationStep_ == step ? GMX_FORCE_DHDL : 0)
+             | (nextNSStep_ == step ? GMX_FORCE_NS : 0));
 
-    (*registerRunFunction)(
-            std::make_unique<SimulatorRunFunction>(
-                    [this, step, time, flags]()
-                    {run(step, time, flags); }));
+    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+            [this, step, time, flags]() { run(step, time, flags); }));
 }
 
 void ForceElement::elementSetup()
 {
     GMX_ASSERT(localTopology_, "Setup called before local topology was set.");
-
 }
 
 void ForceElement::run(Step step, Time time, unsigned int flags)
 {
     // Disabled functionality
-    Awh            *awh              = nullptr;
-    gmx_edsam      *ed               = nullptr;
-    gmx_multisim_t *ms               = nullptr;
-    t_graph        *graph            = nullptr;
+    Awh*            awh   = nullptr;
+    gmx_edsam*      ed    = nullptr;
+    gmx_multisim_t* ms    = nullptr;
+    t_graph*        graph = nullptr;
 
     /* The coordinates (x) are shifted (to get whole molecules)
      * in do_force.
      * This is parallelized as well, and does communication too.
      * Check comments in sim_util.c
      */
-    auto           x      = statePropagatorData_->positionsView();
-    auto           forces = statePropagatorData_->forcesView();
-    auto           box    = statePropagatorData_->constBox();
-    history_t     *hist   = nullptr; // disabled
+    auto       x      = statePropagatorData_->positionsView();
+    auto       forces = statePropagatorData_->forcesView();
+    auto       box    = statePropagatorData_->constBox();
+    history_t* hist   = nullptr; // disabled
 
-    tensor         force_vir = {{0}};
+    tensor force_vir = { { 0 } };
     // TODO: Make lambda const (needs some adjustments in lower force routines)
-    ArrayRef<real> lambda = freeEnergyPerturbationElement_ ?
-        freeEnergyPerturbationElement_->lambdaView() : lambda_;
+    ArrayRef<real> lambda =
+            freeEnergyPerturbationElement_ ? freeEnergyPerturbationElement_->lambdaView() : lambda_;
 
-    do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_,
-             pull_work_,
-             step, nrnb_, wcycle_, localTopology_,
-             box, x, hist,
-             forces, force_vir, mdAtoms_->mdatoms(), energyElement_->enerdata(), fcd_,
-             lambda, graph,
-             fr_, runScheduleWork_, vsite_, energyElement_->muTot(), time, ed,
-             static_cast<int>(flags), ddBalanceRegionHandler_);
+    do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_, pull_work_, step,
+             nrnb_, wcycle_, localTopology_, box, x, hist, forces, force_vir, mdAtoms_->mdatoms(),
+             energyElement_->enerdata(), fcd_, lambda, graph, fr_, runScheduleWork_, vsite_,
+             energyElement_->muTot(), time, ed, static_cast<int>(flags), ddBalanceRegionHandler_);
     energyElement_->addToForceVirial(force_vir, step);
 }
 
-void ForceElement::setTopology(const gmx_localtop_t *top)
+void ForceElement::setTopology(const gmx_localtop_t* top)
 {
     localTopology_ = top;
 }
@@ -173,29 +161,26 @@ void ForceElement::setTopology(const gmx_localtop_t *top)
 SignallerCallbackPtr ForceElement::registerNSCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time)
-            {this->nextNSStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; });
 }
 
-SignallerCallbackPtr ForceElement::
-    registerEnergyCallback(EnergySignallerEvent event)
+SignallerCallbackPtr ForceElement::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::EnergyCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time)
-                {nextEnergyCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { nextEnergyCalculationStep_ = step; });
     }
     if (event == EnergySignallerEvent::VirialCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){nextVirialCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { nextVirialCalculationStep_ = step; });
     }
     if (event == EnergySignallerEvent::FreeEnergyCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){nextFreeEnergyCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { nextFreeEnergyCalculationStep_ = step; });
     }
     return nullptr;
 }
-}  // namespace std
+} // namespace gmx

@@ -65,8 +65,7 @@ struct gmx_domdec_t;
  *                   The order is inv_bzz, bzx, bzy, bzz, inv_byy, byx, byy,
  *                   inv_bxx, and bxx.
  */
-void set_pbc_simd(const t_pbc *pbc,
-                  real        *pbc_simd);
+void set_pbc_simd(const t_pbc* pbc, real* pbc_simd);
 
 #if GMX_SIMD_HAVE_REAL
 
@@ -81,27 +80,25 @@ void set_pbc_simd(const t_pbc *pbc,
  * without PBC. But on modern processors the overhead of this, often called,
  * routine should be low. On e.g. Intel Haswell/Broadwell it takes 8 cycles.
  */
-static inline void gmx_simdcall
-pbc_correct_dx_simd(gmx::SimdReal         *dx,
-                    gmx::SimdReal         *dy,
-                    gmx::SimdReal         *dz,
-                    const real            *pbc_simd)
+static inline void gmx_simdcall pbc_correct_dx_simd(gmx::SimdReal* dx,
+                                                    gmx::SimdReal* dy,
+                                                    gmx::SimdReal* dz,
+                                                    const real*    pbc_simd)
 {
     using namespace gmx;
     SimdReal shz, shy, shx;
 
-    shz = round(*dz * load<SimdReal>(pbc_simd+0*GMX_SIMD_REAL_WIDTH)); // load inv_bzz
-    *dx = *dx - shz * load<SimdReal>(pbc_simd+1*GMX_SIMD_REAL_WIDTH);  // load bzx
-    *dy = *dy - shz * load<SimdReal>(pbc_simd+2*GMX_SIMD_REAL_WIDTH);  // load bzy
-    *dz = *dz - shz * load<SimdReal>(pbc_simd+3*GMX_SIMD_REAL_WIDTH);  // load bzz
+    shz = round(*dz * load<SimdReal>(pbc_simd + 0 * GMX_SIMD_REAL_WIDTH)); // load inv_bzz
+    *dx = *dx - shz * load<SimdReal>(pbc_simd + 1 * GMX_SIMD_REAL_WIDTH);  // load bzx
+    *dy = *dy - shz * load<SimdReal>(pbc_simd + 2 * GMX_SIMD_REAL_WIDTH);  // load bzy
+    *dz = *dz - shz * load<SimdReal>(pbc_simd + 3 * GMX_SIMD_REAL_WIDTH);  // load bzz
 
-    shy = round(*dy * load<SimdReal>(pbc_simd+4*GMX_SIMD_REAL_WIDTH)); // load inv_byy
-    *dx = *dx - shy * load<SimdReal>(pbc_simd+5*GMX_SIMD_REAL_WIDTH);  // load byx
-    *dy = *dy - shy * load<SimdReal>(pbc_simd+6*GMX_SIMD_REAL_WIDTH);  // load byy
+    shy = round(*dy * load<SimdReal>(pbc_simd + 4 * GMX_SIMD_REAL_WIDTH)); // load inv_byy
+    *dx = *dx - shy * load<SimdReal>(pbc_simd + 5 * GMX_SIMD_REAL_WIDTH);  // load byx
+    *dy = *dy - shy * load<SimdReal>(pbc_simd + 6 * GMX_SIMD_REAL_WIDTH);  // load byy
 
-    shx = round(*dx * load<SimdReal>(pbc_simd+7*GMX_SIMD_REAL_WIDTH)); // load inv_bxx
-    *dx = *dx - shx * load<SimdReal>(pbc_simd+8*GMX_SIMD_REAL_WIDTH);  // load bxx
-
+    shx = round(*dx * load<SimdReal>(pbc_simd + 7 * GMX_SIMD_REAL_WIDTH)); // load inv_bxx
+    *dx = *dx - shx * load<SimdReal>(pbc_simd + 8 * GMX_SIMD_REAL_WIDTH);  // load bxx
 }
 
 /*! \brief Calculates the PBC corrected distance between SIMD coordinates.
@@ -115,11 +112,10 @@ pbc_correct_dx_simd(gmx::SimdReal         *dx,
  * when all atoms are in the unit-cell (aiuc).
  * This is the SIMD equivalent of the scalar version declared in pbc.h.
  */
-static inline void gmx_simdcall
-pbc_dx_aiuc(const real            *pbc_simd,
-            const gmx::SimdReal   *x1,
-            const gmx::SimdReal   *x2,
-            gmx::SimdReal         *dx)
+static inline void gmx_simdcall pbc_dx_aiuc(const real*          pbc_simd,
+                                            const gmx::SimdReal* x1,
+                                            const gmx::SimdReal* x2,
+                                            gmx::SimdReal*       dx)
 {
     for (int d = 0; d < DIM; d++)
     {

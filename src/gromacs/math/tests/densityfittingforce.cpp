@@ -64,16 +64,17 @@ namespace
 
 TEST(DensityFittingForce, isZeroWhenMatchingDensity)
 {
-    const float         sigma      = 1;
-    const float         nSigma     = 5;
-    const RVec          gridCenter = {1, 1, 1};
+    const float sigma      = 1;
+    const float nSigma     = 5;
+    const RVec  gridCenter = { 1, 1, 1 };
 
-    DensityFittingForce forceEvaluator({{sigma, sigma, sigma}, nSigma});
+    DensityFittingForce forceEvaluator({ { sigma, sigma, sigma }, nSigma });
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 0);
 
-    const RVec             result   = forceEvaluator.evaluateForce({gridCenter, 1.0}, densityDerivative.asConstView());
-    const RVec             expected = {0, 0, 0};
+    const RVec result =
+            forceEvaluator.evaluateForce({ gridCenter, 1.0 }, densityDerivative.asConstView());
+    const RVec             expected = { 0, 0, 0 };
     FloatingPointTolerance tolerance(defaultFloatTolerance());
 
     EXPECT_FLOAT_EQ_TOL(expected[XX], result[XX], tolerance);
@@ -83,20 +84,21 @@ TEST(DensityFittingForce, isZeroWhenMatchingDensity)
 
 TEST(DensityFittingForce, isZeroWhenMismatchingSameAllDirections)
 {
-    const BasicVector<double>  sigma      = {1., 1., 1.};
-    const float                nSigma     = 5;
-    const RVec                 gridCenter = {1, 1, 1};
+    const BasicVector<double> sigma      = { 1., 1., 1. };
+    const float               nSigma     = 5;
+    const RVec                gridCenter = { 1, 1, 1 };
 
-    DensityFittingForce        forceEvaluator({{sigma}, nSigma});
+    DensityFittingForce                                 forceEvaluator({ { sigma }, nSigma });
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 1);
 
-    const RVec result   = forceEvaluator.evaluateForce({gridCenter, 1.}, densityDerivative.asConstView());
-    const RVec expected = {0, 0, 0};
+    const RVec result =
+            forceEvaluator.evaluateForce({ gridCenter, 1. }, densityDerivative.asConstView());
+    const RVec expected = { 0, 0, 0 };
 
     // need to increase the tolerance here, because the checked value is the
-    // result of a complex calculation (the sum of 27 3d Gaussians weighted with the distance to center)
-    // \todo increase tightness of this bound with better implementations
+    // result of a complex calculation (the sum of 27 3d Gaussians weighted with the distance to
+    // center) \todo increase tightness of this bound with better implementations
     FloatingPointTolerance tolerance(absoluteTolerance(1e-8));
 
     EXPECT_FLOAT_EQ_TOL(expected[XX], result[XX], tolerance);
@@ -106,17 +108,18 @@ TEST(DensityFittingForce, isZeroWhenMismatchingSameAllDirections)
 
 TEST(DensityFittingForce, pullsTowardsDerivative)
 {
-    const float         sigma      = 1;
-    const float         nSigma     = 5;
-    const RVec          gridCenter = {1, 1, 1};
+    const float sigma      = 1;
+    const float nSigma     = 5;
+    const RVec  gridCenter = { 1, 1, 1 };
 
-    DensityFittingForce forceEvaluator({{sigma, sigma, sigma}, nSigma});
+    DensityFittingForce forceEvaluator({ { sigma, sigma, sigma }, nSigma });
     MultiDimArray<std::vector<float>, dynamicExtents3D> densityDerivative(3, 3, 3);
     std::fill(begin(densityDerivative), end(densityDerivative), 0);
     densityDerivative(0, 0, 0) = 1;
 
-    const RVec result   = forceEvaluator.evaluateForce({gridCenter, 1.}, densityDerivative.asConstView());
-    real       expected =  -1/sqrt(2*2*2*M_PI*M_PI*M_PI)*exp(-0.5)*exp(-0.5)*exp(-0.5);
+    const RVec result =
+            forceEvaluator.evaluateForce({ gridCenter, 1. }, densityDerivative.asConstView());
+    real expected = -1 / sqrt(2 * 2 * 2 * M_PI * M_PI * M_PI) * exp(-0.5) * exp(-0.5) * exp(-0.5);
 
     EXPECT_FLOAT_EQ(expected, result[XX]);
     EXPECT_FLOAT_EQ(expected, result[YY]);

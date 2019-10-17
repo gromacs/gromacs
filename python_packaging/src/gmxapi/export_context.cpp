@@ -70,8 +70,7 @@ namespace py = pybind11;
  * For reference and default values, see
  * http://manual.gromacs.org/current/onlinehelp/gmx-mdrun.html#options
  */
-static void setMDArgs(std::vector<std::string>* mdargs,
-                      const py::dict           &params)
+static void setMDArgs(std::vector<std::string>* mdargs, const py::dict& params)
 {
     mdargs->clear();
     if (params.contains("grid"))
@@ -88,7 +87,7 @@ static void setMDArgs(std::vector<std::string>* mdargs,
             ++iterator;
         }
         mdargs->emplace_back("-dd");
-        for (auto && val : vals)
+        for (auto&& val : vals)
         {
             mdargs->emplace_back(val);
         }
@@ -144,7 +143,7 @@ static void setMDArgs(std::vector<std::string>* mdargs,
                 mdargs->emplace_back("-noappend");
             }
         }
-        catch (const py::cast_error &e)
+        catch (const py::cast_error& e)
         {
             // Couldn't cast to bool for some reason.
             // Convert to gmxapi exception (not implemented)
@@ -154,24 +153,22 @@ static void setMDArgs(std::vector<std::string>* mdargs,
     }
 }
 
-void export_context(py::module &m)
+void export_context(py::module& m)
 {
     // Add argument type before it is used for more sensible automatic bindings behavior.
-    py::class_ < MDArgs, std::unique_ptr < MDArgs>> mdargs(m, "MDArgs");
+    py::class_<MDArgs, std::unique_ptr<MDArgs>> mdargs(m, "MDArgs");
     mdargs.def(py::init(), "Create an empty MDArgs object.");
-    mdargs.def("set",
-               [](MDArgs* self, const py::dict &params){ setMDArgs(self, params); },
+    mdargs.def("set", [](MDArgs* self, const py::dict& params) { setMDArgs(self, params); },
                "Assign parameters in MDArgs from Python dict.");
 
     // Export execution context class
-    py::class_ < PyContext, std::shared_ptr < PyContext>> context(m, "Context");
+    py::class_<PyContext, std::shared_ptr<PyContext>> context(m, "Context");
     context.def(py::init(), "Create a default execution context.");
     context.def("setMDArgs", &PyContext::setMDArgs, "Set MD runtime parameters.");
 
-    context.def("add_mdmodule", &PyContext::addMDModule,
-                "Add an MD plugin for the simulation.");
+    context.def("add_mdmodule", &PyContext::addMDModule, "Add an MD plugin for the simulation.");
 }
 
-} // end namespace gmxpy::detail
+} // namespace detail
 
 } // end namespace gmxpy

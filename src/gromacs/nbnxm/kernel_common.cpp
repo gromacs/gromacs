@@ -50,10 +50,9 @@
 #include "gromacs/utility/gmxassert.h"
 
 //! Clears all elements of buffer
-static void
-clearBufferAll(gmx::ArrayRef<real> buffer)
+static void clearBufferAll(gmx::ArrayRef<real> buffer)
 {
-    for (real &elem : buffer)
+    for (real& elem : buffer)
     {
         elem = 0;
     }
@@ -64,30 +63,25 @@ clearBufferAll(gmx::ArrayRef<real> buffer)
  * Only elements with flags in \p nbat set for index \p outputIndex
  * are cleared.
  */
-template <int numComponentsPerElement>
-static void
-clearBufferFlagged(const nbnxn_atomdata_t &nbat,
-                   int                     outputIndex,
-                   gmx::ArrayRef<real>     buffer)
+template<int numComponentsPerElement>
+static void clearBufferFlagged(const nbnxn_atomdata_t& nbat, int outputIndex, gmx::ArrayRef<real> buffer)
 {
-    const nbnxn_buffer_flags_t &flags = nbat.buffer_flags;
+    const nbnxn_buffer_flags_t& flags = nbat.buffer_flags;
     gmx_bitmask_t               our_flag;
     bitmask_init_bit(&our_flag, outputIndex);
 
-    constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE*numComponentsPerElement;
+    constexpr size_t numComponentsPerBlock = NBNXN_BUFFERFLAG_SIZE * numComponentsPerElement;
 
     for (int b = 0; b < flags.nflag; b++)
     {
         if (!bitmask_is_disjoint(flags.flag[b], our_flag))
         {
-            clearBufferAll(buffer.subArray(b*numComponentsPerBlock, numComponentsPerBlock));
+            clearBufferAll(buffer.subArray(b * numComponentsPerBlock, numComponentsPerBlock));
         }
     }
 }
 
-void
-clearForceBuffer(nbnxn_atomdata_t *nbat,
-                 int               outputIndex)
+void clearForceBuffer(nbnxn_atomdata_t* nbat, int outputIndex)
 {
     if (nbat->bUseBufferFlags)
     {
@@ -101,22 +95,17 @@ clearForceBuffer(nbnxn_atomdata_t *nbat,
     }
 }
 
-void
-clear_fshift(real *fshift)
+void clear_fshift(real* fshift)
 {
     int i;
 
-    for (i = 0; i < SHIFTS*DIM; i++)
+    for (i = 0; i < SHIFTS * DIM; i++)
     {
         fshift[i] = 0;
     }
 }
 
-void
-reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                         nlist,
-                           real                       *Vvdw,
-                           real                       *Vc)
+void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc)
 {
     const int nenergrp = nbat->params().nenergrp;
 
@@ -125,18 +114,18 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
         for (int i = 0; i < nenergrp; i++)
         {
             /* Reduce the diagonal terms */
-            int ind    = i*nenergrp + i;
+            int ind = i * nenergrp + i;
             Vvdw[ind] += nbat->out[nb].Vvdw[ind];
-            Vc[ind]   += nbat->out[nb].Vc[ind];
+            Vc[ind] += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
             for (int j = i + 1; j < nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
-                int ind    = i*nenergrp + j;
-                int indr   = j*nenergrp + i;
+                int ind  = i * nenergrp + j;
+                int indr = j * nenergrp + i;
                 Vvdw[ind] += nbat->out[nb].Vvdw[ind] + nbat->out[nb].Vvdw[indr];
-                Vc[ind]   += nbat->out[nb].Vc[ind]   + nbat->out[nb].Vc[indr];
+                Vc[ind] += nbat->out[nb].Vc[ind] + nbat->out[nb].Vc[indr];
             }
         }
     }

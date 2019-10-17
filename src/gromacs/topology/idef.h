@@ -47,125 +47,166 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef union t_iparams
-{
+typedef union t_iparams {
     /* Some parameters have A and B values for free energy calculations.
      * The B values are not used for regular simulations of course.
      * Free Energy for nonbondeds can be computed by changing the atom type.
      * The harmonic type is used for all harmonic potentials:
      * bonds, angles and improper dihedrals
      */
-    struct {
+    struct
+    {
         real a, b, c;
     } bham;
-    struct {
+    struct
+    {
         real rA, krA, rB, krB;
     } harmonic;
-    struct {
+    struct
+    {
         real klinA, aA, klinB, aB;
     } linangle;
-    struct {
+    struct
+    {
         real lowA, up1A, up2A, kA, lowB, up1B, up2B, kB;
     } restraint;
     /* No free energy supported for cubic bonds, FENE, WPOL or cross terms */
-    struct {
+    struct
+    {
         real b0, kb, kcub;
     } cubic;
-    struct {
+    struct
+    {
         real bm, kb;
     } fene;
-    struct {
+    struct
+    {
         real r1e, r2e, krr;
     } cross_bb;
-    struct {
+    struct
+    {
         real r1e, r2e, r3e, krt;
     } cross_ba;
-    struct {
+    struct
+    {
         real thetaA, kthetaA, r13A, kUBA, thetaB, kthetaB, r13B, kUBB;
     } u_b;
-    struct {
+    struct
+    {
         real theta, c[5];
     } qangle;
-    struct {
+    struct
+    {
         real alpha;
     } polarize;
-    struct {
+    struct
+    {
         real alpha, drcut, khyp;
     } anharm_polarize;
-    struct {
+    struct
+    {
         real al_x, al_y, al_z, rOH, rHH, rOD;
     } wpol;
-    struct {
+    struct
+    {
         real a, alpha1, alpha2, rfac;
     } thole;
-    struct {
+    struct
+    {
         real c6, c12;
     } lj;
-    struct {
+    struct
+    {
         real c6A, c12A, c6B, c12B;
     } lj14;
-    struct {
+    struct
+    {
         real fqq, qi, qj, c6, c12;
     } ljc14;
-    struct {
+    struct
+    {
         real qi, qj, c6, c12;
     } ljcnb;
     /* Proper dihedrals can not have different multiplicity when
      * doing free energy calculations, because the potential would not
      * be periodic anymore.
      */
-    struct {
-        real phiA, cpA; int mult; real phiB, cpB;
+    struct
+    {
+        real phiA, cpA;
+        int  mult;
+        real phiB, cpB;
     } pdihs;
-    struct {
+    struct
+    {
         real dA, dB;
     } constr;
     /* Settle can not be used for Free energy calculations of water bond geometry.
      * Use shake (or lincs) instead if you have to change the water bonds.
      */
-    struct {
+    struct
+    {
         real doh, dhh;
     } settle;
-    struct {
+    struct
+    {
         real b0A, cbA, betaA, b0B, cbB, betaB;
     } morse;
-    struct {
+    struct
+    {
         real pos0A[DIM], fcA[DIM], pos0B[DIM], fcB[DIM];
     } posres;
-    struct {
-        real pos0[DIM], r, k; int geom;
+    struct
+    {
+        real pos0[DIM], r, k;
+        int  geom;
     } fbposres;
-    struct {
+    struct
+    {
         real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];
     } rbdihs;
-    struct {
+    struct
+    {
         real cbtcA[NR_CBTDIHS], cbtcB[NR_CBTDIHS];
     } cbtdihs;
-    struct {
+    struct
+    {
         real a, b, c, d, e, f;
     } vsite;
-    struct {
-        int  n; real a;
+    struct
+    {
+        int  n;
+        real a;
     } vsiten;
     /* NOTE: npair is only set after reading the tpx file */
-    struct {
-        real low, up1, up2, kfac; int type, label, npair;
+    struct
+    {
+        real low, up1, up2, kfac;
+        int  type, label, npair;
     } disres;
-    struct {
+    struct
+    {
         real phiA, dphiA, kfacA, phiB, dphiB, kfacB;
     } dihres;
-    struct {
-        int  ex, power, label; real c, obs, kfac;
+    struct
+    {
+        int  ex, power, label;
+        real c, obs, kfac;
     } orires;
-    struct {
-        int  table; real kA; real kB;
+    struct
+    {
+        int  table;
+        real kA;
+        real kB;
     } tab;
-    struct {
+    struct
+    {
         int cmapA, cmapB;
     } cmap;
-    struct {
+    struct
+    {
         real buf[MAXFORCEPARAM];
-    } generic;                                               /* Conversion */
+    } generic; /* Conversion */
 } t_iparams;
 
 typedef int t_functype;
@@ -178,10 +219,7 @@ typedef int t_functype;
 struct InteractionList
 {
     /* Returns the total number of elements in iatoms */
-    int size() const
-    {
-        return gmx::ssize(iatoms);
-    }
+    int size() const { return gmx::ssize(iatoms); }
 
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
@@ -203,14 +241,11 @@ typedef std::array<InteractionList, F_NRE> InteractionLists;
 struct t_ilist
 {
     /* Returns the total number of elements in iatoms */
-    int size() const
-    {
-        return nr;
-    }
+    int size() const { return nr; }
 
     int      nr;
     int      nr_nonperturbed;
-    t_iatom *iatoms;
+    t_iatom* iatoms;
     int      nalloc;
 };
 
@@ -247,7 +282,7 @@ struct t_ilist
 struct InteractionListHandle
 {
     const int               functionType; //!< The function type
-    const std::vector<int> &iatoms;       //!< Reference to interaction list
+    const std::vector<int>& iatoms;       //!< Reference to interaction list
 };
 
 /*! \brief Returns a list of all non-empty InteractionList entries with any of the interaction flags in \p flags set
@@ -255,9 +290,7 @@ struct InteractionListHandle
  * \param[in] ilists  Set of interaction lists
  * \param[in] flags   Bit mask with one or more IF_... bits set
  */
-static inline std::vector<InteractionListHandle>
-extractILists(const InteractionLists &ilists,
-              int                     flags)
+static inline std::vector<InteractionListHandle> extractILists(const InteractionLists& ilists, int flags)
 {
     std::vector<InteractionListHandle> handles;
     for (size_t ftype = 0; ftype < ilists.size(); ftype++)
@@ -274,7 +307,7 @@ extractILists(const InteractionLists &ilists,
  *
  * \param[in] ilistHandle  The ilist to return the stride for
  */
-static inline int ilistStride(const InteractionListHandle &ilistHandle)
+static inline int ilistStride(const InteractionListHandle& ilistHandle)
 {
     return 1 + NRAL(ilistHandle.functionType);
 }
@@ -288,27 +321,31 @@ struct gmx_cmapdata_t
 struct gmx_cmap_t
 {
     int                         grid_spacing = 0; /* Grid spacing */
-    std::vector<gmx_cmapdata_t> cmapdata;         /* Lists of grids with actual, pre-interpolated data */
+    std::vector<gmx_cmapdata_t> cmapdata; /* Lists of grids with actual, pre-interpolated data */
 };
 
 
-enum {
-    ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
+enum
+{
+    ilsortUNKNOWN,
+    ilsortNO_FE,
+    ilsortFE_UNSORTED,
+    ilsortFE_SORTED
 };
 
 typedef struct t_idef
 {
     int         ntypes;
     int         atnr;
-    t_functype *functype;
-    t_iparams  *iparams;
+    t_functype* functype;
+    t_iparams*  iparams;
     real        fudgeQQ;
-    gmx_cmap_t *cmap_grid;
-    t_iparams  *iparams_posres, *iparams_fbposres;
+    gmx_cmap_t* cmap_grid;
+    t_iparams * iparams_posres, *iparams_fbposres;
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
-    t_ilist     il[F_NRE];
-    int         ilsort;
+    t_ilist il[F_NRE];
+    int     ilsort;
 } t_idef;
 
 /*
@@ -345,28 +382,31 @@ typedef struct t_idef
  *      The state of the sorting of il, values are provided above.
  */
 
-void pr_iparams(FILE *fp, t_functype ftype, const t_iparams *iparams);
-void pr_ilist(FILE *fp, int indent, const char *title,
-              const t_functype *functype, const InteractionList &ilist,
-              gmx_bool bShowNumbers,
-              gmx_bool bShowParameters, const t_iparams *iparams);
-void pr_idef(FILE *fp, int indent, const char *title, const t_idef *idef,
-             gmx_bool bShowNumbers, gmx_bool bShowParameters);
+void pr_iparams(FILE* fp, t_functype ftype, const t_iparams* iparams);
+void pr_ilist(FILE*                  fp,
+              int                    indent,
+              const char*            title,
+              const t_functype*      functype,
+              const InteractionList& ilist,
+              gmx_bool               bShowNumbers,
+              gmx_bool               bShowParameters,
+              const t_iparams*       iparams);
+void pr_idef(FILE* fp, int indent, const char* title, const t_idef* idef, gmx_bool bShowNumbers, gmx_bool bShowParameters);
 
 /*! \brief
  * Properly initialize idef struct.
  *
  * \param[in] idef Pointer to idef struct to initialize.
  */
-void init_idef(t_idef *idef);
+void init_idef(t_idef* idef);
 
 /*! \brief
  * Properly clean up idef struct.
  *
  * \param[in] idef Pointer to idef struct to clean up.
  */
-void done_idef(t_idef *idef);
+void done_idef(t_idef* idef);
 
-void copy_ilist(const t_ilist *src, t_ilist *dst);
+void copy_ilist(const t_ilist* src, t_ilist* dst);
 
 #endif

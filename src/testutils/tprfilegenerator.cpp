@@ -54,7 +54,7 @@ namespace gmx
 namespace test
 {
 
-TprAndFileManager::TprAndFileManager(const std::string &name)
+TprAndFileManager::TprAndFileManager(const std::string& name)
 {
     const std::string mdpInputFileName = fileManager_.getTemporaryFilePath(name + ".mdp");
     gmx::TextWriter::writeFileFromString(mdpInputFileName, "");

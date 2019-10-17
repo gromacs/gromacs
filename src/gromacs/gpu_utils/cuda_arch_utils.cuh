@@ -48,9 +48,9 @@
  * intended to be used instead of __CUDA_ARCH__.
  */
 #ifndef __CUDA_ARCH__
-    #define GMX_PTX_ARCH 0
+#    define GMX_PTX_ARCH 0
 #else
-    #define GMX_PTX_ARCH __CUDA_ARCH__
+#    define GMX_PTX_ARCH __CUDA_ARCH__
 #endif
 
 /* Until CC 5.2 and likely for the near future all NVIDIA architectures
@@ -74,9 +74,9 @@ static const unsigned int c_fullWarpMask = 0xffffffff;
  *  to provide fallback code.
  */
 #if defined(GMX_DISABLE_CUDA_TEXTURES) || (defined(__clang__) && defined(__CUDA__))
-#define DISABLE_CUDA_TEXTURES 1
+#    define DISABLE_CUDA_TEXTURES 1
 #else
-#define DISABLE_CUDA_TEXTURES 0
+#    define DISABLE_CUDA_TEXTURES 0
 #endif
 
 /*! \brief True if the use of texture fetch in the CUDA kernels is disabled. */
@@ -89,29 +89,29 @@ static const bool c_disableCudaTextures = DISABLE_CUDA_TEXTURES;
  *
  */
 #if GMX_PTX_ARCH > 0
-    #if GMX_PTX_ARCH <= 370  // CC 3.x
-        #define GMX_CUDA_MAX_BLOCKS_PER_MP   16
-        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
-    #else // CC 5.x, 6.x
-          /* Note that this final branch covers all future architectures (current gen
-           * is 6.x as of writing), hence assuming that these *currently defined* upper
-           * limits will not be lowered.
-           */
-        #define GMX_CUDA_MAX_BLOCKS_PER_MP   32
-        #define GMX_CUDA_MAX_THREADS_PER_MP  2048
-    #endif
+#    if GMX_PTX_ARCH <= 370 // CC 3.x
+#        define GMX_CUDA_MAX_BLOCKS_PER_MP 16
+#        define GMX_CUDA_MAX_THREADS_PER_MP 2048
+#    else // CC 5.x, 6.x
+/* Note that this final branch covers all future architectures (current gen
+ * is 6.x as of writing), hence assuming that these *currently defined* upper
+ * limits will not be lowered.
+ */
+#        define GMX_CUDA_MAX_BLOCKS_PER_MP 32
+#        define GMX_CUDA_MAX_THREADS_PER_MP 2048
+#    endif
 #else
-        #define GMX_CUDA_MAX_BLOCKS_PER_MP   0
-        #define GMX_CUDA_MAX_THREADS_PER_MP  0
+#    define GMX_CUDA_MAX_BLOCKS_PER_MP 0
+#    define GMX_CUDA_MAX_THREADS_PER_MP 0
 #endif
 
 // Macro defined for clang CUDA device compilation in the presence of debug symbols
 // used to work around codegen bug that breaks some kernels when assertions are on
 // at -O1 and higher (tested with clang 6-8).
 #if defined(__clang__) && defined(__CUDA__) && defined(__CUDA_ARCH__) && !defined(NDEBUG)
-#define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __attribute__ ((optnone))
+#    define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __attribute__((optnone))
 #else
-#define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE
+#    define CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE
 #endif
 
 

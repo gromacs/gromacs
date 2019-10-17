@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,14 +48,13 @@
 namespace gmx
 {
 
-template <int align>
-static inline void gmx_simdcall
-gatherLoadTranspose(const double *        base,
-                    const std::int32_t    offset[],
-                    SimdDouble *          v0,
-                    SimdDouble *          v1,
-                    SimdDouble *          v2,
-                    SimdDouble *          v3)
+template<int align>
+static inline void gmx_simdcall gatherLoadTranspose(const double*      base,
+                                                    const std::int32_t offset[],
+                                                    SimdDouble*        v0,
+                                                    SimdDouble*        v1,
+                                                    SimdDouble*        v2,
+                                                    SimdDouble*        v3)
 {
     __m128d t1, t2, t3, t4;
 
@@ -72,12 +71,9 @@ gatherLoadTranspose(const double *        base,
     v3->simdInternal_ = _mm_unpackhi_pd(t3, t4);
 }
 
-template <int align>
+template<int align>
 static inline void gmx_simdcall
-gatherLoadTranspose(const double *        base,
-                    const std::int32_t    offset[],
-                    SimdDouble *          v0,
-                    SimdDouble *          v1)
+                   gatherLoadTranspose(const double* base, const std::int32_t offset[], SimdDouble* v0, SimdDouble* v1)
 {
     __m128d t1, t2;
 
@@ -92,13 +88,12 @@ gatherLoadTranspose(const double *        base,
 
 static const int c_simdBestPairAlignmentDouble = 2;
 
-template <int align>
-static inline void gmx_simdcall
-gatherLoadUTranspose(const double *        base,
-                     const std::int32_t    offset[],
-                     SimdDouble *          v0,
-                     SimdDouble *          v1,
-                     SimdDouble *          v2)
+template<int align>
+static inline void gmx_simdcall gatherLoadUTranspose(const double*      base,
+                                                     const std::int32_t offset[],
+                                                     SimdDouble*        v0,
+                                                     SimdDouble*        v1,
+                                                     SimdDouble*        v2)
 {
     __m128d t1, t2, t3, t4;
     t1                = _mm_loadu_pd(base + align * offset[0]);
@@ -110,105 +105,97 @@ gatherLoadUTranspose(const double *        base,
     v2->simdInternal_ = _mm_unpacklo_pd(t3, t4);
 }
 
-template <int align>
-static inline void gmx_simdcall
-transposeScatterStoreU(double *            base,
-                       const std::int32_t  offset[],
-                       SimdDouble          v0,
-                       SimdDouble          v1,
-                       SimdDouble          v2)
+template<int align>
+static inline void gmx_simdcall transposeScatterStoreU(double*            base,
+                                                       const std::int32_t offset[],
+                                                       SimdDouble         v0,
+                                                       SimdDouble         v1,
+                                                       SimdDouble         v2)
 {
     __m128d t1, t2;
-    t1  = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
-    t2  = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t1 = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t2 = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
     _mm_storeu_pd(base + align * offset[0], t1);
     _mm_store_sd(base + align * offset[0] + 2, v2.simdInternal_);
     _mm_storeu_pd(base + align * offset[1], t2);
-    _mm_storeh_pi(reinterpret_cast< __m64 *>(base + align * offset[1] + 2), _mm_castpd_ps(v2.simdInternal_));
+    _mm_storeh_pi(reinterpret_cast<__m64*>(base + align * offset[1] + 2), _mm_castpd_ps(v2.simdInternal_));
 }
 
-template <int align>
+template<int align>
 static inline void gmx_simdcall
-transposeScatterIncrU(double *            base,
-                      const std::int32_t  offset[],
-                      SimdDouble          v0,
-                      SimdDouble          v1,
-                      SimdDouble          v2)
+                   transposeScatterIncrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     __m128d t1, t2, t3, t4, t5, t6, t7;
 
-    t5          = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
-    t6          = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
-    t7          = _mm_unpackhi_pd(v2.simdInternal_, v2.simdInternal_);
+    t5 = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t6 = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t7 = _mm_unpackhi_pd(v2.simdInternal_, v2.simdInternal_);
 
-    t1          = _mm_loadu_pd(base + align * offset[0]);
-    t2          = _mm_load_sd(base + align * offset[0] + 2);
-    t1          = _mm_add_pd(t1, t5);
-    t2          = _mm_add_sd(t2, v2.simdInternal_);
+    t1 = _mm_loadu_pd(base + align * offset[0]);
+    t2 = _mm_load_sd(base + align * offset[0] + 2);
+    t1 = _mm_add_pd(t1, t5);
+    t2 = _mm_add_sd(t2, v2.simdInternal_);
     _mm_storeu_pd(base + align * offset[0], t1);
     _mm_store_sd(base + align * offset[0] + 2, t2);
 
-    t3          = _mm_loadu_pd(base + align * offset[1]);
-    t4          = _mm_load_sd(base + align * offset[1] + 2);
-    t3          = _mm_add_pd(t3, t6);
-    t4          = _mm_add_sd(t4, t7);
+    t3 = _mm_loadu_pd(base + align * offset[1]);
+    t4 = _mm_load_sd(base + align * offset[1] + 2);
+    t3 = _mm_add_pd(t3, t6);
+    t4 = _mm_add_sd(t4, t7);
     _mm_storeu_pd(base + align * offset[1], t3);
     _mm_store_sd(base + align * offset[1] + 2, t4);
 }
 
-template <int align>
+template<int align>
 static inline void gmx_simdcall
-transposeScatterDecrU(double *            base,
-                      const std::int32_t  offset[],
-                      SimdDouble          v0,
-                      SimdDouble          v1,
-                      SimdDouble          v2)
+                   transposeScatterDecrU(double* base, const std::int32_t offset[], SimdDouble v0, SimdDouble v1, SimdDouble v2)
 {
     // This implementation is identical to the increment version, apart from using subtraction instead
     __m128d t1, t2, t3, t4, t5, t6, t7;
 
-    t5          = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
-    t6          = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
-    t7          = _mm_unpackhi_pd(v2.simdInternal_, v2.simdInternal_);
+    t5 = _mm_unpacklo_pd(v0.simdInternal_, v1.simdInternal_);
+    t6 = _mm_unpackhi_pd(v0.simdInternal_, v1.simdInternal_);
+    t7 = _mm_unpackhi_pd(v2.simdInternal_, v2.simdInternal_);
 
-    t1          = _mm_loadu_pd(base + align * offset[0]);
-    t2          = _mm_load_sd(base + align * offset[0] + 2);
-    t1          = _mm_sub_pd(t1, t5);
-    t2          = _mm_sub_sd(t2, v2.simdInternal_);
+    t1 = _mm_loadu_pd(base + align * offset[0]);
+    t2 = _mm_load_sd(base + align * offset[0] + 2);
+    t1 = _mm_sub_pd(t1, t5);
+    t2 = _mm_sub_sd(t2, v2.simdInternal_);
     _mm_storeu_pd(base + align * offset[0], t1);
     _mm_store_sd(base + align * offset[0] + 2, t2);
 
-    t3          = _mm_loadu_pd(base + align * offset[1]);
-    t4          = _mm_load_sd(base + align * offset[1] + 2);
-    t3          = _mm_sub_pd(t3, t6);
-    t4          = _mm_sub_sd(t4, t7);
+    t3 = _mm_loadu_pd(base + align * offset[1]);
+    t4 = _mm_load_sd(base + align * offset[1] + 2);
+    t3 = _mm_sub_pd(t3, t6);
+    t4 = _mm_sub_sd(t4, t7);
     _mm_storeu_pd(base + align * offset[1], t3);
     _mm_store_sd(base + align * offset[1] + 2, t4);
 }
 
 // Override for AVX-128-FMA and higher
 #if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
+                                                        SimdDouble* triplets0,
+                                                        SimdDouble* triplets1,
+                                                        SimdDouble* triplets2)
 {
-    triplets0->simdInternal_ = _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(0, 0));
-    triplets1->simdInternal_ = _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(1, 0));
-    triplets2->simdInternal_ = _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(1, 1));
+    triplets0->simdInternal_ =
+            _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(0, 0));
+    triplets1->simdInternal_ =
+            _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(1, 0));
+    triplets2->simdInternal_ =
+            _mm_shuffle_pd(scalar.simdInternal_, scalar.simdInternal_, _MM_SHUFFLE2(1, 1));
 }
 #endif
 
 
-template <int align>
-static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *  base,
-                             SimdDInt32      offset,
-                             SimdDouble *    v0,
-                             SimdDouble *    v1,
-                             SimdDouble *    v2,
-                             SimdDouble *    v3)
+template<int align>
+static inline void gmx_simdcall gatherLoadBySimdIntTranspose(const double* base,
+                                                             SimdDInt32    offset,
+                                                             SimdDouble*   v0,
+                                                             SimdDouble*   v1,
+                                                             SimdDouble*   v2,
+                                                             SimdDouble*   v3)
 {
     __m128d t1, t2, t3, t4;
     // Use optimized bit-shift multiply for the most common alignments
@@ -223,7 +210,8 @@ gatherLoadBySimdIntTranspose(const double *  base,
     else if (align == 12)
     {
         /* multiply by 3, then by 4 */
-        offset.simdInternal_ = _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
+        offset.simdInternal_ =
+                _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
         offset.simdInternal_ = _mm_slli_epi32(offset.simdInternal_, 2);
     }
     else if (align == 16)
@@ -236,20 +224,20 @@ gatherLoadBySimdIntTranspose(const double *  base,
         assert(std::size_t(base + extract<0>(offset)) % 16 == 0);
         assert(std::size_t(base + extract<1>(offset)) % 16 == 0);
 
-        t1  = _mm_load_pd(base + extract<0>(offset));
-        t2  = _mm_load_pd(base + extract<1>(offset));
-        t3  = _mm_load_pd(base + extract<0>(offset) + 2);
-        t4  = _mm_load_pd(base + extract<1>(offset) + 2);
+        t1 = _mm_load_pd(base + extract<0>(offset));
+        t2 = _mm_load_pd(base + extract<1>(offset));
+        t3 = _mm_load_pd(base + extract<0>(offset) + 2);
+        t4 = _mm_load_pd(base + extract<1>(offset) + 2);
     }
     else
     {
         assert(std::size_t(base + align * extract<0>(offset)) % 16 == 0);
         assert(std::size_t(base + align * extract<1>(offset)) % 16 == 0);
 
-        t1  = _mm_load_pd(base + align * extract<0>(offset));
-        t2  = _mm_load_pd(base + align * extract<1>(offset));
-        t3  = _mm_load_pd(base + align * extract<0>(offset) + 2);
-        t4  = _mm_load_pd(base + align * extract<1>(offset) + 2);
+        t1 = _mm_load_pd(base + align * extract<0>(offset));
+        t2 = _mm_load_pd(base + align * extract<1>(offset));
+        t3 = _mm_load_pd(base + align * extract<0>(offset) + 2);
+        t4 = _mm_load_pd(base + align * extract<1>(offset) + 2);
     }
     v0->simdInternal_ = _mm_unpacklo_pd(t1, t2);
     v1->simdInternal_ = _mm_unpackhi_pd(t1, t2);
@@ -257,12 +245,9 @@ gatherLoadBySimdIntTranspose(const double *  base,
     v3->simdInternal_ = _mm_unpackhi_pd(t3, t4);
 }
 
-template <int align>
+template<int align>
 static inline void gmx_simdcall
-gatherLoadBySimdIntTranspose(const double *    base,
-                             SimdDInt32        offset,
-                             SimdDouble *      v0,
-                             SimdDouble *      v1)
+                   gatherLoadBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
 {
     __m128d t1, t2;
 
@@ -278,7 +263,8 @@ gatherLoadBySimdIntTranspose(const double *    base,
     else if (align == 6)
     {
         // multiply by 3, then by 2
-        offset.simdInternal_ = _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
+        offset.simdInternal_ =
+                _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
         offset.simdInternal_ = _mm_slli_epi32(offset.simdInternal_, 1);
     }
     else if (align == 8)
@@ -288,7 +274,8 @@ gatherLoadBySimdIntTranspose(const double *    base,
     else if (align == 12)
     {
         // multiply by 3, then by 4
-        offset.simdInternal_ = _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
+        offset.simdInternal_ =
+                _mm_add_epi32(offset.simdInternal_, _mm_slli_epi32(offset.simdInternal_, 1));
         offset.simdInternal_ = _mm_slli_epi32(offset.simdInternal_, 2);
     }
     else if (align == 16)
@@ -296,34 +283,30 @@ gatherLoadBySimdIntTranspose(const double *    base,
         offset.simdInternal_ = _mm_slli_epi32(offset.simdInternal_, 4);
     }
 
-    if (align == 2 || align == 4 || align == 6 ||
-        align == 8 || align == 12 || align == 16)
+    if (align == 2 || align == 4 || align == 6 || align == 8 || align == 12 || align == 16)
     {
         assert(std::size_t(base + extract<0>(offset)) % 16 == 0);
         assert(std::size_t(base + extract<1>(offset)) % 16 == 0);
 
-        t1  = _mm_load_pd(base + extract<0>(offset));
-        t2  = _mm_load_pd(base + extract<1>(offset));
+        t1 = _mm_load_pd(base + extract<0>(offset));
+        t2 = _mm_load_pd(base + extract<1>(offset));
     }
     else
     {
         assert(std::size_t(base + align * extract<0>(offset)) % 16 == 0);
         assert(std::size_t(base + align * extract<1>(offset)) % 16 == 0);
 
-        t1  = _mm_load_pd(base + align * extract<0>(offset));
-        t2  = _mm_load_pd(base + align * extract<1>(offset));
+        t1 = _mm_load_pd(base + align * extract<0>(offset));
+        t2 = _mm_load_pd(base + align * extract<1>(offset));
     }
     v0->simdInternal_ = _mm_unpacklo_pd(t1, t2);
     v1->simdInternal_ = _mm_unpackhi_pd(t1, t2);
 }
 
 
-template <int align>
+template<int align>
 static inline void gmx_simdcall
-gatherLoadUBySimdIntTranspose(const double *  base,
-                              SimdDInt32      offset,
-                              SimdDouble *    v0,
-                              SimdDouble *    v1)
+                   gatherLoadUBySimdIntTranspose(const double* base, SimdDInt32 offset, SimdDouble* v0, SimdDouble* v1)
 {
     __m128d t1, t2;
     // Use optimized bit-shift multiply for the most common alignments.
@@ -340,13 +323,13 @@ gatherLoadUBySimdIntTranspose(const double *  base,
 
     if (align == 1 || align == 2 || align == 4)
     {
-        t1  = _mm_loadu_pd(base + extract<0>(offset));
-        t2  = _mm_loadu_pd(base + extract<1>(offset));
+        t1 = _mm_loadu_pd(base + extract<0>(offset));
+        t2 = _mm_loadu_pd(base + extract<1>(offset));
     }
     else
     {
-        t1  = _mm_loadu_pd(base + align * extract<0>(offset));
-        t2  = _mm_loadu_pd(base + align * extract<1>(offset));
+        t1 = _mm_loadu_pd(base + align * extract<0>(offset));
+        t2 = _mm_loadu_pd(base + align * extract<1>(offset));
     }
     v0->simdInternal_ = _mm_unpacklo_pd(t1, t2);
     v1->simdInternal_ = _mm_unpackhi_pd(t1, t2);
@@ -355,11 +338,7 @@ gatherLoadUBySimdIntTranspose(const double *  base,
 // Override for AVX-128-FMA and higher
 #if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1
 static inline double gmx_simdcall
-reduceIncr4ReturnSum(double *    m,
-                     SimdDouble  v0,
-                     SimdDouble  v1,
-                     SimdDouble  v2,
-                     SimdDouble  v3)
+                     reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
     __m128d t1, t2, t3, t4;
 
@@ -382,10 +361,10 @@ reduceIncr4ReturnSum(double *    m,
     t1 = _mm_add_pd(t1, t3);
 
     t2 = _mm_add_sd(t1, _mm_shuffle_pd(t1, t1, _MM_SHUFFLE2(1, 1)));
-    return *reinterpret_cast<double *>(&t2);
+    return *reinterpret_cast<double*>(&t2);
 }
 #endif
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_SSE2_UTIL_DOUBLE_H

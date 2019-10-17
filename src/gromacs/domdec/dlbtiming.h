@@ -54,15 +54,15 @@ struct t_nrnb;
 /*! \brief Tells if we should open the balancing region */
 enum class DdAllowBalanceRegionReopen
 {
-    no,  //!< Do not allow opening an already open region
-    yes  //!< Allow opening an already open region
+    no, //!< Do not allow opening an already open region
+    yes //!< Allow opening an already open region
 };
 
 /*! \brief Tells if we had to wait for a GPU to finish computation */
 enum class DdBalanceRegionWaitedForGpu
 {
-    no,  //!< The GPU finished computation before the CPU needed the result
-    yes  //!< We had to wait for the GPU to finish computation
+    no, //!< The GPU finished computation before the CPU needed the result
+    yes //!< We had to wait for the GPU to finish computation
 };
 
 /*! \brief Re-open the, already opened, load balance timing region
@@ -76,135 +76,131 @@ enum class DdBalanceRegionWaitedForGpu
  *
  * \param[in,out] dd  The domain decomposition struct
  */
-void ddReopenBalanceRegionCpu(const gmx_domdec_t *dd);
+void ddReopenBalanceRegionCpu(const gmx_domdec_t* dd);
 
 /*! \libinternal
  * \brief Manager for starting and stopping the dynamic load balancing region
  */
 class DDBalanceRegionHandler
 {
-    public:
-        //! Constructor, pass a pointer to t_commrec or nullptr when not using domain decomposition
-        DDBalanceRegionHandler(const t_commrec *cr) :
-            useBalancingRegion_(cr != nullptr ? havePPDomainDecomposition(cr) : false),
-            dd_(cr != nullptr ? cr->dd : nullptr)
+public:
+    //! Constructor, pass a pointer to t_commrec or nullptr when not using domain decomposition
+    DDBalanceRegionHandler(const t_commrec* cr) :
+        useBalancingRegion_(cr != nullptr ? havePPDomainDecomposition(cr) : false),
+        dd_(cr != nullptr ? cr->dd : nullptr)
+    {
+    }
+
+    /*! \brief Returns whether were are actually using the balancing region
+     */
+    bool useBalancingRegion() const { return useBalancingRegion_; }
+
+    /*! \brief Open the load balance timing region on the CPU
+     *
+     * Opens the balancing region for timing how much time it takes to perform
+     * the (balancable part of) the MD step. This should be called right after
+     * the last communication during the previous step to maximize the region.
+     * In practice this means right after the force communication finished
+     * or just before neighbor search at search steps.
+     * It is assumed that computation done in the region either scales along
+     * with the domain size or takes constant time.
+     *
+     * \param[in] allowReopen  Allows calling with a potentially already opened region
+     */
+    void openBeforeForceComputationCpu(DdAllowBalanceRegionReopen allowReopen) const
+    {
+        if (useBalancingRegion_)
         {
+            openRegionCpuImpl(allowReopen);
         }
+    }
 
-        /*! \brief Returns whether were are actually using the balancing region
-         */
-        bool useBalancingRegion() const
+    /*! \brief Open the load balance timing region for the CPU
+     *
+     * This can only be called within a region that is open on the CPU side.
+     */
+    void openBeforeForceComputationGpu() const
+    {
+        if (useBalancingRegion_)
         {
-            return useBalancingRegion_;
+            openRegionGpuImpl();
         }
+    }
 
-        /*! \brief Open the load balance timing region on the CPU
-         *
-         * Opens the balancing region for timing how much time it takes to perform
-         * the (balancable part of) the MD step. This should be called right after
-         * the last communication during the previous step to maximize the region.
-         * In practice this means right after the force communication finished
-         * or just before neighbor search at search steps.
-         * It is assumed that computation done in the region either scales along
-         * with the domain size or takes constant time.
-         *
-         * \param[in] allowReopen  Allows calling with a potentially already opened region
-         */
-        void openBeforeForceComputationCpu(DdAllowBalanceRegionReopen allowReopen) const
+    /*! \brief Re-open the, already opened, load balance timing region
+     *
+     * This function should be called after every MPI communication that occurs
+     * in the main MD loop.
+     * Note that the current setup assumes that all MPI communication acts like
+     * a global barrier. But if some ranks don't participate in communication
+     * or if some ranks communicate faster with neighbors than others,
+     * the obtained timings might not accurately reflect the computation time.
+     */
+    void reopenRegionCpu() const
+    {
+        if (useBalancingRegion_)
         {
-            if (useBalancingRegion_)
-            {
-                openRegionCpuImpl(allowReopen);
-            }
+            ddReopenBalanceRegionCpu(dd_);
         }
+    }
 
-        /*! \brief Open the load balance timing region for the CPU
-         *
-         * This can only be called within a region that is open on the CPU side.
-         */
-        void openBeforeForceComputationGpu() const
+    /*! \brief Close the load balance timing region on the CPU side
+     */
+    void closeAfterForceComputationCpu() const
+    {
+        if (useBalancingRegion_)
         {
-            if (useBalancingRegion_)
-            {
-                openRegionGpuImpl();
-            }
+            closeRegionCpuImpl();
         }
+    }
 
-        /*! \brief Re-open the, already opened, load balance timing region
-         *
-         * This function should be called after every MPI communication that occurs
-         * in the main MD loop.
-         * Note that the current setup assumes that all MPI communication acts like
-         * a global barrier. But if some ranks don't participate in communication
-         * or if some ranks communicate faster with neighbors than others,
-         * the obtained timings might not accurately reflect the computation time.
-         */
-        void reopenRegionCpu() const
+    /*! \brief Close the load balance timing region on the GPU side
+     *
+     * This should be called after the CPU receives the last (local) results
+     * from the GPU. The wait time for these results is estimated, depending
+     * on the \p waitedForGpu parameter.
+     * If called on an already closed region, this call does nothing.
+     *
+     * \param[in] waitCyclesGpuInCpuRegion  The time we waited for the GPU earlier, overlapping completely with the open CPU region
+     * \param[in] waitedForGpu              Tells if we waited for the GPU to finish now
+     */
+    void closeAfterForceComputationGpu(float                       waitCyclesGpuInCpuRegion,
+                                       DdBalanceRegionWaitedForGpu waitedForGpu) const
+    {
+        if (useBalancingRegion_)
         {
-            if (useBalancingRegion_)
-            {
-                ddReopenBalanceRegionCpu(dd_);
-            }
+            closeRegionGpuImpl(waitCyclesGpuInCpuRegion, waitedForGpu);
         }
+    }
 
-        /*! \brief Close the load balance timing region on the CPU side
-         */
-        void closeAfterForceComputationCpu() const
-        {
-            if (useBalancingRegion_)
-            {
-                closeRegionCpuImpl();
-            }
-        }
+private:
+    /*! \brief Open the load balance timing region on the CPU
+     *
+     * \param[in] allowReopen  Allows calling with a potentially already opened region
+     */
+    void openRegionCpuImpl(DdAllowBalanceRegionReopen allowReopen) const;
 
-        /*! \brief Close the load balance timing region on the GPU side
-         *
-         * This should be called after the CPU receives the last (local) results
-         * from the GPU. The wait time for these results is estimated, depending
-         * on the \p waitedForGpu parameter.
-         * If called on an already closed region, this call does nothing.
-         *
-         * \param[in] waitCyclesGpuInCpuRegion  The time we waited for the GPU earlier, overlapping completely with the open CPU region
-         * \param[in] waitedForGpu              Tells if we waited for the GPU to finish now
-         */
-        void closeAfterForceComputationGpu(float                       waitCyclesGpuInCpuRegion,
-                                           DdBalanceRegionWaitedForGpu waitedForGpu) const
-        {
-            if (useBalancingRegion_)
-            {
-                closeRegionGpuImpl(waitCyclesGpuInCpuRegion, waitedForGpu);
-            }
-        }
+    /*! \brief Open the load balance timing region for the GPU
+     *
+     * This can only be called within a region that is open on the CPU side.
+     */
+    void openRegionGpuImpl() const;
 
-    private:
-        /*! \brief Open the load balance timing region on the CPU
-         *
-         * \param[in] allowReopen  Allows calling with a potentially already opened region
-         */
-        void openRegionCpuImpl(DdAllowBalanceRegionReopen allowReopen) const;
+    /*! \brief Close the load balance timing region on the CPU side
+     */
+    void closeRegionCpuImpl() const;
 
-        /*! \brief Open the load balance timing region for the GPU
-         *
-         * This can only be called within a region that is open on the CPU side.
-         */
-        void openRegionGpuImpl() const;
+    /*! \brief Close the load balance timing region on the GPU side
+     *
+     * \param[in] waitCyclesGpuInCpuRegion  The time we waited for the GPU earlier, overlapping completely with the open CPU region
+     * \param[in] waitedForGpu              Tells if we waited for the GPU to finish now
+     */
+    void closeRegionGpuImpl(float waitCyclesGpuInCpuRegion, DdBalanceRegionWaitedForGpu waitedForGpu) const;
 
-        /*! \brief Close the load balance timing region on the CPU side
-         */
-        void closeRegionCpuImpl() const;
-
-        /*! \brief Close the load balance timing region on the GPU side
-         *
-         * \param[in] waitCyclesGpuInCpuRegion  The time we waited for the GPU earlier, overlapping completely with the open CPU region
-         * \param[in] waitedForGpu              Tells if we waited for the GPU to finish now
-         */
-        void closeRegionGpuImpl(float                       waitCyclesGpuInCpuRegion,
-                                DdBalanceRegionWaitedForGpu waitedForGpu) const;
-
-        //! Tells whether the balancing region should be active
-        bool          useBalancingRegion_;
-        //! A pointer to the DD struct, only valid with useBalancingRegion_=true
-        gmx_domdec_t *dd_;
+    //! Tells whether the balancing region should be active
+    bool useBalancingRegion_;
+    //! A pointer to the DD struct, only valid with useBalancingRegion_=true
+    gmx_domdec_t* dd_;
 };
 
 /*! \brief Returns a pointer to a constructed \p BalanceRegion struct
@@ -212,15 +208,15 @@ class DDBalanceRegionHandler
  * Should be replaced by a proper constructor once BalanceRegion is a proper
  * class (requires restructering in domdec.cpp).
  */
-BalanceRegion *ddBalanceRegionAllocate();
+BalanceRegion* ddBalanceRegionAllocate();
 
 /*! \brief Start the force flop count */
-void dd_force_flop_start(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+void dd_force_flop_start(struct gmx_domdec_t* dd, t_nrnb* nrnb);
 
 /*! \brief Stop the force flop count */
-void dd_force_flop_stop(struct gmx_domdec_t *dd, t_nrnb *nrnb);
+void dd_force_flop_stop(struct gmx_domdec_t* dd, t_nrnb* nrnb);
 
 //! Clear the cycle counts used for tuning.
-void clear_dd_cycle_counts(gmx_domdec_t *dd);
+void clear_dd_cycle_counts(gmx_domdec_t* dd);
 
 #endif

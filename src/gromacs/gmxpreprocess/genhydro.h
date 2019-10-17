@@ -61,11 +61,11 @@ struct MoleculePatchDatabase;
  * \param[in] bMissing If routine should continue if atoms are not found.
  * \returns New total number of atoms.
  */
-int add_h(t_atoms                                   **initialAtoms,
-          t_atoms                                   **localAtoms,
-          std::vector<gmx::RVec>                     *xptr,
+int add_h(t_atoms**                                   initialAtoms,
+          t_atoms**                                   localAtoms,
+          std::vector<gmx::RVec>*                     xptr,
           gmx::ArrayRef<const MoleculePatchDatabase>  globalPatches,
-          t_symtab                                   *symtab,
+          t_symtab*                                   symtab,
           int                                         nterpairs,
           gmx::ArrayRef<MoleculePatchDatabase* const> ntdb,
           gmx::ArrayRef<MoleculePatchDatabase* const> ctdb,

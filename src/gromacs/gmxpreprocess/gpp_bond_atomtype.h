@@ -59,55 +59,54 @@ struct t_symtab;
  */
 class PreprocessingBondAtomType
 {
-    public:
-        PreprocessingBondAtomType();
-        ~PreprocessingBondAtomType();
+public:
+    PreprocessingBondAtomType();
+    ~PreprocessingBondAtomType();
 
-        //! Get number of defined bond atom types.
-        size_t size() const;
+    //! Get number of defined bond atom types.
+    size_t size() const;
 
-        /*! \brief
-         * Get name of atom from internal bond atom type number.
-         *
-         * \param[in] nt Internal number of atom type.
-         * \returns The type name.
-         */
-        const char *atomNameFromBondAtomType(int nt) const;
+    /*! \brief
+     * Get name of atom from internal bond atom type number.
+     *
+     * \param[in] nt Internal number of atom type.
+     * \returns The type name.
+     */
+    const char* atomNameFromBondAtomType(int nt) const;
 
-        /*! \brief
-         *  Get bond atom type index for atom type name if present in the database, or NOTSET.
-         *
-         *  \todo The code should be changed to instead use a gmx::compat version
-         *  of std::optional to return a handle to the element being searched,
-         *  or an empty optional construct if the entry has not been found.
-         *
-         *  \param[in] str Input string to search type for.
-         *  \returns Atomtype as integer.
-         */
-        int bondAtomTypeFromName(const std::string &str) const;
+    /*! \brief
+     *  Get bond atom type index for atom type name if present in the database, or NOTSET.
+     *
+     *  \todo The code should be changed to instead use a gmx::compat version
+     *  of std::optional to return a handle to the element being searched,
+     *  or an empty optional construct if the entry has not been found.
+     *
+     *  \param[in] str Input string to search type for.
+     *  \returns Atomtype as integer.
+     */
+    int bondAtomTypeFromName(const std::string& str) const;
 
-        /*! \brief
-         * Add a complete new bond atom type.
-         *
-         * \param[in] tab Symbol table.
-         * \param[in] name Atom name.
-         * \returns The number of entries in database or the type number of an already set type.
-         */
-        int addBondAtomType(t_symtab          *tab,
-                            const std::string &name);
+    /*! \brief
+     * Add a complete new bond atom type.
+     *
+     * \param[in] tab Symbol table.
+     * \param[in] name Atom name.
+     * \returns The number of entries in database or the type number of an already set type.
+     */
+    int addBondAtomType(t_symtab* tab, const std::string& name);
 
-        /*! \brief
-         * If a value is within the range of the current types or not.
-         *
-         * \param[in] nt Value to check.
-         * \returns True if value is in range.
-         */
-        bool isSet(int nt) const;
+    /*! \brief
+     * If a value is within the range of the current types or not.
+     *
+     * \param[in] nt Value to check.
+     * \returns True if value is in range.
+     */
+    bool isSet(int nt) const;
 
-    private:
-        class Impl;
-        //! Pimpl that holds the data.
-        gmx::PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    //! Pimpl that holds the data.
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
 #endif

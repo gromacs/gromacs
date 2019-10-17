@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,20 +87,18 @@ static bool useBuildCache = getenv("GMX_OCL_GENCACHE") != nullptr;
  * \param program             OpenCL program that was compiled
  * \param deviceId            Id of the device for which compilation took place
  * \param kernelFilename      File name containing the kernel
- * \param preprocessorOptions String containing the preprocessor command-line options used for the build
- * \param buildFailed         Whether the OpenCL build succeeded
+ * \param preprocessorOptions String containing the preprocessor command-line options used for the
+ * build \param buildFailed         Whether the OpenCL build succeeded
  *
  * \throws std::bad_alloc if out of memory */
-static void
-writeOclBuildLog(FILE              *fplog,
-                 cl_program         program,
-                 cl_device_id       deviceId,
-                 const std::string &kernelFilename,
-                 const std::string &preprocessorOptions,
-                 bool               buildFailed)
+static void writeOclBuildLog(FILE*              fplog,
+                             cl_program         program,
+                             cl_device_id       deviceId,
+                             const std::string& kernelFilename,
+                             const std::string& preprocessorOptions,
+                             bool               buildFailed)
 {
-    bool writeOutput = ((fplog != nullptr) &&
-                        (buildFailed || (getenv("GMX_OCL_DUMP_LOG") != nullptr)));
+    bool writeOutput = ((fplog != nullptr) && (buildFailed || (getenv("GMX_OCL_DUMP_LOG") != nullptr)));
 
     if (!writeOutput)
     {
@@ -109,18 +107,15 @@ writeOclBuildLog(FILE              *fplog,
 
     // Get build log string size
     size_t buildLogSize;
-    cl_int cl_error = clGetProgramBuildInfo(program,
-                                            deviceId,
-                                            CL_PROGRAM_BUILD_LOG,
-                                            0,
-                                            nullptr,
-                                            &buildLogSize);
+    cl_int cl_error =
+            clGetProgramBuildInfo(program, deviceId, CL_PROGRAM_BUILD_LOG, 0, nullptr, &buildLogSize);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not get OpenCL program build log size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not get OpenCL program build log size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
-    char             *buildLog = nullptr;
+    char*             buildLog = nullptr;
     unique_cptr<char> buildLogGuard;
     if (buildLogSize != 0)
     {
@@ -130,15 +125,12 @@ writeOclBuildLog(FILE              *fplog,
         buildLogGuard.reset(buildLog);
 
         /* Get the actual compilation log */
-        cl_error = clGetProgramBuildInfo(program,
-                                         deviceId,
-                                         CL_PROGRAM_BUILD_LOG,
-                                         buildLogSize,
-                                         buildLog,
-                                         nullptr);
+        cl_error = clGetProgramBuildInfo(program, deviceId, CL_PROGRAM_BUILD_LOG, buildLogSize,
+                                         buildLog, nullptr);
         if (cl_error != CL_SUCCESS)
         {
-            GMX_THROW(InternalError("Could not get OpenCL program build log, error was " + ocl_get_error_string(cl_error)));
+            GMX_THROW(InternalError("Could not get OpenCL program build log, error was "
+                                    + ocl_get_error_string(cl_error)));
         }
     }
 
@@ -154,7 +146,8 @@ writeOclBuildLog(FILE              *fplog,
     message += "-- Used build options: " + preprocessorOptions + "\n";
     message += "--------------LOG START---------------\n";
     message += buildLog;
-    message += "---------------LOG END----------------\n";;
+    message += "---------------LOG END----------------\n";
+    ;
 
     fputs(message.c_str(), fplog);
 }
@@ -165,12 +158,11 @@ writeOclBuildLog(FILE              *fplog,
  *          automatically enable some vendor-specific options
  * \return The string with the compiler options
  */
-static std::string
-selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
+static std::string selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
 {
     std::string compilerOptions;
 
-    if (getenv("GMX_OCL_NOOPT") )
+    if (getenv("GMX_OCL_NOOPT"))
     {
         compilerOptions += " -cl-opt-disable";
     }
@@ -222,29 +214,28 @@ selectCompilerOptions(ocl_vendor_id_t deviceVendorId)
  * \throws std::bad_alloc    if out of memory.
  *         FileIOError  if GMX_OCL_FILE_PATH does not specify a readable path
  */
-static std::string
-getSourceRootPath(const std::string &sourceRelativePath)
+static std::string getSourceRootPath(const std::string& sourceRelativePath)
 {
     std::string sourceRootPath;
     /* Use GMX_OCL_FILE_PATH if the user has defined it */
-    const char *gmxOclFilePath = getenv("GMX_OCL_FILE_PATH");
+    const char* gmxOclFilePath = getenv("GMX_OCL_FILE_PATH");
 
     if (gmxOclFilePath == nullptr)
     {
         /* Normal way of getting ocl_root_dir. First get the right
            root path from the path to the binary that is running. */
-        InstallationPrefixInfo      info           = getProgramContext().installationPrefix();
-        std::string                 dataPathSuffix = (info.bSourceLayout ?
-                                                      "src" :
-                                                      GMX_INSTALL_OCLDIR);
+        InstallationPrefixInfo info           = getProgramContext().installationPrefix();
+        std::string            dataPathSuffix = (info.bSourceLayout ? "src" : GMX_INSTALL_OCLDIR);
         sourceRootPath = Path::join(info.path, dataPathSuffix, sourceRelativePath);
     }
     else
     {
         if (!Directory::exists(gmxOclFilePath))
         {
-            GMX_THROW(FileIOError(formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
-                                               "kernels are found, but '%s' does not exist", gmxOclFilePath)));
+            GMX_THROW(FileIOError(
+                    formatString("GMX_OCL_FILE_PATH must point to the directory where OpenCL"
+                                 "kernels are found, but '%s' does not exist",
+                                 gmxOclFilePath)));
         }
         sourceRootPath = Path::join(gmxOclFilePath, sourceRelativePath);
     }
@@ -256,11 +247,13 @@ getSourceRootPath(const std::string &sourceRelativePath)
 size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId)
 {
     size_t warpSize = 0;
-    cl_int cl_error = clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
-                                               sizeof(warpSize), &warpSize, nullptr);
+    cl_int cl_error =
+            clGetKernelWorkGroupInfo(kernel, deviceId, CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE,
+                                     sizeof(warpSize), &warpSize, nullptr);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not query OpenCL preferred workgroup size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not query OpenCL preferred workgroup size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
     if (warpSize == 0)
     {
@@ -272,23 +265,27 @@ size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId)
 size_t getDeviceWarpSize(cl_context context, cl_device_id deviceId)
 {
     cl_int      cl_error;
-    const char *warpSizeKernel = "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
-    cl_program  program        = clCreateProgramWithSource(context, 1, &warpSizeKernel, nullptr, &cl_error);
+    const char* warpSizeKernel =
+            "__kernel void test(__global int* test){test[get_local_id(0)] = 0;}";
+    cl_program program = clCreateProgramWithSource(context, 1, &warpSizeKernel, nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not create OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not create OpenCL program to determine warp size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     cl_error = clBuildProgram(program, 0, nullptr, nullptr, nullptr, nullptr);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not build OpenCL program to determine warp size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not build OpenCL program to determine warp size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     cl_kernel kernel = clCreateKernel(program, "test", &cl_error);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not create OpenCL kernel to determine warp size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not create OpenCL kernel to determine warp size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     size_t warpSize = getKernelWarpSize(kernel, deviceId);
@@ -296,12 +293,14 @@ size_t getDeviceWarpSize(cl_context context, cl_device_id deviceId)
     cl_error = clReleaseKernel(kernel);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not release OpenCL warp-size kernel, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not release OpenCL warp-size kernel, error was "
+                                + ocl_get_error_string(cl_error)));
     }
     cl_error = clReleaseProgram(program);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not release OpenCL warp-size program, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not release OpenCL warp-size program, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     return warpSize;
@@ -313,24 +312,15 @@ size_t getDeviceWarpSize(cl_context context, cl_device_id deviceId)
  *
  * \return The appropriate compilation-line define
  */
-static const char *
-makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
+static const char* makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
 {
-    const char *choice;
+    const char* choice;
     switch (vendorId)
     {
-        case OCL_VENDOR_AMD:
-            choice = "-D_AMD_SOURCE_";
-            break;
-        case OCL_VENDOR_NVIDIA:
-            choice = "-D_NVIDIA_SOURCE_";
-            break;
-        case OCL_VENDOR_INTEL:
-            choice = "-D_INTEL_SOURCE_";
-            break;
-        default:
-            choice = "";
-            break;
+        case OCL_VENDOR_AMD: choice = "-D_AMD_SOURCE_"; break;
+        case OCL_VENDOR_NVIDIA: choice = "-D_NVIDIA_SOURCE_"; break;
+        case OCL_VENDOR_INTEL: choice = "-D_INTEL_SOURCE_"; break;
+        default: choice = ""; break;
     }
     return choice;
 }
@@ -341,7 +331,7 @@ makeVendorFlavorChoice(ocl_vendor_id_t vendorId)
  *
  * \throws std::bad_alloc  if out of memory.
  */
-static std::string makeKernelIncludePathOption(const std::string &unescapedKernelRootPath)
+static std::string makeKernelIncludePathOption(const std::string& unescapedKernelRootPath)
 {
     std::string includePathOption;
 
@@ -375,29 +365,27 @@ static std::string makeKernelIncludePathOption(const std::string &unescapedKerne
  *
  * \param str String that will be modified.
  */
-static void
-removeExtraSpaces(std::string *str)
+static void removeExtraSpaces(std::string* str)
 {
     GMX_RELEASE_ASSERT(str != nullptr, "A pointer to an actual string must be provided");
-    std::string::iterator newEnd =
-        std::unique( str->begin(), str->end(), [ = ](char a, char b){ return isspace(a) != 0 && (a == b); } );
+    std::string::iterator newEnd = std::unique(
+            str->begin(), str->end(), [=](char a, char b) { return isspace(a) != 0 && (a == b); });
     str->erase(newEnd, str->end());
 }
 
 /*! \brief Builds a string with build options for the OpenCL kernels
  *
  * \throws std::bad_alloc  if out of memory. */
-static std::string
-makePreprocessorOptions(const std::string   &kernelRootPath,
-                        const std::string   &includeRootPath,
-                        size_t               warpSize,
-                        ocl_vendor_id_t      deviceVendorId,
-                        const std::string   &extraDefines)
+static std::string makePreprocessorOptions(const std::string& kernelRootPath,
+                                           const std::string& includeRootPath,
+                                           size_t             warpSize,
+                                           ocl_vendor_id_t    deviceVendorId,
+                                           const std::string& extraDefines)
 {
     std::string preprocessorOptions;
 
     /* Compose the complete build options */
-    preprocessorOptions  = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
+    preprocessorOptions = formatString("-DWARP_SIZE_TEST=%d", static_cast<int>(warpSize));
     preprocessorOptions += ' ';
     preprocessorOptions += makeVendorFlavorChoice(deviceVendorId);
     preprocessorOptions += ' ';
@@ -415,35 +403,30 @@ makePreprocessorOptions(const std::string   &kernelRootPath,
     return preprocessorOptions;
 }
 
-cl_program
-compileProgram(FILE              *fplog,
-               const std::string &kernelRelativePath,
-               const std::string &kernelBaseFilename,
-               const std::string &extraDefines,
-               cl_context         context,
-               cl_device_id       deviceId,
-               ocl_vendor_id_t    deviceVendorId)
+cl_program compileProgram(FILE*              fplog,
+                          const std::string& kernelRelativePath,
+                          const std::string& kernelBaseFilename,
+                          const std::string& extraDefines,
+                          cl_context         context,
+                          cl_device_id       deviceId,
+                          ocl_vendor_id_t    deviceVendorId)
 {
-    cl_int      cl_error;
+    cl_int cl_error;
     // Let the kernel find include files from its module.
-    std::string kernelRootPath  = getSourceRootPath(kernelRelativePath);
+    std::string kernelRootPath = getSourceRootPath(kernelRelativePath);
     // Let the kernel find include files from other modules.
     std::string rootPath = getSourceRootPath("");
 
     GMX_RELEASE_ASSERT(fplog != nullptr, "Need a valid log file for building OpenCL programs");
 
     /* Load OpenCL source files */
-    std::string kernelFilename = Path::join(kernelRootPath,
-                                            kernelBaseFilename);
+    std::string kernelFilename = Path::join(kernelRootPath, kernelBaseFilename);
 
     /* Make the build options */
-    std::string preprocessorOptions = makePreprocessorOptions(kernelRootPath,
-                                                              rootPath,
-                                                              getDeviceWarpSize(context, deviceId),
-                                                              deviceVendorId,
-                                                              extraDefines);
+    std::string preprocessorOptions = makePreprocessorOptions(
+            kernelRootPath, rootPath, getDeviceWarpSize(context, deviceId), deviceVendorId, extraDefines);
 
-    bool        buildCacheWasRead = false;
+    bool buildCacheWasRead = false;
 
     std::string cacheFilename;
     if (useBuildCache)
@@ -463,7 +446,7 @@ compileProgram(FILE              *fplog,
                 program           = makeProgramFromCache(cacheFilename, context, deviceId);
                 buildCacheWasRead = true;
             }
-            catch (FileIOError &e)
+            catch (FileIOError& e)
             {
                 // Failing to read from the cache is not a critical error
                 formatExceptionMessageToFile(fplog, e);
@@ -471,7 +454,8 @@ compileProgram(FILE              *fplog,
         }
         else
         {
-            fprintf(fplog, "No OpenCL binary cache file was present, so will compile kernels normally.\n");
+            fprintf(fplog,
+                    "No OpenCL binary cache file was present, so will compile kernels normally.\n");
         }
     }
     if (program == nullptr)
@@ -482,36 +466,31 @@ compileProgram(FILE              *fplog,
         {
             GMX_THROW(FileIOError("Error loading OpenCL code " + kernelFilename));
         }
-        const char *kernelSourcePtr  = kernelSource.c_str();
+        const char* kernelSourcePtr  = kernelSource.c_str();
         size_t      kernelSourceSize = kernelSource.size();
         /* Create program from source code */
-        program = clCreateProgramWithSource(context,
-                                            1,
-                                            &kernelSourcePtr,
-                                            &kernelSourceSize,
-                                            &cl_error);
+        program = clCreateProgramWithSource(context, 1, &kernelSourcePtr, &kernelSourceSize, &cl_error);
         if (cl_error != CL_SUCCESS)
         {
-            GMX_THROW(InternalError("Could not create OpenCL program, error was " + ocl_get_error_string(cl_error)));
+            GMX_THROW(InternalError("Could not create OpenCL program, error was "
+                                    + ocl_get_error_string(cl_error)));
         }
     }
 
     /* Build the OpenCL program, keeping the status to potentially
        write to the simulation log file. */
-    cl_int buildStatus = clBuildProgram(program, 0, nullptr, preprocessorOptions.c_str(), nullptr, nullptr);
+    cl_int buildStatus =
+            clBuildProgram(program, 0, nullptr, preprocessorOptions.c_str(), nullptr, nullptr);
 
     /* Write log first, and then throw exception that the user know what is
        the issue even if the build fails. */
-    writeOclBuildLog(fplog,
-                     program,
-                     deviceId,
-                     kernelFilename,
-                     preprocessorOptions,
+    writeOclBuildLog(fplog, program, deviceId, kernelFilename, preprocessorOptions,
                      buildStatus != CL_SUCCESS);
 
     if (buildStatus != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not build OpenCL program, error was " + ocl_get_error_string(buildStatus)));
+        GMX_THROW(InternalError("Could not build OpenCL program, error was "
+                                + ocl_get_error_string(buildStatus)));
     }
 
     if (useBuildCache)
@@ -524,7 +503,7 @@ compileProgram(FILE              *fplog,
             {
                 writeBinaryToCache(program, cacheFilename);
             }
-            catch (GromacsException &e)
+            catch (GromacsException& e)
             {
                 // Failing to write the cache is not a critical error
                 formatExceptionMessageToFile(fplog, e);
@@ -540,7 +519,8 @@ compileProgram(FILE              *fplog,
         cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, sizeof(buffer), buffer, nullptr);
         if (cl_error != CL_SUCCESS)
         {
-            GMX_THROW(InternalError("Could not get OpenCL device info, error was " + ocl_get_error_string(cl_error)));
+            GMX_THROW(InternalError("Could not get OpenCL device info, error was "
+                                    + ocl_get_error_string(cl_error)));
         }
         std::string ptxFilename = buffer;
         ptxFilename += ".ptx";
@@ -549,7 +529,7 @@ compileProgram(FILE              *fplog,
         {
             writeBinaryToCache(program, ptxFilename);
         }
-        catch (GromacsException &e)
+        catch (GromacsException& e)
         {
             // Failing to write the cache is not a critical error
             formatExceptionMessageToFile(fplog, e);

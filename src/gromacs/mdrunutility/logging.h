@@ -54,23 +54,22 @@ namespace gmx
 {
 
 /*! \brief Close the log file */
-void closeLogFile(t_fileio *logfio);
+void closeLogFile(t_fileio* logfio);
 
 //! Simple guard pointer See unique_cptr for details.
-using LogFilePtr = std::unique_ptr < t_fileio, functor_wrapper < t_fileio, closeLogFile>>;
+using LogFilePtr = std::unique_ptr<t_fileio, functor_wrapper<t_fileio, closeLogFile>>;
 
 /*! \brief Open the log file for writing/appending.
  *
  * \throws FileIOError when the log file cannot be opened. */
-LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles);
+LogFilePtr openLogFile(const char* lognm, bool appendFiles);
 
 /*! \brief Prepare to use the open log file when appending.
  *
  * Does not throw.
  */
-void prepareLogAppending(FILE *fplog);
+void prepareLogAppending(FILE* fplog);
 
-}    // namespace gmx
+} // namespace gmx
 
 #endif

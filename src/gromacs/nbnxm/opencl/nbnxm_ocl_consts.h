@@ -43,8 +43,8 @@
  * \ingroup module_nbnxm
  */
 /*! @{ */
-#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT       4
-//The following has to match getOclPruneKernelJ4Concurrency
+#define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT 4
+// The following has to match getOclPruneKernelJ4Concurrency
 #define GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT
 /*! @} */
 #endif

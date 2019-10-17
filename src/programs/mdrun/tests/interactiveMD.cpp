@@ -51,22 +51,17 @@ namespace gmx
 namespace test
 {
 
-class ImdTestFixture : public MdrunTestFixture,
-                       public ::testing::WithParamInterface <const char *>
+class ImdTestFixture : public MdrunTestFixture, public ::testing::WithParamInterface<const char*>
 {
-    protected:
-        ImdTestFixture();
-        ~ImdTestFixture() override;
+protected:
+    ImdTestFixture();
+    ~ImdTestFixture() override;
 };
 
 
-ImdTestFixture::ImdTestFixture()
-{
-}
+ImdTestFixture::ImdTestFixture() {}
 
-ImdTestFixture::~ImdTestFixture()
-{
-}
+ImdTestFixture::~ImdTestFixture() {}
 
 
 //! Test fixture for mdrun with IMD settings
@@ -104,7 +99,7 @@ TEST_P(ImdTest, ImdCanRun)
     ::gmx::test::CommandLine imdCaller;
     imdCaller.addOption("-imdport", 0); // automatically assign a free port
     imdCaller.append("-imdpull");
-    imdCaller.append("-noimdwait");     // cannot use -imdwait: then mdrun would not return control ...
+    imdCaller.append("-noimdwait"); // cannot use -imdwait: then mdrun would not return control ...
     imdCaller.append("-noimdterm");
 
     // Do an mdrun with IMD enabled
@@ -113,8 +108,7 @@ TEST_P(ImdTest, ImdCanRun)
 
 // Check a dynamical integrator and an energy minimizer. No need to
 // cover the whole space.
-INSTANTIATE_TEST_CASE_P(WithIntegrator, ImdTest,
-                            ::testing::Values("md", "steep"));
+INSTANTIATE_TEST_CASE_P(WithIntegrator, ImdTest, ::testing::Values("md", "steep"));
 
 } // namespace test
 } // namespace gmx

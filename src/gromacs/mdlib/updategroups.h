@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,7 +71,7 @@ class RangePartitioning;
  *
  * \param[in] mtop  The system topology
  */
-std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t &mtop);
+std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t& mtop);
 
 /*! \brief Returns the maximum update group radius
  *
@@ -81,10 +81,10 @@ std::vector<RangePartitioning> makeUpdateGroups(const gmx_mtop_t &mtop);
  * \param[in] updateGroups  List of update group, size should match the number of moltypes in \p mtop or be 0
  * \param[in] temperature   The maximum reference temperature, pass -1 when unknown or not applicable
  */
-real computeMaxUpdateGroupRadius(const gmx_mtop_t                       &mtop,
-                                 gmx::ArrayRef<const RangePartitioning>  updateGroups,
-                                 real                                    temperature);
+real computeMaxUpdateGroupRadius(const gmx_mtop_t&                      mtop,
+                                 gmx::ArrayRef<const RangePartitioning> updateGroups,
+                                 real                                   temperature);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_UPDATEGROUPS

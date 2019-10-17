@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,12 +72,13 @@ int getBlockDataListSize(int numBlocks)
         blockDataListSize++;
     }
 
-    GMX_RELEASE_ASSERT((1 << (blockDataListSize - 1)) == numBlocks, "numBlocks should be a power of 2");
+    GMX_RELEASE_ASSERT((1 << (blockDataListSize - 1)) == numBlocks,
+                       "numBlocks should be a power of 2");
 
     return blockDataListSize;
 }
 
-}   // namespace
+} // namespace
 
 CorrelationGrid::CorrelationGrid(int                numPoints,
                                  int                numDim,
@@ -109,14 +110,14 @@ CorrelationGrid::CorrelationGrid(int                numPoints,
 
 int CorrelationGrid::getNumBlocks() const
 {
-    const auto &blockDataList  = tensors()[0].blockDataList();
+    const auto& blockDataList  = tensors()[0].blockDataList();
     double      maxBlockLength = blockDataList.back().blockLength();
     double      minBlockLength = blockDataList[0].blockLength();
 
     /* If we have a finite block span we have a constant number of blocks, otherwise we are always adding more blocks (and we don't keep track of the number) */
     if (maxBlockLength < GMX_DOUBLE_MAX)
     {
-        return static_cast<int>(maxBlockLength/minBlockLength);
+        return static_cast<int>(maxBlockLength / minBlockLength);
     }
     else
     {

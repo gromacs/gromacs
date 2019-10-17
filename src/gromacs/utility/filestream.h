@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,26 +70,26 @@ class FileStreamImpl;
  */
 class StandardInputStream : public TextInputStream
 {
-    public:
-        /*! \brief
-         * Returns whether `stdin` is an interactive terminal.
-         *
-         * Only works on Unix, otherwise always returns true.
-         *
-         * Does not throw.
-         */
-        bool isInteractive() const;
+public:
+    /*! \brief
+     * Returns whether `stdin` is an interactive terminal.
+     *
+     * Only works on Unix, otherwise always returns true.
+     *
+     * Does not throw.
+     */
+    bool isInteractive() const;
 
-        // From TextInputStream
-        bool readLine(std::string *line) override;
-        void close() override {}
+    // From TextInputStream
+    bool readLine(std::string* line) override;
+    void close() override {}
 
-        /*! \brief
-         * Returns a stream for accessing `stdin`.
-         *
-         * Does not throw.
-         */
-        static StandardInputStream &instance();
+    /*! \brief
+     * Returns a stream for accessing `stdin`.
+     *
+     * Does not throw.
+     */
+    static StandardInputStream& instance();
 };
 
 /*! \libinternal \brief
@@ -103,53 +103,53 @@ class StandardInputStream : public TextInputStream
  */
 class TextInputFile : public TextInputStream
 {
-    public:
-        /*! \brief
-         * Opens a file and returns an RAII-style `FILE` handle.
-         *
-         * \param[in] filename  Path of the file to open.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Instead of returning `NULL` on errors, throws an exception with
-         * additional details (including the file name and `errno`).
-         */
-        static FilePtr openRawHandle(const char *filename);
-        //! \copydoc openRawHandle(const char *)
-        static FilePtr openRawHandle(const std::string &filename);
+public:
+    /*! \brief
+     * Opens a file and returns an RAII-style `FILE` handle.
+     *
+     * \param[in] filename  Path of the file to open.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Instead of returning `NULL` on errors, throws an exception with
+     * additional details (including the file name and `errno`).
+     */
+    static FilePtr openRawHandle(const char* filename);
+    //! \copydoc openRawHandle(const char *)
+    static FilePtr openRawHandle(const std::string& filename);
 
-        /*! \brief
-         * Opens a text file as a stream.
-         *
-         * \param[in]  filename  Path to the file to open.
-         * \throws     std::bad_alloc if out of memory.
-         * \throws     FileIOError on any I/O error.
-         */
-        explicit TextInputFile(const std::string &filename);
-        /*! \brief
-         * Initializes file object from an existing file handle.
-         *
-         * \param[in]  fp     File handle to use.
-         * \throws     std::bad_alloc if out of memory.
-         *
-         * The caller is responsible of closing the file; close() does nothing
-         * for an object constructed this way.
-         */
-        explicit TextInputFile(FILE *fp);
-        ~TextInputFile() override;
+    /*! \brief
+     * Opens a text file as a stream.
+     *
+     * \param[in]  filename  Path to the file to open.
+     * \throws     std::bad_alloc if out of memory.
+     * \throws     FileIOError on any I/O error.
+     */
+    explicit TextInputFile(const std::string& filename);
+    /*! \brief
+     * Initializes file object from an existing file handle.
+     *
+     * \param[in]  fp     File handle to use.
+     * \throws     std::bad_alloc if out of memory.
+     *
+     * The caller is responsible of closing the file; close() does nothing
+     * for an object constructed this way.
+     */
+    explicit TextInputFile(FILE* fp);
+    ~TextInputFile() override;
 
-        /*! \brief
-         * Returns a raw handle to the input file.
-         *
-         * This is provided for interoperability with older C-like code.
-         */
-        FILE *handle();
+    /*! \brief
+     * Returns a raw handle to the input file.
+     *
+     * This is provided for interoperability with older C-like code.
+     */
+    FILE* handle();
 
-        // From TextInputStream
-        bool readLine(std::string *line) override;
-        void close() override;
+    // From TextInputStream
+    bool readLine(std::string* line) override;
+    void close() override;
 
-    private:
-        PrivateImplPointer<internal::FileStreamImpl> impl_;
+private:
+    PrivateImplPointer<internal::FileStreamImpl> impl_;
 };
 
 /*! \libinternal \brief
@@ -163,32 +163,32 @@ class TextInputFile : public TextInputStream
  */
 class TextOutputFile : public TextOutputStream
 {
-    public:
-        //! \copydoc TextInputFile::TextInputFile(const std::string &)
-        explicit TextOutputFile(const std::string &filename);
-        //! \copydoc TextInputFile::TextInputFile(FILE *)
-        explicit TextOutputFile(FILE *fp);
-        ~TextOutputFile() override;
+public:
+    //! \copydoc TextInputFile::TextInputFile(const std::string &)
+    explicit TextOutputFile(const std::string& filename);
+    //! \copydoc TextInputFile::TextInputFile(FILE *)
+    explicit TextOutputFile(FILE* fp);
+    ~TextOutputFile() override;
 
-        // From TextOutputStream
-        void write(const char *text) override;
-        void close() override;
+    // From TextOutputStream
+    void write(const char* text) override;
+    void close() override;
 
-        /*! \brief
-         * Returns a stream for accessing `stdout`.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static TextOutputFile &standardOutput();
-        /*! \brief
-         * Returns a stream for accessing `stderr`.
-         *
-         * \throws    std::bad_alloc if out of memory (only on first call).
-         */
-        static TextOutputFile &standardError();
+    /*! \brief
+     * Returns a stream for accessing `stdout`.
+     *
+     * \throws    std::bad_alloc if out of memory (only on first call).
+     */
+    static TextOutputFile& standardOutput();
+    /*! \brief
+     * Returns a stream for accessing `stderr`.
+     *
+     * \throws    std::bad_alloc if out of memory (only on first call).
+     */
+    static TextOutputFile& standardError();
 
-    private:
-        PrivateImplPointer<internal::FileStreamImpl> impl_;
+private:
+    PrivateImplPointer<internal::FileStreamImpl> impl_;
 };
 
 } // namespace gmx

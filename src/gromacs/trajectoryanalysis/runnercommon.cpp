@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,69 +79,78 @@ namespace gmx
 
 class TrajectoryAnalysisRunnerCommon::Impl : public ITopologyProvider
 {
-    public:
-        explicit Impl(TrajectoryAnalysisSettings *settings);
-        ~Impl() override;
+public:
+    explicit Impl(TrajectoryAnalysisSettings* settings);
+    ~Impl() override;
 
-        bool hasTrajectory() const { return !trjfile_.empty(); }
+    bool hasTrajectory() const { return !trjfile_.empty(); }
 
-        void initTopology(bool required);
-        void initFirstFrame();
-        void initFrameIndexGroup();
-        void finishTrajectory();
+    void initTopology(bool required);
+    void initFirstFrame();
+    void initFrameIndexGroup();
+    void finishTrajectory();
 
-        // From ITopologyProvider
-        gmx_mtop_t *getTopology(bool required) override
+    // From ITopologyProvider
+    gmx_mtop_t* getTopology(bool required) override
+    {
+        initTopology(required);
+        return topInfo_.mtop_.get();
+    }
+    int getAtomCount() override
+    {
+        if (!topInfo_.hasTopology())
         {
-            initTopology(required);
-            return topInfo_.mtop_.get();
-        }
-        int getAtomCount() override
-        {
-            if (!topInfo_.hasTopology())
+            if (trajectoryGroup_.isValid())
             {
-                if (trajectoryGroup_.isValid())
-                {
-                    GMX_THROW(InconsistentInputError("-fgroup is only supported when -s is also specified"));
-                }
-                // Read the first frame if we don't know the maximum number of
-                // atoms otherwise.
-                initFirstFrame();
-                return fr->natoms;
+                GMX_THROW(InconsistentInputError(
+                        "-fgroup is only supported when -s is also specified"));
             }
-            return -1;
+            // Read the first frame if we don't know the maximum number of
+            // atoms otherwise.
+            initFirstFrame();
+            return fr->natoms;
         }
+        return -1;
+    }
 
-        TrajectoryAnalysisSettings &settings_;
-        TopologyInformation         topInfo_;
+    TrajectoryAnalysisSettings& settings_;
+    TopologyInformation         topInfo_;
 
-        //! Name of the trajectory file (empty if not provided).
-        std::string                 trjfile_;
-        //! Name of the topology file (empty if no topology provided).
-        std::string                 topfile_;
-        Selection                   trajectoryGroup_;
-        double                      startTime_;
-        double                      endTime_;
-        double                      deltaTime_;
-        bool                        bStartTimeSet_;
-        bool                        bEndTimeSet_;
-        bool                        bDeltaTimeSet_;
+    //! Name of the trajectory file (empty if not provided).
+    std::string trjfile_;
+    //! Name of the topology file (empty if no topology provided).
+    std::string topfile_;
+    Selection   trajectoryGroup_;
+    double      startTime_;
+    double      endTime_;
+    double      deltaTime_;
+    bool        bStartTimeSet_;
+    bool        bEndTimeSet_;
+    bool        bDeltaTimeSet_;
 
-        bool                        bTrajOpen_;
-        //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe                 *fr;
-        gmx_rmpbc_t                 gpbc_;
-        //! Used to store the status variable from read_first_frame().
-        t_trxstatus                *status_;
-        gmx_output_env_t           *oenv_;
+    bool bTrajOpen_;
+    //! The current frame, or \p NULL if no frame loaded yet.
+    t_trxframe* fr;
+    gmx_rmpbc_t gpbc_;
+    //! Used to store the status variable from read_first_frame().
+    t_trxstatus*      status_;
+    gmx_output_env_t* oenv_;
 };
 
 
-TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
-    : settings_(*settings),
-      startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
-      bStartTimeSet_(false), bEndTimeSet_(false), bDeltaTimeSet_(false),
-      bTrajOpen_(false), fr(nullptr), gpbc_(nullptr), status_(nullptr), oenv_(nullptr)
+TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings* settings) :
+    settings_(*settings),
+    startTime_(0.0),
+    endTime_(0.0),
+    deltaTime_(0.0),
+    bStartTimeSet_(false),
+    bEndTimeSet_(false),
+    bDeltaTimeSet_(false),
+    bTrajOpen_(false),
+    fr(nullptr),
+    gpbc_(nullptr),
+    status_(nullptr),
+    oenv_(nullptr)
 {
 }
 
@@ -163,8 +173,7 @@ TrajectoryAnalysisRunnerCommon::Impl::~Impl()
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
+void TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
 {
     // Return immediately if the topology has already been loaded.
     if (topInfo_.hasTopology())
@@ -181,29 +190,25 @@ TrajectoryAnalysisRunnerCommon::Impl::initTopology(bool required)
     if (!topfile_.empty())
     {
         topInfo_.fillFromInputFile(topfile_);
-        if (hasTrajectory()
-            && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
+        if (hasTrajectory() && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
             topInfo_.xtop_.clear();
         }
-        if (hasTrajectory()
-            && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopV))
+        if (hasTrajectory() && !settings_.hasFlag(TrajectoryAnalysisSettings::efUseTopV))
         {
             topInfo_.vtop_.clear();
         }
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
+void TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
 {
     // Return if we have already initialized the trajectory.
     if (fr != nullptr)
     {
         return;
     }
-    time_unit_t time_unit
-        = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
+    time_unit_t time_unit = static_cast<time_unit_t>(settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
     output_env_init(&oenv_, getProgramContext(), time_unit, FALSE, exvgNONE, 0);
 
     int frflags = settings_.frflags();
@@ -224,9 +229,9 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
             const int topologyAtomCount = topInfo_.mtop()->natoms;
             if (fr->natoms > topologyAtomCount)
             {
-                const std::string message
-                    = formatString("Trajectory (%d atoms) does not match topology (%d atoms)",
-                                   fr->natoms, topologyAtomCount);
+                const std::string message =
+                        formatString("Trajectory (%d atoms) does not match topology (%d atoms)",
+                                     fr->natoms, topologyAtomCount);
                 GMX_THROW(InconsistentInputError(message));
             }
         }
@@ -241,56 +246,50 @@ TrajectoryAnalysisRunnerCommon::Impl::initFirstFrame()
         fr->natoms = topInfo_.mtop()->natoms;
         fr->bX     = TRUE;
         snew(fr->x, fr->natoms);
-        memcpy(fr->x, topInfo_.xtop_.data(),
-               sizeof(*fr->x) * fr->natoms);
+        memcpy(fr->x, topInfo_.xtop_.data(), sizeof(*fr->x) * fr->natoms);
         if (frflags & (TRX_NEED_V))
         {
             if (topInfo_.vtop_.empty())
             {
-                GMX_THROW(InvalidInputError("Velocities were required, but could not be read from the topology file"));
+                GMX_THROW(InvalidInputError(
+                        "Velocities were required, but could not be read from the topology file"));
             }
             fr->bV = TRUE;
             snew(fr->v, fr->natoms);
-            memcpy(fr->v, topInfo_.vtop_.data(),
-                   sizeof(*fr->v) * fr->natoms);
+            memcpy(fr->v, topInfo_.vtop_.data(), sizeof(*fr->v) * fr->natoms);
         }
-        fr->bBox   = TRUE;
+        fr->bBox = TRUE;
         copy_mat(topInfo_.boxtop_, fr->box);
     }
 
     set_trxframe_ePBC(fr, topInfo_.ePBC());
     if (topInfo_.hasTopology() && settings_.hasRmPBC())
     {
-        gpbc_             = gmx_rmpbc_init(topInfo_);
+        gpbc_ = gmx_rmpbc_init(topInfo_);
     }
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
+void TrajectoryAnalysisRunnerCommon::Impl::initFrameIndexGroup()
 {
     if (!trajectoryGroup_.isValid())
     {
         return;
     }
-    GMX_RELEASE_ASSERT(bTrajOpen_,
-                       "Trajectory index only makes sense with a real trajectory");
+    GMX_RELEASE_ASSERT(bTrajOpen_, "Trajectory index only makes sense with a real trajectory");
     if (trajectoryGroup_.atomCount() != fr->natoms)
     {
         const std::string message = formatString(
-                    "Selection specified with -fgroup has %d atoms, but "
-                    "the trajectory (-f) has %d atoms.",
-                    trajectoryGroup_.atomCount(), fr->natoms);
+                "Selection specified with -fgroup has %d atoms, but "
+                "the trajectory (-f) has %d atoms.",
+                trajectoryGroup_.atomCount(), fr->natoms);
         GMX_THROW(InconsistentInputError(message));
     }
     fr->bIndex = TRUE;
     snew(fr->index, trajectoryGroup_.atomCount());
-    std::copy(trajectoryGroup_.atomIndices().begin(),
-              trajectoryGroup_.atomIndices().end(),
-              fr->index);
+    std::copy(trajectoryGroup_.atomIndices().begin(), trajectoryGroup_.atomIndices().end(), fr->index);
 }
 
-void
-TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
+void TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
 {
     if (bTrajOpen_)
     {
@@ -308,56 +307,55 @@ TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
  * TrajectoryAnalysisRunnerCommon
  */
 
-TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
-        TrajectoryAnalysisSettings *settings)
-    : impl_(new Impl(settings))
+TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(TrajectoryAnalysisSettings* settings) :
+    impl_(new Impl(settings))
 {
 }
 
 
-TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon()
-{
-}
+TrajectoryAnalysisRunnerCommon::~TrajectoryAnalysisRunnerCommon() {}
 
 
-ITopologyProvider *
-TrajectoryAnalysisRunnerCommon::topologyProvider()
+ITopologyProvider* TrajectoryAnalysisRunnerCommon::topologyProvider()
 {
     return impl_.get();
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
-                                            TimeUnitBehavior  *timeUnitBehavior)
+void TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer* options, TimeUnitBehavior* timeUnitBehavior)
 {
-    TrajectoryAnalysisSettings &settings = impl_->settings_;
+    TrajectoryAnalysisSettings& settings = impl_->settings_;
 
     // Add common file name arguments.
     options->addOption(FileNameOption("f")
-                           .filetype(eftTrajectory).inputFile()
-                           .store(&impl_->trjfile_)
-                           .defaultBasename("traj")
-                           .description("Input trajectory or single configuration"));
+                               .filetype(eftTrajectory)
+                               .inputFile()
+                               .store(&impl_->trjfile_)
+                               .defaultBasename("traj")
+                               .description("Input trajectory or single configuration"));
     options->addOption(FileNameOption("s")
-                           .filetype(eftTopology).inputFile()
-                           .store(&impl_->topfile_)
-                           .defaultBasename("topol")
-                           .description("Input structure"));
+                               .filetype(eftTopology)
+                               .inputFile()
+                               .store(&impl_->topfile_)
+                               .defaultBasename("topol")
+                               .description("Input structure"));
 
     // Add options for trajectory time control.
     options->addOption(DoubleOption("b")
-                           .store(&impl_->startTime_).storeIsSet(&impl_->bStartTimeSet_)
-                           .timeValue()
-                           .description("First frame (%t) to read from trajectory"));
+                               .store(&impl_->startTime_)
+                               .storeIsSet(&impl_->bStartTimeSet_)
+                               .timeValue()
+                               .description("First frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("e")
-                           .store(&impl_->endTime_).storeIsSet(&impl_->bEndTimeSet_)
-                           .timeValue()
-                           .description("Last frame (%t) to read from trajectory"));
+                               .store(&impl_->endTime_)
+                               .storeIsSet(&impl_->bEndTimeSet_)
+                               .timeValue()
+                               .description("Last frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("dt")
-                           .store(&impl_->deltaTime_).storeIsSet(&impl_->bDeltaTimeSet_)
-                           .timeValue()
-                           .description("Only use frame if t MOD dt == first time (%t)"));
+                               .store(&impl_->deltaTime_)
+                               .storeIsSet(&impl_->bDeltaTimeSet_)
+                               .timeValue()
+                               .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
     timeUnitBehavior->setTimeUnitFromEnvironment();
@@ -365,10 +363,11 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
     timeUnitBehavior->setTimeUnitStore(&impl_->settings_.impl_->timeUnit);
 
     options->addOption(SelectionOption("fgroup")
-                           .store(&impl_->trajectoryGroup_)
-                           .onlySortedAtoms().onlyStatic()
-                           .description("Atoms stored in the trajectory file "
-                                        "(if not set, assume first N atoms)"));
+                               .store(&impl_->trajectoryGroup_)
+                               .onlySortedAtoms()
+                               .onlyStatic()
+                               .description("Atoms stored in the trajectory file "
+                                            "(if not set, assume first N atoms)"));
 
     // Add plot options.
     settings.impl_->plotSettings.initOptions(options);
@@ -376,19 +375,20 @@ TrajectoryAnalysisRunnerCommon::initOptions(IOptionsContainer *options,
     // Add common options for trajectory processing.
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
-        options->addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC)
-                               .description("Make molecules whole for each frame"));
+        options->addOption(
+                BooleanOption("rmpbc").store(&settings.impl_->bRmPBC).description("Make molecules whole for each frame"));
     }
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserPBC))
     {
-        options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
-                               .description("Use periodic boundary conditions for distance calculation"));
+        options->addOption(
+                BooleanOption("pbc")
+                        .store(&settings.impl_->bPBC)
+                        .description("Use periodic boundary conditions for distance calculation"));
     }
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::optionsFinished()
+void TrajectoryAnalysisRunnerCommon::optionsFinished()
 {
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {
@@ -397,7 +397,8 @@ TrajectoryAnalysisRunnerCommon::optionsFinished()
 
     if (impl_->trajectoryGroup_.isValid() && impl_->trjfile_.empty())
     {
-        GMX_THROW(InconsistentInputError("-fgroup only makes sense together with a trajectory (-f)"));
+        GMX_THROW(
+                InconsistentInputError("-fgroup only makes sense together with a trajectory (-f)"));
     }
 
     impl_->settings_.impl_->plotSettings.setTimeUnit(impl_->settings_.timeUnit());
@@ -417,31 +418,26 @@ TrajectoryAnalysisRunnerCommon::optionsFinished()
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initTopology()
+void TrajectoryAnalysisRunnerCommon::initTopology()
 {
-    const bool topologyRequired =
-        impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
+    const bool topologyRequired = impl_->settings_.hasFlag(TrajectoryAnalysisSettings::efRequireTop);
     impl_->initTopology(topologyRequired);
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFirstFrame()
+void TrajectoryAnalysisRunnerCommon::initFirstFrame()
 {
     impl_->initFirstFrame();
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFrameIndexGroup()
+void TrajectoryAnalysisRunnerCommon::initFrameIndexGroup()
 {
     impl_->initFrameIndexGroup();
 }
 
 
-bool
-TrajectoryAnalysisRunnerCommon::readNextFrame()
+bool TrajectoryAnalysisRunnerCommon::readNextFrame()
 {
     bool bContinue = false;
     if (hasTrajectory())
@@ -456,8 +452,7 @@ TrajectoryAnalysisRunnerCommon::readNextFrame()
 }
 
 
-void
-TrajectoryAnalysisRunnerCommon::initFrame()
+void TrajectoryAnalysisRunnerCommon::initFrame()
 {
     if (impl_->gpbc_ != nullptr)
     {
@@ -466,22 +461,19 @@ TrajectoryAnalysisRunnerCommon::initFrame()
 }
 
 
-bool
-TrajectoryAnalysisRunnerCommon::hasTrajectory() const
+bool TrajectoryAnalysisRunnerCommon::hasTrajectory() const
 {
     return impl_->hasTrajectory();
 }
 
 
-const TopologyInformation &
-TrajectoryAnalysisRunnerCommon::topologyInformation() const
+const TopologyInformation& TrajectoryAnalysisRunnerCommon::topologyInformation() const
 {
     return impl_->topInfo_;
 }
 
 
-t_trxframe &
-TrajectoryAnalysisRunnerCommon::frame() const
+t_trxframe& TrajectoryAnalysisRunnerCommon::frame() const
 {
     GMX_RELEASE_ASSERT(impl_->fr != nullptr, "Frame not available when accessed");
     return *impl_->fr;

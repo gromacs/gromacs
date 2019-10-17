@@ -64,15 +64,15 @@ class IMdpOptionProvider;
  */
 class IMDModule
 {
-    public:
-        virtual ~IMDModule() {}
+public:
+    virtual ~IMDModule() {}
 
-        //! Returns an interface for handling mdp input (and tpr I/O).
-        virtual IMdpOptionProvider *mdpOptionProvider() = 0;
-        //! Returns an interface for handling output files during simulation.
-        virtual IMDOutputProvider *outputProvider()     = 0;
-        //! Initializes force providers from this module.
-        virtual void initForceProviders(ForceProviders *forceProviders) = 0;
+    //! Returns an interface for handling mdp input (and tpr I/O).
+    virtual IMdpOptionProvider* mdpOptionProvider() = 0;
+    //! Returns an interface for handling output files during simulation.
+    virtual IMDOutputProvider* outputProvider() = 0;
+    //! Initializes force providers from this module.
+    virtual void initForceProviders(ForceProviders* forceProviders) = 0;
 };
 
 } // namespace gmx

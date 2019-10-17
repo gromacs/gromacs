@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,13 +58,19 @@ namespace gmx
  * \tparam Int optional integral type
  */
 template<typename T, typename Int = void>
-struct isIntegralConstant : public std::false_type {};
+struct isIntegralConstant : public std::false_type
+{
+};
 
 template<typename Int, Int N>
-struct isIntegralConstant<std::integral_constant<Int, N>, void> : public std::true_type {};
+struct isIntegralConstant<std::integral_constant<Int, N>, void> : public std::true_type
+{
+};
 
 template<typename Int, Int N>
-struct isIntegralConstant<std::integral_constant<Int, N>, Int> : public std::true_type {};
+struct isIntegralConstant<std::integral_constant<Int, N>, Int> : public std::true_type
+{
+};
 
 } // namespace gmx
 

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,8 +76,7 @@ gmx_ana_pos_t::~gmx_ana_pos_t()
  * Ensures that enough memory is allocated in \p pos to calculate \p n
  * positions from \p isize atoms.
  */
-void
-gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
+void gmx_ana_pos_reserve(gmx_ana_pos_t* pos, int n, int isize)
 {
     GMX_RELEASE_ASSERT(n >= 0, "Invalid position allocation count");
     // Always reserve at least one entry to make NULL checks against pos->x
@@ -111,11 +111,9 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
  * Currently, this function can only be called after gmx_ana_pos_reserve()
  * has been called at least once with a \p n >= 0.
  */
-void
-gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
+void gmx_ana_pos_reserve_velocities(gmx_ana_pos_t* pos)
 {
-    GMX_RELEASE_ASSERT(pos->nalloc_x > 0,
-                       "No memory reserved yet for positions");
+    GMX_RELEASE_ASSERT(pos->nalloc_x > 0, "No memory reserved yet for positions");
     if (!pos->v)
     {
         snew(pos->v, pos->nalloc_x);
@@ -128,11 +126,9 @@ gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
  * Currently, this function can only be called after gmx_ana_pos_reserve()
  * has been called at least once with a \p n >= 0.
  */
-void
-gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
+void gmx_ana_pos_reserve_forces(gmx_ana_pos_t* pos)
 {
-    GMX_RELEASE_ASSERT(pos->nalloc_x > 0,
-                       "No memory reserved yet for positions");
+    GMX_RELEASE_ASSERT(pos->nalloc_x > 0, "No memory reserved yet for positions");
     if (!pos->f)
     {
         snew(pos->f, pos->nalloc_x);
@@ -152,9 +148,7 @@ gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
  * This method needs to be called instead of gmx_ana_pos_reserve() if the
  * intent is to use gmx_ana_pos_append_init()/gmx_ana_pos_append().
  */
-void
-gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
-                               bool bVelocities, bool bForces)
+void gmx_ana_pos_reserve_for_append(gmx_ana_pos_t* pos, int n, int isize, bool bVelocities, bool bForces)
 {
     gmx_ana_pos_reserve(pos, n, isize);
     snew(pos->m.mapb.a, isize);
@@ -173,8 +167,7 @@ gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
  * \param[out]    pos  Position data structure to initialize.
  * \param[in]     x    Position vector to use.
  */
-void
-gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
+void gmx_ana_pos_init_const(gmx_ana_pos_t* pos, const rvec x)
 {
     snew(pos->x, 1);
     snew(pos->v, 1);
@@ -195,8 +188,7 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
  *
  * \p dest should have been initialized somehow (calloc() is enough).
  */
-void
-gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
+void gmx_ana_pos_copy(gmx_ana_pos_t* dest, gmx_ana_pos_t* src, bool bFirst)
 {
     if (bFirst)
     {
@@ -210,16 +202,16 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
             gmx_ana_pos_reserve_forces(dest);
         }
     }
-    memcpy(dest->x, src->x, src->count()*sizeof(*dest->x));
+    memcpy(dest->x, src->x, src->count() * sizeof(*dest->x));
     if (dest->v)
     {
         GMX_ASSERT(src->v, "src velocities should be non-null if dest velocities are allocated");
-        memcpy(dest->v, src->v, src->count()*sizeof(*dest->v));
+        memcpy(dest->v, src->v, src->count() * sizeof(*dest->v));
     }
     if (dest->f)
     {
         GMX_ASSERT(src->f, "src forces should be non-null if dest forces are allocated");
-        memcpy(dest->f, src->f, src->count()*sizeof(*dest->f));
+        memcpy(dest->f, src->f, src->count() * sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
 }
@@ -228,8 +220,7 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
  * \param[in,out] pos  Position data structure.
  * \param[in]     nr   Number of positions.
  */
-void
-gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
+void gmx_ana_pos_set_nr(gmx_ana_pos_t* pos, int nr)
 {
     // TODO: This puts the mapping in a somewhat inconsistent state.
     pos->m.mapb.nr = nr;
@@ -240,8 +231,7 @@ gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
  *
  * Sets the number of positions to 0.
  */
-void
-gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
+void gmx_ana_pos_empty_init(gmx_ana_pos_t* pos)
 {
     pos->m.mapb.nr  = 0;
     pos->m.mapb.nra = 0;
@@ -253,7 +243,7 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
     pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic       = true;
+    pos->m.bStatic = true;
 }
 
 /*!
@@ -261,8 +251,7 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
  *
  * Sets the number of positions to 0.
  */
-void
-gmx_ana_pos_empty(gmx_ana_pos_t *pos)
+void gmx_ana_pos_empty(gmx_ana_pos_t* pos)
 {
     pos->m.mapb.nr  = 0;
     pos->m.mapb.nra = 0;
@@ -272,7 +261,7 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
      * should be false. This makes it possible to update the flag in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic       = true;
+    pos->m.bStatic = true;
 }
 
 /*!
@@ -280,10 +269,9 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
  * \param[in]     src   Data structure from which the position is copied.
  * \param[in]     i     Index in \p from to copy.
  */
-void
-gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
+void gmx_ana_pos_append_init(gmx_ana_pos_t* dest, gmx_ana_pos_t* src, int i)
 {
-    int  j, k;
+    int j, k;
 
     j = dest->count();
     copy_rvec(src->x[i], dest->x[j]);
@@ -312,13 +300,13 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
     dest->m.refid[j] = j;
     dest->m.mapid[j] = src->m.mapid[i];
     dest->m.orgid[j] = src->m.orgid[i];
-    for (k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
+    for (k = src->m.mapb.index[i]; k < src->m.mapb.index[i + 1]; ++k)
     {
         dest->m.mapb.a[dest->m.mapb.nra++] = src->m.mapb.a[k];
         dest->m.b.a[dest->m.b.nra++]       = src->m.b.a[k];
     }
-    dest->m.mapb.index[j+1] = dest->m.mapb.nra;
-    dest->m.b.index[j+1]    = dest->m.mapb.nra;
+    dest->m.mapb.index[j + 1] = dest->m.mapb.nra;
+    dest->m.b.index[j + 1]    = dest->m.mapb.nra;
     dest->m.mapb.nr++;
     dest->m.b.nr++;
 }
@@ -330,10 +318,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
  * \param[in]     refid Reference ID in \p out
  *   (all negative values are treated as -1).
  */
-void
-gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
+void gmx_ana_pos_append(gmx_ana_pos_t* dest, gmx_ana_pos_t* src, int i, int refid)
 {
-    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
+    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i + 1]; ++k)
     {
         dest->m.mapb.a[dest->m.mapb.nra++] = src->m.mapb.a[k];
     }
@@ -379,7 +366,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
          * handle user customization. */
         dest->m.mapid[j] = dest->m.orgid[refid];
     }
-    dest->m.mapb.index[j+1] = dest->m.mapb.nra;
+    dest->m.mapb.index[j + 1] = dest->m.mapb.nra;
     dest->m.mapb.nr++;
 }
 
@@ -390,8 +377,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
  * is not consistent before this function is called. This function should be
  * called after any gmx_ana_pos_append() calls have been made.
  */
-void
-gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
+void gmx_ana_pos_append_finish(gmx_ana_pos_t* pos)
 {
     if (pos->m.mapb.nr != pos->m.b.nr)
     {
@@ -404,10 +390,9 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
  * \param[in]     src   Data structure from which the position is copied.
  * \param[in]     i     Index in \p src to copy.
  */
-void
-gmx_ana_pos_add_to_group(gmx_ana_index_t *g, gmx_ana_pos_t *src, int i)
+void gmx_ana_pos_add_to_group(gmx_ana_index_t* g, gmx_ana_pos_t* src, int i)
 {
-    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
+    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i + 1]; ++k)
     {
         g->index[g->isize++] = src->m.mapb.a[k];
     }

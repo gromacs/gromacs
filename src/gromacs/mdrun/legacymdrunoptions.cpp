@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ namespace gmx
 
 /*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */
-static bool is_multisim_option_set(int argc, const char *const argv[])
+static bool is_multisim_option_set(int argc, const char* const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
@@ -72,9 +72,9 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
     return false;
 }
 
-int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<const char *> desc)
+int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<const char*> desc)
 {
-    unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
+    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multidir, the working directory still needs to be
     // changed, so we can't check for the existence of files during
     // parsing.  It isn't useful to do any completion based on file
@@ -84,9 +84,8 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
 
-    if (!parse_common_args(&argc, argv, PCA_Flags,
-                           ssize(filenames), filenames.data(), asize(pa), pa,
-                           ssize(desc), desc.data(), 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_Flags, ssize(filenames), filenames.data(), asize(pa),
+                           pa, ssize(desc), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -104,7 +103,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
-        const char *env = getenv("GMX_GPU_ID");
+        const char* env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
             if (!hw_opt.gpuIdsAvailable.empty())
@@ -148,9 +147,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         }
     }
 
-    mdrunOptions.rerun            = opt2bSet("-rerun",
-                                             ssize(filenames),
-                                             filenames.data());
+    mdrunOptions.rerun            = opt2bSet("-rerun", ssize(filenames), filenames.data());
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));

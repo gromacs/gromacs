@@ -75,20 +75,18 @@ namespace
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager,
-                    CommandLineModuleGroup    group)
+template<class ModuleInfo>
+void registerModule(CommandLineModuleManager* manager, CommandLineModuleGroup group)
 {
     TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
+            manager, ModuleInfo::name, ModuleInfo::shortDescription, &ModuleInfo::create);
     group.addModule(ModuleInfo::name);
 }
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
+void registerTrajectoryAnalysisModules(CommandLineModuleManager* manager)
 {
     using namespace gmx::analysismodules;
     CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");

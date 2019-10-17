@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,9 +103,9 @@ struct VerletbufAtomtype
 // Struct for derivatives of a non-bonded interaction potential
 struct pot_derivatives_t
 {
-    real  md1; // -V' at the cutoff
-    real  d2;  //  V'' at the cutoff
-    real  md3; // -V''' at the cutoff
+    real md1; // -V' at the cutoff
+    real d2;  //  V'' at the cutoff
+    real md3; // -V''' at the cutoff
 };
 
 VerletbufListSetup verletbufGetListSetup(Nbnxm::KernelType nbnxnKernelType)
@@ -157,21 +158,15 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType)
 }
 
 // Returns whether prop1 and prop2 are identical
-static bool
-atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t &prop1,
-                                  const atom_nonbonded_kinetic_prop_t &prop2)
+static bool atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t& prop1,
+                                              const atom_nonbonded_kinetic_prop_t& prop2)
 {
-    return (prop1.mass     == prop2.mass &&
-            prop1.type     == prop2.type &&
-            prop1.q        == prop2.q &&
-            prop1.bConstr  == prop2.bConstr &&
-            prop1.con_mass == prop2.con_mass &&
-            prop1.con_len  == prop2.con_len);
+    return (prop1.mass == prop2.mass && prop1.type == prop2.type && prop1.q == prop2.q
+            && prop1.bConstr == prop2.bConstr && prop1.con_mass == prop2.con_mass
+            && prop1.con_len == prop2.con_len);
 }
 
-static void addAtomtype(std::vector<VerletbufAtomtype>      *att,
-                        const atom_nonbonded_kinetic_prop_t &prop,
-                        int                                  nmol)
+static void addAtomtype(std::vector<VerletbufAtomtype>* att, const atom_nonbonded_kinetic_prop_t& prop, int nmol)
 {
     if (prop.mass == 0)
     {
@@ -180,8 +175,7 @@ static void addAtomtype(std::vector<VerletbufAtomtype>      *att,
     }
 
     size_t i = 0;
-    while (i < att->size() &&
-           !atom_nonbonded_kinetic_prop_equal(prop, (*att)[i].prop))
+    while (i < att->size() && !atom_nonbonded_kinetic_prop_equal(prop, (*att)[i].prop))
     {
         i++;
     }
@@ -197,9 +191,7 @@ static void addAtomtype(std::vector<VerletbufAtomtype>      *att,
 }
 
 /* Returns the mass of atom atomIndex or 1 when setMassesToOne=true */
-static real getMass(const t_atoms &atoms,
-                    int            atomIndex,
-                    bool           setMassesToOne)
+static real getMass(const t_atoms& atoms, int atomIndex, bool setMassesToOne)
 {
     if (!setMassesToOne)
     {
@@ -212,19 +204,19 @@ static real getMass(const t_atoms &atoms,
 }
 
 // Set the masses of a vsites in vsite_m and the non-linear vsite count in n_nonlin_vsite
-static void get_vsite_masses(const gmx_moltype_t  &moltype,
-                             const gmx_ffparams_t &ffparams,
+static void get_vsite_masses(const gmx_moltype_t&  moltype,
+                             const gmx_ffparams_t& ffparams,
                              bool                  setMassesToOne,
                              gmx::ArrayRef<real>   vsite_m)
 {
     int numNonlinearVsites = 0;
 
     /* Check for virtual sites, determine mass from constructing atoms */
-    for (const auto &ilist : extractILists(moltype.ilist, IF_VSITE))
+    for (const auto& ilist : extractILists(moltype.ilist, IF_VSITE))
     {
         for (size_t i = 0; i < ilist.iatoms.size(); i += ilistStride(ilist))
         {
-            const t_iparams &ip = ffparams.iparams[ilist.iatoms[i]];
+            const t_iparams& ip = ffparams.iparams[ilist.iatoms[i]];
             const int        a1 = ilist.iatoms[i + 1];
 
             if (ilist.functionType != F_VSITEN)
@@ -237,7 +229,7 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
                 for (int j = 1; j < maxj; j++)
                 {
                     const int aj = ilist.iatoms[i + 1 + j];
-                    cam[j] = getMass(moltype.atoms, aj, setMassesToOne);
+                    cam[j]       = getMass(moltype.atoms, aj, setMassesToOne);
                     if (cam[j] == 0)
                     {
                         cam[j] = vsite_m[aj];
@@ -253,11 +245,16 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
                 {
                     case F_VSITE2:
                         /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2])/(cam[2]*gmx::square(1 - ip.vsite.a) + cam[1]*gmx::square(ip.vsite.a));
+                        vsite_m[a1] = (cam[1] * cam[2])
+                                      / (cam[2] * gmx::square(1 - ip.vsite.a)
+                                         + cam[1] * gmx::square(ip.vsite.a));
                         break;
                     case F_VSITE3:
                         /* Exact */
-                        vsite_m[a1] = (cam[1]*cam[2]*cam[3])/(cam[2]*cam[3]*gmx::square(1 - ip.vsite.a - ip.vsite.b) + cam[1]*cam[3]*gmx::square(ip.vsite.a) + cam[1]*cam[2]*gmx::square(ip.vsite.b));
+                        vsite_m[a1] = (cam[1] * cam[2] * cam[3])
+                                      / (cam[2] * cam[3] * gmx::square(1 - ip.vsite.a - ip.vsite.b)
+                                         + cam[1] * cam[3] * gmx::square(ip.vsite.a)
+                                         + cam[1] * cam[2] * gmx::square(ip.vsite.b));
                         break;
                     case F_VSITEN:
                         GMX_RELEASE_ASSERT(false, "VsiteN should not end up in this code path");
@@ -289,7 +286,7 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
                 /* Exact */
                 real inv_mass             = 0;
                 int  numConstructingAtoms = ffparams.iparams[ilist.iatoms[i]].vsiten.n;
-                for (int j = 0; j < 3*numConstructingAtoms; j += 3)
+                for (int j = 0; j < 3 * numConstructingAtoms; j += 3)
                 {
                     int  aj    = ilist.iatoms[i + j + 2];
                     real coeff = ffparams.iparams[ilist.iatoms[i + j]].vsiten.a;
@@ -306,40 +303,37 @@ static void get_vsite_masses(const gmx_moltype_t  &moltype,
                     {
                         gmx_incons("The mass of a vsiten constructing atom is <= 0");
                     }
-                    inv_mass += coeff*coeff/m_aj;
+                    inv_mass += coeff * coeff / m_aj;
                 }
-                vsite_m[a1] = 1/inv_mass;
+                vsite_m[a1] = 1 / inv_mass;
                 /* Correct the loop increment of i for processes more than 1 entry */
-                i += (numConstructingAtoms - 1)*ilistStride(ilist);
+                i += (numConstructingAtoms - 1) * ilistStride(ilist);
             }
             if (gmx_debug_at)
             {
-                fprintf(debug, "atom %4d %-20s mass %6.3f\n",
-                        a1, interaction_function[ilist.functionType].longname, vsite_m[a1]);
+                fprintf(debug, "atom %4d %-20s mass %6.3f\n", a1,
+                        interaction_function[ilist.functionType].longname, vsite_m[a1]);
             }
         }
     }
 
     if (debug && numNonlinearVsites > 0)
     {
-        fprintf(debug, "The molecule type has %d non-linear virtual constructions\n",
-                numNonlinearVsites);
+        fprintf(debug, "The molecule type has %d non-linear virtual constructions\n", numNonlinearVsites);
     }
 }
 
-static std::vector<VerletbufAtomtype>
-getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
-                         const bool        setMassesToOne)
+static std::vector<VerletbufAtomtype> getVerletBufferAtomtypes(const gmx_mtop_t& mtop, const bool setMassesToOne)
 {
     std::vector<VerletbufAtomtype> att;
     int                            ft, i, a1, a2, a3, a;
-    const t_iparams               *ip;
+    const t_iparams*               ip;
 
-    for (const gmx_molblock_t &molblock : mtop.molblock)
+    for (const gmx_molblock_t& molblock : mtop.molblock)
     {
         int                  nmol    = molblock.nmol;
-        const gmx_moltype_t &moltype = mtop.moltype[molblock.type];
-        const t_atoms       *atoms   = &moltype.atoms;
+        const gmx_moltype_t& moltype = mtop.moltype[molblock.type];
+        const t_atoms*       atoms   = &moltype.atoms;
 
         /* Check for constraints, as they affect the kinetic energy.
          * For virtual sites we need the masses and geometry of
@@ -351,13 +345,13 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
         {
-            const InteractionList &il = moltype.ilist[ft];
+            const InteractionList& il = moltype.ilist[ft];
 
-            for (i = 0; i < il.size(); i += 1+NRAL(ft))
+            for (i = 0; i < il.size(); i += 1 + NRAL(ft))
             {
                 ip         = &mtop.ffparams.iparams[il.iatoms[i]];
-                a1         = il.iatoms[i+1];
-                a2         = il.iatoms[i+2];
+                a1         = il.iatoms[i + 1];
+                a2         = il.iatoms[i + 2];
                 real mass1 = getMass(*atoms, a1, setMassesToOne);
                 real mass2 = getMass(*atoms, a2, setMassesToOne);
                 if (mass2 > prop[a1].con_mass)
@@ -373,14 +367,14 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
             }
         }
 
-        const InteractionList &il = moltype.ilist[F_SETTLE];
+        const InteractionList& il = moltype.ilist[F_SETTLE];
 
-        for (i = 0; i < il.size(); i += 1+NRAL(F_SETTLE))
+        for (i = 0; i < il.size(); i += 1 + NRAL(F_SETTLE))
         {
-            ip         = &mtop.ffparams.iparams[il.iatoms[i]];
-            a1         = il.iatoms[i+1];
-            a2         = il.iatoms[i+2];
-            a3         = il.iatoms[i+3];
+            ip = &mtop.ffparams.iparams[il.iatoms[i]];
+            a1 = il.iatoms[i + 1];
+            a2 = il.iatoms[i + 2];
+            a3 = il.iatoms[i + 3];
             /* Usually the mass of a1 (usually oxygen) is larger than a2/a3.
              * If this is not the case, we overestimate the displacement,
              * which leads to a larger buffer (ok since this is an exotic case).
@@ -396,10 +390,7 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
         }
 
         std::vector<real> vsite_m(atoms->nr);
-        get_vsite_masses(moltype,
-                         mtop.ffparams,
-                         setMassesToOne,
-                         vsite_m);
+        get_vsite_masses(moltype, mtop.ffparams, setMassesToOne, vsite_m);
 
         for (a = 0; a < atoms->nr; a++)
         {
@@ -411,8 +402,8 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
             {
                 prop[a].mass = getMass(*atoms, a, setMassesToOne);
             }
-            prop[a].type     = atoms->atom[a].type;
-            prop[a].q        = atoms->atom[a].q;
+            prop[a].type = atoms->atom[a].type;
+            prop[a].q    = atoms->atom[a].q;
             /* We consider an atom constrained, #DOF=2, when it is
              * connected with constraints to (at least one) atom with
              * a mass of more than 0.4x its own mass. This is not a critical
@@ -420,7 +411,7 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
              * and constrained displacement will not differ much (and both
              * overestimate the displacement).
              */
-            prop[a].bConstr = (prop[a].con_mass > 0.4*prop[a].mass);
+            prop[a].bConstr = (prop[a].con_mass > 0.4 * prop[a].mass);
 
             addAtomtype(&att, prop[a], nmol);
         }
@@ -432,8 +423,8 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
         {
             fprintf(debug, "type %zu: m %5.2f t %d q %6.3f con %s con_m %5.3f con_l %5.3f n %d\n",
                     a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
-                    gmx::boolToString(att[a].prop.bConstr), att[a].prop.con_mass, att[a].prop.con_len,
-                    att[a].n);
+                    gmx::boolToString(att[a].prop.bConstr), att[a].prop.con_mass,
+                    att[a].prop.con_len, att[a].n);
         }
     }
 
@@ -451,24 +442,21 @@ getVerletBufferAtomtypes(const gmx_mtop_t &mtop,
  * into account. If an atom has multiple constraints, this will result in
  * an overestimate of the displacement, which gives a larger drift and buffer.
  */
-void constrained_atom_sigma2(real                                 kT_fac,
-                             const atom_nonbonded_kinetic_prop_t *prop,
-                             real                                *sigma2_2d,
-                             real                                *sigma2_3d)
+void constrained_atom_sigma2(real kT_fac, const atom_nonbonded_kinetic_prop_t* prop, real* sigma2_2d, real* sigma2_3d)
 {
     /* Here we decompose the motion of a constrained atom into two
      * components: rotation around the COM and translation of the COM.
      */
 
     /* Determine the variance of the arc length for the two rotational DOFs */
-    real massFraction = prop->con_mass/(prop->mass + prop->con_mass);
-    real sigma2_rot   = kT_fac*massFraction/prop->mass;
+    real massFraction = prop->con_mass / (prop->mass + prop->con_mass);
+    real sigma2_rot   = kT_fac * massFraction / prop->mass;
 
     /* The distance from the atom to the COM, i.e. the rotational arm */
-    real comDistance  = prop->con_len*massFraction;
+    real comDistance = prop->con_len * massFraction;
 
     /* The variance relative to the arm */
-    real sigma2_rel   = sigma2_rot/gmx::square(comDistance);
+    real sigma2_rel = sigma2_rot / gmx::square(comDistance);
 
     /* For sigma2_rel << 1 we don't notice the rotational effect and
      * we have a normal, Gaussian displacement distribution.
@@ -493,24 +481,21 @@ void constrained_atom_sigma2(real                                 kT_fac,
      * whereas the actual distribution can not reach values larger than 2.
      */
     /* Coeffients obtained from a Taylor expansion */
-    const real a = 1.0/3.0;
-    const real b = 2.0/45.0;
+    const real a = 1.0 / 3.0;
+    const real b = 2.0 / 45.0;
 
     /* Our approximation is constant after sigma2_rel = 1/sqrt(b) */
-    sigma2_rel   = std::min(sigma2_rel, 1/std::sqrt(b));
+    sigma2_rel = std::min(sigma2_rel, 1 / std::sqrt(b));
 
     /* Compute the approximate sigma^2 for 2D motion due to the rotation */
-    *sigma2_2d   = gmx::square(comDistance)*
-        sigma2_rel/(1 + a*sigma2_rel + b*gmx::square(sigma2_rel));
+    *sigma2_2d =
+            gmx::square(comDistance) * sigma2_rel / (1 + a * sigma2_rel + b * gmx::square(sigma2_rel));
 
     /* The constrained atom also moves (in 3D) with the COM of both atoms */
-    *sigma2_3d   = kT_fac/(prop->mass + prop->con_mass);
+    *sigma2_3d = kT_fac / (prop->mass + prop->con_mass);
 }
 
-static void get_atom_sigma2(real                                 kT_fac,
-                            const atom_nonbonded_kinetic_prop_t *prop,
-                            real                                *sigma2_2d,
-                            real                                *sigma2_3d)
+static void get_atom_sigma2(real kT_fac, const atom_nonbonded_kinetic_prop_t* prop, real* sigma2_2d, real* sigma2_3d)
 {
     if (prop->bConstr)
     {
@@ -521,11 +506,11 @@ static void get_atom_sigma2(real                                 kT_fac,
     {
         /* Unconstrained atom: trivial */
         *sigma2_2d = 0;
-        *sigma2_3d = kT_fac/prop->mass;
+        *sigma2_3d = kT_fac / prop->mass;
     }
 }
 
-static void approx_2dof(real s2, real x, real *shift, real *scale)
+static void approx_2dof(real s2, real x, real* shift, real* scale)
 {
     /* A particle with 1 DOF constrained has 2 DOFs instead of 3.
      * This code is also used for particles with multiple constraints,
@@ -537,32 +522,34 @@ static void approx_2dof(real s2, real x, real *shift, real *scale)
      */
     real ex, er;
 
-    ex = std::exp(-x*x/(2*s2));
-    er = std::erfc(x/std::sqrt(2*s2));
+    ex = std::exp(-x * x / (2 * s2));
+    er = std::erfc(x / std::sqrt(2 * s2));
 
-    *shift = -x + std::sqrt(2*s2/M_PI)*ex/er;
-    *scale = 0.5*M_PI*std::exp(ex*ex/(M_PI*er*er))*er;
+    *shift = -x + std::sqrt(2 * s2 / M_PI) * ex / er;
+    *scale = 0.5 * M_PI * std::exp(ex * ex / (M_PI * er * er)) * er;
 }
 
 // Returns an (over)estimate of the energy drift for a single atom pair,
 // given the kinetic properties, displacement variances and list buffer.
-static real energyDriftAtomPair(bool isConstrained_i,
-                                bool isConstrained_j,
-                                real s2, real s2i_2d, real s2j_2d,
-                                real r_buffer,
-                                const pot_derivatives_t *der)
+static real energyDriftAtomPair(bool                     isConstrained_i,
+                                bool                     isConstrained_j,
+                                real                     s2,
+                                real                     s2i_2d,
+                                real                     s2j_2d,
+                                real                     r_buffer,
+                                const pot_derivatives_t* der)
 {
     // For relatively small arguments erfc() is so small that if will be 0.0
     // when stored in a float. We set an argument limit of 8 (Erfc(8)=1e-29),
     // such that we can divide by erfc and have some space left for arithmetic.
     const real erfc_arg_max = 8.0;
 
-    real       rsh    = r_buffer;
-    real       sc_fac = 1.0;
+    real rsh    = r_buffer;
+    real sc_fac = 1.0;
 
-    real       c_exp, c_erfc;
+    real c_exp, c_erfc;
 
-    if (rsh*rsh > 2*s2*erfc_arg_max*erfc_arg_max)
+    if (rsh * rsh > 2 * s2 * erfc_arg_max * erfc_arg_max)
     {
         // Below we calculate c_erfc = 0.5*erfc(rsh/sqrt(2*s2))
         // When rsh/sqrt(2*s2) increases, this erfc will be the first
@@ -585,16 +572,16 @@ static real energyDriftAtomPair(bool isConstrained_i,
         {
             real sh, sc;
 
-            approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
-            rsh    += sh;
+            approx_2dof(s2i_2d, r_buffer * s2i_2d / s2, &sh, &sc);
+            rsh += sh;
             sc_fac *= sc;
         }
         if (isConstrained_j)
         {
             real sh, sc;
 
-            approx_2dof(s2j_2d, r_buffer*s2j_2d/s2, &sh, &sc);
-            rsh    += sh;
+            approx_2dof(s2j_2d, r_buffer * s2j_2d / s2, &sh, &sc);
+            rsh += sh;
             sc_fac *= sc;
         }
 
@@ -609,31 +596,31 @@ static real energyDriftAtomPair(bool isConstrained_i,
          * Note that pot has unit energy*length, as the linear
          * atom density still needs to be put in.
          */
-        c_exp  = std::exp(-rsh*rsh/(2*s2))/std::sqrt(2*M_PI);
-        c_erfc = 0.5*std::erfc(rsh/(std::sqrt(2*s2)));
+        c_exp  = std::exp(-rsh * rsh / (2 * s2)) / std::sqrt(2 * M_PI);
+        c_erfc = 0.5 * std::erfc(rsh / (std::sqrt(2 * s2)));
     }
     real s    = std::sqrt(s2);
-    real rsh2 = rsh*rsh;
+    real rsh2 = rsh * rsh;
 
-    real pot1 = sc_fac*
-        der->md1/2*((rsh2 + s2)*c_erfc - rsh*s*c_exp);
-    real pot2 = sc_fac*
-        der->d2/6*(s*(rsh2 + 2*s2)*c_exp - rsh*(rsh2 + 3*s2)*c_erfc);
-    real pot3 = sc_fac*
-        der->md3/24*((rsh2*rsh2 + 6*rsh2*s2 + 3*s2*s2)*c_erfc - rsh*s*(rsh2 + 5*s2)*c_exp);
+    real pot1 = sc_fac * der->md1 / 2 * ((rsh2 + s2) * c_erfc - rsh * s * c_exp);
+    real pot2 = sc_fac * der->d2 / 6 * (s * (rsh2 + 2 * s2) * c_exp - rsh * (rsh2 + 3 * s2) * c_erfc);
+    real pot3 = sc_fac * der->md3 / 24
+                * ((rsh2 * rsh2 + 6 * rsh2 * s2 + 3 * s2 * s2) * c_erfc - rsh * s * (rsh2 + 5 * s2) * c_exp);
 
     return pot1 + pot2 + pot3;
 }
 
 // Computes and returns an estimate of the energy drift for the whole system
 static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
-                        const gmx_ffparams_t *ffp,
-                        real kT_fac,
-                        const pot_derivatives_t *ljDisp,
-                        const pot_derivatives_t *ljRep,
-                        const pot_derivatives_t *elec,
-                        real rlj, real rcoulomb,
-                        real rlist, real boxvol)
+                        const gmx_ffparams_t*                  ffp,
+                        real                                   kT_fac,
+                        const pot_derivatives_t*               ljDisp,
+                        const pot_derivatives_t*               ljRep,
+                        const pot_derivatives_t*               elec,
+                        real                                   rlj,
+                        real                                   rcoulomb,
+                        real                                   rlist,
+                        real                                   boxvol)
 {
     double drift_tot = 0;
 
@@ -648,14 +635,14 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
     for (gmx::index i = 0; i < att.ssize(); i++)
     {
         // Get the thermal displacement variance for the i-atom type
-        const atom_nonbonded_kinetic_prop_t *prop_i = &att[i].prop;
+        const atom_nonbonded_kinetic_prop_t* prop_i = &att[i].prop;
         real                                 s2i_2d, s2i_3d;
         get_atom_sigma2(kT_fac, prop_i, &s2i_2d, &s2i_3d);
 
         for (gmx::index j = i; j < att.ssize(); j++)
         {
             // Get the thermal displacement variance for the j-atom type
-            const atom_nonbonded_kinetic_prop_t *prop_j = &att[j].prop;
+            const atom_nonbonded_kinetic_prop_t* prop_j = &att[j].prop;
             real                                 s2j_2d, s2j_3d;
             get_atom_sigma2(kT_fac, prop_j, &s2j_2d, &s2j_3d);
 
@@ -663,28 +650,24 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             real s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d;
 
             // Set -V', V'' and -V''' at the cut-off for LJ */
-            real              c6  = ffp->iparams[prop_i->type*ffp->atnr + prop_j->type].lj.c6;
-            real              c12 = ffp->iparams[prop_i->type*ffp->atnr + prop_j->type].lj.c12;
+            real              c6  = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c6;
+            real              c12 = ffp->iparams[prop_i->type * ffp->atnr + prop_j->type].lj.c12;
             pot_derivatives_t lj;
-            lj.md1 = c6*ljDisp->md1 + c12*ljRep->md1;
-            lj.d2  = c6*ljDisp->d2  + c12*ljRep->d2;
-            lj.md3 = c6*ljDisp->md3 + c12*ljRep->md3;
+            lj.md1 = c6 * ljDisp->md1 + c12 * ljRep->md1;
+            lj.d2  = c6 * ljDisp->d2 + c12 * ljRep->d2;
+            lj.md3 = c6 * ljDisp->md3 + c12 * ljRep->md3;
 
-            real pot_lj = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr,
-                                              s2, s2i_2d, s2j_2d,
-                                              rlist - rlj,
-                                              &lj);
+            real pot_lj = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d,
+                                              rlist - rlj, &lj);
 
             // Set -V' and V'' at the cut-off for Coulomb
             pot_derivatives_t elec_qq;
-            elec_qq.md1 = elec->md1*prop_i->q*prop_j->q;
-            elec_qq.d2  = elec->d2 *prop_i->q*prop_j->q;
+            elec_qq.md1 = elec->md1 * prop_i->q * prop_j->q;
+            elec_qq.d2  = elec->d2 * prop_i->q * prop_j->q;
             elec_qq.md3 = 0;
 
-            real pot_q  = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr,
-                                              s2, s2i_2d, s2j_2d,
-                                              rlist - rcoulomb,
-                                              &elec_qq);
+            real pot_q = energyDriftAtomPair(prop_i->bConstr, prop_j->bConstr, s2, s2i_2d, s2j_2d,
+                                             rlist - rcoulomb, &elec_qq);
 
             // Note that attractive and repulsive potentials for individual
             // pairs can partially cancel.
@@ -693,16 +676,16 @@ static real energyDrift(gmx::ArrayRef<const VerletbufAtomtype> att,
             /* Multiply by the number of atom pairs */
             if (j == i)
             {
-                pot *= static_cast<double>(att[i].n)*(att[i].n - 1)/2;
+                pot *= static_cast<double>(att[i].n) * (att[i].n - 1) / 2;
             }
             else
             {
-                pot *= static_cast<double>(att[i].n)*att[j].n;
+                pot *= static_cast<double>(att[i].n) * att[j].n;
             }
             /* We need the line density to get the energy drift of the system.
              * The effective average r^2 is close to (rlist+sigma)^2.
              */
-            pot *= 4*M_PI*gmx::square(rlist + std::sqrt(s2))/boxvol;
+            pot *= 4 * M_PI * gmx::square(rlist + std::sqrt(s2)) / boxvol;
 
             /* Add the unsigned drift to avoid cancellation of errors */
             drift_tot += std::abs(pot);
@@ -718,14 +701,14 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
 {
     real d, area_rel;
 
-    if (rlist < 0.5*particle_distance)
+    if (rlist < 0.5 * particle_distance)
     {
         /* We have non overlapping spheres */
         return 1.0;
     }
 
     /* Half the inter-particle distance relative to rlist */
-    d = 0.5*particle_distance/rlist;
+    d = 0.5 * particle_distance / rlist;
 
     /* Determine the area of the surface at distance rlist to the closest
      * particle, relative to surface of a sphere of radius rlist.
@@ -751,17 +734,17 @@ static real surface_frac(int cluster_size, real particle_distance, real rlist)
              * The surface around a tetrahedron is too complex for a full
              * analytical solution, so we use a Taylor expansion.
              */
-            area_rel = (1.0 + 1/M_PI*(6*std::acos(1/std::sqrt(3))*d +
-                                      std::sqrt(3)*d*d*(1.0 +
-                                                        5.0/18.0*d*d +
-                                                        7.0/45.0*d*d*d*d +
-                                                        83.0/756.0*d*d*d*d*d*d)));
+            area_rel = (1.0
+                        + 1 / M_PI
+                                  * (6 * std::acos(1 / std::sqrt(3)) * d
+                                     + std::sqrt(3) * d * d
+                                               * (1.0 + 5.0 / 18.0 * d * d + 7.0 / 45.0 * d * d * d * d
+                                                  + 83.0 / 756.0 * d * d * d * d * d * d)));
             break;
-        default:
-            gmx_incons("surface_frac called with unsupported cluster_size");
+        default: gmx_incons("surface_frac called with unsupported cluster_size");
     }
 
-    return area_rel/cluster_size;
+    return area_rel / cluster_size;
 }
 
 /* Returns the negative of the third derivative of a potential r^-p
@@ -775,11 +758,11 @@ static real md3_force_switch(real p, real rswitch, real rc)
     real a, b;
     real md3_pot, md3_sw;
 
-    a = -((p + 4)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::square(rc-rswitch));
-    b =  ((p + 3)*rc - (p + 1)*rswitch)/(pow(rc, p+2)*gmx::power3(rc-rswitch));
+    a = -((p + 4) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::square(rc - rswitch));
+    b = ((p + 3) * rc - (p + 1) * rswitch) / (pow(rc, p + 2) * gmx::power3(rc - rswitch));
 
-    md3_pot = (p + 2)*(p + 1)*p*pow(rc, p+3);
-    md3_sw  = 2*a + 6*b*(rc - rswitch);
+    md3_pot = (p + 2) * (p + 1) * p * pow(rc, p + 3);
+    md3_sw  = 2 * a + 6 * b * (rc - rswitch);
 
     return md3_pot + md3_sw;
 }
@@ -789,9 +772,7 @@ static real md3_force_switch(real p, real rswitch, real rc)
  * Note: When not using BD with a non-mass dependendent friction coefficient,
  *       the return value still needs to be divided by the particle mass.
  */
-static real displacementVariance(const t_inputrec &ir,
-                                 real              temperature,
-                                 real              timePeriod)
+static real displacementVariance(const t_inputrec& ir, real temperature, real timePeriod)
 {
     real kT_fac;
 
@@ -802,7 +783,7 @@ static real displacementVariance(const t_inputrec &ir,
          * should be negligible (unless nstlist is extremely large, which
          * you wouldn't do anyhow).
          */
-        kT_fac = 2*BOLTZ*temperature*timePeriod;
+        kT_fac = 2 * BOLTZ * temperature * timePeriod;
         if (ir.bd_fric > 0)
         {
             /* This is directly sigma^2 of the displacement */
@@ -823,7 +804,7 @@ static real displacementVariance(const t_inputrec &ir,
     }
     else
     {
-        kT_fac = BOLTZ*temperature*gmx::square(timePeriod);
+        kT_fac = BOLTZ * temperature * gmx::square(timePeriod);
     }
 
     return kT_fac;
@@ -832,43 +813,41 @@ static real displacementVariance(const t_inputrec &ir,
 /* Returns the largest sigma of the Gaussian displacement over all particle
  * types. This ignores constraints, so is an overestimate.
  */
-static real maxSigma(real                                   kT_fac,
-                     gmx::ArrayRef<const VerletbufAtomtype> att)
+static real maxSigma(real kT_fac, gmx::ArrayRef<const VerletbufAtomtype> att)
 {
     GMX_ASSERT(!att.empty(), "We should have at least one type");
     real smallestMass = att[0].prop.mass;
-    for (const auto &atomType : att)
+    for (const auto& atomType : att)
     {
         smallestMass = std::min(smallestMass, atomType.prop.mass);
     }
-    ;
 
-    return 2*std::sqrt(kT_fac/smallestMass);
+    return 2 * std::sqrt(kT_fac / smallestMass);
 }
 
-real
-calcVerletBufferSize(const gmx_mtop_t         &mtop,
-                     const real                boxVolume,
-                     const t_inputrec         &ir,
-                     const int                 nstlist,
-                     const int                 listLifetime,
-                     real                      referenceTemperature,
-                     const VerletbufListSetup &listSetup)
+real calcVerletBufferSize(const gmx_mtop_t&         mtop,
+                          const real                boxVolume,
+                          const t_inputrec&         ir,
+                          const int                 nstlist,
+                          const int                 listLifetime,
+                          real                      referenceTemperature,
+                          const VerletbufListSetup& listSetup)
 {
-    double                resolution;
-    char                 *env;
+    double resolution;
+    char*  env;
 
-    real                  particle_distance;
-    real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
+    real particle_distance;
+    real nb_clust_frac_pairs_not_in_list_at_cutoff;
 
-    real                  elfac;
-    int                   ib0, ib1, ib;
-    real                  rb, rl;
-    real                  drift;
+    real elfac;
+    int  ib0, ib1, ib;
+    real rb, rl;
+    real drift;
 
     if (!EI_DYNAMICS(ir.eI))
     {
-        gmx_incons("Can only determine the Verlet buffer size for integrators that perform dynamics");
+        gmx_incons(
+                "Can only determine the Verlet buffer size for integrators that perform dynamics");
     }
     if (ir.verletbuf_tol <= 0)
     {
@@ -883,7 +862,8 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
          */
         referenceTemperature = maxReferenceTemperature(ir);
 
-        GMX_RELEASE_ASSERT(referenceTemperature >= 0, "Without T-coupling we should not end up here");
+        GMX_RELEASE_ASSERT(referenceTemperature >= 0,
+                           "Without T-coupling we should not end up here");
     }
 
     /* Resolution of the buffer size */
@@ -920,20 +900,18 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
      */
 
     /* Worst case assumption: HCP packing of particles gives largest distance */
-    particle_distance = std::cbrt(boxVolume*std::sqrt(2)/mtop.natoms);
+    particle_distance = std::cbrt(boxVolume * std::sqrt(2) / mtop.natoms);
 
     /* TODO: Obtain masses through (future) integrator functionality
      *       to avoid scattering the code with (or forgetting) checks.
      */
     const bool setMassesToOne = (ir.eI == eiBD && ir.bd_fric > 0);
-    const auto att            =
-        getVerletBufferAtomtypes(mtop, setMassesToOne);
+    const auto att            = getVerletBufferAtomtypes(mtop, setMassesToOne);
     GMX_ASSERT(!att.empty(), "We expect at least one type");
 
     if (debug)
     {
-        fprintf(debug, "particle distance assuming HCP packing: %f nm\n",
-                particle_distance);
+        fprintf(debug, "particle distance assuming HCP packing: %f nm\n", particle_distance);
         fprintf(debug, "energy drift atom types: %zu\n", att.size());
     }
 
@@ -950,50 +928,51 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
             case eintmodNONE:
             case eintmodPOTSHIFT:
                 /* -dV/dr of -r^-6 and r^-reppow */
-                ljDisp.md1 =     -6*std::pow(ir.rvdw, -7.0);
-                ljRep.md1  = repPow*std::pow(ir.rvdw, -(repPow + 1));
+                ljDisp.md1 = -6 * std::pow(ir.rvdw, -7.0);
+                ljRep.md1  = repPow * std::pow(ir.rvdw, -(repPow + 1));
                 /* The contribution of the higher derivatives is negligible */
                 break;
             case eintmodFORCESWITCH:
                 /* At the cut-off: V=V'=V''=0, so we use only V''' */
-                ljDisp.md3 = -md3_force_switch(6.0,    ir.rvdw_switch, ir.rvdw);
-                ljRep.md3  =  md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
+                ljDisp.md3 = -md3_force_switch(6.0, ir.rvdw_switch, ir.rvdw);
+                ljRep.md3  = md3_force_switch(repPow, ir.rvdw_switch, ir.rvdw);
                 break;
             case eintmodPOTSWITCH:
                 /* At the cut-off: V=V'=V''=0.
                  * V''' is given by the original potential times
                  * the third derivative of the switch function.
                  */
-                sw_range   = ir.rvdw - ir.rvdw_switch;
-                md3_pswf   = 60.0/gmx::power3(sw_range);
+                sw_range = ir.rvdw - ir.rvdw_switch;
+                md3_pswf = 60.0 / gmx::power3(sw_range);
 
-                ljDisp.md3 = -std::pow(ir.rvdw, -6.0   )*md3_pswf;
-                ljRep.md3  =  std::pow(ir.rvdw, -repPow)*md3_pswf;
+                ljDisp.md3 = -std::pow(ir.rvdw, -6.0) * md3_pswf;
+                ljRep.md3  = std::pow(ir.rvdw, -repPow) * md3_pswf;
                 break;
-            default:
-                gmx_incons("Unimplemented VdW modifier");
+            default: gmx_incons("Unimplemented VdW modifier");
         }
     }
     else if (EVDW_PME(ir.vdwtype))
     {
-        real b     = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
-        real r     = ir.rvdw;
-        real br    = b*r;
-        real br2   = br*br;
-        real br4   = br2*br2;
-        real br6   = br4*br2;
+        real b   = calc_ewaldcoeff_lj(ir.rvdw, ir.ewald_rtol_lj);
+        real r   = ir.rvdw;
+        real br  = b * r;
+        real br2 = br * br;
+        real br4 = br2 * br2;
+        real br6 = br4 * br2;
         // -dV/dr of g(br)*r^-6 [where g(x) = exp(-x^2)(1+x^2+x^4/2),
         // see LJ-PME equations in manual] and r^-reppow
-        ljDisp.md1 = -std::exp(-br2)*(br6 + 3.0*br4 + 6.0*br2 + 6.0)*std::pow(r, -7.0);
-        ljRep.md1  = repPow*pow(r, -(repPow + 1));
+        ljDisp.md1 = -std::exp(-br2) * (br6 + 3.0 * br4 + 6.0 * br2 + 6.0) * std::pow(r, -7.0);
+        ljRep.md1  = repPow * pow(r, -(repPow + 1));
         // The contribution of the higher derivatives is negligible
     }
     else
     {
-        gmx_fatal(FARGS, "Energy drift calculation is only implemented for plain cut-off Lennard-Jones interactions");
+        gmx_fatal(FARGS,
+                  "Energy drift calculation is only implemented for plain cut-off Lennard-Jones "
+                  "interactions");
     }
 
-    elfac = ONE_4PI_EPS0/ir.epsilon_r;
+    elfac = ONE_4PI_EPS0 / ir.epsilon_r;
 
     // Determine the 1st and 2nd derivative for the electostatics
     pot_derivatives_t elec = { 0, 0, 0 };
@@ -1009,23 +988,23 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
         }
         else
         {
-            eps_rf = ir.epsilon_rf/ir.epsilon_r;
+            eps_rf = ir.epsilon_rf / ir.epsilon_r;
             if (eps_rf != 0)
             {
-                k_rf = (eps_rf - ir.epsilon_r)/( gmx::power3(ir.rcoulomb) * (2*eps_rf + ir.epsilon_r) );
+                k_rf = (eps_rf - ir.epsilon_r) / (gmx::power3(ir.rcoulomb) * (2 * eps_rf + ir.epsilon_r));
             }
             else
             {
                 /* epsilon_rf = infinity */
-                k_rf = 0.5/gmx::power3(ir.rcoulomb);
+                k_rf = 0.5 / gmx::power3(ir.rcoulomb);
             }
         }
 
         if (eps_rf > 0)
         {
-            elec.md1 = elfac*(1.0/gmx::square(ir.rcoulomb) - 2*k_rf*ir.rcoulomb);
+            elec.md1 = elfac * (1.0 / gmx::square(ir.rcoulomb) - 2 * k_rf * ir.rcoulomb);
         }
-        elec.d2      = elfac*(2.0/gmx::power3(ir.rcoulomb) + 2*k_rf);
+        elec.d2 = elfac * (2.0 / gmx::power3(ir.rcoulomb) + 2 * k_rf);
     }
     else if (EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD)
     {
@@ -1033,13 +1012,16 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
 
         b        = calc_ewaldcoeff_q(ir.rcoulomb, ir.ewald_rtol);
         rc       = ir.rcoulomb;
-        br       = b*rc;
-        elec.md1 = elfac*(b*std::exp(-br*br)*M_2_SQRTPI/rc + std::erfc(br)/(rc*rc));
-        elec.d2  = elfac/(rc*rc)*(2*b*(1 + br*br)*std::exp(-br*br)*M_2_SQRTPI + 2*std::erfc(br)/rc);
+        br       = b * rc;
+        elec.md1 = elfac * (b * std::exp(-br * br) * M_2_SQRTPI / rc + std::erfc(br) / (rc * rc));
+        elec.d2  = elfac / (rc * rc)
+                  * (2 * b * (1 + br * br) * std::exp(-br * br) * M_2_SQRTPI + 2 * std::erfc(br) / rc);
     }
     else
     {
-        gmx_fatal(FARGS, "Energy drift calculation is only implemented for Reaction-Field and Ewald electrostatics");
+        gmx_fatal(FARGS,
+                  "Energy drift calculation is only implemented for Reaction-Field and Ewald "
+                  "electrostatics");
     }
 
     /* Determine the variance of the atomic displacement
@@ -1047,8 +1029,7 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
      * For inertial dynamics (not Brownian dynamics) the mass factor
      * is not included in kT_fac, it is added later.
      */
-    const real kT_fac = displacementVariance(ir, referenceTemperature,
-                                             listLifetime*ir.delta_t);
+    const real kT_fac = displacementVariance(ir, referenceTemperature, listLifetime * ir.delta_t);
 
     if (debug)
     {
@@ -1062,43 +1043,36 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
     /* Search using bisection */
     ib0 = -1;
     /* The drift will be neglible at 5 times the max sigma */
-    ib1 = static_cast<int>(5*maxSigma(kT_fac, att)/resolution) + 1;
+    ib1 = static_cast<int>(5 * maxSigma(kT_fac, att) / resolution) + 1;
     while (ib1 - ib0 > 1)
     {
-        ib = (ib0 + ib1)/2;
-        rb = ib*resolution;
+        ib = (ib0 + ib1) / 2;
+        rb = ib * resolution;
         rl = std::max(ir.rvdw, ir.rcoulomb) + rb;
 
         /* Calculate the average energy drift at the last step
          * of the nstlist steps at which the pair-list is used.
          */
-        drift = energyDrift(att, &mtop.ffparams,
-                            kT_fac,
-                            &ljDisp, &ljRep, &elec,
-                            ir.rvdw, ir.rcoulomb,
-                            rl, boxVolume);
+        drift = energyDrift(att, &mtop.ffparams, kT_fac, &ljDisp, &ljRep, &elec, ir.rvdw,
+                            ir.rcoulomb, rl, boxVolume);
 
         /* Correct for the fact that we are using a Ni x Nj particle pair list
          * and not a 1 x 1 particle pair list. This reduces the drift.
          */
         /* We don't have a formula for 8 (yet), use 4 which is conservative */
         nb_clust_frac_pairs_not_in_list_at_cutoff =
-            surface_frac(std::min(listSetup.cluster_size_i, 4),
-                         particle_distance, rl)*
-            surface_frac(std::min(listSetup.cluster_size_j, 4),
-                         particle_distance, rl);
+                surface_frac(std::min(listSetup.cluster_size_i, 4), particle_distance, rl)
+                * surface_frac(std::min(listSetup.cluster_size_j, 4), particle_distance, rl);
         drift *= nb_clust_frac_pairs_not_in_list_at_cutoff;
 
         /* Convert the drift to drift per unit time per atom */
-        drift /= nstlist*ir.delta_t*mtop.natoms;
+        drift /= nstlist * ir.delta_t * mtop.natoms;
 
         if (debug)
         {
-            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n",
-                    ib0, ib, ib1, rb,
+            fprintf(debug, "ib %3d %3d %3d rb %.3f %dx%d fac %.3f drift %.1e\n", ib0, ib, ib1, rb,
                     listSetup.cluster_size_i, listSetup.cluster_size_j,
-                    nb_clust_frac_pairs_not_in_list_at_cutoff,
-                    drift);
+                    nb_clust_frac_pairs_not_in_list_at_cutoff, drift);
         }
 
         if (std::abs(drift) > ir.verletbuf_tol)
@@ -1111,7 +1085,7 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
         }
     }
 
-    return std::max(ir.rvdw, ir.rcoulomb) + ib1*resolution;
+    return std::max(ir.rvdw, ir.rcoulomb) + ib1 * resolution;
 }
 
 /* Returns the pairlist buffer size for use as a minimum buffer size
@@ -1120,15 +1094,12 @@ calcVerletBufferSize(const gmx_mtop_t         &mtop,
  * set for good energy conservation or RF electrostatics. But it is
  * too small with PME and the buffer set with the default tolerance.
  */
-static real minCellSizeFromPairlistBuffer(const t_inputrec &ir)
+static real minCellSizeFromPairlistBuffer(const t_inputrec& ir)
 {
     return ir.rlist - std::max(ir.rvdw, ir.rcoulomb);
 }
 
-static real
-chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atomtypes,
-                         real                                   kT_fac,
-                         real                                   cellSize)
+static real chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atomtypes, real kT_fac, real cellSize)
 {
     /* We assume atoms are distributed uniformly over the cell width.
      * Once an atom has moved by more than the cellSize (as passed
@@ -1139,20 +1110,18 @@ chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atomtypes,
      * derivative = -1/cellSize. Using this in the energyDriftAtomPair
      * function will return the chance of crossing the next boundary.
      */
-    const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
+    const pot_derivatives_t boundaryInteraction = { 1 / cellSize, 0, 0 };
 
-    real                    chance = 0;
-    for (const VerletbufAtomtype &att : atomtypes)
+    real chance = 0;
+    for (const VerletbufAtomtype& att : atomtypes)
     {
-        const atom_nonbonded_kinetic_prop_t &propAtom = att.prop;
-        real s2_2d;
-        real s2_3d;
+        const atom_nonbonded_kinetic_prop_t& propAtom = att.prop;
+        real                                 s2_2d;
+        real                                 s2_3d;
         get_atom_sigma2(kT_fac, &propAtom, &s2_2d, &s2_3d);
 
-        real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false,
-                                                 s2_2d + s2_3d, s2_2d, 0,
-                                                 cellSize,
-                                                 &boundaryInteraction);
+        real chancePerAtom = energyDriftAtomPair(propAtom.bConstr, false, s2_2d + s2_3d, s2_2d, 0,
+                                                 cellSize, &boundaryInteraction);
 
         if (propAtom.bConstr)
         {
@@ -1163,21 +1132,18 @@ chanceOfAtomCrossingCell(gmx::ArrayRef<const VerletbufAtomtype> atomtypes,
              * Use this maximum, limited displacement when this results in
              * a smaller chance (note that this is still an overestimate).
              */
-            real massFraction = propAtom.con_mass/(propAtom.mass + propAtom.con_mass);
-            real comDistance  = propAtom.con_len*massFraction;
+            real massFraction = propAtom.con_mass / (propAtom.mass + propAtom.con_mass);
+            real comDistance  = propAtom.con_len * massFraction;
 
-            real chanceWithMaxDistance =
-                energyDriftAtomPair(false, false,
-                                    s2_3d, 0, 0,
-                                    cellSize - 2*comDistance,
-                                    &boundaryInteraction);
+            real chanceWithMaxDistance = energyDriftAtomPair(
+                    false, false, s2_3d, 0, 0, cellSize - 2 * comDistance, &boundaryInteraction);
             chancePerAtom = std::min(chancePerAtom, chanceWithMaxDistance);
         }
 
         /* Take into account the line density of the boundary */
         chancePerAtom /= cellSize;
 
-        chance        += att.n*chancePerAtom;
+        chance += att.n * chancePerAtom;
     }
 
     return chance;
@@ -1189,7 +1155,7 @@ struct AtomConstraintProps
     void addConstraint(real length)
     {
         numConstraints += 1;
-        sumLengths     += length;
+        sumLengths += length;
     }
 
     int  numConstraints = 0; /* The number of constraints of an atom */
@@ -1197,14 +1163,13 @@ struct AtomConstraintProps
 };
 
 /* Constructs and returns a list of constraint properties per atom */
-static std::vector<AtomConstraintProps>
-getAtomConstraintProps(const gmx_moltype_t  &moltype,
-                       const gmx_ffparams_t &ffparams)
+static std::vector<AtomConstraintProps> getAtomConstraintProps(const gmx_moltype_t&  moltype,
+                                                               const gmx_ffparams_t& ffparams)
 {
-    const t_atoms                    &atoms = moltype.atoms;
-    std::vector<AtomConstraintProps>  props(atoms.nr);
+    const t_atoms&                   atoms = moltype.atoms;
+    std::vector<AtomConstraintProps> props(atoms.nr);
 
-    for (const auto &ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
+    for (const auto& ilist : extractILists(moltype.ilist, IF_CONSTRAINT))
     {
         // Settles are handled separately
         if (ilist.functionType == F_SETTLE)
@@ -1227,27 +1192,27 @@ getAtomConstraintProps(const gmx_moltype_t  &moltype,
 }
 
 /* Return the chance of at least one update group in a molecule crossing a cell of size cellSize */
-static real
-chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
-                                const gmx_ffparams_t         &ffparams,
-                                const gmx::RangePartitioning &updateGrouping,
-                                real                          kT_fac,
-                                real                          cellSize)
+static real chanceOfUpdateGroupCrossingCell(const gmx_moltype_t&          moltype,
+                                            const gmx_ffparams_t&         ffparams,
+                                            const gmx::RangePartitioning& updateGrouping,
+                                            real                          kT_fac,
+                                            real                          cellSize)
 {
-    const t_atoms &atoms = moltype.atoms;
-    GMX_ASSERT(updateGrouping.fullRange().end() == atoms.nr, "The update groups should match the molecule type");
+    const t_atoms& atoms = moltype.atoms;
+    GMX_ASSERT(updateGrouping.fullRange().end() == atoms.nr,
+               "The update groups should match the molecule type");
 
-    const pot_derivatives_t boundaryInteraction = { 1/cellSize, 0, 0 };
+    const pot_derivatives_t boundaryInteraction = { 1 / cellSize, 0, 0 };
 
-    const auto              atomConstraintProps = getAtomConstraintProps(moltype, ffparams);
+    const auto atomConstraintProps = getAtomConstraintProps(moltype, ffparams);
 
-    real                    chance              = 0;
+    real chance = 0;
     for (int group = 0; group < updateGrouping.numBlocks(); group++)
     {
-        const auto &block                   = updateGrouping.block(group);
+        const auto& block = updateGrouping.block(group);
         /* Determine the number of atoms with constraints and the mass of the COG */
-        int         numAtomsWithConstraints = 0;
-        real        massSum                 = 0;
+        int  numAtomsWithConstraints = 0;
+        real massSum                 = 0;
         for (const int atom : block)
         {
             if (atomConstraintProps[atom].numConstraints > 0)
@@ -1268,7 +1233,8 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
                 {
                     GMX_ASSERT(atomConstraintProps[atom].numConstraints == 1,
                                "Two atoms should be connected by one constraint");
-                    maxComCogDistance = std::abs(atoms.atom[atom].m/massSum - 0.5)*atomConstraintProps[atom].sumLengths;
+                    maxComCogDistance = std::abs(atoms.atom[atom].m / massSum - 0.5)
+                                        * atomConstraintProps[atom].sumLengths;
                     break;
                 }
             }
@@ -1279,8 +1245,8 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
             {
                 if (atomConstraintProps[atom].numConstraints == numAtomsWithConstraints - 1)
                 {
-                    real comCogDistance = atomConstraintProps[atom].sumLengths/numAtomsWithConstraints;
-                    maxComCogDistance   = std::max(maxComCogDistance, comCogDistance);
+                    real comCogDistance = atomConstraintProps[atom].sumLengths / numAtomsWithConstraints;
+                    maxComCogDistance = std::max(maxComCogDistance, comCogDistance);
                 }
             }
         }
@@ -1289,58 +1255,56 @@ chanceOfUpdateGroupCrossingCell(const gmx_moltype_t          &moltype,
             // All normal atoms must be connected by SETTLE
             for (const int atom : block)
             {
-                const auto &ilist = moltype.ilist[F_SETTLE];
-                GMX_RELEASE_ASSERT(ilist.size() > 0, "There should be at least one settle in this moltype");
+                const auto& ilist = moltype.ilist[F_SETTLE];
+                GMX_RELEASE_ASSERT(ilist.size() > 0,
+                                   "There should be at least one settle in this moltype");
                 for (int i = 0; i < ilist.size(); i += 1 + NRAL(F_SETTLE))
                 {
                     if (atom == ilist.iatoms[i + 1])
                     {
-                        const t_iparams &iparams = ffparams.iparams[ilist.iatoms[i]];
+                        const t_iparams& iparams = ffparams.iparams[ilist.iatoms[i]];
                         real             dOH     = iparams.settle.doh;
                         real             dHH     = iparams.settle.dhh;
-                        real             dOMidH  = std::sqrt(dOH*dOH - 0.25_real*dHH*dHH);
-                        maxComCogDistance        = std::abs(atoms.atom[atom].m/massSum - 1.0_real/3.0_real)*dOMidH;
+                        real             dOMidH  = std::sqrt(dOH * dOH - 0.25_real * dHH * dHH);
+                        maxComCogDistance =
+                                std::abs(atoms.atom[atom].m / massSum - 1.0_real / 3.0_real) * dOMidH;
                     }
                 }
             }
         }
-        real s2_3d  = kT_fac/massSum;
-        chance     += energyDriftAtomPair(false, false,
-                                          s2_3d, 0, 0,
-                                          cellSize - 2*maxComCogDistance,
-                                          &boundaryInteraction);
+        real s2_3d = kT_fac / massSum;
+        chance += energyDriftAtomPair(false, false, s2_3d, 0, 0, cellSize - 2 * maxComCogDistance,
+                                      &boundaryInteraction);
     }
 
     return chance;
 }
 
 /* Return the chance of at least one update group in the system crossing a cell of size cellSize */
-static real
-chanceOfUpdateGroupCrossingCell(const gmx_mtop_t       &mtop,
-                                PartitioningPerMoltype  updateGrouping,
-                                real                    kT_fac,
-                                real                    cellSize)
+static real chanceOfUpdateGroupCrossingCell(const gmx_mtop_t&      mtop,
+                                            PartitioningPerMoltype updateGrouping,
+                                            real                   kT_fac,
+                                            real                   cellSize)
 {
     GMX_RELEASE_ASSERT(updateGrouping.size() == mtop.moltype.size(),
                        "The update groups should match the topology");
 
     real chance = 0;
-    for (const gmx_molblock_t &molblock : mtop.molblock)
+    for (const gmx_molblock_t& molblock : mtop.molblock)
     {
-        const gmx_moltype_t &moltype  = mtop.moltype[molblock.type];
-        chance                       +=
-            molblock.nmol*chanceOfUpdateGroupCrossingCell(moltype, mtop.ffparams, updateGrouping[molblock.type],
-                                                          kT_fac, cellSize);
+        const gmx_moltype_t& moltype = mtop.moltype[molblock.type];
+        chance += molblock.nmol
+                  * chanceOfUpdateGroupCrossingCell(moltype, mtop.ffparams,
+                                                    updateGrouping[molblock.type], kT_fac, cellSize);
     }
 
     return chance;
 }
 
-real
-minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
-                               const t_inputrec       &ir,
-                               PartitioningPerMoltype  updateGrouping,
-                               real                    chanceRequested)
+real minCellSizeForAtomDisplacement(const gmx_mtop_t&      mtop,
+                                    const t_inputrec&      ir,
+                                    PartitioningPerMoltype updateGrouping,
+                                    real                   chanceRequested)
 {
     if (!EI_DYNAMICS(ir.eI) || (EI_MD(ir.eI) && ir.etc == etcNO))
     {
@@ -1357,21 +1321,20 @@ minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
 
     const auto atomtypes = getVerletBufferAtomtypes(mtop, setMassesToOne);
 
-    const real kT_fac = displacementVariance(ir, temperature,
-                                             ir.nstlist*ir.delta_t);
+    const real kT_fac = displacementVariance(ir, temperature, ir.nstlist * ir.delta_t);
 
     /* Resolution of the cell size */
     real resolution = 0.001;
 
     /* Search using bisection, avoid 0 and start at 1 */
-    int  ib0      = 0;
+    int ib0 = 0;
     /* The chance will be neglible at 10 times the max sigma */
-    int  ib1      = int(10*maxSigma(kT_fac, atomtypes)/resolution) + 1;
+    int  ib1      = int(10 * maxSigma(kT_fac, atomtypes) / resolution) + 1;
     real cellSize = 0;
     while (ib1 - ib0 > 1)
     {
-        int  ib     = (ib0 + ib1)/2;
-        cellSize    = ib*resolution;
+        int ib   = (ib0 + ib1) / 2;
+        cellSize = ib * resolution;
 
         real chance;
         if (updateGrouping.empty())
@@ -1384,7 +1347,7 @@ minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
         }
 
         /* Note: chance is for every nstlist steps */
-        if (chance > chanceRequested*ir.nstlist)
+        if (chance > chanceRequested * ir.nstlist)
         {
             ib0 = ib;
         }

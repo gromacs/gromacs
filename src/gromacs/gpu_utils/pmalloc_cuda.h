@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,13 +48,13 @@
 ///@cond INTERNAL
 
 /*! \brief Allocates nbytes of page-locked memory. */
-void pmalloc(void **h_ptr, size_t nbytes);
+void pmalloc(void** h_ptr, size_t nbytes);
 
 /*! \brief Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void **h_ptr, size_t nbytes);
+void pmalloc_wc(void** h_ptr, size_t nbytes);
 
 /*! \brief Frees page locked memory allocated with pmalloc. */
-void pfree(void *h_ptr);
+void pfree(void* h_ptr);
 
 ///@endcond
 

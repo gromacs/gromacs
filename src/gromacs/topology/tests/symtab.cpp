@@ -62,45 +62,42 @@ namespace
 
 class SymtabTest : public ::testing::Test
 {
-    public:
-        SymtabTest()
-        {
-            open_symtab(&symtab_);
-        }
-        ~SymtabTest() override
-        {
-            done_symtab(&symtab_);
-            EXPECT_EQ(symtab_.nr, 0);
-            EXPECT_EQ(symtab_.symbuf, nullptr);
-        }
+public:
+    SymtabTest() { open_symtab(&symtab_); }
+    ~SymtabTest() override
+    {
+        done_symtab(&symtab_);
+        EXPECT_EQ(symtab_.nr, 0);
+        EXPECT_EQ(symtab_.symbuf, nullptr);
+    }
 
-        //! Get handle to symbol table.
-        t_symtab *symtab() { return &symtab_; }
-        //! Dump symtab. Similar to pr_symtab function.
-        void dumpSymtab();
+    //! Get handle to symbol table.
+    t_symtab* symtab() { return &symtab_; }
+    //! Dump symtab. Similar to pr_symtab function.
+    void dumpSymtab();
 
-    private:
-        //! Get reference checker using lazy initialization
-        TestReferenceChecker *checker()
+private:
+    //! Get reference checker using lazy initialization
+    TestReferenceChecker* checker()
+    {
+        if (!checker_)
         {
-            if (!checker_)
-            {
-                checker_ = std::make_unique<TestReferenceChecker>(data_.rootChecker());
-            }
-            return checker_.get();
+            checker_ = std::make_unique<TestReferenceChecker>(data_.rootChecker());
         }
-        //! The symbol table being tested.
-        t_symtab                              symtab_;
-        //! Handler for reference data.
-        TestReferenceData                     data_;
-        //! Handler for checking reference data.
-        std::unique_ptr<TestReferenceChecker> checker_;
+        return checker_.get();
+    }
+    //! The symbol table being tested.
+    t_symtab symtab_;
+    //! Handler for reference data.
+    TestReferenceData data_;
+    //! Handler for checking reference data.
+    std::unique_ptr<TestReferenceChecker> checker_;
 };
 
 void SymtabTest::dumpSymtab()
 {
     int                      nr     = symtab_.nr;
-    t_symbuf                *symbuf = symtab_.symbuf;
+    t_symbuf*                symbuf = symtab_.symbuf;
     std::vector<std::string> symtabDump;
     int                      pos = 0;
     while (symbuf != nullptr)
@@ -110,7 +107,7 @@ void SymtabTest::dumpSymtab()
         {
             symtabDump.emplace_back(formatString("Symtab[%d]=\"%s\"", pos++, symbuf->buf[i]));
         }
-        nr    -= i;
+        nr -= i;
         symbuf = symbuf->next;
     }
     checker()->checkSequence(symtabDump.begin(), symtabDump.end(), "Complete dump of SymbolTable");
@@ -124,7 +121,7 @@ void SymtabTest::dumpSymtab()
  * \param[in] index  Index into symtab corresponding to an entry.
  * \returns Whether to \p symbol and the entry returned by \p index are the same pointer.
  */
-bool entriesAreEqual(t_symtab *symtab, char **symbol, int index)
+bool entriesAreEqual(t_symtab* symtab, char** symbol, int index)
 {
     return symbol == get_symtab_handle(symtab, index);
 }
@@ -138,7 +135,7 @@ bool entriesAreEqual(t_symtab *symtab, char **symbol, int index)
  * \param[in] symtab Symbol table that contains the entries.
  * \param[in] symbol The entry obtained from placing a string in the symbol table.
  */
-void compareSymtabLookupAndHandle(t_symtab *symtab, char **symbol)
+void compareSymtabLookupAndHandle(t_symtab* symtab, char** symbol)
 {
     ASSERT_NE(symtab->symbuf, nullptr);
     auto index = lookup_symtab(symtab, symbol);
@@ -155,10 +152,7 @@ void compareSymtabLookupAndHandle(t_symtab *symtab, char **symbol)
  *  \param[in] otherSymbol Other handle from obtained from separate string deposit.
  *  \param[in] expectedOutcome If the handles should result in equal entries or not.
  */
-void compareDifferentHandles(t_symtab *symtab,
-                             char    **firstSymbol,
-                             char    **otherSymbol,
-                             bool      expectedOutcome)
+void compareDifferentHandles(t_symtab* symtab, char** firstSymbol, char** otherSymbol, bool expectedOutcome)
 {
     ASSERT_NE(symtab->symbuf, nullptr);
     auto firstIndex = lookup_symtab(symtab, firstSymbol);
@@ -228,8 +222,8 @@ TEST_F(SymtabTest, TryToAddDuplicates)
 
 TEST_F(SymtabTest, AddLargeNumberOfEntries)
 {
-    int                  numStringsToAdd = 7; // Larger than c_maxBufSize limit for size of symbuf.
-    std::vector<char **> symbolsAdded;
+    int                 numStringsToAdd = 7; // Larger than c_maxBufSize limit for size of symbuf.
+    std::vector<char**> symbolsAdded;
     symbolsAdded.reserve(numStringsToAdd);
     for (int i = 0; i < numStringsToAdd; ++i)
     {
@@ -243,7 +237,7 @@ TEST_F(SymtabTest, AddLargeNumberOfEntries)
     }
     // Add something unrelated and check that indices still work afterward.
     auto foobarSymbol = put_symtab(symtab(), "foobar");
-    ASSERT_EQ(numStringsToAdd+1, symtab()->nr);
+    ASSERT_EQ(numStringsToAdd + 1, symtab()->nr);
     for (int i = 0; i < numStringsToAdd; ++i)
     {
         EXPECT_STREQ(toString(i).c_str(), *symbolsAdded[i]);
@@ -257,9 +251,9 @@ TEST_F(SymtabTest, AddLargeNumberOfEntries)
 
 TEST_F(SymtabTest, NoDuplicatesInLargeTable)
 {
-    int                  halfOfStringsToAdd   = 7; // Larger than c_maxBufSize limit for size of symbuf.
-    int                  totalNumStringsToAdd = 2*halfOfStringsToAdd;
-    std::vector<char **> symbolsAdded;
+    int halfOfStringsToAdd   = 7; // Larger than c_maxBufSize limit for size of symbuf.
+    int totalNumStringsToAdd = 2 * halfOfStringsToAdd;
+    std::vector<char**> symbolsAdded;
     symbolsAdded.reserve(halfOfStringsToAdd);
     for (int i = 0; i < halfOfStringsToAdd; ++i)
     {
@@ -269,7 +263,7 @@ TEST_F(SymtabTest, NoDuplicatesInLargeTable)
 
     // We now try to mess around in the symtab.
     auto bazSymbol = put_symtab(symtab(), "baz");
-    ASSERT_EQ(halfOfStringsToAdd+1, symtab()->nr);
+    ASSERT_EQ(halfOfStringsToAdd + 1, symtab()->nr);
     compareSymtabLookupAndHandle(symtab(), bazSymbol);
 
     // Now try to add more symbols, also including those that are already there.
@@ -277,13 +271,13 @@ TEST_F(SymtabTest, NoDuplicatesInLargeTable)
     {
         symbolsAdded.push_back(put_symtab(symtab(), toString(i).c_str()));
     }
-    ASSERT_EQ(totalNumStringsToAdd+1, symtab()->nr);
+    ASSERT_EQ(totalNumStringsToAdd + 1, symtab()->nr);
 
     //! Check that entries that should be equal are, and new ones are not.
     for (int i = 0; i < halfOfStringsToAdd; i++)
     {
-        compareDifferentHandles(symtab(), symbolsAdded[i], symbolsAdded[halfOfStringsToAdd+i], true);
-        compareDifferentHandles(symtab(), symbolsAdded[i], symbolsAdded[2*halfOfStringsToAdd+i], false);
+        compareDifferentHandles(symtab(), symbolsAdded[i], symbolsAdded[halfOfStringsToAdd + i], true);
+        compareDifferentHandles(symtab(), symbolsAdded[i], symbolsAdded[2 * halfOfStringsToAdd + i], false);
         compareDifferentHandles(symtab(), symbolsAdded[i], bazSymbol, false);
     }
     compareSymtabLookupAndHandle(symtab(), bazSymbol);

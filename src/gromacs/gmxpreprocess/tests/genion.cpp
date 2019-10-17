@@ -66,55 +66,52 @@ namespace
 
 class GenionTest : public CommandLineTestBase
 {
-    public:
-        GenionTest()
-        {
-            CommandLine       caller = commandLine();
+public:
+    GenionTest()
+    {
+        CommandLine caller = commandLine();
 
-            const std::string mdpInputFileName(fileManager().getTemporaryFilePath("input.mdp"));
-            TextWriter::writeFileFromString(mdpInputFileName,
-                                            "verlet-buffer-tolerance =-1\nrcoulomb=0.5\nrvdw = 0.5\nrlist = 0.5\n");
-            caller.addOption("-f", mdpInputFileName);
-            caller.addOption("-c", TestFileManager::getInputFilePath("spc216_with_methane.gro"));
-            caller.addOption("-p", TestFileManager::getInputFilePath("spc216_with_methane.top"));
-            caller.addOption("-o", tprFileName_);
+        const std::string mdpInputFileName(fileManager().getTemporaryFilePath("input.mdp"));
+        TextWriter::writeFileFromString(
+                mdpInputFileName,
+                "verlet-buffer-tolerance =-1\nrcoulomb=0.5\nrvdw = 0.5\nrlist = 0.5\n");
+        caller.addOption("-f", mdpInputFileName);
+        caller.addOption("-c", TestFileManager::getInputFilePath("spc216_with_methane.gro"));
+        caller.addOption("-p", TestFileManager::getInputFilePath("spc216_with_methane.top"));
+        caller.addOption("-o", tprFileName_);
 
-            gmx_grompp(caller.argc(), caller.argv());
+        gmx_grompp(caller.argc(), caller.argv());
 
-            setOutputFile("-o", "out.gro", ConfMatch());
-        }
+        setOutputFile("-o", "out.gro", ConfMatch());
+    }
 
-        void runTest(const CommandLine &args, const std::string &interactiveCommandLineInput)
-        {
-            StdioTestHelper stdIoHelper(&fileManager());
-            stdIoHelper.redirectStringToStdin(interactiveCommandLineInput.c_str());
+    void runTest(const CommandLine& args, const std::string& interactiveCommandLineInput)
+    {
+        StdioTestHelper stdIoHelper(&fileManager());
+        stdIoHelper.redirectStringToStdin(interactiveCommandLineInput.c_str());
 
-            CommandLine &cmdline = commandLine();
-            cmdline.addOption("-s", tprFileName_);
-            cmdline.merge(args);
+        CommandLine& cmdline = commandLine();
+        cmdline.addOption("-s", tprFileName_);
+        cmdline.merge(args);
 
-            ASSERT_EQ(0, gmx_genion(cmdline.argc(), cmdline.argv()));
-            checkOutputFiles();
-        }
-    private:
-        const std::string tprFileName_
-            = fileManager().getTemporaryFilePath("spc216_with_methane.tpr");
+        ASSERT_EQ(0, gmx_genion(cmdline.argc(), cmdline.argv()));
+        checkOutputFiles();
+    }
+
+private:
+    const std::string tprFileName_ = fileManager().getTemporaryFilePath("spc216_with_methane.tpr");
 };
 
 TEST_F(GenionTest, HighConcentrationIonPlacement)
 {
-    const char *const cmdline[] = {
-        "genion", "-seed", "1997", "-conc", "1.0", "-rmin", "0.6"
-    };
+    const char* const cmdline[] = { "genion", "-seed", "1997", "-conc", "1.0", "-rmin", "0.6" };
 
     runTest(CommandLine(cmdline), "Water");
 }
 
 TEST_F(GenionTest, NoIonPlacement)
 {
-    const char *const cmdline[] = {
-        "genion", "-seed", "1997", "-conc", "0.0", "-rmin", "0.6"
-    };
+    const char* const cmdline[] = { "genion", "-seed", "1997", "-conc", "0.0", "-rmin", "0.6" };
 
     runTest(CommandLine(cmdline), "Water");
 }

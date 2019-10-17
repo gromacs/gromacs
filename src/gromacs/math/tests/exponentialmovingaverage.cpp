@@ -103,7 +103,7 @@ TEST(ExponentialMovingAverage, SetAverageCorrectly)
 
     ExponentialMovingAverageState thisState = exponentialMovingAverage.state();
 
-    ExponentialMovingAverage      other(lagTime, thisState);
+    ExponentialMovingAverage other(lagTime, thisState);
 
     other.updateWithDataPoint(-10);
     EXPECT_REAL_EQ(-0.050251256281406857, other.biasCorrectedAverage());
@@ -131,7 +131,6 @@ TEST(ExponentialMovingAverage, DeterminesCorrectlyIfIncreasing)
 }
 
 
-
 TEST(ExponentialMovingAverage, InverseLagTimeCorrect)
 {
     const real               lagTime = 2.;
@@ -145,11 +144,11 @@ TEST(ExponentialMovingAverage, RoundTripAsKeyValueTree)
     const real                    weightedSum   = 9;
     const real                    weightedCount = 1;
     const bool                    increasing    = true;
-    ExponentialMovingAverageState state         = {weightedSum, weightedCount, increasing};
+    ExponentialMovingAverageState state         = { weightedSum, weightedCount, increasing };
     exponentialMovingAverageStateAsKeyValueTree(builder.rootObject(), state);
-    state = {};
+    state                     = {};
     KeyValueTreeObject result = builder.build();
-    state = exponentialMovingAverageStateFromKeyValueTree(result);
+    state                     = exponentialMovingAverageStateFromKeyValueTree(result);
     EXPECT_EQ(weightedSum, state.weightedSum_);
     EXPECT_EQ(weightedCount, state.weightedCount_);
     EXPECT_EQ(increasing, state.increasing_);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,39 +71,39 @@ class LoggerOwner;
  */
 class LoggerBuilder
 {
-    public:
-        LoggerBuilder();
-        ~LoggerBuilder();
+public:
+    LoggerBuilder();
+    ~LoggerBuilder();
 
-        /*! \brief
-         * Adds a stream to which log output is written.
-         *
-         * All output at level \p level or above it is written to \p stream.
-         * The caller is responsible of closing and freeing \p stream once the
-         * logger is discarded.
-         */
-        void addTargetStream(MDLogger::LogLevel level, TextOutputStream *stream);
-        /*! \brief
-         * Adds a file to which log output is written.
-         *
-         * All output at level \p level or above it is written to \p fp.
-         * The caller is responsible of closing \p fp once the logger is
-         * discarded.
-         */
-        void addTargetFile(MDLogger::LogLevel level, FILE *fp);
+    /*! \brief
+     * Adds a stream to which log output is written.
+     *
+     * All output at level \p level or above it is written to \p stream.
+     * The caller is responsible of closing and freeing \p stream once the
+     * logger is discarded.
+     */
+    void addTargetStream(MDLogger::LogLevel level, TextOutputStream* stream);
+    /*! \brief
+     * Adds a file to which log output is written.
+     *
+     * All output at level \p level or above it is written to \p fp.
+     * The caller is responsible of closing \p fp once the logger is
+     * discarded.
+     */
+    void addTargetFile(MDLogger::LogLevel level, FILE* fp);
 
-        /*! \brief
-         * Builds the logger with the targets set for this builder.
-         *
-         * After this function has been called, the builder can (and should) be
-         * discarded.
-         */
-        LoggerOwner build();
+    /*! \brief
+     * Builds the logger with the targets set for this builder.
+     *
+     * After this function has been called, the builder can (and should) be
+     * discarded.
+     */
+    LoggerOwner build();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -122,26 +122,26 @@ class LoggerBuilder
  */
 class LoggerOwner
 {
-    public:
-        //! Move-constructs the owner.
-        LoggerOwner(LoggerOwner &&other) noexcept;
-        ~LoggerOwner();
+public:
+    //! Move-constructs the owner.
+    LoggerOwner(LoggerOwner&& other) noexcept;
+    ~LoggerOwner();
 
-        //! Move-assings the owner.
-        LoggerOwner &operator=(LoggerOwner &&other) noexcept;
+    //! Move-assings the owner.
+    LoggerOwner& operator=(LoggerOwner&& other) noexcept;
 
-        //! Returns the logger for writing the logs.
-        const MDLogger &logger() const { return *logger_; }
+    //! Returns the logger for writing the logs.
+    const MDLogger& logger() const { return *logger_; }
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        LoggerOwner(std::unique_ptr<Impl> impl);
+    LoggerOwner(std::unique_ptr<Impl> impl);
 
-        PrivateImplPointer<Impl>  impl_;
-        const MDLogger           *logger_;
+    PrivateImplPointer<Impl> impl_;
+    const MDLogger*          logger_;
 
-        friend class LoggerBuilder;
+    friend class LoggerBuilder;
 };
 
 } // namespace gmx

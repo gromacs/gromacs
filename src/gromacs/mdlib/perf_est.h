@@ -43,16 +43,14 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 
-void count_bonded_distances(const gmx_mtop_t &mtop, const t_inputrec &ir,
-                            double *ndistance_c, double *ndistance_simd);
+void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double* ndistance_c, double* ndistance_simd);
 /* Count the number of distance calculations in bonded interactions,
  * separately for plain-C and SIMD bonded functions.
  * The computational cost is nearly proportional to the numbers.
  * It is allowed to pass NULL for the last two arguments.
  */
 
-float pme_load_estimate(const gmx_mtop_t &mtop, const t_inputrec &ir,
-                        const matrix box);
+float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matrix box);
 /* Returns an estimate for the relative load of the PME mesh calculation
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.

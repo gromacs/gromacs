@@ -62,7 +62,9 @@ enum class AtomLocality : int
 };
 
 /*! \brief Descriptive strings for atom localities */
-static const EnumerationArray<AtomLocality, const char *> c_atomLocalityNames = { { "local", "non-local", "all" } };
+static const EnumerationArray<AtomLocality, const char*> c_atomLocalityNames = {
+    { "local", "non-local", "all" }
+};
 
 /*! \brief Interaction locality indicator: local, non-local, all.
  *
@@ -77,8 +79,10 @@ enum class InteractionLocality : int
 };
 
 /*! \brief Descriptive strings for interaction localities */
-static const EnumerationArray<InteractionLocality, const char *> c_interactionLocalityNames = { { "local", "non-local" } };
+static const EnumerationArray<InteractionLocality, const char*> c_interactionLocalityNames = {
+    { "local", "non-local" }
+};
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDTYPES_LOCALITY_H

@@ -58,34 +58,34 @@
 namespace gmx
 {
 
-PmeCoordinateReceiverGpu::Impl::Impl(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks)
-    : pmeStream_(*static_cast<cudaStream_t*> (pmeStream)),
-      comm_(comm),
-      ppRanks_(ppRanks)
+PmeCoordinateReceiverGpu::Impl::Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks) :
+    pmeStream_(*static_cast<cudaStream_t*>(pmeStream)),
+    comm_(comm),
+    ppRanks_(ppRanks)
 {
-    GMX_RELEASE_ASSERT(GMX_THREAD_MPI, "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
+    GMX_RELEASE_ASSERT(
+            GMX_THREAD_MPI,
+            "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
 }
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;
 
-void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(rvec *d_x)
+void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(rvec* d_x)
 {
 
     int ind_start = 0;
     int ind_end   = 0;
-    for (const auto &receiver : ppRanks_)
+    for (const auto& receiver : ppRanks_)
     {
         ind_start = ind_end;
         ind_end   = ind_start + receiver.numAtoms;
 
-        //Data will be transferred directly from GPU.
-        void* sendBuf = reinterpret_cast<void*> (&d_x[ind_start]);
+        // Data will be transferred directly from GPU.
+        void* sendBuf = reinterpret_cast<void*>(&d_x[ind_start]);
 
 #if GMX_MPI
-        MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId,
-                 0, comm_);
+        MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
 #endif
-
     }
 }
 
@@ -97,16 +97,16 @@ void PmeCoordinateReceiverGpu::Impl::receiveCoordinatesFromPpCudaDirect(int ppRa
 #if GMX_MPI
     // Receive event from PP task and add to PME stream, to ensure PME calculation doesn't
     // commence until coordinate data has been transferred
-    GpuEventSynchronizer *ppSync;
-    MPI_Recv(&ppSync, sizeof(GpuEventSynchronizer*),
-             MPI_BYTE, ppRank, 0,
-             comm_, MPI_STATUS_IGNORE);
+    GpuEventSynchronizer* ppSync;
+    MPI_Recv(&ppSync, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_, MPI_STATUS_IGNORE);
     ppSync->enqueueWaitEvent(pmeStream_);
 #endif
 }
 
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks)
-    : impl_(new Impl(pmeStream, comm, ppRanks))
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void*                  pmeStream,
+                                                   MPI_Comm               comm,
+                                                   gmx::ArrayRef<PpRanks> ppRanks) :
+    impl_(new Impl(pmeStream, comm, ppRanks))
 {
 }
 
@@ -122,4 +122,4 @@ void PmeCoordinateReceiverGpu::receiveCoordinatesFromPpCudaDirect(int ppRank)
     impl_->receiveCoordinatesFromPpCudaDirect(ppRank);
 }
 
-} //namespace gmx
+} // namespace gmx

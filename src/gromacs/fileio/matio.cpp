@@ -60,27 +60,29 @@
 
 using namespace gmx;
 
-static const char mapper[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/?";
-#define NMAP static_cast<long int>(sizeof(mapper)/sizeof(mapper[0]))
+static const char mapper[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+{}|;:',<.>/"
+        "?";
+#define NMAP static_cast<long int>(sizeof(mapper) / sizeof(mapper[0]))
 
 #define MAX_XPM_LINELENGTH 4096
 
-real **mk_matrix(int nx, int ny, gmx_bool b1D)
+real** mk_matrix(int nx, int ny, gmx_bool b1D)
 {
     int    i;
-    real **m;
+    real** m;
 
     snew(m, nx);
     if (b1D)
     {
-        snew(m[0], nx*ny);
+        snew(m[0], nx * ny);
     }
 
     for (i = 0; (i < nx); i++)
     {
         if (b1D)
         {
-            m[i] = &(m[0][i*ny]);
+            m[i] = &(m[0][i * ny]);
         }
         else
         {
@@ -91,7 +93,7 @@ real **mk_matrix(int nx, int ny, gmx_bool b1D)
     return m;
 }
 
-void done_matrix(int nx, real ***m)
+void done_matrix(int nx, real*** m)
 {
     int i;
 
@@ -111,13 +113,12 @@ static bool operator==(t_xpmelmt e1, t_xpmelmt e2)
 //! Return the index of the first element that matches \c c, or -1 if not found.
 t_matelmt searchcmap(ArrayRef<const t_mapping> map, t_xpmelmt c)
 {
-    auto findIt = std::find_if(map.begin(), map.end(), [&c](const auto &m)
-                               { return (m.code == c); });
+    auto findIt = std::find_if(map.begin(), map.end(), [&c](const auto& m) { return (m.code == c); });
     return (findIt == map.end()) ? -1 : (findIt - map.begin());
 }
 
 //! Read the mapping table from in, return number of entries
-static std::vector<t_mapping> getcmap(FILE *in, const char *fn)
+static std::vector<t_mapping> getcmap(FILE* in, const char* fn)
 {
     int                    i, n;
     char                   line[STRLEN];
@@ -125,19 +126,23 @@ static std::vector<t_mapping> getcmap(FILE *in, const char *fn)
     double                 r, g, b;
     std::vector<t_mapping> m;
 
-    if (fgets2(line, STRLEN-1, in) == nullptr)
+    if (fgets2(line, STRLEN - 1, in) == nullptr)
     {
-        gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                  "(just wanted to read number of entries)", fn);
+        gmx_fatal(FARGS,
+                  "Not enough lines in colormap file %s"
+                  "(just wanted to read number of entries)",
+                  fn);
     }
     sscanf(line, "%d", &n);
     m.resize(n);
     for (i = 0; (i < n); i++)
     {
-        if (fgets2(line, STRLEN-1, in) == nullptr)
+        if (fgets2(line, STRLEN - 1, in) == nullptr)
         {
-            gmx_fatal(FARGS, "Not enough lines in colormap file %s"
-                      "(should be %d, found only %d)", fn, n+1, i);
+            gmx_fatal(FARGS,
+                      "Not enough lines in colormap file %s"
+                      "(should be %d, found only %d)",
+                      fn, n + 1, i);
         }
         sscanf(line, "%s%s%lf%lf%lf", code, desc, &r, &g, &b);
         m[i].code.c1 = code[0];
@@ -151,42 +156,41 @@ static std::vector<t_mapping> getcmap(FILE *in, const char *fn)
     return m;
 }
 
-std::vector<t_mapping> readcmap(const char *fn)
+std::vector<t_mapping> readcmap(const char* fn)
 {
     FilePtr in = openLibraryFile(fn);
     return getcmap(in.get(), fn);
 }
 
-void printcmap(FILE *out, int n, t_mapping map[])
+void printcmap(FILE* out, int n, t_mapping map[])
 {
     int i;
 
     fprintf(out, "%d\n", n);
     for (i = 0; (i < n); i++)
     {
-        fprintf(out, "%c%c  %20s  %10g  %10g  %10g\n",
-                map[i].code.c1 ? map[i].code.c1 : ' ',
-                map[i].code.c2 ? map[i].code.c2 : ' ',
-                map[i].desc, map[i].rgb.r, map[i].rgb.g, map[i].rgb.b);
+        fprintf(out, "%c%c  %20s  %10g  %10g  %10g\n", map[i].code.c1 ? map[i].code.c1 : ' ',
+                map[i].code.c2 ? map[i].code.c2 : ' ', map[i].desc, map[i].rgb.r, map[i].rgb.g,
+                map[i].rgb.b);
     }
 }
 
-void writecmap(const char *fn, int n, t_mapping map[])
+void writecmap(const char* fn, int n, t_mapping map[])
 {
-    FILE *out;
+    FILE* out;
 
     out = gmx_fio_fopen(fn, "w");
     printcmap(out, n, map);
     gmx_fio_fclose(out);
 }
 
-static char *fgetline(char **line, int llmax, int *llalloc, FILE *in)
+static char* fgetline(char** line, int llmax, int* llalloc, FILE* in)
 {
-    char *fg;
+    char* fg;
 
     if (llmax > *llalloc)
     {
-        srenew(*line, llmax+1);
+        srenew(*line, llmax + 1);
         *llalloc = llmax;
     }
     fg = fgets(*line, llmax, in);
@@ -195,7 +199,7 @@ static char *fgetline(char **line, int llmax, int *llalloc, FILE *in)
     return fg;
 }
 
-static void skipstr(char *line)
+static void skipstr(char* line)
 {
     int i, c;
 
@@ -208,19 +212,19 @@ static void skipstr(char *line)
     i = c;
     while (line[c] != '\0')
     {
-        line[c-i] = line[c];
+        line[c - i] = line[c];
         c++;
     }
-    line[c-i] = '\0';
+    line[c - i] = '\0';
 }
 
-static char *line2string(char **line)
+static char* line2string(char** line)
 {
     int i;
 
     if (*line != nullptr)
     {
-        while (((*line)[0] != '\"' ) && ( (*line)[0] != '\0' ))
+        while (((*line)[0] != '\"') && ((*line)[0] != '\0'))
         {
             (*line)++;
         }
@@ -232,7 +236,7 @@ static char *line2string(char **line)
         (*line)++;
 
         i = 0;
-        while (( (*line)[i] != '\"' ) && ( (*line)[i] != '\0' ))
+        while (((*line)[i] != '\"') && ((*line)[i] != '\0'))
         {
             i++;
         }
@@ -251,8 +255,7 @@ static char *line2string(char **line)
 }
 
 //! If a label named \c label is found in \c line, return it. Otherwise return empty string.
-static std::string findLabelInLine(const std::string &line,
-                                   const std::string &label)
+static std::string findLabelInLine(const std::string& line, const std::string& label)
 {
     std::regex  re(".*" + label + "\"(.*)\"");
     std::smatch match;
@@ -264,28 +267,28 @@ static std::string findLabelInLine(const std::string &line,
 }
 
 //! Read and return a matrix from \c in
-static t_matrix read_xpm_entry(FILE *in)
+static t_matrix read_xpm_entry(FILE* in)
 {
-    char        *line_buf = nullptr, *line = nullptr, *str, buf[256] = {0};
-    int          i, m, col_len, nch = 0, llmax;
+    char *       line_buf = nullptr, *line = nullptr, *str, buf[256] = { 0 };
+    int          i, m, col_len, nch                                  = 0, llmax;
     int          llalloc = 0;
     unsigned int r, g, b;
     double       u;
     gmx_bool     bGetOnWithIt, bSetLine;
     t_xpmelmt    c;
 
-    t_matrix     mm;
+    t_matrix mm;
 
     llmax = STRLEN;
 
-    while ((nullptr != fgetline(&line_buf, llmax, &llalloc, in)) &&
-           (std::strncmp(line_buf, "static", 6) != 0))
+    while ((nullptr != fgetline(&line_buf, llmax, &llalloc, in))
+           && (std::strncmp(line_buf, "static", 6) != 0))
     {
         std::string lineString = line_buf;
-        mm.title   = findLabelInLine(lineString, "title");
-        mm.legend  = findLabelInLine(lineString, "legend");
-        mm.label_x = findLabelInLine(lineString, "x-label");
-        mm.label_y = findLabelInLine(lineString, "y-label");
+        mm.title               = findLabelInLine(lineString, "title");
+        mm.legend              = findLabelInLine(lineString, "legend");
+        mm.label_x             = findLabelInLine(lineString, "x-label");
+        mm.label_y             = findLabelInLine(lineString, "y-label");
         findLabelInLine(lineString, "type"); // discard the returned string
     }
 
@@ -301,22 +304,22 @@ static t_matrix read_xpm_entry(FILE *in)
 
     if (debug)
     {
-        fprintf(debug, "%s %s %s %s\n",
-                mm.title.c_str(), mm.legend.c_str(), mm.label_x.c_str(), mm.label_y.c_str());
+        fprintf(debug, "%s %s %s %s\n", mm.title.c_str(), mm.legend.c_str(), mm.label_x.c_str(),
+                mm.label_y.c_str());
     }
 
     /* Read sizes */
-    int nmap = 0;
+    int nmap     = 0;
     bGetOnWithIt = FALSE;
     while (!bGetOnWithIt && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)))
     {
         line = line_buf;
-        while (( line[0] != '\"' ) && ( line[0] != '\0' ))
+        while ((line[0] != '\"') && (line[0] != '\0'))
         {
             line++;
         }
 
-        if  (line[0] == '\"')
+        if (line[0] == '\"')
         {
             line2string(&line);
             sscanf(line, "%d %d %d %d", &(mm.nx), &(mm.ny), &nmap, &nch);
@@ -328,14 +331,13 @@ static t_matrix read_xpm_entry(FILE *in)
             {
                 gmx_fatal(FARGS, "Dimensions of xpm-file have to be larger than 0\n");
             }
-            llmax        = std::max(STRLEN, mm.nx+10);
+            llmax        = std::max(STRLEN, mm.nx + 10);
             bGetOnWithIt = TRUE;
         }
     }
     if (debug)
     {
-        fprintf(debug, "mm.nx %d mm.ny %d nmap %d nch %d\n",
-                mm.nx, mm.ny, nmap, nch);
+        fprintf(debug, "mm.nx %d mm.ny %d nmap %d nch %d\n", mm.nx, mm.ny, nmap, nch);
     }
     if (nch == 0)
     {
@@ -348,7 +350,7 @@ static t_matrix read_xpm_entry(FILE *in)
     while ((m < nmap) && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)))
     {
         line = std::strchr(line_buf, '\"');
-        if  (line)
+        if (line)
         {
             line++;
             /* Read xpm color map entry */
@@ -362,7 +364,7 @@ static t_matrix read_xpm_entry(FILE *in)
                 mm.map[m].code.c2 = line[1];
             }
             line += nch;
-            str   = std::strchr(line, '#');
+            str = std::strchr(line, '#');
             if (str)
             {
                 str++;
@@ -374,16 +376,16 @@ static t_matrix read_xpm_entry(FILE *in)
                 if (col_len == 6)
                 {
                     sscanf(line, "%*s #%2x%2x%2x", &r, &g, &b);
-                    mm.map[m].rgb.r = r/255.0;
-                    mm.map[m].rgb.g = g/255.0;
-                    mm.map[m].rgb.b = b/255.0;
+                    mm.map[m].rgb.r = r / 255.0;
+                    mm.map[m].rgb.g = g / 255.0;
+                    mm.map[m].rgb.b = b / 255.0;
                 }
                 else if (col_len == 12)
                 {
                     sscanf(line, "%*s #%4x%4x%4x", &r, &g, &b);
-                    mm.map[m].rgb.r = r/65535.0;
-                    mm.map[m].rgb.g = g/65535.0;
-                    mm.map[m].rgb.b = b/65535.0;
+                    mm.map[m].rgb.r = r / 65535.0;
+                    mm.map[m].rgb.g = g / 65535.0;
+                    mm.map[m].rgb.b = b / 65535.0;
                 }
                 else
                 {
@@ -413,13 +415,16 @@ static t_matrix read_xpm_entry(FILE *in)
             m++;
         }
     }
-    if  (m != nmap)
+    if (m != nmap)
     {
-        gmx_fatal(FARGS, "Number of read colors map entries (%d) does not match the number in the header (%d)", m, nmap);
+        gmx_fatal(FARGS,
+                  "Number of read colors map entries (%d) does not match the number in the header "
+                  "(%d)",
+                  m, nmap);
     }
 
     /* Read axes, if there are any */
-    bSetLine     = FALSE;
+    bSetLine = FALSE;
     do
     {
         if (bSetLine)
@@ -467,13 +472,12 @@ static t_matrix read_xpm_entry(FILE *in)
                 skipstr(line);
             }
         }
-    }
-    while ((line[0] != '\"') && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)));
+    } while ((line[0] != '\"') && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)));
 
     /* Read matrix */
     mm.matrix.resize(mm.nx, mm.ny);
     int rowIndex = mm.ny - 1;
-    bSetLine = FALSE;
+    bSetLine     = FALSE;
     do
     {
         if (bSetLine)
@@ -481,9 +485,9 @@ static t_matrix read_xpm_entry(FILE *in)
             line = line_buf;
         }
         bSetLine = TRUE;
-        if (rowIndex%(1+mm.ny/100) == 0)
+        if (rowIndex % (1 + mm.ny / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (100*(mm.ny-rowIndex))/mm.ny);
+            fprintf(stderr, "%3d%%\b\b\b\b", (100 * (mm.ny - rowIndex)) / mm.ny);
         }
         while ((line[0] != '\"') && (line[0] != '\0'))
         {
@@ -491,28 +495,27 @@ static t_matrix read_xpm_entry(FILE *in)
         }
         if (line[0] != '\"')
         {
-            gmx_fatal(FARGS, "Not enough characters in row %d of the matrix\n", rowIndex+1);
+            gmx_fatal(FARGS, "Not enough characters in row %d of the matrix\n", rowIndex + 1);
         }
         else
         {
             line++;
             for (i = 0; i < mm.nx; i++)
             {
-                c.c1 = line[nch*i];
+                c.c1 = line[nch * i];
                 if (nch == 1)
                 {
                     c.c2 = 0;
                 }
                 else
                 {
-                    c.c2 = line[nch*i+1];
+                    c.c2 = line[nch * i + 1];
                 }
                 mm.matrix(i, rowIndex) = searchcmap(mm.map, c);
             }
             rowIndex--;
         }
-    }
-    while ((rowIndex >= 0) && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)));
+    } while ((rowIndex >= 0) && (nullptr != fgetline(&line_buf, llmax, &llalloc, in)));
     if (rowIndex >= 0)
     {
         gmx_incons("Not enough rows in the matrix");
@@ -522,10 +525,10 @@ static t_matrix read_xpm_entry(FILE *in)
     return mm;
 }
 
-std::vector<t_matrix> read_xpm_matrix(const char *fnm)
+std::vector<t_matrix> read_xpm_matrix(const char* fnm)
 {
-    FILE *in;
-    char *line    = nullptr;
+    FILE* in;
+    char* line    = nullptr;
     int   llalloc = 0;
 
     in = gmx_fio_fopen(fnm, "r");
@@ -550,9 +553,9 @@ std::vector<t_matrix> read_xpm_matrix(const char *fnm)
     return mat;
 }
 
-real **matrix2real(t_matrix *in, real **out)
+real** matrix2real(t_matrix* in, real** out)
 {
-    double            tmp;
+    double tmp;
 
     std::vector<real> rmap(in->map.size());
 
@@ -560,7 +563,8 @@ real **matrix2real(t_matrix *in, real **out)
     {
         if ((in->map[i].desc == nullptr) || (sscanf(in->map[i].desc, "%lf", &tmp) != 1))
         {
-            fprintf(stderr, "Could not convert matrix to reals,\n"
+            fprintf(stderr,
+                    "Could not convert matrix to reals,\n"
                     "color map entry %zd has a non-real description: \"%s\"\n",
                     i, in->map[i].desc);
             return nullptr;
@@ -584,23 +588,24 @@ real **matrix2real(t_matrix *in, real **out)
         }
     }
 
-    fprintf(stderr, "Converted a %dx%d matrix with %zu levels to reals\n",
-            in->nx, in->ny, in->map.size());
+    fprintf(stderr, "Converted a %dx%d matrix with %zu levels to reals\n", in->nx, in->ny, in->map.size());
 
     return out;
 }
 
-static void write_xpm_header(FILE *out,
-                             const std::string &title, const std::string &legend,
-                             const std::string &label_x, const std::string &label_y,
-                             gmx_bool bDiscrete)
+static void write_xpm_header(FILE*              out,
+                             const std::string& title,
+                             const std::string& legend,
+                             const std::string& label_x,
+                             const std::string& label_y,
+                             gmx_bool           bDiscrete)
 {
-    fprintf(out,  "/* XPM */\n");
-    fprintf(out,  "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
-    fprintf(out,  "/* title:   \"%s\" */\n", title.c_str());
-    fprintf(out,  "/* legend:  \"%s\" */\n", legend.c_str());
-    fprintf(out,  "/* x-label: \"%s\" */\n", label_x.c_str());
-    fprintf(out,  "/* y-label: \"%s\" */\n", label_y.c_str());
+    fprintf(out, "/* XPM */\n");
+    fprintf(out, "/* This file can be converted to EPS by the GROMACS program xpm2ps */\n");
+    fprintf(out, "/* title:   \"%s\" */\n", title.c_str());
+    fprintf(out, "/* legend:  \"%s\" */\n", legend.c_str());
+    fprintf(out, "/* x-label: \"%s\" */\n", label_x.c_str());
+    fprintf(out, "/* y-label: \"%s\" */\n", label_y.c_str());
     if (bDiscrete)
     {
         fprintf(out, "/* type:    \"Discrete\" */\n");
@@ -615,27 +620,24 @@ static int calc_nmid(int nlevels, real lo, real mid, real hi)
 {
     /* Take care that we have at least 1 entry in the mid to hi range
      */
-    return std::min(std::max(0, static_cast<int>(((mid-lo)/(hi-lo))*(nlevels-1))),
-                    nlevels-1);
+    return std::min(std::max(0, static_cast<int>(((mid - lo) / (hi - lo)) * (nlevels - 1))), nlevels - 1);
 }
 
-static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
-                           real lo, real mid, real hi,
-                           t_rgb rlo, t_rgb rmid, t_rgb rhi)
+static void
+write_xpm_map3(FILE* out, int n_x, int n_y, int* nlevels, real lo, real mid, real hi, t_rgb rlo, t_rgb rmid, t_rgb rhi)
 {
     int    i, nmid;
     double r, g, b, clev_lo, clev_hi;
 
-    if (*nlevels > NMAP*NMAP)
+    if (*nlevels > NMAP * NMAP)
     {
-        fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n",
-                *nlevels, static_cast<int>(NMAP*NMAP));
-        *nlevels = NMAP*NMAP;
+        fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n", *nlevels,
+                static_cast<int>(NMAP * NMAP));
+        *nlevels = NMAP * NMAP;
     }
     else if (*nlevels < 2)
     {
-        fprintf(stderr, "Warning, too few levels (%d) in matrix, using 2 instead\n",
-                *nlevels);
+        fprintf(stderr, "Warning, too few levels (%d) in matrix, using 2 instead\n", *nlevels);
         *nlevels = 2;
     }
     if (!((mid >= lo) && (mid < hi)))
@@ -644,65 +646,58 @@ static void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
     }
 
     fprintf(out, "static char *gromacs_xpm[] = {\n");
-    fprintf(out, "\"%d %d   %d %d\",\n",
-            n_x, n_y, *nlevels, (*nlevels <= NMAP) ? 1 : 2);
+    fprintf(out, "\"%d %d   %d %d\",\n", n_x, n_y, *nlevels, (*nlevels <= NMAP) ? 1 : 2);
 
     nmid    = calc_nmid(*nlevels, lo, mid, hi);
     clev_lo = nmid;
     clev_hi = (*nlevels - 1 - nmid);
     for (i = 0; (i < nmid); i++)
     {
-        r   = rlo.r+(i*(rmid.r-rlo.r)/clev_lo);
-        g   = rlo.g+(i*(rmid.g-rlo.g)/clev_lo);
-        b   = rlo.b+(i*(rmid.b-rlo.b)/clev_lo);
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-                mapper[i % NMAP],
-                (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(std::round(255*r)),
-                static_cast<unsigned int>(std::round(255*g)),
-                static_cast<unsigned int>(std::round(255*b)),
-                ((nmid - i)*lo + i*mid)/clev_lo);
+        r = rlo.r + (i * (rmid.r - rlo.r) / clev_lo);
+        g = rlo.g + (i * (rmid.g - rlo.g) / clev_lo);
+        b = rlo.b + (i * (rmid.b - rlo.b) / clev_lo);
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n", mapper[i % NMAP],
+                (*nlevels <= NMAP) ? ' ' : mapper[i / NMAP],
+                static_cast<unsigned int>(std::round(255 * r)),
+                static_cast<unsigned int>(std::round(255 * g)),
+                static_cast<unsigned int>(std::round(255 * b)), ((nmid - i) * lo + i * mid) / clev_lo);
     }
-    for (i = 0; (i < (*nlevels-nmid)); i++)
+    for (i = 0; (i < (*nlevels - nmid)); i++)
     {
-        r   = rmid.r+(i*(rhi.r-rmid.r)/clev_hi);
-        g   = rmid.g+(i*(rhi.g-rmid.g)/clev_hi);
-        b   = rmid.b+(i*(rhi.b-rmid.b)/clev_hi);
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-                mapper[(i+nmid) % NMAP],
-                (*nlevels <= NMAP) ? ' ' : mapper[(i+nmid)/NMAP],
-                static_cast<unsigned int>(std::round(255*r)),
-                static_cast<unsigned int>(std::round(255*g)),
-                static_cast<unsigned int>(std::round(255*b)),
-                ((*nlevels - 1 - nmid - i)*mid + i*hi)/clev_hi);
+        r = rmid.r + (i * (rhi.r - rmid.r) / clev_hi);
+        g = rmid.g + (i * (rhi.g - rmid.g) / clev_hi);
+        b = rmid.b + (i * (rhi.b - rmid.b) / clev_hi);
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n", mapper[(i + nmid) % NMAP],
+                (*nlevels <= NMAP) ? ' ' : mapper[(i + nmid) / NMAP],
+                static_cast<unsigned int>(std::round(255 * r)),
+                static_cast<unsigned int>(std::round(255 * g)),
+                static_cast<unsigned int>(std::round(255 * b)),
+                ((*nlevels - 1 - nmid - i) * mid + i * hi) / clev_hi);
     }
 }
 
-static void pr_simple_cmap(FILE *out, real lo, real hi, int nlevel, t_rgb rlo,
-                           t_rgb rhi, int i0)
+static void pr_simple_cmap(FILE* out, real lo, real hi, int nlevel, t_rgb rlo, t_rgb rhi, int i0)
 {
-    int    i;
-    real   r, g, b, fac;
+    int  i;
+    real r, g, b, fac;
 
     for (i = 0; (i < nlevel); i++)
     {
-        fac = (i+1.0)/(nlevel);
-        r   = rlo.r+fac*(rhi.r-rlo.r);
-        g   = rlo.g+fac*(rhi.g-rlo.g);
-        b   = rlo.b+fac*(rhi.b-rlo.b);
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-                mapper[(i+i0) % NMAP],
-                (nlevel <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
-                static_cast<unsigned int>(std::round(255*r)),
-                static_cast<unsigned int>(std::round(255*g)),
-                static_cast<unsigned int>(std::round(255*b)),
-                lo+fac*(hi-lo));
+        fac = (i + 1.0) / (nlevel);
+        r   = rlo.r + fac * (rhi.r - rlo.r);
+        g   = rlo.g + fac * (rhi.g - rlo.g);
+        b   = rlo.b + fac * (rhi.b - rlo.b);
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n", mapper[(i + i0) % NMAP],
+                (nlevel <= NMAP) ? ' ' : mapper[(i + i0) / NMAP],
+                static_cast<unsigned int>(std::round(255 * r)),
+                static_cast<unsigned int>(std::round(255 * g)),
+                static_cast<unsigned int>(std::round(255 * b)), lo + fac * (hi - lo));
     }
 }
 
-static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
+static void pr_discrete_cmap(FILE* out, int* nlevel, int i0)
 {
-    t_rgb  rgbd[16] = {
+    t_rgb rgbd[16] = {
         { 1.0, 1.0, 1.0 }, /* white */
         { 1.0, 0.0, 0.0 }, /* red */
         { 1.0, 1.0, 0.0 }, /* yellow */
@@ -721,32 +716,37 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
         { 0.0, 0.0, 0.0 }  /* black */
     };
 
-    int    i, n;
+    int i, n;
 
     *nlevel = std::min(16, *nlevel);
     n       = *nlevel;
     for (i = 0; (i < n); i++)
     {
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%3d\" */,\n",
-                mapper[(i+i0) % NMAP],
-                (n <= NMAP) ? ' ' : mapper[(i+i0)/NMAP],
-                static_cast<unsigned int>(round(255*rgbd[i].r)),
-                static_cast<unsigned int>(round(255*rgbd[i].g)),
-                static_cast<unsigned int>(round(255*rgbd[i].b)),
-                i);
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%3d\" */,\n", mapper[(i + i0) % NMAP],
+                (n <= NMAP) ? ' ' : mapper[(i + i0) / NMAP],
+                static_cast<unsigned int>(round(255 * rgbd[i].r)),
+                static_cast<unsigned int>(round(255 * rgbd[i].g)),
+                static_cast<unsigned int>(round(255 * rgbd[i].b)), i);
     }
 }
 
 
-
-static void write_xpm_map_split(FILE *out, int n_x, int n_y,
-                                const int *nlevel_top, real lo_top, real hi_top,
-                                t_rgb rlo_top, t_rgb rhi_top,
-                                gmx_bool bDiscreteColor,
-                                int *nlevel_bot, real lo_bot, real hi_bot,
-                                t_rgb rlo_bot, t_rgb rhi_bot)
+static void write_xpm_map_split(FILE*      out,
+                                int        n_x,
+                                int        n_y,
+                                const int* nlevel_top,
+                                real       lo_top,
+                                real       hi_top,
+                                t_rgb      rlo_top,
+                                t_rgb      rhi_top,
+                                gmx_bool   bDiscreteColor,
+                                int*       nlevel_bot,
+                                real       lo_bot,
+                                real       hi_bot,
+                                t_rgb      rlo_bot,
+                                t_rgb      rhi_bot)
 {
-    int    ntot;
+    int ntot;
 
     ntot = *nlevel_top + *nlevel_bot;
     if (ntot > NMAP)
@@ -770,17 +770,16 @@ static void write_xpm_map_split(FILE *out, int n_x, int n_y,
 }
 
 
-static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
-                          real lo, real hi, t_rgb rlo, t_rgb rhi)
+static void write_xpm_map(FILE* out, int n_x, int n_y, int* nlevels, real lo, real hi, t_rgb rlo, t_rgb rhi)
 {
-    int    i, nlo;
-    real   invlevel, r, g, b;
+    int  i, nlo;
+    real invlevel, r, g, b;
 
-    if (*nlevels > NMAP*NMAP)
+    if (*nlevels > NMAP * NMAP)
     {
-        fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n",
-                *nlevels, static_cast<int>(NMAP*NMAP));
-        *nlevels = NMAP*NMAP;
+        fprintf(stderr, "Warning, too many levels (%d) in matrix, using %d only\n", *nlevels,
+                static_cast<int>(NMAP * NMAP));
+        *nlevels = NMAP * NMAP;
     }
     else if (*nlevels < 2)
     {
@@ -789,27 +788,24 @@ static void write_xpm_map(FILE *out, int n_x, int n_y, int *nlevels,
     }
 
     fprintf(out, "static char *gromacs_xpm[] = {\n");
-    fprintf(out, "\"%d %d   %d %d\",\n",
-            n_x, n_y, *nlevels, (*nlevels <= NMAP) ? 1 : 2);
+    fprintf(out, "\"%d %d   %d %d\",\n", n_x, n_y, *nlevels, (*nlevels <= NMAP) ? 1 : 2);
 
-    invlevel = 1.0/(*nlevels-1);
+    invlevel = 1.0 / (*nlevels - 1);
     for (i = 0; (i < *nlevels); i++)
     {
-        nlo = *nlevels-1-i;
-        r   = (nlo*rlo.r+i*rhi.r)*invlevel;
-        g   = (nlo*rlo.g+i*rhi.g)*invlevel;
-        b   = (nlo*rlo.b+i*rhi.b)*invlevel;
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n",
-                mapper[i % NMAP], (*nlevels <= NMAP) ? ' ' : mapper[i/NMAP],
-                static_cast<unsigned int>(std::round(255*r)),
-                static_cast<unsigned int>(std::round(255*g)),
-                static_cast<unsigned int>(std::round(255*b)),
-                (nlo*lo+i*hi)*invlevel);
+        nlo = *nlevels - 1 - i;
+        r   = (nlo * rlo.r + i * rhi.r) * invlevel;
+        g   = (nlo * rlo.g + i * rhi.g) * invlevel;
+        b   = (nlo * rlo.b + i * rhi.b) * invlevel;
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%.3g\" */,\n", mapper[i % NMAP],
+                (*nlevels <= NMAP) ? ' ' : mapper[i / NMAP],
+                static_cast<unsigned int>(std::round(255 * r)),
+                static_cast<unsigned int>(std::round(255 * g)),
+                static_cast<unsigned int>(std::round(255 * b)), (nlo * lo + i * hi) * invlevel);
     }
 }
 
-static void writeXpmAxis(FILE *out, const char *axis,
-                         ArrayRef<const real> label)
+static void writeXpmAxis(FILE* out, const char* axis, ArrayRef<const real> label)
 {
     if (label.empty())
     {
@@ -830,30 +826,29 @@ static void writeXpmAxis(FILE *out, const char *axis,
     fprintf(out, "*/\n");
 }
 
-static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
-                           real lo, real hi, int nlevels)
+static void write_xpm_data(FILE* out, int n_x, int n_y, real** mat, real lo, real hi, int nlevels)
 {
     int  i, j, c;
     real invlevel;
 
-    invlevel = (nlevels-1)/(hi-lo);
-    for (j = n_y-1; (j >= 0); j--)
+    invlevel = (nlevels - 1) / (hi - lo);
+    for (j = n_y - 1; (j >= 0); j--)
     {
-        if (j%(1+n_y/100) == 0)
+        if (j % (1 + n_y / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (100*(n_y-j))/n_y);
+            fprintf(stderr, "%3d%%\b\b\b\b", (100 * (n_y - j)) / n_y);
         }
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
-            c = roundToInt((mat[i][j]-lo)*invlevel);
+            c = roundToInt((mat[i][j] - lo) * invlevel);
             if (c < 0)
             {
                 c = 0;
             }
             if (c >= nlevels)
             {
-                c = nlevels-1;
+                c = nlevels - 1;
             }
             if (nlevels <= NMAP)
             {
@@ -875,32 +870,31 @@ static void write_xpm_data(FILE *out, int n_x, int n_y, real **mat,
     }
 }
 
-static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
-                            real lo, real mid, real hi, int nlevels)
+static void write_xpm_data3(FILE* out, int n_x, int n_y, real** mat, real lo, real mid, real hi, int nlevels)
 {
     int  i, j, c = 0, nmid;
     real invlev_lo, invlev_hi;
 
     nmid      = calc_nmid(nlevels, lo, mid, hi);
-    invlev_hi = (nlevels-1-nmid)/(hi-mid);
-    invlev_lo = (nmid)/(mid-lo);
+    invlev_hi = (nlevels - 1 - nmid) / (hi - mid);
+    invlev_lo = (nmid) / (mid - lo);
 
-    for (j = n_y-1; (j >= 0); j--)
+    for (j = n_y - 1; (j >= 0); j--)
     {
-        if (j%(1+n_y/100) == 0)
+        if (j % (1 + n_y / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (100*(n_y-j))/n_y);
+            fprintf(stderr, "%3d%%\b\b\b\b", (100 * (n_y - j)) / n_y);
         }
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
             if (mat[i][j] >= mid)
             {
-                c = nmid+roundToInt((mat[i][j]-mid)*invlev_hi);
+                c = nmid + roundToInt((mat[i][j] - mid) * invlev_hi);
             }
             else if (mat[i][j] >= lo)
             {
-                c = roundToInt((mat[i][j]-lo)*invlev_lo);
+                c = roundToInt((mat[i][j] - lo) * invlev_lo);
             }
             else
             {
@@ -913,7 +907,7 @@ static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
             }
             if (c >= nlevels)
             {
-                c = nlevels-1;
+                c = nlevels - 1;
             }
             if (nlevels <= NMAP)
             {
@@ -935,39 +929,52 @@ static void write_xpm_data3(FILE *out, int n_x, int n_y, real **mat,
     }
 }
 
-static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
-                                 real lo_top, real hi_top, int nlevel_top,
-                                 real lo_bot, real hi_bot, int nlevel_bot)
+static void write_xpm_data_split(FILE*  out,
+                                 int    n_x,
+                                 int    n_y,
+                                 real** mat,
+                                 real   lo_top,
+                                 real   hi_top,
+                                 int    nlevel_top,
+                                 real   lo_bot,
+                                 real   hi_bot,
+                                 int    nlevel_bot)
 {
     int  i, j, c;
     real invlev_top, invlev_bot;
 
-    invlev_top = (nlevel_top-1)/(hi_top-lo_top);
-    invlev_bot = (nlevel_bot-1)/(hi_bot-lo_bot);
+    invlev_top = (nlevel_top - 1) / (hi_top - lo_top);
+    invlev_bot = (nlevel_bot - 1) / (hi_bot - lo_bot);
 
-    for (j = n_y-1; (j >= 0); j--)
+    for (j = n_y - 1; (j >= 0); j--)
     {
-        if (j % (1+n_y/100) == 0)
+        if (j % (1 + n_y / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (100*(n_y-j))/n_y);
+            fprintf(stderr, "%3d%%\b\b\b\b", (100 * (n_y - j)) / n_y);
         }
         fprintf(out, "\"");
         for (i = 0; (i < n_x); i++)
         {
             if (i < j)
             {
-                c = nlevel_bot+roundToInt((mat[i][j]-lo_top)*invlev_top);
-                if ((c < nlevel_bot) || (c >= nlevel_bot+nlevel_top))
+                c = nlevel_bot + roundToInt((mat[i][j] - lo_top) * invlev_top);
+                if ((c < nlevel_bot) || (c >= nlevel_bot + nlevel_top))
                 {
-                    gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
+                    gmx_fatal(FARGS,
+                              "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d "
+                              "matrix[i,j] = %f",
+                              i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
                 }
             }
             else if (i > j)
             {
-                c = roundToInt((mat[i][j]-lo_bot)*invlev_bot);
-                if ((c < 0) || (c >= nlevel_bot+nlevel_bot))
+                c = roundToInt((mat[i][j] - lo_bot) * invlev_bot);
+                if ((c < 0) || (c >= nlevel_bot + nlevel_bot))
                 {
-                    gmx_fatal(FARGS, "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d matrix[i,j] = %f", i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
+                    gmx_fatal(FARGS,
+                              "Range checking i = %d, j = %d, c = %d, bot = %d, top = %d "
+                              "matrix[i,j] = %f",
+                              i, j, c, nlevel_bot, nlevel_top, mat[i][j]);
                 }
             }
             else
@@ -988,32 +995,29 @@ static void write_xpm_data_split(FILE *out, int n_x, int n_y, real **mat,
     }
 }
 
-void write_xpm_m(FILE *out, t_matrix m)
+void write_xpm_m(FILE* out, t_matrix m)
 {
-    gmx_bool      bOneChar;
-    t_xpmelmt     c;
+    gmx_bool  bOneChar;
+    t_xpmelmt c;
 
     bOneChar = (m.map[0].code.c2 == 0);
-    write_xpm_header(out, m.title, m.legend, m.label_x, m.label_y,
-                     m.bDiscrete);
+    write_xpm_header(out, m.title, m.legend, m.label_x, m.label_y, m.bDiscrete);
     fprintf(out, "static char *gromacs_xpm[] = {\n");
     fprintf(out, "\"%d %d   %zu %d\",\n", m.nx, m.ny, m.map.size(), bOneChar ? 1 : 2);
-    for (const auto &map : m.map)
+    for (const auto& map : m.map)
     {
-        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%s\" */,\n",
-                map.code.c1,
-                bOneChar ? ' ' : map.code.c2,
-                static_cast<unsigned int>(round(map.rgb.r*255)),
-                static_cast<unsigned int>(round(map.rgb.g*255)),
-                static_cast<unsigned int>(round(map.rgb.b*255)), map.desc);
+        fprintf(out, "\"%c%c c #%02X%02X%02X \" /* \"%s\" */,\n", map.code.c1,
+                bOneChar ? ' ' : map.code.c2, static_cast<unsigned int>(round(map.rgb.r * 255)),
+                static_cast<unsigned int>(round(map.rgb.g * 255)),
+                static_cast<unsigned int>(round(map.rgb.b * 255)), map.desc);
     }
     writeXpmAxis(out, "x", m.axis_x);
     writeXpmAxis(out, "y", m.axis_y);
-    for (int j = m.ny-1; (j >= 0); j--)
+    for (int j = m.ny - 1; (j >= 0); j--)
     {
-        if (j%(1+m.ny/100) == 0)
+        if (j % (1 + m.ny / 100) == 0)
         {
-            fprintf(stderr, "%3d%%\b\b\b\b", (100*(m.ny-j))/m.ny);
+            fprintf(stderr, "%3d%%\b\b\b\b", (100 * (m.ny - j)) / m.ny);
         }
         fprintf(out, "\"");
         if (bOneChar)
@@ -1042,12 +1046,24 @@ void write_xpm_m(FILE *out, t_matrix m)
     }
 }
 
-void write_xpm3(FILE *out, unsigned int flags,
-                const std::string &title, const std::string &legend,
-                const std::string &label_x, const std::string &label_y,
-                int n_x, int n_y, real axis_x[], real axis_y[],
-                real *mat[], real lo, real mid, real hi,
-                t_rgb rlo, t_rgb rmid, t_rgb rhi, int *nlevels)
+void write_xpm3(FILE*              out,
+                unsigned int       flags,
+                const std::string& title,
+                const std::string& legend,
+                const std::string& label_x,
+                const std::string& label_y,
+                int                n_x,
+                int                n_y,
+                real               axis_x[],
+                real               axis_y[],
+                real*              mat[],
+                real               lo,
+                real               mid,
+                real               hi,
+                t_rgb              rlo,
+                t_rgb              rmid,
+                t_rgb              rhi,
+                int*               nlevels)
 {
     /* See write_xpm.
      * Writes a colormap varying as rlo -> rmid -> rhi.
@@ -1065,16 +1081,28 @@ void write_xpm3(FILE *out, unsigned int flags,
     write_xpm_data3(out, n_x, n_y, mat, lo, mid, hi, *nlevels);
 }
 
-void write_xpm_split(FILE *out, unsigned int flags,
-                     const std::string &title, const std::string &legend,
-                     const std::string &label_x, const std::string &label_y,
-                     int n_x, int n_y, real axis_x[], real axis_y[],
-                     real *mat[],
-                     real lo_top, real hi_top, int *nlevel_top,
-                     t_rgb rlo_top, t_rgb rhi_top,
-                     real lo_bot, real hi_bot, int *nlevel_bot,
-                     gmx_bool bDiscreteColor,
-                     t_rgb rlo_bot, t_rgb rhi_bot)
+void write_xpm_split(FILE*              out,
+                     unsigned int       flags,
+                     const std::string& title,
+                     const std::string& legend,
+                     const std::string& label_x,
+                     const std::string& label_y,
+                     int                n_x,
+                     int                n_y,
+                     real               axis_x[],
+                     real               axis_y[],
+                     real*              mat[],
+                     real               lo_top,
+                     real               hi_top,
+                     int*               nlevel_top,
+                     t_rgb              rlo_top,
+                     t_rgb              rhi_top,
+                     real               lo_bot,
+                     real               hi_bot,
+                     int*               nlevel_bot,
+                     gmx_bool           bDiscreteColor,
+                     t_rgb              rlo_bot,
+                     t_rgb              rhi_bot)
 {
     /* See write_xpm.
      * Writes a colormap varying as rlo -> rmid -> rhi.
@@ -1094,20 +1122,29 @@ void write_xpm_split(FILE *out, unsigned int flags,
     }
 
     write_xpm_header(out, title, legend, label_x, label_y, FALSE);
-    write_xpm_map_split(out, n_x, n_y, nlevel_top, lo_top, hi_top, rlo_top, rhi_top,
-                        bDiscreteColor, nlevel_bot, lo_bot, hi_bot, rlo_bot, rhi_bot);
+    write_xpm_map_split(out, n_x, n_y, nlevel_top, lo_top, hi_top, rlo_top, rhi_top, bDiscreteColor,
+                        nlevel_bot, lo_bot, hi_bot, rlo_bot, rhi_bot);
     writeXpmAxis(out, "x", ArrayRef<real>(axis_x, axis_x + n_x + ((flags & MAT_SPATIAL_X) != 0U ? 1 : 0)));
     writeXpmAxis(out, "y", ArrayRef<real>(axis_y, axis_y + n_y + ((flags & MAT_SPATIAL_Y) != 0U ? 1 : 0)));
-    write_xpm_data_split(out, n_x, n_y, mat, lo_top, hi_top, *nlevel_top,
-                         lo_bot, hi_bot, *nlevel_bot);
+    write_xpm_data_split(out, n_x, n_y, mat, lo_top, hi_top, *nlevel_top, lo_bot, hi_bot, *nlevel_bot);
 }
 
-void write_xpm(FILE *out, unsigned int flags,
-               const std::string &title, const std::string &legend,
-               const std::string &label_x, const std::string &label_y,
-               int n_x, int n_y, real axis_x[], real axis_y[],
-               real *mat[], real lo, real hi,
-               t_rgb rlo, t_rgb rhi, int *nlevels)
+void write_xpm(FILE*              out,
+               unsigned int       flags,
+               const std::string& title,
+               const std::string& legend,
+               const std::string& label_x,
+               const std::string& label_y,
+               int                n_x,
+               int                n_y,
+               real               axis_x[],
+               real               axis_y[],
+               real*              mat[],
+               real               lo,
+               real               hi,
+               t_rgb              rlo,
+               t_rgb              rhi,
+               int*               nlevels)
 {
     /* out        xpm file
      * title      matrix title

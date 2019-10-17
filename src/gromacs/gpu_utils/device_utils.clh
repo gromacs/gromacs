@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,21 +56,19 @@
  * \param[in]   addr    The address where the data to be added to resides
  * \param[in]   val     The value to increment with
  */
-gmx_opencl_inline
-void atomicAdd_l_f(volatile __local float *addr, float val)
+gmx_opencl_inline void atomicAdd_l_f(volatile __local float* addr, float val)
 {
     union {
         unsigned int u32;
         float        f32;
     } next, expected, current;
-    current.f32    = *addr;
+    current.f32 = *addr;
     do
     {
         expected.f32 = current.f32;
         next.f32     = expected.f32 + val;
-        current.u32  = atomic_cmpxchg( (volatile __local unsigned int *)addr, expected.u32, next.u32);
-    }
-    while (current.u32 != expected.u32);
+        current.u32  = atomic_cmpxchg((volatile __local unsigned int*)addr, expected.u32, next.u32);
+    } while (current.u32 != expected.u32);
 }
 
 /* \brief Atomically increment the float3 value at address addr (in local memory) with value val.
@@ -82,11 +80,11 @@ void atomicAdd_l_f(volatile __local float *addr, float val)
  * \param[in]   addr    The address where the data to be added to resides
  * \param[in]   val     The value to increment with
  */
-gmx_opencl_inline void atomicAdd_l_f3(__local float3 *addr, float3 val)
+gmx_opencl_inline void atomicAdd_l_f3(__local float3* addr, float3 val)
 {
-    atomicAdd_l_f( ((__local float*)(addr)), val.x);
-    atomicAdd_l_f( ((__local float*)(addr))+1, val.y);
-    atomicAdd_l_f( ((__local float*)(addr))+2, val.z);
+    atomicAdd_l_f(((__local float*)(addr)), val.x);
+    atomicAdd_l_f(((__local float*)(addr)) + 1, val.y);
+    atomicAdd_l_f(((__local float*)(addr)) + 2, val.z);
 }
 
 /* \brief Atomically increment the float value at address addr (in global memory) with value val.
@@ -96,20 +94,19 @@ gmx_opencl_inline void atomicAdd_l_f3(__local float3 *addr, float3 val)
  * \param[in]   addr    The address where the data to be added to resides
  * \param[in]   val     The value to increment with
  */
-gmx_opencl_inline void atomicAdd_g_f(volatile __global float *addr, float val)
+gmx_opencl_inline void atomicAdd_g_f(volatile __global float* addr, float val)
 {
     union {
         unsigned int u32;
         float        f32;
     } next, expected, current;
-    current.f32    = *addr;
+    current.f32 = *addr;
     do
     {
         expected.f32 = current.f32;
         next.f32     = expected.f32 + val;
-        current.u32  = atomic_cmpxchg( (volatile __global unsigned int *)addr, expected.u32, next.u32);
-    }
-    while (current.u32 != expected.u32);
+        current.u32 = atomic_cmpxchg((volatile __global unsigned int*)addr, expected.u32, next.u32);
+    } while (current.u32 != expected.u32);
 }
 
 /* \brief Atomically increment the float3 value at address addr (in local memory) with value val.
@@ -122,7 +119,7 @@ gmx_opencl_inline void atomicAdd_g_f(volatile __global float *addr, float val)
  * \param[in]   addr    The address where the data to be added to resides
  * \param[in]   val     The value to increment with
  */
-gmx_opencl_inline void atomicAdd_g_f3(__global float *addr, const float3 val)
+gmx_opencl_inline void atomicAdd_g_f3(__global float* addr, const float3 val)
 {
     atomicAdd_g_f(addr, val.x);
     atomicAdd_g_f(addr + 1, val.y);

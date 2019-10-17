@@ -68,6 +68,6 @@ namespace gmx
 // Forward declaration for libgromacs header gromacs/restraint/restraintpotential.h
 class IRestraintPotential;
 
-}      // end namespace gmx
+} // end namespace gmx
 
-#endif //GMXAPI_GROMACSFWD_H
+#endif // GMXAPI_GROMACSFWD_H

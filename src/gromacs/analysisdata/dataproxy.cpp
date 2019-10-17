@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,10 +50,11 @@
 namespace gmx
 {
 
-AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
-                                     AbstractAnalysisData *data)
-    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan),
-      bParallel_(false)
+AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAnalysisData* data) :
+    source_(*data),
+    firstColumn_(firstColumn),
+    columnSpan_(columnSpan),
+    bParallel_(false)
 {
     GMX_RELEASE_ASSERT(data != nullptr, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
@@ -61,15 +62,13 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
 }
 
 
-int
-AnalysisDataProxy::frameCount() const
+int AnalysisDataProxy::frameCount() const
 {
     return source_.frameCount();
 }
 
 
-AnalysisDataFrameRef
-AnalysisDataProxy::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 {
     AnalysisDataFrameRef frame = source_.tryGetDataFrame(index);
     if (!frame.isValid())
@@ -80,23 +79,19 @@ AnalysisDataProxy::tryGetDataFrameInternal(int index) const
 }
 
 
-bool
-AnalysisDataProxy::requestStorageInternal(int nframes)
+bool AnalysisDataProxy::requestStorageInternal(int nframes)
 {
     return source_.requestStorage(nframes);
 }
 
 
-int
-AnalysisDataProxy::flags() const
+int AnalysisDataProxy::flags() const
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
-           | efAllowMultipleDataSets;
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing | efAllowMultipleDataSets;
 }
 
 
-void
-AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataProxy::dataStarted(AbstractAnalysisData* data)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
     setDataSetCount(data->dataSetCount());
@@ -108,10 +103,8 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 }
 
 
-bool
-AnalysisDataProxy::parallelDataStarted(
-        AbstractAnalysisData              *data,
-        const AnalysisDataParallelOptions &options)
+bool AnalysisDataProxy::parallelDataStarted(AbstractAnalysisData*              data,
+                                            const AnalysisDataParallelOptions& options)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
     setDataSetCount(data->dataSetCount());
@@ -125,8 +118,7 @@ AnalysisDataProxy::parallelDataStarted(
 }
 
 
-void
-AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
+void AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader& frame)
 {
     if (bParallel_)
     {
@@ -139,8 +131,7 @@ AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 }
 
 
-void
-AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
@@ -157,8 +148,7 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 }
 
 
-void
-AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
+void AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader& header)
 {
     if (bParallel_)
     {
@@ -170,8 +160,7 @@ AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
     }
 }
 
-void
-AnalysisDataProxy::frameFinishedSerial(int frameIndex)
+void AnalysisDataProxy::frameFinishedSerial(int frameIndex)
 {
     if (bParallel_)
     {
@@ -182,8 +171,7 @@ AnalysisDataProxy::frameFinishedSerial(int frameIndex)
 }
 
 
-void
-AnalysisDataProxy::dataFinished()
+void AnalysisDataProxy::dataFinished()
 {
     moduleManager().notifyDataFinish();
 }

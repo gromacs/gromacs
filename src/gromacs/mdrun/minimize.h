@@ -45,6 +45,6 @@
 namespace gmx
 {
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDRUN_MINIMIZE_H

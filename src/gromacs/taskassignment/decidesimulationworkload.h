@@ -68,15 +68,15 @@ namespace gmx
  * \param[in] haveEwaldSurfaceContribution Whether there is an Ewald surface contribution
  * \returns Simulation lifetime constant workload description.
  */
-SimulationWorkload createSimulationWorkload(bool              useGpuForNonbonded,
-                                            PmeRunMode        pmeRunMode,
-                                            bool              useGpuForBonded,
-                                            bool              useGpuForUpdate,
-                                            bool              useGpuForBufferOps,
-                                            bool              useGpuHaloExchange,
-                                            bool              useGpuPmePpComm,
-                                            bool              haveEwaldSurfaceContribution);
+SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
+                                            PmeRunMode pmeRunMode,
+                                            bool       useGpuForBonded,
+                                            bool       useGpuForUpdate,
+                                            bool       useGpuForBufferOps,
+                                            bool       useGpuHaloExchange,
+                                            bool       useGpuPmePpComm,
+                                            bool       haveEwaldSurfaceContribution);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

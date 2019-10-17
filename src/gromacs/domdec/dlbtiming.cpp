@@ -58,14 +58,14 @@ struct BalanceRegion
     {
     }
 
-    bool         isOpen;         /**< Are we in an open balancing region? */
-    bool         isOpenOnCpu;    /**< Is the, currently open, region still open on the CPU side? */
-    bool         isOpenOnGpu;    /**< Is the, currently open, region open on the GPU side? */
-    gmx_cycles_t cyclesOpenCpu;  /**< Cycle count when opening the CPU region */
-    gmx_cycles_t cyclesLastCpu;  /**< Cycle count at the last call to \p ddCloseBalanceRegionCpu() */
+    bool         isOpen;        /**< Are we in an open balancing region? */
+    bool         isOpenOnCpu;   /**< Is the, currently open, region still open on the CPU side? */
+    bool         isOpenOnGpu;   /**< Is the, currently open, region open on the GPU side? */
+    gmx_cycles_t cyclesOpenCpu; /**< Cycle count when opening the CPU region */
+    gmx_cycles_t cyclesLastCpu; /**< Cycle count at the last call to \p ddCloseBalanceRegionCpu() */
 };
 
-BalanceRegion *ddBalanceRegionAllocate()
+BalanceRegion* ddBalanceRegionAllocate()
 {
     return new BalanceRegion;
 }
@@ -75,20 +75,21 @@ BalanceRegion *ddBalanceRegionAllocate()
  * This should be replaced by a properly managed BalanceRegion class,
  * but that requires a lot of refactoring in domdec.cpp.
  */
-static BalanceRegion *getBalanceRegion(const gmx_domdec_t *dd)
+static BalanceRegion* getBalanceRegion(const gmx_domdec_t* dd)
 {
     GMX_ASSERT(dd != nullptr && dd->comm != nullptr, "Balance regions should only be used with DD");
-    BalanceRegion *region = dd->comm->balanceRegion;
+    BalanceRegion* region = dd->comm->balanceRegion;
     GMX_ASSERT(region != nullptr, "Balance region should be initialized before use");
     return region;
 }
 
 void DDBalanceRegionHandler::openRegionCpuImpl(DdAllowBalanceRegionReopen gmx_unused allowReopen) const
 {
-    BalanceRegion *reg = getBalanceRegion(dd_);
+    BalanceRegion* reg = getBalanceRegion(dd_);
     if (dd_->comm->ddSettings.recordLoad)
     {
-        GMX_ASSERT(allowReopen == DdAllowBalanceRegionReopen::yes || !reg->isOpen, "Should not open an already opened region");
+        GMX_ASSERT(allowReopen == DdAllowBalanceRegionReopen::yes || !reg->isOpen,
+                   "Should not open an already opened region");
 
         reg->cyclesOpenCpu = gmx_cycles_read();
         reg->isOpen        = true;
@@ -99,15 +100,15 @@ void DDBalanceRegionHandler::openRegionCpuImpl(DdAllowBalanceRegionReopen gmx_un
 
 void DDBalanceRegionHandler::openRegionGpuImpl() const
 {
-    BalanceRegion *reg = getBalanceRegion(dd_);
+    BalanceRegion* reg = getBalanceRegion(dd_);
     GMX_ASSERT(reg->isOpen, "Can only open a GPU region inside an open CPU region");
     GMX_ASSERT(!reg->isOpenOnGpu, "Can not re-open a GPU balance region");
     reg->isOpenOnGpu = true;
 }
 
-void ddReopenBalanceRegionCpu(const gmx_domdec_t *dd)
+void ddReopenBalanceRegionCpu(const gmx_domdec_t* dd)
 {
-    BalanceRegion *reg = getBalanceRegion(dd);
+    BalanceRegion* reg = getBalanceRegion(dd);
     /* If the GPU is busy, don't reopen as we are overlapping with work */
     if (reg->isOpen && !reg->isOpenOnGpu)
     {
@@ -117,7 +118,7 @@ void ddReopenBalanceRegionCpu(const gmx_domdec_t *dd)
 
 void DDBalanceRegionHandler::closeRegionCpuImpl() const
 {
-    BalanceRegion *reg = getBalanceRegion(dd_);
+    BalanceRegion* reg = getBalanceRegion(dd_);
     if (reg->isOpen && reg->isOpenOnCpu)
     {
         GMX_ASSERT(reg->isOpenOnCpu, "Can only close an open region");
@@ -132,21 +133,22 @@ void DDBalanceRegionHandler::closeRegionCpuImpl() const
         else
         {
             /* We can close the region */
-            float cyclesCpu   = cycles - reg->cyclesOpenCpu;
+            float cyclesCpu = cycles - reg->cyclesOpenCpu;
             dd_cycles_add(dd_, cyclesCpu, ddCyclF);
-            reg->isOpen       = false;
+            reg->isOpen = false;
         }
     }
 }
 
-void DDBalanceRegionHandler::closeRegionGpuImpl(float                       waitGpuCyclesInCpuRegion,
+void DDBalanceRegionHandler::closeRegionGpuImpl(float waitGpuCyclesInCpuRegion,
                                                 DdBalanceRegionWaitedForGpu waitedForGpu) const
 {
-    BalanceRegion *reg = getBalanceRegion(dd_);
+    BalanceRegion* reg = getBalanceRegion(dd_);
     if (reg->isOpen)
     {
         GMX_ASSERT(reg->isOpenOnGpu, "Can not close a non-open GPU balance region");
-        GMX_ASSERT(!reg->isOpenOnCpu, "The GPU region should be closed after closing the CPU region");
+        GMX_ASSERT(!reg->isOpenOnCpu,
+                   "The GPU region should be closed after closing the CPU region");
 
         float waitGpuCyclesEstimate = gmx_cycles_read() - reg->cyclesLastCpu;
         if (waitedForGpu == DdBalanceRegionWaitedForGpu::no)
@@ -171,11 +173,11 @@ void DDBalanceRegionHandler::closeRegionGpuImpl(float                       wait
 }
 
 //! Accumulates flop counts for force calculations.
-static double force_flop_count(const t_nrnb *nrnb)
+static double force_flop_count(const t_nrnb* nrnb)
 {
     int         i;
     double      sum;
-    const char *name;
+    const char* name;
 
     sum = 0;
     for (i = 0; i < eNR_NBKERNEL_FREE_ENERGY; i++)
@@ -186,11 +188,11 @@ static double force_flop_count(const t_nrnb *nrnb)
         name = nrnb_str(i);
         if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
         {
-            sum += nrnb->n[i]*0.25*cost_nrnb(i);
+            sum += nrnb->n[i] * 0.25 * cost_nrnb(i);
         }
         else
         {
-            sum += nrnb->n[i]*0.50*cost_nrnb(i);
+            sum += nrnb->n[i] * 0.50 * cost_nrnb(i);
         }
     }
     for (i = eNR_NBKERNEL_FREE_ENERGY; i <= eNR_NB14; i++)
@@ -198,18 +200,18 @@ static double force_flop_count(const t_nrnb *nrnb)
         name = nrnb_str(i);
         if (strstr(name, "W3") != nullptr || strstr(name, "W4") != nullptr)
         {
-            sum += nrnb->n[i]*cost_nrnb(i);
+            sum += nrnb->n[i] * cost_nrnb(i);
         }
     }
     for (i = eNR_BONDS; i <= eNR_WALLS; i++)
     {
-        sum += nrnb->n[i]*cost_nrnb(i);
+        sum += nrnb->n[i] * cost_nrnb(i);
     }
 
     return sum;
 }
 
-void dd_force_flop_start(gmx_domdec_t *dd, t_nrnb *nrnb)
+void dd_force_flop_start(gmx_domdec_t* dd, t_nrnb* nrnb)
 {
     if (dd->comm->ddSettings.eFlop)
     {
@@ -217,7 +219,7 @@ void dd_force_flop_start(gmx_domdec_t *dd, t_nrnb *nrnb)
     }
 }
 
-void dd_force_flop_stop(gmx_domdec_t *dd, t_nrnb *nrnb)
+void dd_force_flop_stop(gmx_domdec_t* dd, t_nrnb* nrnb)
 {
     if (dd->comm->ddSettings.eFlop)
     {
@@ -226,7 +228,7 @@ void dd_force_flop_stop(gmx_domdec_t *dd, t_nrnb *nrnb)
     }
 }
 
-void clear_dd_cycle_counts(gmx_domdec_t *dd)
+void clear_dd_cycle_counts(gmx_domdec_t* dd)
 {
     int i;
 

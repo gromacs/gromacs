@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,9 +51,9 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static int get_espresso_word(FILE *fp, char word[])
+static int get_espresso_word(FILE* fp, char word[])
 {
-    int  ret, nc, i;
+    int ret, nc, i;
 
     ret = 0;
     nc  = 0;
@@ -91,16 +91,14 @@ static int get_espresso_word(FILE *fp, char word[])
                 word[nc++] = static_cast<char>(i);
             }
         }
-    }
-    while (i != EOF && ret == 0);
+    } while (i != EOF && ret == 0);
 
     word[nc] = '\0';
 
     return ret;
 }
 
-static int check_open_parenthesis(FILE *fp, int r,
-                                  const char *infile, const char *keyword)
+static int check_open_parenthesis(FILE* fp, int r, const char* infile, const char* keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -119,16 +117,14 @@ static int check_open_parenthesis(FILE *fp, int r,
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'",
-                      keyword, infile);
+            gmx_fatal(FARGS, "Expected '{' after '%s' in file '%s'", keyword, infile);
         }
     }
 
     return level_inc;
 }
 
-static int check_close_parenthesis(FILE *fp, int r,
-                                   const char *infile, const char *keyword)
+static int check_close_parenthesis(FILE* fp, int r, const char* infile, const char* keyword)
 {
     int  level_inc;
     char word[STRLEN];
@@ -147,32 +143,34 @@ static int check_close_parenthesis(FILE *fp, int r,
         }
         else
         {
-            gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'",
-                      keyword, infile);
+            gmx_fatal(FARGS, "Expected '}' after section '%s' in file '%s'", keyword, infile);
         }
     }
 
     return level_inc;
 }
 
-enum {
-    espID, espPOS, espTYPE, espQ, espV, espF, espMOLECULE, espNR
-};
-static const char *const esp_prop[espNR] = {
-    "id", "pos", "type", "q", "v", "f",
-    "molecule"
-};
-
-void gmx_espresso_read_conf(const char *infile,
-                            t_symtab *symtab, char **name, t_atoms *atoms,
-                            rvec x[], rvec *v, matrix box)
+enum
 {
-    FILE     *fp;
-    char      word[STRLEN], buf[STRLEN];
-    int       level, r, nprop, p, i, m, molnr;
-    int       prop[32];
-    double    d;
-    gmx_bool  bFoundParticles, bFoundProp, bFoundVariable, bMol;
+    espID,
+    espPOS,
+    espTYPE,
+    espQ,
+    espV,
+    espF,
+    espMOLECULE,
+    espNR
+};
+static const char* const esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f", "molecule" };
+
+void gmx_espresso_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], rvec* v, matrix box)
+{
+    FILE*    fp;
+    char     word[STRLEN], buf[STRLEN];
+    int      level, r, nprop, p, i, m, molnr;
+    int      prop[32];
+    double   d;
+    gmx_bool bFoundParticles, bFoundProp, bFoundVariable, bMol;
 
     if (name != nullptr)
     {
@@ -199,8 +197,8 @@ void gmx_espresso_read_conf(const char *infile,
         if (level == 1 && std::strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
-            level          += check_open_parenthesis(fp, r, infile, "particles");
-            nprop           = 0;
+            level += check_open_parenthesis(fp, r, infile, "particles");
+            nprop = 0;
             while (level == 2 && (r = get_espresso_word(fp, word)))
             {
                 bFoundProp = FALSE;
@@ -217,7 +215,7 @@ void gmx_espresso_read_conf(const char *infile,
 
                         if (debug)
                         {
-                            fprintf(debug, "  prop[%d] = %s\n", nprop-1, esp_prop[prop[nprop-1]]);
+                            fprintf(debug, "  prop[%d] = %s\n", nprop - 1, esp_prop[prop[nprop - 1]]);
                         }
                     }
                 }
@@ -291,19 +289,18 @@ void gmx_espresso_read_conf(const char *infile,
                             case espMOLECULE:
                                 r     = get_espresso_word(fp, word);
                                 molnr = std::strtol(word, nullptr, 10);
-                                if (i == 0 ||
-                                    atoms->resinfo[atoms->atom[i-1].resind].nr != molnr)
+                                if (i == 0 || atoms->resinfo[atoms->atom[i - 1].resind].nr != molnr)
                                 {
-                                    atoms->atom[i].resind =
-                                        (i == 0 ? 0 : atoms->atom[i-1].resind+1);
-                                    atoms->resinfo[atoms->atom[i].resind].nr       = molnr;
-                                    atoms->resinfo[atoms->atom[i].resind].ic       = ' ';
-                                    atoms->resinfo[atoms->atom[i].resind].chainid  = ' ';
-                                    atoms->resinfo[atoms->atom[i].resind].chainnum = molnr; /* Not sure if this is right? */
+                                    atoms->atom[i].resind = (i == 0 ? 0 : atoms->atom[i - 1].resind + 1);
+                                    atoms->resinfo[atoms->atom[i].resind].nr      = molnr;
+                                    atoms->resinfo[atoms->atom[i].resind].ic      = ' ';
+                                    atoms->resinfo[atoms->atom[i].resind].chainid = ' ';
+                                    atoms->resinfo[atoms->atom[i].resind].chainnum =
+                                            molnr; /* Not sure if this is right? */
                                 }
                                 else
                                 {
-                                    atoms->atom[i].resind = atoms->atom[i-1].resind;
+                                    atoms->atom[i].resind = atoms->atom[i - 1].resind;
                                 }
                                 break;
                         }
@@ -313,10 +310,9 @@ void gmx_espresso_read_conf(const char *infile,
                     atoms->atomname[i] = put_symtab(symtab, buf);
                     if (bMol)
                     {
-                        if (i == 0 || atoms->atom[i].resind != atoms->atom[i-1].resind)
+                        if (i == 0 || atoms->atom[i].resind != atoms->atom[i - 1].resind)
                         {
-                            atoms->resinfo[atoms->atom[i].resind].name =
-                                put_symtab(symtab, "MOL");
+                            atoms->resinfo[atoms->atom[i].resind].name = put_symtab(symtab, "MOL");
                         }
                     }
                     else
@@ -326,12 +322,12 @@ void gmx_espresso_read_conf(const char *infile,
                         /* Generate an residue name from the particle type */
                         if (atoms->atom[i].type < 26)
                         {
-                            sprintf(buf, "T%c", 'A'+atoms->atom[i].type);
+                            sprintf(buf, "T%c", 'A' + atoms->atom[i].type);
                         }
                         else
                         {
-                            sprintf(buf, "T%c%c",
-                                    'A'+atoms->atom[i].type/26, 'A'+atoms->atom[i].type%26);
+                            sprintf(buf, "T%c%c", 'A' + atoms->atom[i].type / 26,
+                                    'A' + atoms->atom[i].type % 26);
                         }
                         t_atoms_set_resinfo(atoms, i, symtab, buf, i, ' ', 0, ' ');
                     }
@@ -347,13 +343,16 @@ void gmx_espresso_read_conf(const char *infile,
 
             if (i != atoms->nr)
             {
-                gmx_fatal(FARGS, "Internal inconsistency in Espresso routines, read %d atoms, expected %d atoms", i, atoms->nr);
+                gmx_fatal(FARGS,
+                          "Internal inconsistency in Espresso routines, read %d atoms, expected %d "
+                          "atoms",
+                          i, atoms->nr);
             }
         }
         else if (level == 1 && std::strcmp(word, "variable") == 0 && !bFoundVariable)
         {
             bFoundVariable = TRUE;
-            level         += check_open_parenthesis(fp, r, infile, "variable");
+            level += check_open_parenthesis(fp, r, infile, "variable");
             while (level == 2 && (r = get_espresso_word(fp, word)))
             {
                 if (level == 2 && std::strcmp(word, "box_l") == 0)
@@ -380,16 +379,15 @@ void gmx_espresso_read_conf(const char *infile,
 
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n",
-                infile);
+        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile);
     }
 
     gmx_fio_fclose(fp);
 }
 
-int get_espresso_coordnum(const char *infile)
+int get_espresso_coordnum(const char* infile)
 {
-    FILE    *fp;
+    FILE*    fp;
     char     word[STRLEN];
     int      natoms, level, r;
     gmx_bool bFoundParticles;
@@ -405,7 +403,7 @@ int get_espresso_coordnum(const char *infile)
         if (level == 1 && strcmp(word, "particles") == 0 && !bFoundParticles)
         {
             bFoundParticles = TRUE;
-            level          += check_open_parenthesis(fp, r, infile, "particles");
+            level += check_open_parenthesis(fp, r, infile, "particles");
             while (level > 0 && (r = get_espresso_word(fp, word)))
             {
                 if (r == 2)
@@ -433,8 +431,7 @@ int get_espresso_coordnum(const char *infile)
     }
     if (!bFoundParticles)
     {
-        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n",
-                infile);
+        fprintf(stderr, "Did not find a particles section in Espresso file '%s'\n", infile);
     }
 
     gmx_fio_fclose(fp);
@@ -442,9 +439,14 @@ int get_espresso_coordnum(const char *infile)
     return natoms;
 }
 
-void write_espresso_conf_indexed(FILE *out, const char *title,
-                                 const t_atoms *atoms, int nx, const int *index,
-                                 const rvec *x, const rvec *v, const matrix box)
+void write_espresso_conf_indexed(FILE*          out,
+                                 const char*    title,
+                                 const t_atoms* atoms,
+                                 int            nx,
+                                 const int*     index,
+                                 const rvec*    x,
+                                 const rvec*    v,
+                                 const matrix   box)
 {
     int i, j;
 
@@ -466,9 +468,8 @@ void write_espresso_conf_indexed(FILE *out, const char *title,
         {
             j = i;
         }
-        fprintf(out, "\t{%d %f %f %f %hu %g",
-                j, x[j][XX], x[j][YY], x[j][ZZ],
-                atoms->atom[j].type, atoms->atom[j].q);
+        fprintf(out, "\t{%d %f %f %f %hu %g", j, x[j][XX], x[j][YY], x[j][ZZ], atoms->atom[j].type,
+                atoms->atom[j].q);
         if (v)
         {
             fprintf(out, " %f %f %f", v[j][XX], v[j][YY], v[j][ZZ]);

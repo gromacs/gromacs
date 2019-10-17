@@ -61,12 +61,11 @@ namespace
 /*! \brief A basic TPI runner.
  * The only input parameter used currently: input system random seed (ld-seed).
  */
-class TpiTest : public MdrunTestFixture,
-                public ::testing::WithParamInterface<int>
+class TpiTest : public MdrunTestFixture, public ::testing::WithParamInterface<int>
 {
-    public:
-        //! Runs the test with the given inputs
-        void runTest();
+public:
+    //! Runs the test with the given inputs
+    void runTest();
 };
 
 void TpiTest::runTest()
@@ -81,23 +80,23 @@ void TpiTest::runTest()
     commandLine.append(rerunFileName);
     ASSERT_EQ(0, runner_.callMdrun(commandLine));
 
-    const std::string    logFileContexts = TextReader::readFileToString(runner_.logFileName_);
-    const std::string    tpiOutputs      = logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));
+    const std::string logFileContexts = TextReader::readFileToString(runner_.logFileName_);
+    const std::string tpiOutputs =
+            logFileContexts.substr(logFileContexts.find("Started Test Particle Insertion"));
 
     TestReferenceData    refData;
     TestReferenceChecker checker(refData.rootChecker());
 
     // Output values, their output patterns and relative tolerances (empirical)
-    const std::map<std::string, std::pair<std::string, double> > valuesToCheck = {
-        {"V", {"<V>  =", 1e-10}},
-        {"mu", {"<mu> =", 1e-3}}
+    const std::map<std::string, std::pair<std::string, double>> valuesToCheck = {
+        { "V", { "<V>  =", 1e-10 } }, { "mu", { "<mu> =", 1e-3 } }
     };
 
-    for (const auto &valueDesc : valuesToCheck)
+    for (const auto& valueDesc : valuesToCheck)
     {
-        const auto &name              = valueDesc.first;
-        const auto &pattern           = valueDesc.second.first;
-        const auto &relativeTolerance = valueDesc.second.second;
+        const auto& name              = valueDesc.first;
+        const auto& pattern           = valueDesc.second.first;
+        const auto& relativeTolerance = valueDesc.second.second;
         auto        startIndex        = tpiOutputs.find(pattern);
         ASSERT_NE(startIndex, std::string::npos);
         startIndex += pattern.size();
@@ -109,7 +108,7 @@ void TpiTest::runTest()
 
 TEST_P(TpiTest, ReproducesOutput)
 {
-    const int         randomSeed  = GetParam();
+    const int randomSeed = GetParam();
 
     const int         nsteps          = 200;
     const std::string mdpFileContents = formatString(R"(
@@ -134,7 +133,8 @@ TEST_P(TpiTest, ReproducesOutput)
         tau_t                    = 0.5
         ref_t                    = 298
         nsteps                   = %d
-    )", randomSeed, nsteps);
+    )",
+                                                     randomSeed, nsteps);
 
     runner_.useStringAsMdpFile(mdpFileContents);
     runTest();
@@ -142,6 +142,6 @@ TEST_P(TpiTest, ReproducesOutput)
 
 INSTANTIATE_TEST_CASE_P(Simple, TpiTest, ::testing::Values(1993, 2994));
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

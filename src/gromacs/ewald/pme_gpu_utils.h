@@ -53,9 +53,9 @@
 
 //! A macro for inline GPU functions.
 #if GMX_GPU == GMX_GPU_CUDA
-#define INLINE_EVERYWHERE __host__ __device__ __forceinline__
+#    define INLINE_EVERYWHERE __host__ __device__ __forceinline__
 #else
-#define INLINE_EVERYWHERE inline
+#    define INLINE_EVERYWHERE inline
 #endif
 
 /*! \internal \brief
@@ -73,7 +73,7 @@
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
-template <int order, int atomsPerWarp>
+template<int order, int atomsPerWarp>
 int INLINE_EVERYWHERE getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
 {
     assert((atomWarpIndex >= 0) && (atomWarpIndex < atomsPerWarp));
@@ -97,7 +97,7 @@ int INLINE_EVERYWHERE getSplineParamIndexBase(int warpIndex, int atomWarpIndex)
  *
  * \returns Index into theta or dtheta array using GPU layout.
  */
-template <int order, int atomsPerWarp>
+template<int order, int atomsPerWarp>
 int INLINE_EVERYWHERE getSplineParamIndex(int paramIndexBase, int dimIndex, int splineIndex)
 {
     assert((dimIndex >= XX) && (dimIndex < DIM));

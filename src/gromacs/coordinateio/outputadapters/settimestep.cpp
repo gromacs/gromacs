@@ -51,8 +51,7 @@
 namespace gmx
 {
 
-real
-SetTimeStep::calculateNewFrameTime(real currentInputFrameTime)
+real SetTimeStep::calculateNewFrameTime(real currentInputFrameTime)
 {
     real currentTime = 0.0;
     if (!haveProcessedFirstFrame_)
@@ -69,8 +68,7 @@ SetTimeStep::calculateNewFrameTime(real currentInputFrameTime)
     return currentTime;
 }
 
-void
-SetTimeStep::processFrame(const int /* framenumber */, t_trxframe *input)
+void SetTimeStep::processFrame(const int /* framenumber */, t_trxframe* input)
 {
     input->time  = calculateNewFrameTime(input->time);
     input->bTime = true;

@@ -47,12 +47,17 @@
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 
-enum {
-    epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
+enum
+{
+    epbcXYZ,
+    epbcNONE,
+    epbcXY,
+    epbcSCREW,
+    epbcNR
 };
 
 //! Strings corresponding to epbc enum values.
-extern const char *epbc_names[epbcNR+1];
+extern const char* epbc_names[epbcNR + 1];
 
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
@@ -61,34 +66,35 @@ extern const char *epbc_names[epbcNR+1];
 #define MAX_NTRICVEC 12
 
 /*! \brief Structure containing info on periodic boundary conditions */
-typedef struct t_pbc {
+typedef struct t_pbc
+{
     //! The PBC type
-    int        ePBC;
+    int ePBC;
     //! Number of dimensions in which PBC is exerted
-    int        ndim_ePBC;
+    int ndim_ePBC;
     /*! \brief Determines how to compute distance vectors.
      *
      *  Indicator of how to compute distance vectors, depending
      *  on PBC type (depends on ePBC and dimensions with(out) DD)
      *  and the box angles.
      */
-    int        ePBCDX;
+    int ePBCDX;
     /*! \brief Used for selecting which dimensions to use in PBC.
      *
      *  In case of 1-D PBC this indicates which dimension is used,
      *  in case of 2-D PBC this indicates the opposite
      */
-    int        dim;
+    int dim;
     //! The simulation box
-    matrix     box;
+    matrix box;
     //! The lengths of the diagonal of the full box
-    rvec       fbox_diag;
+    rvec fbox_diag;
     //! Halve of the above
-    rvec       hbox_diag;
+    rvec hbox_diag;
     //! Negative of the above
-    rvec       mhbox_diag;
+    rvec mhbox_diag;
     //! Maximum allowed cutoff squared for the box and PBC used
-    real       max_cutoff2;
+    real max_cutoff2;
     /*! \brief Number of triclinic shift vectors.
      *
      *  Number of triclinic shift vectors depends on the skewedness
@@ -99,11 +105,11 @@ typedef struct t_pbc {
      *  be tried. Because of the restrictions imposed on the unit-cell
      *  by GROMACS, ntric_vec <= MAX_NTRICVEC = 12.
      */
-    int        ntric_vec;
+    int ntric_vec;
     //! The triclinic shift vectors in grid cells. Internal use only.
-    ivec       tric_shift[MAX_NTRICVEC];
+    ivec tric_shift[MAX_NTRICVEC];
     //!  The triclinic shift vectors in length units
-    rvec       tric_vec[MAX_NTRICVEC];
+    rvec tric_vec[MAX_NTRICVEC];
 } t_pbc;
 
 #define TRICLINIC(box) ((box)[YY][XX] != 0 || (box)[ZZ][XX] != 0 || (box)[ZZ][YY] != 0)
@@ -112,7 +118,8 @@ typedef struct t_pbc {
 #define NCUCVERT 24
 #define NCUCEDGE 36
 
-enum {
+enum
+{
     ecenterTRIC, /* 0.5*(a+b+c)                  */
     ecenterRECT, /* (0.5*a[x],0.5*b[y],0.5*c[z]) */
     ecenterZERO, /* (0,0,0)                      */
@@ -133,7 +140,7 @@ int ePBC2npbcdim(int ePBC);
  * \param[in] fp  The file pointer to write to
  * \param[in] pbc The periodic boundary condition information structure
  */
-void dump_pbc(FILE *fp, t_pbc *pbc);
+void dump_pbc(FILE* fp, t_pbc* pbc);
 
 /*! \brief Check the box for consistency
  *
@@ -143,7 +150,7 @@ void dump_pbc(FILE *fp, t_pbc *pbc);
  * Otherwise returns a string with the problem.
  * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
-const char *check_box(int ePBC, const matrix box);
+const char* check_box(int ePBC, const matrix box);
 
 /*! \brief Creates box matrix from edge lengths and angles.
  *
@@ -182,7 +189,7 @@ int guess_ePBC(const matrix box);
  * \param[in] graph Information about molecular connectivity
  * \return TRUE when the box was corrected.
  */
-gmx_bool correct_box(FILE *fplog, int step, tensor box, struct t_graph *graph);
+gmx_bool correct_box(FILE* fplog, int step, tensor box, struct t_graph* graph);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *
@@ -193,7 +200,7 @@ gmx_bool correct_box(FILE *fplog, int step, tensor box, struct t_graph *graph);
  * \param[in] ePBC The PBC identifier
  * \param[in] box  The box tensor
  */
-void set_pbc(t_pbc *pbc, int ePBC, const matrix box);
+void set_pbc(t_pbc* pbc, int ePBC, const matrix box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *
@@ -213,9 +220,7 @@ void set_pbc(t_pbc *pbc, int ePBC, const matrix box);
  * \param[in] box         The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
-t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
-                  const ivec domdecCells, gmx_bool bSingleDir,
-                  const matrix box);
+t_pbc* set_pbc_dd(t_pbc* pbc, int ePBC, const ivec domdecCells, gmx_bool bSingleDir, const matrix box);
 
 /*! \brief Compute distance with PBC
  *
@@ -229,7 +234,7 @@ t_pbc *set_pbc_dd(t_pbc *pbc, int ePBC,
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
  */
-void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
+void pbc_dx(const t_pbc* pbc, const rvec x1, const rvec x2, rvec dx);
 
 /*! \brief Compute distance vector for simple PBC types
  *
@@ -245,7 +250,7 @@ void pbc_dx(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
  * (see calc_shifts below on how to obtain shift_vec)
  */
-int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
+int pbc_dx_aiuc(const t_pbc* pbc, const rvec x1, const rvec x2, rvec dx);
 
 /*! \brief Compute distance with PBC
  *
@@ -256,7 +261,7 @@ int pbc_dx_aiuc(const t_pbc *pbc, const rvec x1, const rvec x2, rvec dx);
  * \param[in]    x2  Coordinates for particle 2
  * \param[out]   dx  Distance vector
  */
-void pbc_dx_d(const t_pbc *pbc, const dvec x1, const dvec x2, dvec dx);
+void pbc_dx_d(const t_pbc* pbc, const dvec x1, const dvec x2, dvec dx);
 
 /*! \brief Computes shift vectors
  *
@@ -289,8 +294,7 @@ void calc_triclinic_images(const matrix box, rvec img[]);
  * \param[in]  box     The simulation box
  * \param[out] vert    The vertices
  */
-void calc_compact_unitcell_vertices(int ecenter, const matrix box,
-                                    rvec vert[]);
+void calc_compact_unitcell_vertices(int ecenter, const matrix box, rvec vert[]);
 
 /*! \brief Compute unitcell edges
  *
@@ -299,7 +303,7 @@ void calc_compact_unitcell_vertices(int ecenter, const matrix box,
  * The index consists of NCUCEDGE pairs of vertex indices.
  * The index does not change, so it needs to be retrieved only once.
  */
-int *compact_unitcell_edges();
+int* compact_unitcell_edges();
 
 /*! \brief Put atoms inside the simulations box
  *
@@ -332,8 +336,7 @@ void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x
  * \param[in]    box     The simulation box
  * \param[in,out] x       The coordinates of the atoms
  */
-void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
-                                     gmx::ArrayRef<gmx::RVec> x);
+void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Put atoms inside the unitcell
  *
@@ -345,9 +348,7 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box,
  * \param[in]    box     The simulation box
  * \param[in,out] x       The coordinates of the atoms
  */
-void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
-                                   const matrix box,
-                                   gmx::ArrayRef<gmx::RVec> x);
+void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Make all molecules whole by shifting positions
  *
@@ -357,8 +358,7 @@ void put_atoms_in_compact_unitcell(int ePBC, int ecenter,
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
  */
-void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
-                       const gmx_mtop_t *mtop, rvec x[]);
+void do_pbc_first_mtop(FILE* fplog, int ePBC, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
 
 /*! \brief Make molecules consisting of multiple charge groups whole by shifting positions
  *
@@ -367,7 +367,6 @@ void do_pbc_first_mtop(FILE *fplog, int ePBC, const matrix box,
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
  */
-void do_pbc_mtop(int ePBC, const matrix box,
-                 const gmx_mtop_t *mtop, rvec x[]);
+void do_pbc_mtop(int ePBC, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
 
 #endif

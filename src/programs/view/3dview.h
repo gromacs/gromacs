@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-typedef int  iv2[2];
+typedef int iv2[2];
 
-typedef struct {
+typedef struct
+{
     matrix box;
     int    ecenter;     /* enum for centering, see pbc.h */
     vec4   eye, origin; /* The eye and origin position   */
@@ -55,7 +56,7 @@ typedef struct {
     mat4   RotM[DIM];
 } t_3dview;
 
-t_3dview *init_view(matrix box);
+t_3dview* init_view(matrix box);
 /* Generate the view matrix from the eye pos and the origin,
  * applying also the scaling for the aspect ration.
  * There is no accompanying done_view routine: the struct can simply
@@ -68,18 +69,18 @@ t_3dview *init_view(matrix box);
  * reset the view
  */
 
-gmx_bool zoom_3d(t_3dview *view, real fac);
+gmx_bool zoom_3d(t_3dview* view, real fac);
 /* Zoom in or out with factor fac, returns TRUE when zoom successful,
  * FALSE otherwise.
  */
 
-void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive);
+void rotate_3d(t_3dview* view, int axis, gmx_bool bPositive);
 /* Rotate the eye around the center of the box, around axis */
 
-void translate_view(t_3dview *view, int axis, gmx_bool bPositive);
+void translate_view(t_3dview* view, int axis, gmx_bool bPositive);
 /* Translate the origin at which one is looking */
 
-void reset_view(t_3dview *view);
+void reset_view(t_3dview* view);
 /* Reset the viewing to the initial view */
 
 #endif

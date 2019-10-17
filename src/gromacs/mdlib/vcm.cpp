@@ -54,17 +54,16 @@
 #include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/smalloc.h"
 
-t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir) :
+t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
     integratorConservesMomentum(!EI_RANDOM(ir.eI))
 {
     mode     = (ir.nstcomm > 0) ? ir.comm_mode : ecmNO;
     ndim     = ndof_com(&ir);
-    timeStep = ir.nstcomm*ir.delta_t;
+    timeStep = ir.nstcomm * ir.delta_t;
 
     if (mode == ecmANGULAR && ndim < 3)
     {
-        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s",
-                  epbc_names[ir.ePBC]);
+        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s", epbc_names[ir.ePBC]);
     }
 
     if (mode != ecmNO)
@@ -83,7 +82,6 @@ t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir) :
             group_j.resize(size);
             group_x.resize(size);
             group_w.resize(size);
-
         }
 
         group_name.resize(size);
@@ -93,9 +91,9 @@ t_vcm::t_vcm(const SimulationGroups &groups, const t_inputrec &ir) :
         group_ndf.resize(size);
         for (int g = 0; (g < nr); g++)
         {
-            group_ndf[g]  = ir.opts.nrdf[g];
-            group_name[g] = *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
-
+            group_ndf[g] = ir.opts.nrdf[g];
+            group_name[g] =
+                    *groups.groupNames[groups.groups[SimulationAtomGroupType::MassCenterVelocityRemoval][g]];
         }
 
         thread_vcm.resize(gmx_omp_nthreads_get(emntDefault) * stride);
@@ -112,15 +110,15 @@ t_vcm::~t_vcm()
     }
 }
 
-void reportComRemovalInfo(FILE * fp, const t_vcm &vcm)
+void reportComRemovalInfo(FILE* fp, const t_vcm& vcm)
 {
 
     /* Copy pointer to group names and print it. */
     if (fp && vcm.mode != ecmNO)
     {
-        fprintf(fp, "Center of mass motion removal mode is %s\n",
-                ECOM(vcm.mode));
-        fprintf(fp, "We have the following groups for center of"
+        fprintf(fp, "Center of mass motion removal mode is %s\n", ECOM(vcm.mode));
+        fprintf(fp,
+                "We have the following groups for center of"
                 " mass motion removal:\n");
 
         for (int g = 0; (g < vcm.nr); g++)
@@ -137,12 +135,12 @@ static void update_tensor(const rvec x, real m0, tensor I)
     real xy, xz, yz;
 
     /* Compute inertia tensor contribution due to this atom */
-    xy         = x[XX]*x[YY]*m0;
-    xz         = x[XX]*x[ZZ]*m0;
-    yz         = x[YY]*x[ZZ]*m0;
-    I[XX][XX] += x[XX]*x[XX]*m0;
-    I[YY][YY] += x[YY]*x[YY]*m0;
-    I[ZZ][ZZ] += x[ZZ]*x[ZZ]*m0;
+    xy = x[XX] * x[YY] * m0;
+    xz = x[XX] * x[ZZ] * m0;
+    yz = x[YY] * x[ZZ] * m0;
+    I[XX][XX] += x[XX] * x[XX] * m0;
+    I[YY][YY] += x[YY] * x[YY] * m0;
+    I[ZZ][ZZ] += x[ZZ] * x[ZZ] * m0;
     I[XX][YY] += xy;
     I[YY][XX] += xy;
     I[XX][ZZ] += xz;
@@ -152,8 +150,7 @@ static void update_tensor(const rvec x, real m0, tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(const t_mdatoms &md,
-                  const rvec x[], const rvec v[], t_vcm *vcm)
+void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vcm)
 {
     int nthreads = gmx_omp_nthreads_get(emntDefault);
     if (vcm->mode != ecmNO)
@@ -164,8 +161,8 @@ void calc_vcm_grp(const t_mdatoms &md,
             for (int g = 0; g < vcm->size; g++)
             {
                 /* Reset linear momentum */
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
-                vcm_t->mass = 0;
+                t_vcm_thread* vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
+                vcm_t->mass         = 0;
                 clear_rvec(vcm_t->p);
                 if (vcm->mode == ecmANGULAR)
                 {
@@ -185,25 +182,25 @@ void calc_vcm_grp(const t_mdatoms &md,
                 {
                     g = md.cVCM[i];
                 }
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
+                t_vcm_thread* vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 /* Calculate linear momentum */
-                vcm_t->mass  += m0;
+                vcm_t->mass += m0;
                 int m;
                 for (m = 0; (m < DIM); m++)
                 {
-                    vcm_t->p[m] += m0*v[i][m];
+                    vcm_t->p[m] += m0 * v[i][m];
                 }
 
                 if (vcm->mode == ecmANGULAR)
                 {
                     /* Calculate angular momentum */
-                    rvec   j0;
+                    rvec j0;
                     cprod(x[i], v[i], j0);
 
                     for (m = 0; (m < DIM); m++)
                     {
-                        vcm_t->j[m] += m0*j0[m];
-                        vcm_t->x[m] += m0*x[i][m];
+                        vcm_t->j[m] += m0 * j0[m];
+                        vcm_t->x[m] += m0 * x[i][m];
                     }
                     /* Update inertia tensor */
                     update_tensor(x[i], m0, vcm_t->i);
@@ -226,7 +223,7 @@ void calc_vcm_grp(const t_mdatoms &md,
 
             for (int t = 0; t < nthreads; t++)
             {
-                t_vcm_thread *vcm_t = &vcm->thread_vcm[t*vcm->stride + g];
+                t_vcm_thread* vcm_t = &vcm->thread_vcm[t * vcm->stride + g];
                 vcm->group_mass[g] += vcm_t->mass;
                 rvec_inc(vcm->group_p[g], vcm_t->p);
                 if (vcm->mode == ecmANGULAR)
@@ -237,7 +234,6 @@ void calc_vcm_grp(const t_mdatoms &md,
                 }
             }
         }
-
     }
 }
 
@@ -251,13 +247,10 @@ void calc_vcm_grp(const t_mdatoms &md,
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void
-doStopComMotionLinear(const t_mdatoms      &mdatoms,
-                      rvec                 *v,
-                      const t_vcm          &vcm)
+static void doStopComMotionLinear(const t_mdatoms& mdatoms, rvec* v, const t_vcm& vcm)
 {
     const int             homenr   = mdatoms.homenr;
-    const unsigned short *group_id = mdatoms.cVCM;
+    const unsigned short* group_id = mdatoms.cVCM;
 
     if (mdatoms.cFREEZE != nullptr)
     {
@@ -314,14 +307,13 @@ doStopComMotionLinear(const t_mdatoms      &mdatoms,
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void
-doStopComMotionAccelerationCorrection(int                   homenr,
-                                      const unsigned short *group_id,
-                                      rvec * gmx_restrict   x,
-                                      rvec * gmx_restrict   v,
-                                      const t_vcm          &vcm)
+static void doStopComMotionAccelerationCorrection(int                   homenr,
+                                                  const unsigned short* group_id,
+                                                  rvec* gmx_restrict x,
+                                                  rvec* gmx_restrict v,
+                                                  const t_vcm&       vcm)
 {
-    const real xCorrectionFactor = 0.5*vcm.timeStep;
+    const real xCorrectionFactor = 0.5 * vcm.timeStep;
 
     if (group_id == nullptr)
     {
@@ -330,7 +322,7 @@ doStopComMotionAccelerationCorrection(int                   homenr,
         {
             for (int d = 0; d < numDimensions; d++)
             {
-                x[i][d] -= vcm.group_v[0][d]*xCorrectionFactor;
+                x[i][d] -= vcm.group_v[0][d] * xCorrectionFactor;
                 v[i][d] -= vcm.group_v[0][d];
             }
         }
@@ -343,45 +335,39 @@ doStopComMotionAccelerationCorrection(int                   homenr,
             const int g = group_id[i];
             for (int d = 0; d < numDimensions; d++)
             {
-                x[i][d] -= vcm.group_v[g][d]*xCorrectionFactor;
+                x[i][d] -= vcm.group_v[g][d] * xCorrectionFactor;
                 v[i][d] -= vcm.group_v[g][d];
             }
         }
     }
 }
 
-static void do_stopcm_grp(const t_mdatoms &mdatoms,
-                          rvec x[], rvec v[], const t_vcm &vcm)
+static void do_stopcm_grp(const t_mdatoms& mdatoms, rvec x[], rvec v[], const t_vcm& vcm)
 {
     if (vcm.mode != ecmNO)
     {
         const int             homenr   = mdatoms.homenr;
-        const unsigned short *group_id = mdatoms.cVCM;
+        const unsigned short* group_id = mdatoms.cVCM;
 
-        int gmx_unused        nth = gmx_omp_nthreads_get(emntDefault);
+        int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
 #pragma omp parallel num_threads(nth)
         {
-            if (vcm.mode == ecmLINEAR ||
-                vcm.mode == ecmANGULAR ||
-                (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x == nullptr))
+            if (vcm.mode == ecmLINEAR || vcm.mode == ecmANGULAR
+                || (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x == nullptr))
             {
                 /* Subtract linear momentum for v */
                 switch (vcm.ndim)
                 {
-                    case 1:
-                        doStopComMotionLinear<1>(mdatoms, v, vcm);
-                        break;
-                    case 2:
-                        doStopComMotionLinear<2>(mdatoms, v, vcm);
-                        break;
-                    case 3:
-                        doStopComMotionLinear<3>(mdatoms, v, vcm);
-                        break;
+                    case 1: doStopComMotionLinear<1>(mdatoms, v, vcm); break;
+                    case 2: doStopComMotionLinear<2>(mdatoms, v, vcm); break;
+                    case 3: doStopComMotionLinear<3>(mdatoms, v, vcm); break;
                 }
             }
             else
             {
-                GMX_ASSERT(vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION, "When the mode is not linear or angular, it should be acceleration correction");
+                GMX_ASSERT(vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION,
+                           "When the mode is not linear or angular, it should be acceleration "
+                           "correction");
                 /* Subtract linear momentum for v and x*/
                 switch (vcm.ndim)
                 {
@@ -395,7 +381,6 @@ static void do_stopcm_grp(const t_mdatoms &mdatoms,
                         doStopComMotionAccelerationCorrection<3>(homenr, group_id, x, v, vcm);
                         break;
                 }
-
             }
             if (vcm.mode == ecmANGULAR)
             {
@@ -427,23 +412,23 @@ static void get_minv(tensor A, tensor B)
     double fac, rfac;
     tensor tmp;
 
-    tmp[XX][XX] =  A[YY][YY] + A[ZZ][ZZ];
+    tmp[XX][XX] = A[YY][YY] + A[ZZ][ZZ];
     tmp[YY][XX] = -A[XX][YY];
     tmp[ZZ][XX] = -A[XX][ZZ];
     tmp[XX][YY] = -A[XX][YY];
-    tmp[YY][YY] =  A[XX][XX] + A[ZZ][ZZ];
+    tmp[YY][YY] = A[XX][XX] + A[ZZ][ZZ];
     tmp[ZZ][YY] = -A[YY][ZZ];
     tmp[XX][ZZ] = -A[XX][ZZ];
     tmp[YY][ZZ] = -A[YY][ZZ];
-    tmp[ZZ][ZZ] =  A[XX][XX] + A[YY][YY];
+    tmp[ZZ][ZZ] = A[XX][XX] + A[YY][YY];
 
     /* This is a hack to prevent very large determinants */
-    rfac  = (tmp[XX][XX]+tmp[YY][YY]+tmp[ZZ][ZZ])/3;
+    rfac = (tmp[XX][XX] + tmp[YY][YY] + tmp[ZZ][ZZ]) / 3;
     if (rfac == 0.0)
     {
         gmx_fatal(FARGS, "Can not stop center of mass: maybe 2dimensional system");
     }
-    fac = 1.0/rfac;
+    fac = 1.0 / rfac;
     for (m = 0; (m < DIM); m++)
     {
         for (n = 0; (n < DIM); n++)
@@ -462,7 +447,7 @@ static void get_minv(tensor A, tensor B)
 }
 
 /* Processes VCM after reduction over ranks and prints warning with high VMC and fp != nullptr */
-static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
+static void process_and_check_cm_grp(FILE* fp, t_vcm* vcm, real Temp_Max)
 {
     int    m, g;
     real   ekcm, ekrot, tm, tm_1, Temp_cm;
@@ -477,7 +462,7 @@ static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
             tm = vcm->group_mass[g];
             if (tm != 0)
             {
-                tm_1 = 1.0/tm;
+                tm_1 = 1.0 / tm;
                 svmul(tm_1, vcm->group_p[g], vcm->group_v[g]);
             }
             /* Else it's zero anyway! */
@@ -489,7 +474,7 @@ static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
                 tm = vcm->group_mass[g];
                 if (tm != 0)
                 {
-                    tm_1 = 1.0/tm;
+                    tm_1 = 1.0 / tm;
 
                     /* Compute center of mass for this group */
                     for (m = 0; (m < DIM); m++)
@@ -503,7 +488,7 @@ static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
                     cprod(vcm->group_x[g], vcm->group_v[g], jcm);
                     for (m = 0; (m < DIM); m++)
                     {
-                        vcm->group_j[g][m] -= tm*jcm[m];
+                        vcm->group_j[g][m] -= tm * jcm[m];
                     }
 
                     /* Subtract the center of mass contribution from the inertia
@@ -528,43 +513,43 @@ static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
     }
     for (g = 0; (g < vcm->nr); g++)
     {
-        ekcm    = 0;
+        ekcm = 0;
         if (vcm->group_mass[g] != 0 && vcm->group_ndf[g] > 0)
         {
             for (m = 0; m < vcm->ndim; m++)
             {
                 ekcm += gmx::square(vcm->group_v[g][m]);
             }
-            ekcm   *= 0.5*vcm->group_mass[g];
-            Temp_cm = 2*ekcm/vcm->group_ndf[g];
+            ekcm *= 0.5 * vcm->group_mass[g];
+            Temp_cm = 2 * ekcm / vcm->group_ndf[g];
 
             if ((Temp_cm > Temp_Max) && fp)
             {
                 fprintf(fp, "Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
-                        vcm->group_name[g], vcm->group_v[g][XX],
-                        vcm->group_v[g][YY], vcm->group_v[g][ZZ], Temp_cm);
+                        vcm->group_name[g], vcm->group_v[g][XX], vcm->group_v[g][YY],
+                        vcm->group_v[g][ZZ], Temp_cm);
             }
 
             if (vcm->mode == ecmANGULAR)
             {
-                ekrot = 0.5*iprod(vcm->group_j[g], vcm->group_w[g]);
+                ekrot = 0.5 * iprod(vcm->group_j[g], vcm->group_w[g]);
                 // TODO: Change absolute energy comparison to relative
                 if ((ekrot > 1) && fp && vcm->integratorConservesMomentum)
                 {
                     /* if we have an integrator that may not conserve momenta, skip */
-                    tm    = vcm->group_mass[g];
+                    tm = vcm->group_mass[g];
                     fprintf(fp, "Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
                             vcm->group_name[g], tm, ekrot, det(vcm->group_i[g]));
-                    fprintf(fp, "  COM: %12.5f  %12.5f  %12.5f\n",
-                            vcm->group_x[g][XX], vcm->group_x[g][YY], vcm->group_x[g][ZZ]);
-                    fprintf(fp, "  P:   %12.5f  %12.5f  %12.5f\n",
-                            vcm->group_p[g][XX], vcm->group_p[g][YY], vcm->group_p[g][ZZ]);
-                    fprintf(fp, "  V:   %12.5f  %12.5f  %12.5f\n",
-                            vcm->group_v[g][XX], vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
-                    fprintf(fp, "  J:   %12.5f  %12.5f  %12.5f\n",
-                            vcm->group_j[g][XX], vcm->group_j[g][YY], vcm->group_j[g][ZZ]);
-                    fprintf(fp, "  w:   %12.5f  %12.5f  %12.5f\n",
-                            vcm->group_w[g][XX], vcm->group_w[g][YY], vcm->group_w[g][ZZ]);
+                    fprintf(fp, "  COM: %12.5f  %12.5f  %12.5f\n", vcm->group_x[g][XX],
+                            vcm->group_x[g][YY], vcm->group_x[g][ZZ]);
+                    fprintf(fp, "  P:   %12.5f  %12.5f  %12.5f\n", vcm->group_p[g][XX],
+                            vcm->group_p[g][YY], vcm->group_p[g][ZZ]);
+                    fprintf(fp, "  V:   %12.5f  %12.5f  %12.5f\n", vcm->group_v[g][XX],
+                            vcm->group_v[g][YY], vcm->group_v[g][ZZ]);
+                    fprintf(fp, "  J:   %12.5f  %12.5f  %12.5f\n", vcm->group_j[g][XX],
+                            vcm->group_j[g][YY], vcm->group_j[g][ZZ]);
+                    fprintf(fp, "  w:   %12.5f  %12.5f  %12.5f\n", vcm->group_w[g][XX],
+                            vcm->group_w[g][YY], vcm->group_w[g][ZZ]);
                     pr_rvecs(fp, 0, "Inertia tensor", vcm->group_i[g], DIM);
                 }
             }
@@ -572,10 +557,7 @@ static void process_and_check_cm_grp(FILE *fp, t_vcm *vcm, real Temp_Max)
     }
 }
 
-void process_and_stopcm_grp(FILE *fplog,
-                            t_vcm *vcm,
-                            const t_mdatoms &mdatoms,
-                            rvec x[], rvec v[])
+void process_and_stopcm_grp(FILE* fplog, t_vcm* vcm, const t_mdatoms& mdatoms, rvec x[], rvec v[])
 {
     if (vcm->mode != ecmNO)
     {

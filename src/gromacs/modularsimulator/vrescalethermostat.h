@@ -60,86 +60,80 @@ namespace gmx
  * This element takes a callback to the propagator and updates the velocity
  * scaling factor according to the v-rescale thermostat.
  */
-class VRescaleThermostat final :
-    public               ISimulatorElement,
-    public               ICheckpointHelperClient
+class VRescaleThermostat final : public ISimulatorElement, public ICheckpointHelperClient
 {
-    public:
-        //! Constructor
-        VRescaleThermostat(
-            int nstcouple,
-            int offset,
-            bool useFullStepKE,
-            int64_t seed,
-            int numTemperatureGroups,
-            double couplingTimeStep,
-            const real *referenceTemperature,
-            const real *couplingTime,
-            const real *numDegreesOfFreedom,
-            EnergyElement *energyElement,
-            ArrayRef<real> lambdaView,
-            PropagatorCallbackPtr propagatorCallback,
-            const t_state *globalState,
-            t_commrec *cr,
-            bool isRestart);
+public:
+    //! Constructor
+    VRescaleThermostat(int                   nstcouple,
+                       int                   offset,
+                       bool                  useFullStepKE,
+                       int64_t               seed,
+                       int                   numTemperatureGroups,
+                       double                couplingTimeStep,
+                       const real*           referenceTemperature,
+                       const real*           couplingTime,
+                       const real*           numDegreesOfFreedom,
+                       EnergyElement*        energyElement,
+                       ArrayRef<real>        lambdaView,
+                       PropagatorCallbackPtr propagatorCallback,
+                       const t_state*        globalState,
+                       t_commrec*            cr,
+                       bool                  isRestart);
 
-        /*! \brief Register run function for step / time
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! No element setup needed
-        void elementSetup() override {}
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! No element setup needed
+    void elementSetup() override {}
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-        //! Getter for the thermostatIntegral
-        const std::vector<double> &thermostatIntegral() const;
+    //! Getter for the thermostatIntegral
+    const std::vector<double>& thermostatIntegral() const;
 
-    private:
-        //! The frequency at which the thermostat is applied
-        const int     nstcouple_;
-        //! If != 0, offset the step at which the thermostat is applied
-        const int     offset_;
-        //! Whether we're using full step kinetic energy
-        const bool    useFullStepKE_;
-        //! The random seed
-        const int64_t seed_;
+private:
+    //! The frequency at which the thermostat is applied
+    const int nstcouple_;
+    //! If != 0, offset the step at which the thermostat is applied
+    const int offset_;
+    //! Whether we're using full step kinetic energy
+    const bool useFullStepKE_;
+    //! The random seed
+    const int64_t seed_;
 
-        //! The number of temperature groups
-        const int               numTemperatureGroups_;
-        //! The coupling time step - simulation time step x nstcouple_
-        const double            couplingTimeStep_;
-        //! Coupling temperature per group
-        const std::vector<real> referenceTemperature_;
-        //! Coupling time per group
-        const std::vector<real> couplingTime_;
-        //! Number of degrees of freedom per group
-        const std::vector<real> numDegreesOfFreedom_;
-        //! Work exerted by thermostat
-        std::vector<double>     thermostatIntegral_;
+    //! The number of temperature groups
+    const int numTemperatureGroups_;
+    //! The coupling time step - simulation time step x nstcouple_
+    const double couplingTimeStep_;
+    //! Coupling temperature per group
+    const std::vector<real> referenceTemperature_;
+    //! Coupling time per group
+    const std::vector<real> couplingTime_;
+    //! Number of degrees of freedom per group
+    const std::vector<real> numDegreesOfFreedom_;
+    //! Work exerted by thermostat
+    std::vector<double> thermostatIntegral_;
 
-        //! Pointer to the energy element (for ekindata)
-        EnergyElement *energyElement_;
+    //! Pointer to the energy element (for ekindata)
+    EnergyElement* energyElement_;
 
-        //! View on the scaling factor of the propagator
-        ArrayRef<real>        lambda_;
-        //! Callback to let propagator know that we updated lambda
-        PropagatorCallbackPtr propagatorCallback_;
+    //! View on the scaling factor of the propagator
+    ArrayRef<real> lambda_;
+    //! Callback to let propagator know that we updated lambda
+    PropagatorCallbackPtr propagatorCallback_;
 
-        //! Set new lambda value (at T-coupling steps)
-        void setLambda(Step step);
+    //! Set new lambda value (at T-coupling steps)
+    void setLambda(Step step);
 
-        //! ICheckpointHelperClient implementation
-        void writeCheckpoint(t_state *localState, t_state *globalState) override;
-
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_VRESCALETHERMOSTAT_H

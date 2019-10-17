@@ -56,30 +56,28 @@ namespace gmx
 
 class DensityFittingAmplitudeLookupImpl
 {
-    public:
-        DensityFittingAmplitudeLookupImpl() = default;
-        DensityFittingAmplitudeLookupImpl(const DensityFittingAmplitudeLookupImpl &) = default;
-        virtual ~DensityFittingAmplitudeLookupImpl() = default;
+public:
+    DensityFittingAmplitudeLookupImpl()                                         = default;
+    DensityFittingAmplitudeLookupImpl(const DensityFittingAmplitudeLookupImpl&) = default;
+    virtual ~DensityFittingAmplitudeLookupImpl()                                = default;
 
-        virtual const std::vector<real> &operator()(const t_mdatoms    &atoms,
-                                                    ArrayRef<const int> localIndex) = 0;
-        virtual std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() = 0;
+    virtual const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) = 0;
+    virtual std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() = 0;
 };
 
 namespace
 {
 class UnitAmplitudes final : public DensityFittingAmplitudeLookupImpl
 {
-    public:
-        UnitAmplitudes() = default;
-        UnitAmplitudes(const UnitAmplitudes &) = default;
-        ~UnitAmplitudes() override             = default;
-        std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-        const std::vector<real> &operator()(const t_mdatoms    &atoms,
-                                            ArrayRef<const int> localIndex) override;
+public:
+    UnitAmplitudes()                      = default;
+    UnitAmplitudes(const UnitAmplitudes&) = default;
+    ~UnitAmplitudes() override            = default;
+    std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
+    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
 
-    private:
-        std::vector<real> amplitude_;
+private:
+    std::vector<real> amplitude_;
 };
 
 std::unique_ptr<DensityFittingAmplitudeLookupImpl> UnitAmplitudes::clone()
@@ -87,8 +85,7 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> UnitAmplitudes::clone()
     return std::make_unique<UnitAmplitudes>(*this);
 };
 
-const std::vector<real> &UnitAmplitudes::operator()(const t_mdatoms     & /*atoms*/,
-                                                    ArrayRef<const int> localIndex)
+const std::vector<real>& UnitAmplitudes::operator()(const t_mdatoms& /*atoms*/, ArrayRef<const int> localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -100,16 +97,15 @@ const std::vector<real> &UnitAmplitudes::operator()(const t_mdatoms     & /*atom
 
 class ChargesAsAmplitudes final : public DensityFittingAmplitudeLookupImpl
 {
-    public:
-        ChargesAsAmplitudes() = default;
-        ChargesAsAmplitudes(const ChargesAsAmplitudes &) = default;
-        ~ChargesAsAmplitudes() override                  = default;
-        std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-        const std::vector<real> &operator()(const t_mdatoms    &atoms,
-                                            ArrayRef<const int> localIndex) override;
+public:
+    ChargesAsAmplitudes()                           = default;
+    ChargesAsAmplitudes(const ChargesAsAmplitudes&) = default;
+    ~ChargesAsAmplitudes() override                 = default;
+    std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
+    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
 
-    private:
-        std::vector<real> amplitude_;
+private:
+    std::vector<real> amplitude_;
 };
 
 std::unique_ptr<DensityFittingAmplitudeLookupImpl> ChargesAsAmplitudes::clone()
@@ -117,8 +113,7 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> ChargesAsAmplitudes::clone()
     return std::make_unique<ChargesAsAmplitudes>(*this);
 };
 
-const std::vector<real> &ChargesAsAmplitudes::operator()(const t_mdatoms    &atoms,
-                                                         ArrayRef<const int> localIndex)
+const std::vector<real>& ChargesAsAmplitudes::operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -126,23 +121,21 @@ const std::vector<real> &ChargesAsAmplitudes::operator()(const t_mdatoms    &ato
     }
 
     std::transform(std::begin(localIndex), std::end(localIndex), std::begin(amplitude_),
-                   [&atoms](gmx::index index){return atoms.chargeA[index]; }
-                   );
+                   [&atoms](gmx::index index) { return atoms.chargeA[index]; });
     return amplitude_;
 }
 
 class MassesAsAmplitudes final : public DensityFittingAmplitudeLookupImpl
 {
-    public:
-        MassesAsAmplitudes() = default;
-        MassesAsAmplitudes(const MassesAsAmplitudes &) = default;
-        ~MassesAsAmplitudes() override                 = default;
-        std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
-        const std::vector<real> &operator()(const t_mdatoms    &atoms,
-                                            ArrayRef<const int> localIndex) override;
+public:
+    MassesAsAmplitudes()                          = default;
+    MassesAsAmplitudes(const MassesAsAmplitudes&) = default;
+    ~MassesAsAmplitudes() override                = default;
+    std::unique_ptr<DensityFittingAmplitudeLookupImpl> clone() override;
+    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex) override;
 
-    private:
-        std::vector<real> amplitude_;
+private:
+    std::vector<real> amplitude_;
 };
 
 std::unique_ptr<DensityFittingAmplitudeLookupImpl> MassesAsAmplitudes::clone()
@@ -150,8 +143,7 @@ std::unique_ptr<DensityFittingAmplitudeLookupImpl> MassesAsAmplitudes::clone()
     return std::make_unique<MassesAsAmplitudes>(*this);
 };
 
-const std::vector<real> &MassesAsAmplitudes::operator()(const t_mdatoms    &atoms,
-                                                        ArrayRef<const int> localIndex)
+const std::vector<real>& MassesAsAmplitudes::operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex)
 {
     if (amplitude_.size() != localIndex.size())
     {
@@ -163,14 +155,14 @@ const std::vector<real> &MassesAsAmplitudes::operator()(const t_mdatoms    &atom
     return amplitude_;
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * DensityFittingAmplitudeLookup
  */
 
 
-DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittingAmplitudeMethod &method)
+DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittingAmplitudeMethod& method)
 {
     switch (method)
     {
@@ -183,12 +175,11 @@ DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittin
         case DensityFittingAmplitudeMethod::Charge:
             impl_ = std::make_unique<ChargesAsAmplitudes>();
             break;
-        default:
-            break;
+        default: break;
     }
 }
 
-const std::vector<real> &DensityFittingAmplitudeLookup::operator()(const t_mdatoms    &atoms,
+const std::vector<real>& DensityFittingAmplitudeLookup::operator()(const t_mdatoms&    atoms,
                                                                    ArrayRef<const int> localIndex)
 {
     return (*impl_)(atoms, localIndex);
@@ -196,19 +187,20 @@ const std::vector<real> &DensityFittingAmplitudeLookup::operator()(const t_mdato
 
 DensityFittingAmplitudeLookup::~DensityFittingAmplitudeLookup() = default;
 
-DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittingAmplitudeLookup &other)
-    : impl_(other.impl_->clone())
+DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(const DensityFittingAmplitudeLookup& other) :
+    impl_(other.impl_->clone())
 {
 }
 
-DensityFittingAmplitudeLookup &DensityFittingAmplitudeLookup::operator=(const DensityFittingAmplitudeLookup &other)
+DensityFittingAmplitudeLookup& DensityFittingAmplitudeLookup::operator=(const DensityFittingAmplitudeLookup& other)
 {
     impl_ = other.impl_->clone();
     return *this;
 }
 
-DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(DensityFittingAmplitudeLookup &&) noexcept = default;
+DensityFittingAmplitudeLookup::DensityFittingAmplitudeLookup(DensityFittingAmplitudeLookup&&) noexcept = default;
 
-DensityFittingAmplitudeLookup &DensityFittingAmplitudeLookup::operator=(DensityFittingAmplitudeLookup &&) noexcept = default;
+DensityFittingAmplitudeLookup& DensityFittingAmplitudeLookup::
+                               operator=(DensityFittingAmplitudeLookup&&) noexcept = default;
 
 } // namespace gmx

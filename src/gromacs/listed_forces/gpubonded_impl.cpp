@@ -56,7 +56,7 @@ namespace gmx
 {
 
 //! Returns whether there are any interactions in ilists suitable for a GPU.
-static bool someInteractionsCanRunOnGpu(const InteractionLists &ilists)
+static bool someInteractionsCanRunOnGpu(const InteractionLists& ilists)
 {
     for (int fType : fTypesOnGpu)
     {
@@ -76,10 +76,10 @@ static bool someInteractionsCanRunOnGpu(const InteractionLists &ilists)
 }
 
 //! Returns whether there are any bonded interactions in the global topology suitable for a GPU.
-static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t &mtop)
+static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t& mtop)
 {
     // Check the regular molecule types
-    for (const auto &moltype : mtop.moltype)
+    for (const auto& moltype : mtop.moltype)
     {
         if (someInteractionsCanRunOnGpu(moltype.ilist))
         {
@@ -101,20 +101,18 @@ static bool bondedInteractionsCanRunOnGpu(const gmx_mtop_t &mtop)
  * \c errorReasons why bondeds on a GPU are not supported.
  *
  * \returns Whether the lack of errorReasons indicate there is support. */
-static bool
-addMessageIfNotSupported(ArrayRef <const std::string> errorReasons,
-                         std::string                 *error)
+static bool addMessageIfNotSupported(ArrayRef<const std::string> errorReasons, std::string* error)
 {
     bool isSupported = errorReasons.empty();
     if (!isSupported && error)
     {
-        *error  = "Bonded interactions cannot run on GPUs: ";
+        *error = "Bonded interactions cannot run on GPUs: ";
         *error += joinStrings(errorReasons, "; ") + ".";
     }
     return isSupported;
 }
 
-bool buildSupportsGpuBondeds(std::string *error)
+bool buildSupportsGpuBondeds(std::string* error)
 {
     std::vector<std::string> errorReasons;
 
@@ -133,9 +131,7 @@ bool buildSupportsGpuBondeds(std::string *error)
     return addMessageIfNotSupported(errorReasons, error);
 }
 
-bool inputSupportsGpuBondeds(const t_inputrec &ir,
-                             const gmx_mtop_t &mtop,
-                             std::string      *error)
+bool inputSupportsGpuBondeds(const t_inputrec& ir, const gmx_mtop_t& mtop, std::string* error)
 {
     std::vector<std::string> errorReasons;
 
@@ -164,52 +160,38 @@ class GpuBonded::Impl
 {
 };
 
-GpuBonded::GpuBonded(const gmx_ffparams_t & /* ffparams */,
-                     void                 * /*streamPtr */,
-                     gmx_wallcycle        * /* wcycle */)
-    : impl_(nullptr)
+GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */, void* /*streamPtr */, gmx_wallcycle* /* wcycle */) :
+    impl_(nullptr)
 {
 }
 
 GpuBonded::~GpuBonded() = default;
 
-void
-GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>   /* nbnxnAtomOrder */,
-                                                  const t_idef        & /* idef */,
-                                                  void                * /* xqDevice */,
-                                                  void                * /* forceDevice */,
-                                                  void                * /* fshiftDevice */)
+void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> /* nbnxnAtomOrder */,
+                                                       const t_idef& /* idef */,
+                                                       void* /* xqDevice */,
+                                                       void* /* forceDevice */,
+                                                       void* /* fshiftDevice */)
 {
 }
 
-bool
-GpuBonded::haveInteractions() const
+bool GpuBonded::haveInteractions() const
 {
     return false;
 }
 
-void
-GpuBonded::launchKernel(const t_forcerec           * /* fr */,
-                        const gmx::StepWorkload    & /* stepWork */,
-                        const matrix   /* box */)
+void GpuBonded::launchKernel(const t_forcerec* /* fr */,
+                             const gmx::StepWorkload& /* stepWork */,
+                             const matrix /* box */)
 {
 }
 
-void
-GpuBonded::launchEnergyTransfer()
-{
-}
+void GpuBonded::launchEnergyTransfer() {}
 
-void
-GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t * /* enerd */)
-{
-}
+void GpuBonded::waitAccumulateEnergyTerms(gmx_enerdata_t* /* enerd */) {}
 
-void
-GpuBonded::clearEnergies()
-{
-}
+void GpuBonded::clearEnergies() {}
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */
 
-}      // namespace gmx
+} // namespace gmx

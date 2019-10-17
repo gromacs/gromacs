@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,15 +59,12 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the angle analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::AngleInfo>
-    AngleModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::AngleInfo> AngleModuleTest;
 
 TEST_F(AngleModuleTest, ComputesSimpleAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3",
-        "-binw", "60"
+    const char* const cmdline[] = {
+        "angle", "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3", "-binw", "60"
     };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
@@ -75,9 +72,8 @@ TEST_F(AngleModuleTest, ComputesSimpleAngles)
 
 TEST_F(AngleModuleTest, ComputesDihedrals)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "dihedral", "-group1", "resname RD1 RD2 RD3 and name A1 A2 A3 A4",
+    const char* const cmdline[] = {
+        "angle", "-g1", "dihedral", "-group1", "resname RD1 RD2 RD3 and name A1 A2 A3 A4",
         "-binw", "120"
     };
     setTopology("angle.gro");
@@ -86,35 +82,43 @@ TEST_F(AngleModuleTest, ComputesDihedrals)
 
 TEST_F(AngleModuleTest, ComputesVectorPairAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
-        "-g2", "vector", "-group2", "resname RV3 RV4 and name A1 A2",
-        "-binw", "60"
-    };
+    const char* const cmdline[] = { "angle",
+                                    "-g1",
+                                    "vector",
+                                    "-group1",
+                                    "resname RV1 RV2 and name A1 A2",
+                                    "-g2",
+                                    "vector",
+                                    "-group2",
+                                    "resname RV3 RV4 and name A1 A2",
+                                    "-binw",
+                                    "60" };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesVectorPlanePairAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
-        "-g2", "plane",  "-group2", "resname RP1 RP2 and name A1 A2 A3",
-        "-binw", "60"
-    };
+    const char* const cmdline[] = { "angle",
+                                    "-g1",
+                                    "vector",
+                                    "-group1",
+                                    "resname RV1 RV2 and name A1 A2",
+                                    "-g2",
+                                    "plane",
+                                    "-group2",
+                                    "resname RP1 RP2 and name A1 A2 A3",
+                                    "-binw",
+                                    "60" };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "plane", "-group1", "resname RP1 RP2 and name A1 A2 A3",
-        "-g2", "z",
-        "-binw", "60"
+    const char* const cmdline[] = {
+        "angle", "-g1", "plane", "-group1", "resname RP1 RP2 and name A1 A2 A3",
+        "-g2",   "z",   "-binw", "60"
     };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
@@ -122,11 +126,10 @@ TEST_F(AngleModuleTest, ComputesPlaneZAxisAngles)
 
 TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector",  "-group1", "resname RV1 RV2 and name A1 A2",
-        "-g2", "sphnorm", "-group2", "cog of resname RS",
-        "-binw", "60"
+    const char* const cmdline[] = {
+        "angle", "-g1",     "vector",  "-group1",           "resname RV1 RV2 and name A1 A2",
+        "-g2",   "sphnorm", "-group2", "cog of resname RS", "-binw",
+        "60"
     };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
@@ -134,11 +137,9 @@ TEST_F(AngleModuleTest, ComputesVectorSphereNormalZAxisAngles)
 
 TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector", "-group1", "resname RV1 RV2 RV3 RV4 and name A1 A2",
-        "-g2", "t0",
-        "-binw", "60"
+    const char* const cmdline[] = {
+        "angle", "-g1", "vector", "-group1", "resname RV1 RV2 RV3 RV4 and name A1 A2",
+        "-g2",   "t0",  "-binw",  "60"
     };
     setTopology("angle.gro");
     setTrajectory("angle.gro");
@@ -147,27 +148,27 @@ TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
 
 TEST_F(AngleModuleTest, ComputesMultipleAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector",
-        "-group1",
-        "resname RV1 RV2 and name A1 A2",
-        "resname RV3 RV4 and name A1 A2",
-        "-g2", "plane",
-        "-group2",
-        "resname RP1 RP2 and name A1 A2 A3",
-        "resname RP1 RP2 and name A1 A2 A3",
-        "-binw", "60"
-    };
+    const char* const cmdline[] = { "angle",
+                                    "-g1",
+                                    "vector",
+                                    "-group1",
+                                    "resname RV1 RV2 and name A1 A2",
+                                    "resname RV3 RV4 and name A1 A2",
+                                    "-g2",
+                                    "plane",
+                                    "-group2",
+                                    "resname RP1 RP2 and name A1 A2 A3",
+                                    "resname RP1 RP2 and name A1 A2 A3",
+                                    "-binw",
+                                    "60" };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, HandlesDynamicSelections)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3 and z < 0.5",
+    const char* const cmdline[] = {
+        "angle", "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3 and z < 0.5",
         "-binw", "60"
     };
     setTopology("angle.gro");
@@ -176,29 +177,35 @@ TEST_F(AngleModuleTest, HandlesDynamicSelections)
 
 TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector", "-group1", "resname RV1 RV2 and name A1 A2",
-        "-g2", "vector", "-group2", "resname RV3 and name A1 A2",
-        "-binw", "60"
-    };
+    const char* const cmdline[] = { "angle",
+                                    "-g1",
+                                    "vector",
+                                    "-group1",
+                                    "resname RV1 RV2 and name A1 A2",
+                                    "-g2",
+                                    "vector",
+                                    "-group2",
+                                    "resname RV3 and name A1 A2",
+                                    "-binw",
+                                    "60" };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(AngleModuleTest, HandlesOneVsMultipleVectorGroupsAngles)
 {
-    const char *const cmdline[] = {
-        "angle",
-        "-g1", "vector",
-        "-group1",
-        "resname RV2 and name A1 A2",
-        "resname RV3 RV4 and name A1 A2",
-        "-g2", "plane",
-        "-group2",
-        "resname RP1 RP2 and name A1 A2 A3",
-        "-binw", "60"
-    };
+    const char* const cmdline[] = { "angle",
+                                    "-g1",
+                                    "vector",
+                                    "-group1",
+                                    "resname RV2 and name A1 A2",
+                                    "resname RV3 RV4 and name A1 A2",
+                                    "-g2",
+                                    "plane",
+                                    "-group2",
+                                    "resname RP1 RP2 and name A1 A2 A3",
+                                    "-binw",
+                                    "60" };
     setTopology("angle.gro");
     runTest(CommandLine(cmdline));
 }

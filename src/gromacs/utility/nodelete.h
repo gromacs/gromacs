@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,11 +59,11 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_utility
  */
-template <class T>
+template<class T>
 struct no_delete
 {
     //! Deleter that does nothing.
-    void operator()(T * /*unused*/) {}
+    void operator()(T* /*unused*/) {}
 };
 
 } // namespace gmx

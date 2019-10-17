@@ -53,16 +53,15 @@ struct t_commrec;
 struct t_filenm;
 
 //! Free memory associated with the commrec.
-void done_commrec(t_commrec *cr);
+void done_commrec(t_commrec* cr);
 
 //! Convenience alias.
 using CommrecHandle = gmx::unique_cptr<t_commrec, done_commrec>;
 
 //! Allocate, initialize and return the commrec.
-CommrecHandle init_commrec(MPI_Comm              communicator,
-                           const gmx_multisim_t *ms);
+CommrecHandle init_commrec(MPI_Comm communicator, const gmx_multisim_t* ms);
 
-struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
+struct t_commrec* reinitialize_commrec_for_this_thread(const t_commrec* cro);
 
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
@@ -70,48 +69,50 @@ struct t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
    thread-local versions (a small memory leak results because we don't
    deallocate the old shared version).  */
 
-void gmx_fill_commrec_from_mpi(t_commrec            *cr);
+void gmx_fill_commrec_from_mpi(t_commrec* cr);
 /* Continues t_commrec construction */
 
-void gmx_setup_nodecomm(FILE *fplog, struct t_commrec *cr);
+void gmx_setup_nodecomm(FILE* fplog, struct t_commrec* cr);
 /* Sets up fast global communication for clusters with multi-core nodes */
 
-void gmx_barrier(const struct t_commrec *cr);
+void gmx_barrier(const struct t_commrec* cr);
 /* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
-void gmx_bcast(int nbytes, void *b, const struct t_commrec *cr);
+void gmx_bcast(int nbytes, void* b, const struct t_commrec* cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
 
-void gmx_bcast_sim(int nbytes, void *b, const struct t_commrec *cr);
+void gmx_bcast_sim(int nbytes, void* b, const struct t_commrec* cr);
 /* Broadcast nbytes bytes from the sim master to cr->mpi_comm_mysim */
 
-void gmx_sumi(int nr, int r[], const struct t_commrec *cr);
+void gmx_sumi(int nr, int r[], const struct t_commrec* cr);
 /* Calculate the global sum of an array of ints */
 
-void gmx_sumli(int nr, int64_t r[], const struct t_commrec *cr);
+void gmx_sumli(int nr, int64_t r[], const struct t_commrec* cr);
 /* Calculate the global sum of an array of large ints */
 
-void gmx_sumf(int nr, float r[], const struct t_commrec *cr);
+void gmx_sumf(int nr, float r[], const struct t_commrec* cr);
 /* Calculate the global sum of an array of floats */
 
-void gmx_sumd(int nr, double r[], const struct t_commrec *cr);
+void gmx_sumd(int nr, double r[], const struct t_commrec* cr);
 /* Calculate the global sum of an array of doubles */
 
 #if GMX_DOUBLE
-#define gmx_sum       gmx_sumd
+#    define gmx_sum gmx_sumd
 #else
-#define gmx_sum       gmx_sumf
+#    define gmx_sum gmx_sumf
 #endif
 
-const char *opt2fn_master(const char *opt, int nfile,
-                          const t_filenm fnm[], t_commrec *cr);
+const char* opt2fn_master(const char* opt, int nfile, const t_filenm fnm[], t_commrec* cr);
 /* Return the filename belonging to cmd-line option opt, or NULL when
  * no such option or not running on master */
 
-[[ noreturn ]] void
-gmx_fatal_collective(int f_errno, const char *file, int line,
-                     MPI_Comm comm, gmx_bool bMaster,
-                     gmx_fmtstr const char *fmt, ...) gmx_format(printf, 6, 7);
+[[noreturn]] void gmx_fatal_collective(int                    f_errno,
+                                       const char*            file,
+                                       int                    line,
+                                       MPI_Comm               comm,
+                                       gmx_bool               bMaster,
+                                       gmx_fmtstr const char* fmt,
+                                       ...) gmx_format(printf, 6, 7);
 /* As gmx_fatal declared in utility/fatalerror.h,
  * but only the master process prints the error message.
  * This should only be called one of the following two situations:
@@ -123,6 +124,6 @@ gmx_fatal_collective(int f_errno, const char *file, int line,
  */
 
 //! Make a barrier across all ranks of this simulation
-void simulationBarrier(const t_commrec *cr);
+void simulationBarrier(const t_commrec* cr);
 
 #endif

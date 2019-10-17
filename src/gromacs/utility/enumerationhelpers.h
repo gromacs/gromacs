@@ -103,68 +103,82 @@ namespace gmx
  * \tparam  Last       Last constant or number thereof (assumes a default 'Count' member).
  * \tparam  Step       Step increment.
  */
-template
-<
-    typename EnumType,
-    EnumType Last     = EnumType::Count,
-    unsigned int Step = 1
->
+template<typename EnumType, EnumType Last = EnumType::Count, unsigned int Step = 1>
 class EnumerationIterator final
 {
-    public:
-        //! Convenience alias
-        using IntegerType = std::underlying_type_t<EnumType>;
+public:
+    //! Convenience alias
+    using IntegerType = std::underlying_type_t<EnumType>;
 
-        /*! \name Iterator type traits
-         * Satisfies the requirements for STL forward iterator.
-         * \{
-         */
-        using iterator_category = std::forward_iterator_tag;
-        using value_type        = EnumType;
-        using difference_type   = std::ptrdiff_t;
-        using pointer           = EnumType*;
-        using reference         = EnumType&;
-        //! \}
+    /*! \name Iterator type traits
+     * Satisfies the requirements for STL forward iterator.
+     * \{
+     */
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = EnumType;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = EnumType*;
+    using reference         = EnumType&;
+    //! \}
 
-        constexpr EnumerationIterator() noexcept :
-        m_current { 0 } // Assumes 0 is the first constant
-        { }
-        //! Copy constructor
-        constexpr EnumerationIterator(const EnumType index) noexcept
-        : m_current(static_cast<IntegerType>(index))
-        { }
-        //! Pre-increment operator
-        EnumerationIterator operator++()
-        {
-            m_current += Step;
-            return *this;
-        }
-        //! Post-increment operator
-        EnumerationIterator operator++(int)
-        {
-            EnumerationIterator old_val { *this };
-            m_current += Step;
-            return old_val;
-        }
-        //! Dereference operator
-        EnumType operator*() const
-        {
-            GMX_ASSERT(m_current < static_cast<IntegerType>(Last), "dereferencing out of range");
-            return static_cast<EnumType>(m_current);
-        }
+    constexpr EnumerationIterator() noexcept : m_current{ 0 } // Assumes 0 is the first constant
+    {
+    }
+    //! Copy constructor
+    constexpr EnumerationIterator(const EnumType index) noexcept :
+        m_current(static_cast<IntegerType>(index))
+    {
+    }
+    //! Pre-increment operator
+    EnumerationIterator operator++()
+    {
+        m_current += Step;
+        return *this;
+    }
+    //! Post-increment operator
+    EnumerationIterator operator++(int)
+    {
+        EnumerationIterator old_val{ *this };
+        m_current += Step;
+        return old_val;
+    }
+    //! Dereference operator
+    EnumType operator*() const
+    {
+        GMX_ASSERT(m_current < static_cast<IntegerType>(Last), "dereferencing out of range");
+        return static_cast<EnumType>(m_current);
+    }
 
-        /*!@{*/
-        //! Comparision operators
-        bool operator== (const EnumerationIterator other) const noexcept { return m_current == other.m_current; }
-        bool operator!= (const EnumerationIterator other) const noexcept { return m_current != other.m_current; }
-        bool operator<  (const EnumerationIterator other) const noexcept { return m_current <  other.m_current; }
-        bool operator>  (const EnumerationIterator other) const noexcept { return m_current >  other.m_current; }
-        bool operator<= (const EnumerationIterator other) const noexcept { return m_current <= other.m_current; }
-        bool operator>= (const EnumerationIterator other) const noexcept { return m_current >= other.m_current; }
-        /*!@}*/
+    /*!@{*/
+    //! Comparision operators
+    bool operator==(const EnumerationIterator other) const noexcept
+    {
+        return m_current == other.m_current;
+    }
+    bool operator!=(const EnumerationIterator other) const noexcept
+    {
+        return m_current != other.m_current;
+    }
+    bool operator<(const EnumerationIterator other) const noexcept
+    {
+        return m_current < other.m_current;
+    }
+    bool operator>(const EnumerationIterator other) const noexcept
+    {
+        return m_current > other.m_current;
+    }
+    bool operator<=(const EnumerationIterator other) const noexcept
+    {
+        return m_current <= other.m_current;
+    }
+    bool operator>=(const EnumerationIterator other) const noexcept
+    {
+        return m_current >= other.m_current;
+    }
+    /*!@}*/
 
-    private:
-        IntegerType m_current;
+private:
+    IntegerType m_current;
 };
 
 /*! \libinternal
@@ -183,23 +197,18 @@ class EnumerationIterator final
  * \tparam  Last       Last constant or number thereof (assumes a default 'Count' member).
  * \tparam  Step       Step increment.
  */
-template
-<
-    typename EnumType,
-    EnumType Last     = EnumType::Count,
-    unsigned int Step = 1
->
+template<typename EnumType, EnumType Last = EnumType::Count, unsigned int Step = 1>
 class EnumerationWrapper final
 {
-    public:
-        //! Convenience alias.
-        using IteratorType = EnumerationIterator<EnumType, Last, Step>;
+public:
+    //! Convenience alias.
+    using IteratorType = EnumerationIterator<EnumType, Last, Step>;
 
-        //! Functions required for range-based for statements to work.
-        /*!@{*/
-        IteratorType begin() const { return IteratorType {}; }
-        IteratorType end()   const { return IteratorType { Last }; }
-        /*!@}*/
+    //! Functions required for range-based for statements to work.
+    /*!@{*/
+    IteratorType begin() const { return IteratorType{}; }
+    IteratorType end() const { return IteratorType{ Last }; }
+    /*!@}*/
 };
 
 /*! \libinternal
@@ -214,12 +223,10 @@ class EnumerationWrapper final
  * \tparam  DataType   Type of the data stored in the array.
  * \tparam  ArraySize  Size in entries of the array.
  */
-template
-<
-    typename EnumType,                   // The enum (class) type.
-    typename DataType,                   // Type of the data stored in the array.
-    EnumType ArraySize = EnumType::Count // Size in entries of the array.
->
+template<typename EnumType,                   // The enum (class) type.
+         typename DataType,                   // Type of the data stored in the array.
+         EnumType ArraySize = EnumType::Count // Size in entries of the array.
+         >
 struct EnumerationArray final
 {
     //! Convenience alias
@@ -232,29 +239,29 @@ struct EnumerationArray final
     DataType m_elements[std::size_t(ArraySize)];
 
     //! Returns an object that provides iterators over the keys.
-    static constexpr EnumerationWrapperType keys() { return EnumerationWrapperType {}; }
+    static constexpr EnumerationWrapperType keys() { return EnumerationWrapperType{}; }
     //! Returns the size of the enumeration.
     static constexpr std::size_t size() { return std::size_t(ArraySize); }
 
     /*!@{*/
     //! Array access with asserts:
-    DataType &operator[](const std::size_t index)
+    DataType& operator[](const std::size_t index)
     {
         GMX_ASSERT(index < size(), "index out of range");
         return m_elements[index];
     }
-    const DataType &operator[](const std::size_t index) const
+    const DataType& operator[](const std::size_t index) const
     {
         GMX_ASSERT(index < size(), "index out of range");
         return m_elements[index];
     }
 
-    DataType &operator[](const EnumType index)
+    DataType& operator[](const EnumType index)
     {
         GMX_ASSERT(std::size_t(index) < size(), "index out of range");
         return m_elements[std::size_t(index)];
     }
-    const DataType &operator[](const EnumType index) const
+    const DataType& operator[](const EnumType index) const
     {
         GMX_ASSERT(std::size_t(index) < size(), "index out of range");
         return m_elements[std::size_t(index)];
@@ -263,32 +270,32 @@ struct EnumerationArray final
 
     /*!@{*/
     //! Range iterators (unchecked)
-    using iterator               = DataType *;
-    using const_iterator         = const DataType *;
+    using iterator               = DataType*;
+    using const_iterator         = const DataType*;
     using reverse_iterator       = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     /*!@}*/
 
     /*!@{*/
     //! Getters for forward iterators for ranges
-    iterator               begin()        { return &m_elements[0];      }
-    iterator               end()          { return &m_elements[size()]; }
-    const_iterator         begin()  const { return &m_elements[0];      }
-    const_iterator         end()    const { return &m_elements[size()]; }
+    iterator       begin() { return &m_elements[0]; }
+    iterator       end() { return &m_elements[size()]; }
+    const_iterator begin() const { return &m_elements[0]; }
+    const_iterator end() const { return &m_elements[size()]; }
     /*!@}*/
 
     /*!@{*/
     //! Getters for reverse iterators for ranges
-    reverse_iterator       rbegin()       { return reverse_iterator { end() }; }
-    reverse_iterator       rend()         { return reverse_iterator { begin() }; }
-    const_reverse_iterator rbegin() const { return const_reverse_iterator { end() }; }
-    const_reverse_iterator rend()   const { return const_reverse_iterator { begin() }; }
+    reverse_iterator       rbegin() { return reverse_iterator{ end() }; }
+    reverse_iterator       rend() { return reverse_iterator{ begin() }; }
+    const_reverse_iterator rbegin() const { return const_reverse_iterator{ end() }; }
+    const_reverse_iterator rend() const { return const_reverse_iterator{ begin() }; }
     /*!@}*/
 
     /*!@{*/
     //! Pointers (unchecked)
-    using pointer       = DataType *;
-    using const_pointer = const DataType *;
+    using pointer       = DataType*;
+    using const_pointer = const DataType*;
     /*!@}*/
 
     //! Returns a const raw pointer to the contents of the array.
@@ -308,8 +315,8 @@ struct EnumerationArray final
  * member function (such as keys()) via an object rather than the
  * type, but clang-tidy warns about that. So instead we make available
  * a free function that calls that static method. */
-template <typename EnumerationArrayType>
-typename EnumerationArrayType::EnumerationWrapperType keysOf(const EnumerationArrayType & /* arrayObject */)
+template<typename EnumerationArrayType>
+typename EnumerationArrayType::EnumerationWrapperType keysOf(const EnumerationArrayType& /* arrayObject */)
 {
     return EnumerationArrayType::keys();
 }

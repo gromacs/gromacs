@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,23 +46,19 @@
 
 #include "Xstuff.h"
 
-int CheckWin(Window win, const char *file, int line)
+int CheckWin(Window win, const char* file, int line)
 {
-    typedef struct {
+    typedef struct
+    {
         Window      n;
-        const char *s;
+        const char* s;
     } t_winerr;
-    t_winerr          winerr[] = {
-        { BadAlloc,  "Bad Alloc" },
-        { BadColor,  "Bad Color" },
-        { BadCursor, "Bad Cursor"},
-        { BadMatch,  "Bad Match" },
-        { BadPixmap, "Bad Pixmap"},
-        { BadValue,  "Bad Value" },
-        { BadWindow, "Bad Window"}
-    };
-#define NERR (sizeof(winerr)/sizeof(winerr[0]))
-    unsigned int      i;
+    t_winerr winerr[] = { { BadAlloc, "Bad Alloc" },   { BadColor, "Bad Color" },
+                          { BadCursor, "Bad Cursor" }, { BadMatch, "Bad Match" },
+                          { BadPixmap, "Bad Pixmap" }, { BadValue, "Bad Value" },
+                          { BadWindow, "Bad Window" } };
+#define NERR (sizeof(winerr) / sizeof(winerr[0]))
+    unsigned int i;
 
     for (i = 0; (i < NERR); i++)
     {
@@ -81,7 +77,7 @@ int CheckWin(Window win, const char *file, int line)
     return 0;
 }
 
-void LightBorder(Display *disp, Window win, unsigned long color)
+void LightBorder(Display* disp, Window win, unsigned long color)
 {
     XSetWindowAttributes attributes;
 
@@ -89,12 +85,19 @@ void LightBorder(Display *disp, Window win, unsigned long color)
     XChangeWindowAttributes(disp, win, CWBorderPixel, &attributes);
 }
 
-void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
-                       const char *s, int x, int y, int width, int height,
-                       eXPos eX, eYPos eY)
+void SpecialTextInRect(t_x11*       x11,
+                       XFontStruct* font,
+                       Drawable     win,
+                       const char*  s,
+                       int          x,
+                       int          y,
+                       int          width,
+                       int          height,
+                       eXPos        eX,
+                       eYPos        eY)
 {
     int          fw, fh, x0, y0;
-    XFontStruct *f;
+    XFontStruct* f;
 
     if (font)
     {
@@ -110,29 +113,17 @@ void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
     fh = XTextHeight(f);
     switch (eX)
     {
-        case eXLeft:
-            x0 = x;
-            break;
-        case eXRight:
-            x0 = x+width-fw;
-            break;
+        case eXLeft: x0 = x; break;
+        case eXRight: x0 = x + width - fw; break;
         case eXCenter:
-        default:
-            x0 = x+(width-fw)/2;
-            break;
+        default: x0 = x + (width - fw) / 2; break;
     }
     switch (eY)
     {
-        case eYTop:
-            y0 = y+f->ascent;
-            break;
-        case eYBottom:
-            y0 = y+height-f->descent;
-            break;
+        case eYTop: y0 = y + f->ascent; break;
+        case eYBottom: y0 = y + height - f->descent; break;
         case eYCenter:
-        default:
-            y0 = y+(height-fh)/2+f->ascent;
-            break;
+        default: y0 = y + (height - fh) / 2 + f->ascent; break;
     }
     XDrawString(x11->disp, win, x11->gc, x0, y0, s, std::strlen(s));
     if (font)
@@ -141,20 +132,17 @@ void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
     }
 }
 
-void TextInRect(t_x11 *x11, Drawable win,
-                const char *s, int x, int y, int width, int height,
-                eXPos eX, eYPos eY)
+void TextInRect(t_x11* x11, Drawable win, const char* s, int x, int y, int width, int height, eXPos eX, eYPos eY)
 {
     SpecialTextInRect(x11, nullptr, win, s, x, y, width, height, eX, eY);
 }
 
-void TextInWin(t_x11 *x11, t_windata *win,
-               const char *s, eXPos eX, eYPos eY)
+void TextInWin(t_x11* x11, t_windata* win, const char* s, eXPos eX, eYPos eY)
 {
     TextInRect(x11, win->self, s, 0, 0, win->width, win->height, eX, eY);
 }
 
-void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *text)
+void InitWin(t_windata* win, int x0, int y0, int w, int h, int bw, const char* text)
 {
     win->self   = 0;
     win->color  = 0;
@@ -178,7 +166,7 @@ void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *t
 #endif
 }
 
-void FreeWin(Display *disp, t_windata *win)
+void FreeWin(Display* disp, t_windata* win)
 {
     if (win->text)
     {
@@ -190,7 +178,7 @@ void FreeWin(Display *disp, t_windata *win)
     }
 }
 
-void ExposeWin(Display *disp, Window win)
+void ExposeWin(Display* disp, Window win)
 {
     XEvent event;
 
@@ -205,11 +193,12 @@ void ExposeWin(Display *disp, Window win)
     XSendEvent(disp, win, False, ExposureMask, &event);
 }
 
-void XDrawRoundRect(Display *disp, Window win, GC gc,
-                    int x, int y, int w, int h)
+void XDrawRoundRect(Display* disp, Window win, GC gc, int x, int y, int w, int h)
 {
-#define RAD (OFFS_X/2)
-#define SetPoint(pn, x0, y0) pn.x = x0; pn.y = y0
+#define RAD (OFFS_X / 2)
+#define SetPoint(pn, x0, y0) \
+    pn.x = x0;               \
+    pn.y = y0
 
     if ((w < 10) || (h < 10))
     {
@@ -219,55 +208,54 @@ void XDrawRoundRect(Display *disp, Window win, GC gc,
     {
         XPoint p[9];
 
-        SetPoint(p[0], x+RAD, y);
-        SetPoint(p[1], w-2*RAD, 0);
+        SetPoint(p[0], x + RAD, y);
+        SetPoint(p[1], w - 2 * RAD, 0);
         SetPoint(p[2], RAD, RAD);
-        SetPoint(p[3], 0, h-2*RAD);
+        SetPoint(p[3], 0, h - 2 * RAD);
         SetPoint(p[4], -RAD, RAD);
-        SetPoint(p[5], 2*RAD-w, 0);
+        SetPoint(p[5], 2 * RAD - w, 0);
         SetPoint(p[6], -RAD, -RAD);
-        SetPoint(p[7], 0, 2*RAD-h);
+        SetPoint(p[7], 0, 2 * RAD - h);
         SetPoint(p[8], RAD, -RAD);
         XDrawLines(disp, win, gc, p, 9, CoordModePrevious);
     }
 }
 
-void RoundRectWin(Display *disp, GC gc, t_windata *win,
-                  int offsx, int offsy, unsigned long color)
+void RoundRectWin(Display* disp, GC gc, t_windata* win, int offsx, int offsy, unsigned long color)
 {
     XSetLineAttributes(disp, gc, 1, LineOnOffDash, CapButt, JoinRound);
     XSetForeground(disp, gc, color);
-    XDrawRoundRect(disp, win->self, gc, offsx, offsy,
-                   win->width-2*offsx-1, win->height-2*offsy-1);
+    XDrawRoundRect(disp, win->self, gc, offsx, offsy, win->width - 2 * offsx - 1,
+                   win->height - 2 * offsy - 1);
     XSetLineAttributes(disp, gc, 1, LineSolid, CapButt, JoinRound);
 }
 
-void RectWin(Display *disp, GC gc, t_windata *win, unsigned long color)
+void RectWin(Display* disp, GC gc, t_windata* win, unsigned long color)
 {
     int bw = 1; /*2*w.bwidth;*/
 
     XSetForeground(disp, gc, color);
-    XDrawRoundRect(disp, win->self, gc, 0, 0, win->width-bw, win->height-bw);
+    XDrawRoundRect(disp, win->self, gc, 0, 0, win->width - bw, win->height - bw);
 }
 
-typedef struct t_mpos {
+typedef struct t_mpos
+{
     int            x, y;
-    struct t_mpos *prev;
+    struct t_mpos* prev;
 } t_mpos;
 
-static t_mpos *mpos = nullptr;
+static t_mpos* mpos = nullptr;
 
-void PushMouse(Display *disp, Window dest, int x, int y)
+void PushMouse(Display* disp, Window dest, int x, int y)
 {
-    Window         root, child;
-    int            root_x, root_y;
-    int            win_x, win_y;
-    unsigned int   keybut;
-    t_mpos        *newpos;
+    Window       root, child;
+    int          root_x, root_y;
+    int          win_x, win_y;
+    unsigned int keybut;
+    t_mpos*      newpos;
 
     snew(newpos, 1);
-    XQueryPointer(disp, DefaultRootWindow(disp), &root, &child, &root_x, &root_y,
-                  &win_x, &win_y, &keybut);
+    XQueryPointer(disp, DefaultRootWindow(disp), &root, &child, &root_x, &root_y, &win_x, &win_y, &keybut);
     newpos->x    = root_x;
     newpos->y    = root_y;
     newpos->prev = mpos;
@@ -278,9 +266,9 @@ void PushMouse(Display *disp, Window dest, int x, int y)
 #endif
 }
 
-void PopMouse(Display *disp)
+void PopMouse(Display* disp)
 {
-    t_mpos *old;
+    t_mpos* old;
 
     old = mpos;
     if (!old)
@@ -296,10 +284,10 @@ void PopMouse(Display *disp)
     sfree(old);
 }
 
-bool HelpPressed(XEvent *event)
+bool HelpPressed(XEvent* event)
 {
 #define BUFSIZE 24
-    char           buf[BUFSIZE+1];
+    char           buf[BUFSIZE + 1];
     XComposeStatus compose;
     KeySym         keysym;
 
@@ -308,22 +296,16 @@ bool HelpPressed(XEvent *event)
     return (keysym == XK_F1);
 }
 
-bool GrabOK(FILE *out, int err)
+bool GrabOK(FILE* out, int err)
 {
     switch (err)
     {
-        case GrabSuccess:
-            return true;
-        case GrabNotViewable:
-            std::fprintf(out, "GrabNotViewable\n"); break;
-        case AlreadyGrabbed:
-            std::fprintf(out, "AlreadyGrabbed\n"); break;
-        case GrabFrozen:
-            std::fprintf(out, "GrabFrozen\n"); break;
-        case GrabInvalidTime:
-            std::fprintf(out, "GrabInvalidTime\n"); break;
-        default:
-            break;
+        case GrabSuccess: return true;
+        case GrabNotViewable: std::fprintf(out, "GrabNotViewable\n"); break;
+        case AlreadyGrabbed: std::fprintf(out, "AlreadyGrabbed\n"); break;
+        case GrabFrozen: std::fprintf(out, "GrabFrozen\n"); break;
+        case GrabInvalidTime: std::fprintf(out, "GrabInvalidTime\n"); break;
+        default: break;
     }
     return false;
 }

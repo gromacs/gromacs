@@ -65,21 +65,22 @@ namespace test
 
 TEST(LocalAtomSetManager, CanAddEmptyLocalAtomSet)
 {
-    LocalAtomSetManager       manager;
-    const std::vector<int>    emptyIndex = {};
-    LocalAtomSet              emptyGroup(manager.add(emptyIndex));
-    const std::vector<int>    globalIndexFromGroup(emptyGroup.globalIndex().begin(), emptyGroup.globalIndex().end());
+    LocalAtomSetManager    manager;
+    const std::vector<int> emptyIndex = {};
+    LocalAtomSet           emptyGroup(manager.add(emptyIndex));
+    const std::vector<int> globalIndexFromGroup(emptyGroup.globalIndex().begin(),
+                                                emptyGroup.globalIndex().end());
     ASSERT_THAT(globalIndexFromGroup, testing::ContainerEq(emptyIndex));
 }
 
 TEST(LocalAtomSetManager, CanAddandReadLocalAtomSetIndices)
 {
-    LocalAtomSetManager    manager;
+    LocalAtomSetManager manager;
 
-    const std::vector<int> index = {5, 10};
+    const std::vector<int> index = { 5, 10 };
     LocalAtomSet           newGroup(manager.add(index));
     std::vector<int>       readIndex;
-    for (const auto &i : newGroup.localIndex())
+    for (const auto& i : newGroup.localIndex())
     {
         readIndex.push_back(i);
     }

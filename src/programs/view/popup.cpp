@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,36 +48,31 @@
 #include "x11.h"
 #include "xutil.h"
 
-static bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ChildCallBack(t_x11* x11, XEvent* event, Window w, void* data)
 {
-    t_child   *child;
-    t_mentry  *m;
-    t_windata *wd;
+    t_child*   child;
+    t_mentry*  m;
+    t_windata* wd;
     XEvent     letter;
 
-    child = (t_child *)data;
+    child = (t_child*)data;
     m     = child->m;
     wd    = &(child->wd);
     switch (event->type)
     {
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
-            TextInRect(x11, w, m->str, 16, 0, wd->width-16-2, wd->height-2,
-                       eXLeft, eYCenter);
+            TextInRect(x11, w, m->str, 16, 0, wd->width - 16 - 2, wd->height - 2, eXLeft, eYCenter);
             if (m->bChecked)
             {
                 int y = x11->font->ascent;
-                XDrawLine(x11->disp, w, x11->gc, 2, (y*2)/3, 6, y);
-                XDrawLine(x11->disp, w, x11->gc, 3, (y*2)/3, 7, y);
+                XDrawLine(x11->disp, w, x11->gc, 2, (y * 2) / 3, 6, y);
+                XDrawLine(x11->disp, w, x11->gc, 3, (y * 2) / 3, 7, y);
                 XDrawLine(x11->disp, w, x11->gc, 7, y, 12, 2);
             }
             break;
-        case EnterNotify:
-            LightBorder(x11->disp, w, x11->fg);
-            break;
-        case LeaveNotify:
-            LightBorder(x11->disp, w, x11->bg);
-            break;
+        case EnterNotify: LightBorder(x11->disp, w, x11->fg); break;
+        case LeaveNotify: LightBorder(x11->disp, w, x11->bg); break;
         case ButtonRelease:
             letter.type                 = ClientMessage;
             letter.xclient.display      = x11->disp;
@@ -87,51 +82,45 @@ static bool ChildCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             letter.xclient.data.l[0]    = m->nreturn;
             XSendEvent(x11->disp, letter.xclient.window, True, 0, &letter);
             break;
-        default:
-            break;
+        default: break;
     }
     return false;
 }
 
-static bool MenuCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool MenuCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
 {
-    t_menu *m;
+    t_menu* m;
 
-    m = (t_menu *)data;
+    m = (t_menu*)data;
     switch (event->type)
     {
         case Expose:
             /* Nothing to be done */
             if (m->bGrabbed)
             {
-                m->bGrabbed =
-                    GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True,
-                                                ButtonReleaseMask, GrabModeAsync,
-                                                GrabModeAsync, m->wd.self, None, CurrentTime));
+                m->bGrabbed = GrabOK(stderr, XGrabPointer(x11->disp, m->wd.self, True, ButtonReleaseMask,
+                                                          GrabModeAsync, GrabModeAsync, m->wd.self,
+                                                          None, CurrentTime));
             }
             break;
-        case ButtonRelease:
-            hide_menu(x11, m);
-            break;
+        case ButtonRelease: hide_menu(x11, m); break;
         case ClientMessage:
             event->xclient.window = m->Parent;
             XSendEvent(x11->disp, m->Parent, True, 0, event);
             break;
-        default:
-            break;
+        default: break;
     }
     return false;
 }
 
-t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
-                  int nent, t_mentry ent[], int ncol)
+t_menu* init_menu(t_x11* x11, Window Parent, unsigned long fg, unsigned long bg, int nent, t_mentry ent[], int ncol)
 {
     int        i, mlen, mht, area, ht;
     int        j, k, l;
     int        frows, fcol;
-    t_menu    *m;
-    t_child   *kid;
-    t_windata *w;
+    t_menu*    m;
+    t_child*   kid;
+    t_windata* w;
 
     snew(m, 1);
     m->nitem  = nent;
@@ -146,41 +135,38 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mht = XTextHeight(x11->font);
     /* Now we have the biggest single box, add a border of 2 pixels */
     mlen += 20; /* We need extra space at the left for checkmarks */
-    mht  += 4;
+    mht += 4;
     /* Calculate the area of the menu */
-    area = mlen*mht;
+    area = mlen * mht;
     ht   = std::sqrt(area);
     /* No the number of rows per column, only beyond 8 rows */
     if (ncol == 0)
     {
         if (nent > 8)
         {
-            frows = (1+ht/mht);
+            frows = (1 + ht / mht);
         }
         else
         {
             frows = nent;
         }
-        fcol = nent/frows;
+        fcol = nent / frows;
     }
     else
     {
         fcol  = ncol;
-        frows = nent/ncol;
+        frows = nent / ncol;
         if (nent % ncol)
         {
             frows++;
         }
     }
-    InitWin(&(m->wd), 10, 10, fcol*mlen, frows*mht, 1, "Menu");
+    InitWin(&(m->wd), 10, 10, fcol * mlen, frows * mht, 1, "Menu");
     snew(m->item, nent);
-    m->wd.self = XCreateSimpleWindow(x11->disp, Parent,
-                                     m->wd.x, m->wd.y,
-                                     m->wd.width, m->wd.height,
+    m->wd.self = XCreateSimpleWindow(x11->disp, Parent, m->wd.x, m->wd.y, m->wd.width, m->wd.height,
                                      m->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, m->wd.self, Parent, MenuCallBack, m);
-    x11->SetInputMask(x11, m->wd.self, ExposureMask |
-                      OwnerGrabButtonMask | ButtonReleaseMask);
+    x11->SetInputMask(x11, m->wd.self, ExposureMask | OwnerGrabButtonMask | ButtonReleaseMask);
 
     for (j = l = 0; (j < fcol); j++)
     {
@@ -190,23 +176,20 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
             kid->m      = &(ent[l]);
             kid->Parent = Parent;
             w           = &(kid->wd);
-            InitWin(w, j*mlen, k*mht, mlen-2, mht-2, 1, nullptr);
-            w->self = XCreateSimpleWindow(x11->disp, m->wd.self,
-                                          w->x, w->y, w->width, w->height,
+            InitWin(w, j * mlen, k * mht, mlen - 2, mht - 2, 1, nullptr);
+            w->self = XCreateSimpleWindow(x11->disp, m->wd.self, w->x, w->y, w->width, w->height,
                                           w->bwidth, bg, bg);
-            x11->RegisterCallback(x11, w->self, m->wd.self,
-                                  ChildCallBack, kid);
+            x11->RegisterCallback(x11, w->self, m->wd.self, ChildCallBack, kid);
             x11->SetInputMask(x11, w->self,
-                              ButtonPressMask | ButtonReleaseMask |
-                              OwnerGrabButtonMask | ExposureMask |
-                              EnterWindowMask | LeaveWindowMask);
+                              ButtonPressMask | ButtonReleaseMask | OwnerGrabButtonMask
+                                      | ExposureMask | EnterWindowMask | LeaveWindowMask);
         }
     }
 
     return m;
 }
 
-void show_menu(t_x11 *x11, t_menu *m, int x, int y, bool bGrab)
+void show_menu(t_x11* x11, t_menu* m, int x, int y, bool bGrab)
 {
     XMoveWindow(x11->disp, m->wd.self, x, y);
     m->bGrabbed = bGrab;
@@ -214,7 +197,7 @@ void show_menu(t_x11 *x11, t_menu *m, int x, int y, bool bGrab)
     XMapSubwindows(x11->disp, m->wd.self);
 }
 
-void hide_menu(t_x11 *x11, t_menu *m)
+void hide_menu(t_x11* x11, t_menu* m)
 {
     if (m->bGrabbed)
     {
@@ -223,7 +206,7 @@ void hide_menu(t_x11 *x11, t_menu *m)
     XUnmapWindow(x11->disp, m->wd.self);
 }
 
-void check_menu_item(t_menu *m, int nreturn, bool bStatus)
+void check_menu_item(t_menu* m, int nreturn, bool bStatus)
 {
     int i;
 
@@ -236,7 +219,7 @@ void check_menu_item(t_menu *m, int nreturn, bool bStatus)
     }
 }
 
-void done_menu(t_x11 *x11, t_menu *m)
+void done_menu(t_x11* x11, t_menu* m)
 {
     int i;
 
@@ -249,12 +232,12 @@ void done_menu(t_x11 *x11, t_menu *m)
     sfree(m);
 }
 
-int menu_width(t_menu *m)
+int menu_width(t_menu* m)
 {
     return m->wd.width;
 }
 
-int menu_height(t_menu *m)
+int menu_height(t_menu* m)
 {
     return m->wd.height;
 }

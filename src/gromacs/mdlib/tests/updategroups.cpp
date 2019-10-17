@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,12 +74,7 @@ gmx_moltype_t methane()
     gmx_moltype_t moltype = {};
 
     moltype.atoms.nr               = 5;
-    moltype.ilist[F_CONSTR].iatoms = {
-        0, 0, 1,
-        0, 0, 2,
-        0, 0, 3,
-        0, 0, 4
-    };
+    moltype.ilist[F_CONSTR].iatoms = { 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 4 };
 
     return moltype;
 }
@@ -90,22 +85,9 @@ gmx_moltype_t ethane()
     gmx_moltype_t moltype = {};
 
     moltype.atoms.nr               = 8;
-    moltype.ilist[F_CONSTR].iatoms = {
-        0, 0, 1,
-        0, 0, 2,
-        0, 0, 3,
-        0, 4, 5,
-        0, 4, 6,
-        0, 4, 7
-    };
-    moltype.ilist[F_ANGLES].iatoms = {
-        1, 1, 0, 2,
-        1, 1, 0, 3,
-        1, 2, 0, 3,
-        1, 5, 4, 6,
-        1, 5, 4, 7,
-        1, 6, 4, 7
-    };
+    moltype.ilist[F_CONSTR].iatoms = { 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 4, 5, 0, 4, 6, 0, 4, 7 };
+    moltype.ilist[F_ANGLES].iatoms = { 1, 1, 0, 2, 1, 1, 0, 3, 1, 2, 0, 3,
+                                       1, 5, 4, 6, 1, 5, 4, 7, 1, 6, 4, 7 };
 
     return moltype;
 }
@@ -116,11 +98,7 @@ gmx_moltype_t butaneUA()
     gmx_moltype_t moltype = {};
 
     moltype.atoms.nr               = 4;
-    moltype.ilist[F_CONSTR].iatoms = {
-        0, 0, 1,
-        0, 1, 2,
-        0, 2, 3
-    };
+    moltype.ilist[F_CONSTR].iatoms = { 0, 0, 1, 0, 1, 2, 0, 2, 3 };
 
     return moltype;
 }
@@ -131,7 +109,7 @@ gmx_moltype_t waterThreeSite()
     gmx_moltype_t moltype = {};
 
     moltype.atoms.nr               = 3;
-    moltype.ilist[F_SETTLE].iatoms = { 0, 0, 1, 2};
+    moltype.ilist[F_SETTLE].iatoms = { 0, 0, 1, 2 };
 
     return moltype;
 }
@@ -143,7 +121,7 @@ gmx_moltype_t waterFourSite()
 
     moltype.atoms.nr               = 4;
     moltype.ilist[F_SETTLE].iatoms = { 0, 1, 2, 3 };
-    moltype.ilist[F_VSITE3].iatoms = { 1, 0, 1, 2, 3};
+    moltype.ilist[F_VSITE3].iatoms = { 1, 0, 1, 2, 3 };
 
     return moltype;
 }
@@ -155,11 +133,13 @@ gmx_moltype_t waterFlexAngle()
 
     moltype.atoms.nr               = 3;
     moltype.ilist[F_CONSTR].iatoms = {
-        0, 0, 1,
-        0, 0, 2,
+        0, 0, 1, 0, 0, 2,
     };
     moltype.ilist[F_ANGLES].iatoms = {
-        1, 1, 0, 2,
+        1,
+        1,
+        0,
+        2,
     };
 
     return moltype;
@@ -171,7 +151,7 @@ TEST(UpdateGroups, ethaneUA)
 
     mtop.moltype.emplace_back(ethaneUA());
     t_iparams iparams;
-    iparams.constr        = { 0.3, 0.3 };
+    iparams.constr = { 0.3, 0.3 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -181,7 +161,7 @@ TEST(UpdateGroups, ethaneUA)
 
     real temperature = 298;
     real maxRadius   = computeMaxUpdateGroupRadius(mtop, updateGroups, temperature);
-    EXPECT_FLOAT_EQ(maxRadius, 0.3/2);
+    EXPECT_FLOAT_EQ(maxRadius, 0.3 / 2);
 }
 
 TEST(UpdateGroups, methane)
@@ -190,7 +170,7 @@ TEST(UpdateGroups, methane)
 
     mtop.moltype.emplace_back(methane());
     t_iparams iparams;
-    iparams.constr        = { 0.1, 0.1 };
+    iparams.constr = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -208,9 +188,9 @@ TEST(UpdateGroups, ethane)
 
     mtop.moltype.emplace_back(ethane());
     t_iparams iparams;
-    iparams.constr        = { 0.1, 0.1 };
+    iparams.constr = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
-    iparams.harmonic       = { 107.800, 276.144, 107.800, 276.144 };
+    iparams.harmonic = { 107.800, 276.144, 107.800, 276.144 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -237,7 +217,7 @@ TEST(UpdateGroups, butaneUA)
 
     mtop.moltype.emplace_back(butaneUA());
     t_iparams iparams;
-    iparams.constr        = { 0.3, 0.3 };
+    iparams.constr = { 0.3, 0.3 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -251,7 +231,7 @@ TEST(UpdateGroups, waterThreeSite)
 
     mtop.moltype.emplace_back(waterThreeSite());
     t_iparams iparams;
-    iparams.settle        = { 0.1, 0.1633 };
+    iparams.settle = { 0.1, 0.1633 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -271,8 +251,8 @@ TEST(UpdateGroups, waterFourSite)
 
     mtop.moltype.emplace_back(waterFourSite());
     t_iparams iparams[2];
-    iparams[0].settle     = { 0.1, 0.1633 };
-    iparams[1].vsite      = { 0.128, 0.128 };
+    iparams[0].settle = { 0.1, 0.1633 };
+    iparams[1].vsite  = { 0.128, 0.128 };
     mtop.ffparams.iparams.push_back(iparams[0]);
     mtop.ffparams.iparams.push_back(iparams[1]);
 
@@ -302,9 +282,9 @@ TEST(UpdateGroups, waterFlexAngle)
 
     mtop.moltype.emplace_back(waterFlexAngle());
     t_iparams iparams;
-    iparams.constr        = { 0.1, 0.1 };
+    iparams.constr = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
-    iparams.harmonic      = { 109.47, 383.0, 109.47, 383.0 };
+    iparams.harmonic = { 109.47, 383.0, 109.47, 383.0 };
     mtop.ffparams.iparams.push_back(iparams);
 
     auto updateGroups = gmx::makeUpdateGroups(mtop);
@@ -331,7 +311,7 @@ TEST(UpdateGroups, twoMoltypes)
 
     mtop.moltype.emplace_back(methane());
     t_iparams iparams;
-    iparams.constr        = { 0.1, 0.1 };
+    iparams.constr = { 0.1, 0.1 };
     mtop.ffparams.iparams.push_back(iparams);
 
     mtop.moltype.emplace_back(waterThreeSite());
@@ -344,6 +324,6 @@ TEST(UpdateGroups, twoMoltypes)
     EXPECT_EQ(updateGroups[1].numBlocks(), 1);
 }
 
-}   // namespace
+} // namespace
 
-}   // namespace gmx
+} // namespace gmx

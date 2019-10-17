@@ -53,7 +53,7 @@ namespace gmx
  *
  * Does not throw.
  */
-CUDA_FUNC_QUALIFIER void pinBuffer(void *CUDA_FUNC_ARGUMENT(pointer),
+CUDA_FUNC_QUALIFIER void pinBuffer(void*       CUDA_FUNC_ARGUMENT(pointer),
                                    std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM;
 
 /*! \brief Unpin the allocation.
@@ -63,6 +63,6 @@ CUDA_FUNC_QUALIFIER void pinBuffer(void *CUDA_FUNC_ARGUMENT(pointer),
  *
  * Does not throw.
  */
-CUDA_FUNC_QUALIFIER void unpinBuffer(void *CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM;
+CUDA_FUNC_QUALIFIER void unpinBuffer(void* CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM;
 
 } // namespace gmx

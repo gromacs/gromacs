@@ -66,63 +66,61 @@ namespace gmx
  */
 class OutputSelector : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct OutputSelector object with initial selection.
-         *
-         * Can be used to initialize OutputSelector from outside of trajectoryanalysis
-         * framework.
-         */
-        explicit OutputSelector(const Selection &sel) :
-            sel_(sel), selectionAtoms_(nullptr)
-        {
-            GMX_RELEASE_ASSERT(sel.isValid() && sel.hasOnlyAtoms(),
-                               "Need a valid selection out of simple atom indices");
-        }
-        /*! \brief
-         *  Move assignment constructor for OutputSelector.
-         */
-        OutputSelector(OutputSelector &&old) noexcept = default;
+public:
+    /*! \brief
+     * Construct OutputSelector object with initial selection.
+     *
+     * Can be used to initialize OutputSelector from outside of trajectoryanalysis
+     * framework.
+     */
+    explicit OutputSelector(const Selection& sel) : sel_(sel), selectionAtoms_(nullptr)
+    {
+        GMX_RELEASE_ASSERT(sel.isValid() && sel.hasOnlyAtoms(),
+                           "Need a valid selection out of simple atom indices");
+    }
+    /*! \brief
+     *  Move assignment constructor for OutputSelector.
+     */
+    OutputSelector(OutputSelector&& old) noexcept = default;
 
-        ~OutputSelector() override {}
+    ~OutputSelector() override {}
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * Takes the previously internally stored coordinates and saves them again.
-         * Applies correct number of atoms in this case.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumber*/, t_trxframe *input) override;
+    /*! \brief
+     * Change coordinate frame information for output.
+     *
+     * Takes the previously internally stored coordinates and saves them again.
+     * Applies correct number of atoms in this case.
+     *
+     * \param[in] input Coordinate frame to be modified later.
+     */
+    void processFrame(int /*framenumber*/, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long /* abilities */) const override {}
+    void checkAbilityDependencies(unsigned long /* abilities */) const override {}
 
-    private:
-
-        /*! \brief
-         * Selection of atoms that will be written to disk.
-         *
-         * Internal selection of atoms chosen by the user that will be written
-         * to disk during processing.
-         */
-        const Selection                            &sel_;
-        /*! \brief
-         * Local storage of modified atoms.
-         *
-         * When selection input information, we might will have to adjust the
-         * atoms content to match the new output. To perform this, we keep track
-         * of modified atoms information in this object that is not used by default.
-         */
-        AtomsDataPtr      selectionAtoms_;
-        //! Local storage for coordinates
-        std::vector<RVec> localX_;
-        //! Local storage for velocities
-        std::vector<RVec> localV_;
-        //! Local storage for forces
-        std::vector<RVec> localF_;
-        //! Local storage for atom indices
-        std::vector<int>  localIndex_;
+private:
+    /*! \brief
+     * Selection of atoms that will be written to disk.
+     *
+     * Internal selection of atoms chosen by the user that will be written
+     * to disk during processing.
+     */
+    const Selection& sel_;
+    /*! \brief
+     * Local storage of modified atoms.
+     *
+     * When selection input information, we might will have to adjust the
+     * atoms content to match the new output. To perform this, we keep track
+     * of modified atoms information in this object that is not used by default.
+     */
+    AtomsDataPtr selectionAtoms_;
+    //! Local storage for coordinates
+    std::vector<RVec> localX_;
+    //! Local storage for velocities
+    std::vector<RVec> localV_;
+    //! Local storage for forces
+    std::vector<RVec> localF_;
+    //! Local storage for atom indices
+    std::vector<int> localIndex_;
 };
 
 //! Smart pointer to manage the object.

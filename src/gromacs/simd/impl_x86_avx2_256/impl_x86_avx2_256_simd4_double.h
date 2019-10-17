@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,38 +45,26 @@
 namespace gmx
 {
 
-static inline Simd4Double gmx_simdcall
-fma(Simd4Double a, Simd4Double b, Simd4Double c)
+static inline Simd4Double gmx_simdcall fma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
-    return {
-               _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm256_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Double gmx_simdcall
-fms(Simd4Double a, Simd4Double b, Simd4Double c)
+static inline Simd4Double gmx_simdcall fms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
-    return {
-               _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm256_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Double gmx_simdcall
-fnma(Simd4Double a, Simd4Double b, Simd4Double c)
+static inline Simd4Double gmx_simdcall fnma(Simd4Double a, Simd4Double b, Simd4Double c)
 {
-    return {
-               _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm256_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Double gmx_simdcall
-fnms(Simd4Double a, Simd4Double b, Simd4Double c)
+static inline Simd4Double gmx_simdcall fnms(Simd4Double a, Simd4Double b, Simd4Double c)
 {
-    return {
-               _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm256_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_256_SIMD4_DOUBLE_H

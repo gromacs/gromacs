@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,13 +49,9 @@
 namespace gmx
 {
 
-IFileInputRedirector::~IFileInputRedirector()
-{
-}
+IFileInputRedirector::~IFileInputRedirector() {}
 
-IFileOutputRedirector::~IFileOutputRedirector()
-{
-}
+IFileOutputRedirector::~IFileOutputRedirector() {}
 
 namespace
 {
@@ -70,12 +66,11 @@ namespace
  */
 class DefaultInputRedirector : public IFileInputRedirector
 {
-    public:
-        bool fileExists(const char            *filename,
-                        File::NotFoundHandler  onNotFound) const override
-        {
-            return File::exists(filename, onNotFound);
-        }
+public:
+    bool fileExists(const char* filename, File::NotFoundHandler onNotFound) const override
+    {
+        return File::exists(filename, onNotFound);
+    }
 };
 
 /*! \internal
@@ -89,27 +84,24 @@ class DefaultInputRedirector : public IFileInputRedirector
  */
 class DefaultOutputRedirector : public IFileOutputRedirector
 {
-    public:
-        TextOutputStream &standardOutput() override
-        {
-            return TextOutputFile::standardOutput();
-        }
-        TextOutputStreamPointer openTextOutputFile(const char *filename) override
-        {
-            return TextOutputStreamPointer(new TextOutputFile(filename));
-        }
+public:
+    TextOutputStream&       standardOutput() override { return TextOutputFile::standardOutput(); }
+    TextOutputStreamPointer openTextOutputFile(const char* filename) override
+    {
+        return TextOutputStreamPointer(new TextOutputFile(filename));
+    }
 };
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
-IFileInputRedirector &defaultFileInputRedirector()
+IFileInputRedirector& defaultFileInputRedirector()
 {
     static DefaultInputRedirector instance;
     return instance;
 }
 
-IFileOutputRedirector &defaultFileOutputRedirector()
+IFileOutputRedirector& defaultFileOutputRedirector()
 {
     static DefaultOutputRedirector instance;
     return instance;

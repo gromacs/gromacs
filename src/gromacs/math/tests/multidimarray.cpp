@@ -64,32 +64,32 @@ namespace
 
 class MultiDimArrayTest : public ::testing::Test
 {
-    public:
-        MultiDimArrayTest()
-        {
-            std::fill(begin(staticArray_), end(staticArray_), testNumber_ - 1);
-            std::fill(begin(dynamicArray_), end(dynamicArray_), testNumber_ - 1);
-        }
-    protected:
+public:
+    MultiDimArrayTest()
+    {
+        std::fill(begin(staticArray_), end(staticArray_), testNumber_ - 1);
+        std::fill(begin(dynamicArray_), end(dynamicArray_), testNumber_ - 1);
+    }
 
-        using static_container_type = std::array<float, 3*3>;
-        using static_extents_type   = extents<3, 3>;
-        using static_array_type     = MultiDimArray<static_container_type, static_extents_type>;
+protected:
+    using static_container_type = std::array<float, 3 * 3>;
+    using static_extents_type   = extents<3, 3>;
+    using static_array_type     = MultiDimArray<static_container_type, static_extents_type>;
 
-        using dynamic_container_type = std::vector<float>;
-        using dynamic_extents_type   = extents<dynamic_extent, dynamic_extent>;
-        using dynamic_array_type     = MultiDimArray<dynamic_container_type, dynamic_extents_type>;
+    using dynamic_container_type = std::vector<float>;
+    using dynamic_extents_type   = extents<dynamic_extent, dynamic_extent>;
+    using dynamic_array_type     = MultiDimArray<dynamic_container_type, dynamic_extents_type>;
 
-        static_array_type  staticArray_;
-        dynamic_array_type dynamicArray_ {2, 2};
+    static_array_type  staticArray_;
+    dynamic_array_type dynamicArray_{ 2, 2 };
 
-        float              testNumber_      = 42;
+    float testNumber_ = 42;
 };
 
 
 TEST_F(MultiDimArrayTest, canConstructAndFillStatic)
 {
-    for (const auto &x : staticArray_)
+    for (const auto& x : staticArray_)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -97,7 +97,7 @@ TEST_F(MultiDimArrayTest, canConstructAndFillStatic)
 
 TEST_F(MultiDimArrayTest, canConstructAndFillDynamic)
 {
-    for (const auto &x : dynamicArray_)
+    for (const auto& x : dynamicArray_)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -106,7 +106,7 @@ TEST_F(MultiDimArrayTest, canConstructAndFillDynamic)
 TEST_F(MultiDimArrayTest, canSetValuesInStatic)
 {
     staticArray_(1, 1) = testNumber_;
-    EXPECT_EQ(testNumber_, staticArray_(1, 1) );
+    EXPECT_EQ(testNumber_, staticArray_(1, 1));
 }
 
 TEST_F(MultiDimArrayTest, canSetValuesInDynamic)
@@ -118,7 +118,7 @@ TEST_F(MultiDimArrayTest, canSetValuesInDynamic)
 TEST_F(MultiDimArrayTest, canMoveConstructStatic)
 {
     auto other(std::move(staticArray_));
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -127,7 +127,7 @@ TEST_F(MultiDimArrayTest, canMoveConstructStatic)
 TEST_F(MultiDimArrayTest, canMoveConstructDynamic)
 {
     auto other(std::move(dynamicArray_));
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -137,7 +137,7 @@ TEST_F(MultiDimArrayTest, canMoveAssignStatic)
 {
     static_array_type other;
     other = std::move(staticArray_);
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -147,7 +147,7 @@ TEST_F(MultiDimArrayTest, canMoveAssignDynamic)
 {
     dynamic_array_type other;
     other = std::move(dynamicArray_);
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -157,7 +157,7 @@ TEST_F(MultiDimArrayTest, canCopyConstructStatic)
 {
     auto other       = staticArray_;
     auto twoDArrayIt = begin(staticArray_);
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(*twoDArrayIt, x);
         ++twoDArrayIt;
@@ -168,7 +168,7 @@ TEST_F(MultiDimArrayTest, canCopyConstructDynamic)
 {
     auto other       = dynamicArray_;
     auto twoDArrayIt = begin(dynamicArray_);
-    for (const auto &x : other)
+    for (const auto& x : other)
     {
         EXPECT_EQ(*twoDArrayIt, x);
         ++twoDArrayIt;
@@ -178,9 +178,9 @@ TEST_F(MultiDimArrayTest, canCopyConstructDynamic)
 TEST_F(MultiDimArrayTest, canCopyAssignStatic)
 {
     static_array_type other;
-    other = staticArray_;
-    auto              twoDArrayIt = begin(staticArray_);
-    for (const auto &x : other)
+    other            = staticArray_;
+    auto twoDArrayIt = begin(staticArray_);
+    for (const auto& x : other)
     {
         EXPECT_EQ(*twoDArrayIt, x);
         ++twoDArrayIt;
@@ -190,9 +190,9 @@ TEST_F(MultiDimArrayTest, canCopyAssignStatic)
 TEST_F(MultiDimArrayTest, canCopyAssignDynamic)
 {
     dynamic_array_type other;
-    other = dynamicArray_;
-    auto               twoDArrayIt = begin(dynamicArray_);
-    for (const auto &x : other)
+    other            = dynamicArray_;
+    auto twoDArrayIt = begin(dynamicArray_);
+    for (const auto& x : other)
     {
         EXPECT_EQ(*twoDArrayIt, x);
         ++twoDArrayIt;
@@ -251,7 +251,7 @@ TEST_F(MultiDimArrayTest, dynamicMultiDimArrayResizeAndSetValue)
 
 TEST_F(MultiDimArrayTest, staticMultiDimArrayFromArray)
 {
-    static_array_type arr = {{1, 2, 3, 4, 5, 6, 7, 8, 9}};
+    static_array_type arr = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
     EXPECT_EQ(arr(0, 0), 1);
     EXPECT_EQ(arr(0, 1), 2);
     EXPECT_EQ(arr(0, 2), 3);
@@ -266,7 +266,7 @@ TEST_F(MultiDimArrayTest, staticMultiDimArrayFromArray)
 TEST_F(MultiDimArrayTest, conversionToView)
 {
     static_array_type::view_type view = staticArray_.asView();
-    view(2, 2) = testNumber_;
+    view(2, 2)                        = testNumber_;
     EXPECT_EQ(testNumber_, view(2, 2));
 }
 
@@ -275,7 +275,7 @@ TEST_F(MultiDimArrayTest, conversionToConstView)
     static_array_type::const_view_type view = staticArray_.asConstView();
     // the following must not compile:
     // view(2, 2) = testNumber_;
-    for (const auto &x : view)
+    for (const auto& x : view)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -284,14 +284,14 @@ TEST_F(MultiDimArrayTest, conversionToConstView)
 TEST_F(MultiDimArrayTest, viewBegin)
 {
     static_array_type::view_type view = staticArray_.asView();
-    *begin(view) = testNumber_;
+    *begin(view)                      = testNumber_;
     EXPECT_EQ(*begin(view), testNumber_);
 }
 
 TEST_F(MultiDimArrayTest, viewEnd)
 {
     static_array_type::view_type view = staticArray_.asView();
-    auto x = end(view);
+    auto                         x    = end(view);
     --x;
     view(2, 2) = testNumber_;
     EXPECT_EQ(*x, testNumber_);
@@ -300,7 +300,7 @@ TEST_F(MultiDimArrayTest, viewEnd)
 TEST_F(MultiDimArrayTest, constViewConstBegin)
 {
     staticArray_(0, 0) = testNumber_;
-    const auto view = staticArray_.asConstView();
+    const auto view    = staticArray_.asConstView();
     // must not compile: *begin(view) = testNumber_;
     EXPECT_EQ(*begin(view), testNumber_);
 }
@@ -308,16 +308,16 @@ TEST_F(MultiDimArrayTest, constViewConstBegin)
 TEST_F(MultiDimArrayTest, constViewConstEnd)
 {
     staticArray_(2, 2) = testNumber_;
-    const auto view = staticArray_.asConstView();
-    auto       x    = end(view);
+    const auto view    = staticArray_.asConstView();
+    auto       x       = end(view);
     --x;
     EXPECT_EQ(*x, testNumber_);
 }
 
 TEST(MultiDimArrayToMdSpanTest, convertsToMdSpan)
 {
-    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
-    basic_mdspan < int, extents < 2, 2>> span(arr);
+    MultiDimArray<std::array<int, 4>, extents<2, 2>> arr = { { 0, 1, 2, 3 } };
+    basic_mdspan<int, extents<2, 2>>                 span(arr);
 
     // test copy correctness
     EXPECT_EQ(span(1, 1), 3);
@@ -329,24 +329,22 @@ TEST(MultiDimArrayToMdSpanTest, convertsToMdSpan)
 
 TEST(MultiDimArrayToMdSpanTest, constArrayToMdSpan)
 {
-    const MultiDimArray < std::array<int, 4>, extents < 2, 2>> constArr = {{0, 1, 2, 3}};
-    basic_mdspan < const int, extents < 2, 2>> span(constArr);
+    const MultiDimArray<std::array<int, 4>, extents<2, 2>> constArr = { { 0, 1, 2, 3 } };
+    basic_mdspan<const int, extents<2, 2>>                 span(constArr);
     EXPECT_EQ(span(0, 1), 1);
 }
 
 TEST(MultiDimArrayToMdSpanTest, nonConstArrayToConstMdSpan)
 {
-    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
-    basic_mdspan < const int, extents < 2, 2>> span(arr);
+    MultiDimArray<std::array<int, 4>, extents<2, 2>> arr = { { 0, 1, 2, 3 } };
+    basic_mdspan<const int, extents<2, 2>>           span(arr);
     EXPECT_EQ(span(0, 1), 1);
 }
 
 TEST(MultiDimArrayToMdSpanTest, implicitConversionToMdSpan)
 {
-    auto testFunc = [](basic_mdspan < const int, extents < 2, 2>> a){
-            return a(0, 0);
-        };
-    MultiDimArray < std::array<int, 4>, extents < 2, 2>> arr = {{0, 1, 2, 3}};
+    auto testFunc = [](basic_mdspan<const int, extents<2, 2>> a) { return a(0, 0); };
+    MultiDimArray<std::array<int, 4>, extents<2, 2>> arr = { { 0, 1, 2, 3 } };
     EXPECT_EQ(testFunc(arr), 0);
 }
 

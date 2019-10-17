@@ -53,24 +53,22 @@ namespace gmx
  */
 
 // static
-IOptionSectionStorage *
-AbstractOptionSectionHandle::getStorage(internal::OptionSectionImpl *section)
+IOptionSectionStorage* AbstractOptionSectionHandle::getStorage(internal::OptionSectionImpl* section)
 {
     return section->storage_.get();
 }
 
-IOptionsContainer &AbstractOptionSectionHandle::addGroup()
+IOptionsContainer& AbstractOptionSectionHandle::addGroup()
 {
     return section_->addGroup();
 }
 
-internal::OptionSectionImpl *
-AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection &section)
+internal::OptionSectionImpl* AbstractOptionSectionHandle::addSectionImpl(const AbstractOptionSection& section)
 {
     return section_->addSectionImpl(section);
 }
 
-OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &settings)
+OptionInfo* AbstractOptionSectionHandle::addOptionImpl(const AbstractOption& settings)
 {
     return section_->addOptionImpl(settings);
 }
@@ -79,7 +77,7 @@ OptionInfo *AbstractOptionSectionHandle::addOptionImpl(const AbstractOption &set
  * AbstractOptionSectionInfo
  */
 
-const std::string &AbstractOptionSectionInfo::name() const
+const std::string& AbstractOptionSectionInfo::name() const
 {
     return section_.name_;
 }

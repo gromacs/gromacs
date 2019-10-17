@@ -43,12 +43,12 @@ namespace gmx
 class DumpInfo
 {
 
-    public:
-        static const char name[];
-        static const char shortDescription[];
-        static ICommandLineOptionsModulePointer create();
+public:
+    static const char                       name[];
+    static const char                       shortDescription[];
+    static ICommandLineOptionsModulePointer create();
 };
 
-}   // namespace gmx
+} // namespace gmx
 
 #endif

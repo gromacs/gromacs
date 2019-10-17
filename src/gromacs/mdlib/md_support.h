@@ -56,70 +56,71 @@ struct t_trxframe;
 
 namespace gmx
 {
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 class Constraints;
 class MDLogger;
 class SimulationSignaller;
-}
+} // namespace gmx
 
 /* Define a number of flags to better control the information
  * passed to compute_globals in md.c and global_stat.
  */
 
 /* we are computing the kinetic energy from average velocities */
-#define CGLO_EKINAVEVEL     (1u<<2u)
+#define CGLO_EKINAVEVEL (1u << 2u)
 /* we are removing the center of mass momenta */
-#define CGLO_STOPCM         (1u<<3u)
+#define CGLO_STOPCM (1u << 3u)
 /* bGStat is defined in do_md */
-#define CGLO_GSTAT          (1u<<4u)
+#define CGLO_GSTAT (1u << 4u)
 /* Sum the energy terms in global computation */
-#define CGLO_ENERGY         (1u<<6u)
+#define CGLO_ENERGY (1u << 6u)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_TEMPERATURE    (1u<<7u)
+#define CGLO_TEMPERATURE (1u << 7u)
 /* Sum the kinetic energy terms in global computation */
-#define CGLO_PRESSURE       (1u<<8u)
+#define CGLO_PRESSURE (1u << 8u)
 /* Sum the constraint term in global computation */
-#define CGLO_CONSTRAINT     (1u<<9u)
+#define CGLO_CONSTRAINT (1u << 9u)
 /* Reading ekin from the trajectory */
-#define CGLO_READEKIN       (1u<<10u)
+#define CGLO_READEKIN (1u << 10u)
 /* we need to reset the ekin rescaling factor here */
-#define CGLO_SCALEEKIN      (1u<<11u)
+#define CGLO_SCALEEKIN (1u << 11u)
 /* After a new DD partitioning, we need to set a flag to schedule
  * global reduction of the total number of bonded interactions that
  * will be computed, to check none are missing. */
-#define CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS (1u<<12u)
+#define CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS (1u << 12u)
 
 
 /*! \brief Return the number of steps that will take place between
  * intra-simulation communications, given the constraints of the
  * inputrec. */
-int computeGlobalCommunicationPeriod(const gmx::MDLogger &mdlog,
-                                     t_inputrec          *ir,
-                                     const t_commrec     *cr);
+int computeGlobalCommunicationPeriod(const gmx::MDLogger& mdlog, t_inputrec* ir, const t_commrec* cr);
 
 /*! \brief Return true if the \p value is equal across the set of multi-simulations
  *
  * \todo This duplicates some of check_multi_int. Consolidate. */
-bool multisim_int_all_are_equal(const gmx_multisim_t *ms,
-                                int64_t               value);
+bool multisim_int_all_are_equal(const gmx_multisim_t* ms, int64_t value);
 
-void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bLastStep);
+void rerun_parallel_comm(t_commrec* cr, t_trxframe* fr, gmx_bool* bLastStep);
 
 //! \brief Allocate and initialize node-local state entries
-void set_state_entries(t_state *state, const t_inputrec *ir);
+void set_state_entries(t_state* state, const t_inputrec* ir);
 
 /* Set the lambda values in the global state from a frame read with rerun */
-void setCurrentLambdasRerun(int64_t step, const t_lambda *fepvals,
-                            const t_trxframe *rerun_fr, const double *lam0,
-                            t_state *globalState);
+void setCurrentLambdasRerun(int64_t           step,
+                            const t_lambda*   fepvals,
+                            const t_trxframe* rerun_fr,
+                            const double*     lam0,
+                            t_state*          globalState);
 
 /* Set the lambda values at each step of mdrun when they change */
-void setCurrentLambdasLocal(int64_t step, const t_lambda *fepvals,
-                            const double *lam0, gmx::ArrayRef<real> lambda,
-                            int currentFEPState);
+void setCurrentLambdasLocal(int64_t             step,
+                            const t_lambda*     fepvals,
+                            const double*       lam0,
+                            gmx::ArrayRef<real> lambda,
+                            int                 currentFEPState);
 
-int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
+int multisim_min(const gmx_multisim_t* ms, int nmin, int n);
 /* Set an appropriate value for n across the whole multi-simulation */
 
 
@@ -129,15 +130,30 @@ int multisim_min(const gmx_multisim_t *ms, int nmin, int n);
  * and for COM removal with rotational and acceleration correction modes.
  * Velocities v are needed for kinetic energy calculation and for COM removal.
  */
-void compute_globals(gmx_global_stat *gstat, t_commrec *cr, const t_inputrec *ir,
-                     t_forcerec *fr, gmx_ekindata_t *ekind,
-                     const rvec *x, const rvec *v, const matrix box,
-                     real vdwLambda, const t_mdatoms *mdatoms,
-                     t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
-                     gmx_enerdata_t *enerd, tensor force_vir, tensor shake_vir, tensor total_vir,
-                     tensor pres, rvec mu_tot, gmx::Constraints *constr,
-                     gmx::SimulationSignaller *signalCoordinator,
-                     const matrix lastbox, int *totalNumberOfBondedInteractions,
-                     gmx_bool *bSumEkinhOld, int flags);
+void compute_globals(gmx_global_stat*          gstat,
+                     t_commrec*                cr,
+                     const t_inputrec*         ir,
+                     t_forcerec*               fr,
+                     gmx_ekindata_t*           ekind,
+                     const rvec*               x,
+                     const rvec*               v,
+                     const matrix              box,
+                     real                      vdwLambda,
+                     const t_mdatoms*          mdatoms,
+                     t_nrnb*                   nrnb,
+                     t_vcm*                    vcm,
+                     gmx_wallcycle_t           wcycle,
+                     gmx_enerdata_t*           enerd,
+                     tensor                    force_vir,
+                     tensor                    shake_vir,
+                     tensor                    total_vir,
+                     tensor                    pres,
+                     rvec                      mu_tot,
+                     gmx::Constraints*         constr,
+                     gmx::SimulationSignaller* signalCoordinator,
+                     const matrix              lastbox,
+                     int*                      totalNumberOfBondedInteractions,
+                     gmx_bool*                 bSumEkinhOld,
+                     int                       flags);
 
 #endif

@@ -97,46 +97,49 @@ namespace gmx
 
 /*! \brief Define constant that signals dynamic extent.
  */
-enum : std::ptrdiff_t {
+enum : std::ptrdiff_t
+{
     dynamic_extent = -1
 };
 
-template< std::ptrdiff_t ... StaticExtents >
+template<std::ptrdiff_t... StaticExtents>
 class extents;
 
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-constexpr bool operator==(const extents<LHS...> &lhs,
-                          const extents<RHS...> &rhs) noexcept;
+constexpr bool operator==(const extents<LHS...>& lhs, const extents<RHS...>& rhs) noexcept;
 
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-constexpr bool operator!=(const extents<LHS...> &lhs,
-                          const extents<RHS...> &rhs) noexcept;
+constexpr bool operator!=(const extents<LHS...>& lhs, const extents<RHS...>& rhs) noexcept;
 
 namespace detail
 {
 
-template< int R, std::ptrdiff_t ... StaticExtents >
+template<int R, std::ptrdiff_t... StaticExtents>
 struct extents_analyse;
 
 /*! \libinternal \brief Enable querying extent of specific rank by splitting
  * a static extents off the variadic template arguments.
  *
  */
-template< int R, std::ptrdiff_t E0, std::ptrdiff_t ... StaticExtents >
-struct extents_analyse<R, E0, StaticExtents...> {
+template<int R, std::ptrdiff_t E0, std::ptrdiff_t... StaticExtents>
+struct extents_analyse<R, E0, StaticExtents...>
+{
 
     //! The extent analysis of the next lower rank.
-    using next_extents_analyse = extents_analyse<R-1, StaticExtents...>;
+    using next_extents_analyse = extents_analyse<R - 1, StaticExtents...>;
 
     /*! \brief Accumulate the total rank from all extents.
      * \returns incremented rank of the next extent
      */
-    static constexpr std::size_t rank() noexcept { return next_extents_analyse::rank()+1; }
+    static constexpr std::size_t rank() noexcept { return next_extents_analyse::rank() + 1; }
     /*! \brief Accumulate the dynamic rank from all extents.
      * This extent is static, so hand down query to the next extent analysis.
      * \returns the dynamic rank of the next extent analysis.
      */
-    static constexpr std::size_t rank_dynamic() noexcept { return next_extents_analyse::rank_dynamic(); }
+    static constexpr std::size_t rank_dynamic() noexcept
+    {
+        return next_extents_analyse::rank_dynamic();
+    }
 
     //! Store analysis of the next extent of next lower rank.
     next_extents_analyse next;
@@ -148,8 +151,10 @@ struct extents_analyse<R, E0, StaticExtents...> {
      * to the next extents analysis of lower rank.
      * \param[in] de dynamic extents
      */
-    template<class ... DynamicExtents>
-    constexpr extents_analyse(DynamicExtents... de) : next(de ...) {}
+    template<class... DynamicExtents>
+    constexpr extents_analyse(DynamicExtents... de) : next(de...)
+    {
+    }
 
     /*! \brief Construct from an array of dynamic extentes and rank.
      * Hand down the dynamic rank parameters to the next extents analysis rank
@@ -157,15 +162,20 @@ struct extents_analyse<R, E0, StaticExtents...> {
      * \param[in] r rank to read from the dynamic extent
      */
     template<std::size_t Rank>
-    constexpr extents_analyse(const std::array<std::ptrdiff_t, Rank> &de, const std::size_t r) : next(de, r) {}
+    constexpr extents_analyse(const std::array<std::ptrdiff_t, Rank>& de, const std::size_t r) :
+        next(de, r)
+    {
+    }
 
     //! Copy constructor.
     template<std::ptrdiff_t... OtherStaticExtents>
-    extents_analyse(extents_analyse<R, OtherStaticExtents...> rhs) : next(rhs.next) {}
+    extents_analyse(extents_analyse<R, OtherStaticExtents...> rhs) : next(rhs.next)
+    {
+    }
 
     //! Assignment operator.
     template<std::ptrdiff_t... OtherStaticExtents>
-    extents_analyse &operator= (extents_analyse<R, OtherStaticExtents...> rhs)
+    extents_analyse& operator=(extents_analyse<R, OtherStaticExtents...> rhs)
     {
         next = rhs.next;
         return *this;
@@ -189,32 +199,33 @@ struct extents_analyse<R, E0, StaticExtents...> {
     }
 
     //! Returns the extent with the first dimension sliced off
-    constexpr auto sliced_extents() const noexcept
-    {
-        return next;
-    }
+    constexpr auto sliced_extents() const noexcept { return next; }
 };
 
 /*! \libinternal \brief Enable querying extent of specific rank by splitting
  * a dynamic extent off the variadic template arguments.
  */
-template< int R, std::ptrdiff_t ... StaticExtents >
-struct extents_analyse<R, dynamic_extent, StaticExtents...> {
+template<int R, std::ptrdiff_t... StaticExtents>
+struct extents_analyse<R, dynamic_extent, StaticExtents...>
+{
     //! The extent analysis of the next lower rank.
-    using next_extents_analyse = extents_analyse<R-1, StaticExtents...>;
+    using next_extents_analyse = extents_analyse<R - 1, StaticExtents...>;
     /*! \brief Accumulate the total rank from all extents.
      * \returns incremented rank of the next extent
      */
-    static constexpr std::size_t rank() noexcept { return next_extents_analyse::rank()+1; }
+    static constexpr std::size_t rank() noexcept { return next_extents_analyse::rank() + 1; }
     /*! \brief Accumulate the dynamic rank from all extents.
      * \returns the dynamic rank of the next extent analysis.
      */
-    static constexpr std::size_t rank_dynamic() noexcept { return next_extents_analyse::rank_dynamic()+1; }
+    static constexpr std::size_t rank_dynamic() noexcept
+    {
+        return next_extents_analyse::rank_dynamic() + 1;
+    }
 
     //! Store analysis of the next extent of next lower rank.
     next_extents_analyse next;
     //! The dynamic extent of this rank
-    std::ptrdiff_t       this_extent;
+    std::ptrdiff_t this_extent;
 
     //! Trivial constructor.
     extents_analyse() : next(), this_extent(0) {}
@@ -224,8 +235,10 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
      * \param[in] E the dynamic extent of this rank.
      * \param[in] de dynamic extents
      */
-    template<class ... DynamicExtents>
-    extents_analyse(std::ptrdiff_t E, DynamicExtents... de) : next(de ...), this_extent(E) {}
+    template<class... DynamicExtents>
+    extents_analyse(std::ptrdiff_t E, DynamicExtents... de) : next(de...), this_extent(E)
+    {
+    }
 
     /*! \brief Construct from an array of dynamic extentes and rank.
      * Hand down the dynamic rank parameters to the next extents analysis rank
@@ -233,15 +246,23 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
      * \param[in] r rank to read from the dynamic extent
      */
     template<std::size_t Rank>
-    extents_analyse(const std::array<std::ptrdiff_t, Rank> &de, const std::size_t r) : next(de, r+1), this_extent(de[r]) {}
+    extents_analyse(const std::array<std::ptrdiff_t, Rank>& de, const std::size_t r) :
+        next(de, r + 1),
+        this_extent(de[r])
+    {
+    }
 
     //! Copy constructor.
     template<std::ptrdiff_t... OtherStaticExtents>
-    extents_analyse(extents_analyse<R, OtherStaticExtents...> rhs) : next(rhs.next), this_extent(rhs.extent(R)) {}
+    extents_analyse(extents_analyse<R, OtherStaticExtents...> rhs) :
+        next(rhs.next),
+        this_extent(rhs.extent(R))
+    {
+    }
 
     //! Assignment operator.
     template<std::ptrdiff_t... OtherStaticExtents>
-    extents_analyse &operator= (extents_analyse<R, OtherStaticExtents...> rhs)
+    extents_analyse& operator=(extents_analyse<R, OtherStaticExtents...> rhs)
     {
         next        = rhs.next;
         this_extent = rhs.extent(R);
@@ -266,17 +287,15 @@ struct extents_analyse<R, dynamic_extent, StaticExtents...> {
     }
 
     //! Returns the extent with the first dimension sliced off
-    constexpr auto sliced_extents() const noexcept
-    {
-        return next;
-    }
+    constexpr auto sliced_extents() const noexcept { return next; }
 };
 
 /*! \libinternal \brief Specialisation for rank 0 extents analysis.
  * Ends recursive rank analysis.
  */
 template<>
-struct extents_analyse<0> {
+struct extents_analyse<0>
+{
     /*! \brief Rank of extent of rank 0.
      * \returns 0
      */
@@ -291,32 +310,27 @@ struct extents_analyse<0> {
 
     //! Construct from array and rank, doing nothing.
     template<std::size_t Rank>
-    extents_analyse(const std::array<std::ptrdiff_t, Rank> & /*de*/, const std::size_t /*r*/) {}
+    extents_analyse(const std::array<std::ptrdiff_t, Rank>& /*de*/, const std::size_t /*r*/)
+    {
+    }
 
-    //extents_analyse & operator=(extents_analyse) = default;
+    // extents_analyse & operator=(extents_analyse) = default;
 
     /*! \brief Extent of rank 0 is 1, ensuring that product of extents yields required size and not zero.
      * NOTE changed from ORNL reference implementation in making this static constexpr instead of constexpr .. const
      */
-    static constexpr std::ptrdiff_t extent(const std::size_t /*r*/) noexcept
-    {
-        return 1;
-    }
+    static constexpr std::ptrdiff_t extent(const std::size_t /*r*/) noexcept { return 1; }
 
     //! Static extent of rank 0 is 1, ensuring that product of extents yields required size and not zero.
-    static constexpr std::ptrdiff_t static_extent(const std::size_t /*r*/) noexcept
-    {
-        return 1;
-    }
-
+    static constexpr std::ptrdiff_t static_extent(const std::size_t /*r*/) noexcept { return 1; }
 };
 
-template< std::ptrdiff_t E0, std::ptrdiff_t ... StaticExtents >
+template<std::ptrdiff_t E0, std::ptrdiff_t... StaticExtents>
 struct sliced_extents
 {
     using type = extents<StaticExtents...>;
 };
-}   // namespace detail
+} // namespace detail
 
 /*! \libinternal \brief Multidimensional extents with static and dynamic dimensions.
  *
@@ -329,92 +343,104 @@ struct sliced_extents
  * \tparam StaticExtents rank number of extents, where the dynamic_extent
  * constant for static extent is used to signal a dynamic extent.
  */
-template< std::ptrdiff_t ... StaticExtents >
+template<std::ptrdiff_t... StaticExtents>
 class extents
 {
-    private:
-        using extents_analyse_t = detail::extents_analyse<sizeof ... (StaticExtents), StaticExtents...>;
+private:
+    using extents_analyse_t = detail::extents_analyse<sizeof...(StaticExtents), StaticExtents...>;
 
-    public:
-        //! Type used to index elements.
-        using index_type = std::ptrdiff_t;
-        //! Trivial constructor
-        constexpr extents() noexcept {}
-        //! Move constructor
-        constexpr extents( extents && ) noexcept = default;
-        //! Copy constructor.
-        constexpr extents( const extents & ) noexcept = default;
-        /*! \brief Construct with dynamic extents.
-         *
-         * Allows for extents(u,v,w..) syntax when setting dynamic extents
-         *
-         * \tparam IndexType type of index
-         * \param[in] dn first dynamic index
-         * \param[in] DynamicExtents parameter pack
-         */
-        template< class ... IndexType >
-        constexpr extents( std::ptrdiff_t dn,
-                           IndexType ...  DynamicExtents ) noexcept
-            : impl( dn, DynamicExtents ... )
-        { static_assert( 1+sizeof ... (DynamicExtents) == rank_dynamic(), "" ); }
+public:
+    //! Type used to index elements.
+    using index_type = std::ptrdiff_t;
+    //! Trivial constructor
+    constexpr extents() noexcept {}
+    //! Move constructor
+    constexpr extents(extents&&) noexcept = default;
+    //! Copy constructor.
+    constexpr extents(const extents&) noexcept = default;
+    /*! \brief Construct with dynamic extents.
+     *
+     * Allows for extents(u,v,w..) syntax when setting dynamic extents
+     *
+     * \tparam IndexType type of index
+     * \param[in] dn first dynamic index
+     * \param[in] DynamicExtents parameter pack
+     */
+    template<class... IndexType>
+    constexpr extents(std::ptrdiff_t dn, IndexType... DynamicExtents) noexcept :
+        impl(dn, DynamicExtents...)
+    {
+        static_assert(1 + sizeof...(DynamicExtents) == rank_dynamic(), "");
+    }
 
-        /*! \brief Construct from array of dynamic extents.
-         *
-         * Allows for extents({{u,v,w..}}) syntax when setting dynamic extents
-         *
-         * \param[in] dynamic_extents array of dynamic rank size containing extents
-         */
-        constexpr extents( const std::array<std::ptrdiff_t, extents_analyse_t::rank_dynamic()> dynamic_extents) noexcept
-            : impl(dynamic_extents, 0) {}
+    /*! \brief Construct from array of dynamic extents.
+     *
+     * Allows for extents({{u,v,w..}}) syntax when setting dynamic extents
+     *
+     * \param[in] dynamic_extents array of dynamic rank size containing extents
+     */
+    constexpr extents(const std::array<std::ptrdiff_t, extents_analyse_t::rank_dynamic()> dynamic_extents) noexcept :
+        impl(dynamic_extents, 0)
+    {
+    }
 
-        //! Copy constructor
-        template<std::ptrdiff_t... OtherStaticExtents>
-        extents( const extents<OtherStaticExtents...> &other )
-            : impl( other.impl ) {}
+    //! Copy constructor
+    template<std::ptrdiff_t... OtherStaticExtents>
+    extents(const extents<OtherStaticExtents...>& other) : impl(other.impl)
+    {
+    }
 
-        //! Default move assignment
-        extents &operator= ( extents && ) noexcept = default;
-        //! Default copy assignment
-        extents &operator= ( const extents & ) noexcept = default;
-        //! Copy assignment
-        template<std::ptrdiff_t... OtherStaticExtents>
-        extents &operator= ( const extents<OtherStaticExtents...> &other )
-        { impl = other.impl; return *this; }
-        //! Default destructor
-        ~extents() = default;
+    //! Default move assignment
+    extents& operator=(extents&&) noexcept = default;
+    //! Default copy assignment
+    extents& operator=(const extents&) noexcept = default;
+    //! Copy assignment
+    template<std::ptrdiff_t... OtherStaticExtents>
+    extents& operator=(const extents<OtherStaticExtents...>& other)
+    {
+        impl = other.impl;
+        return *this;
+    }
+    //! Default destructor
+    ~extents() = default;
 
-        // [mdspan.extents.obs]
-        /*! \brief The rank of the extent.
-         * \returns the rank all extents together
-         */
-        static constexpr std::size_t rank() noexcept
-        { return sizeof ... (StaticExtents); }
-        /*! \brief The rank of the dynamic extents.
-         * \returns Only the dynamic extents.
-         */
-        static constexpr std::size_t rank_dynamic() noexcept
-        { return extents_analyse_t::rank_dynamic(); }
-        /*! \brief The rank of the static extents.
-         * \returns Only the static extents.
-         */
-        static constexpr index_type static_extent(std::size_t k) noexcept
-        { return extents_analyse_t::static_extent(rank()-k); }
-        /*! \brief The extent along a specific dimension.
-         * \param[in] k the dimension
-         * \returns the extent along that dimension
-         */
-        constexpr index_type extent(std::size_t k) const noexcept
-        { return impl.extent(rank()-k); }
-        //! Returns the extent with the first dimension sliced off
-        constexpr auto sliced_extents() const noexcept
-        { return typename detail::sliced_extents<StaticExtents...>::type(impl.sliced_extents()); }
+    // [mdspan.extents.obs]
+    /*! \brief The rank of the extent.
+     * \returns the rank all extents together
+     */
+    static constexpr std::size_t rank() noexcept { return sizeof...(StaticExtents); }
+    /*! \brief The rank of the dynamic extents.
+     * \returns Only the dynamic extents.
+     */
+    static constexpr std::size_t rank_dynamic() noexcept
+    {
+        return extents_analyse_t::rank_dynamic();
+    }
+    /*! \brief The rank of the static extents.
+     * \returns Only the static extents.
+     */
+    static constexpr index_type static_extent(std::size_t k) noexcept
+    {
+        return extents_analyse_t::static_extent(rank() - k);
+    }
+    /*! \brief The extent along a specific dimension.
+     * \param[in] k the dimension
+     * \returns the extent along that dimension
+     */
+    constexpr index_type extent(std::size_t k) const noexcept { return impl.extent(rank() - k); }
+    //! Returns the extent with the first dimension sliced off
+    constexpr auto sliced_extents() const noexcept
+    {
+        return typename detail::sliced_extents<StaticExtents...>::type(impl.sliced_extents());
+    }
 
-    private:
-        extents(extents_analyse_t o) : impl(o) {}
-        //! For copy assignment, extents are friends of extents.
-        template< std::ptrdiff_t... > friend class extents;
-        //! The implementation class.
-        extents_analyse_t impl;
+private:
+    extents(extents_analyse_t o) : impl(o) {}
+    //! For copy assignment, extents are friends of extents.
+    template<std::ptrdiff_t...>
+    friend class extents;
+    //! The implementation class.
+    extents_analyse_t impl;
 };
 
 
@@ -422,13 +448,12 @@ class extents
  * \returns true if extents are equal
  */
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-constexpr bool operator==(const extents<LHS...> &lhs,
-                          const extents<RHS...> &rhs) noexcept
+constexpr bool operator==(const extents<LHS...>& lhs, const extents<RHS...>& rhs) noexcept
 {
     bool equal = lhs.rank() == rhs.rank();
     for (std::size_t r = 0; r < lhs.rank(); r++)
     {
-        equal = equal && ( lhs.extent(r) == rhs.extent(r) );
+        equal = equal && (lhs.extent(r) == rhs.extent(r));
     }
     return equal;
 }
@@ -437,11 +462,10 @@ constexpr bool operator==(const extents<LHS...> &lhs,
  * \returns true if extents are unequal
  */
 template<std::ptrdiff_t... LHS, std::ptrdiff_t... RHS>
-constexpr bool operator!=(const extents<LHS...> &lhs,
-                          const extents<RHS...> &rhs) noexcept
+constexpr bool operator!=(const extents<LHS...>& lhs, const extents<RHS...>& rhs) noexcept
 {
     return !(lhs == rhs);
 }
 
-}      // namespace gmx
+} // namespace gmx
 #endif /* end of include guard: MDSPAN_EXTENTS_H */

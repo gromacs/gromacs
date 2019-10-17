@@ -47,29 +47,28 @@
 namespace gmxapi
 {
 
-const char* MDHolder::api_name  = MDHolder_Name;
+const char* MDHolder::api_name = MDHolder_Name;
 
 //! \cond internal
 class MDWorkSpec::Impl
 {
-    public:
-        /*!
-         * \brief container of objects glued together by the client.
-         *
-         * Note that the client can't be trusted to keep alive or destroy these,
-         * and we do not yet have sufficient abstraction layers to allow the
-         * client to interact asynchronously with code supporting MD simulation
-         * through truly separate handles to the underlying objects, so ownership
-         * is amongst the collaborators of the gmxapi::MDModule.
-         * \todo Pass factory function objects instead of shared handles.
-         * \todo Consolidate MDWorkSpec and gmxapi::Workflow under new Context umbrella.
-         */
-        std::vector< std::shared_ptr<gmxapi::MDModule> > modules;
+public:
+    /*!
+     * \brief container of objects glued together by the client.
+     *
+     * Note that the client can't be trusted to keep alive or destroy these,
+     * and we do not yet have sufficient abstraction layers to allow the
+     * client to interact asynchronously with code supporting MD simulation
+     * through truly separate handles to the underlying objects, so ownership
+     * is amongst the collaborators of the gmxapi::MDModule.
+     * \todo Pass factory function objects instead of shared handles.
+     * \todo Consolidate MDWorkSpec and gmxapi::Workflow under new Context umbrella.
+     */
+    std::vector<std::shared_ptr<gmxapi::MDModule>> modules;
 };
 //! \endcond
 
-MDWorkSpec::MDWorkSpec() :
-    impl_ {std::make_unique<Impl>()}
+MDWorkSpec::MDWorkSpec() : impl_{ std::make_unique<Impl>() }
 {
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
 }
@@ -80,7 +79,7 @@ void MDWorkSpec::addModule(std::shared_ptr<gmxapi::MDModule> module)
     impl_->modules.emplace_back(std::move(module));
 }
 
-std::vector < std::shared_ptr < gmxapi::MDModule>> &MDWorkSpec::getModules()
+std::vector<std::shared_ptr<gmxapi::MDModule>>& MDWorkSpec::getModules()
 {
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
     return impl_->modules;
@@ -102,29 +101,25 @@ std::shared_ptr<const ::gmxapi::MDWorkSpec> MDHolder::getSpec() const
     return impl_->spec_;
 }
 
-MDHolder::MDHolder() :
-    MDHolder {std::make_shared<MDWorkSpec>()}
+MDHolder::MDHolder() : MDHolder{ std::make_shared<MDWorkSpec>() }
 {
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
     GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
 }
 
 MDHolder::MDHolder(std::shared_ptr<MDWorkSpec> spec) :
-    name_(),
     impl_(std::make_shared<MDHolder::Impl>(std::move(spec)))
 {
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
     GMX_ASSERT(impl_->spec_, "Expected non-null work specification.");
 }
 
-MDHolder::Impl::Impl(std::shared_ptr<MDWorkSpec> &&spec) :
-    spec_ {spec}
+MDHolder::Impl::Impl(std::shared_ptr<MDWorkSpec>&& spec) : spec_{ spec }
 {
     GMX_ASSERT(spec_, "Expected non-null work specification.");
 }
 
-MDHolder::MDHolder(std::string name) :
-    MDHolder {}
+MDHolder::MDHolder(std::string name) : MDHolder{}
 {
     name_ = std::move(name);
     GMX_ASSERT(impl_, "Expected non-null implementation object.");
@@ -137,4 +132,4 @@ std::string MDHolder::name() const
 }
 
 
-} //end namespace gmxapi
+} // end namespace gmxapi

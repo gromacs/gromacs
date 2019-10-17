@@ -51,80 +51,72 @@ namespace gmx
 namespace
 {
 
-struct EventA{};
-struct EventB{};
+struct EventA
+{
+};
+struct EventB
+{
+};
 
 class EventACallee final
 {
-    public:
-        void callback(EventA /*a*/)
-        {
-            notifiedEventA_ = true;
-        };
+public:
+    void callback(EventA /*a*/) { notifiedEventA_ = true; };
 
-        bool notifiedEventA() { return notifiedEventA_; }
+    bool notifiedEventA() { return notifiedEventA_; }
 
-    private:
-        bool notifiedEventA_ = false;
+private:
+    bool notifiedEventA_ = false;
 };
 
 class EventBCallee final
 {
-    public:
-        void callback(EventB * /* bPointer */)
-        {
-            notifiedEventB_ = true;
-        };
+public:
+    void callback(EventB* /* bPointer */) { notifiedEventB_ = true; };
 
-        bool notifiedEventB() { return notifiedEventB_; }
+    bool notifiedEventB() { return notifiedEventB_; }
 
-    private:
-        bool notifiedEventB_ = false;
+private:
+    bool notifiedEventB_ = false;
 };
 
 class EventAandBCallee final
 {
-    public:
-        void notify(EventB * /* bPointer */)
-        {
-            notifiedEventB_ = true;
-        };
+public:
+    void notify(EventB* /* bPointer */) { notifiedEventB_ = true; };
 
-        void callback(EventA /* a */)
-        {
-            notifiedEventA_ = true;
-        };
+    void callback(EventA /* a */) { notifiedEventA_ = true; };
 
-        bool notifiedEventB() { return notifiedEventB_; }
-        bool notifiedEventA() { return notifiedEventA_; }
+    bool notifiedEventB() { return notifiedEventB_; }
+    bool notifiedEventA() { return notifiedEventA_; }
 
-    private:
-        bool notifiedEventB_ = false;
-        bool notifiedEventA_ = false;
+private:
+    bool notifiedEventB_ = false;
+    bool notifiedEventA_ = false;
 };
 
 TEST(MDModuleNotificationTest, addConsumer)
 {
     registerMdModuleNotification<EventA>::type notifications;
-    EventACallee eventACallee;
+    EventACallee                               eventACallee;
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
 
     notifications.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
-    notifications.notify(EventA {});
+    notifications.notify(EventA{});
 
     EXPECT_TRUE(eventACallee.notifiedEventA());
 }
 
 TEST(MDModuleNotificationTest, addConsumerWithPointerParameter)
 {
-    registerMdModuleNotification<EventB *>::type notifications;
-    EventBCallee eventBCallee;
+    registerMdModuleNotification<EventB*>::type notifications;
+    EventBCallee                                eventBCallee;
 
     EXPECT_FALSE(eventBCallee.notifiedEventB());
 
-    notifications.subscribe([&eventBCallee](EventB * eventB) { eventBCallee.callback(eventB); });
-    EventB * eventBPointer = nullptr;
+    notifications.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
+    EventB* eventBPointer = nullptr;
     notifications.notify(eventBPointer);
 
     EXPECT_TRUE(eventBCallee.notifiedEventB());
@@ -132,23 +124,23 @@ TEST(MDModuleNotificationTest, addConsumerWithPointerParameter)
 
 TEST(MDModuleNotificationTest, addTwoDifferentConsumers)
 {
-    registerMdModuleNotification<EventA, EventB *>::type notifications;
-    EventBCallee eventBCallee;
-    EventACallee eventACallee;
+    registerMdModuleNotification<EventA, EventB*>::type notifications;
+    EventBCallee                                        eventBCallee;
+    EventACallee                                        eventACallee;
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
     EXPECT_FALSE(eventBCallee.notifiedEventB());
 
-    notifications.subscribe([&eventBCallee](EventB *eventB) { eventBCallee.callback(eventB); });
+    notifications.subscribe([&eventBCallee](EventB* eventB) { eventBCallee.callback(eventB); });
     notifications.subscribe([&eventACallee](EventA eventA) { eventACallee.callback(eventA); });
 
-    EventB * eventBPointer = nullptr;
+    EventB* eventBPointer = nullptr;
     notifications.notify(eventBPointer);
 
     EXPECT_FALSE(eventACallee.notifiedEventA());
     EXPECT_TRUE(eventBCallee.notifiedEventB());
 
-    notifications.notify(EventA {});
+    notifications.notify(EventA{});
 
     EXPECT_TRUE(eventACallee.notifiedEventA());
     EXPECT_TRUE(eventBCallee.notifiedEventB());
@@ -156,25 +148,25 @@ TEST(MDModuleNotificationTest, addTwoDifferentConsumers)
 
 TEST(MDModuleNotificationTest, consumerOfTwoResources)
 {
-    registerMdModuleNotification<EventA, EventB *>::type notifications;
+    registerMdModuleNotification<EventA, EventB*>::type notifications;
 
-    EventAandBCallee     callee;
+    EventAandBCallee callee;
 
     EXPECT_FALSE(callee.notifiedEventB());
     EXPECT_FALSE(callee.notifiedEventA());
 
     // requires a template parameter here, because call is ambiguous otherwise
     notifications.subscribe([&callee](EventA msg) { callee.callback(msg); });
-    notifications.subscribe([&callee](EventB *msg) { callee.notify(msg); });
+    notifications.subscribe([&callee](EventB* msg) { callee.notify(msg); });
 
-    EventB * eventBp = nullptr;
+    EventB* eventBp = nullptr;
 
     notifications.notify(eventBp);
 
     EXPECT_FALSE(callee.notifiedEventA());
     EXPECT_TRUE(callee.notifiedEventB());
 
-    notifications.notify(EventA {});
+    notifications.notify(EventA{});
 
     EXPECT_TRUE(callee.notifiedEventA());
     EXPECT_TRUE(callee.notifiedEventB());

@@ -56,8 +56,8 @@ enum class KernelType;
 
 struct VerletbufListSetup
 {
-    int  cluster_size_i;  /* Cluster pair-list i-cluster size atom count */
-    int  cluster_size_j;  /* Cluster pair-list j-cluster size atom count */
+    int cluster_size_i; /* Cluster pair-list i-cluster size atom count */
+    int cluster_size_j; /* Cluster pair-list j-cluster size atom count */
 };
 
 
@@ -109,19 +109,18 @@ VerletbufListSetup verletbufGetSafeListSetup(ListSetupType listType);
  * \param[in] boxVolume     The volume of the unit cell
  * \param[in] inputrec      The input record
  * \param[in] nstlist       The pair list update frequency in steps (is not taken from \p inputrec)
- * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different for dynamic pruning
- * \param[in] referenceTemperature  The reference temperature for the ensemble
+ * \param[in] listLifetime  The lifetime of the pair-list, usually nstlist-1, but could be different
+ * for dynamic pruning \param[in] referenceTemperature  The reference temperature for the ensemble
  * \param[in] listSetup     The pair-list setup
  * \returns The computed pair-list radius including buffer
  */
-real
-calcVerletBufferSize(const gmx_mtop_t         &mtop,
-                     real                      boxVolume,
-                     const t_inputrec         &inputrec,
-                     int                       nstlist,
-                     int                       listLifetime,
-                     real                      referenceTemperature,
-                     const VerletbufListSetup &listSetup);
+real calcVerletBufferSize(const gmx_mtop_t&         mtop,
+                          real                      boxVolume,
+                          const t_inputrec&         inputrec,
+                          int                       nstlist,
+                          int                       listLifetime,
+                          real                      referenceTemperature,
+                          const VerletbufListSetup& listSetup);
 
 /* Convenience type */
 using PartitioningPerMoltype = gmx::ArrayRef<const gmx::RangePartitioning>;
@@ -141,11 +140,10 @@ using PartitioningPerMoltype = gmx::ArrayRef<const gmx::RangePartitioning>;
  *
  * Note: This size increases (very slowly) with system size.
  */
-real
-minCellSizeForAtomDisplacement(const gmx_mtop_t       &mtop,
-                               const t_inputrec       &ir,
-                               PartitioningPerMoltype  updateGrouping,
-                               real                    chanceRequested);
+real minCellSizeForAtomDisplacement(const gmx_mtop_t&      mtop,
+                                    const t_inputrec&      ir,
+                                    PartitioningPerMoltype updateGrouping,
+                                    real                   chanceRequested);
 
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.
@@ -170,9 +168,6 @@ struct atom_nonbonded_kinetic_prop_t
  *
  * Only exposed here for testing purposes.
  */
-void constrained_atom_sigma2(real                                 kT_fac,
-                             const atom_nonbonded_kinetic_prop_t *prop,
-                             real                                *sigma2_2d,
-                             real                                *sigma2_3d);
+void constrained_atom_sigma2(real kT_fac, const atom_nonbonded_kinetic_prop_t* prop, real* sigma2_2d, real* sigma2_3d);
 
 #endif

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,46 +66,54 @@ namespace gmx
  */
 class AnalysisDataDisplacementModule::Impl
 {
-    public:
-        Impl();
-        ~Impl();
+public:
+    Impl();
+    ~Impl();
 
-        //! Maximum number of particles for which the displacements are calculated.
-        int                     nmax;
-        //! Maximum time for which the displacements are needed.
-        real                    tmax;
-        //! Number of dimensions per data point.
-        int                     ndim;
+    //! Maximum number of particles for which the displacements are calculated.
+    int nmax;
+    //! Maximum time for which the displacements are needed.
+    real tmax;
+    //! Number of dimensions per data point.
+    int ndim;
 
-        //! true if no frames have been read.
-        bool                    bFirst;
-        //! Stores the time of the first frame.
-        real                    t0;
-        //! Stores the time interval between frames.
-        real                    dt;
-        //! Stores the time of the current frame.
-        real                    t;
-        //! Stores the index in the store for the current positions.
-        int                     ci;
+    //! true if no frames have been read.
+    bool bFirst;
+    //! Stores the time of the first frame.
+    real t0;
+    //! Stores the time interval between frames.
+    real dt;
+    //! Stores the time of the current frame.
+    real t;
+    //! Stores the index in the store for the current positions.
+    int ci;
 
-        //! Maximum number of positions to store for a particle.
-        int                            max_store;
-        //! The total number of positions ever stored (can be larger than \p max_store).
-        int                            nstored;
-        //! Old values.
-        real                          *oldval;
-        //! The most recently calculated displacements.
-        std::vector<AnalysisDataValue> currValues_;
+    //! Maximum number of positions to store for a particle.
+    int max_store;
+    //! The total number of positions ever stored (can be larger than \p max_store).
+    int nstored;
+    //! Old values.
+    real* oldval;
+    //! The most recently calculated displacements.
+    std::vector<AnalysisDataValue> currValues_;
 
-        //! Histogram module for calculating MSD histograms, or NULL if not set.
-        AnalysisDataBinAverageModule *histm;
+    //! Histogram module for calculating MSD histograms, or NULL if not set.
+    AnalysisDataBinAverageModule* histm;
 };
 
-AnalysisDataDisplacementModule::Impl::Impl()
-    : nmax(0), tmax(0.0), ndim(3),
-      bFirst(true), t0(0.0), dt(0.0), t(0.0), ci(0),
-      max_store(-1), nstored(0), oldval(nullptr),
-      histm(nullptr)
+AnalysisDataDisplacementModule::Impl::Impl() :
+    nmax(0),
+    tmax(0.0),
+    ndim(3),
+    bFirst(true),
+    t0(0.0),
+    dt(0.0),
+    t(0.0),
+    ci(0),
+    max_store(-1),
+    nstored(0),
+    oldval(nullptr),
+    histm(nullptr)
 {
 }
 
@@ -117,28 +126,22 @@ AnalysisDataDisplacementModule::Impl::~Impl()
  * AnalysisDataDisplacementModule
  */
 
-AnalysisDataDisplacementModule::AnalysisDataDisplacementModule()
-    : _impl(new Impl())
+AnalysisDataDisplacementModule::AnalysisDataDisplacementModule() : _impl(new Impl())
 {
     setMultipoint(true);
 }
 
 
-AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule()
-{
-}
+AnalysisDataDisplacementModule::~AnalysisDataDisplacementModule() {}
 
 
-void
-AnalysisDataDisplacementModule::setMaxTime(real tmax)
+void AnalysisDataDisplacementModule::setMaxTime(real tmax)
 {
     _impl->tmax = tmax;
 }
 
 
-void
-AnalysisDataDisplacementModule::setMSDHistogram(
-        const AnalysisDataBinAverageModulePointer &histm)
+void AnalysisDataDisplacementModule::setMSDHistogram(const AnalysisDataBinAverageModulePointer& histm)
 {
     GMX_RELEASE_ASSERT(_impl->histm == nullptr, "Can only set MSD histogram once");
     _impl->histm = histm.get();
@@ -146,29 +149,25 @@ AnalysisDataDisplacementModule::setMSDHistogram(
 }
 
 
-AnalysisDataFrameRef
-AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
+AnalysisDataFrameRef AnalysisDataDisplacementModule::tryGetDataFrameInternal(int /*index*/) const
 {
     return AnalysisDataFrameRef();
 }
 
 
-bool
-AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
+bool AnalysisDataDisplacementModule::requestStorageInternal(int /*nframes*/)
 {
     return false;
 }
 
 
-int
-AnalysisDataDisplacementModule::flags() const
+int AnalysisDataDisplacementModule::flags() const
 {
     return efAllowMulticolumn;
 }
 
 
-void
-AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData* data)
 {
     if (data->columnCount() % _impl->ndim != 0)
     {
@@ -184,8 +183,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 }
 
 
-void
-AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader& header)
 {
     // Initialize times.
     if (_impl->bFirst)
@@ -212,7 +210,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     // Allocate memory for all the positions once it is possible.
     if (_impl->max_store == -1 && !_impl->bFirst)
     {
-        _impl->max_store = _impl->nmax * static_cast<int>(_impl->tmax/_impl->dt + 1);
+        _impl->max_store = _impl->nmax * static_cast<int>(_impl->tmax / _impl->dt + 1);
         srenew(_impl->oldval, _impl->max_store);
     }
 
@@ -223,22 +221,20 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
         _impl->ci = 0;
     }
 
-/*
-    for (int i = 0; i < _impl->nmax; ++i)
-    {
-        _impl->p[_impl->ci + i].bPres = false;
-    }
- */
+    /*
+        for (int i = 0; i < _impl->nmax; ++i)
+        {
+            _impl->p[_impl->ci + i].bPres = false;
+        }
+     */
     _impl->nstored++;
     _impl->bFirst = false;
 }
 
 
-void
-AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
-    if (points.firstColumn() % _impl->ndim != 0
-        || points.columnCount() % _impl->ndim != 0)
+    if (points.firstColumn() % _impl->ndim != 0 || points.columnCount() % _impl->ndim != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
@@ -249,8 +245,7 @@ AnalysisDataDisplacementModule::pointsAdded(const AnalysisDataPointSetRef &point
 }
 
 
-void
-AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+void AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader& /*header*/)
 {
     if (_impl->nstored <= 1)
     {
@@ -263,16 +258,15 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
     {
         if (_impl->histm)
         {
-            _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
-                                                 _impl->dt).integerBins());
+            _impl->histm->init(
+                    histogramFromBins(0, _impl->max_store / _impl->nmax, _impl->dt).integerBins());
         }
         moduleManager().notifyDataStart(this);
     }
     AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
     moduleManager().notifyFrameStart(header);
 
-    for (i = _impl->ci - _impl->nmax, step = 1;
-         step < _impl->nstored && i != _impl->ci;
+    for (i = _impl->ci - _impl->nmax, step = 1; step < _impl->nstored && i != _impl->ci;
          i -= _impl->nmax, ++step)
     {
         if (i < 0)
@@ -288,8 +282,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 
             for (int d = 0; d < _impl->ndim; ++d)
             {
-                real displ = _impl->oldval[_impl->ci + j + d]
-                    - _impl->oldval[i + j + d];
+                real displ = _impl->oldval[_impl->ci + j + d] - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
             _impl->currValues_.emplace_back(dist2);
@@ -301,8 +294,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
 }
 
 
-void
-AnalysisDataDisplacementModule::dataFinished()
+void AnalysisDataDisplacementModule::dataFinished()
 {
     if (_impl->nstored >= 2)
     {

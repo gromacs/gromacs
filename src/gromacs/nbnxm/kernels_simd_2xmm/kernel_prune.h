@@ -54,8 +54,7 @@ struct NbnxnPairlistCpu;
  * Reads a cluster pairlist \p nbl->ciOuter, \p nbl->cjOuter and writes
  * all cluster pairs within \p rlistInner to \p nbl->ci, \p nbl->cj.
  */
-void
-nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu *         nbl,
-                        const nbnxn_atomdata_t *   nbat,
-                        const rvec * gmx_restrict  shift_vec,
-                        real                       rlistInner);
+void nbnxn_kernel_prune_2xnn(NbnxnPairlistCpu*       nbl,
+                             const nbnxn_atomdata_t* nbat,
+                             const rvec* gmx_restrict shift_vec,
+                             real                     rlistInner);

@@ -58,10 +58,8 @@ namespace test
  * Run grompp, and repeat mdrun with and without the environment variable set.
  * Compare energies (via EnergyComparator) and trajectories.
  */
-template<typename ... Args>
-void executeSimulatorComparisonTest(
-        const std::string      &environmentVariable,
-        Args && ...             args);
+template<typename... Args>
+void executeSimulatorComparisonTest(const std::string& environmentVariable, Args&&... args);
 
 /*!
  * \brief Run and compare a simulator run to its rerun
@@ -69,11 +67,11 @@ void executeSimulatorComparisonTest(
  * Run grompp, run mdrun and rerun the resulting trajectory.
  * Compare energies (via EnergyComparator) and trajectories.
  */
-template<typename ... Args>
-void executeRerunTest(Args && ... args);
+template<typename... Args>
+void executeRerunTest(Args&&... args);
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 // Including this here avoid having to put everything in the header file,
 // or to explicitly declare the templates (which would render the parameter

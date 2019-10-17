@@ -64,93 +64,93 @@ namespace gmxapi
  */
 class ContextImpl final : public std::enable_shared_from_this<ContextImpl>
 {
-    public:
-        /*!
-         * \brief Default constructor.
-         *
-         * Don't use this. Use create() to get a shared pointer right away.
-         * Otherwise, shared_from_this() is potentially dangerous.
-         *
-         * \todo Make default constructor private or otherwise reduce brittleness of construction.
-         */
-        ContextImpl();
+public:
+    /*!
+     * \brief Default constructor.
+     *
+     * Don't use this. Use create() to get a shared pointer right away.
+     * Otherwise, shared_from_this() is potentially dangerous.
+     *
+     * \todo Make default constructor private or otherwise reduce brittleness of construction.
+     */
+    ContextImpl();
 
-        /*!
-         * \brief Factory function
-         *
-         * Since this class provides `shared_from_this`, we need to make sure
-         * that it never exists without a shared_ptr owning it.
-         *
-         * If we can confirm `shared_from_this` is no longer necessary, implementation may change.
-         *
-         * \return ownership of a new object
-         */
-        static std::shared_ptr<gmxapi::ContextImpl> create();
+    /*!
+     * \brief Factory function
+     *
+     * Since this class provides `shared_from_this`, we need to make sure
+     * that it never exists without a shared_ptr owning it.
+     *
+     * If we can confirm `shared_from_this` is no longer necessary, implementation may change.
+     *
+     * \return ownership of a new object
+     */
+    static std::shared_ptr<gmxapi::ContextImpl> create();
 
-        /*!
-         * \brief Copy disallowed because Session state would become ambiguous.
-         *
-         * The API implementation needs to unambiguously determine
-         * which Sessions and Contexts are associated with each other.
-         * \{
-         */
-        ContextImpl(const ContextImpl&) = delete;
-        ContextImpl                  &operator=(const ContextImpl &) = delete;
-        //! \}
+    /*!
+     * \brief Copy disallowed because Session state would become ambiguous.
+     *
+     * The API implementation needs to unambiguously determine
+     * which Sessions and Contexts are associated with each other.
+     * \{
+     */
+    ContextImpl(const ContextImpl&) = delete;
+    ContextImpl& operator=(const ContextImpl&) = delete;
+    //! \}
 
-        /*!
-         * \brief Objects are not trivial to move.
-         *
-         * \todo Implement move semantics.
-         * \{
-         */
-        ContextImpl(ContextImpl &&)            = delete;
-        ContextImpl &operator=(ContextImpl &&) = delete;
-        //! \}
+    /*!
+     * \brief Objects are not trivial to move.
+     *
+     * \todo Implement move semantics.
+     * \{
+     */
+    ContextImpl(ContextImpl&&) = delete;
+    ContextImpl& operator=(ContextImpl&&) = delete;
+    //! \}
 
-        /*!
-         * \brief Translate the workflow to the execution context and launch.
-         *
-         * \param work workflow graph
-         * \return ownership of a new session
-         *
-         * \todo This probably makes more sense as a free function, but we need to determine access policies.
-         *
-         * Session is returned with shared_ptr ownership so that Context
-         * can hold a weak_ptr and because Session Resources handles
-         * are still evolving.
-         * \todo Hide lifetime management and ownership from handle object.
-         * We can achieve the necessary aspects of this shared_ptr at a lower level of implementation.
-         */
-        std::shared_ptr<Session> launch(const Workflow &work);
+    /*!
+     * \brief Translate the workflow to the execution context and launch.
+     *
+     * \param work workflow graph
+     * \return ownership of a new session
+     *
+     * \todo This probably makes more sense as a free function, but we need to determine access policies.
+     *
+     * Session is returned with shared_ptr ownership so that Context
+     * can hold a weak_ptr and because Session Resources handles
+     * are still evolving.
+     * \todo Hide lifetime management and ownership from handle object.
+     * We can achieve the necessary aspects of this shared_ptr at a lower level of implementation.
+     */
+    std::shared_ptr<Session> launch(const Workflow& work);
 
-        /*!
-         * \brief Retain the ability to find a launched session while it exists.
-         *
-         * The client owns the Session launched by a Context, but it is helpful
-         * for the Context to know if it has an active Session associated with it.
-         */
-        std::weak_ptr<Session>  session_;
+    /*!
+     * \brief Retain the ability to find a launched session while it exists.
+     *
+     * The client owns the Session launched by a Context, but it is helpful
+     * for the Context to know if it has an active Session associated with it.
+     */
+    std::weak_ptr<Session> session_;
 
-        /*!
-         * \brief mdrun command line arguments.
-         *
-         * Store arguments provided by the client and pass them when launching
-         * a simulation runner. This allows client code to access the same
-         * options as are available to mdrun on the command line while the API
-         * evolves.
-         */
-        MDArgs                  mdArgs_;
+    /*!
+     * \brief mdrun command line arguments.
+     *
+     * Store arguments provided by the client and pass them when launching
+     * a simulation runner. This allows client code to access the same
+     * options as are available to mdrun on the command line while the API
+     * evolves.
+     */
+    MDArgs mdArgs_;
 
-        /*!
-         * \brief Legacy option-handling and set up for mdrun.
-         *
-         * This object should not exist, but is necessary now to introduce
-         * the API in a way that means CLI and API work similarly and do not
-         * duplicate definitions e.g. of command-line options.
-         */
-        gmx::LegacyMdrunOptions options_;
+    /*!
+     * \brief Legacy option-handling and set up for mdrun.
+     *
+     * This object should not exist, but is necessary now to introduce
+     * the API in a way that means CLI and API work similarly and do not
+     * duplicate definitions e.g. of command-line options.
+     */
+    gmx::LegacyMdrunOptions options_;
 };
 
-}      // end namespace gmxapi
-#endif //GMXAPI_CONTEXT_IMPL_H
+} // end namespace gmxapi
+#endif // GMXAPI_CONTEXT_IMPL_H

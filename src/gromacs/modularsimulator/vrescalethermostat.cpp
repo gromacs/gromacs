@@ -56,22 +56,21 @@
 namespace gmx
 {
 
-VRescaleThermostat::VRescaleThermostat(
-        int                   nstcouple,
-        int                   offset,
-        bool                  useFullStepKE,
-        int64_t               seed,
-        int                   numTemperatureGroups,
-        double                couplingTimeStep,
-        const real           *referenceTemperature,
-        const real           *couplingTime,
-        const real           *numDegreesOfFreedom,
-        EnergyElement        *energyElement,
-        ArrayRef<real>        lambdaView,
-        PropagatorCallbackPtr propagatorCallback,
-        const t_state        *globalState,
-        t_commrec            *cr,
-        bool                  isRestart) :
+VRescaleThermostat::VRescaleThermostat(int                   nstcouple,
+                                       int                   offset,
+                                       bool                  useFullStepKE,
+                                       int64_t               seed,
+                                       int                   numTemperatureGroups,
+                                       double                couplingTimeStep,
+                                       const real*           referenceTemperature,
+                                       const real*           couplingTime,
+                                       const real*           numDegreesOfFreedom,
+                                       EnergyElement*        energyElement,
+                                       ArrayRef<real>        lambdaView,
+                                       PropagatorCallbackPtr propagatorCallback,
+                                       const t_state*        globalState,
+                                       t_commrec*            cr,
+                                       bool                  isRestart) :
     nstcouple_(nstcouple),
     offset_(offset),
     useFullStepKE_(useFullStepKE),
@@ -99,14 +98,12 @@ VRescaleThermostat::VRescaleThermostat(
         }
         if (DOMAINDECOMP(cr))
         {
-            dd_bcast(cr->dd, int(thermostatIntegral_.size()*sizeof(double)), thermostatIntegral_.data());
+            dd_bcast(cr->dd, int(thermostatIntegral_.size() * sizeof(double)), thermostatIntegral_.data());
         }
     }
 }
 
-void VRescaleThermostat::scheduleTask(
-        Step step, Time gmx_unused time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+void VRescaleThermostat::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     /* The thermostat will need a valid kinetic energy when it is running.
      * Currently, computeGlobalCommunicationPeriod() is making sure this
@@ -120,9 +117,7 @@ void VRescaleThermostat::scheduleTask(
     {
         // do T-coupling this step
         (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this, step]()
-                        {setLambda(step); }));
+                std::make_unique<SimulatorRunFunction>([this, step]() { setLambda(step); }));
 
         // Let propagator know that we want to do T-coupling
         (*propagatorCallback_)(step);
@@ -150,10 +145,9 @@ void VRescaleThermostat::setLambda(Step step)
         {
             referenceKineticEnergy = 0.5 * referenceTemperature_[i] * BOLTZ * numDegreesOfFreedom_[i];
 
-            newKineticEnergy = vrescale_resamplekin(
-                        currentKineticEnergy, referenceKineticEnergy,
-                        numDegreesOfFreedom_[i], couplingTime_[i]/couplingTimeStep_,
-                        step, seed_);
+            newKineticEnergy = vrescale_resamplekin(currentKineticEnergy, referenceKineticEnergy,
+                                                    numDegreesOfFreedom_[i],
+                                                    couplingTime_[i] / couplingTimeStep_, step, seed_);
 
             // Analytically newKineticEnergy >= 0, but we check for rounding errors
             if (newKineticEnergy <= 0)
@@ -169,8 +163,8 @@ void VRescaleThermostat::setLambda(Step step)
 
             if (debug)
             {
-                fprintf(debug, "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n",
-                        i, referenceKineticEnergy, currentKineticEnergy, newKineticEnergy, lambda_[i]);
+                fprintf(debug, "TC: group %d: Ekr %g, Ek %g, Ek_new %g, Lambda: %g\n", i,
+                        referenceKineticEnergy, currentKineticEnergy, newKineticEnergy, lambda_[i]);
             }
         }
         else
@@ -180,15 +174,15 @@ void VRescaleThermostat::setLambda(Step step)
     }
 }
 
-void VRescaleThermostat::writeCheckpoint(t_state *localState, t_state gmx_unused *globalState)
+void VRescaleThermostat::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
 {
     localState->therm_integral = thermostatIntegral_;
-    localState->flags         |= (1u << estTHERM_INT);
+    localState->flags |= (1U << estTHERM_INT);
 }
 
-const std::vector<double> &VRescaleThermostat::thermostatIntegral() const
+const std::vector<double>& VRescaleThermostat::thermostatIntegral() const
 {
     return thermostatIntegral_;
 }
 
-}  // namespace gmx
+} // namespace gmx

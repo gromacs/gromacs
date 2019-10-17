@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,11 +74,11 @@ namespace gmx
 {
 
 //! Implements C-style main function for mdrun
-int gmx_mdrun(int argc, char *argv[])
+int gmx_mdrun(int argc, char* argv[])
 {
-    auto                     mdModules = std::make_unique<MDModules>();
+    auto mdModules = std::make_unique<MDModules>();
 
-    std::vector<const char *>desc = {
+    std::vector<const char*> desc = {
         "[THISMODULE] is the main computational chemistry engine",
         "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
         "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -205,7 +205,7 @@ int gmx_mdrun(int argc, char *argv[])
         "pulling is used."
     };
 
-    LegacyMdrunOptions       options;
+    LegacyMdrunOptions options;
 
     if (options.updateFromCommandLine(argc, argv, desc) == 0)
     {
@@ -213,7 +213,7 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     ArrayRef<const std::string> multiSimDirectoryNames =
-        opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
+            opt2fnsIfOptionSet("-multidir", ssize(options.filenames), options.filenames.data());
 
     // Set up the communicator, where possible (see docs for
     // SimulationContext).
@@ -225,16 +225,12 @@ int gmx_mdrun(int argc, char *argv[])
     // wrapper binary.
     SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
-    StartingBehavior  startingBehavior = StartingBehavior::NewSimulation;
-    LogFilePtr        logFileGuard     = nullptr;
-    gmx_multisim_t   *ms               = simulationContext.multiSimulation_.get();
-    std::tie(startingBehavior,
-             logFileGuard) = handleRestart(findIsSimulationMasterRank(ms, communicator),
-                                           communicator,
-                                           ms,
-                                           options.mdrunOptions.appendingBehavior,
-                                           ssize(options.filenames),
-                                           options.filenames.data());
+    StartingBehavior startingBehavior        = StartingBehavior::NewSimulation;
+    LogFilePtr       logFileGuard            = nullptr;
+    gmx_multisim_t*  ms                      = simulationContext.multiSimulation_.get();
+    std::tie(startingBehavior, logFileGuard) = handleRestart(
+            findIsSimulationMasterRank(ms, communicator), communicator, ms,
+            options.mdrunOptions.appendingBehavior, ssize(options.filenames), options.filenames.data());
 
     /* The named components for the builder exposed here are descriptive of the
      * state of mdrun at implementation and are not intended to be prescriptive
@@ -274,4 +270,4 @@ int gmx_mdrun(int argc, char *argv[])
     return runner.mdrunner();
 }
 
-}
+} // namespace gmx

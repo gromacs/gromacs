@@ -57,14 +57,11 @@ namespace test
  *
  * This method lets test runners understand when end-to-end tests
  * should be expected to work. */
-bool
-isNumberOfPpRanksSupported(const std::string &simulationName,
-                           int                possibleNumberOfPpRanks);
+bool isNumberOfPpRanksSupported(const std::string& simulationName, int possibleNumberOfPpRanks);
 
 /*! \brief Return a string describing the numbers of ranks supported
  * for the simulation \c simulationName in the database. */
-std::string
-reportNumbersOfPpRanksSupported(const std::string &simulationName);
+std::string reportNumbersOfPpRanksSupported(const std::string& simulationName);
 
 //! Helper typedef
 using MdpFieldValues = std::map<std::string, std::string>;
@@ -103,24 +100,21 @@ using MdpFieldValues = std::map<std::string, std::string>;
  *
  * \throws  std::bad_alloc     if out of memory
  *          std::out_of_range  if \c simulationName is not in the database */
-MdpFieldValues
-prepareMdpFieldValues(const std::string &simulationName,
-                      const std::string &integrator,
-                      const std::string &tcoupl,
-                      const std::string &pcoupl);
+MdpFieldValues prepareMdpFieldValues(const std::string& simulationName,
+                                     const std::string& integrator,
+                                     const std::string& tcoupl,
+                                     const std::string& pcoupl);
 
 //! \copydoc prepareMdpFieldValues()
-MdpFieldValues
-prepareMdpFieldValues(const char *simulationName,
-                      const char *integrator,
-                      const char *tcoupl,
-                      const char *pcoupl);
+MdpFieldValues prepareMdpFieldValues(const char* simulationName,
+                                     const char* integrator,
+                                     const char* tcoupl,
+                                     const char* pcoupl);
 
 /*! \brief Make a string containing an .mdp file from the \c mdpFieldValues.
  *
  * \throws  std::bad_alloc     if out of memory */
-std::string
-prepareMdpFileContents(const MdpFieldValues &mdpFieldValues);
+std::string prepareMdpFileContents(const MdpFieldValues& mdpFieldValues);
 
 } // namespace test
 } // namespace gmx

@@ -69,66 +69,67 @@ namespace testing
  *
  * \returns Step size for tests.
  */
-inline real getTestStepSize() { return 0.001953125; }
+inline real getTestStepSize()
+{
+    return 0.001953125;
+}
 
 //! Provide command-line infrastructure for gmxapi tests.
 class GmxApiTest : public gmx::test::MdrunTestFixture
 {
-    public:
-        GmxApiTest()
-        {
-        }
+public:
+    GmxApiTest() {}
 
-        /* \brief
-         * Prepare a tpr to run the test with.
-         *
-         * Sets up the TPR to run a test of the GMXAPI with a set number of \p steps
-         * defined in the test.
-         *
-         * \param[in] steps Number of steps for test to run.
-         */
-        void makeTprFile(int steps)
-        {
-            runner_.useTopGroAndNdxFromDatabase("spc_and_methane");
-            runner_.useStringAsMdpFile(gmx::formatString("integrator = md\n"
-                                                         "cutoff-scheme = Verlet\n"
-                                                         "nsteps = %d\n"
-                                                         "dt = %11.9f\n"
-                                                         "nstxout = 2\n"
-                                                         "nstvout = 2\n"
-                                                         "nstfout = 4\n"
-                                                         "nstxout-compressed = 5\n"
-                                                         "tcoupl = v-rescale\n"
-                                                         "tc-grps = System\n"
-                                                         "tau-t = 1\n"
-                                                         "ref-t = 298\n"
-                                                         "compressed-x-grps = Sol\n",
-                                                         steps,
-                                                         getTestStepSize()));
+    /* \brief
+     * Prepare a tpr to run the test with.
+     *
+     * Sets up the TPR to run a test of the GMXAPI with a set number of \p steps
+     * defined in the test.
+     *
+     * \param[in] steps Number of steps for test to run.
+     */
+    void makeTprFile(int steps)
+    {
+        runner_.useTopGroAndNdxFromDatabase("spc_and_methane");
+        runner_.useStringAsMdpFile(
+                gmx::formatString("integrator = md\n"
+                                  "cutoff-scheme = Verlet\n"
+                                  "nsteps = %d\n"
+                                  "dt = %11.9f\n"
+                                  "nstxout = 2\n"
+                                  "nstvout = 2\n"
+                                  "nstfout = 4\n"
+                                  "nstxout-compressed = 5\n"
+                                  "tcoupl = v-rescale\n"
+                                  "tc-grps = System\n"
+                                  "tau-t = 1\n"
+                                  "ref-t = 298\n"
+                                  "compressed-x-grps = Sol\n",
+                                  steps, getTestStepSize()));
 
-            EXPECT_EQ(0, runner_.callGromppOnThisRank());
-        }
+        EXPECT_EQ(0, runner_.callGromppOnThisRank());
+    }
 
-        //! Make the md arguments to work with
-        std::vector<std::string> makeMdArgs() const
-        {
-            std::vector<std::string> mdArgs;
+    //! Make the md arguments to work with
+    std::vector<std::string> makeMdArgs() const
+    {
+        std::vector<std::string> mdArgs;
 
-            mdArgs.emplace_back("-o");
-            mdArgs.emplace_back(runner_.fullPrecisionTrajectoryFileName_);
-            mdArgs.emplace_back("-x");
-            mdArgs.emplace_back(runner_.reducedPrecisionTrajectoryFileName_);
-            mdArgs.emplace_back("-c");
-            mdArgs.emplace_back(runner_.groOutputFileName_);
-            mdArgs.emplace_back("-g");
-            mdArgs.emplace_back(runner_.logFileName_);
-            mdArgs.emplace_back("-e");
-            mdArgs.emplace_back(runner_.edrFileName_);
-            mdArgs.emplace_back("-cpo");
-            mdArgs.emplace_back(runner_.cptFileName_);
+        mdArgs.emplace_back("-o");
+        mdArgs.emplace_back(runner_.fullPrecisionTrajectoryFileName_);
+        mdArgs.emplace_back("-x");
+        mdArgs.emplace_back(runner_.reducedPrecisionTrajectoryFileName_);
+        mdArgs.emplace_back("-c");
+        mdArgs.emplace_back(runner_.groOutputFileName_);
+        mdArgs.emplace_back("-g");
+        mdArgs.emplace_back(runner_.logFileName_);
+        mdArgs.emplace_back("-e");
+        mdArgs.emplace_back(runner_.edrFileName_);
+        mdArgs.emplace_back("-cpo");
+        mdArgs.emplace_back(runner_.cptFileName_);
 
-            return mdArgs;
-        }
+        return mdArgs;
+    }
 };
 
 } // namespace testing
@@ -136,4 +137,4 @@ class GmxApiTest : public gmx::test::MdrunTestFixture
 } // end namespace gmxapi
 
 
-#endif //GROMACS_TESTINGCONFIGURATION_H
+#endif // GROMACS_TESTINGCONFIGURATION_H

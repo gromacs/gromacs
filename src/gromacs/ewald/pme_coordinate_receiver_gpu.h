@@ -53,34 +53,33 @@ namespace gmx
 class PmeCoordinateReceiverGpu
 {
 
-    public:
-        /*! \brief Creates PME GPU coordinate receiver object
-         * \param[in] pmeStream       CUDA stream used for PME computations
-         * \param[in] comm            Communicator used for simulation
-         * \param[in] ppRanks         List of PP ranks
-         */
-        PmeCoordinateReceiverGpu(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
-        ~PmeCoordinateReceiverGpu();
+public:
+    /*! \brief Creates PME GPU coordinate receiver object
+     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] comm            Communicator used for simulation
+     * \param[in] ppRanks         List of PP ranks
+     */
+    PmeCoordinateReceiverGpu(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    ~PmeCoordinateReceiverGpu();
 
-        /*! \brief
-         * send coordinates buffer address to PP rank
-         * \param[in] d_x   coordinates buffer in GPU memory
-         */
-        void sendCoordinateBufferAddressToPpRanks(rvec *d_x);
+    /*! \brief
+     * send coordinates buffer address to PP rank
+     * \param[in] d_x   coordinates buffer in GPU memory
+     */
+    void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
 
 
-        /*! \brief
-         * receive coordinate data from PP rank
-         * \param[in] ppRank  PP rank to send data
-         */
-        void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    /*! \brief
+     * receive coordinate data from PP rank
+     * \param[in] ppRank  PP rank to send data
+     */
+    void receiveCoordinatesFromPpCudaDirect(int ppRank);
 
-    private:
-        class Impl;
-        gmx::PrivateImplPointer<Impl> impl_;
-
+private:
+    class Impl;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
-} //namespace gmx
+} // namespace gmx
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,29 +71,28 @@ namespace test
  */
 class TerminationHelper
 {
-    public:
-        //! Constructor
-        TerminationHelper(TestFileManager  *fileManager,
-                          CommandLine      *mdrunCaller,
-                          SimulationRunner *runner);
-        /*! \brief Do a short simulation, likely terminated by -maxh
-         *
-         * \param[in] expectedCptFileName The name of the checkpoint
-         * file that mdrun will write (which has to be customizable,
-         * if we are testing a multi-simulation). */
-        void runFirstMdrun(const std::string &expectedCptFileName);
-        //! Check that the restart works, but don't do any more MD steps.
-        void runSecondMdrun();
-        //! Check that the restart works without appending, but don't do any more MD steps.
-        void runSecondMdrunWithNoAppend();
-    protected:
-        //! Object to help call mdrun
-        CommandLine      *mdrunCaller_;
-        //! Object to coordinate running a simulation
-        SimulationRunner *runner_;
+public:
+    //! Constructor
+    TerminationHelper(TestFileManager* fileManager, CommandLine* mdrunCaller, SimulationRunner* runner);
+    /*! \brief Do a short simulation, likely terminated by -maxh
+     *
+     * \param[in] expectedCptFileName The name of the checkpoint
+     * file that mdrun will write (which has to be customizable,
+     * if we are testing a multi-simulation). */
+    void runFirstMdrun(const std::string& expectedCptFileName);
+    //! Check that the restart works, but don't do any more MD steps.
+    void runSecondMdrun();
+    //! Check that the restart works without appending, but don't do any more MD steps.
+    void runSecondMdrunWithNoAppend();
+
+protected:
+    //! Object to help call mdrun
+    CommandLine* mdrunCaller_;
+    //! Object to coordinate running a simulation
+    SimulationRunner* runner_;
 };
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

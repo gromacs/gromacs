@@ -48,7 +48,7 @@
 #include <string>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h> // for usleep()
+#    include <unistd.h> // for usleep()
 #endif
 
 #include "gromacs/fileio/tpxio.h"
@@ -68,30 +68,29 @@
 #include "3dview.h"
 #include "nmol.h"
 
-static void add_object(t_manager *man, eObject eO, int ai, int aj)
+static void add_object(t_manager* man, eObject eO, int ai, int aj)
 {
     srenew(man->obj, ++man->nobj);
-    man->obj[man->nobj-1].eO    = eO;
-    man->obj[man->nobj-1].eV    = eVNormal;
-    man->obj[man->nobj-1].color = WHITE;
-    man->obj[man->nobj-1].ai    = ai;
-    man->obj[man->nobj-1].aj    = aj;
-    man->obj[man->nobj-1].z     = 0.0;
+    man->obj[man->nobj - 1].eO    = eO;
+    man->obj[man->nobj - 1].eV    = eVNormal;
+    man->obj[man->nobj - 1].color = WHITE;
+    man->obj[man->nobj - 1].ai    = ai;
+    man->obj[man->nobj - 1].aj    = aj;
+    man->obj[man->nobj - 1].z     = 0.0;
 }
 
-static void add_bonds(t_manager *man, const t_functype func[],
-                      t_ilist *b, bool bB[])
+static void add_bonds(t_manager* man, const t_functype func[], t_ilist* b, bool bB[])
 {
-    bool        *bH = man->bHydro;
-    t_iatom     *ia;
-    t_iatom      type, ai, aj, ak;
-    int          i, delta, ftype;
+    bool*    bH = man->bHydro;
+    t_iatom* ia;
+    t_iatom  type, ai, aj, ak;
+    int      i, delta, ftype;
 
 #ifdef DEBUG
     std::fprintf(stderr, "Going to make bonds from an ilist with %d entries\n", b->nr);
 #endif
     ia = b->iatoms;
-    for (i = 0; (i < b->nr); )
+    for (i = 0; (i < b->nr);)
     {
         type  = ia[0];
         ai    = ia[1];
@@ -125,12 +124,12 @@ static void add_bonds(t_manager *man, const t_functype func[],
 #ifdef DEBUG
         std::fprintf(stderr, "Type: %5d, delta: %5d\n", type, delta);
 #endif
-        ia += delta+1;
-        i  += delta+1;
+        ia += delta + 1;
+        i += delta + 1;
     }
 }
 
-static void add_bpl(t_manager *man, t_idef *idef, bool bB[])
+static void add_bpl(t_manager* man, t_idef* idef, bool bB[])
 {
     int ftype;
 
@@ -143,15 +142,15 @@ static void add_bpl(t_manager *man, t_idef *idef, bool bB[])
     }
 }
 
-static int which_atom(t_manager *man, int x, int y)
+static int which_atom(t_manager* man, int x, int y)
 {
 #define DELTA 5
     int  i;
-    iv2 *ix = man->ix;
+    iv2* ix = man->ix;
 
     for (i = 0; (i < man->natom); i++)
     {
-        if ((std::abs(ix[i][XX]-x) < DELTA) && (std::abs(ix[i][YY]-y) < DELTA))
+        if ((std::abs(ix[i][XX] - x) < DELTA) && (std::abs(ix[i][YY] - y) < DELTA))
         {
             if (man->bVis[i])
             {
@@ -162,10 +161,10 @@ static int which_atom(t_manager *man, int x, int y)
     return -1;
 }
 
-static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
+static void do_label(t_x11* x11, t_manager* man, int x, int y, bool bSet)
 {
-    int             ai;
-    unsigned long   col;
+    int           ai;
+    unsigned long col;
 
     if ((ai = which_atom(man, x, y)) != -1)
     {
@@ -186,30 +185,29 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
             return;
         }
         XSetForeground(x11->disp, x11->gc, col);
-        XDrawString(x11->disp, man->molw->wd.self, x11->gc, x+2, y-2, man->szLab[ai],
+        XDrawString(x11->disp, man->molw->wd.self, x11->gc, x + 2, y - 2, man->szLab[ai],
                     std::strlen(man->szLab[ai]));
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
 }
 
-static void show_label(t_x11 *x11, t_manager *man, int x, int y)
+static void show_label(t_x11* x11, t_manager* man, int x, int y)
 {
     do_label(x11, man, x, y, true);
 }
 
-static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
+static void hide_label(t_x11* x11, t_manager* man, int x, int y)
 {
     do_label(x11, man, x, y, false);
 }
 
-void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
-              const char *status)
+void set_file(t_x11* x11, t_manager* man, const char* trajectory, const char* status)
 {
-    t_atoms          *at;
-    bool             *bB;
-    int               i;
+    t_atoms* at;
+    bool*    bB;
+    int      i;
 
-    TpxFileHeader     sh = readTpxHeader(status, true);
+    TpxFileHeader sh = readTpxHeader(status, true);
     snew(man->ix, sh.natoms);
     snew(man->zz, sh.natoms);
     snew(man->col, sh.natoms);
@@ -230,25 +228,25 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     read_tpx_top(status, nullptr, man->box, &man->natom, nullptr, nullptr, &man->top);
     man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
-    man->natom =
-        read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
-                     man->box);
+    man->natom = read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x), man->box);
     man->trajfile = gmx_strdup(trajectory);
     if (man->natom > man->top.atoms.nr)
     {
-        gmx_fatal(FARGS, "Topology %s (%d atoms) and trajectory %s (%d atoms) "
-                  "do not match", status, man->top.atoms.nr,
-                  trajectory, man->natom);
+        gmx_fatal(FARGS,
+                  "Topology %s (%d atoms) and trajectory %s (%d atoms) "
+                  "do not match",
+                  status, man->top.atoms.nr, trajectory, man->natom);
     }
 
-    man->title.text = gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());
-    man->view       = init_view(man->box);
-    at              = &(man->top.atoms);
+    man->title.text =
+            gmx_strdup(gmx::formatString("%s: %s", *man->top.name, gmx::getCoolQuote().c_str()).c_str());
+    man->view = init_view(man->box);
+    at        = &(man->top.atoms);
     AtomProperties aps;
     for (i = 0; (i < man->natom); i++)
     {
-        char      *aname = *(at->atomname[i]);
-        t_resinfo *ri    = &at->resinfo[at->atom[i].resind];
+        char*      aname = *(at->atomname[i]);
+        t_resinfo* ri    = &at->resinfo[at->atom[i].resind];
 
         man->col[i] = Type2Color(aname);
         snew(man->szLab[i], 20);
@@ -283,7 +281,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     ExposeWin(x11->disp, man->molw->wd.self);
 }
 
-void step_message(t_x11 *x11, t_manager *man)
+void step_message(t_x11* x11, t_manager* man)
 {
     XEvent letter;
 
@@ -297,7 +295,7 @@ void step_message(t_x11 *x11, t_manager *man)
     XSendEvent(x11->disp, letter.xclient.window, True, 0, &letter);
 }
 
-static void reset_mols(t_block *mols, matrix box, rvec x[])
+static void reset_mols(t_block* mols, matrix box, rvec x[])
 {
     int  i, m0, m1, j, m;
     rvec xcm, icm;
@@ -306,7 +304,7 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
     for (i = 0; (i < mols->nr); i++)
     {
         m0 = mols->index[i];
-        m1 = mols->index[i+1];
+        m1 = mols->index[i + 1];
 
         clear_rvec(xcm);
         clear_rvec(icm);
@@ -317,7 +315,7 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
         }
         for (m = 0; (m < DIM); m++)
         {
-            xcm[m] /= (m1-m0);
+            xcm[m] /= (m1 - m0);
         }
         for (m = 0; (m < DIM); m++)
         {
@@ -344,10 +342,10 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
     }
 }
 
-static bool step_man(t_manager *man, int *nat)
+static bool step_man(t_manager* man, int* nat)
 {
-    static int      ncount = 0;
-    bool            bEof;
+    static int ncount = 0;
+    bool       bEof;
 
     if (!man->natom)
     {
@@ -358,20 +356,18 @@ static bool step_man(t_manager *man, int *nat)
     *nat = man->natom;
     if (ncount == man->nSkip)
     {
-        auto atomsArrayRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec *>(man->x), man->natom);
+        auto atomsArrayRef = gmx::arrayRefFromArray(reinterpret_cast<gmx::RVec*>(man->x), man->natom);
         switch (man->molw->boxtype)
         {
             case esbTri:
                 put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, atomsArrayRef);
                 break;
             case esbTrunc:
-                put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box,
-                                              atomsArrayRef);
+                put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box, atomsArrayRef);
                 break;
             case esbRect:
             case esbNone:
-            default:
-                break;
+            default: break;
         }
         if (man->bPbc)
         {
@@ -392,7 +388,7 @@ static bool step_man(t_manager *man, int *nat)
     return bEof;
 }
 
-static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
+static void HandleClient(t_x11* x11, t_manager* man, const long data[])
 {
     int  ID, button, x, y;
     bool bPos;
@@ -408,7 +404,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
         case IDROTX:
         case IDROTY:
         case IDROTZ:
-            rotate_3d(man->view, ID-IDROTX, bPos);
+            rotate_3d(man->view, ID - IDROTX, bPos);
             draw_mol(x11, man);
             break;
         case IDZOOM:
@@ -431,22 +427,21 @@ static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
         case IDTRANSX:
         case IDTRANSY:
         case IDTRANSZ:
-            translate_view(man->view, ID-IDTRANSX, bPos);
+            translate_view(man->view, ID - IDTRANSX, bPos);
             draw_mol(x11, man);
             break;
         case IDREWIND:
             if (man->status)
             {
                 rewind_trj(man->status);
-                read_next_x(man->oenv, man->status, &(man->time), man->x,
-                            man->box);
+                read_next_x(man->oenv, man->status, &(man->time), man->x, man->box);
                 man->bEof = false;
                 draw_mol(x11, man);
             }
             break;
         case IDSTEP:
         {
-            int      nat;
+            int nat;
 
             nat = 0;
             if (!step_man(man, &nat))
@@ -459,34 +454,23 @@ static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
                 if (nat > 0)
                 {
                     draw_mol(x11, man);
-                    usleep(man->nWait*1000);
+                    usleep(man->nWait * 1000);
                 }
             }
             break;
         }
-        case IDFF:
-            man->bStop = false;
-            break;
-        case IDSTOP_ANI:
-            man->bStop = true;
-            break;
-        case IDDRAWMOL:
-            draw_mol(x11, man);
-            break;
+        case IDFF: man->bStop = false; break;
+        case IDSTOP_ANI: man->bStop = true; break;
+        case IDDRAWMOL: draw_mol(x11, man); break;
         case IDLABEL:
             switch (button)
             {
                 case Button1:
-                case Button2:
-                    show_label(x11, man, x, y);
-                    break;
-                case Button3:
-                    hide_label(x11, man, x, y);
-                    break;
+                case Button2: show_label(x11, man, x, y); break;
+                case Button3: hide_label(x11, man, x, y); break;
             }
             break;
-        default:
-            break;
+        default: break;
     }
     if (man->bAnimate && !man->bEof && !man->bStop)
     {
@@ -494,11 +478,11 @@ static void HandleClient(t_x11 *x11, t_manager *man, const long data[])
     }
 }
 
-static bool TitleCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool TitleCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
 {
-    t_windata *wd;
+    t_windata* wd;
 
-    wd = static_cast<t_windata *>(data);
+    wd = static_cast<t_windata*>(data);
     switch (event->type)
     {
         case Expose:
@@ -506,8 +490,7 @@ static bool TitleCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             {
                 XSetForeground(x11->disp, x11->gc, WHITE);
                 TextInWin(x11, wd, wd->text, eXCenter, eYCenter);
-                XDrawLine(x11->disp, wd->self, x11->gc, 0, wd->height,
-                          wd->width, wd->height);
+                XDrawLine(x11->disp, wd->self, x11->gc, 0, wd->height, wd->width, wd->height);
             }
             break;
         case ConfigureNotify:
@@ -518,12 +501,12 @@ static bool TitleCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
     return false;
 }
 
-static bool ManCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool ManCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
 {
-    t_manager *man;
+    t_manager* man;
     int        width, height;
 
-    man = static_cast<t_manager *>(data);
+    man = static_cast<t_manager*>(data);
     switch (event->type)
     {
         case ConfigureNotify:
@@ -534,16 +517,13 @@ static bool ManCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
                 move_man(x11, man, width, height);
             }
             break;
-        case ClientMessage:
-            HandleClient(x11, man, event->xclient.data.l);
-            break;
-        default:
-            break;
+        case ClientMessage: HandleClient(x11, man, event->xclient.data.l); break;
+        default: break;
     }
     return false;
 }
 
-void no_labels(t_x11 *x11, t_manager *man)
+void no_labels(t_x11* x11, t_manager* man)
 {
     int i;
 
@@ -554,7 +534,7 @@ void no_labels(t_x11 *x11, t_manager *man)
     draw_mol(x11, man);
 }
 
-void move_man(t_x11 *x11, t_manager *man, int width, int height)
+void move_man(t_x11* x11, t_manager* man, int width, int height)
 {
     int x0, y0, mw, mh, hb;
     int th;
@@ -566,21 +546,21 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     man->wd.height = height;
 
     /* Move all subwindows, resize only Mol window */
-    x0 = width-EWIDTH-AIR-4*BORDER;           /* Starting of ewin etc. */
+    x0 = width - EWIDTH - AIR - 4 * BORDER; /* Starting of ewin etc. */
     y0 = AIR;
 
     /* Mol Window */
-    mw = x0-2*AIR-4*BORDER;
-    mh = height-y0-AIR-2*BORDER;
+    mw = x0 - 2 * AIR - 4 * BORDER;
+    mh = height - y0 - AIR - 2 * BORDER;
     XMoveResizeWindow(x11->disp, man->molw->wd.self, AIR, y0, mw, mh);
 
     /* Title Window */
     th = XTextHeight(x11->font);
-    XMoveResizeWindow(x11->disp, man->title.self, 0, 0, mw, th+AIR);
+    XMoveResizeWindow(x11->disp, man->title.self, 0, 0, mw, th + AIR);
 
     /* Legend Window */
     XMoveResizeWindow(x11->disp, man->legw->wd.self, x0, y0, EWIDTH, LEGHEIGHT);
-    y0 += LEGHEIGHT+AIR+2*BORDER;
+    y0 += LEGHEIGHT + AIR + 2 * BORDER;
 
     if (y0 > height)
     {
@@ -588,16 +568,16 @@ void move_man(t_x11 *x11, t_manager *man, int width, int height)
     }
 
     /* Button Box */
-    hb = height-y0-AIR-2*BORDER;
+    hb = height - y0 - AIR - 2 * BORDER;
     XMoveResizeWindow(x11->disp, man->bbox->wd.self, x0, y0, EWIDTH, hb);
 
     /* Video Box */
-    x0 = (mw-man->vbox->wd.width)/2;
-    y0 = (mh-2-AIR-man->vbox->wd.height);
+    x0 = (mw - man->vbox->wd.width) / 2;
+    y0 = (mh - 2 - AIR - man->vbox->wd.height);
     XMoveWindow(x11->disp, man->vbox->wd.self, x0, y0);
 }
 
-void map_man(t_x11 *x11, t_manager *man)
+void map_man(t_x11* x11, t_manager* man)
 {
     XMapWindow(x11->disp, man->wd.self);
     map_mw(x11, man->molw);
@@ -606,7 +586,7 @@ void map_man(t_x11 *x11, t_manager *man)
     show_but(x11, man->bbox);
 }
 
-bool toggle_animate (t_x11 *x11, t_manager *man)
+bool toggle_animate(t_x11* x11, t_manager* man)
 {
     if (man->status)
     {
@@ -625,7 +605,7 @@ bool toggle_animate (t_x11 *x11, t_manager *man)
     return man->bAnimate;
 }
 
-bool toggle_pbc (t_manager *man)
+bool toggle_pbc(t_manager* man)
 {
     man->bPbc = !man->bPbc;
 
@@ -633,13 +613,19 @@ bool toggle_pbc (t_manager *man)
 }
 
 
-t_manager *init_man(t_x11 *x11, Window Parent,
-                    int x, int y, int width, int height,
-                    unsigned long fg, unsigned long bg,
-                    int ePBC, matrix box,
-                    gmx_output_env_t *oenv)
+t_manager* init_man(t_x11*            x11,
+                    Window            Parent,
+                    int               x,
+                    int               y,
+                    int               width,
+                    int               height,
+                    unsigned long     fg,
+                    unsigned long     bg,
+                    int               ePBC,
+                    matrix            box,
+                    gmx_output_env_t* oenv)
 {
-    t_manager *man;
+    t_manager* man;
 
     snew(man, 1);
     man->status = nullptr;
@@ -647,12 +633,10 @@ t_manager *init_man(t_x11 *x11, Window Parent,
     man->bSort  = true;
     man->oenv   = oenv;
     InitWin(&(man->wd), x, y, width, height, 0, "Manager");
-    man->wd.self = XCreateSimpleWindow(x11->disp, Parent, man->wd.x, man->wd.y,
-                                       man->wd.width, man->wd.height,
-                                       man->wd.bwidth, fg, bg);
+    man->wd.self = XCreateSimpleWindow(x11->disp, Parent, man->wd.x, man->wd.y, man->wd.width,
+                                       man->wd.height, man->wd.bwidth, fg, bg);
     x11->RegisterCallback(x11, man->wd.self, Parent, ManCallBack, man);
-    x11->SetInputMask(x11, man->wd.self, StructureNotifyMask |
-                      ExposureMask | ButtonPressMask);
+    x11->SetInputMask(x11, man->wd.self, StructureNotifyMask | ExposureMask | ButtonPressMask);
 
     /* The order of creating windows is important for the stacking order */
     /* Mol Window */
@@ -660,12 +644,10 @@ t_manager *init_man(t_x11 *x11, Window Parent,
 
     /* Title Window */
     InitWin(&(man->title), 0, 0, 1, 1, 0, nullptr);
-    man->title.self = XCreateSimpleWindow(x11->disp, man->molw->wd.self,
-                                          man->title.x, man->title.y,
-                                          man->title.width, man->title.height,
-                                          man->title.bwidth, WHITE, BLUE);
-    x11->RegisterCallback(x11, man->title.self, man->molw->wd.self,
-                          TitleCallBack, &(man->title));
+    man->title.self =
+            XCreateSimpleWindow(x11->disp, man->molw->wd.self, man->title.x, man->title.y,
+                                man->title.width, man->title.height, man->title.bwidth, WHITE, BLUE);
+    x11->RegisterCallback(x11, man->title.self, man->molw->wd.self, TitleCallBack, &(man->title));
     x11->SetInputMask(x11, man->title.self, ExposureMask | StructureNotifyMask);
 
     /* Button box */
@@ -680,7 +662,7 @@ t_manager *init_man(t_x11 *x11, Window Parent,
     return man;
 }
 
-void done_man(t_x11 *x11, t_manager *man)
+void done_man(t_x11* x11, t_manager* man)
 {
     done_bbox(x11, man->vbox);
     done_bbox(x11, man->bbox);
@@ -697,10 +679,10 @@ void done_man(t_x11 *x11, t_manager *man)
     sfree(man);
 }
 
-void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
+void do_filter(t_x11* x11, t_manager* man, t_filter* filter)
 {
-    int      i;
-    int      j;
+    int i;
+    int j;
 
     for (i = 0; (i < man->natom); i++)
     {
@@ -710,7 +692,7 @@ void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
     {
         if (filter->bShow[i])
         {
-            for (j = filter->grps->index[i]; (j < filter->grps->index[i+1]); j++)
+            for (j = filter->grps->index[i]; (j < filter->grps->index[i + 1]); j++)
             {
                 man->bVis[filter->grps->a[j]] = true;
             }

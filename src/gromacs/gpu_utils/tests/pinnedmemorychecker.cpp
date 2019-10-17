@@ -106,7 +106,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
         return;
     }
 
-    real *dummy;
+    real* dummy;
     snew(dummy, 3);
     EXPECT_FALSE(isHostMemoryPinned(dummy));
     sfree(dummy);
@@ -119,8 +119,8 @@ TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
         return;
     }
 
-    real *dummy = nullptr;
-    pmalloc(reinterpret_cast<void **>(&dummy), 3 * sizeof(real));
+    real* dummy = nullptr;
+    pmalloc(reinterpret_cast<void**>(&dummy), 3 * sizeof(real));
     EXPECT_TRUE(isHostMemoryPinned(dummy));
     pfree(dummy);
 }

@@ -51,22 +51,28 @@ namespace gmx
 class Constraints;
 }
 
-typedef struct gmx_global_stat *gmx_global_stat_t;
+typedef struct gmx_global_stat* gmx_global_stat_t;
 
-gmx_global_stat_t global_stat_init(const t_inputrec *ir);
+gmx_global_stat_t global_stat_init(const t_inputrec* ir);
 
 void global_stat_destroy(gmx_global_stat_t gs);
 
 /*! \brief All-reduce energy-like quantities over cr->mpi_comm_mysim  */
-void global_stat(const gmx_global_stat *gs,
-                 const t_commrec *cr, gmx_enerdata_t *enerd,
-                 tensor fvir, tensor svir, rvec mu_tot,
-                 const t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind,
-                 const gmx::Constraints *constr, t_vcm *vcm,
-                 int nsig, real *sig,
-                 int *totalNumberOfBondedInteractions,
-                 gmx_bool bSumEkinhOld, int flags);
+void global_stat(const gmx_global_stat*  gs,
+                 const t_commrec*        cr,
+                 gmx_enerdata_t*         enerd,
+                 tensor                  fvir,
+                 tensor                  svir,
+                 rvec                    mu_tot,
+                 const t_inputrec*       inputrec,
+                 gmx_ekindata_t*         ekind,
+                 const gmx::Constraints* constr,
+                 t_vcm*                  vcm,
+                 int                     nsig,
+                 real*                   sig,
+                 int*                    totalNumberOfBondedInteractions,
+                 gmx_bool                bSumEkinhOld,
+                 int                     flags);
 
 /*! \brief Returns TRUE if io should be done */
 inline bool do_per_step(int64_t step, int64_t nstep)
@@ -81,4 +87,4 @@ inline bool do_per_step(int64_t step, int64_t nstep)
     }
 }
 
-#endif //GMX_MDLIB_STAT_H
+#endif // GMX_MDLIB_STAT_H

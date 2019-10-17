@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2005 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,9 +45,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/real.h"
 
-typedef struct gmx_parallel_3dfft *
-    gmx_parallel_3dfft_t;
-
+typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 
 
 /*! \brief Initialize parallel MPI-based 3D-FFT.
@@ -76,44 +74,37 @@ typedef struct gmx_parallel_3dfft *
  *
  *  \return 0 or a standard error code.
  */
-int
-    gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
-                               const ivec                      ndata,
-                               real **real_data,
-                               t_complex **complex_data,
-                               MPI_Comm                  comm[2],
-                               gmx_bool                  bReproducible,
-                               int                       nthreads,
-                               gmx::PinningPolicy realGridAllocation = gmx::PinningPolicy::CannotBePinned);
-
-
-
+int gmx_parallel_3dfft_init(gmx_parallel_3dfft_t* pfft_setup,
+                            const ivec            ndata,
+                            real**                real_data,
+                            t_complex**           complex_data,
+                            MPI_Comm              comm[2],
+                            gmx_bool              bReproducible,
+                            int                   nthreads,
+                            gmx::PinningPolicy realGridAllocation = gmx::PinningPolicy::CannotBePinned);
 
 
 /*! \brief Get direct space grid index limits
  */
-int
-gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t      pfft_setup,
-                               ivec                      local_ndata,
-                               ivec                      local_offset,
-                               ivec                      local_size);
+int gmx_parallel_3dfft_real_limits(gmx_parallel_3dfft_t pfft_setup,
+                                   ivec                 local_ndata,
+                                   ivec                 local_offset,
+                                   ivec                 local_size);
 
 
 /*! \brief Get reciprocal space grid index limits
  */
-int
-gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
-                                  ivec                      complex_order,
-                                  ivec                      local_ndata,
-                                  ivec                      local_offset,
-                                  ivec                      local_size);
+int gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t pfft_setup,
+                                      ivec                 complex_order,
+                                      ivec                 local_ndata,
+                                      ivec                 local_offset,
+                                      ivec                 local_size);
 
 
-int
-gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
-                           enum gmx_fft_direction  dir,
-                           int                     thread,
-                           gmx_wallcycle_t         wcycle);
+int gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t   pfft_setup,
+                               enum gmx_fft_direction dir,
+                               int                    thread,
+                               gmx_wallcycle_t        wcycle);
 
 
 /*! \brief Release all data in parallel fft setup
@@ -125,7 +116,6 @@ gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
  *
  *  \return 0 or a standard error code.
  */
-int
-gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
+int gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t pfft_setup);
 
 #endif

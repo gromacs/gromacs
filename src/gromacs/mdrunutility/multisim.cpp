@@ -54,8 +54,7 @@
 
 gmx_multisim_t::gmx_multisim_t() = default;
 
-gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
-                               gmx::ArrayRef<const std::string> multidirs)
+gmx_multisim_t::gmx_multisim_t(MPI_Comm comm, gmx::ArrayRef<const std::string> multidirs)
 {
     if (multidirs.empty())
     {
@@ -64,14 +63,16 @@ gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
 
     if (!GMX_LIB_MPI && !multidirs.empty())
     {
-        gmx_fatal(FARGS, "mdrun -multidir is only supported when GROMACS has been "
+        gmx_fatal(FARGS,
+                  "mdrun -multidir is only supported when GROMACS has been "
                   "configured with a proper external MPI library.");
     }
 
     if (multidirs.size() == 1)
     {
         /* NOTE: It would be nice if this special case worked, but this requires checks/tests. */
-        gmx_fatal(FARGS, "To run mdrun in multiple simulation mode, more then one "
+        gmx_fatal(FARGS,
+                  "To run mdrun in multiple simulation mode, more then one "
                   "actual simulation is required. The single simulation case is not supported.");
     }
 
@@ -80,33 +81,35 @@ gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
     MPI_Comm_size(comm, &numRanks);
     if (numRanks % multidirs.size() != 0)
     {
-        gmx_fatal(FARGS, "The number of ranks (%d) is not a multiple of the number of simulations (%td)", numRanks, multidirs.ssize());
+        gmx_fatal(FARGS,
+                  "The number of ranks (%d) is not a multiple of the number of simulations (%td)",
+                  numRanks, multidirs.ssize());
     }
 
-    int numRanksPerSim = numRanks/multidirs.size();
+    int numRanksPerSim = numRanks / multidirs.size();
     int rankWithinComm;
     MPI_Comm_rank(comm, &rankWithinComm);
 
     if (debug)
     {
-        fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n", multidirs.ssize(), numRanksPerSim, rankWithinComm/numRanksPerSim);
+        fprintf(debug, "We have %td simulations, %d ranks per simulation, local simulation is %d\n",
+                multidirs.ssize(), numRanksPerSim, rankWithinComm / numRanksPerSim);
     }
 
     nsim = multidirs.size();
-    sim  = rankWithinComm/numRanksPerSim;
+    sim  = rankWithinComm / numRanksPerSim;
     /* Create a communicator for the master nodes */
     std::vector<int> rank(nsim);
     for (int i = 0; i < nsim; i++)
     {
-        rank[i] = i*numRanksPerSim;
+        rank[i] = i * numRanksPerSim;
     }
     MPI_Group mpi_group_world;
     MPI_Comm_group(comm, &mpi_group_world);
     MPI_Group_incl(mpi_group_world, nsim, rank.data(), &mpi_group_masters);
-    MPI_Comm_create(comm, mpi_group_masters,
-                    &mpi_comm_masters);
+    MPI_Comm_create(comm, mpi_group_masters, &mpi_comm_masters);
 
-#if !MPI_IN_PLACE_EXISTS
+#    if !MPI_IN_PLACE_EXISTS
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(mpb, 1);
     mpb->ibuf        = nullptr;
@@ -117,7 +120,7 @@ gmx_multisim_t::gmx_multisim_t(MPI_Comm                         comm,
     mpb->libuf_alloc = 0;
     mpb->fbuf_alloc  = 0;
     mpb->dbuf_alloc  = 0;
-#endif
+#    endif
 
     // TODO This should throw upon error
     gmx_chdir(multidirs[sim].c_str());
@@ -133,8 +136,7 @@ gmx_multisim_t::~gmx_multisim_t()
 #if GMX_MPI
     // TODO This would work better if the result of MPI_Comm_split was
     // put into an RAII-style guard, such as gmx::unique_cptr.
-    if (mpi_comm_masters != MPI_COMM_NULL &&
-        mpi_comm_masters != MPI_COMM_WORLD)
+    if (mpi_comm_masters != MPI_COMM_NULL && mpi_comm_masters != MPI_COMM_WORLD)
     {
         MPI_Comm_free(&mpi_comm_masters);
     }
@@ -148,13 +150,13 @@ gmx_multisim_t::~gmx_multisim_t()
 #if GMX_MPI
 static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
 {
-#if MPI_IN_PLACE_EXISTS
+#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM, mpi_comm);
-#else
+#    else
     /* this function is only used in code that is not performance critical,
        (during setup, when comm_rec is not the appropriate communication
        structure), so this isn't as bad as it looks. */
-    double *buf;
+    double* buf;
     int     i;
 
     snew(buf, nr);
@@ -164,20 +166,20 @@ static void gmx_sumd_comm(int nr, double r[], MPI_Comm mpi_comm)
         r[i] = buf[i];
     }
     sfree(buf);
-#endif
+#    endif
 }
 #endif
 
 #if GMX_MPI
 static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
 {
-#if MPI_IN_PLACE_EXISTS
+#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_FLOAT, MPI_SUM, mpi_comm);
-#else
+#    else
     /* this function is only used in code that is not performance critical,
        (during setup, when comm_rec is not the appropriate communication
        structure), so this isn't as bad as it looks. */
-    float *buf;
+    float* buf;
     int    i;
 
     snew(buf, nr);
@@ -187,11 +189,11 @@ static void gmx_sumf_comm(int nr, float r[], MPI_Comm mpi_comm)
         r[i] = buf[i];
     }
     sfree(buf);
-#endif
+#    endif
 }
 #endif
 
-void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumd_sim");
@@ -200,7 +202,7 @@ void gmx_sumd_sim(int gmx_unused nr, double gmx_unused r[], const gmx_multisim_t
 #endif
 }
 
-void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumf_sim");
@@ -209,14 +211,14 @@ void gmx_sumf_sim(int gmx_unused nr, float gmx_unused r[], const gmx_multisim_t 
 #endif
 }
 
-void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumi_sim");
 #else
-#if MPI_IN_PLACE_EXISTS
+#    if MPI_IN_PLACE_EXISTS
     MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM, ms->mpi_comm_masters);
-#else
+#    else
     /* this is thread-unsafe, but it will do for now: */
     int i;
 
@@ -230,19 +232,18 @@ void gmx_sumi_sim(int gmx_unused nr, int gmx_unused r[], const gmx_multisim_t gm
     {
         r[i] = ms->mpb->ibuf[i];
     }
-#endif
+#    endif
 #endif
 }
 
-void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused *ms)
+void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim_t gmx_unused* ms)
 {
 #if !GMX_MPI
     gmx_call("gmx_sumli_sim");
 #else
-#if MPI_IN_PLACE_EXISTS
-    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM,
-                  ms->mpi_comm_masters);
-#else
+#    if MPI_IN_PLACE_EXISTS
+    MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT64_T, MPI_SUM, ms->mpi_comm_masters);
+#    else
     /* this is thread-unsafe, but it will do for now: */
     int i;
 
@@ -251,18 +252,16 @@ void gmx_sumli_sim(int gmx_unused nr, int64_t gmx_unused r[], const gmx_multisim
         ms->mpb->libuf_alloc = nr;
         srenew(ms->mpb->libuf, ms->mpb->libuf_alloc);
     }
-    MPI_Allreduce(r, ms->mpb->libuf, nr, MPI_INT64_T, MPI_SUM,
-                  ms->mpi_comm_masters);
+    MPI_Allreduce(r, ms->mpb->libuf, nr, MPI_INT64_T, MPI_SUM, ms->mpi_comm_masters);
     for (i = 0; i < nr; i++)
     {
         r[i] = ms->mpb->libuf[i];
     }
-#endif
+#    endif
 #endif
 }
 
-std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
-                                              const int             localValue)
+std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, const int localValue)
 {
     std::vector<int> valuesFromAllRanks;
     if (GMX_MPI && ms != nullptr)
@@ -278,11 +277,9 @@ std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
     return valuesFromAllRanks;
 }
 
-void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
-                     const char *name,
-                     gmx_bool bQuiet)
+void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* name, gmx_bool bQuiet)
 {
-    int     *ibuf, p;
+    int *    ibuf, p;
     gmx_bool bCompatible;
 
     if (nullptr != log && !bQuiet)
@@ -292,8 +289,7 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
 
     if (ms == nullptr)
     {
-        gmx_fatal(FARGS,
-                  "check_multi_int called with a NULL communication pointer");
+        gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
     }
 
     snew(ibuf, ms->nsim);
@@ -303,7 +299,7 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     bCompatible = TRUE;
     for (p = 1; p < ms->nsim; p++)
     {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
 
     if (bCompatible)
@@ -329,13 +325,11 @@ void check_multi_int(FILE *log, const gmx_multisim_t *ms, int val,
     sfree(ibuf);
 }
 
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       int64_t val, const char *name,
-                       gmx_bool bQuiet)
+void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const char* name, gmx_bool bQuiet)
 {
-    int64_t          *ibuf;
-    int               p;
-    gmx_bool          bCompatible;
+    int64_t* ibuf;
+    int      p;
+    gmx_bool bCompatible;
 
     if (nullptr != log && !bQuiet)
     {
@@ -344,8 +338,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
 
     if (ms == nullptr)
     {
-        gmx_fatal(FARGS,
-                  "check_multi_int called with a NULL communication pointer");
+        gmx_fatal(FARGS, "check_multi_int called with a NULL communication pointer");
     }
 
     snew(ibuf, ms->nsim);
@@ -355,7 +348,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     bCompatible = TRUE;
     for (p = 1; p < ms->nsim; p++)
     {
-        bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
+        bCompatible = bCompatible && (ibuf[p - 1] == ibuf[p]);
     }
 
     if (bCompatible)
@@ -376,8 +369,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
             {
                 char strbuf[255];
                 /* first make the format string */
-                snprintf(strbuf, 255, "  subsystem %%d: %s\n",
-                         "%" PRId64);
+                snprintf(strbuf, 255, "  subsystem %%d: %s\n", "%" PRId64);
                 fprintf(log, strbuf, p, ibuf[p]);
             }
         }
@@ -387,8 +379,7 @@ void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
     sfree(ibuf);
 }
 
-bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
-                                MPI_Comm              communicator)
+bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
 {
     if (GMX_LIB_MPI)
     {
@@ -410,8 +401,8 @@ bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
     }
     else if (GMX_THREAD_MPI)
     {
-        GMX_RELEASE_ASSERT(communicator == MPI_COMM_NULL ||
-                           communicator == MPI_COMM_WORLD, "Invalid communicator");
+        GMX_RELEASE_ASSERT(communicator == MPI_COMM_NULL || communicator == MPI_COMM_WORLD,
+                           "Invalid communicator");
         // Spawned threads have MPI_COMM_WORLD upon creation, so if
         // the communicator is MPI_COMM_NULL this is not a spawned thread,
         // ie is the master thread
@@ -427,18 +418,17 @@ bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
     return true;
 }
 
-bool isMasterSim(const gmx_multisim_t *ms)
+bool isMasterSim(const gmx_multisim_t* ms)
 {
     return !isMultiSim(ms) || ms->sim == 0;
 }
 
-bool isMasterSimMasterRank(const gmx_multisim_t *ms,
-                           const bool            isMaster)
+bool isMasterSimMasterRank(const gmx_multisim_t* ms, const bool isMaster)
 {
     return (isMaster && isMasterSim(ms));
 }
 
-void multiSimBarrier(const gmx_multisim_t *ms)
+void multiSimBarrier(const gmx_multisim_t* ms)
 {
     if (isMultiSim(ms))
     {

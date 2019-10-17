@@ -51,9 +51,16 @@
 #include "gromacs/utility/real.h"
 
 /*! \brief MPI Tags used to separate communication of different types of quantities */
-enum {
-    eCommType_ChargeA, eCommType_ChargeB, eCommType_SQRTC6A, eCommType_SQRTC6B,
-    eCommType_SigmaA, eCommType_SigmaB, eCommType_NR, eCommType_COORD,
+enum
+{
+    eCommType_ChargeA,
+    eCommType_ChargeB,
+    eCommType_SQRTC6A,
+    eCommType_SQRTC6B,
+    eCommType_SigmaA,
+    eCommType_SigmaB,
+    eCommType_NR,
+    eCommType_COORD,
     eCommType_CNB
 };
 
@@ -64,22 +71,23 @@ enum {
  * that the six first flags are exactly in this order.
  */
 
-#define PP_PME_CHARGE         (1<<0)
-#define PP_PME_CHARGEB        (1<<1)
-#define PP_PME_SQRTC6         (1<<2)
-#define PP_PME_SQRTC6B        (1<<3)
-#define PP_PME_SIGMA          (1<<4)
-#define PP_PME_SIGMAB         (1<<5)
-#define PP_PME_COORD          (1<<6)
-#define PP_PME_ENER_VIR       (1<<9)
-#define PP_PME_FINISH         (1<<10)
-#define PP_PME_SWITCHGRID     (1<<11)
-#define PP_PME_RESETCOUNTERS  (1<<12)
-#define PP_PME_GPUCOMMS       (1<<13)
+#define PP_PME_CHARGE (1 << 0)
+#define PP_PME_CHARGEB (1 << 1)
+#define PP_PME_SQRTC6 (1 << 2)
+#define PP_PME_SQRTC6B (1 << 3)
+#define PP_PME_SIGMA (1 << 4)
+#define PP_PME_SIGMAB (1 << 5)
+#define PP_PME_COORD (1 << 6)
+#define PP_PME_ENER_VIR (1 << 9)
+#define PP_PME_FINISH (1 << 10)
+#define PP_PME_SWITCHGRID (1 << 11)
+#define PP_PME_RESETCOUNTERS (1 << 12)
+#define PP_PME_GPUCOMMS (1 << 13)
 //@}
 
 /*! \brief Return values for gmx_pme_recv_q_x */
-enum {
+enum
+{
     pmerecvqxX,            /* calculate PME mesh interactions for new x    */
     pmerecvqxFINISH,       /* the simulation should finish, we should quit */
     pmerecvqxSWITCHGRID,   /* change the PME grid size                     */
@@ -94,19 +102,19 @@ enum {
  */
 struct gmx_pme_comm_n_box_t
 {
-    int             natoms;     /**< Number of atoms */
-    matrix          box;        /**< Box */
-    int             maxshift_x; /**< Maximum shift in x direction */
-    int             maxshift_y; /**< Maximum shift in y direction */
-    real            lambda_q;   /**< Free-energy lambda for electrostatics */
-    real            lambda_lj;  /**< Free-energy lambda for Lennard-Jones */
-    unsigned int    flags;      /**< Control flags */
-    int64_t         step;       /**< MD integration step number */
+    int          natoms;     /**< Number of atoms */
+    matrix       box;        /**< Box */
+    int          maxshift_x; /**< Maximum shift in x direction */
+    int          maxshift_y; /**< Maximum shift in y direction */
+    real         lambda_q;   /**< Free-energy lambda for electrostatics */
+    real         lambda_lj;  /**< Free-energy lambda for Lennard-Jones */
+    unsigned int flags;      /**< Control flags */
+    int64_t      step;       /**< MD integration step number */
     //@{
     /*! \brief Used in PME grid tuning */
-    ivec            grid_size;
-    real            ewaldcoeff_q;
-    real            ewaldcoeff_lj;
+    ivec grid_size;
+    real ewaldcoeff_q;
+    real ewaldcoeff_lj;
     //@}
 };
 
@@ -120,13 +128,13 @@ struct gmx_pme_comm_vir_ene_t
 {
     //@{
     /*! \brief Virial, energy, and derivative of potential w.r.t. lambda for charge and Lennard-Jones */
-    matrix          vir_q;
-    matrix          vir_lj;
-    real            energy_q;
-    real            energy_lj;
-    real            dvdlambda_q;
-    real            dvdlambda_lj;
+    matrix vir_q;
+    matrix vir_lj;
+    real   energy_q;
+    real   energy_lj;
+    real   dvdlambda_q;
+    real   dvdlambda_lj;
     //@}
-    float           cycles;     /**< Counter of CPU cycles used */
-    gmx_stop_cond_t stop_cond;  /**< Flag used in responding to an external signal to terminate */
+    float           cycles;    /**< Counter of CPU cycles used */
+    gmx_stop_cond_t stop_cond; /**< Flag used in responding to an external signal to terminate */
 };

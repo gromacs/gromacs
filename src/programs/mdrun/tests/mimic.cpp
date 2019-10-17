@@ -65,41 +65,37 @@ namespace test
 //! Test fixture for bonded interactions
 class MimicTest : public gmx::test::MdrunTestFixture
 {
-    public:
-        //! Execute the trajectory writing test
-        void setupGrompp(const char *index_file, const char *top_file, const char *gro_file)
-        {
-            runner_.topFileName_ = TestFileManager::getInputFilePath(top_file);
-            runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file);
-            runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file);
-            runner_.useStringAsMdpFile("integrator                = mimic\n"
-                                       "QMMM-grps                 = QMatoms");
-        }
-        //! Prepare an mdrun caller
-        CommandLine setupRerun()
-        {
-            CommandLine rerunCaller;
-            rerunCaller.append("mdrun");
-            rerunCaller.addOption("-rerun", runner_.groFileName_);
-            runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
-            return rerunCaller;
-        }
-        //! Check the output of mdrun
-        void checkRerun()
-        {
-            EnergyTermsToCompare energyTermsToCompare
-            {{
-                 {
-                     interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4)
-                 },
-             }};
+public:
+    //! Execute the trajectory writing test
+    void setupGrompp(const char* index_file, const char* top_file, const char* gro_file)
+    {
+        runner_.topFileName_ = TestFileManager::getInputFilePath(top_file);
+        runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file);
+        runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file);
+        runner_.useStringAsMdpFile(
+                "integrator                = mimic\n"
+                "QMMM-grps                 = QMatoms");
+    }
+    //! Prepare an mdrun caller
+    CommandLine setupRerun()
+    {
+        CommandLine rerunCaller;
+        rerunCaller.append("mdrun");
+        rerunCaller.addOption("-rerun", runner_.groFileName_);
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
+        return rerunCaller;
+    }
+    //! Check the output of mdrun
+    void checkRerun()
+    {
+        EnergyTermsToCompare energyTermsToCompare{ {
+                { interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4) },
+        } };
 
-            TestReferenceData refData;
-            auto              checker = refData.rootChecker();
-            checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                              energyTermsToCompare,
-                                              &checker);
-        }
+        TestReferenceData refData;
+        auto              checker = refData.rootChecker();
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
+    }
 };
 
 // This test checks if the energies produced with one quantum molecule are reasonable

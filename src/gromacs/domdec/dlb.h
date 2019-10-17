@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,24 +55,24 @@ struct t_commrec;
  * With large imbalance DLB will turn on at the first step, so we can
  * make the interval so large that the MPI overhead of the check is negligible.
  */
-constexpr int c_checkTurnDlbOnInterval  = 100;
+constexpr int c_checkTurnDlbOnInterval = 100;
 /*! \brief We need to check if DLB results in worse performance and then turn it off.
  * We check this more often then for turning DLB on, because the DLB can scale
  * the domains very rapidly, so if unlucky the load imbalance can go up quickly
  * and furthermore, we are already synchronizing often with DLB, so
  * the overhead of the MPI Bcast is not that high.
  */
-constexpr int c_checkTurnDlbOffInterval =  20;
+constexpr int c_checkTurnDlbOffInterval = 20;
 
 
 /*! \brief Return the PME/PP force load ratio, or -1 if nothing was measured.
  *
  * Should only be called on the DD master node.
  */
-float dd_pme_f_ratio(const gmx_domdec_t *dd);
+float dd_pme_f_ratio(const gmx_domdec_t* dd);
 
 //! Sets the cell size limits for DD to suit dynamic load balancing.
-void set_dlb_limits(gmx_domdec_t *dd);
+void set_dlb_limits(gmx_domdec_t* dd);
 
 /*! \brief Limit DLB to preserve the option of returning to the current cut-off.
  *
@@ -82,7 +82,7 @@ void set_dlb_limits(gmx_domdec_t *dd);
  * should still be possible after subsequently setting a shorter cut-off
  * with change_dd_cutoff.
  */
-void set_dd_dlb_max_cutoff(struct t_commrec *cr, real cutoff);
+void set_dd_dlb_max_cutoff(struct t_commrec* cr, real cutoff);
 
 /*! \brief Sets whether we should later check the load imbalance data, so that
  * we can trigger dynamic load balancing if enough imbalance has
@@ -91,25 +91,25 @@ void set_dd_dlb_max_cutoff(struct t_commrec *cr, real cutoff);
  * Used after PME load balancing unlocks DLB, so that the check
  * whether DLB will be useful can happen immediately.
  */
-void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, bool bValue);
+void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd, bool bValue);
 
 /*! \brief Returns if we should check whether there has been enough
  * load imbalance to trigger dynamic load balancing.
  *
  * We need to check whether we check because it might be always off.
  */
-bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd);
+bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd);
 
 /*! \brief Return if we are currently using dynamic load balancing */
-bool dd_dlb_is_on(const gmx_domdec_t *dd);
+bool dd_dlb_is_on(const gmx_domdec_t* dd);
 
 /*! \brief Return if the DLB lock is set */
-bool dd_dlb_is_locked(const gmx_domdec_t *dd);
+bool dd_dlb_is_locked(const gmx_domdec_t* dd);
 
 /*! \brief Set a lock such that with DLB=auto DLB cannot get turned on */
-void dd_dlb_lock(struct gmx_domdec_t *dd);
+void dd_dlb_lock(struct gmx_domdec_t* dd);
 
 /*! \brief Clear a lock such that with DLB=auto DLB may get turned on later */
-void dd_dlb_unlock(struct gmx_domdec_t *dd);
+void dd_dlb_unlock(struct gmx_domdec_t* dd);
 
 #endif

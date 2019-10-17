@@ -62,50 +62,50 @@ namespace test
  */
 class SettleTestData
 {
-    public:
-        //! Initial (undisturbed) positions
-        PaddedVector<gmx::RVec> x_;
-        //! Updated water atom positions to constrain
-        PaddedVector<gmx::RVec> xPrime_;
-        //! Water atom velocities to constrain
-        PaddedVector<gmx::RVec> v_;
-        //! SETTLE virial
-        tensor                  virial_ = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+public:
+    //! Initial (undisturbed) positions
+    PaddedVector<gmx::RVec> x_;
+    //! Updated water atom positions to constrain
+    PaddedVector<gmx::RVec> xPrime_;
+    //! Water atom velocities to constrain
+    PaddedVector<gmx::RVec> v_;
+    //! SETTLE virial
+    tensor virial_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
 
-        //! Global topology
-        gmx_mtop_t              mtop_;
-        //! Atoms data
-        t_mdatoms               mdatoms_;
-        //! Interactions list
-        t_ilist                 ilist_;
-        //! Local topology
-        t_idef                  idef_;
+    //! Global topology
+    gmx_mtop_t mtop_;
+    //! Atoms data
+    t_mdatoms mdatoms_;
+    //! Interactions list
+    t_ilist ilist_;
+    //! Local topology
+    t_idef idef_;
 
-        //! Inverse timestep
-        const real              reciprocalTimeStep_ = 1.0/0.002;
-        //! Target distance between oxygen and hydrogens
-        const real              dOH_                = 0.09572;
-        //! Target distance between hydrogens
-        const real              dHH_                = 0.15139;
-        //! Mass of oxygen atom
-        const real              oxygenMass_         = 15.9994;
-        //! Mass of hydrogen atom
-        const real              hydrogenMass_       = 1.008;
+    //! Inverse timestep
+    const real reciprocalTimeStep_ = 1.0 / 0.002;
+    //! Target distance between oxygen and hydrogens
+    const real dOH_ = 0.09572;
+    //! Target distance between hydrogens
+    const real dHH_ = 0.15139;
+    //! Mass of oxygen atom
+    const real oxygenMass_ = 15.9994;
+    //! Mass of hydrogen atom
+    const real hydrogenMass_ = 1.008;
 
-        //! Stride for array with atom indexes
-        const int               atomsPerSettle_     = NRAL(F_SETTLE);
+    //! Stride for array with atom indexes
+    const int atomsPerSettle_ = NRAL(F_SETTLE);
 
-        /*! \brief Construct the object and initialize the data structures.
-         *
-         * \param[in] numSettles   Number of SETTLE constraints in the system.
-         *
-         */
-        SettleTestData(int numSettles);
+    /*! \brief Construct the object and initialize the data structures.
+     *
+     * \param[in] numSettles   Number of SETTLE constraints in the system.
+     *
+     */
+    SettleTestData(int numSettles);
 
-        ~SettleTestData();
+    ~SettleTestData();
 };
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_SETTLETESTDATA_H

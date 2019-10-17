@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxomp.h"
 
-int many_auto_correl(std::vector<std::vector<real> > *c)
+int many_auto_correl(std::vector<std::vector<real>>* c)
 {
     size_t nfunc = (*c).size();
     if (nfunc == 0)
@@ -68,60 +68,60 @@ int many_auto_correl(std::vector<std::vector<real> > *c)
         {
             char buf[256];
             snprintf(buf, sizeof(buf), "Vectors of different lengths supplied (%d %d)",
-                     static_cast<int>((*c)[i].size()),
-                     static_cast<int>(ndata));
+                     static_cast<int>((*c)[i].size()), static_cast<int>(ndata));
             GMX_THROW(gmx::InconsistentInputError(buf));
         }
     }
 #endif
     // Add buffer size to the arrays.
-    size_t nfft = (3*ndata/2) + 1;
+    size_t nfft = (3 * ndata / 2) + 1;
     // Pad arrays with zeros
-    for (auto &i : *c)
+    for (auto& i : *c)
     {
         i.resize(nfft, 0);
     }
-    #pragma omp parallel
+#pragma omp parallel
     {
         try
         {
             gmx_fft_t         fft1;
             std::vector<real> in, out;
 
-            int               nthreads  = gmx_omp_get_max_threads();
-            int               thread_id = gmx_omp_get_thread_num();
-            int               i0        = (thread_id*nfunc)/nthreads;
-            int               i1        = std::min(nfunc, ((thread_id+1)*nfunc)/nthreads);
+            int nthreads  = gmx_omp_get_max_threads();
+            int thread_id = gmx_omp_get_thread_num();
+            int i0        = (thread_id * nfunc) / nthreads;
+            int i1        = std::min(nfunc, ((thread_id + 1) * nfunc) / nthreads);
 
             gmx_fft_init_1d(&fft1, nfft, GMX_FFT_FLAG_CONSERVATIVE);
             /* Allocate temporary arrays */
-            in.resize(2*nfft, 0);
-            out.resize(2*nfft, 0);
+            in.resize(2 * nfft, 0);
+            out.resize(2 * nfft, 0);
             for (int i = i0; (i < i1); i++)
             {
                 for (size_t j = 0; j < ndata; j++)
                 {
-                    in[2*j+0] = (*c)[i][j];
-                    in[2*j+1] = 0;
+                    in[2 * j + 0] = (*c)[i][j];
+                    in[2 * j + 1] = 0;
                 }
                 gmx_fft_1d(fft1, GMX_FFT_BACKWARD, in.data(), out.data());
                 for (size_t j = 0; j < nfft; j++)
                 {
-                    in[2*j+0] = (out[2*j+0]*out[2*j+0] + out[2*j+1]*out[2*j+1])/nfft;
-                    in[2*j+1] = 0;
+                    in[2 * j + 0] =
+                            (out[2 * j + 0] * out[2 * j + 0] + out[2 * j + 1] * out[2 * j + 1]) / nfft;
+                    in[2 * j + 1] = 0;
                 }
                 gmx_fft_1d(fft1, GMX_FFT_FORWARD, in.data(), out.data());
                 for (size_t j = 0; (j < nfft); j++)
                 {
-                    (*c)[i][j] = out[2*j+0];
+                    (*c)[i][j] = out[2 * j + 0];
                 }
             }
             /* Free the memory */
             gmx_fft_destroy(fft1);
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    for (auto &i : *c)
+    for (auto& i : *c)
     {
         i.resize(ndata);
     }

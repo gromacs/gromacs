@@ -38,41 +38,41 @@
 #include "gromacs/simd/vector_operations.h"
 #include "gromacs/utility/basedefinitions.h"
 #ifdef CALC_COUL_EWALD
-#include "gromacs/math/utilities.h"
+#    include "gromacs/math/utilities.h"
 #endif
 
 #include "config.h"
 
 #ifndef GMX_SIMD_J_UNROLL_SIZE
-#error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
+#    error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 4xn kernel common header file"
 #endif
 
-#define UNROLLI    4
-#define UNROLLJ    (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+#define UNROLLI 4
+#define UNROLLJ (GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE)
 
 static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-cluster size");
 
 /* The stride of all the atom data arrays is max(UNROLLI,unrollj) */
 #if GMX_SIMD_REAL_WIDTH >= UNROLLI
-#define STRIDE     (GMX_SIMD_REAL_WIDTH/GMX_SIMD_J_UNROLL_SIZE)
+#    define STRIDE (GMX_SIMD_REAL_WIDTH / GMX_SIMD_J_UNROLL_SIZE)
 #else
-#define STRIDE     (UNROLLI)
+#    define STRIDE (UNROLLI)
 #endif
 
 
 #if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
-#error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
+#    error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
 #endif
 
 // We use the FDV0 tables for width==4 (when we can load it in one go), or if we don't have any unaligned loads
 #if GMX_SIMD_REAL_WIDTH == 4 || !GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
-#define TAB_FDV0
+#    define TAB_FDV0
 #endif
 
 
 #ifdef UNROLLJ
 /* Add energy register to possibly multiple terms in the energy array */
-static inline void add_ener_grp(gmx::SimdReal e_S, real *v, const int *offset_jj)
+static inline void add_ener_grp(gmx::SimdReal e_S, real* v, const int* offset_jj)
 {
     using namespace gmx;
     int jj;
@@ -81,68 +81,70 @@ static inline void add_ener_grp(gmx::SimdReal e_S, real *v, const int *offset_jj
      * the rapidly increases number of combinations of energy groups.
      * We add to a temporary buffer for 1 i-group vs 2 j-groups.
      */
-    for (jj = 0; jj < (UNROLLJ/2); jj++)
+    for (jj = 0; jj < (UNROLLJ / 2); jj++)
     {
         SimdReal v_S;
 
-        v_S = load<SimdReal>(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH);
-        store(v+offset_jj[jj]+jj*GMX_SIMD_REAL_WIDTH, v_S + e_S);
+        v_S = load<SimdReal>(v + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH);
+        store(v + offset_jj[jj] + jj * GMX_SIMD_REAL_WIDTH, v_S + e_S);
     }
 }
 #endif
 
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-typedef gmx::SimdInt32    SimdBitMask;
+typedef gmx::SimdInt32 SimdBitMask;
 #else
-typedef gmx::SimdReal     SimdBitMask;
+typedef gmx::SimdReal SimdBitMask;
 #endif
 
-static inline void gmx_simdcall
-gmx_load_simd_4xn_interactions(int                               excl,
-                               SimdBitMask gmx_unused            filter_S0,
-                               SimdBitMask gmx_unused            filter_S1,
-                               SimdBitMask gmx_unused            filter_S2,
-                               SimdBitMask gmx_unused            filter_S3,
-                               const real gmx_unused            *simd_interaction_array,
-                               gmx::SimdBool                    *interact_S0,
-                               gmx::SimdBool                    *interact_S1,
-                               gmx::SimdBool                    *interact_S2,
-                               gmx::SimdBool                    *interact_S3)
+static inline void gmx_simdcall gmx_load_simd_4xn_interactions(int         excl,
+                                                               SimdBitMask gmx_unused filter_S0,
+                                                               SimdBitMask gmx_unused filter_S1,
+                                                               SimdBitMask gmx_unused filter_S2,
+                                                               SimdBitMask gmx_unused filter_S3,
+                                                               const real gmx_unused* simd_interaction_array,
+                                                               gmx::SimdBool* interact_S0,
+                                                               gmx::SimdBool* interact_S1,
+                                                               gmx::SimdBool* interact_S2,
+                                                               gmx::SimdBool* interact_S3)
 {
     using namespace gmx;
 #if GMX_SIMD_HAVE_INT32_LOGICAL
     /* Load integer interaction mask */
     SimdInt32 mask_pr_S(excl);
-    *interact_S0  = cvtIB2B(testBits( mask_pr_S & filter_S0 ));
-    *interact_S1  = cvtIB2B(testBits( mask_pr_S & filter_S1 ));
-    *interact_S2  = cvtIB2B(testBits( mask_pr_S & filter_S2 ));
-    *interact_S3  = cvtIB2B(testBits( mask_pr_S & filter_S3 ));
+    *interact_S0 = cvtIB2B(testBits(mask_pr_S & filter_S0));
+    *interact_S1 = cvtIB2B(testBits(mask_pr_S & filter_S1));
+    *interact_S2 = cvtIB2B(testBits(mask_pr_S & filter_S2));
+    *interact_S3 = cvtIB2B(testBits(mask_pr_S & filter_S3));
 #elif GMX_SIMD_HAVE_LOGICAL
-    union
-    {
-#if GMX_DOUBLE
+    union {
+#    if GMX_DOUBLE
         std::int64_t i;
-#else
+#    else
         std::int32_t i;
-#endif
+#    endif
         real         r;
     } conv;
 
     conv.i = excl;
-    SimdReal      mask_pr_S(conv.r);
+    SimdReal mask_pr_S(conv.r);
 
-    *interact_S0  = testBits( mask_pr_S & filter_S0 );
-    *interact_S1  = testBits( mask_pr_S & filter_S1 );
-    *interact_S2  = testBits( mask_pr_S & filter_S2 );
-    *interact_S3  = testBits( mask_pr_S & filter_S3 );
+    *interact_S0 = testBits(mask_pr_S & filter_S0);
+    *interact_S1 = testBits(mask_pr_S & filter_S1);
+    *interact_S2 = testBits(mask_pr_S & filter_S2);
+    *interact_S3 = testBits(mask_pr_S & filter_S3);
 #else
     // Neither real or integer bitwise logical operations supported.
     // Load masks from memory instead.
-    SimdReal      zero = setZero();
-    *interact_S0  = ( zero < load<SimdReal>( simd_interaction_array + GMX_SIMD_REAL_WIDTH*((excl >> (0 * UNROLLJ)) & 0xF) ) );
-    *interact_S1  = ( zero < load<SimdReal>( simd_interaction_array + GMX_SIMD_REAL_WIDTH*((excl >> (1 * UNROLLJ)) & 0xF) ) );
-    *interact_S2  = ( zero < load<SimdReal>( simd_interaction_array + GMX_SIMD_REAL_WIDTH*((excl >> (2 * UNROLLJ)) & 0xF) ) );
-    *interact_S3  = ( zero < load<SimdReal>( simd_interaction_array + GMX_SIMD_REAL_WIDTH*((excl >> (3 * UNROLLJ)) & 0xF) ) );
+    SimdReal zero = setZero();
+    *interact_S0  = (zero < load<SimdReal>(simd_interaction_array
+                                          + GMX_SIMD_REAL_WIDTH * ((excl >> (0 * UNROLLJ)) & 0xF)));
+    *interact_S1  = (zero < load<SimdReal>(simd_interaction_array
+                                          + GMX_SIMD_REAL_WIDTH * ((excl >> (1 * UNROLLJ)) & 0xF)));
+    *interact_S2  = (zero < load<SimdReal>(simd_interaction_array
+                                          + GMX_SIMD_REAL_WIDTH * ((excl >> (2 * UNROLLJ)) & 0xF)));
+    *interact_S3  = (zero < load<SimdReal>(simd_interaction_array
+                                          + GMX_SIMD_REAL_WIDTH * ((excl >> (3 * UNROLLJ)) & 0xF)));
 #endif
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,21 +78,20 @@ namespace
  * \param G                Component to multiply with eps^2
  * \param H                Component to multiply with eps^3
  */
-void
-calculateCubicSplineCoefficients(double  functionValue0,
-                                 double  functionValue1,
-                                 double  derivativeValue0,
-                                 double  derivativeValue1,
-                                 double  spacing,
-                                 double *Y,
-                                 double *F,
-                                 double *G,
-                                 double *H)
+void calculateCubicSplineCoefficients(double  functionValue0,
+                                      double  functionValue1,
+                                      double  derivativeValue0,
+                                      double  derivativeValue1,
+                                      double  spacing,
+                                      double* Y,
+                                      double* F,
+                                      double* G,
+                                      double* H)
 {
-    *Y  =  functionValue0;
-    *F  =  spacing * derivativeValue0;
-    *G  =  3.0*( functionValue1 - functionValue0) - spacing * (derivativeValue1 + 2.0 * derivativeValue0);
-    *H  = -2.0*( functionValue1 - functionValue0) + spacing * (derivativeValue1 + derivativeValue0);
+    *Y = functionValue0;
+    *F = spacing * derivativeValue0;
+    *G = 3.0 * (functionValue1 - functionValue0) - spacing * (derivativeValue1 + 2.0 * derivativeValue0);
+    *H = -2.0 * (functionValue1 - functionValue0) + spacing * (derivativeValue1 + derivativeValue0);
 }
 
 /*! \brief Perform cubic spline interpolation in interval from function/derivative
@@ -106,29 +105,25 @@ calculateCubicSplineCoefficients(double  functionValue0,
  * \param[out] interpolatedFunctionValue    Output function value
  * \param[out] interpolatedDerivativeValue  Output derivative value
  */
-void
-cubicSplineInterpolationFromFunctionAndDerivative(double  functionValue0,
-                                                  double  functionValue1,
-                                                  double  derivativeValue0,
-                                                  double  derivativeValue1,
-                                                  double  spacing,
-                                                  double  eps,
-                                                  double *interpolatedFunctionValue,
-                                                  double *interpolatedDerivativeValue)
+void cubicSplineInterpolationFromFunctionAndDerivative(double  functionValue0,
+                                                       double  functionValue1,
+                                                       double  derivativeValue0,
+                                                       double  derivativeValue1,
+                                                       double  spacing,
+                                                       double  eps,
+                                                       double* interpolatedFunctionValue,
+                                                       double* interpolatedDerivativeValue)
 {
     double Y, F, G, H;
 
-    calculateCubicSplineCoefficients(functionValue0, functionValue1,
-                                     derivativeValue0, derivativeValue1,
-                                     spacing,
-                                     &Y, &F, &G, &H);
+    calculateCubicSplineCoefficients(functionValue0, functionValue1, derivativeValue0,
+                                     derivativeValue1, spacing, &Y, &F, &G, &H);
 
     double Fp = fma(fma(H, eps, G), eps, F);
 
     *interpolatedFunctionValue   = fma(Fp, eps, Y);
-    *interpolatedDerivativeValue = fma(eps, fma(2.0*eps, H, G), Fp)/spacing;
+    *interpolatedDerivativeValue = fma(eps, fma(2.0 * eps, H, G), Fp) / spacing;
 }
-
 
 
 /*! \brief Construct the data for a single cubic table from analytical functions
@@ -139,24 +134,23 @@ cubicSplineInterpolationFromFunctionAndDerivative(double  functionValue0,
  * \param[in]  spacing              Distance between table points
  * \param[out] yfghTableData        Output cubic spline table with Y,F,G,H entries
  */
-void
-fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
-                               const std::function<double(double)>   &derivative,
-                               const std::pair<real, real>           &range,
-                               double                                 spacing,
-                               std::vector<real>                     *yfghTableData)
+void fillSingleCubicSplineTableData(const std::function<double(double)>& function,
+                                    const std::function<double(double)>& derivative,
+                                    const std::pair<real, real>&         range,
+                                    double                               spacing,
+                                    std::vector<real>*                   yfghTableData)
 {
-    int  endIndex   = static_cast<int>(range.second / spacing + 2);
+    int endIndex = static_cast<int>(range.second / spacing + 2);
 
-    yfghTableData->resize(4*endIndex);
+    yfghTableData->resize(4 * endIndex);
 
-    double       maxMagnitude      = 0.0001*GMX_REAL_MAX;
-    bool         functionIsInRange = true;
-    std::size_t  lastIndexInRange  = endIndex - 1;
+    double      maxMagnitude      = 0.0001 * GMX_REAL_MAX;
+    bool        functionIsInRange = true;
+    std::size_t lastIndexInRange  = endIndex - 1;
 
     for (int i = endIndex - 1; i >= 0; i--)
     {
-        double x                    = i * spacing;
+        double x = i * spacing;
         double tmpFunctionValue;
         double tmpDerivativeValue;
         double nextHigherFunction;
@@ -174,8 +168,8 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
         {
             tmpFunctionValue     = function(x);
             tmpDerivativeValue   = derivative(x);
-            nextHigherFunction   = ((i+1) < endIndex) ? function(x+spacing) : 0.0;
-            nextHigherDerivative = ((i+1) < endIndex) ? derivative(x+spacing) : 0.0;
+            nextHigherFunction   = ((i + 1) < endIndex) ? function(x + spacing) : 0.0;
+            nextHigherDerivative = ((i + 1) < endIndex) ? derivative(x + spacing) : 0.0;
 
             if (std::abs(tmpFunctionValue) > maxMagnitude || std::abs(tmpDerivativeValue) > maxMagnitude)
             {
@@ -185,16 +179,14 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
 
         if (functionIsInRange)
         {
-            calculateCubicSplineCoefficients(tmpFunctionValue, nextHigherFunction,
-                                             tmpDerivativeValue, nextHigherDerivative,
-                                             spacing,
-                                             &Y, &F, &G, &H);
+            calculateCubicSplineCoefficients(tmpFunctionValue, nextHigherFunction, tmpDerivativeValue,
+                                             nextHigherDerivative, spacing, &Y, &F, &G, &H);
             lastIndexInRange--;
         }
         else
         {
-            double lastIndexY = (*yfghTableData)[4*lastIndexInRange];
-            double lastIndexF = (*yfghTableData)[4*lastIndexInRange + 1];
+            double lastIndexY = (*yfghTableData)[4 * lastIndexInRange];
+            double lastIndexF = (*yfghTableData)[4 * lastIndexInRange + 1];
 
             Y = lastIndexY + lastIndexF * (i - lastIndexInRange);
             F = lastIndexF;
@@ -202,10 +194,10 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
             H = 0.0;
         }
 
-        (*yfghTableData)[4*i  ] = Y;
-        (*yfghTableData)[4*i+1] = F;
-        (*yfghTableData)[4*i+2] = G;
-        (*yfghTableData)[4*i+3] = H;
+        (*yfghTableData)[4 * i]     = Y;
+        (*yfghTableData)[4 * i + 1] = F;
+        (*yfghTableData)[4 * i + 2] = G;
+        (*yfghTableData)[4 * i + 3] = H;
     }
 }
 
@@ -219,22 +211,21 @@ fillSingleCubicSplineTableData(const std::function<double(double)>   &function,
  * \param[in]  spacing              Distance between table points
  * \param[out] yfghTableData        Output cubic spline table with Y,F,G,H entries
  */
-void
-fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
-                               ArrayRef<const double>                 derivative,
-                               double                                 inputSpacing,
-                               const std::pair<real, real>           &range,
-                               double                                 spacing,
-                               std::vector<real>                     *yfghTableData)
+void fillSingleCubicSplineTableData(ArrayRef<const double>       function,
+                                    ArrayRef<const double>       derivative,
+                                    double                       inputSpacing,
+                                    const std::pair<real, real>& range,
+                                    double                       spacing,
+                                    std::vector<real>*           yfghTableData)
 {
-    int                 endIndex   = static_cast<int>(range.second / spacing + 2);
+    int endIndex = static_cast<int>(range.second / spacing + 2);
 
     std::vector<double> tmpFunction(endIndex);
     std::vector<double> tmpDerivative(endIndex);
 
-    double              maxMagnitude      = 0.0001*GMX_REAL_MAX;
-    bool                functionIsInRange = true;
-    std::size_t         lastIndexInRange  = endIndex - 1;
+    double      maxMagnitude      = 0.0001 * GMX_REAL_MAX;
+    bool        functionIsInRange = true;
+    std::size_t lastIndexInRange  = endIndex - 1;
 
     // Interpolate function and derivative values in positions needed for output
     for (int i = endIndex - 1; i >= 0; i--)
@@ -251,74 +242,66 @@ fillSingleCubicSplineTableData(ArrayRef<const double>                 function,
             functionIsInRange = false;
         }
 
-        if (functionIsInRange && (std::abs(function[index]) > maxMagnitude || std::abs(derivative[index]) > maxMagnitude))
+        if (functionIsInRange
+            && (std::abs(function[index]) > maxMagnitude || std::abs(derivative[index]) > maxMagnitude))
         {
             functionIsInRange = false; // Once this happens, it never resets to true again
         }
 
         if (functionIsInRange)
         {
-            cubicSplineInterpolationFromFunctionAndDerivative(function[index],
-                                                              function[index+1],
-                                                              derivative[index],
-                                                              derivative[index+1],
-                                                              inputSpacing,
-                                                              eps,
-                                                              &(tmpFunction[i]),
-                                                              &(tmpDerivative[i]));
+            cubicSplineInterpolationFromFunctionAndDerivative(
+                    function[index], function[index + 1], derivative[index], derivative[index + 1],
+                    inputSpacing, eps, &(tmpFunction[i]), &(tmpDerivative[i]));
             lastIndexInRange--;
         }
         else
         {
             double lastIndexFunction   = tmpFunction[lastIndexInRange];
             double lastIndexDerivative = tmpDerivative[lastIndexInRange];
-            tmpFunction[i]             = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
-            tmpDerivative[i]           = lastIndexDerivative;
+            tmpFunction[i] = lastIndexFunction + lastIndexDerivative * (i - lastIndexInRange) * spacing;
+            tmpDerivative[i] = lastIndexDerivative;
         }
     }
 
-    yfghTableData->resize(4*endIndex);
+    yfghTableData->resize(4 * endIndex);
 
     for (int i = 0; i < endIndex; i++)
     {
         double Y, F, G, H;
 
-        double nextFunction   = ((i+1) < endIndex) ? tmpFunction[i+1] : 0.0;
-        double nextDerivative = ((i+1) < endIndex) ? tmpDerivative[i+1] : 0.0;
+        double nextFunction   = ((i + 1) < endIndex) ? tmpFunction[i + 1] : 0.0;
+        double nextDerivative = ((i + 1) < endIndex) ? tmpDerivative[i + 1] : 0.0;
 
-        calculateCubicSplineCoefficients(tmpFunction[i], nextFunction,
-                                         tmpDerivative[i], nextDerivative,
-                                         spacing,
-                                         &Y, &F, &G, &H);
-        (*yfghTableData)[4*i  ] = Y;
-        (*yfghTableData)[4*i+1] = F;
-        (*yfghTableData)[4*i+2] = G;
-        (*yfghTableData)[4*i+3] = H;
+        calculateCubicSplineCoefficients(tmpFunction[i], nextFunction, tmpDerivative[i],
+                                         nextDerivative, spacing, &Y, &F, &G, &H);
+        (*yfghTableData)[4 * i]     = Y;
+        (*yfghTableData)[4 * i + 1] = F;
+        (*yfghTableData)[4 * i + 2] = G;
+        (*yfghTableData)[4 * i + 3] = H;
     }
-
 }
 
-}   // namespace
-
+} // namespace
 
 
 #if GMX_DOUBLE
-const real
-CubicSplineTable::defaultTolerance = 1e-10;
+const real CubicSplineTable::defaultTolerance = 1e-10;
 #else
-const real
-CubicSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
+const real CubicSplineTable::defaultTolerance = 10.0 * GMX_FLOAT_EPS;
 #endif
 
-CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput>   analyticalInputList,
-                                   const std::pair<real, real>                        &range,
-                                   real                                                tolerance)
-    : numFuncInTable_(analyticalInputList.size()), range_(range)
+CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableInput> analyticalInputList,
+                                   const std::pair<real, real>&                      range,
+                                   real                                              tolerance) :
+    numFuncInTable_(analyticalInputList.size()),
+    range_(range)
 {
     // Sanity check on input values
-    if (range_.first < 0.0 || (range_.second-range_.first) < 0.001)
+    if (range_.first < 0.0 || (range_.second - range_.first) < 0.001)
     {
-        GMX_THROW(InvalidInputError("Range to tabulate cannot include negative values and must span at least 0.001"));
+        GMX_THROW(InvalidInputError(
+                "Range to tabulate cannot include negative values and must span at least 0.001"));
     }
 
     if (tolerance < GMX_REAL_EPS)
@@ -329,38 +312,43 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     double minQuotient = GMX_REAL_MAX;
 
     // loop over all functions to find smallest spacing
-    for (const auto &thisFuncInput : analyticalInputList)
+    for (const auto& thisFuncInput : analyticalInputList)
     {
         try
         {
-            internal::throwUnlessDerivativeIsConsistentWithFunction(thisFuncInput.function, thisFuncInput.derivative, range_);
+            internal::throwUnlessDerivativeIsConsistentWithFunction(
+                    thisFuncInput.function, thisFuncInput.derivative, range_);
         }
-        catch (gmx::GromacsException &ex)
+        catch (gmx::GromacsException& ex)
         {
-            ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
+            ex.prependContext("Error generating cubic spline table for function '"
+                              + thisFuncInput.desc + "'");
             throw;
         }
         // Calculate the required table spacing h. The error we make with a third order polynomial
         // (second order for derivative) will be described by the fourth-derivative correction term.
         //
-        // This means we can compute the required spacing as h = 0.5*cbrt(72*sqrt(3)*tolerance**min(f'/f'''')),
-        // where f'/f'''' is the first and fourth derivative of the function, respectively.
-        // Since we already have an analytical form of the derivative, we reduce the numerical
-        // errors by calculating the quotient of the function and third derivative of the
-        // input-derivative-analytical function instead.
+        // This means we can compute the required spacing as h =
+        // 0.5*cbrt(72*sqrt(3)*tolerance**min(f'/f'''')), where f'/f'''' is the first and fourth
+        // derivative of the function, respectively. Since we already have an analytical form of the
+        // derivative, we reduce the numerical errors by calculating the quotient of the function
+        // and third derivative of the input-derivative-analytical function instead.
 
-        double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndThirdDerivative(thisFuncInput.derivative, range_);
+        double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndThirdDerivative(
+                thisFuncInput.derivative, range_);
 
         minQuotient = std::min(minQuotient, thisMinQuotient);
     }
 
     double spacing = 0.5 * std::cbrt(72.0 * std::sqrt(3.0) * tolerance * minQuotient);
 
-    tableScale_  = 1.0 / spacing;
+    tableScale_ = 1.0 / spacing;
 
     if (range_.second * tableScale_ > 2e6)
     {
-        GMX_THROW(ToleranceError("Over a million points would be required for table; decrease range or increase tolerance"));
+        GMX_THROW(
+                ToleranceError("Over a million points would be required for table; decrease range "
+                               "or increase tolerance"));
     }
 
     // Loop over all tables again.
@@ -368,41 +356,41 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<AnalyticalSplineTableIn
     // combine them into a multiplexed table function.
     std::size_t funcIndex = 0;
 
-    for (const auto &thisFuncInput : analyticalInputList)
+    for (const auto& thisFuncInput : analyticalInputList)
     {
         try
         {
             std::vector<real> tmpYfghTableData;
 
-            fillSingleCubicSplineTableData(thisFuncInput.function,
-                                           thisFuncInput.derivative,
-                                           range_,
-                                           spacing,
-                                           &tmpYfghTableData);
+            fillSingleCubicSplineTableData(thisFuncInput.function, thisFuncInput.derivative, range_,
+                                           spacing, &tmpYfghTableData);
 
-            internal::fillMultiplexedTableData(tmpYfghTableData, &yfghMultiTableData_,
-                                               4, numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(tmpYfghTableData, &yfghMultiTableData_, 4,
+                                               numFuncInTable_, funcIndex);
 
             funcIndex++;
         }
-        catch (gmx::GromacsException &ex)
+        catch (gmx::GromacsException& ex)
         {
-            ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
+            ex.prependContext("Error generating cubic spline table for function '"
+                              + thisFuncInput.desc + "'");
             throw;
         }
     }
 }
 
 
-CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInput>   numericalInputList,
-                                   const std::pair<real, real>                       &range,
-                                   real                                               tolerance)
-    : numFuncInTable_(numericalInputList.size()), range_(range)
+CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInput> numericalInputList,
+                                   const std::pair<real, real>&                     range,
+                                   real                                             tolerance) :
+    numFuncInTable_(numericalInputList.size()),
+    range_(range)
 {
     // Sanity check on input values
-    if (range.first < 0.0 || (range.second-range.first) < 0.001)
+    if (range.first < 0.0 || (range.second - range.first) < 0.001)
     {
-        GMX_THROW(InvalidInputError("Range to tabulate cannot include negative values and must span at least 0.001"));
+        GMX_THROW(InvalidInputError(
+                "Range to tabulate cannot include negative values and must span at least 0.001"));
     }
 
     if (tolerance < GMX_REAL_EPS)
@@ -421,19 +409,24 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInp
             // the requested range before starting to calculate derivatives
             if (thisFuncInput.function.size() < range_.second / thisFuncInput.spacing + 1)
             {
-                GMX_THROW(InconsistentInputError("Table input vectors must cover requested range, and a margin beyond the upper endpoint"));
+                GMX_THROW(
+                        InconsistentInputError("Table input vectors must cover requested range, "
+                                               "and a margin beyond the upper endpoint"));
             }
 
             if (thisFuncInput.function.size() != thisFuncInput.derivative.size())
             {
-                GMX_THROW(InconsistentInputError("Function and derivative vectors have different lengths"));
+                GMX_THROW(InconsistentInputError(
+                        "Function and derivative vectors have different lengths"));
             }
 
-            internal::throwUnlessDerivativeIsConsistentWithFunction(thisFuncInput.function, thisFuncInput.derivative, thisFuncInput.spacing, range_);
+            internal::throwUnlessDerivativeIsConsistentWithFunction(
+                    thisFuncInput.function, thisFuncInput.derivative, thisFuncInput.spacing, range_);
         }
-        catch (gmx::GromacsException &ex)
+        catch (gmx::GromacsException& ex)
         {
-            ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
+            ex.prependContext("Error generating cubic spline table for function '"
+                              + thisFuncInput.desc + "'");
             throw;
         }
         // Calculate the required table spacing h. The error we make with linear interpolation
@@ -441,18 +434,20 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInp
         // This means we can compute the required spacing as h = sqrt(12*tolerance*min(f'/f''')),
         // where f'/f''' is the first and third derivative of the function, respectively.
 
-        double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndThirdDerivative(thisFuncInput.derivative, thisFuncInput.spacing, range_);
+        double thisMinQuotient = internal::findSmallestQuotientOfFunctionAndThirdDerivative(
+                thisFuncInput.derivative, thisFuncInput.spacing, range_);
 
         minQuotient = std::min(minQuotient, thisMinQuotient);
     }
 
-    double spacing     = std::cbrt(72.0 * std::sqrt(3.0) * tolerance * minQuotient);
+    double spacing = std::cbrt(72.0 * std::sqrt(3.0) * tolerance * minQuotient);
 
-    tableScale_  = 1.0 / spacing;
+    tableScale_ = 1.0 / spacing;
 
     if (range_.second * tableScale_ > 1e6)
     {
-        GMX_THROW(ToleranceError("Requested tolerance would require over a million points in table"));
+        GMX_THROW(
+                ToleranceError("Requested tolerance would require over a million points in table"));
     }
 
     // Loop over all tables again.
@@ -466,26 +461,24 @@ CubicSplineTable::CubicSplineTable(std::initializer_list<NumericalSplineTableInp
         {
             if (spacing < thisFuncInput.spacing)
             {
-                GMX_THROW(ToleranceError("Input vector spacing cannot achieve tolerance requested"));
+                GMX_THROW(
+                        ToleranceError("Input vector spacing cannot achieve tolerance requested"));
             }
 
             std::vector<real> tmpYfghTableData;
 
-            fillSingleCubicSplineTableData(thisFuncInput.function,
-                                           thisFuncInput.derivative,
-                                           thisFuncInput.spacing,
-                                           range,
-                                           spacing,
-                                           &tmpYfghTableData);
+            fillSingleCubicSplineTableData(thisFuncInput.function, thisFuncInput.derivative,
+                                           thisFuncInput.spacing, range, spacing, &tmpYfghTableData);
 
-            internal::fillMultiplexedTableData(tmpYfghTableData, &yfghMultiTableData_,
-                                               4, numFuncInTable_, funcIndex);
+            internal::fillMultiplexedTableData(tmpYfghTableData, &yfghMultiTableData_, 4,
+                                               numFuncInTable_, funcIndex);
 
             funcIndex++;
         }
-        catch (gmx::GromacsException &ex)
+        catch (gmx::GromacsException& ex)
         {
-            ex.prependContext("Error generating cubic spline table for function '" + thisFuncInput.desc + "'");
+            ex.prependContext("Error generating cubic spline table for function '"
+                              + thisFuncInput.desc + "'");
             throw;
         }
     }

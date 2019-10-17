@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,13 +51,13 @@ namespace gmx
 {
 
 //! fclose wrapper to be used as unique_ptr deleter
-inline void fclose_wrapper(FILE *fp)
+inline void fclose_wrapper(FILE* fp)
 {
     fclose(fp); // NOLINT(cppcoreguidelines-owning-memory)
 }
 
 //! Simple guard pointer which calls fclose. See unique_cptr for details.
-using FilePtr = std::unique_ptr < FILE, functor_wrapper < FILE, fclose_wrapper>>;
+using FilePtr = std::unique_ptr<FILE, functor_wrapper<FILE, fclose_wrapper>>;
 
 } // namespace gmx
 

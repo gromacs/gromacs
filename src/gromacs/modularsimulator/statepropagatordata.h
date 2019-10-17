@@ -97,181 +97,176 @@ class FreeEnergyPerturbationElement;
  * constraining are using this.
  */
 class StatePropagatorData final :
-    public                ISimulatorElement,
-    public                ITrajectoryWriterClient,
-    public                ITrajectorySignallerClient,
-    public                ICheckpointHelperClient
+    public ISimulatorElement,
+    public ITrajectoryWriterClient,
+    public ITrajectorySignallerClient,
+    public ICheckpointHelperClient
 {
-    public:
-        //! Constructor
-        StatePropagatorData(
-            int                             numAtoms,
-            FILE                           *fplog,
-            const t_commrec                *cr,
-            t_state                        *globalState,
-            int                             nstxout,
-            int                             nstvout,
-            int                             nstfout,
-            int                             nstxout_compressed,
-            bool                            useGPU,
-            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-            const t_inputrec              *inputrec,
-            const t_mdatoms               *mdatoms);
+public:
+    //! Constructor
+    StatePropagatorData(int                            numAtoms,
+                        FILE*                          fplog,
+                        const t_commrec*               cr,
+                        t_state*                       globalState,
+                        int                            nstxout,
+                        int                            nstvout,
+                        int                            nstfout,
+                        int                            nstxout_compressed,
+                        bool                           useGPU,
+                        FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                        const t_inputrec*              inputrec,
+                        const t_mdatoms*               mdatoms);
 
-        // Allow access to state
-        //! Get write access to position vector
-        ArrayRefWithPadding<RVec> positionsView();
-        //! Get read access to position vector
-        ArrayRefWithPadding<const RVec> constPositionsView() const;
-        //! Get write access to previous position vector
-        ArrayRefWithPadding<RVec> previousPositionsView();
-        //! Get read access to previous position vector
-        ArrayRefWithPadding<const RVec> constPreviousPositionsView() const;
-        //! Get write access to velocity vector
-        ArrayRefWithPadding<RVec> velocitiesView();
-        //! Get read access to velocity vector
-        ArrayRefWithPadding<const RVec> constVelocitiesView() const;
-        //! Get write access to force vector
-        ArrayRefWithPadding<RVec> forcesView();
-        //! Get read access to force vector
-        ArrayRefWithPadding<const RVec> constForcesView() const;
-        //! Get pointer to box
-        rvec* box();
-        //! Get const pointer to box
-        const rvec* constBox();
-        //! Get pointer to previous box
-        rvec* previousBox();
-        //! Get const pointer to previous box
-        const rvec* constPreviousBox();
-        //! Get the local number of atoms
-        int localNumAtoms();
+    // Allow access to state
+    //! Get write access to position vector
+    ArrayRefWithPadding<RVec> positionsView();
+    //! Get read access to position vector
+    ArrayRefWithPadding<const RVec> constPositionsView() const;
+    //! Get write access to previous position vector
+    ArrayRefWithPadding<RVec> previousPositionsView();
+    //! Get read access to previous position vector
+    ArrayRefWithPadding<const RVec> constPreviousPositionsView() const;
+    //! Get write access to velocity vector
+    ArrayRefWithPadding<RVec> velocitiesView();
+    //! Get read access to velocity vector
+    ArrayRefWithPadding<const RVec> constVelocitiesView() const;
+    //! Get write access to force vector
+    ArrayRefWithPadding<RVec> forcesView();
+    //! Get read access to force vector
+    ArrayRefWithPadding<const RVec> constForcesView() const;
+    //! Get pointer to box
+    rvec* box();
+    //! Get const pointer to box
+    const rvec* constBox();
+    //! Get pointer to previous box
+    rvec* previousBox();
+    //! Get const pointer to previous box
+    const rvec* constPreviousBox();
+    //! Get the local number of atoms
+    int localNumAtoms();
 
-        /*! \brief Register run function for step / time
-         *
-         * This needs to be called during the integration part of the simulator,
-         * at the moment at which the state is at a full time step. Positioning
-         * this element is the responsibility of the programmer writing the
-         * integration algorithm! If the current step is a trajectory writing
-         * step, StatePropagatorData will save a backup for later writeout.
-         *
-         * This is also the place at which the current state becomes the previous
-         * state.
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * This needs to be called during the integration part of the simulator,
+     * at the moment at which the state is at a full time step. Positioning
+     * this element is the responsibility of the programmer writing the
+     * integration algorithm! If the current step is a trajectory writing
+     * step, StatePropagatorData will save a backup for later writeout.
+     *
+     * This is also the place at which the current state becomes the previous
+     * state.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        /*! \brief Backup starting velocities
-         *
-         * This is only needed for vv, where the first (velocity) half step is only
-         * used to compute the constraint virial, but the velocities need to be reset
-         * after.
-         * TODO: There must be a more elegant solution to this!
-         */
-        void elementSetup() override;
+    /*! \brief Backup starting velocities
+     *
+     * This is only needed for vv, where the first (velocity) half step is only
+     * used to compute the constraint virial, but the velocities need to be reset
+     * after.
+     * TODO: There must be a more elegant solution to this!
+     */
+    void elementSetup() override;
 
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-        //! @cond
-        // (doxygen doesn't like these)
-        // Classes which need access to legacy state
-        friend class DomDecHelper;
-        //! @endcond
+    //! @cond
+    // (doxygen doesn't like these)
+    // Classes which need access to legacy state
+    friend class DomDecHelper;
+    //! @endcond
 
-    private:
-        //! The total number of atoms in the system
-        int totalNumAtoms_;
-        //! The position writeout frequency
-        int nstxout_;
-        //! The velocity writeout frequency
-        int nstvout_;
-        //! The force writeout frequency
-        int nstfout_;
-        //! The compressed position writeout frequency
-        int nstxout_compressed_;
+private:
+    //! The total number of atoms in the system
+    int totalNumAtoms_;
+    //! The position writeout frequency
+    int nstxout_;
+    //! The velocity writeout frequency
+    int nstvout_;
+    //! The force writeout frequency
+    int nstfout_;
+    //! The compressed position writeout frequency
+    int nstxout_compressed_;
 
-        //! The local number of atoms
-        int                        localNAtoms_;
-        //! The position vector
-        PaddedHostVector<RVec>     x_;
-        //! The position vector of the previous step
-        PaddedHostVector<RVec>     previousX_;
-        //! The velocity vector
-        PaddedHostVector<RVec>     v_;
-        //! The force vector
-        PaddedHostVector<RVec>     f_;
-        //! The box matrix
-        matrix                     box_;
-        //! The box matrix of the previous step
-        matrix                     previousBox_;
-        //! The DD partitioning count for legacy t_state compatibility
-        int                        ddpCount_;
+    //! The local number of atoms
+    int localNAtoms_;
+    //! The position vector
+    PaddedHostVector<RVec> x_;
+    //! The position vector of the previous step
+    PaddedHostVector<RVec> previousX_;
+    //! The velocity vector
+    PaddedHostVector<RVec> v_;
+    //! The force vector
+    PaddedHostVector<RVec> f_;
+    //! The box matrix
+    matrix box_;
+    //! The box matrix of the previous step
+    matrix previousBox_;
+    //! The DD partitioning count for legacy t_state compatibility
+    int ddpCount_;
 
-        //! Move x_ to previousX_
-        void copyPosition();
-        //! OMP helper to move x_ to previousX_
-        void copyPosition(int start, int end);
+    //! Move x_ to previousX_
+    void copyPosition();
+    //! OMP helper to move x_ to previousX_
+    void copyPosition(int start, int end);
 
-        // Access to legacy state
-        //! Get a deep copy of the current state in legacy format
-        std::unique_ptr<t_state> localState();
-        //! Update the current state with a state in legacy format
-        void setLocalState(std::unique_ptr<t_state> state);
-        //! Get a pointer to the global state
-        t_state *globalState();
-        //! Get a force pointer
-        PaddedHostVector<gmx::RVec> *forcePointer();
+    // Access to legacy state
+    //! Get a deep copy of the current state in legacy format
+    std::unique_ptr<t_state> localState();
+    //! Update the current state with a state in legacy format
+    void setLocalState(std::unique_ptr<t_state> state);
+    //! Get a pointer to the global state
+    t_state* globalState();
+    //! Get a force pointer
+    PaddedHostVector<gmx::RVec>* forcePointer();
 
-        //! Pointer to keep a backup of the state for later writeout
-        std::unique_ptr<t_state> localStateBackup_;
-        //! Step at which next writeout occurs
-        Step                     writeOutStep_;
-        //! Backup current state
-        void saveState();
+    //! Pointer to keep a backup of the state for later writeout
+    std::unique_ptr<t_state> localStateBackup_;
+    //! Step at which next writeout occurs
+    Step writeOutStep_;
+    //! Backup current state
+    void saveState();
 
-        //! ITrajectorySignallerClient implementation
-        SignallerCallbackPtr
-        registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    //! ITrajectorySignallerClient implementation
+    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
 
-        //! ITrajectoryWriterClient implementation
-        ITrajectoryWriterCallbackPtr
-        registerTrajectoryWriterCallback(TrajectoryEvent event) override;
+    //! ITrajectoryWriterClient implementation
+    ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent event) override;
 
-        //! ICheckpointHelperClient implementation
-        void writeCheckpoint(t_state *localState, t_state *globalState) override;
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
 
-        //! Callback writing the state to file
-        void write(gmx_mdoutf *outf, Step step, Time time);
+    //! Callback writing the state to file
+    void write(gmx_mdoutf* outf, Step step, Time time);
 
-        //! Whether we're doing VV and need to reset velocities after the first half step
-        bool                   vvResetVelocities_;
-        //! Velocities backup for VV
-        PaddedHostVector<RVec> velocityBackup_;
-        //! Function resetting the velocities
-        void resetVelocities();
+    //! Whether we're doing VV and need to reset velocities after the first half step
+    bool vvResetVelocities_;
+    //! Velocities backup for VV
+    PaddedHostVector<RVec> velocityBackup_;
+    //! Function resetting the velocities
+    void resetVelocities();
 
-        //! Pointer to the free energy perturbation element (for trajectory writing only)
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+    //! Pointer to the free energy perturbation element (for trajectory writing only)
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE            *fplog_;
-        //! Handles communication.
-        const t_commrec *cr_;
-        //! Full simulation state (only non-nullptr on master rank).
-        t_state         *globalState_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    const t_commrec* cr_;
+    //! Full simulation state (only non-nullptr on master rank).
+    t_state* globalState_;
 
-        //! No trajectory writer setup needed
-        void trajectoryWriterSetup(gmx_mdoutf gmx_unused *outf) override {}
-        //! No trajectory writer teardown needed
-        void trajectoryWriterTeardown(gmx_mdoutf gmx_unused *outf) override {}
+    //! No trajectory writer setup needed
+    void trajectoryWriterSetup(gmx_mdoutf gmx_unused* outf) override {}
+    //! No trajectory writer teardown needed
+    void trajectoryWriterTeardown(gmx_mdoutf gmx_unused* outf) override {}
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H

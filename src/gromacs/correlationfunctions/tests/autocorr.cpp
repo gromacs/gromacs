@@ -71,164 +71,145 @@ typedef std::unique_ptr<CorrelationDataSet> CorrelationDataSetPointer;
 
 class AutocorrTest : public ::testing::Test
 {
-    protected:
+protected:
+    static int                       nrFrames_;
+    static CorrelationDataSetPointer data_;
+    // Need raw pointer for passing this to C routines
+    static t_pargs* tempArgs_;
 
-        static int                                  nrFrames_;
-        static CorrelationDataSetPointer            data_;
-        // Need raw pointer for passing this to C routines
-        static t_pargs                            * tempArgs_;
+    test::TestReferenceData    refData_;
+    test::TestReferenceChecker checker_;
 
-        test::TestReferenceData                     refData_;
-        test::TestReferenceChecker                  checker_;
-
-        // Use erefdataCreateMissing for creating new files
-        AutocorrTest( )
-            : checker_(refData_.rootChecker())
-        {
+    // Use erefdataCreateMissing for creating new files
+    AutocorrTest() : checker_(refData_.rootChecker())
+    {
 #if GMX_DOUBLE
-            checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-6));
+        checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-6));
 #else
-            checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-3));
+        checker_.setDefaultTolerance(test::relativeToleranceAsFloatingPoint(1, 1e-3));
 #endif
-        }
+    }
 
-        // Static initiation, only run once every test.
-        static void SetUpTestCase()
+    // Static initiation, only run once every test.
+    static void SetUpTestCase()
+    {
+        int         n        = 0;
+        std::string fileName = "testCOS3.xvg";
+        data_                = std::make_unique<CorrelationDataSet>(fileName);
+        nrFrames_            = data_->getNrLines();
+        tempArgs_            = add_acf_pargs(&n, nullptr);
+    }
+
+    static void TearDownTestCase()
+    {
+        sfree(tempArgs_);
+        tempArgs_ = nullptr;
+        gmx_fft_cleanup();
+    }
+
+    void test(unsigned long mode, bool bNormalize)
+    {
+        bool              bAverage  = true;
+        bool              bVerbose  = false;
+        int               nrRestart = 1;
+        int               dim       = getDim(mode);
+        std::vector<real> result;
+
+        for (int i = 0; i < nrFrames_; i++)
         {
-            int         n        = 0;
-            std::string fileName = "testCOS3.xvg";
-            data_                = std::make_unique<CorrelationDataSet>(fileName);
-            nrFrames_            = data_->getNrLines();
-            tempArgs_            = add_acf_pargs(&n, nullptr);
-        }
-
-        static void TearDownTestCase()
-        {
-            sfree(tempArgs_);
-            tempArgs_ = nullptr;
-            gmx_fft_cleanup();
-        }
-
-        void test(unsigned long mode, bool bNormalize)
-        {
-            bool              bAverage      = true;
-            bool              bVerbose      = false;
-            int               nrRestart     = 1;
-            int               dim           = getDim(mode);
-            std::vector<real> result;
-
-            for (int i = 0; i < nrFrames_; i++)
+            for (int m = 0; m < dim; m++)
             {
-                for (int m = 0; m < dim; m++)
-                {
-                    result.push_back(data_->getValue(m, i));
-                }
+                result.push_back(data_->getValue(m, i));
             }
-            real *ptr = result.data();
-            low_do_autocorr(nullptr, nullptr, nullptr,   nrFrames_, 1,
-                            get_acfnout(), &ptr, data_->getDt(), mode,
-                            nrRestart, bAverage, bNormalize,
-                            bVerbose, data_->getStartTime(), data_->getEndTime(),
-                            effnNONE);
-
-            double testResult = 0;
-            for (int i = 0; i < get_acfnout(); i++)
-            {
-                testResult += result[i];
-            }
-            checker_.checkSequenceArray(get_acfnout(), ptr,
-                                        "AutocorrelationFunction");
-            checker_.checkReal(testResult, "Integral");
         }
+        real* ptr = result.data();
+        low_do_autocorr(nullptr, nullptr, nullptr, nrFrames_, 1, get_acfnout(), &ptr,
+                        data_->getDt(), mode, nrRestart, bAverage, bNormalize, bVerbose,
+                        data_->getStartTime(), data_->getEndTime(), effnNONE);
 
-        int getDim(unsigned long type)
+        double testResult = 0;
+        for (int i = 0; i < get_acfnout(); i++)
         {
-            switch (type)
-            {
-                case eacNormal:
-                    return 1;
-                case eacVector:
-                    return 3;
-                case eacCos:
-                    return 1;
-                case eacRcross:
-                    return 3;
-                case eacP0:
-                    return 3;
-                case eacP1:
-                    return 3;
-                case eacP2:
-                    return 3;
-                case eacP3:
-                    return 3;
-                case eacP4:
-                    return 3;
-                case eacIden:
-                    return 1;
-                default:
-                    GMX_RELEASE_ASSERT(false, "Invalid auto correlation option");
-                    return -1;
-            }
-
+            testResult += result[i];
         }
+        checker_.checkSequenceArray(get_acfnout(), ptr, "AutocorrelationFunction");
+        checker_.checkReal(testResult, "Integral");
+    }
 
+    int getDim(unsigned long type)
+    {
+        switch (type)
+        {
+            case eacNormal: return 1;
+            case eacVector: return 3;
+            case eacCos: return 1;
+            case eacRcross: return 3;
+            case eacP0: return 3;
+            case eacP1: return 3;
+            case eacP2: return 3;
+            case eacP3: return 3;
+            case eacP4: return 3;
+            case eacIden: return 1;
+            default: GMX_RELEASE_ASSERT(false, "Invalid auto correlation option"); return -1;
+        }
+    }
 };
 
-int                         AutocorrTest::nrFrames_;
-CorrelationDataSetPointer   AutocorrTest::data_;
-t_pargs                   * AutocorrTest::tempArgs_;
+int                       AutocorrTest::nrFrames_;
+CorrelationDataSetPointer AutocorrTest::data_;
+t_pargs*                  AutocorrTest::tempArgs_;
 
-TEST_F (AutocorrTest, EacNormal)
+TEST_F(AutocorrTest, EacNormal)
 {
     test(eacNormal, true);
 }
 
-TEST_F (AutocorrTest, EacNoNormalize)
+TEST_F(AutocorrTest, EacNoNormalize)
 {
     test(eacNormal, false);
 }
 
-TEST_F (AutocorrTest, EacCos)
+TEST_F(AutocorrTest, EacCos)
 {
     test(eacCos, true);
 }
 
-TEST_F (AutocorrTest, EacVector)
+TEST_F(AutocorrTest, EacVector)
 {
     test(eacVector, true);
 }
 
-TEST_F (AutocorrTest, EacRcross)
+TEST_F(AutocorrTest, EacRcross)
 {
     test(eacRcross, true);
 }
 
-TEST_F (AutocorrTest, EacP0)
+TEST_F(AutocorrTest, EacP0)
 {
     test(eacP0, true);
 }
 
-TEST_F (AutocorrTest, EacP1)
+TEST_F(AutocorrTest, EacP1)
 {
     test(eacP1, true);
 }
 
-TEST_F (AutocorrTest, EacP2)
+TEST_F(AutocorrTest, EacP2)
 {
     test(eacP2, true);
 }
 
-TEST_F (AutocorrTest, EacP3)
+TEST_F(AutocorrTest, EacP3)
 {
     test(eacP3, true);
 }
 
-TEST_F (AutocorrTest, EacP4)
+TEST_F(AutocorrTest, EacP4)
 {
     test(eacP4, true);
 }
 
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

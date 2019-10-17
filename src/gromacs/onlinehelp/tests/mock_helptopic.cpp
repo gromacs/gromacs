@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,38 +58,37 @@ namespace test
  */
 
 // static
-MockHelpTopic &
-MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic *parent,
-                           const char *name, const char *title,
-                           const char *text)
+MockHelpTopic& MockHelpTopic::addSubTopic(gmx::AbstractCompositeHelpTopic* parent,
+                                          const char*                      name,
+                                          const char*                      title,
+                                          const char*                      text)
 {
-    MockHelpTopic *topic = new MockHelpTopic(name, title, text);
+    MockHelpTopic* topic = new MockHelpTopic(name, title, text);
     parent->addSubTopic(gmx::HelpTopicPointer(topic));
     return *topic;
 }
 
-MockHelpTopic::MockHelpTopic(const char *name, const char *title, const char *text)
-    : name_(name), title_(title), text_(text != nullptr ? text : "")
+MockHelpTopic::MockHelpTopic(const char* name, const char* title, const char* text) :
+    name_(name),
+    title_(title),
+    text_(text != nullptr ? text : "")
 {
     if (!isNullOrEmpty(text))
     {
         using ::testing::_;
         using ::testing::Invoke;
-        ON_CALL(*this, writeHelp(_))
-            .WillByDefault(Invoke(this, &MockHelpTopic::writeHelpBase));
+        ON_CALL(*this, writeHelp(_)).WillByDefault(Invoke(this, &MockHelpTopic::writeHelpBase));
     }
 }
 
-MockHelpTopic::~MockHelpTopic()
-{
-}
+MockHelpTopic::~MockHelpTopic() {}
 
-const char *MockHelpTopic::name() const
+const char* MockHelpTopic::name() const
 {
     return name_;
 }
 
-const char *MockHelpTopic::title() const
+const char* MockHelpTopic::title() const
 {
     return title_;
 }
@@ -99,9 +98,7 @@ std::string MockHelpTopic::helpText() const
     return text_;
 }
 
-MockHelpTopic &
-MockHelpTopic::addSubTopic(const char *name, const char *title,
-                           const char *text)
+MockHelpTopic& MockHelpTopic::addSubTopic(const char* name, const char* title, const char* text)
 {
     return addSubTopic(this, name, title, text);
 }

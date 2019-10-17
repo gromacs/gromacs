@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,15 +69,11 @@ using gmx::test::ExactTextMatch;
  */
 
 //! Test fixture for the select analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SelectInfo>
-    SelectModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SelectInfo> SelectModuleTest;
 
 TEST_F(SelectModuleTest, BasicTest)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "y < 2.5", "resname RA"
-    };
+    const char* const cmdline[] = { "select", "-select", "y < 2.5", "resname RA" };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
     setOutputFile("-oi", "index.dat", ExactTextMatch());
@@ -88,10 +84,7 @@ TEST_F(SelectModuleTest, BasicTest)
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "resname RA RD and y < 2.5"
-    };
+    const char* const cmdline[] = { "select", "-select", "resname RA RD and y < 2.5" };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
@@ -101,10 +94,7 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithNonPDBInput)
 
 TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "resname RA RD and y < 2.5"
-    };
+    const char* const cmdline[] = { "select", "-select", "resname RA RD and y < 2.5" };
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
@@ -114,11 +104,8 @@ TEST_F(SelectModuleTest, HandlesPDBOutputWithPDBInput)
 
 TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "resname RA RD and y < 2.5", "resname RA RB",
-        "-pdbatoms", "maxsel"
-    };
+    const char* const cmdline[] = { "select",        "-select",   "resname RA RD and y < 2.5",
+                                    "resname RA RB", "-pdbatoms", "maxsel" };
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
@@ -128,11 +115,8 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 
 TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "resname RA RD and y < 2.5", "resname RA RB",
-        "-pdbatoms", "selected"
-    };
+    const char* const cmdline[] = { "select",        "-select",   "resname RA RD and y < 2.5",
+                                    "resname RA RB", "-pdbatoms", "selected" };
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
@@ -142,11 +126,8 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 
 TEST_F(SelectModuleTest, NormalizesSizes)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "y < 2.5", "resname RA and y < 2.5", "resname RA",
-        "-norm"
-    };
+    const char* const cmdline[] = { "select",     "-select", "y < 2.5", "resname RA and y < 2.5",
+                                    "resname RA", "-norm" };
     setTopology("simple.gro");
     includeDataset("size");
     runTest(CommandLine(cmdline));
@@ -154,10 +135,7 @@ TEST_F(SelectModuleTest, NormalizesSizes)
 
 TEST_F(SelectModuleTest, WritesResidueNumbers)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "res_com of resname RA RD"
-    };
+    const char* const cmdline[] = { "select", "-select", "res_com of resname RA RD" };
     setTopology("simple.gro");
     includeDataset("index");
     runTest(CommandLine(cmdline));
@@ -165,11 +143,8 @@ TEST_F(SelectModuleTest, WritesResidueNumbers)
 
 TEST_F(SelectModuleTest, WritesResidueIndices)
 {
-    const char *const cmdline[] = {
-        "select",
-        "-select", "res_com of resname RA RD",
-        "-resnr", "index"
-    };
+    const char* const cmdline[] = { "select", "-select", "res_com of resname RA RD", "-resnr",
+                                    "index" };
     setTopology("simple.gro");
     includeDataset("index");
     runTest(CommandLine(cmdline));

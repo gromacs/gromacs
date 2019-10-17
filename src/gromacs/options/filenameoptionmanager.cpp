@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,7 @@ namespace
 {
 
 //! Extensions that are recognized as compressed files.
-const char *const c_compressedExtensions[] =
-{ ".gz", ".Z" };
+const char* const c_compressedExtensions[] = { ".gz", ".Z" };
 
 /********************************************************************
  * Helper functions
@@ -79,9 +78,9 @@ const char *const c_compressedExtensions[] =
  * The first match is returned.
  * Returns an empty string if no existing file is found.
  */
-std::string findExistingExtension(const std::string                  &prefix,
-                                  const FileNameOptionInfo           &option,
-                                  const IFileInputRedirector         *redirector)
+std::string findExistingExtension(const std::string&          prefix,
+                                  const FileNameOptionInfo&   option,
+                                  const IFileInputRedirector* redirector)
 {
     ArrayRef<const int>                 types = option.fileTypes();
     ArrayRef<const int>::const_iterator i;
@@ -96,7 +95,7 @@ std::string findExistingExtension(const std::string                  &prefix,
     return std::string();
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * FileNameOptionManager::Impl
@@ -109,36 +108,26 @@ std::string findExistingExtension(const std::string                  &prefix,
  */
 class FileNameOptionManager::Impl
 {
-    public:
-        Impl()
-            : redirector_(&defaultFileInputRedirector()),
-              bInputCheckingDisabled_(false)
-        {
-        }
+public:
+    Impl() : redirector_(&defaultFileInputRedirector()), bInputCheckingDisabled_(false) {}
 
-        //! Redirector for file existence checks.
-        const IFileInputRedirector         *redirector_;
-        //! Global default file name, if set.
-        std::string                         defaultFileName_;
-        //! Whether input option processing has been disabled.
-        bool                                bInputCheckingDisabled_;
+    //! Redirector for file existence checks.
+    const IFileInputRedirector* redirector_;
+    //! Global default file name, if set.
+    std::string defaultFileName_;
+    //! Whether input option processing has been disabled.
+    bool bInputCheckingDisabled_;
 };
 
 /********************************************************************
  * FileNameOptionManager
  */
 
-FileNameOptionManager::FileNameOptionManager()
-    : impl_(new Impl())
-{
-}
+FileNameOptionManager::FileNameOptionManager() : impl_(new Impl()) {}
 
-FileNameOptionManager::~FileNameOptionManager()
-{
-}
+FileNameOptionManager::~FileNameOptionManager() {}
 
-void FileNameOptionManager::setInputRedirector(
-        const IFileInputRedirector *redirector)
+void FileNameOptionManager::setInputRedirector(const IFileInputRedirector* redirector)
 {
     impl_->redirector_ = redirector;
 }
@@ -148,31 +137,25 @@ void FileNameOptionManager::disableInputOptionChecking(bool bDisable)
     impl_->bInputCheckingDisabled_ = bDisable;
 }
 
-void FileNameOptionManager::addDefaultFileNameOption(
-        IOptionsContainer *options, const char *name)
+void FileNameOptionManager::addDefaultFileNameOption(IOptionsContainer* options, const char* name)
 {
     options->addOption(
-            StringOption(name).store(&impl_->defaultFileName_)
-                .description("Set the default filename for all file options"));
+            StringOption(name).store(&impl_->defaultFileName_).description("Set the default filename for all file options"));
 }
 
-std::string FileNameOptionManager::completeFileName(
-        const std::string &value, const FileNameOptionInfo &option)
+std::string FileNameOptionManager::completeFileName(const std::string& value, const FileNameOptionInfo& option)
 {
     const bool bAllowMissing = option.allowMissing();
-    const bool bInput
-        = option.isInputFile() || option.isInputOutputFile();
+    const bool bInput        = option.isInputFile() || option.isInputOutputFile();
     // Currently, directory options are simple, and don't need any
     // special processing.
     // TODO: Consider splitting them into a separate DirectoryOption.
     if (option.isDirectoryOption())
     {
-        if (!impl_->bInputCheckingDisabled_ && bInput && !bAllowMissing
-            && !Directory::exists(value))
+        if (!impl_->bInputCheckingDisabled_ && bInput && !bAllowMissing && !Directory::exists(value))
         {
-            std::string message
-                = formatString("Directory '%s' does not exist or is not accessible.",
-                               value.c_str());
+            std::string message =
+                    formatString("Directory '%s' does not exist or is not accessible.", value.c_str());
             // TODO: Get actual errno value from the attempt to open the file
             // to provide better feedback to the user.
             GMX_THROW(InvalidInputError(message));
@@ -182,11 +165,10 @@ std::string FileNameOptionManager::completeFileName(
     const int fileType = fn2ftp(value.c_str());
     if (bInput && !impl_->bInputCheckingDisabled_)
     {
-        if (fileType == efNR
-            && impl_->redirector_->fileExists(value, File::throwOnError))
+        if (fileType == efNR && impl_->redirector_->fileExists(value, File::throwOnError))
         {
-            ArrayRef<const char *const>                 compressedExtensions(c_compressedExtensions);
-            ArrayRef<const char *const>::const_iterator ext;
+            ArrayRef<const char* const> compressedExtensions(c_compressedExtensions);
+            ArrayRef<const char* const>::const_iterator ext;
             for (ext = compressedExtensions.begin(); ext != compressedExtensions.end(); ++ext)
             {
                 if (endsWith(value, *ext))
@@ -210,8 +192,7 @@ std::string FileNameOptionManager::completeFileName(
         }
         else if (fileType == efNR)
         {
-            const std::string processedValue
-                = findExistingExtension(value, option, impl_->redirector_);
+            const std::string processedValue = findExistingExtension(value, option, impl_->redirector_);
             if (!processedValue.empty())
             {
                 return processedValue;
@@ -227,10 +208,10 @@ std::string FileNameOptionManager::completeFileName(
             }
             else
             {
-                std::string message
-                    = formatString("File '%s' does not exist or is not accessible.\n"
-                                   "The following extensions were tried to complete the file name:\n  %s",
-                                   value.c_str(), joinStrings(option.extensions(), ", ").c_str());
+                std::string message = formatString(
+                        "File '%s' does not exist or is not accessible.\n"
+                        "The following extensions were tried to complete the file name:\n  %s",
+                        value.c_str(), joinStrings(option.extensions(), ", ").c_str());
                 GMX_THROW(InvalidInputError(message));
             }
         }
@@ -264,20 +245,18 @@ std::string FileNameOptionManager::completeFileName(
     return std::string();
 }
 
-std::string FileNameOptionManager::completeDefaultFileName(
-        const std::string &prefix, const FileNameOptionInfo &option)
+std::string FileNameOptionManager::completeDefaultFileName(const std::string&        prefix,
+                                                           const FileNameOptionInfo& option)
 {
     if (option.isDirectoryOption())
     {
         return std::string();
     }
-    const bool        bInput = option.isInputFile() || option.isInputOutputFile();
-    const std::string realPrefix
-        = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
+    const bool        bInput     = option.isInputFile() || option.isInputOutputFile();
+    const std::string realPrefix = !impl_->defaultFileName_.empty() ? impl_->defaultFileName_ : prefix;
     if (bInput && !impl_->bInputCheckingDisabled_)
     {
-        const std::string completedName
-            = findExistingExtension(realPrefix, option, impl_->redirector_);
+        const std::string completedName = findExistingExtension(realPrefix, option, impl_->redirector_);
         if (!completedName.empty())
         {
             return completedName;
@@ -293,20 +272,20 @@ std::string FileNameOptionManager::completeDefaultFileName(
         }
         else if (option.isSet())
         {
-            std::string message
-                = formatString("No file name was provided, and the default file "
-                               "'%s' does not exist or is not accessible.\n"
-                               "The following extensions were tried to complete the file name:\n  %s",
-                               prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
+            std::string message = formatString(
+                    "No file name was provided, and the default file "
+                    "'%s' does not exist or is not accessible.\n"
+                    "The following extensions were tried to complete the file name:\n  %s",
+                    prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
         else if (option.isRequired())
         {
-            std::string message
-                = formatString("Required option was not provided, and the default file "
-                               "'%s' does not exist or is not accessible.\n"
-                               "The following extensions were tried to complete the file name:\n  %s",
-                               prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
+            std::string message = formatString(
+                    "Required option was not provided, and the default file "
+                    "'%s' does not exist or is not accessible.\n"
+                    "The following extensions were tried to complete the file name:\n  %s",
+                    prefix.c_str(), joinStrings(option.extensions(), ", ").c_str());
             GMX_THROW(InvalidInputError(message));
         }
         // We get here with the legacy optional behavior.

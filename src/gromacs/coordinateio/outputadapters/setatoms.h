@@ -67,94 +67,89 @@ namespace gmx
  */
 class SetAtoms : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetAtoms object with choice for boolean value
-         * for availability of the t_atoms struct.
-         *
-         * Can be used to initialize SetAtoms from outside of trajectoryanalysis
-         * framework.
-         */
-        explicit SetAtoms(ChangeAtomsType atomFlag, AtomsDataPtr inputAtoms) :
-            atomFlag_(atomFlag),
-            haveStructureFileAtoms_(false),
-            atoms_(std::move(inputAtoms))
+public:
+    /*! \brief
+     * Construct SetAtoms object with choice for boolean value
+     * for availability of the t_atoms struct.
+     *
+     * Can be used to initialize SetAtoms from outside of trajectoryanalysis
+     * framework.
+     */
+    explicit SetAtoms(ChangeAtomsType atomFlag, AtomsDataPtr inputAtoms) :
+        atomFlag_(atomFlag),
+        haveStructureFileAtoms_(false),
+        atoms_(std::move(inputAtoms))
+    {
+        if (atoms_ != nullptr)
         {
-            if (atoms_ != nullptr)
-            {
-                haveStructureFileAtoms_ = true;
-            }
-            if (atomFlag_ == ChangeAtomsType::Never)
-            {
-                moduleRequirements_ = CoordinateFileFlags::Base;
-            }
-            else
-            {
-                moduleRequirements_ = CoordinateFileFlags::RequireAtomInformation;
-            }
+            haveStructureFileAtoms_ = true;
         }
-        /*! \brief
-         *  Move constructor for SetAtoms.
-         */
-        SetAtoms(SetAtoms &&old) noexcept :
-            atomFlag_(old.atomFlag_),
-            haveStructureFileAtoms_(old.haveStructureFileAtoms_),
-            atoms_(std::move(old.atoms_))
+        if (atomFlag_ == ChangeAtomsType::Never)
         {
+            moduleRequirements_ = CoordinateFileFlags::Base;
         }
+        else
+        {
+            moduleRequirements_ = CoordinateFileFlags::RequireAtomInformation;
+        }
+    }
+    /*! \brief
+     *  Move constructor for SetAtoms.
+     */
+    SetAtoms(SetAtoms&& old) noexcept :
+        atomFlag_(old.atomFlag_),
+        haveStructureFileAtoms_(old.haveStructureFileAtoms_),
+        atoms_(std::move(old.atoms_))
+    {
+    }
 
-        ~SetAtoms() override
-        {
-        }
+    ~SetAtoms() override {}
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * Changes the frame t_atoms struct according to user choice and
-         * availability.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumber*/, t_trxframe *input) override;
+    /*! \brief
+     * Change coordinate frame information for output.
+     *
+     * Changes the frame t_atoms struct according to user choice and
+     * availability.
+     *
+     * \param[in] input Coordinate frame to be modified later.
+     */
+    void processFrame(int /*framenumber*/, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long abilities) const override;
+    void checkAbilityDependencies(unsigned long abilities) const override;
 
-    private:
-        //! Local function to check that we have a proper t_atoms struct available.
-        bool haveStructureFileAtoms() const
-        {
-            return haveStructureFileAtoms_;
-        }
-        /*! \brief
-         *  Checking if t_trxframe has the atom information saved within.
-         *
-         *  \param[in] input t_trxframe before we start modifying it.
-         */
-        bool haveFrameAtoms(const t_trxframe &input) const;
-        //! Test if the atoms data is available for writing.
-        bool haveAtoms(const t_trxframe &input) const
-        {
-            return haveStructureFileAtoms() || haveFrameAtoms(input);
-        }
-        //! Return pointer to t_atoms.
-        t_atoms *atoms()
-        {
-            GMX_RELEASE_ASSERT(haveStructureFileAtoms(), "No atoms information available");
-            return atoms_.get();
-        }
-        //! Flag provided for setting atoms in coordinate frame from user.
-        ChangeAtomsType   atomFlag_;
-        //! Flag set if input atoms have been valid from the beginning.
-        bool              haveStructureFileAtoms_;
-        /*! \brief
-         *  Atoms information if available.
-         *
-         *  Note, the module takes ownership of the information and
-         *  will clean it up on exit.
-         */
-        AtomsDataPtr        atoms_;
-        //! Requirements obtained from user input.
-        CoordinateFileFlags moduleRequirements_;
+private:
+    //! Local function to check that we have a proper t_atoms struct available.
+    bool haveStructureFileAtoms() const { return haveStructureFileAtoms_; }
+    /*! \brief
+     *  Checking if t_trxframe has the atom information saved within.
+     *
+     *  \param[in] input t_trxframe before we start modifying it.
+     */
+    bool haveFrameAtoms(const t_trxframe& input) const;
+    //! Test if the atoms data is available for writing.
+    bool haveAtoms(const t_trxframe& input) const
+    {
+        return haveStructureFileAtoms() || haveFrameAtoms(input);
+    }
+    //! Return pointer to t_atoms.
+    t_atoms* atoms()
+    {
+        GMX_RELEASE_ASSERT(haveStructureFileAtoms(), "No atoms information available");
+        return atoms_.get();
+    }
+    //! Flag provided for setting atoms in coordinate frame from user.
+    ChangeAtomsType atomFlag_;
+    //! Flag set if input atoms have been valid from the beginning.
+    bool haveStructureFileAtoms_;
+    /*! \brief
+     *  Atoms information if available.
+     *
+     *  Note, the module takes ownership of the information and
+     *  will clean it up on exit.
+     */
+    AtomsDataPtr atoms_;
+    //! Requirements obtained from user input.
+    CoordinateFileFlags moduleRequirements_;
 };
 
 //! Smart pointer to manage the object.

@@ -40,7 +40,7 @@
 namespace gmx
 {
 
-bool operator==(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs)
+bool operator==(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs)
 {
     if (lhs.active_ != rhs.active_)
     {
@@ -66,16 +66,17 @@ bool operator==(const DensityFittingParameters &lhs, const DensityFittingParamet
     {
         return false;
     }
-    if (lhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_ != rhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_)
+    if (lhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_
+        != rhs.gaussianTransformSpreadingRangeInMultiplesOfWidth_)
     {
         return false;
     }
     return true;
 }
 
-bool operator!=(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs)
+bool operator!=(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs)
 {
     return !(lhs == rhs);
 }
 
-}      // namespace gmx
+} // namespace gmx

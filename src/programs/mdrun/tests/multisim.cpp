@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,9 +85,9 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
     SimulationRunner runner(&fileManager_);
     runner.useTopGroAndNdxFromDatabase("spc2");
 
-    const char *pcoupl = GetParam();
+    const char* pcoupl = GetParam();
     // Do some different small numbers of steps in each simulation
-    int         numSteps = rank_ % 4;
+    int numSteps = rank_ % 4;
     organizeMdpFile(&runner, pcoupl, numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
@@ -99,12 +99,10 @@ TEST_P(MultiSimTest, ExitsNormallyWithDifferentNumbersOfStepsPerSimulation)
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest,
-                            ::testing::Values("pcoupl = no"));
+INSTANTIATE_TEST_CASE_P(InNvt, MultiSimTest, ::testing::Values("pcoupl = no"));
 #else
 // Test needs real MPI to run
-INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest,
-                            ::testing::Values("pcoupl = no"));
+INSTANTIATE_TEST_CASE_P(DISABLED_InNvt, MultiSimTest, ::testing::Values("pcoupl = no"));
 #endif
 
 //! Convenience typedef
@@ -115,5 +113,5 @@ TEST_F(MultiSimTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenResta
     runMaxhTest();
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

@@ -60,45 +60,36 @@ namespace gmx
  */
 class SetBox : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetBox object with a new user defined box.
-         */
-        explicit SetBox(const matrix box)
-        {
-            copy_mat(box, box_);
-        }
-        /*! \brief
-         *  Move constructor for SetBox.
-         */
-        SetBox(SetBox &&old) noexcept
-        {
-            copy_mat(old.box_, box_);
-        }
+public:
+    /*! \brief
+     * Construct SetBox object with a new user defined box.
+     */
+    explicit SetBox(const matrix box) { copy_mat(box, box_); }
+    /*! \brief
+     *  Move constructor for SetBox.
+     */
+    SetBox(SetBox&& old) noexcept { copy_mat(old.box_, box_); }
 
-        ~SetBox() override
-        {
-            clear_mat(box_);
-        }
+    ~SetBox() override { clear_mat(box_); }
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * In this case, box information is added to the \p t_trxframe object
-         * depending on the user input.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumner*/, t_trxframe *input) override
-        {
-            copy_mat(box_, input->box);
-        }
+    /*! \brief
+     * Change coordinate frame information for output.
+     *
+     * In this case, box information is added to the \p t_trxframe object
+     * depending on the user input.
+     *
+     * \param[in] input Coordinate frame to be modified later.
+     */
+    void processFrame(int /*framenumner*/, t_trxframe* input) override
+    {
+        copy_mat(box_, input->box);
+    }
 
-        void checkAbilityDependencies(unsigned long /* abilities */) const override {}
+    void checkAbilityDependencies(unsigned long /* abilities */) const override {}
 
-    private:
-        //! New box information from the user.
-        matrix                            box_;
+private:
+    //! New box information from the user.
+    matrix box_;
 };
 
 //! Smart pointer to manage the object.

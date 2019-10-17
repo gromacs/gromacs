@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,22 +43,27 @@
 #include "xdlg.h"
 #include "xmb.h"
 
-#define MB_OK              1
-#define MB_CANCEL          (1<<1)
-#define MB_OKCANCEL        (MB_OK | MB_CANCEL)
-#define MB_YES             (1<<2)
-#define MB_NO              (1<<3)
-#define MB_YESNO           (MB_YES | MB_NO)
-#define MB_ICONSTOP        (1<<16)
-#define MB_ICONINFORMATION (1<<17)
-#define MB_ICONEXCLAMATION (1<<18)
-#define MB_ICONGMX         (1<<19)
-#define MB_SYSTEMMODAL     (1<<20)
-#define MB_APPLMODAL       (1<<21)
-#define MB_DONTSHOW        (1<<22)
+#define MB_OK 1
+#define MB_CANCEL (1 << 1)
+#define MB_OKCANCEL (MB_OK | MB_CANCEL)
+#define MB_YES (1 << 2)
+#define MB_NO (1 << 3)
+#define MB_YESNO (MB_YES | MB_NO)
+#define MB_ICONSTOP (1 << 16)
+#define MB_ICONINFORMATION (1 << 17)
+#define MB_ICONEXCLAMATION (1 << 18)
+#define MB_ICONGMX (1 << 19)
+#define MB_SYSTEMMODAL (1 << 20)
+#define MB_APPLMODAL (1 << 21)
+#define MB_DONTSHOW (1 << 22)
 
-t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
-                  int nlines, const char * const *lines, unsigned long Flags,
-                  DlgCallback *cb, void *data);
+t_dlg* MessageBox(t_x11*             x11,
+                  Window             Parent,
+                  const char*        title,
+                  int                nlines,
+                  const char* const* lines,
+                  unsigned long      Flags,
+                  DlgCallback*       cb,
+                  void*              data);
 
-#endif  /* _xmb_h */
+#endif /* _xmb_h */

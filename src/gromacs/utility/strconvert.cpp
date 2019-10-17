@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,30 +57,28 @@ namespace gmx
 
 //! \cond libapi
 
-bool boolFromString(const char *value)
+bool boolFromString(const char* value)
 {
-    if (gmx_strcasecmp(value, "1") == 0
-        || gmx_strcasecmp(value, "yes") == 0
+    if (gmx_strcasecmp(value, "1") == 0 || gmx_strcasecmp(value, "yes") == 0
         || gmx_strcasecmp(value, "true") == 0)
     {
         return true;
     }
-    if (gmx_strcasecmp(value, "0") == 0
-        || gmx_strcasecmp(value, "no") == 0
+    if (gmx_strcasecmp(value, "0") == 0 || gmx_strcasecmp(value, "no") == 0
         || gmx_strcasecmp(value, "false") == 0)
     {
         return false;
     }
-    GMX_THROW(InvalidInputError("Invalid value: '" + std::string(value) + "'; supported values are: 1, 0, yes, no, true, false"));
+    GMX_THROW(InvalidInputError("Invalid value: '" + std::string(value)
+                                + "'; supported values are: 1, 0, yes, no, true, false"));
 }
 
-int intFromString(const char *str)
+int intFromString(const char* str)
 {
     errno = 0;
-    char           *endptr;
-    const long int  value = std::strtol(str, &endptr, 10);
-    if (errno == ERANGE
-        || value < std::numeric_limits<int>::min()
+    char*          endptr;
+    const long int value = std::strtol(str, &endptr, 10);
+    if (errno == ERANGE || value < std::numeric_limits<int>::min()
         || value > std::numeric_limits<int>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
@@ -88,17 +86,16 @@ int intFromString(const char *str)
     }
     if (str[0] == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
-                                    + "'; expected an integer"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected an integer"));
     }
     return value;
 }
 
-int64_t int64FromString(const char *str)
+int64_t int64FromString(const char* str)
 {
     errno = 0;
-    char              *endptr;
-    const int64_t      value = str_to_int64_t(str, &endptr);
+    char*         endptr;
+    const int64_t value = str_to_int64_t(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
@@ -106,37 +103,34 @@ int64_t int64FromString(const char *str)
     }
     if (str[0] == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
-                                    + "'; expected an integer"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected an integer"));
     }
     return value;
 }
 
-float floatFromString(const char *str)
+float floatFromString(const char* str)
 {
     errno = 0;
-    char         *endptr;
-    const double  value = std::strtod(str, &endptr);
-    if (errno == ERANGE
-        || value < -std::numeric_limits<float>::max()
-        || value >  std::numeric_limits<float>::max())
+    char*        endptr;
+    const double value = std::strtod(str, &endptr);
+    if (errno == ERANGE || value < -std::numeric_limits<float>::max()
+        || value > std::numeric_limits<float>::max())
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
                                     + "'; it causes an overflow/underflow"));
     }
     if (str[0] == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
-                                    + "'; expected a number"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected a number"));
     }
     return value;
 }
 
-double doubleFromString(const char *str)
+double doubleFromString(const char* str)
 {
     errno = 0;
-    char         *endptr;
-    const double  value = std::strtod(str, &endptr);
+    char*        endptr;
+    const double value = std::strtod(str, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
@@ -144,8 +138,7 @@ double doubleFromString(const char *str)
     }
     if (str[0] == '\0' || *endptr != '\0')
     {
-        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str)
-                                    + "'; expected a number"));
+        GMX_THROW(InvalidInputError("Invalid value: '" + std::string(str) + "'; expected a number"));
     }
     return value;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,51 +64,44 @@ namespace
 
 class MockModule : public gmx::TrajectoryAnalysisModule
 {
-    public:
-        MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer          *options,
-                                       gmx::TrajectoryAnalysisSettings *settings));
-        MOCK_METHOD2(initAnalysis, void(const gmx::TrajectoryAnalysisSettings &settings,
-                                        const gmx::TopologyInformation        &top));
+public:
+    MOCK_METHOD2(initOptions,
+                 void(gmx::IOptionsContainer* options, gmx::TrajectoryAnalysisSettings* settings));
+    MOCK_METHOD2(initAnalysis,
+                 void(const gmx::TrajectoryAnalysisSettings& settings, const gmx::TopologyInformation& top));
 
-        MOCK_METHOD4(analyzeFrame, void(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                                        gmx::TrajectoryAnalysisModuleData *pdata));
-        MOCK_METHOD1(finishAnalysis, void(int nframes));
-        MOCK_METHOD0(writeOutput, void());
+    MOCK_METHOD4(analyzeFrame,
+                 void(int frnr, const t_trxframe& fr, t_pbc* pbc, gmx::TrajectoryAnalysisModuleData* pdata));
+    MOCK_METHOD1(finishAnalysis, void(int nframes));
+    MOCK_METHOD0(writeOutput, void());
 };
 
 using gmx::test::CommandLine;
 
 class TrajectoryAnalysisCommandLineRunnerTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        TrajectoryAnalysisCommandLineRunnerTest()
-            : mockModule_(new MockModule())
-        {
-        }
+public:
+    TrajectoryAnalysisCommandLineRunnerTest() : mockModule_(new MockModule()) {}
 
-        gmx::ICommandLineOptionsModulePointer createRunner()
-        {
-            return gmx::TrajectoryAnalysisCommandLineRunner::createModule(
-                    std::move(mockModule_));
-        }
+    gmx::ICommandLineOptionsModulePointer createRunner()
+    {
+        return gmx::TrajectoryAnalysisCommandLineRunner::createModule(std::move(mockModule_));
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
-            ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
-        }
+    void runTest(const CommandLine& args)
+    {
+        CommandLine& cmdline = commandLine();
+        cmdline.merge(args);
+        ASSERT_EQ(0, gmx::test::CommandLineTestHelper::runModuleDirect(createRunner(), &cmdline));
+    }
 
-        std::unique_ptr<MockModule> mockModule_;
+    std::unique_ptr<MockModule> mockModule_;
 };
 
 //! Initializes options for help testing.
-void initOptions(gmx::IOptionsContainer *options, gmx::TrajectoryAnalysisSettings *settings)
+void initOptions(gmx::IOptionsContainer* options, gmx::TrajectoryAnalysisSettings* settings)
 {
-    const char *const desc[] = {
-        "Sample description",
-        "for testing [THISMODULE]."
-    };
+    const char* const desc[] = { "Sample description", "for testing [THISMODULE]." };
     settings->setHelpText(desc);
 
     options->addOption(gmx::BooleanOption("test").description("Test option"));
@@ -121,16 +114,13 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, WritesHelp)
     EXPECT_CALL(*mockModule_, initOptions(_, _)).WillOnce(Invoke(&initOptions));
 
     const std::unique_ptr<gmx::ICommandLineModule> module(
-            gmx::ICommandLineOptionsModule::createModule("mod", "Description",
-                                                         createRunner()));
+            gmx::ICommandLineOptionsModule::createModule("mod", "Description", createRunner()));
     testWriteHelp(module.get());
 }
 
 TEST_F(TrajectoryAnalysisCommandLineRunnerTest, RunsWithSubsetTrajectory)
 {
-    const char *const cmdline[] = {
-        "-fgroup", "atomnr 4 5 6 10 to 14"
-    };
+    const char* const cmdline[] = { "-fgroup", "atomnr 4 5 6 10 to 14" };
 
     using ::testing::_;
     EXPECT_CALL(*mockModule_, initOptions(_, _));
@@ -147,9 +137,7 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, RunsWithSubsetTrajectory)
 
 TEST_F(TrajectoryAnalysisCommandLineRunnerTest, DetectsIncorrectTrajectorySubset)
 {
-    const char *const cmdline[] = {
-        "-fgroup", "atomnr 3 to 6 10 to 14"
-    };
+    const char* const cmdline[] = { "-fgroup", "atomnr 3 to 6 10 to 14" };
 
     using ::testing::_;
     EXPECT_CALL(*mockModule_, initOptions(_, _));
@@ -162,9 +150,7 @@ TEST_F(TrajectoryAnalysisCommandLineRunnerTest, DetectsIncorrectTrajectorySubset
 
 TEST_F(TrajectoryAnalysisCommandLineRunnerTest, FailsWithTrajectorySubsetWithoutTrajectory)
 {
-    const char *const cmdline[] = {
-        "-fgroup", "atomnr 3 to 6 10 to 14"
-    };
+    const char* const cmdline[] = { "-fgroup", "atomnr 3 to 6 10 to 14" };
 
     using ::testing::_;
     EXPECT_CALL(*mockModule_, initOptions(_, _));

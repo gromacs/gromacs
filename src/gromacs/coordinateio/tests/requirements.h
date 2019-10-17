@@ -78,21 +78,20 @@ enum class TestEnums
  * \param[in] optionValues String to split that contains option values.
  * \param[in] type         Determine which input time we are using.
  */
-static void
-splitAndAddValues(OptionsAssigner *assigner, const std::string &optionValues, TestEnums type)
+static void splitAndAddValues(OptionsAssigner* assigner, const std::string& optionValues, TestEnums type)
 {
     std::vector<std::string> strings = splitString(optionValues);
-    for (const auto &entry : strings)
+    for (const auto& entry : strings)
     {
         switch (type)
         {
             case (TestEnums::efTestFloat):
-                {
-                    real    value = std::stod(entry);
-                    Any     var(value);
-                    assigner->appendValue(var);
-                    break;
-                }
+            {
+                real value = std::stod(entry);
+                Any  var(value);
+                assigner->appendValue(var);
+                break;
+            }
             case (TestEnums::efTestString):
             {
                 assigner->appendValue(entry);
@@ -100,13 +99,12 @@ splitAndAddValues(OptionsAssigner *assigner, const std::string &optionValues, Te
             }
             case (TestEnums::efTestInt):
             {
-                int     value = std::stoi(entry);
-                Any     var(value);
+                int value = std::stoi(entry);
+                Any var(value);
                 assigner->appendValue(var);
                 break;
             }
-            default:
-                GMX_THROW(InternalError("No such input type"));
+            default: GMX_THROW(InternalError("No such input type"));
         }
     }
 }
@@ -117,38 +115,32 @@ splitAndAddValues(OptionsAssigner *assigner, const std::string &optionValues, Te
  */
 class FlagTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        FlagTest()
-        {
-            requirementsBuilder_.initOptions(&options_);
-        }
+public:
+    FlagTest() { requirementsBuilder_.initOptions(&options_); }
 
-        /*! \brief
-         * Set value for options in flag setting object.
-         *
-         * \param[in] optionName   Name of the option to add value for.
-         * \param[in] optionValues Values to set for option.
-         * \param[in] options      Container for options.
-         * \param[in] type         Need to know type of entries.
-         */
-        void setModuleFlag(const std::string &optionName,
-                           const std::string &optionValues,
-                           Options           *options,
-                           TestEnums          type)
-        {
-            OptionsAssigner assigner(options);
-            assigner.start();
-            assigner.startOption(optionName.c_str());
-            splitAndAddValues(&assigner, optionValues, type);
+    /*! \brief
+     * Set value for options in flag setting object.
+     *
+     * \param[in] optionName   Name of the option to add value for.
+     * \param[in] optionValues Values to set for option.
+     * \param[in] options      Container for options.
+     * \param[in] type         Need to know type of entries.
+     */
+    void setModuleFlag(const std::string& optionName, const std::string& optionValues, Options* options, TestEnums type)
+    {
+        OptionsAssigner assigner(options);
+        assigner.start();
+        assigner.startOption(optionName.c_str());
+        splitAndAddValues(&assigner, optionValues, type);
 
-            assigner.finishOption();
-            assigner.finish();
-        }
+        assigner.finishOption();
+        assigner.finish();
+    }
 
-        //! Storage of requirments.
-        OutputRequirementOptionDirector requirementsBuilder_;
-        //! Options storage
-        Options                         options_;
+    //! Storage of requirments.
+    OutputRequirementOptionDirector requirementsBuilder_;
+    //! Options storage
+    Options options_;
 };
 
 } // namespace test

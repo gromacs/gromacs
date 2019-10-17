@@ -41,8 +41,7 @@
 struct SimulationGroups;
 struct t_inputrec;
 
-double compute_io(const t_inputrec *ir, int natoms, const SimulationGroups &groups,
-                  int nrener, int nrepl);
+double compute_io(const t_inputrec* ir, int natoms, const SimulationGroups& groups, int nrener, int nrepl);
 /* Return total output to be written from this simulation. */
 
 #endif

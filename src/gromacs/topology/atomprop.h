@@ -43,8 +43,13 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
 
-enum {
-    epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
+enum
+{
+    epropMass,
+    epropVDW,
+    epropDGsol,
+    epropElectroneg,
+    epropElement,
     epropNR
 };
 
@@ -55,65 +60,62 @@ class ResidueType;
  */
 class AtomProperties
 {
-    public:
-        //! Default constructor.
-        AtomProperties();
-        //! Default destructor
-        ~AtomProperties();
+public:
+    //! Default constructor.
+    AtomProperties();
+    //! Default destructor
+    ~AtomProperties();
 
-        /*! \brief
-         * Get element string from atom number.
-         *
-         * \param[in] atomNumber Atomnumber to check.
-         * \returns Name of the element.
-         *
-         * \todo This should be made const once the lazy
-         * implementation is done properly for the class.
-         */
-        std::string elementFromAtomNumber(int atomNumber);
-        /*! \brief
-         * Get atom number from element string.
-         *
-         * \param[in] element Name of element.
-         * \returns AtomNumber that was being looked for.
-         *
-         * \todo This should be made const once the lazy
-         * implementation is done properly for the class.
-         */
-        int atomNumberFromElement(const char *element);
-        /*! \brief
-         * Set atom property based on atomname.
-         *
-         * Extract a \p value from the database. Returns true
-         * if this is successful, or false if not. Sets default value
-         * in the later case. The first time this function is called
-         * for this property the database will be initialized.
-         *
-         * \param[in] eprop Property to set.
-         * \param[in] residueName Residue name for entry.
-         * \param[in] atomName Atom name for entry.
-         * \param[out] value New value to set or default.
-         * \returns If the operation has been succesful.
-         */
-        bool setAtomProperty(int                eprop,
-                             const std::string &residueName,
-                             const std::string &atomName,
-                             real              *value);
-        /*! \brief
-         * Get handle to property.
-         *
-         * \param[in] eprop Which property we need a handle to.
-         * \returns Pointer to property entry.
-         */
-        AtomProperty *prop(int eprop);
-        //! Get handle to residuetype library.
-        ResidueType *restype();
+    /*! \brief
+     * Get element string from atom number.
+     *
+     * \param[in] atomNumber Atomnumber to check.
+     * \returns Name of the element.
+     *
+     * \todo This should be made const once the lazy
+     * implementation is done properly for the class.
+     */
+    std::string elementFromAtomNumber(int atomNumber);
+    /*! \brief
+     * Get atom number from element string.
+     *
+     * \param[in] element Name of element.
+     * \returns AtomNumber that was being looked for.
+     *
+     * \todo This should be made const once the lazy
+     * implementation is done properly for the class.
+     */
+    int atomNumberFromElement(const char* element);
+    /*! \brief
+     * Set atom property based on atomname.
+     *
+     * Extract a \p value from the database. Returns true
+     * if this is successful, or false if not. Sets default value
+     * in the later case. The first time this function is called
+     * for this property the database will be initialized.
+     *
+     * \param[in] eprop Property to set.
+     * \param[in] residueName Residue name for entry.
+     * \param[in] atomName Atom name for entry.
+     * \param[out] value New value to set or default.
+     * \returns If the operation has been succesful.
+     */
+    bool setAtomProperty(int eprop, const std::string& residueName, const std::string& atomName, real* value);
+    /*! \brief
+     * Get handle to property.
+     *
+     * \param[in] eprop Which property we need a handle to.
+     * \returns Pointer to property entry.
+     */
+    AtomProperty* prop(int eprop);
+    //! Get handle to residuetype library.
+    ResidueType* restype();
 
-    private:
-        //! Implementation pointer.
-        class Impl;
+private:
+    //! Implementation pointer.
+    class Impl;
 
-        gmx::PrivateImplPointer<Impl> impl_;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
 #endif

@@ -55,16 +55,19 @@ struct InteractionsOfType;
 
 /* UTILITIES */
 
-void add_param_to_list(InteractionsOfType *list, const InteractionOfType &b);
+void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b);
 
 /* PRINTING */
 
-void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
-                 bool bRTPresname);
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname);
 
-void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist);
+void print_bondeds(FILE*                                   out,
+                   int                                     natoms,
+                   Directive                               d,
+                   int                                     ftype,
+                   int                                     fsubtype,
+                   gmx::ArrayRef<const InteractionsOfType> plist);
 
-void print_excl(FILE *out, int natoms, t_excls excls[]);
+void print_excl(FILE* out, int natoms, t_excls excls[]);
 
 #endif

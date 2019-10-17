@@ -101,7 +101,7 @@ case "$action" in
         ;;
     clang-format)
         if [ -z "$CLANG_FORMAT" ] ; then
-            CLANG_FORMAT=clang-format
+            CLANG_FORMAT=clang-format-7
         fi
         if ! which "$CLANG_FORMAT" 1>/dev/null ; then
             echo "clang-format not found. Specify one with CLANG_FORMAT"
@@ -126,7 +126,7 @@ esac
 
 if [[ "$filter" == "default" ]] ; then
     if [[ "$action" == "clang-format" ]] ; then
-        filter=complete_formatting
+        filter=clangformat
     else
         filter=$action
     fi
@@ -146,7 +146,7 @@ case "$filter" in
         filter_re="(complete_formatting|clangformat)"
         ;;
     complete_formatting)
-        filter_re="(complete_formatting|clangformat|includesort|copyright)"
+        filter_re="(complete_formatting|clangformat)"
         ;;
     *)
         echo "Unknown filter mode: $filter"

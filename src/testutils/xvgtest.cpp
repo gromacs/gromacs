@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,43 +67,34 @@ namespace
 
 class XvgMatcher : public ITextBlockMatcher
 {
-    public:
-        explicit XvgMatcher(const XvgMatchSettings &settings)
-            : settings_(settings)
-        {
-        }
+public:
+    explicit XvgMatcher(const XvgMatchSettings& settings) : settings_(settings) {}
 
-        void checkStream(TextInputStream      *stream,
-                         TestReferenceChecker *checker) override
-        {
-            checkXvgFile(stream, checker, settings_);
-        }
+    void checkStream(TextInputStream* stream, TestReferenceChecker* checker) override
+    {
+        checkXvgFile(stream, checker, settings_);
+    }
 
-    private:
-        XvgMatchSettings  settings_;
+private:
+    XvgMatchSettings settings_;
 };
 
 //! Helper function to identify which @ lines in xvg files should be tested.
-bool isRelevantXvgCommand(const std::string &line)
+bool isRelevantXvgCommand(const std::string& line)
 {
-    return contains(line, " title ")
-           || contains(line, " subtitle ")
-           || contains(line, " label ")
-           || contains(line, "@TYPE ")
-           || contains(line, " legend \"");
+    return contains(line, " title ") || contains(line, " subtitle ") || contains(line, " label ")
+           || contains(line, "@TYPE ") || contains(line, " legend \"");
 }
 
 //! Helper function to check a single xvg value in a sequence.
-void checkXvgDataPoint(TestReferenceChecker *checker, const std::string &value)
+void checkXvgDataPoint(TestReferenceChecker* checker, const std::string& value)
 {
     checker->checkRealFromString(value, nullptr);
 }
 
-}       // namespace
+} // namespace
 
-void checkXvgFile(TextInputStream        *input,
-                  TestReferenceChecker   *checker,
-                  const XvgMatchSettings &settings)
+void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const XvgMatchSettings& settings)
 {
     TestReferenceChecker legendChecker(checker->checkCompound("XvgLegend", "Legend"));
     TestReferenceChecker dataChecker(checker->checkCompound("XvgData", "Data"));
@@ -136,8 +127,7 @@ void checkXvgFile(TextInputStream        *input,
         }
         const std::vector<std::string> columns = splitString(line);
         const std::string              id      = formatString("Row%d", dataRowCount);
-        dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(),
-                                  &checkXvgDataPoint);
+        dataChecker.checkSequence(columns.begin(), columns.end(), id.c_str(), &checkXvgDataPoint);
         ++dataRowCount;
     }
     dataChecker.checkUnusedEntries();

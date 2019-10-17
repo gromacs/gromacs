@@ -82,21 +82,21 @@ namespace gmx
  * See Redmine #2535. */
 class ClfftInitializer
 {
-    public:
-        /*! \brief Constructor
-         *
-         * This initializers the clFFT library if there is a
-         * possibility of an FFT task on the device, and preserves it
-         * until destruction. Any time required for this
-         * initialization or tear down should not be accrued to
-         * per-MD-step counters. */
-        ClfftInitializer();
-        //! Destructor
-        ~ClfftInitializer();
+public:
+    /*! \brief Constructor
+     *
+     * This initializers the clFFT library if there is a
+     * possibility of an FFT task on the device, and preserves it
+     * until destruction. Any time required for this
+     * initialization or tear down should not be accrued to
+     * per-MD-step counters. */
+    ClfftInitializer();
+    //! Destructor
+    ~ClfftInitializer();
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(ClfftInitializer);
+    GMX_DISALLOW_COPY_AND_ASSIGN(ClfftInitializer);
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

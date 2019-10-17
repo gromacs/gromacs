@@ -63,53 +63,53 @@ namespace gmx
  */
 class SetForces : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetForces object with choice for boolean value.
-         *
-         * Can be used to initialize SetForces from outside of trajectoryanalysis
-         * with the user specified option to write coordinate forces or not.
-         */
-        explicit SetForces(ChangeSettingType force) : force_(force)
+public:
+    /*! \brief
+     * Construct SetForces object with choice for boolean value.
+     *
+     * Can be used to initialize SetForces from outside of trajectoryanalysis
+     * with the user specified option to write coordinate forces or not.
+     */
+    explicit SetForces(ChangeSettingType force) : force_(force)
+    {
+        if (force == ChangeSettingType::Never)
         {
-            if (force == ChangeSettingType::Never)
-            {
-                moduleRequirements_ = CoordinateFileFlags::Base;
-            }
-            else
-            {
-                moduleRequirements_ = CoordinateFileFlags::RequireForceOutput;
-            }
+            moduleRequirements_ = CoordinateFileFlags::Base;
         }
-        /*! \brief
-         *  Move constructor for SetForces.
-         */
-        SetForces(SetForces &&old) noexcept = default;
+        else
+        {
+            moduleRequirements_ = CoordinateFileFlags::RequireForceOutput;
+        }
+    }
+    /*! \brief
+     *  Move constructor for SetForces.
+     */
+    SetForces(SetForces&& old) noexcept = default;
 
-        ~SetForces() override {}
+    ~SetForces() override {}
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * In this case, the correct flag for writing the forces is applied
-         * to the output frame, depending on user selection and availability
-         * in the input data.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumner*/, t_trxframe *input) override;
+    /*! \brief
+     * Change coordinate frame information for output.
+     *
+     * In this case, the correct flag for writing the forces is applied
+     * to the output frame, depending on user selection and availability
+     * in the input data.
+     *
+     * \param[in] input Coordinate frame to be modified later.
+     */
+    void processFrame(int /*framenumner*/, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long abilities) const override;
+    void checkAbilityDependencies(unsigned long abilities) const override;
 
-    private:
-        /*! \brief
-         * Flag to specify if forces should be written.
-         *
-         * Internal storage for the user choice for writing coordinate forces.
-         */
-        ChangeSettingType                            force_;
-        //! Local requirements to be determined from user input.
-        CoordinateFileFlags moduleRequirements_;
+private:
+    /*! \brief
+     * Flag to specify if forces should be written.
+     *
+     * Internal storage for the user choice for writing coordinate forces.
+     */
+    ChangeSettingType force_;
+    //! Local requirements to be determined from user input.
+    CoordinateFileFlags moduleRequirements_;
 };
 
 //! Smart pointer to manage the object.

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,7 @@ namespace gmx
  *
  * This is needed to discard the return value so it can be used as a
  * deleter by a smart pointer. */
-void
-MPI_Comm_free_wrapper(MPI_Comm *comm);
+void MPI_Comm_free_wrapper(MPI_Comm* comm);
 
 //! Make a smart pointer for MPI communicators.
 using MPI_Comm_ptr = gmx::unique_cptr<MPI_Comm, MPI_Comm_free_wrapper>;
@@ -66,24 +65,24 @@ using MPI_Comm_ptr = gmx::unique_cptr<MPI_Comm, MPI_Comm_free_wrapper>;
  * suited for general-purpose communication. */
 class PhysicalNodeCommunicator
 {
-    public:
-        /*! \brief Constructor.
-         *
-         * Communicates within \c world to make intra-communicator \c
-         * comm_ between all ranks that share \c physicalNodeId. */
-        PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId);
-        //! Communicator for all ranks on this physical node
-        MPI_Comm     comm_;
-        //! Number of ranks on this physical node, corresponds to MPI_Comm_size of comm.
-        int          size_;
-        //! Rank ID within this physical node, corresponds to MPI_Comm_rank of comm.
-        int          rank_;
-        //! RAII handler for cleaning up \c comm_ only when appropriate.
-        MPI_Comm_ptr commGuard_;
-        //! Creates a barrier for all ranks on this physical node.
-        void barrier() const;
+public:
+    /*! \brief Constructor.
+     *
+     * Communicates within \c world to make intra-communicator \c
+     * comm_ between all ranks that share \c physicalNodeId. */
+    PhysicalNodeCommunicator(MPI_Comm world, int physicalNodeId);
+    //! Communicator for all ranks on this physical node
+    MPI_Comm comm_;
+    //! Number of ranks on this physical node, corresponds to MPI_Comm_size of comm.
+    int size_;
+    //! Rank ID within this physical node, corresponds to MPI_Comm_rank of comm.
+    int rank_;
+    //! RAII handler for cleaning up \c comm_ only when appropriate.
+    MPI_Comm_ptr commGuard_;
+    //! Creates a barrier for all ranks on this physical node.
+    void barrier() const;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

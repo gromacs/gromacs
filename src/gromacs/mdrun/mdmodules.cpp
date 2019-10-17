@@ -61,86 +61,79 @@ namespace gmx
 
 class MDModules::Impl : public IMDOutputProvider
 {
-    public:
+public:
+    Impl() :
+        densityFitting_(DensityFittingModuleInfo::create(&notifier_)),
+        field_(createElectricFieldModule()),
+        imd_(createInteractiveMolecularDynamicsModule()),
+        swapCoordinates_(createSwapCoordinatesModule())
+    {
+    }
 
-        Impl()
-            : densityFitting_(DensityFittingModuleInfo::create(&notifier_)),
-              field_(createElectricFieldModule()),
-              imd_(createInteractiveMolecularDynamicsModule()),
-              swapCoordinates_(createSwapCoordinatesModule())
-        {
-        }
+    void makeModuleOptions(Options* options)
+    {
+        // Create a section for applied-forces modules
+        auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
+        field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+        densityFitting_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
+        // In future, other sections would also go here.
+    }
 
-        void makeModuleOptions(Options *options)
-        {
-            // Create a section for applied-forces modules
-            auto appliedForcesOptions = options->addSection(OptionSection("applied-forces"));
-            field_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-            densityFitting_->mdpOptionProvider()->initMdpOptions(&appliedForcesOptions);
-            // In future, other sections would also go here.
-        }
+    // From IMDOutputProvider
+    void initOutput(FILE* fplog, int nfile, const t_filenm fnm[], bool bAppendFiles, const gmx_output_env_t* oenv) override
+    {
+        field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+        densityFitting_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
+    }
+    void finishOutput() override
+    {
+        field_->outputProvider()->finishOutput();
+        densityFitting_->outputProvider()->finishOutput();
+    }
 
-        // From IMDOutputProvider
-        void initOutput(FILE *fplog, int nfile, const t_filenm fnm[],
-                        bool bAppendFiles, const gmx_output_env_t *oenv) override
-        {
-            field_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
-            densityFitting_->outputProvider()->initOutput(fplog, nfile, fnm, bAppendFiles, oenv);
-        }
-        void finishOutput() override
-        {
-            field_->outputProvider()->finishOutput();
-            densityFitting_->outputProvider()->finishOutput();
-        }
+    /*! \brief Manages callbacks and notifies the MD modules.
+     *
+     * \note The notifier must be constructed before the modules and shall
+     *       not be destructed before the modules are destructed.
+     */
+    MdModulesNotifier notifier_;
 
-        /*! \brief Manages callbacks and notifies the MD modules.
-         *
-         * \note The notifier must be constructed before the modules and shall
-         *       not be destructed before the modules are destructed.
-         */
-        MdModulesNotifier               notifier_;
+    std::unique_ptr<IMDModule>      densityFitting_;
+    std::unique_ptr<IMDModule>      field_;
+    std::unique_ptr<ForceProviders> forceProviders_;
+    std::unique_ptr<IMDModule>      imd_;
+    std::unique_ptr<IMDModule>      swapCoordinates_;
 
-        std::unique_ptr<IMDModule>      densityFitting_;
-        std::unique_ptr<IMDModule>      field_;
-        std::unique_ptr<ForceProviders> forceProviders_;
-        std::unique_ptr<IMDModule>      imd_;
-        std::unique_ptr<IMDModule>      swapCoordinates_;
-
-        /*! \brief List of registered MDModules
-         *
-         * Note that MDModules::Impl owns this container, but it is only used by
-         * the MDModules::initForceProviders() function. To be consistent with
-         * IMDModule's vision, as indicated by its docs, we should
-         * \todo update IMDModule docs to allow nullptr return values
-         * \todo check for nullptr returned by IMDModule methods.
-         * \todo include field_ in modules_
-         */
-        std::vector< std::shared_ptr<IMDModule> > modules_;
+    /*! \brief List of registered MDModules
+     *
+     * Note that MDModules::Impl owns this container, but it is only used by
+     * the MDModules::initForceProviders() function. To be consistent with
+     * IMDModule's vision, as indicated by its docs, we should
+     * \todo update IMDModule docs to allow nullptr return values
+     * \todo check for nullptr returned by IMDModule methods.
+     * \todo include field_ in modules_
+     */
+    std::vector<std::shared_ptr<IMDModule>> modules_;
 };
 
-MDModules::MDModules() : impl_(new Impl)
-{
-}
+MDModules::MDModules() : impl_(new Impl) {}
 
-MDModules::~MDModules()
-{
-}
+MDModules::~MDModules() {}
 
-void MDModules::initMdpTransform(IKeyValueTreeTransformRules *rules)
+void MDModules::initMdpTransform(IKeyValueTreeTransformRules* rules)
 {
     auto appliedForcesScope = rules->scopedTransform("/applied-forces");
     impl_->field_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
     impl_->densityFitting_->mdpOptionProvider()->initMdpTransform(appliedForcesScope.rules());
 }
 
-void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder *builder)
+void MDModules::buildMdpOutput(KeyValueTreeObjectBuilder* builder)
 {
     impl_->field_->mdpOptionProvider()->buildMdpOutput(builder);
     impl_->densityFitting_->mdpOptionProvider()->buildMdpOutput(builder);
 }
 
-void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
-                                       IKeyValueTreeErrorHandler *errorHandler)
+void MDModules::assignOptionsToModules(const KeyValueTreeObject& params, IKeyValueTreeErrorHandler* errorHandler)
 {
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
@@ -149,7 +142,7 @@ void MDModules::assignOptionsToModules(const KeyValueTreeObject  &params,
     assignOptionsFromKeyValueTree(&moduleOptions, params, errorHandler);
 }
 
-void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
+void MDModules::adjustInputrecBasedOnModules(t_inputrec* ir)
 {
     Options moduleOptions;
     impl_->makeModuleOptions(&moduleOptions);
@@ -157,25 +150,24 @@ void MDModules::adjustInputrecBasedOnModules(t_inputrec *ir)
     checkForUnknownOptionsInKeyValueTree(*ir->params, moduleOptions);
 
     std::unique_ptr<KeyValueTreeObject> params(
-            new KeyValueTreeObject(
-                    adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
+            new KeyValueTreeObject(adjustKeyValueTreeFromOptions(*ir->params, moduleOptions)));
     delete ir->params;
     ir->params = params.release();
 }
 
-IMDOutputProvider *MDModules::outputProvider()
+IMDOutputProvider* MDModules::outputProvider()
 {
     return impl_.get();
 }
 
-ForceProviders *MDModules::initForceProviders()
+ForceProviders* MDModules::initForceProviders()
 {
     GMX_RELEASE_ASSERT(impl_->forceProviders_ == nullptr,
                        "Force providers initialized multiple times");
     impl_->forceProviders_ = std::make_unique<ForceProviders>();
     impl_->field_->initForceProviders(impl_->forceProviders_.get());
     impl_->densityFitting_->initForceProviders(impl_->forceProviders_.get());
-    for (auto && module : impl_->modules_)
+    for (auto&& module : impl_->modules_)
     {
         module->initForceProviders(impl_->forceProviders_.get());
     }
@@ -187,7 +179,7 @@ void MDModules::add(std::shared_ptr<gmx::IMDModule> module)
     impl_->modules_.emplace_back(std::move(module));
 }
 
-const MdModulesNotifier &MDModules::notifier()
+const MdModulesNotifier& MDModules::notifier()
 {
     return impl_->notifier_;
 }

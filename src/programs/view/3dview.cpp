@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,13 +50,13 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void set_scale(t_3dview *view, real sx, real sy)
+static void set_scale(t_3dview* view, real sx, real sy)
 {
     view->sc_x = sx;
     view->sc_y = sy;
 }
 
-static void calculate_view(t_3dview *view)
+static void calculate_view(t_3dview* view)
 {
 #define SMALL 1e-6
     mat4 To, Te, T1, T2, T3, T4, T5, N1, D1, D2, D3, D4, D5;
@@ -66,8 +66,8 @@ static void calculate_view(t_3dview *view)
     dx = view->eye[XX];
     dy = view->eye[YY];
     dz = view->eye[ZZ];
-    l  = std::sqrt(dx*dx+dy*dy+dz*dz);
-    r  = std::sqrt(dx*dx+dy*dy);
+    l  = std::sqrt(dx * dx + dy * dy + dz * dz);
+    r  = std::sqrt(dx * dx + dy * dy);
 #ifdef DEBUG
     gmx_vec4_print(debug, "eye", view->eye);
     std::printf("del: %10.5f%10.5f%10.5f l: %10.5f, r: %10.5f\n", dx, dy, dz, l, r);
@@ -85,11 +85,11 @@ static void calculate_view(t_3dview *view)
     gmx_mat4_init_unity(T3);
     if (r > 0)
     {
-        T3[XX][XX] = -dy/r, T3[XX][ZZ] = dx/r, T3[ZZ][XX] = -dx/r, T3[ZZ][ZZ] = -dy/r;
+        T3[XX][XX] = -dy / r, T3[XX][ZZ] = dx / r, T3[ZZ][XX] = -dx / r, T3[ZZ][ZZ] = -dy / r;
     }
 
     gmx_mat4_init_unity(T4);
-    T4[YY][YY] = r/l, T4[YY][ZZ] = dz/l, T4[ZZ][YY] = -dz/l, T4[ZZ][ZZ] = r/l;
+    T4[YY][YY] = r / l, T4[YY][ZZ] = dz / l, T4[ZZ][YY] = -dz / l, T4[ZZ][ZZ] = r / l;
 
     gmx_mat4_init_unity(T5);
     T5[ZZ][ZZ] = -1;
@@ -118,7 +118,7 @@ static void calculate_view(t_3dview *view)
 #endif
 }
 
-gmx_bool zoom_3d(t_3dview *view, real fac)
+gmx_bool zoom_3d(t_3dview* view, real fac)
 {
     real dr;
     real bm, dr1, dr2;
@@ -127,14 +127,14 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
     dr2 = 0;
     for (i = 0; (i < DIM); i++)
     {
-        dr   = view->eye[i];
-        dr2 += dr*dr;
+        dr = view->eye[i];
+        dr2 += dr * dr;
     }
     dr1 = std::sqrt(dr2);
     if (fac < 1)
     {
         bm = std::max(norm(view->box[XX]), std::max(norm(view->box[YY]), norm(view->box[ZZ])));
-        if (dr1*fac < 1.1*bm) /* Don't come to close */
+        if (dr1 * fac < 1.1 * bm) /* Don't come to close */
         {
             return FALSE;
         }
@@ -149,14 +149,14 @@ gmx_bool zoom_3d(t_3dview *view, real fac)
 }
 
 /* Initiates the state of 3d rotation matrices in the structure */
-static void init_rotate_3d(t_3dview *view)
+static void init_rotate_3d(t_3dview* view)
 {
-    real rot = DEG2RAD*15;
+    real rot = DEG2RAD * 15;
     int  i;
 
     for (i = 0; (i < DIM); i++)
     {
-        gmx_mat4_init_rotation(i,  rot, view->RotP[i]);
+        gmx_mat4_init_rotation(i, rot, view->RotP[i]);
         gmx_mat4_init_rotation(i, -rot, view->RotM[i]);
 #ifdef DEBUG
         gmx_mat4_print(debug, "RotP", view->RotP[i]);
@@ -166,7 +166,7 @@ static void init_rotate_3d(t_3dview *view)
 }
 
 
-void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive)
+void rotate_3d(t_3dview* view, int axis, gmx_bool bPositive)
 {
     mat4 m4;
 
@@ -182,23 +182,23 @@ void rotate_3d(t_3dview *view, int axis, gmx_bool bPositive)
     calculate_view(view);
 }
 
-void translate_view(t_3dview *view, int axis, gmx_bool bPositive)
+void translate_view(t_3dview* view, int axis, gmx_bool bPositive)
 {
 #ifdef DEBUG
     std::printf("Translate called\n");
 #endif
     if (bPositive)
     {
-        view->origin[axis] += view->box[axis][axis]/8;
+        view->origin[axis] += view->box[axis][axis] / 8;
     }
     else
     {
-        view->origin[axis] -= view->box[axis][axis]/8;
+        view->origin[axis] -= view->box[axis][axis] / 8;
     }
     calculate_view(view);
 }
 
-void reset_view(t_3dview *view)
+void reset_view(t_3dview* view)
 {
 #ifdef DEBUG
     std::printf("Reset view called\n");
@@ -206,7 +206,7 @@ void reset_view(t_3dview *view)
     set_scale(view, 4.0, 4.0);
     clear_rvec(view->eye);
     calc_box_center(view->ecenter, view->box, view->origin);
-    view->eye[ZZ] = 3.0*std::max(view->box[XX][XX], view->box[YY][YY]);
+    view->eye[ZZ] = 3.0 * std::max(view->box[XX][XX], view->box[YY][YY]);
     zoom_3d(view, 1.0);
     view->eye[WW] = view->origin[WW] = 0.0;
 
@@ -217,9 +217,9 @@ void reset_view(t_3dview *view)
     init_rotate_3d(view);
 }
 
-t_3dview *init_view(matrix box)
+t_3dview* init_view(matrix box)
 {
-    t_3dview *view;
+    t_3dview* view;
 
     snew(view, 1);
     copy_mat(box, view->box);

@@ -42,38 +42,39 @@
 
 #include "nbnxm_ocl_consts.h"
 
-#define CL_SIZE                 (NBNXN_GPU_CLUSTER_SIZE)
-#define NCL_PER_SUPERCL         c_nbnxnGpuNumClusterPerSupercluster
+#define CL_SIZE (NBNXN_GPU_CLUSTER_SIZE)
+#define NCL_PER_SUPERCL c_nbnxnGpuNumClusterPerSupercluster
 
-#define WARP_SIZE  (CL_SIZE*CL_SIZE/2) //Currently only c_nbnxnGpuClusterpairSplit=2 supported
+#define WARP_SIZE (CL_SIZE * CL_SIZE / 2) // Currently only c_nbnxnGpuClusterpairSplit=2 supported
 
 #if defined _NVIDIA_SOURCE_ || defined _AMD_SOURCE_
 /* Currently we enable CJ prefetch for AMD/NVIDIA and disable it for other vendors
  * Note that this should precede the kernel_utils include.
  */
-#define USE_CJ_PREFETCH 1
+#    define USE_CJ_PREFETCH 1
 #else
-#define USE_CJ_PREFETCH 0
+#    define USE_CJ_PREFETCH 0
 #endif
 
-#if defined cl_intel_subgroups || defined cl_khr_subgroups || (defined __OPENCL_VERSION__ && __OPENCL_VERSION__ >= 210)
-#define HAVE_SUBGROUP 1
+#if defined cl_intel_subgroups || defined cl_khr_subgroups \
+        || (defined __OPENCL_VERSION__ && __OPENCL_VERSION__ >= 210)
+#    define HAVE_SUBGROUP 1
 #else
-#define HAVE_SUBGROUP 0
+#    define HAVE_SUBGROUP 0
 #endif
 
 #ifdef cl_intel_subgroups
-#define HAVE_INTEL_SUBGROUP 1
+#    define HAVE_INTEL_SUBGROUP 1
 #else
-#define HAVE_INTEL_SUBGROUP 0
+#    define HAVE_INTEL_SUBGROUP 0
 #endif
 
 #if defined _INTEL_SOURCE_
-#define SUBGROUP_SIZE 8
+#    define SUBGROUP_SIZE 8
 #elif defined _AMD_SOURCE_
-#define SUBGROUP_SIZE 64
+#    define SUBGROUP_SIZE 64
 #else
-#define SUBGROUP_SIZE 32
+#    define SUBGROUP_SIZE 32
 #endif
 
 #define REDUCE_SHUFFLE (HAVE_INTEL_SUBGROUP && CL_SIZE == 4 && SUBGROUP_SIZE == WARP_SIZE)
@@ -86,36 +87,37 @@
 //-------------------
 
 #ifndef NBNXN_OPENCL_KERNEL_UTILS_CLH
-#define NBNXN_OPENCL_KERNEL_UTILS_CLH
+#    define NBNXN_OPENCL_KERNEL_UTILS_CLH
 
-#if CL_SIZE == 8
-#define WARP_SIZE_LOG2  (5)
-#define CL_SIZE_LOG2    (3)
-#elif CL_SIZE == 4
-#define WARP_SIZE_LOG2  (3)
-#define CL_SIZE_LOG2    (2)
-#else
-#error unsupported CL_SIZE
-#endif
+#    if CL_SIZE == 8
+#        define WARP_SIZE_LOG2 (5)
+#        define CL_SIZE_LOG2 (3)
+#    elif CL_SIZE == 4
+#        define WARP_SIZE_LOG2 (3)
+#        define CL_SIZE_LOG2 (2)
+#    else
+#        error unsupported CL_SIZE
+#    endif
 
-#define CL_SIZE_SQ      (CL_SIZE * CL_SIZE)
-#define FBUF_STRIDE     (CL_SIZE_SQ)
+#    define CL_SIZE_SQ (CL_SIZE * CL_SIZE)
+#    define FBUF_STRIDE (CL_SIZE_SQ)
 
-#define ONE_SIXTH_F     0.16666667f
-#define ONE_TWELVETH_F  0.08333333f
+#    define ONE_SIXTH_F 0.16666667f
+#    define ONE_TWELVETH_F 0.08333333f
 
 
-#ifdef __GNUC__
+#    ifdef __GNUC__
 /* GCC, clang, and some ICC pretending to be GCC */
-#  define gmx_unused __attribute__ ((unused))
-#else
-#  define gmx_unused
-#endif
+#        define gmx_unused __attribute__((unused))
+#    else
+#        define gmx_unused
+#    endif
 
 // Data structures shared between OpenCL device code and OpenCL host code
 // TODO: review, improve
 // Replaced real by float for now, to avoid including any other header
-typedef struct {
+typedef struct
+{
     float c2;
     float c3;
     float cpot;
@@ -128,7 +130,8 @@ typedef struct {
  * force      = force*dsw - potential*sw
  * potential *= sw
  */
-typedef struct {
+typedef struct
+{
     float c3;
     float c4;
     float c5;
@@ -139,99 +142,101 @@ typedef struct {
 typedef struct cl_nbparam_params
 {
 
-    int             eeltype;          /**< type of electrostatics, takes values from #eelCu */
-    int             vdwtype;          /**< type of VdW impl., takes values from #evdwCu     */
+    int eeltype; /**< type of electrostatics, takes values from #eelCu */
+    int vdwtype; /**< type of VdW impl., takes values from #evdwCu     */
 
-    float           epsfac;           /**< charge multiplication factor                      */
-    float           c_rf;             /**< Reaction-field/plain cutoff electrostatics const. */
-    float           two_k_rf;         /**< Reaction-field electrostatics constant            */
-    float           ewald_beta;       /**< Ewald/PME parameter                               */
-    float           sh_ewald;         /**< Ewald/PME correction term substracted from the direct-space potential */
-    float           sh_lj_ewald;      /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float           ewaldcoeff_lj;    /**< LJ-Ewald/PME coefficient                          */
+    float epsfac;      /**< charge multiplication factor                      */
+    float c_rf;        /**< Reaction-field/plain cutoff electrostatics const. */
+    float two_k_rf;    /**< Reaction-field electrostatics constant            */
+    float ewald_beta;  /**< Ewald/PME parameter                               */
+    float sh_ewald;    /**< Ewald/PME correction term substracted from the direct-space potential */
+    float sh_lj_ewald; /**< LJ-Ewald/PME correction term added to the correction potential        */
+    float ewaldcoeff_lj; /**< LJ-Ewald/PME coefficient                          */
 
-    float           rcoulomb_sq;      /**< Coulomb cut-off squared                           */
+    float rcoulomb_sq; /**< Coulomb cut-off squared                           */
 
-    float           rvdw_sq;          /**< VdW cut-off squared                               */
-    float           rvdw_switch;      /**< VdW switched cut-off                              */
-    float           rlistOuter_sq;    /**< Full, outer pair-list cut-off squared             */
-    float           rlistInner_sq;    /**< Inner, dynamic pruned pair-list cut-off squared  XXX: this is only needed in the pruning kernels, but for now we also pass it to the nonbondeds */
+    float rvdw_sq;       /**< VdW cut-off squared                               */
+    float rvdw_switch;   /**< VdW switched cut-off                              */
+    float rlistOuter_sq; /**< Full, outer pair-list cut-off squared             */
+    float rlistInner_sq; /**< Inner, dynamic pruned pair-list cut-off squared  XXX: this is only needed in the pruning kernels, but for now we also pass it to the nonbondeds */
 
     shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
     shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
     switch_consts_t vdw_switch;       /**< VdW switch constants                     */
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    float                  coulomb_tab_scale;  /**< table scale/spacing                        */
-}cl_nbparam_params_t;
+    float coulomb_tab_scale; /**< table scale/spacing                        */
+} cl_nbparam_params_t;
 
-typedef struct {
-    int sci;            /* i-super-cluster       */
-    int shift;          /* Shift vector index plus possible flags */
-    int cj4_ind_start;  /* Start index into cj4  */
-    int cj4_ind_end;    /* End index into cj4    */
+typedef struct
+{
+    int sci;           /* i-super-cluster       */
+    int shift;         /* Shift vector index plus possible flags */
+    int cj4_ind_start; /* Start index into cj4  */
+    int cj4_ind_end;   /* End index into cj4    */
 } nbnxn_sci_t;
 
-typedef struct {
+typedef struct
+{
     unsigned int imask;    /* The i-cluster interactions mask for 1 warp  */
     int          excl_ind; /* Index into the exclusion array for 1 warp   */
 } nbnxn_im_ei_t;
 
-typedef struct {
+typedef struct
+{
     int           cj[4];   /* The 4 j-clusters                            */
     nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
 } nbnxn_cj4_t;
 
 
-typedef struct {
-    unsigned int pair[CL_SIZE*CL_SIZE/2]; /* Topology exclusion interaction bits for one warp,
-                                           * each unsigned has bitS for 4*8 i clusters
-                                           */
+typedef struct
+{
+    unsigned int pair[CL_SIZE * CL_SIZE / 2]; /* Topology exclusion interaction bits for one warp,
+                                               * each unsigned has bitS for 4*8 i clusters
+                                               */
 } nbnxn_excl_t;
 
 /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
 __constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
-gmx_opencl_inline
-void preloadCj4Generic(__local int        *sm_cjPreload,
-                       const __global int *gm_cj,
-                       int                 tidxi,
-                       int                 tidxj,
-                       bool gmx_unused     iMaskCond)
+gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
+                                         const __global int* gm_cj,
+                                         int                 tidxi,
+                                         int                 tidxj,
+                                         bool gmx_unused iMaskCond)
 {
     /* Pre-load cj into shared memory */
-#if defined _AMD_SOURCE_ //TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
+#    if defined _AMD_SOURCE_ // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
     if (tidxj == 0 & tidxi < c_nbnxnGpuJgroupSize)
     {
         sm_cjPreload[tidxi] = gm_cj[tidxi];
     }
-#else
+#    else
     const int c_clSize                   = CL_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
+    const int c_splitClSize              = c_clSize / c_nbnxnGpuClusterpairSplit;
     if ((tidxj == 0 | tidxj == c_splitClSize) & (tidxi < c_nbnxnGpuJgroupSize))
     {
-        sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = gm_cj[tidxi];
+        sm_cjPreload[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = gm_cj[tidxi];
     }
-#endif
+#    endif
 }
 
 
-#if USE_SUBGROUP_PRELOAD
-gmx_opencl_inline
-int  preloadCj4Subgroup(const __global int *gm_cj)
+#    if USE_SUBGROUP_PRELOAD
+gmx_opencl_inline int preloadCj4Subgroup(const __global int* gm_cj)
 {
-    //loads subgroup-size # of elements (8) instead of the 4 required
-    //equivalent to *cjs = *gm_cj
-    return intel_sub_group_block_read((const __global uint *)gm_cj);
+    // loads subgroup-size # of elements (8) instead of the 4 required
+    // equivalent to *cjs = *gm_cj
+    return intel_sub_group_block_read((const __global uint*)gm_cj);
 }
-#endif //USE_SUBGROUP_PRELOAD
+#    endif // USE_SUBGROUP_PRELOAD
 
-#if USE_SUBGROUP_PRELOAD
+#    if USE_SUBGROUP_PRELOAD
 typedef size_t CjType;
-#else
+#    else
 typedef __local int* CjType;
-#endif
+#    endif
 
 /*! \brief Preload cj4
  *
@@ -242,36 +247,31 @@ typedef __local int* CjType;
  * It is the caller's responsibility to make sure that data is consumed only when
  * it's ready. This function does not call a barrier.
  */
-gmx_opencl_inline
-void preloadCj4(CjType gmx_unused             *cjs,
-                const __global int gmx_unused *gm_cj,
-                int gmx_unused                 tidxi,
-                int gmx_unused                 tidxj,
-                bool gmx_unused                iMaskCond)
+gmx_opencl_inline void preloadCj4(CjType gmx_unused* cjs,
+                                  const __global int gmx_unused* gm_cj,
+                                  int gmx_unused tidxi,
+                                  int gmx_unused tidxj,
+                                  bool gmx_unused iMaskCond)
 {
-#if USE_SUBGROUP_PRELOAD
+#    if USE_SUBGROUP_PRELOAD
     *cjs = preloadCj4Subgroup(gm_cj);
-#elif USE_CJ_PREFETCH
+#    elif USE_CJ_PREFETCH
     preloadCj4Generic(*cjs, gm_cj, tidxi, tidxj, iMaskCond);
-#else
-    //nothing to do
-#endif
+#    else
+    // nothing to do
+#    endif
 }
 
-gmx_opencl_inline
-int loadCjPreload(__local int           *        sm_cjPreload,
-                  int                            jm,
-                  int gmx_unused                 tidxi,
-                  int gmx_unused                 tidxj)
+gmx_opencl_inline int loadCjPreload(__local int* sm_cjPreload, int jm, int gmx_unused tidxi, int gmx_unused tidxj)
 {
-#if defined _AMD_SOURCE_
-    int       warpLoadOffset = 0; //TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
-#else
-    const int c_clSize                   = CL_SIZE;
+#    if defined _AMD_SOURCE_
+    int         warpLoadOffset = 0; // TODO: fix by setting c_nbnxnGpuClusterpairSplit properly
+#    else
+    const int c_clSize = CL_SIZE;
     const int c_nbnxnGpuClusterpairSplit = 2;
-    const int c_splitClSize              = c_clSize/c_nbnxnGpuClusterpairSplit;
-    int       warpLoadOffset             = (tidxj & c_splitClSize) * c_nbnxnGpuJgroupSize/c_splitClSize;
-#endif
+    const int c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
+    int warpLoadOffset = (tidxj & c_splitClSize) * c_nbnxnGpuJgroupSize / c_splitClSize;
+#    endif
     return sm_cjPreload[jm + warpLoadOffset];
 }
 
@@ -279,43 +279,37 @@ int loadCjPreload(__local int           *        sm_cjPreload,
  *
  * If cj4 preloading is enabled, it loads from the local memory, otherwise from global.
  */
-gmx_opencl_inline
-int loadCj(CjType cjs, const __global int gmx_unused* gm_cj,
-           int jm, int gmx_unused tidxi, int gmx_unused tidxj)
+gmx_opencl_inline int
+loadCj(CjType cjs, const __global int gmx_unused* gm_cj, int jm, int gmx_unused tidxi, int gmx_unused tidxj)
 {
-#if USE_SUBGROUP_PRELOAD
+#    if USE_SUBGROUP_PRELOAD
     return sub_group_broadcast(cjs, jm);
-#elif USE_CJ_PREFETCH
+#    elif USE_CJ_PREFETCH
     return loadCjPreload(cjs, jm, tidxi, tidxj);
-#else
+#    else
     return gm_cj[jm];
-#endif
+#    endif
 }
 
 /*! Convert LJ sigma,epsilon parameters to C6,C12. */
-gmx_opencl_inline
-void convert_sigma_epsilon_to_c6_c12(const float  sigma,
-                                     const float  epsilon,
-                                     float       *c6,
-                                     float       *c12)
+gmx_opencl_inline void convert_sigma_epsilon_to_c6_c12(const float sigma, const float epsilon, float* c6, float* c12)
 {
     float sigma2, sigma6;
 
     sigma2 = sigma * sigma;
-    sigma6 = sigma2 *sigma2 * sigma2;
+    sigma6 = sigma2 * sigma2 * sigma2;
     *c6    = epsilon * sigma6;
     *c12   = *c6 * sigma6;
 }
 
 
 /*! Apply force switch,  force + energy version. */
-gmx_opencl_inline
-void calculate_force_switch_F(const cl_nbparam_params_t *nbparam,
-                              float                      c6,
-                              float                      c12,
-                              float                      inv_r,
-                              float                      r2,
-                              float                     *F_invr)
+gmx_opencl_inline void calculate_force_switch_F(const cl_nbparam_params_t* nbparam,
+                                                float                      c6,
+                                                float                      c12,
+                                                float                      inv_r,
+                                                float                      r2,
+                                                float*                     F_invr)
 {
     float r, r_switch;
 
@@ -325,24 +319,22 @@ void calculate_force_switch_F(const cl_nbparam_params_t *nbparam,
     float repu_shift_V2 = nbparam->repulsion_shift.c2;
     float repu_shift_V3 = nbparam->repulsion_shift.c3;
 
-    r         = r2 * inv_r;
-    r_switch  = r - nbparam->rvdw_switch;
-    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+    r        = r2 * inv_r;
+    r_switch = r - nbparam->rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
-    *F_invr  +=
-        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
+    *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
+               + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
 }
 
 /*! Apply force switch, force-only version. */
-gmx_opencl_inline
-void calculate_force_switch_F_E(const cl_nbparam_params_t *nbparam,
-                                float                      c6,
-                                float                      c12,
-                                float                      inv_r,
-                                float                      r2,
-                                float                     *F_invr,
-                                float                     *E_lj)
+gmx_opencl_inline void calculate_force_switch_F_E(const cl_nbparam_params_t* nbparam,
+                                                  float                      c6,
+                                                  float                      c12,
+                                                  float                      inv_r,
+                                                  float                      r2,
+                                                  float*                     F_invr,
+                                                  float*                     E_lj)
 {
     float r, r_switch;
 
@@ -352,30 +344,27 @@ void calculate_force_switch_F_E(const cl_nbparam_params_t *nbparam,
     float repu_shift_V2 = nbparam->repulsion_shift.c2;
     float repu_shift_V3 = nbparam->repulsion_shift.c3;
 
-    float disp_shift_F2 = nbparam->dispersion_shift.c2/3;
-    float disp_shift_F3 = nbparam->dispersion_shift.c3/4;
-    float repu_shift_F2 = nbparam->repulsion_shift.c2/3;
-    float repu_shift_F3 = nbparam->repulsion_shift.c3/4;
+    float disp_shift_F2 = nbparam->dispersion_shift.c2 / 3;
+    float disp_shift_F3 = nbparam->dispersion_shift.c3 / 4;
+    float repu_shift_F2 = nbparam->repulsion_shift.c2 / 3;
+    float repu_shift_F3 = nbparam->repulsion_shift.c3 / 4;
 
-    r         = r2 * inv_r;
-    r_switch  = r - nbparam->rvdw_switch;
-    r_switch  = r_switch >= 0.0f ? r_switch : 0.0f;
+    r        = r2 * inv_r;
+    r_switch = r - nbparam->rvdw_switch;
+    r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
-    *F_invr  +=
-        -c6*(disp_shift_V2 + disp_shift_V3*r_switch)*r_switch*r_switch*inv_r +
-        c12*(repu_shift_V2 + repu_shift_V3*r_switch)*r_switch*r_switch*inv_r;
-    *E_lj    +=
-        c6*(disp_shift_F2 + disp_shift_F3*r_switch)*r_switch*r_switch*r_switch -
-        c12*(repu_shift_F2 + repu_shift_F3*r_switch)*r_switch*r_switch*r_switch;
+    *F_invr += -c6 * (disp_shift_V2 + disp_shift_V3 * r_switch) * r_switch * r_switch * inv_r
+               + c12 * (repu_shift_V2 + repu_shift_V3 * r_switch) * r_switch * r_switch * inv_r;
+    *E_lj += c6 * (disp_shift_F2 + disp_shift_F3 * r_switch) * r_switch * r_switch * r_switch
+             - c12 * (repu_shift_F2 + repu_shift_F3 * r_switch) * r_switch * r_switch * r_switch;
 }
 
 /*! Apply potential switch, force-only version. */
-gmx_opencl_inline
-void calculate_potential_switch_F(const cl_nbparam_params_t *nbparam,
-                                  float                      inv_r,
-                                  float                      r2,
-                                  float                     *F_invr,
-                                  const float               *E_lj)
+gmx_opencl_inline void calculate_potential_switch_F(const cl_nbparam_params_t* nbparam,
+                                                    float                      inv_r,
+                                                    float                      r2,
+                                                    float*                     F_invr,
+                                                    const float*               E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -394,20 +383,19 @@ void calculate_potential_switch_F(const cl_nbparam_params_t *nbparam,
     /* Unlike in the F+E kernel, conditional is faster here */
     if (r_switch > 0.0f)
     {
-        sw      = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
-        dsw     = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+        sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+        dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
-        *F_invr = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
+        *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
     }
 }
 
 /*! Apply potential switch, force + energy version. */
-gmx_opencl_inline
-void calculate_potential_switch_F_E(const cl_nbparam_params_t *nbparam,
-                                    float                      inv_r,
-                                    float                      r2,
-                                    float                     *F_invr,
-                                    float                     *E_lj)
+gmx_opencl_inline void calculate_potential_switch_F_E(const cl_nbparam_params_t* nbparam,
+                                                      float                      inv_r,
+                                                      float                      r2,
+                                                      float*                     F_invr,
+                                                      float*                     E_lj)
 {
     float r, r_switch;
     float sw, dsw;
@@ -425,72 +413,70 @@ void calculate_potential_switch_F_E(const cl_nbparam_params_t *nbparam,
     r_switch = r_switch >= 0.0f ? r_switch : 0.0f;
 
     /* Unlike in the F-only kernel, masking is faster here */
-    sw       = 1.0f + (switch_V3 + (switch_V4 + switch_V5*r_switch)*r_switch)*r_switch*r_switch*r_switch;
-    dsw      = (switch_F2 + (switch_F3 + switch_F4*r_switch)*r_switch)*r_switch*r_switch;
+    sw  = 1.0f + (switch_V3 + (switch_V4 + switch_V5 * r_switch) * r_switch) * r_switch * r_switch * r_switch;
+    dsw = (switch_F2 + (switch_F3 + switch_F4 * r_switch) * r_switch) * r_switch * r_switch;
 
-    *F_invr  = (*F_invr)*sw - inv_r*(*E_lj)*dsw;
-    *E_lj   *= sw;
+    *F_invr = (*F_invr) * sw - inv_r * (*E_lj) * dsw;
+    *E_lj *= sw;
 }
 
 /*! Calculate LJ-PME grid force contribution with
  *  geometric combination rule.
  */
-gmx_opencl_inline
-void calculate_lj_ewald_comb_geom_F(__constant const float *nbfp_comb_climg2d,
-                                    int                     typei,
-                                    int                     typej,
-                                    float                   r2,
-                                    float                   inv_r2,
-                                    float                   lje_coeff2,
-                                    float                   lje_coeff6_6,
-                                    float                  *F_invr)
+gmx_opencl_inline void calculate_lj_ewald_comb_geom_F(__constant const float* nbfp_comb_climg2d,
+                                                      int                     typei,
+                                                      int                     typej,
+                                                      float                   r2,
+                                                      float                   inv_r2,
+                                                      float                   lje_coeff2,
+                                                      float                   lje_coeff6_6,
+                                                      float*                  F_invr)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
 
-    c6grid    = nbfp_comb_climg2d[2*typei]*nbfp_comb_climg2d[2*typej];
+    c6grid = nbfp_comb_climg2d[2 * typei] * nbfp_comb_climg2d[2 * typej];
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 }
 
 /*! Calculate LJ-PME grid force + energy contribution with
  *  geometric combination rule.
  */
-gmx_opencl_inline
-void calculate_lj_ewald_comb_geom_F_E(__constant const float    *nbfp_comb_climg2d,
-                                      const cl_nbparam_params_t *nbparam,
-                                      int                        typei,
-                                      int                        typej,
-                                      float                      r2,
-                                      float                      inv_r2,
-                                      float                      lje_coeff2,
-                                      float                      lje_coeff6_6,
-                                      float                      int_bit,
-                                      float                     *F_invr,
-                                      float                     *E_lj)
+gmx_opencl_inline void calculate_lj_ewald_comb_geom_F_E(__constant const float* nbfp_comb_climg2d,
+                                                        const cl_nbparam_params_t* nbparam,
+                                                        int                        typei,
+                                                        int                        typej,
+                                                        float                      r2,
+                                                        float                      inv_r2,
+                                                        float                      lje_coeff2,
+                                                        float                      lje_coeff6_6,
+                                                        float                      int_bit,
+                                                        float*                     F_invr,
+                                                        float*                     E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly, sh_mask;
 
-    c6grid    = nbfp_comb_climg2d[2*typei]*nbfp_comb_climg2d[2*typej];
+    c6grid = nbfp_comb_climg2d[2 * typei] * nbfp_comb_climg2d[2 * typej];
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 
     /* Shift should be applied only to real LJ pairs */
-    sh_mask   = nbparam->sh_lj_ewald*int_bit;
-    *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+    sh_mask = nbparam->sh_lj_ewald * int_bit;
+    *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
 }
 
 /*! Calculate LJ-PME grid force + energy contribution (if E_lj != NULL) with
@@ -498,70 +484,66 @@ void calculate_lj_ewald_comb_geom_F_E(__constant const float    *nbfp_comb_climg
  *  We use a single F+E kernel with conditional because the performance impact
  *  of this is pretty small and LB on the CPU is anyway very slow.
  */
-gmx_opencl_inline
-void calculate_lj_ewald_comb_LB_F_E(__constant const float    *nbfp_comb_climg2d,
-                                    const cl_nbparam_params_t *nbparam,
-                                    int                        typei,
-                                    int                        typej,
-                                    float                      r2,
-                                    float                      inv_r2,
-                                    float                      lje_coeff2,
-                                    float                      lje_coeff6_6,
-                                    float                      int_bit,
-                                    bool                       with_E_lj,
-                                    float                     *F_invr,
-                                    float                     *E_lj)
+gmx_opencl_inline void calculate_lj_ewald_comb_LB_F_E(__constant const float*    nbfp_comb_climg2d,
+                                                      const cl_nbparam_params_t* nbparam,
+                                                      int                        typei,
+                                                      int                        typej,
+                                                      float                      r2,
+                                                      float                      inv_r2,
+                                                      float                      lje_coeff2,
+                                                      float                      lje_coeff6_6,
+                                                      float                      int_bit,
+                                                      bool                       with_E_lj,
+                                                      float*                     F_invr,
+                                                      float*                     E_lj)
 {
     float c6grid, inv_r6_nm, cr2, expmcr2, poly;
     float sigma, sigma2, epsilon;
 
     /* sigma and epsilon are scaled to give 6*C6 */
-    sigma      = nbfp_comb_climg2d[2*typei] + nbfp_comb_climg2d[2*typej];
+    sigma = nbfp_comb_climg2d[2 * typei] + nbfp_comb_climg2d[2 * typej];
 
-    epsilon    = nbfp_comb_climg2d[2*typei+1]*nbfp_comb_climg2d[2*typej+1];
+    epsilon = nbfp_comb_climg2d[2 * typei + 1] * nbfp_comb_climg2d[2 * typej + 1];
 
-    sigma2  = sigma*sigma;
-    c6grid  = epsilon*sigma2*sigma2*sigma2;
+    sigma2 = sigma * sigma;
+    c6grid = epsilon * sigma2 * sigma2 * sigma2;
 
     /* Recalculate inv_r6 without exclusion mask */
-    inv_r6_nm = inv_r2*inv_r2*inv_r2;
-    cr2       = lje_coeff2*r2;
+    inv_r6_nm = inv_r2 * inv_r2 * inv_r2;
+    cr2       = lje_coeff2 * r2;
     expmcr2   = exp(-cr2);
-    poly      = 1.0f + cr2 + 0.5f*cr2*cr2;
+    poly      = 1.0f + cr2 + 0.5f * cr2 * cr2;
 
     /* Subtract the grid force from the total LJ force */
-    *F_invr  += c6grid*(inv_r6_nm - expmcr2*(inv_r6_nm*poly + lje_coeff6_6))*inv_r2;
+    *F_invr += c6grid * (inv_r6_nm - expmcr2 * (inv_r6_nm * poly + lje_coeff6_6)) * inv_r2;
 
     if (with_E_lj)
     {
         float sh_mask;
 
         /* Shift should be applied only to real LJ pairs */
-        sh_mask   = nbparam->sh_lj_ewald*int_bit;
-        *E_lj    += ONE_SIXTH_F*c6grid*(inv_r6_nm*(1.0f - expmcr2*poly) + sh_mask);
+        sh_mask = nbparam->sh_lj_ewald * int_bit;
+        *E_lj += ONE_SIXTH_F * c6grid * (inv_r6_nm * (1.0f - expmcr2 * poly) + sh_mask);
     }
 }
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: from the OpenMM project
  */
-gmx_opencl_inline float
-interpolate_coulomb_force_r(__constant const float *coulomb_tab_climg2d,
-                            float                   r,
-                            float                   scale)
+gmx_opencl_inline float interpolate_coulomb_force_r(__constant const float* coulomb_tab_climg2d,
+                                                    float                   r,
+                                                    float                   scale)
 {
-    float   normalized = scale * r;
-    int     index      = (int) normalized;
-    float   fract2     = normalized - index;
-    float   fract1     = 1.0f - fract2;
+    float normalized = scale * r;
+    int   index      = (int)normalized;
+    float fract2     = normalized - index;
+    float fract1     = 1.0f - fract2;
 
-    return fract1*coulomb_tab_climg2d[index] +
-           fract2*coulomb_tab_climg2d[index + 1];
+    return fract1 * coulomb_tab_climg2d[index] + fract2 * coulomb_tab_climg2d[index + 1];
 }
 
 /*! Calculate analytical Ewald correction term. */
-gmx_opencl_inline
-float pmecorrF(float z2)
+gmx_opencl_inline float pmecorrF(float z2)
 {
     const float FN6 = -1.7357322914161492954e-8f;
     const float FN5 = 1.4703624142580877519e-6f;
@@ -577,44 +559,43 @@ float pmecorrF(float z2)
     const float FD1 = 0.50736591960530292870f;
     const float FD0 = 1.0f;
 
-    float       z4;
-    float       polyFN0, polyFN1, polyFD0, polyFD1;
+    float z4;
+    float polyFN0, polyFN1, polyFD0, polyFD1;
 
-    z4          = z2*z2;
+    z4 = z2 * z2;
 
-    polyFD0     = FD4*z4 + FD2;
-    polyFD1     = FD3*z4 + FD1;
-    polyFD0     = polyFD0*z4 + FD0;
-    polyFD0     = polyFD1*z2 + polyFD0;
+    polyFD0 = FD4 * z4 + FD2;
+    polyFD1 = FD3 * z4 + FD1;
+    polyFD0 = polyFD0 * z4 + FD0;
+    polyFD0 = polyFD1 * z2 + polyFD0;
 
-    polyFD0     = 1.0f/polyFD0;
+    polyFD0 = 1.0f / polyFD0;
 
-    polyFN0     = FN6*z4 + FN4;
-    polyFN1     = FN5*z4 + FN3;
-    polyFN0     = polyFN0*z4 + FN2;
-    polyFN1     = polyFN1*z4 + FN1;
-    polyFN0     = polyFN0*z4 + FN0;
-    polyFN0     = polyFN1*z2 + polyFN0;
+    polyFN0 = FN6 * z4 + FN4;
+    polyFN1 = FN5 * z4 + FN3;
+    polyFN0 = polyFN0 * z4 + FN2;
+    polyFN1 = polyFN1 * z4 + FN1;
+    polyFN0 = polyFN0 * z4 + FN0;
+    polyFN0 = polyFN1 * z2 + polyFN0;
 
-    return polyFN0*polyFD0;
+    return polyFN0 * polyFD0;
 }
 
-#if REDUCE_SHUFFLE
-gmx_opencl_inline
-void reduce_force_j_shfl(float3 fin, __global float *fout,
-                         int gmx_unused tidxi, int gmx_unused tidxj, int aidx)
+#    if REDUCE_SHUFFLE
+gmx_opencl_inline void
+reduce_force_j_shfl(float3 fin, __global float* fout, int gmx_unused tidxi, int gmx_unused tidxj, int aidx)
 {
     /* Only does reduction over 4 elements in cluster. Needs to be changed
      * for CL_SIZE>4. See CUDA code for required code */
     fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 1);
-    fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, 1);
+    fin.y += intel_sub_group_shuffle_up(fin.y, fin.y, 1);
     fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, 1);
     if ((tidxi & 1) == 1)
     {
         fin.x = fin.y;
     }
     fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, 2);
-    fin.z += intel_sub_group_shuffle_up  (fin.z, fin.z, 2);
+    fin.z += intel_sub_group_shuffle_up(fin.z, fin.z, 2);
     if (tidxi == 2)
     {
         fin.x = fin.z;
@@ -624,15 +605,14 @@ void reduce_force_j_shfl(float3 fin, __global float *fout,
         atomicAdd_g_f(&fout[3 * aidx + tidxi], fin.x);
     }
 }
-#endif
+#    endif
 
-gmx_opencl_inline
-void reduce_force_j_generic(__local float *f_buf, float3 fcj_buf, __global float *fout,
-                            int tidxi, int tidxj, int aidx)
+gmx_opencl_inline void
+reduce_force_j_generic(__local float* f_buf, float3 fcj_buf, __global float* fout, int tidxi, int tidxj, int aidx)
 {
-    int tidx = tidxi + tidxj*CL_SIZE;
-    f_buf[                  tidx] = fcj_buf.x;
-    f_buf[    FBUF_STRIDE + tidx] = fcj_buf.y;
+    int tidx                      = tidxi + tidxj * CL_SIZE;
+    f_buf[tidx]                   = fcj_buf.x;
+    f_buf[FBUF_STRIDE + tidx]     = fcj_buf.y;
     f_buf[2 * FBUF_STRIDE + tidx] = fcj_buf.z;
 
     /* Split the reduction between the first 3 column threads
@@ -654,22 +634,29 @@ void reduce_force_j_generic(__local float *f_buf, float3 fcj_buf, __global float
 
 /*! Final j-force reduction
  */
-gmx_opencl_inline
-void reduce_force_j(__local float gmx_unused *f_buf, float3 fcj_buf, __global float *fout,
-                    int tidxi, int tidxj, int aidx)
+gmx_opencl_inline void reduce_force_j(__local float gmx_unused* f_buf,
+                                      float3                    fcj_buf,
+                                      __global float*           fout,
+                                      int                       tidxi,
+                                      int                       tidxj,
+                                      int                       aidx)
 {
-#if REDUCE_SHUFFLE
+#    if REDUCE_SHUFFLE
     reduce_force_j_shfl(fcj_buf, fout, tidxi, tidxj, aidx);
-#else
+#    else
     reduce_force_j_generic(f_buf, fcj_buf, fout, tidxi, tidxj, aidx);
-#endif
+#    endif
 }
 
-#if REDUCE_SHUFFLE
-gmx_opencl_inline
-void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
-                                   bool bCalcFshift, int tidxi, int tidxj,
-                                   int sci, int shift, __global float *fshift)
+#    if REDUCE_SHUFFLE
+gmx_opencl_inline void reduce_force_i_and_shift_shfl(float3*         fci_buf,
+                                                     __global float* fout,
+                                                     bool            bCalcFshift,
+                                                     int             tidxi,
+                                                     int             tidxj,
+                                                     int             sci,
+                                                     int             shift,
+                                                     __global float* fshift)
 {
     /* Only does reduction over 4 elements in cluster (2 per warp). Needs to be changed
      * for CL_SIZE>4.*/
@@ -679,7 +666,7 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
         int    aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
         float3 fin  = fci_buf[ci_offset];
         fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
-        fin.y += intel_sub_group_shuffle_up  (fin.y, fin.y, CL_SIZE);
+        fin.y += intel_sub_group_shuffle_up(fin.y, fin.y, CL_SIZE);
         fin.z += intel_sub_group_shuffle_down(fin.z, fin.z, CL_SIZE);
 
         if (tidxj & 1)
@@ -687,7 +674,7 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
             fin.x = fin.y;
         }
         /* Threads 0,1 and 2,3 increment x,y for their warp */
-        atomicAdd_g_f(&fout[3*aidx + (tidxj & 1)], fin.x);
+        atomicAdd_g_f(&fout[3 * aidx + (tidxj & 1)], fin.x);
         if (bCalcFshift)
         {
             fshift_buf[0] += fin.x;
@@ -695,7 +682,7 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
         /* Threads 0 and 2 increment z for their warp */
         if ((tidxj & 1) == 0)
         {
-            atomicAdd_g_f(&fout[3*aidx+2], fin.z);
+            atomicAdd_g_f(&fout[3 * aidx + 2], fin.z);
             if (bCalcFshift)
             {
                 fshift_buf[1] += fin.z;
@@ -705,52 +692,57 @@ void reduce_force_i_and_shift_shfl(float3* fci_buf, __global float *fout,
     /* add up local shift forces into global mem */
     if (bCalcFshift)
     {
-        //Threads 0,1 and 2,3 update x,y
-        atomicAdd_g_f(&(fshift[3 * shift + (tidxj&1)]), fshift_buf[0]);
-        //Threads 0 and 2 update z
+        // Threads 0,1 and 2,3 update x,y
+        atomicAdd_g_f(&(fshift[3 * shift + (tidxj & 1)]), fshift_buf[0]);
+        // Threads 0 and 2 update z
         if ((tidxj & 1) == 0)
         {
             atomicAdd_g_f(&(fshift[3 * shift + 2]), fshift_buf[1]);
         }
     }
 }
-#endif
+#    endif
 
 /*! Final i-force reduction; this implementation works only with power of two
  *  array sizes.
  */
-gmx_opencl_inline
-void reduce_force_i_and_shift_pow2(volatile __local float *f_buf, float3* fci_buf,
-                                   __global float *fout,
-                                   bool bCalcFshift,
-                                   int tidxi, int tidxj,
-                                   int sci, int shift, __global float *fshift)
+gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_buf,
+                                                     float3*                 fci_buf,
+                                                     __global float*         fout,
+                                                     bool                    bCalcFshift,
+                                                     int                     tidxi,
+                                                     int                     tidxj,
+                                                     int                     sci,
+                                                     int                     shift,
+                                                     __global float*         fshift)
 {
     float fshift_buf = 0;
     for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
         int aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
-        int tidx = tidxi + tidxj*CL_SIZE;
+        int tidx = tidxi + tidxj * CL_SIZE;
         /* store i forces in shmem */
-        f_buf[                  tidx] = fci_buf[ci_offset].x;
-        f_buf[    FBUF_STRIDE + tidx] = fci_buf[ci_offset].y;
+        f_buf[tidx]                   = fci_buf[ci_offset].x;
+        f_buf[FBUF_STRIDE + tidx]     = fci_buf[ci_offset].y;
         f_buf[2 * FBUF_STRIDE + tidx] = fci_buf[ci_offset].z;
         barrier(CLK_LOCAL_MEM_FENCE);
 
-        int     i, j;
+        int i, j;
         /* Reduce the initial CL_SIZE values for each i atom to half
          * every step by using CL_SIZE * i threads.
          * Can't just use i as loop variable because than nvcc refuses to unroll.
          */
-        i = CL_SIZE/2;
+        i = CL_SIZE / 2;
         for (j = CL_SIZE_LOG2 - 1; j > 0; j--)
         {
             if (tidxj < i)
             {
 
-                f_buf[                  tidxj * CL_SIZE + tidxi] += f_buf[                  (tidxj + i) * CL_SIZE + tidxi];
-                f_buf[    FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[    FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
-                f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] += f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+                f_buf[tidxj * CL_SIZE + tidxi] += f_buf[(tidxj + i) * CL_SIZE + tidxi];
+                f_buf[FBUF_STRIDE + tidxj * CL_SIZE + tidxi] +=
+                        f_buf[FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
+                f_buf[2 * FBUF_STRIDE + tidxj * CL_SIZE + tidxi] +=
+                        f_buf[2 * FBUF_STRIDE + (tidxj + i) * CL_SIZE + tidxi];
             }
             i >>= 1;
         }
@@ -794,28 +786,30 @@ void reduce_force_i_and_shift_pow2(volatile __local float *f_buf, float3* fci_bu
 
 /*! Final i-force reduction
  */
-gmx_opencl_inline
-void reduce_force_i_and_shift(__local float gmx_unused *f_buf, float3* fci_buf, __global float *f,
-                              bool bCalcFshift, int tidxi, int tidxj, int sci,
-                              int shift, __global float *fshift)
+gmx_opencl_inline void reduce_force_i_and_shift(__local float gmx_unused* f_buf,
+                                                float3*                   fci_buf,
+                                                __global float*           f,
+                                                bool                      bCalcFshift,
+                                                int                       tidxi,
+                                                int                       tidxj,
+                                                int                       sci,
+                                                int                       shift,
+                                                __global float*           fshift)
 {
-#if REDUCE_SHUFFLE
-    reduce_force_i_and_shift_shfl(fci_buf, f, bCalcFshift, tidxi, tidxj,
-                                  sci, shift, fshift);
-#else
-    reduce_force_i_and_shift_pow2(f_buf, fci_buf, f, bCalcFshift, tidxi, tidxj,
-                                  sci, shift, fshift);
-#endif
+#    if REDUCE_SHUFFLE
+    reduce_force_i_and_shift_shfl(fci_buf, f, bCalcFshift, tidxi, tidxj, sci, shift, fshift);
+#    else
+    reduce_force_i_and_shift_pow2(f_buf, fci_buf, f, bCalcFshift, tidxi, tidxj, sci, shift, fshift);
+#    endif
 }
 
 
-
-#if REDUCE_SHUFFLE
-gmx_opencl_inline
-void reduce_energy_shfl(float E_lj, float E_el,
-                        volatile __global float *e_lj,
-                        volatile __global float *e_el,
-                        unsigned int    tidx)
+#    if REDUCE_SHUFFLE
+gmx_opencl_inline void reduce_energy_shfl(float                    E_lj,
+                                          float                    E_el,
+                                          volatile __global float* e_lj,
+                                          volatile __global float* e_el,
+                                          unsigned int             tidx)
 {
     E_lj = sub_group_reduce_add(E_lj);
     E_el = sub_group_reduce_add(E_el);
@@ -830,27 +824,26 @@ void reduce_energy_shfl(float E_lj, float E_el,
         atomicAdd_g_f(e_el, E_el);
     }
 }
-#endif
+#    endif
 
 /*! Energy reduction; this implementation works only with power of two
  *  array sizes.
  */
-gmx_opencl_inline
-void reduce_energy_pow2(volatile __local float  *buf,
-                        volatile __global float *e_lj,
-                        volatile __global float *e_el,
-                        unsigned int             tidx)
+gmx_opencl_inline void reduce_energy_pow2(volatile __local float*  buf,
+                                          volatile __global float* e_lj,
+                                          volatile __global float* e_el,
+                                          unsigned int             tidx)
 {
-    int          j;
+    int j;
 
-    unsigned int i = WARP_SIZE/2;
+    unsigned int i = WARP_SIZE / 2;
 
     /* Can't just use i as loop variable because than nvcc refuses to unroll. */
     for (j = WARP_SIZE_LOG2 - 1; j > 0; j--)
     {
         if (tidx < i)
         {
-            buf[              tidx] += buf[              tidx + i];
+            buf[tidx] += buf[tidx + i];
             buf[FBUF_STRIDE + tidx] += buf[FBUF_STRIDE + tidx + i];
         }
         i >>= 1;
@@ -859,7 +852,7 @@ void reduce_energy_pow2(volatile __local float  *buf,
     /* last reduction step, writing to global mem */
     if (tidx == 0)
     {
-        float e1 = buf[              tidx] + buf[              tidx + i];
+        float e1 = buf[tidx] + buf[tidx + i];
         float e2 = buf[FBUF_STRIDE + tidx] + buf[FBUF_STRIDE + tidx + i];
 
         atomicAdd_g_f(e_lj, e1);
@@ -867,25 +860,24 @@ void reduce_energy_pow2(volatile __local float  *buf,
     }
 }
 
-gmx_opencl_inline
-void reduce_energy(volatile __local float  gmx_unused *buf,
-                   float E_lj, float E_el,
-                   volatile __global float *e_lj,
-                   volatile __global float *e_el,
-                   unsigned int             tidx)
+gmx_opencl_inline void reduce_energy(volatile __local float gmx_unused* buf,
+                                     float                              E_lj,
+                                     float                              E_el,
+                                     volatile __global float*           e_lj,
+                                     volatile __global float*           e_el,
+                                     unsigned int                       tidx)
 {
-#if REDUCE_SHUFFLE
+#    if REDUCE_SHUFFLE
     reduce_energy_shfl(E_lj, E_el, e_lj, e_el, tidx);
-#else
+#    else
     /* flush the energies to shmem and reduce them */
-    buf[              tidx] = E_lj;
+    buf[tidx] = E_lj;
     buf[FBUF_STRIDE + tidx] = E_el;
     reduce_energy_pow2(buf + (tidx & WARP_SIZE), e_lj, e_el, tidx & ~WARP_SIZE);
-#endif
+#    endif
 }
 
-gmx_opencl_inline
-bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool pred)
+gmx_opencl_inline bool gmx_sub_group_any_localmem(volatile __local uint* warp_any, int widx, bool pred)
 {
     if (pred)
     {
@@ -900,14 +892,15 @@ bool gmx_sub_group_any_localmem(volatile __local uint *warp_any, int widx, bool 
 }
 
 //! Returns a true if predicate is true for any work item in warp
-gmx_opencl_inline
-bool gmx_sub_group_any(volatile __local uint gmx_unused *warp_any, int gmx_unused widx, bool pred)
+gmx_opencl_inline bool gmx_sub_group_any(volatile __local uint gmx_unused* warp_any,
+                                         int gmx_unused widx,
+                                         bool           pred)
 {
-#if USE_SUBGROUP_ANY
+#    if USE_SUBGROUP_ANY
     return sub_group_any(pred);
-#else
+#    else
     return gmx_sub_group_any_localmem(warp_any, widx, pred);
-#endif
+#    endif
 }
 
 #endif /* NBNXN_OPENCL_KERNEL_UTILS_CLH */

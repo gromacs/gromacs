@@ -94,17 +94,17 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param [in]      gm_v             Velocities of the particles.
  * \param [in]      gm_virialScaled  Virial tensor.
  */
-template <bool updateVelocities, bool computeVirial>
-__launch_bounds__(c_maxThreadsPerBlock)
-__global__ void settle_kernel(const int                            numSettles,
-                              const int3*  __restrict__            gm_settles,
-                              const SettleParameters               pars,
-                              const float3*  __restrict__          gm_x,
-                              float3*  __restrict__                gm_xprime,
-                              const PbcAiuc                        pbcAiuc,
-                              float                                invdt,
-                              float3*  __restrict__                gm_v,
-                              float*   __restrict__                gm_virialScaled)
+template<bool updateVelocities, bool computeVirial>
+__launch_bounds__(c_maxThreadsPerBlock) __global__
+        void settle_kernel(const int numSettles,
+                           const int3* __restrict__ gm_settles,
+                           const SettleParameters pars,
+                           const float3* __restrict__ gm_x,
+                           float3* __restrict__ gm_xprime,
+                           const PbcAiuc pbcAiuc,
+                           float         invdt,
+                           float3* __restrict__ gm_v,
+                           float* __restrict__ gm_virialScaled)
 {
     /* ******************************************************************* */
     /*                                                                  ** */
@@ -121,17 +121,17 @@ __global__ void settle_kernel(const int                            numSettles,
     /*                                                                  ** */
     /* ******************************************************************* */
 
-    constexpr float          almost_zero = real(1e-12);
+    constexpr float almost_zero = real(1e-12);
 
-    extern __shared__ float  sm_threadVirial[];
+    extern __shared__ float sm_threadVirial[];
 
-    int tid = static_cast<int>(blockIdx.x*blockDim.x + threadIdx.x);
+    int tid = static_cast<int>(blockIdx.x * blockDim.x + threadIdx.x);
 
     if (tid < numSettles)
     {
         // These are the indexes of three atoms in a single 'water' molecule.
         // TODO Can be reduced to one integer if atoms are consecutive in memory.
-        int3   indices = gm_settles[tid];
+        int3 indices = gm_settles[tid];
 
         float3 x_ow1 = gm_x[indices.x];
         float3 x_hw2 = gm_x[indices.y];
@@ -151,30 +151,30 @@ __global__ void settle_kernel(const int                            numSettles,
         float3 doh3 = pbcDxAiuc(pbcAiuc, xprime_hw3, xprime_ow1);
 
         float3 sh_hw3 = xprime_hw3 - (xprime_ow1 + doh3);
-        xprime_hw3 = xprime_hw3 - sh_hw3;
+        xprime_hw3    = xprime_hw3 - sh_hw3;
 
         float3 a1  = (-doh2 - doh3) * pars.wh;
         float3 com = xprime_ow1 - a1;
 
-        float3 b1  = xprime_hw2 - com;
+        float3 b1 = xprime_hw2 - com;
 
-        float3 c1  = xprime_hw3 - com;
+        float3 c1 = xprime_hw3 - com;
 
-        float  xakszd = dist21.y * dist31.z - dist21.z * dist31.y;
-        float  yakszd = dist21.z * dist31.x - dist21.x * dist31.z;
-        float  zakszd = dist21.x * dist31.y - dist21.y * dist31.x;
+        float xakszd = dist21.y * dist31.z - dist21.z * dist31.y;
+        float yakszd = dist21.z * dist31.x - dist21.x * dist31.z;
+        float zakszd = dist21.x * dist31.y - dist21.y * dist31.x;
 
-        float  xaksxd = a1.y * zakszd - a1.z * yakszd;
-        float  yaksxd = a1.z * xakszd - a1.x * zakszd;
-        float  zaksxd = a1.x * yakszd - a1.y * xakszd;
+        float xaksxd = a1.y * zakszd - a1.z * yakszd;
+        float yaksxd = a1.z * xakszd - a1.x * zakszd;
+        float zaksxd = a1.x * yakszd - a1.y * xakszd;
 
-        float  xaksyd = yakszd * zaksxd - zakszd * yaksxd;
-        float  yaksyd = zakszd * xaksxd - xakszd * zaksxd;
-        float  zaksyd = xakszd * yaksxd - yakszd * xaksxd;
+        float xaksyd = yakszd * zaksxd - zakszd * yaksxd;
+        float yaksyd = zakszd * xaksxd - xakszd * zaksxd;
+        float zaksyd = xakszd * yaksxd - yakszd * xaksxd;
 
-        float  axlng = rsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
-        float  aylng = rsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
-        float  azlng = rsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+        float axlng = rsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
+        float aylng = rsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
+        float azlng = rsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
 
         // TODO {1,2,3} indexes should be swapped with {.x, .y, .z} components.
         //      This way, we will be able to use vector ops more.
@@ -203,7 +203,7 @@ __global__ void settle_kernel(const int                            numSettles,
 
         float3 b1d, c1d;
 
-        float  a1d_z = trns1.z * a1.x + trns2.z * a1.y + trns3.z * a1.z;
+        float a1d_z = trns1.z * a1.x + trns2.z * a1.y + trns3.z * a1.z;
 
         b1d.x = trns1.x * b1.x + trns2.x * b1.y + trns3.x * b1.z;
         b1d.y = trns1.y * b1.x + trns2.y * b1.y + trns3.y * b1.z;
@@ -214,66 +214,66 @@ __global__ void settle_kernel(const int                            numSettles,
         c1d.z = trns1.z * c1.x + trns2.z * c1.y + trns3.z * c1.z;
 
 
-        float sinphi   = a1d_z * rsqrt(pars.ra*pars.ra);
-        float tmp2     = 1.0f - sinphi * sinphi;
+        float sinphi = a1d_z * rsqrt(pars.ra * pars.ra);
+        float tmp2   = 1.0f - sinphi * sinphi;
 
         if (almost_zero > tmp2)
         {
             tmp2 = almost_zero;
         }
 
-        float tmp      = rsqrt(tmp2);
-        float cosphi   = tmp2*tmp;
-        float sinpsi   = (b1d.z - c1d.z) * pars.irc2 * tmp;
-        tmp2     = 1.0f - sinpsi * sinpsi;
+        float tmp    = rsqrt(tmp2);
+        float cosphi = tmp2 * tmp;
+        float sinpsi = (b1d.z - c1d.z) * pars.irc2 * tmp;
+        tmp2         = 1.0f - sinpsi * sinpsi;
 
-        float cospsi = tmp2*rsqrt(tmp2);
+        float cospsi = tmp2 * rsqrt(tmp2);
 
-        float a2d_y  =  pars.ra * cosphi;
-        float b2d_x  = -pars.rc * cospsi;
-        float t1     = -pars.rb * cosphi;
-        float t2     =  pars.rc * sinpsi * sinphi;
-        float b2d_y  =  t1 - t2;
-        float c2d_y  =  t1 + t2;
+        float a2d_y = pars.ra * cosphi;
+        float b2d_x = -pars.rc * cospsi;
+        float t1    = -pars.rb * cosphi;
+        float t2    = pars.rc * sinpsi * sinphi;
+        float b2d_y = t1 - t2;
+        float c2d_y = t1 + t2;
 
         /*     --- Step3  al,be,ga            --- */
         float alpha  = b2d_x * (b0d.x - c0d.x) + b0d.y * b2d_y + c0d.y * c2d_y;
         float beta   = b2d_x * (c0d.y - b0d.y) + b0d.x * b2d_y + c0d.x * c2d_y;
         float gamma  = b0d.x * b1d.y - b1d.x * b0d.y + c0d.x * c1d.y - c1d.x * c0d.y;
         float al2be2 = alpha * alpha + beta * beta;
-        tmp2     = (al2be2 - gamma * gamma);
-        float sinthe = (alpha * gamma - beta * tmp2*rsqrt(tmp2)) * rsqrt(al2be2*al2be2);
+        tmp2         = (al2be2 - gamma * gamma);
+        float sinthe = (alpha * gamma - beta * tmp2 * rsqrt(tmp2)) * rsqrt(al2be2 * al2be2);
 
         /*  --- Step4  A3' --- */
-        tmp2     = 1.0f - sinthe * sinthe;
-        float  costhe = tmp2*rsqrt(tmp2);
+        tmp2         = 1.0f - sinthe * sinthe;
+        float costhe = tmp2 * rsqrt(tmp2);
 
         float3 a3d, b3d, c3d;
 
-        a3d.x  = -a2d_y * sinthe;
-        a3d.y  =  a2d_y * costhe;
-        a3d.z  =  a1d_z;
-        b3d.x  =  b2d_x * costhe - b2d_y * sinthe;
-        b3d.y  =  b2d_x * sinthe + b2d_y * costhe;
-        b3d.z  =  b1d.z;
-        c3d.x  = -b2d_x * costhe - c2d_y * sinthe;
-        c3d.y  = -b2d_x * sinthe + c2d_y * costhe;
-        c3d.z  =  c1d.z;
+        a3d.x = -a2d_y * sinthe;
+        a3d.y = a2d_y * costhe;
+        a3d.z = a1d_z;
+        b3d.x = b2d_x * costhe - b2d_y * sinthe;
+        b3d.y = b2d_x * sinthe + b2d_y * costhe;
+        b3d.z = b1d.z;
+        c3d.x = -b2d_x * costhe - c2d_y * sinthe;
+        c3d.y = -b2d_x * sinthe + c2d_y * costhe;
+        c3d.z = c1d.z;
 
         /*    --- Step5  A3 --- */
         float3 a3, b3, c3;
 
-        a3.x = trns1.x*a3d.x + trns1.y*a3d.y + trns1.z*a3d.z;
-        a3.y = trns2.x*a3d.x + trns2.y*a3d.y + trns2.z*a3d.z;
-        a3.z = trns3.x*a3d.x + trns3.y*a3d.y + trns3.z*a3d.z;
+        a3.x = trns1.x * a3d.x + trns1.y * a3d.y + trns1.z * a3d.z;
+        a3.y = trns2.x * a3d.x + trns2.y * a3d.y + trns2.z * a3d.z;
+        a3.z = trns3.x * a3d.x + trns3.y * a3d.y + trns3.z * a3d.z;
 
-        b3.x = trns1.x*b3d.x + trns1.y*b3d.y + trns1.z*b3d.z;
-        b3.y = trns2.x*b3d.x + trns2.y*b3d.y + trns2.z*b3d.z;
-        b3.z = trns3.x*b3d.x + trns3.y*b3d.y + trns3.z*b3d.z;
+        b3.x = trns1.x * b3d.x + trns1.y * b3d.y + trns1.z * b3d.z;
+        b3.y = trns2.x * b3d.x + trns2.y * b3d.y + trns2.z * b3d.z;
+        b3.z = trns3.x * b3d.x + trns3.y * b3d.y + trns3.z * b3d.z;
 
-        c3.x = trns1.x*c3d.x + trns1.y*c3d.y + trns1.z*c3d.z;
-        c3.y = trns2.x*c3d.x + trns2.y*c3d.y + trns2.z*c3d.z;
-        c3.z = trns3.x*c3d.x + trns3.y*c3d.y + trns3.z*c3d.z;
+        c3.x = trns1.x * c3d.x + trns1.y * c3d.y + trns1.z * c3d.z;
+        c3.y = trns2.x * c3d.x + trns2.y * c3d.y + trns2.z * c3d.z;
+        c3.z = trns3.x * c3d.x + trns3.y * c3d.y + trns3.z * c3d.z;
 
 
         /* Compute and store the corrected new coordinate */
@@ -281,9 +281,9 @@ __global__ void settle_kernel(const int                            numSettles,
         xprime_hw2 = com + b3 + sh_hw2;
         xprime_hw3 = com + c3 + sh_hw3;
 
-        gm_xprime[indices.x]   = xprime_ow1;
-        gm_xprime[indices.y]   = xprime_hw2;
-        gm_xprime[indices.z]   = xprime_hw3;
+        gm_xprime[indices.x] = xprime_ow1;
+        gm_xprime[indices.y] = xprime_hw2;
+        gm_xprime[indices.z] = xprime_hw3;
 
 
         if (updateVelocities || computeVirial)
@@ -301,29 +301,34 @@ __global__ void settle_kernel(const int                            numSettles,
                 float3 v_hw3 = gm_v[indices.z];
 
                 /* Add the position correction divided by dt to the velocity */
-                v_ow1 = da*invdt + v_ow1;
-                v_hw2 = db*invdt + v_hw2;
-                v_hw3 = dc*invdt + v_hw3;
+                v_ow1 = da * invdt + v_ow1;
+                v_hw2 = db * invdt + v_hw2;
+                v_hw3 = dc * invdt + v_hw3;
 
-                gm_v[indices.x]   = v_ow1;
-                gm_v[indices.y]   = v_hw2;
-                gm_v[indices.z]   = v_hw3;
-
+                gm_v[indices.x] = v_ow1;
+                gm_v[indices.y] = v_hw2;
+                gm_v[indices.z] = v_hw3;
             }
 
             if (computeVirial)
             {
 
-                float3 mdb = pars.mH*db;
-                float3 mdc = pars.mH*dc;
-                float3 mdo = pars.mO*da + mdb + mdc;
+                float3 mdb = pars.mH * db;
+                float3 mdc = pars.mH * dc;
+                float3 mdo = pars.mO * da + mdb + mdc;
 
-                sm_threadVirial[0*blockDim.x + threadIdx.x] = -(x_ow1.x*mdo.x + dist21.x*mdb.x + dist31.x*mdc.x);
-                sm_threadVirial[1*blockDim.x + threadIdx.x] = -(x_ow1.x*mdo.y + dist21.x*mdb.y + dist31.x*mdc.y);
-                sm_threadVirial[2*blockDim.x + threadIdx.x] = -(x_ow1.x*mdo.z + dist21.x*mdb.z + dist31.x*mdc.z);
-                sm_threadVirial[3*blockDim.x + threadIdx.x] = -(x_ow1.y*mdo.y + dist21.y*mdb.y + dist31.y*mdc.y);
-                sm_threadVirial[4*blockDim.x + threadIdx.x] = -(x_ow1.y*mdo.z + dist21.y*mdb.z + dist31.y*mdc.z);
-                sm_threadVirial[5*blockDim.x + threadIdx.x] = -(x_ow1.z*mdo.z + dist21.z*mdb.z + dist31.z*mdc.z);
+                sm_threadVirial[0 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.x * mdo.x + dist21.x * mdb.x + dist31.x * mdc.x);
+                sm_threadVirial[1 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.x * mdo.y + dist21.x * mdb.y + dist31.x * mdc.y);
+                sm_threadVirial[2 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.x * mdo.z + dist21.x * mdb.z + dist31.x * mdc.z);
+                sm_threadVirial[3 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.y * mdo.y + dist21.y * mdb.y + dist31.y * mdc.y);
+                sm_threadVirial[4 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.y * mdo.z + dist21.y * mdb.z + dist31.y * mdc.z);
+                sm_threadVirial[5 * blockDim.x + threadIdx.x] =
+                        -(x_ow1.z * mdo.z + dist21.z * mdb.z + dist31.z * mdc.z);
             }
         }
     }
@@ -334,7 +339,7 @@ __global__ void settle_kernel(const int                            numSettles,
         {
             for (int d = 0; d < 6; d++)
             {
-                sm_threadVirial[d*blockDim.x + threadIdx.x] = 0.0f;
+                sm_threadVirial[d * blockDim.x + threadIdx.x] = 0.0f;
             }
         }
     }
@@ -345,8 +350,8 @@ __global__ void settle_kernel(const int                            numSettles,
         // This is to ensure that all threads saved the data before reduction starts
         __syncthreads();
         // This casts unsigned into signed integers to avoid clang warnings
-        int tib        = static_cast<int>(threadIdx.x);
-        int blockSize  = static_cast<int>(blockDim.x);
+        int tib       = static_cast<int>(threadIdx.x);
+        int blockSize = static_cast<int>(blockDim.x);
         // Reduce up to one virial per thread block
         // All blocks are divided by half, the first half of threads sums
         // two virials. Then the first half is divided by two and the first half
@@ -354,15 +359,16 @@ __global__ void settle_kernel(const int                            numSettles,
         // Only works if the threads per blocks is a power of two.
         for (int divideBy = 2; divideBy <= blockSize; divideBy *= 2)
         {
-            int dividedAt = blockSize/divideBy;
+            int dividedAt = blockSize / divideBy;
             if (tib < dividedAt)
             {
                 for (int d = 0; d < 6; d++)
                 {
-                    sm_threadVirial[d*blockSize + tib] += sm_threadVirial[d*blockSize + (tib + dividedAt)];
+                    sm_threadVirial[d * blockSize + tib] +=
+                            sm_threadVirial[d * blockSize + (tib + dividedAt)];
                 }
             }
-            if (dividedAt > warpSize/2)
+            if (dividedAt > warpSize / 2)
             {
                 __syncthreads();
             }
@@ -370,7 +376,7 @@ __global__ void settle_kernel(const int                            numSettles,
         // First 6 threads in the block add the 6 components of virial to the global memory address
         if (tib < 6)
         {
-            atomicAdd(&(gm_virialScaled[tib]), sm_threadVirial[tib*blockSize]);
+            atomicAdd(&(gm_virialScaled[tib]), sm_threadVirial[tib * blockSize]);
         }
     }
 
@@ -386,8 +392,7 @@ __global__ void settle_kernel(const int                            numSettles,
  *
  * \retrun                      Pointer to CUDA kernel
  */
-inline auto getSettleKernelPtr(const bool  updateVelocities,
-                               const bool  computeVirial)
+inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVirial)
 {
 
     auto kernelPtr = settle_kernel<true, true>;
@@ -410,10 +415,10 @@ inline auto getSettleKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-void SettleCuda::apply(const float3 *d_x,
-                       float3       *d_xp,
+void SettleCuda::apply(const float3* d_x,
+                       float3*       d_xp,
                        const bool    updateVelocities,
-                       float3       *d_v,
+                       float3*       d_v,
                        const real    invdt,
                        const bool    computeVirial,
                        tensor        virialScaled)
@@ -434,45 +439,36 @@ void SettleCuda::apply(const float3 *d_x,
         clearDeviceBufferAsync(&d_virialScaled_, 0, 6, commandStream_);
     }
 
-    auto               kernelPtr = getSettleKernelPtr(updateVelocities, computeVirial);
+    auto kernelPtr = getSettleKernelPtr(updateVelocities, computeVirial);
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_threadsPerBlock;
-    config.blockSize[1]     = 1;
-    config.blockSize[2]     = 1;
-    config.gridSize[0]      = (numSettles_ + c_threadsPerBlock - 1)/c_threadsPerBlock;
-    config.gridSize[1]      = 1;
-    config.gridSize[2]      = 1;
+    config.blockSize[0] = c_threadsPerBlock;
+    config.blockSize[1] = 1;
+    config.blockSize[2] = 1;
+    config.gridSize[0]  = (numSettles_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    config.gridSize[1]  = 1;
+    config.gridSize[2]  = 1;
     // Shared memory is only used for virial reduction
     if (computeVirial)
     {
-        config.sharedMemorySize = c_threadsPerBlock*6*sizeof(float);
+        config.sharedMemorySize = c_threadsPerBlock * 6 * sizeof(float);
     }
     else
     {
         config.sharedMemorySize = 0;
     }
-    config.stream           = commandStream_;
+    config.stream = commandStream_;
 
-    const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
-                                                          &numSettles_,
-                                                          &d_atomIds_,
-                                                          &settleParameters_,
-                                                          &d_x,
-                                                          &d_xp,
-                                                          &pbcAiuc_,
-                                                          &invdt,
-                                                          &d_v,
-                                                          &d_virialScaled_);
+    const auto kernelArgs = prepareGpuKernelArguments(kernelPtr, config, &numSettles_, &d_atomIds_,
+                                                      &settleParameters_, &d_x, &d_xp, &pbcAiuc_,
+                                                      &invdt, &d_v, &d_virialScaled_);
 
-    launchGpuKernel(kernelPtr, config, nullptr,
-                    "settle_kernel<updateVelocities, computeVirial>", kernelArgs);
+    launchGpuKernel(kernelPtr, config, nullptr, "settle_kernel<updateVelocities, computeVirial>", kernelArgs);
 
     if (computeVirial)
     {
-        copyFromDeviceBuffer(h_virialScaled_.data(), &d_virialScaled_,
-                             0, 6,
-                             commandStream_, GpuApiCallBehavior::Sync, nullptr);
+        copyFromDeviceBuffer(h_virialScaled_.data(), &d_virialScaled_, 0, 6, commandStream_,
+                             GpuApiCallBehavior::Sync, nullptr);
 
         // Mapping [XX, XY, XZ, YY, YZ, ZZ] internal format to a tensor object
         virialScaled[XX][XX] += h_virialScaled_[0];
@@ -491,14 +487,14 @@ void SettleCuda::apply(const float3 *d_x,
     return;
 }
 
-SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
-                       CommandStream     commandStream) :
+SettleCuda::SettleCuda(const gmx_mtop_t& mtop, CommandStream commandStream) :
     commandStream_(commandStream)
 {
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
-    static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
-                  "Number of threads per block should be a power of two in order for reduction to work.");
+    static_assert(
+            c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
+            "Number of threads per block should be a power of two in order for reduction to work.");
 
     // This is to prevent the assertion failure for the systems without water
     int totalSettles = 0;
@@ -507,17 +503,17 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
         const int        nral1           = 1 + NRAL(F_SETTLE);
         InteractionList  interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
         std::vector<int> iatoms          = interactionList.iatoms;
-        totalSettles += iatoms.size()/nral1;
+        totalSettles += iatoms.size() / nral1;
     }
     if (totalSettles == 0)
     {
         return;
     }
 
-    // TODO This should be lifted to a separate subroutine that gets the values of Oxygen and Hydrogen
-    // masses, checks if they are consistent across the topology and if there is no more than two values
-    // for each mass if the free energy perturbation is enabled. In later case, masses may need to be
-    // updated on a regular basis (i.e. in set(...) method).
+    // TODO This should be lifted to a separate subroutine that gets the values of Oxygen and
+    // Hydrogen masses, checks if they are consistent across the topology and if there is no more
+    // than two values for each mass if the free energy perturbation is enabled. In later case,
+    // masses may need to be updated on a regular basis (i.e. in set(...) method).
     // TODO Do the checks for FEP
     real mO = -1.0;
     real mH = -1.0;
@@ -527,12 +523,12 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
         const int        nral1           = 1 + NRAL(F_SETTLE);
         InteractionList  interactionList = mtop.moltype.at(mt).ilist[F_SETTLE];
         std::vector<int> iatoms          = interactionList.iatoms;
-        for (unsigned i = 0; i < iatoms.size()/nral1; i++)
+        for (unsigned i = 0; i < iatoms.size() / nral1; i++)
         {
             int3 settler;
-            settler.x = iatoms[i*nral1 + 1]; // Oxygen index
-            settler.y = iatoms[i*nral1 + 2]; // First hydrogen index
-            settler.z = iatoms[i*nral1 + 3]; // Second hydrogen index
+            settler.x  = iatoms[i * nral1 + 1]; // Oxygen index
+            settler.y  = iatoms[i * nral1 + 2]; // First hydrogen index
+            settler.z  = iatoms[i * nral1 + 3]; // Second hydrogen index
             t_atom ow1 = mtop.moltype.at(mt).atoms.atom[settler.x];
             t_atom hw2 = mtop.moltype.at(mt).atoms.atom[settler.y];
             t_atom hw3 = mtop.moltype.at(mt).atoms.atom[settler.z];
@@ -545,8 +541,12 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
             {
                 mH = hw2.m;
             }
-            GMX_RELEASE_ASSERT(mO == ow1.m, "Topology has different values for oxygen mass. Should be identical in order to use SETTLE.");
-            GMX_RELEASE_ASSERT(hw2.m == hw3.m && hw2.m == mH, "Topology has different values for hydrogen mass. Should be identical in order to use SETTLE.");
+            GMX_RELEASE_ASSERT(mO == ow1.m,
+                               "Topology has different values for oxygen mass. Should be identical "
+                               "in order to use SETTLE.");
+            GMX_RELEASE_ASSERT(hw2.m == hw3.m && hw2.m == mH,
+                               "Topology has different values for hydrogen mass. Should be "
+                               "identical in order to use SETTLE.");
         }
     }
 
@@ -555,7 +555,7 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
 
     // TODO Very similar to SETTLE initialization on CPU. Should be lifted to a separate method
     // (one that gets dOH and dHH values and checks them for consistency)
-    int                    settle_type = -1;
+    int settle_type = -1;
     for (unsigned mt = 0; mt < mtop.moltype.size(); mt++)
     {
         const int       nral1           = 1 + NRAL(F_SETTLE);
@@ -569,10 +569,12 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
             else if (interactionList.iatoms[i] != settle_type)
             {
                 gmx_fatal(FARGS,
-                          "The [molecules] section of your topology specifies more than one block of\n"
+                          "The [molecules] section of your topology specifies more than one block "
+                          "of\n"
                           "a [moleculetype] with a [settles] block. Only one such is allowed.\n"
                           "If you are trying to partition your solvent into different *groups*\n"
-                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong approach. Index\n"
+                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong "
+                          "approach. Index\n"
                           "files specify groups. Otherwise, you may wish to change the least-used\n"
                           "block of molecules with SETTLE constraints into 3 normal constraints.");
             }
@@ -588,7 +590,6 @@ SettleCuda::SettleCuda(const gmx_mtop_t &mtop,
 
     allocateDeviceBuffer(&d_virialScaled_, 6, nullptr);
     h_virialScaled_.resize(6);
-
 }
 
 SettleCuda::~SettleCuda()
@@ -605,31 +606,28 @@ SettleCuda::~SettleCuda()
     }
 }
 
-void SettleCuda::set(const t_idef               &idef,
-                     const t_mdatoms gmx_unused &md)
+void SettleCuda::set(const t_idef& idef, const t_mdatoms gmx_unused& md)
 {
-    const int  nral1     = 1 + NRAL(F_SETTLE);
-    t_ilist    il_settle = idef.il[F_SETTLE];
-    t_iatom   *iatoms    = il_settle.iatoms;
-    numSettles_          = il_settle.nr/nral1;
+    const int nral1     = 1 + NRAL(F_SETTLE);
+    t_ilist   il_settle = idef.il[F_SETTLE];
+    t_iatom*  iatoms    = il_settle.iatoms;
+    numSettles_         = il_settle.nr / nral1;
 
     reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, nullptr);
     h_atomIds_.resize(numSettles_);
     for (int i = 0; i < numSettles_; i++)
     {
         int3 settler;
-        settler.x          = iatoms[i*nral1 + 1]; // Oxygen index
-        settler.y          = iatoms[i*nral1 + 2]; // First hydrogen index
-        settler.z          = iatoms[i*nral1 + 3]; // Second hydrogen index
-        h_atomIds_.at(i)   = settler;
+        settler.x        = iatoms[i * nral1 + 1]; // Oxygen index
+        settler.y        = iatoms[i * nral1 + 2]; // First hydrogen index
+        settler.z        = iatoms[i * nral1 + 3]; // Second hydrogen index
+        h_atomIds_.at(i) = settler;
     }
-    copyToDeviceBuffer(&d_atomIds_, h_atomIds_.data(),
-                       0, numSettles_,
-                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
-
+    copyToDeviceBuffer(&d_atomIds_, h_atomIds_.data(), 0, numSettles_, commandStream_,
+                       GpuApiCallBehavior::Sync, nullptr);
 }
 
-void SettleCuda::setPbc(const t_pbc *pbc)
+void SettleCuda::setPbc(const t_pbc* pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
 }

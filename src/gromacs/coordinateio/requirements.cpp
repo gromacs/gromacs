@@ -55,48 +55,44 @@
 namespace gmx
 {
 
-void
-OutputRequirementOptionDirector::initOptions(IOptionsContainer        *options)
+void OutputRequirementOptionDirector::initOptions(IOptionsContainer* options)
 {
     options->addOption(EnumOption<ChangeSettingType>("vel")
-                           .enumValue(cChangeSettingTypeEnum)
-                           .store(&velocity_)
-                           .description("Save velocities from frame if possible"));
+                               .enumValue(cChangeSettingTypeEnum)
+                               .store(&velocity_)
+                               .description("Save velocities from frame if possible"));
     options->addOption(EnumOption<ChangeSettingType>("force")
-                           .enumValue(cChangeSettingTypeEnum)
-                           .store(&force_)
-                           .description("Save forces from frame if possible"));
-    options->addOption(EnumOption<ChangeAtomsType>("atoms")
-                           .enumValue(cChangeAtomsTypeEnum)
-                           .store(&atoms_)
-                           .description("Decide on providing new atom information from topology or using current frame atom information"));
+                               .enumValue(cChangeSettingTypeEnum)
+                               .store(&force_)
+                               .description("Save forces from frame if possible"));
+    options->addOption(
+            EnumOption<ChangeAtomsType>("atoms").enumValue(cChangeAtomsTypeEnum).store(&atoms_).description("Decide on providing new atom information from topology or using current frame atom information"));
     options->addOption(IntegerOption("precision")
-                           .store(&prec_)
-                           .defaultValue(prec_)
-                           .storeIsSet(&setNewPrecision_)
-                           .description("Set output precision to custom value"));
+                               .store(&prec_)
+                               .defaultValue(prec_)
+                               .storeIsSet(&setNewPrecision_)
+                               .description("Set output precision to custom value"));
     options->addOption(RealOption("starttime")
-                           .store(&startTimeValue_)
-                           .defaultValue(startTimeValue_)
-                           .timeValue()
-                           .storeIsSet(&setNewStartTime_)
-                           .description("Change start time for first frame"));
+                               .store(&startTimeValue_)
+                               .defaultValue(startTimeValue_)
+                               .timeValue()
+                               .storeIsSet(&setNewStartTime_)
+                               .description("Change start time for first frame"));
     options->addOption(RealOption("timestep")
-                           .store(&timeStepValue_)
-                           .defaultValue(timeStepValue_)
-                           .timeValue()
-                           .storeIsSet(&setNewTimeStep_)
-                           .description("Change time between different frames"));
+                               .store(&timeStepValue_)
+                               .defaultValue(timeStepValue_)
+                               .timeValue()
+                               .storeIsSet(&setNewTimeStep_)
+                               .description("Change time between different frames"));
     options->addOption(RealOption("box")
-                           .vector()
-                           .storeVector(&newBoxVector_)
-                           .valueCount(3)
-                           .storeIsSet(&setNewBox_)
-                           .description("New diagonal box vector for output frame"));
+                               .vector()
+                               .storeVector(&newBoxVector_)
+                               .valueCount(3)
+                               .storeIsSet(&setNewBox_)
+                               .description("New diagonal box vector for output frame"));
 }
 
-OutputRequirements
-OutputRequirementOptionDirector::process() const
+OutputRequirements OutputRequirementOptionDirector::process() const
 {
     OutputRequirements requirements;
     /* If the user has just set the values directly without setting the flags,

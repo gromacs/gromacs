@@ -46,16 +46,16 @@
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
  * 16-way SIMD: 4x8 setup, works with Intel MIC in single precision
  */
-#if GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8
-#define GMX_NBNXN_SIMD_4XN
-#endif
-#if GMX_SIMD_REAL_WIDTH == 8 || GMX_SIMD_REAL_WIDTH == 16
-#define GMX_NBNXN_SIMD_2XNN
-#endif
+#    if GMX_SIMD_REAL_WIDTH == 2 || GMX_SIMD_REAL_WIDTH == 4 || GMX_SIMD_REAL_WIDTH == 8
+#        define GMX_NBNXN_SIMD_4XN
+#    endif
+#    if GMX_SIMD_REAL_WIDTH == 8 || GMX_SIMD_REAL_WIDTH == 16
+#        define GMX_NBNXN_SIMD_2XNN
+#    endif
 
-#if !(defined GMX_NBNXN_SIMD_4XN || defined GMX_NBNXN_SIMD_2XNN)
-#error "No SIMD kernel type defined"
-#endif
+#    if !(defined GMX_NBNXN_SIMD_4XN || defined GMX_NBNXN_SIMD_2XNN)
+#        error "No SIMD kernel type defined"
+#    endif
 
 #endif // GMX_SIMD
 

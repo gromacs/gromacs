@@ -61,25 +61,33 @@ class PmeForceSenderGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeForceSenderGpu::PmeForceSenderGpu(void gmx_unused *pmeStream, MPI_Comm gmx_unused comm, gmx::ArrayRef<PpRanks> gmx_unused ppRanks)
-    : impl_(nullptr)
+PmeForceSenderGpu::PmeForceSenderGpu(void gmx_unused* pmeStream,
+                                     MPI_Comm gmx_unused    comm,
+                                     gmx::ArrayRef<PpRanks> gmx_unused ppRanks) :
+    impl_(nullptr)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
 PmeForceSenderGpu::~PmeForceSenderGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec gmx_unused *d_f)
+void PmeForceSenderGpu::sendForceBufferAddressToPpRanks(rvec gmx_unused* d_f)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication initialization was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication initialization was called instead of the "
+               "correct implementation.");
 }
 
 void PmeForceSenderGpu::sendFToPpCudaDirect(int gmx_unused ppRank)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

@@ -57,8 +57,7 @@ class TextWriter;
  * well as the normal key and value. The comment pair will
  * have a key of "comment", and the value will be used as a
  * comment (if non-empty). */
-void writeKeyValueTreeAsMdp(TextWriter               *writer,
-                            const KeyValueTreeObject &tree);
+void writeKeyValueTreeAsMdp(TextWriter* writer, const KeyValueTreeObject& tree);
 
 } // namespace gmx
 

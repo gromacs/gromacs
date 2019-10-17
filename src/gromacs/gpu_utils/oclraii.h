@@ -48,19 +48,19 @@ namespace gmx
 {
 
 /*! \libinternal \brief Stub for OpenCL type traits */
-template <typename cl_type>
+template<typename cl_type>
 struct OpenClTraits;
 
 /*! \libinternal \brief Implements common trait infrastructure for OpenCL types. */
-template <typename cl_type>
+template<typename cl_type>
 struct OpenClTraitsBase
 {
     //! Type of the function that will release a handle of this type.
-    using ReleaserType = cl_int(*)(cl_type);
+    using ReleaserType = cl_int (*)(cl_type);
 };
 
 /*! \libinternal \brief Implements traits for cl_context. */
-template <>
+template<>
 struct OpenClTraits<cl_context> : public OpenClTraitsBase<cl_context>
 {
     //! Function that will release a handle of this type.
@@ -68,7 +68,7 @@ struct OpenClTraits<cl_context> : public OpenClTraitsBase<cl_context>
 };
 
 /*! \libinternal \brief Implements traits for cl_command_queue. */
-template <>
+template<>
 struct OpenClTraits<cl_command_queue> : public OpenClTraitsBase<cl_command_queue>
 {
     //! Function that will release a handle of this type.
@@ -76,7 +76,7 @@ struct OpenClTraits<cl_command_queue> : public OpenClTraitsBase<cl_command_queue
 };
 
 /*! \libinternal \brief Implements traits for cl_program. */
-template <>
+template<>
 struct OpenClTraits<cl_program> : public OpenClTraitsBase<cl_program>
 {
     //! Function that will release a handle of this type.
@@ -84,7 +84,7 @@ struct OpenClTraits<cl_program> : public OpenClTraitsBase<cl_program>
 };
 
 /*! \libinternal \brief Implements traits for cl_kernel. */
-template <>
+template<>
 struct OpenClTraits<cl_kernel> : public OpenClTraitsBase<cl_kernel>
 {
     //! Function that will release a handle of this type.
@@ -99,30 +99,31 @@ struct OpenClTraits<cl_kernel> : public OpenClTraitsBase<cl_kernel>
  * Simple copying and assignment are not supported, because there's no
  * need for that, and would require OpenCL API calls for deep copies
  * if they were needed. Move and move assignment are fine, however. */
-template <typename cl_type>
+template<typename cl_type>
 class ClHandle
 {
-    public:
-        //! Constructor that takes an already created handle.
-        explicit ClHandle(cl_type handle) : handle_(handle) {}
-        //! Destructor that calls the releaser associated with cl_type.
-        ~ClHandle() { OpenClTraits<cl_type>::releaser(handle_); }
-        //! Deleted default constructor.
-        ClHandle()                            = delete;
-        //! Deleted assignment operator.
-        ClHandle &operator=(const ClHandle &) = delete;
-        //! Deleted copy constructor.
-        ClHandle(const ClHandle &)            = delete;
-        //! Default move assignment operator.
-        ClHandle &operator=(ClHandle &&) noexcept = default;
-        //! Default copy constructor.
-        ClHandle(ClHandle &&)  noexcept               = default;
-        /*! \brief Convenience conversion operator so the wrapper type
-         * can simply convert to the wrapped type. */
-        operator cl_type() const { return handle_; }
-    private:
-        //! The wrapped object.
-        cl_type handle_;
+public:
+    //! Constructor that takes an already created handle.
+    explicit ClHandle(cl_type handle) : handle_(handle) {}
+    //! Destructor that calls the releaser associated with cl_type.
+    ~ClHandle() { OpenClTraits<cl_type>::releaser(handle_); }
+    //! Deleted default constructor.
+    ClHandle() = delete;
+    //! Deleted assignment operator.
+    ClHandle& operator=(const ClHandle&) = delete;
+    //! Deleted copy constructor.
+    ClHandle(const ClHandle&) = delete;
+    //! Default move assignment operator.
+    ClHandle& operator=(ClHandle&&) noexcept = default;
+    //! Default copy constructor.
+    ClHandle(ClHandle&&) noexcept = default;
+    /*! \brief Convenience conversion operator so the wrapper type
+     * can simply convert to the wrapped type. */
+    operator cl_type() const { return handle_; }
+
+private:
+    //! The wrapped object.
+    cl_type handle_;
 };
 
 //! Convenience declarations.

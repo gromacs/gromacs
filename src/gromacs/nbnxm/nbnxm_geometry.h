@@ -68,44 +68,32 @@ namespace Nbnxm
 {
 
 /* The nbnxn i-cluster size in atoms for each nbnxn kernel type */
-static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType =
-{ {
-      0,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnGpuClusterSize,
-      c_nbnxnGpuClusterSize
-  } };
+static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType = {
+    { 0, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize,
+      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
+};
 
 /* The nbnxn j-cluster size in atoms for each nbnxn kernel type */
-static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType =
-{ {
-      0,
-      c_nbnxnCpuIClusterSize,
+static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType = {
+    { 0, c_nbnxnCpuIClusterSize,
 #if GMX_SIMD
-      GMX_SIMD_REAL_WIDTH,
-      GMX_SIMD_REAL_WIDTH/2,
+      GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH / 2,
 #else
-      0,
-      0,
+      0, 0,
 #endif
-      c_nbnxnGpuClusterSize,
-      c_nbnxnGpuClusterSize
-  } };
+      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
+};
 
 /* Returns whether the pair-list corresponding to nb_kernel_type is simple */
 static inline bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
 {
-    return (kernelType == KernelType::Cpu4x4_PlainC ||
-            kernelType == KernelType::Cpu4xN_Simd_4xN ||
-            kernelType == KernelType::Cpu4xN_Simd_2xNN);
+    return (kernelType == KernelType::Cpu4x4_PlainC || kernelType == KernelType::Cpu4xN_Simd_4xN
+            || kernelType == KernelType::Cpu4xN_Simd_2xNN);
 }
 
 static inline bool kernelTypeIsSimd(const KernelType kernelType)
 {
-    return (kernelType == KernelType::Cpu4xN_Simd_4xN ||
-            kernelType == KernelType::Cpu4xN_Simd_2xNN);
+    return (kernelType == KernelType::Cpu4xN_Simd_4xN || kernelType == KernelType::Cpu4xN_Simd_2xNN);
 }
 
 } // namespace Nbnxm
@@ -119,15 +107,13 @@ static inline bool kernelTypeIsSimd(const KernelType kernelType)
  *       the physical dimensions of the clusters, use the next function
  *       for more accurate results
  */
-real nbnxn_get_rlist_effective_inc(int  jClusterSize,
-                                   real atomDensity);
+real nbnxn_get_rlist_effective_inc(int jClusterSize, real atomDensity);
 
 /* Returns the effective list radius of the pair-list
  *
  * Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
  */
-real nbnxn_get_rlist_effective_inc(int              clusterSize,
-                                   const gmx::RVec &averageClusterBoundingBox);
+real nbnxn_get_rlist_effective_inc(int clusterSize, const gmx::RVec& averageClusterBoundingBox);
 
 #endif

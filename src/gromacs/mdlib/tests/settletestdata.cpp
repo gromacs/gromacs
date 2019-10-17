@@ -86,7 +86,7 @@ SettleTestData::SettleTestData(int numSettles) :
     // work to do.
     const real deltas[] = { 0.01, -0.01, +0.02, -0.02 };
     int        i        = 0;
-    for (auto &xPrime : xPrime_)
+    for (auto& xPrime : xPrime_)
     {
         xPrime[XX] += deltas[i % 4];
         ++i;
@@ -95,50 +95,52 @@ SettleTestData::SettleTestData(int numSettles) :
         xPrime[ZZ] += deltas[i % 4];
         ++i;
     }
-    std::fill(v_.begin(), v_.end(), RVec {0.0, 0.0, 0.0});
+    std::fill(v_.begin(), v_.end(), RVec{ 0.0, 0.0, 0.0 });
 
     // Set up the topology.
     const int settleType = 0;
     mtop_.moltype.resize(1);
     mtop_.molblock.resize(1);
-    mtop_.molblock[0].type = 0;
-    std::vector<int> &iatoms = mtop_.moltype[0].ilist[F_SETTLE].iatoms;
+    mtop_.molblock[0].type   = 0;
+    std::vector<int>& iatoms = mtop_.moltype[0].ilist[F_SETTLE].iatoms;
     for (int i = 0; i < numSettles; ++i)
     {
         iatoms.push_back(settleType);
-        iatoms.push_back(i*atomsPerSettle_ + 0);
-        iatoms.push_back(i*atomsPerSettle_ + 1);
-        iatoms.push_back(i*atomsPerSettle_ + 2);
+        iatoms.push_back(i * atomsPerSettle_ + 0);
+        iatoms.push_back(i * atomsPerSettle_ + 1);
+        iatoms.push_back(i * atomsPerSettle_ + 2);
     }
 
     // Set up the SETTLE parameters.
-    t_iparams         iparams;
+    t_iparams iparams;
     iparams.settle.doh = dOH_;
     iparams.settle.dhh = dHH_;
     mtop_.ffparams.iparams.push_back(iparams);
 
     // Set up the masses.
-    mtop_.moltype[0].atoms.atom = static_cast<t_atom*>(calloc(numSettles*atomsPerSettle_, sizeof(t_atom)));
-    mdatoms_.homenr             = numSettles * atomsPerSettle_;
-    mdatoms_.massT              = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
-    mdatoms_.invmass            = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
+    mtop_.moltype[0].atoms.atom =
+            static_cast<t_atom*>(calloc(numSettles * atomsPerSettle_, sizeof(t_atom)));
+    mdatoms_.homenr  = numSettles * atomsPerSettle_;
+    mdatoms_.massT   = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
+    mdatoms_.invmass = static_cast<real*>(calloc(mdatoms_.homenr, sizeof(real)));
     for (int i = 0; i < numSettles; ++i)
     {
-        mdatoms_.massT[i*atomsPerSettle_ + 0] = oxygenMass_;
-        mdatoms_.massT[i*atomsPerSettle_ + 1] = hydrogenMass_;
-        mdatoms_.massT[i*atomsPerSettle_ + 2] = hydrogenMass_;
+        mdatoms_.massT[i * atomsPerSettle_ + 0] = oxygenMass_;
+        mdatoms_.massT[i * atomsPerSettle_ + 1] = hydrogenMass_;
+        mdatoms_.massT[i * atomsPerSettle_ + 2] = hydrogenMass_;
 
-        mdatoms_.invmass[i*atomsPerSettle_ + 0] = 1.0/oxygenMass_;
-        mdatoms_.invmass[i*atomsPerSettle_ + 1] = 1.0/hydrogenMass_;
-        mdatoms_.invmass[i*atomsPerSettle_ + 2] = 1.0/hydrogenMass_;
+        mdatoms_.invmass[i * atomsPerSettle_ + 0] = 1.0 / oxygenMass_;
+        mdatoms_.invmass[i * atomsPerSettle_ + 1] = 1.0 / hydrogenMass_;
+        mdatoms_.invmass[i * atomsPerSettle_ + 2] = 1.0 / hydrogenMass_;
 
-        mtop_.moltype[0].atoms.atom[i*atomsPerSettle_ + 0].m = oxygenMass_;
-        mtop_.moltype[0].atoms.atom[i*atomsPerSettle_ + 1].m = hydrogenMass_;
-        mtop_.moltype[0].atoms.atom[i*atomsPerSettle_ + 2].m = hydrogenMass_;
+        mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 0].m = oxygenMass_;
+        mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 1].m = hydrogenMass_;
+        mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 2].m = hydrogenMass_;
     }
 
     // Reshape some data so it can be directly used by the SETTLE constraints
-    ilist_             = { mtop_.moltype[0].ilist[F_SETTLE].size(), 0, mtop_.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
+    ilist_             = { mtop_.moltype[0].ilist[F_SETTLE].size(), 0,
+               mtop_.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
     idef_.il[F_SETTLE] = ilist_;
 }
 
@@ -148,5 +150,5 @@ SettleTestData::~SettleTestData()
     free(mdatoms_.invmass);
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

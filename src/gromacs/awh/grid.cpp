@@ -77,12 +77,11 @@ namespace
  * \param[in,out] x       Pointer to the value to modify.
  * \param[in]     period  The period, or 0 if not periodic.
  */
-void centerPeriodicValueAroundZero(double *x,
-                                   double  period)
+void centerPeriodicValueAroundZero(double* x, double period)
 {
     GMX_ASSERT(period >= 0, "Periodic should not be negative");
 
-    const double halfPeriod = period*0.5;
+    const double halfPeriod = period * 0.5;
 
     if (*x >= halfPeriod)
     {
@@ -107,8 +106,7 @@ void centerPeriodicValueAroundZero(double *x,
  * \param[in]     period  The period, or 0 if not periodic.
  * \returns for period>0: index value witin [0, period), otherwise: \p x.
  */
-int indexWithinPeriod(int x,
-                      int period)
+int indexWithinPeriod(int x, int period)
 {
     GMX_ASSERT(period >= 0, "Periodic should not be negative");
 
@@ -117,7 +115,8 @@ int indexWithinPeriod(int x,
         return x;
     }
 
-    GMX_ASSERT(x > -period && x < 2*period, "x should not be more shifted by more than one period");
+    GMX_ASSERT(x > -period && x < 2 * period,
+               "x should not be more shifted by more than one period");
 
     if (x >= period)
     {
@@ -147,9 +146,7 @@ int indexWithinPeriod(int x,
  * \param[in] period    The period, or 0 if not periodic.
  * \returns the interval length from origin to end.
  */
-double getIntervalLengthPeriodic(double origin,
-                                 double end,
-                                 double period)
+double getIntervalLengthPeriodic(double origin, double end, double period)
 {
     double length = end - origin;
     if (length < 0)
@@ -176,9 +173,7 @@ double getIntervalLengthPeriodic(double origin,
  * \param[in] period   The period, or 0 if not periodic.
  * \returns the deviation from x to x0.
  */
-double getDeviationPeriodic(double x,
-                            double x0,
-                            double period)
+double getDeviationPeriodic(double x, double x0, double period)
 {
     double dev = x - x0;
 
@@ -190,12 +185,9 @@ double getDeviationPeriodic(double x,
     return dev;
 }
 
-}   // namespace
+} // namespace
 
-double getDeviationFromPointAlongGridAxis(const Grid &grid,
-                                          int         dimIndex,
-                                          int         pointIndex,
-                                          double      value)
+double getDeviationFromPointAlongGridAxis(const Grid& grid, int dimIndex, int pointIndex, double value)
 {
     double coordValue = grid.point(pointIndex).coordValue[dimIndex];
 
@@ -213,14 +205,12 @@ void linearArrayIndexToMultiDim(int indexLinear, int numDimensions, const awh_iv
             stride *= numPointsDim[k];
         }
 
-        indexMulti[d] = indexLinear/stride;
-        indexLinear  -= indexMulti[d]*stride;
+        indexMulti[d] = indexLinear / stride;
+        indexLinear -= indexMulti[d] * stride;
     }
 }
 
-void linearGridindexToMultiDim(const Grid &grid,
-                               int         indexLinear,
-                               awh_ivec    indexMulti)
+void linearGridindexToMultiDim(const Grid& grid, int indexLinear, awh_ivec indexMulti)
 {
     awh_ivec  numPointsDim;
     const int numDimensions = grid.numDimensions();
@@ -233,16 +223,14 @@ void linearGridindexToMultiDim(const Grid &grid,
 }
 
 
-int multiDimArrayIndexToLinear(const awh_ivec indexMulti,
-                               int            numDimensions,
-                               const awh_ivec numPointsDim)
+int multiDimArrayIndexToLinear(const awh_ivec indexMulti, int numDimensions, const awh_ivec numPointsDim)
 {
     int stride      = 1;
     int indexLinear = 0;
     for (int d = numDimensions - 1; d >= 0; d--)
     {
-        indexLinear += stride*indexMulti[d];
-        stride      *= numPointsDim[d];
+        indexLinear += stride * indexMulti[d];
+        stride *= numPointsDim[d];
     }
 
     return indexLinear;
@@ -257,8 +245,7 @@ namespace
  * \param[in] indexMulti Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-int multiDimGridIndexToLinear(const std::vector<GridAxis> &axis,
-                              const awh_ivec               indexMulti)
+int multiDimGridIndexToLinear(const std::vector<GridAxis>& axis, const awh_ivec indexMulti)
 {
     awh_ivec numPointsDim = { 0 };
 
@@ -270,10 +257,9 @@ int multiDimGridIndexToLinear(const std::vector<GridAxis> &axis,
     return multiDimArrayIndexToLinear(indexMulti, axis.size(), numPointsDim);
 }
 
-}   // namespace
+} // namespace
 
-int multiDimGridIndexToLinear(const Grid     &grid,
-                              const awh_ivec  indexMulti)
+int multiDimGridIndexToLinear(const Grid& grid, const awh_ivec indexMulti)
 {
     return multiDimGridIndexToLinear(grid.axis(), indexMulti);
 }
@@ -294,9 +280,7 @@ namespace
  * \param[in,out] indexDim  Multidimensional index, each with values in [0, numPoints[d] - 1].
  * \returns true if a step was taken, false if not.
  */
-bool stepInMultiDimArray(int            numDim,
-                         const awh_ivec numPoints,
-                         awh_ivec       indexDim)
+bool stepInMultiDimArray(int numDim, const awh_ivec numPoints, awh_ivec indexDim)
 {
     bool haveStepped = false;
 
@@ -342,23 +326,23 @@ bool stepInMultiDimArray(int            numDim,
  * \param[in]     point           Grid point to get subgrid index for.
  * \param[in,out] subgridIndex    Subgrid multidimensional index.
  */
-void gridToSubgridIndex(const Grid     &grid,
-                        const awh_ivec  subgridOrigin,
-                        const awh_ivec  subgridNpoints,
-                        int             point,
-                        awh_ivec        subgridIndex)
+void gridToSubgridIndex(const Grid&    grid,
+                        const awh_ivec subgridOrigin,
+                        const awh_ivec subgridNpoints,
+                        int            point,
+                        awh_ivec       subgridIndex)
 {
     /* Get the subgrid index of the given grid point, for each dimension. */
     for (int d = 0; d < grid.numDimensions(); d++)
     {
         /* The multidimensional grid point index relative to the subgrid origin. */
-        subgridIndex[d] =
-            indexWithinPeriod(grid.point(point).index[d] - subgridOrigin[d],
-                              grid.axis(d).numPointsInPeriod());
+        subgridIndex[d] = indexWithinPeriod(grid.point(point).index[d] - subgridOrigin[d],
+                                            grid.axis(d).numPointsInPeriod());
 
         /* The given point should be in the subgrid. */
         GMX_RELEASE_ASSERT((subgridIndex[d] >= 0) && (subgridIndex[d] < subgridNpoints[d]),
-                           "Attempted to convert an AWH grid point index not in subgrid to out of bounds subgrid index");
+                           "Attempted to convert an AWH grid point index not in subgrid to out of "
+                           "bounds subgrid index");
     }
 }
 
@@ -375,10 +359,7 @@ void gridToSubgridIndex(const Grid     &grid,
  * \param[in,out] gridIndex      Grid point index.
  * \returns true if the transformation was successful.
  */
-bool subgridToGridIndex(const Grid     &grid,
-                        const awh_ivec  subgridOrigin,
-                        const awh_ivec  subgridIndex,
-                        int            *gridIndex)
+bool subgridToGridIndex(const Grid& grid, const awh_ivec subgridOrigin, const awh_ivec subgridIndex, int* gridIndex)
 {
     awh_ivec globalIndexDim;
 
@@ -389,7 +370,7 @@ bool subgridToGridIndex(const Grid     &grid,
         globalIndexDim[d] = subgridOrigin[d] + subgridIndex[d];
 
         /* The local grid is allowed to stick out on the edges of the global grid. Here the boundary conditions are applied.*/
-        if (globalIndexDim[d] < 0 ||  globalIndexDim[d] > grid.axis(d).numPoints() - 1)
+        if (globalIndexDim[d] < 0 || globalIndexDim[d] > grid.axis(d).numPoints() - 1)
         {
             /* Try to wrap around if periodic. Otherwise, the transformation failed so return. */
             if (!grid.axis(d).isPeriodic())
@@ -434,12 +415,12 @@ bool subgridToGridIndex(const Grid     &grid,
     return true;
 }
 
-}   // namespace
+} // namespace
 
-bool advancePointInSubgrid(const Grid     &grid,
-                           const awh_ivec  subgridOrigin,
-                           const awh_ivec  subgridNumPoints,
-                           int            *gridPointIndex)
+bool advancePointInSubgrid(const Grid&    grid,
+                           const awh_ivec subgridOrigin,
+                           const awh_ivec subgridNumPoints,
+                           int*           gridPointIndex)
 {
     /* Initialize the subgrid index to the subgrid origin. */
     awh_ivec subgridIndex = { 0 };
@@ -485,7 +466,7 @@ bool advancePointInSubgrid(const Grid     &grid,
  * \param[in]  x0     To value.
  * \returns (x - x0) in number of points.
  */
-static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
+static int pointDistanceAlongAxis(const GridAxis& axis, double x, double x0)
 {
     int distance = 0;
 
@@ -496,7 +477,7 @@ static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
         double dx     = getDeviationPeriodic(x, x0, period);
 
         /* Transform the distance into a point distance by rounding. */
-        distance = gmx::roundToInt(dx/axis.spacing());
+        distance = gmx::roundToInt(dx / axis.spacing());
 
         /* If periodic, shift the point distance to be in [0, period) */
         distance = indexWithinPeriod(distance, axis.numPointsInPeriod());
@@ -512,8 +493,7 @@ static int pointDistanceAlongAxis(const GridAxis &axis, double x, double x0)
  * \param[in] axis    The grid axes.
  * \returns true if the value is in the grid.
  */
-static bool valueIsInGrid(const awh_dvec               value,
-                          const std::vector<GridAxis> &axis)
+static bool valueIsInGrid(const awh_dvec value, const std::vector<GridAxis>& axis)
 {
     /* For each dimension get the one-dimensional index and check if it is in range. */
     for (size_t d = 0; d < axis.size(); d++)
@@ -548,7 +528,7 @@ int GridAxis::nearestIndex(double value) const
                                "Index not in periodic interval 0 for AWH periodic axis");
             int endDistance    = (index - (numPoints_ - 1));
             int originDistance = (numPointsInPeriod_ - index);
-            index = originDistance < endDistance ? 0 : numPoints_ - 1;
+            index              = originDistance < endDistance ? 0 : numPoints_ - 1;
         }
         else
         {
@@ -566,8 +546,7 @@ int GridAxis::nearestIndex(double value) const
  * \param[in] axis   The grid axes.
  * \returns the point index nearest to the value.
  */
-static int getNearestIndexInGrid(const awh_dvec               value,
-                                 const std::vector<GridAxis> &axis)
+static int getNearestIndexInGrid(const awh_dvec value, const std::vector<GridAxis>& axis)
 {
     awh_ivec indexMulti;
 
@@ -598,23 +577,21 @@ namespace
  * \param[in]     grid                 The grid.
  * \param[in,out] neighborIndexArray   Array to fill with neighbor indices.
  */
-void setNeighborsOfGridPoint(int               pointIndex,
-                             const Grid       &grid,
-                             std::vector<int> *neighborIndexArray)
+void setNeighborsOfGridPoint(int pointIndex, const Grid& grid, std::vector<int>* neighborIndexArray)
 {
-    const int c_maxNeighborsAlongAxis = 1 + 2*static_cast<int>(Grid::c_numPointsPerSigma*Grid::c_scopeCutoff);
+    const int c_maxNeighborsAlongAxis =
+            1 + 2 * static_cast<int>(Grid::c_numPointsPerSigma * Grid::c_scopeCutoff);
 
-    awh_ivec  numCandidates           = {0};
-    awh_ivec  subgridOrigin           = {0};
+    awh_ivec numCandidates = { 0 };
+    awh_ivec subgridOrigin = { 0 };
     for (int d = 0; d < grid.numDimensions(); d++)
     {
         /* The number of candidate points along this dimension is given by the scope cutoff. */
-        numCandidates[d] = std::min(c_maxNeighborsAlongAxis,
-                                    grid.axis(d).numPoints());
+        numCandidates[d] = std::min(c_maxNeighborsAlongAxis, grid.axis(d).numPoints());
 
         /* The origin of the subgrid to search */
         int centerIndex  = grid.point(pointIndex).index[d];
-        subgridOrigin[d] = centerIndex - numCandidates[d]/2;
+        subgridOrigin[d] = centerIndex - numCandidates[d] / 2;
     }
 
     /* Find and set the neighbors */
@@ -634,12 +611,12 @@ void setNeighborsOfGridPoint(int               pointIndex,
     }
 }
 
-}   // namespace
+} // namespace
 
 void Grid::initPoints()
 {
-    awh_ivec     numPointsDimWork = { 0 };
-    awh_ivec     indexWork        = { 0 };
+    awh_ivec numPointsDimWork = { 0 };
+    awh_ivec indexWork        = { 0 };
 
     for (size_t d = 0; d < axis_.size(); d++)
     {
@@ -647,11 +624,11 @@ void Grid::initPoints()
         numPointsDimWork[d] = axis_[d].numPoints();
     }
 
-    for (auto &point : point_)
+    for (auto& point : point_)
     {
         for (size_t d = 0; d < axis_.size(); d++)
         {
-            point.coordValue[d] = axis_[d].origin() + indexWork[d]*axis_[d].spacing();
+            point.coordValue[d] = axis_[d].origin() + indexWork[d] * axis_[d].spacing();
 
             if (axis_[d].period() > 0)
             {
@@ -666,8 +643,7 @@ void Grid::initPoints()
     }
 }
 
-GridAxis::GridAxis(double origin, double end,
-                   double period, double pointDensity) :
+GridAxis::GridAxis(double origin, double end, double period, double pointDensity) :
     origin_(origin),
     period_(period)
 {
@@ -687,7 +663,7 @@ GridAxis::GridAxis(double origin, double end,
     {
         /* An extra point is added here to account for the endpoints. The
            minimum number of points for a non-zero interval is 2. */
-        numPoints_            = 1 + static_cast<int>(std::ceil(length_*pointDensity));
+        numPoints_ = 1 + static_cast<int>(std::ceil(length_ * pointDensity));
     }
 
     /* Set point spacing based on the number of points */
@@ -696,33 +672,31 @@ GridAxis::GridAxis(double origin, double end,
         /* Set the grid spacing so that a period is matched exactly by an integer number of points.
            The number of points in a period is equal to the number of grid spacings in a period
            since the endpoints are connected.  */
-        numPointsInPeriod_ = length_ > 0 ? static_cast<int>(std::ceil(period/length_*(numPoints_ - 1))) : 1;
-        spacing_           = period_/numPointsInPeriod_;
+        numPointsInPeriod_ =
+                length_ > 0 ? static_cast<int>(std::ceil(period / length_ * (numPoints_ - 1))) : 1;
+        spacing_ = period_ / numPointsInPeriod_;
 
         /* Modify the number of grid axis points to be compatible with the period dependent spacing. */
-        numPoints_         = std::min(static_cast<int>(round(length_/spacing_)) + 1,
-                                      numPointsInPeriod_);
+        numPoints_ = std::min(static_cast<int>(round(length_ / spacing_)) + 1, numPointsInPeriod_);
     }
     else
     {
         numPointsInPeriod_ = 0;
-        spacing_           = numPoints_ > 1 ? length_/(numPoints_ - 1) : 0;
+        spacing_           = numPoints_ > 1 ? length_ / (numPoints_ - 1) : 0;
     }
 }
 
-GridAxis::GridAxis(double origin, double end,
-                   double period, int numPoints) :
+GridAxis::GridAxis(double origin, double end, double period, int numPoints) :
     origin_(origin),
     period_(period),
     numPoints_(numPoints)
 {
     length_            = getIntervalLengthPeriodic(origin_, end, period_);
-    spacing_           = numPoints_ > 1 ? length_/(numPoints_ - 1) : period_;
-    numPointsInPeriod_ = static_cast<int>(std::round(period_/spacing_));
+    spacing_           = numPoints_ > 1 ? length_ / (numPoints_ - 1) : period_;
+    numPointsInPeriod_ = static_cast<int>(std::round(period_ / spacing_));
 }
 
-Grid::Grid(const std::vector<DimParams> &dimParams,
-           const AwhDimParams           *awhDimParams)
+Grid::Grid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams)
 {
     /* Define the discretization along each dimension */
     awh_dvec period;
@@ -732,8 +706,10 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
         double origin = dimParams[d].scaleUserInputToInternal(awhDimParams[d].origin);
         double end    = dimParams[d].scaleUserInputToInternal(awhDimParams[d].end);
         period[d]     = dimParams[d].scaleUserInputToInternal(awhDimParams[d].period);
-        static_assert(c_numPointsPerSigma >= 1.0, "The number of points per sigma should be at least 1.0 to get a uniformly covering the reaction using Gaussians");
-        double pointDensity = std::sqrt(dimParams[d].betak)*c_numPointsPerSigma;
+        static_assert(c_numPointsPerSigma >= 1.0,
+                      "The number of points per sigma should be at least 1.0 to get a uniformly "
+                      "covering the reaction using Gaussians");
+        double pointDensity = std::sqrt(dimParams[d].betak) * c_numPointsPerSigma;
         axis_.emplace_back(origin, end, period[d], pointDensity);
         numPoints *= axis_[d].numPoints();
     }
@@ -749,18 +725,18 @@ Grid::Grid(const std::vector<DimParams> &dimParams,
      */
     for (size_t m = 0; m < point_.size(); m++)
     {
-        std::vector<int> *neighbor = &point_[m].neighbor;
+        std::vector<int>* neighbor = &point_[m].neighbor;
 
         setNeighborsOfGridPoint(m, *this, neighbor);
     }
 }
 
-void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
-                       const double* const *data,
+void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
+                       const double* const* data,
                        int                  numDataPoints,
-                       const std::string   &dataFilename,
-                       const Grid          &grid,
-                       const std::string   &correctFormatMessage)
+                       const std::string&   dataFilename,
+                       const Grid&          grid,
+                       const std::string&   correctFormatMessage)
 {
     /* Transform the data into a grid in order to map each grid point to a data point
        using the grid functions. */
@@ -778,25 +754,25 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
         do
         {
             numPointsInDim++;
-            pointIndex       += stride;
-        }
-        while (pointIndex < numDataPoints &&
-               !gmx_within_tol(firstValue, data[d][pointIndex], GMX_REAL_EPS));
+            pointIndex += stride;
+        } while (pointIndex < numDataPoints
+                 && !gmx_within_tol(firstValue, data[d][pointIndex], GMX_REAL_EPS));
 
         /* The stride in dimension dimension d - 1 equals the number of points
            dimension d. */
         stride = numPointsInDim;
 
-        numPointsCounted = (numPointsCounted == 0) ? numPointsInDim : numPointsCounted*numPointsInDim;
+        numPointsCounted = (numPointsCounted == 0) ? numPointsInDim : numPointsCounted * numPointsInDim;
 
-        numPoints[d]     = numPointsInDim;
+        numPoints[d] = numPointsInDim;
     }
 
     if (numPointsCounted != numDataPoints)
     {
-        std::string mesg = gmx::formatString("Could not extract data properly from %s. Wrong data format?"
-                                             "\n\n%s",
-                                             dataFilename.c_str(), correctFormatMessage.c_str());
+        std::string mesg = gmx::formatString(
+                "Could not extract data properly from %s. Wrong data format?"
+                "\n\n%s",
+                dataFilename.c_str(), correctFormatMessage.c_str());
         GMX_THROW(InvalidInputError(mesg));
     }
 
@@ -805,8 +781,7 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
     /* The data grid has the data that was read and the properties of the AWH grid */
     for (int d = 0; d < grid.numDimensions(); d++)
     {
-        axis_.emplace_back(data[d][0], data[d][numDataPoints - 1],
-                           grid.axis(d).period(), numPoints[d]);
+        axis_.emplace_back(data[d][0], data[d][numDataPoints - 1], grid.axis(d).period(), numPoints[d]);
     }
 
     /* Map each grid point to a data point. No interpolation, just pick the nearest one.
@@ -818,11 +793,11 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
 
         if (!valueIsInGrid(grid.point(m).coordValue, axis_))
         {
-            std::string mesg =
-                gmx::formatString("%s does not contain data for all coordinate values. "
-                                  "Make sure your input data covers the whole sampling domain "
-                                  "and is correctly formatted. \n\n%s",
-                                  dataFilename.c_str(), correctFormatMessage.c_str());
+            std::string mesg = gmx::formatString(
+                    "%s does not contain data for all coordinate values. "
+                    "Make sure your input data covers the whole sampling domain "
+                    "and is correctly formatted. \n\n%s",
+                    dataFilename.c_str(), correctFormatMessage.c_str());
             GMX_THROW(InvalidInputError(mesg));
         }
         (*gridpointToDatapoint)[m] = getNearestIndexInGrid(grid.point(m).coordValue, axis_);

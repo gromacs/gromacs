@@ -92,12 +92,12 @@ class MDAtoms;
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              nonbondedTarget,
-                                                     const std::vector<int> &gpuIdsToUse,
-                                                     const std::vector<int> &userGpuTaskAssignment,
+                                                     const std::vector<int>& gpuIdsToUse,
+                                                     const std::vector<int>& userGpuTaskAssignment,
                                                      EmulateGpuNonbonded     emulateGpuNonbonded,
-                                                     bool                    buildSupportsNonbondedOnGpu,
-                                                     bool                    nonbondedOnGpuIsUseful,
-                                                     int                     numRanksPerSimulation);
+                                                     bool buildSupportsNonbondedOnGpu,
+                                                     bool nonbondedOnGpuIsUseful,
+                                                     int  numRanksPerSimulation);
 
 /*! \brief Decide whether this thread-MPI simulation will run
  * PME tasks on GPUs.
@@ -108,10 +108,10 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  * the number of thread-MPI ranks.
  *
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
- * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign long-ranged PME nonbonded interaction tasks.
- * \param[in]  gpuIdsToUse               The compatible GPUs that the user permitted us to use.
- * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
- * \param[in]  hardwareInfo              Hardware information
+ * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign
+ * long-ranged PME nonbonded interaction tasks. \param[in]  gpuIdsToUse               The compatible
+ * GPUs that the user permitted us to use. \param[in]  userGpuTaskAssignment     The user-specified
+ * assignment of GPU tasks to device IDs. \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
@@ -123,11 +123,11 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuForNonbonded,
                                                TaskTarget              pmeTarget,
-                                               const std::vector<int> &gpuIdsToUse,
-                                               const std::vector<int> &userGpuTaskAssignment,
-                                               const gmx_hw_info_t    &hardwareInfo,
-                                               const t_inputrec       &inputrec,
-                                               const gmx_mtop_t       &mtop,
+                                               const std::vector<int>& gpuIdsToUse,
+                                               const std::vector<int>& userGpuTaskAssignment,
+                                               const gmx_hw_info_t&    hardwareInfo,
+                                               const t_inputrec&       inputrec,
+                                               const gmx_mtop_t&       mtop,
                                                int                     numRanksPerSimulation,
                                                int                     numPmeRanksPerSimulation);
 
@@ -159,7 +159,7 @@ bool decideWhetherToUseGpusForPmeWithThreadMpi(bool                    useGpuFor
  * \throws     std::bad_alloc          If out of memory
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
-                                        const std::vector<int> &userGpuTaskAssignment,
+                                        const std::vector<int>& userGpuTaskAssignment,
                                         EmulateGpuNonbonded     emulateGpuNonbonded,
                                         bool                    buildSupportsNonbondedOnGpu,
                                         bool                    nonbondedOnGpuIsUseful,
@@ -197,10 +197,10 @@ bool decideWhetherToUseGpusForNonbonded(TaskTarget              nonbondedTarget,
  *             InconsistentInputError  If the user requirements are inconsistent. */
 bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   TaskTarget              pmeTarget,
-                                  const std::vector<int> &userGpuTaskAssignment,
-                                  const gmx_hw_info_t    &hardwareInfo,
-                                  const t_inputrec       &inputrec,
-                                  const gmx_mtop_t       &mtop,
+                                  const std::vector<int>& userGpuTaskAssignment,
+                                  const gmx_hw_info_t&    hardwareInfo,
+                                  const t_inputrec&       inputrec,
+                                  const gmx_mtop_t&       mtop,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);
@@ -253,13 +253,13 @@ bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultOn,
                                     bool              useGpuForNonbonded,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,
-                                    const t_inputrec &inputrec,
+                                    const t_inputrec& inputrec,
                                     bool              haveVSites,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
                                     bool              useReplicaExchange);
 
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

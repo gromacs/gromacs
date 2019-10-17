@@ -55,9 +55,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-int gmx_genrestr(int argc, char *argv[])
+int gmx_genrestr(int argc, char* argv[])
 {
-    const char        *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] produces an #include file for a topology containing",
         "a list of atom numbers and three force constants for the",
         "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-direction based on",
@@ -82,58 +82,80 @@ int gmx_genrestr(int argc, char *argv[])
         "maintain the overall conformation of a protein without tieing it to",
         "a specific position (as with position restraints)."
     };
-    static rvec        fc           = {1000.0, 1000.0, 1000.0};
-    static real        freeze_level = 0.0;
-    static real        disre_dist   = 0.1;
-    static real        disre_frac   = 0.0;
-    static real        disre_up2    = 1.0;
-    static gmx_bool    bDisre       = FALSE;
-    static gmx_bool    bConstr      = FALSE;
-    static real        cutoff       = -1.0;
+    static rvec     fc           = { 1000.0, 1000.0, 1000.0 };
+    static real     freeze_level = 0.0;
+    static real     disre_dist   = 0.1;
+    static real     disre_frac   = 0.0;
+    static real     disre_up2    = 1.0;
+    static gmx_bool bDisre       = FALSE;
+    static gmx_bool bConstr      = FALSE;
+    static real     cutoff       = -1.0;
 
-    t_pargs            pa[] = {
-        { "-fc", FALSE, etRVEC, {fc},
-          "Force constants (kJ/mol nm^2)" },
-        { "-freeze", FALSE, etREAL, {&freeze_level},
-          "If the [TT]-of[tt] option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
-        { "-disre", FALSE, etBOOL, {&bDisre},
+    t_pargs pa[] = {
+        { "-fc", FALSE, etRVEC, { fc }, "Force constants (kJ/mol nm^2)" },
+        { "-freeze",
+          FALSE,
+          etREAL,
+          { &freeze_level },
+          "If the [TT]-of[tt] option or this one is given an index file will be written containing "
+          "atom numbers of all atoms that have a B-factor less than the level given here" },
+        { "-disre",
+          FALSE,
+          etBOOL,
+          { &bDisre },
           "Generate a distance restraint matrix for all the atoms in index" },
-        { "-disre_dist", FALSE, etREAL, {&disre_dist},
+        { "-disre_dist",
+          FALSE,
+          etREAL,
+          { &disre_dist },
           "Distance range around the actual distance for generating distance restraints" },
-        { "-disre_frac", FALSE, etREAL, {&disre_frac},
-          "Fraction of distance to be used as interval rather than a fixed distance. If the fraction of the distance that you specify here is less than the distance given in the previous option, that one is used instead." },
-        { "-disre_up2", FALSE, etREAL, {&disre_up2},
-          "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" },
-        { "-cutoff", FALSE, etREAL, {&cutoff},
+        { "-disre_frac",
+          FALSE,
+          etREAL,
+          { &disre_frac },
+          "Fraction of distance to be used as interval rather than a fixed distance. If the "
+          "fraction of the distance that you specify here is less than the distance given in the "
+          "previous option, that one is used instead." },
+        { "-disre_up2",
+          FALSE,
+          etREAL,
+          { &disre_up2 },
+          "Distance between upper bound for distance restraints, and the distance at which the "
+          "force becomes constant (see manual)" },
+        { "-cutoff",
+          FALSE,
+          etREAL,
+          { &cutoff },
           "Only generate distance restraints for atoms pairs within cutoff (nm)" },
-        { "-constr", FALSE, etBOOL, {&bConstr},
-          "Generate a constraint matrix rather than distance restraints. Constraints of type 2 will be generated that do generate exclusions." }
+        { "-constr",
+          FALSE,
+          etBOOL,
+          { &bConstr },
+          "Generate a constraint matrix rather than distance restraints. Constraints of type 2 "
+          "will be generated that do generate exclusions." }
     };
 #define npargs asize(pa)
 
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
     t_atoms           atoms;
     int               i, j, k;
-    FILE             *out;
+    FILE*             out;
     int               igrp;
     real              d, dd, lo, hi;
-    int              *ind_grp;
-    const char       *xfn, *nfn;
-    char             *gn_grp;
+    int*              ind_grp;
+    const char *      xfn, *nfn;
+    char*             gn_grp;
     matrix            box;
     gmx_bool          bFreeze;
     rvec              dx, *x = nullptr, *v = nullptr;
 
-    t_filenm          fnm[] = {
-        { efSTX, "-f",  nullptr,    ffREAD },
-        { efNDX, "-n",  nullptr,    ffOPTRD },
-        { efITP, "-o",  "posre", ffWRITE },
-        { efNDX, "-of", "freeze",    ffOPTWR }
-    };
+    t_filenm fnm[] = { { efSTX, "-f", nullptr, ffREAD },
+                       { efNDX, "-n", nullptr, ffOPTRD },
+                       { efITP, "-o", "posre", ffWRITE },
+                       { efNDX, "-of", "freeze", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -143,7 +165,7 @@ int gmx_genrestr(int argc, char *argv[])
     xfn     = opt2fn_null("-f", NFILE, fnm);
     nfn     = opt2fn_null("-n", NFILE, fnm);
 
-    if (( nfn == nullptr ) && ( xfn == nullptr))
+    if ((nfn == nullptr) && (xfn == nullptr))
     {
         gmx_fatal(FARGS, "no index file and no structure file supplied");
     }
@@ -157,7 +179,7 @@ int gmx_genrestr(int argc, char *argv[])
         gmx_fatal(FARGS, "disre_dist should be >= 0");
     }
 
-    const char *title        = "";
+    const char* title        = "";
     bool        haveTopology = false;
     if (xfn != nullptr)
     {
@@ -177,8 +199,7 @@ int gmx_genrestr(int argc, char *argv[])
     {
         if (!haveTopology || !atoms.pdbinfo)
         {
-            gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.",
-                      xfn);
+            gmx_fatal(FARGS, "No B-factors in input file %s, use a pdb file next time.", xfn);
         }
 
         out = opt2FILE("-of", NFILE, fnm, "w");
@@ -187,15 +208,14 @@ int gmx_genrestr(int argc, char *argv[])
         {
             if (atoms.pdbinfo[i].bfac <= freeze_level)
             {
-                fprintf(out, "%d\n", i+1);
+                fprintf(out, "%d\n", i + 1);
             }
         }
         gmx_ffclose(out);
     }
     else if ((bDisre || bConstr) && x)
     {
-        printf("Select group to generate %s matrix from\n",
-               bConstr ? "constraint" : "distance restraint");
+        printf("Select group to generate %s matrix from\n", bConstr ? "constraint" : "distance restraint");
         get_index(&atoms, nfn, 1, &igrp, &ind_grp, &gn_grp);
 
         out = ftp2FILE(efITP, NFILE, fnm, "w");
@@ -209,18 +229,18 @@ int gmx_genrestr(int argc, char *argv[])
         {
             fprintf(out, "; distance restraints for %s of %s\n\n", gn_grp, title);
             fprintf(out, "[ distance_restraints ]\n");
-            fprintf(out, ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n", "i", "j", "?",
-                    "label", "funct", "lo", "up1", "up2", "weight");
+            fprintf(out, ";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n", "i", "j", "?", "label",
+                    "funct", "lo", "up1", "up2", "weight");
         }
         for (i = k = 0; i < igrp; i++)
         {
-            for (j = i+1; j < igrp; j++, k++)
+            for (j = i + 1; j < igrp; j++, k++)
             {
                 rvec_sub(x[ind_grp[i]], x[ind_grp[j]], dx);
                 d = norm(dx);
                 if (bConstr)
                 {
-                    fprintf(out, "%5d %5d %1d %10g\n", ind_grp[i]+1, ind_grp[j]+1, 2, d);
+                    fprintf(out, "%5d %5d %1d %10g\n", ind_grp[i] + 1, ind_grp[j] + 1, 2, d);
                 }
                 else
                 {
@@ -228,17 +248,16 @@ int gmx_genrestr(int argc, char *argv[])
                     {
                         if (disre_frac > 0)
                         {
-                            dd = std::min(disre_dist, disre_frac*d);
+                            dd = std::min(disre_dist, disre_frac * d);
                         }
                         else
                         {
                             dd = disre_dist;
                         }
-                        lo = std::max(0.0_real, d-dd);
-                        hi = d+dd;
-                        fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
-                                ind_grp[i]+1, ind_grp[j]+1, 1, k, 1,
-                                lo, hi, hi+disre_up2, 1.0);
+                        lo = std::max(0.0_real, d - dd);
+                        hi = d + dd;
+                        fprintf(out, "%5d %5d %1d %5d %10d %10g %10g %10g %10g\n", ind_grp[i] + 1,
+                                ind_grp[j] + 1, 1, k, 1, lo, hi, hi + disre_up2, 1.0);
                     }
                 }
             }
@@ -256,8 +275,7 @@ int gmx_genrestr(int argc, char *argv[])
         fprintf(out, ";%3s %5s %9s %10s %10s\n", "i", "funct", "fcx", "fcy", "fcz");
         for (i = 0; i < igrp; i++)
         {
-            fprintf(out, "%4d %4d %10g %10g %10g\n",
-                    ind_grp[i]+1, 1, fc[XX], fc[YY], fc[ZZ]);
+            fprintf(out, "%4d %4d %10g %10g %10g\n", ind_grp[i] + 1, 1, fc[XX], fc[YY], fc[ZZ]);
         }
         gmx_ffclose(out);
     }

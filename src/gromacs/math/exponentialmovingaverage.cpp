@@ -50,7 +50,8 @@ namespace gmx
 {
 
 //! Convert the exponential moving average state as key-value-tree object
-void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder builder, const ExponentialMovingAverageState &state)
+void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder            builder,
+                                                 const ExponentialMovingAverageState& state)
 {
     builder.addValue<real>("weighted-sum", state.weightedSum_);
     builder.addValue<real>("weighted-count", state.weightedCount_);
@@ -58,34 +59,35 @@ void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder build
 }
 
 //! Sets the exponential moving average state from a key-value-tree object
-ExponentialMovingAverageState
-exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject &object)
+ExponentialMovingAverageState exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject& object)
 {
     const real weightedSum   = object["weighted-sum"].cast<real>();
     const real weightedCount = object["weighted-count"].cast<real>();
     const bool increasing    = object["increasing"].cast<bool>();
-    return {weightedSum, weightedCount, increasing};
+    return { weightedSum, weightedCount, increasing };
 }
 
-ExponentialMovingAverage::ExponentialMovingAverage(real timeConstant, const ExponentialMovingAverageState &state)
-    : state_(state)
+ExponentialMovingAverage::ExponentialMovingAverage(real timeConstant,
+                                                   const ExponentialMovingAverageState& state) :
+    state_(state)
 {
     if (timeConstant < 1)
     {
-        GMX_THROW(InconsistentInputError("Lag time may not be negative or zero for exponential moving averages."));
+        GMX_THROW(InconsistentInputError(
+                "Lag time may not be negative or zero for exponential moving averages."));
     }
     inverseTimeConstant_ = 1. / timeConstant;
 }
 
 void ExponentialMovingAverage::updateWithDataPoint(real dataPoint)
 {
-    state_.weightedSum_   = dataPoint + (1-inverseTimeConstant_) * state_.weightedSum_;
+    state_.weightedSum_   = dataPoint + (1 - inverseTimeConstant_) * state_.weightedSum_;
     state_.weightedCount_ = 1 + (1 - inverseTimeConstant_) * state_.weightedCount_;
 
     state_.increasing_ = dataPoint * state_.weightedCount_ > state_.weightedSum_;
 }
 
-const ExponentialMovingAverageState &ExponentialMovingAverage::state() const
+const ExponentialMovingAverageState& ExponentialMovingAverage::state() const
 {
     return state_;
 }

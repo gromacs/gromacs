@@ -62,25 +62,25 @@
 
 #if GMX_IMD
 
-#if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
 
-#include <Windows.h>
-#include <Winsock.h>
+#        include <Windows.h>
+#        include <Winsock.h>
 
 //! Constant for passing no flags
 constexpr int c_noFlags = 0;
 /*! \brief Define socklen type on Windows. */
 typedef int socklen_t;
 
-#else
+#    else
 
-#include <unistd.h>
-#include <netinet/in.h>
-#include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/time.h>
+#        include <unistd.h>
+#        include <netinet/in.h>
+#        include <sys/select.h>
+#        include <sys/socket.h>
+#        include <sys/time.h>
 
-#endif
+#    endif
 
 #endif
 
@@ -96,8 +96,8 @@ namespace gmx
 struct IMDSocket
 {
 #if GMX_IMD
-    struct sockaddr_in address;      /**< address of socket                   */
-    int                sockfd;       /**< socket file descriptor              */
+    struct sockaddr_in address; /**< address of socket                   */
+    int                sockfd;  /**< socket file descriptor              */
 #endif
 };
 
@@ -106,7 +106,7 @@ int imdsock_winsockinit()
 {
 #if GMX_IMD && GMX_NATIVE_WINDOWS
     fprintf(stderr, "%s Initializing winsock.\n", IMDstr);
-    int     ret = -1;
+    int ret = -1;
 
     WSADATA wsd;
 
@@ -121,9 +121,9 @@ int imdsock_winsockinit()
 
 /*! \brief Simple error handling. */
 #if GMX_NATIVE_WINDOWS
-#define ERR_ARGS __FILE__, __LINE__, NULL
+#    define ERR_ARGS __FILE__, __LINE__, NULL
 #else
-#define ERR_ARGS __FILE__, __LINE__, strerror(errno)
+#    define ERR_ARGS __FILE__, __LINE__, strerror(errno)
 #endif
 
 
@@ -132,7 +132,7 @@ constexpr int c_maxConnections = 1;
 
 
 /*! \brief Print a nice error message on UNIX systems, using errno.h. */
-static void print_IMD_error(const char *file, int line, char *msg)
+static void print_IMD_error(const char* file, int line, char* msg)
 {
     fprintf(stderr, "%s Error in file %s on line %d.\n", IMDstr, file, line);
 
@@ -145,7 +145,7 @@ static void print_IMD_error(const char *file, int line, char *msg)
 
 IMDSocket* imdsock_create()
 {
-    IMDSocket *sock = nullptr;
+    IMDSocket* sock = nullptr;
 
 
 #if GMX_IMD
@@ -168,18 +168,18 @@ IMDSocket* imdsock_create()
 void imd_sleep(unsigned int seconds)
 {
 #if GMX_IMD
-#if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
     Sleep(seconds);
-#else
+#    else
     sleep(seconds);
-#endif
+#    endif
 #else
     GMX_UNUSED_VALUE(seconds);
 #endif
 }
 
 
-int imdsock_bind(IMDSocket *sock, int port)
+int imdsock_bind(IMDSocket* sock, int port)
 {
     int ret;
 
@@ -190,7 +190,7 @@ int imdsock_bind(IMDSocket *sock, int port)
     sock->address.sin_port   = htons(port);
 
     /* Try to bind to address and port ...*/
-    ret = bind(sock->sockfd, reinterpret_cast<struct sockaddr *>(&sock->address), sizeof(sock->address));
+    ret = bind(sock->sockfd, reinterpret_cast<struct sockaddr*>(&sock->address), sizeof(sock->address));
 #else
     GMX_UNUSED_VALUE(port);
     GMX_UNUSED_VALUE(sock);
@@ -206,7 +206,7 @@ int imdsock_bind(IMDSocket *sock, int port)
 }
 
 
-int imd_sock_listen(IMDSocket *sock)
+int imd_sock_listen(IMDSocket* sock)
 {
     int ret;
 
@@ -229,21 +229,21 @@ int imd_sock_listen(IMDSocket *sock)
 }
 
 
-IMDSocket* imdsock_accept(IMDSocket *sock)
+IMDSocket* imdsock_accept(IMDSocket* sock)
 {
 
 #if GMX_IMD
     socklen_t length = sizeof(sock->address);
-    int       ret    = accept(sock->sockfd, reinterpret_cast<struct sockaddr *>(&sock->address), &length);
+    int ret = accept(sock->sockfd, reinterpret_cast<struct sockaddr*>(&sock->address), &length);
 
     /* successful, redirect to distinct clientsocket */
     if (ret >= 0)
     {
-        IMDSocket *newsock;
+        IMDSocket* newsock;
 
         snew(newsock, 1);
-        newsock->address    = sock->address;
-        newsock->sockfd     = ret;
+        newsock->address = sock->address;
+        newsock->sockfd  = ret;
 
         return newsock;
     }
@@ -259,15 +259,15 @@ IMDSocket* imdsock_accept(IMDSocket *sock)
 }
 
 
-int imdsock_getport(IMDSocket *sock, int *port)
+int imdsock_getport(IMDSocket* sock, int* port)
 {
-    int                ret;
+    int ret;
 #if GMX_IMD
-    socklen_t          len;
+    socklen_t len;
 
 
     len = sizeof(struct sockaddr_in);
-    ret = getsockname(sock->sockfd, reinterpret_cast<struct sockaddr *>(&(sock->address)), &len);
+    ret = getsockname(sock->sockfd, reinterpret_cast<struct sockaddr*>(&(sock->address)), &len);
     if (ret)
     {
         fprintf(stderr, "%s getsockname failed with error %d.\n", IMDstr, ret);
@@ -306,15 +306,15 @@ int imd_ntohl(int src)
 #endif
 }
 
-int imdsock_write(IMDSocket *sock, const char *buffer, int length)
+int imdsock_write(IMDSocket* sock, const char* buffer, int length)
 {
 #if GMX_IMD
     /* No read and write on windows, we have to use send and recv instead... */
-#if GMX_NATIVE_WINDOWS
-    return send(sock->sockfd, (const char *) buffer, length, c_noFlags);
-#else
+#    if GMX_NATIVE_WINDOWS
+    return send(sock->sockfd, (const char*)buffer, length, c_noFlags);
+#    else
     return write(sock->sockfd, buffer, length);
-#endif
+#    endif
 #else
     GMX_UNUSED_VALUE(buffer);
     GMX_UNUSED_VALUE(length);
@@ -324,15 +324,15 @@ int imdsock_write(IMDSocket *sock, const char *buffer, int length)
 }
 
 
-int imdsock_read(IMDSocket *sock, char *buffer, int length)
+int imdsock_read(IMDSocket* sock, char* buffer, int length)
 {
 #if GMX_IMD
     /* See above... */
-#if GMX_NATIVE_WINDOWS
-    return recv(sock->sockfd, (char *) buffer, length, c_noFlags);
-#else
+#    if GMX_NATIVE_WINDOWS
+    return recv(sock->sockfd, (char*)buffer, length, c_noFlags);
+#    else
     return read(sock->sockfd, buffer, length);
-#endif
+#    endif
 #else
     GMX_UNUSED_VALUE(buffer);
     GMX_UNUSED_VALUE(length);
@@ -342,7 +342,7 @@ int imdsock_read(IMDSocket *sock, char *buffer, int length)
 }
 
 
-void imdsock_shutdown(IMDSocket *sock)
+void imdsock_shutdown(IMDSocket* sock)
 {
     int ret = -1;
 
@@ -366,7 +366,7 @@ void imdsock_shutdown(IMDSocket *sock)
 }
 
 
-int imdsock_destroy(IMDSocket *sock)
+int imdsock_destroy(IMDSocket* sock)
 {
     int ret = -1;
 
@@ -377,11 +377,11 @@ int imdsock_destroy(IMDSocket *sock)
     }
 
 #if GMX_IMD
-#if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
     ret = closesocket(sock->sockfd);
-#else
+#    else
     ret = close(sock->sockfd);
-#endif
+#    endif
 #endif
 
     if (ret == -1)
@@ -396,15 +396,15 @@ int imdsock_destroy(IMDSocket *sock)
 }
 
 
-int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
+int imdsock_tryread(IMDSocket* sock, int timeoutsec, int timeoutusec)
 {
-    int             ret = -1;
+    int ret = -1;
 
 
 #if GMX_IMD
-    fd_set          readfds;
+    fd_set readfds;
     /* Create new time structure with sec and usec. */
-    struct timeval *tval;
+    struct timeval* tval;
 
 
     snew(tval, 1);
@@ -422,8 +422,7 @@ int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec)
         /* check the set for read readiness. */
         ret = select(sock->sockfd + 1, &readfds, nullptr, nullptr, tval);
         /* redo on system interrupt */
-    }
-    while (ret < 0 && errno == EINTR);
+    } while (ret < 0 && errno == EINTR);
 
     sfree(tval);
 #else

@@ -45,39 +45,37 @@ struct InteractionsOfType;
 
 struct t_nextnb
 {
-    int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
-    int nrex;   /* with nrex lists of neighbours		*/
+    int nr;   /* nr atoms (0 <= i < nr) (atoms->nr)	        */
+    int nrex; /* with nrex lists of neighbours		*/
     /* respectively containing zeroth, first	*/
     /* second etc. neigbours (0 <= nre < nrex)	*/
-    int  **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
+    int** nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
     /* per list stored in one 2d array of lists	*/
-    int ***a;      /* like this: a[i][nre][nrx]			*/
+    int*** a; /* like this: a[i][nre][nrx]			*/
 };
 
-void init_nnb(t_nextnb *nnb, int nr, int nrex);
+void init_nnb(t_nextnb* nnb, int nr, int nrex);
 /* Initiate the arrays for nnb (see above) */
 
-void done_nnb(t_nextnb *nnb);
+void done_nnb(t_nextnb* nnb);
 /* Cleanup the nnb struct */
 
 #ifdef DEBUG_NNB
-#define print_nnb(nnb, s) __print_nnb(nnb, s)
-void print_nnb(t_nextnb *nnb, char *s);
+#    define print_nnb(nnb, s) __print_nnb(nnb, s)
+void print_nnb(t_nextnb* nnb, char* s);
 /* Print the nnb struct */
 #else
-#define print_nnb(nnb, s)
+#    define print_nnb(nnb, s)
 #endif
 
-void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionsOfType> plist);
+void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist);
 /* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
  * initiated using init_nnb.
  */
 
-void generate_excl(int nrexcl, int nratoms,
-                   gmx::ArrayRef<InteractionsOfType> plist,
-                   t_blocka *excl);
+void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, t_blocka* excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

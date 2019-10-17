@@ -65,8 +65,8 @@ TEST_F(LoggerTest, LogsToStream)
     gmx::StringOutputStream stream;
     gmx::LoggerBuilder      builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::VerboseDebug, &stream);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger& logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");
@@ -80,12 +80,12 @@ TEST_F(LoggerTest, LogsToFile)
 {
     gmx::test::TestFileManager files;
     std::string                filename(files.getTemporaryFilePath("log.txt"));
-    FILE                      *fp = fopen(filename.c_str(), "w");
+    FILE*                      fp = fopen(filename.c_str(), "w");
     {
-        gmx::LoggerBuilder      builder;
+        gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::VerboseDebug, fp);
-        gmx::LoggerOwner        owner  = builder.build();
-        const gmx::MDLogger    &logger = owner.logger();
+        gmx::LoggerOwner     owner  = builder.build();
+        const gmx::MDLogger& logger = owner.logger();
         GMX_LOG(logger.info).appendText("line");
         GMX_LOG(logger.warning).appendText("par").asParagraph();
         GMX_LOG(logger.info).appendText("line2");
@@ -102,8 +102,8 @@ TEST_F(LoggerTest, LevelFilteringWorks)
     gmx::StringOutputStream stream;
     gmx::LoggerBuilder      builder;
     builder.addTargetStream(gmx::MDLogger::LogLevel::Warning, &stream);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger& logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");
@@ -126,8 +126,8 @@ TEST_F(LoggerTest, LogsToMultipleStreams)
     builder.addTargetStream(gmx::MDLogger::LogLevel::Error, &stream3);
     builder.addTargetStream(gmx::MDLogger::LogLevel::Debug, &stream4);
     builder.addTargetStream(gmx::MDLogger::LogLevel::VerboseDebug, &stream5);
-    gmx::LoggerOwner        owner  = builder.build();
-    const gmx::MDLogger    &logger = owner.logger();
+    gmx::LoggerOwner     owner  = builder.build();
+    const gmx::MDLogger& logger = owner.logger();
     GMX_LOG(logger.info).appendText("line");
     GMX_LOG(logger.warning).appendText("par").asParagraph();
     GMX_LOG(logger.info).appendText("line2");
@@ -150,20 +150,20 @@ TEST_F(LoggerTest, LogsToMultipleFiles)
     std::string                filename3(files.getTemporaryFilePath("error.txt"));
     std::string                filename4(files.getTemporaryFilePath("debug.txt"));
     std::string                filename5(files.getTemporaryFilePath("verboseDebug.txt"));
-    FILE                      *fp1 = fopen(filename1.c_str(), "w");
-    FILE                      *fp2 = fopen(filename2.c_str(), "w");
-    FILE                      *fp3 = fopen(filename3.c_str(), "w");
-    FILE                      *fp4 = fopen(filename4.c_str(), "w");
-    FILE                      *fp5 = fopen(filename5.c_str(), "w");
+    FILE*                      fp1 = fopen(filename1.c_str(), "w");
+    FILE*                      fp2 = fopen(filename2.c_str(), "w");
+    FILE*                      fp3 = fopen(filename3.c_str(), "w");
+    FILE*                      fp4 = fopen(filename4.c_str(), "w");
+    FILE*                      fp5 = fopen(filename5.c_str(), "w");
     {
-        gmx::LoggerBuilder      builder;
+        gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::Info, fp1);
         builder.addTargetFile(gmx::MDLogger::LogLevel::Warning, fp2);
         builder.addTargetFile(gmx::MDLogger::LogLevel::Error, fp3);
         builder.addTargetFile(gmx::MDLogger::LogLevel::Debug, fp4);
         builder.addTargetFile(gmx::MDLogger::LogLevel::VerboseDebug, fp5);
-        gmx::LoggerOwner        owner  = builder.build();
-        const gmx::MDLogger    &logger = owner.logger();
+        gmx::LoggerOwner     owner  = builder.build();
+        const gmx::MDLogger& logger = owner.logger();
         GMX_LOG(logger.info).appendText("line");
         GMX_LOG(logger.warning).appendText("par").asParagraph();
         GMX_LOG(logger.info).appendText("line2");
@@ -188,13 +188,13 @@ TEST_F(LoggerTest, LogsToStreamAndFile)
     gmx::test::TestFileManager files;
     gmx::StringOutputStream    stream;
     std::string                filename(files.getTemporaryFilePath("verboseDebug.txt"));
-    FILE *fp = fopen(filename.c_str(), "w");
+    FILE*                      fp = fopen(filename.c_str(), "w");
     {
-        gmx::LoggerBuilder      builder;
+        gmx::LoggerBuilder builder;
         builder.addTargetFile(gmx::MDLogger::LogLevel::VerboseDebug, fp);
         builder.addTargetStream(gmx::MDLogger::LogLevel::VerboseDebug, &stream);
-        gmx::LoggerOwner        owner  = builder.build();
-        const gmx::MDLogger    &logger = owner.logger();
+        gmx::LoggerOwner     owner  = builder.build();
+        const gmx::MDLogger& logger = owner.logger();
         GMX_LOG(logger.info).appendText("line");
         GMX_LOG(logger.warning).appendText("par").asParagraph();
         GMX_LOG(logger.info).appendText("line2");

@@ -79,8 +79,7 @@
  * \return true if version is 14.4 or later (= OS X version 10.10.4),
  *         or OS is not Darwin.
  */
-static bool
-runningOnCompatibleOSForAmd()
+static bool runningOnCompatibleOSForAmd()
 {
 #ifdef __APPLE__
     int    mib[2];
@@ -90,10 +89,10 @@ runningOnCompatibleOSForAmd()
     mib[0] = CTL_KERN;
     mib[1] = KERN_OSRELEASE;
 
-    sysctl(mib, sizeof(mib)/sizeof(mib[0]), kernelVersion, &len, NULL, 0);
+    sysctl(mib, sizeof(mib) / sizeof(mib[0]), kernelVersion, &len, NULL, 0);
 
     int major = strtod(kernelVersion, NULL);
-    int minor = strtod(strchr(kernelVersion, '.')+1, NULL);
+    int minor = strtod(strchr(kernelVersion, '.') + 1, NULL);
 
     // Kernel 14.4 corresponds to OS X 10.10.4
     return (major > 14 || (major == 14 && minor >= 4));
@@ -114,20 +113,16 @@ namespace gmx
  * \param[in]  status   OpenCL API status code
  * \returns             A string describing the OpenCL error.
  */
-static std::string
-makeOpenClInternalErrorString(const char *message, cl_int status)
+static std::string makeOpenClInternalErrorString(const char* message, cl_int status)
 {
     if (message != nullptr)
     {
-        return formatString("%s did %ssucceed %d: %s",
-                            message,
-                            ((status != CL_SUCCESS) ? "not " : ""),
+        return formatString("%s did %ssucceed %d: %s", message, ((status != CL_SUCCESS) ? "not " : ""),
                             status, ocl_get_error_string(status).c_str());
     }
     else
     {
-        return formatString("%sOpenCL error encountered %d: %s",
-                            ((status != CL_SUCCESS) ? "" : "No "),
+        return formatString("%sOpenCL error encountered %d: %s", ((status != CL_SUCCESS) ? "" : "No "),
                             status, ocl_get_error_string(status).c_str());
     }
 }
@@ -144,13 +139,10 @@ makeOpenClInternalErrorString(const char *message, cl_int status)
  * \throws     std::bad_alloc  When out of memory.
  * \returns                    Whether the device passed sanity checks
  */
-static bool isDeviceSane(const gmx_device_info_t *devInfo,
-                         std::string             *errorMessage)
+static bool isDeviceSane(const gmx_device_info_t* devInfo, std::string* errorMessage)
 {
     cl_context_properties properties[] = {
-        CL_CONTEXT_PLATFORM,
-        reinterpret_cast<cl_context_properties>(devInfo->ocl_gpu_id.ocl_platform_id),
-        0
+        CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(devInfo->ocl_gpu_id.ocl_platform_id), 0
     };
     // uncrustify spacing
 
@@ -170,7 +162,7 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
     }
 
     // Some compilers such as Apple's require kernel functions to have at least one argument
-    const char *lines[] = { "__kernel void dummyKernel(__global void* input){}" };
+    const char* lines[] = { "__kernel void dummyKernel(__global void* input){}" };
     ClProgram   program(clCreateProgramWithSource(context, 1, lines, nullptr, &status));
     if (status != CL_SUCCESS)
     {
@@ -194,9 +186,9 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
     clSetKernelArg(kernel, 0, sizeof(void*), nullptr);
 
     const size_t localWorkSize = 1, globalWorkSize = 1;
-    if ((status =
-             clEnqueueNDRangeKernel(commandQueue, kernel, 1, nullptr,
-                                    &globalWorkSize, &localWorkSize, 0, nullptr, nullptr)) != CL_SUCCESS)
+    if ((status = clEnqueueNDRangeKernel(commandQueue, kernel, 1, nullptr, &globalWorkSize,
+                                         &localWorkSize, 0, nullptr, nullptr))
+        != CL_SUCCESS)
     {
         errorMessage->assign(makeOpenClInternalErrorString("clEnqueueNDRangeKernel", status));
         return false;
@@ -213,7 +205,7 @@ static bool isDeviceSane(const gmx_device_info_t *devInfo,
  * \param[in]  devInfo         The device info pointer.
  * \returns                    The result of the compatibility checks.
  */
-static int isDeviceSupported(const gmx_device_info_t *devInfo)
+static int isDeviceSupported(const gmx_device_info_t* devInfo)
 {
     if (getenv("GMX_OCL_DISABLE_COMPATIBILITY_CHECK") != nullptr)
     {
@@ -229,10 +221,12 @@ static int isDeviceSupported(const gmx_device_info_t *devInfo)
     // the device which has the following format:
     //      OpenCL<space><major_version.minor_version><space><vendor-specific information>
     unsigned int deviceVersionMinor, deviceVersionMajor;
-    const int    valuesScanned      = std::sscanf(devInfo->device_version, "OpenCL %u.%u", &deviceVersionMajor, &deviceVersionMinor);
-    const bool   versionLargeEnough = ((valuesScanned == 2) &&
-                                       ((deviceVersionMajor > minVersionMajor) ||
-                                        (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
+    const int    valuesScanned = std::sscanf(devInfo->device_version, "OpenCL %u.%u",
+                                          &deviceVersionMajor, &deviceVersionMinor);
+    const bool   versionLargeEnough =
+            ((valuesScanned == 2)
+             && ((deviceVersionMajor > minVersionMajor)
+                 || (deviceVersionMajor == minVersionMajor && deviceVersionMinor >= minVersionMinor)));
     if (!versionLargeEnough)
     {
         return egpuIncompatible;
@@ -241,17 +235,14 @@ static int isDeviceSupported(const gmx_device_info_t *devInfo)
     /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
     switch (devInfo->vendor_e)
     {
-        case OCL_VENDOR_NVIDIA:
-            return egpuCompatible;
+        case OCL_VENDOR_NVIDIA: return egpuCompatible;
         case OCL_VENDOR_AMD:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
         case OCL_VENDOR_INTEL:
             return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
-        default:
-            return egpuIncompatible;
+        default: return egpuIncompatible;
     }
 }
-
 
 
 /*! \brief Check whether the \c ocl_gpu_device is suitable for use by mdrun
@@ -266,8 +257,7 @@ static int isDeviceSupported(const gmx_device_info_t *devInfo)
  * \returns  An e_gpu_detect_res_t to indicate how the GPU coped with
  *           the sanity and compatibility check.
  */
-static int checkGpu(size_t                   deviceId,
-                    const gmx_device_info_t *deviceInfo)
+static int checkGpu(size_t deviceId, const gmx_device_info_t* deviceInfo)
 {
 
     int supportStatus = isDeviceSupported(deviceInfo);
@@ -293,7 +283,7 @@ static int checkGpu(size_t                   deviceId,
  *  \param[in] vendor_name String with OpenCL vendor name.
  *  \returns               ocl_vendor_id_t value for the input vendor_name
  */
-static ocl_vendor_id_t get_vendor_id(char *vendor_name)
+static ocl_vendor_id_t get_vendor_id(char* vendor_name)
 {
     if (vendor_name)
     {
@@ -301,14 +291,11 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
         {
             return OCL_VENDOR_NVIDIA;
         }
-        else
-        if (strstr(vendor_name, "AMD") ||
-            strstr(vendor_name, "Advanced Micro Devices"))
+        else if (strstr(vendor_name, "AMD") || strstr(vendor_name, "Advanced Micro Devices"))
         {
             return OCL_VENDOR_AMD;
         }
-        else
-        if (strstr(vendor_name, "Intel"))
+        else if (strstr(vendor_name, "Intel"))
         {
             return OCL_VENDOR_INTEL;
         }
@@ -316,10 +303,10 @@ static ocl_vendor_id_t get_vendor_id(char *vendor_name)
     return OCL_VENDOR_UNKNOWN;
 }
 
-bool isGpuDetectionFunctional(std::string *errorMessage)
+bool isGpuDetectionFunctional(std::string* errorMessage)
 {
     cl_uint numPlatforms;
-    cl_int  status       = clGetPlatformIDs(0, nullptr, &numPlatforms);
+    cl_int  status = clGetPlatformIDs(0, nullptr, &numPlatforms);
     GMX_ASSERT(status != CL_INVALID_VALUE, "Incorrect call of clGetPlatformIDs detected");
 #ifdef cl_khr_icd
     if (status == CL_PLATFORM_NOT_FOUND_KHR)
@@ -332,9 +319,11 @@ bool isGpuDetectionFunctional(std::string *errorMessage)
         return false;
     }
 #endif
-    GMX_RELEASE_ASSERT(status == CL_SUCCESS,
-                       gmx::formatString("An unexpected value was returned from clGetPlatformIDs %d: %s",
-                                         status, ocl_get_error_string(status).c_str()).c_str());
+    GMX_RELEASE_ASSERT(
+            status == CL_SUCCESS,
+            gmx::formatString("An unexpected value was returned from clGetPlatformIDs %d: %s",
+                              status, ocl_get_error_string(status).c_str())
+                    .c_str());
     bool foundPlatform = (numPlatforms > 0);
     if (!foundPlatform && errorMessage != nullptr)
     {
@@ -343,10 +332,10 @@ bool isGpuDetectionFunctional(std::string *errorMessage)
     return foundPlatform;
 }
 
-void findGpus(gmx_gpu_info_t *gpu_info)
+void findGpus(gmx_gpu_info_t* gpu_info)
 {
     cl_uint         ocl_platform_count;
-    cl_platform_id *ocl_platform_ids;
+    cl_platform_id* ocl_platform_ids;
     cl_device_type  req_dev_type = CL_DEVICE_TYPE_GPU;
 
     ocl_platform_ids = nullptr;
@@ -361,8 +350,9 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         cl_int status = clGetPlatformIDs(0, nullptr, &ocl_platform_count);
         if (CL_SUCCESS != status)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ",
-                                                           status) + ocl_get_error_string(status)));
+            GMX_THROW(gmx::InternalError(
+                    gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ", status)
+                    + ocl_get_error_string(status)));
         }
 
         if (1 > ocl_platform_count)
@@ -376,8 +366,9 @@ void findGpus(gmx_gpu_info_t *gpu_info)
         status = clGetPlatformIDs(ocl_platform_count, ocl_platform_ids, nullptr);
         if (CL_SUCCESS != status)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ",
-                                                           status) + ocl_get_error_string(status)));
+            GMX_THROW(gmx::InternalError(
+                    gmx::formatString("An unexpected value %d was returned from clGetPlatformIDs: ", status)
+                    + ocl_get_error_string(status)));
         }
 
         for (unsigned int i = 0; i < ocl_platform_count; i++)
@@ -405,7 +396,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
 
         {
             int           device_index;
-            cl_device_id *ocl_device_ids;
+            cl_device_id* ocl_device_ids;
 
             snew(ocl_device_ids, gpu_info->n_dev);
             device_index = 0;
@@ -415,7 +406,9 @@ void findGpus(gmx_gpu_info_t *gpu_info)
                 cl_uint ocl_device_count;
 
                 /* If requesting req_dev_type devices fails, just go to the next platform */
-                if (CL_SUCCESS != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, gpu_info->n_dev, ocl_device_ids, &ocl_device_count))
+                if (CL_SUCCESS
+                    != clGetDeviceIDs(ocl_platform_ids[i], req_dev_type, gpu_info->n_dev,
+                                      ocl_device_ids, &ocl_device_count))
                 {
                     continue;
                 }
@@ -431,27 +424,41 @@ void findGpus(gmx_gpu_info_t *gpu_info)
                     gpu_info->gpu_dev[device_index].ocl_gpu_id.ocl_device_id   = ocl_device_ids[j];
 
                     gpu_info->gpu_dev[device_index].device_name[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME, sizeof(gpu_info->gpu_dev[device_index].device_name), gpu_info->gpu_dev[device_index].device_name, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_NAME,
+                                    sizeof(gpu_info->gpu_dev[device_index].device_name),
+                                    gpu_info->gpu_dev[device_index].device_name, nullptr);
 
                     gpu_info->gpu_dev[device_index].device_version[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION, sizeof(gpu_info->gpu_dev[device_index].device_version), gpu_info->gpu_dev[device_index].device_version, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VERSION,
+                                    sizeof(gpu_info->gpu_dev[device_index].device_version),
+                                    gpu_info->gpu_dev[device_index].device_version, nullptr);
 
                     gpu_info->gpu_dev[device_index].device_vendor[0] = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR, sizeof(gpu_info->gpu_dev[device_index].device_vendor), gpu_info->gpu_dev[device_index].device_vendor, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR,
+                                    sizeof(gpu_info->gpu_dev[device_index].device_vendor),
+                                    gpu_info->gpu_dev[device_index].device_vendor, nullptr);
 
                     gpu_info->gpu_dev[device_index].compute_units = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(gpu_info->gpu_dev[device_index].compute_units), &(gpu_info->gpu_dev[device_index].compute_units), nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS,
+                                    sizeof(gpu_info->gpu_dev[device_index].compute_units),
+                                    &(gpu_info->gpu_dev[device_index].compute_units), nullptr);
 
                     gpu_info->gpu_dev[device_index].adress_bits = 0;
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS, sizeof(gpu_info->gpu_dev[device_index].adress_bits), &(gpu_info->gpu_dev[device_index].adress_bits), nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_ADDRESS_BITS,
+                                    sizeof(gpu_info->gpu_dev[device_index].adress_bits),
+                                    &(gpu_info->gpu_dev[device_index].adress_bits), nullptr);
 
-                    gpu_info->gpu_dev[device_index].vendor_e = get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
+                    gpu_info->gpu_dev[device_index].vendor_e =
+                            get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
 
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkItemSizes, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t),
+                                    &gpu_info->gpu_dev[device_index].maxWorkItemSizes, nullptr);
 
-                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
+                    clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t),
+                                    &gpu_info->gpu_dev[device_index].maxWorkGroupSize, nullptr);
 
-                    gpu_info->gpu_dev[device_index].stat = gmx::checkGpu(device_index, gpu_info->gpu_dev + device_index);
+                    gpu_info->gpu_dev[device_index].stat =
+                            gmx::checkGpu(device_index, gpu_info->gpu_dev + device_index);
 
                     if (egpuCompatible == gpu_info->gpu_dev[device_index].stat)
                     {
@@ -515,7 +522,7 @@ void findGpus(gmx_gpu_info_t *gpu_info)
     sfree(ocl_platform_ids);
 }
 
-void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int index)
+void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int index)
 {
     assert(s);
 
@@ -524,28 +531,23 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t &gpu_info, int ind
         return;
     }
 
-    gmx_device_info_t *dinfo = &gpu_info.gpu_dev[index];
+    gmx_device_info_t* dinfo = &gpu_info.gpu_dev[index];
 
-    bool               bGpuExists = (dinfo->stat != egpuNonexistent &&
-                                     dinfo->stat != egpuInsane);
+    bool bGpuExists = (dinfo->stat != egpuNonexistent && dinfo->stat != egpuInsane);
 
     if (!bGpuExists)
     {
-        sprintf(s, "#%d: %s, stat: %s",
-                index, "N/A",
-                gpu_detect_res_str[dinfo->stat]);
+        sprintf(s, "#%d: %s, stat: %s", index, "N/A", gpu_detect_res_str[dinfo->stat]);
     }
     else
     {
-        sprintf(s, "#%d: name: %s, vendor: %s, device version: %s, stat: %s",
-                index, dinfo->device_name, dinfo->device_vendor,
-                dinfo->device_version,
-                gpu_detect_res_str[dinfo->stat]);
+        sprintf(s, "#%d: name: %s, vendor: %s, device version: %s, stat: %s", index, dinfo->device_name,
+                dinfo->device_vendor, dinfo->device_version, gpu_detect_res_str[dinfo->stat]);
     }
 }
 
 
-void init_gpu(const gmx_device_info_t *deviceInfo)
+void init_gpu(const gmx_device_info_t* deviceInfo)
 {
     assert(deviceInfo);
 
@@ -567,8 +569,7 @@ void init_gpu(const gmx_device_info_t *deviceInfo)
     }
 }
 
-gmx_device_info_t *getDeviceInfo(const gmx_gpu_info_t &gpu_info,
-                                 int                   deviceId)
+gmx_device_info_t* getDeviceInfo(const gmx_gpu_info_t& gpu_info, int deviceId)
 {
     if (deviceId < 0 || deviceId >= gpu_info.n_dev)
     {
@@ -582,7 +583,7 @@ size_t sizeof_gpu_dev_info()
     return sizeof(gmx_device_info_t);
 }
 
-int gpu_info_get_stat(const gmx_gpu_info_t &info, int index)
+int gpu_info_get_stat(const gmx_gpu_info_t& info, int index)
 {
     return info.gpu_dev[index].stat;
 }

@@ -62,21 +62,16 @@ enum class ConstraintVariable : int;
 struct shakedata;
 
 /*! \brief Initializes and return the SHAKE data structure */
-shakedata *shake_init();
+shakedata* shake_init();
 
 //! Destroy SHAKE. Needed to solve memory leaks.
-void done_shake(shakedata *d);
+void done_shake(shakedata* d);
 
 //! Make SHAKE blocks when not using DD.
-void
-make_shake_sblock_serial(shakedata *shaked,
-                         const t_idef *idef, const t_mdatoms &md);
+void make_shake_sblock_serial(shakedata* shaked, const t_idef* idef, const t_mdatoms& md);
 
 //! Make SHAKE blocks when using DD.
-void
-make_shake_sblock_dd(shakedata          *shaked,
-                     const t_ilist      *ilcon,
-                     const gmx_domdec_t *dd);
+void make_shake_sblock_dd(shakedata* shaked, const t_ilist* ilcon, const gmx_domdec_t* dd);
 
 /*! \brief Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
@@ -86,30 +81,39 @@ make_shake_sblock_dd(shakedata          *shaked,
  * sblock[n] to sblock[n+1]. Array sblock should be large enough.
  * Return TRUE when OK, FALSE when shake-error
  */
-bool
-constrain_shake(FILE              *log,          /* Log file			*/
-                shakedata         *shaked,       /* Total number of atoms	*/
-                const real         invmass[],    /* Atomic masses		*/
-                const t_idef      &idef,         /* The interaction def		*/
-                const t_inputrec  &ir,           /* Input record		        */
-                const rvec         x_s[],        /* Coords before update		*/
-                rvec               xprime[],     /* Output coords when constraining x */
-                rvec               vprime[],     /* Output coords when constraining v */
-                t_nrnb            *nrnb,         /* Performance measure          */
-                real               lambda,       /* FEP lambda                   */
-                real              *dvdlambda,    /* FEP force                    */
-                real               invdt,        /* 1/delta_t                    */
-                rvec              *v,            /* Also constrain v if v!=NULL  */
-                bool               bCalcVir,     /* Calculate r x m delta_r      */
-                tensor             vir_r_m_dr,   /* sum r x m delta_r            */
-                bool               bDumpOnError, /* Dump debugging stuff on error*/
-                ConstraintVariable econq);       /* which type of constraint is occurring */
+bool constrain_shake(FILE*              log,          /* Log file			*/
+                     shakedata*         shaked,       /* Total number of atoms	*/
+                     const real         invmass[],    /* Atomic masses		*/
+                     const t_idef&      idef,         /* The interaction def		*/
+                     const t_inputrec&  ir,           /* Input record		        */
+                     const rvec         x_s[],        /* Coords before update		*/
+                     rvec               xprime[],     /* Output coords when constraining x */
+                     rvec               vprime[],     /* Output coords when constraining v */
+                     t_nrnb*            nrnb,         /* Performance measure          */
+                     real               lambda,       /* FEP lambda                   */
+                     real*              dvdlambda,    /* FEP force                    */
+                     real               invdt,        /* 1/delta_t                    */
+                     rvec*              v,            /* Also constrain v if v!=NULL  */
+                     bool               bCalcVir,     /* Calculate r x m delta_r      */
+                     tensor             vir_r_m_dr,   /* sum r x m delta_r            */
+                     bool               bDumpOnError, /* Dump debugging stuff on error*/
+                     ConstraintVariable econq);       /* which type of constraint is occurring */
 
 /*! \brief Regular iterative shake */
-void cshake(const int iatom[], int ncon, int *nnit, int maxnit,
-            const real dist2[], real xp[], const real rij[], const real m2[], real omega,
-            const real invmass[], const real tt[], real lagr[], int *nerror);
+void cshake(const int  iatom[],
+            int        ncon,
+            int*       nnit,
+            int        maxnit,
+            const real dist2[],
+            real       xp[],
+            const real rij[],
+            const real m2[],
+            real       omega,
+            const real invmass[],
+            const real tt[],
+            real       lagr[],
+            int*       nerror);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

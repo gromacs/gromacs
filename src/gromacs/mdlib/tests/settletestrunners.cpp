@@ -57,41 +57,35 @@ namespace gmx
 namespace test
 {
 
-void applySettle(SettleTestData    *testData,
+void applySettle(SettleTestData*    testData,
                  const t_pbc        pbc,
                  const bool         updateVelocities,
                  const bool         calcVirial,
-                 const std::string &testDescription)
+                 const std::string& testDescription)
 {
-    settledata    *settled = settle_init(testData->mtop_);
+    settledata* settled = settle_init(testData->mtop_);
 
     settle_set_constraints(settled, &testData->ilist_, testData->mdatoms_);
 
     bool errorOccured;
     int  numThreads  = 1;
     int  threadIndex = 0;
-    csettle(settled,
-            numThreads,
-            threadIndex,
-            &pbc,
+    csettle(settled, numThreads, threadIndex, &pbc,
             reinterpret_cast<real*>(as_rvec_array(testData->x_.data())),
-            reinterpret_cast<real*>(as_rvec_array(testData->xPrime_.data())),
-            testData->reciprocalTimeStep_,
+            reinterpret_cast<real*>(as_rvec_array(testData->xPrime_.data())), testData->reciprocalTimeStep_,
             updateVelocities ? reinterpret_cast<real*>(as_rvec_array(testData->v_.data())) : nullptr,
-            calcVirial,
-            testData->virial_,
-            &errorOccured);
+            calcVirial, testData->virial_, &errorOccured);
     settle_free(settled);
     EXPECT_FALSE(errorOccured) << testDescription;
 }
 
 #if GMX_GPU != GMX_GPU_CUDA
 
-void applySettleGpu(gmx_unused SettleTestData    *testData,
-                    gmx_unused const t_pbc        pbc,
-                    gmx_unused const bool         updateVelocities,
-                    gmx_unused const bool         calcVirial,
-                    gmx_unused const std::string &testDescription)
+void applySettleGpu(gmx_unused SettleTestData* testData,
+                    gmx_unused const t_pbc pbc,
+                    gmx_unused const bool  updateVelocities,
+                    gmx_unused const bool  calcVirial,
+                    gmx_unused const std::string& testDescription)
 {
     FAIL() << "Dummy SETTLE GPU function was called instead of the real one in the SETTLE test.";
 }

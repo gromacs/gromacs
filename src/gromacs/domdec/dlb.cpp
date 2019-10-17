@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,13 +52,13 @@
 #include "domdec_internal.h"
 #include "utility.h"
 
-float dd_pme_f_ratio(const gmx_domdec_t *dd)
+float dd_pme_f_ratio(const gmx_domdec_t* dd)
 {
     GMX_ASSERT(DDMASTER(dd), "This function should only be called on the master rank");
 
     if (dd->comm->load[0].mdf > 0 && dd->comm->cycl_n[ddCyclPME] > 0)
     {
-        return dd->comm->load[0].pme/dd->comm->load[0].mdf;
+        return dd->comm->load[0].pme / dd->comm->load[0].mdf;
     }
     else
     {
@@ -66,7 +66,7 @@ float dd_pme_f_ratio(const gmx_domdec_t *dd)
     }
 }
 
-void set_dlb_limits(gmx_domdec_t *dd)
+void set_dlb_limits(gmx_domdec_t* dd)
 
 {
     for (int d = 0; d < dd->ndim; d++)
@@ -74,12 +74,11 @@ void set_dlb_limits(gmx_domdec_t *dd)
         /* Set the number of pulses to the value for DLB */
         dd->comm->cd[d].ind.resize(dd->comm->cd[d].np_dlb);
 
-        dd->comm->cellsize_min[dd->dim[d]] =
-            dd->comm->cellsize_min_dlb[dd->dim[d]];
+        dd->comm->cellsize_min[dd->dim[d]] = dd->comm->cellsize_min_dlb[dd->dim[d]];
     }
 }
 
-void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool bValue)
+void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd, gmx_bool bValue)
 {
     if (dd->comm->dlbState == DlbState::offCanTurnOn)
     {
@@ -95,7 +94,7 @@ void dd_dlb_set_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd, gmx_bool b
     }
 }
 
-gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
+gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t* dd)
 {
     if (dd->comm->dlbState != DlbState::offCanTurnOn)
     {
@@ -136,17 +135,17 @@ gmx_bool dd_dlb_get_should_check_whether_to_turn_dlb_on(gmx_domdec_t *dd)
     return dd->comm->n_load_have % c_checkTurnDlbOnInterval == c_checkTurnDlbOnInterval - 1;
 }
 
-gmx_bool dd_dlb_is_on(const gmx_domdec_t *dd)
+gmx_bool dd_dlb_is_on(const gmx_domdec_t* dd)
 {
     return isDlbOn(dd->comm);
 }
 
-gmx_bool dd_dlb_is_locked(const gmx_domdec_t *dd)
+gmx_bool dd_dlb_is_locked(const gmx_domdec_t* dd)
 {
     return (dd->comm->dlbState == DlbState::offTemporarilyLocked);
 }
 
-void dd_dlb_lock(gmx_domdec_t *dd)
+void dd_dlb_lock(gmx_domdec_t* dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
     if (dd->comm->dlbState == DlbState::offCanTurnOn)
@@ -155,7 +154,7 @@ void dd_dlb_lock(gmx_domdec_t *dd)
     }
 }
 
-void dd_dlb_unlock(gmx_domdec_t *dd)
+void dd_dlb_unlock(gmx_domdec_t* dd)
 {
     /* We can only lock the DLB when it is set to auto, otherwise don't do anything */
     if (dd->comm->dlbState == DlbState::offTemporarilyLocked)

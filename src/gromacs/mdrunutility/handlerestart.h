@@ -113,13 +113,12 @@ enum class StartingBehavior : int
  * \param[inout] fnm                Filename parameters to mdrun
  *
  * \return  Description of how mdrun is starting */
-std::tuple<StartingBehavior, LogFilePtr>
-handleRestart(bool                  isSimulationMaster,
-              MPI_Comm              communicator,
-              const gmx_multisim_t *ms,
-              AppendingBehavior     appendingBehavior,
-              int                   nfile,
-              t_filenm              fnm[]);
+std::tuple<StartingBehavior, LogFilePtr> handleRestart(bool                  isSimulationMaster,
+                                                       MPI_Comm              communicator,
+                                                       const gmx_multisim_t* ms,
+                                                       AppendingBehavior     appendingBehavior,
+                                                       int                   nfile,
+                                                       t_filenm              fnm[]);
 
 } // namespace gmx
 

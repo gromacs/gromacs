@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,8 @@
 /*! \file
  * \brief Declare base classes and API for MD simulation engines.
  *
- * This header allows interaction with gmxapi for basic MD simulation functionality in client code without
- * additional dependencies.
+ * This header allows interaction with gmxapi for basic MD simulation functionality in client code
+ * without additional dependencies.
  *
  * Helper functions, standard concrete classes, and implementation interfaces are in gmxapi/md/
  * \ingroup gmxapi_md
@@ -54,9 +54,9 @@
 /*! \defgroup gmxapi_md Molecular Dynamics
  * \brief API access to Molecular Mechanics and Molecular Dynamics calculation in GROMACS
  *
- * At a minimum, the client code must specify the input source for a MD simulation. Helper functions allow setting up
- * inputs from a standard GROMACS run input `.tpr` file. A System object serves as a container for a molecular system
- * and associated computational work.
+ * At a minimum, the client code must specify the input source for a MD simulation. Helper functions
+ * allow setting up inputs from a standard GROMACS run input `.tpr` file. A System object serves as
+ * a container for a molecular system and associated computational work.
  *
  * \ingroup gmxapi
  */
@@ -154,33 +154,34 @@ class MDModule;
  */
 class MDWorkSpec
 {
-    public:
-        MDWorkSpec();
-        ~MDWorkSpec();
+public:
+    MDWorkSpec();
+    ~MDWorkSpec();
 
-        /*!
-         * \brief Grant shared ownership of a modular MD computation object
-         *
-         * \param module instance that can produce a IRestraintPotential at runtime.
-         */
-        void addModule(std::shared_ptr<gmxapi::MDModule> module);
+    /*!
+     * \brief Grant shared ownership of a modular MD computation object
+     *
+     * \param module instance that can produce a IRestraintPotential at runtime.
+     */
+    void addModule(std::shared_ptr<gmxapi::MDModule> module);
 
-        /*!
-         * \brief Get a handle to the stored list of modules
-         *
-         * Future versions of MDWorkSpec will not directly hold and grant access to module instances.
-         * \return reference that is only valid for the life of this object.
-         */
-        std::vector < std::shared_ptr < gmxapi::MDModule>>&getModules();
-    private:
-        //! \cond internal
-        //! \brief Private implementation class
-        class Impl;
-        //! \brief Opaque pointer to implementation object.
-        std::unique_ptr<Impl> impl_;
-        //! \endcond
+    /*!
+     * \brief Get a handle to the stored list of modules
+     *
+     * Future versions of MDWorkSpec will not directly hold and grant access to module instances.
+     * \return reference that is only valid for the life of this object.
+     */
+    std::vector<std::shared_ptr<gmxapi::MDModule>>& getModules();
+
+private:
+    //! \cond internal
+    //! \brief Private implementation class
+    class Impl;
+    //! \brief Opaque pointer to implementation object.
+    std::unique_ptr<Impl> impl_;
+    //! \endcond
 };
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
 #endif // header guard

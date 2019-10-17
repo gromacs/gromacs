@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,58 +56,51 @@ using gmx::test::ExactTextMatch;
 
 class GenconfTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        GenconfTest()
-        {
-            std::string confFileName = gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.gro");
-            commandLine().addOption("-f", confFileName);
-            commandLine().addOption("-seed", "1993"); // make random operations reproducible
-            setOutputFile("-o", "out.gro", ExactTextMatch());
-        }
+public:
+    GenconfTest()
+    {
+        std::string confFileName =
+                gmx::test::TestFileManager::getInputFilePath("spc-and-methanol.gro");
+        commandLine().addOption("-f", confFileName);
+        commandLine().addOption("-seed", "1993"); // make random operations reproducible
+        setOutputFile("-o", "out.gro", ExactTextMatch());
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
+    void runTest(const CommandLine& args)
+    {
+        CommandLine& cmdline = commandLine();
+        cmdline.merge(args);
 
-            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(args.toString(), "CommandLine");
+        gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+        rootChecker.checkString(args.toString(), "CommandLine");
 
-            ASSERT_EQ(0, gmx_genconf(cmdline.argc(), cmdline.argv()));
+        ASSERT_EQ(0, gmx_genconf(cmdline.argc(), cmdline.argv()));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(GenconfTest, nbox_Works)
 {
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "1", "1"
-    };
+    const char* const cmdline[] = { "genconf", "-nbox", "2", "1", "1" };
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(GenconfTest, nbox_norenumber_Works)
 {
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "1", "1", "-norenumber"
-    };
+    const char* const cmdline[] = { "genconf", "-nbox", "2", "1", "1", "-norenumber" };
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(GenconfTest, nbox_dist_Works)
 {
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "2", "3", "-dist", "0.1"
-    };
+    const char* const cmdline[] = { "genconf", "-nbox", "2", "2", "3", "-dist", "0.1" };
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(GenconfTest, nbox_rot_Works)
 {
-    const char *const cmdline[] = {
-        "genconf", "-nbox", "2", "2", "3", "-rot"
-    };
+    const char* const cmdline[] = { "genconf", "-nbox", "2", "2", "3", "-rot" };
     runTest(CommandLine(cmdline));
 }
 

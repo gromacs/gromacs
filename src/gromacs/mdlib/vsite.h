@@ -80,49 +80,54 @@ struct gmx_vsite_t
     ~gmx_vsite_t();
 
     /* The number of vsites that cross update groups, when =0 no PBC treatment is needed */
-    int                       numInterUpdategroupVsites;
-    int                       nthreads;                  /* Number of threads used for vsites       */
-    std::vector < std::unique_ptr < VsiteThread>> tData; /* Thread local vsites and work structs    */
-    std::vector<int>          taskIndex;                 /* Work array                              */
-    bool                      useDomdec;                 /* Tells whether we use domain decomposition with more than 1 DD rank */
+    int numInterUpdategroupVsites;
+    int nthreads;                                    /* Number of threads used for vsites       */
+    std::vector<std::unique_ptr<VsiteThread>> tData; /* Thread local vsites and work structs    */
+    std::vector<int> taskIndex;                      /* Work array                              */
+    bool useDomdec; /* Tells whether we use domain decomposition with more than 1 DD rank */
 };
 
 /*! \brief Create positions of vsite atoms based for the local system
  *
- * \param[in]     vsite    The vsite struct, when nullptr is passed, no MPI and no multi-threading is used
- * \param[in,out] x        The coordinates
- * \param[in]     dt       The time step
- * \param[in,out] v        When != nullptr, velocities for vsites are set as displacement/dt
- * \param[in]     ip       Interaction parameters
- * \param[in]     ilist    The interaction list
- * \param[in]     ePBC     The type of periodic boundary conditions
- * \param[in]     bMolPBC  When true, molecules are broken over PBC
- * \param[in]     cr       The communication record
- * \param[in]     box      The box
+ * \param[in]     vsite    The vsite struct, when nullptr is passed, no MPI and no multi-threading
+ * is used \param[in,out] x        The coordinates \param[in]     dt       The time step \param[in,out]
+ * v        When != nullptr, velocities for vsites are set as displacement/dt \param[in]     ip
+ * Interaction parameters \param[in]     ilist    The interaction list \param[in]     ePBC     The
+ * type of periodic boundary conditions \param[in]     bMolPBC  When true, molecules are broken over
+ * PBC \param[in]     cr       The communication record \param[in]     box      The box
  */
-void construct_vsites(const gmx_vsite_t *vsite,
-                      rvec x[],
-                      real dt, rvec v[],
-                      const t_iparams ip[], const t_ilist ilist[],
-                      int ePBC, gmx_bool bMolPBC,
-                      const t_commrec *cr,
-                      const matrix box);
+void construct_vsites(const gmx_vsite_t* vsite,
+                      rvec               x[],
+                      real               dt,
+                      rvec               v[],
+                      const t_iparams    ip[],
+                      const t_ilist      ilist[],
+                      int                ePBC,
+                      gmx_bool           bMolPBC,
+                      const t_commrec*   cr,
+                      const matrix       box);
 
 /*! \brief Create positions of vsite atoms for the whole system assuming all molecules are wholex
  *
  * \param[in]     mtop  The global topology
  * \param[in,out] x     The global coordinates
  */
-void constructVsitesGlobal(const gmx_mtop_t         &mtop,
-                           gmx::ArrayRef<gmx::RVec>  x);
+void constructVsitesGlobal(const gmx_mtop_t& mtop, gmx::ArrayRef<gmx::RVec> x);
 
-void spread_vsite_f(const gmx_vsite_t *vsite,
-                    const rvec x[],
-                    rvec f[], rvec *fshift,
-                    gmx_bool VirCorr, matrix vir,
-                    t_nrnb *nrnb, const t_idef *idef,
-                    int ePBC, gmx_bool bMolPBC, const t_graph *g, const matrix box,
-                    const t_commrec *cr, gmx_wallcycle *wcycle);
+void spread_vsite_f(const gmx_vsite_t* vsite,
+                    const rvec         x[],
+                    rvec               f[],
+                    rvec*              fshift,
+                    gmx_bool           VirCorr,
+                    matrix             vir,
+                    t_nrnb*            nrnb,
+                    const t_idef*      idef,
+                    int                ePBC,
+                    gmx_bool           bMolPBC,
+                    const t_graph*     g,
+                    const matrix       box,
+                    const t_commrec*   cr,
+                    gmx_wallcycle*     wcycle);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
@@ -132,15 +137,15 @@ void spread_vsite_f(const gmx_vsite_t *vsite,
  */
 
 /* Return the number of non-linear virtual site constructions in the system */
-int countNonlinearVsites(const gmx_mtop_t &mtop);
+int countNonlinearVsites(const gmx_mtop_t& mtop);
 
 /* Return the number of virtual sites that cross update groups
  *
  * \param[in] mtop                           The global topology
  * \param[in] updateGroupingPerMoleculetype  Update grouping per molecule type, pass empty when not using update groups
  */
-int countInterUpdategroupVsites(const gmx_mtop_t                            &mtop,
-                                gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupingPerMoleculetype);
+int countInterUpdategroupVsites(const gmx_mtop_t&                           mtop,
+                                gmx::ArrayRef<const gmx::RangePartitioning> updateGroupingPerMoleculetype);
 
 /* Initialize the virtual site struct,
  *
@@ -148,21 +153,17 @@ int countInterUpdategroupVsites(const gmx_mtop_t                            &mto
  * \param[in] cr    The communication record
  * \returns A valid vsite struct or nullptr when there are no virtual sites
  */
-std::unique_ptr<gmx_vsite_t>
-initVsite(const gmx_mtop_t &mtop,
-          const t_commrec  *cr);
+std::unique_ptr<gmx_vsite_t> initVsite(const gmx_mtop_t& mtop, const t_commrec* cr);
 
-void split_vsites_over_threads(const t_ilist   *ilist,
-                               const t_iparams *ip,
-                               const t_mdatoms *mdatoms,
-                               gmx_vsite_t     *vsite);
+void split_vsites_over_threads(const t_ilist*   ilist,
+                               const t_iparams* ip,
+                               const t_mdatoms* mdatoms,
+                               gmx_vsite_t*     vsite);
 /* Divide the vsite work-load over the threads.
  * Should be called at the end of the domain decomposition.
  */
 
-void set_vsite_top(gmx_vsite_t          *vsite,
-                   const gmx_localtop_t *top,
-                   const t_mdatoms      *md);
+void set_vsite_top(gmx_vsite_t* vsite, const gmx_localtop_t* top, const t_mdatoms* md);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */

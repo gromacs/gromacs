@@ -122,7 +122,7 @@ TEST(StringUtilityTest, SplitString)
     using ::testing::ElementsAre;
     using ::testing::IsEmpty;
     using ::testing::Matcher;
-    Matcher<std::vector<std::string> > matcher = ElementsAre("foo", "bar");
+    Matcher<std::vector<std::string>> matcher = ElementsAre("foo", "bar");
     EXPECT_THAT(gmx::splitString("foo bar"), matcher);
     EXPECT_THAT(gmx::splitString("  foo bar"), matcher);
     EXPECT_THAT(gmx::splitString("foo bar  "), matcher);
@@ -159,7 +159,8 @@ TEST(StringUtilityTest, SplitAndTrimDelimitedString)
     EXPECT_THAT(splitAndTrimDelimitedString("foo  ;  bar ", ';'), ElementsAre("foo", "bar"));
     EXPECT_THAT(splitAndTrimDelimitedString("  ; foo ;  bar ", ';'), ElementsAre("", "foo", "bar"));
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ;  bar ; ", ';'), ElementsAre("foo", "bar", ""));
-    EXPECT_THAT(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'), ElementsAre("", "foo", "bar", ""));
+    EXPECT_THAT(splitAndTrimDelimitedString(" ;  foo\n ;  bar ;  ", ';'),
+                ElementsAre("", "foo", "bar", ""));
     EXPECT_THAT(splitAndTrimDelimitedString(" foo  ; ; \tbar", ';'), ElementsAre("foo", "", "bar"));
 }
 
@@ -180,10 +181,7 @@ TEST(StringUtilityTest, CanCompareCaseInsensitive)
  * \param[in] length Max comparison length to use.
  * \param[in] expectedResult If we expect the result be a match between the strings or not.
  */
-void checkEqualCaseInsensitive(const std::string &foo,
-                               const std::string &bar,
-                               int                length,
-                               bool               expectedResult)
+void checkEqualCaseInsensitive(const std::string& foo, const std::string& bar, int length, bool expectedResult)
 {
     EXPECT_EQ(equalCaseInsensitive(foo, bar, length), expectedResult);
     EXPECT_EQ(equalCaseInsensitive(bar, foo, length), expectedResult);
@@ -230,8 +228,8 @@ TEST(FormatStringTest, HandlesLongStrings)
 TEST(StringFormatterTest, HandlesBasicFormatting)
 {
     int value = 103;
-    EXPECT_EQ("103", gmx::StringFormatter("%d") (value));
-    EXPECT_EQ("null", gmx::StringFormatter("null") (value));
+    EXPECT_EQ("103", gmx::StringFormatter("%d")(value));
+    EXPECT_EQ("null", gmx::StringFormatter("null")(value));
 }
 
 /********************************************************************
@@ -240,14 +238,14 @@ TEST(StringFormatterTest, HandlesBasicFormatting)
 
 TEST(formatAndJoinTest, Works)
 {
-    const char * const words[] = { "The", "quick", "brown", "fox" };
+    const char* const words[] = { "The", "quick", "brown", "fox" };
     EXPECT_EQ("The       .quick     .brown     .fox       ",
-              gmx::formatAndJoin(gmx::ArrayRef<const char *const>(words), ".",
+              gmx::formatAndJoin(gmx::ArrayRef<const char* const>(words), ".",
                                  gmx::StringFormatter("%-10s")));
 
     const int values[] = { 0, 1, 4 };
-    EXPECT_EQ("0,1,4", gmx::formatAndJoin(gmx::ArrayRef<const int>(values), ",",
-                                          gmx::StringFormatter("%d")));
+    EXPECT_EQ("0,1,4",
+              gmx::formatAndJoin(gmx::ArrayRef<const int>(values), ",", gmx::StringFormatter("%d")));
 }
 
 /********************************************************************
@@ -256,9 +254,10 @@ TEST(formatAndJoinTest, Works)
 
 TEST(JoinStringsTest, Works)
 {
-    const char * const               words[] = { "The", "quick", "brown", "fox" };
-    gmx::ArrayRef<const char *const> refToWords(words);
-    EXPECT_EQ("The; quick; brown; fox", gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
+    const char* const                words[] = { "The", "quick", "brown", "fox" };
+    gmx::ArrayRef<const char* const> refToWords(words);
+    EXPECT_EQ("The; quick; brown; fox",
+              gmx::joinStrings(refToWords.begin(), refToWords.end(), "; "));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(refToWords, "-"));
     EXPECT_EQ("The-quick-brown-fox", gmx::joinStrings(words, "-"));
 }
@@ -291,24 +290,20 @@ TEST(ReplaceAllTest, HandlesMatchesAtEnds)
 TEST(ReplaceAllTest, HandlesMultipleMatches)
 {
     const std::string text("Text aaa with multiple aaa matches");
-    EXPECT_EQ("Text bbbb with multiple bbbb matches",
-              gmx::replaceAll(text, "aaa", "bbbb"));
-    EXPECT_EQ("Text bbbb with multiple bbbb matches",
-              gmx::replaceAllWords(text, "aaa", "bbbb"));
+    EXPECT_EQ("Text bbbb with multiple bbbb matches", gmx::replaceAll(text, "aaa", "bbbb"));
+    EXPECT_EQ("Text bbbb with multiple bbbb matches", gmx::replaceAllWords(text, "aaa", "bbbb"));
 }
 
 TEST(ReplaceAllTest, HandlesWordBoundaries)
 {
     const std::string text("Text aaax with one word aaa match");
-    EXPECT_EQ("Text aaax with one word bbbb match",
-              gmx::replaceAllWords(text, "aaa", "bbbb"));
+    EXPECT_EQ("Text aaax with one word bbbb match", gmx::replaceAllWords(text, "aaa", "bbbb"));
 }
 
 TEST(ReplaceAllTest, HandlesPossibleRecursiveMatches)
 {
     const std::string text("Text with recursive aaabbbbbb matches");
-    EXPECT_EQ("Text with recursive aaaaaabbb matches",
-              gmx::replaceAll(text, "aaabbb", "aaaaaa"));
+    EXPECT_EQ("Text with recursive aaaaaabbb matches", gmx::replaceAll(text, "aaabbb", "aaaaaa"));
 }
 
 /********************************************************************
@@ -322,8 +317,8 @@ const char g_wrapText2[] = "A quick brown fox jumps\nover the lazy dog";
 //! Test string for wrapping with embedded line breaks and an empty line.
 const char g_wrapText3[] = "A quick brown fox jumps\n\nover the lazy dog";
 //! Test string for wrapping with a long word.
-const char g_wrapTextLongWord[]
-    = "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
+const char g_wrapTextLongWord[] =
+        "A quick brown fox jumps awordthatoverflowsaline over the lazy dog";
 //! Test string for wrapping with extra whitespace.
 const char g_wrapTextWhitespace[] = " A quick brown   fox jumps  \n over the lazy dog";
 
@@ -467,12 +462,10 @@ TEST_F(TextLineWrapperTest, WrapsCorrectlyWithExtraWhitespace)
     gmx::TextLineWrapper wrapper;
     wrapper.settings().setLineLength(14);
 
-    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14");
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14");
 
     wrapper.settings().setKeepFinalSpaces(true);
-    checkText(wrapper.wrapToString(g_wrapTextWhitespace),
-              "WrappedAt14WithTrailingWhitespace");
+    checkText(wrapper.wrapToString(g_wrapTextWhitespace), "WrappedAt14WithTrailingWhitespace");
 }
 
 } // namespace

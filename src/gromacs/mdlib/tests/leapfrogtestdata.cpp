@@ -67,7 +67,12 @@ namespace gmx
 namespace test
 {
 
-LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups, int nstpcouple) :
+LeapFrogTestData::LeapFrogTestData(int        numAtoms,
+                                   real       timestep,
+                                   const rvec v0,
+                                   const rvec f0,
+                                   int        numTCoupleGroups,
+                                   int        nstpcouple) :
     numAtoms_(numAtoms),
     timestep_(timestep),
     x0_(numAtoms),
@@ -85,9 +90,9 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     for (int i = 0; i < numAtoms_; i++)
     {
         // Typical PBC box size is tens of nanometers
-        x_[i][XX] = (i%21)*1.0;
-        x_[i][YY] = 6.5 + (i%13)*(-1.0);
-        x_[i][ZZ] = (i%32)*(0.0);
+        x_[i][XX] = (i % 21) * 1.0;
+        x_[i][YY] = 6.5 + (i % 13) * (-1.0);
+        x_[i][ZZ] = (i % 32) * (0.0);
 
         for (int d = 0; d < DIM; d++)
         {
@@ -101,7 +106,7 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
             v0_[i][d] = v_[i][d];
         }
         // Atom masses are ~1-100 g/mol
-        inverseMasses_[i] = 1.0/(1.0 + i%100);
+        inverseMasses_[i] = 1.0 / (1.0 + i % 100);
         for (int d = 0; d < DIM; d++)
         {
             inverseMassesPerDim_[i][d] = inverseMasses_[i];
@@ -138,7 +143,7 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
         kineticEnergyData_.ngtc = numTCoupleGroups_;
         for (int i = 0; i < numTCoupleGroups; i++)
         {
-            real         tCoupleLambda = 1.0 - (i + 1.0)/10.0;
+            real         tCoupleLambda = 1.0 - (i + 1.0) / 10.0;
             t_grp_tcstat temperatureCouplingGroupData;
             temperatureCouplingGroupData.lambda = tCoupleLambda;
             kineticEnergyData_.tcstat.emplace_back(temperatureCouplingGroupData);
@@ -184,7 +189,7 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
     {
         inputRecord_.epc        = epcPARRINELLORAHMAN;
         inputRecord_.nstpcouple = nstpcouple;
-        dtPressureCouple_       = inputRecord_.nstpcouple*inputRecord_.delta_t;
+        dtPressureCouple_       = inputRecord_.nstpcouple * inputRecord_.delta_t;
 
         velocityScalingMatrix_[XX][XX] = 1.2;
         velocityScalingMatrix_[XX][YY] = 0.0;
@@ -213,7 +218,6 @@ LeapFrogTestData::LeapFrogTestData(int numAtoms, real timestep, const rvec v0, c
         velocityScalingMatrix_[ZZ][YY] = 0.0;
         velocityScalingMatrix_[ZZ][ZZ] = 1.0;
     }
-
 }
 
 LeapFrogTestData::~LeapFrogTestData()
@@ -221,5 +225,5 @@ LeapFrogTestData::~LeapFrogTestData()
     sfree(mdAtoms_.cTC);
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

@@ -71,65 +71,64 @@ namespace test
  */
 class DensityFittingTest : public MdrunTestFixture
 {
-    public:
-        DensityFittingTest()
-        {
-            runner_.useTopGroAndNdxFromDatabase("argon12");
-            runner_.edrFileName_       = fileManager_.getTemporaryFilePath(".edr");
-        };
+public:
+    DensityFittingTest()
+    {
+        runner_.useTopGroAndNdxFromDatabase("argon12");
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
+    };
 
-        //! Check the output of mdrun
-        void checkMdrun(real energyTermMagnitude)
-        {
-            const FloatingPointTolerance energyTermTolerance =
+    //! Check the output of mdrun
+    void checkMdrun(real energyTermMagnitude)
+    {
+        const FloatingPointTolerance energyTermTolerance =
                 relativeToleranceAsFloatingPoint(energyTermMagnitude, 1e-4);
 
-            EnergyTermsToCompare energyTermsToCompare {
-                { { interaction_function[F_DENSITYFITTING].longname, energyTermTolerance },
-                  { interaction_function[F_EPOT].longname, energyTermTolerance } }
-            };
+        EnergyTermsToCompare energyTermsToCompare{
+            { { interaction_function[F_DENSITYFITTING].longname, energyTermTolerance },
+              { interaction_function[F_EPOT].longname, energyTermTolerance } }
+        };
 
-            TestReferenceData refData;
-            auto              checker = refData.rootChecker();
-            checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
-        }
+        TestReferenceData refData;
+        auto              checker = refData.rootChecker();
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
+    }
 
-        //! Mdp values for steepest-decent energy minimization with default density fitting parameters.
-        const std::string mdpEminDensfitYesUnsetValues = formatString(
-                    "integrator                       = steep\n"
-                    "nsteps                           = 2\n"
-                    "cutoff-scheme                    = verlet\n"
-                    "density-guided-simulation-active = yes\n"
-                    "density-guided-simulation-group  = FirstThreeOfTwelve\n"
-                    "density-guided-simulation-reference-density-filename = %s\n",
-                    TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str() );
+    //! Mdp values for steepest-decent energy minimization with default density fitting parameters.
+    const std::string mdpEminDensfitYesUnsetValues = formatString(
+            "integrator                       = steep\n"
+            "nsteps                           = 2\n"
+            "cutoff-scheme                    = verlet\n"
+            "density-guided-simulation-active = yes\n"
+            "density-guided-simulation-group  = FirstThreeOfTwelve\n"
+            "density-guided-simulation-reference-density-filename = %s\n",
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str());
 
-        //! Mdp values for md integrator with default density fitting parameters.
-        const std::string mdpMdDensfitYesUnsetValues = formatString(
-                    "integrator                       = md\n"
-                    "nsteps                           = 2\n"
-                    "cutoff-scheme                    = verlet\n"
-                    "density-guided-simulation-active = yes\n"
-                    "density-guided-simulation-group  = FirstThreeOfTwelve\n"
-                    "density-guided-simulation-reference-density-filename = %s\n",
-                    TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str() );
+    //! Mdp values for md integrator with default density fitting parameters.
+    const std::string mdpMdDensfitYesUnsetValues = formatString(
+            "integrator                       = md\n"
+            "nsteps                           = 2\n"
+            "cutoff-scheme                    = verlet\n"
+            "density-guided-simulation-active = yes\n"
+            "density-guided-simulation-group  = FirstThreeOfTwelve\n"
+            "density-guided-simulation-reference-density-filename = %s\n",
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc").c_str());
 
-        //! Mdp values for steepest-decent energy minimization with density fitting values set to non-defaults.
-        const std::string mdpDensiftAllDefaultsChanged_ = formatString(
-                    "density-guided-simulation-similarity-measure = relative-entropy\n"
-                    "density-guided-simulation-atom-spreading-weight = mass\n"
-                    "density-guided-simulation-force-constant = -1\n"
-                    "density-guided-simulation-gaussian-transform-spreading-width = 0.8\n"
-                    "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 6\n"
-                    "density-guided-simulation-normalize-densities = false\n"
-                    );
-        //! Set mdp values so that energy calculation interval and density guided simulation interval mismatch.
-        const std::string mdpEnergyAndDensityfittingIntervalMismatch_ = formatString(
-                    "nstcalcenergy = 7\n"
-                    "density-guided-simulation-nst = 3\n"
-                    );
-        //! The command line to call mdrun
-        CommandLine       commandLineForMdrun_;
+    //! Mdp values for steepest-decent energy minimization with density fitting values set to non-defaults.
+    const std::string mdpDensiftAllDefaultsChanged_ = formatString(
+            "density-guided-simulation-similarity-measure = relative-entropy\n"
+            "density-guided-simulation-atom-spreading-weight = mass\n"
+            "density-guided-simulation-force-constant = -1\n"
+            "density-guided-simulation-gaussian-transform-spreading-width = 0.8\n"
+            "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = "
+            "6\n"
+            "density-guided-simulation-normalize-densities = false\n");
+    //! Set mdp values so that energy calculation interval and density guided simulation interval mismatch.
+    const std::string mdpEnergyAndDensityfittingIntervalMismatch_ = formatString(
+            "nstcalcenergy = 7\n"
+            "density-guided-simulation-nst = 3\n");
+    //! The command line to call mdrun
+    CommandLine commandLineForMdrun_;
 };
 
 /* Fit a subset of three of twelve argon atoms into a reference density
@@ -168,7 +167,8 @@ TEST_F(DensityFittingTest, GromppErrorWhenEnergyEvaluationFrequencyMismatch)
 {
     runner_.useStringAsMdpFile(mdpMdDensfitYesUnsetValues + mdpEnergyAndDensityfittingIntervalMismatch_);
 
-    EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(), ".*is not a multiple of density-guided-simulation-nst.*");
+    EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(),
+                              ".*is not a multiple of density-guided-simulation-nst.*");
 }
 
 } // namespace test

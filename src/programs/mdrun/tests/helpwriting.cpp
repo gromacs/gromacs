@@ -66,11 +66,8 @@ TEST(MdrunTest, WritesHelp)
     // like mdrun call parse_common_args, which recognizes the
     // existence of a global help context. That context triggers the
     // writing of help and a fast exit of the tool.
-    HelpLinks             *links = nullptr;
-    CommandLineHelpContext context(&writer,
-                                   eHelpOutputFormat_Console,
-                                   links,
-                                   "dummy");
+    HelpLinks*                   links = nullptr;
+    CommandLineHelpContext       context(&writer, eHelpOutputFormat_Console, links, "dummy");
     GlobalCommandLineHelpContext global(context);
 
     // Call mdrun to get the help printed to the stream
@@ -85,6 +82,6 @@ TEST(MdrunTest, WritesHelp)
     checker.checkString(outputStream.toString(), "Help string");
 };
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

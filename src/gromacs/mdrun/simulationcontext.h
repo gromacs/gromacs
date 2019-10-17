@@ -58,7 +58,8 @@ struct gmx_multisim_t;
 namespace gmx
 {
 
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 
 /*! \cond libapi
  * \libinternal
@@ -99,49 +100,48 @@ template <typename T> class ArrayRef;
  */
 class SimulationContext final
 {
-    public:
-        /*!
-         * \brief Object must be initialized with non-default constructor.
-         */
-        SimulationContext() = delete;
-        /*!
-         * \brief Construct
-         *
-         * \param communicator            MPI communicator for this (set of) simulations
-         * \param multiSimDirectoryNames  Names of any directories used with -multidir
-         */
-        explicit SimulationContext(MPI_Comm                    communicator,
-                                   ArrayRef<const std::string> multiSimDirectoryNames);
+public:
+    /*!
+     * \brief Object must be initialized with non-default constructor.
+     */
+    SimulationContext() = delete;
+    /*!
+     * \brief Construct
+     *
+     * \param communicator            MPI communicator for this (set of) simulations
+     * \param multiSimDirectoryNames  Names of any directories used with -multidir
+     */
+    explicit SimulationContext(MPI_Comm communicator, ArrayRef<const std::string> multiSimDirectoryNames);
 
-        /*!
-         * \brief MPI communicator object for this simulation object.
-         *
-         * With real MPI,
-         *   the gmx wrapper binary has called MPI_Init, thus
-         *     MPI_COMM_WORLD is now valid to use, and
-         *   (in future) the gmxapi runner will handle such details
-         *     (e.g. via mpi4py) before creating its SimulationContext.
-         * In both cases, if a multi-simulation is in use, then its
-         * communicator(s) are found in multiSimulation_. This
-         * communicator is that of all ranks from all simulations, and
-         * will later be split into one for each simulation.
-         * TODO Perhaps (for simplicity) that communicator splitting
-         * task can be undertaken during multi-sim setup.
-         *
-         * With thread-MPI in both cases, the communicator is set up later
-         * during the process of spawning the threads that will be the MPI
-         * ranks. (Multi-simulation is not supported with thread-MPI.)
-         */
-        MPI_Comm communicator_ = MPI_COMM_NULL;
+    /*!
+     * \brief MPI communicator object for this simulation object.
+     *
+     * With real MPI,
+     *   the gmx wrapper binary has called MPI_Init, thus
+     *     MPI_COMM_WORLD is now valid to use, and
+     *   (in future) the gmxapi runner will handle such details
+     *     (e.g. via mpi4py) before creating its SimulationContext.
+     * In both cases, if a multi-simulation is in use, then its
+     * communicator(s) are found in multiSimulation_. This
+     * communicator is that of all ranks from all simulations, and
+     * will later be split into one for each simulation.
+     * TODO Perhaps (for simplicity) that communicator splitting
+     * task can be undertaken during multi-sim setup.
+     *
+     * With thread-MPI in both cases, the communicator is set up later
+     * during the process of spawning the threads that will be the MPI
+     * ranks. (Multi-simulation is not supported with thread-MPI.)
+     */
+    MPI_Comm communicator_ = MPI_COMM_NULL;
 
-        /*!
-         * \brief Multi-sim handler (if required by e.g. gmx mdrun
-         * -multidir; only supported with real MPI)
-         */
-        std::unique_ptr<gmx_multisim_t> multiSimulation_;
+    /*!
+     * \brief Multi-sim handler (if required by e.g. gmx mdrun
+     * -multidir; only supported with real MPI)
+     */
+    std::unique_ptr<gmx_multisim_t> multiSimulation_;
 };
 //! \endcond
 
-}      // end namespace gmx
+} // end namespace gmx
 
-#endif //GROMACS_SIMULATIONCONTEXT_H
+#endif // GROMACS_SIMULATIONCONTEXT_H

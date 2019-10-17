@@ -65,8 +65,7 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
         do
         {
             c = toupper(fgetc(stdin));
-        }
-        while ((c != 'Y') && (c != 'N'));
+        } while ((c != 'Y') && (c != 'N'));
 
         return (c == 'Y');
     }
@@ -76,9 +75,9 @@ static gmx_bool gmx_ask_yesno(gmx_bool bASK)
     }
 }
 
-void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplicate, int natoms)
+void write_index(const char* outf, t_blocka* b, char** gnames, gmx_bool bDuplicate, int natoms)
 {
-    FILE *out;
+    FILE* out;
     int   i, j, k;
 
     out = gmx_ffopen(outf, "w");
@@ -86,10 +85,10 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     for (i = 0; (i < b->nr); i++)
     {
         fprintf(out, "[ %s ]", gnames[i]);
-        for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
+        for (k = 0, j = b->index[i]; j < b->index[i + 1]; j++, k++)
         {
             const char sep = (k % 15 == 0 ? '\n' : ' ');
-            fprintf(out, "%c%4d", sep, b->a[j]+1);
+            fprintf(out, "%c%4d", sep, b->a[j] + 1);
         }
         fprintf(out, "\n");
     }
@@ -101,10 +100,10 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
         for (i = 0; (i < b->nr); i++)
         {
             fprintf(out, "[ %s_copy ]", gnames[i]);
-            for (k = 0, j = b->index[i]; j < b->index[i+1]; j++, k++)
+            for (k = 0, j = b->index[i]; j < b->index[i + 1]; j++, k++)
             {
                 const char sep = (k % 15 == 0 ? '\n' : ' ');
-                fprintf(out, "%c%4d", sep, b->a[j]+1 + natoms);
+                fprintf(out, "%c%4d", sep, b->a[j] + 1 + natoms);
             }
             fprintf(out, "\n");
         }
@@ -113,13 +112,13 @@ void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplica
     gmx_ffclose(out);
 }
 
-void add_grp(t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std::string &name)
+void add_grp(t_blocka* b, char*** gnames, gmx::ArrayRef<const int> a, const std::string& name)
 {
-    srenew(b->index, b->nr+2);
-    srenew(*gnames, b->nr+1);
+    srenew(b->index, b->nr + 2);
+    srenew(*gnames, b->nr + 1);
     (*gnames)[b->nr] = gmx_strdup(name.c_str());
 
-    srenew(b->a, b->nra+a.size());
+    srenew(b->a, b->nra + a.size());
     for (gmx::index i = 0; (i < a.ssize()); i++)
     {
         b->a[b->nra++] = a[i];
@@ -139,24 +138,24 @@ void add_grp(t_blocka *b, char ***gnames, gmx::ArrayRef<const int> a, const std:
  * \param[in] index The index to check.
  * \returns True if groups are the same.
  */
-static bool grp_cmp(t_blocka *b, gmx::ArrayRef<const int> a, int index)
+static bool grp_cmp(t_blocka* b, gmx::ArrayRef<const int> a, int index)
 {
     if (index < 0)
     {
-        index = b->nr-1+index;
+        index = b->nr - 1 + index;
     }
     if (index >= b->nr)
     {
         gmx_fatal(FARGS, "no such index group %d in t_blocka (nr=%d)", index, b->nr);
     }
     /* compare sizes */
-    if (a.ssize() != b->index[index+1] - b->index[index])
+    if (a.ssize() != b->index[index + 1] - b->index[index])
     {
         return FALSE;
     }
     for (gmx::index i = 0; i < a.ssize(); i++)
     {
-        if (a[i] != b->a[b->index[index]+i])
+        if (a[i] != b->a[b->index[index] + i])
         {
             return false;
         }
@@ -164,19 +163,14 @@ static bool grp_cmp(t_blocka *b, gmx::ArrayRef<const int> a, int index)
     return true;
 }
 //! Print out how many residues of a certain type are present.
-static void p_status(gmx::ArrayRef<const std::string> restype,
-                     gmx::ArrayRef<const std::string> typenames)
+static void p_status(gmx::ArrayRef<const std::string> restype, gmx::ArrayRef<const std::string> typenames)
 {
     std::vector<int> counter(typenames.size(), 0);
-    std::transform(typenames.begin(), typenames.end(), counter.begin(),
-                   [&restype](const std::string &typenm) {
-                       return std::count_if(restype.begin(), restype.end(),
-                                            [&typenm](const std::string &res) {
-                                                return gmx_strcasecmp(res.c_str(), typenm.c_str()) == 0;
-                                            }
-                                            );
-                   }
-                   );
+    std::transform(typenames.begin(), typenames.end(), counter.begin(), [&restype](const std::string& typenm) {
+        return std::count_if(restype.begin(), restype.end(), [&typenm](const std::string& res) {
+            return gmx_strcasecmp(res.c_str(), typenm.c_str()) == 0;
+        });
+    });
 
     for (int i = 0; (i < typenames.ssize()); i++)
     {
@@ -197,9 +191,9 @@ static void p_status(gmx::ArrayRef<const std::string> restype,
  * \param[in] bMatch whether to return matching atoms or those that don't.
  * \returns Vector of atoms that match.
  */
-static std::vector<int> mk_aid(const t_atoms                   *atoms,
+static std::vector<int> mk_aid(const t_atoms*                   atoms,
                                gmx::ArrayRef<const std::string> restype,
-                               const std::string               &typestring,
+                               const std::string&               typestring,
                                bool                             bMatch)
 {
     std::vector<int> a;
@@ -219,23 +213,30 @@ static std::vector<int> mk_aid(const t_atoms                   *atoms,
     return a;
 }
 
-typedef struct {
-    char    *rname;
+typedef struct
+{
+    char*    rname;
     gmx_bool bNeg;
-    char    *gname;
+    char*    gname;
 } restp_t;
 
-static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *atoms,
-                          t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
+static void analyse_other(gmx::ArrayRef<std::string> restype,
+                          const t_atoms*             atoms,
+                          t_blocka*                  gb,
+                          char***                    gn,
+                          gmx_bool                   bASK,
+                          gmx_bool                   bVerb)
 {
-    restp_t *restp = nullptr;
-    char   **attp  = nullptr;
-    char    *rname, *aname;
+    restp_t* restp = nullptr;
+    char**   attp  = nullptr;
+    char *   rname, *aname;
     int      i, resind, natp, nrestp = 0;
 
     for (i = 0; (i < atoms->nres); i++)
     {
-        if (gmx_strcasecmp(restype[i].c_str(), "Protein") && gmx_strcasecmp(restype[i].c_str(), "DNA") && gmx_strcasecmp(restype[i].c_str(), "RNA") && gmx_strcasecmp(restype[i].c_str(), "Water"))
+        if (gmx_strcasecmp(restype[i].c_str(), "Protein")
+            && gmx_strcasecmp(restype[i].c_str(), "DNA") && gmx_strcasecmp(restype[i].c_str(), "RNA")
+            && gmx_strcasecmp(restype[i].c_str(), "Water"))
         {
             break;
         }
@@ -245,14 +246,17 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
         /* we have others */
         if (bVerb)
         {
-            printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into groups...\n");
+            printf("Analysing residues not classified as Protein/DNA/RNA/Water and splitting into "
+                   "groups...\n");
         }
         for (int k = 0; (k < atoms->nr); k++)
         {
             resind = atoms->atom[k].resind;
             rname  = *atoms->resinfo[resind].name;
-            if (gmx_strcasecmp(restype[resind].c_str(), "Protein") && gmx_strcasecmp(restype[resind].c_str(), "DNA") &&
-                gmx_strcasecmp(restype[resind].c_str(), "RNA") && gmx_strcasecmp(restype[resind].c_str(), "Water"))
+            if (gmx_strcasecmp(restype[resind].c_str(), "Protein")
+                && gmx_strcasecmp(restype[resind].c_str(), "DNA")
+                && gmx_strcasecmp(restype[resind].c_str(), "RNA")
+                && gmx_strcasecmp(restype[resind].c_str(), "Water"))
             {
                 int l;
                 for (l = 0; (l < nrestp); l++)
@@ -265,7 +269,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
                 }
                 if (l == nrestp)
                 {
-                    srenew(restp, nrestp+1);
+                    srenew(restp, nrestp + 1);
                     restp[nrestp].rname = gmx_strdup(rname);
                     restp[nrestp].bNeg  = FALSE;
                     restp[nrestp].gname = gmx_strdup(rname);
@@ -279,8 +283,8 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
             for (int j = 0; (j < atoms->nr); j++)
             {
                 rname = *atoms->resinfo[atoms->atom[j].resind].name;
-                if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg) ||
-                    (strcmp(restp[i].rname, rname) != 0 &&  restp[i].bNeg))
+                if ((strcmp(restp[i].rname, rname) == 0 && !restp[i].bNeg)
+                    || (strcmp(restp[i].rname, rname) != 0 && restp[i].bNeg))
                 {
                     aid.push_back(j);
                 }
@@ -307,7 +311,7 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
                         if (l == natp)
                         {
                             srenew(attp, ++natp);
-                            attp[natp-1] = aname;
+                            attp[natp - 1] = aname;
                         }
                     }
                     if (natp > 1)
@@ -344,11 +348,11 @@ static void analyse_other(gmx::ArrayRef<std::string> restype, const t_atoms *ato
 typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     /** The set of atom names that will be used to form this index group */
-    const char **defining_atomnames;
+    const char** defining_atomnames;
     /** Size of the defining_atomnames array */
-    int          num_defining_atomnames;
+    int num_defining_atomnames;
     /** Name of this index group */
-    const char  *group_name;
+    const char* group_name;
     /** Whether the above atom names name the atoms in the group, or
         those not in the group */
     gmx_bool bTakeComplement;
@@ -364,42 +368,43 @@ typedef struct gmx_help_make_index_group // NOLINT(clang-analyzer-optin.performa
     int compareto;
 } t_gmx_help_make_index_group;
 
-static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms *atoms,
-                         t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
+static void analyse_prot(gmx::ArrayRef<const std::string> restype,
+                         const t_atoms*                   atoms,
+                         t_blocka*                        gb,
+                         char***                          gn,
+                         gmx_bool                         bASK,
+                         gmx_bool                         bVerb)
 {
     /* lists of atomnames to be used in constructing index groups: */
-    static const char *pnoh[]    = { "H", "HN" };
-    static const char *pnodum[]  = {
-        "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2",
-        "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2"
-    };
-    static const char *calpha[]  = { "CA" };
-    static const char *bb[]      = { "N", "CA", "C" };
-    static const char *mc[]      = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
-    static const char *mcb[]     = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
-    static const char *mch[]     = {
-        "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT",
-        "H1", "H2", "H3", "H", "HN"
-    };
+    static const char* pnoh[]   = { "H", "HN" };
+    static const char* pnodum[] = { "MN1",  "MN2",  "MCB1", "MCB2", "MCG1", "MCG2",
+                                    "MCD1", "MCD2", "MCE1", "MCE2", "MNZ1", "MNZ2" };
+    static const char* calpha[] = { "CA" };
+    static const char* bb[]     = { "N", "CA", "C" };
+    static const char* mc[]     = { "N", "CA", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
+    static const char* mcb[] = { "N", "CA", "CB", "C", "O", "O1", "O2", "OC1", "OC2", "OT", "OXT" };
+    static const char* mch[] = { "N",  "CA",  "C",  "O",  "O1", "O2", "OC1", "OC2",
+                                 "OT", "OXT", "H1", "H2", "H3", "H",  "HN" };
 
-    static const t_gmx_help_make_index_group constructing_data[] =
-    {{ nullptr,   0, "Protein",      TRUE,  -1, -1},
-     { pnoh,   asize(pnoh),   "Protein-H",    TRUE,  0,  -1},
-     { calpha, asize(calpha), "C-alpha",      FALSE, -1, -1},
-     { bb,     asize(bb),     "Backbone",     FALSE, -1, -1},
-     { mc,     asize(mc),     "MainChain",    FALSE, -1, -1},
-     { mcb,    asize(mcb),    "MainChain+Cb", FALSE, -1, -1},
-     { mch,    asize(mch),    "MainChain+H",  FALSE, -1, -1},
-     { mch,    asize(mch),    "SideChain",    TRUE,  -1, -1},
-     { mch,    asize(mch),    "SideChain-H",  TRUE,  11, -1},
-     { pnodum, asize(pnodum), "Prot-Masses",  TRUE,  -1, 0}, };
-    const int   num_index_groups = asize(constructing_data);
+    static const t_gmx_help_make_index_group constructing_data[] = {
+        { nullptr, 0, "Protein", TRUE, -1, -1 },
+        { pnoh, asize(pnoh), "Protein-H", TRUE, 0, -1 },
+        { calpha, asize(calpha), "C-alpha", FALSE, -1, -1 },
+        { bb, asize(bb), "Backbone", FALSE, -1, -1 },
+        { mc, asize(mc), "MainChain", FALSE, -1, -1 },
+        { mcb, asize(mcb), "MainChain+Cb", FALSE, -1, -1 },
+        { mch, asize(mch), "MainChain+H", FALSE, -1, -1 },
+        { mch, asize(mch), "SideChain", TRUE, -1, -1 },
+        { mch, asize(mch), "SideChain-H", TRUE, 11, -1 },
+        { pnodum, asize(pnodum), "Prot-Masses", TRUE, -1, 0 },
+    };
+    const int num_index_groups = asize(constructing_data);
 
-    int         n, j;
-    int         npres;
-    gmx_bool    match;
-    char        ndx_name[STRLEN], *atnm;
-    int         i;
+    int      n, j;
+    int      npres;
+    gmx_bool match;
+    char     ndx_name[STRLEN], *atnm;
+    int      i;
 
     if (bVerb)
     {
@@ -432,7 +437,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                     {
                         atnm++;
                     }
-                    if ( (constructing_data[i].wholename == -1) || (j < constructing_data[i].wholename) )
+                    if ((constructing_data[i].wholename == -1) || (j < constructing_data[i].wholename))
                     {
                         if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j], atnm))
                         {
@@ -441,7 +446,9 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                     }
                     else
                     {
-                        if (0 == gmx_strncasecmp(constructing_data[i].defining_atomnames[j], atnm, strlen(constructing_data[i].defining_atomnames[j])))
+                        if (0
+                            == gmx_strncasecmp(constructing_data[i].defining_atomnames[j], atnm,
+                                               strlen(constructing_data[i].defining_atomnames[j])))
                         {
                             match = TRUE;
                         }
@@ -455,7 +462,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
         }
         /* if we want to add this group always or it differs from previous
            group, add it: */
-        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, aid, constructing_data[i].compareto-i) )
+        if (-1 == constructing_data[i].compareto || !grp_cmp(gb, aid, constructing_data[i].compareto - i))
         {
             add_grp(gb, gn, aid, constructing_data[i].group_name);
         }
@@ -471,7 +478,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
             {
                 int resind;
                 aid.clear();
-                for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+                for (n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
                 {
                     resind = atoms->atom[n].resind;
                     for (; ((atoms->atom[n].resind == resind) && (n < atoms->nr)); n++)
@@ -479,7 +486,9 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                         match = FALSE;
                         for (j = 0; (j < constructing_data[i].num_defining_atomnames); j++)
                         {
-                            if (0 == gmx_strcasecmp(constructing_data[i].defining_atomnames[j], *atoms->atomname[n]))
+                            if (0
+                                == gmx_strcasecmp(constructing_data[i].defining_atomnames[j],
+                                                  *atoms->atomname[n]))
                             {
                                 match = TRUE;
                             }
@@ -492,10 +501,10 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                     /* copy the residuename to the tail of the groupname */
                     if (!aid.empty())
                     {
-                        t_resinfo *ri;
+                        t_resinfo* ri;
                         ri = &atoms->resinfo[resind];
-                        sprintf(ndx_name, "%s_%s%d%c",
-                                constructing_data[i].group_name, *ri->name, ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
+                        sprintf(ndx_name, "%s_%s%d%c", constructing_data[i].group_name, *ri->name,
+                                ri->nr, ri->ic == ' ' ? '\0' : ri->ic);
                         add_grp(gb, gn, aid, ndx_name);
                         aid.clear();
                     }
@@ -507,7 +516,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
         {
             /* Make swap sidechain C=O index */
             aid.clear();
-            for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr)); )
+            for (int n = 0; ((atoms->atom[n].resind < npres) && (n < atoms->nr));)
             {
                 int resind = atoms->atom[n].resind;
                 int hold   = -1;
@@ -533,7 +542,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                         {
                             gmx_incons("Atom naming problem");
                         }
-                        aid[hold+1] = n;
+                        aid[hold + 1] = n;
                     }
                     else if (strcmp("O1", *atoms->atomname[n]) == 0)
                     {
@@ -541,7 +550,7 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
                         {
                             gmx_incons("Atom naming problem");
                         }
-                        aid[hold+1] = n;
+                        aid[hold + 1] = n;
                     }
                     else
                     {
@@ -559,12 +568,12 @@ static void analyse_prot(gmx::ArrayRef<const std::string> restype, const t_atoms
 }
 
 
-void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_bool bVerb)
+void analyse(const t_atoms* atoms, t_blocka* gb, char*** gn, gmx_bool bASK, gmx_bool bVerb)
 {
-    char             *resnm;
-    int               i;
-    int               iwater, iion;
-    int               nwater, nion;
+    char* resnm;
+    int   i;
+    int   iwater, iion;
+    int   nwater, nion;
 
     if (bVerb)
     {
@@ -579,7 +588,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
     add_grp(gb, gn, aid, "System");
 
     /* For every residue, get a pointer to the residue type name */
-    ResidueType              rt;
+    ResidueType rt;
 
     std::vector<std::string> restype;
     std::vector<std::string> previousTypename;
@@ -668,31 +677,31 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
         if (!gmx_strcasecmp((*gn)[i], "Water"))
         {
             iwater = i;
-            nwater = gb->index[i+1]-gb->index[i];
+            nwater = gb->index[i + 1] - gb->index[i];
         }
         else if (!gmx_strcasecmp((*gn)[i], "Ion"))
         {
             iion = i;
-            nion = gb->index[i+1]-gb->index[i];
+            nion = gb->index[i + 1] - gb->index[i];
         }
     }
 
     if (nwater > 0 && nion > 0)
     {
-        srenew(gb->index, gb->nr+2);
-        srenew(*gn, gb->nr+1);
+        srenew(gb->index, gb->nr + 2);
+        srenew(*gn, gb->nr + 1);
         (*gn)[gb->nr] = gmx_strdup("Water_and_ions");
-        srenew(gb->a, gb->nra+nwater+nion);
+        srenew(gb->a, gb->nra + nwater + nion);
         if (nwater > 0)
         {
-            for (i = gb->index[iwater]; i < gb->index[iwater+1]; i++)
+            for (i = gb->index[iwater]; i < gb->index[iwater + 1]; i++)
             {
                 gb->a[gb->nra++] = gb->a[i];
             }
         }
         if (nion > 0)
         {
-            for (i = gb->index[iion]; i < gb->index[iion+1]; i++)
+            for (i = gb->index[iion]; i < gb->index[iion + 1]; i++)
             {
                 gb->a[gb->nra++] = gb->a[i];
             }
@@ -703,7 +712,7 @@ void analyse(const t_atoms *atoms, t_blocka *gb, char ***gn, gmx_bool bASK, gmx_
 }
 
 
-void check_index(const char *gname, int n, int index[], const char *traj, int natoms)
+void check_index(const char* gname, int n, int index[], const char* traj, int natoms)
 {
     int i;
 
@@ -711,25 +720,26 @@ void check_index(const char *gname, int n, int index[], const char *traj, int na
     {
         if (index[i] >= natoms)
         {
-            gmx_fatal(FARGS, "%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
-                      gname ? gname : "Index", i+1, index[i]+1,
-                      traj ? traj : "the trajectory", natoms);
+            gmx_fatal(FARGS,
+                      "%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
+                      gname ? gname : "Index", i + 1, index[i] + 1, traj ? traj : "the trajectory",
+                      natoms);
         }
         else if (index[i] < 0)
         {
             gmx_fatal(FARGS, "%s atom number (index[%d]=%d) is less than zero",
-                      gname ? gname : "Index", i+1, index[i]+1);
+                      gname ? gname : "Index", i + 1, index[i] + 1);
         }
     }
 }
 
-t_blocka *init_index(const char *gfile, char ***grpname)
+t_blocka* init_index(const char* gfile, char*** grpname)
 {
-    FILE      *in;
-    t_blocka  *b;
-    int        maxentries;
-    int        i, j;
-    char       line[STRLEN], *pt, str[STRLEN];
+    FILE*     in;
+    t_blocka* b;
+    int       maxentries;
+    int       i, j;
+    char      line[STRLEN], *pt, str[STRLEN];
 
     in = gmx_ffopen(gfile, "r");
     snew(b, 1);
@@ -744,14 +754,14 @@ t_blocka *init_index(const char *gfile, char ***grpname)
         if (get_header(line, str))
         {
             b->nr++;
-            srenew(b->index, b->nr+1);
+            srenew(b->index, b->nr + 1);
             srenew(*grpname, b->nr);
             if (b->nr == 1)
             {
                 b->index[0] = 0;
             }
-            b->index[b->nr]     = b->index[b->nr-1];
-            (*grpname)[b->nr-1] = gmx_strdup(str);
+            b->index[b->nr]       = b->index[b->nr - 1];
+            (*grpname)[b->nr - 1] = gmx_strdup(str);
         }
         else
         {
@@ -769,10 +779,10 @@ t_blocka *init_index(const char *gfile, char ***grpname)
                     srenew(b->a, maxentries);
                 }
                 assert(b->a != nullptr); // for clang analyzer
-                b->a[i] = strtol(str, nullptr, 10)-1;
+                b->a[i] = strtol(str, nullptr, 10) - 1;
                 b->index[b->nr]++;
                 (b->nra)++;
-                pt = strstr(pt, str)+strlen(str);
+                pt = strstr(pt, str) + strlen(str);
             }
         }
     }
@@ -781,12 +791,11 @@ t_blocka *init_index(const char *gfile, char ***grpname)
     for (i = 0; (i < b->nr); i++)
     {
         assert(b->a != nullptr); // for clang analyzer
-        for (j = b->index[i]; (j < b->index[i+1]); j++)
+        for (j = b->index[i]; (j < b->index[i + 1]); j++)
         {
             if (b->a[j] < 0)
             {
-                fprintf(stderr, "\nWARNING: negative index %d in group %s\n\n",
-                        b->a[j], (*grpname)[i]);
+                fprintf(stderr, "\nWARNING: negative index %d in group %s\n\n", b->a[j], (*grpname)[i]);
             }
         }
     }
@@ -794,7 +803,7 @@ t_blocka *init_index(const char *gfile, char ***grpname)
     return b;
 }
 
-static void minstring(char *str)
+static void minstring(char* str)
 {
     int i;
 
@@ -807,7 +816,7 @@ static void minstring(char *str)
     }
 }
 
-int find_group(const char *s, int ngrps, char **grpname)
+int find_group(const char* s, int ngrps, char** grpname)
 {
     int      aa, i, n;
     char     string[STRLEN];
@@ -848,13 +857,13 @@ int find_group(const char *s, int ngrps, char **grpname)
     if (aa == -1)
     {
         char key[STRLEN];
-        strncpy(key, s, sizeof(key)-1);
-        key[STRLEN-1] = '\0';
+        strncpy(key, s, sizeof(key) - 1);
+        key[STRLEN - 1] = '\0';
         upstring(key);
         minstring(key);
         for (i = 0; i < ngrps; i++)
         {
-            strncpy(string, grpname[i], STRLEN-1);
+            strncpy(string, grpname[i], STRLEN - 1);
             upstring(string);
             minstring(string);
             if (strstr(string, key) != nullptr)
@@ -875,12 +884,12 @@ int find_group(const char *s, int ngrps, char **grpname)
     return aa;
 }
 
-static int qgroup(int *a, int ngrps, char **grpname)
+static int qgroup(int* a, int ngrps, char** grpname)
 {
     char     s[STRLEN];
     int      aa;
     gmx_bool bInRange;
-    char    *end;
+    char*    end;
 
     do
     {
@@ -892,8 +901,7 @@ static int qgroup(int *a, int ngrps, char **grpname)
                 gmx_fatal(FARGS, "Cannot read from input");
             }
             trim(s); /* remove spaces */
-        }
-        while (strlen(s) == 0);
+        } while (strlen(s) == 0);
         aa = strtol(s, &end, 10);
         if (aa == 0 && end[0] != '\0') /* string entered */
         {
@@ -904,15 +912,14 @@ static int qgroup(int *a, int ngrps, char **grpname)
         {
             printf("Error: No such group '%s'\n", s);
         }
-    }
-    while (!bInRange);
+    } while (!bInRange);
     printf("Selected %d: '%s'\n", aa, grpname[aa]);
     *a = aa;
     return aa;
 }
 
-static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
-                      int ngrps, int isize[], int *index[], int grpnr[])
+static void
+rd_groups(t_blocka* grps, char** grpname, char* gnames[], int ngrps, int isize[], int* index[], int grpnr[])
 {
     int i, j, gnr1;
 
@@ -923,7 +930,7 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
     for (i = 0; (i < grps->nr); i++)
     {
         fprintf(stderr, "Group %5d (%15s) has %5d elements\n", i, grpname[i],
-                grps->index[i+1]-grps->index[i]);
+                grps->index[i + 1] - grps->index[i]);
     }
     for (i = 0; (i < ngrps); i++)
     {
@@ -934,10 +941,9 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
                 gnr1 = qgroup(&grpnr[i], grps->nr, grpname);
                 if ((gnr1 < 0) || (gnr1 >= grps->nr))
                 {
-                    fprintf(stderr, "Select between %d and %d.\n", 0, grps->nr-1);
+                    fprintf(stderr, "Select between %d and %d.\n", 0, grps->nr - 1);
                 }
-            }
-            while ((gnr1 < 0) || (gnr1 >= grps->nr));
+            } while ((gnr1 < 0) || (gnr1 >= grps->nr));
         }
         else
         {
@@ -945,21 +951,20 @@ static void rd_groups(t_blocka *grps, char **grpname, char *gnames[],
             gnr1 = 0;
         }
         gnames[i] = gmx_strdup(grpname[gnr1]);
-        isize[i]  = grps->index[gnr1+1]-grps->index[gnr1];
+        isize[i]  = grps->index[gnr1 + 1] - grps->index[gnr1];
         snew(index[i], isize[i]);
         for (j = 0; (j < isize[i]); j++)
         {
-            index[i][j] = grps->a[grps->index[gnr1]+j];
+            index[i][j] = grps->a[grps->index[gnr1] + j];
         }
     }
 }
 
-void rd_index(const char *statfile, int ngrps, int isize[],
-              int *index[], char *grpnames[])
+void rd_index(const char* statfile, int ngrps, int isize[], int* index[], char* grpnames[])
 {
-    char    **gnames;
-    t_blocka *grps;
-    int      *grpnr;
+    char**    gnames;
+    t_blocka* grps;
+    int*      grpnr;
 
     snew(grpnr, ngrps);
     if (!statfile)
@@ -978,12 +983,11 @@ void rd_index(const char *statfile, int ngrps, int isize[],
     sfree(grps);
 }
 
-void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
-               int isize[], int *index[], char *grpnames[])
+void get_index(const t_atoms* atoms, const char* fnm, int ngrps, int isize[], int* index[], char* grpnames[])
 {
-    char    ***gnames;
-    t_blocka  *grps = nullptr;
-    int       *grpnr;
+    char***   gnames;
+    t_blocka* grps = nullptr;
+    int*      grpnr;
 
     snew(grpnr, ngrps);
     snew(gnames, 1);
@@ -1014,21 +1018,21 @@ void get_index(const t_atoms *atoms, const char *fnm, int ngrps,
     sfree(grps);
 }
 
-t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
+t_cluster_ndx* cluster_index(FILE* fplog, const char* ndx)
 {
-    t_cluster_ndx *c;
+    t_cluster_ndx* c;
     int            i;
 
     snew(c, 1);
-    c->clust     = init_index(ndx, &c->grpname);
-    c->maxframe  = -1;
+    c->clust    = init_index(ndx, &c->grpname);
+    c->maxframe = -1;
     for (i = 0; (i < c->clust->nra); i++)
     {
         c->maxframe = std::max(c->maxframe, c->clust->a[i]);
     }
     fprintf(fplog ? fplog : stdout,
-            "There are %d clusters containing %d structures, highest framenr is %d\n",
-            c->clust->nr, c->clust->nra, c->maxframe);
+            "There are %d clusters containing %d structures, highest framenr is %d\n", c->clust->nr,
+            c->clust->nra, c->maxframe);
     if (debug)
     {
         pr_blocka(debug, 0, "clust", c->clust, TRUE);
@@ -1036,8 +1040,10 @@ t_cluster_ndx *cluster_index(FILE *fplog, const char *ndx)
         {
             if ((c->clust->a[i] < 0) || (c->clust->a[i] > c->maxframe))
             {
-                gmx_fatal(FARGS, "Range check error for c->clust->a[%d] = %d\n"
-                          "should be within 0 and %d", i, c->clust->a[i], c->maxframe+1);
+                gmx_fatal(FARGS,
+                          "Range check error for c->clust->a[%d] = %d\n"
+                          "should be within 0 and %d",
+                          i, c->clust->a[i], c->maxframe + 1);
             }
         }
     }

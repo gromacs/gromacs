@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,8 +57,7 @@ namespace gmx
 namespace internal
 {
 
-void assertHandler(const char *condition, const char *msg,
-                   const char *func, const char *file, int line)
+void assertHandler(const char* condition, const char* msg, const char* func, const char* file, int line)
 {
     printFatalErrorHeader(stderr, "Assertion failed", func, file, line);
     std::fprintf(stderr, "Condition: %s\n", condition);
@@ -67,7 +66,7 @@ void assertHandler(const char *condition, const char *msg,
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
-}   // namespace internal
+} // namespace internal
 //! \endcond
 
 } // namespace gmx

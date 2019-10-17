@@ -56,64 +56,62 @@ namespace gmx
 class MimicCommunicator
 {
 
-    public:
-        /*! \brief
-         * Initializes the communicator
-         */
-        void init();
+public:
+    /*! \brief
+     * Initializes the communicator
+     */
+    void init();
 
-        /*! \brief
-         * Sends the data needed for MiMiC initialization
-         *
-         * That includes number of atoms, element numbers, charges, masses,
-         * maximal order of multipoles (0 for point-charge forcefields),
-         * number of molecules, number of atoms per each molecule,
-         * bond constraints data
-         *
-         * @param mtop global topology data
-         * @param coords coordinates of all atoms
-         */
-        void sendInitData(gmx_mtop_t                  *mtop,
-                          PaddedHostVector<gmx::RVec>  coords);
+    /*! \brief
+     * Sends the data needed for MiMiC initialization
+     *
+     * That includes number of atoms, element numbers, charges, masses,
+     * maximal order of multipoles (0 for point-charge forcefields),
+     * number of molecules, number of atoms per each molecule,
+     * bond constraints data
+     *
+     * @param mtop global topology data
+     * @param coords coordinates of all atoms
+     */
+    void sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx::RVec> coords);
 
-        /*! \brief
-         * Gets the number of MD steps to perform from MiMiC
-         *
-         * @return nsteps the number of MD steps to perform
-         */
-        int64_t getStepNumber();
+    /*! \brief
+     * Gets the number of MD steps to perform from MiMiC
+     *
+     * @return nsteps the number of MD steps to perform
+     */
+    int64_t getStepNumber();
 
-        /*! \brief
-         * Receive and array of updated atomic coordinates from MiMiC
-         *
-         * @param x array of coordinates to fill
-         * @param natoms number of atoms in the system
-         */
-        void getCoords(PaddedHostVector<RVec> *x, int natoms);
+    /*! \brief
+     * Receive and array of updated atomic coordinates from MiMiC
+     *
+     * @param x array of coordinates to fill
+     * @param natoms number of atoms in the system
+     */
+    void getCoords(PaddedHostVector<RVec>* x, int natoms);
 
-        /*! \brief
-         * Send the potential energy value to MiMiC
-         *
-         * @param energy energy value to send
-         */
-        void sendEnergies(real energy);
+    /*! \brief
+     * Send the potential energy value to MiMiC
+     *
+     * @param energy energy value to send
+     */
+    void sendEnergies(real energy);
 
-        /*! \brief
-         * Send classical forces acting on all atoms in the system
-         * to MiMiC.
-         *
-         * @param forces array of forces to send
-         * @param natoms number of atoms in the system
-         */
-        void sendForces(ArrayRef<gmx::RVec> forces, int natoms);
+    /*! \brief
+     * Send classical forces acting on all atoms in the system
+     * to MiMiC.
+     *
+     * @param forces array of forces to send
+     * @param natoms number of atoms in the system
+     */
+    void sendForces(ArrayRef<gmx::RVec> forces, int natoms);
 
-        /*! \brief
-         * Finish communications and disconnect from the server
-         */
-        void finalize();
-
+    /*! \brief
+     * Finish communications and disconnect from the server
+     */
+    void finalize();
 };
 
-}      // namespace gmx
+} // namespace gmx
 
-#endif //GMX_MIMIC_COMMUNICATOR_H
+#endif // GMX_MIMIC_COMMUNICATOR_H

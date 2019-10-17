@@ -63,57 +63,54 @@ namespace test
  */
 class SetBothTimeTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        SetBothTimeTest()
+public:
+    SetBothTimeTest() { clear_trxframe(frame(), true); }
+    /*! \brief
+     * Get access to the method for changing frame time step information.
+     *
+     * \param[in] timeStep User supplied time step to test.
+     */
+    SetTimeStep* setTimeStep(real timeStep)
+    {
+        if (!setTimeStep_)
         {
-            clear_trxframe(frame(), true);
+            setTimeStep_ = std::make_unique<SetTimeStep>(timeStep);
         }
-        /*! \brief
-         * Get access to the method for changing frame time step information.
-         *
-         * \param[in] timeStep User supplied time step to test.
-         */
-        SetTimeStep *setTimeStep(real timeStep)
+        return setTimeStep_.get();
+    }
+    /*! \brief
+     * Get access to the method for changing frame start time information.
+     *
+     * \param[in] startTime User supplied start time to test.
+     */
+    SetStartTime* setStartTime(real startTime)
+    {
+        if (!setStartTime_)
         {
-            if (!setTimeStep_)
-            {
-                setTimeStep_ = std::make_unique<SetTimeStep>(timeStep);
-            }
-            return setTimeStep_.get();
+            setStartTime_ = std::make_unique<SetStartTime>(startTime);
         }
-        /*! \brief
-         * Get access to the method for changing frame start time information.
-         *
-         * \param[in] startTime User supplied start time to test.
-         */
-        SetStartTime *setStartTime(real startTime)
-        {
-            if (!setStartTime_)
-            {
-                setStartTime_ = std::make_unique<SetStartTime>(startTime);
-            }
-            return setStartTime_.get();
-        }
+        return setStartTime_.get();
+    }
 
-        //! Get access to trajectoryframe to mess with.
-        t_trxframe *frame() { return &frame_; }
+    //! Get access to trajectoryframe to mess with.
+    t_trxframe* frame() { return &frame_; }
 
-    private:
-        //! Object to use for tests
-        SetTimeStepPointer     setTimeStep_;
-        //! Object to use for tests
-        SetStartTimePointer    setStartTime_;
-        //! Storage of trajectoryframe.
-        t_trxframe             frame_;
+private:
+    //! Object to use for tests
+    SetTimeStepPointer setTimeStep_;
+    //! Object to use for tests
+    SetStartTimePointer setStartTime_;
+    //! Storage of trajectoryframe.
+    t_trxframe frame_;
 };
 
 TEST_F(SetBothTimeTest, StartTimeZeroWorks)
 {
     frame()->time = 23;
     // Set start time.
-    SetTimeStep  *timestep = setTimeStep(7);
+    SetTimeStep* timestep = setTimeStep(7);
     // Set initial time to zero.
-    SetStartTime *starttime = setStartTime(0);
+    SetStartTime* starttime = setStartTime(0);
     // processing always goes through start time before time step.
     EXPECT_NO_THROW(starttime->processFrame(0, frame()));
     EXPECT_NO_THROW(timestep->processFrame(0, frame()));
@@ -135,9 +132,9 @@ TEST_F(SetBothTimeTest, SetStartTimeNonZeroWorks)
 {
     frame()->time = 23;
     // Set start time.
-    SetTimeStep  *timestep = setTimeStep(7);
+    SetTimeStep* timestep = setTimeStep(7);
     // Set initial time to zero.
-    SetStartTime *starttime = setStartTime(23);
+    SetStartTime* starttime = setStartTime(23);
     // processing always goes through start time before time step.
     EXPECT_NO_THROW(starttime->processFrame(0, frame()));
     EXPECT_NO_THROW(timestep->processFrame(0, frame()));

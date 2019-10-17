@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ class TextWriter;
 //! Output format for ShellCompletionWriter.
 enum ShellCompletionFormat
 {
-    eShellCompletionFormat_Bash         //!< Shell completions for bash.
+    eShellCompletionFormat_Bash //!< Shell completions for bash.
 };
 
 //! \}
@@ -71,26 +71,23 @@ enum ShellCompletionFormat
 
 class ShellCompletionWriter
 {
-    public:
-        typedef std::vector<std::string> ModuleNameList;
+public:
+    typedef std::vector<std::string> ModuleNameList;
 
-        ShellCompletionWriter(const std::string     &binaryName,
-                              ShellCompletionFormat  format);
-        ~ShellCompletionWriter();
+    ShellCompletionWriter(const std::string& binaryName, ShellCompletionFormat format);
+    ~ShellCompletionWriter();
 
-        TextWriter &outputWriter();
+    TextWriter& outputWriter();
 
-        void startCompletions();
-        void writeModuleCompletions(const char    *moduleName,
-                                    const Options &options);
-        void writeWrapperCompletions(const ModuleNameList &modules,
-                                     const Options        &options);
-        void finishCompletions();
+    void startCompletions();
+    void writeModuleCompletions(const char* moduleName, const Options& options);
+    void writeWrapperCompletions(const ModuleNameList& modules, const Options& options);
+    void finishCompletions();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

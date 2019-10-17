@@ -56,45 +56,35 @@
  * size on all systems.
  */
 static const int reduction_block_size = 32; /**< Force buffer block size in atoms*/
-static const int reduction_block_bits =  5; /**< log2(reduction_block_size) */
+static const int reduction_block_bits = 5;  /**< log2(reduction_block_size) */
 
 /*! \internal \brief The division of bonded interactions of the threads */
 class WorkDivision
 {
-    public:
-        //! Constructor
-        WorkDivision(int numThreads) :
-            stride_(numThreads + 1),
-            packedBounds_(F_NRE*stride_)
-        {
-        }
+public:
+    //! Constructor
+    WorkDivision(int numThreads) : stride_(numThreads + 1), packedBounds_(F_NRE * stride_) {}
 
-        //! Sets the bound between threads \p boundIndex-1 and \p boundIndex to \p count
-        void setBound(int functionType,
-                      int boundIndex,
-                      int count)
-        {
-            packedBounds_[functionType*stride_ + boundIndex] = count;
-        }
+    //! Sets the bound between threads \p boundIndex-1 and \p boundIndex to \p count
+    void setBound(int functionType, int boundIndex, int count)
+    {
+        packedBounds_[functionType * stride_ + boundIndex] = count;
+    }
 
-        //! Returns the bound between threads \p boundIndex-1 and \p boundIndex
-        int bound(int functionType,
-                  int boundIndex) const
-        {
-            return packedBounds_[functionType*stride_ + boundIndex];
-        }
+    //! Returns the bound between threads \p boundIndex-1 and \p boundIndex
+    int bound(int functionType, int boundIndex) const
+    {
+        return packedBounds_[functionType * stride_ + boundIndex];
+    }
 
-        //! Returns the last bound
-        int end(int ftype) const
-        {
-            return bound(ftype, stride_ - 1);
-        }
+    //! Returns the last bound
+    int end(int ftype) const { return bound(ftype, stride_ - 1); }
 
-    private:
-        //! The stride_ between and size of the entries for a function type
-        int              stride_;
-        //! The bounds stored as a flat array for fast access
-        std::vector<int> packedBounds_;
+private:
+    //! The stride_ between and size of the entries for a function type
+    int stride_;
+    //! The bounds stored as a flat array for fast access
+    std::vector<int> packedBounds_;
 };
 
 /*! \internal \brief struct with output for bonded forces, used per thread */
@@ -105,44 +95,44 @@ struct f_thread_t
 
     ~f_thread_t();
 
-    rvec4            *f        = nullptr;     /**< Force array */
-    int               f_nalloc = 0;           /**< Allocation size of f */
-    gmx_bitmask_t    *mask     = nullptr;     /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
-    int               nblock_used;            /**< Number of blocks touched by our thread */
-    int              *block_index  = nullptr; /**< Index to touched blocks, size nblock_used */
-    int               block_nalloc = 0;       /**< Allocation size of f (*reduction_block_size), mask_index, mask */
+    rvec4*         f        = nullptr; /**< Force array */
+    int            f_nalloc = 0;       /**< Allocation size of f */
+    gmx_bitmask_t* mask =
+            nullptr; /**< Mask for marking which parts of f are filled, working array for constructing mask in bonded_threading_t */
+    int  nblock_used;            /**< Number of blocks touched by our thread */
+    int* block_index  = nullptr; /**< Index to touched blocks, size nblock_used */
+    int  block_nalloc = 0; /**< Allocation size of f (*reduction_block_size), mask_index, mask */
 
-    rvec             *fshift;                 /**< Shift force array, size SHIFTS */
-    real              ener[F_NRE];            /**< Energy array */
-    gmx_grppairener_t grpp;                   /**< Group pair energy data for pairs */
-    real              dvdl[efptNR];           /**< Free-energy dV/dl output */
+    rvec*             fshift;       /**< Shift force array, size SHIFTS */
+    real              ener[F_NRE];  /**< Energy array */
+    gmx_grppairener_t grpp;         /**< Group pair energy data for pairs */
+    real              dvdl[efptNR]; /**< Free-energy dV/dl output */
 };
 
 /*! \internal \brief struct contain all data for bonded force threading */
 struct bonded_threading_t
 {
     //! Constructor
-    bonded_threading_t(int numThreads,
-                       int numEnergyGroups);
+    bonded_threading_t(int numThreads, int numEnergyGroups);
 
     //! Number of threads to be used for bondeds
-    int                                      nthreads;
+    int nthreads;
     //! Force/energy data per thread, size nthreads, stored in unique_ptr to allow thread local allocation
-    std::vector < std::unique_ptr < f_thread_t>> f_t;
+    std::vector<std::unique_ptr<f_thread_t>> f_t;
     //! The number of force blocks to reduce
-    int                                      nblock_used;
+    int nblock_used;
     //! Index of size nblock_used into mask
-    std::vector<int>                         block_index;
+    std::vector<int> block_index;
     //! Mask array, one element corresponds to a block of reduction_block_size atoms of the force array, bit corresponding to thread indices set if a thread writes to that block
-    std::vector<gmx_bitmask_t>               mask;
+    std::vector<gmx_bitmask_t> mask;
     //! true if we have and thus need to reduce bonded forces
-    bool                                     haveBondeds;
+    bool haveBondeds;
 
     /* There are two different ways to distribute the bonded force calculation
      * over the threads. We dedice which to use based on the number of threads.
      */
     //! Maximum thread count for uniform distribution of bondeds over threads
-    int  max_nthread_uniform;
+    int max_nthread_uniform;
 
     //! The division of work in the t_list over threads.
     WorkDivision workDivision;
@@ -158,7 +148,6 @@ struct bonded_threading_t
  * This function is intended for writing ascii output and returns atom
  * numbers starting at 1.  When global_atom_index=NULL returns i+1.
  */
-int
-glatnr(const int *global_atom_index, int i);
+int glatnr(const int* global_atom_index, int i);
 
 #endif

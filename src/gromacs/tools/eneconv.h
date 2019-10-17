@@ -40,6 +40,6 @@
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
-int gmx_eneconv(int argc, char *argv[]);
+int gmx_eneconv(int argc, char* argv[]);
 
 #endif

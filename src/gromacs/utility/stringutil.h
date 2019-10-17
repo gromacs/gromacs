@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +61,7 @@ namespace gmx
  *
  * Does not throw.
  */
-static inline bool isNullOrEmpty(const char *str)
+static inline bool isNullOrEmpty(const char* str)
 {
     return str == nullptr || str[0] == '\0';
 }
@@ -75,12 +76,12 @@ static inline bool isNullOrEmpty(const char *str)
  * Returns true if \p prefix is empty.
  * Does not throw.
  */
-static inline bool startsWith(const std::string &str, const std::string &prefix)
+static inline bool startsWith(const std::string& str, const std::string& prefix)
 {
     return str.compare(0, prefix.length(), prefix) == 0;
 }
 //! \copydoc startsWith(const std::string &, const std::string &)
-static inline bool startsWith(const char *str, const char *prefix)
+static inline bool startsWith(const char* str, const char* prefix)
 {
     return std::strncmp(str, prefix, std::strlen(prefix)) == 0;
 }
@@ -95,9 +96,9 @@ static inline bool startsWith(const char *str, const char *prefix)
  * Returns true if \p suffix is NULL or empty.
  * Does not throw.
  */
-bool endsWith(const char *str, const char *suffix);
+bool endsWith(const char* str, const char* suffix);
 //! \copydoc endsWith(const char *, const char *)
-static inline bool endsWith(const std::string &str, const char *suffix)
+static inline bool endsWith(const std::string& str, const char* suffix)
 {
     return endsWith(str.c_str(), suffix);
 }
@@ -111,12 +112,12 @@ static inline bool endsWith(const std::string &str, const char *suffix)
  *
  * Does not throw.
  */
-static inline bool contains(const std::string &str, const char *substr)
+static inline bool contains(const std::string& str, const char* substr)
 {
     return str.find(substr) != std::string::npos;
 }
 //! \copydoc contains(const std::string &str, const char *substr)
-static inline bool contains(const std::string &str, const std::string &substr)
+static inline bool contains(const std::string& str, const std::string& substr)
 {
     return str.find(substr) != std::string::npos;
 }
@@ -130,8 +131,7 @@ static inline bool contains(const std::string &str, const std::string &substr)
  * \note This routine is mainly meant to support legacy code in GROMACS. For
  *       new source you should try hard to use C++ string objects instead.
  */
-std::size_t
-countWords(const char *s);
+std::size_t countWords(const char* s);
 
 /*!\brief Returns the number of space-separated words in a string object
  *
@@ -139,11 +139,10 @@ countWords(const char *s);
  *
  * \returns number of words in string.
  */
-std::size_t
-countWords(const std::string &str);
+std::size_t countWords(const std::string& str);
 
 //! \copydoc endsWith(const std::string &str, const char *suffix)
-static inline bool endsWith(const std::string &str, const std::string &suffix)
+static inline bool endsWith(const std::string& str, const std::string& suffix)
 {
     return endsWith(str, suffix.c_str());
 }
@@ -159,7 +158,7 @@ static inline bool endsWith(const std::string &str, const std::string &suffix)
  *
  * Returns \p str if \p suffix is NULL or empty.
  */
-std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
+std::string stripSuffixIfPresent(const std::string& str, const char* suffix);
 /*! \brief
  * Removes leading and trailing whitespace from a string.
  *
@@ -167,10 +166,10 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \returns   \p str with leading and trailing whitespaces removed.
  * \throws    std::bad_alloc if out of memory.
  */
-std::string stripString(const std::string &str);
+std::string stripString(const std::string& str);
 #ifdef __GNUC__
-#define gmx_format(archetype, string_index, first_to_check) \
-    __attribute__ ((format (archetype, string_index, first_to_check)))
+#    define gmx_format(archetype, string_index, first_to_check) \
+        __attribute__((format(archetype, string_index, first_to_check)))
 #else
 /*! \brief GCC like function format attribute
  *
@@ -181,17 +180,17 @@ std::string stripString(const std::string &str);
  * definitions (GCC limitation). For member functions the implicit `this`
  * pointer is included in the argument count.
  */
-#define gmx_format(archetype, string_index, first_to_check)
+#    define gmx_format(archetype, string_index, first_to_check)
 #endif
 #ifdef _MSC_VER
-#define gmx_fmtstr _In_ _Printf_format_string_
+#    define gmx_fmtstr _In_ _Printf_format_string_
 #else
 /*! \brief MSVC like function format attribute
  *
  * Does type checking for printf like format strings in MSVC style.
  * Attribute has to be placed before format string.
  */
-#define gmx_fmtstr
+#    define gmx_fmtstr
 #endif
 /*! \brief
  * Formats a string (snprintf() wrapper).
@@ -202,7 +201,7 @@ std::string stripString(const std::string &str);
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
  */
-std::string formatString(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 2);
+std::string formatString(gmx_fmtstr const char* fmt, ...) gmx_format(printf, 1, 2);
 
 /*! \brief
  * Formats a string (vsnprintf() wrapper).
@@ -213,33 +212,31 @@ std::string formatString(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 
  * instead of requiring a preallocated buffer.  Arbitrary length output is
  * supported.
  */
-std::string formatStringV(const char *fmt, va_list ap);
+std::string formatStringV(const char* fmt, va_list ap);
 
 /*! \brief Function object that wraps a call to formatString() that
  * expects a single conversion argument, for use with algorithms. */
 class StringFormatter
 {
-    public:
-        /*! \brief Constructor
-         *
-         * \param[in] format The printf-style format string that will
-         *     be applied to convert values of type T to
-         *     string. Exactly one argument to the conversion
-         *     specification(s) in `format` is supported. */
-        explicit StringFormatter(const char *format) : format_(format)
-        {
-        }
+public:
+    /*! \brief Constructor
+     *
+     * \param[in] format The printf-style format string that will
+     *     be applied to convert values of type T to
+     *     string. Exactly one argument to the conversion
+     *     specification(s) in `format` is supported. */
+    explicit StringFormatter(const char* format) : format_(format) {}
 
-        //! Implements the formatting functionality
-        template <typename T>
-        std::string operator()(const T &value) const
-        {
-            return formatString(format_, value);
-        }
+    //! Implements the formatting functionality
+    template<typename T>
+    std::string operator()(const T& value) const
+    {
+        return formatString(format_, value);
+    }
 
-    private:
-        //! Format string to use
-        const char *format_;
+private:
+    //! Format string to use
+    const char* format_;
 };
 
 /*! \brief Function object to implement the same interface as
@@ -247,12 +244,9 @@ class StringFormatter
  * further. */
 class IdentityFormatter
 {
-    public:
-        //! Implements the formatting non-functionality
-        std::string operator()(const std::string &value) const
-        {
-            return value;
-        }
+public:
+    //! Implements the formatting non-functionality
+    std::string operator()(const std::string& value) const { return value; }
 };
 
 /*! \brief Formats all the range as strings, and then joins them with
@@ -267,11 +261,11 @@ class IdentityFormatter
  *     as strings and concatenated with `separator` between each pair.
  * \throws    std::bad_alloc if out of memory.
  */
-template <typename InputIterator, typename FormatterType>
-std::string formatAndJoin(InputIterator begin, InputIterator end, const char *separator, const FormatterType &formatter)
+template<typename InputIterator, typename FormatterType>
+std::string formatAndJoin(InputIterator begin, InputIterator end, const char* separator, const FormatterType& formatter)
 {
     std::string result;
-    const char *currentSeparator = "";
+    const char* currentSeparator = "";
     for (InputIterator i = begin; i != end; ++i)
     {
         result.append(currentSeparator);
@@ -292,8 +286,8 @@ std::string formatAndJoin(InputIterator begin, InputIterator end, const char *se
  *     concatenated with `separator` between each pair.
  * \throws    std::bad_alloc if out of memory.
  */
-template <typename ContainerType, typename FormatterType>
-std::string formatAndJoin(const ContainerType &container, const char *separator, const FormatterType &formatter)
+template<typename ContainerType, typename FormatterType>
+std::string formatAndJoin(const ContainerType& container, const char* separator, const FormatterType& formatter)
 {
     return formatAndJoin(container.begin(), container.end(), separator, formatter);
 }
@@ -308,9 +302,8 @@ std::string formatAndJoin(const ContainerType &container, const char *separator,
  *     between each pair.
  * \throws    std::bad_alloc if out of memory.
  */
-template <typename InputIterator>
-std::string joinStrings(InputIterator begin, InputIterator end,
-                        const char *separator)
+template<typename InputIterator>
+std::string joinStrings(InputIterator begin, InputIterator end, const char* separator)
 {
     return formatAndJoin(begin, end, separator, IdentityFormatter());
 }
@@ -324,8 +317,8 @@ std::string joinStrings(InputIterator begin, InputIterator end,
  *     between each pair.
  * \throws    std::bad_alloc if out of memory.
  */
-template <typename ContainerType>
-std::string joinStrings(const ContainerType &container, const char *separator)
+template<typename ContainerType>
+std::string joinStrings(const ContainerType& container, const char* separator)
 {
     return joinStrings(container.begin(), container.end(), separator);
 }
@@ -340,8 +333,8 @@ std::string joinStrings(const ContainerType &container, const char *separator)
  *     between each pair.
  * \throws    std::bad_alloc if out of memory.
  */
-template <size_t count>
-std::string joinStrings(const char *const (&array)[count], const char *separator)
+template<size_t count>
+std::string joinStrings(const char* const (&array)[count], const char* separator)
 {
     return joinStrings(array, array + count, separator);
 }
@@ -357,7 +350,7 @@ std::string joinStrings(const char *const (&array)[count], const char *separator
  * whitespace is ignored, and consecutive whitespaces are treated as a single
  * separator.
  */
-std::vector<std::string> splitString(const std::string &str);
+std::vector<std::string> splitString(const std::string& str);
 /*! \brief
  * Splits a string to tokens separated by a given delimiter.
  *
@@ -370,7 +363,7 @@ std::vector<std::string> splitString(const std::string &str);
  * will leading or trailing delimiters.
  * Empty input will return an empty vector.
  */
-std::vector<std::string> splitDelimitedString(const std::string &str, char delim);
+std::vector<std::string> splitDelimitedString(const std::string& str, char delim);
 /*! \brief
  * Splits \c str to tokens separated by delimiter \c delim. Removes
  * leading and trailing whitespace from those strings with std::isspace.
@@ -386,7 +379,7 @@ std::vector<std::string> splitDelimitedString(const std::string &str, char delim
  * Input with only whitespace will return a vector of size 1,
  * that contains an empty token.
  */
-std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim);
+std::vector<std::string> splitAndTrimDelimitedString(const std::string& str, char delim);
 
 /*! \brief
  * Replace all occurrences of a string with another string.
@@ -405,11 +398,9 @@ std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, cha
  *
  * \see replaceAllWords()
  */
-std::string replaceAll(const std::string &input,
-                       const char *from, const char *to);
+std::string replaceAll(const std::string& input, const char* from, const char* to);
 //! \copydoc replaceAll(const std::string &, const char *, const char *)
-std::string replaceAll(const std::string &input,
-                       const std::string &from, const std::string &to);
+std::string replaceAll(const std::string& input, const std::string& from, const std::string& to);
 /*! \brief
  * Replace whole words with others.
  *
@@ -424,11 +415,9 @@ std::string replaceAll(const std::string &input,
  *
  * \see replaceAll()
  */
-std::string replaceAllWords(const std::string &input,
-                            const char *from, const char *to);
+std::string replaceAllWords(const std::string& input, const char* from, const char* to);
 //! \copydoc replaceAllWords(const std::string &, const char *, const char *)
-std::string replaceAllWords(const std::string &input,
-                            const std::string &from, const std::string &to);
+std::string replaceAllWords(const std::string& input, const std::string& from, const std::string& to);
 
 /*! \brief Return whether two strings are equal, ignoring case.
  *
@@ -440,8 +429,7 @@ std::string replaceAllWords(const std::string &input,
  * \param[in] target String to be matched to \p source.
  * \returns True if the strings match.
  */
-bool equalCaseInsensitive(const std::string &source,
-                          const std::string &target);
+bool equalCaseInsensitive(const std::string& source, const std::string& target);
 
 /*! \brief
  * Checks if at most \p maxLengthOfComparison characters of two strings match case insensitive.
@@ -460,9 +448,7 @@ bool equalCaseInsensitive(const std::string &source,
  * \param[in] maxLengthOfComparison The maximum string length to compare.
  * \returns True if the strings match.
  */
-bool equalCaseInsensitive(const std::string &source,
-                          const std::string &target,
-                          size_t             maxLengthOfComparison);
+bool equalCaseInsensitive(const std::string& source, const std::string& target, size_t maxLengthOfComparison);
 
 class TextLineWrapper;
 
@@ -477,110 +463,104 @@ class TextLineWrapper;
  */
 class TextLineWrapperSettings
 {
-    public:
-        /*! \brief
-         * Initializes default wrapper settings.
-         *
-         * Default settings are:
-         *  - No maximum line width (only explicit line breaks).
-         *  - No indentation.
-         *  - No continuation characters.
-         *  - Do not keep final spaces in input strings.
-         */
-        TextLineWrapperSettings();
+public:
+    /*! \brief
+     * Initializes default wrapper settings.
+     *
+     * Default settings are:
+     *  - No maximum line width (only explicit line breaks).
+     *  - No indentation.
+     *  - No continuation characters.
+     *  - Do not keep final spaces in input strings.
+     */
+    TextLineWrapperSettings();
 
-        /*! \brief
-         * Sets the maximum length for output lines.
-         *
-         * \param[in] length  Maximum length for the lines after wrapping.
-         *
-         * If this method is not called, or is called with zero \p length, the
-         * wrapper has no maximum length (only wraps at explicit line breaks).
-         */
-        void setLineLength(int length) { maxLength_ = length; }
-        /*! \brief
-         * Sets the indentation for output lines.
-         *
-         * \param[in] indent  Number of spaces to add for indentation.
-         *
-         * If this method is not called, the wrapper does not add indentation.
-         */
-        void setIndent(int indent) { indent_ = indent; }
-        /*! \brief
-         * Sets the indentation for first output line after a line break.
-         *
-         * \param[in] indent  Number of spaces to add for indentation.
-         *
-         * If this method is not called, or called with \p indent equal to -1,
-         * the value set with setIndent() is used.
-         */
-        void setFirstLineIndent(int indent) { firstLineIndent_ = indent; }
-        /*! \brief
-         * Sets whether final spaces in input should be kept.
-         *
-         * \param[in] bKeep  Whether to keep spaces at the end of the input.
-         *
-         * This means that wrapping a string that ends in spaces also keeps
-         * those spaces in the output.  This allows using the wrapper for
-         * partial lines where the initial part of the line may end in a space.
-         * By default, all trailing whitespace is removed.  Note that this
-         * option does not affect spaces before an explicit newline: those are
-         * always removed.
-         */
-        void setKeepFinalSpaces(bool bKeep) { bKeepFinalSpaces_ = bKeep; }
-        /*! \brief
-         * Sets a continuation marker for wrapped lines.
-         *
-         * \param[in] continuationChar  Character to use to mark continuation
-         *      lines.
-         *
-         * If set to non-zero character code, this character is added at the
-         * end of each line where a line break is added by TextLineWrapper
-         * (but not after lines produced by explicit line breaks).
-         * The default (\c '\0') is to not add continuation markers.
-         *
-         * Note that currently, the continuation char may cause the output line
-         * length to exceed the value set with setLineLength() by at most two
-         * characters.
-         */
-        void setContinuationChar(char continuationChar)
-        {
-            continuationChar_ = continuationChar;
-        }
+    /*! \brief
+     * Sets the maximum length for output lines.
+     *
+     * \param[in] length  Maximum length for the lines after wrapping.
+     *
+     * If this method is not called, or is called with zero \p length, the
+     * wrapper has no maximum length (only wraps at explicit line breaks).
+     */
+    void setLineLength(int length) { maxLength_ = length; }
+    /*! \brief
+     * Sets the indentation for output lines.
+     *
+     * \param[in] indent  Number of spaces to add for indentation.
+     *
+     * If this method is not called, the wrapper does not add indentation.
+     */
+    void setIndent(int indent) { indent_ = indent; }
+    /*! \brief
+     * Sets the indentation for first output line after a line break.
+     *
+     * \param[in] indent  Number of spaces to add for indentation.
+     *
+     * If this method is not called, or called with \p indent equal to -1,
+     * the value set with setIndent() is used.
+     */
+    void setFirstLineIndent(int indent) { firstLineIndent_ = indent; }
+    /*! \brief
+     * Sets whether final spaces in input should be kept.
+     *
+     * \param[in] bKeep  Whether to keep spaces at the end of the input.
+     *
+     * This means that wrapping a string that ends in spaces also keeps
+     * those spaces in the output.  This allows using the wrapper for
+     * partial lines where the initial part of the line may end in a space.
+     * By default, all trailing whitespace is removed.  Note that this
+     * option does not affect spaces before an explicit newline: those are
+     * always removed.
+     */
+    void setKeepFinalSpaces(bool bKeep) { bKeepFinalSpaces_ = bKeep; }
+    /*! \brief
+     * Sets a continuation marker for wrapped lines.
+     *
+     * \param[in] continuationChar  Character to use to mark continuation
+     *      lines.
+     *
+     * If set to non-zero character code, this character is added at the
+     * end of each line where a line break is added by TextLineWrapper
+     * (but not after lines produced by explicit line breaks).
+     * The default (\c '\0') is to not add continuation markers.
+     *
+     * Note that currently, the continuation char may cause the output line
+     * length to exceed the value set with setLineLength() by at most two
+     * characters.
+     */
+    void setContinuationChar(char continuationChar) { continuationChar_ = continuationChar; }
 
-        //! Returns the maximum length set with setLineLength().
-        int lineLength() const { return maxLength_; }
-        //! Returns the indentation set with setIndent().
-        int indent() const { return indent_; }
-        /*! \brief
-         * Returns the indentation set with setFirstLineIndent().
-         *
-         * If setFirstLineIndent() has not been called or has been called with
-         * -1, indent() is returned.
-         */
-        int firstLineIndent() const
-        {
-            return (firstLineIndent_ >= 0 ? firstLineIndent_ : indent_);
-        }
+    //! Returns the maximum length set with setLineLength().
+    int lineLength() const { return maxLength_; }
+    //! Returns the indentation set with setIndent().
+    int indent() const { return indent_; }
+    /*! \brief
+     * Returns the indentation set with setFirstLineIndent().
+     *
+     * If setFirstLineIndent() has not been called or has been called with
+     * -1, indent() is returned.
+     */
+    int firstLineIndent() const { return (firstLineIndent_ >= 0 ? firstLineIndent_ : indent_); }
 
-    private:
-        //! Maximum length of output lines, or <= 0 if no limit.
-        int                     maxLength_;
-        //! Number of spaces to indent each output line with.
-        int                     indent_;
-        /*! \brief
-         * Number of spaces to indent the first line after a newline.
-         *
-         * If -1, \a indent_ is used.
-         */
-        int                     firstLineIndent_;
-        //! Whether to keep spaces at end of input.
-        bool                    bKeepFinalSpaces_;
-        //! If not \c '\0', mark each wrapping point with this character.
-        char                    continuationChar_;
+private:
+    //! Maximum length of output lines, or <= 0 if no limit.
+    int maxLength_;
+    //! Number of spaces to indent each output line with.
+    int indent_;
+    /*! \brief
+     * Number of spaces to indent the first line after a newline.
+     *
+     * If -1, \a indent_ is used.
+     */
+    int firstLineIndent_;
+    //! Whether to keep spaces at end of input.
+    bool bKeepFinalSpaces_;
+    //! If not \c '\0', mark each wrapping point with this character.
+    char continuationChar_;
 
-        //! Needed to access the members.
-        friend class TextLineWrapper;
+    //! Needed to access the members.
+    friend class TextLineWrapper;
 };
 
 /*! \brief
@@ -619,131 +599,125 @@ class TextLineWrapperSettings
  */
 class TextLineWrapper
 {
-    public:
-        /*! \brief
-         * Constructs a new line wrapper with default settings.
-         *
-         * Does not throw.
-         */
-        TextLineWrapper()
-        {
-        }
-        /*! \brief
-         * Constructs a new line wrapper with given settings.
-         *
-         * \param[in] settings  Wrapping settings.
-         *
-         * Does not throw.
-         */
-        explicit TextLineWrapper(const TextLineWrapperSettings &settings)
-            : settings_(settings)
-        {
-        }
+public:
+    /*! \brief
+     * Constructs a new line wrapper with default settings.
+     *
+     * Does not throw.
+     */
+    TextLineWrapper() {}
+    /*! \brief
+     * Constructs a new line wrapper with given settings.
+     *
+     * \param[in] settings  Wrapping settings.
+     *
+     * Does not throw.
+     */
+    explicit TextLineWrapper(const TextLineWrapperSettings& settings) : settings_(settings) {}
 
-        /*! \brief
-         * Provides access to settings of this wrapper.
-         *
-         * \returns  The settings object for this wrapper.
-         *
-         * The returned object can be used to modify settings for the wrapper.
-         * All subsequent calls to wrapToString() and wrapToVector() use the
-         * modified settings.
-         *
-         * Does not throw.
-         */
-        TextLineWrapperSettings &settings() { return settings_; }
+    /*! \brief
+     * Provides access to settings of this wrapper.
+     *
+     * \returns  The settings object for this wrapper.
+     *
+     * The returned object can be used to modify settings for the wrapper.
+     * All subsequent calls to wrapToString() and wrapToVector() use the
+     * modified settings.
+     *
+     * Does not throw.
+     */
+    TextLineWrapperSettings& settings() { return settings_; }
 
-        //! Returns true if the wrapper would not modify the input string.
-        bool isTrivial() const;
+    //! Returns true if the wrapper would not modify the input string.
+    bool isTrivial() const;
 
-        /*! \brief
-         * Finds the next line to be wrapped.
-         *
-         * \param[in] input     String to wrap.
-         * \param[in] lineStart Index of first character of the line to find.
-         * \returns   Index of first character of the next line.
-         *
-         * If this is the last line, returns the length of \p input.
-         * In determining the length of the returned line, this function
-         * considers the maximum line length, leaving space for indentation,
-         * and also whitespace stripping behavior.
-         * Thus, the line returned may be longer than the maximum line length
-         * if it has leading and/or trailing space.
-         * When wrapping a line on a space (not on an explicit line break),
-         * the returned index is always on a non-whitespace character after the
-         * space.
-         *
-         * To iterate over lines in a string, use the following code:
-         * \code
-           gmx::TextLineWrapper wrapper;
-           // <set desired wrapping settings>
-           size_t lineStart = 0;
-           size_t length = input.length();
-           while (lineStart < length)
-           {
-               size_t nextLineStart = wrapper.findNextLine(input, lineStart);
-               std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
-               // <do something with the line>
-               lineStart = nextLineStart;
-           }
-           return result;
-           \endcode
-         *
-         * Does not throw.
-         */
-        size_t findNextLine(const char *input, size_t lineStart) const;
-        //! \copydoc findNextLine(const char *, size_t)const
-        size_t findNextLine(const std::string &input, size_t lineStart) const;
-        /*! \brief
-         * Formats a single line for output according to wrapping settings.
-         *
-         * \param[in] input     Input string.
-         * \param[in] lineStart Index of first character of the line to format.
-         * \param[in] lineEnd   Index of first character of the next line.
-         * \returns   The line with leading and/or trailing whitespace removed
-         *      and indentation applied.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Intended to be used on the lines found by findNextLine().
-         * When used with the lines returned from findNextLine(), the returned
-         * line conforms to the wrapper settings.
-         * Trailing whitespace is always stripped (including any newlines,
-         * i.e., the return value does not contain a newline).
-         */
-        std::string formatLine(const std::string &input,
-                               size_t lineStart, size_t lineEnd) const;
+    /*! \brief
+     * Finds the next line to be wrapped.
+     *
+     * \param[in] input     String to wrap.
+     * \param[in] lineStart Index of first character of the line to find.
+     * \returns   Index of first character of the next line.
+     *
+     * If this is the last line, returns the length of \p input.
+     * In determining the length of the returned line, this function
+     * considers the maximum line length, leaving space for indentation,
+     * and also whitespace stripping behavior.
+     * Thus, the line returned may be longer than the maximum line length
+     * if it has leading and/or trailing space.
+     * When wrapping a line on a space (not on an explicit line break),
+     * the returned index is always on a non-whitespace character after the
+     * space.
+     *
+     * To iterate over lines in a string, use the following code:
+     * \code
+       gmx::TextLineWrapper wrapper;
+       // <set desired wrapping settings>
+       size_t lineStart = 0;
+       size_t length = input.length();
+       while (lineStart < length)
+       {
+           size_t nextLineStart = wrapper.findNextLine(input, lineStart);
+           std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
+           // <do something with the line>
+           lineStart = nextLineStart;
+       }
+       return result;
+       \endcode
+     *
+     * Does not throw.
+     */
+    size_t findNextLine(const char* input, size_t lineStart) const;
+    //! \copydoc findNextLine(const char *, size_t)const
+    size_t findNextLine(const std::string& input, size_t lineStart) const;
+    /*! \brief
+     * Formats a single line for output according to wrapping settings.
+     *
+     * \param[in] input     Input string.
+     * \param[in] lineStart Index of first character of the line to format.
+     * \param[in] lineEnd   Index of first character of the next line.
+     * \returns   The line with leading and/or trailing whitespace removed
+     *      and indentation applied.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Intended to be used on the lines found by findNextLine().
+     * When used with the lines returned from findNextLine(), the returned
+     * line conforms to the wrapper settings.
+     * Trailing whitespace is always stripped (including any newlines,
+     * i.e., the return value does not contain a newline).
+     */
+    std::string formatLine(const std::string& input, size_t lineStart, size_t lineEnd) const;
 
-        /*! \brief
-         * Formats a string, producing a single string with all the lines.
-         *
-         * \param[in] input  String to wrap.
-         * \returns   \p input with added newlines such that maximum line
-         *      length is not exceeded.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * Newlines in the input are preserved, including terminal newlines.
-         * Note that if the input does not contain a terminal newline, the
-         * output does not either.
-         */
-        std::string wrapToString(const std::string &input) const;
-        /*! \brief
-         * Formats a string, producing a vector with all the lines.
-         *
-         * \param[in] input  String to wrap.
-         * \returns   \p input split into lines such that maximum line length
-         *      is not exceeded.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * The strings in the returned vector do not contain newlines at the
-         * end.
-         * Note that a single terminal newline does not affect the output:
-         * "line\\n" and "line" both produce the same output (but "line\\n\\n"
-         * produces two lines, the second of which is empty).
-         */
-        std::vector<std::string> wrapToVector(const std::string &input) const;
+    /*! \brief
+     * Formats a string, producing a single string with all the lines.
+     *
+     * \param[in] input  String to wrap.
+     * \returns   \p input with added newlines such that maximum line
+     *      length is not exceeded.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * Newlines in the input are preserved, including terminal newlines.
+     * Note that if the input does not contain a terminal newline, the
+     * output does not either.
+     */
+    std::string wrapToString(const std::string& input) const;
+    /*! \brief
+     * Formats a string, producing a vector with all the lines.
+     *
+     * \param[in] input  String to wrap.
+     * \returns   \p input split into lines such that maximum line length
+     *      is not exceeded.
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * The strings in the returned vector do not contain newlines at the
+     * end.
+     * Note that a single terminal newline does not affect the output:
+     * "line\\n" and "line" both produce the same output (but "line\\n\\n"
+     * produces two lines, the second of which is empty).
+     */
+    std::vector<std::string> wrapToVector(const std::string& input) const;
 
-    private:
-        TextLineWrapperSettings settings_;
+private:
+    TextLineWrapperSettings settings_;
 };
 
 //! \}

@@ -62,132 +62,126 @@ namespace gmx
 class UpdateConstrainCuda::Impl
 {
 
-    public:
-        /*! \brief Create Update-Constrain object.
-         *
-         * The constructor is given a non-nullptr \p commandStream, in which all the update and constrain
-         * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that modify
-         * coordinates. The event is maintained outside this class and also passed to all (if any) consumers
-         * of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr because the
-         * markEvent(...) method is called unconditionally.
-         *
-         * \param[in] ir                Input record data: LINCS takes number of iterations and order of
-         *                              projection from it.
-         * \param[in] mtop              Topology of the system: SETTLE gets the masses for O and H atoms
-         *                              and target O-H and H-H distances from this object.
-         * \param[in] commandStream     GPU stream to use. Can be nullptr.
-         * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
-         */
-        Impl(const t_inputrec     &ir,
-             const gmx_mtop_t     &mtop,
-             const void           *commandStream,
-             GpuEventSynchronizer *xUpdatedOnDevice);
+public:
+    /*! \brief Create Update-Constrain object.
+     *
+     * The constructor is given a non-nullptr \p commandStream, in which all the update and constrain
+     * routines are executed. \p xUpdatedOnDevice should mark the completion of all kernels that modify
+     * coordinates. The event is maintained outside this class and also passed to all (if any) consumers
+     * of the updated coordinates. The \p xUpdatedOnDevice also can not be a nullptr because the
+     * markEvent(...) method is called unconditionally.
+     *
+     * \param[in] ir                Input record data: LINCS takes number of iterations and order of
+     *                              projection from it.
+     * \param[in] mtop              Topology of the system: SETTLE gets the masses for O and H atoms
+     *                              and target O-H and H-H distances from this object.
+     * \param[in] commandStream     GPU stream to use. Can be nullptr.
+     * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
+     */
+    Impl(const t_inputrec& ir, const gmx_mtop_t& mtop, const void* commandStream, GpuEventSynchronizer* xUpdatedOnDevice);
 
-        ~Impl();
+    ~Impl();
 
-        /*! \brief Integrate
-         *
-         * Integrates the equation of motion using Leap-Frog algorithm and applies
-         * LINCS and SETTLE constraints.
-         * If computeVirial is true, constraints virial is written at the provided pointer.
-         * doTempCouple should be true if:
-         *   1. The temperature coupling is enabled.
-         *   2. This is the temperature coupling step.
-         * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
-         *
-         * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in the device memory.
-         * \param[in]  dt                     Timestep.
-         * \param[in]  updateVelocities       If the velocities should be constrained.
-         * \param[in]  computeVirial          If virial should be updated.
-         * \param[out] virial                 Place to save virial tensor.
-         * \param[in]  doTempCouple           If the temperature coupling should be performed.
-         * \param[in]  tcstat                 Temperature coupling data.
-         * \param[in]  doPressureCouple       If the temperature coupling should be applied.
-         * \param[in]  dtPressureCouple       Period between pressure coupling steps
-         * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
-         */
-        void integrate(GpuEventSynchronizer             *fReadyOnDevice,
-                       real                              dt,
-                       bool                              updateVelocities,
-                       bool                              computeVirial,
-                       tensor                            virial,
-                       bool                              doTempCouple,
-                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                       bool                              doPressureCouple,
-                       float                             dtPressureCouple,
-                       const matrix                      velocityScalingMatrix);
+    /*! \brief Integrate
+     *
+     * Integrates the equation of motion using Leap-Frog algorithm and applies
+     * LINCS and SETTLE constraints.
+     * If computeVirial is true, constraints virial is written at the provided pointer.
+     * doTempCouple should be true if:
+     *   1. The temperature coupling is enabled.
+     *   2. This is the temperature coupling step.
+     * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
+     *
+     * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in
+     * the device memory. \param[in]  dt                     Timestep. \param[in]  updateVelocities
+     * If the velocities should be constrained. \param[in]  computeVirial          If virial should
+     * be updated. \param[out] virial                 Place to save virial tensor. \param[in]
+     * doTempCouple           If the temperature coupling should be performed. \param[in]  tcstat
+     * Temperature coupling data. \param[in]  doPressureCouple       If the temperature coupling
+     * should be applied. \param[in]  dtPressureCouple       Period between pressure coupling steps
+     * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     */
+    void integrate(GpuEventSynchronizer*             fReadyOnDevice,
+                   real                              dt,
+                   bool                              updateVelocities,
+                   bool                              computeVirial,
+                   tensor                            virial,
+                   bool                              doTempCouple,
+                   gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                   bool                              doPressureCouple,
+                   float                             dtPressureCouple,
+                   const matrix                      velocityScalingMatrix);
 
-        /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
-         *
-         * \param[in,out]  d_x            Device buffer with coordinates.
-         * \param[in,out]  d_v            Device buffer with velocities.
-         * \param[in]      d_f            Device buffer with forces.
-         * \param[in] idef                System topology
-         * \param[in] md                  Atoms data.
-         * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
-         */
-        void set(DeviceBuffer<float>        d_x,
-                 DeviceBuffer<float>        d_v,
-                 const DeviceBuffer<float>  d_f,
-                 const t_idef              &idef,
-                 const t_mdatoms           &md,
-                 const int                  numTempScaleValues);
+    /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
+     *
+     * \param[in,out]  d_x            Device buffer with coordinates.
+     * \param[in,out]  d_v            Device buffer with velocities.
+     * \param[in]      d_f            Device buffer with forces.
+     * \param[in] idef                System topology
+     * \param[in] md                  Atoms data.
+     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
+     */
+    void set(DeviceBuffer<float>       d_x,
+             DeviceBuffer<float>       d_v,
+             const DeviceBuffer<float> d_f,
+             const t_idef&             idef,
+             const t_mdatoms&          md,
+             const int                 numTempScaleValues);
 
-        /*! \brief
-         * Update PBC data.
-         *
-         * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
-         *
-         * \param[in] pbc The PBC data in t_pbc format.
-         */
-        void setPbc(const t_pbc *pbc);
+    /*! \brief
+     * Update PBC data.
+     *
+     * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
+     *
+     * \param[in] pbc The PBC data in t_pbc format.
+     */
+    void setPbc(const t_pbc* pbc);
 
-        /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
-         */
-        GpuEventSynchronizer* getCoordinatesReadySync();
+    /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
+     */
+    GpuEventSynchronizer* getCoordinatesReadySync();
 
-    private:
+private:
+    //! CUDA stream
+    CommandStream commandStream_ = nullptr;
 
-        //! CUDA stream
-        CommandStream       commandStream_         = nullptr;
+    //! Periodic boundary data
+    PbcAiuc pbcAiuc_;
 
-        //! Periodic boundary data
-        PbcAiuc             pbcAiuc_;
+    //! Number of atoms
+    int numAtoms_;
 
-        //! Number of atoms
-        int                 numAtoms_;
+    //! Local copy of the pointer to the device positions buffer
+    float3* d_x_;
+    //! Local copy of the pointer to the device velocities buffer
+    float3* d_v_;
+    //! Local copy of the pointer to the device forces buffer
+    float3* d_f_;
 
-        //! Local copy of the pointer to the device positions buffer
-        float3             *d_x_;
-        //! Local copy of the pointer to the device velocities buffer
-        float3             *d_v_;
-        //! Local copy of the pointer to the device forces buffer
-        float3             *d_f_;
-
-        //! Device buffer for intermediate positions (maintained internally)
-        float3             *d_xp_;
-        //! Number of elements in shifted coordinates buffer
-        int                 numXp_                 = -1;
-        //! Allocation size for the shifted coordinates buffer
-        int                 numXpAlloc_            = -1;
+    //! Device buffer for intermediate positions (maintained internally)
+    float3* d_xp_;
+    //! Number of elements in shifted coordinates buffer
+    int numXp_ = -1;
+    //! Allocation size for the shifted coordinates buffer
+    int numXpAlloc_ = -1;
 
 
-        //! 1/mass for all atoms (GPU)
-        real               *d_inverseMasses_;
-        //! Number of elements in reciprocal masses buffer
-        int                 numInverseMasses_      = -1;
-        //! Allocation size for the reciprocal masses buffer
-        int                 numInverseMassesAlloc_ = -1;
+    //! 1/mass for all atoms (GPU)
+    real* d_inverseMasses_;
+    //! Number of elements in reciprocal masses buffer
+    int numInverseMasses_ = -1;
+    //! Allocation size for the reciprocal masses buffer
+    int numInverseMassesAlloc_ = -1;
 
-        //! Leap-Frog integrator
-        std::unique_ptr<LeapFrogCuda>        integrator_;
-        //! LINCS CUDA object to use for non-water constraints
-        std::unique_ptr<LincsCuda>           lincsCuda_;
-        //! SETTLE CUDA object for water constrains
-        std::unique_ptr<SettleCuda>          settleCuda_;
+    //! Leap-Frog integrator
+    std::unique_ptr<LeapFrogCuda> integrator_;
+    //! LINCS CUDA object to use for non-water constraints
+    std::unique_ptr<LincsCuda> lincsCuda_;
+    //! SETTLE CUDA object for water constrains
+    std::unique_ptr<SettleCuda> settleCuda_;
 
-        //! An pointer to the event to indicate when the update of coordinates is complete
-        GpuEventSynchronizer                *coordinatesReady_;
+    //! An pointer to the event to indicate when the update of coordinates is complete
+    GpuEventSynchronizer* coordinatesReady_;
 };
 
 } // namespace gmx

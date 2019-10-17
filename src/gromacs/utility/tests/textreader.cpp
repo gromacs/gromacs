@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,17 +67,17 @@ namespace
 //! Convenience name.
 using Container = std::vector<std::string>;
 //! Convenience type for callbacks.
-using TestCallbackFunc = void(*)(TextReader &);
+using TestCallbackFunc = void (*)(TextReader&);
 
 //! Helper struct.
 struct TextReaderTestParams
 {
     //! Input data.
-    const Container  input;
+    const Container input;
     //! Callback to configure the reader with the behaviour being tested.
     TestCallbackFunc callback;
     //! Output to expect from the configured reader acting on the \c input.
-    const Container  expectedOutput;
+    const Container expectedOutput;
 };
 
 //! Test fixture.
@@ -87,7 +87,7 @@ class TextReaderTest : public ::testing::TestWithParam<TextReaderTestParams>
 
 TEST_P(TextReaderTest, UsingDifferentConfigurations)
 {
-    const auto &params = GetParam();
+    const auto& params = GetParam();
 
     // Prepare the reader with the input lines.
     StringInputStream stream(params.input);
@@ -106,8 +106,7 @@ TEST_P(TextReaderTest, UsingDifferentConfigurations)
 }
 
 //! Test input data. Some configurations will remove comments delimited by '#'.
-const Container g_inputs =
-{
+const Container g_inputs = {
     "",
     " \t ",
     "expected text",
@@ -131,8 +130,7 @@ const Container g_inputs =
  * container with "\n", so the inputs are always changed before being
  * read. The name of this variable reflects that TextReader does not
  * change them during reading. */
-const Container g_unchangedOutputs =
-{
+const Container g_unchangedOutputs = {
     "\n",
     " \t \n",
     "expected text\n",
@@ -148,132 +146,113 @@ const Container g_unchangedOutputs =
     "\t #\n",
     "   # not expected \n",
 };
-INSTANTIATE_TEST_CASE_P(ParsesLinesDifferently, TextReaderTest,
-                            ::testing::Values(TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      GMX_UNUSED_VALUE(r);
-                                                  },
-                                                  g_unchangedOutputs
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimLeadingWhiteSpace(true);
-                                                  },
-                                                  { "",
-                                                    "",
-                                                    "expected text\n",
-                                                    "expected text \n",
-                                                    "expected text \t\n",
-                                                    "expected text\n",
-                                                    "expected text \t\n",
-                                                    "expected text#\n",
-                                                    "expected text\t #\n",
-                                                    "expected text# \n",
-                                                    "expected text   # not expected \n",
-                                                    "#\n",
-                                                    "#\n",
-                                                    "# not expected \n", }
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimTrailingWhiteSpace(true);
-                                                  },
-                                                  { "",
-                                                    "",
-                                                    "expected text",
-                                                    " expected text",
-                                                    "expected text",
-                                                    " \t expected text",
-                                                    " \t expected text",
-                                                    "expected text#",
-                                                    "expected text\t #",
-                                                    "expected text#",
-                                                    "expected text   # not expected",
-                                                    "#",
-                                                    "\t #",
-                                                    "   # not expected", }
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimTrailingWhiteSpace(true);
-                                                      r.setTrimLeadingWhiteSpace(true);
-                                                  },
-                                                  { "",
-                                                    "",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text#",
-                                                    "expected text\t #",
-                                                    "expected text#",
-                                                    "expected text   # not expected",
-                                                    "#",
-                                                    "#",
-                                                    "# not expected", }
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimTrailingComment(true, '#');
-                                                  },
-                                                  { "\n",
-                                                    " \t \n",
-                                                    "expected text\n",
-                                                    " expected text \n",
-                                                    "expected text \t\n",
-                                                    " \t expected text\n",
-                                                    " \t expected text \t\n",
-                                                    "expected text",
-                                                    "expected text\t ",
-                                                    "expected text",
-                                                    "expected text   ",
-                                                    "",
-                                                    "\t ",
-                                                    "   ", }
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimTrailingComment(true, '#');
-                                                      r.setTrimTrailingComment(false, 0);
-                                                  },
-                                                  g_unchangedOutputs
-                                              },
-                                              TextReaderTestParams {
-                                                  g_inputs,
-                                                  [](TextReader &r)
-                                                  {
-                                                      r.setTrimTrailingComment(true, '#');
-                                                      r.setTrimTrailingWhiteSpace(true);
-                                                  },
-                                                  { "",
-                                                    "",
-                                                    "expected text",
-                                                    " expected text",
-                                                    "expected text",
-                                                    " \t expected text",
-                                                    " \t expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "expected text",
-                                                    "",
-                                                    "",
-                                                    "",   }
-                                              }
-                                              ));
+INSTANTIATE_TEST_CASE_P(
+        ParsesLinesDifferently,
+        TextReaderTest,
+        ::testing::Values(
+                TextReaderTestParams{ g_inputs, [](TextReader& r) { GMX_UNUSED_VALUE(r); }, g_unchangedOutputs },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) { r.setTrimLeadingWhiteSpace(true); },
+                                      {
+                                              "",
+                                              "",
+                                              "expected text\n",
+                                              "expected text \n",
+                                              "expected text \t\n",
+                                              "expected text\n",
+                                              "expected text \t\n",
+                                              "expected text#\n",
+                                              "expected text\t #\n",
+                                              "expected text# \n",
+                                              "expected text   # not expected \n",
+                                              "#\n",
+                                              "#\n",
+                                              "# not expected \n",
+                                      } },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) { r.setTrimTrailingWhiteSpace(true); },
+                                      {
+                                              "",
+                                              "",
+                                              "expected text",
+                                              " expected text",
+                                              "expected text",
+                                              " \t expected text",
+                                              " \t expected text",
+                                              "expected text#",
+                                              "expected text\t #",
+                                              "expected text#",
+                                              "expected text   # not expected",
+                                              "#",
+                                              "\t #",
+                                              "   # not expected",
+                                      } },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) {
+                                          r.setTrimTrailingWhiteSpace(true);
+                                          r.setTrimLeadingWhiteSpace(true);
+                                      },
+                                      {
+                                              "",
+                                              "",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text#",
+                                              "expected text\t #",
+                                              "expected text#",
+                                              "expected text   # not expected",
+                                              "#",
+                                              "#",
+                                              "# not expected",
+                                      } },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) { r.setTrimTrailingComment(true, '#'); },
+                                      {
+                                              "\n",
+                                              " \t \n",
+                                              "expected text\n",
+                                              " expected text \n",
+                                              "expected text \t\n",
+                                              " \t expected text\n",
+                                              " \t expected text \t\n",
+                                              "expected text",
+                                              "expected text\t ",
+                                              "expected text",
+                                              "expected text   ",
+                                              "",
+                                              "\t ",
+                                              "   ",
+                                      } },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) {
+                                          r.setTrimTrailingComment(true, '#');
+                                          r.setTrimTrailingComment(false, 0);
+                                      },
+                                      g_unchangedOutputs },
+                TextReaderTestParams{ g_inputs,
+                                      [](TextReader& r) {
+                                          r.setTrimTrailingComment(true, '#');
+                                          r.setTrimTrailingWhiteSpace(true);
+                                      },
+                                      {
+                                              "",
+                                              "",
+                                              "expected text",
+                                              " expected text",
+                                              "expected text",
+                                              " \t expected text",
+                                              " \t expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "expected text",
+                                              "",
+                                              "",
+                                              "",
+                                      } }));
 
 } // namespace
 } // namespace test

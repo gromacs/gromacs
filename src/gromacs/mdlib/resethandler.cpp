@@ -72,16 +72,15 @@ static inline ResetSignal convertToResetSignal(signed char sig)
     return sig >= 1 ? ResetSignal::doResetCounters : ResetSignal::noSignal;
 }
 
-ResetHandler::ResetHandler(
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationsShareState,
-        int64_t                             nsteps,
-        bool                                isMaster,
-        bool                                resetHalfway,
-        real                                maximumHoursToRun,
-        const MDLogger                     &mdlog,
-        gmx_wallcycle_t                     wcycle,
-        gmx_walltime_accounting_t           walltime_accounting) :
+ResetHandler::ResetHandler(compat::not_null<SimulationSignal*> signal,
+                           bool                                simulationsShareState,
+                           int64_t                             nsteps,
+                           bool                                isMaster,
+                           bool                                resetHalfway,
+                           real                                maximumHoursToRun,
+                           const MDLogger&                     mdlog,
+                           gmx_wallcycle_t                     wcycle,
+                           gmx_walltime_accounting_t           walltime_accounting) :
     signal_(*signal),
     rankCanSetSignal_(false),
     simulationNeedsReset_(false),
@@ -93,9 +92,11 @@ ResetHandler::ResetHandler(
     }
     if (resetHalfway)
     {
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText(
-                "The -resethway functionality is deprecated, and may be removed in a future version.");
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(
+                        "The -resethway functionality is deprecated, and may be removed in a "
+                        "future version.");
         if (nsteps > 0)
         {
             /* Signal to reset the counters half the simulation steps. */
@@ -133,22 +134,21 @@ bool ResetHandler::setSignalImpl(gmx_walltime_accounting_t walltime_accounting)
     return false;
 }
 
-bool ResetHandler::resetCountersImpl(
-        int64_t                     step,
-        int64_t                     step_rel,
-        const MDLogger             &mdlog,
-        FILE                       *fplog,
-        const t_commrec            *cr,
-        nonbonded_verlet_t         *nbv,
-        t_nrnb                     *nrnb,
-        const gmx_pme_t            *pme,
-        const pme_load_balancing_t *pme_loadbal,
-        gmx_wallcycle_t             wcycle,
-        gmx_walltime_accounting_t   walltime_accounting)
+bool ResetHandler::resetCountersImpl(int64_t                     step,
+                                     int64_t                     step_rel,
+                                     const MDLogger&             mdlog,
+                                     FILE*                       fplog,
+                                     const t_commrec*            cr,
+                                     nonbonded_verlet_t*         nbv,
+                                     t_nrnb*                     nrnb,
+                                     const gmx_pme_t*            pme,
+                                     const pme_load_balancing_t* pme_loadbal,
+                                     gmx_wallcycle_t             wcycle,
+                                     gmx_walltime_accounting_t   walltime_accounting)
 {
     /* Reset either if signal has been passed, or if reset step has been reached */
-    if (convertToResetSignal(signal_.set) == ResetSignal::doResetCounters ||
-        step_rel == wcycle_get_reset_counters(wcycle))
+    if (convertToResetSignal(signal_.set) == ResetSignal::doResetCounters
+        || step_rel == wcycle_get_reset_counters(wcycle))
     {
         if (pme_loadbal_is_active(pme_loadbal))
         {
@@ -161,18 +161,22 @@ bool ResetHandler::resetCountersImpl(
              * TODO consider fixing this by delaying the reset
              * until after load balancing completes,
              * e.g. https://gerrit.gromacs.org/#/c/4964/2 */
-            gmx_fatal(FARGS, "PME tuning was still active when attempting to "
-                      "reset mdrun counters at step %" PRId64 ". Try "
+            gmx_fatal(FARGS,
+                      "PME tuning was still active when attempting to "
+                      "reset mdrun counters at step %" PRId64
+                      ". Try "
                       "resetting counters later in the run, e.g. with gmx "
-                      "mdrun -resetstep.", step);
+                      "mdrun -resetstep.",
+                      step);
         }
 
         char sbuf[STEPSTRSIZE];
 
         /* Reset all the counters related to performance over the run */
-        GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "step %s: resetting all time and cycle counters",
-                gmx_step_str(step, sbuf));
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted("step %s: resetting all time and cycle counters",
+                                     gmx_step_str(step, sbuf));
 
         if (nbv && nbv->useGpu())
         {
@@ -218,4 +222,4 @@ bool ResetHandler::resetCountersImpl(
     return false;
 }
 
-}  // namespace gmx
+} // namespace gmx

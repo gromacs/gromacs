@@ -65,41 +65,40 @@ using test::TextFileMatch;
 //! Test parameter struct.
 using CommandLineOptionParams = std::tuple<std::string, int>;
 
-class EditconfTest : public test::CommandLineTestBase,
-                     public ::testing::WithParamInterface<CommandLineOptionParams>
+class EditconfTest :
+    public test::CommandLineTestBase,
+    public ::testing::WithParamInterface<CommandLineOptionParams>
 {
-    public:
-        EditconfTest()
-        {
-            const auto &params = GetParam();
-            setInputFile("-f", std::get<0>(params));
+public:
+    EditconfTest()
+    {
+        const auto& params = GetParam();
+        setInputFile("-f", std::get<0>(params));
 
-            std::string    outputfile = "output.";
-            outputfile += ftp2ext(std::get<1>(params));
-            ExactTextMatch settings;
-            setOutputFile("-o", outputfile.c_str(), TextFileMatch(settings));
-        }
+        std::string outputfile = "output.";
+        outputfile += ftp2ext(std::get<1>(params));
+        ExactTextMatch settings;
+        setOutputFile("-o", outputfile.c_str(), TextFileMatch(settings));
+    }
 
-        void runTest(const char *testName)
-        {
-            // Get the command line flags that were set up in the constructor
-            CommandLine &cmdline = commandLine();
+    void runTest(const char* testName)
+    {
+        // Get the command line flags that were set up in the constructor
+        CommandLine& cmdline = commandLine();
 
-            // Provide the name of the module to call
-            std::string module[] = {
-                "editconf"
-            };
-            cmdline.merge(CommandLine(module));
+        // Provide the name of the module to call
+        std::string module[] = { "editconf" };
+        cmdline.merge(CommandLine(module));
 
-            // Call the module
-            ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
+        // Call the module
+        ASSERT_EQ(0, gmx_editconf(cmdline.argc(), cmdline.argv()));
 
-            // Check the output
-            auto                 extension = ftp2ext(std::get<1>(GetParam()));
-            TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(extension, testName);
-            checkOutputFiles();
-        }
+        // Check the output
+        auto                 extension = ftp2ext(std::get<1>(GetParam()));
+        TestReferenceChecker rootChecker(this->rootChecker());
+        rootChecker.checkString(extension, testName);
+        checkOutputFiles();
+    }
 };
 
 TEST_P(EditconfTest, ProducesMatchingOutputStructureFile)
@@ -118,11 +117,11 @@ TEST_P(EditconfTest, ProducesMatchingOutputStructureFileUsingIndexGroup)
 // coordinates. It's better to run the tests only in single than not
 // have the tests.
 #if !GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(SinglePeptideFragments, EditconfTest,
-                            ::testing::Combine
-                            (::testing::Values("fragment1.pdb", "fragment1.gro", "fragment1.g96"),
-                                ::testing::Values(efPDB, efGRO, efG96))
-                        );
+INSTANTIATE_TEST_CASE_P(
+        SinglePeptideFragments,
+        EditconfTest,
+        ::testing::Combine(::testing::Values("fragment1.pdb", "fragment1.gro", "fragment1.g96"),
+                           ::testing::Values(efPDB, efGRO, efG96)));
 #endif
 
 } // namespace

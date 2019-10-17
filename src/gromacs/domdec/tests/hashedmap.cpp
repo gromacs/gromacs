@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,11 +51,9 @@ namespace
 {
 
 /*! \brief Checks that the key is found and if so also checks the value */
-void checkFinds(const gmx::HashedMap<char> &map,
-                int                         key,
-                char                        value)
+void checkFinds(const gmx::HashedMap<char>& map, int key, char value)
 {
-    const char *pointer = map.find(key);
+    const char* pointer = map.find(key);
     EXPECT_FALSE(pointer == nullptr);
     if (pointer)
     {
@@ -64,10 +62,9 @@ void checkFinds(const gmx::HashedMap<char> &map,
 }
 
 /*! \brief Checks that the key is not found */
-void checkDoesNotFind(const gmx::HashedMap<char> &map,
-                      int                         key)
+void checkDoesNotFind(const gmx::HashedMap<char>& map, int key)
 {
-    const char *pointer = map.find(key);
+    const char* pointer = map.find(key);
     EXPECT_TRUE(pointer == nullptr);
 }
 
@@ -76,12 +73,12 @@ TEST(HashedMap, InsertsFinds)
     gmx::HashedMap<char> map(2);
 
     map.insert(10, 'a');
-    map.insert(5,  'b');
-    map.insert(7,  'c');
+    map.insert(5, 'b');
+    map.insert(7, 'c');
 
     checkFinds(map, 10, 'a');
-    checkFinds(map, 5,  'b');
-    checkFinds(map, 7,  'c');
+    checkFinds(map, 5, 'b');
+    checkFinds(map, 7, 'c');
     checkDoesNotFind(map, 4);
 }
 
@@ -90,11 +87,11 @@ TEST(HashedMap, NegativeKeysWork)
     gmx::HashedMap<char> map(5);
 
     map.insert(-1, 'a');
-    map.insert(1,  'b');
+    map.insert(1, 'b');
     map.insert(-3, 'c');
 
     checkFinds(map, -1, 'a');
-    checkFinds(map, 1,  'b');
+    checkFinds(map, 1, 'b');
     checkFinds(map, -3, 'c');
 }
 
@@ -103,8 +100,8 @@ TEST(HashedMap, InsertsErases)
     gmx::HashedMap<char> map(3);
 
     map.insert(10, 'a');
-    map.insert(5,  'b');
-    map.insert(7,  'c');
+    map.insert(5, 'b');
+    map.insert(7, 'c');
 
     checkFinds(map, 10, 'a');
     map.erase(10);
@@ -116,7 +113,7 @@ TEST(HashedMap, InsertsOrAssigns)
     gmx::HashedMap<char> map(3);
 
     map.insert(10, 'a');
-    map.insert(5,  'b');
+    map.insert(5, 'b');
 
     map.insert_or_assign(7, 'c');
     checkFinds(map, 7, 'c');
@@ -131,8 +128,8 @@ TEST(HashedMap, Clears)
     gmx::HashedMap<char> map(3);
 
     map.insert(10, 'a');
-    map.insert(5,  'b');
-    map.insert(7,  'c');
+    map.insert(5, 'b');
+    map.insert(7, 'c');
 
     map.clear();
     checkDoesNotFind(map, 10);
@@ -148,22 +145,22 @@ TEST(HashedMap, LinkedEntries)
 
     gmx::HashedMap<char> map(20);
 
-    const int            largePowerOf2 = 2048;
+    const int largePowerOf2 = 2048;
 
-    map.insert(3 + 0*largePowerOf2, 'a');
-    map.insert(3 + 1*largePowerOf2, 'b');
-    map.insert(3 + 2*largePowerOf2, 'c');
+    map.insert(3 + 0 * largePowerOf2, 'a');
+    map.insert(3 + 1 * largePowerOf2, 'b');
+    map.insert(3 + 2 * largePowerOf2, 'c');
 
-    checkFinds(map, 3 + 0*largePowerOf2, 'a');
-    checkFinds(map, 3 + 1*largePowerOf2, 'b');
-    checkFinds(map, 3 + 2*largePowerOf2, 'c');
+    checkFinds(map, 3 + 0 * largePowerOf2, 'a');
+    checkFinds(map, 3 + 1 * largePowerOf2, 'b');
+    checkFinds(map, 3 + 2 * largePowerOf2, 'c');
 
     // Erase the middle entry in the linked list
-    map.erase(3 + 1*largePowerOf2);
+    map.erase(3 + 1 * largePowerOf2);
 
-    checkFinds(map, 3 + 0*largePowerOf2, 'a');
-    checkDoesNotFind(map, 3 + 1*largePowerOf2);
-    checkFinds(map, 3 + 2*largePowerOf2, 'c');
+    checkFinds(map, 3 + 0 * largePowerOf2, 'a');
+    checkDoesNotFind(map, 3 + 1 * largePowerOf2);
+    checkFinds(map, 3 + 2 * largePowerOf2, 'c');
 }
 
 // HashedMap only throws in debug mode, so only test in debug mode
@@ -174,7 +171,7 @@ TEST(HashedMap, CatchesDuplicateKey)
     gmx::HashedMap<char> map(15);
 
     map.insert(10, 'a');
-    map.insert(5,  'b');
+    map.insert(5, 'b');
     EXPECT_THROW_GMX(map.insert(10, 'c'), gmx::InvalidInputError);
 }
 
@@ -190,7 +187,7 @@ TEST(HashedMap, ResizesTable)
 
     for (int i = 0; i < 60; i++)
     {
-        map.insert(2*i + 3, 'a');
+        map.insert(2 * i + 3, 'a');
     }
     EXPECT_LT(map.bucket_count(), 128);
 
@@ -210,4 +207,4 @@ TEST(HashedMap, ResizesTable)
     EXPECT_LT(map.bucket_count(), 128);
 }
 
-}      // namespace
+} // namespace

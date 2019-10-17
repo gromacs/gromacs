@@ -47,16 +47,16 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_bool get_a_line(FILE *fp, char line[], int n)
+gmx_bool get_a_line(FILE* fp, char line[], int n)
 {
-    char *line0;
-    char *dum;
+    char* line0;
+    char* dum;
 
-    snew(line0, n+1);
+    snew(line0, n + 1);
 
     do
     {
-        if (!fgets(line0, n+1, fp))
+        if (!fgets(line0, n + 1, fp))
         {
             sfree(line0);
             return FALSE;
@@ -68,13 +68,13 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
         }
         else if (static_cast<int>(std::strlen(line0)) == n)
         {
-            fprintf(stderr, "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
-            line0[n-1] = '\0';
+            fprintf(stderr,
+                    "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
+            line0[n - 1] = '\0';
         }
         else
         {
-            fprintf(stderr, "Warning: file does not end with a newline, last line:\n%s\n",
-                    line0);
+            fprintf(stderr, "Warning: file does not end with a newline, last line:\n%s\n", line0);
         }
         dum = std::strchr(line0, ';');
         if (dum)
@@ -84,14 +84,13 @@ gmx_bool get_a_line(FILE *fp, char line[], int n)
         std::strncpy(line, line0, n);
         dum = line0;
         ltrim(dum);
-    }
-    while (dum[0] == '\0');
+    } while (dum[0] == '\0');
 
     sfree(line0);
     return TRUE;
 }
 
-gmx_bool get_header(char line[], char *header)
+gmx_bool get_header(char line[], char* header)
 {
     std::string temp  = line;
     auto        index = temp.find('[');
@@ -110,7 +109,7 @@ gmx_bool get_header(char line[], char *header)
     return sscanf(temp.c_str(), "%s%*s", header) == 1;
 }
 
-int search_str(int nstr, char **str, char *key)
+int search_str(int nstr, char** str, char* key)
 {
     int i;
 
@@ -126,15 +125,15 @@ int search_str(int nstr, char **str, char *key)
     return -1;
 }
 
-static int fget_lines(FILE *in, const char *db, char ***strings)
+static int fget_lines(FILE* in, const char* db, char*** strings)
 {
-    char **ptr;
+    char** ptr;
     char   buf[STRLEN];
     int    i, nstr;
-    char  *pret;
+    char*  pret;
 
     pret = fgets(buf, STRLEN, in);
-    if (pret == nullptr  || sscanf(buf, "%d", &nstr) != 1)
+    if (pret == nullptr || sscanf(buf, "%d", &nstr) != 1)
     {
         gmx_warning("File is empty");
         gmx_ffclose(in);
@@ -159,7 +158,7 @@ static int fget_lines(FILE *in, const char *db, char ***strings)
     return nstr;
 }
 
-int get_lines(const char *db, char ***strings)
+int get_lines(const char* db, char*** strings)
 {
     gmx::FilePtr in = gmx::openLibraryFile(db);
     return fget_lines(in.get(), db, strings);

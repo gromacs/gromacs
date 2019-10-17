@@ -47,20 +47,20 @@
 
 #if GMX_GPU == GMX_GPU_CUDA
 
-#include "gromacs/gpu_utils/gputraits.cuh"
+#    include "gromacs/gpu_utils/gputraits.cuh"
 
 #elif GMX_GPU == GMX_GPU_OPENCL
 
-#include "gromacs/gpu_utils/gputraits_ocl.h"
+#    include "gromacs/gpu_utils/gputraits_ocl.h"
 
 #else
 
 //! \brief GPU command stream
-using CommandStream = void *;
+using CommandStream = void*;
 //! \brief Single GPU call timing event
-using CommandEvent  = void *;
+using CommandEvent = void*;
 //! \brief GPU context
-using DeviceContext = void *;
+using DeviceContext = void*;
 
 #endif // GMX_GPU
 

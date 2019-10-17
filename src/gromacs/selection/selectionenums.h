@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,8 @@
  */
 typedef enum
 {
-    CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
+    CFRAC_NONE,      /**< No covered fraction (everything covered). */
+    CFRAC_SOLIDANGLE /**< Fraction of a solid (3D) angle covered. */
 } e_coverfrac_t;
 
 namespace gmx
@@ -67,17 +67,17 @@ namespace gmx
  */
 enum SelectionFlag
 {
-    efSelection_OnlyStatic              = 1<<0,
-    efSelection_OnlyAtoms               = 1<<1,
-    efSelection_OnlySorted              = 1<<2,
+    efSelection_OnlyStatic = 1 << 0,
+    efSelection_OnlyAtoms  = 1 << 1,
+    efSelection_OnlySorted = 1 << 2,
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
-    efSelection_DynamicMask             = 1<<3,
+    efSelection_DynamicMask = 1 << 3,
     //! If set, unconditionally empty selections result in compilation errors.
-    efSelection_DisallowEmpty           = 1<<4,
+    efSelection_DisallowEmpty = 1 << 4,
     //! Whether velocities of output positions should be evaluated.
-    efSelection_EvaluateVelocities      = 1<<5,
+    efSelection_EvaluateVelocities = 1 << 5,
     //! Whether forces on output positions should be evaluated.
-    efSelection_EvaluateForces          = 1<<6,
+    efSelection_EvaluateForces = 1 << 6,
 };
 
 //! Holds a collection of ::SelectionFlag values.
@@ -100,24 +100,19 @@ struct SelectionTopologyProperties
         return SelectionTopologyProperties(true, false);
     }
     //! Returns a property object that requires atom masses.
-    static SelectionTopologyProperties masses()
-    {
-        return SelectionTopologyProperties(true, true);
-    }
+    static SelectionTopologyProperties masses() { return SelectionTopologyProperties(true, true); }
 
     //! Initializes properties that does not require anything.
-    SelectionTopologyProperties()
-        : needsTopology(false), needsMasses(false)
-    {
-    }
+    SelectionTopologyProperties() : needsTopology(false), needsMasses(false) {}
     //! Initializes properties with the given flags.
-    SelectionTopologyProperties(bool needsTopology, bool needsMasses)
-        : needsTopology(needsTopology), needsMasses(needsMasses)
+    SelectionTopologyProperties(bool needsTopology, bool needsMasses) :
+        needsTopology(needsTopology),
+        needsMasses(needsMasses)
     {
     }
 
     //! Combines flags from another properties object to this.
-    void merge(const SelectionTopologyProperties &other)
+    void merge(const SelectionTopologyProperties& other)
     {
         needsTopology = needsTopology || other.needsTopology;
         needsMasses   = needsMasses || other.needsMasses;
@@ -133,6 +128,6 @@ struct SelectionTopologyProperties
     bool needsMasses;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

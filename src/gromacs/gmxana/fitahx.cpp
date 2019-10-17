@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,7 @@
 
 static void my_calc_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
 {
-    int    i, m, ai;
+    int i, m, ai;
 
     clear_rvec(xcm);
     for (i = 0; (i < nbb); i++)
@@ -72,15 +72,13 @@ static void my_sub_xcm(int nbb, const int bbind[], rvec x[], rvec xcm)
     }
 }
 
-real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
-             rvec x[], int nca,
-             int caindex[], gmx_bool bFit)
+real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[], rvec x[], int nca, int caindex[], gmx_bool bFit)
 {
-    static rvec *xref = nullptr;
-    static real *mass = nullptr;
-    const  real  d    = 0.15;  /* Rise per residue (nm)    */
-    const  real  tw   = 1.745; /* Twist per residue (rad)  */
-    const  real  rad  = 0.23;  /* Radius of the helix (nm) */
+    static rvec* xref = nullptr;
+    static real* mass = nullptr;
+    const real   d    = 0.15;  /* Rise per residue (nm)    */
+    const real   tw   = 1.745; /* Twist per residue (rad)  */
+    const real   rad  = 0.23;  /* Radius of the helix (nm) */
     real         phi0, trms, rms;
     rvec         dx, xcm;
     int          ai, i, nmass;
@@ -99,17 +97,16 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
     for (i = 0; (i < nca); i++)
     {
         ai           = caindex[i];
-        xref[ai][XX] = rad*std::cos(phi0);
-        xref[ai][YY] = rad*std::sin(phi0);
-        xref[ai][ZZ] = d*i;
+        xref[ai][XX] = rad * std::cos(phi0);
+        xref[ai][YY] = rad * std::sin(phi0);
+        xref[ai][ZZ] = d * i;
 
         /* Set the mass to select that this Calpha contributes to fitting */
         mass[ai] = 10.0;
 /*#define DEBUG*/
 #ifdef DEBUG
-        fprintf(stderr, "%5d  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n", ai,
-                x[ai][XX], x[ai][YY], x[ai][ZZ],
-                xref[ai][XX], xref[ai][YY], xref[ai][ZZ]);
+        fprintf(stderr, "%5d  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f  %8.3f\n", ai, x[ai][XX], x[ai][YY],
+                x[ai][ZZ], xref[ai][XX], xref[ai][YY], xref[ai][ZZ]);
 #endif
         phi0 += tw;
     }
@@ -156,12 +153,12 @@ real fit_ahx(int nres, t_bb bb[], int natoms, int nall, int allindex[],
         if (mass[ai] > 0.0)
         {
             rvec_sub(x[ai], xref[ai], dx);
-            rms         = iprod(dx, dx);
+            rms = iprod(dx, dx);
             bb[i].rmsa += std::sqrt(rms);
             bb[i].nrms++;
-            trms    += rms;
+            trms += rms;
             mass[ai] = 0.0;
         }
     }
-    return std::sqrt(trms/nca);
+    return std::sqrt(trms / nca);
 }

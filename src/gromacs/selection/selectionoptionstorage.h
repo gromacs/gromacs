@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,78 +66,72 @@ class SelectionOptionManager;
  */
 class SelectionOptionStorage : public OptionStorageTemplate<Selection>
 {
-    public:
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         * \param     manager    Manager for this object.
-         */
-        SelectionOptionStorage(const SelectionOption  &settings,
-                               SelectionOptionManager *manager);
+public:
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings   Storage settings.
+     * \param     manager    Manager for this object.
+     */
+    SelectionOptionStorage(const SelectionOption& settings, SelectionOptionManager* manager);
 
-        OptionInfo &optionInfo() override { return info_; }
-        std::string typeString() const override { return "selection"; }
-        std::string formatSingleValue(const Selection &value) const override;
-        std::vector<Any>
-        normalizeValues(const std::vector<Any> &values) const override;
+    OptionInfo&      optionInfo() override { return info_; }
+    std::string      typeString() const override { return "selection"; }
+    std::string      formatSingleValue(const Selection& value) const override;
+    std::vector<Any> normalizeValues(const std::vector<Any>& values) const override;
 
-        /*! \brief
-         * Adds selections to the storage.
-         *
-         * \param[in] selections  List of selections to add.
-         * \param[in] bFullValue  If true, the provided selections are the full
-         *      value of the option, and additional checks are performed.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  InvalidInputError if
-         *      - There is an incorrect number of selections in \p selections.
-         *      - Any selection in \p selections is not allowed for this
-         *        option.
-         *
-         * This function is used to add selections from SelectionOptionManager.
-         * It is called with \p bFullValue set to false from
-         * SelectionOptionManager::convertOptionValue(), and \p bFullValue set
-         * to true when parsing requested selections.
-         */
-        void addSelections(const SelectionList &selections,
-                           bool                 bFullValue);
+    /*! \brief
+     * Adds selections to the storage.
+     *
+     * \param[in] selections  List of selections to add.
+     * \param[in] bFullValue  If true, the provided selections are the full
+     *      value of the option, and additional checks are performed.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  InvalidInputError if
+     *      - There is an incorrect number of selections in \p selections.
+     *      - Any selection in \p selections is not allowed for this
+     *        option.
+     *
+     * This function is used to add selections from SelectionOptionManager.
+     * It is called with \p bFullValue set to false from
+     * SelectionOptionManager::convertOptionValue(), and \p bFullValue set
+     * to true when parsing requested selections.
+     */
+    void addSelections(const SelectionList& selections, bool bFullValue);
 
-        // Required to access the number of values in selection requests.
-        // See SelectionCollection::Impl.
-        using MyBase::maxValueCount;
-        //! Whether the option allows only atom-valued selections.
-        bool allowsOnlyAtoms() const
-        {
-            return selectionFlags_.test(efSelection_OnlyAtoms);
-        }
-        //! \copydoc SelectionOptionInfo::setValueCount()
-        void setAllowedValueCount(int count);
-        /*! \brief
-         * Alters flags for the selections created by this option.
-         *
-         * \param[in] flag        Flag to change.
-         * \param[in] bSet        Whether to set or clear the flag.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if selections have already been
-         *      provided and conflict with the given flags.
-         *
-         * If selections have already been provided, it is checked that they
-         * match the limitations enforced by the flags.  Pending requests are
-         * also affected.
-         *
-         * Strong exception safety guarantee.
-         */
-        void setSelectionFlag(SelectionFlag flag, bool bSet);
+    // Required to access the number of values in selection requests.
+    // See SelectionCollection::Impl.
+    using MyBase::maxValueCount;
+    //! Whether the option allows only atom-valued selections.
+    bool allowsOnlyAtoms() const { return selectionFlags_.test(efSelection_OnlyAtoms); }
+    //! \copydoc SelectionOptionInfo::setValueCount()
+    void setAllowedValueCount(int count);
+    /*! \brief
+     * Alters flags for the selections created by this option.
+     *
+     * \param[in] flag        Flag to change.
+     * \param[in] bSet        Whether to set or clear the flag.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if selections have already been
+     *      provided and conflict with the given flags.
+     *
+     * If selections have already been provided, it is checked that they
+     * match the limitations enforced by the flags.  Pending requests are
+     * also affected.
+     *
+     * Strong exception safety guarantee.
+     */
+    void setSelectionFlag(SelectionFlag flag, bool bSet);
 
-    private:
-        void convertValue(const Any &value) override;
-        void processSetValues(ValueList *values) override;
-        void processAll() override;
+private:
+    void convertValue(const Any& value) override;
+    void processSetValues(ValueList* values) override;
+    void processAll() override;
 
-        SelectionOptionInfo     info_;
-        SelectionOptionManager &manager_;
-        std::string             defaultText_;
-        SelectionFlags          selectionFlags_;
+    SelectionOptionInfo     info_;
+    SelectionOptionManager& manager_;
+    std::string             defaultText_;
+    SelectionFlags          selectionFlags_;
 };
 
 } // namespace gmx

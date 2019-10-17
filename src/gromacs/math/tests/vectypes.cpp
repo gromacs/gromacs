@@ -58,9 +58,9 @@
 namespace
 {
 
-using gmx::RVec;
 using gmx::DVec;
 using gmx::IVec;
+using gmx::RVec;
 
 TEST(RVecTest, CanBeStoredInVector)
 {
@@ -86,7 +86,7 @@ TEST(RVecTest, ConvertsImplicitlyTo_rvec)
 {
     std::vector<RVec> v;
     v.emplace_back(1, 2, 3);
-    rvec              x;
+    rvec x;
     copy_rvec(v[0], x);
     EXPECT_EQ(1, x[XX]);
     EXPECT_EQ(2, x[YY]);
@@ -97,7 +97,7 @@ TEST(RVecTest, WorksAsMutable_rvec)
 {
     std::vector<RVec> v;
     v.emplace_back(1, 2, 3);
-    rvec              x = {2, 3, 4};
+    rvec x = { 2, 3, 4 };
     copy_rvec(x, v[0]);
     EXPECT_EQ(2, v[0][XX]);
     EXPECT_EQ(3, v[0][YY]);
@@ -109,7 +109,7 @@ TEST(RVecTest, WorksAs_rvec_Array)
     std::vector<RVec> v;
     v.emplace_back(1, 2, 3);
     v.emplace_back(2, 3, 4);
-    const rvec *r = as_rvec_array(v.data());
+    const rvec* r = as_rvec_array(v.data());
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);
     EXPECT_EQ(3, r[0][ZZ]);
@@ -195,7 +195,7 @@ TEST(RVecTest, CanDivideRVecInplace)
     RVec a(1, 2, 3);
     real b = 0.5;
     RVec c;
-    c = a/b;
+    c = a / b;
     EXPECT_EQ(2, c[XX]);
     EXPECT_EQ(4, c[YY]);
     EXPECT_EQ(6, c[ZZ]);
@@ -276,7 +276,7 @@ TEST(RVecTest, CanLeftScalarMultiply)
     RVec a(1, 2, 3);
     real b = 2.0;
     RVec c;
-    c = b*a;
+    c = b * a;
     EXPECT_EQ(2, c[XX]);
     EXPECT_EQ(4, c[YY]);
     EXPECT_EQ(6, c[ZZ]);
@@ -287,7 +287,7 @@ TEST(RVecTest, CanRightScalarMultiply)
     RVec a(1, 2, 3);
     real b = 2.0;
     RVec c;
-    c = a*b;
+    c = a * b;
     EXPECT_EQ(2, c[XX]);
     EXPECT_EQ(4, c[YY]);
     EXPECT_EQ(6, c[ZZ]);
@@ -384,7 +384,7 @@ TEST(RVecTest, elementWiseMax)
 /*! \brief
  * Helper function for testing DVec to dvec conversions.
  */
-const dvec *testFunction(const dvec &x)
+const dvec* testFunction(const dvec& x)
 {
     return &x;
 }
@@ -392,7 +392,7 @@ const dvec *testFunction(const dvec &x)
 TEST(RVecTest, WorksAs_dvec_Reference)
 {
     DVec        v(1, 2, 3);
-    const dvec *r = testFunction(v.as_vec());
+    const dvec* r = testFunction(v.as_vec());
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);
     EXPECT_EQ(3, r[0][ZZ]);
@@ -401,7 +401,7 @@ TEST(RVecTest, WorksAs_dvec_Reference)
 /*! \brief
  * Helper function for testing IVec to ivec conversions.
  */
-const ivec *testFunction(const ivec &x)
+const ivec* testFunction(const ivec& x)
 {
     return &x;
 }
@@ -409,7 +409,7 @@ const ivec *testFunction(const ivec &x)
 TEST(RVecTest, WorksAs_ivec_Reference)
 {
     IVec        v(1, 2, 3);
-    const ivec *r = testFunction(v.as_vec());
+    const ivec* r = testFunction(v.as_vec());
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);
     EXPECT_EQ(3, r[0][ZZ]);
@@ -418,8 +418,8 @@ TEST(RVecTest, WorksAs_ivec_Reference)
 /*! \brief
  * Helper function for testing RVec to rvec conversions.
  */
-#if !GMX_DOUBLE //otherwise rvec==dvec
-const rvec *testFunction(const rvec &x)
+#if !GMX_DOUBLE // otherwise rvec==dvec
+const rvec* testFunction(const rvec& x)
 {
     return &x;
 }
@@ -428,7 +428,7 @@ const rvec *testFunction(const rvec &x)
 TEST(RVecTest, WorksAs_rvec_Reference)
 {
     RVec        v(1, 2, 3);
-    const rvec *r = testFunction(v);
+    const rvec* r = testFunction(v);
     EXPECT_EQ(1, r[0][XX]);
     EXPECT_EQ(2, r[0][YY]);
     EXPECT_EQ(3, r[0][ZZ]);

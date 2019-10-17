@@ -53,19 +53,18 @@
 namespace gmx
 {
 
-void
-SetPrecision::checkAbilityDependencies(unsigned long abilities) const
+void SetPrecision::checkAbilityDependencies(unsigned long abilities) const
 {
     if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
-        std::string errorMessage = "Output file type does not support writing variable precision. "
-            "Only XTC and TNG support variable precision.";
+        std::string errorMessage =
+                "Output file type does not support writing variable precision. "
+                "Only XTC and TNG support variable precision.";
         GMX_THROW(InconsistentInputError(errorMessage.c_str()));
     }
 }
 
-void
-SetPrecision::processFrame(const int /*framenumber*/, t_trxframe *input)
+void SetPrecision::processFrame(const int /*framenumber*/, t_trxframe* input)
 {
     input->prec  = std::pow(10, precision_);
     input->bPrec = true;

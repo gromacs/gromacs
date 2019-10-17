@@ -68,8 +68,9 @@
 #include "utilities.h"
 
 /*! \brief struct for passing all data required for a function type */
-typedef struct {
-    const t_ilist *il;    /**< pointer to t_ilist entry corresponding to ftype */
+typedef struct
+{
+    const t_ilist* il;    /**< pointer to t_ilist entry corresponding to ftype */
     int            ftype; /**< the function type index */
     int            nat;   /**< nr of atoms involved in a single ftype interaction */
 } ilist_data_t;
@@ -81,9 +82,7 @@ typedef struct {
  * equal load and different threads avoid touching the same atoms as much
  * as possible.
  */
-static void divide_bondeds_by_locality(bonded_threading_t *bt,
-                                       int                 numType,
-                                       const ilist_data_t *ild)
+static void divide_bondeds_by_locality(bonded_threading_t* bt, int numType, const ilist_data_t* ild)
 {
     int nat_tot, nat_sum;
     int ind[F_NRE];    /* index into the ild[].il->iatoms */
@@ -96,9 +95,9 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
     for (f = 0; f < numType; f++)
     {
         /* Sum #bondeds*#atoms_per_bond over all bonded types */
-        nat_tot  += ild[f].il->nr/(ild[f].nat + 1)*ild[f].nat;
+        nat_tot += ild[f].il->nr / (ild[f].nat + 1) * ild[f].nat;
         /* The start bound for thread 0 is 0 for all interactions */
-        ind[f]    = 0;
+        ind[f] = 0;
         /* Initialize the next atom index array */
         assert(ild[f].il->nr > 0);
         at_ind[f] = ild[f].il->iatoms[1];
@@ -127,7 +126,7 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
          * uniformly. Proper and RB dihedrals are often distributed
          * non-uniformly, but their cost is roughly equal.
          */
-        nat_thread = (nat_tot*t)/bt->nthreads;
+        nat_thread = (nat_tot * t) / bt->nthreads;
 
         while (nat_sum < nat_thread)
         {
@@ -159,7 +158,7 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
              * index f_min) to thread t-1 by increasing ind.
              */
             ind[f_min] += ild[f_min].nat + 1;
-            nat_sum    += ild[f_min].nat;
+            nat_sum += ild[f_min].nat;
 
             /* Update the first unassigned atom index for this type */
             if (ind[f_min] < ild[f_min].il->nr)
@@ -190,21 +189,18 @@ static void divide_bondeds_by_locality(bonded_threading_t *bt,
 }
 
 //! Return whether function type \p ftype in \p idef has perturbed interactions
-static bool ftypeHasPerturbedEntries(const t_idef  &idef,
-                                     int            ftype)
+static bool ftypeHasPerturbedEntries(const t_idef& idef, int ftype)
 {
     GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
                "Perturbed interations should be sorted here");
 
-    const t_ilist &ilist = idef.il[ftype];
+    const t_ilist& ilist = idef.il[ftype];
 
     return (idef.ilsort != ilsortNO_FE && ilist.nr_nonperturbed != ilist.nr);
 }
 
 //! Divides bonded interactions over threads and GPU
-static void divide_bondeds_over_threads(bonded_threading_t *bt,
-                                        bool                useGpuForBondeds,
-                                        const t_idef       &idef)
+static void divide_bondeds_over_threads(bonded_threading_t* bt, bool useGpuForBondeds, const t_idef& idef)
 {
     ilist_data_t ild[F_NRE];
 
@@ -221,12 +217,11 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
             continue;
         }
 
-        const t_ilist &il                     = idef.il[fType];
+        const t_ilist& il                     = idef.il[fType];
         int            nrToAssignToCpuThreads = il.nr;
 
-        if (useGpuForBondeds &&
-            fTypeGpuIndex < gmx::fTypesOnGpu.size() &&
-            gmx::fTypesOnGpu[fTypeGpuIndex] == fType)
+        if (useGpuForBondeds && fTypeGpuIndex < gmx::fTypesOnGpu.size()
+            && gmx::fTypesOnGpu[fTypeGpuIndex] == fType)
         {
             fTypeGpuIndex++;
 
@@ -265,16 +260,16 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
             for (int t = 0; t <= numThreads; t++)
             {
                 /* Divide equally over the threads */
-                int nr_t = (((nrToAssignToCpuThreads/stride)*t)/numThreads)*stride;
+                int nr_t = (((nrToAssignToCpuThreads / stride) * t) / numThreads) * stride;
 
                 if (fType == F_DISRES)
                 {
                     /* Ensure that distance restraint pairs with the same label
                      * end up on the same thread.
                      */
-                    while (nr_t > 0 && nr_t < nrToAssignToCpuThreads &&
-                           idef.iparams[il.iatoms[nr_t]].disres.label ==
-                           idef.iparams[il.iatoms[nr_t - stride]].disres.label)
+                    while (nr_t > 0 && nr_t < nrToAssignToCpuThreads
+                           && idef.iparams[il.iatoms[nr_t]].disres.label
+                                      == idef.iparams[il.iatoms[nr_t - stride]].disres.label)
                     {
                         nr_t += stride;
                     }
@@ -286,7 +281,7 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
         else
         {
             /* Add this fType to the list to be distributed */
-            int nat          = NRAL(fType);
+            int nat            = NRAL(fType);
             ild[numType].ftype = fType;
             ild[numType].il    = &il;
             ild[numType].nat   = nat;
@@ -318,9 +313,8 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
                 for (t = 0; t < numThreads; t++)
                 {
                     fprintf(debug, " %4d",
-                            (bt->workDivision.bound(f, t + 1) -
-                             bt->workDivision.bound(f, t))/
-                            (1 + NRAL(f)));
+                            (bt->workDivision.bound(f, t + 1) - bt->workDivision.bound(f, t))
+                                    / (1 + NRAL(f)));
                 }
                 fprintf(debug, "\n");
             }
@@ -329,37 +323,41 @@ static void divide_bondeds_over_threads(bonded_threading_t *bt,
 }
 
 //! Construct a reduction mask for which parts (blocks) of the force array are touched on which thread task
-static void
-calc_bonded_reduction_mask(int                       natoms,
-                           f_thread_t               *f_thread,
-                           const t_idef             &idef,
-                           int                       thread,
-                           const bonded_threading_t &bondedThreading)
+static void calc_bonded_reduction_mask(int                       natoms,
+                                       f_thread_t*               f_thread,
+                                       const t_idef&             idef,
+                                       int                       thread,
+                                       const bonded_threading_t& bondedThreading)
 {
-    static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS, "For the error message below we assume these two are equal.");
+    static_assert(BITMASK_SIZE == GMX_OPENMP_MAX_THREADS,
+                  "For the error message below we assume these two are equal.");
 
     if (bondedThreading.nthreads > BITMASK_SIZE)
     {
 #pragma omp master
-        gmx_fatal(FARGS, "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS (%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger value for GMX_OPENMP_MAX_THREADS passed to CMake.",
+        gmx_fatal(FARGS,
+                  "You are using %d OpenMP threads, which is larger than GMX_OPENMP_MAX_THREADS "
+                  "(%d). Decrease the number of OpenMP threads or rebuild GROMACS with a larger "
+                  "value for GMX_OPENMP_MAX_THREADS passed to CMake.",
                   bondedThreading.nthreads, GMX_OPENMP_MAX_THREADS);
 #pragma omp barrier
     }
-    GMX_ASSERT(bondedThreading.nthreads <= BITMASK_SIZE, "We need at least nthreads bits in the mask");
+    GMX_ASSERT(bondedThreading.nthreads <= BITMASK_SIZE,
+               "We need at least nthreads bits in the mask");
 
     int nblock = (natoms + reduction_block_size - 1) >> reduction_block_bits;
 
     if (nblock > f_thread->block_nalloc)
     {
         f_thread->block_nalloc = over_alloc_large(nblock);
-        srenew(f_thread->mask,        f_thread->block_nalloc);
+        srenew(f_thread->mask, f_thread->block_nalloc);
         srenew(f_thread->block_index, f_thread->block_nalloc);
         // NOTE: It seems f_thread->f does not need to be aligned
         sfree_aligned(f_thread->f);
-        snew_aligned(f_thread->f,     f_thread->block_nalloc*reduction_block_size, 128);
+        snew_aligned(f_thread->f, f_thread->block_nalloc * reduction_block_size, 128);
     }
 
-    gmx_bitmask_t *mask = f_thread->mask;
+    gmx_bitmask_t* mask = f_thread->mask;
 
     for (int b = 0; b < nblock; b++)
     {
@@ -382,7 +380,7 @@ calc_bonded_reduction_mask(int                       natoms,
                 {
                     for (int a = 1; a < nat1; a++)
                     {
-                        bitmask_set_bit(&mask[idef.il[ftype].iatoms[i+a] >> reduction_block_bits], thread);
+                        bitmask_set_bit(&mask[idef.il[ftype].iatoms[i + a] >> reduction_block_bits], thread);
                     }
                 }
             }
@@ -402,12 +400,9 @@ calc_bonded_reduction_mask(int                       natoms,
     }
 }
 
-void setup_bonded_threading(bonded_threading_t *bt,
-                            int                 numAtoms,
-                            bool                useGpuForBondeds,
-                            const t_idef       &idef)
+void setup_bonded_threading(bonded_threading_t* bt, int numAtoms, bool useGpuForBondeds, const t_idef& idef)
 {
-    int                 ctot = 0;
+    int ctot = 0;
 
     assert(bt->nthreads >= 1);
 
@@ -428,10 +423,9 @@ void setup_bonded_threading(bonded_threading_t *bt,
     {
         try
         {
-            calc_bonded_reduction_mask(numAtoms, bt->f_t[t].get(),
-                                       idef, t, *bt);
+            calc_bonded_reduction_mask(numAtoms, bt->f_t[t].get(), idef, t, *bt);
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
     /* Reduce the masks over the threads and determine which blocks
@@ -450,7 +444,7 @@ void setup_bonded_threading(bonded_threading_t *bt,
     bt->nblock_used = 0;
     for (int b = 0; b < nblock_tot; b++)
     {
-        gmx_bitmask_t *mask = &bt->mask[b];
+        gmx_bitmask_t* mask = &bt->mask[b];
 
         /* Generate the union over the threads of the bitmask */
         bitmask_clear(mask);
@@ -477,28 +471,25 @@ void setup_bonded_threading(bonded_threading_t *bt,
 
             if (gmx_debug_at)
             {
-                fprintf(debug, "block %d flags %s count %d\n",
-                        b, to_hex_string(*mask).c_str(), c);
+                fprintf(debug, "block %d flags %s count %d\n", b, to_hex_string(*mask).c_str(), c);
             }
         }
     }
     if (debug)
     {
-        fprintf(debug, "Number of %d atom blocks to reduce: %d\n",
-                reduction_block_size, bt->nblock_used);
+        fprintf(debug, "Number of %d atom blocks to reduce: %d\n", reduction_block_size, bt->nblock_used);
         fprintf(debug, "Reduction density %.2f for touched blocks only %.2f\n",
-                ctot*reduction_block_size/static_cast<double>(numAtoms),
-                ctot/static_cast<double>(bt->nblock_used));
+                ctot * reduction_block_size / static_cast<double>(numAtoms),
+                ctot / static_cast<double>(bt->nblock_used));
     }
 }
 
-void tear_down_bonded_threading(bonded_threading_t *bt)
+void tear_down_bonded_threading(bonded_threading_t* bt)
 {
     delete bt;
 }
 
-f_thread_t::f_thread_t(int numEnergyGroups) :
-    grpp(numEnergyGroups)
+f_thread_t::f_thread_t(int numEnergyGroups) : grpp(numEnergyGroups)
 {
     snew(fshift, SHIFTS);
 }
@@ -511,8 +502,7 @@ f_thread_t::~f_thread_t()
     sfree_aligned(f);
 }
 
-bonded_threading_t::bonded_threading_t(const int numThreads,
-                                       const int numEnergyGroups) :
+bonded_threading_t::bonded_threading_t(const int numThreads, const int numEnergyGroups) :
     nthreads(numThreads),
     nblock_used(0),
     haveBondeds(false),
@@ -530,12 +520,11 @@ bonded_threading_t::bonded_threading_t(const int numThreads,
              */
             f_t[t] = std::make_unique<f_thread_t>(numEnergyGroups);
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 }
 
-bonded_threading_t *init_bonded_threading(FILE      *fplog,
-                                          const int  nenergrp)
+bonded_threading_t* init_bonded_threading(FILE* fplog, const int nenergrp)
 {
     /* These thread local data structures are used for bondeds only.
      *
@@ -546,15 +535,14 @@ bonded_threading_t *init_bonded_threading(FILE      *fplog,
      * of doing transposeScatterIncr/DecrU with aligment 4 instead of 3
      * is much larger than the reduction overhead.
      */
-    bonded_threading_t *bt = new bonded_threading_t(gmx_omp_nthreads_get(emntBonded),
-                                                    nenergrp);
+    bonded_threading_t* bt = new bonded_threading_t(gmx_omp_nthreads_get(emntBonded), nenergrp);
 
     /* The optimal value after which to switch from uniform to localized
      * bonded interaction distribution is 3, 4 or 5 depending on the system
      * and hardware.
      */
     const int max_nthread_uniform = 4;
-    char *    ptr;
+    char*     ptr;
 
     if ((ptr = getenv("GMX_BONDED_NTHREAD_UNIFORM")) != nullptr)
     {

@@ -66,93 +66,88 @@ class StatePropagatorData;
  *     scaling factor, and
  *   * scales the box and the positions of the system.
  */
-class ParrinelloRahmanBarostat final :
-    public                     ISimulatorElement,
-    public                     ICheckpointHelperClient
+class ParrinelloRahmanBarostat final : public ISimulatorElement, public ICheckpointHelperClient
 {
-    public:
-        //! Constructor
-        ParrinelloRahmanBarostat(
-            int                   nstpcouple,
-            int                   offset,
-            real                  couplingTimeStep,
-            Step                  initStep,
-            ArrayRef<rvec>        scalingTensor,
-            PropagatorCallbackPtr propagatorCallback,
-            StatePropagatorData  *statePropagatorData,
-            EnergyElement        *energyElement,
-            FILE                 *fplog,
-            const t_inputrec     *inputrec,
-            const MDAtoms        *mdAtoms,
-            const t_state        *globalState,
-            t_commrec            *cr,
-            bool                  isRestart);
+public:
+    //! Constructor
+    ParrinelloRahmanBarostat(int                   nstpcouple,
+                             int                   offset,
+                             real                  couplingTimeStep,
+                             Step                  initStep,
+                             ArrayRef<rvec>        scalingTensor,
+                             PropagatorCallbackPtr propagatorCallback,
+                             StatePropagatorData*  statePropagatorData,
+                             EnergyElement*        energyElement,
+                             FILE*                 fplog,
+                             const t_inputrec*     inputrec,
+                             const MDAtoms*        mdAtoms,
+                             const t_state*        globalState,
+                             t_commrec*            cr,
+                             bool                  isRestart);
 
-        /*! \brief Register run function for step / time
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! Fix relative box shape
-        void elementSetup() override;
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! Fix relative box shape
+    void elementSetup() override;
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-        //! Getter for the box velocities
-        const rvec* boxVelocities() const;
+    //! Getter for the box velocities
+    const rvec* boxVelocities() const;
 
-    private:
-        //! The frequency at which the barostat is applied
-        const int  nstpcouple_;
-        //! If != 0, offset the step at which the barostat is applied
-        const int  offset_;
-        //! The coupling time step - simulation time step x nstcouple_
-        const real couplingTimeStep_;
-        //! The first step of the simulation
-        const Step initStep_;
+private:
+    //! The frequency at which the barostat is applied
+    const int nstpcouple_;
+    //! If != 0, offset the step at which the barostat is applied
+    const int offset_;
+    //! The coupling time step - simulation time step x nstcouple_
+    const real couplingTimeStep_;
+    //! The first step of the simulation
+    const Step initStep_;
 
-        //! Whether this is the first step
-        bool isInitStep_;
+    //! Whether this is the first step
+    bool isInitStep_;
 
-        //! View on the velocity scaling tensor (owned by the propagator)
-        ArrayRef<rvec>        scalingTensor_;
-        //! Callback to let propagator know that we updated lambda
-        PropagatorCallbackPtr propagatorCallback_;
+    //! View on the velocity scaling tensor (owned by the propagator)
+    ArrayRef<rvec> scalingTensor_;
+    //! Callback to let propagator know that we updated lambda
+    PropagatorCallbackPtr propagatorCallback_;
 
-        //! Relative change in box before - after barostatting
-        matrix mu_;
-        //! Relative box shape
-        tensor boxRel_;
-        //! Box velocity
-        tensor boxVelocity_;
+    //! Relative change in box before - after barostatting
+    matrix mu_;
+    //! Relative box shape
+    tensor boxRel_;
+    //! Box velocity
+    tensor boxVelocity_;
 
-        //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
-        //! Pointer to the energy element
-        EnergyElement       *energyElement_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the energy element
+    EnergyElement* energyElement_;
 
-        //! Integrate the PR box vector equations of motion - does not alter state
-        void integrateBoxVelocityEquations(Step step);
-        //! Scale box and positions
-        void scaleBoxAndPositions();
+    //! Integrate the PR box vector equations of motion - does not alter state
+    void integrateBoxVelocityEquations(Step step);
+    //! Scale box and positions
+    void scaleBoxAndPositions();
 
-        //! ICheckpointHelperClient implementation
-        void writeCheckpoint(t_state *localState, t_state *globalState) override;
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE             *fplog_;
-        //! Contains user input mdp options.
-        const t_inputrec *inputrec_;
-        //! Atom parameters for this domain.
-        const MDAtoms    *mdAtoms_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    const MDAtoms* mdAtoms_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_PARRINELLORAHMANBAROSTAT_H

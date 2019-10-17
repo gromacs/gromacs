@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,16 +37,14 @@
 
 #include "gromacs/utility/real.h"
 
-void rangeArray(int *ar, int size);
+void rangeArray(int* ar, int size);
 
-void insertionSort(real *ar, int *perm, int start, int end, int direction);
+void insertionSort(real* ar, int* perm, int start, int end, int direction);
 
-int BinarySearch(const real *ar, int start, int end, real key, int direction);
+int BinarySearch(const real* ar, int start, int end, real key, int direction);
 
-int start_binsearch(real *array, int *perm, int low, int high,
-                    real key, int direction);
+int start_binsearch(real* array, int* perm, int low, int high, real key, int direction);
 
-int LinearSearch(const double *array, int startindx, int stopindx,
-                 double key, int *count, int direction);
+int LinearSearch(const double* array, int startindx, int stopindx, double key, int* count, int direction);
 
 #endif

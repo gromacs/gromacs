@@ -62,80 +62,71 @@ namespace
 
 class ExactTextMatcher : public ITextBlockMatcher
 {
-    public:
-        void checkStream(TextInputStream      *stream,
-                         TestReferenceChecker *checker) override
-        {
-            TextReader reader(stream);
-            checker->checkTextBlock(reader.readAll(), "Contents");
-        }
+public:
+    void checkStream(TextInputStream* stream, TestReferenceChecker* checker) override
+    {
+        TextReader reader(stream);
+        checker->checkTextBlock(reader.readAll(), "Contents");
+    }
 };
 
 class NoTextMatcher : public ITextBlockMatcher
 {
-    public:
-        void checkStream(TextInputStream      * /*stream*/,
-                         TestReferenceChecker * /*checker*/) override
-        {
-        }
+public:
+    void checkStream(TextInputStream* /*stream*/, TestReferenceChecker* /*checker*/) override {}
 };
 
 class FilteringExactTextMatcher : public ITextBlockMatcher
 {
-    public:
-        FilteringExactTextMatcher(const std::vector<std::string> &linesToSkip)
+public:
+    FilteringExactTextMatcher(const std::vector<std::string>& linesToSkip)
+    {
+        // Prepare the regular expressions to filter out of the stream.
+        for (const auto& lineToSkip : linesToSkip)
         {
-            // Prepare the regular expressions to filter out of the stream.
-            for (const auto &lineToSkip : linesToSkip)
-            {
-                regexesToSkip_.emplace_back(lineToSkip, std::regex::nosubs | std::regex::extended);
-            }
+            regexesToSkip_.emplace_back(lineToSkip, std::regex::nosubs | std::regex::extended);
         }
+    }
 
-        void checkStream(TextInputStream      *stream,
-                         TestReferenceChecker *checker) override
+    void checkStream(TextInputStream* stream, TestReferenceChecker* checker) override
+    {
+        StringOutputStream filteredStream;
         {
-            StringOutputStream filteredStream;
-            {
-                TextReader  reader(stream);
-                TextWriter  writer(&filteredStream);
+            TextReader reader(stream);
+            TextWriter writer(&filteredStream);
 
-                // Filter the stream
-                std::string line;
-                while (reader.readLine(&line))
+            // Filter the stream
+            std::string line;
+            while (reader.readLine(&line))
+            {
+                bool shouldSkip = false;
+                for (const auto& regexToSkip : regexesToSkip_)
                 {
-                    bool shouldSkip = false;
-                    for (const auto &regexToSkip : regexesToSkip_)
+                    if (std::regex_match(line.c_str(), regexToSkip))
                     {
-                        if (std::regex_match(line.c_str(), regexToSkip))
-                        {
-                            shouldSkip = true;
-                            break;
-                        }
-                    }
-                    if (!shouldSkip)
-                    {
-                        writer.writeLine(line);
+                        shouldSkip = true;
+                        break;
                     }
                 }
+                if (!shouldSkip)
+                {
+                    writer.writeLine(line);
+                }
             }
-            StringInputStream filteredStreamToCheck(filteredStream.toString());
-            TextReader        reader(&filteredStreamToCheck);
-            checker->checkTextBlock(reader.readAll(), "Contents");
         }
+        StringInputStream filteredStreamToCheck(filteredStream.toString());
+        TextReader        reader(&filteredStreamToCheck);
+        checker->checkTextBlock(reader.readAll(), "Contents");
+    }
 
-        std::vector<std::regex> regexesToSkip_;
+    std::vector<std::regex> regexesToSkip_;
 };
 
-}       // namespace
+} // namespace
 
-ITextBlockMatcher::~ITextBlockMatcher()
-{
-}
+ITextBlockMatcher::~ITextBlockMatcher() {}
 
-ITextBlockMatcherSettings::~ITextBlockMatcherSettings()
-{
-}
+ITextBlockMatcherSettings::~ITextBlockMatcherSettings() {}
 
 TextBlockMatcherPointer ExactTextMatch::createMatcher() const
 {
@@ -147,11 +138,12 @@ TextBlockMatcherPointer NoTextMatch::createMatcher() const
     return TextBlockMatcherPointer(std::make_unique<NoTextMatcher>());
 }
 
-FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip)
-    : linesToSkip_(std::move(linesToSkip))
-{}
+FilteringExactTextMatch::FilteringExactTextMatch(std::vector<std::string> linesToSkip) :
+    linesToSkip_(std::move(linesToSkip))
+{
+}
 
-void FilteringExactTextMatch::addRegexToSkip(const std::string &lineToSkip)
+void FilteringExactTextMatch::addRegexToSkip(const std::string& lineToSkip)
 {
     linesToSkip_.push_back(lineToSkip);
 }

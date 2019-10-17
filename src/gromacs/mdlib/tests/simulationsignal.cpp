@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,14 +64,14 @@ TEST(NullSignalTest, NullSignallerWorks)
 //! Test fixture for mdrun signalling
 class SignalTest : public ::testing::Test
 {
-    public:
-        SignalTest() : signals_ {}
-        {
-            signals_[0].sig = 1;
-            signals_[1].sig = -1;
-        }
-        //! Default object to hold signals
-        SimulationSignals signals_;
+public:
+    SignalTest() : signals_{}
+    {
+        signals_[0].sig = 1;
+        signals_[1].sig = -1;
+    }
+    //! Default object to hold signals
+    SimulationSignals signals_;
 };
 
 TEST_F(SignalTest, NoSignalPropagatesIfNoSignallingTakesPlace)
@@ -172,5 +172,5 @@ TEST_F(SignalTest, NonLocalSignalPropagatesWhenBothTakePlace)
     EXPECT_EQ(0, signals_[2].set);
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

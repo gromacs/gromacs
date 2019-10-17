@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,71 +43,56 @@
 /*! \brief
  * Contains per-process and per-thread data about elapsed wall-clock
  * times and integration steps performed. */
-typedef struct gmx_walltime_accounting *gmx_walltime_accounting_t;
+typedef struct gmx_walltime_accounting* gmx_walltime_accounting_t;
 
 //! Constructor
-gmx_walltime_accounting_t
-walltime_accounting_init(int numOpenMPThreads);
+gmx_walltime_accounting_t walltime_accounting_init(int numOpenMPThreads);
 
 //! Destructor
-void
-walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_destroy(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Record initial time stamps, e.g. at run start
  */
-void
-walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_start_time(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Reset time stamps, e.g. at counter re-initalization time
  */
-void
-walltime_accounting_reset_time(gmx_walltime_accounting_t walltime_accounting,
-                               int64_t                   step);
+void walltime_accounting_reset_time(gmx_walltime_accounting_t walltime_accounting, int64_t step);
 
 /*! \brief
  * Measure and cache the elapsed wall-clock time since
  * walltime_accounting_reset_time() */
-void
-walltime_accounting_end_time(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_end_time(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief
  * Measure and return the elapsed wall-clock time since
  * walltime_accounting_reset_time() */
-double
-walltime_accounting_get_time_since_reset(gmx_walltime_accounting_t walltime_accounting);
+double walltime_accounting_get_time_since_reset(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the wall-clock time since the actual start of the run (regardless of any resets).
-double
-walltime_accounting_get_time_since_start(gmx_walltime_accounting_t walltime_accounting);
+double walltime_accounting_get_time_since_start(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the cached wall-clock time, multiplied by the number of OpenMP threads
-double
-walltime_accounting_get_time_since_reset_over_all_threads(gmx_walltime_accounting_t walltime_accounting);
+double walltime_accounting_get_time_since_reset_over_all_threads(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the cached initial time stamp for this node
-double
-walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_accounting);
+double walltime_accounting_get_start_time_stamp(gmx_walltime_accounting_t walltime_accounting);
 
 //! Get the number of integration steps done
-int64_t
-walltime_accounting_get_nsteps_done_since_reset(gmx_walltime_accounting_t walltime_accounting);
+int64_t walltime_accounting_get_nsteps_done_since_reset(gmx_walltime_accounting_t walltime_accounting);
 
 /*! \brief Set the number of integration steps done
  *
  * TODO consider whether this should get done in walltime_accounting_end */
-void
-walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t   walltime_accounting,
-                                    int64_t                     nsteps_done);
+void walltime_accounting_set_nsteps_done(gmx_walltime_accounting_t walltime_accounting, int64_t nsteps_done);
 
 //! Record that the simulation finished in a way valid for reporting walltime.
-void
-walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounting);
+void walltime_accounting_set_valid_finish(gmx_walltime_accounting_t walltime_accounting);
 
 //! Return whether the simulation finished in a way valid for reporting walltime.
-bool
-walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_accounting);
+bool walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_accounting);
 
 /*! \brief
  * Calls system timing routines (e.g. clock_gettime) to get the (fractional)
@@ -117,4 +102,4 @@ walltime_accounting_get_valid_finish(const gmx_walltime_accounting* walltime_acc
  * or microseconds. */
 double gmx_gettime();
 
-#endif  /* GMX_TIMING_WALLTIME_ACCOUNTING_H */
+#endif /* GMX_TIMING_WALLTIME_ACCOUNTING_H */

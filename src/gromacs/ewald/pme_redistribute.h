@@ -47,14 +47,13 @@
 #include "pme_internal.h"
 
 //! Redistributes forces along the dimension gives by \p atc
-void
-dd_pmeredist_f(struct gmx_pme_t *pme, PmeAtomComm *atc,
-               gmx::ArrayRef<gmx::RVec> f,
-               gmx_bool bAddF);
+void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF);
 
 //! Redistributes coefficients and when \p bFirst=true coordinates over MPI ranks
-void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr,
-                     gmx_bool bFirst, gmx::ArrayRef<const gmx::RVec> x, const real *data);
+void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
+                          const t_commrec*               cr,
+                          gmx_bool                       bFirst,
+                          gmx::ArrayRef<const gmx::RVec> x,
+                          const real*                    data);
 
 #endif

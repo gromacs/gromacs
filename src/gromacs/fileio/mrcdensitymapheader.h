@@ -75,9 +75,9 @@ enum class SpaceGroup : int32_t
  */
 enum class MrcDataMode : int32_t
 {
-    uInt8          = 0, //!< compressed data mode, 8 bits, signed byte (range -128 to 127, ISO/IEC 10967)
-    int16          = 1, //!< 16 bits, signed integer (range -32768 to 32767, ISO/IEC 10967)
-    float32        = 2, //!< 32 bits, floating point number (IEEE 754)
+    uInt8   = 0, //!< compressed data mode, 8 bits, signed byte (range -128 to 127, ISO/IEC 10967)
+    int16   = 1, //!< 16 bits, signed integer (range -32768 to 32767, ISO/IEC 10967)
+    float32 = 2, //!< 32 bits, floating point number (IEEE 754)
     complexInt32   = 3, //!< 32 bits, complex signed integers (ISO/IEC 10967)
     complexFloat64 = 4, //!< 64 bits, complex floating point numbers (IEEE 754)
 };
@@ -100,9 +100,9 @@ struct MrcDataStatistics
  */
 struct MrcDensitySkewData
 {
-    bool                         valid_  = false;   //!< True if skew matrix is stored.
-    std::array<float, DIM * DIM> matrix_ = {};      //!< Skew matrix for crystallographic unit cell in Ångström
-    std::array<float, DIM>       translation_ = {}; //!< Translation of crystallographic unit cell in Ångström
+    bool                        valid_ = false; //!< True if skew matrix is stored.
+    std::array<float, DIM* DIM> matrix_ = {}; //!< Skew matrix for crystallographic unit cell in Ångström
+    std::array<float, DIM> translation_ = {}; //!< Translation of crystallographic unit cell in Ångström
 };
 
 /*! \libinternal
@@ -112,7 +112,7 @@ struct CrystallographicLabels
 {
     static constexpr int c_labelSize = 80; //!< Length of crystallographic labels is eighty.
     //! Number of used crystallographic labels, 0 for imagestacks, 1 for emdb data
-    int32_t              numUsedLabels_ = 0;
+    int32_t numUsedLabels_ = 0;
 
     //! Crystallographic labels or "::::EMDataBank.org::::EMD-1234::::" for EMDB entries
     std::array<std::array<unsigned char, c_labelSize>, 10> labels_ = {};
@@ -127,38 +127,39 @@ struct CrystallographicLabels
  * For a detailed description see
  * "EMDB Map Distribution Format Description Version 1.01 (c) emdatabank.org 2014"
  */
-struct MrcDensityMapHeader{
+struct MrcDensityMapHeader
+{
 
     //! Space group of stored data.
-    SpaceGroup                   spaceGroup_ = SpaceGroup::P1;
+    SpaceGroup spaceGroup_ = SpaceGroup::P1;
     //! Data mode, currently only mode 2 is supported
-    MrcDataMode                  dataMode_   = MrcDataMode::float32;
+    MrcDataMode dataMode_ = MrcDataMode::float32;
     //! Identifies file format, expected to be "MAP "
-    std::array<unsigned char, 4> formatIdentifier_ = {{'M', 'A', 'P', ' ' }};
+    std::array<unsigned char, 4> formatIdentifier_ = { { 'M', 'A', 'P', ' ' } };
     //! 15 unspecified float numbers
-    std::array<float, 15>        userDefinedFloat_ = {};
+    std::array<float, 15> userDefinedFloat_ = {};
 
-    //!Labels for crystallographic data
-    CrystallographicLabels      labels_ = {};
+    //! Labels for crystallographic data
+    CrystallographicLabels labels_ = {};
 
     //! Length of the crystallographic unit cell in Ångström
-    std::array<float, DIM> cellLength_ = {{1., 1., 1. }};
+    std::array<float, DIM> cellLength_ = { { 1., 1., 1. } };
     //! crystallographic unit cell angles
-    std::array<float, DIM> cellAngles_ = {{90., 90., 90. }};
+    std::array<float, DIM> cellAngles_ = { { 90., 90., 90. } };
 
     //! Data axis order with columns varying the fastest, and sections the slowest.
-    std::array<int32_t, DIM>      columnRowSectionToXyz_ = {{0, 1, 2 }};
+    std::array<int32_t, DIM> columnRowSectionToXyz_ = { { 0, 1, 2 } };
 
-    std::array<int32_t, DIM>      numColumnRowSection_ = {};   //!< Column, row and section count
-    std::array<int32_t, DIM>      columnRowSectionStart_ = {}; //!< Start of values in grid
-    std::array<int32_t, DIM>      extent_ = {};                //!< The number of grid points in the crystall cell
+    std::array<int32_t, DIM> numColumnRowSection_   = {}; //!< Column, row and section count
+    std::array<int32_t, DIM> columnRowSectionStart_ = {}; //!< Start of values in grid
+    std::array<int32_t, DIM> extent_ = {}; //!< The number of grid points in the crystall cell
 
     //! Statistics about the data stored in the file.
-    MrcDataStatistics           dataStatistics_ = {};
+    MrcDataStatistics dataStatistics_ = {};
     //! Data to perform crystallographic unit cell skewing
-    MrcDensitySkewData          skewData_ = {};
+    MrcDensitySkewData skewData_ = {};
     //! Extended header with symmetry tables
-    std::vector<unsigned char>  extendedHeader_ = {};
+    std::vector<unsigned char> extendedHeader_ = {};
 };
 
 /*! \brief Return the number of density data items that are expected
@@ -166,7 +167,7 @@ struct MrcDensityMapHeader{
  * \throws InternalError if the number of data items cannot be determined
  * \returns the number of voxels
  */
-size_t numberOfExpectedDataItems(const MrcDensityMapHeader &header);
+size_t numberOfExpectedDataItems(const MrcDensityMapHeader& header);
 
 /*! \brief Extract the transformation into lattice coordinates.
  * \note Transformation into lattice coordinates is not treated uniformly
@@ -182,12 +183,12 @@ size_t numberOfExpectedDataItems(const MrcDensityMapHeader &header);
  * \param[in] header from which the coordinate transformation is to be extracted
  * \returns a functor that transforms real space coordinates into the lattice
  */
-TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader &header);
+TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader& header);
 
 /*! \brief Extract the extents of the density data
  * \param[in] header from which the extents are to be extracted
  * \returns density data extents in three dimensions.
  */
-dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader &header);
-}      // namespace gmx
+dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader& header);
+} // namespace gmx
 #endif /* end of include guard: GMX_FILEIO_MRCDENSITYMAPHEADER_H */

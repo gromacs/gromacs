@@ -56,19 +56,19 @@
 
 /*! \brief Size of bitmask. Has to be 32 or multiple of 64. */
 #ifndef BITMASK_SIZE
-#define BITMASK_SIZE GMX_OPENMP_MAX_THREADS
+#    define BITMASK_SIZE GMX_OPENMP_MAX_THREADS
 #endif
 
-#if BITMASK_SIZE != 32 && BITMASK_SIZE%64 != 0
-#error BITMASK_SIZE has to be 32 or a multiple of 64.
+#if BITMASK_SIZE != 32 && BITMASK_SIZE % 64 != 0
+#    error BITMASK_SIZE has to be 32 or a multiple of 64.
 #endif
 
 #if BITMASK_SIZE <= 64 || defined DOXYGEN
-#if BITMASK_SIZE == 32
+#    if BITMASK_SIZE == 32
 typedef uint32_t gmx_bitmask_t;
-#else
+#    else
 typedef uint64_t gmx_bitmask_t; /**< bitmask type */
-#endif
+#    endif
 
 /*! \brief Initialize all bits to 0 */
 inline static void bitmask_clear(gmx_bitmask_t* m)
@@ -124,7 +124,7 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     *a |= b;
 }
 #else
-#define BITMASK_ALEN (BITMASK_SIZE/64)
+#    define BITMASK_ALEN (BITMASK_SIZE / 64)
 using gmx_bitmask_t = std::array<uint64_t, BITMASK_ALEN>;
 
 inline static void bitmask_clear(gmx_bitmask_t* m)
@@ -134,31 +134,31 @@ inline static void bitmask_clear(gmx_bitmask_t* m)
 
 inline static void bitmask_set_bit(gmx_bitmask_t* m, int b)
 {
-    (*m)[b/64] |= (static_cast<uint64_t>(1) << (b%64));
+    (*m)[b / 64] |= (static_cast<uint64_t>(1) << (b % 64));
 }
 
 inline static void bitmask_init_bit(gmx_bitmask_t* m, int b)
 {
     bitmask_clear(m);
-    (*m)[b/64] = (static_cast<uint64_t>(1) << (b%64));
+    (*m)[b / 64] = (static_cast<uint64_t>(1) << (b % 64));
 }
 
 inline static void bitmask_init_low_bits(gmx_bitmask_t* m, int b)
 {
-    memset(m->data(), 255, b/64*8);
-    (*m)[b/64] = (static_cast<uint64_t>(1) << (b%64)) - 1;
-    memset(m->data()+(b/64+1), 0, (BITMASK_ALEN-b/64-1)*8);
+    memset(m->data(), 255, b / 64 * 8);
+    (*m)[b / 64] = (static_cast<uint64_t>(1) << (b % 64)) - 1;
+    memset(m->data() + (b / 64 + 1), 0, (BITMASK_ALEN - b / 64 - 1) * 8);
 }
 
 inline static bool bitmask_is_set(gmx_bitmask_t m, int b)
 {
-    return (m[b/64] & (static_cast<uint64_t>(1) << (b%64))) != 0;
+    return (m[b / 64] & (static_cast<uint64_t>(1) << (b % 64))) != 0;
 }
 
 inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    int      i;
-    bool     r = true;
+    int  i;
+    bool r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && ((a[i] & b[i]) == 0U);
@@ -168,8 +168,8 @@ inline static bool bitmask_is_disjoint(gmx_bitmask_t a, gmx_bitmask_t b)
 
 inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 {
-    int      i;
-    bool     r = true;
+    int  i;
+    bool r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (a[i] == b[i]);
@@ -179,8 +179,8 @@ inline static bool bitmask_is_equal(gmx_bitmask_t a, gmx_bitmask_t b)
 
 inline static bool bitmask_is_zero(gmx_bitmask_t m)
 {
-    int      i;
-    bool     r = true;
+    int  i;
+    bool r = true;
     for (i = 0; i < BITMASK_ALEN; i++)
     {
         r = r && (m[i] == 0U);
@@ -197,7 +197,7 @@ inline static void bitmask_union(gmx_bitmask_t* a, gmx_bitmask_t b)
     }
 }
 #endif
-//In bitmask.h because only current use is for bitmask.
+// In bitmask.h because only current use is for bitmask.
 
 //! Convert uint32_t to hex string
 inline static std::string to_hex_string(uint32_t m)
@@ -210,7 +210,7 @@ inline static std::string to_hex_string(uint64_t m)
     return gmx::formatString("%016" PRIx64, m);
 }
 //! Convert container of intergers to hex string
-template <typename C>
+template<typename C>
 inline static std::string to_hex_string(C m)
 {
     std::string ret;

@@ -51,10 +51,9 @@
 namespace gmx
 {
 
-FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(
-        FILE             *fplog,
-        const t_inputrec *inputrec,
-        MDAtoms          *mdAtoms) :
+FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(FILE*             fplog,
+                                                             const t_inputrec* inputrec,
+                                                             MDAtoms*          mdAtoms) :
     lambda_(),
     lambda0_(),
     currentFEPState_(0),
@@ -65,33 +64,25 @@ FreeEnergyPerturbationElement::FreeEnergyPerturbationElement(
 {
     lambda_.fill(0);
     lambda0_.fill(0);
-    initialize_lambdas(
-            fplog_, *inputrec_, true,
-            &currentFEPState_, lambda_,
-            lambda0_.data());
+    initialize_lambdas(fplog_, *inputrec_, true, &currentFEPState_, lambda_, lambda0_.data());
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
-void FreeEnergyPerturbationElement::scheduleTask(
-        Step step, Time gmx_unused time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+void FreeEnergyPerturbationElement::scheduleTask(Step step,
+                                                 Time gmx_unused               time,
+                                                 const RegisterRunFunctionPtr& registerRunFunction)
 {
     if (lambdasChange_)
     {
         (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this, step]()
-                        {updateLambdas(step); }));
+                std::make_unique<SimulatorRunFunction>([this, step]() { updateLambdas(step); }));
     }
 }
 
 void FreeEnergyPerturbationElement::updateLambdas(Step step)
 {
     // at beginning of step (if lambdas change...)
-    setCurrentLambdasLocal(
-            step, inputrec_->fepvals,
-            lambda0_.data(),
-            lambda_, currentFEPState_);
+    setCurrentLambdasLocal(step, inputrec_->fepvals, lambda0_.data(), lambda_, currentFEPState_);
     update_mdatoms(mdAtoms_->mdatoms(), lambda_[efptMASS]);
 }
 
@@ -110,12 +101,11 @@ int FreeEnergyPerturbationElement::currentFEPState()
     return currentFEPState_;
 }
 
-void FreeEnergyPerturbationElement::writeCheckpoint(
-        t_state *localState, t_state gmx_unused *globalState)
+void FreeEnergyPerturbationElement::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
 {
     localState->fep_state = currentFEPState_;
     localState->lambda    = lambda_;
-    localState->flags    |= (1u<<estLAMBDA) | (1u<<estFEPSTATE);
+    localState->flags |= (1U << estLAMBDA) | (1U << estFEPSTATE);
 }
 
-}
+} // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,35 +65,29 @@ namespace gmx
  */
 class HelpManager::Impl
 {
-    public:
-        //! Container type for keeping the stack of active topics.
-        typedef std::vector<const IHelpTopic *> TopicStack;
+public:
+    //! Container type for keeping the stack of active topics.
+    typedef std::vector<const IHelpTopic*> TopicStack;
 
-        //! Initializes a new manager with the given context.
-        explicit Impl(const HelpWriterContext &context)
-            : rootContext_(context)
-        {
-        }
+    //! Initializes a new manager with the given context.
+    explicit Impl(const HelpWriterContext& context) : rootContext_(context) {}
 
-        //! Whether the active topic is the root topic.
-        bool isAtRootTopic() const { return topicStack_.size() == 1; }
-        //! Returns the active topic.
-        const IHelpTopic &currentTopic() const
-        {
-            return *topicStack_.back();
-        }
-        //! Formats the active topic as a string, including its parent topics.
-        std::string currentTopicAsString() const;
+    //! Whether the active topic is the root topic.
+    bool isAtRootTopic() const { return topicStack_.size() == 1; }
+    //! Returns the active topic.
+    const IHelpTopic& currentTopic() const { return *topicStack_.back(); }
+    //! Formats the active topic as a string, including its parent topics.
+    std::string currentTopicAsString() const;
 
-        //! Context with which the manager was initialized.
-        const HelpWriterContext &rootContext_;
-        /*! \brief
-         * Stack of active topics.
-         *
-         * The first item is always the root topic, and each item is a subtopic
-         * of the preceding item.  The last item is the currently active topic.
-         */
-        TopicStack               topicStack_;
+    //! Context with which the manager was initialized.
+    const HelpWriterContext& rootContext_;
+    /*! \brief
+     * Stack of active topics.
+     *
+     * The first item is always the root topic, and each item is a subtopic
+     * of the preceding item.  The last item is the currently active topic.
+     */
+    TopicStack topicStack_;
 };
 
 std::string HelpManager::Impl::currentTopicAsString() const
@@ -115,54 +109,48 @@ std::string HelpManager::Impl::currentTopicAsString() const
  * HelpManager
  */
 
-HelpManager::HelpManager(const IHelpTopic         &rootTopic,
-                         const HelpWriterContext  &context)
-    : impl_(new Impl(context))
+HelpManager::HelpManager(const IHelpTopic& rootTopic, const HelpWriterContext& context) :
+    impl_(new Impl(context))
 {
     impl_->topicStack_.push_back(&rootTopic);
 }
 
-HelpManager::~HelpManager()
-{
-}
+HelpManager::~HelpManager() {}
 
-void HelpManager::enterTopic(const char *name)
+void HelpManager::enterTopic(const char* name)
 {
-    const IHelpTopic &topic = impl_->currentTopic();
+    const IHelpTopic& topic = impl_->currentTopic();
     if (!topic.hasSubTopics())
     {
-        GMX_THROW(InvalidInputError(
-                          formatString("Help topic '%s' has no subtopics",
-                                       impl_->currentTopicAsString().c_str())));
+        GMX_THROW(InvalidInputError(formatString("Help topic '%s' has no subtopics",
+                                                 impl_->currentTopicAsString().c_str())));
     }
-    const IHelpTopic *newTopic = topic.findSubTopic(name);
+    const IHelpTopic* newTopic = topic.findSubTopic(name);
     if (newTopic == nullptr)
     {
         if (impl_->isAtRootTopic())
         {
-            GMX_THROW(InvalidInputError(
-                              formatString("No help available for '%s'", name)));
+            GMX_THROW(InvalidInputError(formatString("No help available for '%s'", name)));
         }
         else
         {
-            GMX_THROW(InvalidInputError(
-                              formatString("Help topic '%s' has no subtopic '%s'",
-                                           impl_->currentTopicAsString().c_str(), name)));
+            GMX_THROW(InvalidInputError(formatString("Help topic '%s' has no subtopic '%s'",
+                                                     impl_->currentTopicAsString().c_str(), name)));
         }
     }
     impl_->topicStack_.push_back(newTopic);
 }
 
-void HelpManager::enterTopic(const std::string &name)
+void HelpManager::enterTopic(const std::string& name)
 {
     enterTopic(name.c_str());
 }
 
 void HelpManager::writeCurrentTopic() const
 {
-    const IHelpTopic         &topic = impl_->currentTopic();
-    const char               *title = topic.title();
-    HelpWriterContext         context(impl_->rootContext_);
+    const IHelpTopic& topic = impl_->currentTopic();
+    const char*       title = topic.title();
+    HelpWriterContext context(impl_->rootContext_);
     context.enterSubSection(title != nullptr ? title : "");
     topic.writeHelp(context);
 }

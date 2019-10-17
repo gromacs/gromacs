@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009,2010,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,8 +54,9 @@ struct t_commrec;
 
 namespace gmx
 {
-template <typename T> class HashedMap;
-} // namespace
+template<typename T>
+class HashedMap;
+} // namespace gmx
 
 /*! \internal \brief The communication setup along a single dimension */
 struct gmx_specatsend_t
@@ -68,23 +69,22 @@ struct gmx_specatsend_t
 struct gmx_domdec_specat_comm_t
 {
     /* The number of indices to receive during the setup */
-    int               nreq[DIM][2][2] = {{{0}}}; /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
+    int nreq[DIM][2][2] = { { { 0 } } }; /**< The nr. of atoms requested, per DIM, direction and direct/indirect */
     /* The atoms to send */
-    gmx_specatsend_t  spas[DIM][2];              /**< The communication setup per DIM, direction */
-    std::vector<bool> sendAtom;                  /**< Work buffer that tells if spec.atoms should be sent */
+    gmx_specatsend_t  spas[DIM][2]; /**< The communication setup per DIM, direction */
+    std::vector<bool> sendAtom;     /**< Work buffer that tells if spec.atoms should be sent */
 
     /* Send buffers */
-    std::vector<int>       ibuf;       /**< Integer send buffer */
-    std::vector<gmx::RVec> vbuf;       /**< rvec send buffer */
-    std::vector<gmx::RVec> vbuf2;      /**< rvec send buffer */
+    std::vector<int>       ibuf;  /**< Integer send buffer */
+    std::vector<gmx::RVec> vbuf;  /**< rvec send buffer */
+    std::vector<gmx::RVec> vbuf2; /**< rvec send buffer */
     /* The range in the local buffer(s) for received atoms */
-    int                    at_start;   /**< Start index of received atoms */
-    int                    at_end;     /**< End index of received atoms */
+    int at_start; /**< Start index of received atoms */
+    int at_end;   /**< End index of received atoms */
 };
 
 /*! \brief Communicates the force for special atoms, the shift forces are reduced with \p fshift != NULL */
-void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                      rvec *f, rvec *fshift);
+void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f, rvec* fshift);
 
 /*! \brief Communicates the coordinates for special atoms
  *
@@ -95,10 +95,12 @@ void dd_move_f_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in,out] x1         Vector to communicate, when != NULL
  * \param[in]     bX1IsCoord Tells is \p x1 is a coordinate vector (needs pbc)
  */
-void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
-                      const matrix box,
-                      rvec *x0,
-                      rvec *x1, gmx_bool bX1IsCoord);
+void dd_move_x_specat(gmx_domdec_t*             dd,
+                      gmx_domdec_specat_comm_t* spac,
+                      const matrix              box,
+                      rvec*                     x0,
+                      rvec*                     x1,
+                      gmx_bool                  bX1IsCoord);
 
 /*! \brief Sets up the communication for special atoms
  *
@@ -111,13 +113,13 @@ void dd_move_x_specat(gmx_domdec_t *dd, gmx_domdec_specat_comm_t *spac,
  * \param[in]     specat_type  Name of the special atom, used for error message
  * \param[in]     add_err      Text to add at the end of error message when atoms can't be found
  */
-int setup_specat_communication(gmx_domdec_t               *dd,
-                               std::vector<int>           *ireq,
-                               gmx_domdec_specat_comm_t   *spac,
-                               gmx::HashedMap<int>        *ga2la_specat,
-                               int                         at_start,
-                               int                         vbuf_fac,
-                               const char                 *specat_type,
-                               const char                 *add_err);
+int setup_specat_communication(gmx_domdec_t*             dd,
+                               std::vector<int>*         ireq,
+                               gmx_domdec_specat_comm_t* spac,
+                               gmx::HashedMap<int>*      ga2la_specat,
+                               int                       at_start,
+                               int                       vbuf_fac,
+                               const char*               specat_type,
+                               const char*               add_err);
 
 #endif

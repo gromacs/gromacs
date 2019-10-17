@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,98 +70,92 @@ struct CorrelationGridHistory;
  */
 class CorrelationGrid
 {
-    public:
-        //! Enum that sets how we measure block length.
-        enum class BlockLengthMeasure
-        {
-            Time,   //!< Measure block length in time.
-            Weight  //!< Measure block length in sampled weight.
-        };
+public:
+    //! Enum that sets how we measure block length.
+    enum class BlockLengthMeasure
+    {
+        Time,  //!< Measure block length in time.
+        Weight //!< Measure block length in sampled weight.
+    };
 
-        /*! \brief Constructor.
-         *
-         * \param[in] numPoints           Number of points in the grid.
-         * \param[in] numDims             Number of dimensions of the grid.
-         * \param[in] blockLengthInit     Initial length of the blocks used for block averaging.
-         * \param[in] blockLengthMeasure  Sets how we measure block length.
-         * \param[in] dtSample            Time step for sampling correlations.
-         */
-        CorrelationGrid(int                numPoints,
-                        int                numDims,
-                        double             blockLengthInit,
-                        BlockLengthMeasure blockLengthMeasure,
-                        double             dtSample);
+    /*! \brief Constructor.
+     *
+     * \param[in] numPoints           Number of points in the grid.
+     * \param[in] numDims             Number of dimensions of the grid.
+     * \param[in] blockLengthInit     Initial length of the blocks used for block averaging.
+     * \param[in] blockLengthMeasure  Sets how we measure block length.
+     * \param[in] dtSample            Time step for sampling correlations.
+     */
+    CorrelationGrid(int                numPoints,
+                    int                numDims,
+                    double             blockLengthInit,
+                    BlockLengthMeasure blockLengthMeasure,
+                    double             dtSample);
 
-        /*! \brief Adds a weighted data vector to one point in the correlation grid.
-         *
-         * \param[in] pointIndex  Index of the point to add data to.
-         * \param[in] weight      Weight to assign to the data.
-         * \param[in] data        One data point for each grid dimension.
-         * \param[in] t           The time when the data was sampled.
-         */
-        void addData(int                          pointIndex,
-                     double                       weight,
-                     gmx::ArrayRef<const double>  data,
-                     double                       t)
-        {
-            tensors_[pointIndex].addData(weight, data, blockLengthMeasure == BlockLengthMeasure::Weight, t);
-        }
+    /*! \brief Adds a weighted data vector to one point in the correlation grid.
+     *
+     * \param[in] pointIndex  Index of the point to add data to.
+     * \param[in] weight      Weight to assign to the data.
+     * \param[in] data        One data point for each grid dimension.
+     * \param[in] t           The time when the data was sampled.
+     */
+    void addData(int pointIndex, double weight, gmx::ArrayRef<const double> data, double t)
+    {
+        tensors_[pointIndex].addData(weight, data, blockLengthMeasure == BlockLengthMeasure::Weight, t);
+    }
 
-        /*! \brief Restores the correlation grid state from the correlation grid history.
-         *
-         * The setup in the history should match that of this simulation.
-         * If this is not the case, an exception is thrown.
-         *
-         * \param[in] correlationGridHistory  The correlation grid state history.
-         */
-        void restoreStateFromHistory(const CorrelationGridHistory &correlationGridHistory);
+    /*! \brief Restores the correlation grid state from the correlation grid history.
+     *
+     * The setup in the history should match that of this simulation.
+     * If this is not the case, an exception is thrown.
+     *
+     * \param[in] correlationGridHistory  The correlation grid state history.
+     */
+    void restoreStateFromHistory(const CorrelationGridHistory& correlationGridHistory);
 
-        /*! \brief Returns the number of elements in the tensor: dim*(dim+1)/2.
-         */
-        int tensorSize() const
-        {
-            GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
+    /*! \brief Returns the number of elements in the tensor: dim*(dim+1)/2.
+     */
+    int tensorSize() const
+    {
+        GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
 
-            return tensors_[0].blockDataList()[0].correlationIntegral().size();
-        }
+        return tensors_[0].blockDataList()[0].correlationIntegral().size();
+    }
 
-        /*! \brief Returns the size of the block data list.
-         */
-        int blockDataListSize() const
-        {
-            GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
+    /*! \brief Returns the size of the block data list.
+     */
+    int blockDataListSize() const
+    {
+        GMX_RELEASE_ASSERT(!tensors_.empty(), "Should only call tensorSize on a valid grid");
 
-            return tensors_[0].blockDataList().size();
-        }
+        return tensors_[0].blockDataList().size();
+    }
 
-        /*! \brief Get a const reference to the correlation grid data.
-         */
-        const std::vector<CorrelationTensor> &tensors() const
-        {
-            return tensors_;
-        }
+    /*! \brief Get a const reference to the correlation grid data.
+     */
+    const std::vector<CorrelationTensor>& tensors() const { return tensors_; }
 
-        /* Right now the below functions are only used for an initial log printing. */
+    /* Right now the below functions are only used for an initial log printing. */
 
-        /*! \brief Get the current blocklength.
-         */
-        double getBlockLength() const;
+    /*! \brief Get the current blocklength.
+     */
+    double getBlockLength() const;
 
-        /*! \brief Get the current number of blocks.
-         *
-         * If we have a finite block span we have a constant number of blocks,
-         * otherwise we are always adding more blocks (and we don't keep
-         * track of the number), so we return -1.
-         */
-        int getNumBlocks() const;
+    /*! \brief Get the current number of blocks.
+     *
+     * If we have a finite block span we have a constant number of blocks,
+     * otherwise we are always adding more blocks (and we don't keep
+     * track of the number), so we return -1.
+     */
+    int getNumBlocks() const;
 
-    public:
-        const double                   dtSample;           /**< Time in between samples. */
-        const BlockLengthMeasure       blockLengthMeasure; /**< The measure for the block length. */
-    private:
-        std::vector<CorrelationTensor> tensors_;           /**< Correlation tensor grid */
+public:
+    const double             dtSample;           /**< Time in between samples. */
+    const BlockLengthMeasure blockLengthMeasure; /**< The measure for the block length. */
+private:
+    std::vector<CorrelationTensor> tensors_; /**< Correlation tensor grid */
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_CORRELATIONGRID_H */

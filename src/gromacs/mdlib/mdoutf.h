@@ -57,25 +57,25 @@ enum class StartingBehavior;
 class IMDOutputProvider;
 struct MdModulesNotifier;
 struct MdrunOptions;
-}
+} // namespace gmx
 
-typedef struct gmx_mdoutf *gmx_mdoutf_t;
+typedef struct gmx_mdoutf* gmx_mdoutf_t;
 
 /*! \brief Allocate and initialize object to manager trajectory writing output
  *
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                         *fplog,
+gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
                          int                           nfile,
                          const t_filenm                fnm[],
-                         const gmx::MdrunOptions      &mdrunOptions,
-                         const t_commrec              *cr,
-                         gmx::IMDOutputProvider       *outputProvider,
-                         const gmx::MdModulesNotifier &mdModulesNotifier,
-                         const t_inputrec             *ir,
-                         gmx_mtop_t                   *mtop,
-                         const gmx_output_env_t       *oenv,
+                         const gmx::MdrunOptions&      mdrunOptions,
+                         const t_commrec*              cr,
+                         gmx::IMDOutputProvider*       outputProvider,
+                         const gmx::MdModulesNotifier& mdModulesNotifier,
+                         const t_inputrec*             ir,
+                         gmx_mtop_t*                   mtop,
+                         const gmx_output_env_t*       oenv,
                          gmx_wallcycle_t               wcycle,
                          gmx::StartingBehavior         startingBehavior);
 
@@ -83,7 +83,7 @@ gmx_mdoutf_t init_mdoutf(FILE                         *fplog,
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
+FILE* mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
 
 /*! \brief Getter for wallcycle timer */
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
@@ -117,13 +117,16 @@ void done_mdoutf(gmx_mdoutf_t of);
  * \param[in] observablesHistory Pointer to the ObservableHistory object.
  * \param[in] f_local            The local forces.
  */
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
-                                      gmx_mdoutf_t of,
-                                      int mdof_flags,
-                                      int natoms,
-                                      int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
+void mdoutf_write_to_trajectory_files(FILE*                    fplog,
+                                      const t_commrec*         cr,
+                                      gmx_mdoutf_t             of,
+                                      int                      mdof_flags,
+                                      int                      natoms,
+                                      int64_t                  step,
+                                      double                   t,
+                                      t_state*                 state_local,
+                                      t_state*                 state_global,
+                                      ObservablesHistory*      observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 
 /*! \brief Get the output interval of box size of uncompressed TNG output.
@@ -146,15 +149,15 @@ int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
  */
 int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 
-#define MDOF_X                 (1u<<0u)
-#define MDOF_V                 (1u<<1u)
-#define MDOF_F                 (1u<<2u)
-#define MDOF_X_COMPRESSED      (1u<<3u)
-#define MDOF_CPT               (1u<<4u)
-#define MDOF_IMD               (1u<<5u)
-#define MDOF_BOX               (1u<<6u)
-#define MDOF_LAMBDA            (1u<<7u)
-#define MDOF_BOX_COMPRESSED    (1u<<8u)
-#define MDOF_LAMBDA_COMPRESSED (1u<<9u)
+#define MDOF_X (1u << 0u)
+#define MDOF_V (1u << 1u)
+#define MDOF_F (1u << 2u)
+#define MDOF_X_COMPRESSED (1u << 3u)
+#define MDOF_CPT (1u << 4u)
+#define MDOF_IMD (1u << 5u)
+#define MDOF_BOX (1u << 6u)
+#define MDOF_LAMBDA (1u << 7u)
+#define MDOF_BOX_COMPRESSED (1u << 8u)
+#define MDOF_LAMBDA_COMPRESSED (1u << 9u)
 
 #endif

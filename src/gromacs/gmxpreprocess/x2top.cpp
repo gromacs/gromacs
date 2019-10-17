@@ -71,7 +71,7 @@
 
 #define MARGIN_FAC 1.1
 
-static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
+static bool is_bond(int nnm, t_nm2type nmt[], char* ai, char* aj, real blen)
 {
     int i, j;
 
@@ -79,11 +79,11 @@ static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     {
         for (j = 0; (j < nmt[i].nbonds); j++)
         {
-            if ((((gmx::equalCaseInsensitive(ai, nmt[i].elem, 1)) &&
-                  (gmx::equalCaseInsensitive(aj, nmt[i].bond[j], 1))) ||
-                 ((gmx::equalCaseInsensitive(ai, nmt[i].bond[j], 1)) &&
-                  (gmx::equalCaseInsensitive(aj, nmt[i].elem, 1)))) &&
-                (fabs(blen-nmt[i].blen[j]) <= 0.1*nmt[i].blen[j]))
+            if ((((gmx::equalCaseInsensitive(ai, nmt[i].elem, 1))
+                  && (gmx::equalCaseInsensitive(aj, nmt[i].bond[j], 1)))
+                 || ((gmx::equalCaseInsensitive(ai, nmt[i].bond[j], 1))
+                     && (gmx::equalCaseInsensitive(aj, nmt[i].elem, 1))))
+                && (fabs(blen - nmt[i].blen[j]) <= 0.1 * nmt[i].blen[j]))
             {
                 return TRUE;
             }
@@ -92,16 +92,21 @@ static bool is_bond(int nnm, t_nm2type nmt[], char *ai, char *aj, real blen)
     return FALSE;
 }
 
-static void mk_bonds(int nnm, t_nm2type nmt[],
-                     t_atoms *atoms, const rvec x[], InteractionsOfType *bond, int nbond[],
-                     bool bPBC, matrix box)
+static void mk_bonds(int                 nnm,
+                     t_nm2type           nmt[],
+                     t_atoms*            atoms,
+                     const rvec          x[],
+                     InteractionsOfType* bond,
+                     int                 nbond[],
+                     bool                bPBC,
+                     matrix              box)
 {
-    int                             i, j;
-    t_pbc                           pbc;
-    rvec                            dx;
-    real                            dx2;
+    int   i, j;
+    t_pbc pbc;
+    rvec  dx;
+    real  dx2;
 
-    std::array<real, MAXFORCEPARAM> forceParam = {0.0};
+    std::array<real, MAXFORCEPARAM> forceParam = { 0.0 };
     if (bPBC)
     {
         set_pbc(&pbc, -1, box);
@@ -113,7 +118,7 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
             fprintf(stderr, "\ratom %d", i);
             fflush(stderr);
         }
-        for (j = i+1; (j < atoms->nr); j++)
+        for (j = i + 1; (j < atoms->nr); j++)
         {
             if (bPBC)
             {
@@ -125,12 +130,11 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
             }
 
             dx2 = iprod(dx, dx);
-            if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j],
-                        std::sqrt(dx2)))
+            if (is_bond(nnm, nmt, *atoms->atomname[i], *atoms->atomname[j], std::sqrt(dx2)))
             {
-                forceParam[0] = std::sqrt(dx2);
-                std::vector<int> atoms = {i, j};
-                add_param_to_list (bond, InteractionOfType(atoms, forceParam));
+                forceParam[0]          = std::sqrt(dx2);
+                std::vector<int> atoms = { i, j };
+                add_param_to_list(bond, InteractionOfType(atoms, forceParam));
                 nbond[i]++;
                 nbond[j]++;
             }
@@ -140,11 +144,11 @@ static void mk_bonds(int nnm, t_nm2type nmt[],
     fflush(stderr);
 }
 
-static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
+static int* set_cgnr(t_atoms* atoms, bool bUsePDBcharge, real* qtot, real* mtot)
 {
-    int     i, n = 1;
-    int    *cgnr;
-    double  qt = 0;
+    int    i, n = 1;
+    int*   cgnr;
+    double qt = 0;
 
     *qtot = *mtot = 0;
     snew(cgnr, atoms->nr);
@@ -154,9 +158,9 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
         {
             atoms->atom[i].q = atoms->pdbinfo[i].bfac;
         }
-        qt     += atoms->atom[i].q;
-        *qtot  += atoms->atom[i].q;
-        *mtot  += atoms->atom[i].m;
+        qt += atoms->atom[i].q;
+        *qtot += atoms->atom[i].q;
+        *mtot += atoms->atom[i].m;
         cgnr[i] = n;
         if (is_int(qt))
         {
@@ -167,35 +171,32 @@ static int *set_cgnr(t_atoms *atoms, bool bUsePDBcharge, real *qtot, real *mtot)
     return cgnr;
 }
 
-static void set_atom_type(PreprocessingAtomTypes     *atypes,
-                          t_symtab                   *tab,
-                          t_atoms                    *atoms,
-                          InteractionsOfType         *bonds,
-                          int                        *nbonds,
-                          int                         nnm,
-                          t_nm2type                   nm2t[])
+static void set_atom_type(PreprocessingAtomTypes* atypes,
+                          t_symtab*               tab,
+                          t_atoms*                atoms,
+                          InteractionsOfType*     bonds,
+                          int*                    nbonds,
+                          int                     nnm,
+                          t_nm2type               nm2t[])
 {
-    int            nresolved;
+    int nresolved;
 
     snew(atoms->atomtype, atoms->nr);
     nresolved = nm2type(nnm, nm2t, tab, atoms, atypes, nbonds, bonds);
     if (nresolved != atoms->nr)
     {
-        gmx_fatal(FARGS, "Could only find a forcefield type for %d out of %d atoms",
-                  nresolved, atoms->nr);
+        gmx_fatal(FARGS, "Could only find a forcefield type for %d out of %d atoms", nresolved, atoms->nr);
     }
 
-    fprintf(stderr, "There are %zu different atom types in your sample\n",
-            atypes->size());
+    fprintf(stderr, "There are %zu different atom types in your sample\n", atypes->size());
 }
 
-static void lo_set_force_const(InteractionsOfType *plist, real c[], int nrfp, bool bRound,
-                               bool bDih, bool bParam)
+static void lo_set_force_const(InteractionsOfType* plist, real c[], int nrfp, bool bRound, bool bDih, bool bParam)
 {
     double cc;
     char   buf[32];
 
-    for (auto &param : plist->interactionTypes)
+    for (auto& param : plist->interactionTypes)
     {
         if (!bParam)
         {
@@ -219,7 +220,7 @@ static void lo_set_force_const(InteractionsOfType *plist, real c[], int nrfp, bo
             if (bDih)
             {
                 c[0] *= c[2];
-                c[0]  = (static_cast<int>(c[0] + 3600)) % 360;
+                c[0] = (static_cast<int>(c[0] + 3600)) % 360;
                 if (c[0] > 180)
                 {
                     c[0] -= 360;
@@ -228,19 +229,18 @@ static void lo_set_force_const(InteractionsOfType *plist, real c[], int nrfp, bo
                 c[0] += 180;
             }
         }
-        GMX_ASSERT(nrfp <= MAXFORCEPARAM/2, "Only 6 parameters may be used for an interaction");
+        GMX_ASSERT(nrfp <= MAXFORCEPARAM / 2, "Only 6 parameters may be used for an interaction");
         std::array<real, MAXFORCEPARAM> forceParam;
         for (int j = 0; (j < nrfp); j++)
         {
-            forceParam[j]      = c[j];
-            forceParam[nrfp+j] = c[j];
+            forceParam[j]        = c[j];
+            forceParam[nrfp + j] = c[j];
         }
         param = InteractionOfType(param.atoms(), forceParam);
     }
 }
 
-static void set_force_const(gmx::ArrayRef<InteractionsOfType> plist, real kb, real kt, real kp, bool bRound,
-                            bool bParam)
+static void set_force_const(gmx::ArrayRef<InteractionsOfType> plist, real kb, real kt, real kp, bool bRound, bool bParam)
 {
     real c[MAXFORCEPARAM];
 
@@ -254,25 +254,24 @@ static void set_force_const(gmx::ArrayRef<InteractionsOfType> plist, real kb, re
     lo_set_force_const(&plist[F_PDIHS], c, 3, bRound, TRUE, bParam);
 }
 
-static void calc_angles_dihs(InteractionsOfType *ang, InteractionsOfType *dih, const rvec x[], bool bPBC,
-                             matrix box)
+static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, const rvec x[], bool bPBC, matrix box)
 {
-    int    t1, t2, t3;
-    rvec   r_ij, r_kj, r_kl, m, n;
-    real   costh;
-    t_pbc  pbc;
+    int   t1, t2, t3;
+    rvec  r_ij, r_kj, r_kl, m, n;
+    real  costh;
+    t_pbc pbc;
 
     if (bPBC)
     {
         set_pbc(&pbc, epbcXYZ, box);
     }
-    for (auto &angle : ang->interactionTypes)
+    for (auto& angle : ang->interactionTypes)
     {
         int  ai = angle.ai();
         int  aj = angle.aj();
         int  ak = angle.ak();
-        real th = RAD2DEG*bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr,
-                                     r_ij, r_kj, &costh, &t1, &t2);
+        real th = RAD2DEG
+                  * bond_angle(x[ai], x[aj], x[ak], bPBC ? &pbc : nullptr, r_ij, r_kj, &costh, &t1, &t2);
         angle.setForceParameter(0, th);
     }
     for (auto dihedral : dih->interactionTypes)
@@ -281,13 +280,14 @@ static void calc_angles_dihs(InteractionsOfType *ang, InteractionsOfType *dih, c
         int  aj = dihedral.aj();
         int  ak = dihedral.ak();
         int  al = dihedral.al();
-        real ph = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr,
-                                    r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+        real ph = RAD2DEG
+                  * dih_angle(x[ai], x[aj], x[ak], x[al], bPBC ? &pbc : nullptr, r_ij, r_kj, r_kl,
+                              m, n, &t1, &t2, &t3);
         dihedral.setForceParameter(0, ph);
     }
 }
 
-static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
+static void dump_hybridization(FILE* fp, t_atoms* atoms, int nbonds[])
 {
     for (int i = 0; (i < atoms->nr); i++)
     {
@@ -295,19 +295,19 @@ static void dump_hybridization(FILE *fp, t_atoms *atoms, int nbonds[])
     }
 }
 
-static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionsOfType> plist, int ftp, const char *name,
-                     char ***atomname)
+static void
+print_pl(FILE* fp, gmx::ArrayRef<const InteractionsOfType> plist, int ftp, const char* name, char*** atomname)
 {
     if (!plist[ftp].interactionTypes.empty())
     {
         fprintf(fp, "\n");
         fprintf(fp, "[ %s ]\n", name);
         int nrfp = interaction_function[ftp].nrfpA;
-        for (const auto &param : plist[ftp].interactionTypes)
+        for (const auto& param : plist[ftp].interactionTypes)
         {
             gmx::ArrayRef<const int>  atoms      = param.atoms();
             gmx::ArrayRef<const real> forceParam = param.forceParam();
-            for (const auto &atom : atoms)
+            for (const auto& atom : atoms)
             {
                 fprintf(fp, "  %5s", *atomname[atom]);
             }
@@ -323,16 +323,16 @@ static void print_pl(FILE *fp, gmx::ArrayRef<const InteractionsOfType> plist, in
     }
 }
 
-static void print_rtp(const char                                     *filenm,
-                      const char                                     *title,
-                      t_atoms                                        *atoms,
-                      gmx::ArrayRef<const InteractionsOfType>         plist,
-                      PreprocessingAtomTypes                         *atypes,
-                      int                                             cgnr[])
+static void print_rtp(const char*                             filenm,
+                      const char*                             title,
+                      t_atoms*                                atoms,
+                      gmx::ArrayRef<const InteractionsOfType> plist,
+                      PreprocessingAtomTypes*                 atypes,
+                      int                                     cgnr[])
 {
-    FILE       *fp;
+    FILE*       fp;
     int         i, tp;
-    const char *tpnm;
+    const char* tpnm;
 
     fp = gmx_fio_fopen(filenm, "w");
     fprintf(fp, "; %s\n", title);
@@ -347,9 +347,7 @@ static void print_rtp(const char                                     *filenm,
         {
             gmx_fatal(FARGS, "tp = %d, i = %d in print_rtp", tp, i);
         }
-        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n",
-                *atoms->atomname[i], tpnm,
-                atoms->atom[i].q, cgnr[i]);
+        fprintf(fp, "%-8s  %12s  %8.4f  %5d\n", *atoms->atomname[i], tpnm, atoms->atom[i].q, cgnr[i]);
     }
     print_pl(fp, plist, F_BONDS, "bonds", atoms->atomname);
     print_pl(fp, plist, F_ANGLES, "angles", atoms->atomname);
@@ -359,9 +357,9 @@ static void print_rtp(const char                                     *filenm,
     gmx_fio_fclose(fp);
 }
 
-int gmx_x2top(int argc, char *argv[])
+int gmx_x2top(int argc, char* argv[])
 {
-    const char                                  *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] generates a primitive topology from a coordinate file.",
         "The program assumes all hydrogens are present when defining",
         "the hybridization from the atom name and the number of bonds.",
@@ -382,83 +380,86 @@ int gmx_x2top(int argc, char *argv[])
         "one of the short names above on the command line instead. In that",
         "case [THISMODULE] just looks for the corresponding file.[PAR]",
     };
-    const char                                  *bugs[] = {
+    const char* bugs[] = {
         "The atom type selection is primitive. Virtually no chemical knowledge is used",
-        "Periodic boundary conditions screw up the bonding",
-        "No improper dihedrals are generated",
-        "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in the data directory). Please extend it and send the results back to the GROMACS crew."
+        "Periodic boundary conditions screw up the bonding", "No improper dihedrals are generated",
+        "The atoms to atomtype translation table is incomplete ([TT]atomname2type.n2t[tt] file in "
+        "the data directory). Please extend it and send the results back to the GROMACS crew."
     };
-    FILE                                        *fp;
-    std::array<InteractionsOfType, F_NRE>        plist;
-    t_excls                                     *excls;
-    t_nm2type                                   *nm2t;
-    t_mols                                       mymol;
-    int                                          nnm;
-    char                                         forcefield[32], ffdir[STRLEN];
-    rvec                                        *x; /* coordinates? */
-    int                                         *nbonds, *cgnr;
-    int                                          bts[] = { 1, 1, 1, 2 };
-    matrix                                       box;    /* box length matrix */
-    int                                          natoms; /* number of atoms in one molecule  */
-    int                                          epbc;
-    bool                                         bRTP, bTOP, bOPLS;
-    t_symtab                                     symtab;
-    real                                         qtot, mtot;
-    char                                         n2t[STRLEN];
-    gmx_output_env_t                            *oenv;
+    FILE*                                 fp;
+    std::array<InteractionsOfType, F_NRE> plist;
+    t_excls*                              excls;
+    t_nm2type*                            nm2t;
+    t_mols                                mymol;
+    int                                   nnm;
+    char                                  forcefield[32], ffdir[STRLEN];
+    rvec*                                 x; /* coordinates? */
+    int *                                 nbonds, *cgnr;
+    int                                   bts[] = { 1, 1, 1, 2 };
+    matrix                                box;    /* box length matrix */
+    int                                   natoms; /* number of atoms in one molecule  */
+    int                                   epbc;
+    bool                                  bRTP, bTOP, bOPLS;
+    t_symtab                              symtab;
+    real                                  qtot, mtot;
+    char                                  n2t[STRLEN];
+    gmx_output_env_t*                     oenv;
 
-    t_filenm                                     fnm[] = {
-        { efSTX, "-f", "conf", ffREAD  },
-        { efTOP, "-o", "out",  ffOPTWR },
-        { efRTP, "-r", "out",  ffOPTWR }
-    };
+    t_filenm fnm[] = { { efSTX, "-f", "conf", ffREAD },
+                       { efTOP, "-o", "out", ffOPTWR },
+                       { efRTP, "-r", "out", ffOPTWR } };
 #define NFILE asize(fnm)
-    real                                         kb                            = 4e5, kt = 400, kp = 5;
-    PreprocessResidue                            rtp_header_settings;
-    bool                                         bRemoveDihedralIfWithImproper = FALSE;
-    bool                                         bGenerateHH14Interactions     = TRUE;
-    bool                                         bKeepAllGeneratedDihedrals    = FALSE;
-    int                                          nrexcl                        = 3;
-    bool                                         bParam                        = TRUE, bRound = TRUE;
-    bool                                         bPairs                        = TRUE, bPBC = TRUE;
-    bool                                         bUsePDBcharge                 = FALSE, bVerbose = FALSE;
-    const char                                  *molnm                         = "ICE";
-    const char                                  *ff                            = "oplsaa";
-    t_pargs                                      pa[]                          = {
-        { "-ff",     FALSE, etSTR, {&ff},
+    real              kb = 4e5, kt = 400, kp = 5;
+    PreprocessResidue rtp_header_settings;
+    bool              bRemoveDihedralIfWithImproper = FALSE;
+    bool              bGenerateHH14Interactions     = TRUE;
+    bool              bKeepAllGeneratedDihedrals    = FALSE;
+    int               nrexcl                        = 3;
+    bool              bParam = TRUE, bRound = TRUE;
+    bool              bPairs = TRUE, bPBC = TRUE;
+    bool              bUsePDBcharge = FALSE, bVerbose = FALSE;
+    const char*       molnm = "ICE";
+    const char*       ff    = "oplsaa";
+    t_pargs           pa[]  = {
+        { "-ff",
+          FALSE,
+          etSTR,
+          { &ff },
           "Force field for your simulation. Type \"select\" for interactive selection." },
-        { "-v",      FALSE, etBOOL, {&bVerbose},
-          "Generate verbose output in the top file." },
-        { "-nexcl", FALSE, etINT,  {&nrexcl},
-          "Number of exclusions" },
-        { "-H14",    FALSE, etBOOL, {&bGenerateHH14Interactions},
+        { "-v", FALSE, etBOOL, { &bVerbose }, "Generate verbose output in the top file." },
+        { "-nexcl", FALSE, etINT, { &nrexcl }, "Number of exclusions" },
+        { "-H14",
+          FALSE,
+          etBOOL,
+          { &bGenerateHH14Interactions },
           "Use 3rd neighbour interactions for hydrogen atoms" },
-        { "-alldih", FALSE, etBOOL, {&bKeepAllGeneratedDihedrals},
+        { "-alldih",
+          FALSE,
+          etBOOL,
+          { &bKeepAllGeneratedDihedrals },
           "Generate all proper dihedrals" },
-        { "-remdih", FALSE, etBOOL, {&bRemoveDihedralIfWithImproper},
+        { "-remdih",
+          FALSE,
+          etBOOL,
+          { &bRemoveDihedralIfWithImproper },
           "Remove dihedrals on the same bond as an improper" },
-        { "-pairs",  FALSE, etBOOL, {&bPairs},
-          "Output 1-4 interactions (pairs) in topology file" },
-        { "-name",   FALSE, etSTR,  {&molnm},
-          "Name of your molecule" },
-        { "-pbc",    FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions." },
-        { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
+        { "-pairs", FALSE, etBOOL, { &bPairs }, "Output 1-4 interactions (pairs) in topology file" },
+        { "-name", FALSE, etSTR, { &molnm }, "Name of your molecule" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions." },
+        { "-pdbq",
+          FALSE,
+          etBOOL,
+          { &bUsePDBcharge },
           "Use the B-factor supplied in a [REF].pdb[ref] file for the atomic charges" },
-        { "-param", FALSE, etBOOL, {&bParam},
-          "Print parameters in the output" },
-        { "-round",  FALSE, etBOOL, {&bRound},
-          "Round off measured values" },
-        { "-kb",    FALSE, etREAL, {&kb},
-          "Bonded force constant (kJ/mol/nm^2)" },
-        { "-kt",    FALSE, etREAL, {&kt},
-          "Angle force constant (kJ/mol/rad^2)" },
-        { "-kp",    FALSE, etREAL, {&kp},
-          "Dihedral angle force constant (kJ/mol/rad^2)" }
+        { "-param", FALSE, etBOOL, { &bParam }, "Print parameters in the output" },
+        { "-round", FALSE, etBOOL, { &bRound }, "Round off measured values" },
+        { "-kb", FALSE, etREAL, { &kb }, "Bonded force constant (kJ/mol/nm^2)" },
+        { "-kt", FALSE, etREAL, { &kt }, "Angle force constant (kJ/mol/rad^2)" },
+        { "-kp", FALSE, etREAL, { &kp }, "Dihedral angle force constant (kJ/mol/rad^2)" }
     };
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -469,7 +470,7 @@ int gmx_x2top(int argc, char *argv[])
     rtp_header_settings.bRemoveDihedralIfWithImproper = bRemoveDihedralIfWithImproper;
     rtp_header_settings.bGenerateHH14Interactions     = bGenerateHH14Interactions;
     rtp_header_settings.bKeepAllGeneratedDihedrals    = bKeepAllGeneratedDihedrals;
-    rtp_header_settings.nrexcl = nrexcl;
+    rtp_header_settings.nrexcl                        = nrexcl;
 
     if (!bRTP && !bTOP)
     {
@@ -477,9 +478,8 @@ int gmx_x2top(int argc, char *argv[])
     }
 
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff,
-              forcefield, sizeof(forcefield),
-              ffdir, sizeof(ffdir));
+    choose_ff(strcmp(ff, "select") == 0 ? nullptr : ff, forcefield, sizeof(forcefield), ffdir,
+              sizeof(ffdir));
 
     bOPLS = (strcmp(forcefield, "oplsaa") == 0);
 
@@ -488,11 +488,11 @@ int gmx_x2top(int argc, char *argv[])
     mymol.nr   = 1;
 
     /* Read coordinates */
-    t_topology *top;
+    t_topology* top;
     snew(top, 1);
     read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
-    t_atoms  *atoms = &top->atoms;
-    natoms = atoms->nr;
+    t_atoms* atoms = &top->atoms;
+    natoms         = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {
         snew(atoms->pdbinfo, natoms);
@@ -502,8 +502,7 @@ int gmx_x2top(int argc, char *argv[])
     nm2t = rd_nm2type(n2t, &nnm);
     if (nnm == 0)
     {
-        gmx_fatal(FARGS, "No or incorrect atomname2type.n2t file found (looking for %s)",
-                  n2t);
+        gmx_fatal(FARGS, "No or incorrect atomname2type.n2t file found (looking for %s)", n2t);
     }
     else
     {
@@ -533,10 +532,8 @@ int gmx_x2top(int argc, char *argv[])
     fprintf(stderr,
             "There are %4zu %s dihedrals, %4zu impropers, %4zu angles\n"
             "          %4zu pairs,     %4zu bonds and  %4d atoms\n",
-            plist[F_PDIHS].size(),
-            bOPLS ? "Ryckaert-Bellemans" : "proper",
-            plist[F_IDIHS].size(), plist[F_ANGLES].size(),
-            plist[F_LJ14].size(), plist[F_BONDS].size(), atoms->nr);
+            plist[F_PDIHS].size(), bOPLS ? "Ryckaert-Bellemans" : "proper", plist[F_IDIHS].size(),
+            plist[F_ANGLES].size(), plist[F_LJ14].size(), plist[F_BONDS].size(), atoms->nr);
 
     calc_angles_dihs(&plist[F_ANGLES], &plist[F_PDIHS], x, bPBC, box);
 
@@ -555,16 +552,15 @@ int gmx_x2top(int argc, char *argv[])
         fp = ftp2FILE(efTOP, NFILE, fnm, "w");
         print_top_header(fp, ftp2fn(efTOP, NFILE, fnm), TRUE, ffdir, 1.0);
 
-        write_top(fp, nullptr, mymol.name.c_str(), atoms, FALSE, bts, plist, excls, &atypes,
-                  cgnr, rtp_header_settings.nrexcl);
+        write_top(fp, nullptr, mymol.name.c_str(), atoms, FALSE, bts, plist, excls, &atypes, cgnr,
+                  rtp_header_settings.nrexcl);
         print_top_mols(fp, mymol.name.c_str(), ffdir, nullptr, {}, gmx::arrayRefFromArray(&mymol, 1));
 
         gmx_ffclose(fp);
     }
     if (bRTP)
     {
-        print_rtp(ftp2fn(efRTP, NFILE, fnm), "Generated by x2top",
-                  atoms, plist, &atypes, cgnr);
+        print_rtp(ftp2fn(efRTP, NFILE, fnm), "Generated by x2top", atoms, plist, &atypes, cgnr);
     }
 
     if (debug)

@@ -138,7 +138,7 @@ cut -f2 <$tmpdir/difflist | \
     paste $tmpdir/difflist - | \
     grep -E '(complete_formatting|uncrustify|copyright|includesort)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
-grep -E '(complete_formatting|uncrustify)$' <$tmpdir/filtered | \
+grep -E '(uncrustify)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_uncrustify
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 

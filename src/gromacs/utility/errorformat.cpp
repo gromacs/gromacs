@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010-2017, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,17 +61,16 @@ namespace gmx
 namespace internal
 {
 
-void printFatalErrorHeader(FILE *fp, const char *title,
-                           const char *func, const char *file, int line)
+void printFatalErrorHeader(FILE* fp, const char* title, const char* func, const char* file, int line)
 {
     // In case ProgramInfo is not initialized and there is an issue with the
     // initialization, fall back to "GROMACS".
-    const char *programName = "GROMACS";
+    const char* programName = "GROMACS";
     try
     {
         programName = getProgramContext().displayName();
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
     }
 
@@ -78,8 +78,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     std::fprintf(fp, "Program:     %s, version %s\n", programName, gmx_version());
     if (file != nullptr)
     {
-        std::fprintf(fp, "Source file: %s (line %d)\n",
-                     Path::stripSourcePrefix(file), line);
+        std::fprintf(fp, "Source file: %s (line %d)\n", Path::stripSourcePrefix(file), line);
     }
     if (func != nullptr)
     {
@@ -93,12 +92,12 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     std::fprintf(fp, "%s:\n", title);
 }
 
-void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
+void printFatalErrorMessageLine(FILE* fp, const char* text, int indent)
 {
     gmx::TextLineWrapper wrapper;
     wrapper.settings().setLineLength(78 - indent);
-    size_t               lineStart = 0;
-    size_t               length    = std::strlen(text);
+    size_t lineStart = 0;
+    size_t length    = std::strlen(text);
     while (lineStart < length)
     {
         size_t nextLineStart = wrapper.findNextLine(text, lineStart);
@@ -112,15 +111,16 @@ void printFatalErrorMessageLine(FILE *fp, const char *text, int indent)
     }
 }
 
-void printFatalErrorFooter(FILE *fp)
+void printFatalErrorFooter(FILE* fp)
 {
     std::fprintf(fp, "\n");
-    std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
+    std::fprintf(fp,
+                 "For more information and tips for troubleshooting, please check the GROMACS\n"
                  "website at http://www.gromacs.org/Documentation/Errors");
     std::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 
-}   // namespace internal
+} // namespace internal
 //! \endcond
 
 } // namespace gmx

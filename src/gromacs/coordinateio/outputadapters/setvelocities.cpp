@@ -51,19 +51,18 @@
 namespace gmx
 {
 
-void
-SetVelocities::checkAbilityDependencies(unsigned long abilities) const
+void SetVelocities::checkAbilityDependencies(unsigned long abilities) const
 {
     if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
-        std::string errorMessage = "Output file type does not support writing velocities. "
-            "Only GRO, TRR and TNG support this output.";
+        std::string errorMessage =
+                "Output file type does not support writing velocities. "
+                "Only GRO, TRR and TNG support this output.";
         GMX_THROW(InconsistentInputError(errorMessage.c_str()));
     }
 }
 
-void
-SetVelocities::processFrame(const int /*framenumber*/, t_trxframe *input)
+void SetVelocities::processFrame(const int /*framenumber*/, t_trxframe* input)
 {
     switch (velocity_)
     {
@@ -74,11 +73,11 @@ SetVelocities::processFrame(const int /*framenumber*/, t_trxframe *input)
         case (ChangeSettingType::Always):
             if (!input->bV)
             {
-                GMX_THROW(InconsistentInputError("Velocity output requested but current frame has no velocities"));
+                GMX_THROW(InconsistentInputError(
+                        "Velocity output requested but current frame has no velocities"));
             }
             break;
-        default:
-            GMX_THROW(InconsistentInputError("Value for velocity flag is not supported"));
+        default: GMX_THROW(InconsistentInputError("Value for velocity flag is not supported"));
     }
 }
 

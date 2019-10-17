@@ -58,10 +58,8 @@ namespace gmx
 
 TEST(MdSpanExtension, SlicingAllStatic)
 {
-    std::array<int, 2*3>              data = {1, 2, 3, 4, 5, 6};
-    basic_mdspan<int, extents<3, 2> > span {
-        data.data()
-    };
+    std::array<int, 2 * 3>           data = { 1, 2, 3, 4, 5, 6 };
+    basic_mdspan<int, extents<3, 2>> span{ data.data() };
     EXPECT_EQ(span[0][0], 1);
     EXPECT_EQ(span[0][1], 2);
 
@@ -74,10 +72,8 @@ TEST(MdSpanExtension, SlicingAllStatic)
 
 TEST(MdSpanExtension, SlicingDynamic)
 {
-    std::array<int, 2 * 3> data = {1, 2, 3, 4, 5, 6};
-    basic_mdspan<int, extents<dynamic_extent, dynamic_extent> > span {
-        data.data(), 2, 2
-    };
+    std::array<int, 2 * 3>                                     data = { 1, 2, 3, 4, 5, 6 };
+    basic_mdspan<int, extents<dynamic_extent, dynamic_extent>> span{ data.data(), 2, 2 };
 
     EXPECT_EQ(span[0][0], 1);
     EXPECT_EQ(span[0][1], 2);
@@ -91,11 +87,8 @@ TEST(MdSpanExtension, SlicingDynamic)
 
 TEST(MdSpanExtension, SlicingAllStatic3D)
 {
-    std::array<int, 2 * 2* 2> data = {1, 2, 3, 4, 5, 6, 7, 8 };
-    basic_mdspan<int, extents<2, 2, 2> >
-    span {
-        data.data()
-    };
+    std::array<int, 2 * 2 * 2>          data = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    basic_mdspan<int, extents<2, 2, 2>> span{ data.data() };
     EXPECT_EQ(span[0][0][0], 1);
     EXPECT_EQ(span[0][0][1], 2);
 
@@ -107,15 +100,12 @@ TEST(MdSpanExtension, SlicingAllStatic3D)
 
     EXPECT_EQ(span[1][1][0], 7);
     EXPECT_EQ(span[1][1][1], 8);
-
 }
 
 TEST(MdSpanExtension, SlicingEqualsView3D)
 {
-    std::array<int, 2 * 2 * 2>           data = {1, 2, 3, 4, 5, 6, 7, 8};
-    basic_mdspan<int, extents<2, 2, 2> > span {
-        data.data()
-    };
+    std::array<int, 2 * 2 * 2>          data = { 1, 2, 3, 4, 5, 6, 7, 8 };
+    basic_mdspan<int, extents<2, 2, 2>> span{ data.data() };
     EXPECT_EQ(span[0][0][0], span(0, 0, 0));
     EXPECT_EQ(span[0][0][1], span(0, 0, 1));
     EXPECT_EQ(span[0][1][0], span(0, 1, 0));
@@ -128,33 +118,25 @@ TEST(MdSpanExtension, SlicingEqualsView3D)
 
 TEST(MdSpanExtension, additionWorks)
 {
-    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
-    std::array<int, 2 * 2 * 2>           arr2 = {{1, 1, 1, 1, 1, 1, 1, 1}};
-    basic_mdspan<int, extents<2, 2, 2> > span1 {
-        arr1.data()
-    };
-    basic_mdspan<int, extents<2, 2, 2> > span2 {
-        arr2.data()
-    };
+    std::array<int, 2 * 2 * 2>          arr1 = { { -4, -3, -2, -1, 0, 1, 2, 3 } };
+    std::array<int, 2 * 2 * 2>          arr2 = { { 1, 1, 1, 1, 1, 1, 1, 1 } };
+    basic_mdspan<int, extents<2, 2, 2>> span1{ arr1.data() };
+    basic_mdspan<int, extents<2, 2, 2>> span2{ arr2.data() };
 
-    auto              result = addElementwise(span1, span2);
+    auto result = addElementwise(span1, span2);
     EXPECT_EQ(result[0][0][1], -2);
     EXPECT_EQ(result[0][1][0], -1);
-    EXPECT_EQ(result[1][0][0],  1);
+    EXPECT_EQ(result[1][0][0], 1);
 }
 
 TEST(MdSpanExtension, subtractionWorks)
 {
-    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
-    std::array<int, 2 * 2 * 2>           arr2 = {{1, 1, 1, 1, 1, 1, 1, 1}};
-    basic_mdspan<int, extents<2, 2, 2> > span1 {
-        arr1.data()
-    };
-    basic_mdspan<int, extents<2, 2, 2> > span2 {
-        arr2.data()
-    };
+    std::array<int, 2 * 2 * 2>          arr1 = { { -4, -3, -2, -1, 0, 1, 2, 3 } };
+    std::array<int, 2 * 2 * 2>          arr2 = { { 1, 1, 1, 1, 1, 1, 1, 1 } };
+    basic_mdspan<int, extents<2, 2, 2>> span1{ arr1.data() };
+    basic_mdspan<int, extents<2, 2, 2>> span2{ arr2.data() };
 
-    auto              result = subtractElementwise(span1, span2);
+    auto result = subtractElementwise(span1, span2);
     EXPECT_EQ(result[0][0][1], -4);
     EXPECT_EQ(result[0][1][0], -3);
     EXPECT_EQ(result[1][0][0], -1);
@@ -162,35 +144,44 @@ TEST(MdSpanExtension, subtractionWorks)
 
 TEST(MdSpanExtension, multiplicationWorks)
 {
-    std::array<int, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
-    std::array<int, 2 * 2 * 2>           arr2 = {{2, 2, 2, 2, 2, 2, 2, }};
-    basic_mdspan<int, extents<2, 2, 2> > span1 {
-        arr1.data()
-    };
-    basic_mdspan<int, extents<2, 2, 2> > span2 {
-        arr2.data()
-    };
+    std::array<int, 2 * 2 * 2>          arr1 = { { -4, -3, -2, -1, 0, 1, 2, 3 } };
+    std::array<int, 2 * 2 * 2>          arr2 = { {
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+    } };
+    basic_mdspan<int, extents<2, 2, 2>> span1{ arr1.data() };
+    basic_mdspan<int, extents<2, 2, 2>> span2{ arr2.data() };
 
-    auto              result = multiplyElementwise(span1, span2);
+    auto result = multiplyElementwise(span1, span2);
     EXPECT_EQ(result[0][0][1], -6);
     EXPECT_EQ(result[0][1][0], -4);
-    EXPECT_EQ(result[1][0][0],  0);
+    EXPECT_EQ(result[1][0][0], 0);
 }
 
 TEST(MdSpanExtension, divisionWorks)
 {
-    std::array<float, 2 * 2 * 2>           arr1 = {{-4, -3, -2, -1, 0, 1, 2, 3}};
-    std::array<float, 2 * 2 * 2>           arr2 = {{2, 2, 2, 2, 2, 2, 2, 2, }};
-    basic_mdspan<float, extents<2, 2, 2> > span1 {
-        arr1.data()
-    };
-    basic_mdspan<float, extents<2, 2, 2> > span2 {
-        arr2.data()
-    };
+    std::array<float, 2 * 2 * 2>          arr1 = { { -4, -3, -2, -1, 0, 1, 2, 3 } };
+    std::array<float, 2 * 2 * 2>          arr2 = { {
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+    } };
+    basic_mdspan<float, extents<2, 2, 2>> span1{ arr1.data() };
+    basic_mdspan<float, extents<2, 2, 2>> span2{ arr2.data() };
 
-    auto              result = divideElementwise(span1, span2);
+    auto result = divideElementwise(span1, span2);
     EXPECT_EQ(result[0][0][1], -1.5);
     EXPECT_EQ(result[0][1][0], -1);
-    EXPECT_EQ(result[1][0][0],    0);
+    EXPECT_EQ(result[1][0][0], 0);
 }
 } // namespace gmx

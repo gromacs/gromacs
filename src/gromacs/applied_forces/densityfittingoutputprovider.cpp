@@ -46,11 +46,14 @@
 namespace gmx
 {
 
-void DensityFittingOutputProvider::initOutput(FILE * /*fplog*/, int /*nfile*/,
-                                              const t_filenm /*fnm*/[], bool /*bAppendFiles*/, const gmx_output_env_t * /*oenv*/)
-{}
+void DensityFittingOutputProvider::initOutput(FILE* /*fplog*/,
+                                              int /*nfile*/,
+                                              const t_filenm /*fnm*/[],
+                                              bool /*bAppendFiles*/,
+                                              const gmx_output_env_t* /*oenv*/)
+{
+}
 
-void DensityFittingOutputProvider::finishOutput()
-{}
+void DensityFittingOutputProvider::finishOutput() {}
 
 } // namespace gmx

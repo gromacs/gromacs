@@ -96,160 +96,154 @@ typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractions
  *
  * @tparam algorithm  The global reduction scheme
  */
-template <ComputeGlobalsAlgorithm algorithm>
+template<ComputeGlobalsAlgorithm algorithm>
 class ComputeGlobalsElement final :
-    public                  ISimulatorElement,
-    public                  IEnergySignallerClient,
-    public                  ITrajectorySignallerClient,
-    public                  ITopologyHolderClient
+    public ISimulatorElement,
+    public IEnergySignallerClient,
+    public ITrajectorySignallerClient,
+    public ITopologyHolderClient
 {
-    public:
-        //! Constructor
-        ComputeGlobalsElement(
-            StatePropagatorData           *statePropagatorData,
-            EnergyElement                 *energyElement,
-            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-            SimulationSignals             *signals,
-            int                            nstglobalcomm,
-            FILE                          *fplog,
-            const MDLogger                &mdlog,
-            t_commrec                     *cr,
-            t_inputrec                    *inputrec,
-            const MDAtoms                 *mdAtoms,
-            t_nrnb                        *nrnb,
-            gmx_wallcycle                 *wcycle,
-            t_forcerec                    *fr,
-            const gmx_mtop_t              *global_top,
-            Constraints                   *constr,
-            bool                           hasReadEkinState);
+public:
+    //! Constructor
+    ComputeGlobalsElement(StatePropagatorData*           statePropagatorData,
+                          EnergyElement*                 energyElement,
+                          FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                          SimulationSignals*             signals,
+                          int                            nstglobalcomm,
+                          FILE*                          fplog,
+                          const MDLogger&                mdlog,
+                          t_commrec*                     cr,
+                          t_inputrec*                    inputrec,
+                          const MDAtoms*                 mdAtoms,
+                          t_nrnb*                        nrnb,
+                          gmx_wallcycle*                 wcycle,
+                          t_forcerec*                    fr,
+                          const gmx_mtop_t*              global_top,
+                          Constraints*                   constr,
+                          bool                           hasReadEkinState);
 
-        //! Destructor
-        ~ComputeGlobalsElement() override;
+    //! Destructor
+    ~ComputeGlobalsElement() override;
 
-        /*! \brief Element setup - first call to compute_globals
-         *
-         */
-        void elementSetup() override;
+    /*! \brief Element setup - first call to compute_globals
+     *
+     */
+    void elementSetup() override;
 
-        /*! \brief Register run function for step / time
-         *
-         * This registers the call to compute_globals when needed.
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * This registers the call to compute_globals when needed.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! Get callback to request checking of bonded interactions
-        CheckBondedInteractionsCallbackPtr getCheckNumberOfBondedInteractionsCallback();
+    //! Get callback to request checking of bonded interactions
+    CheckBondedInteractionsCallbackPtr getCheckNumberOfBondedInteractionsCallback();
 
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-    private:
-        //! ITopologyClient implementation
-        void setTopology(const gmx_localtop_t *top) override;
-        //! IEnergySignallerClient implementation
-        SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
-        //! ITrajectorySignallerClient implementation
-        SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
-        //! The compute_globals call
-        void compute(
-            Step step, unsigned int flags,
-            SimulationSignaller *signaller, bool useLastBox,
-            bool isInit = false);
+private:
+    //! ITopologyClient implementation
+    void setTopology(const gmx_localtop_t* top) override;
+    //! IEnergySignallerClient implementation
+    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    //! ITrajectorySignallerClient implementation
+    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    //! The compute_globals call
+    void compute(Step step, unsigned int flags, SimulationSignaller* signaller, bool useLastBox, bool isInit = false);
 
-        //! Next step at which energy needs to be reduced
-        Step energyReductionStep_;
-        //! Next step at which virial needs to be reduced
-        Step virialReductionStep_;
+    //! Next step at which energy needs to be reduced
+    Step energyReductionStep_;
+    //! Next step at which virial needs to be reduced
+    Step virialReductionStep_;
 
-        //! Whether center of mass motion stopping is enabled
-        const bool                           doStopCM_;
-        //! Number of steps after which center of mass motion is removed
-        int                                  nstcomm_;
-        //! Compute globals communication period
-        int                                  nstglobalcomm_;
-        //! The last (planned) step (only used for LF)
-        const Step                           lastStep_;
-        //! The initial step (only used for VV)
-        const Step                           initStep_;
-        //! A dummy signaller (used for setup and VV)
-        std::unique_ptr<SimulationSignaller> nullSignaller_;
-        //! Whether we read kinetic energy from checkpoint
-        const bool                           hasReadEkinState_;
+    //! Whether center of mass motion stopping is enabled
+    const bool doStopCM_;
+    //! Number of steps after which center of mass motion is removed
+    int nstcomm_;
+    //! Compute globals communication period
+    int nstglobalcomm_;
+    //! The last (planned) step (only used for LF)
+    const Step lastStep_;
+    //! The initial step (only used for VV)
+    const Step initStep_;
+    //! A dummy signaller (used for setup and VV)
+    std::unique_ptr<SimulationSignaller> nullSignaller_;
+    //! Whether we read kinetic energy from checkpoint
+    const bool hasReadEkinState_;
 
-        /*! \brief Check that DD doesn't miss bonded interactions
-         *
-         * Domain decomposition could incorrectly miss a bonded
-         * interaction, but checking for that requires a global
-         * communication stage, which does not otherwise happen in DD
-         * code. So we do that alongside the first global energy reduction
-         * after a new DD is made. These variables handle whether the
-         * check happens, and the result it returns.
-         */
-        //! @{
-        int  totalNumberOfBondedInteractions_;
-        bool shouldCheckNumberOfBondedInteractions_;
-        //! @}
+    /*! \brief Check that DD doesn't miss bonded interactions
+     *
+     * Domain decomposition could incorrectly miss a bonded
+     * interaction, but checking for that requires a global
+     * communication stage, which does not otherwise happen in DD
+     * code. So we do that alongside the first global energy reduction
+     * after a new DD is made. These variables handle whether the
+     * check happens, and the result it returns.
+     */
+    //! @{
+    int  totalNumberOfBondedInteractions_;
+    bool shouldCheckNumberOfBondedInteractions_;
+    //! @}
 
-        /*! \brief Signal to ComputeGlobalsElement that it should check for DD errors
-         *
-         * Note that this should really be the responsibility of the DD element.
-         * MDLogger, global and local topology are only needed due to the call to
-         * checkNumberOfBondedInteractions(...).
-         *
-         * The DD element should have a single variable which gets reduced, and then
-         * be responsible for the checking after a global reduction has happened.
-         * This would, however, require a new approach for the compute_globals calls,
-         * which is not yet implemented. So for now, we're leaving this here.
-         */
-        void needToCheckNumberOfBondedInteractions();
+    /*! \brief Signal to ComputeGlobalsElement that it should check for DD errors
+     *
+     * Note that this should really be the responsibility of the DD element.
+     * MDLogger, global and local topology are only needed due to the call to
+     * checkNumberOfBondedInteractions(...).
+     *
+     * The DD element should have a single variable which gets reduced, and then
+     * be responsible for the checking after a global reduction has happened.
+     * This would, however, require a new approach for the compute_globals calls,
+     * which is not yet implemented. So for now, we're leaving this here.
+     */
+    void needToCheckNumberOfBondedInteractions();
 
-        //! Global reduction struct
-        gmx_global_stat *gstat_;
+    //! Global reduction struct
+    gmx_global_stat* gstat_;
 
-        //! Pointer to the microstate
-        StatePropagatorData           *statePropagatorData_;
-        //! Pointer to the energy element (needed for the tensors and mu_tot)
-        EnergyElement                 *energyElement_;
-        //! Pointer to the local topology (only needed for checkNumberOfBondedInteractions)
-        const gmx_localtop_t          *localTopology_;
-        //! Pointer to the free energy perturbation element
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+    //! Pointer to the microstate
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the energy element (needed for the tensors and mu_tot)
+    EnergyElement* energyElement_;
+    //! Pointer to the local topology (only needed for checkNumberOfBondedInteractions)
+    const gmx_localtop_t* localTopology_;
+    //! Pointer to the free energy perturbation element
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
-        //! Center of mass motion removal
-        t_vcm              vcm_;
-        //! Signals
-        SimulationSignals *signals_;
+    //! Center of mass motion removal
+    t_vcm vcm_;
+    //! Signals
+    SimulationSignals* signals_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE             *fplog_;
-        //! Handles logging.
-        const MDLogger   &mdlog_;
-        //! Handles communication.
-        t_commrec        *cr_;
-        //! Contains user input mdp options.
-        t_inputrec       *inputrec_;
-        //! Full system topology - only needed for checkNumberOfBondedInteractions.
-        const gmx_mtop_t *top_global_;
-        //! Atom parameters for this domain.
-        const MDAtoms    *mdAtoms_;
-        //! Handles constraints.
-        Constraints      *constr_;
-        //! Manages flop accounting.
-        t_nrnb           *nrnb_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle    *wcycle_;
-        //! Parameters for force calculations.
-        t_forcerec       *fr_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles logging.
+    const MDLogger& mdlog_;
+    //! Handles communication.
+    t_commrec* cr_;
+    //! Contains user input mdp options.
+    t_inputrec* inputrec_;
+    //! Full system topology - only needed for checkNumberOfBondedInteractions.
+    const gmx_mtop_t* top_global_;
+    //! Atom parameters for this domain.
+    const MDAtoms* mdAtoms_;
+    //! Handles constraints.
+    Constraints* constr_;
+    //! Manages flop accounting.
+    t_nrnb* nrnb_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
+    //! Parameters for force calculations.
+    t_forcerec* fr_;
 };
 
 //! \}
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_COMPUTEGLOBALSELEMENT_H

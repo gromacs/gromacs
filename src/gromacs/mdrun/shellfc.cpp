@@ -80,57 +80,58 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    int     nnucl;
-    int     shell;               /* The shell id				*/
-    int     nucl1, nucl2, nucl3; /* The nuclei connected to the shell	*/
-    /* gmx_bool    bInterCG; */       /* Coupled to nuclei outside cg?        */
-    real    k;                   /* force constant		        */
-    real    k_1;                 /* 1 over force constant		*/
-    rvec    xold;
-    rvec    fold;
-    rvec    step;
+typedef struct
+{
+    int nnucl;
+    int shell;                  /* The shell id				*/
+    int nucl1, nucl2, nucl3;    /* The nuclei connected to the shell	*/
+    /* gmx_bool    bInterCG; */ /* Coupled to nuclei outside cg?        */
+    real k;                     /* force constant		        */
+    real k_1;                   /* 1 over force constant		*/
+    rvec xold;
+    rvec fold;
+    rvec step;
 } t_shell;
 
-struct gmx_shellfc_t {
+struct gmx_shellfc_t
+{
     /* Shell counts, indices, parameters and working data */
-    int          nshell_gl;              /* The number of shells in the system        */
-    t_shell     *shell_gl;               /* All the shells (for DD only)              */
-    int         *shell_index_gl;         /* Global shell index (for DD only)          */
-    gmx_bool     bInterCG;               /* Are there inter charge-group shells?      */
-    int          nshell;                 /* The number of local shells                */
-    t_shell     *shell;                  /* The local shells                          */
-    int          shell_nalloc;           /* The allocation size of shell              */
-    gmx_bool     bPredict;               /* Predict shell positions                   */
-    gmx_bool     bRequireInit;           /* Require initialization of shell positions */
-    int          nflexcon;               /* The number of flexible constraints        */
+    int      nshell_gl;      /* The number of shells in the system        */
+    t_shell* shell_gl;       /* All the shells (for DD only)              */
+    int*     shell_index_gl; /* Global shell index (for DD only)          */
+    gmx_bool bInterCG;       /* Are there inter charge-group shells?      */
+    int      nshell;         /* The number of local shells                */
+    t_shell* shell;          /* The local shells                          */
+    int      shell_nalloc;   /* The allocation size of shell              */
+    gmx_bool bPredict;       /* Predict shell positions                   */
+    gmx_bool bRequireInit;   /* Require initialization of shell positions */
+    int      nflexcon;       /* The number of flexible constraints        */
 
     /* Temporary arrays, should be fixed size 2 when fully converted to C++ */
-    PaddedHostVector<gmx::RVec>     *x;  /* Array for iterative minimization          */
-    PaddedHostVector<gmx::RVec>     *f;  /* Array for iterative minimization          */
+    PaddedHostVector<gmx::RVec>* x; /* Array for iterative minimization          */
+    PaddedHostVector<gmx::RVec>* f; /* Array for iterative minimization          */
 
     /* Flexible constraint working data */
-    rvec        *acc_dir;                /* Acceleration direction for flexcon        */
-    rvec        *x_old;                  /* Old coordinates for flexcon               */
+    rvec*        acc_dir;                /* Acceleration direction for flexcon        */
+    rvec*        x_old;                  /* Old coordinates for flexcon               */
     int          flex_nalloc;            /* The allocation size of acc_dir and x_old  */
-    rvec        *adir_xnold;             /* Work space for init_adir                  */
-    rvec        *adir_xnew;              /* Work space for init_adir                  */
+    rvec*        adir_xnold;             /* Work space for init_adir                  */
+    rvec*        adir_xnew;              /* Work space for init_adir                  */
     int          adir_nalloc;            /* Work space for init_adir                  */
     std::int64_t numForceEvaluations;    /* Total number of force evaluations         */
     int          numConvergedIterations; /* Total number of iterations that converged */
 };
 
 
-static void pr_shell(FILE *fplog, int ns, t_shell s[])
+static void pr_shell(FILE* fplog, int ns, t_shell s[])
 {
     int i;
 
     fprintf(fplog, "SHELL DATA\n");
-    fprintf(fplog, "%5s  %8s  %5s  %5s  %5s\n",
-            "Shell", "Force k", "Nucl1", "Nucl2", "Nucl3");
+    fprintf(fplog, "%5s  %8s  %5s  %5s  %5s\n", "Shell", "Force k", "Nucl1", "Nucl2", "Nucl3");
     for (i = 0; (i < ns); i++)
     {
-        fprintf(fplog, "%5d  %8.3f  %5d", s[i].shell, 1.0/s[i].k_1, s[i].nucl1);
+        fprintf(fplog, "%5d  %8.3f  %5d", s[i].shell, 1.0 / s[i].k_1, s[i].nucl1);
         if (s[i].nnucl == 2)
         {
             fprintf(fplog, "  %5d\n", s[i].nucl2);
@@ -153,13 +154,19 @@ static void pr_shell(FILE *fplog, int ns, t_shell s[])
  * started, but even when called, the prediction was always
  * over-written by a subsequent call in the MD loop, so has been
  * removed. */
-static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
-                           int ns, t_shell s[],
-                           const real mass[], gmx_mtop_t *mtop, gmx_bool bInit)
+static void predict_shells(FILE*       fplog,
+                           rvec        x[],
+                           rvec        v[],
+                           real        dt,
+                           int         ns,
+                           t_shell     s[],
+                           const real  mass[],
+                           gmx_mtop_t* mtop,
+                           gmx_bool    bInit)
 {
-    int                   i, m, s1, n1, n2, n3;
-    real                  dt_1, fudge, tm, m1, m2, m3;
-    rvec                 *ptr;
+    int   i, m, s1, n1, n2, n3;
+    real  dt_1, fudge, tm, m1, m2, m3;
+    rvec* ptr;
 
     GMX_RELEASE_ASSERT(mass || mtop, "Must have masses or a way to look them up");
 
@@ -181,7 +188,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
     else
     {
         ptr  = v;
-        dt_1 = fudge*dt;
+        dt_1 = fudge * dt;
     }
 
     int molb = 0;
@@ -198,7 +205,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                 n1 = s[i].nucl1;
                 for (m = 0; (m < DIM); m++)
                 {
-                    x[s1][m] += ptr[n1][m]*dt_1;
+                    x[s1][m] += ptr[n1][m] * dt_1;
                 }
                 break;
             case 2:
@@ -215,10 +222,10 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                     m1 = mtopGetAtomMass(mtop, n1, &molb);
                     m2 = mtopGetAtomMass(mtop, n2, &molb);
                 }
-                tm = dt_1/(m1+m2);
+                tm = dt_1 / (m1 + m2);
                 for (m = 0; (m < DIM); m++)
                 {
-                    x[s1][m] += (m1*ptr[n1][m]+m2*ptr[n2][m])*tm;
+                    x[s1][m] += (m1 * ptr[n1][m] + m2 * ptr[n2][m]) * tm;
                 }
                 break;
             case 3:
@@ -238,14 +245,13 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
                     m2 = mtopGetAtomMass(mtop, n2, &molb);
                     m3 = mtopGetAtomMass(mtop, n3, &molb);
                 }
-                tm = dt_1/(m1+m2+m3);
+                tm = dt_1 / (m1 + m2 + m3);
                 for (m = 0; (m < DIM); m++)
                 {
-                    x[s1][m] += (m1*ptr[n1][m]+m2*ptr[n2][m]+m3*ptr[n3][m])*tm;
+                    x[s1][m] += (m1 * ptr[n1][m] + m2 * ptr[n2][m] + m3 * ptr[n3][m]) * tm;
                 }
                 break;
-            default:
-                gmx_fatal(FARGS, "Shell %d has %d nuclei!", i, s[i].nnucl);
+            default: gmx_fatal(FARGS, "Shell %d has %d nuclei!", i, s[i].nnucl);
         }
     }
 }
@@ -258,8 +264,7 @@ static void predict_shells(FILE *fplog, rvec x[], rvec v[], real dt,
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-std::array<int, eptNR> countPtypes(FILE             *fplog,
-                                   const gmx_mtop_t *mtop)
+std::array<int, eptNR> countPtypes(FILE* fplog, const gmx_mtop_t* mtop)
 {
     std::array<int, eptNR> nptype = { { 0 } };
     /* Count number of shells, and find their indices */
@@ -268,18 +273,16 @@ std::array<int, eptNR> countPtypes(FILE             *fplog,
         nptype[i] = 0;
     }
 
-    gmx_mtop_atomloop_block_t  aloopb = gmx_mtop_atomloop_block_init(mtop);
-    int                        nmol;
-    const t_atom              *atom;
+    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
+    int                       nmol;
+    const t_atom*             atom;
     while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
     {
         switch (atom->ptype)
         {
             case eptAtom:
             case eptVSite:
-            case eptShell:
-                nptype[atom->ptype] += nmol;
-                break;
+            case eptShell: nptype[atom->ptype] += nmol; break;
             default:
                 fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
                         static_cast<int>(atom->ptype));
@@ -289,7 +292,7 @@ std::array<int, eptNR> countPtypes(FILE             *fplog,
     {
         /* Print the number of each particle type */
         int n = 0;
-        for (const auto &i : nptype)
+        for (const auto& i : nptype)
         {
             if (i != 0)
             {
@@ -301,25 +304,22 @@ std::array<int, eptNR> countPtypes(FILE             *fplog,
     return nptype;
 }
 
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  const gmx_mtop_t *mtop, int nflexcon,
-                                  int nstcalcenergy,
-                                  bool usingDomainDecomposition)
+gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflexcon, int nstcalcenergy, bool usingDomainDecomposition)
 {
-    gmx_shellfc_t            *shfc;
-    t_shell                  *shell;
-    int                      *shell_index = nullptr;
+    gmx_shellfc_t* shfc;
+    t_shell*       shell;
+    int*           shell_index = nullptr;
 
-    int                       ns, nshell, nsi;
-    int                       i, j, type, a_offset, mol, ftype, nra;
-    real                      qS, alpha;
-    int                       aS, aN = 0; /* Shell and nucleus */
-    int                       bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
+    int  ns, nshell, nsi;
+    int  i, j, type, a_offset, mol, ftype, nra;
+    real qS, alpha;
+    int  aS, aN = 0; /* Shell and nucleus */
+    int bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_ANHARM_POL, F_WATER_POL };
 #define NBT asize(bondtypes)
-    const gmx_ffparams_t     *ffparams;
+    const gmx_ffparams_t* ffparams;
 
-    std::array<int, eptNR>    n = countPtypes(fplog, mtop);
-    nshell = n[eptShell];
+    std::array<int, eptNR> n = countPtypes(fplog, mtop);
+    nshell                   = n[eptShell];
 
     if (nshell == 0 && nflexcon == 0)
     {
@@ -345,11 +345,16 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     if (nstcalcenergy != 1)
     {
-        gmx_fatal(FARGS, "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is not supported in combination with shell particles.\nPlease make a new tpr file.", nstcalcenergy);
+        gmx_fatal(FARGS,
+                  "You have nstcalcenergy set to a value (%d) that is different from 1.\nThis is "
+                  "not supported in combination with shell particles.\nPlease make a new tpr file.",
+                  nstcalcenergy);
     }
     if (usingDomainDecomposition)
     {
-        gmx_fatal(FARGS, "Shell particles are not implemented with domain decomposition, use a single rank");
+        gmx_fatal(
+                FARGS,
+                "Shell particles are not implemented with domain decomposition, use a single rank");
     }
 
     /* We have shells: fill the shell data structure */
@@ -360,7 +365,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     nshell = 0;
     for (const AtomProxy atomP : AtomRange(*mtop))
     {
-        const t_atom &local = atomP.atom();
+        const t_atom& local = atomP.atom();
         int           i     = atomP.globalAtomNumber();
         if (local.ptype == eptShell)
         {
@@ -379,8 +384,8 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         shell[i].nucl2 = -1;
         shell[i].nucl3 = -1;
         /* shell[i].bInterCG=FALSE; */
-        shell[i].k_1   = 0;
-        shell[i].k     = 0;
+        shell[i].k_1 = 0;
+        shell[i].k   = 0;
     }
 
     ffparams = &mtop->ffparams;
@@ -392,16 +397,16 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     a_offset       = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
-        const gmx_molblock_t *molb = &mtop->molblock[mb];
-        const gmx_moltype_t  *molt = &mtop->moltype[molb->type];
+        const gmx_molblock_t* molb = &mtop->molblock[mb];
+        const gmx_moltype_t*  molt = &mtop->moltype[molb->type];
 
-        const t_atom         *atom = molt->atoms.atom;
+        const t_atom* atom = molt->atoms.atom;
         for (mol = 0; mol < molb->nmol; mol++)
         {
             for (j = 0; (j < NBT); j++)
             {
-                const int *ia = molt->ilist[bondtypes[j]].iatoms.data();
-                for (i = 0; (i < molt->ilist[bondtypes[j]].size()); )
+                const int* ia = molt->ilist[bondtypes[j]].iatoms.data();
+                for (i = 0; (i < molt->ilist[bondtypes[j]].size());)
                 {
                     type  = ia[0];
                     ftype = ffparams->functype[type];
@@ -429,11 +434,10 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                             }
                             break;
                         case F_WATER_POL:
-                            aN    = ia[4]; /* Dummy */
-                            aS    = ia[5]; /* Shell */
+                            aN = ia[4]; /* Dummy */
+                            aS = ia[5]; /* Shell */
                             break;
-                        default:
-                            gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
+                        default: gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                     }
 
                     if (aS != -1)
@@ -441,23 +445,22 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                         qS = atom[aS].q;
 
                         /* Check whether one of the particles is a shell... */
-                        nsi = shell_index[a_offset+aS];
+                        nsi = shell_index[a_offset + aS];
                         if ((nsi < 0) || (nsi >= nshell))
                         {
-                            gmx_fatal(FARGS, "nsi is %d should be within 0 - %d. aS = %d",
-                                      nsi, nshell, aS);
+                            gmx_fatal(FARGS, "nsi is %d should be within 0 - %d. aS = %d", nsi, nshell, aS);
                         }
                         if (shell[nsi].shell == -1)
                         {
                             shell[nsi].shell = a_offset + aS;
                             ns++;
                         }
-                        else if (shell[nsi].shell != a_offset+aS)
+                        else if (shell[nsi].shell != a_offset + aS)
                         {
                             gmx_fatal(FARGS, "Weird stuff in %s, %d", __FILE__, __LINE__);
                         }
 
-                        if      (shell[nsi].nucl1 == -1)
+                        if (shell[nsi].nucl1 == -1)
                         {
                             shell[nsi].nucl1 = a_offset + aN;
                         }
@@ -487,37 +490,43 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
                         {
                             case F_BONDS:
                             case F_HARMONIC:
-                                shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
+                                shell[nsi].k += ffparams->iparams[type].harmonic.krA;
                                 break;
                             case F_CUBICBONDS:
-                                shell[nsi].k    += ffparams->iparams[type].cubic.kb;
+                                shell[nsi].k += ffparams->iparams[type].cubic.kb;
                                 break;
                             case F_POLARIZATION:
                             case F_ANHARM_POL:
-                                if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+                                if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS * 10))
                                 {
-                                    gmx_fatal(FARGS, "polarize can not be used with qA(%e) != qB(%e) for atom %d of molecule block %zu", qS, atom[aS].qB, aS+1, mb+1);
+                                    gmx_fatal(FARGS,
+                                              "polarize can not be used with qA(%e) != qB(%e) for "
+                                              "atom %d of molecule block %zu",
+                                              qS, atom[aS].qB, aS + 1, mb + 1);
                                 }
-                                shell[nsi].k    += gmx::square(qS)*ONE_4PI_EPS0/
-                                    ffparams->iparams[type].polarize.alpha;
+                                shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0
+                                                / ffparams->iparams[type].polarize.alpha;
                                 break;
                             case F_WATER_POL:
-                                if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS*10))
+                                if (!gmx_within_tol(qS, atom[aS].qB, GMX_REAL_EPS * 10))
                                 {
-                                    gmx_fatal(FARGS, "water_pol can not be used with qA(%e) != qB(%e) for atom %d of molecule block %zu", qS, atom[aS].qB, aS+1, mb+1);
+                                    gmx_fatal(FARGS,
+                                              "water_pol can not be used with qA(%e) != qB(%e) for "
+                                              "atom %d of molecule block %zu",
+                                              qS, atom[aS].qB, aS + 1, mb + 1);
                                 }
-                                alpha          = (ffparams->iparams[type].wpol.al_x+
-                                                  ffparams->iparams[type].wpol.al_y+
-                                                  ffparams->iparams[type].wpol.al_z)/3.0;
-                                shell[nsi].k  += gmx::square(qS)*ONE_4PI_EPS0/alpha;
+                                alpha = (ffparams->iparams[type].wpol.al_x
+                                         + ffparams->iparams[type].wpol.al_y
+                                         + ffparams->iparams[type].wpol.al_z)
+                                        / 3.0;
+                                shell[nsi].k += gmx::square(qS) * ONE_4PI_EPS0 / alpha;
                                 break;
-                            default:
-                                gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
+                            default: gmx_fatal(FARGS, "Death Horror: %s, %d", __FILE__, __LINE__);
                         }
                         shell[nsi].nnucl++;
                     }
-                    ia += nra+1;
-                    i  += nra+1;
+                    ia += nra + 1;
+                    i += nra + 1;
                 }
             }
             a_offset += molt->atoms.nr;
@@ -533,7 +542,7 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
 
     for (i = 0; (i < ns); i++)
     {
-        shell[i].k_1 = 1.0/shell[i].k;
+        shell[i].k_1 = 1.0 / shell[i].k;
     }
 
     if (debug)
@@ -570,7 +579,9 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
         {
             if (fplog)
             {
-                fprintf(fplog, "\nNOTE: in the current version shell prediction during the crun is disabled\n\n");
+                fprintf(fplog,
+                        "\nNOTE: in the current version shell prediction during the crun is "
+                        "disabled\n\n");
             }
             /* Prediction improves performance, so we should implement either:
              * 1. communication for the atoms needed for prediction
@@ -585,13 +596,11 @@ gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
     return shfc;
 }
 
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
-                       gmx_shellfc_t   *shfc)
+void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* shfc)
 {
-    t_shell      *shell;
+    t_shell*      shell;
     int           a0, a1, *ind, nshell, i;
-    gmx_domdec_t *dd = nullptr;
+    gmx_domdec_t* dd = nullptr;
 
     if (DOMAINDECOMP(cr))
     {
@@ -616,9 +625,9 @@ void make_local_shells(const t_commrec *cr,
     {
         if (md->ptype[i] == eptShell)
         {
-            if (nshell+1 > shfc->shell_nalloc)
+            if (nshell + 1 > shfc->shell_nalloc)
             {
-                shfc->shell_nalloc = over_alloc_dd(nshell+1);
+                shfc->shell_nalloc = over_alloc_dd(nshell + 1);
                 srenew(shell, shfc->shell_nalloc);
             }
             if (dd)
@@ -635,7 +644,7 @@ void make_local_shells(const t_commrec *cr,
              */
             if (!shfc->bInterCG)
             {
-                shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
+                shell[nshell].nucl1 = i + shell[nshell].nucl1 - shell[nshell].shell;
                 if (shell[nshell].nnucl > 1)
                 {
                     shell[nshell].nucl2 = i + shell[nshell].nucl2 - shell[nshell].shell;
@@ -663,13 +672,13 @@ static void do_1pos(rvec xnew, const rvec xold, const rvec f, real step)
     yo = xold[YY];
     zo = xold[ZZ];
 
-    dx = f[XX]*step;
-    dy = f[YY]*step;
-    dz = f[ZZ]*step;
+    dx = f[XX] * step;
+    dy = f[YY] * step;
+    dz = f[ZZ] * step;
 
-    xnew[XX] = xo+dx;
-    xnew[YY] = yo+dy;
-    xnew[ZZ] = zo+dz;
+    xnew[XX] = xo + dx;
+    xnew[YY] = yo + dy;
+    xnew[ZZ] = zo + dz;
 }
 
 static void do_1pos3(rvec xnew, const rvec xold, const rvec f, const rvec step)
@@ -681,21 +690,23 @@ static void do_1pos3(rvec xnew, const rvec xold, const rvec f, const rvec step)
     yo = xold[YY];
     zo = xold[ZZ];
 
-    dx = f[XX]*step[XX];
-    dy = f[YY]*step[YY];
-    dz = f[ZZ]*step[ZZ];
+    dx = f[XX] * step[XX];
+    dy = f[YY] * step[YY];
+    dz = f[ZZ] * step[ZZ];
 
-    xnew[XX] = xo+dx;
-    xnew[YY] = yo+dy;
-    xnew[ZZ] = zo+dz;
+    xnew[XX] = xo + dx;
+    xnew[YY] = yo + dy;
+    xnew[ZZ] = zo + dz;
 }
 
 static void directional_sd(gmx::ArrayRef<const gmx::RVec> xold,
-                           gmx::ArrayRef<gmx::RVec> xnew,
-                           const rvec acc_dir[], int homenr, real step)
+                           gmx::ArrayRef<gmx::RVec>       xnew,
+                           const rvec                     acc_dir[],
+                           int                            homenr,
+                           real                           step)
 {
-    const rvec *xo = as_rvec_array(xold.data());
-    rvec       *xn = as_rvec_array(xnew.data());
+    const rvec* xo = as_rvec_array(xold.data());
+    rvec*       xn = as_rvec_array(xnew.data());
 
     for (int i = 0; i < homenr; i++)
     {
@@ -704,19 +715,19 @@ static void directional_sd(gmx::ArrayRef<const gmx::RVec> xold,
 }
 
 static void shell_pos_sd(gmx::ArrayRef<const gmx::RVec> xcur,
-                         gmx::ArrayRef<gmx::RVec> xnew,
+                         gmx::ArrayRef<gmx::RVec>       xnew,
                          gmx::ArrayRef<const gmx::RVec> f,
-                         int ns, t_shell s[], int count)
+                         int                            ns,
+                         t_shell                        s[],
+                         int                            count)
 {
-    const real step_scale_min       = 0.8,
-               step_scale_increment = 0.2,
-               step_scale_max       = 1.2,
-               step_scale_multiple  = (step_scale_max - step_scale_min) / step_scale_increment;
+    const real step_scale_min = 0.8, step_scale_increment = 0.2, step_scale_max = 1.2,
+               step_scale_multiple = (step_scale_max - step_scale_min) / step_scale_increment;
     int        i, shell, d;
     real       dx, df, k_est;
     const real zero = 0;
 #ifdef PRINT_STEP
-    real       step_min, step_max;
+    real step_min, step_max;
 
     step_min = 1e30;
     step_max = 0;
@@ -740,20 +751,21 @@ static void shell_pos_sd(gmx::ArrayRef<const gmx::RVec> xcur,
             for (d = 0; d < DIM; d++)
             {
                 dx = xcur[shell][d] - s[i].xold[d];
-                df =    f[shell][d] - s[i].fold[d];
+                df = f[shell][d] - s[i].fold[d];
                 /* -dx/df gets used to generate an interpolated value, but would
                  * cause a NaN if df were binary-equal to zero. Values close to
                  * zero won't cause problems (because of the min() and max()), so
                  * just testing for binary inequality is OK. */
                 if (zero != df)
                 {
-                    k_est = -dx/df;
+                    k_est = -dx / df;
                     /* Scale the step size by a factor interpolated from
                      * step_scale_min to step_scale_max, as k_est goes from 0 to
                      * step_scale_multiple * s[i].step[d] */
-                    s[i].step[d] =
-                        step_scale_min * s[i].step[d] +
-                        step_scale_increment * std::min(step_scale_multiple * s[i].step[d], std::max(k_est, zero));
+                    s[i].step[d] = step_scale_min * s[i].step[d]
+                                   + step_scale_increment
+                                             * std::min(step_scale_multiple * s[i].step[d],
+                                                        std::max(k_est, zero));
                 }
                 else
                 {
@@ -774,8 +786,8 @@ static void shell_pos_sd(gmx::ArrayRef<const gmx::RVec> xcur,
 #endif
             }
         }
-        copy_rvec(xcur [shell], s[i].xold);
-        copy_rvec(f[shell],   s[i].fold);
+        copy_rvec(xcur[shell], s[i].xold);
+        copy_rvec(f[shell], s[i].fold);
 
         do_1pos3(xnew[shell], xcur[shell], f[shell], s[i].step);
 
@@ -803,16 +815,14 @@ static void decrease_step_size(int nshell, t_shell s[])
     }
 }
 
-static void print_epot(FILE *fp, int64_t mdstep, int count, real epot, real df,
-                       int ndir, real sf_dir)
+static void print_epot(FILE* fp, int64_t mdstep, int count, real epot, real df, int ndir, real sf_dir)
 {
     char buf[22];
 
-    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e",
-            gmx_step_str(mdstep, buf), count, epot, df);
+    fprintf(fp, "MDStep=%5s/%2d EPot: %12.8e, rmsF: %6.2e", gmx_step_str(mdstep, buf), count, epot, df);
     if (ndir)
     {
-        fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir/ndir));
+        fprintf(fp, ", dir. rmsF: %6.2e\n", std::sqrt(sf_dir / ndir));
     }
     else
     {
@@ -821,17 +831,22 @@ static void print_epot(FILE *fp, int64_t mdstep, int count, real epot, real df,
 }
 
 
-static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force, int ns, t_shell s[],
-                      int ndir, real *sf_dir, real *Epot)
+static real rms_force(const t_commrec*               cr,
+                      gmx::ArrayRef<const gmx::RVec> force,
+                      int                            ns,
+                      t_shell                        s[],
+                      int                            ndir,
+                      real*                          sf_dir,
+                      real*                          Epot)
 {
     double      buf[4];
-    const rvec *f = as_rvec_array(force.data());
+    const rvec* f = as_rvec_array(force.data());
 
     buf[0] = *sf_dir;
     for (int i = 0; i < ns; i++)
     {
-        int shell  = s[i].shell;
-        buf[0]    += norm2(f[shell]);
+        int shell = s[i].shell;
+        buf[0] += norm2(f[shell]);
     }
     int ntot = ns;
 
@@ -847,10 +862,10 @@ static real rms_force(const t_commrec *cr, gmx::ArrayRef<const gmx::RVec> force,
     }
     ntot += ndir;
 
-    return (ntot ? std::sqrt(buf[0]/ntot) : 0);
+    return (ntot ? std::sqrt(buf[0] / ntot) : 0);
 }
 
-static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns, t_shell s[])
+static void dump_shells(FILE* fp, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns, t_shell s[])
 {
     int  i, shell;
     real ft2, ff2;
@@ -863,33 +878,33 @@ static void dump_shells(FILE *fp, gmx::ArrayRef<gmx::RVec> f, real ftol, int ns,
         ff2   = iprod(f[shell], f[shell]);
         if (ff2 > ft2)
         {
-            fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n",
-                    shell, f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
+            fprintf(fp, "SHELL %5d, force %10.5f  %10.5f  %10.5f, |f| %10.5f\n", shell,
+                    f[shell][XX], f[shell][YY], f[shell][ZZ], std::sqrt(ff2));
         }
     }
 }
 
-static void init_adir(gmx_shellfc_t            *shfc,
-                      gmx::Constraints         *constr,
-                      const t_inputrec         *ir,
-                      const t_commrec          *cr,
+static void init_adir(gmx_shellfc_t*            shfc,
+                      gmx::Constraints*         constr,
+                      const t_inputrec*         ir,
+                      const t_commrec*          cr,
                       int                       dd_ac1,
                       int64_t                   step,
-                      const t_mdatoms          *md,
+                      const t_mdatoms*          md,
                       int                       end,
-                      rvec                     *x_old,
-                      rvec                     *x_init,
-                      rvec                     *x,
-                      rvec                     *f,
-                      rvec                     *acc_dir,
+                      rvec*                     x_old,
+                      rvec*                     x_init,
+                      rvec*                     x,
+                      rvec*                     f,
+                      rvec*                     acc_dir,
                       const matrix              box,
                       gmx::ArrayRef<const real> lambda,
-                      real                     *dvdlambda)
+                      real*                     dvdlambda)
 {
-    rvec           *xnold, *xnew;
+    rvec *          xnold, *xnew;
     double          dt, w_dt;
     int             n, d;
-    unsigned short *ptype;
+    unsigned short* ptype;
 
     if (DOMAINDECOMP(cr))
     {
@@ -915,14 +930,14 @@ static void init_adir(gmx_shellfc_t            *shfc,
     /* Does NOT work with freeze or acceleration groups (yet) */
     for (n = 0; n < end; n++)
     {
-        w_dt = md->invmass[n]*dt;
+        w_dt = md->invmass[n] * dt;
 
         for (d = 0; d < DIM; d++)
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell))
             {
                 xnold[n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
-                xnew[n][d]  = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
+                xnew[n][d]  = 2 * x[n][d] - x_old[n][d] + f[n][d] * w_dt * dt;
             }
             else
             {
@@ -931,75 +946,68 @@ static void init_adir(gmx_shellfc_t            *shfc,
             }
         }
     }
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x, xnold, nullptr, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x, xnew, nullptr, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, x, xnold, nullptr, box, lambda[efptBONDED],
+                  &(dvdlambda[efptBONDED]), nullptr, nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, x, xnew, nullptr, box, lambda[efptBONDED],
+                  &(dvdlambda[efptBONDED]), nullptr, nullptr, gmx::ConstraintVariable::Positions);
 
     for (n = 0; n < end; n++)
     {
         for (d = 0; d < DIM; d++)
         {
-            xnew[n][d] =
-                -(2*x[n][d]-xnold[n][d]-xnew[n][d])/gmx::square(dt)
-                - f[n][d]*md->invmass[n];
+            xnew[n][d] = -(2 * x[n][d] - xnold[n][d] - xnew[n][d]) / gmx::square(dt)
+                         - f[n][d] * md->invmass[n];
         }
         clear_rvec(acc_dir[n]);
     }
 
     /* Project the acceleration on the old bond directions */
-    constr->apply(FALSE, FALSE, step, 0, 1.0,
-                  x_old, xnew, acc_dir, box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]),
-                  nullptr, nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, x_old, xnew, acc_dir, box, lambda[efptBONDED],
+                  &(dvdlambda[efptBONDED]), nullptr, nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE                                     *fplog,
-                         const t_commrec                          *cr,
-                         const gmx_multisim_t                     *ms,
-                         gmx_bool                                  bVerbose,
-                         gmx_enfrot                               *enforcedRotation,
-                         int64_t                                   mdstep,
-                         const t_inputrec                         *inputrec,
-                         gmx::ImdSession                          *imdSession,
-                         pull_t                                   *pull_work,
-                         gmx_bool                                  bDoNS,
-                         int                                       force_flags,
-                         const gmx_localtop_t                     *top,
-                         gmx::Constraints                         *constr,
-                         gmx_enerdata_t                           *enerd,
-                         t_fcdata                                 *fcd,
-                         int                                       natoms,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       x,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       v,
-                         const matrix                              box,
-                         gmx::ArrayRef<real>                       lambda,
-                         history_t                                *hist,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       f,
-                         tensor                                    force_vir,
-                         const t_mdatoms                          *md,
-                         t_nrnb                                   *nrnb,
-                         gmx_wallcycle_t                           wcycle,
-                         t_graph                                  *graph,
-                         gmx_shellfc_t                            *shfc,
-                         t_forcerec                               *fr,
-                         gmx::MdrunScheduleWorkload               *runScheduleWork,
-                         double                                    t,
-                         rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         const DDBalanceRegionHandler             &ddBalanceRegionHandler)
+void relax_shell_flexcon(FILE*                               fplog,
+                         const t_commrec*                    cr,
+                         const gmx_multisim_t*               ms,
+                         gmx_bool                            bVerbose,
+                         gmx_enfrot*                         enforcedRotation,
+                         int64_t                             mdstep,
+                         const t_inputrec*                   inputrec,
+                         gmx::ImdSession*                    imdSession,
+                         pull_t*                             pull_work,
+                         gmx_bool                            bDoNS,
+                         int                                 force_flags,
+                         const gmx_localtop_t*               top,
+                         gmx::Constraints*                   constr,
+                         gmx_enerdata_t*                     enerd,
+                         t_fcdata*                           fcd,
+                         int                                 natoms,
+                         gmx::ArrayRefWithPadding<gmx::RVec> x,
+                         gmx::ArrayRefWithPadding<gmx::RVec> v,
+                         const matrix                        box,
+                         gmx::ArrayRef<real>                 lambda,
+                         history_t*                          hist,
+                         gmx::ArrayRefWithPadding<gmx::RVec> f,
+                         tensor                              force_vir,
+                         const t_mdatoms*                    md,
+                         t_nrnb*                             nrnb,
+                         gmx_wallcycle_t                     wcycle,
+                         t_graph*                            graph,
+                         gmx_shellfc_t*                      shfc,
+                         t_forcerec*                         fr,
+                         gmx::MdrunScheduleWorkload*         runScheduleWork,
+                         double                              t,
+                         rvec                                mu_tot,
+                         const gmx_vsite_t*                  vsite,
+                         const DDBalanceRegionHandler&       ddBalanceRegionHandler)
 {
-    auto          xRvec = as_rvec_array(x.paddedArrayRef().data());
-    auto          vRvec = as_rvec_array(v.paddedArrayRef().data());
+    auto xRvec = as_rvec_array(x.paddedArrayRef().data());
+    auto vRvec = as_rvec_array(v.paddedArrayRef().data());
 
     int           nshell;
-    t_shell      *shell;
-    const t_idef *idef;
-    rvec         *acc_dir = nullptr, *x_old = nullptr;
+    t_shell*      shell;
+    const t_idef* idef;
+    rvec *        acc_dir = nullptr, *x_old = nullptr;
     real          Epot[2], df[2];
     real          sf_dir, invdt;
     real          ftol, dum = 0;
@@ -1008,7 +1016,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
     int           nat, dd_ac0, dd_ac1 = 0, i;
     int           homenr = md->homenr, end = homenr;
     int           nflexcon, number_steps, d, Min = 0, count = 0;
-#define  Try (1-Min)             /* At start Try = 1 */
+#define Try (1 - Min) /* At start Try = 1 */
 
     bCont        = (mdstep == inputrec->init_step) && inputrec->bContinuation;
     bInit        = (mdstep == inputrec->init_step) || shfc->bRequireInit;
@@ -1060,7 +1068,8 @@ void relax_shell_flexcon(FILE                                     *fplog,
          * charge groups in the box.
          */
         auto xRef = x.paddedArrayRef();
-        put_atoms_in_box_omp(fr->ePBC, box, xRef.subArray(0, md->homenr), gmx_omp_nthreads_get(emntDefault));
+        put_atoms_in_box_omp(fr->ePBC, box, xRef.subArray(0, md->homenr),
+                             gmx_omp_nthreads_get(emntDefault));
 
         if (graph)
         {
@@ -1082,16 +1091,15 @@ void relax_shell_flexcon(FILE                                     *fplog,
             srenew(shfc->acc_dir, shfc->flex_nalloc);
             srenew(shfc->x_old, shfc->flex_nalloc);
         }
-        acc_dir = shfc->acc_dir;
-        x_old   = shfc->x_old;
+        acc_dir        = shfc->acc_dir;
+        x_old          = shfc->x_old;
         auto xArrayRef = x.paddedArrayRef();
         auto vArrayRef = v.paddedArrayRef();
         for (i = 0; i < homenr; i++)
         {
             for (d = 0; d < DIM; d++)
             {
-                shfc->x_old[i][d] =
-                    xArrayRef[i][d] - vArrayRef[i][d]*inputrec->delta_t;
+                shfc->x_old[i][d] = xArrayRef[i][d] - vArrayRef[i][d] * inputrec->delta_t;
             }
         }
     }
@@ -1101,8 +1109,7 @@ void relax_shell_flexcon(FILE                                     *fplog,
      */
     if (shfc->bPredict && !bCont && (EI_STATE_VELOCITY(inputrec->eI) || bInit))
     {
-        predict_shells(fplog, xRvec, vRvec, inputrec->delta_t, nshell, shell,
-                       md->massT, nullptr, bInit);
+        predict_shells(fplog, xRvec, vRvec, inputrec->delta_t, nshell, shell, md->massT, nullptr, bInit);
     }
 
     /* do_force expected the charge groups to be in the box */
@@ -1117,34 +1124,27 @@ void relax_shell_flexcon(FILE                                     *fplog,
         pr_rvecs(debug, 0, "x b4 do_force", xRvec, homenr);
     }
     int shellfc_flags = force_flags | (bVerbose ? GMX_FORCE_ENERGY : 0);
-    do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
-             pull_work,
-             mdstep, nrnb, wcycle, top,
-             box, x, hist,
-             forceWithPadding[Min], force_vir, md, enerd, fcd,
-             lambda, graph,
-             fr, runScheduleWork, vsite, mu_tot, t, nullptr,
-             (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags,
-             ddBalanceRegionHandler);
+    do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession, pull_work, mdstep,
+             nrnb, wcycle, top, box, x, hist, forceWithPadding[Min], force_vir, md, enerd, fcd,
+             lambda, graph, fr, runScheduleWork, vsite, mu_tot, t, nullptr,
+             (bDoNS ? GMX_FORCE_NS : 0) | shellfc_flags, ddBalanceRegionHandler);
 
     sf_dir = 0;
     if (nflexcon)
     {
-        init_adir(shfc,
-                  constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                  shfc->x_old, xRvec, xRvec, as_rvec_array(force[Min].data()),
-                  shfc->acc_dir,
-                  box, lambda, &dum);
+        init_adir(shfc, constr, inputrec, cr, dd_ac1, mdstep, md, end, shfc->x_old, xRvec, xRvec,
+                  as_rvec_array(force[Min].data()), shfc->acc_dir, box, lambda, &dum);
 
         for (i = 0; i < end; i++)
         {
-            sf_dir += md->massT[i]*norm2(shfc->acc_dir[i]);
+            sf_dir += md->massT[i] * norm2(shfc->acc_dir[i]);
         }
     }
     sum_epot(&(enerd->grpp), enerd->term);
     Epot[Min] = enerd->term[F_EPOT];
 
-    df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), nshell, shell, nflexcon, &sf_dir, &Epot[Min]);
+    df[Min] = rms_force(cr, forceWithPadding[Min].paddedArrayRef(), nshell, shell, nflexcon,
+                        &sf_dir, &Epot[Min]);
     df[Try] = 0;
     if (debug)
     {
@@ -1156,17 +1156,15 @@ void relax_shell_flexcon(FILE                                     *fplog,
         pr_rvecs(debug, 0, "force0", as_rvec_array(force[Min].data()), md->nr);
     }
 
-    if (nshell+nflexcon > 0)
+    if (nshell + nflexcon > 0)
     {
         /* Copy x to pos[Min] & pos[Try]: during minimization only the
          * shell positions are updated, therefore the other particles must
          * be set here, in advance.
          */
-        std::copy(x.paddedArrayRef().begin(),
-                  x.paddedArrayRef().end(),
+        std::copy(x.paddedArrayRef().begin(), x.paddedArrayRef().end(),
                   posWithPadding[Min].paddedArrayRef().begin());
-        std::copy(x.paddedArrayRef().begin(),
-                  x.paddedArrayRef().end(),
+        std::copy(x.paddedArrayRef().begin(), x.paddedArrayRef().end(),
                   posWithPadding[Try].paddedArrayRef().begin());
     }
 
@@ -1177,12 +1175,9 @@ void relax_shell_flexcon(FILE                                     *fplog,
 
     if (debug)
     {
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_EKIN].longname, enerd->term[F_EKIN]);
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_EPOT].longname, enerd->term[F_EPOT]);
-        fprintf(debug, "%17s: %14.10e\n",
-                interaction_function[F_ETOT].longname, enerd->term[F_ETOT]);
+        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_EKIN].longname, enerd->term[F_EKIN]);
+        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_EPOT].longname, enerd->term[F_EPOT]);
+        fprintf(debug, "%17s: %14.10e\n", interaction_function[F_ETOT].longname, enerd->term[F_ETOT]);
         fprintf(debug, "SHELLSTEP %s\n", gmx_step_str(mdstep, sbuf));
     }
 
@@ -1195,19 +1190,14 @@ void relax_shell_flexcon(FILE                                     *fplog,
     {
         if (vsite)
         {
-            construct_vsites(vsite, as_rvec_array(pos[Min].data()),
-                             inputrec->delta_t, vRvec,
-                             idef->iparams, idef->il,
-                             fr->ePBC, fr->bMolPBC, cr, box);
+            construct_vsites(vsite, as_rvec_array(pos[Min].data()), inputrec->delta_t, vRvec,
+                             idef->iparams, idef->il, fr->ePBC, fr->bMolPBC, cr, box);
         }
 
         if (nflexcon)
         {
-            init_adir(shfc,
-                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, xRvec,
-                      as_rvec_array(pos[Min].data()),
-                      as_rvec_array(force[Min].data()), acc_dir,
+            init_adir(shfc, constr, inputrec, cr, dd_ac1, mdstep, md, end, x_old, xRvec,
+                      as_rvec_array(pos[Min].data()), as_rvec_array(force[Min].data()), acc_dir,
                       box, lambda, &dum);
 
             directional_sd(pos[Min], pos[Try], acc_dir, end, fr->fc_stepsize);
@@ -1228,15 +1218,10 @@ void relax_shell_flexcon(FILE                                     *fplog,
             pr_rvecs(debug, 0, "RELAX: pos[Try]  ", as_rvec_array(pos[Try].data()), homenr);
         }
         /* Try the new positions */
-        do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession,
-                 pull_work,
-                 1, nrnb, wcycle,
-                 top, box, posWithPadding[Try], hist,
-                 forceWithPadding[Try], force_vir,
-                 md, enerd, fcd, lambda, graph,
-                 fr, runScheduleWork, vsite, mu_tot, t, nullptr,
-                 shellfc_flags,
-                 ddBalanceRegionHandler);
+        do_force(fplog, cr, ms, inputrec, nullptr, enforcedRotation, imdSession, pull_work, 1, nrnb,
+                 wcycle, top, box, posWithPadding[Try], hist, forceWithPadding[Try], force_vir, md,
+                 enerd, fcd, lambda, graph, fr, runScheduleWork, vsite, mu_tot, t, nullptr,
+                 shellfc_flags, ddBalanceRegionHandler);
         sum_epot(&(enerd->grpp), enerd->term);
         if (gmx_debug_at)
         {
@@ -1246,16 +1231,13 @@ void relax_shell_flexcon(FILE                                     *fplog,
         sf_dir = 0;
         if (nflexcon)
         {
-            init_adir(shfc,
-                      constr, inputrec, cr, dd_ac1, mdstep, md, end,
-                      x_old, xRvec,
-                      as_rvec_array(pos[Try].data()),
-                      as_rvec_array(force[Try].data()),
-                      acc_dir, box, lambda, &dum);
+            init_adir(shfc, constr, inputrec, cr, dd_ac1, mdstep, md, end, x_old, xRvec,
+                      as_rvec_array(pos[Try].data()), as_rvec_array(force[Try].data()), acc_dir,
+                      box, lambda, &dum);
 
             for (i = 0; i < end; i++)
             {
-                sf_dir += md->massT[i]*norm2(acc_dir[i]);
+                sf_dir += md->massT[i] * norm2(acc_dir[i]);
             }
         }
 
@@ -1297,17 +1279,17 @@ void relax_shell_flexcon(FILE                                     *fplog,
             if (nflexcon)
             {
                 /* Correct the velocities for the flexible constraints */
-                invdt = 1/inputrec->delta_t;
+                invdt          = 1 / inputrec->delta_t;
                 auto vArrayRef = v.paddedArrayRef();
                 for (i = 0; i < end; i++)
                 {
                     for (d = 0; d < DIM; d++)
                     {
-                        vArrayRef[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+                        vArrayRef[i][d] += (pos[Try][i][d] - pos[Min][i][d]) * invdt;
                     }
                 }
             }
-            Min  = Try;
+            Min = Try;
         }
         else
         {
@@ -1324,12 +1306,10 @@ void relax_shell_flexcon(FILE                                     *fplog,
         /* Note that the energies and virial are incorrect when not converged */
         if (fplog)
         {
-            fprintf(fplog,
-                    "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
+            fprintf(fplog, "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
                     gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
         }
-        fprintf(stderr,
-                "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
+        fprintf(stderr, "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
                 gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
     }
 
@@ -1338,15 +1318,15 @@ void relax_shell_flexcon(FILE                                     *fplog,
     std::copy(force[Min].begin(), force[Min].end(), f.unpaddedArrayRef().begin());
 }
 
-void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, int64_t numSteps)
+void done_shellfc(FILE* fplog, gmx_shellfc_t* shfc, int64_t numSteps)
 {
     if (shfc && fplog && numSteps > 0)
     {
         double numStepsAsDouble = static_cast<double>(numSteps);
         fprintf(fplog, "Fraction of iterations that converged:           %.2f %%\n",
-                (shfc->numConvergedIterations*100.0)/numStepsAsDouble);
+                (shfc->numConvergedIterations * 100.0) / numStepsAsDouble);
         fprintf(fplog, "Average number of force evaluations per MD step: %.2f\n\n",
-                shfc->numForceEvaluations/numStepsAsDouble);
+                shfc->numForceEvaluations / numStepsAsDouble);
     }
 
     // TODO Deallocate memory in shfc

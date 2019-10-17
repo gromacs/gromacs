@@ -54,8 +54,10 @@ struct MoleculePatchDatabase;
  * \param[in] atype Database for atomtype information.
  * \returns Number of entries entered into database.
  */
-int read_ter_db(const char *ffdir, char ter,
-                std::vector<MoleculePatchDatabase> *tbptr, PreprocessingAtomTypes *atype);
+int read_ter_db(const char*                         ffdir,
+                char                                ter,
+                std::vector<MoleculePatchDatabase>* tbptr,
+                PreprocessingAtomTypes*             atype);
 
 /*! \brief
  * Return entries for modification blocks that match a residue name.
@@ -64,9 +66,7 @@ int read_ter_db(const char *ffdir, char ter,
  * \param[in] resname Residue name for terminus.
  * \returns A list of pointers to entries that match, or of nullptr for no matching entry.
  */
-std::vector<MoleculePatchDatabase *>
-filter_ter(gmx::ArrayRef<MoleculePatchDatabase>                tb,
-           const char                                         *resname);
+std::vector<MoleculePatchDatabase*> filter_ter(gmx::ArrayRef<MoleculePatchDatabase> tb, const char* resname);
 
 /*! \brief
  * Interactively select one terminus.
@@ -75,6 +75,6 @@ filter_ter(gmx::ArrayRef<MoleculePatchDatabase>                tb,
  * \param[in] title Name of entry.
  * \returns The modification block selected.
  */
-MoleculePatchDatabase *choose_ter(gmx::ArrayRef<MoleculePatchDatabase *> tb, const char *title);
+MoleculePatchDatabase* choose_ter(gmx::ArrayRef<MoleculePatchDatabase*> tb, const char* title);
 
 #endif

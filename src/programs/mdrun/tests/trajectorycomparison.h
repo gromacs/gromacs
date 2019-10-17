@@ -86,11 +86,11 @@ enum class ComparisonConditions : int
 struct TrajectoryFrameMatchSettings
 {
     //! Whether boxes must be compared.
-    bool                 mustCompareBox = false;
+    bool mustCompareBox = false;
     //! Whether PBC will be handled if it can be handled.
-    bool                 handlePbcIfPossible = true;
+    bool handlePbcIfPossible = true;
     //! Whether PBC handling must occur for a valid comparison.
-    bool                 requirePbcHandling = false;
+    bool requirePbcHandling = false;
     //! Whether position coordinates must be compared.
     ComparisonConditions coordinatesComparison = ComparisonConditions::CompareIfBothFound;
     //! Whether velocities must be compared.
@@ -115,22 +115,22 @@ struct TrajectoryFrameMatchSettings
  * failures will be given. */
 class TrajectoryComparison
 {
-    public:
-        //! Defaults for trajectory comparisons
-        static const TrajectoryTolerances s_defaultTrajectoryTolerances;
-        //! Constructor
-        TrajectoryComparison(const TrajectoryFrameMatchSettings &matchSettings,
-                             const TrajectoryTolerances         &tolerances);
-        /*! \brief Compare reference with test given the \c
-         * matchSettings_ within \c tolerances_ */
-        void operator()(const TrajectoryFrame &reference, const TrajectoryFrame &test) const;
-        //! Specifies expected behavior in comparisons
-        TrajectoryFrameMatchSettings matchSettings_;
-        //! Trajectory fields to match with given tolerances.
-        TrajectoryTolerances         tolerances_;
+public:
+    //! Defaults for trajectory comparisons
+    static const TrajectoryTolerances s_defaultTrajectoryTolerances;
+    //! Constructor
+    TrajectoryComparison(const TrajectoryFrameMatchSettings& matchSettings,
+                         const TrajectoryTolerances&         tolerances);
+    /*! \brief Compare reference with test given the \c
+     * matchSettings_ within \c tolerances_ */
+    void operator()(const TrajectoryFrame& reference, const TrajectoryFrame& test) const;
+    //! Specifies expected behavior in comparisons
+    TrajectoryFrameMatchSettings matchSettings_;
+    //! Trajectory fields to match with given tolerances.
+    TrajectoryTolerances tolerances_;
 };
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

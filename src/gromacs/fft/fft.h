@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,10 +68,7 @@
  *  handles this datatype should only be used for one thread at a time, i.e.
  *  they should allocate one instance each when executing in parallel.
  */
-typedef struct gmx_fft *
-    gmx_fft_t;
-
-
+typedef struct gmx_fft* gmx_fft_t;
 
 
 /*! \brief Specifier for FFT direction.
@@ -116,7 +113,7 @@ typedef int gmx_fft_flag;
 /** Macro to indicate no special flags for FFT routines. */
 static const int GMX_FFT_FLAG_NONE = 0;
 /** Flag to disable FFT optimizations based on timings, see ::gmx_fft_flag. */
-static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
+static const int GMX_FFT_FLAG_CONSERVATIVE = (1 << 0);
 
 /*! \brief Setup a 1-dimensional complex-to-complex transform
  *
@@ -130,10 +127,7 @@ static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
  *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
-int
-gmx_fft_init_1d        (gmx_fft_t *       fft,
-                        int               nx,
-                        gmx_fft_flag      flags);
+int gmx_fft_init_1d(gmx_fft_t* fft, int nx, gmx_fft_flag flags);
 
 
 /*! \brief Setup multiple 1-dimensional complex-to-complex transform
@@ -149,11 +143,7 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
  *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
-int
-gmx_fft_init_many_1d        (gmx_fft_t *       fft,
-                             int               nx,
-                             int               howmany,
-                             gmx_fft_flag      flags);
+int gmx_fft_init_many_1d(gmx_fft_t* fft, int nx, int howmany, gmx_fft_flag flags);
 
 
 /*! \brief Setup a 1-dimensional real-to-complex transform
@@ -168,10 +158,7 @@ gmx_fft_init_many_1d        (gmx_fft_t *       fft,
  *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
-int
-gmx_fft_init_1d_real        (gmx_fft_t *       fft,
-                             int               nx,
-                             gmx_fft_flag      flags);
+int gmx_fft_init_1d_real(gmx_fft_t* fft, int nx, gmx_fft_flag flags);
 
 
 /*! \brief Setup multiple 1-dimensional real-to-complex transform
@@ -187,11 +174,7 @@ gmx_fft_init_1d_real        (gmx_fft_t *       fft,
  *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
-int
-gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
-                                  int               nx,
-                                  int               howmany,
-                                  gmx_fft_flag      flags);
+int gmx_fft_init_many_1d_real(gmx_fft_t* fft, int nx, int howmany, gmx_fft_flag flags);
 
 
 /*! \brief Setup a 2-dimensional real-to-complex transform
@@ -210,11 +193,7 @@ gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
  *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
-int
-gmx_fft_init_2d_real        (gmx_fft_t *         fft,
-                             int                 nx,
-                             int                 ny,
-                             gmx_fft_flag        flags);
+int gmx_fft_init_2d_real(gmx_fft_t* fft, int nx, int ny, gmx_fft_flag flags);
 
 
 /*! \brief Perform a 1-dimensional complex-to-complex transform
@@ -235,11 +214,7 @@ gmx_fft_init_2d_real        (gmx_fft_t *         fft,
  * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
-int
-gmx_fft_1d               (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
+int gmx_fft_1d(gmx_fft_t setup, enum gmx_fft_direction dir, void* in_data, void* out_data);
 
 
 /*! \brief Perform many 1-dimensional complex-to-complex transforms
@@ -260,11 +235,7 @@ gmx_fft_1d               (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
-int
-gmx_fft_many_1d          (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
+int gmx_fft_many_1d(gmx_fft_t setup, enum gmx_fft_direction dir, void* in_data, void* out_data);
 
 
 /*! \brief Perform a 1-dimensional real-to-complex transform
@@ -289,11 +260,7 @@ gmx_fft_many_1d          (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int
-gmx_fft_1d_real          (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
+int gmx_fft_1d_real(gmx_fft_t setup, enum gmx_fft_direction dir, void* in_data, void* out_data);
 
 /*! \brief Perform many 1-dimensional real-to-complex transforms
  *
@@ -317,11 +284,7 @@ gmx_fft_1d_real          (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int
-gmx_fft_many_1d_real     (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
+int gmx_fft_many_1d_real(gmx_fft_t setup, enum gmx_fft_direction dir, void* in_data, void* out_data);
 
 /*! \brief Perform a 2-dimensional real-to-complex transform
  *
@@ -352,11 +315,7 @@ gmx_fft_many_1d_real     (gmx_fft_t                  setup,
  * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int
-gmx_fft_2d_real          (gmx_fft_t                  setup,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data);
+int gmx_fft_2d_real(gmx_fft_t setup, enum gmx_fft_direction dir, void* in_data, void* out_data);
 
 /*! \brief Release an FFT setup structure
  *
@@ -366,8 +325,7 @@ gmx_fft_2d_real          (gmx_fft_t                  setup,
  *		 of the other initializers.
  *
  */
-void
-gmx_fft_destroy          (gmx_fft_t                 setup);
+void gmx_fft_destroy(gmx_fft_t setup);
 
 /*! \brief Release a many FFT setup structure
  *
@@ -377,8 +335,7 @@ gmx_fft_destroy          (gmx_fft_t                 setup);
  *		 of the other initializers.
  *
  */
-void
-gmx_many_fft_destroy          (gmx_fft_t                 setup);
+void gmx_many_fft_destroy(gmx_fft_t setup);
 
 
 /*! \brief Transpose 2d complex matrix, in-place or out-of-place.
@@ -395,11 +352,7 @@ gmx_many_fft_destroy          (gmx_fft_t                 setup);
  *
  * \return GMX_SUCCESS, or an error code from gmx_errno.h
  */
-int
-gmx_fft_transpose_2d   (t_complex *       in_data,
-                        t_complex *       out_data,
-                        int               nx,
-                        int               ny);
+int gmx_fft_transpose_2d(t_complex* in_data, t_complex* out_data, int nx, int ny);
 
 /*! \brief Cleanup global data of FFT
  *

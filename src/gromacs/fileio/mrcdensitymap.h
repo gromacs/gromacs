@@ -60,26 +60,25 @@ class TranslateAndScale;
  */
 class MrcDensityMapOfFloatReader
 {
-    public:
-        /*! \brief Construct from directly de-serializing data into the object.
-         * \throws InternalError if serializer is not reading
-         * \throws InternalError if header is inconsistent
-         * \throws if serializer throws error upon failed reading
-         * \param[in] serializer Serializer to read the object data from
-         */
-        explicit MrcDensityMapOfFloatReader(ISerializer * serializer);
+public:
+    /*! \brief Construct from directly de-serializing data into the object.
+     * \throws InternalError if serializer is not reading
+     * \throws InternalError if header is inconsistent
+     * \throws if serializer throws error upon failed reading
+     * \param[in] serializer Serializer to read the object data from
+     */
+    explicit MrcDensityMapOfFloatReader(ISerializer* serializer);
 
-        ~MrcDensityMapOfFloatReader();
+    ~MrcDensityMapOfFloatReader();
 
-        //! Return a view on the data of the density grid
-        ArrayRef<const float> constView() const;
-        //! Return the header
-        const MrcDensityMapHeader &header() const;
+    //! Return a view on the data of the density grid
+    ArrayRef<const float> constView() const;
+    //! Return the header
+    const MrcDensityMapHeader& header() const;
 
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
-
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief Read an mrc density map from a given file.
@@ -94,53 +93,52 @@ class MrcDensityMapOfFloatReader
  */
 class MrcDensityMapOfFloatFromFileReader
 {
-    public:
+public:
+    MrcDensityMapOfFloatFromFileReader();
 
-        MrcDensityMapOfFloatFromFileReader();
+    /*! \brief Read from filename.
+     * \throws FileIOError if file does not exist
+     * \throws FileIOError if read in buffer size does not match file size
+     * \throws FileIOError if header information does not match density
+     *                     data size
+     */
+    explicit MrcDensityMapOfFloatFromFileReader(const std::string& filename);
 
-        /*! \brief Read from filename.
-         * \throws FileIOError if file does not exist
-         * \throws FileIOError if read in buffer size does not match file size
-         * \throws FileIOError if header information does not match density
-         *                     data size
-         */
-        explicit MrcDensityMapOfFloatFromFileReader(const std::string &filename);
+    ~MrcDensityMapOfFloatFromFileReader();
 
-        ~MrcDensityMapOfFloatFromFileReader();
+    //! Return the coordinate transformation into the density
+    TranslateAndScale transformationToDensityLattice() const;
 
-        //! Return the coordinate transformation into the density
-        TranslateAndScale transformationToDensityLattice() const;
+    //! Return a copy of the density data
+    MultiDimArray<std::vector<float>, dynamicExtents3D> densityDataCopy() const;
 
-        //! Return a copy of the density data
-        MultiDimArray<std::vector<float>, dynamicExtents3D> densityDataCopy() const;
-
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief Write an mrc/ccp4 file that contains float values.
  */
 class MrcDensityMapOfFloatWriter
 {
-    public:
-        /*! \brief Construct by setting the data and the header.
-         *
-         * \throws if the header data description does not match the provided data
-         *
-         * \param[in] header mrc density map header
-         * \param[in] data the density map data
-         */
-        MrcDensityMapOfFloatWriter(const MrcDensityMapHeader &header, ArrayRef<const float> data);
+public:
+    /*! \brief Construct by setting the data and the header.
+     *
+     * \throws if the header data description does not match the provided data
+     *
+     * \param[in] header mrc density map header
+     * \param[in] data the density map data
+     */
+    MrcDensityMapOfFloatWriter(const MrcDensityMapHeader& header, ArrayRef<const float> data);
 
-        ~MrcDensityMapOfFloatWriter();
+    ~MrcDensityMapOfFloatWriter();
 
-        //! Serialize the mrc density data.
-        void write(ISerializer *serializer) const;
+    //! Serialize the mrc density data.
+    void write(ISerializer* serializer) const;
 
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

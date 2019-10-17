@@ -38,80 +38,80 @@
     using namespace gmx;
 
     /* Unpack pointers for output */
-    real               *f      = out->f.data();
-    real               *fshift = out->fshift.data();
+    real* f      = out->f.data();
+    real* fshift = out->fshift.data();
 #ifdef CALC_ENERGIES
+#    ifdef ENERGY_GROUPS
+    real* Vvdw = out->VSvdw.data();
+    real* Vc   = out->VSc.data();
+#    else
+    real* Vvdw = out->Vvdw.data();
+    real* Vc   = out->Vc.data();
+#    endif
+#endif
+
+    const nbnxn_cj_t* l_cj;
+    int               ci, ci_sh;
+    int               ish, ish3;
+    gmx_bool          do_LJ, half_LJ, do_coul;
+    int               cjind0, cjind1, cjind;
+
 #ifdef ENERGY_GROUPS
-    real               *Vvdw   = out->VSvdw.data();
-    real               *Vc     = out->VSc.data();
-#else
-    real               *Vvdw   = out->Vvdw.data();
-    real               *Vc     = out->Vc.data();
-#endif
-#endif
-
-    const nbnxn_cj_t   *l_cj;
-    int                 ci, ci_sh;
-    int                 ish, ish3;
-    gmx_bool            do_LJ, half_LJ, do_coul;
-    int                 cjind0, cjind1, cjind;
-
-#ifdef ENERGY_GROUPS
-    int         Vstride_i;
-    int         egps_ishift, egps_imask;
-    int         egps_jshift, egps_jmask, egps_jstride;
-    int         egps_i;
-    real       *vvdwtp[UNROLLI];
-    real       *vctp[UNROLLI];
+    int   Vstride_i;
+    int   egps_ishift, egps_imask;
+    int   egps_jshift, egps_jmask, egps_jstride;
+    int   egps_i;
+    real* vvdwtp[UNROLLI];
+    real* vctp[UNROLLI];
 #endif
 
-    SimdReal  shX_S;
-    SimdReal  shY_S;
-    SimdReal  shZ_S;
-    SimdReal  ix_S0, iy_S0, iz_S0;
-    SimdReal  ix_S1, iy_S1, iz_S1;
-    SimdReal  ix_S2, iy_S2, iz_S2;
-    SimdReal  ix_S3, iy_S3, iz_S3;
-    SimdReal  fix_S0, fiy_S0, fiz_S0;
-    SimdReal  fix_S1, fiy_S1, fiz_S1;
-    SimdReal  fix_S2, fiy_S2, fiz_S2;
-    SimdReal  fix_S3, fiy_S3, fiz_S3;
+    SimdReal shX_S;
+    SimdReal shY_S;
+    SimdReal shZ_S;
+    SimdReal ix_S0, iy_S0, iz_S0;
+    SimdReal ix_S1, iy_S1, iz_S1;
+    SimdReal ix_S2, iy_S2, iz_S2;
+    SimdReal ix_S3, iy_S3, iz_S3;
+    SimdReal fix_S0, fiy_S0, fiz_S0;
+    SimdReal fix_S1, fiy_S1, fiz_S1;
+    SimdReal fix_S2, fiy_S2, fiz_S2;
+    SimdReal fix_S3, fiy_S3, fiz_S3;
 
-    SimdReal  diagonal_jmi_S;
+    SimdReal diagonal_jmi_S;
 #if UNROLLI == UNROLLJ
-    SimdBool  diagonal_mask_S0, diagonal_mask_S1, diagonal_mask_S2, diagonal_mask_S3;
+    SimdBool diagonal_mask_S0, diagonal_mask_S1, diagonal_mask_S2, diagonal_mask_S3;
 #else
-    SimdBool  diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
-    SimdBool  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
+    SimdBool diagonal_mask0_S0, diagonal_mask0_S1, diagonal_mask0_S2, diagonal_mask0_S3;
+    SimdBool diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
-    SimdBitMask          filter_S0, filter_S1, filter_S2, filter_S3;
+    SimdBitMask filter_S0, filter_S1, filter_S2, filter_S3;
 
-    SimdReal             zero_S(0.0);
+    SimdReal zero_S(0.0);
 
-    SimdReal             one_S(1.0);
-    SimdReal             iq_S0  = setZero();
-    SimdReal             iq_S1  = setZero();
-    SimdReal             iq_S2  = setZero();
-    SimdReal             iq_S3  = setZero();
+    SimdReal one_S(1.0);
+    SimdReal iq_S0 = setZero();
+    SimdReal iq_S1 = setZero();
+    SimdReal iq_S2 = setZero();
+    SimdReal iq_S3 = setZero();
 
 #ifdef CALC_COUL_RF
-    SimdReal      mrc_3_S;
-#ifdef CALC_ENERGIES
-    SimdReal      hrc_3_S, moh_rc_S;
-#endif
+    SimdReal mrc_3_S;
+#    ifdef CALC_ENERGIES
+    SimdReal hrc_3_S, moh_rc_S;
+#    endif
 #endif
 
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
-    SimdReal               invtsp_S;
-    const real      *      tab_coul_F;
-#if defined CALC_ENERGIES && !defined TAB_FDV0
-    const real gmx_unused *tab_coul_V;
-#endif
-#ifdef CALC_ENERGIES
-    SimdReal   mhalfsp_S;
-#endif
+    SimdReal    invtsp_S;
+    const real* tab_coul_F;
+#    if defined CALC_ENERGIES && !defined TAB_FDV0
+    const real gmx_unused* tab_coul_V;
+#    endif
+#    ifdef CALC_ENERGIES
+    SimdReal mhalfsp_S;
+#    endif
 #endif
 
 #ifdef CALC_COUL_EWALD
@@ -119,43 +119,43 @@
 #endif
 
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
-    SimdReal  sh_ewald_S;
+    SimdReal sh_ewald_S;
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
-    SimdReal   p6_cpot_S, p12_cpot_S;
+    SimdReal p6_cpot_S, p12_cpot_S;
 #endif
 #ifdef LJ_POT_SWITCH
-    SimdReal   rswitch_S;
-    SimdReal   swV3_S, swV4_S, swV5_S;
-    SimdReal   swF2_S, swF3_S, swF4_S;
+    SimdReal rswitch_S;
+    SimdReal swV3_S, swV4_S, swV5_S;
+    SimdReal swF2_S, swF3_S, swF4_S;
 #endif
 #ifdef LJ_FORCE_SWITCH
-    SimdReal   rswitch_S;
-    SimdReal   p6_fc2_S, p6_fc3_S;
-    SimdReal   p12_fc2_S, p12_fc3_S;
-#ifdef CALC_ENERGIES
-    SimdReal   p6_vc3_S, p6_vc4_S;
-    SimdReal   p12_vc3_S, p12_vc4_S;
-    SimdReal   p6_6cpot_S, p12_12cpot_S;
-#endif
+    SimdReal rswitch_S;
+    SimdReal p6_fc2_S, p6_fc3_S;
+    SimdReal p12_fc2_S, p12_fc3_S;
+#    ifdef CALC_ENERGIES
+    SimdReal p6_vc3_S, p6_vc4_S;
+    SimdReal p12_vc3_S, p12_vc4_S;
+    SimdReal p6_6cpot_S, p12_12cpot_S;
+#    endif
 #endif
 #ifdef LJ_EWALD_GEOM
-    real              lj_ewaldcoeff2, lj_ewaldcoeff6_6;
-    SimdReal          mone_S, half_S, lje_c2_S, lje_c6_6_S;
+    real     lj_ewaldcoeff2, lj_ewaldcoeff6_6;
+    SimdReal mone_S, half_S, lje_c2_S, lje_c6_6_S;
 #endif
 
 #ifdef LJ_COMB_LB
-    SimdReal          hsig_i_S0, seps_i_S0;
-    SimdReal          hsig_i_S1, seps_i_S1;
-    SimdReal          hsig_i_S2, seps_i_S2;
-    SimdReal          hsig_i_S3, seps_i_S3;
+    SimdReal hsig_i_S0, seps_i_S0;
+    SimdReal hsig_i_S1, seps_i_S1;
+    SimdReal hsig_i_S2, seps_i_S2;
+    SimdReal hsig_i_S3, seps_i_S3;
 #endif /* LJ_COMB_LB */
 
-    SimdReal  minRsq_S;
-    SimdReal  rc2_S;
+    SimdReal minRsq_S;
+    SimdReal rc2_S;
 #ifdef VDW_CUTOFF_CHECK
-    SimdReal  rcvdw2_S;
+    SimdReal rcvdw2_S;
 #endif
 
     int ninner;
@@ -164,30 +164,30 @@
     int npair = 0;
 #endif
 
-    const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
+    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
 #if defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined LJ_EWALD_GEOM
-    const real * gmx_restrict ljc      = nbatParams.lj_comb.data();
+    const real* gmx_restrict ljc = nbatParams.lj_comb.data();
 #endif
 #if !(defined LJ_COMB_GEOM || defined LJ_COMB_LB || defined FIX_LJ_C)
     /* No combination rule used */
-    const real * gmx_restrict nbfp_ptr = nbatParams.nbfp_aligned.data();
-    const int * gmx_restrict  type     = nbatParams.type.data();
+    const real* gmx_restrict nbfp_ptr = nbatParams.nbfp_aligned.data();
+    const int* gmx_restrict type      = nbatParams.type.data();
 #endif
 
     /* Load j-i for the first i */
-    diagonal_jmi_S    = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data());
+    diagonal_jmi_S = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data());
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
-    diagonal_mask_S0  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask_S1  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask_S2  = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask_S3  = (zero_S < diagonal_jmi_S);
+    diagonal_mask_S0 = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S   = diagonal_jmi_S - one_S;
+    diagonal_mask_S1 = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S   = diagonal_jmi_S - one_S;
+    diagonal_mask_S2 = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S   = diagonal_jmi_S - one_S;
+    diagonal_mask_S3 = (zero_S < diagonal_jmi_S);
 #else
-#if UNROLLI == 2*UNROLLJ || 2*UNROLLI == UNROLLJ
+#    if UNROLLI == 2 * UNROLLJ || 2 * UNROLLI == UNROLLJ
     diagonal_mask0_S0 = (zero_S < diagonal_jmi_S);
     diagonal_jmi_S    = diagonal_jmi_S - one_S;
     diagonal_mask0_S1 = (zero_S < diagonal_jmi_S);
@@ -197,25 +197,25 @@
     diagonal_mask0_S3 = (zero_S < diagonal_jmi_S);
     diagonal_jmi_S    = diagonal_jmi_S - one_S;
 
-#if UNROLLI == 2*UNROLLJ
+#        if UNROLLI == 2 * UNROLLJ
     /* Load j-i for the second half of the j-cluster */
-    diagonal_jmi_S    = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data() + UNROLLJ);
-#endif
+    diagonal_jmi_S = load<SimdReal>(nbat->simdMasks.diagonal_4xn_j_minus_i.data() + UNROLLJ);
+#        endif
 
-    diagonal_mask1_S0 = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask1_S1 = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask1_S2 = (zero_S < diagonal_jmi_S);
-    diagonal_jmi_S    = diagonal_jmi_S - one_S;
-    diagonal_mask1_S3 = (zero_S < diagonal_jmi_S);
-#endif
+    diagonal_mask1_S0                                  = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
+    diagonal_mask1_S1                                  = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
+    diagonal_mask1_S2                                  = (zero_S < diagonal_jmi_S);
+    diagonal_jmi_S                                     = diagonal_jmi_S - one_S;
+    diagonal_mask1_S3                                  = (zero_S < diagonal_jmi_S);
+#    endif
 #endif
 
 #if GMX_DOUBLE && !GMX_SIMD_HAVE_INT32_LOGICAL
-    const std::uint64_t * gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
+    const std::uint64_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter64.data();
 #else
-    const std::uint32_t * gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter.data();
+    const std::uint32_t* gmx_restrict exclusion_filter = nbat->simdMasks.exclusion_filter.data();
 #endif
 
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
@@ -223,45 +223,45 @@
      * matter, as long as both filter and mask data are treated the same way.
      */
 #if GMX_SIMD_HAVE_INT32_LOGICAL
-    filter_S0 = load<SimdBitMask>(reinterpret_cast<const int *>(exclusion_filter + 0*UNROLLJ));
-    filter_S1 = load<SimdBitMask>(reinterpret_cast<const int *>(exclusion_filter + 1*UNROLLJ));
-    filter_S2 = load<SimdBitMask>(reinterpret_cast<const int *>(exclusion_filter + 2*UNROLLJ));
-    filter_S3 = load<SimdBitMask>(reinterpret_cast<const int *>(exclusion_filter + 3*UNROLLJ));
+    filter_S0 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 0 * UNROLLJ));
+    filter_S1 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 1 * UNROLLJ));
+    filter_S2 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 2 * UNROLLJ));
+    filter_S3 = load<SimdBitMask>(reinterpret_cast<const int*>(exclusion_filter + 3 * UNROLLJ));
 #else
-    filter_S0 = load<SimdBitMask>(reinterpret_cast<const real *>(exclusion_filter + 0*UNROLLJ));
-    filter_S1 = load<SimdBitMask>(reinterpret_cast<const real *>(exclusion_filter + 1*UNROLLJ));
-    filter_S2 = load<SimdBitMask>(reinterpret_cast<const real *>(exclusion_filter + 2*UNROLLJ));
-    filter_S3 = load<SimdBitMask>(reinterpret_cast<const real *>(exclusion_filter + 3*UNROLLJ));
+    filter_S0 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 0 * UNROLLJ));
+    filter_S1 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 1 * UNROLLJ));
+    filter_S2 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 2 * UNROLLJ));
+    filter_S3 = load<SimdBitMask>(reinterpret_cast<const real*>(exclusion_filter + 3 * UNROLLJ));
 #endif
 
 #ifdef CALC_COUL_RF
     /* Reaction-field constants */
-    mrc_3_S  = SimdReal(-2*ic->k_rf);
-#ifdef CALC_ENERGIES
+    mrc_3_S = SimdReal(-2 * ic->k_rf);
+#    ifdef CALC_ENERGIES
     hrc_3_S  = SimdReal(ic->k_rf);
     moh_rc_S = SimdReal(-ic->c_rf);
-#endif
+#    endif
 #endif
 
 #ifdef CALC_COUL_TAB
 
-    invtsp_S  = SimdReal(ic->coulombEwaldTables->scale);
-#ifdef CALC_ENERGIES
-    mhalfsp_S = SimdReal(-0.5_real/ic->coulombEwaldTables->scale);
-#endif
+    invtsp_S = SimdReal(ic->coulombEwaldTables->scale);
+#    ifdef CALC_ENERGIES
+    mhalfsp_S = SimdReal(-0.5_real / ic->coulombEwaldTables->scale);
+#    endif
 
-#ifdef TAB_FDV0
+#    ifdef TAB_FDV0
     tab_coul_F = ic->coulombEwaldTables->tableFDV0.data();
-#else
+#    else
     tab_coul_F = ic->coulombEwaldTables->tableF.data();
-#ifdef CALC_ENERGIES
+#        ifdef CALC_ENERGIES
     tab_coul_V = ic->coulombEwaldTables->tableV.data();
-#endif
-#endif
+#        endif
+#    endif
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_S = SimdReal(ic->ewaldcoeff_q*ic->ewaldcoeff_q);
+    beta2_S = SimdReal(ic->ewaldcoeff_q * ic->ewaldcoeff_q);
     beta_S  = SimdReal(ic->ewaldcoeff_q);
 #endif
 
@@ -271,23 +271,23 @@
 
     /* LJ function constants */
 #if defined CALC_ENERGIES || defined LJ_POT_SWITCH
-    SimdReal sixth_S(1.0/6.0);
-    SimdReal twelveth_S(1.0/12.0);
+    SimdReal sixth_S(1.0 / 6.0);
+    SimdReal twelveth_S(1.0 / 12.0);
 #endif
 
 #if defined LJ_CUT && defined CALC_ENERGIES
     /* We shift the potential by cpot, which can be zero */
-    p6_cpot_S    = SimdReal(ic->dispersion_shift.cpot);
-    p12_cpot_S   = SimdReal(ic->repulsion_shift.cpot);
+    p6_cpot_S  = SimdReal(ic->dispersion_shift.cpot);
+    p12_cpot_S = SimdReal(ic->repulsion_shift.cpot);
 #endif
 #ifdef LJ_POT_SWITCH
     rswitch_S = SimdReal(ic->rvdw_switch);
     swV3_S    = SimdReal(ic->vdw_switch.c3);
     swV4_S    = SimdReal(ic->vdw_switch.c4);
     swV5_S    = SimdReal(ic->vdw_switch.c5);
-    swF2_S    = SimdReal(3*ic->vdw_switch.c3);
-    swF3_S    = SimdReal(4*ic->vdw_switch.c4);
-    swF4_S    = SimdReal(5*ic->vdw_switch.c5);
+    swF2_S    = SimdReal(3 * ic->vdw_switch.c3);
+    swF3_S    = SimdReal(4 * ic->vdw_switch.c4);
+    swF4_S    = SimdReal(5 * ic->vdw_switch.c5);
 #endif
 #ifdef LJ_FORCE_SWITCH
     rswitch_S = SimdReal(ic->rvdw_switch);
@@ -295,113 +295,113 @@
     p6_fc3_S  = SimdReal(ic->dispersion_shift.c3);
     p12_fc2_S = SimdReal(ic->repulsion_shift.c2);
     p12_fc3_S = SimdReal(ic->repulsion_shift.c3);
-#ifdef CALC_ENERGIES
+#    ifdef CALC_ENERGIES
     {
-        SimdReal mthird_S(-1.0/3.0);
-        SimdReal mfourth_S(-1.0/4.0);
+        SimdReal mthird_S(-1.0 / 3.0);
+        SimdReal mfourth_S(-1.0 / 4.0);
 
         p6_vc3_S     = mthird_S * p6_fc2_S;
         p6_vc4_S     = mfourth_S * p6_fc3_S;
-        p6_6cpot_S   = SimdReal(ic->dispersion_shift.cpot/6);
+        p6_6cpot_S   = SimdReal(ic->dispersion_shift.cpot / 6);
         p12_vc3_S    = mthird_S * p12_fc2_S;
         p12_vc4_S    = mfourth_S * p12_fc3_S;
-        p12_12cpot_S = SimdReal(ic->repulsion_shift.cpot/12);
+        p12_12cpot_S = SimdReal(ic->repulsion_shift.cpot / 12);
     }
-#endif
+#    endif
 #endif
 #ifdef LJ_EWALD_GEOM
     mone_S           = SimdReal(-1.0);
     half_S           = SimdReal(0.5);
-    lj_ewaldcoeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
-    lj_ewaldcoeff6_6 = lj_ewaldcoeff2*lj_ewaldcoeff2*lj_ewaldcoeff2/6;
+    lj_ewaldcoeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    lj_ewaldcoeff6_6 = lj_ewaldcoeff2 * lj_ewaldcoeff2 * lj_ewaldcoeff2 / 6;
     lje_c2_S         = SimdReal(lj_ewaldcoeff2);
     lje_c6_6_S       = SimdReal(lj_ewaldcoeff6_6);
-#ifdef CALC_ENERGIES
+#    ifdef CALC_ENERGIES
     /* Determine the grid potential at the cut-off */
     SimdReal lje_vc_S(ic->sh_lj_ewald);
-#endif
+#    endif
 #endif
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    rc2_S    =  SimdReal(ic->rcoulomb*ic->rcoulomb);
+    rc2_S = SimdReal(ic->rcoulomb * ic->rcoulomb);
 #ifdef VDW_CUTOFF_CHECK
-    rcvdw2_S =  SimdReal(ic->rvdw*ic->rvdw);
+    rcvdw2_S = SimdReal(ic->rvdw * ic->rvdw);
 #endif
 
-    minRsq_S                           = SimdReal(NBNXN_MIN_RSQ);
+    minRsq_S = SimdReal(NBNXN_MIN_RSQ);
 
-    const real * gmx_restrict q        = nbatParams.q.data();
-    const real                facel    = ic->epsfac;
-    const real * gmx_restrict shiftvec = shift_vec[0];
-    const real * gmx_restrict x        = nbat->x().data();
+    const real* gmx_restrict q        = nbatParams.q.data();
+    const real               facel    = ic->epsfac;
+    const real* gmx_restrict shiftvec = shift_vec[0];
+    const real* gmx_restrict x        = nbat->x().data();
 
 #ifdef FIX_LJ_C
-    alignas(GMX_SIMD_ALIGNMENT) real  pvdw_c6[2*UNROLLI*UNROLLJ];
-    real *pvdw_c12 = pvdw_c6 + UNROLLI*UNROLLJ;
+    alignas(GMX_SIMD_ALIGNMENT) real pvdw_c6[2 * UNROLLI * UNROLLJ];
+    real*                            pvdw_c12 = pvdw_c6 + UNROLLI * UNROLLJ;
 
     for (int jp = 0; jp < UNROLLJ; jp++)
     {
-        pvdw_c6 [0*UNROLLJ+jp] = nbat->nbfp[0*2];
-        pvdw_c6 [1*UNROLLJ+jp] = nbat->nbfp[0*2];
-        pvdw_c6 [2*UNROLLJ+jp] = nbat->nbfp[0*2];
-        pvdw_c6 [3*UNROLLJ+jp] = nbat->nbfp[0*2];
+        pvdw_c6[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[2 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
+        pvdw_c6[3 * UNROLLJ + jp] = nbat->nbfp[0 * 2];
 
-        pvdw_c12[0*UNROLLJ+jp] = nbat->nbfp[0*2+1];
-        pvdw_c12[1*UNROLLJ+jp] = nbat->nbfp[0*2+1];
-        pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
-        pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
+        pvdw_c12[0 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
+        pvdw_c12[1 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
+        pvdw_c12[2 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
+        pvdw_c12[3 * UNROLLJ + jp] = nbat->nbfp[0 * 2 + 1];
     }
-    SimdReal c6_S0  = load<SimdReal>(pvdw_c6 +0*UNROLLJ);
-    SimdReal c6_S1  = load<SimdReal>(pvdw_c6 +1*UNROLLJ);
-    SimdReal c6_S2  = load<SimdReal>(pvdw_c6 +2*UNROLLJ);
-    SimdReal c6_S3  = load<SimdReal>(pvdw_c6 +3*UNROLLJ);
+    SimdReal c6_S0 = load<SimdReal>(pvdw_c6 + 0 * UNROLLJ);
+    SimdReal c6_S1 = load<SimdReal>(pvdw_c6 + 1 * UNROLLJ);
+    SimdReal c6_S2 = load<SimdReal>(pvdw_c6 + 2 * UNROLLJ);
+    SimdReal c6_S3 = load<SimdReal>(pvdw_c6 + 3 * UNROLLJ);
 
-    SimdReal c12_S0 = load<SimdReal>(pvdw_c12+0*UNROLLJ);
-    SimdReal c12_S1 = load<SimdReal>(pvdw_c12+1*UNROLLJ);
-    SimdReal c12_S2 = load<SimdReal>(pvdw_c12+2*UNROLLJ);
-    SimdReal c12_S3 = load<SimdReal>(pvdw_c12+3*UNROLLJ);
+    SimdReal c12_S0 = load<SimdReal>(pvdw_c12 + 0 * UNROLLJ);
+    SimdReal c12_S1 = load<SimdReal>(pvdw_c12 + 1 * UNROLLJ);
+    SimdReal c12_S2 = load<SimdReal>(pvdw_c12 + 2 * UNROLLJ);
+    SimdReal c12_S3 = load<SimdReal>(pvdw_c12 + 3 * UNROLLJ);
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS
     egps_ishift  = nbatParams.neg_2log;
-    egps_imask   = (1<<egps_ishift) - 1;
-    egps_jshift  = 2*nbatParams.neg_2log;
-    egps_jmask   = (1<<egps_jshift) - 1;
-    egps_jstride = (UNROLLJ>>1)*UNROLLJ;
+    egps_imask   = (1 << egps_ishift) - 1;
+    egps_jshift  = 2 * nbatParams.neg_2log;
+    egps_jmask   = (1 << egps_jshift) - 1;
+    egps_jstride = (UNROLLJ >> 1) * UNROLLJ;
     /* Major division is over i-particle energy groups, determine the stride */
-    Vstride_i    = nbatParams.nenergrp*(1 << nbatParams.neg_2log)*egps_jstride;
+    Vstride_i = nbatParams.nenergrp * (1 << nbatParams.neg_2log) * egps_jstride;
 #endif
 
     l_cj = nbl->cj.data();
 
     ninner = 0;
 
-    for (const nbnxn_ci_t &ciEntry : nbl->ci)
+    for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
-        ish              = (ciEntry.shift & NBNXN_CI_SHIFT);
-        ish3             = ish*3;
-        cjind0           = ciEntry.cj_ind_start;
-        cjind1           = ciEntry.cj_ind_end;
-        ci               = ciEntry.ci;
-        ci_sh            = (ish == CENTRAL ? ci : -1);
+        ish    = (ciEntry.shift & NBNXN_CI_SHIFT);
+        ish3   = ish * 3;
+        cjind0 = ciEntry.cj_ind_start;
+        cjind1 = ciEntry.cj_ind_end;
+        ci     = ciEntry.ci;
+        ci_sh  = (ish == CENTRAL ? ci : -1);
 
         shX_S = SimdReal(shiftvec[ish3]);
-        shY_S = SimdReal(shiftvec[ish3+1]);
-        shZ_S = SimdReal(shiftvec[ish3+2]);
+        shY_S = SimdReal(shiftvec[ish3 + 1]);
+        shZ_S = SimdReal(shiftvec[ish3 + 2]);
 
 #if UNROLLJ <= 4
-        int sci          = ci*STRIDE;
-        int scix         = sci*DIM;
-#if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-        int sci2         = sci*2;
-#endif
+        int sci  = ci * STRIDE;
+        int scix = sci * DIM;
+#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        int sci2 = sci * 2;
+#    endif
 #else
-        int sci          = (ci>>1)*STRIDE;
-        int scix         = sci*DIM + (ci & 1)*(STRIDE>>1);
-#if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
-        int sci2         = sci*2 + (ci & 1)*(STRIDE>>1);
-#endif
-        sci             += (ci & 1)*(STRIDE>>1);
+        int sci  = (ci >> 1) * STRIDE;
+        int scix = sci * DIM + (ci & 1) * (STRIDE >> 1);
+#    if defined LJ_COMB_LB || defined LJ_COMB_GEOM || defined LJ_EWALD_GEOM
+        int sci2 = sci * 2 + (ci & 1) * (STRIDE >> 1);
+#    endif
+        sci += (ci & 1) * (STRIDE >> 1);
 #endif
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
@@ -421,166 +421,167 @@
 
             for (ia = 0; ia < UNROLLI; ia++)
             {
-                egp_ia     = (egps_i >> (ia*egps_ishift)) & egps_imask;
-                vvdwtp[ia] = Vvdw + egp_ia*Vstride_i;
-                vctp[ia]   = Vc   + egp_ia*Vstride_i;
+                egp_ia     = (egps_i >> (ia * egps_ishift)) & egps_imask;
+                vvdwtp[ia] = Vvdw + egp_ia * Vstride_i;
+                vctp[ia]   = Vc + egp_ia * Vstride_i;
             }
         }
 #endif
 
 #ifdef CALC_ENERGIES
-#ifdef LJ_EWALD_GEOM
+#    ifdef LJ_EWALD_GEOM
         gmx_bool do_self = TRUE;
-#else
+#    else
         gmx_bool do_self = do_coul;
-#endif
-#if UNROLLJ == 4
+#    endif
+#    if UNROLLJ == 4
         if (do_self && l_cj[ciEntry.cj_ind_start].cj == ci_sh)
-#endif
-#if UNROLLJ == 2
-        if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh<<1))
-#endif
-#if UNROLLJ == 8
-        if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh>>1))
-#endif
-        {
-            if (do_coul)
-            {
-                real Vc_sub_self;
-                int  ia;
-
-#ifdef CALC_COUL_RF
-                Vc_sub_self = 0.5*ic->c_rf;
-#endif
-#ifdef CALC_COUL_TAB
-#ifdef TAB_FDV0
-                Vc_sub_self = 0.5*tab_coul_F[2];
-#else
-                Vc_sub_self = 0.5*tab_coul_V[0];
-#endif
-#endif
-#ifdef CALC_COUL_EWALD
-                /* beta/sqrt(pi) */
-                Vc_sub_self = 0.5*ic->ewaldcoeff_q*M_2_SQRTPI;
-#endif
-
-                for (ia = 0; ia < UNROLLI; ia++)
+#    endif
+#    if UNROLLJ == 2
+            if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh << 1))
+#    endif
+#    if UNROLLJ == 8
+                if (do_self && l_cj[ciEntry.cj_ind_start].cj == (ci_sh >> 1))
+#    endif
                 {
-                    real qi;
+                    if (do_coul)
+                    {
+                        real Vc_sub_self;
+                        int  ia;
 
-                    qi = q[sci+ia];
-#ifdef ENERGY_GROUPS
-                    vctp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
-#else
+#    ifdef CALC_COUL_RF
+                        Vc_sub_self = 0.5 * ic->c_rf;
+#    endif
+#    ifdef CALC_COUL_TAB
+#        ifdef TAB_FDV0
+                        Vc_sub_self = 0.5 * tab_coul_F[2];
+#        else
+                        Vc_sub_self = 0.5 * tab_coul_V[0];
+#        endif
+#    endif
+#    ifdef CALC_COUL_EWALD
+                        /* beta/sqrt(pi) */
+                        Vc_sub_self = 0.5 * ic->ewaldcoeff_q * M_2_SQRTPI;
+#    endif
+
+                        for (ia = 0; ia < UNROLLI; ia++)
+                        {
+                            real qi;
+
+                            qi = q[sci + ia];
+#    ifdef ENERGY_GROUPS
+                            vctp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
+#    else
                     Vc[0]
-#endif
-                        -= facel*qi*qi*Vc_sub_self;
+#    endif
+                                    -= facel * qi * qi * Vc_sub_self;
+                        }
+                    }
+
+#    ifdef LJ_EWALD_GEOM
+                    {
+                        int ia;
+
+                        for (ia = 0; ia < UNROLLI; ia++)
+                        {
+                            real c6_i;
+
+                            c6_i = nbatParams.nbfp[nbatParams.type[sci + ia] * (nbatParams.numTypes + 1) * 2]
+                                   / 6;
+#        ifdef ENERGY_GROUPS
+                            vvdwtp[ia][((egps_i >> (ia * egps_ishift)) & egps_imask) * egps_jstride]
+#        else
+                            Vvdw[0]
+#        endif
+                                    += 0.5 * c6_i * lj_ewaldcoeff6_6;
+                        }
+                    }
+#    endif /* LJ_EWALD_GEOM */
                 }
-            }
-
-#ifdef LJ_EWALD_GEOM
-            {
-                int  ia;
-
-                for (ia = 0; ia < UNROLLI; ia++)
-                {
-                    real c6_i;
-
-                    c6_i = nbatParams.nbfp[nbatParams.type[sci+ia]*(nbatParams.numTypes + 1)*2]/6;
-#ifdef ENERGY_GROUPS
-                    vvdwtp[ia][((egps_i>>(ia*egps_ishift)) & egps_imask)*egps_jstride]
-#else
-                    Vvdw[0]
-#endif
-                        += 0.5*c6_i*lj_ewaldcoeff6_6;
-                }
-            }
-#endif      /* LJ_EWALD_GEOM */
-        }
 #endif
 
         /* Load i atom data */
-        int sciy         = scix + STRIDE;
-        int sciz         = sciy + STRIDE;
-        ix_S0            = SimdReal(x[scix]) + shX_S;
-        ix_S1            = SimdReal(x[scix+1]) + shX_S;
-        ix_S2            = SimdReal(x[scix+2]) + shX_S;
-        ix_S3            = SimdReal(x[scix+3]) + shX_S;
-        iy_S0            = SimdReal(x[sciy]) + shY_S;
-        iy_S1            = SimdReal(x[sciy+1]) + shY_S;
-        iy_S2            = SimdReal(x[sciy+2]) + shY_S;
-        iy_S3            = SimdReal(x[sciy+3]) + shY_S;
-        iz_S0            = SimdReal(x[sciz]) + shZ_S;
-        iz_S1            = SimdReal(x[sciz+1]) + shZ_S;
-        iz_S2            = SimdReal(x[sciz+2]) + shZ_S;
-        iz_S3            = SimdReal(x[sciz+3]) + shZ_S;
+        int sciy = scix + STRIDE;
+        int sciz = sciy + STRIDE;
+        ix_S0    = SimdReal(x[scix]) + shX_S;
+        ix_S1    = SimdReal(x[scix + 1]) + shX_S;
+        ix_S2    = SimdReal(x[scix + 2]) + shX_S;
+        ix_S3    = SimdReal(x[scix + 3]) + shX_S;
+        iy_S0    = SimdReal(x[sciy]) + shY_S;
+        iy_S1    = SimdReal(x[sciy + 1]) + shY_S;
+        iy_S2    = SimdReal(x[sciy + 2]) + shY_S;
+        iy_S3    = SimdReal(x[sciy + 3]) + shY_S;
+        iz_S0    = SimdReal(x[sciz]) + shZ_S;
+        iz_S1    = SimdReal(x[sciz + 1]) + shZ_S;
+        iz_S2    = SimdReal(x[sciz + 2]) + shZ_S;
+        iz_S3    = SimdReal(x[sciz + 3]) + shZ_S;
 
         if (do_coul)
         {
-            iq_S0      = SimdReal(facel*q[sci]);
-            iq_S1      = SimdReal(facel*q[sci+1]);
-            iq_S2      = SimdReal(facel*q[sci+2]);
-            iq_S3      = SimdReal(facel*q[sci+3]);
+            iq_S0 = SimdReal(facel * q[sci]);
+            iq_S1 = SimdReal(facel * q[sci + 1]);
+            iq_S2 = SimdReal(facel * q[sci + 2]);
+            iq_S3 = SimdReal(facel * q[sci + 3]);
         }
 
 #ifdef LJ_COMB_LB
-        hsig_i_S0      = SimdReal(ljc[sci2+0]);
-        hsig_i_S1      = SimdReal(ljc[sci2+1]);
-        hsig_i_S2      = SimdReal(ljc[sci2+2]);
-        hsig_i_S3      = SimdReal(ljc[sci2+3]);
-        seps_i_S0      = SimdReal(ljc[sci2+STRIDE+0]);
-        seps_i_S1      = SimdReal(ljc[sci2+STRIDE+1]);
-        seps_i_S2      = SimdReal(ljc[sci2+STRIDE+2]);
-        seps_i_S3      = SimdReal(ljc[sci2+STRIDE+3]);
+        hsig_i_S0 = SimdReal(ljc[sci2 + 0]);
+        hsig_i_S1 = SimdReal(ljc[sci2 + 1]);
+        hsig_i_S2 = SimdReal(ljc[sci2 + 2]);
+        hsig_i_S3 = SimdReal(ljc[sci2 + 3]);
+        seps_i_S0 = SimdReal(ljc[sci2 + STRIDE + 0]);
+        seps_i_S1 = SimdReal(ljc[sci2 + STRIDE + 1]);
+        seps_i_S2 = SimdReal(ljc[sci2 + STRIDE + 2]);
+        seps_i_S3 = SimdReal(ljc[sci2 + STRIDE + 3]);
 #else
-#ifdef LJ_COMB_GEOM
-        SimdReal c6s_S0 = SimdReal(ljc[sci2+0]);
-        SimdReal c6s_S1 = SimdReal(ljc[sci2+1]);
+#    ifdef LJ_COMB_GEOM
+        SimdReal c6s_S0 = SimdReal(ljc[sci2 + 0]);
+        SimdReal c6s_S1 = SimdReal(ljc[sci2 + 1]);
         SimdReal c6s_S2, c6s_S3;
         if (!half_LJ)
         {
-            c6s_S2     = SimdReal(ljc[sci2+2]);
-            c6s_S3     = SimdReal(ljc[sci2+3]);
+            c6s_S2 = SimdReal(ljc[sci2 + 2]);
+            c6s_S3 = SimdReal(ljc[sci2 + 3]);
         }
         else
         {
-            c6s_S2     = setZero();
-            c6s_S3     = setZero();
+            c6s_S2 = setZero();
+            c6s_S3 = setZero();
         }
-        SimdReal c12s_S0 = SimdReal(ljc[sci2+STRIDE+0]);
-        SimdReal c12s_S1 = SimdReal(ljc[sci2+STRIDE+1]);
+        SimdReal c12s_S0 = SimdReal(ljc[sci2 + STRIDE + 0]);
+        SimdReal c12s_S1 = SimdReal(ljc[sci2 + STRIDE + 1]);
         SimdReal c12s_S2, c12s_S3;
         if (!half_LJ)
         {
-            c12s_S2    = SimdReal(ljc[sci2+STRIDE+2]);
-            c12s_S3    = SimdReal(ljc[sci2+STRIDE+3]);
+            c12s_S2 = SimdReal(ljc[sci2 + STRIDE + 2]);
+            c12s_S3 = SimdReal(ljc[sci2 + STRIDE + 3]);
         }
         else
         {
-            c12s_S2    = setZero();
-            c12s_S3    = setZero();
+            c12s_S2 = setZero();
+            c12s_S3 = setZero();
         }
-#else
-        const int   numTypes  = nbatParams.numTypes;
-        const real *nbfp0     = nbfp_ptr + type[sci  ]*numTypes*c_simdBestPairAlignment;
-        const real *nbfp1     = nbfp_ptr + type[sci+1]*numTypes*c_simdBestPairAlignment;
-        const real *nbfp2     = nullptr, *nbfp3 = nullptr;
+#    else
+        const int   numTypes = nbatParams.numTypes;
+        const real* nbfp0    = nbfp_ptr + type[sci] * numTypes * c_simdBestPairAlignment;
+        const real* nbfp1    = nbfp_ptr + type[sci + 1] * numTypes * c_simdBestPairAlignment;
+        const real *nbfp2 = nullptr, *nbfp3 = nullptr;
         if (!half_LJ)
         {
-            nbfp2 = nbfp_ptr + type[sci+2]*numTypes*c_simdBestPairAlignment;
-            nbfp3 = nbfp_ptr + type[sci+3]*numTypes*c_simdBestPairAlignment;
+            nbfp2 = nbfp_ptr + type[sci + 2] * numTypes * c_simdBestPairAlignment;
+            nbfp3 = nbfp_ptr + type[sci + 3] * numTypes * c_simdBestPairAlignment;
         }
-#endif
+#    endif
 #endif
 #ifdef LJ_EWALD_GEOM
         /* We need the geometrically combined C6 for the PME grid correction */
-        SimdReal c6s_S0 = SimdReal(ljc[sci2+0]);
-        SimdReal c6s_S1 = SimdReal(ljc[sci2+1]);
+        SimdReal c6s_S0 = SimdReal(ljc[sci2 + 0]);
+        SimdReal c6s_S1 = SimdReal(ljc[sci2 + 1]);
         SimdReal c6s_S2, c6s_S3;
         if (!half_LJ)
         {
-            c6s_S2 = SimdReal(ljc[sci2+2]);
-            c6s_S3 = SimdReal(ljc[sci2+3]);
+            c6s_S2 = SimdReal(ljc[sci2 + 2]);
+            c6s_S3 = SimdReal(ljc[sci2 + 3]);
         }
 #endif
 
@@ -591,18 +592,18 @@
 #endif
 
         /* Clear i atom forces */
-        fix_S0           = setZero();
-        fix_S1           = setZero();
-        fix_S2           = setZero();
-        fix_S3           = setZero();
-        fiy_S0           = setZero();
-        fiy_S1           = setZero();
-        fiy_S2           = setZero();
-        fiy_S3           = setZero();
-        fiz_S0           = setZero();
-        fiz_S1           = setZero();
-        fiz_S2           = setZero();
-        fiz_S3           = setZero();
+        fix_S0 = setZero();
+        fix_S1 = setZero();
+        fix_S2 = setZero();
+        fix_S3 = setZero();
+        fiy_S0 = setZero();
+        fiy_S1 = setZero();
+        fiy_S2 = setZero();
+        fiy_S3 = setZero();
+        fiz_S0 = setZero();
+        fiz_S1 = setZero();
+        fiz_S2 = setZero();
+        fiz_S3 = setZero();
 
         cjind = cjind0;
 
@@ -663,15 +664,15 @@
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-        real fShiftX = reduceIncr4ReturnSum(f+scix, fix_S0, fix_S1, fix_S2, fix_S3);
-        real fShiftY = reduceIncr4ReturnSum(f+sciy, fiy_S0, fiy_S1, fiy_S2, fiy_S3);
-        real fShiftZ = reduceIncr4ReturnSum(f+sciz, fiz_S0, fiz_S1, fiz_S2, fiz_S3);
+        real fShiftX = reduceIncr4ReturnSum(f + scix, fix_S0, fix_S1, fix_S2, fix_S3);
+        real fShiftY = reduceIncr4ReturnSum(f + sciy, fiy_S0, fiy_S1, fiy_S2, fiy_S3);
+        real fShiftZ = reduceIncr4ReturnSum(f + sciz, fiz_S0, fiz_S1, fiz_S2, fiz_S3);
 
 
 #ifdef CALC_SHIFTFORCES
-        fshift[ish3+0] += fShiftX;
-        fshift[ish3+1] += fShiftY;
-        fshift[ish3+2] += fShiftZ;
+        fshift[ish3 + 0] += fShiftX;
+        fshift[ish3 + 1] += fShiftY;
+        fshift[ish3 + 2] += fShiftZ;
 #endif
 
 #ifdef CALC_ENERGIES

@@ -66,10 +66,10 @@ TEST(MrcDensityMap, RoundTripIsIdempotent)
 {
     // write header and data to serializer, store the serialized data
 
-    MrcDensityMapHeader  header {};
-    header.numColumnRowSection_ = {1, 1, 1};
+    MrcDensityMapHeader header{};
+    header.numColumnRowSection_ = { 1, 1, 1 };
 
-    std::vector<float>         data(numberOfExpectedDataItems(header));
+    std::vector<float> data(numberOfExpectedDataItems(header));
 
     MrcDensityMapOfFloatWriter mrcDensityMapWriter(header, data);
     InMemorySerializer         serializer;
@@ -81,7 +81,8 @@ TEST(MrcDensityMap, RoundTripIsIdempotent)
     InMemoryDeserializer       deserializer(serializedFile, false);
     MrcDensityMapOfFloatReader mrcDensityMapReader(&deserializer);
 
-    MrcDensityMapOfFloatWriter writerOfDeserializedOutput(mrcDensityMapReader.header(), mrcDensityMapReader.constView());
+    MrcDensityMapOfFloatWriter writerOfDeserializedOutput(mrcDensityMapReader.header(),
+                                                          mrcDensityMapReader.constView());
     writerOfDeserializedOutput.write(&serializer);
 
     const auto roundTripResult = serializer.finishAndGetBuffer();
@@ -102,11 +103,12 @@ TEST(MrcDensityMap, ReadsCoordinateTransformationFromFile)
     RVec coordinate3(1, 0, 0);
     RVec coordinate4(0, 1, 0);
 
-    MrcDensityMapOfFloatFromFileReader mrcFileReader(TestFileManager::getInputFilePath("ellipsoid-density.mrc"));
-    TranslateAndScale                  coordinateTransformation(mrcFileReader.transformationToDensityLattice());
+    MrcDensityMapOfFloatFromFileReader mrcFileReader(
+            TestFileManager::getInputFilePath("ellipsoid-density.mrc"));
+    TranslateAndScale coordinateTransformation(mrcFileReader.transformationToDensityLattice());
 
-    coordinateTransformation({&coordinate1, &coordinate1+1});
-    coordinateTransformation({&coordinate2, &coordinate2+1});
+    coordinateTransformation({ &coordinate1, &coordinate1 + 1 });
+    coordinateTransformation({ &coordinate2, &coordinate2 + 1 });
 
     EXPECT_REAL_EQ(0, coordinate1[XX]);
     EXPECT_REAL_EQ(-2, coordinate1[YY]);
@@ -129,10 +131,10 @@ TEST(MrcDensityMap, ReadsDensityDataFromFile)
 {
     MrcDensityMapOfFloatFromFileReader mrcFileReader(
             TestFileManager::getInputFilePath("ellipsoid-density.mrc"));
-    const auto                         densityData = mrcFileReader.densityDataCopy();
+    const auto densityData = mrcFileReader.densityDataCopy();
 
-    TestReferenceData                  refData;
-    TestReferenceChecker               checker(refData.rootChecker());
+    TestReferenceData    refData;
+    TestReferenceChecker checker(refData.rootChecker());
     checker.checkSequence(begin(densityData.asConstView()), end(densityData.asConstView()),
                           "data ellipsoid density");
 }

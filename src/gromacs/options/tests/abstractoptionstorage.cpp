@@ -67,11 +67,11 @@ class MockOptionStorage;
 
 class MockOptionInfo : public gmx::OptionInfo
 {
-    public:
-        //! Creates an option info object for the given option.
-        explicit MockOptionInfo(MockOptionStorage *option);
+public:
+    //! Creates an option info object for the given option.
+    explicit MockOptionInfo(MockOptionStorage* option);
 
-        MockOptionStorage &option();
+    MockOptionStorage& option();
 };
 
 /*! \brief
@@ -84,49 +84,39 @@ class MockOptionInfo : public gmx::OptionInfo
  */
 class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
 {
-    public:
-        /*! \brief
-         * Initializes the storage from option settings.
-         *
-         * \param[in] settings   Storage settings.
-         */
-        explicit MockOptionStorage(const MockOption &settings);
+public:
+    /*! \brief
+     * Initializes the storage from option settings.
+     *
+     * \param[in] settings   Storage settings.
+     */
+    explicit MockOptionStorage(const MockOption& settings);
 
-        /*! \brief
-         * Calls addValue("dummy") in the base class.
-         */
-        void addDummyValue()
-        {
-            addValue("dummy");
-        }
-        using MyBase::markAsSet;
-        using MyBase::addValue;
-        using MyBase::commitValues;
+    /*! \brief
+     * Calls addValue("dummy") in the base class.
+     */
+    void addDummyValue() { addValue("dummy"); }
+    using MyBase::addValue;
+    using MyBase::commitValues;
+    using MyBase::markAsSet;
 
-        gmx::OptionInfo &optionInfo() override { return info_; }
-        // These are not used.
-        std::string typeString() const override { return "mock"; }
-        std::string formatSingleValue(const std::string & /*value*/) const override
-        {
-            return "";
-        }
-        std::vector<gmx::Any>
-        normalizeValues(const std::vector<gmx::Any> &values) const override
-        {
-            return values;
-        }
+    gmx::OptionInfo& optionInfo() override { return info_; }
+    // These are not used.
+    std::string typeString() const override { return "mock"; }
+    std::string formatSingleValue(const std::string& /*value*/) const override { return ""; }
+    std::vector<gmx::Any> normalizeValues(const std::vector<gmx::Any>& values) const override
+    {
+        return values;
+    }
 
-        void convertValue(const gmx::Any &value) override
-        {
-            convertValue(value.cast<std::string>());
-        }
+    void convertValue(const gmx::Any& value) override { convertValue(value.cast<std::string>()); }
 
-        MOCK_METHOD1(convertValue, void(const std::string &value));
-        MOCK_METHOD1(processSetValues, void(ValueList *values));
-        MOCK_METHOD0(processAll, void());
+    MOCK_METHOD1(convertValue, void(const std::string& value));
+    MOCK_METHOD1(processSetValues, void(ValueList* values));
+    MOCK_METHOD0(processAll, void());
 
-    private:
-        MockOptionInfo          info_;
+private:
+    MockOptionInfo info_;
 };
 
 /*! \internal \brief
@@ -136,42 +126,33 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
  */
 class MockOption : public gmx::OptionTemplate<std::string, MockOption>
 {
-    public:
-        //! OptionInfo subclass corresponding to this option type.
-        typedef MockOptionInfo InfoType;
+public:
+    //! OptionInfo subclass corresponding to this option type.
+    typedef MockOptionInfo InfoType;
 
-        //! Initializes an option with the given name.
-        explicit MockOption(const char *name)
-            : MyBase(name)
-        {
-        }
+    //! Initializes an option with the given name.
+    explicit MockOption(const char* name) : MyBase(name) {}
 
-    private:
-        gmx::AbstractOptionStorage *createStorage(
-            const gmx::OptionManagerContainer & /*managers*/) const override
-        {
-            return new MockOptionStorage(*this);
-        }
+private:
+    gmx::AbstractOptionStorage* createStorage(const gmx::OptionManagerContainer& /*managers*/) const override
+    {
+        return new MockOptionStorage(*this);
+    }
 };
 
-MockOptionStorage::MockOptionStorage(const MockOption &settings)
-    : MyBase(settings), info_(this)
+MockOptionStorage::MockOptionStorage(const MockOption& settings) : MyBase(settings), info_(this)
 {
     using ::testing::_;
     using ::testing::Invoke;
     using ::testing::WithArg;
-    ON_CALL(*this, convertValue(_))
-        .WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
+    ON_CALL(*this, convertValue(_)).WillByDefault(WithArg<0>(Invoke(this, &MockOptionStorage::addValue)));
 }
 
-MockOptionInfo::MockOptionInfo(MockOptionStorage *option)
-    : gmx::OptionInfo(option)
-{
-}
+MockOptionInfo::MockOptionInfo(MockOptionStorage* option) : gmx::OptionInfo(option) {}
 
-MockOptionStorage &MockOptionInfo::option()
+MockOptionStorage& MockOptionInfo::option()
 {
-    return static_cast<MockOptionStorage &>(gmx::OptionInfo::option());
+    return static_cast<MockOptionStorage&>(gmx::OptionInfo::option());
 }
 
 /*
@@ -180,19 +161,18 @@ MockOptionStorage &MockOptionInfo::option()
  */
 TEST(AbstractOptionStorageTest, HandlesSetInFinish)
 {
-    gmx::Options                options;
-    std::vector<std::string>    values;
-    MockOptionInfo             *info = options.addOption(
-                MockOption("name").required().storeVector(&values));
-    MockOptionStorage          *mock = &info->option();
+    gmx::Options             options;
+    std::vector<std::string> values;
+    MockOptionInfo*    info = options.addOption(MockOption("name").required().storeVector(&values));
+    MockOptionStorage* mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
         using ::testing::InvokeWithoutArgs;
         EXPECT_CALL(*mock, processAll())
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::markAsSet),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::commitValues)));
     }
 
     gmx::OptionsAssigner assigner(&options);
@@ -210,19 +190,17 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
  */
 TEST(AbstractOptionStorageTest, HandlesValueRemoval)
 {
-    gmx::Options                options;
-    std::vector<std::string>    values;
-    MockOptionInfo             *info = options.addOption(
-                MockOption("name").storeVector(&values).multiValue());
-    MockOptionStorage          *mock = &info->option();
+    gmx::Options             options;
+    std::vector<std::string> values;
+    MockOptionInfo* info = options.addOption(MockOption("name").storeVector(&values).multiValue());
+    MockOptionStorage* mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::ElementsAre;
         using ::testing::Pointee;
         using ::testing::Return;
         EXPECT_CALL(*mock, convertValue("a"));
-        EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(Return());
+        EXPECT_CALL(*mock, convertValue("b")).WillOnce(Return());
         EXPECT_CALL(*mock, convertValue("c"));
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "c"))));
         EXPECT_CALL(*mock, processAll());
@@ -249,11 +227,10 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
  */
 TEST(AbstractOptionStorageTest, HandlesValueAddition)
 {
-    gmx::Options                options;
-    std::vector<std::string>    values;
-    MockOptionInfo             *info = options.addOption(
-                MockOption("name").storeVector(&values).multiValue());
-    MockOptionStorage          *mock = &info->option();
+    gmx::Options             options;
+    std::vector<std::string> values;
+    MockOptionInfo* info = options.addOption(MockOption("name").storeVector(&values).multiValue());
+    MockOptionStorage* mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -262,8 +239,8 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
         using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre("a", "dummy", "dummy"))));
         EXPECT_CALL(*mock, processAll());
     }
@@ -289,11 +266,10 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
  */
 TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
 {
-    gmx::Options                options;
-    std::vector<std::string>    values;
-    MockOptionInfo             *info = options.addOption(
-                MockOption("name").storeVector(&values).valueCount(2));
-    MockOptionStorage          *mock = &info->option();
+    gmx::Options             options;
+    std::vector<std::string> values;
+    MockOptionInfo* info = options.addOption(MockOption("name").storeVector(&values).valueCount(2));
+    MockOptionStorage* mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
@@ -302,8 +278,8 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
         using ::testing::Pointee;
         EXPECT_CALL(*mock, convertValue("a"));
         EXPECT_CALL(*mock, convertValue("b"))
-            .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
-                            InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
+                .WillOnce(DoAll(InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue),
+                                InvokeWithoutArgs(mock, &MockOptionStorage::addDummyValue)));
         EXPECT_CALL(*mock, processAll());
     }
 
@@ -325,19 +301,17 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
  */
 TEST(AbstractOptionStorageTest, AllowsEmptyValues)
 {
-    gmx::Options                options;
-    std::vector<std::string>    values;
-    MockOptionInfo             *info = options.addOption(
-                MockOption("name").storeVector(&values).valueCount(0));
-    MockOptionStorage          *mock = &info->option();
+    gmx::Options             options;
+    std::vector<std::string> values;
+    MockOptionInfo* info = options.addOption(MockOption("name").storeVector(&values).valueCount(0));
+    MockOptionStorage* mock = &info->option();
     {
         ::testing::InSequence dummy;
         using ::testing::DoAll;
         using ::testing::ElementsAre;
         using ::testing::Pointee;
         using ::testing::Return;
-        EXPECT_CALL(*mock, convertValue("a"))
-            .WillOnce(Return());
+        EXPECT_CALL(*mock, convertValue("a")).WillOnce(Return());
         EXPECT_CALL(*mock, processSetValues(Pointee(ElementsAre())));
         EXPECT_CALL(*mock, processAll());
     }

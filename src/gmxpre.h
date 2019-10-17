@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
  */
 //! \cond
 #ifdef HAVE_CONFIG_H
-#include "gmxpre-config.h"
+#    include "gmxpre-config.h"
 #endif
 
 /* We use a few GNU functions for thread affinity and other low-level stuff.
@@ -68,7 +68,7 @@
  * sorting of the includes more difficult.
  */
 #ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
+#    define _GNU_SOURCE 1
 #endif
 
 /* Some C++(?) compilers require these to be defined to get the integer limits
@@ -86,8 +86,8 @@
 #define __STDC_FORMAT_MACROS
 
 #if GMX_FAHCORE
-#define FULLINDIRECT 1
-#define USE_FAH_XDR  1
-#include "swindirect.h"
+#    define FULLINDIRECT 1
+#    define USE_FAH_XDR 1
+#    include "swindirect.h"
 #endif
 //! \endcond

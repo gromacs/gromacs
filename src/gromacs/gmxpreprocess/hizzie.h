@@ -44,7 +44,7 @@
 struct t_atoms;
 struct t_symtab;
 
-void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real distance);
+void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real distance);
 /* calculate HIStidine protonation state */
 
 #endif

@@ -59,44 +59,44 @@ class Workflow;
  */
 class System::Impl final
 {
-    public:
-        /*! \cond */
-        ~Impl();
+public:
+    /*! \cond */
+    ~Impl();
 
-        Impl(Impl && /*unused*/) noexcept;
-        Impl &operator=(Impl &&source) noexcept;
-        /*! \endcond */
+    Impl(Impl&& /*unused*/) noexcept;
+    Impl& operator=(Impl&& source) noexcept;
+    /*! \endcond */
 
-        /*!
-         * \brief Initialize from a work description.
-         *
-         * \param workflow Simulation work to perform.
-         */
-        explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
+    /*!
+     * \brief Initialize from a work description.
+     *
+     * \param workflow Simulation work to perform.
+     */
+    explicit Impl(std::unique_ptr<gmxapi::Workflow> workflow) noexcept;
 
-        /*!
-         * \brief Launch the configured simulation.
-         *
-         * \param context Runtime execution context in which to run simulation.
-         * \return Ownership of a new simulation session.
-         *
-         * The session is returned as a shared pointer so that the Context can
-         * maintain a weak reference to it via std::weak_ptr.
-         */
-        std::shared_ptr<Session> launch(const std::shared_ptr<Context> &context);
+    /*!
+     * \brief Launch the configured simulation.
+     *
+     * \param context Runtime execution context in which to run simulation.
+     * \return Ownership of a new simulation session.
+     *
+     * The session is returned as a shared pointer so that the Context can
+     * maintain a weak reference to it via std::weak_ptr.
+     */
+    std::shared_ptr<Session> launch(const std::shared_ptr<Context>& context);
 
-    private:
-        //! Description of simulation work.
-        std::shared_ptr<Workflow>           workflow_;
+private:
+    //! Description of simulation work.
+    std::shared_ptr<Workflow> workflow_;
 
-        /*!
-         * \brief Specified simulation work.
-         *
-         * \todo merge Workflow and MDWorkSpec
-         */
-        std::shared_ptr<gmxapi::MDWorkSpec> spec_;
+    /*!
+     * \brief Specified simulation work.
+     *
+     * \todo merge Workflow and MDWorkSpec
+     */
+    std::shared_ptr<gmxapi::MDWorkSpec> spec_;
 };
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
 #endif // header guard

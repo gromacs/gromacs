@@ -52,24 +52,24 @@
 namespace gmx
 {
 //! Helper function to call all callbacks in a list
-static inline void runAllCallbacks(
-        std::vector<SignallerCallbackPtr> &callbacks,
-        Step step, Time time)
+static inline void runAllCallbacks(std::vector<SignallerCallbackPtr>& callbacks, Step step, Time time)
 {
-    for (const auto &callback : callbacks)
+    for (const auto& callback : callbacks)
     {
         (*callback)(step, time);
     }
 }
 
-NeighborSearchSignaller::NeighborSearchSignaller(
-        std::vector<SignallerCallbackPtr> callbacks,
-        Step nstlist, Step initStep, Time initTime) :
+NeighborSearchSignaller::NeighborSearchSignaller(std::vector<SignallerCallbackPtr> callbacks,
+                                                 Step                              nstlist,
+                                                 Step                              initStep,
+                                                 Time                              initTime) :
     callbacks_(std::move(callbacks)),
     nstlist_(nstlist),
     initStep_(initStep),
     initTime_(initTime)
-{}
+{
+}
 
 void NeighborSearchSignaller::signal(Step step, Time time)
 {
@@ -80,17 +80,18 @@ void NeighborSearchSignaller::signal(Step step, Time time)
     }
 }
 
-LastStepSignaller::LastStepSignaller(
-        std::vector<SignallerCallbackPtr> callbacks,
-        gmx::Step nsteps, gmx::Step initStep,
-        StopHandler* stopHandler) :
+LastStepSignaller::LastStepSignaller(std::vector<SignallerCallbackPtr> callbacks,
+                                     gmx::Step                         nsteps,
+                                     gmx::Step                         initStep,
+                                     StopHandler*                      stopHandler) :
     callbacks_(std::move(callbacks)),
     stopStep_(initStep + nsteps),
     signalledStopCondition_(false),
     stopHandler_(stopHandler),
     nextNSStep_(-1),
     nsStepRegistrationDone_(false)
-{}
+{
+}
 
 void LastStepSignaller::signal(Step step, Time time)
 {
@@ -98,7 +99,7 @@ void LastStepSignaller::signal(Step step, Time time)
     {
         return;
     }
-    bool isNSStep = (step == nextNSStep_);
+    bool isNSStep           = (step == nextNSStep_);
     signalledStopCondition_ = stopHandler_->stoppingAfterCurrentStep(isNSStep);
     if (step == stopStep_ || signalledStopCondition_)
     {
@@ -108,31 +109,29 @@ void LastStepSignaller::signal(Step step, Time time)
 
 void LastStepSignaller::signallerSetup()
 {
-    GMX_ASSERT(
-            nsStepRegistrationDone_,
-            "LastStepSignaller needs to be registered to NeighborSearchSignaller.");
+    GMX_ASSERT(nsStepRegistrationDone_,
+               "LastStepSignaller needs to be registered to NeighborSearchSignaller.");
 }
 
 SignallerCallbackPtr LastStepSignaller::registerNSCallback()
 {
     nsStepRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time)
-            {this->nextNSStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; });
 }
 
-LoggingSignaller::LoggingSignaller(
-        std::vector<SignallerCallbackPtr> callbacks,
-        Step                              nstlog,
-        Step                              initStep,
-        Time                              initTime) :
+LoggingSignaller::LoggingSignaller(std::vector<SignallerCallbackPtr> callbacks,
+                                   Step                              nstlog,
+                                   Step                              initStep,
+                                   Time                              initTime) :
     callbacks_(std::move(callbacks)),
     nstlog_(nstlog),
     initStep_(initStep),
     initTime_(initTime),
     lastStep_(-1),
     lastStepRegistrationDone_(false)
-{}
+{
+}
 
 void LoggingSignaller::signal(Step step, Time time)
 {
@@ -144,25 +143,23 @@ void LoggingSignaller::signal(Step step, Time time)
 
 void LoggingSignaller::signallerSetup()
 {
-    GMX_ASSERT(
-            lastStepRegistrationDone_,
-            "LoggingSignaller needs to be registered to LastStepSignaller.");
+    GMX_ASSERT(lastStepRegistrationDone_,
+               "LoggingSignaller needs to be registered to LastStepSignaller.");
 }
 
 SignallerCallbackPtr LoggingSignaller::registerLastStepCallback()
 {
     lastStepRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time){this->lastStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
 }
 
-EnergySignaller::EnergySignaller(
-        std::vector<SignallerCallbackPtr> calculateEnergyCallbacks,
-        std::vector<SignallerCallbackPtr> calculateVirialCallbacks,
-        std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks,
-        int                               nstcalcenergy,
-        int                               nstcalcfreeenergy,
-        int                               nstcalcvirial) :
+EnergySignaller::EnergySignaller(std::vector<SignallerCallbackPtr> calculateEnergyCallbacks,
+                                 std::vector<SignallerCallbackPtr> calculateVirialCallbacks,
+                                 std::vector<SignallerCallbackPtr> calculateFreeEnergyCallbacks,
+                                 int                               nstcalcenergy,
+                                 int                               nstcalcfreeenergy,
+                                 int                               nstcalcvirial) :
     calculateEnergyCallbacks_(std::move(calculateEnergyCallbacks)),
     calculateVirialCallbacks_(std::move(calculateVirialCallbacks)),
     calculateFreeEnergyCallbacks_(std::move(calculateFreeEnergyCallbacks)),
@@ -173,11 +170,10 @@ EnergySignaller::EnergySignaller(
     trajectoryRegistrationDone_(false),
     loggingStep_(-1),
     loggingRegistrationDone_(false)
-{}
+{
+}
 
-void EnergySignaller::signal(
-        Step step,
-        Time time)
+void EnergySignaller::signal(Step step, Time time)
 {
     bool calculateEnergy     = do_per_step(step, nstcalcenergy_);
     bool calculateFreeEnergy = do_per_step(step, nstcalcfreeenergy_);
@@ -200,12 +196,10 @@ void EnergySignaller::signal(
 
 void EnergySignaller::signallerSetup()
 {
-    GMX_ASSERT(
-            loggingRegistrationDone_,
-            "EnergySignaller needs to be registered to LoggingSignaller.");
-    GMX_ASSERT(
-            trajectoryRegistrationDone_,
-            "EnergySignaller needs to be registered to TrajectoryElement.");
+    GMX_ASSERT(loggingRegistrationDone_,
+               "EnergySignaller needs to be registered to LoggingSignaller.");
+    GMX_ASSERT(trajectoryRegistrationDone_,
+               "EnergySignaller needs to be registered to TrajectoryElement.");
 }
 
 SignallerCallbackPtr EnergySignaller::registerTrajectorySignallerCallback(TrajectoryEvent event)
@@ -214,7 +208,7 @@ SignallerCallbackPtr EnergySignaller::registerTrajectorySignallerCallback(Trajec
     {
         trajectoryRegistrationDone_ = true;
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time gmx_unused time){this->energyWritingStep_ = step; });
+                [this](Step step, Time gmx_unused time) { this->energyWritingStep_ = step; });
     }
     return nullptr;
 }
@@ -223,7 +217,7 @@ SignallerCallbackPtr EnergySignaller::registerLoggingCallback()
 {
     loggingRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time){this->loggingStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->loggingStep_ = step; });
 }
 
-}  // namespace gmx
+} // namespace gmx

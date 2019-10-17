@@ -60,16 +60,15 @@
 namespace gmx
 {
 
-std::vector<GpuTask>
-findGpuTasksOnThisRank(const bool       haveGpusOnThisPhysicalNode,
-                       const TaskTarget nonbondedTarget,
-                       const TaskTarget pmeTarget,
-                       const TaskTarget bondedTarget,
-                       const TaskTarget updateTarget,
-                       const bool       useGpuForNonbonded,
-                       const bool       useGpuForPme,
-                       const bool       rankHasPpTask,
-                       const bool       rankHasPmeTask)
+std::vector<GpuTask> findGpuTasksOnThisRank(const bool       haveGpusOnThisPhysicalNode,
+                                            const TaskTarget nonbondedTarget,
+                                            const TaskTarget pmeTarget,
+                                            const TaskTarget bondedTarget,
+                                            const TaskTarget updateTarget,
+                                            const bool       useGpuForNonbonded,
+                                            const bool       useGpuForPme,
+                                            const bool       rankHasPpTask,
+                                            const bool       rankHasPmeTask)
 {
     std::vector<GpuTask> gpuTasksOnThisRank;
     if (rankHasPpTask)
@@ -84,15 +83,19 @@ findGpuTasksOnThisRank(const bool       haveGpusOnThisPhysicalNode,
             }
             else if (nonbondedTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run short-ranged nonbonded interactions on a GPU because no GPU is detected.");
+                gmx_fatal(FARGS,
+                          "Cannot run short-ranged nonbonded interactions on a GPU because no GPU "
+                          "is detected.");
             }
             else if (bondedTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run bonded interactions on a GPU because no GPU is detected.");
+                gmx_fatal(FARGS,
+                          "Cannot run bonded interactions on a GPU because no GPU is detected.");
             }
             else if (updateTarget == TaskTarget::Gpu)
             {
-                gmx_fatal(FARGS, "Cannot run coordinate update on a GPU because no GPU is detected.");
+                gmx_fatal(FARGS,
+                          "Cannot run coordinate update on a GPU because no GPU is detected.");
             }
         }
     }
@@ -120,9 +123,7 @@ namespace
 constexpr bool g_usingMpi = GMX_MPI;
 
 //! Helper function to prepare to all-gather the vector of non-bonded tasks on this node.
-std::vector<int> allgather(const int &input,
-                           int        numRanks,
-                           MPI_Comm   communicator)
+std::vector<int> allgather(const int& input, int numRanks, MPI_Comm communicator)
 {
     std::vector<int> result(numRanks);
     if (g_usingMpi && numRanks > 1)
@@ -137,19 +138,9 @@ std::vector<int> allgather(const int &input,
         // to compile warning-free with all versions of MPI headers.
         //
         // TODO Make an allgather template to deal with this nonsense.
-        MPI_Gather(const_cast<int *>(&input),
-                   1,
-                   MPI_INT,
-                   const_cast<int *>(result.data()),
-                   1,
-                   MPI_INT,
-                   root,
-                   communicator);
-        MPI_Bcast(const_cast<int *>(result.data()),
-                  result.size(),
-                  MPI_INT,
-                  root,
-                  communicator);
+        MPI_Gather(const_cast<int*>(&input), 1, MPI_INT, const_cast<int*>(result.data()), 1,
+                   MPI_INT, root, communicator);
+        MPI_Bcast(const_cast<int*>(result.data()), result.size(), MPI_INT, root, communicator);
 #else
         GMX_UNUSED_VALUE(communicator);
 #endif
@@ -163,12 +154,12 @@ std::vector<int> allgather(const int &input,
 }
 
 //! Helper function to compute allgatherv displacements.
-std::vector<int> computeDisplacements(ArrayRef<const int> extentOnEachRank,
-                                      int                 numRanks)
+std::vector<int> computeDisplacements(ArrayRef<const int> extentOnEachRank, int numRanks)
 {
     std::vector<int> displacements(numRanks + 1);
     displacements[0] = 0;
-    std::partial_sum(std::begin(extentOnEachRank), std::end(extentOnEachRank), std::begin(displacements) + 1);
+    std::partial_sum(std::begin(extentOnEachRank), std::end(extentOnEachRank),
+                     std::begin(displacements) + 1);
     return displacements;
 }
 
@@ -179,7 +170,7 @@ std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
                                 MPI_Comm                communicator)
 {
     // Now allocate the vector and do the allgatherv
-    int                  totalExtent = displacementForEachRank.back();
+    int totalExtent = displacementForEachRank.back();
 
     std::vector<GpuTask> result;
     result.reserve(totalExtent);
@@ -194,27 +185,17 @@ std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
         int root = 0;
         // Calling a C API with the const T * from data() doesn't seem to compile reliably.
         // TODO Make an allgatherv template to deal with this nonsense.
-        MPI_Gatherv(const_cast<GpuTask *>(input.data()),
-                    input.size(),
-                    MPI_INT,
-                    const_cast<GpuTask *>(result.data()),
-                    const_cast<int *>(extentOnEachRank.data()),
-                    const_cast<int *>(displacementForEachRank.data()),
-                    MPI_INT,
-                    root,
-                    communicator);
-        MPI_Bcast(const_cast<GpuTask *>(result.data()),
-                  result.size(),
-                  MPI_INT,
-                  root,
-                  communicator);
+        MPI_Gatherv(const_cast<GpuTask*>(input.data()), input.size(), MPI_INT,
+                    const_cast<GpuTask*>(result.data()), const_cast<int*>(extentOnEachRank.data()),
+                    const_cast<int*>(displacementForEachRank.data()), MPI_INT, root, communicator);
+        MPI_Bcast(const_cast<GpuTask*>(result.data()), result.size(), MPI_INT, root, communicator);
 #else
         GMX_UNUSED_VALUE(communicator);
 #endif
     }
     else
     {
-        for (const auto &gpuTask : input)
+        for (const auto& gpuTask : input)
         {
             result.push_back(gpuTask);
         }
@@ -222,7 +203,7 @@ std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
     return result;
 }
 
-}   // namespace
+} // namespace
 
 /*! \brief Returns container of all tasks on all ranks of this node
  * that are eligible for GPU execution.
@@ -230,24 +211,24 @@ std::vector<GpuTask> allgatherv(ArrayRef<const GpuTask> input,
  * Perform all necessary communication for preparing for task
  * assignment. Separating this aspect makes it possible to unit test
  * the logic of task assignment. */
-GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
-                          const PhysicalNodeCommunicator &physicalNodeComm)
+GpuTasksOnRanks findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
+                                          const PhysicalNodeCommunicator& physicalNodeComm)
 {
     int      numRanksOnThisNode = physicalNodeComm.size_;
     MPI_Comm communicator       = physicalNodeComm.comm_;
     // Find out how many GPU tasks are on each rank on this node.
-    auto     numGpuTasksOnEachRankOfThisNode =
-        allgather(gpuTasksOnThisRank.size(), numRanksOnThisNode, communicator);
+    auto numGpuTasksOnEachRankOfThisNode =
+            allgather(gpuTasksOnThisRank.size(), numRanksOnThisNode, communicator);
 
     /* Collect on each rank of this node a vector describing all
      * GPU tasks on this node, in ascending order of rank. This
      * requires a vector allgather. The displacements indicate where
      * the GPU tasks on each rank of this node start and end within
      * the vector. */
-    auto displacementsForEachRank = computeDisplacements(numGpuTasksOnEachRankOfThisNode, numRanksOnThisNode);
-    auto gpuTasksOnThisNode       = allgatherv(gpuTasksOnThisRank, numGpuTasksOnEachRankOfThisNode,
-                                               displacementsForEachRank, communicator);
+    auto displacementsForEachRank =
+            computeDisplacements(numGpuTasksOnEachRankOfThisNode, numRanksOnThisNode);
+    auto gpuTasksOnThisNode = allgatherv(gpuTasksOnThisRank, numGpuTasksOnEachRankOfThisNode,
+                                         displacementsForEachRank, communicator);
 
     /* Next, we re-use the displacements to break up the vector
      * of GPU tasks into something that can be indexed like
@@ -257,23 +238,24 @@ findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
     // of iterators that point to adjacent container elements" or
     // "iterator that points to the first of a pair of valid adjacent
     // container elements, or end".
-    GMX_ASSERT(displacementsForEachRank.size() > 1, "Even with one rank, there's always both a start and end displacement");
+    GMX_ASSERT(displacementsForEachRank.size() > 1,
+               "Even with one rank, there's always both a start and end displacement");
     auto currentDisplacementIt = displacementsForEachRank.begin();
     auto nextDisplacementIt    = currentDisplacementIt + 1;
     do
     {
         gpuTasksOnRanksOfThisNode.emplace_back(std::vector<GpuTask>());
-        for (auto taskOnThisRankIndex = *currentDisplacementIt; taskOnThisRankIndex != *nextDisplacementIt; ++taskOnThisRankIndex)
+        for (auto taskOnThisRankIndex = *currentDisplacementIt;
+             taskOnThisRankIndex != *nextDisplacementIt; ++taskOnThisRankIndex)
         {
             gpuTasksOnRanksOfThisNode.back().push_back(gpuTasksOnThisNode[taskOnThisRankIndex]);
         }
 
         currentDisplacementIt = nextDisplacementIt;
         ++nextDisplacementIt;
-    }
-    while (nextDisplacementIt != displacementsForEachRank.end());
+    } while (nextDisplacementIt != displacementsForEachRank.end());
 
     return gpuTasksOnRanksOfThisNode;
 }
 
-}  // namespace gmx
+} // namespace gmx

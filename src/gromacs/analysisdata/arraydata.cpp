@@ -53,58 +53,50 @@
 namespace gmx
 {
 
-AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstep_(1.0),
-      bUniformX_(true), bReady_(false)
+AbstractAnalysisArrayData::AbstractAnalysisArrayData() :
+    rowCount_(0),
+    pointSetInfo_(0, 0, 0, 0),
+    xstep_(1.0),
+    bUniformX_(true),
+    bReady_(false)
 {
     xvalue_.push_back(0);
 }
 
-AbstractAnalysisArrayData::~AbstractAnalysisArrayData()
-{
-}
+AbstractAnalysisArrayData::~AbstractAnalysisArrayData() {}
 
 
-AnalysisDataFrameRef
-AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
 {
     if (!isAllocated())
     {
         return AnalysisDataFrameRef();
     }
-    return AnalysisDataFrameRef(
-            AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-            makeConstArrayRef(value_).
-                subArray(index * columnCount(), columnCount()),
-            constArrayRefFromArray(&pointSetInfo_, 1));
+    return AnalysisDataFrameRef(AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+                                makeConstArrayRef(value_).subArray(index * columnCount(), columnCount()),
+                                constArrayRefFromArray(&pointSetInfo_, 1));
 }
 
 
-bool
-AbstractAnalysisArrayData::requestStorageInternal(int /*nframes*/)
+bool AbstractAnalysisArrayData::requestStorageInternal(int /*nframes*/)
 {
     return true;
 }
 
 
-void
-AbstractAnalysisArrayData::setColumnCount(int ncols)
+void AbstractAnalysisArrayData::setColumnCount(int ncols)
 {
-    GMX_RELEASE_ASSERT(!isAllocated(),
-                       "Cannot change column count after data has been allocated");
+    GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change column count after data has been allocated");
     AbstractAnalysisData::setColumnCount(0, ncols);
     pointSetInfo_ = AnalysisDataPointSetInfo(0, ncols, 0, 0);
 }
 
 
-void
-AbstractAnalysisArrayData::setRowCount(int rowCount)
+void AbstractAnalysisArrayData::setRowCount(int rowCount)
 {
     GMX_RELEASE_ASSERT(rowCount > 0, "Invalid number of rows");
-    GMX_RELEASE_ASSERT(!isAllocated(),
-                       "Cannot change row count after data has been allocated");
-    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty()
-                       || rowCount == ssize(xvalue_),
+    GMX_RELEASE_ASSERT(!isAllocated(), "Cannot change row count after data has been allocated");
+    GMX_RELEASE_ASSERT(bUniformX_ || xvalue_.empty() || rowCount == ssize(xvalue_),
                        "X axis set with setXAxisValue() does not match the row count");
     xvalue_.resize(rowCount);
     if (bUniformX_ && rowCount > rowCount_)
@@ -118,8 +110,7 @@ AbstractAnalysisArrayData::setRowCount(int rowCount)
 }
 
 
-void
-AbstractAnalysisArrayData::allocateValues()
+void AbstractAnalysisArrayData::allocateValues()
 {
     GMX_RELEASE_ASSERT(!isAllocated(), "Can only allocate values once");
     GMX_RELEASE_ASSERT(rowCount() > 0 && columnCount() > 0,
@@ -133,8 +124,7 @@ AbstractAnalysisArrayData::allocateValues()
 }
 
 
-void
-AbstractAnalysisArrayData::setXAxis(real start, real step)
+void AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
     xvalue_[0] = start;
@@ -147,8 +137,7 @@ AbstractAnalysisArrayData::setXAxis(real start, real step)
 }
 
 
-void
-AbstractAnalysisArrayData::setXAxisValue(int row, real value)
+void AbstractAnalysisArrayData::setXAxisValue(int row, real value)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
     if (rowCount_ > 0)
@@ -165,8 +154,7 @@ AbstractAnalysisArrayData::setXAxisValue(int row, real value)
 }
 
 
-void
-AbstractAnalysisArrayData::valuesReady()
+void AbstractAnalysisArrayData::valuesReady()
 {
     GMX_RELEASE_ASSERT(isAllocated(), "There must be some data");
     if (bReady_)
@@ -175,30 +163,26 @@ AbstractAnalysisArrayData::valuesReady()
     }
     bReady_ = true;
 
-    AnalysisDataModuleManager                     &modules   = moduleManager();
+    AnalysisDataModuleManager& modules = moduleManager();
     modules.notifyDataStart(this);
     for (int i = 0; i < rowCount(); ++i)
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         modules.notifyFrameStart(header);
-        modules.notifyPointsAdd(
-                AnalysisDataPointSetRef(
-                        header, pointSetInfo_,
-                        makeConstArrayRef(value_).
-                            subArray(i*columnCount(), columnCount())));
+        modules.notifyPointsAdd(AnalysisDataPointSetRef(
+                header, pointSetInfo_,
+                makeConstArrayRef(value_).subArray(i * columnCount(), columnCount())));
         modules.notifyFrameFinish(header);
     }
     modules.notifyDataFinish();
 }
 
 
-void
-AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
-                                        AbstractAnalysisArrayData       *dest)
+void AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData* src,
+                                             AbstractAnalysisArrayData*       dest)
 {
     GMX_RELEASE_ASSERT(src->isAllocated(), "Source data must not be empty");
-    GMX_RELEASE_ASSERT(!dest->isAllocated(),
-                       "Destination data must not be allocated");
+    GMX_RELEASE_ASSERT(!dest->isAllocated(), "Destination data must not be allocated");
     dest->setColumnCount(src->columnCount());
     dest->setRowCount(src->rowCount());
     dest->allocateValues();

@@ -75,133 +75,130 @@ class StatePropagatorData;
  * The ShellFCElement manages the call to relax_shell_flexcon(...)
  */
 class ShellFCElement final :
-    public           ISimulatorElement,
-    public           ITopologyHolderClient,
-    public           INeighborSearchSignallerClient,
-    public           IEnergySignallerClient
+    public ISimulatorElement,
+    public ITopologyHolderClient,
+    public INeighborSearchSignallerClient,
+    public IEnergySignallerClient
 {
-    public:
-        //! Constructor
-        ShellFCElement(
-            StatePropagatorData           *statePropagatorData,
-            EnergyElement                 *energyElement,
-            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-            bool                           isVerbose,
-            bool                           isDynamicBox,
-            FILE                          *fplog,
-            const t_commrec               *cr,
-            const t_inputrec              *inputrec,
-            const MDAtoms                 *mdAtoms,
-            t_nrnb                        *nrnb,
-            t_forcerec                    *fr,
-            t_fcdata                      *fcd,
-            gmx_wallcycle                 *wcycle,
-            MdrunScheduleWorkload         *runScheduleWork,
-            gmx_vsite_t                   *vsite,
-            ImdSession                    *imdSession,
-            pull_t                        *pull_work,
-            Constraints                   *constr,
-            const gmx_mtop_t              *globalTopology,
-            gmx_enfrot                    *enforcedRotation);
+public:
+    //! Constructor
+    ShellFCElement(StatePropagatorData*           statePropagatorData,
+                   EnergyElement*                 energyElement,
+                   FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                   bool                           isVerbose,
+                   bool                           isDynamicBox,
+                   FILE*                          fplog,
+                   const t_commrec*               cr,
+                   const t_inputrec*              inputrec,
+                   const MDAtoms*                 mdAtoms,
+                   t_nrnb*                        nrnb,
+                   t_forcerec*                    fr,
+                   t_fcdata*                      fcd,
+                   gmx_wallcycle*                 wcycle,
+                   MdrunScheduleWorkload*         runScheduleWork,
+                   gmx_vsite_t*                   vsite,
+                   ImdSession*                    imdSession,
+                   pull_t*                        pull_work,
+                   Constraints*                   constr,
+                   const gmx_mtop_t*              globalTopology,
+                   gmx_enfrot*                    enforcedRotation);
 
-        /*! \brief Register shell / flex constraint calculation for step / time
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register shell / flex constraint calculation for step / time
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! Check that we got the local topology
-        void elementSetup() override;
-        //! Print some final output
-        void elementTeardown() override;
+    //! Check that we got the local topology
+    void elementSetup() override;
+    //! Print some final output
+    void elementTeardown() override;
 
-        //! Whether either shells or flexible constraints are used
-        static bool doShellsOrFlexConstraints(const gmx_mtop_t *mtop, int nflexcon);
+    //! Whether either shells or flexible constraints are used
+    static bool doShellsOrFlexConstraints(const gmx_mtop_t* mtop, int nflexcon);
 
-    private:
-        //! ITopologyHolderClient implementation
-        void setTopology(const gmx_localtop_t *top) override;
-        //! INeighborSearchSignallerClient implementation
-        SignallerCallbackPtr registerNSCallback() override;
-        //! IEnergySignallerClient implementation
-        SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
-        //! The actual do_force call
-        void run(Step step, Time time, unsigned int flags);
+private:
+    //! ITopologyHolderClient implementation
+    void setTopology(const gmx_localtop_t* top) override;
+    //! INeighborSearchSignallerClient implementation
+    SignallerCallbackPtr registerNSCallback() override;
+    //! IEnergySignallerClient implementation
+    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    //! The actual do_force call
+    void run(Step step, Time time, unsigned int flags);
 
-        //! The shell / FC helper struct
-        gmx_shellfc_t *shellfc_;
+    //! The shell / FC helper struct
+    gmx_shellfc_t* shellfc_;
 
-        //! The next NS step
-        Step nextNSStep_;
-        //! The next energy calculation step
-        Step nextEnergyCalculationStep_;
-        //! The next energy calculation step
-        Step nextVirialCalculationStep_;
-        //! The next free energy calculation step
-        Step nextFreeEnergyCalculationStep_;
+    //! The next NS step
+    Step nextNSStep_;
+    //! The next energy calculation step
+    Step nextEnergyCalculationStep_;
+    //! The next energy calculation step
+    Step nextVirialCalculationStep_;
+    //! The next free energy calculation step
+    Step nextFreeEnergyCalculationStep_;
 
-        //! Pointer to the micro state
-        StatePropagatorData           *statePropagatorData_;
-        //! Pointer to the energy element
-        EnergyElement                 *energyElement_;
-        //! The free energy perturbation element
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the energy element
+    EnergyElement* energyElement_;
+    //! The free energy perturbation element
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
-        //! The local topology - updated by Topology via Client system
-        const gmx_localtop_t *localTopology_;
+    //! The local topology - updated by Topology via Client system
+    const gmx_localtop_t* localTopology_;
 
-        //! Whether we're having a dynamic box
-        const bool isDynamicBox_;
-        //! Whether we're being verbose
-        const bool isVerbose_;
-        //! The number of shell relaxation steps we did
-        Step       nSteps_;
+    //! Whether we're having a dynamic box
+    const bool isDynamicBox_;
+    //! Whether we're being verbose
+    const bool isVerbose_;
+    //! The number of shell relaxation steps we did
+    Step nSteps_;
 
-        //! DD / DLB helper object
-        const DDBalanceRegionHandler ddBalanceRegionHandler_;
+    //! DD / DLB helper object
+    const DDBalanceRegionHandler ddBalanceRegionHandler_;
 
-        /* \brief The FEP lambda vector
-         *
-         * Used if FEP is off, since do_force
-         * requires lambda to be allocated anyway
-         */
-        std::array<real, efptNR> lambda_;
+    /* \brief The FEP lambda vector
+     *
+     * Used if FEP is off, since do_force
+     * requires lambda to be allocated anyway
+     */
+    std::array<real, efptNR> lambda_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE                  *fplog_;
-        //! Handles communication.
-        const t_commrec       *cr_;
-        //! Contains user input mdp options.
-        const t_inputrec      *inputrec_;
-        //! Atom parameters for this domain.
-        const MDAtoms         *mdAtoms_;
-        //! Manages flop accounting.
-        t_nrnb                *nrnb_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle         *wcycle_;
-        //! Parameters for force calculations.
-        t_forcerec            *fr_;
-        //! Handles virtual sites.
-        gmx_vsite_t           *vsite_;
-        //! The Interactive Molecular Dynamics session.
-        ImdSession            *imdSession_;
-        //! The pull work object.
-        pull_t                *pull_work_;
-        //! Helper struct for force calculations.
-        t_fcdata              *fcd_;
-        //! Schedule of work for each MD step for this task.
-        MdrunScheduleWorkload *runScheduleWork_;
-        //! Handles constraints.
-        Constraints           *constr_;
-        //! Handles enforced rotation.
-        gmx_enfrot            *enforcedRotation_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    const t_commrec* cr_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    const MDAtoms* mdAtoms_;
+    //! Manages flop accounting.
+    t_nrnb* nrnb_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
+    //! Parameters for force calculations.
+    t_forcerec* fr_;
+    //! Handles virtual sites.
+    gmx_vsite_t* vsite_;
+    //! The Interactive Molecular Dynamics session.
+    ImdSession* imdSession_;
+    //! The pull work object.
+    pull_t* pull_work_;
+    //! Helper struct for force calculations.
+    t_fcdata* fcd_;
+    //! Schedule of work for each MD step for this task.
+    MdrunScheduleWorkload* runScheduleWork_;
+    //! Handles constraints.
+    Constraints* constr_;
+    //! Handles enforced rotation.
+    gmx_enfrot* enforcedRotation_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_SHELLFCELEMENT_H

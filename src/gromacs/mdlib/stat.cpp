@@ -64,12 +64,12 @@
 
 typedef struct gmx_global_stat
 {
-    t_bin *rb;
-    int   *itc0;
-    int   *itc1;
+    t_bin* rb;
+    int*   itc0;
+    int*   itc1;
 } t_gmx_global_stat;
 
-gmx_global_stat_t global_stat_init(const t_inputrec *ir)
+gmx_global_stat_t global_stat_init(const t_inputrec* ir)
 {
     gmx_global_stat_t gs;
 
@@ -90,8 +90,7 @@ void global_stat_destroy(gmx_global_stat_t gs)
     sfree(gs);
 }
 
-static int filter_enerdterm(const real *afrom, gmx_bool bToBuffer, real *ato,
-                            gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner)
+static int filter_enerdterm(const real* afrom, gmx_bool bToBuffer, real* ato, gmx_bool bTemp, gmx_bool bPres, gmx_bool bEner)
 {
     int i, to, from;
 
@@ -136,37 +135,43 @@ static int filter_enerdterm(const real *afrom, gmx_bool bToBuffer, real *ato,
     return to;
 }
 
-void global_stat(const gmx_global_stat *gs,
-                 const t_commrec *cr, gmx_enerdata_t *enerd,
-                 tensor fvir, tensor svir, rvec mu_tot,
-                 const t_inputrec *inputrec,
-                 gmx_ekindata_t *ekind, const gmx::Constraints *constr,
-                 t_vcm *vcm,
-                 int nsig, real *sig,
-                 int *totalNumberOfBondedInteractions,
-                 gmx_bool bSumEkinhOld, int flags)
+void global_stat(const gmx_global_stat*  gs,
+                 const t_commrec*        cr,
+                 gmx_enerdata_t*         enerd,
+                 tensor                  fvir,
+                 tensor                  svir,
+                 rvec                    mu_tot,
+                 const t_inputrec*       inputrec,
+                 gmx_ekindata_t*         ekind,
+                 const gmx::Constraints* constr,
+                 t_vcm*                  vcm,
+                 int                     nsig,
+                 real*                   sig,
+                 int*                    totalNumberOfBondedInteractions,
+                 gmx_bool                bSumEkinhOld,
+                 int                     flags)
 /* instead of current system, gmx_booleans for summing virial, kinetic energy, and other terms */
 {
-    t_bin     *rb;
-    int       *itc0, *itc1;
-    int        ie    = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
-    int        idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
-    int        isig  = -1;
-    int        icj   = -1, ici = -1, icx = -1;
-    int        inn[egNR];
-    real       copyenerd[F_NRE];
-    int        nener, j;
-    double     nb;
-    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
-    bool       checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
+    t_bin* rb;
+    int *  itc0, *itc1;
+    int    ie = 0, ifv = 0, isv = 0, irmsd = 0, imu = 0;
+    int idedl = 0, idedlo = 0, idvdll = 0, idvdlnl = 0, iepl = 0, icm = 0, imass = 0, ica = 0, inb = 0;
+    int      isig = -1;
+    int      icj = -1, ici = -1, icx = -1;
+    int      inn[egNR];
+    real     copyenerd[F_NRE];
+    int      nener, j;
+    double   nb;
+    gmx_bool bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
+    bool checkNumberOfBondedInteractions = (flags & CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS) != 0;
 
-    bVV           = EI_VV(inputrec->eI);
-    bTemp         = ((flags & CGLO_TEMPERATURE) != 0);
-    bEner         = ((flags & CGLO_ENERGY) != 0);
-    bPres         = ((flags & CGLO_PRESSURE) != 0);
-    bConstrVir    = ((flags & CGLO_CONSTRAINT) != 0);
-    bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
-    bReadEkin     = ((flags & CGLO_READEKIN) != 0);
+    bVV         = EI_VV(inputrec->eI);
+    bTemp       = ((flags & CGLO_TEMPERATURE) != 0);
+    bEner       = ((flags & CGLO_ENERGY) != 0);
+    bPres       = ((flags & CGLO_PRESSURE) != 0);
+    bConstrVir  = ((flags & CGLO_CONSTRAINT) != 0);
+    bEkinAveVel = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
+    bReadEkin   = ((flags & CGLO_READEKIN) != 0);
 
     rb   = gs->rb;
     itc0 = gs->itc0;
@@ -189,10 +194,10 @@ void global_stat(const gmx_global_stat *gs,
        This is just the constraint virial.*/
     if (bConstrVir)
     {
-        isv = add_binr(rb, DIM*DIM, svir[0]);
+        isv = add_binr(rb, DIM * DIM, svir[0]);
     }
 
-/* We need the force virial and the kinetic energy for the first time through with velocity verlet */
+    /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
     if (bTemp || !bVV)
     {
         if (ekind)
@@ -201,15 +206,15 @@ void global_stat(const gmx_global_stat *gs,
             {
                 if (bSumEkinhOld)
                 {
-                    itc0[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
+                    itc0[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    itc1[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinf[0]);
                 }
                 else if (!bReadEkin)
                 {
-                    itc1[j] = add_binr(rb, DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    itc1[j] = add_binr(rb, DIM * DIM, ekind->tcstat[j].ekinh[0]);
                 }
             }
             /* these probably need to be put into one of these categories */
@@ -220,20 +225,20 @@ void global_stat(const gmx_global_stat *gs,
             }
             if (ekind->cosacc.cos_accel != 0)
             {
-                ica   = add_binr(rb, 1, &(ekind->cosacc.mvcos));
+                ica = add_binr(rb, 1, &(ekind->cosacc.mvcos));
             }
         }
     }
 
     if (bPres)
     {
-        ifv = add_binr(rb, DIM*DIM, fvir[0]);
+        ifv = add_binr(rb, DIM * DIM, fvir[0]);
     }
 
     gmx::ArrayRef<real> rmsdData;
     if (bEner)
     {
-        ie  = add_binr(rb, nener, copyenerd);
+        ie = add_binr(rb, nener, copyenerd);
         if (constr)
         {
             rmsdData = constr->rmsdData();
@@ -264,13 +269,13 @@ void global_stat(const gmx_global_stat *gs,
 
     if (vcm)
     {
-        icm   = add_binr(rb, DIM*vcm->nr, vcm->group_p[0]);
+        icm   = add_binr(rb, DIM * vcm->nr, vcm->group_p[0]);
         imass = add_binr(rb, vcm->nr, vcm->group_mass.data());
         if (vcm->mode == ecmANGULAR)
         {
-            icj   = add_binr(rb, DIM*vcm->nr, vcm->group_j[0]);
-            icx   = add_binr(rb, DIM*vcm->nr, vcm->group_x[0]);
-            ici   = add_binr(rb, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
+            icj = add_binr(rb, DIM * vcm->nr, vcm->group_j[0]);
+            icx = add_binr(rb, DIM * vcm->nr, vcm->group_x[0]);
+            ici = add_binr(rb, DIM * DIM * vcm->nr, vcm->group_i[0][0]);
         }
     }
 
@@ -295,7 +300,7 @@ void global_stat(const gmx_global_stat *gs,
 
     if (bConstrVir)
     {
-        extract_binr(rb, isv, DIM*DIM, svir[0]);
+        extract_binr(rb, isv, DIM * DIM, svir[0]);
     }
 
     /* We need the force virial and the kinetic energy for the first time through with velocity verlet */
@@ -307,15 +312,15 @@ void global_stat(const gmx_global_stat *gs,
             {
                 if (bSumEkinhOld)
                 {
-                    extract_binr(rb, itc0[j], DIM*DIM, ekind->tcstat[j].ekinh_old[0]);
+                    extract_binr(rb, itc0[j], DIM * DIM, ekind->tcstat[j].ekinh_old[0]);
                 }
                 if (bEkinAveVel && !bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinf[0]);
+                    extract_binr(rb, itc1[j], DIM * DIM, ekind->tcstat[j].ekinf[0]);
                 }
                 else if (!bReadEkin)
                 {
-                    extract_binr(rb, itc1[j], DIM*DIM, ekind->tcstat[j].ekinh[0]);
+                    extract_binr(rb, itc1[j], DIM * DIM, ekind->tcstat[j].ekinh[0]);
                 }
             }
             extract_binr(rb, idedl, 1, &(ekind->dekindl));
@@ -331,7 +336,7 @@ void global_stat(const gmx_global_stat *gs,
     }
     if (bPres)
     {
-        extract_binr(rb, ifv, DIM*DIM, fvir[0]);
+        extract_binr(rb, ifv, DIM * DIM, fvir[0]);
     }
 
     if (bEner)
@@ -365,13 +370,13 @@ void global_stat(const gmx_global_stat *gs,
 
     if (vcm)
     {
-        extract_binr(rb, icm, DIM*vcm->nr, vcm->group_p[0]);
+        extract_binr(rb, icm, DIM * vcm->nr, vcm->group_p[0]);
         extract_binr(rb, imass, vcm->nr, vcm->group_mass.data());
         if (vcm->mode == ecmANGULAR)
         {
-            extract_binr(rb, icj, DIM*vcm->nr, vcm->group_j[0]);
-            extract_binr(rb, icx, DIM*vcm->nr, vcm->group_x[0]);
-            extract_binr(rb, ici, DIM*DIM*vcm->nr, vcm->group_i[0][0]);
+            extract_binr(rb, icj, DIM * vcm->nr, vcm->group_j[0]);
+            extract_binr(rb, icx, DIM * vcm->nr, vcm->group_x[0]);
+            extract_binr(rb, ici, DIM * DIM * vcm->nr, vcm->group_i[0][0]);
         }
     }
 

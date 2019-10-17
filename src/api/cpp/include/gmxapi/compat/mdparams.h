@@ -59,17 +59,17 @@ class GmxMdParamsImpl;
 
 class GmxMdParams
 {
-    public:
-        GmxMdParams();
-        ~GmxMdParams();
-        GmxMdParams(const GmxMdParams &)            = delete;
-        GmxMdParams &operator=(const GmxMdParams &) = delete;
-        GmxMdParams(GmxMdParams &&) noexcept;
-        GmxMdParams &operator=(GmxMdParams &&) noexcept;
+public:
+    GmxMdParams();
+    ~GmxMdParams();
+    GmxMdParams(const GmxMdParams&) = delete;
+    GmxMdParams& operator=(const GmxMdParams&) = delete;
+    GmxMdParams(GmxMdParams&& /*unused*/) noexcept;
+    GmxMdParams& operator=(GmxMdParams&& /*unused*/) noexcept;
 
-        explicit GmxMdParams(std::unique_ptr<GmxMdParamsImpl> &&impl);
+    explicit GmxMdParams(std::unique_ptr<GmxMdParamsImpl>&& impl);
 
-        std::unique_ptr<GmxMdParamsImpl> params_;
+    std::unique_ptr<GmxMdParamsImpl> params_;
 };
 
 /*!
@@ -81,8 +81,8 @@ class GmxMdParams
  * \note The returned data is a copy. Modifying the return value has no affect on
  * the original object inspected.
  */
-std::vector<std::string> keys(const GmxMdParams &params);
+std::vector<std::string> keys(const GmxMdParams& params);
 
-}      // end namespace gmxapicompat
+} // end namespace gmxapicompat
 
-#endif //GMXAPICOMPAT_MDPARAMS_H
+#endif // GMXAPICOMPAT_MDPARAMS_H

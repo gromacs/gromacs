@@ -57,8 +57,7 @@ namespace gmx
 {
 
 //! Implements aspects of logfile handling common to opening either for writing or appending.
-static void prepareLogFile(BinaryInformationSettings settings,
-                           FILE                     *fplog)
+static void prepareLogFile(BinaryInformationSettings settings, FILE* fplog)
 {
     GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
     // TODO This function is writing initial content to the log
@@ -69,21 +68,18 @@ static void prepareLogFile(BinaryInformationSettings settings,
 
     try
     {
-        settings
-            .extendedInfo(true)
-            .processId(true);
+        settings.extendedInfo(true).processId(true);
         printBinaryInformation(fplog, getProgramContext(), settings);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     fprintf(fplog, "\n");
 
     fflush(fplog);
 }
 
-LogFilePtr openLogFile(const char *lognm,
-                       bool        appendFiles)
+LogFilePtr openLogFile(const char* lognm, bool appendFiles)
 {
-    const char *fileOpeningMode = "w+";
+    const char* fileOpeningMode = "w+";
     if (appendFiles)
     {
         fileOpeningMode = GMX_FAHCORE ? "a" : "r+";
@@ -99,7 +95,7 @@ LogFilePtr openLogFile(const char *lognm,
     // checksum has been computed.
     if (!appendFiles)
     {
-        FILE *fplog = gmx_fio_getfp(logfio.get());
+        FILE*                          fplog = gmx_fio_getfp(logfio.get());
         gmx::BinaryInformationSettings settings;
         settings.copyright(true);
         prepareLogFile(settings, fplog);
@@ -107,7 +103,7 @@ LogFilePtr openLogFile(const char *lognm,
     return logfio;
 }
 
-void prepareLogAppending(FILE *fplog)
+void prepareLogAppending(FILE* fplog)
 {
     GMX_RELEASE_ASSERT(fplog != nullptr, "Log file must be already open");
     fprintf(fplog,
@@ -115,14 +111,13 @@ void prepareLogAppending(FILE *fplog)
             "\n"
             "-----------------------------------------------------------\n"
             "Restarting from checkpoint, appending to previous log file.\n"
-            "\n"
-            );
+            "\n");
     gmx::BinaryInformationSettings settings;
     settings.copyright(false);
     prepareLogFile(settings, fplog);
 }
 
-void closeLogFile(t_fileio *logfio)
+void closeLogFile(t_fileio* logfio)
 {
     if (logfio)
     {
@@ -131,4 +126,4 @@ void closeLogFile(t_fileio *logfio)
     }
 }
 
-}    // namespace gmx
+} // namespace gmx

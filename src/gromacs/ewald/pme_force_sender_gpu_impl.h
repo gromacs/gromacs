@@ -55,36 +55,36 @@ namespace gmx
 class PmeForceSenderGpu::Impl
 {
 
-    public:
-        /*! \brief Creates PME GPU Force sender object
-         * \param[in] pmeStream       CUDA stream used for PME computations
-         * \param[in] comm            Communicator used for simulation
-         * \param[in] ppRanks         List of PP ranks
-         */
-        Impl(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
-        ~Impl();
+public:
+    /*! \brief Creates PME GPU Force sender object
+     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] comm            Communicator used for simulation
+     * \param[in] ppRanks         List of PP ranks
+     */
+    Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    ~Impl();
 
-        /*! \brief
-         * sends force buffer address to PP rank
-         * \param[in] d_f   force buffer in GPU memory
-         */
-        void sendForceBufferAddressToPpRanks(rvec *d_f);
+    /*! \brief
+     * sends force buffer address to PP rank
+     * \param[in] d_f   force buffer in GPU memory
+     */
+    void sendForceBufferAddressToPpRanks(rvec* d_f);
 
-        /*! \brief
-         * Send PP data to PP rank
-         * \param[in] ppRank           PP rank to receive data
-         */
-        void sendFToPpCudaDirect(int ppRank);
+    /*! \brief
+     * Send PP data to PP rank
+     * \param[in] ppRank           PP rank to receive data
+     */
+    void sendFToPpCudaDirect(int ppRank);
 
-    private:
-        //! CUDA stream for PME operations
-        cudaStream_t           pmeStream_ = nullptr;
-        //! Event triggered when to allow remote PP stream to syn with pme stream
-        GpuEventSynchronizer   pmeSync_;
-        //! communicator for simulation
-        MPI_Comm               comm_;
-        //! list of PP ranks
-        gmx::ArrayRef<PpRanks> ppRanks_;
+private:
+    //! CUDA stream for PME operations
+    cudaStream_t pmeStream_ = nullptr;
+    //! Event triggered when to allow remote PP stream to syn with pme stream
+    GpuEventSynchronizer pmeSync_;
+    //! communicator for simulation
+    MPI_Comm comm_;
+    //! list of PP ranks
+    gmx::ArrayRef<PpRanks> ppRanks_;
 };
 
 } // namespace gmx

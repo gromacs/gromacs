@@ -47,7 +47,7 @@
 bool canComputeOnGpu()
 {
     bool           canComputeOnGpu = false;
-    gmx_gpu_info_t gpuInfo {};
+    gmx_gpu_info_t gpuInfo{};
     if (canPerformGpuDetection())
     {
         findGpus(&gpuInfo);

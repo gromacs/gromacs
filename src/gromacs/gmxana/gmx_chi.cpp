@@ -65,73 +65,71 @@
 
 static gmx_bool bAllowed(real phi, real psi)
 {
-    static const char *map[] = {
-        "1100000000000000001111111000000000001111111111111111111111111",
-        "1100000000000000001111110000000000011111111111111111111111111",
-        "1100000000000000001111110000000000011111111111111111111111111",
-        "1100000000000000001111100000000000111111111111111111111111111",
-        "1100000000000000001111100000000000111111111111111111111111111",
-        "1100000000000000001111100000000001111111111111111111111111111",
-        "1100000000000000001111100000000001111111111111111111111111111",
-        "1100000000000000001111100000000011111111111111111111111111111",
-        "1110000000000000001111110000000111111111111111111111111111111",
-        "1110000000000000001111110000001111111111111111111111111111111",
-        "1110000000000000001111111000011111111111111111111111111111111",
-        "1110000000000000001111111100111111111111111111111111111111111",
-        "1110000000000000001111111111111111111111111111111111111111111",
-        "1110000000000000001111111111111111111111111111111111111111111",
-        "1110000000000000001111111111111111111111111111111111111111111",
-        "1110000000000000001111111111111111111111111111111111111111111",
-        "1110000000000000001111111111111110011111111111111111111111111",
-        "1110000000000000001111111111111100000111111111111111111111111",
-        "1110000000000000001111111111111000000000001111111111111111111",
-        "1100000000000000001111111111110000000000000011111111111111111",
-        "1100000000000000001111111111100000000000000011111111111111111",
-        "1000000000000000001111111111000000000000000001111111111111110",
-        "0000000000000000001111111110000000000000000000111111111111100",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000111111111111000000000000000",
-        "1100000000000000000000000000000001111111111111100000000000111",
-        "1100000000000000000000000000000001111111111111110000000000111",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000",
-        "0000000000000000000000000000000000000000000000000000000000000"
-    };
+    static const char* map[] = { "1100000000000000001111111000000000001111111111111111111111111",
+                                 "1100000000000000001111110000000000011111111111111111111111111",
+                                 "1100000000000000001111110000000000011111111111111111111111111",
+                                 "1100000000000000001111100000000000111111111111111111111111111",
+                                 "1100000000000000001111100000000000111111111111111111111111111",
+                                 "1100000000000000001111100000000001111111111111111111111111111",
+                                 "1100000000000000001111100000000001111111111111111111111111111",
+                                 "1100000000000000001111100000000011111111111111111111111111111",
+                                 "1110000000000000001111110000000111111111111111111111111111111",
+                                 "1110000000000000001111110000001111111111111111111111111111111",
+                                 "1110000000000000001111111000011111111111111111111111111111111",
+                                 "1110000000000000001111111100111111111111111111111111111111111",
+                                 "1110000000000000001111111111111111111111111111111111111111111",
+                                 "1110000000000000001111111111111111111111111111111111111111111",
+                                 "1110000000000000001111111111111111111111111111111111111111111",
+                                 "1110000000000000001111111111111111111111111111111111111111111",
+                                 "1110000000000000001111111111111110011111111111111111111111111",
+                                 "1110000000000000001111111111111100000111111111111111111111111",
+                                 "1110000000000000001111111111111000000000001111111111111111111",
+                                 "1100000000000000001111111111110000000000000011111111111111111",
+                                 "1100000000000000001111111111100000000000000011111111111111111",
+                                 "1000000000000000001111111111000000000000000001111111111111110",
+                                 "0000000000000000001111111110000000000000000000111111111111100",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000111111111111000000000000000",
+                                 "1100000000000000000000000000000001111111111111100000000000111",
+                                 "1100000000000000000000000000000001111111111111110000000000111",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000",
+                                 "0000000000000000000000000000000000000000000000000000000000000" };
 #define NPP asize(map)
-    int                x, y;
+    int x, y;
 
-#define INDEX(ppp) (((static_cast<int> (360+(ppp)*RAD2DEG)) % 360)/6)
+#define INDEX(ppp) (((static_cast<int>(360 + (ppp)*RAD2DEG)) % 360) / 6)
     x = INDEX(phi);
     y = INDEX(psi);
 #undef INDEX
@@ -139,19 +137,19 @@ static gmx_bool bAllowed(real phi, real psi)
     return map[x][y] == '1';
 }
 
-static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
+static int* make_chi_ind(int nl, t_dlist dl[], int* ndih)
 {
-    int     *id;
-    int      i, Xi, n;
+    int* id;
+    int  i, Xi, n;
 
     /* There are nl residues with max edMax dihedrals with 4 atoms each */
-    snew(id, nl*edMax*4);
+    snew(id, nl * edMax * 4);
 
     n = 0;
     for (i = 0; (i < nl); i++)
     {
         /* Phi, fake the first one */
-        dl[i].j0[edPhi] = n/4;
+        dl[i].j0[edPhi] = n / 4;
         if (dl[i].atm.minC >= 0)
         {
             id[n++] = dl[i].atm.minC;
@@ -167,13 +165,13 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
     for (i = 0; (i < nl); i++)
     {
         /* Psi, fake the last one */
-        dl[i].j0[edPsi] = n/4;
+        dl[i].j0[edPsi] = n / 4;
         id[n++]         = dl[i].atm.N;
         id[n++]         = dl[i].atm.Cn[1];
         id[n++]         = dl[i].atm.C;
-        if (i < (nl-1) )
+        if (i < (nl - 1))
         {
-            id[n++] = dl[i+1].atm.N;
+            id[n++] = dl[i + 1].atm.N;
         }
         else
         {
@@ -185,7 +183,7 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
         /* Omega */
         if (has_dihedral(edOmega, &(dl[i])))
         {
-            dl[i].j0[edOmega] = n/4;
+            dl[i].j0[edOmega] = n / 4;
             id[n++]           = dl[i].atm.minCalpha;
             id[n++]           = dl[i].atm.minC;
             id[n++]           = dl[i].atm.N;
@@ -197,39 +195,47 @@ static int *make_chi_ind(int nl, t_dlist dl[], int *ndih)
         /* Chi# */
         for (i = 0; (i < nl); i++)
         {
-            if (dl[i].atm.Cn[Xi+3] != -1)
+            if (dl[i].atm.Cn[Xi + 3] != -1)
             {
-                dl[i].j0[edChi1+Xi] = n/4;
-                id[n++]             = dl[i].atm.Cn[Xi];
-                id[n++]             = dl[i].atm.Cn[Xi+1];
-                id[n++]             = dl[i].atm.Cn[Xi+2];
-                id[n++]             = dl[i].atm.Cn[Xi+3];
+                dl[i].j0[edChi1 + Xi] = n / 4;
+                id[n++]               = dl[i].atm.Cn[Xi];
+                id[n++]               = dl[i].atm.Cn[Xi + 1];
+                id[n++]               = dl[i].atm.Cn[Xi + 2];
+                id[n++]               = dl[i].atm.Cn[Xi + 3];
             }
         }
     }
-    *ndih = n/4;
+    *ndih = n / 4;
 
     return id;
 }
 
-static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
-                       int nlist, t_dlist dlist[], real time[], int maxchi,
-                       gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega,
-                       const gmx_output_env_t *oenv)
+static void do_dihcorr(const char*             fn,
+                       int                     nf,
+                       int                     ndih,
+                       real**                  dih,
+                       real                    dt,
+                       int                     nlist,
+                       t_dlist                 dlist[],
+                       real                    time[],
+                       int                     maxchi,
+                       gmx_bool                bPhi,
+                       gmx_bool                bPsi,
+                       gmx_bool                bChi,
+                       gmx_bool                bOmega,
+                       const gmx_output_env_t* oenv)
 {
     char name1[256], name2[256];
     int  i, j, Xi;
 
-    do_autocorr(fn, oenv, "Dihedral Autocorrelation Function",
-                nf, ndih, dih, dt, eacCos, FALSE);
+    do_autocorr(fn, oenv, "Dihedral Autocorrelation Function", nf, ndih, dih, dt, eacCos, FALSE);
     /* Dump em all */
     j = 0;
     for (i = 0; (i < nlist); i++)
     {
         if (bPhi)
         {
-            print_one(oenv, "corrphi", dlist[i].name, "Phi ACF for", "C(t)", nf/2, time,
-                      dih[j]);
+            print_one(oenv, "corrphi", dlist[i].name, "Phi ACF for", "C(t)", nf / 2, time, dih[j]);
         }
         j++;
     }
@@ -237,8 +243,7 @@ static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
     {
         if (bPsi)
         {
-            print_one(oenv, "corrpsi", dlist[i].name, "Psi ACF for", "C(t)", nf/2, time,
-                      dih[j]);
+            print_one(oenv, "corrpsi", dlist[i].name, "Psi ACF for", "C(t)", nf / 2, time, dih[j]);
         }
         j++;
     }
@@ -248,23 +253,22 @@ static void do_dihcorr(const char *fn, int nf, int ndih, real **dih, real dt,
         {
             if (bOmega)
             {
-                print_one(oenv, "corromega", dlist[i].name, "Omega ACF for", "C(t)",
-                          nf/2, time, dih[j]);
+                print_one(oenv, "corromega", dlist[i].name, "Omega ACF for", "C(t)", nf / 2, time, dih[j]);
             }
             j++;
         }
     }
     for (Xi = 0; (Xi < maxchi); Xi++)
     {
-        sprintf(name1, "corrchi%d", Xi+1);
-        sprintf(name2, "Chi%d ACF for", Xi+1);
+        sprintf(name1, "corrchi%d", Xi + 1);
+        sprintf(name2, "Chi%d ACF for", Xi + 1);
         for (i = 0; (i < nlist); i++)
         {
-            if (dlist[i].atm.Cn[Xi+3] != -1)
+            if (dlist[i].atm.Cn[Xi + 3] != -1)
             {
                 if (bChi)
                 {
-                    print_one(oenv, name1, dlist[i].name, name2, "C(t)", nf/2, time, dih[j]);
+                    print_one(oenv, name1, dlist[i].name, name2, "C(t)", nf / 2, time, dih[j]);
                 }
                 j++;
             }
@@ -285,21 +289,29 @@ static void copy_dih_data(const real in[], real out[], int nf, gmx_bool bLEAVE)
     }
     else
     {
-        mult = (180.0/M_PI);
+        mult = (180.0 / M_PI);
     }
     for (i = 0; (i < nf); i++)
     {
-        out[i] = in[i]*mult;
+        out[i] = in[i] * mult;
     }
 }
 
-static void dump_em_all(int nlist, t_dlist dlist[], int nf, real time[],
-                        real **dih, int maxchi,
-                        gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, gmx_bool bOmega, gmx_bool bRAD,
-                        const gmx_output_env_t *oenv)
+static void dump_em_all(int                     nlist,
+                        t_dlist                 dlist[],
+                        int                     nf,
+                        real                    time[],
+                        real**                  dih,
+                        int                     maxchi,
+                        gmx_bool                bPhi,
+                        gmx_bool                bPsi,
+                        gmx_bool                bChi,
+                        gmx_bool                bOmega,
+                        gmx_bool                bRAD,
+                        const gmx_output_env_t* oenv)
 {
     char  name[256], titlestr[256], ystr[256];
-    real *data;
+    real* data;
     int   i, j, Xi;
 
     snew(data, nf);
@@ -350,12 +362,12 @@ static void dump_em_all(int nlist, t_dlist dlist[], int nf, real time[],
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (dlist[i].atm.Cn[Xi+3] != -1)
+            if (dlist[i].atm.Cn[Xi + 3] != -1)
             {
                 if (bChi)
                 {
-                    sprintf(name, "chi%d", Xi+1);
-                    sprintf(titlestr, "\\xc\\f{}\\s%d\\N", Xi+1);
+                    sprintf(name, "chi%d", Xi + 1);
+                    sprintf(titlestr, "\\xc\\f{}\\s%d\\N", Xi + 1);
                     copy_dih_data(dih[j], data, nf, bRAD);
                     print_one(oenv, name, dlist[i].name, titlestr, ystr, nf, time, data);
                 }
@@ -375,19 +387,18 @@ static void reset_one(real dih[], int nf, real phase)
         dih[j] += phase;
         while (dih[j] < -M_PI)
         {
-            dih[j] += 2*M_PI;
+            dih[j] += 2 * M_PI;
         }
         while (dih[j] >= M_PI)
         {
-            dih[j] -= 2*M_PI;
+            dih[j] -= 2 * M_PI;
         }
     }
 }
 
-static int reset_em_all(int nlist, t_dlist dlist[], int nf,
-                        real **dih, int maxchi)
+static int reset_em_all(int nlist, t_dlist dlist[], int nf, real** dih, int maxchi)
 {
-    int  i, j, Xi;
+    int i, j, Xi;
 
     /* Reset em all */
     j = 0;
@@ -404,7 +415,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
         }
     }
     /* Psi */
-    for (i = 0; (i < nlist-1); i++)
+    for (i = 0; (i < nlist - 1); i++)
     {
         reset_one(dih[j++], nf, 0);
     }
@@ -424,7 +435,7 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (dlist[i].atm.Cn[Xi+3] != -1)
+            if (dlist[i].atm.Cn[Xi + 3] != -1)
             {
                 reset_one(dih[j], nf, 0);
                 j++;
@@ -435,55 +446,61 @@ static int reset_em_all(int nlist, t_dlist dlist[], int nf,
     return j;
 }
 
-static void histogramming(FILE *log, int nbin, ResidueType *rt,
-                          int nf, int maxchi, real **dih,
-                          int nlist, t_dlist dlist[],
-                          const int index[],
-                          gmx_bool bPhi, gmx_bool bPsi, gmx_bool bOmega, gmx_bool bChi,
-                          gmx_bool bNormalize, gmx_bool bSSHisto, const char *ssdump,
-                          real bfac_max, const t_atoms *atoms,
-                          gmx_bool bDo_jc, const char *fn,
-                          const gmx_output_env_t *oenv)
+static void histogramming(FILE*                   log,
+                          int                     nbin,
+                          ResidueType*            rt,
+                          int                     nf,
+                          int                     maxchi,
+                          real**                  dih,
+                          int                     nlist,
+                          t_dlist                 dlist[],
+                          const int               index[],
+                          gmx_bool                bPhi,
+                          gmx_bool                bPsi,
+                          gmx_bool                bOmega,
+                          gmx_bool                bChi,
+                          gmx_bool                bNormalize,
+                          gmx_bool                bSSHisto,
+                          const char*             ssdump,
+                          real                    bfac_max,
+                          const t_atoms*          atoms,
+                          gmx_bool                bDo_jc,
+                          const char*             fn,
+                          const gmx_output_env_t* oenv)
 {
     /* also gets 3J couplings and order parameters S2 */
     // Avoid warnings about narrowing conversions from double to real
 #ifdef _MSC_VER
-#pragma warning(disable: 4838)
+#    pragma warning(disable : 4838)
 #endif
-    t_karplus kkkphi[] = {
-        { "J_NHa1",    6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
-        { "J_NHa2",    6.51, -1.76,  1.6,  M_PI/3,   0.0,  0.0 },
-        { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0,  0.0 },
-        { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI/3,   0.0,  0.0 },
-        { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2*M_PI/3, 0.0,  0.0 }
-    };
-    t_karplus kkkpsi[] = {
-        { "J_HaN",   -0.88, -0.61, -0.27, M_PI/3,  0.0,  0.0 }
-    };
-    t_karplus kkkchi1[] = {
-        { "JHaHb2",       9.5, -1.6, 1.8, -M_PI/3, 0,  0.0 },
-        { "JHaHb3",       9.5, -1.6, 1.8, 0, 0,  0.0 }
-    };
+    t_karplus kkkphi[]  = { { "J_NHa1", 6.51, -1.76, 1.6, -M_PI / 3, 0.0, 0.0 },
+                           { "J_NHa2", 6.51, -1.76, 1.6, M_PI / 3, 0.0, 0.0 },
+                           { "J_HaC'", 4.0, 1.1, 0.1, 0.0, 0.0, 0.0 },
+                           { "J_NHCb", 4.7, -1.5, -0.2, M_PI / 3, 0.0, 0.0 },
+                           { "J_Ci-1Hai", 4.5, -1.3, -1.2, 2 * M_PI / 3, 0.0, 0.0 } };
+    t_karplus kkkpsi[]  = { { "J_HaN", -0.88, -0.61, -0.27, M_PI / 3, 0.0, 0.0 } };
+    t_karplus kkkchi1[] = { { "JHaHb2", 9.5, -1.6, 1.8, -M_PI / 3, 0, 0.0 },
+                            { "JHaHb3", 9.5, -1.6, 1.8, 0, 0, 0.0 } };
 #ifdef _MSC_VER
-#pragma warning(default: 4838)
+#    pragma warning(default : 4838)
 #endif
 #define NKKKPHI asize(kkkphi)
 #define NKKKPSI asize(kkkpsi)
 #define NKKKCHI asize(kkkchi1)
-#define NJC (NKKKPHI+NKKKPSI+NKKKCHI)
+#define NJC (NKKKPHI + NKKKPSI + NKKKCHI)
 
-    FILE       *fp, *ssfp[3] = {nullptr, nullptr, nullptr};
-    const char *sss[3] = { "sheet", "helix", "coil" };
+    FILE *      fp, *ssfp[3] = { nullptr, nullptr, nullptr };
+    const char* sss[3] = { "sheet", "helix", "coil" };
     real        S2;
-    real       *normhisto;
-    real      **Jc, **Jcsig;
-    int     ****his_aa_ss = nullptr;
-    int      ***his_aa, *histmp;
+    real*       normhisto;
+    real **     Jc, **Jcsig;
+    int****     his_aa_ss = nullptr;
+    int ***     his_aa, *histmp;
     int         i, j, k, m, n, nn, Dih, nres, hindex, angle;
     gmx_bool    bBfac, bOccup;
     char        hisfile[256], hhisfile[256], title[256], *ss_str = nullptr;
-    char      **leg;
-    const char *residue_name;
+    char**      leg;
+    const char* residue_name;
     int         rt_size;
 
     rt_size = rt->numberOfEntries();
@@ -495,7 +512,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
             gmx_fatal(FARGS, "Error reading from file %s", ssdump);
         }
 
-        snew(ss_str, nres+1);
+        snew(ss_str, nres + 1);
         if (1 != fscanf(fp, "%s", ss_str))
         {
             gmx_fatal(FARGS, "Error reading from file %s", ssdump);
@@ -506,13 +523,13 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
         snew(his_aa_ss, 3);
         for (i = 0; (i < 3); i++)
         {
-            snew(his_aa_ss[i], rt_size+1);
+            snew(his_aa_ss[i], rt_size + 1);
             for (j = 0; (j <= rt_size); j++)
             {
                 snew(his_aa_ss[i][j], edMax);
                 for (Dih = 0; (Dih < edMax); Dih++)
                 {
-                    snew(his_aa_ss[i][j][Dih], nbin+1);
+                    snew(his_aa_ss[i][j][Dih], nbin + 1);
                 }
             }
         }
@@ -520,10 +537,10 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
     snew(his_aa, edMax);
     for (Dih = 0; (Dih < edMax); Dih++)
     {
-        snew(his_aa[Dih], rt_size+1);
+        snew(his_aa[Dih], rt_size + 1);
         for (i = 0; (i <= rt_size); i++)
         {
-            snew(his_aa[Dih][i], nbin+1);
+            snew(his_aa[Dih][i], nbin + 1);
         }
     }
     snew(histmp, nbin);
@@ -538,13 +555,12 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
 
     j = 0;
     n = 0;
-    for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+    for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (((Dih  < edOmega) ) ||
-                ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i])))) ||
-                ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)))
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 make_histo(log, nf, dih[j], nbin, histmp, -M_PI, M_PI);
 
@@ -559,12 +575,12 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                     bBfac = bOccup = TRUE;
                     for (nn = 0; (nn < 4); nn++, n++)
                     {
-                        bBfac  = bBfac  && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
+                        bBfac  = bBfac && (atoms->pdbinfo[index[n]].bfac <= bfac_max);
                         bOccup = bOccup && (atoms->pdbinfo[index[n]].occup == 1);
                     }
                     if (bOccup && ((bfac_max <= 0) || bBfac))
                     {
-                        hindex = static_cast<int>(((dih[j][0]+M_PI)*nbin)/(2*M_PI));
+                        hindex = static_cast<int>(((dih[j][0] + M_PI) * nbin) / (2 * M_PI));
                         range_check(hindex, 0, nbin);
 
                         /* Assign dihedral to either of the structure determined
@@ -572,15 +588,9 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                          */
                         switch (ss_str[dlist[i].resnr])
                         {
-                            case 'E':
-                                his_aa_ss[0][dlist[i].index][Dih][hindex]++;
-                                break;
-                            case 'H':
-                                his_aa_ss[1][dlist[i].index][Dih][hindex]++;
-                                break;
-                            default:
-                                his_aa_ss[2][dlist[i].index][Dih][hindex]++;
-                                break;
+                            case 'E': his_aa_ss[0][dlist[i].index][Dih][hindex]++; break;
+                            case 'H': his_aa_ss[1][dlist[i].index][Dih][hindex]++; break;
+                            default: his_aa_ss[2][dlist[i].index][Dih][hindex]++; break;
                         }
                     }
                     else if (debug)
@@ -610,23 +620,23 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
 
                         for (m = 0; (m < NKKKPSI); m++)
                         {
-                            Jc[i][NKKKPHI+m]    = kkkpsi[m].Jc;
-                            Jcsig[i][NKKKPHI+m] = kkkpsi[m].Jcsig;
+                            Jc[i][NKKKPHI + m]    = kkkpsi[m].Jc;
+                            Jcsig[i][NKKKPHI + m] = kkkpsi[m].Jcsig;
                         }
                         break;
                     case edChi1:
                         calc_distribution_props(nbin, histmp, -M_PI, NKKKCHI, kkkchi1, &S2);
                         for (m = 0; (m < NKKKCHI); m++)
                         {
-                            Jc[i][NKKKPHI+NKKKPSI+m]    = kkkchi1[m].Jc;
-                            Jcsig[i][NKKKPHI+NKKKPSI+m] = kkkchi1[m].Jcsig;
+                            Jc[i][NKKKPHI + NKKKPSI + m]    = kkkchi1[m].Jc;
+                            Jcsig[i][NKKKPHI + NKKKPSI + m] = kkkchi1[m].Jcsig;
                         }
                         break;
                     default: /* covers edOmega and higher Chis than Chi1 */
                         calc_distribution_props(nbin, histmp, -M_PI, 0, nullptr, &S2);
                         break;
                 }
-                dlist[i].S2[Dih]        = S2;
+                dlist[i].S2[Dih] = S2;
 
                 /* Sum distribution per amino acid type as well */
                 for (k = 0; (k < nbin); k++)
@@ -660,7 +670,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
         fprintf(log, "%7s   SD", kkkchi1[i].name);
     }
     fprintf(log, "\n");
-    for (i = 0; (i < NJC+1); i++)
+    for (i = 0; (i < NJC + 1); i++)
     {
         fprintf(log, "------------");
     }
@@ -679,8 +689,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
     /* and to -jc file... */
     if (bDo_jc)
     {
-        fp = xvgropen(fn, "\\S3\\NJ-Couplings from Karplus Equation", "Residue",
-                      "Coupling", oenv);
+        fp = xvgropen(fn, "\\S3\\NJ-Couplings from Karplus Equation", "Residue", "Coupling", oenv);
         snew(leg, NJC);
         for (i = 0; (i < NKKKPHI); i++)
         {
@@ -688,11 +697,11 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
         }
         for (i = 0; (i < NKKKPSI); i++)
         {
-            leg[i+NKKKPHI] = gmx_strdup(kkkpsi[i].name);
+            leg[i + NKKKPHI] = gmx_strdup(kkkpsi[i].name);
         }
         for (i = 0; (i < NKKKCHI); i++)
         {
-            leg[i+NKKKPHI+NKKKPSI] = gmx_strdup(kkkchi1[i].name);
+            leg[i + NKKKPHI + NKKKPSI] = gmx_strdup(kkkchi1[i].name);
         }
         xvgr_legend(fp, NJC, leg, oenv);
         fprintf(fp, "%5s ", "#Res.");
@@ -731,15 +740,13 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                     break;
                 }
             }
-            if ((j < nbin) &&
-                ((bPhi && (Dih == edPhi)) ||
-                 (bPsi && (Dih == edPsi)) ||
-                 (bOmega && (Dih == edOmega)) ||
-                 (bChi && (Dih >= edChi1))))
+            if ((j < nbin)
+                && ((bPhi && (Dih == edPhi)) || (bPsi && (Dih == edPsi))
+                    || (bOmega && (Dih == edOmega)) || (bChi && (Dih >= edChi1))))
             {
                 if (bNormalize)
                 {
-                    normalize_histo(nbin, his_aa[Dih][i], (360.0/nbin), normhisto);
+                    normalize_histo(nbin, his_aa[Dih][i], (360.0 / nbin), normhisto);
                 }
 
                 residue_name = rt->nameFromResidueIndex(i).c_str();
@@ -758,9 +765,9 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                         sprintf(title, "\\xw\\f{} Distribution for %s", residue_name);
                         break;
                     default:
-                        sprintf(hisfile, "histo-chi%d%s", Dih-NONCHI+1, residue_name);
-                        sprintf(title, "\\xc\\f{}\\s%d\\N Distribution for %s",
-                                Dih-NONCHI+1, residue_name);
+                        sprintf(hisfile, "histo-chi%d%s", Dih - NONCHI + 1, residue_name);
+                        sprintf(title, "\\xc\\f{}\\s%d\\N Distribution for %s", Dih - NONCHI + 1,
+                                residue_name);
                 }
                 std::strcpy(hhisfile, hisfile);
                 std::strcat(hhisfile, ".xvg");
@@ -772,7 +779,9 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                 xvgr_world(fp, -180, 0, 180, 0.1, oenv);
                 if (output_env_get_print_xvgr_codes(oenv))
                 {
-                    fprintf(fp, "# this effort to set graph size fails unless you run with -autoscale none or -autoscale y flags\n");
+                    fprintf(fp,
+                            "# this effort to set graph size fails unless you run with -autoscale "
+                            "none or -autoscale y flags\n");
                     fprintf(fp, "@ xaxis tick on\n");
                     fprintf(fp, "@ xaxis tick major 90\n");
                     fprintf(fp, "@ xaxis tick minor 30\n");
@@ -786,12 +795,12 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                     for (k = 0; (k < 3); k++)
                     {
                         std::string sshisfile = gmx::formatString("%s-%s.xvg", hisfile, sss[k]);
-                        ssfp[k] = gmx_ffopen(sshisfile, "w");
+                        ssfp[k]               = gmx_ffopen(sshisfile, "w");
                     }
                 }
                 for (j = 0; (j < nbin); j++)
                 {
-                    angle = -180 + (360/nbin)*j;
+                    angle = -180 + (360 / nbin) * j;
                     if (bNormalize)
                     {
                         fprintf(fp, "%5d  %10g\n", angle, normhisto[j]);
@@ -804,8 +813,7 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
                     {
                         for (k = 0; (k < 3); k++)
                         {
-                            fprintf(ssfp[k], "%5d  %10d\n", angle,
-                                    his_aa_ss[k][i][Dih][j]);
+                            fprintf(ssfp[k], "%5d  %10d\n", angle, his_aa_ss[k][i][Dih][j]);
                         }
                     }
                 }
@@ -844,10 +852,9 @@ static void histogramming(FILE *log, int nbin, ResidueType *rt,
     }
 }
 
-static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
-                       const char *yaxis, const gmx_output_env_t *oenv)
+static FILE* rama_file(const char* fn, const char* title, const char* xaxis, const char* yaxis, const gmx_output_env_t* oenv)
 {
-    FILE *fp;
+    FILE* fp;
 
     fp = xvgropen(fn, title, xaxis, yaxis, oenv);
     if (output_env_get_print_xvgr_codes(oenv))
@@ -882,27 +889,30 @@ static FILE *rama_file(const char *fn, const char *title, const char *xaxis,
     return fp;
 }
 
-static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
-                    gmx_bool bViol, gmx_bool bRamOmega, const gmx_output_env_t *oenv)
+static void do_rama(int                     nf,
+                    int                     nlist,
+                    t_dlist                 dlist[],
+                    real**                  dih,
+                    gmx_bool                bViol,
+                    gmx_bool                bRamOmega,
+                    const gmx_output_env_t* oenv)
 {
-    FILE         *fp, *gp = nullptr;
+    FILE *        fp, *gp = nullptr;
     gmx_bool      bOm;
     char          fn[256];
     int           i, j, k, Xi1, Xi2, Phi, Psi, Om = 0, nlevels;
     constexpr int NMAT = 120;
-    real        **mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
+    real **       mat  = nullptr, phi, psi, omega, axis[NMAT], lo, hi;
     t_rgb         rlo  = { 1.0, 0.0, 0.0 };
     t_rgb         rmid = { 1.0, 1.0, 1.0 };
     t_rgb         rhi  = { 0.0, 0.0, 1.0 };
 
     for (i = 0; (i < nlist); i++)
     {
-        if ((has_dihedral(edPhi, &(dlist[i]))) &&
-            (has_dihedral(edPsi, &(dlist[i]))))
+        if ((has_dihedral(edPhi, &(dlist[i]))) && (has_dihedral(edPsi, &(dlist[i]))))
         {
             sprintf(fn, "ramaPhiPsi%s.xvg", dlist[i].name);
-            fp = rama_file(fn, "Ramachandran Plot",
-                           "\\8f\\4 (deg)", "\\8y\\4 (deg)", oenv);
+            fp  = rama_file(fn, "Ramachandran Plot", "\\8f\\4 (deg)", "\\8y\\4 (deg)", oenv);
             bOm = bRamOmega && has_dihedral(edOmega, &(dlist[i]));
             if (bOm)
             {
@@ -911,7 +921,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 for (j = 0; (j < NMAT); j++)
                 {
                     snew(mat[j], NMAT);
-                    axis[j] = -180+gmx::exactDiv(360*j, NMAT);
+                    axis[j] = -180 + gmx::exactDiv(360 * j, NMAT);
                 }
             }
             if (bViol)
@@ -923,18 +933,18 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
             Psi = dlist[i].j0[edPsi];
             for (j = 0; (j < nf); j++)
             {
-                phi = RAD2DEG*dih[Phi][j];
-                psi = RAD2DEG*dih[Psi][j];
+                phi = RAD2DEG * dih[Phi][j];
+                psi = RAD2DEG * dih[Psi][j];
                 fprintf(fp, "%10g  %10g\n", phi, psi);
                 if (bViol)
                 {
-                    fprintf(gp, "%d\n", static_cast<int>(!bAllowed(dih[Phi][j], RAD2DEG*dih[Psi][j])) );
+                    fprintf(gp, "%d\n", static_cast<int>(!bAllowed(dih[Phi][j], RAD2DEG * dih[Psi][j])));
                 }
                 if (bOm)
                 {
-                    omega = RAD2DEG*dih[Om][j];
-                    mat[static_cast<int>(((phi*NMAT)/360)+gmx::exactDiv(NMAT, 2))][static_cast<int>(((psi*NMAT)/360)+gmx::exactDiv(NMAT, 2))]
-                        += omega;
+                    omega = RAD2DEG * dih[Om][j];
+                    mat[static_cast<int>(((phi * NMAT) / 360) + gmx::exactDiv(NMAT, 2))]
+                       [static_cast<int>(((psi * NMAT) / 360) + gmx::exactDiv(NMAT, 2))] += omega;
                 }
             }
             if (bViol)
@@ -952,8 +962,8 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                     for (k = 0; (k < NMAT); k++)
                     {
                         mat[j][k] /= nf;
-                        lo         = std::min(mat[j][k], lo);
-                        hi         = std::max(mat[j][k], hi);
+                        lo = std::min(mat[j][k], lo);
+                        hi = std::max(mat[j][k], hi);
                     }
                 }
                 /* Symmetrise */
@@ -973,11 +983,11 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                         mat[j][k] += 180;
                     }
                 }
-                lo     += 180;
-                hi     += 180;
+                lo += 180;
+                hi += 180;
                 nlevels = 20;
-                write_xpm3(fp, 0, "Omega/Ramachandran Plot", "Deg", "Phi", "Psi",
-                           NMAT, NMAT, axis, axis, mat, lo, 180.0, hi, rlo, rmid, rhi, &nlevels);
+                write_xpm3(fp, 0, "Omega/Ramachandran Plot", "Deg", "Phi", "Psi", NMAT, NMAT, axis,
+                           axis, mat, lo, 180.0, hi, rlo, rmid, rhi, &nlevels);
                 gmx_ffclose(fp);
                 for (j = 0; (j < NMAT); j++)
                 {
@@ -986,17 +996,16 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
                 sfree(mat);
             }
         }
-        if ((has_dihedral(edChi1, &(dlist[i]))) &&
-            (has_dihedral(edChi2, &(dlist[i]))))
+        if ((has_dihedral(edChi1, &(dlist[i]))) && (has_dihedral(edChi2, &(dlist[i]))))
         {
             sprintf(fn, "ramaX1X2%s.xvg", dlist[i].name);
-            fp = rama_file(fn, "\\8c\\4\\s1\\N-\\8c\\4\\s2\\N Ramachandran Plot",
+            fp  = rama_file(fn, "\\8c\\4\\s1\\N-\\8c\\4\\s2\\N Ramachandran Plot",
                            "\\8c\\4\\s1\\N (deg)", "\\8c\\4\\s2\\N (deg)", oenv);
             Xi1 = dlist[i].j0[edChi1];
             Xi2 = dlist[i].j0[edChi2];
             for (j = 0; (j < nf); j++)
             {
-                fprintf(fp, "%10g  %10g\n", RAD2DEG*dih[Xi1][j], RAD2DEG*dih[Xi2][j]);
+                fprintf(fp, "%10g  %10g\n", RAD2DEG * dih[Xi1][j], RAD2DEG * dih[Xi2][j]);
             }
             xvgrclose(fp);
         }
@@ -1008,16 +1017,14 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
 }
 
 
-static void print_transitions(const char *fn, int maxchi, int nlist,
-                              t_dlist dlist[], real dt,
-                              const gmx_output_env_t *oenv)
+static void print_transitions(const char* fn, int maxchi, int nlist, t_dlist dlist[], real dt, const gmx_output_env_t* oenv)
 {
     /* based on order_params below */
-    FILE *fp;
+    FILE* fp;
     int   i, Dih, Xi;
 
     /*  must correspond with enum in pp2shift.h:38 */
-    char *leg[edMax];
+    char* leg[edMax];
 #define NLEG asize(leg)
 
     leg[0] = gmx_strdup("Phi");
@@ -1031,24 +1038,23 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     leg[8] = gmx_strdup("Chi6");
 
     /* Print order parameters */
-    fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns",
-                  oenv);
-    xvgr_legend(fp, NONCHI+maxchi, leg, oenv);
+    fp = xvgropen(fn, "Dihedral Rotamer Transitions", "Residue", "Transitions/ns", oenv);
+    xvgr_legend(fp, NONCHI + maxchi, leg, oenv);
 
     fprintf(fp, "%5s ", "#Res.");
     fprintf(fp, "%10s %10s %10s ", leg[edPhi], leg[edPsi], leg[edOmega]);
     for (Xi = 0; Xi < maxchi; Xi++)
     {
-        fprintf(fp, "%10s ", leg[NONCHI+Xi]);
+        fprintf(fp, "%10s ", leg[NONCHI + Xi]);
     }
     fprintf(fp, "\n");
 
     for (i = 0; (i < nlist); i++)
     {
         fprintf(fp, "%5d ", dlist[i].resnr);
-        for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+        for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
         {
-            fprintf(fp, "%10.3f ", dlist[i].ntr[Dih]/dt);
+            fprintf(fp, "%10.3f ", dlist[i].ntr[Dih] / dt);
         }
         /* fprintf(fp,"%12s\n",dlist[i].name);  this confuses xmgrace */
         fprintf(fp, "\n");
@@ -1056,26 +1062,33 @@ static void print_transitions(const char *fn, int maxchi, int nlist,
     xvgrclose(fp);
 }
 
-static void order_params(FILE *log,
-                         const char *fn, int maxchi, int nlist, t_dlist dlist[],
-                         const char *pdbfn, real bfac_init,
-                         t_atoms *atoms, const rvec x[], int ePBC, matrix box,
-                         gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, const gmx_output_env_t *oenv)
+static void order_params(FILE*                   log,
+                         const char*             fn,
+                         int                     maxchi,
+                         int                     nlist,
+                         t_dlist                 dlist[],
+                         const char*             pdbfn,
+                         real                    bfac_init,
+                         t_atoms*                atoms,
+                         const rvec              x[],
+                         int                     ePBC,
+                         matrix                  box,
+                         gmx_bool                bPhi,
+                         gmx_bool                bPsi,
+                         gmx_bool                bChi,
+                         const gmx_output_env_t* oenv)
 {
-    FILE *fp;
+    FILE* fp;
     int   nh[edMax];
     int   i, Dih, Xi;
     real  S2Max, S2Min;
 
     /* except for S2Min/Max, must correspond with enum in pp2shift.h:38 */
-    const char *const_leg[2+edMax] = {
-        "S2Min", "S2Max", "Phi", "Psi", "Omega",
-        "Chi1", "Chi2", "Chi3", "Chi4", "Chi5",
-        "Chi6"
-    };
+    const char* const_leg[2 + edMax] = { "S2Min", "S2Max", "Phi",  "Psi",  "Omega", "Chi1",
+                                         "Chi2",  "Chi3",  "Chi4", "Chi5", "Chi6" };
 #define NLEG asize(leg)
 
-    char *leg[2+edMax];
+    char* leg[2 + edMax];
 
     for (i = 0; i < NLEG; i++)
     {
@@ -1084,7 +1097,7 @@ static void order_params(FILE *log,
 
     /* Print order parameters */
     fp = xvgropen(fn, "Dihedral Order Parameters", "Residue", "S2", oenv);
-    xvgr_legend(fp, 2+NONCHI+maxchi, const_leg, oenv);
+    xvgr_legend(fp, 2 + NONCHI + maxchi, const_leg, oenv);
 
     for (Dih = 0; (Dih < edMax); Dih++)
     {
@@ -1093,10 +1106,10 @@ static void order_params(FILE *log,
 
     fprintf(fp, "%5s ", "#Res.");
     fprintf(fp, "%10s %10s ", leg[0], leg[1]);
-    fprintf(fp, "%10s %10s %10s ", leg[2+edPhi], leg[2+edPsi], leg[2+edOmega]);
+    fprintf(fp, "%10s %10s %10s ", leg[2 + edPhi], leg[2 + edPsi], leg[2 + edOmega]);
     for (Xi = 0; Xi < maxchi; Xi++)
     {
-        fprintf(fp, "%10s ", leg[2+NONCHI+Xi]);
+        fprintf(fp, "%10s ", leg[2 + NONCHI + Xi]);
     }
     fprintf(fp, "\n");
 
@@ -1104,7 +1117,7 @@ static void order_params(FILE *log,
     {
         S2Max = -10;
         S2Min = 10;
-        for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+        for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
         {
             if (dlist[i].S2[Dih] != 0)
             {
@@ -1124,7 +1137,7 @@ static void order_params(FILE *log,
         }
         fprintf(fp, "%5d ", dlist[i].resnr);
         fprintf(fp, "%10.3f %10.3f ", S2Min, S2Max);
-        for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+        for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
         {
             fprintf(fp, "%10.3f ", dlist[i].S2[Dih]);
         }
@@ -1156,16 +1169,17 @@ static void order_params(FILE *log,
             atoms->pdbinfo[dlist[i].atm.O].bfac = -dlist[i].S2[1]; /* Psi */
             for (Xi = 0; (Xi < maxchi); Xi++)                      /* Chi's */
             {
-                if (dlist[i].atm.Cn[Xi+3] != -1)
+                if (dlist[i].atm.Cn[Xi + 3] != -1)
                 {
-                    atoms->pdbinfo[dlist[i].atm.Cn[Xi+1]].bfac = -dlist[i].S2[NONCHI+Xi];
+                    atoms->pdbinfo[dlist[i].atm.Cn[Xi + 1]].bfac = -dlist[i].S2[NONCHI + Xi];
                 }
             }
         }
 
         fp = gmx_ffopen(pdbfn, "w");
         fprintf(fp, "REMARK generated by g_chi\n");
-        fprintf(fp, "REMARK "
+        fprintf(fp,
+                "REMARK "
                 "B-factor field contains negative of dihedral order parameters\n");
         write_pdbfile(fp, nullptr, atoms, x, ePBC, box, ' ', 0, nullptr);
         x0 = y0 = z0 = 1000.0;
@@ -1180,8 +1194,9 @@ static void order_params(FILE *log,
         z0 *= 10.0; /* nm -> angstrom */
         for (i = 0; (i < 10); i++)
         {
-            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr+1+i, "CA", ' ', "LEG", ' ', atoms->nres+1, ' ',
-                                     x0, y0, z0+(1.2*i), 0.0, -0.1*i, "");
+            gmx_fprintf_pdb_atomline(fp, epdbATOM, atoms->nr + 1 + i, "CA", ' ', "LEG", ' ',
+                                     atoms->nres + 1, ' ', x0, y0, z0 + (1.2 * i), 0.0, -0.1 * i,
+                                     "");
         }
         gmx_ffclose(fp);
     }
@@ -1200,7 +1215,7 @@ static void order_params(FILE *log,
     {
         for (Xi = 0; (Xi < maxchi); Xi++)
         {
-            fprintf(log, " %s ", leg[2+NONCHI+Xi]);
+            fprintf(log, " %s ", leg[2 + NONCHI + Xi]);
         }
     }
     fprintf(log, "\nNumber:   ");
@@ -1216,7 +1231,7 @@ static void order_params(FILE *log,
     {
         for (Xi = 0; (Xi < maxchi); Xi++)
         {
-            fprintf(log, "%4d  ", nh[NONCHI+Xi]);
+            fprintf(log, "%4d  ", nh[NONCHI + Xi]);
         }
     }
     fprintf(log, "\n");
@@ -1225,21 +1240,22 @@ static void order_params(FILE *log,
     {
         sfree(leg[i]);
     }
-
 }
 
-int gmx_chi(int argc, char *argv[])
+int gmx_chi(int argc, char* argv[])
 {
-    const char *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes [GRK]phi[grk], [GRK]psi[grk], [GRK]omega[grk],",
         "and [GRK]chi[grk] dihedrals for all your",
         "amino acid backbone and sidechains.",
         "It can compute dihedral angle as a function of time, and as",
         "histogram distributions.",
-        "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all residues of each type.[PAR]",
+        "The distributions [TT](histo-(dihedral)(RESIDUE).xvg[tt]) are cumulative over all ",
+        "residues of each type.[PAR]",
         "If option [TT]-corr[tt] is given, the program will",
         "calculate dihedral autocorrelation functions. The function used",
-        "is C(t) = [CHEVRON][COS][GRK]chi[grk]([GRK]tau[grk])[cos] [COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos][chevron]. The use of cosines",
+        "is C(t) = [CHEVRON][COS][GRK]chi[grk]([GRK]tau[grk])[cos] ",
+        "[COS][GRK]chi[grk]([GRK]tau[grk]+t)[cos][chevron]. The use of cosines",
         "rather than angles themselves, resolves the problem of periodicity.",
         "(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032-2041).",
         "Separate files for each dihedral of each residue",
@@ -1257,7 +1273,8 @@ int gmx_chi(int argc, char *argv[])
         " * a table for each residue of the rotamer occupancy.",
         "",
         "All rotamers are taken as 3-fold, except for [GRK]omega[grk] and [GRK]chi[grk] dihedrals",
-        "to planar groups (i.e. [GRK]chi[grk][SUB]2[sub] of aromatics, Asp and Asn; [GRK]chi[grk][SUB]3[sub] of Glu",
+        "to planar groups (i.e. [GRK]chi[grk][SUB]2[sub] of aromatics, Asp and Asn; ",
+        "[GRK]chi[grk][SUB]3[sub] of Glu",
         "and Gln; and [GRK]chi[grk][SUB]4[sub] of Arg), which are 2-fold. \"rotamer 0\" means ",
         "that the dihedral was not in the core region of each rotamer. ",
         "The width of the core region can be set with [TT]-core_rotamer[tt][PAR]",
@@ -1273,7 +1290,8 @@ int gmx_chi(int argc, char *argv[])
         "are equally spaced in time.[PAR]",
 
         "If [TT]-chi_prod[tt] is set (and [TT]-maxchi[tt] > 0), cumulative rotamers, e.g.",
-        "1+9([GRK]chi[grk][SUB]1[sub]-1)+3([GRK]chi[grk][SUB]2[sub]-1)+([GRK]chi[grk][SUB]3[sub]-1) (if the residue has three 3-fold ",
+        "1+9([GRK]chi[grk][SUB]1[sub]-1)+3([GRK]chi[grk][SUB]2[sub]-1)+",
+        "([GRK]chi[grk][SUB]3[sub]-1) (if the residue has three 3-fold ",
         "dihedrals and [TT]-maxchi[tt] >= 3)",
         "are calculated. As before, if any dihedral is not in the core region,",
         "the rotamer is taken to be 0. The occupancies of these cumulative ",
@@ -1284,113 +1302,140 @@ int gmx_chi(int argc, char *argv[])
         "and their occupancies to [TT]histo-chiproduct(RESIDUE)(nresnr).xvg[tt].[PAR]",
 
         "The option [TT]-r[tt] generates a contour plot of the average [GRK]omega[grk] angle",
-        "as a function of the [GRK]phi[grk] and [GRK]psi[grk] angles, that is, in a Ramachandran plot",
-        "the average [GRK]omega[grk] angle is plotted using color coding.",
+        "as a function of the [GRK]phi[grk] and [GRK]psi[grk] angles, that is, in a Ramachandran ",
+        "plot the average [GRK]omega[grk] angle is plotted using color coding.",
 
     };
 
-    const char *bugs[] = {
-        "Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.",
+    const char* bugs[] = {
+        "Produces MANY output files (up to about 4 times the number of residues in the "
+        "protein, twice that if autocorrelation functions are calculated). Typically "
+        "several hundred files are output.",
         "[GRK]phi[grk] and [GRK]psi[grk] dihedrals are calculated in a "
         "non-standard way, using H-N-CA-C for [GRK]phi[grk] instead of "
         "C(-)-N-CA-C, and N-CA-C-O for [GRK]psi[grk] instead of N-CA-C-N(+). "
         "This causes (usually small) discrepancies with the output of other "
         "tools like [gmx-rama].",
         "[TT]-r0[tt] option does not work properly",
-        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had multiplicity 3, with the 3rd (g(+)) always having probability 0"
+        "Rotamers with multiplicity 2 are printed in [TT]chi.log[tt] as if they had "
+        "multiplicity 3, with the 3rd (g(+)) always having probability 0"
     };
 
     /* defaults */
-    static int         r0          = 1, ndeg = 1, maxchi = 2;
-    static gmx_bool    bAll        = FALSE;
-    static gmx_bool    bPhi        = FALSE, bPsi = FALSE, bOmega = FALSE;
-    static real        bfac_init   = -1.0, bfac_max = 0;
-    static const char *maxchistr[] = { nullptr, "0", "1", "2", "3",  "4", "5", "6", nullptr };
-    static gmx_bool    bRama       = FALSE, bShift = FALSE, bViol = FALSE, bRamOmega = FALSE;
-    static gmx_bool    bNormHisto  = TRUE, bChiProduct = FALSE, bHChi = FALSE, bRAD = FALSE, bPBC = TRUE;
-    static real        core_frac   = 0.5;
-    t_pargs            pa[]        = {
-        { "-r0",  FALSE, etINT, {&r0},
-          "starting residue" },
-        { "-phi",  FALSE, etBOOL, {&bPhi},
-          "Output for [GRK]phi[grk] dihedral angles" },
-        { "-psi",  FALSE, etBOOL, {&bPsi},
-          "Output for [GRK]psi[grk] dihedral angles" },
-        { "-omega", FALSE, etBOOL, {&bOmega},
+    static int         r0 = 1, ndeg = 1, maxchi = 2;
+    static gmx_bool    bAll = FALSE;
+    static gmx_bool    bPhi = FALSE, bPsi = FALSE, bOmega = FALSE;
+    static real        bfac_init = -1.0, bfac_max = 0;
+    static const char* maxchistr[] = { nullptr, "0", "1", "2", "3", "4", "5", "6", nullptr };
+    static gmx_bool    bRama = FALSE, bShift = FALSE, bViol = FALSE, bRamOmega = FALSE;
+    static gmx_bool bNormHisto = TRUE, bChiProduct = FALSE, bHChi = FALSE, bRAD = FALSE, bPBC = TRUE;
+    static real     core_frac = 0.5;
+    t_pargs         pa[]      = {
+        { "-r0", FALSE, etINT, { &r0 }, "starting residue" },
+        { "-phi", FALSE, etBOOL, { &bPhi }, "Output for [GRK]phi[grk] dihedral angles" },
+        { "-psi", FALSE, etBOOL, { &bPsi }, "Output for [GRK]psi[grk] dihedral angles" },
+        { "-omega",
+          FALSE,
+          etBOOL,
+          { &bOmega },
           "Output for [GRK]omega[grk] dihedrals (peptide bonds)" },
-        { "-rama", FALSE, etBOOL, {&bRama},
-          "Generate [GRK]phi[grk]/[GRK]psi[grk] and [GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
-        { "-viol", FALSE, etBOOL, {&bViol},
+        { "-rama",
+          FALSE,
+          etBOOL,
+          { &bRama },
+          "Generate [GRK]phi[grk]/[GRK]psi[grk] and "
+          "[GRK]chi[grk][SUB]1[sub]/[GRK]chi[grk][SUB]2[sub] Ramachandran plots" },
+        { "-viol",
+          FALSE,
+          etBOOL,
+          { &bViol },
           "Write a file that gives 0 or 1 for violated Ramachandran angles" },
-        { "-periodic", FALSE, etBOOL, {&bPBC},
-          "Print dihedral angles modulo 360 degrees" },
-        { "-all",  FALSE, etBOOL, {&bAll},
-          "Output separate files for every dihedral." },
-        { "-rad",  FALSE, etBOOL, {&bRAD},
-          "in angle vs time files, use radians rather than degrees."},
-        { "-shift", FALSE, etBOOL, {&bShift},
+        { "-periodic", FALSE, etBOOL, { &bPBC }, "Print dihedral angles modulo 360 degrees" },
+        { "-all", FALSE, etBOOL, { &bAll }, "Output separate files for every dihedral." },
+        { "-rad",
+          FALSE,
+          etBOOL,
+          { &bRAD },
+          "in angle vs time files, use radians rather than degrees." },
+        { "-shift",
+          FALSE,
+          etBOOL,
+          { &bShift },
           "Compute chemical shifts from [GRK]phi[grk]/[GRK]psi[grk] angles" },
-        { "-binwidth", FALSE, etINT, {&ndeg},
-          "bin width for histograms (degrees)" },
-        { "-core_rotamer", FALSE, etREAL, {&core_frac},
-          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)" },
-        { "-maxchi", FALSE, etENUM, {maxchistr},
-          "calculate first ndih [GRK]chi[grk] dihedrals" },
-        { "-normhisto", FALSE, etBOOL, {&bNormHisto},
-          "Normalize histograms" },
-        { "-ramomega", FALSE, etBOOL, {&bRamOmega},
-          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an [REF].xpm[ref] plot" },
-        { "-bfact", FALSE, etREAL, {&bfac_init},
-          "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order parameter"},
-        { "-chi_prod", FALSE, etBOOL, {&bChiProduct},
-          "compute a single cumulative rotamer for each residue"},
-        { "-HChi", FALSE, etBOOL, {&bHChi},
-          "Include dihedrals to sidechain hydrogens"},
-        { "-bmax",  FALSE, etREAL, {&bfac_max},
-          "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
+        { "-binwidth", FALSE, etINT, { &ndeg }, "bin width for histograms (degrees)" },
+        { "-core_rotamer",
+          FALSE,
+          etREAL,
+          { &core_frac },
+          "only the central [TT]-core_rotamer[tt]\\*(360/multiplicity) belongs to each rotamer "
+          "(the rest is assigned to rotamer 0)" },
+        { "-maxchi", FALSE, etENUM, { maxchistr }, "calculate first ndih [GRK]chi[grk] dihedrals" },
+        { "-normhisto", FALSE, etBOOL, { &bNormHisto }, "Normalize histograms" },
+        { "-ramomega",
+          FALSE,
+          etBOOL,
+          { &bRamOmega },
+          "compute average omega as a function of [GRK]phi[grk]/[GRK]psi[grk] and plot it in an "
+          "[REF].xpm[ref] plot" },
+        { "-bfact",
+          FALSE,
+          etREAL,
+          { &bfac_init },
+          "B-factor value for [REF].pdb[ref] file for atoms with no calculated dihedral order "
+          "parameter" },
+        { "-chi_prod",
+          FALSE,
+          etBOOL,
+          { &bChiProduct },
+          "compute a single cumulative rotamer for each residue" },
+        { "-HChi", FALSE, etBOOL, { &bHChi }, "Include dihedrals to sidechain hydrogens" },
+        { "-bmax",
+          FALSE,
+          etREAL,
+          { &bfac_max },
+          "Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to "
+          "be considere in the statistics. Applies to database work where a number of X-Ray "
+          "structures is analyzed. [TT]-bmax[tt] <= 0 means no limit." }
     };
 
-    FILE              *log;
-    int                nlist, idum, nbin;
-    rvec              *x;
-    int                ePBC;
-    matrix             box;
-    char               grpname[256];
-    t_dlist           *dlist;
-    gmx_bool           bChi, bCorr, bSSHisto;
-    gmx_bool           bDo_rt, bDo_oh, bDo_ot, bDo_jc;
-    real               dt = 0, traj_t_ns;
-    gmx_output_env_t  *oenv;
+    FILE*             log;
+    int               nlist, idum, nbin;
+    rvec*             x;
+    int               ePBC;
+    matrix            box;
+    char              grpname[256];
+    t_dlist*          dlist;
+    gmx_bool          bChi, bCorr, bSSHisto;
+    gmx_bool          bDo_rt, bDo_oh, bDo_ot, bDo_jc;
+    real              dt = 0, traj_t_ns;
+    gmx_output_env_t* oenv;
 
-    int                isize, *index;
-    int                ndih, nactdih, nf;
-    real             **dih, *trans_frac, *aver_angle, *time;
-    int                i, **chi_lookup, *multiplicity;
+    int    isize, *index;
+    int    ndih, nactdih, nf;
+    real **dih, *trans_frac, *aver_angle, *time;
+    int    i, **chi_lookup, *multiplicity;
 
-    t_filenm           fnm[] = {
-        { efSTX, "-s",  nullptr,     ffREAD  },
-        { efTRX, "-f",  nullptr,     ffREAD  },
-        { efXVG, "-o",  "order",  ffWRITE },
-        { efPDB, "-p",  "order",  ffOPTWR },
-        { efDAT, "-ss", "ssdump", ffOPTRD },
-        { efXVG, "-jc", "Jcoupling", ffWRITE },
-        { efXVG, "-corr",  "dihcorr", ffOPTWR },
-        { efLOG, "-g",  "chi",    ffWRITE },
-        /* add two more arguments copying from g_angle */
-        { efXVG, "-ot", "dihtrans", ffOPTWR },
-        { efXVG, "-oh", "trhisto",  ffOPTWR },
-        { efXVG, "-rt", "restrans",  ffOPTWR },
-        { efXVG, "-cp", "chiprodhisto",  ffOPTWR }
-    };
+    t_filenm fnm[] = { { efSTX, "-s", nullptr, ffREAD },
+                       { efTRX, "-f", nullptr, ffREAD },
+                       { efXVG, "-o", "order", ffWRITE },
+                       { efPDB, "-p", "order", ffOPTWR },
+                       { efDAT, "-ss", "ssdump", ffOPTRD },
+                       { efXVG, "-jc", "Jcoupling", ffWRITE },
+                       { efXVG, "-corr", "dihcorr", ffOPTWR },
+                       { efLOG, "-g", "chi", ffWRITE },
+                       /* add two more arguments copying from g_angle */
+                       { efXVG, "-ot", "dihtrans", ffOPTWR },
+                       { efXVG, "-oh", "trhisto", ffOPTWR },
+                       { efXVG, "-rt", "restrans", ffOPTWR },
+                       { efXVG, "-cp", "chiprodhisto", ffOPTWR } };
 #define NFILE asize(fnm)
-    int                npargs;
-    t_pargs           *ppa;
+    int      npargs;
+    t_pargs* ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
-                           &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, npargs, ppa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -1433,19 +1478,17 @@ int gmx_chi(int argc, char *argv[])
 
     if (maxchi > MAXCHI)
     {
-        fprintf(stderr,
-                "Will only calculate first %d Chi dihedrals instead of %d.\n",
-                MAXCHI, maxchi);
+        fprintf(stderr, "Will only calculate first %d Chi dihedrals instead of %d.\n", MAXCHI, maxchi);
         maxchi = MAXCHI;
     }
     bSSHisto = ftp2bSet(efDAT, NFILE, fnm);
-    nbin     = 360/ndeg;
+    nbin     = 360 / ndeg;
 
     /* Find the chi angles using atoms struct and a list of amino acids */
-    t_topology *top;
+    t_topology* top;
     snew(top, 1);
     read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, nullptr, box, FALSE);
-    t_atoms    &atoms = top->atoms;
+    t_atoms& atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)
     {
         snew(atoms.pdbinfo, atoms.nr);
@@ -1463,16 +1506,16 @@ int gmx_chi(int argc, char *argv[])
 
     /* Make a linear index for reading all. */
     index = make_chi_ind(nlist, dlist, &ndih);
-    isize = 4*ndih;
+    isize = 4 * ndih;
     fprintf(stderr, "%d dihedrals found\n", ndih);
 
     snew(dih, ndih);
 
     /* COMPUTE ALL DIHEDRALS! */
-    read_ang_dih(ftp2fn(efTRX, NFILE, fnm), FALSE, TRUE, FALSE, bPBC, 1, &idum,
-                 &nf, &time, isize, index, &trans_frac, &aver_angle, dih, oenv);
+    read_ang_dih(ftp2fn(efTRX, NFILE, fnm), FALSE, TRUE, FALSE, bPBC, 1, &idum, &nf, &time, isize,
+                 index, &trans_frac, &aver_angle, dih, oenv);
 
-    dt = (time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/
+    dt = (time[nf - 1] - time[0]) / (nf - 1); /* might want this for corr or n. transit*/
     if (bCorr)
     {
         if (nf < 2)
@@ -1492,10 +1535,9 @@ int gmx_chi(int argc, char *argv[])
     }
 
     /* Histogramming & J coupling constants & calc of S2 order params */
-    histogramming(log, nbin, &rt, nf, maxchi, dih, nlist, dlist, index,
-                  bPhi, bPsi, bOmega, bChi,
-                  bNormHisto, bSSHisto, ftp2fn(efDAT, NFILE, fnm), bfac_max, &atoms,
-                  bDo_jc, opt2fn("-jc", NFILE, fnm), oenv);
+    histogramming(log, nbin, &rt, nf, maxchi, dih, nlist, dlist, index, bPhi, bPsi, bOmega, bChi,
+                  bNormHisto, bSSHisto, ftp2fn(efDAT, NFILE, fnm), bfac_max, &atoms, bDo_jc,
+                  opt2fn("-jc", NFILE, fnm), oenv);
 
     /* transitions
      *
@@ -1524,15 +1566,12 @@ int gmx_chi(int argc, char *argv[])
     }
 
 
-    low_ana_dih_trans(bDo_ot, opt2fn("-ot", NFILE, fnm),
-                      bDo_oh, opt2fn("-oh", NFILE, fnm), maxchi,
-                      dih, nlist, dlist, nf, nactdih, grpname, multiplicity,
-                      time, FALSE, core_frac, oenv);
+    low_ana_dih_trans(bDo_ot, opt2fn("-ot", NFILE, fnm), bDo_oh, opt2fn("-oh", NFILE, fnm), maxchi, dih,
+                      nlist, dlist, nf, nactdih, grpname, multiplicity, time, FALSE, core_frac, oenv);
 
     /* Order parameters */
-    order_params(log, opt2fn("-o", NFILE, fnm), maxchi, nlist, dlist,
-                 ftp2fn_null(efPDB, NFILE, fnm), bfac_init,
-                 &atoms, x, ePBC, box, bPhi, bPsi, bChi, oenv);
+    order_params(log, opt2fn("-o", NFILE, fnm), maxchi, nlist, dlist, ftp2fn_null(efPDB, NFILE, fnm),
+                 bfac_init, &atoms, x, ePBC, box, bPhi, bPsi, bChi, oenv);
 
     /* Print ramachandran maps! */
     if (bRama)
@@ -1546,7 +1585,7 @@ int gmx_chi(int argc, char *argv[])
     }
 
     /* rprint S^2, transitions, and rotamer occupancies to log */
-    traj_t_ns = 0.001 * (time[nf-1]-time[0]);
+    traj_t_ns = 0.001 * (time[nf - 1] - time[0]);
     pr_dlist(log, nlist, dlist, traj_t_ns, edPrintST, bPhi, bPsi, bChi, bOmega, maxchi);
     pr_dlist(log, nlist, dlist, traj_t_ns, edPrintRO, bPhi, bPsi, bChi, bOmega, maxchi);
     gmx_ffclose(log);
@@ -1566,10 +1605,8 @@ int gmx_chi(int argc, char *argv[])
         }
         mk_chi_lookup(chi_lookup, maxchi, nlist, dlist);
 
-        get_chi_product_traj(dih, nf, nactdih,
-                             maxchi, dlist, time, chi_lookup, multiplicity,
-                             FALSE, bNormHisto, core_frac, bAll,
-                             opt2fn("-cp", NFILE, fnm), oenv);
+        get_chi_product_traj(dih, nf, nactdih, maxchi, dlist, time, chi_lookup, multiplicity, FALSE,
+                             bNormHisto, core_frac, bAll, opt2fn("-cp", NFILE, fnm), oenv);
 
         for (i = 0; i < nlist; i++)
         {
@@ -1580,8 +1617,8 @@ int gmx_chi(int argc, char *argv[])
     /* Correlation comes last because it messes up the angles */
     if (bCorr)
     {
-        do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time,
-                   maxchi, bPhi, bPsi, bChi, bOmega, oenv);
+        do_dihcorr(opt2fn("-corr", NFILE, fnm), nf, ndih, dih, dt, nlist, dlist, time, maxchi, bPhi,
+                   bPsi, bChi, bOmega, oenv);
     }
 
 

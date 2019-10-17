@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,46 +69,45 @@ class OptionSectionImpl;
  */
 class IOptionsContainerWithSections : public IOptionsContainer
 {
-    public:
-        /*! \brief
-         * Adds a section to this collection.
-         *
-         * \tparam    SectionType Type of the section description object.
-         * \param[in] section     Section description.
-         * \returns   AbstractOptionSectionHandle object for the created option.
-         * \throws    APIError if invalid option settings are provided.
-         *
-         * Options can be added to the section through the returned handle.
-         *
-         * \internal
-         * \p SectionType::HandleType must specify a type that derives from
-         * AbstractinOptionSectionHandle and has a suitable constructor.
-         */
-        template <class SectionType>
-        typename SectionType::HandleType addSection(const SectionType &section)
-        {
-            internal::OptionSectionImpl *storage
-                = addSectionImpl(static_cast<const AbstractOptionSection &>(section));
-            return typename SectionType::HandleType(storage);
-        }
+public:
+    /*! \brief
+     * Adds a section to this collection.
+     *
+     * \tparam    SectionType Type of the section description object.
+     * \param[in] section     Section description.
+     * \returns   AbstractOptionSectionHandle object for the created option.
+     * \throws    APIError if invalid option settings are provided.
+     *
+     * Options can be added to the section through the returned handle.
+     *
+     * \internal
+     * \p SectionType::HandleType must specify a type that derives from
+     * AbstractinOptionSectionHandle and has a suitable constructor.
+     */
+    template<class SectionType>
+    typename SectionType::HandleType addSection(const SectionType& section)
+    {
+        internal::OptionSectionImpl* storage =
+                addSectionImpl(static_cast<const AbstractOptionSection&>(section));
+        return typename SectionType::HandleType(storage);
+    }
 
-    protected:
-        // Disallow deletion through the interface.
-        // (no need for the virtual, but some compilers warn otherwise)
-        ~IOptionsContainerWithSections() override;
+protected:
+    // Disallow deletion through the interface.
+    // (no need for the virtual, but some compilers warn otherwise)
+    ~IOptionsContainerWithSections() override;
 
-        /*! \brief
-         * Adds a section to this container.
-         *
-         * \param[in] section     Section description.
-         * \returns   Pointer to the internal section representation object.
-         */
-        virtual internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section) = 0;
+    /*! \brief
+     * Adds a section to this container.
+     *
+     * \param[in] section     Section description.
+     * \returns   Pointer to the internal section representation object.
+     */
+    virtual internal::OptionSectionImpl* addSectionImpl(const AbstractOptionSection& section) = 0;
 
-        GMX_DEFAULT_CONSTRUCTORS(IOptionsContainerWithSections);
+    GMX_DEFAULT_CONSTRUCTORS(IOptionsContainerWithSections);
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

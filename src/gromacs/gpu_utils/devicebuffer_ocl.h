@@ -59,15 +59,14 @@
  * \param[in]     numValues            Number of values to accomodate.
  * \param[in]     deviceContext        The buffer's device context-to-be.
  */
-template <typename ValueType>
-void allocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
-                          size_t                   numValues,
-                          DeviceContext            deviceContext)
+template<typename ValueType>
+void allocateDeviceBuffer(DeviceBuffer<ValueType>* buffer, size_t numValues, DeviceContext deviceContext)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
-    void  *hostPtr = nullptr;
+    void*  hostPtr = nullptr;
     cl_int clError;
-    *buffer = clCreateBuffer(deviceContext, CL_MEM_READ_WRITE, numValues * sizeof(ValueType), hostPtr, &clError);
+    *buffer = clCreateBuffer(deviceContext, CL_MEM_READ_WRITE, numValues * sizeof(ValueType),
+                             hostPtr, &clError);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "clCreateBuffer failure");
 }
 
@@ -79,8 +78,8 @@ void allocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
  *
  * \param[in] buffer  Pointer to the buffer to free.
  */
-template <typename DeviceBuffer>
-void freeDeviceBuffer(DeviceBuffer *buffer)
+template<typename DeviceBuffer>
+void freeDeviceBuffer(DeviceBuffer* buffer)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     if (*buffer)
@@ -105,14 +104,14 @@ void freeDeviceBuffer(DeviceBuffer *buffer)
  *                                     If the pointer is not null, the event can further be used
  *                                     to queue a wait for this operation or to query profiling information.
  */
-template <typename ValueType>
-void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
-                        const ValueType         *hostBuffer,
+template<typename ValueType>
+void copyToDeviceBuffer(DeviceBuffer<ValueType>* buffer,
+                        const ValueType*         hostBuffer,
                         size_t                   startingOffset,
                         size_t                   numValues,
                         CommandStream            stream,
                         GpuApiCallBehavior       transferKind,
-                        CommandEvent            *timingEvent)
+                        CommandEvent*            timingEvent)
 {
     if (numValues == 0)
     {
@@ -126,17 +125,18 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            clError = clEnqueueWriteBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            clError = clEnqueueWriteBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0,
+                                           nullptr, timingEvent);
             GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Asynchronous H2D copy failed");
             break;
 
         case GpuApiCallBehavior::Sync:
-            clError = clEnqueueWriteBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            clError = clEnqueueWriteBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0,
+                                           nullptr, timingEvent);
             GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Synchronous H2D copy failed");
             break;
 
-        default:
-            throw;
+        default: throw;
     }
 }
 
@@ -156,14 +156,14 @@ void copyToDeviceBuffer(DeviceBuffer<ValueType> *buffer,
  *                                     If the pointer is not null, the event can further be used
  *                                     to queue a wait for this operation or to query profiling information.
  */
-template <typename ValueType>
-void copyFromDeviceBuffer(ValueType                     *hostBuffer,
-                          DeviceBuffer<ValueType>       *buffer,
-                          size_t                         startingOffset,
-                          size_t                         numValues,
-                          CommandStream                  stream,
-                          GpuApiCallBehavior             transferKind,
-                          CommandEvent                  *timingEvent)
+template<typename ValueType>
+void copyFromDeviceBuffer(ValueType*               hostBuffer,
+                          DeviceBuffer<ValueType>* buffer,
+                          size_t                   startingOffset,
+                          size_t                   numValues,
+                          CommandStream            stream,
+                          GpuApiCallBehavior       transferKind,
+                          CommandEvent*            timingEvent)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(hostBuffer, "needs a host buffer pointer");
@@ -173,17 +173,18 @@ void copyFromDeviceBuffer(ValueType                     *hostBuffer,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            clError = clEnqueueReadBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            clError = clEnqueueReadBuffer(stream, *buffer, CL_FALSE, offset, bytes, hostBuffer, 0,
+                                          nullptr, timingEvent);
             GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Asynchronous D2H copy failed");
             break;
 
         case GpuApiCallBehavior::Sync:
-            clError = clEnqueueReadBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0, nullptr, timingEvent);
+            clError = clEnqueueReadBuffer(stream, *buffer, CL_TRUE, offset, bytes, hostBuffer, 0,
+                                          nullptr, timingEvent);
             GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Synchronous D2H copy failed");
             break;
 
-        default:
-            throw;
+        default: throw;
     }
 }
 
@@ -192,26 +193,21 @@ void copyFromDeviceBuffer(ValueType                     *hostBuffer,
  *
  * \tparam        ValueType        Raw value type of the \p buffer.
  * \param[in,out] buffer           Pointer to the device-side buffer
- * \param[in]     startingOffset   Offset (in values) at the device-side buffer to start clearing at.
- * \param[in]     numValues        Number of values to clear.
- * \param[in]     stream           GPU stream.
+ * \param[in]     startingOffset   Offset (in values) at the device-side buffer to start clearing
+ * at. \param[in]     numValues        Number of values to clear. \param[in]     stream GPU stream.
  */
-template <typename ValueType>
-void clearDeviceBufferAsync(DeviceBuffer<ValueType> *buffer,
-                            size_t                   startingOffset,
-                            size_t                   numValues,
-                            CommandStream            stream)
+template<typename ValueType>
+void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer, size_t startingOffset, size_t numValues, CommandStream stream)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     const size_t    offset        = startingOffset * sizeof(ValueType);
     const size_t    bytes         = numValues * sizeof(ValueType);
     const ValueType pattern       = 0;
     const cl_uint   numWaitEvents = 0;
-    const cl_event *waitEvents    = nullptr;
+    const cl_event* waitEvents    = nullptr;
     cl_event        commandEvent;
-    cl_int          clError = clEnqueueFillBuffer(stream, *buffer, &pattern, sizeof(pattern),
-                                                  offset, bytes,
-                                                  numWaitEvents, waitEvents, &commandEvent);
+    cl_int clError = clEnqueueFillBuffer(stream, *buffer, &pattern, sizeof(pattern), offset, bytes,
+                                         numWaitEvents, waitEvents, &commandEvent);
     GMX_RELEASE_ASSERT(clError == CL_SUCCESS, "Couldn't clear the device buffer");
 }
 

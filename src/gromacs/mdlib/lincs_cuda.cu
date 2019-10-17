@@ -105,28 +105,28 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  * \param[in,out] kernelParams  All parameters and pointers for the kernel condensed in single struct.
  * \param[in]     invdt         Inverse timestep (needed to update velocities).
  */
-template <bool updateVelocities, bool computeVirial>
-__launch_bounds__(c_maxThreadsPerBlock)
-__global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
-                             const float3* __restrict__  gm_x,
-                             float3*                     gm_xp,
-                             float3*                     gm_v,
-                             const float                 invdt)
+template<bool updateVelocities, bool computeVirial>
+__launch_bounds__(c_maxThreadsPerBlock) __global__
+        void lincs_kernel(LincsCudaKernelParameters kernelParams,
+                          const float3* __restrict__ gm_x,
+                          float3*     gm_xp,
+                          float3*     gm_v,
+                          const float invdt)
 {
-    const PbcAiuc               pbcAiuc                     = kernelParams.pbcAiuc;
-    const int                   numConstraintsThreads       = kernelParams.numConstraintsThreads;
-    const int                   numIterations               = kernelParams.numIterations;
-    const int                   expansionOrder              = kernelParams.expansionOrder;
-    const int2*   __restrict__  gm_constraints              = kernelParams.d_constraints;
-    const float*  __restrict__  gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
-    const int*    __restrict__  gm_coupledConstraintsCounts = kernelParams.d_coupledConstraintsCounts;
-    const int*    __restrict__  gm_coupledConstraintsIdxes  = kernelParams.d_coupledConstraintsIndices;
-    const float*  __restrict__  gm_massFactors              = kernelParams.d_massFactors;
-    float*  __restrict__        gm_matrixA                  = kernelParams.d_matrixA;
-    const float*  __restrict__  gm_inverseMasses            = kernelParams.d_inverseMasses;
-    float*  __restrict__        gm_virialScaled             = kernelParams.d_virialScaled;
+    const PbcAiuc pbcAiuc                                 = kernelParams.pbcAiuc;
+    const int     numConstraintsThreads                   = kernelParams.numConstraintsThreads;
+    const int     numIterations                           = kernelParams.numIterations;
+    const int     expansionOrder                          = kernelParams.expansionOrder;
+    const int2* __restrict__ gm_constraints               = kernelParams.d_constraints;
+    const float* __restrict__ gm_constraintsTargetLengths = kernelParams.d_constraintsTargetLengths;
+    const int* __restrict__ gm_coupledConstraintsCounts   = kernelParams.d_coupledConstraintsCounts;
+    const int* __restrict__ gm_coupledConstraintsIdxes = kernelParams.d_coupledConstraintsIndices;
+    const float* __restrict__ gm_massFactors           = kernelParams.d_massFactors;
+    float* __restrict__ gm_matrixA                     = kernelParams.d_matrixA;
+    const float* __restrict__ gm_inverseMasses         = kernelParams.d_inverseMasses;
+    float* __restrict__ gm_virialScaled                = kernelParams.d_virialScaled;
 
-    int threadIndex                                         = blockIdx.x*blockDim.x+threadIdx.x;
+    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
     // numConstraintsThreads should be a integer multiple of blockSize (numConstraintsThreads = numBlocks*blockSize).
     // This is to ensure proper synchronizations and reduction. All array are padded to the required size.
@@ -136,17 +136,17 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
     // Needed to construct constrain matrix A
     extern __shared__ float3 sm_r[];
 
-    int2                     pair = gm_constraints[threadIndex];
-    int                      i    = pair.x;
-    int                      j    = pair.y;
+    int2 pair = gm_constraints[threadIndex];
+    int  i    = pair.x;
+    int  j    = pair.y;
 
     // Mass-scaled Lagrange multiplier
-    float  lagrangeScaled = 0.0f;
+    float lagrangeScaled = 0.0f;
 
-    float  targetLength;
-    float  inverseMassi;
-    float  inverseMassj;
-    float  sqrtReducedMass;
+    float targetLength;
+    float inverseMassi;
+    float inverseMassj;
+    float sqrtReducedMass;
 
     float3 xi;
     float3 xj;
@@ -178,10 +178,10 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         xi = gm_x[i];
         xj = gm_x[j];
 
-        float3 dx   = pbcDxAiuc(pbcAiuc, xi, xj);
+        float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
-        float  rlen = rsqrtf(dx.x*dx.x + dx.y*dx.y + dx.z*dx.z);
-        rc   = rlen*dx;
+        float rlen = rsqrtf(dx.x * dx.x + dx.y * dx.y + dx.z * dx.z);
+        rc         = rlen * dx;
     }
 
     sm_r[threadIdx.x] = rc;
@@ -197,11 +197,11 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
     int coupledConstraintsCount = gm_coupledConstraintsCounts[threadIndex];
     for (int n = 0; n < coupledConstraintsCount; n++)
     {
-        int    index = n*numConstraintsThreads + threadIndex;
-        int    c1    = gm_coupledConstraintsIdxes[index];
+        int index = n * numConstraintsThreads + threadIndex;
+        int c1    = gm_coupledConstraintsIdxes[index];
 
-        float3 rc1 = sm_r[c1 - blockIdx.x*blockDim.x];
-        gm_matrixA[index] = gm_massFactors[index]*(rc.x*rc1.x + rc.y*rc1.y + rc.z*rc1.z);
+        float3 rc1        = sm_r[c1 - blockIdx.x * blockDim.x];
+        gm_matrixA[index] = gm_massFactors[index] * (rc.x * rc1.x + rc.y * rc1.y + rc.z * rc1.z);
     }
 
     // Skipping in dummy threads
@@ -213,14 +213,14 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
 
     float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
-    float  sol = sqrtReducedMass*((rc.x*dx.x + rc.y*dx.y + rc.z*dx.z) - targetLength);
+    float sol = sqrtReducedMass * ((rc.x * dx.x + rc.y * dx.y + rc.z * dx.z) - targetLength);
 
     /*
      *  Inverse matrix using a set of expansionOrder matrix multiplications
      */
 
     // This will use the same memory space as sm_r, which is no longer needed.
-    extern __shared__ float  sm_rhs[];
+    extern __shared__ float sm_rhs[];
     // Save current right-hand-side vector in the shared memory
     sm_rhs[threadIdx.x] = sol;
 
@@ -232,29 +232,29 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
 
         for (int n = 0; n < coupledConstraintsCount; n++)
         {
-            int index = n*numConstraintsThreads + threadIndex;
+            int index = n * numConstraintsThreads + threadIndex;
             int c1    = gm_coupledConstraintsIdxes[index];
             // Convolute current right-hand-side with A
             // Different, non overlapping parts of sm_rhs[..] are read during odd and even iterations
-            mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
+            mvb = mvb + gm_matrixA[index] * sm_rhs[c1 - blockIdx.x * blockDim.x + blockDim.x * (rec % 2)];
         }
         // 'Switch' rhs vectors, save current result
         // These values will be accessed in the loop above during the next iteration.
-        sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
-        sol  = sol + mvb;
+        sm_rhs[threadIdx.x + blockDim.x * ((rec + 1) % 2)] = mvb;
+        sol                                                = sol + mvb;
     }
 
     // Current mass-scaled Lagrange multipliers
-    lagrangeScaled = sqrtReducedMass*sol;
+    lagrangeScaled = sqrtReducedMass * sol;
 
     // Save updated coordinates before correction for the rotational lengthening
-    float3 tmp     = rc*lagrangeScaled;
+    float3 tmp = rc * lagrangeScaled;
 
     // Writing for all but dummy constraints
     if (!isDummyThread)
     {
-        atomicAdd(&gm_xp[i], -tmp*inverseMassi);
-        atomicAdd(&gm_xp[j],  tmp*inverseMassj);
+        atomicAdd(&gm_xp[i], -tmp * inverseMassi);
+        atomicAdd(&gm_xp[j], tmp * inverseMassj);
     }
 
     /*
@@ -274,23 +274,23 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
 
         float3 dx = pbcDxAiuc(pbcAiuc, xi, xj);
 
-        float  len2  = targetLength*targetLength;
-        float  dlen2 = 2.0f*len2 - norm2(dx);
+        float len2  = targetLength * targetLength;
+        float dlen2 = 2.0f * len2 - norm2(dx);
 
         // TODO A little bit more effective but slightly less readable version of the below would be:
         //      float proj = sqrtReducedMass*(targetLength - (dlen2 > 0.0f ? 1.0f : 0.0f)*dlen2*rsqrt(dlen2));
-        float  proj;
+        float proj;
         if (dlen2 > 0.0f)
         {
-            proj = sqrtReducedMass*(targetLength - dlen2*rsqrt(dlen2));
+            proj = sqrtReducedMass * (targetLength - dlen2 * rsqrt(dlen2));
         }
         else
         {
-            proj = sqrtReducedMass*targetLength;
+            proj = sqrtReducedMass * targetLength;
         }
 
-        sm_rhs[threadIdx.x]   = proj;
-        float sol = proj;
+        sm_rhs[threadIdx.x] = proj;
+        float sol           = proj;
 
         /*
          * Same matrix inversion as above is used for updated data
@@ -303,36 +303,35 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
 
             for (int n = 0; n < coupledConstraintsCount; n++)
             {
-                int index = n*numConstraintsThreads + threadIndex;
+                int index = n * numConstraintsThreads + threadIndex;
                 int c1    = gm_coupledConstraintsIdxes[index];
 
-                mvb = mvb + gm_matrixA[index]*sm_rhs[c1 - blockIdx.x*blockDim.x + blockDim.x*(rec % 2)];
-
+                mvb = mvb + gm_matrixA[index] * sm_rhs[c1 - blockIdx.x * blockDim.x + blockDim.x * (rec % 2)];
             }
-            sm_rhs[threadIdx.x + blockDim.x*((rec + 1) % 2)] = mvb;
-            sol  = sol + mvb;
+            sm_rhs[threadIdx.x + blockDim.x * ((rec + 1) % 2)] = mvb;
+            sol                                                = sol + mvb;
         }
 
         // Add corrections to Lagrange multipliers
-        float sqrtmu_sol  = sqrtReducedMass*sol;
+        float sqrtmu_sol = sqrtReducedMass * sol;
         lagrangeScaled += sqrtmu_sol;
 
         // Save updated coordinates for the next iteration
         // Dummy constraints are skipped
         if (!isDummyThread)
         {
-            float3 tmp = rc*sqrtmu_sol;
-            atomicAdd(&gm_xp[i], -tmp*inverseMassi);
-            atomicAdd(&gm_xp[j],  tmp*inverseMassj);
+            float3 tmp = rc * sqrtmu_sol;
+            atomicAdd(&gm_xp[i], -tmp * inverseMassi);
+            atomicAdd(&gm_xp[j], tmp * inverseMassj);
         }
     }
 
     // Updating particle velocities for all but dummy threads
     if (updateVelocities && !isDummyThread)
     {
-        float3 tmp     = rc*invdt*lagrangeScaled;
-        atomicAdd(&gm_v[i], -tmp*inverseMassi);
-        atomicAdd(&gm_v[j],  tmp*inverseMassj);
+        float3 tmp = rc * invdt * lagrangeScaled;
+        atomicAdd(&gm_v[i], -tmp * inverseMassi);
+        atomicAdd(&gm_v[j], tmp * inverseMassj);
     }
 
 
@@ -354,14 +353,14 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         // lagrangeScaled and rc are all set to zero for them in the beginning of the kernel.
         // The sm_threadVirial[..] will overlap with the sm_r[..] and sm_rhs[..], but the latter
         // two are no longer in use.
-        extern __shared__ float  sm_threadVirial[];
-        float                    mult = targetLength*lagrangeScaled;
-        sm_threadVirial[0*blockDim.x + threadIdx.x] = mult*rc.x*rc.x;
-        sm_threadVirial[1*blockDim.x + threadIdx.x] = mult*rc.x*rc.y;
-        sm_threadVirial[2*blockDim.x + threadIdx.x] = mult*rc.x*rc.z;
-        sm_threadVirial[3*blockDim.x + threadIdx.x] = mult*rc.y*rc.y;
-        sm_threadVirial[4*blockDim.x + threadIdx.x] = mult*rc.y*rc.z;
-        sm_threadVirial[5*blockDim.x + threadIdx.x] = mult*rc.z*rc.z;
+        extern __shared__ float sm_threadVirial[];
+        float                   mult                  = targetLength * lagrangeScaled;
+        sm_threadVirial[0 * blockDim.x + threadIdx.x] = mult * rc.x * rc.x;
+        sm_threadVirial[1 * blockDim.x + threadIdx.x] = mult * rc.x * rc.y;
+        sm_threadVirial[2 * blockDim.x + threadIdx.x] = mult * rc.x * rc.z;
+        sm_threadVirial[3 * blockDim.x + threadIdx.x] = mult * rc.y * rc.y;
+        sm_threadVirial[4 * blockDim.x + threadIdx.x] = mult * rc.y * rc.z;
+        sm_threadVirial[5 * blockDim.x + threadIdx.x] = mult * rc.z * rc.z;
 
         __syncthreads();
 
@@ -372,16 +371,17 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         // in the beginning of the kernel).
         for (int divideBy = 2; divideBy <= static_cast<int>(blockDim.x); divideBy *= 2)
         {
-            int dividedAt = blockDim.x/divideBy;
+            int dividedAt = blockDim.x / divideBy;
             if (static_cast<int>(threadIdx.x) < dividedAt)
             {
                 for (int d = 0; d < 6; d++)
                 {
-                    sm_threadVirial[d*blockDim.x + threadIdx.x] += sm_threadVirial[d*blockDim.x + (threadIdx.x + dividedAt)];
+                    sm_threadVirial[d * blockDim.x + threadIdx.x] +=
+                            sm_threadVirial[d * blockDim.x + (threadIdx.x + dividedAt)];
                 }
             }
             // Syncronize if not within one warp
-            if (dividedAt > warpSize/2)
+            if (dividedAt > warpSize / 2)
             {
                 __syncthreads();
             }
@@ -389,7 +389,7 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
         // First 6 threads in the block add the results of 6 tensor components to the global memory address.
         if (threadIdx.x < 6)
         {
-            atomicAdd(&(gm_virialScaled[threadIdx.x]), sm_threadVirial[threadIdx.x*blockDim.x]);
+            atomicAdd(&(gm_virialScaled[threadIdx.x]), sm_threadVirial[threadIdx.x * blockDim.x]);
         }
     }
 
@@ -405,8 +405,7 @@ __global__ void lincs_kernel(LincsCudaKernelParameters   kernelParams,
  *
  * \return                      Pointer to CUDA kernel
  */
-inline auto getLincsKernelPtr(const bool  updateVelocities,
-                              const bool  computeVirial)
+inline auto getLincsKernelPtr(const bool updateVelocities, const bool computeVirial)
 {
 
     auto kernelPtr = lincs_kernel<true, true>;
@@ -429,10 +428,10 @@ inline auto getLincsKernelPtr(const bool  updateVelocities,
     return kernelPtr;
 }
 
-void LincsCuda::apply(const float3 *d_x,
-                      float3       *d_xp,
+void LincsCuda::apply(const float3* d_x,
+                      float3*       d_xp,
                       const bool    updateVelocities,
-                      float3       *d_v,
+                      float3*       d_v,
                       const real    invdt,
                       const bool    computeVirial,
                       tensor        virialScaled)
@@ -452,15 +451,15 @@ void LincsCuda::apply(const float3 *d_x,
         clearDeviceBufferAsync(&kernelParams_.d_virialScaled, 0, 6, commandStream_);
     }
 
-    auto               kernelPtr = getLincsKernelPtr(updateVelocities, computeVirial);
+    auto kernelPtr = getLincsKernelPtr(updateVelocities, computeVirial);
 
     KernelLaunchConfig config;
-    config.blockSize[0]     = c_threadsPerBlock;
-    config.blockSize[1]     = 1;
-    config.blockSize[2]     = 1;
-    config.gridSize[0]      = (kernelParams_.numConstraintsThreads + c_threadsPerBlock - 1)/c_threadsPerBlock;
-    config.gridSize[1]      = 1;
-    config.gridSize[2]      = 1;
+    config.blockSize[0] = c_threadsPerBlock;
+    config.blockSize[1] = 1;
+    config.blockSize[2] = 1;
+    config.gridSize[0] = (kernelParams_.numConstraintsThreads + c_threadsPerBlock - 1) / c_threadsPerBlock;
+    config.gridSize[1] = 1;
+    config.gridSize[2] = 1;
 
     // Shared memory is used to store:
     // -- Current coordinates (3 floats per thread)
@@ -471,27 +470,23 @@ void LincsCuda::apply(const float3 *d_x,
     // max{3, 2, 6} = 6 floats per thread are needed in case virial is computed, or max{3, 2} = 3 if not.
     if (computeVirial)
     {
-        config.sharedMemorySize = c_threadsPerBlock*6*sizeof(float);
+        config.sharedMemorySize = c_threadsPerBlock * 6 * sizeof(float);
     }
     else
     {
-        config.sharedMemorySize = c_threadsPerBlock*3*sizeof(float);
+        config.sharedMemorySize = c_threadsPerBlock * 3 * sizeof(float);
     }
-    config.stream           = commandStream_;
+    config.stream = commandStream_;
 
-    const auto     kernelArgs = prepareGpuKernelArguments(kernelPtr, config,
-                                                          &kernelParams_,
-                                                          &d_x, &d_xp,
-                                                          &d_v, &invdt);
+    const auto kernelArgs =
+            prepareGpuKernelArguments(kernelPtr, config, &kernelParams_, &d_x, &d_xp, &d_v, &invdt);
 
-    launchGpuKernel(kernelPtr, config, nullptr,
-                    "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);
+    launchGpuKernel(kernelPtr, config, nullptr, "lincs_kernel<updateVelocities, computeVirial>", kernelArgs);
 
     if (computeVirial)
     {
         // Copy LINCS virial data and add it to the common virial
-        copyFromDeviceBuffer(h_virialScaled_.data(), &kernelParams_.d_virialScaled,
-                             0, 6,
+        copyFromDeviceBuffer(h_virialScaled_.data(), &kernelParams_.d_virialScaled, 0, 6,
                              commandStream_, GpuApiCallBehavior::Sync, nullptr);
 
         // Mapping [XX, XY, XZ, YY, YZ, ZZ] internal format to a tensor object
@@ -511,18 +506,17 @@ void LincsCuda::apply(const float3 *d_x,
     return;
 }
 
-LincsCuda::LincsCuda(int           numIterations,
-                     int           expansionOrder,
-                     CommandStream commandStream) :
+LincsCuda::LincsCuda(int numIterations, int expansionOrder, CommandStream commandStream) :
     commandStream_(commandStream)
 {
-    kernelParams_.numIterations              = numIterations;
-    kernelParams_.expansionOrder             = expansionOrder;
+    kernelParams_.numIterations  = numIterations;
+    kernelParams_.expansionOrder = expansionOrder;
 
     static_assert(sizeof(real) == sizeof(float),
                   "Real numbers should be in single precision in GPU code.");
-    static_assert(c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
-                  "Number of threads per block should be a power of two in order for reduction to work.");
+    static_assert(
+            c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
+            "Number of threads per block should be a power of two in order for reduction to work.");
 
     allocateDeviceBuffer(&kernelParams_.d_virialScaled, 6, nullptr);
     h_virialScaled_.resize(6);
@@ -570,8 +564,9 @@ LincsCuda::~LincsCuda()
  *                                   the group has to be moved to the next one.
  * \param[in]     atomAdjacencyList  Stores information about connections between atoms.
  */
-inline int countCoupled(int a, std::vector<int> *spaceNeeded,
-                        std::vector<std::vector<std::tuple<int, int, int> > > *atomsAdjacencyList)
+inline int countCoupled(int                                                  a,
+                        std::vector<int>*                                    spaceNeeded,
+                        std::vector<std::vector<std::tuple<int, int, int>>>* atomsAdjacencyList)
 
 {
     int c2, a2, sign;
@@ -582,31 +577,30 @@ inline int countCoupled(int a, std::vector<int> *spaceNeeded,
         if (spaceNeeded->at(c2) == -1)
         {
             spaceNeeded->at(c2) = 0; // To indicate we've been here
-            counted            += 1 + countCoupled(a2, spaceNeeded, atomsAdjacencyList);
+            counted += 1 + countCoupled(a2, spaceNeeded, atomsAdjacencyList);
         }
     }
     return counted;
 }
 
-void LincsCuda::set(const t_idef    &idef,
-                    const t_mdatoms &md)
+void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
 {
-    int                 numAtoms = md.nr;
+    int numAtoms = md.nr;
     // List of constrained atoms (CPU memory)
-    std::vector<int2>   constraintsHost;
+    std::vector<int2> constraintsHost;
     // Equilibrium distances for the constraints (CPU)
-    std::vector<float>  constraintsTargetLengthsHost;
+    std::vector<float> constraintsTargetLengthsHost;
     // Number of constraints, coupled with the current one (CPU)
-    std::vector<int>    coupledConstraintsCountsHost;
+    std::vector<int> coupledConstraintsCountsHost;
     // List of coupled with the current one (CPU)
-    std::vector<int>    coupledConstraintsIndicesHost;
+    std::vector<int> coupledConstraintsIndicesHost;
     // Mass factors (CPU)
-    std::vector<float>  massFactorsHost;
+    std::vector<float> massFactorsHost;
 
     // List of constrained atoms in local topology
-    t_iatom  *iatoms         = idef.il[F_CONSTR].iatoms;
+    t_iatom*  iatoms         = idef.il[F_CONSTR].iatoms;
     const int stride         = NRAL(F_CONSTR) + 1;
-    const int numConstraints = idef.il[F_CONSTR].nr/stride;
+    const int numConstraints = idef.il[F_CONSTR].nr / stride;
 
     // Early exit if no constraints
     if (numConstraints == 0)
@@ -616,15 +610,15 @@ void LincsCuda::set(const t_idef    &idef,
     }
 
     // Constructing adjacency list --- usefull intermediate structure
-    std::vector<std::vector<std::tuple<int, int, int> > > atomsAdjacencyList(numAtoms);
+    std::vector<std::vector<std::tuple<int, int, int>>> atomsAdjacencyList(numAtoms);
     for (int c = 0; c < numConstraints; c++)
     {
-        int a1     = iatoms[stride*c + 1];
-        int a2     = iatoms[stride*c + 2];
+        int a1 = iatoms[stride * c + 1];
+        int a2 = iatoms[stride * c + 2];
 
-        // Each constraint will be represented as a tuple, containing index of the second constrained atom,
-        // index of the constraint and a sign that indicates the order of atoms in which they are listed.
-        // Sign is needed to compute the mass factors.
+        // Each constraint will be represented as a tuple, containing index of the second
+        // constrained atom, index of the constraint and a sign that indicates the order of atoms in
+        // which they are listed. Sign is needed to compute the mass factors.
         atomsAdjacencyList.at(a1).push_back(std::make_tuple(a2, c, +1));
         atomsAdjacencyList.at(a2).push_back(std::make_tuple(a1, c, -1));
     }
@@ -639,12 +633,12 @@ void LincsCuda::set(const t_idef    &idef,
     std::fill(spaceNeeded.begin(), spaceNeeded.end(), -1);
     for (int c = 0; c < numConstraints; c++)
     {
-        int a1     = iatoms[stride*c + 1];
-        int a2     = iatoms[stride*c + 2];
+        int a1 = iatoms[stride * c + 1];
+        int a2 = iatoms[stride * c + 2];
         if (spaceNeeded.at(c) == -1)
         {
-            spaceNeeded.at(c) = countCoupled(a1, &spaceNeeded, &atomsAdjacencyList) +
-                countCoupled(a2, &spaceNeeded, &atomsAdjacencyList);
+            spaceNeeded.at(c) = countCoupled(a1, &spaceNeeded, &atomsAdjacencyList)
+                                + countCoupled(a2, &spaceNeeded, &atomsAdjacencyList);
         }
     }
 
@@ -652,22 +646,27 @@ void LincsCuda::set(const t_idef    &idef,
     // takes into account the empty spaces which might be needed in the end of each thread block.
     std::vector<int> splitMap;
     splitMap.resize(numConstraints, -1);
-    int              currentMapIndex = 0;
+    int currentMapIndex = 0;
     for (int c = 0; c < numConstraints; c++)
     {
         // Check if coupled constraints all fit in one block
-        GMX_RELEASE_ASSERT(spaceNeeded.at(c) < c_threadsPerBlock, "Maximum number of coupled constraints exceedes the size of the CUDA thread block. "
-                           "Most likely, you are trying to use GPU version of LINCS with constraints on all-bonds, "
-                           "which is not supported. Try using H-bonds constraints only.");
+        GMX_RELEASE_ASSERT(
+                spaceNeeded.at(c) < c_threadsPerBlock,
+                "Maximum number of coupled constraints exceedes the size of the CUDA thread block. "
+                "Most likely, you are trying to use GPU version of LINCS with constraints on "
+                "all-bonds, "
+                "which is not supported. Try using H-bonds constraints only.");
         if (currentMapIndex / c_threadsPerBlock != (currentMapIndex + spaceNeeded.at(c)) / c_threadsPerBlock)
         {
-            currentMapIndex = ((currentMapIndex/c_threadsPerBlock) + 1) * c_threadsPerBlock;
+            currentMapIndex = ((currentMapIndex / c_threadsPerBlock) + 1) * c_threadsPerBlock;
         }
         splitMap.at(c) = currentMapIndex;
         currentMapIndex++;
     }
-    kernelParams_.numConstraintsThreads = currentMapIndex + c_threadsPerBlock - currentMapIndex % c_threadsPerBlock;
-    GMX_RELEASE_ASSERT(kernelParams_.numConstraintsThreads % c_threadsPerBlock == 0, "Number of threads should be a multiple of the block size");
+    kernelParams_.numConstraintsThreads =
+            currentMapIndex + c_threadsPerBlock - currentMapIndex % c_threadsPerBlock;
+    GMX_RELEASE_ASSERT(kernelParams_.numConstraintsThreads % c_threadsPerBlock == 0,
+                       "Number of threads should be a multiple of the block size");
 
     // Initialize constraints and their target indexes taking into account the splits in the data arrays.
     int2 pair;
@@ -679,32 +678,32 @@ void LincsCuda::set(const t_idef    &idef,
     std::fill(constraintsTargetLengthsHost.begin(), constraintsTargetLengthsHost.end(), 0.0);
     for (int c = 0; c < numConstraints; c++)
     {
-        int  a1     = iatoms[stride*c + 1];
-        int  a2     = iatoms[stride*c + 2];
-        int  type   = iatoms[stride*c];
+        int a1   = iatoms[stride * c + 1];
+        int a2   = iatoms[stride * c + 2];
+        int type = iatoms[stride * c];
 
         int2 pair;
-        pair.x = a1;
-        pair.y = a2;
+        pair.x                                          = a1;
+        pair.y                                          = a2;
         constraintsHost.at(splitMap.at(c))              = pair;
         constraintsTargetLengthsHost.at(splitMap.at(c)) = idef.iparams[type].constr.dA;
-
     }
 
     // The adjacency list of constraints (i.e. the list of coupled constraints for each constraint).
-    // We map a single thread to a single constraint, hence each thread 'c' will be using one element from
-    // coupledConstraintsCountsHost array, which is the number of constraints coupled to the constraint 'c'.
-    // The coupled constraints indexes are placed into the coupledConstraintsIndicesHost array. Latter is organized
-    // as a one-dimensional array to ensure good memory alignment. It is addressed as [c + i*numConstraintsThreads],
-    // where 'i' goes from zero to the number of constraints coupled to 'c'. 'numConstraintsThreads' is the width of
-    // the array --- a number, greater then total number of constraints, taking into account the splits in the
-    // constraints array due to the GPU block borders. This number can be adjusted to improve memory access pattern.
-    // Mass factors are saved in a similar data structure.
-    int              maxCoupledConstraints = 0;
+    // We map a single thread to a single constraint, hence each thread 'c' will be using one
+    // element from coupledConstraintsCountsHost array, which is the number of constraints coupled
+    // to the constraint 'c'. The coupled constraints indexes are placed into the
+    // coupledConstraintsIndicesHost array. Latter is organized as a one-dimensional array to ensure
+    // good memory alignment. It is addressed as [c + i*numConstraintsThreads], where 'i' goes from
+    // zero to the number of constraints coupled to 'c'. 'numConstraintsThreads' is the width of the
+    // array --- a number, greater then total number of constraints, taking into account the splits
+    // in the constraints array due to the GPU block borders. This number can be adjusted to improve
+    // memory access pattern. Mass factors are saved in a similar data structure.
+    int maxCoupledConstraints = 0;
     for (int c = 0; c < numConstraints; c++)
     {
-        int a1     = iatoms[stride*c + 1];
-        int a2     = iatoms[stride*c + 2];
+        int a1 = iatoms[stride * c + 1];
+        int a2 = iatoms[stride * c + 2];
 
         // Constraint 'c' is counted twice, but it should be excluded altogether. Hence '-2'.
         int nCoupedConstraints = atomsAdjacencyList.at(a1).size() + atomsAdjacencyList.at(a2).size() - 2;
@@ -716,14 +715,14 @@ void LincsCuda::set(const t_idef    &idef,
     }
 
     coupledConstraintsCountsHost.resize(kernelParams_.numConstraintsThreads, 0);
-    coupledConstraintsIndicesHost.resize(maxCoupledConstraints*kernelParams_.numConstraintsThreads, -1);
-    massFactorsHost.resize(maxCoupledConstraints*kernelParams_.numConstraintsThreads, -1);
+    coupledConstraintsIndicesHost.resize(maxCoupledConstraints * kernelParams_.numConstraintsThreads, -1);
+    massFactorsHost.resize(maxCoupledConstraints * kernelParams_.numConstraintsThreads, -1);
 
     for (int c1 = 0; c1 < numConstraints; c1++)
     {
-        coupledConstraintsCountsHost.at(splitMap.at(c1))  = 0;
-        int c1a1     = iatoms[stride*c1 + 1];
-        int c1a2     = iatoms[stride*c1 + 2];
+        coupledConstraintsCountsHost.at(splitMap.at(c1)) = 0;
+        int c1a1                                         = iatoms[stride * c1 + 1];
+        int c1a2                                         = iatoms[stride * c1 + 2];
         int c2;
         int c2a1;
         int c2a2;
@@ -739,19 +738,20 @@ void LincsCuda::set(const t_idef    &idef,
 
             if (c1 != c2)
             {
-                int index = kernelParams_.numConstraintsThreads*coupledConstraintsCountsHost.at(splitMap.at(c1)) + splitMap.at(c1);
+                int index = kernelParams_.numConstraintsThreads
+                                    * coupledConstraintsCountsHost.at(splitMap.at(c1))
+                            + splitMap.at(c1);
 
                 coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
 
-                int   center = c1a1;
+                int center = c1a1;
 
-                float sqrtmu1 = 1.0/sqrt(md.invmass[c1a1] + md.invmass[c1a2]);
-                float sqrtmu2 = 1.0/sqrt(md.invmass[c2a1] + md.invmass[c2a2]);
+                float sqrtmu1 = 1.0 / sqrt(md.invmass[c1a1] + md.invmass[c1a2]);
+                float sqrtmu2 = 1.0 / sqrt(md.invmass[c2a1] + md.invmass[c2a2]);
 
-                massFactorsHost.at(index) = -sign*md.invmass[center]*sqrtmu1*sqrtmu2;
+                massFactorsHost.at(index) = -sign * md.invmass[center] * sqrtmu1 * sqrtmu2;
 
                 coupledConstraintsCountsHost.at(splitMap.at(c1))++;
-
             }
         }
 
@@ -764,19 +764,20 @@ void LincsCuda::set(const t_idef    &idef,
 
             if (c1 != c2)
             {
-                int index = kernelParams_.numConstraintsThreads*coupledConstraintsCountsHost.at(splitMap.at(c1)) + splitMap.at(c1);
+                int index = kernelParams_.numConstraintsThreads
+                                    * coupledConstraintsCountsHost.at(splitMap.at(c1))
+                            + splitMap.at(c1);
 
                 coupledConstraintsIndicesHost.at(index) = splitMap.at(c2);
 
-                int   center = c1a2;
+                int center = c1a2;
 
-                float sqrtmu1 = 1.0/sqrt(md.invmass[c1a1] + md.invmass[c1a2]);
-                float sqrtmu2 = 1.0/sqrt(md.invmass[c2a1] + md.invmass[c2a2]);
+                float sqrtmu1 = 1.0 / sqrt(md.invmass[c1a1] + md.invmass[c1a2]);
+                float sqrtmu2 = 1.0 / sqrt(md.invmass[c2a1] + md.invmass[c2a2]);
 
-                massFactorsHost.at(index) = sign*md.invmass[center]*sqrtmu1*sqrtmu2;
+                massFactorsHost.at(index) = sign * md.invmass[center] * sqrtmu1 * sqrtmu2;
 
                 coupledConstraintsCountsHost.at(splitMap.at(c1))++;
-
             }
         }
     }
@@ -794,19 +795,22 @@ void LincsCuda::set(const t_idef    &idef,
             freeDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices);
             freeDeviceBuffer(&kernelParams_.d_massFactors);
             freeDeviceBuffer(&kernelParams_.d_matrixA);
-
         }
 
         numConstraintsThreadsAlloc_ = kernelParams_.numConstraintsThreads;
 
         allocateDeviceBuffer(&kernelParams_.d_constraints, kernelParams_.numConstraintsThreads, nullptr);
-        allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths,
+                             kernelParams_.numConstraintsThreads, nullptr);
 
-        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts, kernelParams_.numConstraintsThreads, nullptr);
-        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
-        allocateDeviceBuffer(&kernelParams_.d_massFactors, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
-        allocateDeviceBuffer(&kernelParams_.d_matrixA, maxCoupledConstraints*kernelParams_.numConstraintsThreads, nullptr);
-
+        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts,
+                             kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices,
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_massFactors,
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_matrixA,
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
     }
 
     // (Re)allocate the memory, if the number of atoms has increased.
@@ -821,30 +825,28 @@ void LincsCuda::set(const t_idef    &idef,
     }
 
     // Copy data to GPU.
-    copyToDeviceBuffer(&kernelParams_.d_constraints, constraintsHost.data(),
-                       0, kernelParams_.numConstraintsThreads,
+    copyToDeviceBuffer(&kernelParams_.d_constraints, constraintsHost.data(), 0,
+                       kernelParams_.numConstraintsThreads, commandStream_,
+                       GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&kernelParams_.d_constraintsTargetLengths,
+                       constraintsTargetLengthsHost.data(), 0, kernelParams_.numConstraintsThreads,
                        commandStream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&kernelParams_.d_constraintsTargetLengths, constraintsTargetLengthsHost.data(),
-                       0, kernelParams_.numConstraintsThreads,
-                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts, coupledConstraintsCountsHost.data(),
-                       0, kernelParams_.numConstraintsThreads,
+    copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts,
+                       coupledConstraintsCountsHost.data(), 0, kernelParams_.numConstraintsThreads,
                        commandStream_, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices, coupledConstraintsIndicesHost.data(),
-                       0, maxCoupledConstraints*kernelParams_.numConstraintsThreads,
+                       0, maxCoupledConstraints * kernelParams_.numConstraintsThreads,
                        commandStream_, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&kernelParams_.d_massFactors, massFactorsHost.data(),
-                       0, maxCoupledConstraints*kernelParams_.numConstraintsThreads,
-                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&kernelParams_.d_massFactors, massFactorsHost.data(), 0,
+                       maxCoupledConstraints * kernelParams_.numConstraintsThreads, commandStream_,
+                       GpuApiCallBehavior::Sync, nullptr);
 
     GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of attoms should be specified.\n");
-    copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass,
-                       0, numAtoms,
-                       commandStream_, GpuApiCallBehavior::Sync, nullptr);
-
+    copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass, 0, numAtoms, commandStream_,
+                       GpuApiCallBehavior::Sync, nullptr);
 }
 
-void LincsCuda::setPbc(const t_pbc *pbc)
+void LincsCuda::setPbc(const t_pbc* pbc)
 {
     setPbcAiuc(pbc->ndim_ePBC, pbc->box, &kernelParams_.pbcAiuc);
 }

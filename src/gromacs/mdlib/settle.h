@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,42 +61,44 @@ enum class ConstraintVariable : int;
 struct settledata;
 
 /*! \brief Initializes and returns a structure with SETTLE parameters */
-settledata *settle_init(const gmx_mtop_t &mtop);
+settledata* settle_init(const gmx_mtop_t& mtop);
 
 //! Cleans up.
-void settle_free(settledata *settled);
+void settle_free(settledata* settled);
 
 /*! \brief Set up the indices for the settle constraints */
-void settle_set_constraints(settledata       *settled,
-                            const t_ilist    *il_settle,
-                            const t_mdatoms  &mdatoms);
+void settle_set_constraints(settledata* settled, const t_ilist* il_settle, const t_mdatoms& mdatoms);
 
 /*! \brief Constrain coordinates using SETTLE.
  * Can be called on any number of threads.
  */
-void csettle(settledata         *settled,          /* The SETTLE structure */
-             int                 nthread,          /* The number of threads used */
-             int                 thread,           /* Our thread index */
-             const t_pbc        *pbc,              /* PBC data pointer, can be NULL */
-             const real          x[],              /* Reference coordinates */
-             real                xprime[],         /* New coords, to be settled */
-             real                invdt,            /* 1/delta_t */
-             real               *v,                /* Also constrain v if v!=NULL */
-             bool                bCalcVirial,      /* Calculate the virial contribution */
-             tensor              vir_r_m_dr,       /* sum r x m delta_r */
-             bool               *bErrorHasOccurred /* True if a settle error occurred */
-             );
+void csettle(settledata*  settled,          /* The SETTLE structure */
+             int          nthread,          /* The number of threads used */
+             int          thread,           /* Our thread index */
+             const t_pbc* pbc,              /* PBC data pointer, can be NULL */
+             const real   x[],              /* Reference coordinates */
+             real         xprime[],         /* New coords, to be settled */
+             real         invdt,            /* 1/delta_t */
+             real*        v,                /* Also constrain v if v!=NULL */
+             bool         bCalcVirial,      /* Calculate the virial contribution */
+             tensor       vir_r_m_dr,       /* sum r x m delta_r */
+             bool*        bErrorHasOccurred /* True if a settle error occurred */
+);
 
 /*! \brief Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
-void settle_proj(settledata *settled, ConstraintVariable econq,
-                 int nsettle, const t_iatom iatoms[],
-                 const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
-                 const rvec x[],
-                 rvec *der, rvec *derp,
-                 int CalcVirAtomEnd, tensor vir_r_m_dder);
+void settle_proj(settledata*        settled,
+                 ConstraintVariable econq,
+                 int                nsettle,
+                 const t_iatom      iatoms[],
+                 const t_pbc*       pbc, /* PBC data pointer, can be NULL  */
+                 const rvec         x[],
+                 rvec*              der,
+                 rvec*              derp,
+                 int                CalcVirAtomEnd,
+                 tensor             vir_r_m_dder);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

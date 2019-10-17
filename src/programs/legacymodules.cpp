@@ -83,50 +83,41 @@ namespace
  */
 class ObsoleteToolModule : public gmx::ICommandLineModule
 {
-    public:
-        //! Creates an obsolete tool module for a tool with the given name.
-        explicit ObsoleteToolModule(const char *name)
-            : name_(name)
-        {
-        }
+public:
+    //! Creates an obsolete tool module for a tool with the given name.
+    explicit ObsoleteToolModule(const char* name) : name_(name) {}
 
-        const char *name() const override
-        {
-            return name_;
-        }
-        const char *shortDescription() const override
-        {
-            return nullptr;
-        }
+    const char* name() const override { return name_; }
+    const char* shortDescription() const override { return nullptr; }
 
-        void init(gmx::CommandLineModuleSettings * /*settings*/) override
-        {
-        }
-        int run(int /*argc*/, char * /*argv*/[]) override
-        {
-            printMessage();
-            return 0;
-        }
-        void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const override
-        {
-            printMessage();
-        }
+    void init(gmx::CommandLineModuleSettings* /*settings*/) override {}
+    int  run(int /*argc*/, char* /*argv*/[]) override
+    {
+        printMessage();
+        return 0;
+    }
+    void writeHelp(const gmx::CommandLineHelpContext& /*context*/) const override
+    {
+        printMessage();
+    }
 
-    private:
-        void printMessage() const
-        {
-            std::fprintf(stderr,
-                         "This tool is no longer present in GROMACS. Please see\n"
-                         "  http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/user-guide/cmdline.html#command-changes\n"
-                         "for ideas how to perform the same tasks with the "
-                         "new tools.\n");
-        }
+private:
+    void printMessage() const
+    {
+        std::fprintf(stderr,
+                     "This tool is no longer present in GROMACS. Please see\n"
+                     "  "
+                     "http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc/"
+                     "user-guide/cmdline.html#command-changes\n"
+                     "for ideas how to perform the same tasks with the "
+                     "new tools.\n");
+    }
 
-        const char             *name_;
+    const char* name_;
 };
 
 //! Initializer for a module that defaults to nice level zero.
-void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
+void initSettingsNoNice(gmx::CommandLineModuleSettings* settings)
 {
     settings->setDefaultNiceLevel(0);
 }
@@ -139,9 +130,10 @@ void initSettingsNoNice(gmx::CommandLineModuleSettings *settings)
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-void registerModule(gmx::CommandLineModuleManager                *manager,
-                    gmx::CommandLineModuleManager::CMainFunction  mainFunction,
-                    const char *name, const char *shortDescription)
+void registerModule(gmx::CommandLineModuleManager*               manager,
+                    gmx::CommandLineModuleManager::CMainFunction mainFunction,
+                    const char*                                  name,
+                    const char*                                  shortDescription)
 {
     manager->addModuleCMain(name, shortDescription, mainFunction);
 }
@@ -155,12 +147,12 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
  * \param[in] name             Name for the new module.
  * \param[in] shortDescription One-line description for the new module.
  */
-void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
-                          gmx::CommandLineModuleManager::CMainFunction  mainFunction,
-                          const char *name, const char *shortDescription)
+void registerModuleNoNice(gmx::CommandLineModuleManager*               manager,
+                          gmx::CommandLineModuleManager::CMainFunction mainFunction,
+                          const char*                                  name,
+                          const char*                                  shortDescription)
 {
-    manager->addModuleCMainWithSettings(name, shortDescription, mainFunction,
-                                        &initSettingsNoNice);
+    manager->addModuleCMainWithSettings(name, shortDescription, mainFunction, &initSettingsNoNice);
 }
 
 /*! \brief
@@ -169,8 +161,7 @@ void registerModuleNoNice(gmx::CommandLineModuleManager                *manager,
  * \param[in] manager          Module manager to which to register the module.
  * \param[in] name             Name for the obsolete tool.
  */
-void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
-                          const char                    *name)
+void registerObsoleteTool(gmx::CommandLineModuleManager* manager, const char* name)
 {
     gmx::CommandLineModulePointer module(new ObsoleteToolModule(name));
     manager->addModule(std::move(module));
@@ -178,54 +169,42 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
 
 } // namespace
 
-void registerLegacyModules(gmx::CommandLineModuleManager *manager)
+void registerLegacyModules(gmx::CommandLineModuleManager* manager)
 {
-    registerModule(manager, &gmx_check, "check",
-                   "Check and compare files");
+    registerModule(manager, &gmx_check, "check", "Check and compare files");
     gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::DumpInfo::name,
-            gmx::DumpInfo::shortDescription,
-            &gmx::DumpInfo::create);
-    registerModule(manager, &gmx_grompp, "grompp",
-                   "Make a run input file");
-    registerModule(manager, &gmx_convert_tpr, "convert-tpr",
-                   "Make a modifed run-input file");
+            manager, gmx::DumpInfo::name, gmx::DumpInfo::shortDescription, &gmx::DumpInfo::create);
+    registerModule(manager, &gmx_grompp, "grompp", "Make a run input file");
+    registerModule(manager, &gmx_convert_tpr, "convert-tpr", "Make a modifed run-input file");
     registerObsoleteTool(manager, "tpbconv");
-    registerModule(manager, &gmx_x2top, "x2top",
-                   "Generate a primitive topology from coordinates");
+    registerModule(manager, &gmx_x2top, "x2top", "Generate a primitive topology from coordinates");
 
-    registerModuleNoNice(manager, &gmx::gmx_mdrun, "mdrun",
-                         "Perform a simulation, do a normal mode analysis or an energy minimization");
+    registerModuleNoNice(
+            manager, &gmx::gmx_mdrun, "mdrun",
+            "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     gmx::ICommandLineOptionsModule::registerModuleFactory(
             manager, gmx::NonbondedBenchmarkInfo::name,
-            gmx::NonbondedBenchmarkInfo::shortDescription,
-            &gmx::NonbondedBenchmarkInfo::create);
+            gmx::NonbondedBenchmarkInfo::shortDescription, &gmx::NonbondedBenchmarkInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::InsertMoleculesInfo::name(),
-            gmx::InsertMoleculesInfo::shortDescription(),
-            &gmx::InsertMoleculesInfo::create);
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::InsertMoleculesInfo::name(),
+                                                          gmx::InsertMoleculesInfo::shortDescription(),
+                                                          &gmx::InsertMoleculesInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::ReportMethodsInfo::name,
-            gmx::ReportMethodsInfo::shortDescription,
-            &gmx::ReportMethodsInfo::create);
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::ReportMethodsInfo::name,
+                                                          gmx::ReportMethodsInfo::shortDescription,
+                                                          &gmx::ReportMethodsInfo::create);
 
-    gmx::ICommandLineOptionsModule::registerModuleFactory(
-            manager, gmx::pdb2gmxInfo::name,
-            gmx::pdb2gmxInfo::shortDescription,
-            &gmx::pdb2gmxInfo::create);
+    gmx::ICommandLineOptionsModule::registerModuleFactory(manager, gmx::pdb2gmxInfo::name,
+                                                          gmx::pdb2gmxInfo::shortDescription,
+                                                          &gmx::pdb2gmxInfo::create);
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
                    "Assign secondary structure and calculate solvent accessible surface area");
-    registerModule(manager, &gmx_editconf, "editconf",
-                   "Convert and manipulates structure files");
-    registerModule(manager, &gmx_eneconv, "eneconv",
-                   "Convert energy files");
-    registerModule(manager, &gmx_solvate, "solvate",
-                   "Solvate a system");
+    registerModule(manager, &gmx_editconf, "editconf", "Convert and manipulates structure files");
+    registerModule(manager, &gmx_eneconv, "eneconv", "Convert energy files");
+    registerModule(manager, &gmx_solvate, "solvate", "Solvate a system");
     registerObsoleteTool(manager, "genbox");
     registerModule(manager, &gmx_genconf, "genconf",
                    "Multiply a conformation in 'random' orientations");
@@ -235,23 +214,17 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Generate position restraints or distance restraints for index groups");
     registerModule(manager, &gmx_make_edi, "make_edi",
                    "Generate input files for essential dynamics sampling");
-    registerModule(manager, &gmx_make_ndx, "make_ndx",
-                   "Make index files");
-    registerModule(manager, &gmx_mk_angndx, "mk_angndx",
-                   "Generate index files for 'gmx angle'");
-    registerModule(manager, &gmx_trjcat, "trjcat",
-                   "Concatenate trajectory files");
-    registerModule(manager, &gmx_trjconv, "trjconv",
-                   "Convert and manipulates trajectory files");
+    registerModule(manager, &gmx_make_ndx, "make_ndx", "Make index files");
+    registerModule(manager, &gmx_mk_angndx, "mk_angndx", "Generate index files for 'gmx angle'");
+    registerModule(manager, &gmx_trjcat, "trjcat", "Concatenate trajectory files");
+    registerModule(manager, &gmx_trjconv, "trjconv", "Convert and manipulates trajectory files");
     registerModule(manager, &gmx_trjorder, "trjorder",
                    "Order molecules according to their distance to a group");
     registerModule(manager, &gmx_xpm2ps, "xpm2ps",
                    "Convert XPM (XPixelMap) matrices to postscript or XPM");
 
-    registerModule(manager, &gmx_anaeig, "anaeig",
-                   "Analyze eigenvectors/normal modes");
-    registerModule(manager, &gmx_analyze, "analyze",
-                   "Analyze data sets");
+    registerModule(manager, &gmx_anaeig, "anaeig", "Analyze eigenvectors/normal modes");
+    registerModule(manager, &gmx_analyze, "analyze", "Analyze data sets");
     registerModule(manager, &gmx_g_angle, "angle",
                    "Calculate distributions and correlations for angles and dihedrals");
     registerModule(manager, &gmx_awh, "awh",
@@ -263,64 +236,46 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     registerObsoleteTool(manager, "sas");
     registerObsoleteTool(manager, "sgangle");
 
-    registerModule(manager, &gmx_bundle, "bundle",
-                   "Analyze bundles of axes, e.g., helices");
+    registerModule(manager, &gmx_bundle, "bundle", "Analyze bundles of axes, e.g., helices");
     registerModule(manager, &gmx_chi, "chi",
                    "Calculate everything you want to know about chi and other dihedrals");
-    registerModule(manager, &gmx_cluster, "cluster",
-                   "Cluster structures");
+    registerModule(manager, &gmx_cluster, "cluster", "Cluster structures");
     registerModule(manager, &gmx_clustsize, "clustsize",
                    "Calculate size distributions of atomic clusters");
-    registerModule(manager, &gmx_confrms, "confrms",
-                   "Fit two structures and calculates the RMSD");
-    registerModule(manager, &gmx_covar, "covar",
-                   "Calculate and diagonalize the covariance matrix");
+    registerModule(manager, &gmx_confrms, "confrms", "Fit two structures and calculates the RMSD");
+    registerModule(manager, &gmx_covar, "covar", "Calculate and diagonalize the covariance matrix");
     registerModule(manager, &gmx_current, "current",
                    "Calculate dielectric constants and current autocorrelation function");
-    registerModule(manager, &gmx_density, "density",
-                   "Calculate the density of the system");
+    registerModule(manager, &gmx_density, "density", "Calculate the density of the system");
     registerModule(manager, &gmx_densmap, "densmap",
                    "Calculate 2D planar or axial-radial density maps");
-    registerModule(manager, &gmx_densorder, "densorder",
-                   "Calculate surface fluctuations");
+    registerModule(manager, &gmx_densorder, "densorder", "Calculate surface fluctuations");
     registerModule(manager, &gmx_dielectric, "dielectric",
                    "Calculate frequency dependent dielectric constants");
-    registerModule(manager, &gmx_dipoles, "dipoles",
-                   "Compute the total dipole plus fluctuations");
-    registerModule(manager, &gmx_disre, "disre",
-                   "Analyze distance restraints");
+    registerModule(manager, &gmx_dipoles, "dipoles", "Compute the total dipole plus fluctuations");
+    registerModule(manager, &gmx_disre, "disre", "Analyze distance restraints");
     registerModule(manager, &gmx_dos, "dos",
                    "Analyze density of states and properties based on that");
-    registerModule(manager, &gmx_dyecoupl, "dyecoupl",
-                   "Extract dye dynamics from trajectories");
-    registerModule(manager, &gmx_enemat, "enemat",
-                   "Extract an energy matrix from an energy file");
+    registerModule(manager, &gmx_dyecoupl, "dyecoupl", "Extract dye dynamics from trajectories");
+    registerModule(manager, &gmx_enemat, "enemat", "Extract an energy matrix from an energy file");
     registerModule(manager, &gmx_energy, "energy",
                    "Writes energies to xvg files and display averages");
     registerModule(manager, &gmx_filter, "filter",
                    "Frequency filter trajectories, useful for making smooth movies");
-    registerModule(manager, &gmx_gyrate, "gyrate",
-                   "Calculate the radius of gyration");
-    registerModule(manager, &gmx_h2order, "h2order",
-                   "Compute the orientation of water molecules");
-    registerModule(manager, &gmx_hbond, "hbond",
-                   "Compute and analyze hydrogen bonds");
-    registerModule(manager, &gmx_helix, "helix",
-                   "Calculate basic properties of alpha helices");
+    registerModule(manager, &gmx_gyrate, "gyrate", "Calculate the radius of gyration");
+    registerModule(manager, &gmx_h2order, "h2order", "Compute the orientation of water molecules");
+    registerModule(manager, &gmx_hbond, "hbond", "Compute and analyze hydrogen bonds");
+    registerModule(manager, &gmx_helix, "helix", "Calculate basic properties of alpha helices");
     registerModule(manager, &gmx_helixorient, "helixorient",
                    "Calculate local pitch/bending/rotation/orientation inside helices");
     registerModule(manager, &gmx_hydorder, "hydorder",
                    "Compute tetrahedrality parameters around a given atom");
-    registerModule(manager, &gmx_lie, "lie",
-                   "Estimate free energy from linear combinations");
-    registerModule(manager, &gmx_mdmat, "mdmat",
-                   "Calculate residue contact maps");
+    registerModule(manager, &gmx_lie, "lie", "Estimate free energy from linear combinations");
+    registerModule(manager, &gmx_mdmat, "mdmat", "Calculate residue contact maps");
     registerModule(manager, &gmx_mindist, "mindist",
                    "Calculate the minimum distance between two groups");
-    registerModule(manager, &gmx_msd, "msd",
-                   "Calculates mean square displacements");
-    registerModule(manager, &gmx_nmeig, "nmeig",
-                   "Diagonalize the Hessian for normal mode analysis");
+    registerModule(manager, &gmx_msd, "msd", "Calculates mean square displacements");
+    registerModule(manager, &gmx_nmeig, "nmeig", "Diagonalize the Hessian for normal mode analysis");
     registerModule(manager, &gmx_nmens, "nmens",
                    "Generate an ensemble of structures from the normal modes");
     registerModule(manager, &gmx_nmr, "nmr",
@@ -331,60 +286,48 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute the order parameter per atom for carbon tails");
     registerModule(manager, &gmx_pme_error, "pme_error",
                    "Estimate the error of using PME with a given input file");
-    registerModule(manager, &gmx_polystat, "polystat",
-                   "Calculate static properties of polymers");
+    registerModule(manager, &gmx_polystat, "polystat", "Calculate static properties of polymers");
     registerModule(manager, &gmx_potential, "potential",
                    "Calculate the electrostatic potential across the box");
     registerModule(manager, &gmx_principal, "principal",
                    "Calculate principal axes of inertia for a group of atoms");
-    registerModule(manager, &gmx_rama, "rama",
-                   "Compute Ramachandran plots");
+    registerModule(manager, &gmx_rama, "rama", "Compute Ramachandran plots");
     registerModule(manager, &gmx_rms, "rms",
                    "Calculate RMSDs with a reference structure and RMSD matrices");
     registerModule(manager, &gmx_rmsdist, "rmsdist",
                    "Calculate atom pair distances averaged with power -2, -3 or -6");
-    registerModule(manager, &gmx_rmsf, "rmsf",
-                   "Calculate atomic fluctuations");
+    registerModule(manager, &gmx_rmsf, "rmsf", "Calculate atomic fluctuations");
     registerModule(manager, &gmx_rotacf, "rotacf",
                    "Calculate the rotational correlation function for molecules");
     registerModule(manager, &gmx_rotmat, "rotmat",
                    "Plot the rotation matrix for fitting to a reference structure");
-    registerModule(manager, &gmx_saltbr, "saltbr",
-                   "Compute salt bridges");
-    registerModule(manager, &gmx_sans, "sans",
-                   "Compute small angle neutron scattering spectra");
-    registerModule(manager, &gmx_saxs, "saxs",
-                   "Compute small angle X-ray scattering spectra");
+    registerModule(manager, &gmx_saltbr, "saltbr", "Compute salt bridges");
+    registerModule(manager, &gmx_sans, "sans", "Compute small angle neutron scattering spectra");
+    registerModule(manager, &gmx_saxs, "saxs", "Compute small angle X-ray scattering spectra");
     registerModule(manager, &gmx_sham, "sham",
                    "Compute free energies or other histograms from histograms");
     registerModule(manager, &gmx_sigeps, "sigeps",
                    "Convert c6/12 or c6/cn combinations to and from sigma/epsilon");
-    registerModule(manager, &gmx_sorient, "sorient",
-                   "Analyze solvent orientation around solutes");
-    registerModule(manager, &gmx_spatial, "spatial",
-                   "Calculate the spatial distribution function");
+    registerModule(manager, &gmx_sorient, "sorient", "Analyze solvent orientation around solutes");
+    registerModule(manager, &gmx_spatial, "spatial", "Calculate the spatial distribution function");
     registerModule(manager, &gmx_spol, "spol",
                    "Analyze solvent dipole orientation and polarization around solutes");
-    registerModule(manager, &gmx_tcaf, "tcaf",
-                   "Calculate viscosities of liquids");
+    registerModule(manager, &gmx_tcaf, "tcaf", "Calculate viscosities of liquids");
     registerModule(manager, &gmx_traj, "traj",
                    "Plot x, v, f, box, temperature and rotational energy from trajectories");
     registerModule(manager, &gmx_tune_pme, "tune_pme",
                    "Time mdrun as a function of PME ranks to optimize settings");
     registerModule(manager, &gmx_vanhove, "vanhove",
                    "Compute Van Hove displacement and correlation functions");
-    registerModule(manager, &gmx_velacc, "velacc",
-                   "Calculate velocity autocorrelation functions");
+    registerModule(manager, &gmx_velacc, "velacc", "Calculate velocity autocorrelation functions");
     registerModule(manager, &gmx_wham, "wham",
                    "Perform weighted histogram analysis after umbrella sampling");
-    registerModule(manager, &gmx_wheel, "wheel",
-                   "Plot helical wheels");
-    registerModuleNoNice(manager, &gmx_view, "view",
-                         "View a trajectory on an X-Windows terminal");
+    registerModule(manager, &gmx_wheel, "wheel", "Plot helical wheels");
+    registerModuleNoNice(manager, &gmx_view, "view", "View a trajectory on an X-Windows terminal");
 
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Generating topologies and coordinates");
+                manager->addModuleGroup("Generating topologies and coordinates");
         group.addModuleWithDescription("editconf", "Edit the box and write subgroups");
         group.addModule("x2top");
         group.addModule("solvate");
@@ -395,28 +338,25 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("pdb2gmx");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Running a simulation");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Running a simulation");
         group.addModule("grompp");
         group.addModule("mdrun");
         group.addModule("convert-tpr");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Viewing trajectories");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Viewing trajectories");
         group.addModule("nmtraj");
         group.addModule("view");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Processing energies");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Processing energies");
         group.addModule("enemat");
         group.addModule("energy");
-        group.addModuleWithDescription("mdrun", "(Re)calculate energies for trajectory frames with -rerun");
+        group.addModuleWithDescription("mdrun",
+                                       "(Re)calculate energies for trajectory frames with -rerun");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Converting files");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Converting files");
         group.addModule("editconf");
         group.addModule("eneconv");
         group.addModule("sigeps");
@@ -425,8 +365,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("xpm2ps");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Tools");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Tools");
         group.addModule("analyze");
         group.addModule("awh");
         group.addModule("filter");
@@ -446,8 +385,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("report-methods");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Distances between structures");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Distances between structures");
         group.addModule("cluster");
         group.addModule("confrms");
         group.addModule("rms");
@@ -455,7 +393,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Distances in structures over time");
+                manager->addModuleGroup("Distances in structures over time");
         group.addModule("mindist");
         group.addModule("mdmat");
         group.addModule("polystat");
@@ -463,7 +401,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Mass distribution properties over time");
+                manager->addModuleGroup("Mass distribution properties over time");
         group.addModule("gyrate");
         group.addModule("msd");
         group.addModule("polystat");
@@ -477,13 +415,12 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     }
     {
         gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Analyzing bonded interactions");
+                manager->addModuleGroup("Analyzing bonded interactions");
         group.addModule("angle");
         group.addModule("mk_angndx");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Structural properties");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Structural properties");
         group.addModule("bundle");
         group.addModule("clustsize");
         group.addModule("disre");
@@ -496,8 +433,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("spol");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Kinetic properties");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Kinetic properties");
         group.addModule("bar");
         group.addModule("current");
         group.addModule("dos");
@@ -509,8 +445,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("velacc");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Electrostatic properties");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Electrostatic properties");
         group.addModule("current");
         group.addModule("dielectric");
         group.addModule("dipoles");
@@ -519,8 +454,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("genion");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Protein-specific analysis");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Protein-specific analysis");
         group.addModule("do_dssp");
         group.addModule("chi");
         group.addModule("helix");
@@ -529,8 +463,7 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("wheel");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Interfaces");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Interfaces");
         group.addModule("bundle");
         group.addModule("density");
         group.addModule("densmap");
@@ -541,20 +474,19 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
         group.addModule("potential");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Covariance analysis");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Covariance analysis");
         group.addModuleWithDescription("anaeig", "Analyze the eigenvectors");
         group.addModule("covar");
         group.addModule("make_edi");
     }
     {
-        gmx::CommandLineModuleGroup group =
-            manager->addModuleGroup("Normal modes");
+        gmx::CommandLineModuleGroup group = manager->addModuleGroup("Normal modes");
         group.addModuleWithDescription("anaeig", "Analyze the normal modes");
         group.addModule("nmeig");
         group.addModule("nmtraj");
         group.addModule("nmens");
         group.addModule("grompp");
-        group.addModuleWithDescription("mdrun", "Find a potential energy minimum and calculate the Hessian");
+        group.addModuleWithDescription("mdrun",
+                                       "Find a potential energy minimum and calculate the Hessian");
     }
 }

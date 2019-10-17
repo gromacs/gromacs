@@ -66,64 +66,57 @@ namespace gmx
  */
 class AnalysisDataLifetimeModule::Impl
 {
-    public:
-        //! Container type for storing a histogram during the calculation.
-        typedef std::deque<int> LifetimeHistogram;
+public:
+    //! Container type for storing a histogram during the calculation.
+    typedef std::deque<int> LifetimeHistogram;
 
-        //! Initializes the implementation class with empty/default values.
-        Impl() : firstx_(0.0), lastx_(0.0), frameCount_(0), bCumulative_(false)
-        {
-        }
+    //! Initializes the implementation class with empty/default values.
+    Impl() : firstx_(0.0), lastx_(0.0), frameCount_(0), bCumulative_(false) {}
 
-        /*! \brief
-         * Increments a lifetime histogram with a single lifetime.
-         *
-         * \param[in] dataSet   Index of the histogram to increment.
-         * \param[in] lifetime  Lifetime to add to the histogram.
-         */
-        void addLifetime(int dataSet, int lifetime)
+    /*! \brief
+     * Increments a lifetime histogram with a single lifetime.
+     *
+     * \param[in] dataSet   Index of the histogram to increment.
+     * \param[in] lifetime  Lifetime to add to the histogram.
+     */
+    void addLifetime(int dataSet, int lifetime)
+    {
+        if (lifetime > 0)
         {
-            if (lifetime > 0)
+            LifetimeHistogram& histogram = lifetimeHistograms_[dataSet];
+            if (histogram.size() < static_cast<unsigned>(lifetime))
             {
-                LifetimeHistogram &histogram = lifetimeHistograms_[dataSet];
-                if (histogram.size() < static_cast<unsigned>(lifetime))
-                {
-                    histogram.resize(lifetime, 0);
-                }
-                ++histogram[lifetime - 1];
+                histogram.resize(lifetime, 0);
             }
+            ++histogram[lifetime - 1];
         }
+    }
 
-        //! X value of the first frame (used for determining output spacing).
-        real                            firstx_;
-        //! X value of the last frame (used for determining output spacing).
-        real                            lastx_;
-        //! Total number of frames (used for normalization and output spacing).
-        int                             frameCount_;
-        //! Whether to add subintervals of longer intervals explicitly.
-        bool                            bCumulative_;
-        /*! \brief
-         * Length of current continuously present interval for each data column.
-         *
-         * While frame N has been processed, stores the length of an interval
-         * for each data column where that column has been continuously present
-         * up to and including frame N.
-         */
-        std::vector<std::vector<int> >  currentLifetimes_;
-        /*! \brief
-         * Accumulated lifetime histograms for each data set.
-         */
-        std::vector<LifetimeHistogram>  lifetimeHistograms_;
+    //! X value of the first frame (used for determining output spacing).
+    real firstx_;
+    //! X value of the last frame (used for determining output spacing).
+    real lastx_;
+    //! Total number of frames (used for normalization and output spacing).
+    int frameCount_;
+    //! Whether to add subintervals of longer intervals explicitly.
+    bool bCumulative_;
+    /*! \brief
+     * Length of current continuously present interval for each data column.
+     *
+     * While frame N has been processed, stores the length of an interval
+     * for each data column where that column has been continuously present
+     * up to and including frame N.
+     */
+    std::vector<std::vector<int>> currentLifetimes_;
+    /*! \brief
+     * Accumulated lifetime histograms for each data set.
+     */
+    std::vector<LifetimeHistogram> lifetimeHistograms_;
 };
 
-AnalysisDataLifetimeModule::AnalysisDataLifetimeModule()
-    : impl_(new Impl())
-{
-}
+AnalysisDataLifetimeModule::AnalysisDataLifetimeModule() : impl_(new Impl()) {}
 
-AnalysisDataLifetimeModule::~AnalysisDataLifetimeModule()
-{
-}
+AnalysisDataLifetimeModule::~AnalysisDataLifetimeModule() {}
 
 void AnalysisDataLifetimeModule::setCumulative(bool bCumulative)
 {
@@ -135,8 +128,7 @@ int AnalysisDataLifetimeModule::flags() const
     return efAllowMulticolumn | efAllowMissing | efAllowMultipleDataSets;
 }
 
-void
-AnalysisDataLifetimeModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataLifetimeModule::dataStarted(AbstractAnalysisData* data)
 {
     impl_->currentLifetimes_.reserve(data->dataSetCount());
     impl_->lifetimeHistograms_.reserve(data->dataSetCount());
@@ -147,8 +139,7 @@ AnalysisDataLifetimeModule::dataStarted(AbstractAnalysisData *data)
     }
 }
 
-void
-AnalysisDataLifetimeModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AnalysisDataLifetimeModule::frameStarted(const AnalysisDataFrameHeader& header)
 {
     if (header.index() == 0)
     {
@@ -159,14 +150,13 @@ AnalysisDataLifetimeModule::frameStarted(const AnalysisDataFrameHeader &header)
     // TODO: Check the input for even spacing.
 }
 
-void
-AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     const int dataSet = points.dataSetIndex();
     // This assumption is strictly not necessary, but this is how the
     // framework works currently, and makes the code below simpler.
     GMX_ASSERT(points.firstColumn() == 0
-               && points.lastColumn() == ssize(impl_->currentLifetimes_[dataSet]) - 1,
+                       && points.lastColumn() == ssize(impl_->currentLifetimes_[dataSet]) - 1,
                "Point set should cover all columns");
     for (int i = 0; i < points.columnCount(); ++i)
     {
@@ -184,13 +174,9 @@ AnalysisDataLifetimeModule::pointsAdded(const AnalysisDataPointSetRef &points)
     }
 }
 
-void
-AnalysisDataLifetimeModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
-{
-}
+void AnalysisDataLifetimeModule::frameFinished(const AnalysisDataFrameHeader& /*header*/) {}
 
-void
-AnalysisDataLifetimeModule::dataFinished()
+void AnalysisDataLifetimeModule::dataFinished()
 {
     // Need to process the elements present in the last frame explicitly.
     for (size_t i = 0; i < impl_->currentLifetimes_.size(); ++i)
@@ -207,16 +193,14 @@ AnalysisDataLifetimeModule::dataFinished()
         // Sum up subintervals of longer intervals into the histograms
         // if explicitly requested.
         std::vector<Impl::LifetimeHistogram>::iterator histogram;
-        for (histogram  = impl_->lifetimeHistograms_.begin();
-             histogram != impl_->lifetimeHistograms_.end();
-             ++histogram)
+        for (histogram = impl_->lifetimeHistograms_.begin();
+             histogram != impl_->lifetimeHistograms_.end(); ++histogram)
         {
             Impl::LifetimeHistogram::iterator shorter, longer;
             for (shorter = histogram->begin(); shorter != histogram->end(); ++shorter)
             {
                 int subIntervalCount = 2;
-                for (longer = shorter + 1; longer != histogram->end();
-                     ++longer, ++subIntervalCount)
+                for (longer = shorter + 1; longer != histogram->end(); ++longer, ++subIntervalCount)
                 {
                     // Interval of length shorter contains (longer - shorter + 1)
                     // continuous intervals of length longer.
@@ -229,18 +213,15 @@ AnalysisDataLifetimeModule::dataFinished()
     // X spacing is determined by averaging from the first and last frame
     // instead of first two frames to avoid rounding issues.
     const real spacing =
-        (impl_->frameCount_ > 1)
-        ? (impl_->lastx_ - impl_->firstx_) / (impl_->frameCount_ - 1)
-        : 0.0;
+            (impl_->frameCount_ > 1) ? (impl_->lastx_ - impl_->firstx_) / (impl_->frameCount_ - 1) : 0.0;
     setXAxis(0.0, spacing);
 
     // Determine output dimensionality to cover all the histograms.
     setColumnCount(impl_->lifetimeHistograms_.size());
     std::vector<Impl::LifetimeHistogram>::const_iterator histogram;
-    size_t maxLifetime = 1;
-    for (histogram  = impl_->lifetimeHistograms_.begin();
-         histogram != impl_->lifetimeHistograms_.end();
-         ++histogram)
+    size_t                                               maxLifetime = 1;
+    for (histogram = impl_->lifetimeHistograms_.begin();
+         histogram != impl_->lifetimeHistograms_.end(); ++histogram)
     {
         maxLifetime = std::max(maxLifetime, histogram->size());
     }
@@ -249,11 +230,10 @@ AnalysisDataLifetimeModule::dataFinished()
     // Fill up the output data from the histograms.
     allocateValues();
     int column = 0;
-    for (histogram  = impl_->lifetimeHistograms_.begin();
-         histogram != impl_->lifetimeHistograms_.end();
-         ++histogram, ++column)
+    for (histogram = impl_->lifetimeHistograms_.begin();
+         histogram != impl_->lifetimeHistograms_.end(); ++histogram, ++column)
     {
-        int row = 0;
+        int                                     row = 0;
         Impl::LifetimeHistogram::const_iterator i;
         for (i = histogram->begin(); i != histogram->end(); ++i, ++row)
         {

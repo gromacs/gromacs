@@ -65,34 +65,30 @@ namespace
 
 // A 3-site water model
 //! The number of atoms in a molecule
-constexpr int  numAtomsInMolecule = 3;
+constexpr int numAtomsInMolecule = 3;
 //! The atom type of the oxygen atom
-constexpr int  typeOxygen         = 0;
+constexpr int typeOxygen = 0;
 //! The atom type of the hydrogen atom
-constexpr int  typeHydrogen       = 1;
+constexpr int typeHydrogen = 1;
 //! The charge of the oxygen atom
-constexpr real chargeOxygen       = -0.8476;
+constexpr real chargeOxygen = -0.8476;
 //! The charge of the hydrogen atom
-constexpr real chargeHydrogen     = 0.4238;
+constexpr real chargeHydrogen = 0.4238;
 //! The LJ C6 parameter of the Oxygen atom
-constexpr real c6Oxygen           = 0.0026173456;
+constexpr real c6Oxygen = 0.0026173456;
 //! The LJ C12 parameter of the Oxygen atom
-constexpr real c12Oxygen          = 2.634129e-06;
+constexpr real c12Oxygen = 2.634129e-06;
 // Note that the hydrogen has LJ parameters all zero
 
-}   // namespace
+} // namespace
 
 //! Generates coordinates and a box for the base system scaled by \p multiplicationFactor
 //
 // The parameter \p multiplicationFactor should be a power of 2.
 // A fatal error is generated when this is not the case.
-static void
-generateCoordinates(int                     multiplicationFactor,
-                    std::vector<gmx::RVec> *coordinates,
-                    matrix                  box)
+static void generateCoordinates(int multiplicationFactor, std::vector<gmx::RVec>* coordinates, matrix box)
 {
-    if (multiplicationFactor < 1 ||
-        (multiplicationFactor & (multiplicationFactor - 1)) != 0)
+    if (multiplicationFactor < 1 || (multiplicationFactor & (multiplicationFactor - 1)) != 0)
     {
         gmx_fatal(FARGS, "The size factor has to be a power of 2");
     }
@@ -107,10 +103,10 @@ generateCoordinates(int                     multiplicationFactor,
 
     ivec factors = { 1, 1, 1 };
 
-    int  dim = 0;
+    int dim = 0;
     while (multiplicationFactor > 1)
     {
-        factors[dim]         *= 2;
+        factors[dim] *= 2;
         multiplicationFactor /= 2;
         dim++;
         if (dim == DIM)
@@ -118,24 +114,24 @@ generateCoordinates(int                     multiplicationFactor,
             dim = 0;
         }
     }
-    printf("Stacking a box of %zu atoms %d x %d x %d times\n",
-           coordinates1000.size(), factors[XX], factors[YY], factors[ZZ]);
+    printf("Stacking a box of %zu atoms %d x %d x %d times\n", coordinates1000.size(), factors[XX],
+           factors[YY], factors[ZZ]);
 
-    coordinates->resize(factors[XX]*factors[YY]*factors[ZZ]*coordinates1000.size());
+    coordinates->resize(factors[XX] * factors[YY] * factors[ZZ] * coordinates1000.size());
 
     int       i = 0;
     gmx::RVec shift;
     for (int x = 0; x < factors[XX]; x++)
     {
-        shift[XX] = x*box1000[XX][XX];
+        shift[XX] = x * box1000[XX][XX];
         for (int y = 0; y < factors[YY]; y++)
         {
-            shift[YY] = y*box1000[YY][YY];
+            shift[YY] = y * box1000[YY][YY];
             for (int z = 0; z < factors[ZZ]; z++)
             {
-                shift[ZZ] = z*box1000[ZZ][ZZ];
+                shift[ZZ] = z * box1000[ZZ][ZZ];
 
-                for (const gmx::RVec &coordOrig : coordinates1000)
+                for (const gmx::RVec& coordOrig : coordinates1000)
                 {
                     (*coordinates)[i] = coordOrig + shift;
                     i++;
@@ -148,7 +144,7 @@ generateCoordinates(int                     multiplicationFactor,
     {
         for (int d2 = 0; d2 < DIM; d2++)
         {
-            box[d1][d2] = factors[d1]*box1000[d1][d2];
+            box[d1][d2] = factors[d1] * box1000[d1][d2];
         }
     }
 }
@@ -156,7 +152,7 @@ generateCoordinates(int                     multiplicationFactor,
 BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
 {
     numAtomTypes = 2;
-    nonbondedParameters.resize(numAtomTypes*numAtomTypes*2, 0);
+    nonbondedParameters.resize(numAtomTypes * numAtomTypes * 2, 0);
     nonbondedParameters[0] = c6Oxygen;
     nonbondedParameters[1] = c12Oxygen;
 
@@ -164,14 +160,15 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     put_atoms_in_box(epbcXYZ, box, coordinates);
 
     int numAtoms = coordinates.size();
-    GMX_RELEASE_ASSERT(numAtoms % numAtomsInMolecule == 0, "Coordinates should match whole molecules");
+    GMX_RELEASE_ASSERT(numAtoms % numAtomsInMolecule == 0,
+                       "Coordinates should match whole molecules");
 
     atomTypes.resize(numAtoms);
     charges.resize(numAtoms);
     atomInfoAllVdw.resize(numAtoms);
     atomInfoOxygenVdw.resize(numAtoms);
     snew(excls.index, numAtoms + 1);
-    snew(excls.a, numAtoms*numAtomsInMolecule);
+    snew(excls.a, numAtoms * numAtomsInMolecule);
     excls.index[0] = 0;
 
     for (int a = 0; a < numAtoms; a++)
@@ -197,9 +194,9 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
         const int firstAtomInMolecule = a - (a % numAtomsInMolecule);
         for (int aj = 0; aj < numAtomsInMolecule; aj++)
         {
-            excls.a[a*numAtomsInMolecule + aj] = firstAtomInMolecule + aj;
+            excls.a[a * numAtomsInMolecule + aj] = firstAtomInMolecule + aj;
         }
-        excls.index[a + 1] = (a + 1)*numAtomsInMolecule;
+        excls.index[a + 1] = (a + 1) * numAtomsInMolecule;
     }
 
     forceRec.ntype = numAtomTypes;

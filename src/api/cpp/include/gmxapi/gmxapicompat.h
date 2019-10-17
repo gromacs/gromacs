@@ -97,10 +97,10 @@ class TypeError : public gmxapi::BasicException<TypeError>
  */
 std::map<std::string, gmxapi::GmxapiType> simulationParameterTypeMap();
 
-std::map<std::string, bool t_inputrec::*> boolParams();
-std::map<std::string, int t_inputrec::*> int32Params();
-std::map<std::string, float t_inputrec::*> float32Params();
-std::map<std::string, double t_inputrec::*> float64Params();
+std::map<std::string, bool t_inputrec::*>    boolParams();
+std::map<std::string, int t_inputrec::*>     int32Params();
+std::map<std::string, float t_inputrec::*>   float32Params();
+std::map<std::string, double t_inputrec::*>  float64Params();
 std::map<std::string, int64_t t_inputrec::*> int64Params();
 
 /*!
@@ -111,7 +111,7 @@ std::map<std::string, int64_t t_inputrec::*> int64Params();
  *
  * \throws gmxapi_compat::ValueError for parameters with no mapping.
  */
-gmxapi::GmxapiType mdParamToType(const std::string &name);
+gmxapi::GmxapiType mdParamToType(const std::string& name);
 
 /*!
  * \brief Facade for objects that can provide atomic data for a configuration.
@@ -166,7 +166,7 @@ class TprReadHandle;
  * \param filename Path of file to read.
  * \return handle that may share ownership of TPR file resource.
  */
-std::unique_ptr<TprReadHandle> readTprFile(const std::string &filename);
+std::unique_ptr<TprReadHandle> readTprFile(const std::string& filename);
 
 /*!
  * \brief Write a new TPR file to the filesystem with the provided contents.
@@ -179,11 +179,11 @@ std::unique_ptr<TprReadHandle> readTprFile(const std::string &filename);
  *
  * \throws ValueError for invalid or irreconcilable input.
  */
-void writeTprFile(const std::string     &filename,
-                  const GmxMdParams     &params,
-                  const StructureSource &structure,
-                  const SimulationState &state,
-                  const TopologySource  &topology);
+void writeTprFile(const std::string&     filename,
+                  const GmxMdParams&     params,
+                  const StructureSource& structure,
+                  const SimulationState& state,
+                  const TopologySource&  topology);
 
 /*!
  * \brief Get a topology source from the TPR contents collection.
@@ -193,7 +193,7 @@ void writeTprFile(const std::string     &filename,
  * \todo replace with a helper template on T::topologySource() member function existence.
  */
 
-std::unique_ptr<TopologySource> getTopologySource(const TprReadHandle &handle);
+std::unique_ptr<TopologySource> getTopologySource(const TprReadHandle& handle);
 
 /*!
  * \brief Get a source of simulation state from the TPR contents collection.
@@ -202,21 +202,21 @@ std::unique_ptr<TopologySource> getTopologySource(const TprReadHandle &handle);
  *
  * \todo template on T::simulationState() member function existence.
  */
-std::unique_ptr<SimulationState> getSimulationState(const TprReadHandle &handle);
+std::unique_ptr<SimulationState> getSimulationState(const TprReadHandle& handle);
 
 /*!
  * \brief Get a source of atomic structure from the TPR contents collection.
  * \param handle
  * \return
  */
-std::unique_ptr<StructureSource> getStructureSource(const TprReadHandle &handle);
+std::unique_ptr<StructureSource> getStructureSource(const TprReadHandle& handle);
 
 /*!
  * \brief Get an initialized parameters structure.
  * \param handle
  * \return
  */
-std::unique_ptr<GmxMdParams> getMdParams(const TprReadHandle &handle);
+std::unique_ptr<GmxMdParams> getMdParams(const TprReadHandle& handle);
 
 /*!
  * \brief A set of overloaded functions to fetch parameters of the indicated type, if possible.
@@ -228,15 +228,15 @@ std::unique_ptr<GmxMdParams> getMdParams(const TprReadHandle &handle);
  * Could be used for dispatch and/or some sort of templating in the future, but
  * invoked directly for now.
  */
-int extractParam(const GmxMdParams &params, const std::string &name, int);
-int64_t extractParam(const GmxMdParams&params, const std::string& name, int64_t);
-float extractParam(const GmxMdParams &params, const std::string &name, float);
-double extractParam(const GmxMdParams &params, const std::string &name, double);
+int     extractParam(const GmxMdParams& params, const std::string& name, int /*unused*/);
+int64_t extractParam(const GmxMdParams& params, const std::string& name, int64_t /*unused*/);
+float   extractParam(const GmxMdParams& params, const std::string& name, float /*unused*/);
+double  extractParam(const GmxMdParams& params, const std::string& name, double /*unused*/);
 
-void setParam(GmxMdParams* params, const std::string &name, double value);
-void setParam(GmxMdParams* params, const std::string &name, int64_t value);
+void setParam(GmxMdParams* params, const std::string& name, double value);
+void setParam(GmxMdParams* params, const std::string& name, int64_t value);
 // TODO: unsetParam
 
-}      // end namespace gmxapicompat
+} // end namespace gmxapicompat
 
-#endif //GMXAPICOMPAT_H
+#endif // GMXAPICOMPAT_H

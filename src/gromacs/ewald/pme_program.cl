@@ -57,7 +57,7 @@
 
 /* SPREAD/SPLINE */
 
-#define atomsPerBlock  (c_spreadWorkGroupSize / threadsPerAtom)
+#define atomsPerBlock (c_spreadWorkGroupSize / threadsPerAtom)
 
 // spline/spread fused
 #define computeSplines 1

@@ -52,62 +52,56 @@
 namespace gmx
 {
 
-UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t                            &mtop,
-                                 gmx::ArrayRef<const gmx::RangePartitioning>  updateGroupsPerMoleculetype,
-                                 real                                         temperature,
-                                 int                                          numHomeAtoms) :
+UpdateGroupsCog::UpdateGroupsCog(const gmx_mtop_t&                           mtop,
+                                 gmx::ArrayRef<const gmx::RangePartitioning> updateGroupsPerMoleculetype,
+                                 real                                        temperature,
+                                 int                                         numHomeAtoms) :
     globalToLocalMap_(numHomeAtoms),
     mtop_(mtop)
 {
     int firstUpdateGroupInMolecule = 0;
-    for (const auto &molblock : mtop.molblock)
+    for (const auto& molblock : mtop.molblock)
     {
-        const auto &updateGroups = updateGroupsPerMoleculetype[molblock.type];
-        indicesPerMoleculeblock_.push_back({ firstUpdateGroupInMolecule,
-                                             updateGroups.numBlocks(),
-                                             {} });
-        auto &groupIndex = indicesPerMoleculeblock_.back().groupIndex_;
+        const auto& updateGroups = updateGroupsPerMoleculetype[molblock.type];
+        indicesPerMoleculeblock_.push_back({ firstUpdateGroupInMolecule, updateGroups.numBlocks(), {} });
+        auto& groupIndex = indicesPerMoleculeblock_.back().groupIndex_;
 
         for (int block = 0; block < updateGroups.numBlocks(); block++)
         {
-            groupIndex.insert(groupIndex.end(),
-                              updateGroups.block(block).size(),
-                              block);
+            groupIndex.insert(groupIndex.end(), updateGroups.block(block).size(), block);
         }
 
-        firstUpdateGroupInMolecule += molblock.nmol*updateGroups.numBlocks();
+        firstUpdateGroupInMolecule += molblock.nmol * updateGroups.numBlocks();
     }
 
-    maxUpdateGroupRadius_ =
-        computeMaxUpdateGroupRadius(mtop, updateGroupsPerMoleculetype, temperature);
+    maxUpdateGroupRadius_ = computeMaxUpdateGroupRadius(mtop, updateGroupsPerMoleculetype, temperature);
 }
 
-void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>        globalAtomIndices,
-                              gmx::ArrayRef<const gmx::RVec>  coordinates)
+void UpdateGroupsCog::addCogs(gmx::ArrayRef<const int>       globalAtomIndices,
+                              gmx::ArrayRef<const gmx::RVec> coordinates)
 {
     const int    localAtomBegin = cogIndices_.size();
     const size_t cogBegin       = cogs_.size();
 
     GMX_RELEASE_ASSERT(globalAtomIndices.ssize() >= localAtomBegin,
-                       "addCogs should only be called to add COGs to the list that is already present (which could be empty)");
+                       "addCogs should only be called to add COGs to the list that is already "
+                       "present (which could be empty)");
 
     cogIndices_.reserve(globalAtomIndices.size());
 
     int moleculeBlock = 0;
     for (gmx::index localAtom = localAtomBegin; localAtom < globalAtomIndices.ssize(); localAtom++)
     {
-        const int   globalAtom = globalAtomIndices[localAtom];
-        int         moleculeIndex;
-        int         atomIndexInMolecule;
-        mtopGetMolblockIndex(&mtop_, globalAtom,
-                             &moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
-        const auto &indicesForBlock        = indicesPerMoleculeblock_[moleculeBlock];
-        int         globalUpdateGroupIndex =
-            indicesForBlock.groupStart_ +
-            moleculeIndex*indicesForBlock.numGroupsPerMolecule_ +
-            indicesForBlock.groupIndex_[atomIndexInMolecule];
+        const int globalAtom = globalAtomIndices[localAtom];
+        int       moleculeIndex;
+        int       atomIndexInMolecule;
+        mtopGetMolblockIndex(&mtop_, globalAtom, &moleculeBlock, &moleculeIndex, &atomIndexInMolecule);
+        const auto& indicesForBlock        = indicesPerMoleculeblock_[moleculeBlock];
+        int         globalUpdateGroupIndex = indicesForBlock.groupStart_
+                                     + moleculeIndex * indicesForBlock.numGroupsPerMolecule_
+                                     + indicesForBlock.groupIndex_[atomIndexInMolecule];
 
-        if (const int *cogIndexPtr = globalToLocalMap_.find(globalUpdateGroupIndex))
+        if (const int* cogIndexPtr = globalToLocalMap_.find(globalUpdateGroupIndex))
         {
             GMX_ASSERT(static_cast<size_t>(*cogIndexPtr) >= cogBegin,
                        "Added atoms should not be part of previously present groups");

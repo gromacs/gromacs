@@ -50,13 +50,12 @@ namespace gmx
 class ForceWithShiftForces;
 }
 
-void
-    gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
-                              rvec * gmx_restrict              xx,
-                              gmx::ForceWithShiftForces *      forceWithShiftForces,
-                              const t_forcerec * gmx_restrict  fr,
-                              const t_mdatoms * gmx_restrict   mdatoms,
-                              nb_kernel_data_t * gmx_restrict  kernel_data,
-                              t_nrnb * gmx_restrict            nrnb);
+void gmx_nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
+                               rvec* gmx_restrict         xx,
+                               gmx::ForceWithShiftForces* forceWithShiftForces,
+                               const t_forcerec* gmx_restrict fr,
+                               const t_mdatoms* gmx_restrict mdatoms,
+                               nb_kernel_data_t* gmx_restrict kernel_data,
+                               t_nrnb* gmx_restrict nrnb);
 
 #endif

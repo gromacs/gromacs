@@ -51,7 +51,8 @@
 enum class GpuApiCallBehavior;
 
 /*! \brief OpenCL vendor IDs */
-typedef enum {
+typedef enum
+{
     OCL_VENDOR_NVIDIA = 0,
     OCL_VENDOR_AMD,
     OCL_VENDOR_INTEL,
@@ -66,8 +67,8 @@ typedef enum {
  */
 typedef struct
 {
-    cl_platform_id      ocl_platform_id; /**< Platform ID */
-    cl_device_id        ocl_device_id;   /**< Device ID */
+    cl_platform_id ocl_platform_id; /**< Platform ID */
+    cl_device_id   ocl_device_id;   /**< Device ID */
 } ocl_gpu_id_t;
 
 /*! \internal
@@ -79,16 +80,16 @@ typedef struct
  */
 struct gmx_device_info_t
 {
-    ocl_gpu_id_t        ocl_gpu_id;          /**< device ID assigned at detection   */
-    char                device_name[256];    /**< device name */
-    char                device_version[256]; /**< device version */
-    char                device_vendor[256];  /**< device vendor */
-    int                 compute_units;       /**< number of compute units */
-    int                 adress_bits;         /**< number of adress bits the device is capable of */
-    int                 stat;                /**< device status takes values of e_gpu_detect_res_t */
-    ocl_vendor_id_t     vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
-    size_t              maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
-    size_t              maxWorkGroupSize;    /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
+    ocl_gpu_id_t    ocl_gpu_id;          /**< device ID assigned at detection   */
+    char            device_name[256];    /**< device name */
+    char            device_version[256]; /**< device version */
+    char            device_vendor[256];  /**< device vendor */
+    int             compute_units;       /**< number of compute units */
+    int             adress_bits;         /**< number of adress bits the device is capable of */
+    int             stat;                /**< device status takes values of e_gpu_detect_res_t */
+    ocl_vendor_id_t vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
+    size_t maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
+    size_t maxWorkGroupSize;    /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
 };
 
 /*! \internal
@@ -113,18 +114,22 @@ struct gmx_device_runtime_data_t
  *  identifying this particular device to host operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_D2H(void * h_dest, cl_mem d_src,
-                 size_t offset, size_t bytes,
+int ocl_copy_D2H(void*              h_dest,
+                 cl_mem             d_src,
+                 size_t             offset,
+                 size_t             bytes,
                  GpuApiCallBehavior transferKind,
-                 cl_command_queue command_queue,
-                 cl_event *copy_event);
+                 cl_command_queue   command_queue,
+                 cl_event*          copy_event);
 
 
 /*! \brief Launches asynchronous device to host memory copy. */
-int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
-                       size_t offset, size_t bytes,
+int ocl_copy_D2H_async(void*            h_dest,
+                       cl_mem           d_src,
+                       size_t           offset,
+                       size_t           bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event);
+                       cl_event*        copy_event);
 
 /*! \brief Launches synchronous or asynchronous host to device memory copy.
  *
@@ -132,28 +137,30 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_H2D(cl_mem d_dest, const void* h_src,
-                 size_t offset, size_t bytes,
+int ocl_copy_H2D(cl_mem             d_dest,
+                 const void*        h_src,
+                 size_t             offset,
+                 size_t             bytes,
                  GpuApiCallBehavior transferKind,
-                 cl_command_queue command_queue,
-                 cl_event *copy_event);
+                 cl_command_queue   command_queue,
+                 cl_event*          copy_event);
 
 /*! \brief Launches asynchronous host to device memory copy. */
-int ocl_copy_H2D_async(cl_mem d_dest, const void * h_src,
-                       size_t offset, size_t bytes,
+int ocl_copy_H2D_async(cl_mem           d_dest,
+                       const void*      h_src,
+                       size_t           offset,
+                       size_t           bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event);
+                       cl_event*        copy_event);
 
 /*! \brief Launches synchronous host to device memory copy. */
-int ocl_copy_H2D_sync(cl_mem d_dest, const void * h_src,
-                      size_t offset, size_t bytes,
-                      cl_command_queue command_queue);
+int ocl_copy_H2D_sync(cl_mem d_dest, const void* h_src, size_t offset, size_t bytes, cl_command_queue command_queue);
 
 /*! \brief Allocate host memory in malloc style */
-void pmalloc(void **h_ptr, size_t nbytes);
+void pmalloc(void** h_ptr, size_t nbytes);
 
 /*! \brief Free host memory in malloc style */
-void pfree(void *h_ptr);
+void pfree(void* h_ptr);
 
 /*! \brief Convert error code to diagnostic string */
 std::string ocl_get_error_string(cl_int error);
@@ -170,7 +177,7 @@ static inline void gpuStreamSynchronize(cl_command_queue s)
 }
 
 //! A debug checker to track cl_events being released correctly
-inline void ensureReferenceCount(const cl_event &event, unsigned int refCount)
+inline void ensureReferenceCount(const cl_event& event, unsigned int refCount)
 {
 #ifndef NDEBUG
     cl_int clError = clGetEventInfo(event, CL_EVENT_REFERENCE_COUNT, sizeof(refCount), &refCount, nullptr);
@@ -207,13 +214,12 @@ static inline bool haveStreamTasksCompleted(cl_command_queue gmx_unused s)
  * \param[in]     config          Kernel configuration for launching
  * \param[in]     argIndex        Index of the current argument
  */
-void inline prepareGpuKernelArgument(cl_kernel                 kernel,
-                                     const KernelLaunchConfig &config,
-                                     size_t                    argIndex)
+void inline prepareGpuKernelArgument(cl_kernel kernel, const KernelLaunchConfig& config, size_t argIndex)
 {
     if (config.sharedMemorySize > 0)
     {
-        cl_int gmx_used_in_debug clError = clSetKernelArg(kernel, argIndex, config.sharedMemorySize, nullptr);
+        cl_int gmx_used_in_debug clError =
+                clSetKernelArg(kernel, argIndex, config.sharedMemorySize, nullptr);
         GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
     }
 }
@@ -231,26 +237,25 @@ void inline prepareGpuKernelArgument(cl_kernel                 kernel,
  * \param[in]     argPtr          Pointer to the current argument
  * \param[in]     otherArgsPtrs   Pack of pointers to arguments remaining to process after the current one
  */
-template <typename CurrentArg, typename ... RemainingArgs>
+template<typename CurrentArg, typename... RemainingArgs>
 void prepareGpuKernelArgument(cl_kernel                 kernel,
-                              const KernelLaunchConfig &config,
+                              const KernelLaunchConfig& config,
                               size_t                    argIndex,
-                              const CurrentArg         *argPtr,
-                              const RemainingArgs *...  otherArgsPtrs)
+                              const CurrentArg*         argPtr,
+                              const RemainingArgs*... otherArgsPtrs)
 {
     cl_int gmx_used_in_debug clError = clSetKernelArg(kernel, argIndex, sizeof(CurrentArg), argPtr);
     GMX_ASSERT(CL_SUCCESS == clError, ocl_get_error_string(clError).c_str());
 
     // Assert on types not allowed to be passed to a kernel
     // (as per section 6.9 of the OpenCL spec).
-    static_assert(!std::is_same<CurrentArg, bool>::value &&
-                  !std::is_same<CurrentArg, size_t>::value &&
-                  !std::is_same<CurrentArg, ptrdiff_t>::value &&
-                  !std::is_same<CurrentArg, intptr_t>::value &&
-                  !std::is_same<CurrentArg, uintptr_t>::value,
+    static_assert(!std::is_same<CurrentArg, bool>::value && !std::is_same<CurrentArg, size_t>::value
+                          && !std::is_same<CurrentArg, ptrdiff_t>::value
+                          && !std::is_same<CurrentArg, intptr_t>::value
+                          && !std::is_same<CurrentArg, uintptr_t>::value,
                   "Invalid type passed to OpenCL kernel functions (see OpenCL spec section 6.9).");
 
-    prepareGpuKernelArgument(kernel, config, argIndex + 1, otherArgsPtrs ...);
+    prepareGpuKernelArgument(kernel, config, argIndex + 1, otherArgsPtrs...);
 }
 
 /*! \brief
@@ -264,12 +269,10 @@ void prepareGpuKernelArgument(cl_kernel                 kernel,
  * \returns A handle for the prepared parameter pack to be used with launchGpuKernel() as the last argument
  * - currently always nullptr for OpenCL, as it manages kernel/arguments association by itself.
  */
-template <typename ... Args>
-void *prepareGpuKernelArguments(cl_kernel                 kernel,
-                                const KernelLaunchConfig &config,
-                                const Args *...           argsPtrs)
+template<typename... Args>
+void* prepareGpuKernelArguments(cl_kernel kernel, const KernelLaunchConfig& config, const Args*... argsPtrs)
 {
-    prepareGpuKernelArgument(kernel, config, 0, argsPtrs ...);
+    prepareGpuKernelArgument(kernel, config, 0, argsPtrs...);
     return nullptr;
 }
 
@@ -282,26 +285,27 @@ void *prepareGpuKernelArguments(cl_kernel                 kernel,
  * \throws gmx::InternalError on kernel launch failure
  */
 inline void launchGpuKernel(cl_kernel                 kernel,
-                            const KernelLaunchConfig &config,
-                            CommandEvent             *timingEvent,
-                            const char               *kernelName,
-                            const void                * /*kernelArgs*/)
+                            const KernelLaunchConfig& config,
+                            CommandEvent*             timingEvent,
+                            const char*               kernelName,
+                            const void* /*kernelArgs*/)
 {
-    const int       workDimensions    = 3;
-    const size_t   *globalWorkOffset  = nullptr;
-    const size_t    waitListSize      = 0;
-    const cl_event *waitList          = nullptr;
+    const int       workDimensions   = 3;
+    const size_t*   globalWorkOffset = nullptr;
+    const size_t    waitListSize     = 0;
+    const cl_event* waitList         = nullptr;
     size_t          globalWorkSize[3];
     for (int i = 0; i < workDimensions; i++)
     {
         globalWorkSize[i] = config.gridSize[i] * config.blockSize[i];
     }
     cl_int clError = clEnqueueNDRangeKernel(config.stream, kernel, workDimensions, globalWorkOffset,
-                                            globalWorkSize, config.blockSize, waitListSize, waitList, timingEvent);
+                                            globalWorkSize, config.blockSize, waitListSize,
+                                            waitList, timingEvent);
     if (CL_SUCCESS != clError)
     {
-        const std::string errorMessage = "GPU kernel (" +  std::string(kernelName) +
-            ") failed to launch: " + ocl_get_error_string(clError);
+        const std::string errorMessage = "GPU kernel (" + std::string(kernelName)
+                                         + ") failed to launch: " + ocl_get_error_string(clError);
         GMX_THROW(gmx::InternalError(errorMessage));
     }
 }

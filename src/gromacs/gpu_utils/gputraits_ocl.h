@@ -48,7 +48,7 @@
 //! \brief GPU command stream
 using CommandStream = cl_command_queue;
 //! \brief Single GPU call timing event
-using CommandEvent  = cl_event;
+using CommandEvent = cl_event;
 //! \brief Context used explicitly in OpenCL
 using DeviceContext = cl_context;
 
@@ -59,10 +59,10 @@ using DeviceContext = cl_context;
  */
 struct KernelLaunchConfig
 {
-    size_t        gridSize[3]      = {1, 1, 1}; //!< Work groups (CUDA blocks) counts
-    size_t        blockSize[3]     = {1, 1, 1}; //!< Per work group (CUDA block) thread counts
-    size_t        sharedMemorySize = 0;         //!< Shared memory size in bytes
-    CommandStream stream           = nullptr;   //!< Stream to launch kernel in
+    size_t        gridSize[3]      = { 1, 1, 1 }; //!< Work groups (CUDA blocks) counts
+    size_t        blockSize[3]     = { 1, 1, 1 }; //!< Per work group (CUDA block) thread counts
+    size_t        sharedMemorySize = 0;           //!< Shared memory size in bytes
+    CommandStream stream           = nullptr;     //!< Stream to launch kernel in
 };
 
 /*! \brief Sets whether device code can use arrays that are embedded in structs.

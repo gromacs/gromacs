@@ -96,10 +96,7 @@ struct PbcAiuc
  * \param[out]  pbcAiuc     Pointer to PbcAiuc structure to be initialized.
  *
  */
-static inline
-void setPbcAiuc(int           numPbcDim,
-                const matrix  box,
-                PbcAiuc      *pbcAiuc)
+static inline void setPbcAiuc(int numPbcDim, const matrix box, PbcAiuc* pbcAiuc)
 {
 
     pbcAiuc->invBoxDiagZ = 0.0f;
@@ -114,20 +111,20 @@ void setPbcAiuc(int           numPbcDim,
 
     if (numPbcDim > ZZ)
     {
-        pbcAiuc->invBoxDiagZ = 1.0f/box[ZZ][ZZ];
+        pbcAiuc->invBoxDiagZ = 1.0f / box[ZZ][ZZ];
         pbcAiuc->boxZX       = box[ZZ][XX];
         pbcAiuc->boxZY       = box[ZZ][YY];
         pbcAiuc->boxZZ       = box[ZZ][ZZ];
     }
     if (numPbcDim > YY)
     {
-        pbcAiuc->invBoxDiagY = 1.0f/box[YY][YY];
+        pbcAiuc->invBoxDiagY = 1.0f / box[YY][YY];
         pbcAiuc->boxYX       = box[YY][XX];
         pbcAiuc->boxYY       = box[YY][YY];
     }
     if (numPbcDim > XX)
     {
-        pbcAiuc->invBoxDiagX = 1.0f/box[XX][XX];
+        pbcAiuc->invBoxDiagX = 1.0f / box[XX][XX];
         pbcAiuc->boxXX       = box[XX][XX];
     }
 }
@@ -154,28 +151,24 @@ void setPbcAiuc(int           numPbcDim,
  * \param[in]  r2       Coordinates of the second point.
  * \param[out] dr       Resulting distance.
  */
-static inline
-void pbcDxAiuc(const PbcAiuc  &pbcAiuc,
-               const rvec     &r1,
-               const rvec     &r2,
-               rvec            dr)
+static inline void pbcDxAiuc(const PbcAiuc& pbcAiuc, const rvec& r1, const rvec& r2, rvec dr)
 {
     dr[XX] = r1[XX] - r2[XX];
     dr[YY] = r1[YY] - r2[YY];
     dr[ZZ] = r1[ZZ] - r2[ZZ];
 
-    float shz  = rintf(dr[ZZ]*pbcAiuc.invBoxDiagZ);
-    dr[XX]    -= shz*pbcAiuc.boxZX;
-    dr[YY]    -= shz*pbcAiuc.boxZY;
-    dr[ZZ]    -= shz*pbcAiuc.boxZZ;
+    float shz = rintf(dr[ZZ] * pbcAiuc.invBoxDiagZ);
+    dr[XX] -= shz * pbcAiuc.boxZX;
+    dr[YY] -= shz * pbcAiuc.boxZY;
+    dr[ZZ] -= shz * pbcAiuc.boxZZ;
 
-    float shy  = rintf(dr[YY]*pbcAiuc.invBoxDiagY);
-    dr[XX]    -= shy*pbcAiuc.boxYX;
-    dr[YY]    -= shy*pbcAiuc.boxYY;
+    float shy = rintf(dr[YY] * pbcAiuc.invBoxDiagY);
+    dr[XX] -= shy * pbcAiuc.boxYX;
+    dr[YY] -= shy * pbcAiuc.boxYY;
 
-    float shx  = rintf(dr[XX]*pbcAiuc.invBoxDiagX);
-    dr[XX]    -= shx*pbcAiuc.boxXX;
+    float shx = rintf(dr[XX] * pbcAiuc.invBoxDiagX);
+    dr[XX] -= shx * pbcAiuc.boxXX;
 }
 
 
-#endif //GMX_PBCUTIL_PBC_AIUC_H
+#endif // GMX_PBCUTIL_PBC_AIUC_H

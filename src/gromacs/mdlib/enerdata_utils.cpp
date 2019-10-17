@@ -43,8 +43,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups,
-                               int numFepLambdas) :
+gmx_enerdata_t::gmx_enerdata_t(int numEnergyGroups, int numFepLambdas) :
     grpp(numEnergyGroups),
     enerpart_lambda(numFepLambdas == 0 ? 0 : numFepLambdas + 1),
     foreign_grpp(numEnergyGroups)
@@ -65,20 +64,20 @@ static real sum_v(int n, gmx::ArrayRef<const real> v)
     return t;
 }
 
-void sum_epot(gmx_grppairener_t *grpp, real *epot)
+void sum_epot(gmx_grppairener_t* grpp, real* epot)
 {
     int i;
 
     /* Accumulate energies */
-    epot[F_COUL_SR]  = sum_v(grpp->nener, grpp->ener[egCOULSR]);
-    epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
-    epot[F_LJ14]     = sum_v(grpp->nener, grpp->ener[egLJ14]);
-    epot[F_COUL14]   = sum_v(grpp->nener, grpp->ener[egCOUL14]);
+    epot[F_COUL_SR] = sum_v(grpp->nener, grpp->ener[egCOULSR]);
+    epot[F_LJ]      = sum_v(grpp->nener, grpp->ener[egLJSR]);
+    epot[F_LJ14]    = sum_v(grpp->nener, grpp->ener[egLJ14]);
+    epot[F_COUL14]  = sum_v(grpp->nener, grpp->ener[egCOUL14]);
 
-/* lattice part of LR doesnt belong to any group
- * and has been added earlier
- */
-    epot[F_BHAM]     = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
+    /* lattice part of LR doesnt belong to any group
+     * and has been added earlier
+     */
+    epot[F_BHAM] = sum_v(grpp->nener, grpp->ener[egBHAMSR]);
 
     epot[F_EPOT] = 0;
     for (i = 0; (i < F_EPOT); i++)
@@ -90,12 +89,12 @@ void sum_epot(gmx_grppairener_t *grpp, real *epot)
     }
 }
 
-void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_lambda &fepvals)
+void sum_dhdl(gmx_enerdata_t* enerd, gmx::ArrayRef<const real> lambda, const t_lambda& fepvals)
 {
-    int    index;
+    int index;
 
-    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW];  /* include dispersion correction */
-    enerd->term[F_DVDL]       = 0.0;
+    enerd->dvdl_lin[efptVDW] += enerd->term[F_DVDL_VDW]; /* include dispersion correction */
+    enerd->term[F_DVDL] = 0.0;
     for (int i = 0; i < efptNR; i++)
     {
         if (fepvals.separate_dvdl[i])
@@ -103,30 +102,18 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_l
             /* could this be done more readably/compactly? */
             switch (i)
             {
-                case (efptMASS):
-                    index = F_DKDL;
-                    break;
-                case (efptCOUL):
-                    index = F_DVDL_COUL;
-                    break;
-                case (efptVDW):
-                    index = F_DVDL_VDW;
-                    break;
-                case (efptBONDED):
-                    index = F_DVDL_BONDED;
-                    break;
-                case (efptRESTRAINT):
-                    index = F_DVDL_RESTRAINT;
-                    break;
-                default:
-                    index = F_DVDL;
-                    break;
+                case (efptMASS): index = F_DKDL; break;
+                case (efptCOUL): index = F_DVDL_COUL; break;
+                case (efptVDW): index = F_DVDL_VDW; break;
+                case (efptBONDED): index = F_DVDL_BONDED; break;
+                case (efptRESTRAINT): index = F_DVDL_RESTRAINT; break;
+                default: index = F_DVDL; break;
             }
             enerd->term[index] = enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
             if (debug)
             {
-                fprintf(debug, "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n",
-                        efpt_names[i], i, enerd->term[index], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
+                fprintf(debug, "dvdl-%s[%2d]: %f: non-linear %f + linear %f\n", efpt_names[i], i,
+                        enerd->term[index], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
             }
         }
         else
@@ -134,8 +121,8 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_l
             enerd->term[F_DVDL] += enerd->dvdl_lin[i] + enerd->dvdl_nonlin[i];
             if (debug)
             {
-                fprintf(debug, "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n",
-                        efpt_names[0], i, enerd->term[F_DVDL], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
+                fprintf(debug, "dvd-%sl[%2d]: %f: non-linear %f + linear %f\n", efpt_names[0], i,
+                        enerd->term[F_DVDL], enerd->dvdl_nonlin[i], enerd->dvdl_lin[i]);
             }
         }
     }
@@ -160,36 +147,35 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_l
            current lambda, because the contributions to the current
            lambda are automatically zeroed */
 
-        double &enerpart_lambda = enerd->enerpart_lambda[i + 1];
+        double& enerpart_lambda = enerd->enerpart_lambda[i + 1];
 
         for (gmx::index j = 0; j < lambda.ssize(); j++)
         {
             /* Note that this loop is over all dhdl components, not just the separated ones */
-            const double dlam  = fepvals.all_lambda[j][i] - lambda[j];
+            const double dlam = fepvals.all_lambda[j][i] - lambda[j];
 
-            enerpart_lambda   += dlam*enerd->dvdl_lin[j];
+            enerpart_lambda += dlam * enerd->dvdl_lin[j];
 
             /* Constraints can not be evaluated at foreign lambdas, so we add
              * a linear extrapolation. This is an approximation, but usually
              * quite accurate since constraints change little between lambdas.
              */
-            if ((j == efptBONDED && fepvals.separate_dvdl[efptBONDED]) ||
-                (j == efptFEP && !fepvals.separate_dvdl[efptBONDED]))
+            if ((j == efptBONDED && fepvals.separate_dvdl[efptBONDED])
+                || (j == efptFEP && !fepvals.separate_dvdl[efptBONDED]))
             {
-                enerpart_lambda += dlam*enerd->term[F_DVDL_CONSTR];
+                enerpart_lambda += dlam * enerd->term[F_DVDL_CONSTR];
             }
 
             if (j == efptMASS && !fepvals.separate_dvdl[j])
             {
-                enerpart_lambda += dlam*enerd->term[F_DKDL];
+                enerpart_lambda += dlam * enerd->term[F_DKDL];
             }
 
             if (debug)
             {
                 fprintf(debug, "enerdiff lam %g: (%15s), non-linear %f linear %f*%f\n",
                         fepvals.all_lambda[j][i], efpt_names[j],
-                        enerpart_lambda - enerd->enerpart_lambda[0],
-                        dlam, enerd->dvdl_lin[j]);
+                        enerpart_lambda - enerd->enerpart_lambda[0], dlam, enerd->dvdl_lin[j]);
             }
         }
     }
@@ -199,9 +185,9 @@ void sum_dhdl(gmx_enerdata_t *enerd, gmx::ArrayRef<const real> lambda, const t_l
 }
 
 
-void reset_foreign_enerdata(gmx_enerdata_t *enerd)
+void reset_foreign_enerdata(gmx_enerdata_t* enerd)
 {
-    int  i, j;
+    int i, j;
 
     /* First reset all foreign energy components.  Foreign energies always called on
        neighbor search steps */
@@ -220,9 +206,9 @@ void reset_foreign_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-void reset_enerdata(gmx_enerdata_t *enerd)
+void reset_enerdata(gmx_enerdata_t* enerd)
 {
-    int      i, j;
+    int i, j;
 
     /* First reset all energy components. */
     for (i = 0; (i < egNR); i++)
@@ -243,12 +229,12 @@ void reset_enerdata(gmx_enerdata_t *enerd)
     {
         enerd->term[i] = 0.0;
     }
-    enerd->term[F_DVDL]            = 0.0;
-    enerd->term[F_DVDL_COUL]       = 0.0;
-    enerd->term[F_DVDL_VDW]        = 0.0;
-    enerd->term[F_DVDL_BONDED]     = 0.0;
-    enerd->term[F_DVDL_RESTRAINT]  = 0.0;
-    enerd->term[F_DKDL]            = 0.0;
+    enerd->term[F_DVDL]           = 0.0;
+    enerd->term[F_DVDL_COUL]      = 0.0;
+    enerd->term[F_DVDL_VDW]       = 0.0;
+    enerd->term[F_DVDL_BONDED]    = 0.0;
+    enerd->term[F_DVDL_RESTRAINT] = 0.0;
+    enerd->term[F_DKDL]           = 0.0;
     std::fill(enerd->enerpart_lambda.begin(), enerd->enerpart_lambda.end(), 0);
     /* reset foreign energy data - separate function since we also call it elsewhere */
     reset_foreign_enerdata(enerd);

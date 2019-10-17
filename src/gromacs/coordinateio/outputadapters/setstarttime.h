@@ -61,57 +61,57 @@ namespace gmx
  */
 class SetStartTime : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct object with choice for how to change initial time.
-         *
-         * \param[in] startTime User defined value for the initial time.
-         */
-        explicit SetStartTime(real startTime) :
-            startTime_(startTime),
-            haveProcessedFirstFrame_(false),
-            differenceToInitialTime_(0)
-        {
-        }
-        /*! \brief
-         *  Move constructor for SetStartTime.
-         */
-        SetStartTime(SetStartTime &&old) noexcept = default;
+public:
+    /*! \brief
+     * Construct object with choice for how to change initial time.
+     *
+     * \param[in] startTime User defined value for the initial time.
+     */
+    explicit SetStartTime(real startTime) :
+        startTime_(startTime),
+        haveProcessedFirstFrame_(false),
+        differenceToInitialTime_(0)
+    {
+    }
+    /*! \brief
+     *  Move constructor for SetStartTime.
+     */
+    SetStartTime(SetStartTime&& old) noexcept = default;
 
-        ~SetStartTime() override {}
+    ~SetStartTime() override {}
 
-        void processFrame(int /* framenumber */, t_trxframe *input) override;
+    void processFrame(int /* framenumber */, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long /* abilities */) const override {}
+    void checkAbilityDependencies(unsigned long /* abilities */) const override {}
 
-    private:
-        /*! \brief
-         * Set initial time from first processed frame.
-         *
-         * Calculates the time shift between the user set time and the time
-         * in the coordinate frame being processed from the first processed coordinate
-         * frame. This time shift is then used to calculate new frame times for each processed
-         * coordinate frame.
-         *
-         * \param[in] initialTime Time value obtained from first frame.
-         */
-        void setInitialTime(real initialTime);
+private:
+    /*! \brief
+     * Set initial time from first processed frame.
+     *
+     * Calculates the time shift between the user set time and the time
+     * in the coordinate frame being processed from the first processed coordinate
+     * frame. This time shift is then used to calculate new frame times for each processed
+     * coordinate frame.
+     *
+     * \param[in] initialTime Time value obtained from first frame.
+     */
+    void setInitialTime(real initialTime);
 
-        /*! \brief
-         * Stores the value of the initial time.
-         *
-         * In case users supply a new time step, the initial time of the
-         * processed coordinate frame is stored here. In case the user also supplies
-         * a new initial time, this variable is set to the user input instead.
-         */
-        real                startTime_;
-        //! Has the first frame been processed?
-        bool                haveProcessedFirstFrame_;
-        /*! \brief
-         * If the initial time is changed, we need to keep track of the initial
-         * time difference to adjust the time of all following frames.
-         */
-        real                differenceToInitialTime_;
+    /*! \brief
+     * Stores the value of the initial time.
+     *
+     * In case users supply a new time step, the initial time of the
+     * processed coordinate frame is stored here. In case the user also supplies
+     * a new initial time, this variable is set to the user input instead.
+     */
+    real startTime_;
+    //! Has the first frame been processed?
+    bool haveProcessedFirstFrame_;
+    /*! \brief
+     * If the initial time is changed, we need to keep track of the initial
+     * time difference to adjust the time of all following frames.
+     */
+    real differenceToInitialTime_;
 };
 
 //! Smart pointer to manage the object.

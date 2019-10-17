@@ -68,129 +68,123 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_math
  */
-template <typename T>
+template<typename T>
 class ArrayRefWithPadding
 {
-    public:
-        //! Type of values stored in the reference.
-        using value_type = T;
-        //! Type for representing size of the reference.
-        using size_type = index;
-        //! Const pointer to an element.
-        using const_pointer = const T*;
-        //! Const iterator type to an element.
-        using const_iterator = const T*;
-        //! Pointer to an element.
-        using pointer = T*;
-        //! Iterator type to an element.
-        using iterator = T*;
+public:
+    //! Type of values stored in the reference.
+    using value_type = T;
+    //! Type for representing size of the reference.
+    using size_type = index;
+    //! Const pointer to an element.
+    using const_pointer = const T*;
+    //! Const iterator type to an element.
+    using const_iterator = const T*;
+    //! Pointer to an element.
+    using pointer = T*;
+    //! Iterator type to an element.
+    using iterator = T*;
 
-        /*! \brief
-         * Constructs an empty reference.
-         */
-        ArrayRefWithPadding()
-            : begin_(nullptr), end_(nullptr), paddedEnd_(nullptr) {}
-        /*! \brief
-         * Constructs a reference to a particular range.
-         *
-         * \param[in] begin        Pointer to the beginning of a range.
-         * \param[in] end          Pointer to the end of a range without padding.
-         * \param[in] paddedEnd    Pointer to the end of a range including padding.
-         *
-         * Passed pointers must remain valid for the lifetime of this object.
-         */
-        ArrayRefWithPadding(pointer begin, pointer end, pointer paddedEnd)
-            : begin_(begin), end_(end), paddedEnd_(paddedEnd)
+    /*! \brief
+     * Constructs an empty reference.
+     */
+    ArrayRefWithPadding() : begin_(nullptr), end_(nullptr), paddedEnd_(nullptr) {}
+    /*! \brief
+     * Constructs a reference to a particular range.
+     *
+     * \param[in] begin        Pointer to the beginning of a range.
+     * \param[in] end          Pointer to the end of a range without padding.
+     * \param[in] paddedEnd    Pointer to the end of a range including padding.
+     *
+     * Passed pointers must remain valid for the lifetime of this object.
+     */
+    ArrayRefWithPadding(pointer begin, pointer end, pointer paddedEnd) :
+        begin_(begin),
+        end_(end),
+        paddedEnd_(paddedEnd)
+    {
+        GMX_ASSERT(end >= begin, "Invalid range");
+        GMX_ASSERT(paddedEnd >= end, "Invalid range");
+    }
+    //! Copy constructor
+    ArrayRefWithPadding(const ArrayRefWithPadding& o) :
+        begin_(o.begin_),
+        end_(o.end_),
+        paddedEnd_(o.paddedEnd_)
+    {
+    }
+    //! Move constructor
+    ArrayRefWithPadding(ArrayRefWithPadding&& o) noexcept :
+        begin_(std::move(o.begin_)),
+        end_(std::move(o.end_)),
+        paddedEnd_(std::move(o.paddedEnd_))
+    {
+    }
+    //! Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.
+    template<typename U, typename = std::enable_if_t<std::is_same<value_type, const typename std::remove_reference_t<U>::value_type>::value>>
+    ArrayRefWithPadding(U&& o)
+    {
+        auto constArrayRefWithPadding = o.constArrayRefWithPadding();
+        this->swap(constArrayRefWithPadding);
+    }
+    //! Copy assignment operator
+    ArrayRefWithPadding& operator=(ArrayRefWithPadding const& o)
+    {
+        if (&o != this)
         {
-            GMX_ASSERT(end >= begin, "Invalid range");
-            GMX_ASSERT(paddedEnd >= end, "Invalid range");
+            begin_     = o.begin_;
+            end_       = o.end_;
+            paddedEnd_ = o.paddedEnd_;
         }
-        //! Copy constructor
-        ArrayRefWithPadding(const ArrayRefWithPadding &o)
-            : begin_(o.begin_), end_(o.end_), paddedEnd_(o.paddedEnd_) {}
-        //! Move constructor
-        ArrayRefWithPadding(ArrayRefWithPadding &&o) noexcept
-            : begin_(std::move(o.begin_)), end_(std::move(o.end_)), paddedEnd_(std::move(o.paddedEnd_)) {}
-        //! Convenience overload constructor to make an ArrayRefWithPadding<const T> from a non-const one.
-        template<typename U,
-                 typename = std::enable_if_t<
-                         std::is_same<value_type,
-                                      const typename std::remove_reference_t<U>::value_type>::value> >
-        ArrayRefWithPadding(U &&o)
+        return *this;
+    }
+    //! Move assignment operator
+    ArrayRefWithPadding& operator=(ArrayRefWithPadding&& o) noexcept
+    {
+        if (&o != this)
         {
-            auto constArrayRefWithPadding = o.constArrayRefWithPadding();
-            this->swap(constArrayRefWithPadding);
+            begin_     = std::move(o.begin_);
+            end_       = std::move(o.end_);
+            paddedEnd_ = std::move(o.paddedEnd_);
         }
-        //! Copy assignment operator
-        ArrayRefWithPadding &operator=(ArrayRefWithPadding const &o)
-        {
-            if (&o != this)
-            {
-                begin_     = o.begin_;
-                end_       = o.end_;
-                paddedEnd_ = o.paddedEnd_;
-            }
-            return *this;
-        }
-        //! Move assignment operator
-        ArrayRefWithPadding &operator=(ArrayRefWithPadding &&o) noexcept
-        {
-            if (&o != this)
-            {
-                begin_     = std::move(o.begin_);
-                end_       = std::move(o.end_);
-                paddedEnd_ = std::move(o.paddedEnd_);
-            }
-            return *this;
-        }
+        return *this;
+    }
 
-        //! Return the size of the view, i.e with the padding.
-        size_type size() const { return paddedEnd_ - begin_; }
-        //! Whether the reference refers to no memory.
-        bool empty() const { return begin_ == end_; }
+    //! Return the size of the view, i.e with the padding.
+    size_type size() const { return paddedEnd_ - begin_; }
+    //! Whether the reference refers to no memory.
+    bool empty() const { return begin_ == end_; }
 
-        //! Returns an ArrayRef of elements that does not include the padding region.
-        ArrayRef<T> unpaddedArrayRef()
-        {
-            return {begin_, end_};
-        }
-        //! Returns an ArrayRef of const elements that does not include the padding region.
-        ArrayRef<const T> unpaddedConstArrayRef() const
-        {
-            return {begin_, end_};
-        }
-        //! Returns an ArrayRef of elements that does include the padding region.
-        ArrayRef<T> paddedArrayRef()
-        {
-            return {begin_, paddedEnd_};
-        }
-        //! Returns an ArrayRef of const elements that does include the padding region.
-        ArrayRef<const T> paddedConstArrayRef() const
-        {
-            return {begin_, paddedEnd_};
-        }
-        //! Returns an identical ArrayRefWithPadding that refers to const elements.
-        ArrayRefWithPadding<const T> constArrayRefWithPadding() const
-        {
-            return {begin_, end_, paddedEnd_};
-        }
-        /*! \brief
-         * Swaps referenced memory with the other object.
-         *
-         * The actual memory areas are not modified, only the references are
-         * swapped.
-         */
-        void swap(ArrayRefWithPadding<T> &other)
-        {
-            std::swap(begin_, other.begin_);
-            std::swap(end_, other.end_);
-            std::swap(paddedEnd_, other.paddedEnd_);
-        }
+    //! Returns an ArrayRef of elements that does not include the padding region.
+    ArrayRef<T> unpaddedArrayRef() { return { begin_, end_ }; }
+    //! Returns an ArrayRef of const elements that does not include the padding region.
+    ArrayRef<const T> unpaddedConstArrayRef() const { return { begin_, end_ }; }
+    //! Returns an ArrayRef of elements that does include the padding region.
+    ArrayRef<T> paddedArrayRef() { return { begin_, paddedEnd_ }; }
+    //! Returns an ArrayRef of const elements that does include the padding region.
+    ArrayRef<const T> paddedConstArrayRef() const { return { begin_, paddedEnd_ }; }
+    //! Returns an identical ArrayRefWithPadding that refers to const elements.
+    ArrayRefWithPadding<const T> constArrayRefWithPadding() const
+    {
+        return { begin_, end_, paddedEnd_ };
+    }
+    /*! \brief
+     * Swaps referenced memory with the other object.
+     *
+     * The actual memory areas are not modified, only the references are
+     * swapped.
+     */
+    void swap(ArrayRefWithPadding<T>& other)
+    {
+        std::swap(begin_, other.begin_);
+        std::swap(end_, other.end_);
+        std::swap(paddedEnd_, other.paddedEnd_);
+    }
 
-    private:
-        pointer begin_;
-        pointer end_;
-        pointer paddedEnd_;
+private:
+    pointer begin_;
+    pointer end_;
+    pointer paddedEnd_;
 };
 
 } // namespace gmx

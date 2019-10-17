@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,20 +48,13 @@
 namespace gmx
 {
 
-IOptionsBehavior::~IOptionsBehavior()
-{
-}
+IOptionsBehavior::~IOptionsBehavior() {}
 
-OptionsBehaviorCollection::OptionsBehaviorCollection(Options *options)
-    : options_(options)
-{
-}
+OptionsBehaviorCollection::OptionsBehaviorCollection(Options* options) : options_(options) {}
 
-OptionsBehaviorCollection::~OptionsBehaviorCollection()
-{
-}
+OptionsBehaviorCollection::~OptionsBehaviorCollection() {}
 
-void OptionsBehaviorCollection::addBehavior(const OptionsBehaviorPointer &behavior)
+void OptionsBehaviorCollection::addBehavior(const OptionsBehaviorPointer& behavior)
 {
     behaviors_.reserve(behaviors_.size() + 1);
     behavior->initBehavior(options_);
@@ -70,7 +63,7 @@ void OptionsBehaviorCollection::addBehavior(const OptionsBehaviorPointer &behavi
 
 void OptionsBehaviorCollection::optionsFinishing()
 {
-    for (const OptionsBehaviorPointer &behavior : behaviors_)
+    for (const OptionsBehaviorPointer& behavior : behaviors_)
     {
         behavior->optionsFinishing(options_);
     }
@@ -78,7 +71,7 @@ void OptionsBehaviorCollection::optionsFinishing()
 
 void OptionsBehaviorCollection::optionsFinished()
 {
-    for (const OptionsBehaviorPointer &behavior : behaviors_)
+    for (const OptionsBehaviorPointer& behavior : behaviors_)
     {
         behavior->optionsFinished();
     }

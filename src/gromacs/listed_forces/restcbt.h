@@ -77,9 +77,14 @@
  */
 
 
-void compute_factors_restangles(int type, const t_iparams forceparams[],
-                                rvec delta_ante,  rvec delta_post,
-                                double *prefactor, double *ratio_ante, double *ratio_post, real *v);
+void compute_factors_restangles(int             type,
+                                const t_iparams forceparams[],
+                                rvec            delta_ante,
+                                rvec            delta_post,
+                                double*         prefactor,
+                                double*         ratio_ante,
+                                double*         ratio_post,
+                                real*           v);
 
 
 /*! \brief Compute factors for restricted dihedral potentials.
@@ -118,13 +123,25 @@ void compute_factors_restangles(int type, const t_iparams forceparams[],
  *  \param[out] v                                contribution to energy  (see formula above)
  */
 
-void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
-                               rvec delta_ante, rvec delta_crnt, rvec delta_post,
-                               real *factor_phi_ai_ante, real *factor_phi_ai_crnt, real *factor_phi_ai_post,
-                               real *factor_phi_aj_ante, real *factor_phi_aj_crnt, real *factor_phi_aj_post,
-                               real *factor_phi_ak_ante, real *factor_phi_ak_crnt, real *factor_phi_ak_post,
-                               real *factor_phi_al_ante, real *factor_phi_al_crnt, real *factor_phi_al_post,
-                               real *prefactor_phi, real *v);
+void compute_factors_restrdihs(int             type,
+                               const t_iparams forceparams[],
+                               rvec            delta_ante,
+                               rvec            delta_crnt,
+                               rvec            delta_post,
+                               real*           factor_phi_ai_ante,
+                               real*           factor_phi_ai_crnt,
+                               real*           factor_phi_ai_post,
+                               real*           factor_phi_aj_ante,
+                               real*           factor_phi_aj_crnt,
+                               real*           factor_phi_aj_post,
+                               real*           factor_phi_ak_ante,
+                               real*           factor_phi_ak_crnt,
+                               real*           factor_phi_ak_post,
+                               real*           factor_phi_al_ante,
+                               real*           factor_phi_al_crnt,
+                               real*           factor_phi_al_post,
+                               real*           prefactor_phi,
+                               real*           v);
 
 /*! \brief Compute factors for combined bending-torsion (CBT) potentials.
  *
@@ -136,7 +153,7 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
  * It contains in its expression not only the dihedral angle \f$\phi\f$
  * but also \f$\theta_{i-1}\f$ (denoted as theta_ante below) and \f$\theta_{i}\f$ (denoted as theta_post below)
  * --- the adjacent bending angles. The derivative of the CBT potential is calculated as:
- * \f[\frac{\partial V_{\rm CBT}(\theta_{i-1},\theta_i,\phi_i)} {\partial \vec r_{l}} =  \frac{\partial V_
+ * \f[\frac{\partial V_{\rm CBT}(\theta_{i-1},\theta_i,\phi_i)} {\partial \vec r_{l}} = \frac{\partial V_
  * {\rm CBT}}{\partial \theta_{i-1}} \frac{\partial \theta_{i-1}}{\partial \vec r_{l}} +
  * \frac{\partial V_{\rm CBT}}{\partial \phi_{i    }} \frac{\partial \phi_{i    }}{\partial \vec r_{l}}\f]
  * where all the derivatives of the angles with respect to Cartesian coordinates are calculated as
@@ -164,11 +181,21 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
  *  \param[out] v                                contribution to energy (see formula above)
  */
 
-void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
-                             rvec delta_ante, rvec delta_crnt, rvec delta_post,
-                             rvec f_phi_ai, rvec f_phi_aj, rvec f_phi_ak, rvec f_phi_al,
-                             rvec f_theta_ante_ai, rvec f_theta_ante_aj, rvec f_theta_ante_ak,
-                             rvec f_theta_post_aj, rvec f_theta_post_ak, rvec f_theta_post_al,
-                             real * v);
+void compute_factors_cbtdihs(int             type,
+                             const t_iparams forceparams[],
+                             rvec            delta_ante,
+                             rvec            delta_crnt,
+                             rvec            delta_post,
+                             rvec            f_phi_ai,
+                             rvec            f_phi_aj,
+                             rvec            f_phi_ak,
+                             rvec            f_phi_al,
+                             rvec            f_theta_ante_ai,
+                             rvec            f_theta_ante_aj,
+                             rvec            f_theta_ante_ak,
+                             rvec            f_theta_post_aj,
+                             rvec            f_theta_post_ak,
+                             rvec            f_theta_post_al,
+                             real*           v);
 
 #endif

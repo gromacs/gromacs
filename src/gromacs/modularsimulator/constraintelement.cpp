@@ -54,16 +54,15 @@
 
 namespace gmx
 {
-template <ConstraintVariable variable>
-ConstraintsElement<variable>::ConstraintsElement(
-        Constraints                   *constr,
-        StatePropagatorData           *statePropagatorData,
-        EnergyElement                 *energyElement,
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-        bool                           isMaster,
-        FILE                          *fplog,
-        const t_inputrec              *inputrec,
-        const t_mdatoms               *mdAtoms) :
+template<ConstraintVariable variable>
+ConstraintsElement<variable>::ConstraintsElement(Constraints*                   constr,
+                                                 StatePropagatorData*           statePropagatorData,
+                                                 EnergyElement*                 energyElement,
+                                                 FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                                 bool                           isMaster,
+                                                 FILE*                          fplog,
+                                                 const t_inputrec*              inputrec,
+                                                 const t_mdatoms*               mdAtoms) :
     nextVirialCalculationStep_(-1),
     nextEnergyWritingStep_(-1),
     nextLogWritingStep_(-1),
@@ -79,93 +78,78 @@ ConstraintsElement<variable>::ConstraintsElement(
     GMX_ASSERT(constr_, "Constraint element created but constr == nullptr");
 }
 
-template <ConstraintVariable variable>
+template<ConstraintVariable variable>
 void ConstraintsElement<variable>::elementSetup()
 {
-    if (!inputrec_->bContinuation &&
-        ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD) ||
-         (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
+    if (!inputrec_->bContinuation
+        && ((variable == ConstraintVariable::Positions && inputrec_->eI == eiMD)
+            || (variable == ConstraintVariable::Velocities && inputrec_->eI == eiVV)))
     {
-        const real lambdaBonded = freeEnergyPerturbationElement_ ?
-            freeEnergyPerturbationElement_->constLambdaView()[efptBONDED] : 0;
+        const real lambdaBonded = freeEnergyPerturbationElement_
+                                          ? freeEnergyPerturbationElement_->constLambdaView()[efptBONDED]
+                                          : 0;
         // Constrain the initial coordinates and velocities
-        do_constrain_first(
-                fplog_, constr_, inputrec_, mdAtoms_,
-                statePropagatorData_->localNumAtoms(),
-                statePropagatorData_->positionsView(),
-                statePropagatorData_->velocitiesView(),
-                statePropagatorData_->box(),
-                lambdaBonded);
+        do_constrain_first(fplog_, constr_, inputrec_, mdAtoms_, statePropagatorData_->localNumAtoms(),
+                           statePropagatorData_->positionsView(), statePropagatorData_->velocitiesView(),
+                           statePropagatorData_->box(), lambdaBonded);
 
         if (isMasterRank_)
         {
             if (inputrec_->eConstrAlg == econtLINCS)
             {
-                fprintf(fplog_,
-                        "RMS relative constraint deviation after constraining: %.2e\n",
+                fprintf(fplog_, "RMS relative constraint deviation after constraining: %.2e\n",
                         constr_->rmsd());
             }
         }
     }
 }
 
-template <ConstraintVariable variable>
-void ConstraintsElement<variable>::scheduleTask(
-        Step step, Time gmx_unused time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+template<ConstraintVariable variable>
+void ConstraintsElement<variable>::scheduleTask(Step step,
+                                                Time gmx_unused               time,
+                                                const RegisterRunFunctionPtr& registerRunFunction)
 {
     bool calculateVirial = (step == nextVirialCalculationStep_);
     bool writeLog        = (step == nextLogWritingStep_);
     bool writeEnergy     = (step == nextEnergyWritingStep_);
 
     // register constraining
-    (*registerRunFunction)(
-            std::make_unique<SimulatorRunFunction>(
-                    [this, step, calculateVirial, writeLog, writeEnergy]()
-                    {apply(step, calculateVirial, writeLog, writeEnergy); }));
+    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+            [this, step, calculateVirial, writeLog, writeEnergy]() {
+                apply(step, calculateVirial, writeLog, writeEnergy);
+            }));
 }
 
-template <ConstraintVariable variable>
-void ConstraintsElement<variable>::apply(
-        Step step,
-        bool calculateVirial,
-        bool writeLog,
-        bool writeEnergy)
+template<ConstraintVariable variable>
+void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool writeLog, bool writeEnergy)
 {
     tensor vir_con;
 
-    rvec  *x, *xprime, *min_proj, *v;
+    rvec *x, *xprime, *min_proj, *v;
 
     // disabled functionality
     real  lambda    = 0;
-    real *dvdlambda = nullptr;
+    real* dvdlambda = nullptr;
 
     switch (variable)
     {
         case ConstraintVariable::Positions:
-            x        = as_rvec_array(statePropagatorData_->previousPositionsView().paddedArrayRef().data());
+            x = as_rvec_array(statePropagatorData_->previousPositionsView().paddedArrayRef().data());
             xprime   = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
             min_proj = nullptr;
-            v        = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+            v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
             break;
         case ConstraintVariable::Velocities:
-            x        = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-            xprime   = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+            x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+            xprime = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
             min_proj = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
             v        = nullptr;
             break;
-        default:
-            gmx_fatal(FARGS, "Constraint algorithm not implemented for modular simulator.");
+        default: gmx_fatal(FARGS, "Constraint algorithm not implemented for modular simulator.");
     }
 
-    constr_->apply(
-            writeLog, writeEnergy,
-            step, 1, 1.0,
-            x, xprime, min_proj,
-            statePropagatorData_->box(),
-            lambda, dvdlambda,
-            v, calculateVirial ? &vir_con : nullptr,
-            variable);
+    constr_->apply(writeLog, writeEnergy, step, 1, 1.0, x, xprime, min_proj, statePropagatorData_->box(),
+                   lambda, dvdlambda, v, calculateVirial ? &vir_con : nullptr, variable);
 
     if (calculateVirial)
     {
@@ -180,36 +164,33 @@ void ConstraintsElement<variable>::apply(
     }
 }
 
-template <ConstraintVariable variable>
-SignallerCallbackPtr ConstraintsElement<variable>::
-    registerEnergyCallback(EnergySignallerEvent event)
+template<ConstraintVariable variable>
+SignallerCallbackPtr ConstraintsElement<variable>::registerEnergyCallback(EnergySignallerEvent event)
 {
     if (event == EnergySignallerEvent::VirialCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){nextVirialCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { nextVirialCalculationStep_ = step; });
     }
     return nullptr;
 }
 
-template <ConstraintVariable variable>
-SignallerCallbackPtr ConstraintsElement<variable>::
-    registerTrajectorySignallerCallback(TrajectoryEvent event)
+template<ConstraintVariable variable>
+SignallerCallbackPtr ConstraintsElement<variable>::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::EnergyWritingStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time)
-                {nextEnergyWritingStep_ = step; });
+                [this](Step step, Time /*unused*/) { nextEnergyWritingStep_ = step; });
     }
     return nullptr;
 }
 
-template <ConstraintVariable variable>
+template<ConstraintVariable variable>
 SignallerCallbackPtr ConstraintsElement<variable>::registerLoggingCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time){nextLogWritingStep_ = step; });
+            [this](Step step, Time /*unused*/) { nextLogWritingStep_ = step; });
 }
 
 //! Explicit template initialization
@@ -218,4 +199,4 @@ template class ConstraintsElement<ConstraintVariable::Positions>;
 template class ConstraintsElement<ConstraintVariable::Velocities>;
 //! @}
 
-}  // namespace gmx
+} // namespace gmx

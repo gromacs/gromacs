@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,8 +81,8 @@ class OptionsImpl;
  */
 class IOptionManager
 {
-    protected:
-        virtual ~IOptionManager();
+protected:
+    virtual ~IOptionManager();
 };
 
 /*! \brief
@@ -101,68 +101,67 @@ class IOptionManager
  */
 class Options : public IOptionsContainerWithSections
 {
-    public:
-        //! Initializes an empty options root container.
-        Options();
-        ~Options() override;
+public:
+    //! Initializes an empty options root container.
+    Options();
+    ~Options() override;
 
-        /*! \brief
-         * Adds an option manager.
-         *
-         * \param    manager Manager to add.
-         * \throws   std::bad_alloc if out of memory.
-         *
-         * Option managers are used by some types of options that require
-         * interaction between different option instances (e.g., selection
-         * options), or need to support globally set properties (e.g., a global
-         * default file prefix).  Option objects can retrieve the pointer to
-         * their manager when they are created, and the caller can alter the
-         * behavior of the options through the manager.
-         * See the individual managers for details.
-         *
-         * Caller is responsible for memory management of \p manager.
-         * The Options object (and its contained options) only stores a
-         * reference to the object.
-         *
-         * This method cannot be called after adding options or sections.
-         */
-        void addManager(IOptionManager *manager);
+    /*! \brief
+     * Adds an option manager.
+     *
+     * \param    manager Manager to add.
+     * \throws   std::bad_alloc if out of memory.
+     *
+     * Option managers are used by some types of options that require
+     * interaction between different option instances (e.g., selection
+     * options), or need to support globally set properties (e.g., a global
+     * default file prefix).  Option objects can retrieve the pointer to
+     * their manager when they are created, and the caller can alter the
+     * behavior of the options through the manager.
+     * See the individual managers for details.
+     *
+     * Caller is responsible for memory management of \p manager.
+     * The Options object (and its contained options) only stores a
+     * reference to the object.
+     *
+     * This method cannot be called after adding options or sections.
+     */
+    void addManager(IOptionManager* manager);
 
-        // From IOptionsContainer
-        IOptionsContainer &addGroup() override;
+    // From IOptionsContainer
+    IOptionsContainer& addGroup() override;
 
-        //! Returns a handle to the root section.
-        OptionSectionInfo       &rootSection();
-        //! Returns a handle to the root section.
-        const OptionSectionInfo &rootSection() const;
+    //! Returns a handle to the root section.
+    OptionSectionInfo& rootSection();
+    //! Returns a handle to the root section.
+    const OptionSectionInfo& rootSection() const;
 
-        /*! \brief
-         * Notifies the collection that all option values are assigned.
-         *
-         * \throws InvalidInputError if invalid user input is detected.
-         *
-         * This function should be called after no more option values are
-         * to be assigned.  Values in storage variables are guaranteed to be
-         * available only after this call, although in most cases, they are
-         * available already during assignment.
-         *
-         * If invalid option values, e.g., missing required option, is detected
-         * at this point, this function throws.  The thrown exception contains
-         * information on all errors detected during the call.
-         */
-        void finish();
+    /*! \brief
+     * Notifies the collection that all option values are assigned.
+     *
+     * \throws InvalidInputError if invalid user input is detected.
+     *
+     * This function should be called after no more option values are
+     * to be assigned.  Values in storage variables are guaranteed to be
+     * available only after this call, although in most cases, they are
+     * available already during assignment.
+     *
+     * If invalid option values, e.g., missing required option, is detected
+     * at this point, this function throws.  The thrown exception contains
+     * information on all errors detected during the call.
+     */
+    void finish();
 
-    private:
-        // From IOptionsContainerWithSections
-        internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section) override;
-        // From IOptionsContainer
-        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
+private:
+    // From IOptionsContainerWithSections
+    internal::OptionSectionImpl* addSectionImpl(const AbstractOptionSection& section) override;
+    // From IOptionsContainer
+    OptionInfo* addOptionImpl(const AbstractOption& settings) override;
 
-        PrivateImplPointer<internal::OptionsImpl> impl_;
+    PrivateImplPointer<internal::OptionsImpl> impl_;
 
-        //! Needed to be able to extend the interface of this object.
-        friend class OptionsAssigner;
+    //! Needed to be able to extend the interface of this object.
+    friend class OptionsAssigner;
 };
 
 } // namespace gmx

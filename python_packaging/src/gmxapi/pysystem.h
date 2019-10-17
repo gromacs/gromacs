@@ -53,6 +53,6 @@ namespace gmxpy
 
 std::shared_ptr<gmxapi::System> from_tpr(std::string filename);
 
-}      // end namespace gmxpy
+} // end namespace gmxpy
 
 #endif // header guard

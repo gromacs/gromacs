@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,74 +67,73 @@ class GpuRegionTimerImpl
      * The maximum size is chosen arbitrarily to work with current code, and can be changed.
      * There is simply no need for run-time resizing, and it's unlikely we'll ever need more than 10.
      */
-    std::array<cl_event, 10> events_ = {{nullptr}};
+    std::array<cl_event, 10> events_ = { { nullptr } };
     //! Index of the active event
-    size_t                   currentEvent_ = 0;
+    size_t currentEvent_ = 0;
 
-    public:
+public:
+    GpuRegionTimerImpl()  = default;
+    ~GpuRegionTimerImpl() = default;
+    //! No copying
+    GpuRegionTimerImpl(const GpuRegionTimerImpl&) = delete;
+    //! No assignment
+    GpuRegionTimerImpl& operator=(GpuRegionTimerImpl&&) = delete;
+    //! Moving is disabled but can be considered in the future if needed
+    GpuRegionTimerImpl(GpuRegionTimerImpl&&) = delete;
 
-        GpuRegionTimerImpl()  = default;
-        ~GpuRegionTimerImpl() = default;
-        //! No copying
-        GpuRegionTimerImpl(const GpuRegionTimerImpl &)       = delete;
-        //! No assignment
-        GpuRegionTimerImpl &operator=(GpuRegionTimerImpl &&) = delete;
-        //! Moving is disabled but can be considered in the future if needed
-        GpuRegionTimerImpl(GpuRegionTimerImpl &&)            = delete;
-
-        /*! \brief Should be called before the region start. */
-        inline void openTimingRegion(CommandStream /*unused*/){}
-        /*! \brief Should be called after the region end. */
-        inline void closeTimingRegion(CommandStream /*unused*/){}
-        /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset(). */
-        inline double getLastRangeTime()
+    /*! \brief Should be called before the region start. */
+    inline void openTimingRegion(CommandStream /*unused*/) {}
+    /*! \brief Should be called after the region end. */
+    inline void closeTimingRegion(CommandStream /*unused*/) {}
+    /*! \brief Returns the last measured region timespan (in milliseconds) and calls reset(). */
+    inline double getLastRangeTime()
+    {
+        double milliseconds = 0.0;
+        for (size_t i = 0; i < currentEvent_; i++)
         {
-            double milliseconds = 0.0;
-            for (size_t i = 0; i < currentEvent_; i++)
+            if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
             {
-                if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
-                {
-                    cl_ulong          start_ns, end_ns;
-                    cl_int gmx_unused cl_error;
+                cl_ulong start_ns, end_ns;
+                cl_int gmx_unused cl_error;
 
-                    cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_START,
-                                                       sizeof(cl_ulong), &start_ns, nullptr);
-                    GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
-                    cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_END,
-                                                       sizeof(cl_ulong), &end_ns, nullptr);
-                    GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
-                    milliseconds += (end_ns - start_ns) / 1000000.0;
-                }
+                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_START,
+                                                   sizeof(cl_ulong), &start_ns, nullptr);
+                GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
+                cl_error = clGetEventProfilingInfo(events_[i], CL_PROFILING_COMMAND_END,
+                                                   sizeof(cl_ulong), &end_ns, nullptr);
+                GMX_ASSERT(CL_SUCCESS == cl_error, "GPU timing update failure");
+                milliseconds += (end_ns - start_ns) / 1000000.0;
             }
-            reset();
-            return milliseconds;
         }
-        /*! \brief Resets the internal state, releasing the used cl_events. */
-        inline void reset()
+        reset();
+        return milliseconds;
+    }
+    /*! \brief Resets the internal state, releasing the used cl_events. */
+    inline void reset()
+    {
+        for (size_t i = 0; i < currentEvent_; i++)
         {
-            for (size_t i = 0; i < currentEvent_; i++)
+            if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
             {
-                if (events_[i]) // This conditional is ugly, but is required to make some tests (e.g. empty domain) pass
-                {
-                    cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
-                    GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
-                }
+                cl_int gmx_unused cl_error = clReleaseEvent(events_[i]);
+                GMX_ASSERT(CL_SUCCESS == cl_error, "OpenCL event release failure");
             }
-            currentEvent_ = 0;
-            // As long as we're doing nullptr checks, we might want to be extra cautious.
-            events_.fill(nullptr);
         }
-        /*! \brief Returns a new raw timing event
-         * for passing into individual GPU API calls
-         * within the region if the API requires it (e.g. on OpenCL).
-         */
-        inline CommandEvent *fetchNextEvent()
-        {
-            GMX_ASSERT(currentEvent_ < events_.size(), "Increase c_maxEventNumber_ if needed");
-            cl_event *result = &events_[currentEvent_];
-            currentEvent_++;
-            return result;
-        }
+        currentEvent_ = 0;
+        // As long as we're doing nullptr checks, we might want to be extra cautious.
+        events_.fill(nullptr);
+    }
+    /*! \brief Returns a new raw timing event
+     * for passing into individual GPU API calls
+     * within the region if the API requires it (e.g. on OpenCL).
+     */
+    inline CommandEvent* fetchNextEvent()
+    {
+        GMX_ASSERT(currentEvent_ < events_.size(), "Increase c_maxEventNumber_ if needed");
+        cl_event* result = &events_[currentEvent_];
+        currentEvent_++;
+        return result;
+    }
 };
 
 //! Short-hand for external use

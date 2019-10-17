@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,21 +52,20 @@ namespace gmx
 void AnalysisDataFrameAverager::setColumnCount(int columnCount)
 {
     GMX_RELEASE_ASSERT(columnCount >= 0, "Invalid column count");
-    GMX_RELEASE_ASSERT(values_.empty(),
-                       "Cannot initialize multiple times");
+    GMX_RELEASE_ASSERT(values_.empty(), "Cannot initialize multiple times");
     values_.resize(columnCount);
 }
 
 void AnalysisDataFrameAverager::addValue(int index, real value)
 {
-    AverageItem &item  = values_[index];
+    AverageItem& item  = values_[index];
     const double delta = value - item.average;
-    item.samples    += 1;
-    item.average    += delta / item.samples;
+    item.samples += 1;
+    item.average += delta / item.samples;
     item.squaredSum += delta * (value - item.average);
 }
 
-void AnalysisDataFrameAverager::addPoints(const AnalysisDataPointSetRef &points)
+void AnalysisDataFrameAverager::addPoints(const AnalysisDataPointSetRef& points)
 {
     const int firstColumn = points.firstColumn();
     GMX_ASSERT(static_cast<size_t>(firstColumn + points.columnCount()) <= values_.size(),
@@ -78,7 +77,6 @@ void AnalysisDataFrameAverager::addPoints(const AnalysisDataPointSetRef &points)
             addValue(firstColumn + i, points.y(i));
         }
     }
-
 }
 
 void AnalysisDataFrameAverager::finish()

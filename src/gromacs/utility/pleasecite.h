@@ -48,11 +48,9 @@
 #include <cstdio>
 
 //! Print a message asking to cite something
-void
-please_cite(FILE *fp, const char *key);
+void please_cite(FILE* fp, const char* key);
 
 //! Write to \c fplog to request citation of GROMACS papers and source DOI.
-void
-pleaseCiteGromacs(FILE *fplog);
+void pleaseCiteGromacs(FILE* fplog);
 
 #endif

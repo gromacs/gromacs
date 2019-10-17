@@ -63,7 +63,7 @@ namespace gmx
 class HardwareTopology;
 class MDLogger;
 class PhysicalNodeCommunicator;
-}
+} // namespace gmx
 
 /*! \brief Return the number of threads to use for thread-MPI based on how many
  * were requested, which algorithms we're using,
@@ -73,14 +73,14 @@ class PhysicalNodeCommunicator;
  * with the hardware, except that ntmpi could be larger than number of GPUs.
  * If necessary, this function will modify hw_opt->nthreads_omp.
  */
-int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
-                     gmx_hw_opt_t           *hw_opt,
-                     const std::vector<int> &gpuIdsToUse,
+int get_nthreads_mpi(const gmx_hw_info_t*    hwinfo,
+                     gmx_hw_opt_t*           hw_opt,
+                     const std::vector<int>& gpuIdsToUse,
                      bool                    nonbondedOnGpu,
                      bool                    pmeOnGpu,
-                     const t_inputrec       *inputrec,
-                     const gmx_mtop_t       *mtop,
-                     const gmx::MDLogger    &mdlog,
+                     const t_inputrec*       inputrec,
+                     const gmx_mtop_t*       mtop,
+                     const gmx::MDLogger&    mdlog,
                      bool                    doMembed);
 
 /*! \brief Check if the number of OpenMP threads is within reasonable range
@@ -91,11 +91,11 @@ int get_nthreads_mpi(const gmx_hw_info_t    *hwinfo,
  * bNtOmpSet==TRUE; with bNtOptOptionSet==FALSE a fatal error is issued.
  * This function should be called after thread-MPI and OpenMP are set up.
  */
-void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
+void check_resource_division_efficiency(const gmx_hw_info_t* hwinfo,
                                         bool                 willUsePhysicalGpu,
                                         gmx_bool             bNtOmpOptionSet,
-                                        t_commrec           *cr,
-                                        const gmx::MDLogger &mdlog);
+                                        t_commrec*           cr,
+                                        const gmx::MDLogger& mdlog);
 
 /*! \brief Checks what our hardware options are based on how Gromacs was compiled
  *  and user-set options
@@ -106,24 +106,24 @@ void check_resource_division_efficiency(const gmx_hw_info_t *hwinfo,
  *  \param[in]      nPmeRanks                 Number of PME ranks
  *  \param[in]      inputrec                  The input record, should point to a valid object when \p isSimulationMasterRank = true
  *  */
-void checkAndUpdateHardwareOptions(const gmx::MDLogger &mdlog,
-                                   gmx_hw_opt_t        *hw_opt,
+void checkAndUpdateHardwareOptions(const gmx::MDLogger& mdlog,
+                                   gmx_hw_opt_t*        hw_opt,
                                    bool                 isSimulationMasterRank,
                                    int                  nPmeRanks,
-                                   const t_inputrec    *inputrec);
+                                   const t_inputrec*    inputrec);
 
 /*! \brief Check, and if necessary update, the number of OpenMP threads requested
  *
  * Should be called when we know the MPI rank count and PME run mode.
  */
-void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t         *hw_opt,
-                                             const gmx_hw_info_t  &hwinfo,
-                                             const t_commrec      *cr,
-                                             const gmx_multisim_t *ms,
+void checkAndUpdateRequestedNumOpenmpThreads(gmx_hw_opt_t*         hw_opt,
+                                             const gmx_hw_info_t&  hwinfo,
+                                             const t_commrec*      cr,
+                                             const gmx_multisim_t* ms,
                                              int                   numRanksOnThisNode,
                                              PmeRunMode            pmeRunMode,
-                                             const gmx_mtop_t     &mtop,
-                                             const t_inputrec     &inputrec);
+                                             const gmx_mtop_t&     mtop,
+                                             const t_inputrec&     inputrec);
 
 namespace gmx
 {
@@ -132,10 +132,10 @@ namespace gmx
  */
 void checkHardwareOversubscription(int                             numThreadsOnThisRank,
                                    int                             rank,
-                                   const HardwareTopology         &hwTop,
-                                   const PhysicalNodeCommunicator &comm,
-                                   const MDLogger                 &mdlog);
+                                   const HardwareTopology&         hwTop,
+                                   const PhysicalNodeCommunicator& comm,
+                                   const MDLogger&                 mdlog);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

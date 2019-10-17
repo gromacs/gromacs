@@ -73,35 +73,35 @@ using SimulatorFunctionType = void();
  */
 class LegacySimulator : public ISimulator
 {
-    private:
-        //! Implements the normal MD simulations.
-        SimulatorFunctionType               do_md;
-        //! Implements the rerun functionality.
-        SimulatorFunctionType               do_rerun;
-        //! Implements steepest descent EM.
-        SimulatorFunctionType               do_steep;
-        //! Implements conjugate gradient energy minimization
-        SimulatorFunctionType               do_cg;
-        //! Implements onjugate gradient energy minimization using the L-BFGS algorithm
-        SimulatorFunctionType               do_lbfgs;
-        //! Implements normal mode analysis
-        SimulatorFunctionType               do_nm;
-        //! Implements test particle insertion
-        SimulatorFunctionType               do_tpi;
-        //! Implements MiMiC QM/MM workflow
-        SimulatorFunctionType               do_mimic;
-        // Use the constructor of the base class
-        using ISimulator::ISimulator;
+private:
+    //! Implements the normal MD simulations.
+    SimulatorFunctionType do_md;
+    //! Implements the rerun functionality.
+    SimulatorFunctionType do_rerun;
+    //! Implements steepest descent EM.
+    SimulatorFunctionType do_steep;
+    //! Implements conjugate gradient energy minimization
+    SimulatorFunctionType do_cg;
+    //! Implements onjugate gradient energy minimization using the L-BFGS algorithm
+    SimulatorFunctionType do_lbfgs;
+    //! Implements normal mode analysis
+    SimulatorFunctionType do_nm;
+    //! Implements test particle insertion
+    SimulatorFunctionType do_tpi;
+    //! Implements MiMiC QM/MM workflow
+    SimulatorFunctionType do_mimic;
+    // Use the constructor of the base class
+    using ISimulator::ISimulator;
 
-    public:
-        // Only builder can construct
-        friend class SimulatorBuilder;
+public:
+    // Only builder can construct
+    friend class SimulatorBuilder;
 
-        /*! \brief Function to run the correct SimulatorFunctionType,
-         * based on the .mdp integrator field. */
-        void run() override;
+    /*! \brief Function to run the correct SimulatorFunctionType,
+     * based on the .mdp integrator field. */
+    void run() override;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDRUN_LEGACYSIMULATOR_H

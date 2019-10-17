@@ -52,12 +52,10 @@
  *
  * \todo This function could go away when idef is not a big bucket of
  * everything. */
-static bool
-ftype_is_bonded_potential(int ftype)
+static bool ftype_is_bonded_potential(int ftype)
 {
-    return
-        ((interaction_function[ftype].flags & IF_BOND) != 0U) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
+    return ((interaction_function[ftype].flags & IF_BOND) != 0U)
+           && !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES);
 }
 
 #endif

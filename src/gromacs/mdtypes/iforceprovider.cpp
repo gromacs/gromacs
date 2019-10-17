@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,20 +51,15 @@ using namespace gmx;
 
 class ForceProviders::Impl
 {
-    public:
-        std::vector<IForceProvider *> providers_;
+public:
+    std::vector<IForceProvider*> providers_;
 };
 
-ForceProviders::ForceProviders()
-    : impl_(new Impl)
-{
-}
+ForceProviders::ForceProviders() : impl_(new Impl) {}
 
-ForceProviders::~ForceProviders()
-{
-}
+ForceProviders::~ForceProviders() {}
 
-void ForceProviders::addForceProvider(gmx::IForceProvider *provider)
+void ForceProviders::addForceProvider(gmx::IForceProvider* provider)
 {
     impl_->providers_.push_back(provider);
 }
@@ -74,8 +69,8 @@ bool ForceProviders::hasForceProvider() const
     return !impl_->providers_.empty();
 }
 
-void ForceProviders::calculateForces(const ForceProviderInput &forceProviderInput,
-                                     ForceProviderOutput      *forceProviderOutput) const
+void ForceProviders::calculateForces(const ForceProviderInput& forceProviderInput,
+                                     ForceProviderOutput*      forceProviderOutput) const
 {
     for (auto provider : impl_->providers_)
     {

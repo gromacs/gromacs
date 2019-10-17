@@ -80,36 +80,20 @@ namespace
  * a reproducible final energy.
  *
  * The choices for tolerance are arbitrary but sufficient. */
-class EnergyMinimizationTest : public MdrunTestFixture,
-                               public ::testing::WithParamInterface <
-                               std::tuple < std::string, std::string>>
+class EnergyMinimizationTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string>>
 {
 };
 
 /*! \brief Database of empirical tolerances for EM integrators on the various systems. */
-std::unordered_map<std::string, FloatingPointTolerance> potentialEnergyToleranceForSystem_g =
-{{
-     {
-         "argon12",
-         relativeToleranceAsPrecisionDependentUlp(-1, 10, 200)
-     },
-     {
-         "tip3p5",
-         relativeToleranceAsPrecisionDependentUlp(-50, 200, 3800)
-     },
-     {
-         "glycine_vacuo",
-         relativeToleranceAsPrecisionDependentUlp(1000, 100, 100)
-     },
-     {
-         "alanine_vsite_vacuo",
-         relativeToleranceAsPrecisionDependentUlp(-160, 150, 400)
-     },
-     {
-         "glycine_no_constraints_vacuo",
-         relativeToleranceAsPrecisionDependentUlp(2000, 100, 100)
-     }
- }};
+std::unordered_map<std::string, FloatingPointTolerance> potentialEnergyToleranceForSystem_g = {
+    { { "argon12", relativeToleranceAsPrecisionDependentUlp(-1, 10, 200) },
+      { "tip3p5", relativeToleranceAsPrecisionDependentUlp(-50, 200, 3800) },
+      { "glycine_vacuo", relativeToleranceAsPrecisionDependentUlp(1000, 100, 100) },
+      { "alanine_vsite_vacuo", relativeToleranceAsPrecisionDependentUlp(-160, 150, 400) },
+      { "glycine_no_constraints_vacuo", relativeToleranceAsPrecisionDependentUlp(2000, 100, 100) } }
+};
 
 TEST_P(EnergyMinimizationTest, WithinTolerances)
 {
@@ -123,16 +107,16 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
-        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
                 simulationName.c_str(), numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                minimizer.c_str(),
-                                                "no", "no");
+    auto mdpFieldValues =
+            prepareMdpFieldValues(simulationName.c_str(), minimizer.c_str(), "no", "no");
     mdpFieldValues["nsteps"] = "4";
 
     int maxWarningsTolerated = (minimizer == "l-bfgs") ? 1 : 0;
@@ -157,7 +141,7 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
         {
             // Ideally we would use this death test, but it is not
             // stable enough in Jenkins, so we just skip it.
-            //EXPECT_DEATH_IF_SUPPORTED(runner_.callMdrun(mdrunCaller),
+            // EXPECT_DEATH_IF_SUPPORTED(runner_.callMdrun(mdrunCaller),
             //                          "L-BFGS minimization only supports a single rank");
             return;
         }
@@ -167,28 +151,25 @@ TEST_P(EnergyMinimizationTest, WithinTolerances)
         }
     }
 
-    EnergyTermsToCompare energyTermsToCompare
-    {{
-         {
-             interaction_function[F_EPOT].longname, potentialEnergyToleranceForSystem_g.at(simulationName)
-         },
-     }};
+    EnergyTermsToCompare energyTermsToCompare{ {
+            { interaction_function[F_EPOT].longname, potentialEnergyToleranceForSystem_g.at(simulationName) },
+    } };
 
     TestReferenceData refData;
     auto              checker = refData.rootChecker()
-            .checkCompound("Simulation", simulationName)
-            .checkCompound("Minimizer", minimizer);
-    checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                      energyTermsToCompare,
-                                      &checker);
+                           .checkCompound("Simulation", simulationName)
+                           .checkCompound("Minimizer", minimizer);
+    checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
 }
 
 //! Containers of systems and integrators to test.
 //! \{
-std::vector<std::string> unconstrainedSystemsToTest_g = { "argon12", "glycine_no_constraints_vacuo" };
+std::vector<std::string> unconstrainedSystemsToTest_g = { "argon12",
+                                                          "glycine_no_constraints_vacuo" };
 std::vector<std::string> minimizersToTest_g           = { "steep", "cg", "l-bfgs" };
 
-std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5", "glycine_vacuo", "alanine_vsite_vacuo" };
+std::vector<std::string> constrainedSystemsToTest_g        = { "tip3p5", "glycine_vacuo",
+                                                        "alanine_vsite_vacuo" };
 std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 //! \}
 
@@ -197,12 +178,14 @@ std::vector<std::string> minimizersToTestWithConstraints_g = { "steep", "cg" };
 // OpenCL builds. However, once that compilation is cached for the
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
-INSTANTIATE_TEST_CASE_P(MinimizersWorkWithConstraints, EnergyMinimizationTest,
-                            ::testing::Combine(::testing::ValuesIn(constrainedSystemsToTest_g),
-                                                   ::testing::ValuesIn(minimizersToTestWithConstraints_g)));
-INSTANTIATE_TEST_CASE_P(MinimizersWork, EnergyMinimizationTest,
-                            ::testing::Combine(::testing::ValuesIn(unconstrainedSystemsToTest_g),
-                                                   ::testing::ValuesIn(minimizersToTest_g)));
+INSTANTIATE_TEST_CASE_P(MinimizersWorkWithConstraints,
+                        EnergyMinimizationTest,
+                        ::testing::Combine(::testing::ValuesIn(constrainedSystemsToTest_g),
+                                           ::testing::ValuesIn(minimizersToTestWithConstraints_g)));
+INSTANTIATE_TEST_CASE_P(MinimizersWork,
+                        EnergyMinimizationTest,
+                        ::testing::Combine(::testing::ValuesIn(unconstrainedSystemsToTest_g),
+                                           ::testing::ValuesIn(minimizersToTest_g)));
 
 } // namespace
 } // namespace test

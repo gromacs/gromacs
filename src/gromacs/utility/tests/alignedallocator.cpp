@@ -50,6 +50,7 @@
 
 #include "gromacs/math/vectypes.h"
 
+#ifndef DOXYGEN
 namespace gmx
 {
 namespace test
@@ -61,13 +62,14 @@ using AllocatorTypesToTest = ::testing::Types<AlignedAllocator<real>,
                                               AlignedAllocator<int>,
                                               PageAlignedAllocator<int>,
                                               AlignedAllocator<RVec>,
-                                              PageAlignedAllocator<RVec>
-                                              >;
+                                              PageAlignedAllocator<RVec>>;
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
+
+#endif
 
 // Includes tests common to all allocation policies.
 #include "gromacs/utility/tests/alignedallocator_impl.h"
@@ -80,16 +82,15 @@ namespace test
 TYPED_TEST(AllocatorTest, StatelessAllocatorUsesNoMemory)
 {
     using value_type = typename TypeParam::value_type;
-    EXPECT_EQ(sizeof(std::vector<value_type>),
-              sizeof(std::vector<value_type, TypeParam>));
+    EXPECT_EQ(sizeof(std::vector<value_type>), sizeof(std::vector<value_type, TypeParam>));
 }
 
 TEST(AllocatorUntypedTest, Comparison)
 {
-    //Should always be true for the same policy, indpendent of value_type
+    // Should always be true for the same policy, indpendent of value_type
     EXPECT_EQ(AlignedAllocator<float>{}, AlignedAllocator<double>{});
     EXPECT_EQ(PageAlignedAllocator<float>{}, PageAlignedAllocator<double>{});
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

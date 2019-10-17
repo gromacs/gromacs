@@ -51,12 +51,11 @@ std::unique_ptr<NodeSpecification> MDNodeSpecification::clone()
 {
     GMX_ASSERT(!tprfilename_.empty(), "Need a non-empty filename string.");
     std::unique_ptr<NodeSpecification> node = nullptr;
-    node = std::make_unique<MDNodeSpecification>(tprfilename_);
+    node                                    = std::make_unique<MDNodeSpecification>(tprfilename_);
     return node;
 }
 
-MDNodeSpecification::MDNodeSpecification(const std::string &filename) :
-    tprfilename_ {std::move(filename)}
+MDNodeSpecification::MDNodeSpecification(const std::string& filename) : tprfilename_{ filename }
 {
     GMX_ASSERT(!tprfilename_.empty(), "Need a non-empty filename string.");
 }
@@ -75,21 +74,22 @@ NodeKey Workflow::addNode(std::unique_ptr<NodeSpecification> spec)
     return {};
 }
 
-std::unique_ptr<Workflow> Workflow::create(const std::string &filename)
+std::unique_ptr<Workflow> Workflow::create(const std::string& filename)
 {
     const std::string name = "MD";
     auto              spec = std::make_unique<MDNodeSpecification>(filename);
     Workflow::Impl    graph;
     graph.emplace(std::make_pair(name, std::move(spec)));
-    auto              workflow = std::make_unique<Workflow>(std::move(graph));
+    auto workflow = std::make_unique<Workflow>(std::move(graph));
     return workflow;
 }
 
-std::unique_ptr<NodeSpecification> Workflow::getNode(const NodeKey &key) const noexcept
+std::unique_ptr<NodeSpecification> Workflow::getNode(const NodeKey& key) const noexcept
 {
-    const Impl &graph = graph_;
-    GMX_ASSERT((graph.count(key) == 0) || (graph.count(key) == 1), "Key should occur zero or one times.");
-    auto const  iter = graph.find(key);
+    const Impl& graph = graph_;
+    GMX_ASSERT((graph.count(key) == 0) || (graph.count(key) == 1),
+               "Key should occur zero or one times.");
+    auto const                         iter = graph.find(key);
     std::unique_ptr<NodeSpecification> node = nullptr;
     if (iter == graph.end())
     {
@@ -103,9 +103,7 @@ std::unique_ptr<NodeSpecification> Workflow::getNode(const NodeKey &key) const n
     return node;
 }
 
-Workflow::Workflow(Workflow::Impl &&impl) :
-    graph_ {std::forward<Workflow::Impl>(impl)}
-{}
+Workflow::Workflow(Workflow::Impl&& impl) : graph_{ std::forward<Workflow::Impl>(impl) } {}
 
 Workflow::Impl::const_iterator Workflow::cbegin() const
 {

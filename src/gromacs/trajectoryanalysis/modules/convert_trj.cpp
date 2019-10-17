@@ -69,36 +69,30 @@ namespace
 
 class ConvertTrj : public TrajectoryAnalysisModule
 {
-    public:
-        ConvertTrj();
+public:
+    ConvertTrj();
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings  &settings,
-                          const TopologyInformation         &top) override;
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void optionsFinished(TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        TrajectoryFrameWriterPointer        output_;
-        Selection                           sel_;
-        std::string                         name_;
-        OutputRequirementOptionDirector     requirementsBuilder_;
+private:
+    TrajectoryFrameWriterPointer    output_;
+    Selection                       sel_;
+    std::string                     name_;
+    OutputRequirementOptionDirector requirementsBuilder_;
 };
 
-ConvertTrj::ConvertTrj()
-{
-}
+ConvertTrj::ConvertTrj() {}
 
 
-void
-ConvertTrj::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void ConvertTrj::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] converts trajectory files between different formats.",
         "The module supports writing all GROMACS supported file formats from",
         "the supported input formats.",
@@ -112,25 +106,23 @@ ConvertTrj::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *
         "selections.",
     };
 
-    options->addOption(SelectionOption("select")
-                           .store(&sel_)
-                           .onlyAtoms()
-                           .description("Selection of particles to write to the file"));
+    options->addOption(SelectionOption("select").store(&sel_).onlyAtoms().description(
+            "Selection of particles to write to the file"));
 
     options->addOption(FileNameOption("o")
-                           .filetype(eftTrajectory)
-                           .outputFile()
-                           .store(&name_).defaultBasename("trajout")
-                           .required()
-                           .description("Output trajectory"));
+                               .filetype(eftTrajectory)
+                               .outputFile()
+                               .store(&name_)
+                               .defaultBasename("trajout")
+                               .required()
+                               .description("Output trajectory"));
 
     requirementsBuilder_.initOptions(options);
 
     settings->setHelpText(desc);
 }
 
-void
-ConvertTrj::optionsFinished(TrajectoryAnalysisSettings * settings)
+void ConvertTrj::optionsFinished(TrajectoryAnalysisSettings* settings)
 {
     int frameFlags = TRX_NEED_X;
 
@@ -141,41 +133,27 @@ ConvertTrj::optionsFinished(TrajectoryAnalysisSettings * settings)
 }
 
 
-void
-ConvertTrj::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
-                         const TopologyInformation          &top)
+void ConvertTrj::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/, const TopologyInformation& top)
 {
-    output_ = createTrajectoryFrameWriter(top.mtop(),
-                                          sel_,
-                                          name_,
+    output_ = createTrajectoryFrameWriter(top.mtop(), sel_, name_,
                                           top.hasTopology() ? top.copyAtoms() : nullptr,
                                           requirementsBuilder_.process());
 }
 
-void
-ConvertTrj::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                         TrajectoryAnalysisModuleData * /*pdata*/)
+void ConvertTrj::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* /* pbc */, TrajectoryAnalysisModuleData* /*pdata*/)
 {
     output_->prepareAndWriteFrame(frnr, fr);
 }
 
-void
-ConvertTrj::finishAnalysis(int /*nframes*/)
-{
-}
+void ConvertTrj::finishAnalysis(int /*nframes*/) {}
 
 
+void ConvertTrj::writeOutput() {}
 
-void
-ConvertTrj::writeOutput()
-{
-}
-
-}       // namespace
+} // namespace
 
 const char ConvertTrjInfo::name[]             = "convert-trj";
-const char ConvertTrjInfo::shortDescription[] =
-    "Converts between different trajectory types";
+const char ConvertTrjInfo::shortDescription[] = "Converts between different trajectory types";
 
 TrajectoryAnalysisModulePointer ConvertTrjInfo::create()
 {

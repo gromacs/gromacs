@@ -57,49 +57,45 @@ namespace test
 
 class DumpTest : public ::testing::Test
 {
-    public:
-        //! Run test case.
-        void runTest(CommandLine *cmdline);
-    protected:
-        // TODO this is changed in newer googletest versions
-        //! Prepare shared resources.
-        static void SetUpTestCase()
-        {
-            s_tprFileHandle = new TprAndFileManager("lysozyme");
-        }
-        //! Clean up shared resources.
-        static void TearDownTestCase()
-        {
-            delete s_tprFileHandle;
-            s_tprFileHandle = nullptr;
-        }
-        //! Storage for opened file handles.
-        static TprAndFileManager *s_tprFileHandle;
+public:
+    //! Run test case.
+    void runTest(CommandLine* cmdline);
+
+protected:
+    // TODO this is changed in newer googletest versions
+    //! Prepare shared resources.
+    static void SetUpTestCase() { s_tprFileHandle = new TprAndFileManager("lysozyme"); }
+    //! Clean up shared resources.
+    static void TearDownTestCase()
+    {
+        delete s_tprFileHandle;
+        s_tprFileHandle = nullptr;
+    }
+    //! Storage for opened file handles.
+    static TprAndFileManager* s_tprFileHandle;
 };
 
-TprAndFileManager *DumpTest::s_tprFileHandle = nullptr;
+TprAndFileManager* DumpTest::s_tprFileHandle = nullptr;
 
-void DumpTest::runTest(CommandLine *cmdline)
+void DumpTest::runTest(CommandLine* cmdline)
 {
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::DumpInfo::create, cmdline));
+    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::DumpInfo::create, cmdline));
 }
 
 TEST_F(DumpTest, WorksWithTpr)
 {
-    const char *const command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str()};
+    const char* const command[] = { "dump", "-s", s_tprFileHandle->tprName().c_str() };
     CommandLine       cmdline(command);
     runTest(&cmdline);
 }
 
 TEST_F(DumpTest, WorksWithTprAndMdpWriting)
 {
-    TestFileManager    fileManager;
-    std::string        mdpName   = fileManager.getTemporaryFilePath("output.mdp");
-    const char *const  command[] =
-    { "dump", "-s", s_tprFileHandle->tprName().c_str(), "-om", mdpName.c_str() };
-    CommandLine        cmdline(command);
+    TestFileManager   fileManager;
+    std::string       mdpName   = fileManager.getTemporaryFilePath("output.mdp");
+    const char* const command[] = { "dump", "-s", s_tprFileHandle->tprName().c_str(), "-om",
+                                    mdpName.c_str() };
+    CommandLine       cmdline(command);
     runTest(&cmdline);
 }
 

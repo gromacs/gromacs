@@ -64,9 +64,9 @@ namespace gmx
  * \param[in] selectionAtoms Pointer to local atoms.
  * \param[in]     sel   Reference to selection.
  */
-static void adjustAtomInformation(t_atoms *atoms, t_atoms *selectionAtoms, const Selection &sel)
+static void adjustAtomInformation(t_atoms* atoms, t_atoms* selectionAtoms, const Selection& sel)
 {
-    int      natoms = sel.atomCount();
+    int natoms = sel.atomCount();
 
     selectionAtoms->nr   = natoms;
     selectionAtoms->nres = atoms->nres;
@@ -96,7 +96,7 @@ static void adjustAtomInformation(t_atoms *atoms, t_atoms *selectionAtoms, const
 
     for (int i = 0; i < natoms; i++)
     {
-        int pos = sel.position(i).refId();
+        int pos                     = sel.position(i).refId();
         selectionAtoms->atom[i]     = atoms->atom[pos];
         selectionAtoms->atomname[i] = atoms->atomname[pos];
         if (selectionAtoms->haveType)
@@ -119,8 +119,7 @@ static void adjustAtomInformation(t_atoms *atoms, t_atoms *selectionAtoms, const
     }
 }
 
-void
-OutputSelector::processFrame(const int /*framenumber*/, t_trxframe *input)
+void OutputSelector::processFrame(const int /*framenumber*/, t_trxframe* input)
 {
     size_t natoms = sel_.atomCount();
 

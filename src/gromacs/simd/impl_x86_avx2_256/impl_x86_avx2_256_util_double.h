@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,26 +48,25 @@ namespace gmx
 // This version is marginally slower than the AVX 4-wide component load
 // version on Intel Skylake. On older Intel architectures this version
 // is significantly slower.
-template <int align>
-static inline void gmx_simdcall
-gatherLoadUTransposeSafe(const double *        base,
-                         const std::int32_t    offset[],
-                         SimdDouble *          v0,
-                         SimdDouble *          v1,
-                         SimdDouble *          v2)
+template<int align>
+static inline void gmx_simdcall gatherLoadUTransposeSafe(const double*      base,
+                                                         const std::int32_t offset[],
+                                                         SimdDouble*        v0,
+                                                         SimdDouble*        v1,
+                                                         SimdDouble*        v2)
 {
     assert(std::size_t(offset) % 16 == 0);
 
     const SimdDInt32 alignSimd = SimdDInt32(align);
 
-    SimdDInt32       vindex = simdLoad(offset, SimdDInt32Tag());
-    vindex = vindex*alignSimd;
+    SimdDInt32 vindex = simdLoad(offset, SimdDInt32Tag());
+    vindex            = vindex * alignSimd;
 
     *v0 = _mm256_i32gather_pd(base + 0, vindex.simdInternal_, sizeof(double));
     *v1 = _mm256_i32gather_pd(base + 1, vindex.simdInternal_, sizeof(double));
     *v2 = _mm256_i32gather_pd(base + 2, vindex.simdInternal_, sizeof(double));
 }
 
-}      //namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_256_UTIL_DOUBLE_H

@@ -64,91 +64,84 @@ class StatePropagatorData;
  *
  * @tparam variable  The constraining variable
  */
-template <ConstraintVariable variable>
+template<ConstraintVariable variable>
 class ConstraintsElement final :
-    public               ISimulatorElement,
+    public ISimulatorElement,
     public IEnergySignallerClient,
     public ITrajectorySignallerClient,
     public ILoggingSignallerClient
 {
-    public:
-        //! Constructor
-        ConstraintsElement(
-            Constraints                   *constr,
-            StatePropagatorData           *statePropagatorData,
-            EnergyElement                 *energyElement,
-            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-            bool                           isMaster,
-            FILE                          *fplog,
-            const t_inputrec              *inputrec,
-            const t_mdatoms               *mdAtoms);
+public:
+    //! Constructor
+    ConstraintsElement(Constraints*                   constr,
+                       StatePropagatorData*           statePropagatorData,
+                       EnergyElement*                 energyElement,
+                       FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                       bool                           isMaster,
+                       FILE*                          fplog,
+                       const t_inputrec*              inputrec,
+                       const t_mdatoms*               mdAtoms);
 
-        /*! \brief Register constraining function for step / time
-         *
-         * Under LF, this is expected to be run once, constraining positions and velocities
-         * Under VV, this is expected to be run twice, once contraining velocities only,
-         * a second time constraining positions and velocities.
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register constraining function for step / time
+     *
+     * Under LF, this is expected to be run once, constraining positions and velocities
+     * Under VV, this is expected to be run twice, once contraining velocities only,
+     * a second time constraining positions and velocities.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        /*! \brief Performs inital constraining
-         *  \todo Should this rather happen at grompp time? Right position of this operation is currently
-         *        depending on the integrator algorithm (after domdec, before compute globals...),
-         *        so doing this earlier would be much more stable!
-         */
-        void elementSetup() override;
-        //! No element teardown needed
-        void elementTeardown() override {}
+    /*! \brief Performs inital constraining
+     *  \todo Should this rather happen at grompp time? Right position of this operation is currently
+     *        depending on the integrator algorithm (after domdec, before compute globals...),
+     *        so doing this earlier would be much more stable!
+     */
+    void elementSetup() override;
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-    private:
-        //! The actual constraining computation
-        void apply(
-            Step step,
-            bool calculateVirial,
-            bool writeLog,
-            bool writeEnergy);
+private:
+    //! The actual constraining computation
+    void apply(Step step, bool calculateVirial, bool writeLog, bool writeEnergy);
 
-        //! IEnergySignallerClient implementation
-        SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
-        //! ITrajectorySignallerClient implementation
-        SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
-        //! ILoggingSignallerClient implementation
-        SignallerCallbackPtr registerLoggingCallback() override;
+    //! IEnergySignallerClient implementation
+    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    //! ITrajectorySignallerClient implementation
+    SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent event) override;
+    //! ILoggingSignallerClient implementation
+    SignallerCallbackPtr registerLoggingCallback() override;
 
-        //! The next energy calculation step
-        Step nextVirialCalculationStep_;
-        //! The next energy writing step
-        Step nextEnergyWritingStep_;
-        //! The next logging step
-        Step nextLogWritingStep_;
+    //! The next energy calculation step
+    Step nextVirialCalculationStep_;
+    //! The next energy writing step
+    Step nextEnergyWritingStep_;
+    //! The next logging step
+    Step nextLogWritingStep_;
 
-        //! Whether we're master rank
-        const bool isMasterRank_;
+    //! Whether we're master rank
+    const bool isMasterRank_;
 
-        //! Pointer to the micro state
-        StatePropagatorData           *statePropagatorData_;
-        //! Pointer to the energy element
-        EnergyElement                 *energyElement_;
-        //! Pointer to the free energy perturbation element (only for initial constraining)
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the energy element
+    EnergyElement* energyElement_;
+    //! Pointer to the free energy perturbation element (only for initial constraining)
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
-        // Access to ISimulator data
-        //! Handles constraints.
-        Constraints      *constr_;
-        //! Handles logging.
-        FILE             *fplog_;
-        //! Contains user input mdp options.
-        const t_inputrec *inputrec_;
-        //! Atom parameters for this domain.
-        const t_mdatoms  *mdAtoms_;
+    // Access to ISimulator data
+    //! Handles constraints.
+    Constraints* constr_;
+    //! Handles logging.
+    FILE* fplog_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    const t_mdatoms* mdAtoms_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_CONSTRAINTELEMENT_H

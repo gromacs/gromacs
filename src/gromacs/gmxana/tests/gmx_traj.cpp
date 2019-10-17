@@ -52,22 +52,21 @@
 namespace
 {
 
-class GmxTraj : public gmx::test::CommandLineTestBase,
-                public ::testing::WithParamInterface<const char *>
+class GmxTraj : public gmx::test::CommandLineTestBase, public ::testing::WithParamInterface<const char*>
 {
-    public:
-        void runTest(const char *fileName)
-        {
-            auto &cmdline = commandLine();
-            setInputFile("-s", "spc2.gro");
-            setInputFile("-f", fileName);
-            setOutputFile("-ox", "spc2.xvg", gmx::test::NoTextMatch());
+public:
+    void runTest(const char* fileName)
+    {
+        auto& cmdline = commandLine();
+        setInputFile("-s", "spc2.gro");
+        setInputFile("-f", fileName);
+        setOutputFile("-ox", "spc2.xvg", gmx::test::NoTextMatch());
 
-            gmx::test::StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin("0\n");
+        gmx::test::StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin("0\n");
 
-            ASSERT_EQ(0, gmx_traj(cmdline.argc(), cmdline.argv()));
-        }
+        ASSERT_EQ(0, gmx_traj(cmdline.argc(), cmdline.argv()));
+    }
 };
 
 /* TODO These tests are actually not very effective, because gmx-traj
@@ -85,18 +84,13 @@ TEST_P(GmxTraj, WithDifferentInputFormats)
  * database. These all have two identical frames of two SPC water
  * molecules, which were generated via trjconv from the .gro
  * version. */
-const char *const trajectoryFileNames[] = {
-    "spc2-traj.trr",
+const char* const trajectoryFileNames[] = { "spc2-traj.trr",
 #if GMX_USE_TNG
-    "spc2-traj.tng",
+                                            "spc2-traj.tng",
 #endif
-    "spc2-traj.xtc",
-    "spc2-traj.gro",
-    "spc2-traj.pdb",
-    "spc2-traj.g96"
-};
+                                            "spc2-traj.xtc", "spc2-traj.gro",
+                                            "spc2-traj.pdb", "spc2-traj.g96" };
 
-INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
-                        GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
+INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom, GmxTraj, ::testing::ValuesIn(trajectoryFileNames));
 
 } // namespace

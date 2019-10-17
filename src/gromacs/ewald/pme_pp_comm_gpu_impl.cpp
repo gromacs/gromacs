@@ -62,10 +62,11 @@ class PmePpCommGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank)
-    : impl_(nullptr)
+PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank) : impl_(nullptr)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
 PmePpCommGpu::~PmePpCommGpu() = default;
@@ -73,31 +74,46 @@ PmePpCommGpu::~PmePpCommGpu() = default;
 /*!\brief init PME-PP GPU communication stub */
 void PmePpCommGpu::reinit(int gmx_unused size)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication initialization was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication initialization was called instead of the "
+               "correct implementation.");
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused *recvPtr, int gmx_unused recvSize, bool gmx_unused receivePmeForceToGpu)
+void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused* recvPtr,
+                                                 int gmx_unused recvSize,
+                                                 bool gmx_unused receivePmeForceToGpu)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused *sendPtr, int gmx_unused sendSize, bool gmx_unused sendPmeCoordinatesFromGpu, GpuEventSynchronizer gmx_unused *coordinatesOnDeviceEvent)
+void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused* sendPtr,
+                                                  int gmx_unused sendSize,
+                                                  bool gmx_unused sendPmeCoordinatesFromGpu,
+                                                  GpuEventSynchronizer gmx_unused* coordinatesOnDeviceEvent)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
 void* PmePpCommGpu::getGpuForceStagingPtr()
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
     return nullptr;
 }
 
 void* PmePpCommGpu::getForcesReadySynchronizer()
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
     return nullptr;
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

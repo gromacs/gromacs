@@ -52,46 +52,41 @@
 
 #include "hackblock.h"
 
-void add_param(InteractionsOfType        *ps,
-               int                        ai,
-               int                        aj,
-               gmx::ArrayRef<const real>  c,
-               const char                *s)
+void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real> c, const char* s)
 {
     if ((ai < 0) || (aj < 0))
     {
         gmx_fatal(FARGS, "Trying to add impossible atoms: ai=%d, aj=%d", ai, aj);
     }
-    std::vector<int>  atoms = {ai, aj};
+    std::vector<int>  atoms = { ai, aj };
     std::vector<real> forceParm(c.begin(), c.end());
 
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_cmap_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, const char* s)
 {
-    std::vector<int> atoms = {ai, aj, ak, al, am};
+    std::vector<int> atoms = { ai, aj, ak, al, am };
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}, s ? s : ""));
 }
 
-void add_vsite2_param(InteractionsOfType *ps, int ai, int aj, int ak, real c0)
+void add_vsite2_param(InteractionsOfType* ps, int ai, int aj, int ak, real c0)
 {
-    std::vector<int>  atoms     = {ai, aj, ak};
-    std::vector<real> forceParm = {c0};
+    std::vector<int>  atoms     = { ai, aj, ak };
+    std::vector<real> forceParm = { c0 };
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_vsite3_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
-                      real c0, real c1)
+void add_vsite3_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, real c0, real c1)
 {
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1};
+    std::vector<int>  atoms     = { ai, aj, ak, al };
+    std::vector<real> forceParm = { c0, c1 };
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_vsite3_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al, bool bSwapParity)
+void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
-    std::vector<int>  atoms = {ai, aj, ak, al};
+    std::vector<int> atoms = { ai, aj, ak, al };
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 
     if (bSwapParity)
@@ -100,25 +95,24 @@ void add_vsite3_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al, bo
     }
 }
 
-void add_vsite4_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am)
 {
-    std::vector<int> atoms = {ai, aj, ak, al, am};
+    std::vector<int> atoms = { ai, aj, ak, al, am };
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 }
 
-int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)
+int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool bNterm)
 {
     int    niter, jmax;
     size_t k, kmax, minstrlen;
-    char  *rtpname, searchname[12];
+    char * rtpname, searchname[12];
 
     strcpy(searchname, name);
 
     /* Do a best match comparison */
     /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
-    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H') &&
-        ( (searchname[1] == '1') || (searchname[1] == '2') ||
-          (searchname[1] == '3') ) )
+    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H')
+        && ((searchname[1] == '1') || (searchname[1] == '2') || (searchname[1] == '3')))
     {
         niter = 2;
     }
@@ -164,12 +158,13 @@ int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool
     }
     if (jmax == -1)
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s",
-                  searchname, localPpResidue.resname.c_str());
+        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s", searchname,
+                  localPpResidue.resname.c_str());
     }
     if (kmax != strlen(searchname))
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
+        gmx_fatal(FARGS,
+                  "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
                   searchname, localPpResidue.resname.c_str(), *(localPpResidue.atomname[jmax]));
     }

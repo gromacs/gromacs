@@ -78,23 +78,15 @@ namespace
 {
 
 /*! \brief Database of enerngy tolerances for MD integrator on the various systems. */
-std::unordered_map<std::string, FloatingPointTolerance> energyToleranceForSystem_g =
-{{
-     {
-         "angles1",
-         relativeToleranceAsFloatingPoint(1, 1e-4)
-     }
- }};
+std::unordered_map<std::string, FloatingPointTolerance> energyToleranceForSystem_g = {
+    { { "angles1", relativeToleranceAsFloatingPoint(1, 1e-4) } }
+};
 
 /*! \brief Database of pressure
    tolerances for MD integrator on the various systems. */
-std::unordered_map<std::string, FloatingPointTolerance> pressureToleranceForSystem_g =
-{{
-     {
-         "angles1",
-         relativeToleranceAsFloatingPoint(1, 1e-4)
-     }
- }};
+std::unordered_map<std::string, FloatingPointTolerance> pressureToleranceForSystem_g = {
+    { { "angles1", relativeToleranceAsFloatingPoint(1, 1e-4) } }
+};
 
 //! Helper type
 using MdpField = MdpFieldValues::value_type;
@@ -105,9 +97,9 @@ using MdpField = MdpFieldValues::value_type;
  * reproducible energies.
  *
  * The choices for tolerance are arbitrary but sufficient. */
-class SimpleMdrunTest : public MdrunTestFixture,
-                        public ::testing::WithParamInterface <
-                        std::tuple < std::string, std::string>>
+class SimpleMdrunTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string>>
 {
 };
 
@@ -116,22 +108,21 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     auto params         = GetParam();
     auto simulationName = std::get<0>(params);
     auto integrator     = std::get<1>(params);
-    SCOPED_TRACE(formatString("Comparing simple mdrun for '%s'",
-                              simulationName.c_str()));
+    SCOPED_TRACE(formatString("Comparing simple mdrun for '%s'", simulationName.c_str()));
 
     // TODO At some point we should also test PME-only ranks.
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
-        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
                 simulationName.c_str(), numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                "no", "no");
+    auto mdpFieldValues =
+            prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(), "no", "no");
     mdpFieldValues["nsteps"]        = "50";
     mdpFieldValues["nstfout"]       = "4";
     mdpFieldValues["constraints"]   = "none";
@@ -148,27 +139,18 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     }
     // Do mdrun
     {
-        CommandLine          mdrunCaller;
+        CommandLine mdrunCaller;
         ASSERT_EQ(0, runner_.callMdrun(mdrunCaller));
-        EnergyTermsToCompare energyTermsToCompare
-        {{
-             {
-                 interaction_function[F_EPOT].longname, energyToleranceForSystem_g.at(simulationName)
-             },
-             {
-                 interaction_function[F_EKIN].longname, energyToleranceForSystem_g.at(simulationName)
-             },
-             {
-                 interaction_function[F_PRES].longname, pressureToleranceForSystem_g.at(simulationName)
-             },
-         }};
-        TestReferenceData refData;
-        auto              checker = refData.rootChecker()
-                .checkCompound("Simulation", simulationName)
-                .checkCompound("Mdrun", integrator);
-        checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                          energyTermsToCompare,
-                                          &checker);
+        EnergyTermsToCompare energyTermsToCompare{ {
+                { interaction_function[F_EPOT].longname, energyToleranceForSystem_g.at(simulationName) },
+                { interaction_function[F_EKIN].longname, energyToleranceForSystem_g.at(simulationName) },
+                { interaction_function[F_PRES].longname, pressureToleranceForSystem_g.at(simulationName) },
+        } };
+        TestReferenceData    refData;
+        auto                 checker = refData.rootChecker()
+                               .checkCompound("Simulation", simulationName)
+                               .checkCompound("Mdrun", integrator);
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
         // Now check the forces
         TrajectoryFrameReader reader(runner_.fullPrecisionTrajectoryFileName_);
         checker.setDefaultTolerance(relativeToleranceAsFloatingPoint(1, 1e-4));
@@ -177,15 +159,14 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
             auto frame = reader.frame();
             auto force = frame.f();
             int  atom  = 0;
-            for (auto &f : force)
+            for (auto& f : force)
             {
                 std::string forceName = frame.frameName() + " F[" + toString(atom) + "]";
 
                 checker.checkVector(f, forceName.c_str());
                 atom++;
             }
-        }
-        while (reader.readNextFrame());
+        } while (reader.readNextFrame());
     }
 }
 
@@ -201,7 +182,9 @@ std::vector<std::string> md_g            = { "md", "md-vv" };
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
 #if GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(Angles1, SimpleMdrunTest, ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::ValuesIn(md_g)));
+INSTANTIATE_TEST_CASE_P(Angles1,
+                        SimpleMdrunTest,
+                        ::testing::Combine(::testing::ValuesIn(systemsToTest_g), ::testing::ValuesIn(md_g)));
 #endif
 } // namespace
 } // namespace test

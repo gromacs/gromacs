@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,85 +63,86 @@ namespace gmxapi
  */
 class Status final
 {
-    public:
-        /*!
-         * \brief Status is "unsuccessful" until set otherwise.
-         *
-         * \internal
-         * Default constructor can be used for convenience when preparing the
-         * return value for an operation that should be assumed unsuccessful
-         * until proven otherwise.
-         */
-        Status();
-        /*!
-         * \brief Can be copy-initialized
-         *
-         * \param status
-         */
-        Status(const Status &status);
-        /*!
-         * \brief Can be moved.
-         */
-        Status(Status &&) noexcept;
-        /*!
-         * \brief Can be copy-assigned.
-         *
-         * \param status
-         * \return reference to lhs.
-         */
-        Status &operator=(const Status &status);
-        /*!
-         * \brief Transfer ownership by move assignment.
-         *
-         * \param status
-         * \return reference to lhs
-         */
-        Status &operator=(Status &&status) noexcept;
-        /*!
-         * \brief Set success status from boolean.
-         *
-         * \param success true to indicate successful operation.
-         * \return reference to lhs
-         */
-        Status &operator=(bool success);
+public:
+    /*!
+     * \brief Status is "unsuccessful" until set otherwise.
+     *
+     * \internal
+     * Default constructor can be used for convenience when preparing the
+     * return value for an operation that should be assumed unsuccessful
+     * until proven otherwise.
+     */
+    Status();
+    /*!
+     * \brief Can be copy-initialized
+     *
+     * \param status
+     */
+    Status(const Status& status);
+    /*!
+     * \brief Can be moved.
+     */
+    Status(Status&& /*unused*/) noexcept;
+    /*!
+     * \brief Can be copy-assigned.
+     *
+     * \param status
+     * \return reference to lhs.
+     */
+    Status& operator=(const Status& status);
+    /*!
+     * \brief Transfer ownership by move assignment.
+     *
+     * \param status
+     * \return reference to lhs
+     */
+    Status& operator=(Status&& status) noexcept;
+    /*!
+     * \brief Set success status from boolean.
+     *
+     * \param success true to indicate successful operation.
+     * \return reference to lhs
+     */
+    Status& operator=(bool success);
 
-        /*!
-         * \brief Initialize with success set true or false.
-         *
-         * \param success
-         */
-        explicit Status(bool success);
+    /*!
+     * \brief Initialize with success set true or false.
+     *
+     * \param success
+     */
+    explicit Status(bool success);
 
-        /*!
-         * \brief Clean up resources.
-         *
-         * Note non-virtual destructor. This class is not heritable.
-         */
-        ~Status();
+    /*!
+     * \brief Clean up resources.
+     *
+     * Note non-virtual destructor. This class is not heritable.
+     */
+    ~Status();
 
-        /*!
-         * \brief Check success status.
-         *
-         * Forces evaluation of any pending computation. The operation that
-         * returned the Status object is guaranteed to complete, successfully
-         * or unsuccessfully, before this function returns.
-         *
-         * \return true if the operation described was successful.
-         *
-         * \internal
-         * Unsuccessful operations should have more useful information associated
-         * than just a boolean. Future versions should behave more like a
-         * `gmx::future<gmx::expected<T>>`, but this functionality is not yet
-         * available.
-         */
-        bool success() const;
-    private:
-        //! \cond
-        class Impl;
-        std::unique_ptr<Impl> impl_;
-        //! \endcond
+    /*!
+     * \brief Check success status.
+     *
+     * Forces evaluation of any pending computation. The operation that
+     * returned the Status object is guaranteed to complete, successfully
+     * or unsuccessfully, before this function returns.
+     *
+     * \return true if the operation described was successful.
+     *
+     * \internal
+     * Unsuccessful operations should have more useful information associated
+     * than just a boolean. Future versions should behave more like a
+     * `gmx::future<gmx::expected<T>>`, but this functionality is not yet
+     * available.
+     */
+    bool success() const;
+
+private:
+    //! \cond
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+    //! \endcond
 };
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_STATUS_H
+#endif // GMXAPI_STATUS_H

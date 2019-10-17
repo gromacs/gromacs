@@ -59,19 +59,19 @@ namespace internal
  */
 
 LocalAtomSetData::LocalAtomSetData(ArrayRef<const index> globalIndex) :
-    globalIndex_(globalIndex.begin(), globalIndex.end()), localIndex_(globalIndex.begin(), globalIndex.end())
+    globalIndex_(globalIndex.begin(), globalIndex.end()),
+    localIndex_(globalIndex.begin(), globalIndex.end())
 {
     collectiveIndex_.resize(localIndex_.size());
     std::iota(collectiveIndex_.begin(), collectiveIndex_.end(), 0);
 }
 
-void
-LocalAtomSetData::setLocalAndCollectiveIndices(const gmx_ga2la_t &ga2la)
+void LocalAtomSetData::setLocalAndCollectiveIndices(const gmx_ga2la_t& ga2la)
 {
     /* Loop over all the atom indices of the set to check which ones are local.
      * cf. dd_make_local_group_indices in groupcoord.cpp
      */
-    int  numAtomsGlobal   = globalIndex_.size();
+    int numAtomsGlobal = globalIndex_.size();
 
     /* Clear vector without changing capacity,
      * because we expect the size of the vectors to vary little. */
@@ -80,7 +80,7 @@ LocalAtomSetData::setLocalAndCollectiveIndices(const gmx_ga2la_t &ga2la)
 
     for (int iCollective = 0; iCollective < numAtomsGlobal; iCollective++)
     {
-        if (const int *iLocal = ga2la.findHome(globalIndex_[iCollective]))
+        if (const int* iLocal = ga2la.findHome(globalIndex_[iCollective]))
         {
             /* Save the atoms index in the local atom numbers array */
             /* The atom with this index is a home atom. */

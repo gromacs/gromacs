@@ -61,39 +61,29 @@ namespace
  */
 class NullRestraint : public gmx::IRestraintPotential
 {
-    public:
-        /*! \cond Implement IRestraintPotential */
-        gmx::PotentialPointData evaluate(gmx::Vector /*  r1 */,
-                                         gmx::Vector /*  r2 */,
-                                         double      /*   t */ ) override
-        {
-            hasBeenCalled_ = true;
-            return {{0., 0., 0.}, 0.};
-        }
+public:
+    /*! \cond Implement IRestraintPotential */
+    gmx::PotentialPointData evaluate(gmx::Vector /*  r1 */, gmx::Vector /*  r2 */, double /*   t */) override
+    {
+        hasBeenCalled_ = true;
+        return { { 0., 0., 0. }, 0. };
+    }
 
-        std::vector<int> sites() const override
-        {
-            return {{0, 1}};
-        }
+    std::vector<int> sites() const override { return { { 0, 1 } }; }
 
-        void bindSession(gmxapi::SessionResources * /* resources */) override
-        {
-        }
-        //! \endcond
+    void bindSession(gmxapi::SessionResources* /* resources */) override {}
+    //! \endcond
 
-        /*!
-         * \brief Check whether the restraint has been called as an IForceProvider.
-         *
-         * \return false until restraint is used in MD loop, then true.
-         */
-        bool hasBeenCalled() const
-        {
-            return hasBeenCalled_;
-        }
+    /*!
+     * \brief Check whether the restraint has been called as an IForceProvider.
+     *
+     * \return false until restraint is used in MD loop, then true.
+     */
+    bool hasBeenCalled() const { return hasBeenCalled_; }
 
-    private:
-        //! State: false until after the first call to evaluate()
-        bool hasBeenCalled_ = false;
+private:
+    //! State: false until after the first call to evaluate()
+    bool hasBeenCalled_ = false;
 };
 
 /*!
@@ -101,38 +91,27 @@ class NullRestraint : public gmx::IRestraintPotential
  */
 class SimpleApiModule : public gmxapi::MDModule
 {
-    public:
-        /*! \cond
-         * Implement gmxapi::MDModule interface.
-         */
-        SimpleApiModule() :
-            restraint_(std::make_shared<NullRestraint>())
-        {}
+public:
+    /*! \cond
+     * Implement gmxapi::MDModule interface.
+     */
+    SimpleApiModule() : restraint_(std::make_shared<NullRestraint>()) {}
 
-        const char *name() const override
-        {
-            return "SimpleApiModule";
-        }
+    const char* name() const override { return "SimpleApiModule"; }
 
-        std::shared_ptr<gmx::IRestraintPotential> getRestraint() override
-        {
-            return restraint_;
-        }
-        //! \endcond
+    std::shared_ptr<gmx::IRestraintPotential> getRestraint() override { return restraint_; }
+    //! \endcond
 
-        /*!
-         * \brief Check whether the restraint has been called as an IForceProvider.
-         *
-         * \return false until restraint is used in MD loop, then true.
-         */
-        bool hasBeenCalled() const
-        {
-            return restraint_->hasBeenCalled();
-        }
+    /*!
+     * \brief Check whether the restraint has been called as an IForceProvider.
+     *
+     * \return false until restraint is used in MD loop, then true.
+     */
+    bool hasBeenCalled() const { return restraint_->hasBeenCalled(); }
 
-    private:
-        //! restraint to provide to client or MD simulator, as well as to use to implement hasBeenCalled.
-        std::shared_ptr<NullRestraint> restraint_;
+private:
+    //! restraint to provide to client or MD simulator, as well as to use to implement hasBeenCalled.
+    std::shared_ptr<NullRestraint> restraint_;
 };
 
 /*!
@@ -149,9 +128,9 @@ TEST_F(GmxApiTest, ApiRunnerRestrainedMD)
 
         context->setMDArgs(args);
 
-        auto           restraint = std::make_shared<SimpleApiModule>();
+        auto restraint = std::make_shared<SimpleApiModule>();
 
-        auto           session = system.launch(context);
+        auto session = system.launch(context);
         EXPECT_TRUE(session != nullptr);
         EXPECT_EQ(restraint->hasBeenCalled(), false);
 

@@ -54,34 +54,34 @@ namespace gmx
 class PmeCoordinateReceiverGpu::Impl
 {
 
-    public:
-        /*! \brief Creates PME GPU coordinate receiver object
-         * \param[in] pmeStream       CUDA stream used for PME computations
-         * \param[in] comm            Communicator used for simulation
-         * \param[in] ppRanks         List of PP ranks
-         */
-        Impl(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
-        ~Impl();
+public:
+    /*! \brief Creates PME GPU coordinate receiver object
+     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] comm            Communicator used for simulation
+     * \param[in] ppRanks         List of PP ranks
+     */
+    Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    ~Impl();
 
-        /*! \brief
-         * send coordinates buffer address to PP rank
-         * \param[in] d_x   coordinates buffer in GPU memory
-         */
-        void sendCoordinateBufferAddressToPpRanks(rvec *d_x);
+    /*! \brief
+     * send coordinates buffer address to PP rank
+     * \param[in] d_x   coordinates buffer in GPU memory
+     */
+    void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
 
-        /*! \brief
-         * receive coordinate data from PP rank
-         * \param[in] ppRank  PP rank to send data
-         */
-        void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    /*! \brief
+     * receive coordinate data from PP rank
+     * \param[in] ppRank  PP rank to send data
+     */
+    void receiveCoordinatesFromPpCudaDirect(int ppRank);
 
-    private:
-        //! CUDA stream for PME operations
-        cudaStream_t            pmeStream_ = nullptr;
-        //! communicator for simulation
-        MPI_Comm                comm_;
-        //! list of PP ranks
-        gmx::ArrayRef<PpRanks>  ppRanks_;
+private:
+    //! CUDA stream for PME operations
+    cudaStream_t pmeStream_ = nullptr;
+    //! communicator for simulation
+    MPI_Comm comm_;
+    //! list of PP ranks
+    gmx::ArrayRef<PpRanks> ppRanks_;
 };
 
 } // namespace gmx

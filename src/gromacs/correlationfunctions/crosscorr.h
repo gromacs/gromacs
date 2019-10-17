@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,6 +70,6 @@ void cross_corr(int n, real f[], real g[], real corr[]);
  * \param[in] g 2D array of second function to crosscorrelate
  * \param[out] corr 2D array of the cross correlations
  */
-void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr);
+void many_cross_corr(int nFunc, int* nData, real** f, real** g, real** corr);
 
 #endif

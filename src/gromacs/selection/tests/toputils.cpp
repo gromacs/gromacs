@@ -68,10 +68,7 @@ namespace gmx
 namespace test
 {
 
-TopologyManager::TopologyManager()
-    :  frame_(nullptr)
-{
-}
+TopologyManager::TopologyManager() : frame_(nullptr) {}
 
 TopologyManager::~TopologyManager()
 {
@@ -84,7 +81,7 @@ TopologyManager::~TopologyManager()
         sfree(frame_);
     }
 
-    for (char *atomtype : atomtypes_)
+    for (char* atomtype : atomtypes_)
     {
         sfree(atomtype);
     }
@@ -92,8 +89,7 @@ TopologyManager::~TopologyManager()
 
 void TopologyManager::requestFrame()
 {
-    GMX_RELEASE_ASSERT(mtop_ == nullptr,
-                       "Frame must be requested before initializing topology");
+    GMX_RELEASE_ASSERT(mtop_ == nullptr, "Frame must be requested before initializing topology");
     if (frame_ == nullptr)
     {
         snew(frame_, 1);
@@ -102,8 +98,7 @@ void TopologyManager::requestFrame()
 
 void TopologyManager::requestVelocities()
 {
-    GMX_RELEASE_ASSERT(frame_ != nullptr,
-                       "Velocities requested before requesting a frame");
+    GMX_RELEASE_ASSERT(frame_ != nullptr, "Velocities requested before requesting a frame");
     frame_->bV = TRUE;
     if (frame_->natoms > 0)
     {
@@ -113,8 +108,7 @@ void TopologyManager::requestVelocities()
 
 void TopologyManager::requestForces()
 {
-    GMX_RELEASE_ASSERT(frame_ != nullptr,
-                       "Forces requested before requesting a frame");
+    GMX_RELEASE_ASSERT(frame_ != nullptr, "Forces requested before requesting a frame");
     frame_->bF = TRUE;
     if (frame_->natoms > 0)
     {
@@ -122,19 +116,17 @@ void TopologyManager::requestForces()
     }
 }
 
-void TopologyManager::loadTopology(const char *filename)
+void TopologyManager::loadTopology(const char* filename)
 {
-    bool    fullTopology;
-    int     ePBC;
-    rvec   *xtop = nullptr;
-    matrix  box;
+    bool   fullTopology;
+    int    ePBC;
+    rvec*  xtop = nullptr;
+    matrix box;
 
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     mtop_ = std::make_unique<gmx_mtop_t>();
-    readConfAndTopology(
-            gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-            &fullTopology, mtop_.get(), &ePBC, frame_ != nullptr ? &xtop : nullptr,
-            nullptr, box);
+    readConfAndTopology(gmx::test::TestFileManager::getInputFilePath(filename).c_str(), &fullTopology,
+                        mtop_.get(), &ePBC, frame_ != nullptr ? &xtop : nullptr, nullptr, box);
 
     if (frame_ != nullptr)
     {
@@ -143,7 +135,7 @@ void TopologyManager::loadTopology(const char *filename)
         frame_->bX     = TRUE;
         snew(frame_->x, frame_->natoms);
         std::memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
-        frame_->bBox   = TRUE;
+        frame_->bBox = TRUE;
         copy_mat(box, frame_->box);
     }
 
@@ -157,13 +149,15 @@ void TopologyManager::initAtoms(int count)
     mtop_->moltype.resize(1);
     init_t_atoms(&mtop_->moltype[0].atoms, count, FALSE);
     mtop_->molblock.resize(1);
-    mtop_->molblock[0].type            = 0;
-    mtop_->molblock[0].nmol            = 1;
-    mtop_->natoms                      = count;
-    mtop_->maxres_renum                = 0;
+    mtop_->molblock[0].type = 0;
+    mtop_->molblock[0].nmol = 1;
+    mtop_->natoms           = count;
+    mtop_->maxres_renum     = 0;
     gmx_mtop_finalize(mtop_.get());
-    GMX_RELEASE_ASSERT(mtop_->maxres_renum == 0, "maxres_renum in mtop can be modified by an env.var., that is not supported in this test");
-    t_atoms &atoms = this->atoms();
+    GMX_RELEASE_ASSERT(mtop_->maxres_renum == 0,
+                       "maxres_renum in mtop can be modified by an env.var., that is not supported "
+                       "in this test");
+    t_atoms& atoms = this->atoms();
     for (int i = 0; i < count; ++i)
     {
         atoms.atom[i].m = (i % 3 == 0 ? 2.0 : 1.0);
@@ -185,17 +179,17 @@ void TopologyManager::initAtoms(int count)
     }
 }
 
-void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
+void TopologyManager::initAtomTypes(const ArrayRef<const char* const>& types)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     atomtypes_.reserve(types.size());
-    for (const char *type : types)
+    for (const char* type : types)
     {
         atomtypes_.push_back(gmx_strdup(type));
     }
-    t_atoms &atoms = this->atoms();
+    t_atoms& atoms = this->atoms();
     snew(atoms.atomtype, atoms.nr);
-    index    j = 0;
+    index j = 0;
     for (int i = 0; i < atoms.nr; ++i, ++j)
     {
         if (j == types.ssize())
@@ -207,8 +201,7 @@ void TopologyManager::initAtomTypes(const ArrayRef<const char *const> &types)
     atoms.haveType = TRUE;
 }
 
-void TopologyManager::initTopology(const int numMoleculeTypes,
-                                   const int numMoleculeBlocks)
+void TopologyManager::initTopology(const int numMoleculeTypes, const int numMoleculeBlocks)
 {
     GMX_RELEASE_ASSERT(mtop_ == nullptr, "Topology initialized more than once");
     mtop_ = std::make_unique<gmx_mtop_t>();
@@ -216,29 +209,24 @@ void TopologyManager::initTopology(const int numMoleculeTypes,
     mtop_->molblock.resize(numMoleculeBlocks);
 }
 
-void TopologyManager::setMoleculeType(const int                 moleculeTypeIndex,
-                                      const ArrayRef<const int> residueSizes)
+void TopologyManager::setMoleculeType(const int moleculeTypeIndex, const ArrayRef<const int> residueSizes)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
 
     // Make a molecule block that refers to a new molecule type
-    auto &newMoleculeType = mtop_->moltype[moleculeTypeIndex];
-    auto &atoms           = newMoleculeType.atoms;
+    auto& newMoleculeType = mtop_->moltype[moleculeTypeIndex];
+    auto& atoms           = newMoleculeType.atoms;
 
-    auto  numAtomsInMolecule = std::accumulate(residueSizes.begin(), residueSizes.end(), 0);
+    auto numAtomsInMolecule = std::accumulate(residueSizes.begin(), residueSizes.end(), 0);
     init_t_atoms(&atoms, numAtomsInMolecule, FALSE);
     atoms.nres = residueSizes.size();
 
     // Fill the residues in the molecule type
-    int      residueIndex = 0;
-    auto     residueSize  = std::begin(residueSizes);
-    for (int i = 0;
-         i < atoms.nr && residueSize != std::end(residueSizes);
-         ++residueSize, ++residueIndex)
+    int  residueIndex = 0;
+    auto residueSize  = std::begin(residueSizes);
+    for (int i = 0; i < atoms.nr && residueSize != std::end(residueSizes); ++residueSize, ++residueIndex)
     {
-        for (int j = 0;
-             i < atoms.nr && j < *residueSize;
-             ++i, ++j)
+        for (int j = 0; i < atoms.nr && j < *residueSize; ++i, ++j)
         {
             atoms.atom[i].resind = residueIndex;
             atoms.atom[i].m      = (i % 3 == 0 ? 2.0 : 1.0);
@@ -254,9 +242,9 @@ void TopologyManager::setMoleculeBlock(const int moleculeBlockIndex,
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
 
-    auto &newMoleculeBlock = mtop_->molblock[moleculeBlockIndex];
-    newMoleculeBlock.type = moleculeTypeIndex;
-    newMoleculeBlock.nmol = numMoleculesToAdd;
+    auto& newMoleculeBlock = mtop_->molblock[moleculeBlockIndex];
+    newMoleculeBlock.type  = moleculeTypeIndex;
+    newMoleculeBlock.nmol  = numMoleculesToAdd;
 
     mtop_->natoms += numMoleculesToAdd * mtop_->moltype[moleculeTypeIndex].atoms.nr;
 }
@@ -273,7 +261,7 @@ void TopologyManager::finalizeTopology()
 void TopologyManager::initUniformResidues(int residueSize)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    t_atoms &atoms        = this->atoms();
+    t_atoms& atoms        = this->atoms();
     int      residueIndex = -1;
     for (int i = 0; i < atoms.nr; ++i)
     {
@@ -289,22 +277,23 @@ void TopologyManager::initUniformResidues(int residueSize)
 void TopologyManager::initUniformMolecules(int moleculeSize)
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
-    GMX_RELEASE_ASSERT(mtop_->molblock.size() == 1, "initUniformMolecules only implemented for a single molblock");
-    gmx_molblock_t &molblock = mtop_->molblock[0];
-    t_atoms        &atoms    = mtop_->moltype[molblock.type].atoms;
+    GMX_RELEASE_ASSERT(mtop_->molblock.size() == 1,
+                       "initUniformMolecules only implemented for a single molblock");
+    gmx_molblock_t& molblock = mtop_->molblock[0];
+    t_atoms&        atoms    = mtop_->moltype[molblock.type].atoms;
     GMX_RELEASE_ASSERT(atoms.nr % moleculeSize == 0,
                        "The number of atoms should be a multiple of moleculeSize");
-    molblock.nmol  = atoms.nr/moleculeSize;
+    molblock.nmol  = atoms.nr / moleculeSize;
     atoms.nr       = moleculeSize;
     const int nres = atoms.atom[atoms.nr].resind;
-    GMX_RELEASE_ASSERT(atoms.atom[atoms.nr-1].resind != nres,
+    GMX_RELEASE_ASSERT(atoms.atom[atoms.nr - 1].resind != nres,
                        "The residues should break at molecule boundaries");
     atoms.nres                 = nres;
     mtop_->haveMoleculeIndices = true;
     gmx_mtop_finalize(mtop_.get());
 }
 
-void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)
+void TopologyManager::initFrameIndices(const ArrayRef<const int>& index)
 {
     GMX_RELEASE_ASSERT(frame_ != nullptr, "Frame not initialized");
     GMX_RELEASE_ASSERT(!frame_->bIndex, "Frame atom indices can only be set once");
@@ -316,7 +305,7 @@ void TopologyManager::initFrameIndices(const ArrayRef<const int> &index)
     frame_->natoms = index.size();
 }
 
-t_atoms &TopologyManager::atoms()
+t_atoms& TopologyManager::atoms()
 {
     GMX_RELEASE_ASSERT(mtop_ != nullptr, "Topology not initialized");
     GMX_RELEASE_ASSERT(mtop_->natoms == mtop_->moltype[0].atoms.nr,

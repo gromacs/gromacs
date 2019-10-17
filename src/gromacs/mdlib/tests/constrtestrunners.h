@@ -57,18 +57,18 @@ namespace test
 
 /*! \brief Apply SHAKE constraints to the test data.
  */
-void applyShake(ConstraintsTestData *testData, t_pbc pbc);
+void applyShake(ConstraintsTestData* testData, t_pbc pbc);
 /*! \brief Apply LINCS constraints to the test data.
  */
-void applyLincs(ConstraintsTestData *testData, t_pbc pbc);
+void applyLincs(ConstraintsTestData* testData, t_pbc pbc);
 /*! \brief Apply CUDA version of LINCS constraints to the test data.
  *
  * All the data is copied to the GPU device, then LINCS is applied and
  * the resulting coordinates are copied back.
  */
-void applyLincsCuda(ConstraintsTestData *testData, t_pbc pbc);
+void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc);
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_CONSTRTESTRUNNERS_H

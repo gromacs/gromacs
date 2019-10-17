@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -103,21 +103,24 @@ namespace
 // a multidimensional array of extent 5 x 4 x 3 x 2 x 1, i.e. 120 elements
 
 //! View on int data with mixed static and dynamic extents
-using mdspan_int   = basic_mdspan < int, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic < int>>;
+using mdspan_int =
+        basic_mdspan<int, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic<int>>;
 
 TEST(MdSpanTest, MdSpanWrapsBasicMdSpanCorrectly)
 {
     // Check that mdspan wraps basic_mdspan as expected
-    ::testing::StaticAssertTypeEq < mdspan_int, mdspan < int, 5, dynamic_extent, 3, dynamic_extent, 1>>();
+    ::testing::StaticAssertTypeEq<mdspan_int, mdspan<int, 5, dynamic_extent, 3, dynamic_extent, 1>>();
 }
 
 //! View on float data with mixed static and dynamic extents
-using mdspan_float = basic_mdspan < float, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic < float>>;
+using mdspan_float =
+        basic_mdspan<float, extents<5, dynamic_extent, 3, dynamic_extent, 1>, layout_right, accessor_basic<float>>;
 //! Types to be tested
-using MdSpanTypes      = ::testing::Types < mdspan_int, mdspan_float>;
+using MdSpanTypes = ::testing::Types<mdspan_int, mdspan_float>;
 
 template<class ElementType, class Mapping>
-struct fill_raw_data {
+struct fill_raw_data
+{
     static void fill(ElementType* p, Mapping m)
     {
         typename Mapping::extents_type e = m.extents();
@@ -131,8 +134,9 @@ struct fill_raw_data {
                     {
                         for (ptrdiff_t i4 = 0; i4 < e.extent(4); i4++)
                         {
-                            p[i0*m.stride(0)+i1*m.stride(1)+i2*m.stride(2)+i3*m.stride(3)+i4*m.stride(4)] =
-                                ElementType(i0*10000+i1*1000+i2*100+i3*10+i4);
+                            p[i0 * m.stride(0) + i1 * m.stride(1) + i2 * m.stride(2)
+                              + i3 * m.stride(3) + i4 * m.stride(4)] =
+                                    ElementType(i0 * 10000 + i1 * 1000 + i2 * 100 + i3 * 10 + i4);
                         }
                     }
                 }
@@ -150,27 +154,27 @@ struct MdSpanTest : public ::testing::Test
     using accessor_type = typename mdspan_type::accessor_type;
     using pointer_type  = typename mdspan_type::pointer;
 
-    mdspan_type               my_mdspan_extents;
-    mdspan_type               my_mdspan_array;
-    mdspan_type               my_mdspan_mapping;
-    mdspan_type               my_mdspan_map_acc;
-    mdspan_type               my_mdspan_copy;
+    mdspan_type my_mdspan_extents;
+    mdspan_type my_mdspan_array;
+    mdspan_type my_mdspan_mapping;
+    mdspan_type my_mdspan_map_acc;
+    mdspan_type my_mdspan_copy;
 
     std::vector<element_type> rawData;
 
-    template<class ... ED>
-    void SetUp(ED ... e)
+    template<class... ED>
+    void SetUp(ED... e)
     {
-        mapping_type  map {extents_type(e ...)};
+        mapping_type  map{ extents_type(e...) };
         accessor_type acc;
         rawData.resize(map.required_span_size());
         fill_raw_data<element_type, mapping_type>::fill(rawData.data(), map);
-        pointer_type  p(rawData.data());
+        pointer_type p(rawData.data());
 
-        my_mdspan_array   = mdspan_type(p, std::array<ptrdiff_t, sizeof ... (ED)>({{e ...}}));
+        my_mdspan_array   = mdspan_type(p, std::array<ptrdiff_t, sizeof...(ED)>({ { e... } }));
         my_mdspan_mapping = mdspan_type(p, map);
         my_mdspan_map_acc = mdspan_type(p, map, acc);
-        my_mdspan_extents = mdspan_type(p, e ...);
+        my_mdspan_extents = mdspan_type(p, e...);
         my_mdspan_copy    = my_mdspan_mapping;
     }
 
@@ -188,10 +192,10 @@ struct MdSpanTest : public ::testing::Test
         EXPECT_EQ(my_mdspan_extents.rank_dynamic(), r);
         EXPECT_EQ(my_mdspan_copy.rank_dynamic(), r);
     }
-    template<class ... E>
-    void check_extents(E ... e)
+    template<class... E>
+    void check_extents(E... e)
     {
-        std::array<ptrdiff_t, extents_type::rank()> a {{e ...}};
+        std::array<ptrdiff_t, extents_type::rank()> a{ { e... } };
         for (size_t r = 0; r < extents_type::rank(); r++)
         {
             EXPECT_EQ(my_mdspan_mapping.extent(r), a[r]);
@@ -200,10 +204,10 @@ struct MdSpanTest : public ::testing::Test
             EXPECT_EQ(my_mdspan_copy.extent(r), a[r]);
         }
     }
-    template<class ... E>
-    void check_strides(E ... e)
+    template<class... E>
+    void check_strides(E... e)
     {
-        std::array<ptrdiff_t, extents_type::rank()> a {{e ...}};
+        std::array<ptrdiff_t, extents_type::rank()> a{ { e... } };
         for (size_t r = 0; r < extents_type::rank(); r++)
         {
             EXPECT_EQ(my_mdspan_mapping.stride(r), a[r]);
@@ -213,8 +217,13 @@ struct MdSpanTest : public ::testing::Test
         }
     }
 
-    void check_properties_internal(mdspan_type my_mdspan, bool always_unique, bool always_contiguous, bool always_strided,
-                                   bool unique, bool contiguous, bool strided)
+    void check_properties_internal(mdspan_type my_mdspan,
+                                   bool        always_unique,
+                                   bool        always_contiguous,
+                                   bool        always_strided,
+                                   bool        unique,
+                                   bool        contiguous,
+                                   bool        strided)
     {
         EXPECT_EQ(my_mdspan.is_always_unique(), always_unique);
         EXPECT_EQ(my_mdspan.is_always_contiguous(), always_contiguous);
@@ -224,13 +233,21 @@ struct MdSpanTest : public ::testing::Test
         EXPECT_EQ(my_mdspan.is_strided(), strided);
     }
 
-    void check_properties(bool always_unique, bool always_contiguous, bool always_strided,
-                          bool unique, bool contiguous, bool strided)
+    void check_properties(bool always_unique,
+                          bool always_contiguous,
+                          bool always_strided,
+                          bool unique,
+                          bool contiguous,
+                          bool strided)
     {
-        check_properties_internal(my_mdspan_mapping, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_map_acc, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_extents, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
-        check_properties_internal(my_mdspan_copy, always_unique, always_contiguous, always_strided, unique, contiguous, strided);
+        check_properties_internal(my_mdspan_mapping, always_unique, always_contiguous,
+                                  always_strided, unique, contiguous, strided);
+        check_properties_internal(my_mdspan_map_acc, always_unique, always_contiguous,
+                                  always_strided, unique, contiguous, strided);
+        check_properties_internal(my_mdspan_extents, always_unique, always_contiguous,
+                                  always_strided, unique, contiguous, strided);
+        check_properties_internal(my_mdspan_copy, always_unique, always_contiguous, always_strided,
+                                  unique, contiguous, strided);
     }
 
     void check_operator()
@@ -246,11 +263,11 @@ struct MdSpanTest : public ::testing::Test
                     {
                         for (ptrdiff_t i4 = 0; i4 < e.extent(4); i4++)
                         {
-                            element_type value = i0*10000+i1*1000+i2*100+i3*10+i4;
+                            element_type value = i0 * 10000 + i1 * 1000 + i2 * 100 + i3 * 10 + i4;
                             EXPECT_EQ(my_mdspan_mapping(i0, i1, i2, i3, i4), value);
                             EXPECT_EQ(my_mdspan_map_acc(i0, i1, i2, i3, i4), value);
                             EXPECT_EQ(my_mdspan_extents(i0, i1, i2, i3, i4), value);
-                            EXPECT_EQ(my_mdspan_copy   (i0, i1, i2, i3, i4), value);
+                            EXPECT_EQ(my_mdspan_copy(i0, i1, i2, i3, i4), value);
                         }
                     }
                 }
@@ -261,27 +278,32 @@ struct MdSpanTest : public ::testing::Test
 
 TYPED_TEST_CASE(MdSpanTest, MdSpanTypes);
 
-TYPED_TEST(MdSpanTest, Rank) {
+TYPED_TEST(MdSpanTest, Rank)
+{
     this->SetUp(4, 2);
     this->check_rank(5);
 }
 
-TYPED_TEST(MdSpanTest, DynamicRank) {
+TYPED_TEST(MdSpanTest, DynamicRank)
+{
     this->SetUp(4, 2);
     this->check_rank_dynamic(2);
 }
 
-TYPED_TEST(MdSpanTest, Extents) {
+TYPED_TEST(MdSpanTest, Extents)
+{
     this->SetUp(4, 2);
     this->check_extents(5, 4, 3, 2, 1);
 }
 
-TYPED_TEST(MdSpanTest, Strides) {
+TYPED_TEST(MdSpanTest, Strides)
+{
     this->SetUp(4, 2);
     this->check_strides(24, 6, 2, 1, 1);
 }
 
-TYPED_TEST(MdSpanTest, Properties) {
+TYPED_TEST(MdSpanTest, Properties)
+{
     this->SetUp(4, 2);
     const bool always_unique     = true;
     const bool always_contiguous = true;
@@ -292,7 +314,8 @@ TYPED_TEST(MdSpanTest, Properties) {
     this->check_properties(always_unique, always_contiguous, always_strided, unique, contiguous, strided);
 }
 
-TYPED_TEST(MdSpanTest, Operator) {
+TYPED_TEST(MdSpanTest, Operator)
+{
     this->SetUp(4, 2);
     this->check_operator();
 }

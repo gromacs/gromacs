@@ -73,14 +73,14 @@ enum class UnitCellType
  *
  * \param[in] type Centering type to get a name for.
  */
-const char *centerTypeNames(CenteringType type);
+const char* centerTypeNames(CenteringType type);
 
 /*! \brief
  * Get names for the different unit cell representation types.
  *
  * \param[in] type Unit cell type to get a name for.
  */
-const char *unitCellTypeNames(UnitCellType type);
+const char* unitCellTypeNames(UnitCellType type);
 
 } // namespace gmx
 

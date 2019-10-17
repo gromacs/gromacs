@@ -45,7 +45,7 @@
 
 #include <cstdlib>
 
-int glatnr(const int *global_atom_index, int i)
+int glatnr(const int* global_atom_index, int i)
 {
     int atnr;
 

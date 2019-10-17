@@ -50,11 +50,11 @@
 #include "pairlist.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
+#    include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
 #endif
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/gpuregiontimer.cuh"
+#    include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #endif
 
 namespace Nbnxm
@@ -85,34 +85,35 @@ struct gpu_timers_t
      */
     struct Interaction
     {
-        GpuRegionTimer pl_h2d;                  /**< timer for pair-list H2D transfers (l/nl, every PS step) */
-        bool           didPairlistH2D = false;  /**< true when a pair-list transfer has been done at this step */
-        GpuRegionTimer nb_k;                    /**< timer for non-bonded kernels (l/nl, every step)         */
-        GpuRegionTimer prune_k;                 /**< timer for the 1st pass list pruning kernel (l/nl, every PS step)   */
-        bool           didPrune = false;        /**< true when we timed pruning and the timings need to be accounted for */
-        GpuRegionTimer rollingPrune_k;          /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
-        bool           didRollingPrune = false; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+        GpuRegionTimer pl_h2d;       /**< timer for pair-list H2D transfers (l/nl, every PS step) */
+        bool didPairlistH2D = false; /**< true when a pair-list transfer has been done at this step */
+        GpuRegionTimer nb_k;         /**< timer for non-bonded kernels (l/nl, every step)         */
+        GpuRegionTimer prune_k; /**< timer for the 1st pass list pruning kernel (l/nl, every PS step) */
+        bool didPrune = false; /**< true when we timed pruning and the timings need to be accounted for */
+        GpuRegionTimer rollingPrune_k; /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
+        bool           didRollingPrune =
+                false; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
     };
 
     //! timer for atom data transfer (every PS step)
-    GpuRegionTimer                                                               atdat;
+    GpuRegionTimer atdat;
     //! timers for coordinate/force transfers (every step)
-    gmx::EnumerationArray<AtomLocality, XFTransfers>                             xf;
+    gmx::EnumerationArray<AtomLocality, XFTransfers> xf;
     //! timers for interaction related transfers
     gmx::EnumerationArray<InteractionLocality, Nbnxm::gpu_timers_t::Interaction> interaction;
 };
 
 struct gpu_plist
 {
-    int                        na_c;         /**< number of atoms per cluster                  */
+    int na_c; /**< number of atoms per cluster                  */
 
-    int                        nsci;         /**< size of sci, # of i clusters in the list     */
-    int                        sci_nalloc;   /**< allocation size of sci                       */
-    DeviceBuffer<nbnxn_sci_t>  sci;          /**< list of i-cluster ("super-clusters")         */
+    int                       nsci;       /**< size of sci, # of i clusters in the list     */
+    int                       sci_nalloc; /**< allocation size of sci                       */
+    DeviceBuffer<nbnxn_sci_t> sci;        /**< list of i-cluster ("super-clusters")         */
 
-    int                        ncj4;         /**< total # of 4*j clusters                      */
-    int                        cj4_nalloc;   /**< allocation size of cj4                       */
-    DeviceBuffer<nbnxn_cj4_t>  cj4;          /**< 4*j cluster list, contains j cluster number
+    int                       ncj4;          /**< total # of 4*j clusters                      */
+    int                       cj4_nalloc;    /**< allocation size of cj4                       */
+    DeviceBuffer<nbnxn_cj4_t> cj4;           /**< 4*j cluster list, contains j cluster number
                                                 and index into the i cluster list            */
     int                        nimask;       /**< # of 4*j clusters * # of warps               */
     int                        imask_nalloc; /**< allocation size of imask                     */
@@ -122,9 +123,9 @@ struct gpu_plist
     int                        excl_nalloc;  /**< allocation size of excl                      */
 
     /* parameter+variables for normal and rolling pruning */
-    bool             haveFreshList;          /**< true after search, indictes that initial pruning with outer prunning is needed */
-    int              rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
-    int              rollingPruningPart;     /**< the next part to which the roling pruning needs to be applied */
+    bool haveFreshList; /**< true after search, indictes that initial pruning with outer prunning is needed */
+    int  rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
+    int  rollingPruningPart; /**< the next part to which the roling pruning needs to be applied */
 };
 
 } // namespace Nbnxm

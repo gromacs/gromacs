@@ -60,25 +60,33 @@ class PmeCoordinateReceiverGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void gmx_unused *pmeStream, MPI_Comm gmx_unused comm, gmx::ArrayRef<PpRanks> gmx_unused ppRanks)
-    : impl_(nullptr)
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void gmx_unused* pmeStream,
+                                                   MPI_Comm gmx_unused    comm,
+                                                   gmx::ArrayRef<PpRanks> gmx_unused ppRanks) :
+    impl_(nullptr)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec gmx_unused *d_x)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec gmx_unused* d_x)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication initialization was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication initialization was called instead of the "
+               "correct implementation.");
 }
 
 void PmeCoordinateReceiverGpu::receiveCoordinatesFromPpCudaDirect(int gmx_unused ppRank)
 {
-    GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

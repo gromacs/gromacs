@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,19 +50,20 @@
 namespace gmx
 {
 
-template<class Layout, ptrdiff_t ... E_STATIC>
-struct LayoutTests {
+template<class Layout, ptrdiff_t... E_STATIC>
+struct LayoutTests
+{
 
-    typedef Layout layout_type;
-    typedef extents<E_STATIC...> extents_type;
+    typedef Layout                                          layout_type;
+    typedef extents<E_STATIC...>                            extents_type;
     typedef typename Layout::template mapping<extents_type> mapping_type;
 
     mapping_type my_mapping_explicit, my_mapping_copy;
 
-    template<class ... E>
-    LayoutTests(E ... e)
+    template<class... E>
+    LayoutTests(E... e)
     {
-        my_mapping_explicit = mapping_type(extents_type(e ...));
+        my_mapping_explicit = mapping_type(extents_type(e...));
         my_mapping_copy     = mapping_type(my_mapping_explicit);
     }
 
@@ -76,20 +77,20 @@ struct LayoutTests {
         EXPECT_EQ(my_mapping_explicit.extents().rank_dynamic(), r);
         EXPECT_EQ(my_mapping_copy.extents().rank_dynamic(), r);
     }
-    template<class ... E>
-    void check_extents(E ... e)
+    template<class... E>
+    void check_extents(E... e)
     {
-        std::array<ptrdiff_t, extents_type::rank()> a = {{e ...}};
+        std::array<ptrdiff_t, extents_type::rank()> a = { { e... } };
         for (size_t r = 0; r < extents_type::rank(); r++)
         {
             EXPECT_EQ(my_mapping_explicit.extents().extent(r), a[r]);
             EXPECT_EQ(my_mapping_copy.extents().extent(r), a[r]);
         }
     }
-    template<class ... E>
-    void check_strides(E ... e)
+    template<class... E>
+    void check_strides(E... e)
     {
-        std::array<ptrdiff_t, extents_type::rank()> a = {{e ...}};
+        std::array<ptrdiff_t, extents_type::rank()> a = { { e... } };
         for (size_t r = 0; r < extents_type::rank(); r++)
         {
             EXPECT_EQ(my_mapping_explicit.stride(r), a[r]);
@@ -102,8 +103,12 @@ struct LayoutTests {
         EXPECT_EQ(my_mapping_copy.required_span_size(), size);
     }
 
-    void check_properties(bool always_unique, bool always_contiguous, bool always_strided,
-                          bool unique, bool contiguous, bool strided)
+    void check_properties(bool always_unique,
+                          bool always_contiguous,
+                          bool always_strided,
+                          bool unique,
+                          bool contiguous,
+                          bool strided)
     {
         EXPECT_EQ(my_mapping_explicit.is_always_unique() ? 1 : 0, always_unique ? 1 : 0);
         EXPECT_EQ(my_mapping_explicit.is_always_contiguous() ? 1 : 0, always_contiguous ? 1 : 0);
@@ -119,16 +124,16 @@ struct LayoutTests {
         EXPECT_EQ(my_mapping_copy.is_strided() ? 1 : 0, strided ? 1 : 0);
     }
 
-    template<class ... E>
-    void check_operator(ptrdiff_t offset, E ... e)
+    template<class... E>
+    void check_operator(ptrdiff_t offset, E... e)
     {
-        EXPECT_EQ(my_mapping_explicit(e ...), offset);
-        EXPECT_EQ(my_mapping_copy(e ...), offset);
+        EXPECT_EQ(my_mapping_explicit(e...), offset);
+        EXPECT_EQ(my_mapping_copy(e...), offset);
     }
-
 };
 
-TEST(LayoutTests, LayoutRightConstruction) {
+TEST(LayoutTests, LayoutRightConstruction)
+{
     LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
 
     test.check_rank(5);
@@ -137,13 +142,15 @@ TEST(LayoutTests, LayoutRightConstruction) {
     test.check_strides(24, 6, 2, 1, 1);
 }
 
-TEST(LayoutTests, LayoutRightProperties) {
+TEST(LayoutTests, LayoutRightProperties)
+{
     LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
 
     test.check_properties(true, true, true, true, true, true);
 }
 
-TEST(LayoutTests, LayoutRightOperator) {
+TEST(LayoutTests, LayoutRightOperator)
+{
     LayoutTests<layout_right, 5, dynamic_extent, 3, dynamic_extent, 1> test(4, 2);
 
     test.check_operator(107, 4, 1, 2, 1, 0);

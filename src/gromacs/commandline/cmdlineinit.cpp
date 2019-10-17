@@ -73,7 +73,7 @@ namespace
 //! Global context instance initialized in initForCommandLine().
 std::unique_ptr<CommandLineProgramContext> g_commandLineContext;
 //! Global library data file finder that respects GMXLIB.
-std::unique_ptr<DataFileFinder>            g_libFileFinder;
+std::unique_ptr<DataFileFinder> g_libFileFinder;
 
 /*! \brief
  * Broadcasts command-line arguments to all ranks.
@@ -82,7 +82,7 @@ std::unique_ptr<DataFileFinder>            g_libFileFinder;
  * other rank than zero, but our code wants to parse them on each rank
  * separately.
  */
-void broadcastArguments(int *argc, char ***argv)
+void broadcastArguments(int* argc, char*** argv)
 {
     if (gmx_node_num() <= 1)
     {
@@ -93,14 +93,14 @@ void broadcastArguments(int *argc, char ***argv)
     const bool isMaster = (gmx_node_rank() == 0);
     if (!isMaster)
     {
-        snew(*argv, *argc+1);
+        snew(*argv, *argc + 1);
     }
     for (int i = 0; i < *argc; i++)
     {
         int len;
         if (isMaster)
         {
-            len = std::strlen((*argv)[i])+1;
+            len = std::strlen((*argv)[i]) + 1;
         }
         gmx_broadcast_world(sizeof(len), &len);
         if (!isMaster)
@@ -113,13 +113,12 @@ void broadcastArguments(int *argc, char ***argv)
 
 //! \}
 
-}   // namespace
+} // namespace
 
-CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
+CommandLineProgramContext& initForCommandLine(int* argc, char*** argv)
 {
     gmx::init(argc, argv);
-    GMX_RELEASE_ASSERT(!g_commandLineContext,
-                       "initForCommandLine() calls cannot be nested");
+    GMX_RELEASE_ASSERT(!g_commandLineContext, "initForCommandLine() calls cannot be nested");
     // TODO: Consider whether the argument broadcast would better be done
     // in CommandLineModuleManager.
     broadcastArguments(argc, argv);
@@ -131,7 +130,7 @@ CommandLineProgramContext &initForCommandLine(int *argc, char ***argv)
         g_libFileFinder->setSearchPathFromEnv("GMXLIB");
         setLibraryFileFinder(g_libFileFinder.get());
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
         printFatalErrorMessage(stderr, ex);
         std::exit(processExceptionAtExit(ex));
@@ -148,30 +147,30 @@ void finalizeForCommandLine()
     g_commandLineContext.reset();
 }
 
-int processExceptionAtExitForCommandLine(const std::exception &ex)
+int processExceptionAtExitForCommandLine(const std::exception& ex)
 {
     int rc = processExceptionAtExit(ex); // Currently this aborts for real MPI
     finalizeForCommandLine();            // thus this MPI_Finalize doesn't matter.
     return rc;
 }
 
-int runCommandLineModule(int argc, char *argv[],
-                         ICommandLineModule *module)
+int runCommandLineModule(int argc, char* argv[], ICommandLineModule* module)
 {
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, module);
 }
 
-int runCommandLineModule(
-        int argc, char *argv[], const char *name, const char *description,
-        std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory)
+int runCommandLineModule(int                                                         argc,
+                         char*                                                       argv[],
+                         const char*                                                 name,
+                         const char*                                                 description,
+                         std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory)
 {
-    return ICommandLineOptionsModule::runAsMain(
-            argc, argv, name, description, std::move(factory));
+    return ICommandLineOptionsModule::runAsMain(argc, argv, name, description, std::move(factory));
 }
 
 } // namespace gmx
 
-int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]))
+int gmx_run_cmain(int argc, char* argv[], int (*mainFunction)(int, char*[]))
 {
     return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, mainFunction);
 }

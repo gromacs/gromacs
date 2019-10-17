@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,7 +43,7 @@
 #include "gromacs/utility/real.h"
 
 /*Make range-array (Permutation identity) for sorting */
-void rangeArray(int *ar, int size)
+void rangeArray(int* ar, int size)
 {
     int i;
     for (i = 0; i < size; i++)
@@ -51,7 +52,7 @@ void rangeArray(int *ar, int size)
     }
 }
 
-static void pswap(int *v1, int *v2)
+static void pswap(int* v1, int* v2)
 {
     int temp;
     temp = *v1;
@@ -60,7 +61,7 @@ static void pswap(int *v1, int *v2)
 }
 
 
-static void Swap (real *v1, real *v2)
+static void Swap(real* v1, real* v2)
 {
     real temp;
     temp = *v1;
@@ -69,8 +70,7 @@ static void Swap (real *v1, real *v2)
 }
 
 
-
-void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction)
+void insertionSort(real* arr, int* perm, int startndx, int endndx, int direction)
 {
     int i, j;
 
@@ -82,13 +82,11 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 
             while (j > startndx && arr[j - 1] > arr[j])
             {
-                Swap(&arr[j], &arr[j-1]);
-                pswap(&perm[j], &perm[j-1]);
+                Swap(&arr[j], &arr[j - 1]);
+                pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
-
         }
-
     }
 
     if (direction < 0)
@@ -99,30 +97,29 @@ void insertionSort(real *arr, int *perm, int startndx, int endndx, int direction
 
             while (j > startndx && arr[j - 1] < arr[j])
             {
-                Swap(&arr[j], &arr[j-1]);
-                pswap(&perm[j], &perm[j-1]);
+                Swap(&arr[j], &arr[j - 1]);
+                pswap(&perm[j], &perm[j - 1]);
                 j--;
             }
-
         }
     }
 }
 
 
-int BinarySearch (const real *array, int low, int high, real key, int direction)
+int BinarySearch(const real* array, int low, int high, real key, int direction)
 {
     int iMid, iMax, iMin;
-    iMax = high+2;
-    iMin = low+1;
+    iMax = high + 2;
+    iMin = low + 1;
 
-/*Iterative implementation*/
+    /*Iterative implementation*/
 
     if (direction >= 0)
     {
-        while (iMax-iMin > 1)
+        while (iMax - iMin > 1)
         {
-            iMid = (iMin+iMax)>>1;
-            if (key < array[iMid-1])
+            iMid = (iMin + iMax) >> 1;
+            if (key < array[iMid - 1])
             {
                 iMax = iMid;
             }
@@ -135,10 +132,10 @@ int BinarySearch (const real *array, int low, int high, real key, int direction)
     }
     else
     {
-        while (iMax-iMin > 1)
+        while (iMax - iMin > 1)
         {
-            iMid = (iMin+iMax)>>1;
-            if (key > array[iMid-1])
+            iMid = (iMin + iMax) >> 1;
+            if (key > array[iMid - 1])
             {
                 iMax = iMid;
             }
@@ -147,20 +144,18 @@ int BinarySearch (const real *array, int low, int high, real key, int direction)
                 iMin = iMid;
             }
         }
-        return iMin-1;
+        return iMin - 1;
     }
 }
 
 
-int start_binsearch(real *array, int *perm, int low, int high,
-                    real key, int direction)
+int start_binsearch(real* array, int* perm, int low, int high, real key, int direction)
 {
     insertionSort(array, perm, low, high, direction);
     return BinarySearch(array, low, high, key, direction);
 }
 
-int LinearSearch (const double *array, int startindx, int stopindx,
-                  double key, int *count, int direction)
+int LinearSearch(const double* array, int startindx, int stopindx, double key, int* count, int direction)
 {
     /*Iterative implementation - assume elements sorted*/
     int i;
@@ -173,7 +168,7 @@ int LinearSearch (const double *array, int startindx, int stopindx,
             (*count)++;
             if (array[i] > key)
             {
-                keyindex = i-1;
+                keyindex = i - 1;
                 return keyindex;
             }
         }
@@ -185,7 +180,7 @@ int LinearSearch (const double *array, int startindx, int stopindx,
             (*count)++;
             if (array[i] > key)
             {
-                keyindex = i+1;
+                keyindex = i + 1;
                 return keyindex;
             }
         }

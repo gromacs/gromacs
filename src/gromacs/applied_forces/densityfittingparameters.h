@@ -60,27 +60,27 @@ namespace gmx
 struct DensityFittingParameters
 {
     //! Indicate if density fitting is active
-    bool                           active_ = false;
+    bool active_ = false;
     //! Indices of the atoms that shall be fit to the density
-    std::vector<index>             indices_;
+    std::vector<index> indices_;
     //! Determines how to measure similarity between simulated and reference density
     DensitySimilarityMeasureMethod similarityMeasureMethod_ = DensitySimilarityMeasureMethod::innerProduct;
     //! Determines with what weight atoms are spread
-    DensityFittingAmplitudeMethod  amplitudeLookupMethod_ = DensityFittingAmplitudeMethod::Unity;
+    DensityFittingAmplitudeMethod amplitudeLookupMethod_ = DensityFittingAmplitudeMethod::Unity;
     //! The force constant to be used for the density fitting
-    real                           forceConstant_ = 1e9;
+    real forceConstant_ = 1e9;
     //! The spreading width used for the gauss transform of atoms onto the density grid
-    real                           gaussianTransformSpreadingWidth_ = 0.2;
+    real gaussianTransformSpreadingWidth_ = 0.2;
     //! The spreading range for spreading atoms onto the grid in multiples of the spreading width
-    real                           gaussianTransformSpreadingRangeInMultiplesOfWidth_ = 4.0;
+    real gaussianTransformSpreadingRangeInMultiplesOfWidth_ = 4.0;
     //! Apply density fitting forces only every n-steps
-    std::int64_t                   calculationIntervalInSteps_ = 1;
+    std::int64_t calculationIntervalInSteps_ = 1;
     //! Normalize reference and simulated densities
-    bool                           normalizeDensities_ = true;
+    bool normalizeDensities_ = true;
     //! Perform adaptive force scaling during the simulation
-    bool                           adaptiveForceScaling_ = false;
+    bool adaptiveForceScaling_ = false;
     //! The time constant for the adaptive force scaling in ps
-    real                           adaptiveForceScalingTimeConstant_ = 4;
+    real adaptiveForceScalingTimeConstant_ = 4;
 };
 
 /*!\brief Check if two structs holding density fitting parameters are equal.
@@ -89,7 +89,7 @@ struct DensityFittingParameters
  * \param[in] rhs right hand side to be compared
  * \returns true if all elements in DensityFittingParameters are equal, else false
  */
-bool operator==(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs);
+bool operator==(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs);
 
 /*!\brief Check if two structs holding density fitting parameters are not equal.
  *
@@ -97,8 +97,8 @@ bool operator==(const DensityFittingParameters &lhs, const DensityFittingParamet
  * \param[in] rhs right hand side to be compared
  * \returns true if lhs is not equal rhs
  */
-bool operator!=(const DensityFittingParameters &lhs, const DensityFittingParameters &rhs);
+bool operator!=(const DensityFittingParameters& lhs, const DensityFittingParameters& rhs);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_APPLIED_FORCES_DENSITYFITTINGPARAMETERS_H

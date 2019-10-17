@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,35 +67,35 @@ namespace test
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
-extern const Simd4Real rSimd4_c0c1c2;    //!< c0,c1,c2 repeated
-extern const Simd4Real rSimd4_c3c4c5;    //!< c3,c4,c5 repeated
-extern const Simd4Real rSimd4_c6c7c8;    //!< c6,c7,c8 repeated
-extern const Simd4Real rSimd4_c3c0c4;    //!< c3,c0,c4 repeated
-extern const Simd4Real rSimd4_c4c6c8;    //!< c4,c6,c8 repeated
-extern const Simd4Real rSimd4_c7c2c3;    //!< c7,c2,c3 repeated
-extern const Simd4Real rSimd4_m0m1m2;    //!< -c0,-c1,-c2 repeated
-extern const Simd4Real rSimd4_m3m0m4;    //!< -c3,-c0,-c4 repeated
-extern const Simd4Real rSimd4_2p25;      //!< Value that rounds down.
-extern const Simd4Real rSimd4_3p75;      //!< Value that rounds up.
-extern const Simd4Real rSimd4_m2p25;     //!< Negative value that rounds up.
-extern const Simd4Real rSimd4_m3p75;     //!< Negative value that rounds down.
+#    if GMX_SIMD4_HAVE_REAL
+extern const Simd4Real rSimd4_c0c1c2; //!< c0,c1,c2 repeated
+extern const Simd4Real rSimd4_c3c4c5; //!< c3,c4,c5 repeated
+extern const Simd4Real rSimd4_c6c7c8; //!< c6,c7,c8 repeated
+extern const Simd4Real rSimd4_c3c0c4; //!< c3,c0,c4 repeated
+extern const Simd4Real rSimd4_c4c6c8; //!< c4,c6,c8 repeated
+extern const Simd4Real rSimd4_c7c2c3; //!< c7,c2,c3 repeated
+extern const Simd4Real rSimd4_m0m1m2; //!< -c0,-c1,-c2 repeated
+extern const Simd4Real rSimd4_m3m0m4; //!< -c3,-c0,-c4 repeated
+extern const Simd4Real rSimd4_2p25;   //!< Value that rounds down.
+extern const Simd4Real rSimd4_3p75;   //!< Value that rounds up.
+extern const Simd4Real rSimd4_m2p25;  //!< Negative value that rounds up.
+extern const Simd4Real rSimd4_m3p75;  //!< Negative value that rounds down.
 //! Three large floating-point values whose exponents are >32.
 extern const Simd4Real rSimd4_Exp;
 
-#if GMX_SIMD_HAVE_LOGICAL
+#        if GMX_SIMD_HAVE_LOGICAL
 extern const Simd4Real rSimd4_logicalA;         //!< Bit pattern to test logical ops
 extern const Simd4Real rSimd4_logicalB;         //!< Bit pattern to test logical ops
 extern const Simd4Real rSimd4_logicalResultOr;  //!< Result or bitwise 'or' of A and B
 extern const Simd4Real rSimd4_logicalResultAnd; //!< Result or bitwise 'and' of A and B
-#endif                                          // GMX_SIMD_HAVE_LOGICAL
+#        endif                                  // GMX_SIMD_HAVE_LOGICAL
 
-extern const Simd4Real rSimd4_Bits1;            //!< Pattern F0 repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits2;            //!< Pattern CC repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits3;            //!< Pattern C0 repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits4;            //!< Pattern 0C repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits5;            //!< Pattern FC repeated to fill single/double.
-extern const Simd4Real rSimd4_Bits6;            //!< Pattern 3C repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits1; //!< Pattern F0 repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits2; //!< Pattern CC repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits3; //!< Pattern C0 repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits4; //!< Pattern 0C repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits5; //!< Pattern FC repeated to fill single/double.
+extern const Simd4Real rSimd4_Bits6; //!< Pattern 3C repeated to fill single/double.
 
 /*! \internal
  * \brief
@@ -107,38 +107,36 @@ extern const Simd4Real rSimd4_Bits6;            //!< Pattern 3C repeated to fill
  */
 class Simd4Test : public SimdBaseTest
 {
-    public:
-        /*! \brief Compare two real SIMD4 variables for approximate equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD4 test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
-        ::testing::AssertionResult
-        compareSimd4RealUlp(const char * refExpr, const char * tstExpr,
-                            Simd4Real ref, Simd4Real tst);
+public:
+    /*! \brief Compare two real SIMD4 variables for approximate equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD4 test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
+    ::testing::AssertionResult
+    compareSimd4RealUlp(const char* refExpr, const char* tstExpr, Simd4Real ref, Simd4Real tst);
 
-        /*! \brief Compare two real SIMD4 variables for exact equality.
-         *
-         * This is an internal implementation routine. YOu should always use
-         * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
-         *
-         * This routine is designed according to the Google test specs, so the char
-         * strings will describe the arguments to the macro.
-         *
-         * The comparison is applied to each element, and it returns true if each element
-         * in the SIMD4 test variable is within the class tolerances of the corresponding
-         * reference element.
-         */
-        ::testing::AssertionResult
-        compareSimd4RealEq(const char * refExpr, const char * tstExpr,
-                           Simd4Real ref, Simd4Real tst);
+    /*! \brief Compare two real SIMD4 variables for exact equality.
+     *
+     * This is an internal implementation routine. YOu should always use
+     * GMX_EXPECT_SIMD4_REAL_NEAR() instead.
+     *
+     * This routine is designed according to the Google test specs, so the char
+     * strings will describe the arguments to the macro.
+     *
+     * The comparison is applied to each element, and it returns true if each element
+     * in the SIMD4 test variable is within the class tolerances of the corresponding
+     * reference element.
+     */
+    ::testing::AssertionResult
+    compareSimd4RealEq(const char* refExpr, const char* tstExpr, Simd4Real ref, Simd4Real tst);
 };
 
 /*! \brief Convert SIMD4 real to std::vector<real>.
@@ -152,7 +150,7 @@ std::vector<real> simd4Real2Vector(Simd4Real simd4);
  * If the vector is longer than SIMD4 width, only the first elements will be used.
  * If it is shorter, the contents will be repeated to fill the SIMD4 register.
  */
-Simd4Real   vector2Simd4Real(const std::vector<real> &v);
+Simd4Real vector2Simd4Real(const std::vector<real>& v);
 
 /*! \brief Set SIMD4 register contents from three real values.
  *
@@ -160,7 +158,7 @@ Simd4Real   vector2Simd4Real(const std::vector<real> &v);
  * is 4, but it simplifies the test organization when the SIMD and SIMD4 tests
  * are completely symmetric.
  */
-Simd4Real   setSimd4RealFrom3R(real r0, real r1, real r2);
+Simd4Real setSimd4RealFrom3R(real r0, real r1, real r2);
 
 /*! \brief Set SIMD4 register contents from single real value.
  *
@@ -168,21 +166,22 @@ Simd4Real   setSimd4RealFrom3R(real r0, real r1, real r2);
  * operation as simd4Set1(), but is implemented using only load/store
  * operations that have been tested separately in the bootstrapping tests.
  */
-Simd4Real   setSimd4RealFrom1R(real value);
+Simd4Real setSimd4RealFrom1R(real value);
 
 /*! \brief Test if a SIMD4 real is bitwise identical to reference SIMD4 value. */
-#define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst)   EXPECT_PRED_FORMAT2(compareSimd4RealEq, ref, tst)
+#        define GMX_EXPECT_SIMD4_REAL_EQ(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealEq, ref, tst)
 
 /*! \brief Test if a SIMD4 real is within tolerance of reference SIMD4 value. */
-#define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) EXPECT_PRED_FORMAT2(compareSimd4RealUlp, ref, tst)
+#        define GMX_EXPECT_SIMD4_REAL_NEAR(ref, tst) \
+            EXPECT_PRED_FORMAT2(compareSimd4RealUlp, ref, tst)
 
-#endif  // GMX_SIMD4_HAVE_REAL
+#    endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD
 

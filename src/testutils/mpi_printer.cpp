@@ -42,65 +42,71 @@
 
 #if GMX_LIB_MPI
 
-#include <memory>
-#include <sstream>
-#include <vector>
+#    include <memory>
+#    include <sstream>
+#    include <vector>
 
-#include <gtest/gtest.h>
+#    include <gtest/gtest.h>
 
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/gmxassert.h"
+#    include "gromacs/utility/classhelpers.h"
+#    include "gromacs/utility/gmxassert.h"
 
-#define FORWARD_TO_DEFAULT_PRINTER1(MethodName, Param1Type) \
-    virtual void MethodName(const Param1Type &param1) { \
-        if (rank_ == 0) { \
-            defaultPrinter_->MethodName(param1); \
-        } \
-    }
-#define FORWARD_TO_DEFAULT_PRINTER2(MethodName, Param1Type, Param2Type) \
-    virtual void MethodName(const Param1Type &param1, Param2Type param2) { \
-        if (rank_ == 0) { \
-            defaultPrinter_->MethodName(param1, param2); \
-        } \
-    }
+#    define FORWARD_TO_DEFAULT_PRINTER1(MethodName, Param1Type) \
+        virtual void MethodName(const Param1Type& param1)       \
+        {                                                       \
+            if (rank_ == 0)                                     \
+            {                                                   \
+                defaultPrinter_->MethodName(param1);            \
+            }                                                   \
+        }
+#    define FORWARD_TO_DEFAULT_PRINTER2(MethodName, Param1Type, Param2Type)  \
+        virtual void MethodName(const Param1Type& param1, Param2Type param2) \
+        {                                                                    \
+            if (rank_ == 0)                                                  \
+            {                                                                \
+                defaultPrinter_->MethodName(param1, param2);                 \
+            }                                                                \
+        }
 
 namespace
 {
 
 class MPIEventForward : public ::testing::TestEventListener
 {
-    public:
-        MPIEventForward(TestEventListener* defaultPrinter, int rank, int size)
-            : defaultPrinter_(defaultPrinter), rank_(rank), size_(size)
-        {
-        }
+public:
+    MPIEventForward(TestEventListener* defaultPrinter, int rank, int size) :
+        defaultPrinter_(defaultPrinter),
+        rank_(rank),
+        size_(size)
+    {
+    }
 
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationStart, ::testing::UnitTest, int);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpEnd, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseStart, ::testing::TestCase);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestStart, ::testing::TestInfo);
-        virtual void OnTestPartResult(const ::testing::TestPartResult & /*result*/)
-        {
-            // Do nothing; all printing is done in OnTestEnd().
-        }
-        virtual void OnTestEnd(const ::testing::TestInfo &test_info);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseEnd, ::testing::TestCase);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownStart, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownEnd, ::testing::UnitTest);
-        FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationEnd, ::testing::UnitTest, int);
-        FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationStart, ::testing::UnitTest, int);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsSetUpEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseStart, ::testing::TestCase);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestStart, ::testing::TestInfo);
+    virtual void OnTestPartResult(const ::testing::TestPartResult& /*result*/)
+    {
+        // Do nothing; all printing is done in OnTestEnd().
+    }
+    virtual void OnTestEnd(const ::testing::TestInfo& test_info);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestCaseEnd, ::testing::TestCase);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownStart, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER1(OnEnvironmentsTearDownEnd, ::testing::UnitTest);
+    FORWARD_TO_DEFAULT_PRINTER2(OnTestIterationEnd, ::testing::UnitTest, int);
+    FORWARD_TO_DEFAULT_PRINTER1(OnTestProgramEnd, ::testing::UnitTest);
 
-    private:
-        const std::unique_ptr<TestEventListener> defaultPrinter_;
-        int                                      rank_;
-        int                                      size_;
+private:
+    const std::unique_ptr<TestEventListener> defaultPrinter_;
+    int                                      rank_;
+    int                                      size_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(MPIEventForward);
+    GMX_DISALLOW_COPY_AND_ASSIGN(MPIEventForward);
 };
 
-void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
+void MPIEventForward::OnTestEnd(const ::testing::TestInfo& test_info)
 {
     // Serialize printing test results to stdout in rank order by
     // passing a flag in order from ranks 0 .. (n-1). Rank 0 does not
@@ -112,8 +118,8 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
     }
 
     // Now this rank can print
-    int localPassed                     = true;
-    const ::testing::TestResult *result = test_info.result();
+    int                          localPassed = true;
+    const ::testing::TestResult* result      = test_info.result();
     if (result->Failed())
     {
         // TODO: This sometimes races with the defaultPrinter_, but
@@ -167,12 +173,11 @@ void MPIEventForward::OnTestEnd(const ::testing::TestInfo &test_info)
             // This marks the current test failed, and modifies test_info
             // behind the scenes, so the default printer sees the test as
             // failed even if localPassed is true.
-            ADD_FAILURE() <<
-            "See AllFailingRanks for the rank IDs that failed. Only if "
-            "rank 0 was among those that failed, will there be some "
-            "accompanying information about the failure, and it will "
-            "pertain only to that rank. Run this test manually to get "
-            "more information.";
+            ADD_FAILURE() << "See AllFailingRanks for the rank IDs that failed. Only if "
+                             "rank 0 was among those that failed, will there be some "
+                             "accompanying information about the failure, and it will "
+                             "pertain only to that rank. Run this test manually to get "
+                             "more information.";
         }
     }
 }
@@ -193,17 +198,16 @@ void gmx::test::initMPIOutput()
         return;
     }
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    ::testing::UnitTest           &unit_test  = *::testing::UnitTest::GetInstance();
-    ::testing::TestEventListeners &listeners  = unit_test.listeners();
-    ::testing::TestEventListener  *defprinter =
-        listeners.Release(listeners.default_result_printer());
+    ::testing::UnitTest&           unit_test = *::testing::UnitTest::GetInstance();
+    ::testing::TestEventListeners& listeners = unit_test.listeners();
+    ::testing::TestEventListener* defprinter = listeners.Release(listeners.default_result_printer());
     listeners.Append(new MPIEventForward(defprinter, rank, size));
     if (0 != rank)
     {
         /* Permit only rank 0 to write to the single GTest XML file,
            by removing the generator on the other ranks. This
            suppresses races when writing that file. */
-        ::testing::TestEventListener *oldlistener = listeners.Release(listeners.default_xml_generator());
+        ::testing::TestEventListener* oldlistener = listeners.Release(listeners.default_xml_generator());
         delete oldlistener;
     }
 #endif

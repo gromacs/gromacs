@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ TEST(UnionFinderTest, LongLeftMerge)
 TEST(MappedUnionFinderTest, BasicMerges)
 {
     using ::testing::Each;
-    const int              mapping[] = {1, 1, 2, 2, 4, 6};
+    const int              mapping[] = { 1, 1, 2, 2, 4, 6 };
     gmx::MappedUnionFinder finder;
     finder.initWithGroupIndices(mapping);
     EXPECT_EQ(4U, finder.allSizes().size());

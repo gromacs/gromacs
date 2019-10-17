@@ -54,7 +54,7 @@ namespace gmx
 {
 class CpuInfo;
 class MDLogger;
-}
+} // namespace gmx
 
 struct gmx_mtop_t;
 struct interaction_const_t;
@@ -73,12 +73,14 @@ struct t_inputrec;
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  * \param[in]     cpuinfo  Information about the CPU(s)
  */
-void increaseNstlist(FILE *fplog, t_commrec *cr,
-                     t_inputrec *ir, int nstlistOnCmdline,
-                     const gmx_mtop_t *mtop,
-                     const matrix box,
-                     bool useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo &cpuinfo);
+void increaseNstlist(FILE*               fplog,
+                     t_commrec*          cr,
+                     t_inputrec*         ir,
+                     int                 nstlistOnCmdline,
+                     const gmx_mtop_t*   mtop,
+                     const matrix        box,
+                     bool                useOrEmulateGpuForNonbondeds,
+                     const gmx::CpuInfo& cpuinfo);
 
 /*! \brief Set up the dynamic pairlist pruning
  *
@@ -89,11 +91,11 @@ void increaseNstlist(FILE *fplog, t_commrec *cr,
  * \param[in]     ic               The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
-void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
-                                 const t_inputrec          *ir,
-                                 const gmx_mtop_t          *mtop,
+void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+                                 const t_inputrec*          ir,
+                                 const gmx_mtop_t*          mtop,
                                  matrix                     box,
-                                 const interaction_const_t *ic,
-                                 PairlistParams            *listParams);
+                                 const interaction_const_t* ic,
+                                 PairlistParams*            listParams);
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

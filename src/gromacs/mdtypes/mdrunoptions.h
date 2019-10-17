@@ -72,14 +72,14 @@ struct CheckpointOptions
     //! True means keep all checkpoint file and add the step number to the name
     gmx_bool keepAndNumberCheckpointFiles = FALSE;
     //! The period in minutes for writing checkpoint files
-    real     period = 15;
+    real period = 15;
 };
 
 //! \internal \brief Options for timing (parts of) mdrun
 struct TimingOptions
 {
     //! Reset timers at the start of this MD step, -1 means do not reset
-    int      resetStep = -1;
+    int resetStep = -1;
     //! If true, reset timers half-way the run
     gmx_bool resetHalfway = FALSE;
 };
@@ -88,7 +88,7 @@ struct TimingOptions
 struct ImdOptions
 {
     //! IMD listening port
-    int      port = 8888;
+    int port = 8888;
     //! If true, pause the simulation while no IMD client is connected
     gmx_bool wait = FALSE;
     //! If true, allow termination of the simulation from IMD client
@@ -101,33 +101,33 @@ struct ImdOptions
 struct MdrunOptions
 {
     //! Re-compute energies, and possibly forces, for frames from an input tracjectory
-    gmx_bool            rerun = FALSE;
+    gmx_bool rerun = FALSE;
     //! Re-construct virual sites durin a rerun simulation
-    gmx_bool            rerunConstructVsites = FALSE;
+    gmx_bool rerunConstructVsites = FALSE;
     //! Try to make the simulation binary reproducible
-    gmx_bool            reproducible = FALSE;
+    gmx_bool reproducible = FALSE;
     //! Write confout.gro at the end of the run
-    gmx_bool            writeConfout = TRUE;
+    gmx_bool writeConfout = TRUE;
     //! User option for appending.
-    AppendingBehavior   appendingBehavior = AppendingBehavior::Auto;
+    AppendingBehavior appendingBehavior = AppendingBehavior::Auto;
     //! Options for checkpointing th simulation
-    CheckpointOptions   checkpointOptions;
+    CheckpointOptions checkpointOptions;
     //! Number of steps to run, -2 is use inputrec, -1 is infinite
-    int64_t             numStepsCommandline = -2;
+    int64_t numStepsCommandline = -2;
     //! Maximum duration of this simulation in wall-clock hours, -1 is no limit
-    real                maximumHoursToRun = -1;
+    real maximumHoursToRun = -1;
     //! Options for timing the run
-    TimingOptions       timingOptions;
+    TimingOptions timingOptions;
     //! If true and supported, will tune the PP-PME load balance
-    gmx_bool            tunePme = TRUE;
+    gmx_bool tunePme = TRUE;
     //! True if the user explicitly set the -ntomp command line option
-    gmx_bool            ntompOptionIsSet = FALSE;
+    gmx_bool ntompOptionIsSet = FALSE;
     //! Options for IMD
-    ImdOptions          imdOptions;
+    ImdOptions imdOptions;
     //! Increase the verbosity level in the logging and/or stdout/stderr
-    gmx_bool            verbose = FALSE;
+    gmx_bool verbose = FALSE;
     //! If verbose=true, print remaining runtime at this step interval
-    int                 verboseStepPrintInterval = 100;
+    int verboseStepPrintInterval = 100;
 };
 
 } // end namespace gmx

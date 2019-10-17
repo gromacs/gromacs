@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,13 +41,13 @@
  */
 
 #ifndef GMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE
-#include "gmxpre.h"
+#    include "gmxpre.h"
 #endif
 
 #include "identifyavx512fmaunits.h"
 
 #ifndef GMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE
-#include "config.h"
+#    include "config.h"
 #endif
 
 #include <cstdint>
@@ -57,7 +57,7 @@
 #include <mutex>
 
 #ifndef GMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE
-#include "gromacs/hardware/cpuinfo.h"
+#    include "gromacs/hardware/cpuinfo.h"
 #endif
 
 namespace gmx
@@ -78,83 +78,83 @@ namespace
  *                   execute 12 FMA and 12 shuffle instructions.
  * \return Number of cycles used for the loop.
  */
-uint64_t
-timeFmaAndShuffleLoop(uint64_t loopCount)
+uint64_t timeFmaAndShuffleLoop(uint64_t loopCount)
 {
     uint64_t cycles;
     // Unfortunately we need to resort to inline ASM since we are
     // making a choice based on timing, and without efficient optimization
     // (e.g. when doing debugging) the usual intrinsics are often implemented
     // as independent load/store operations, which completely screws up timing.
-    __asm__ __volatile__("\tvpxord %%zmm0, %%zmm0, %%zmm0\n"
-                         "\tvmovaps %%zmm0, %%zmm1\n"
-                         "\tvmovaps %%zmm0, %%zmm2\n"
-                         "\tvmovaps %%zmm0, %%zmm3\n"
-                         "\tvmovaps %%zmm0, %%zmm4\n"
-                         "\tvmovaps %%zmm0, %%zmm5\n"
-                         "\tvmovaps %%zmm0, %%zmm6\n"
-                         "\tvmovaps %%zmm0, %%zmm7\n"
-                         "\tvmovaps %%zmm0, %%zmm8\n"
-                         "\tvmovaps %%zmm0, %%zmm9\n"
-                         "\tvmovaps %%zmm0, %%zmm10\n"
-                         "\tvmovaps %%zmm0, %%zmm11\n"
-                         "\tvpxord %%zmm12, %%zmm12, %%zmm12\n"
-                         "\tvmovaps %%zmm12, %%zmm13\n"
-                         "\tvmovaps %%zmm12, %%zmm14\n"
-                         "\tvmovaps %%zmm12, %%zmm15\n"
-                         "\tvmovaps %%zmm12, %%zmm16\n"
-                         "\tvmovaps %%zmm12, %%zmm17\n"
-                         "\tvmovaps %%zmm12, %%zmm18\n"
-                         "\tvmovaps %%zmm12, %%zmm19\n"
-                         "\tvmovaps %%zmm12, %%zmm20\n"
-                         "\tvmovaps %%zmm12, %%zmm21\n"
-                         "\tvmovaps %%zmm12, %%zmm22\n"
-                         "\tvmovaps %%zmm12, %%zmm23\n"
-                         "\tvmovaps %%zmm12, %%zmm30\n"
-                         "\trdtscp\n"
-                         "\tsalq $32, %%rdx\n"
-                         "\tmovl %%eax, %%eax\n"
-                         "\tmovq %%rdx, %%rbx\n"
-                         "\torq %%rax, %%rbx\n"
-                         "\tmovq %1, %%rdx\n"
-                         "1:\n"
-                         "\tvfmadd231pd %%zmm0, %%zmm0, %%zmm0\n"
-                         "\tvfmadd231pd %%zmm1, %%zmm1, %%zmm1\n"
-                         "\tvfmadd231pd %%zmm2, %%zmm2, %%zmm2\n"
-                         "\tvfmadd231pd %%zmm3, %%zmm3, %%zmm3\n"
-                         "\tvfmadd231pd %%zmm4, %%zmm4, %%zmm4\n"
-                         "\tvfmadd231pd %%zmm5, %%zmm5, %%zmm5\n"
-                         "\tvfmadd231pd %%zmm6, %%zmm6, %%zmm6\n"
-                         "\tvfmadd231pd %%zmm7, %%zmm7, %%zmm7\n"
-                         "\tvfmadd231pd %%zmm8, %%zmm8, %%zmm8\n"
-                         "\tvfmadd231pd %%zmm9, %%zmm9, %%zmm9\n"
-                         "\tvfmadd231pd %%zmm10, %%zmm10, %%zmm10\n"
-                         "\tvfmadd231pd %%zmm11, %%zmm11, %%zmm11\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm12\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm13\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm14\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm15\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm16\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm17\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm18\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm19\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm20\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm21\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm22\n"
-                         "\tvpermd %%zmm30, %%zmm30, %%zmm23\n"
-                         "\tdec %%rdx\n"
-                         "\tjg 1b\n"
-                         "\trdtscp\n"
-                         "\tsalq $32, %%rdx\n"
-                         "\tmovl %%eax, %%eax\n"
-                         "\torq %%rax, %%rdx\n"
-                         "\tsubq %%rbx, %%rdx\n"
-                         "\tmovq %%rdx, %0\n"
-                         : "=r" (cycles) : "r" (loopCount)
-                         : "rax", "rbx", "rcx", "rdx", "zmm0", "zmm1", "zmm2", "zmm3",
-                         "zmm4", "zmm5", "zmm6", "zmm7", "zmm8", "zmm9", "zmm10",
-                         "zmm11", "zmm12", "zmm13", "zmm14", "zmm15", "zmm16", "zmm17",
-                         "zmm18", "zmm19", "zmm20", "zmm21", "zmm22", "zmm23", "zmm30");
+    __asm__ __volatile__(
+            "\tvpxord %%zmm0, %%zmm0, %%zmm0\n"
+            "\tvmovaps %%zmm0, %%zmm1\n"
+            "\tvmovaps %%zmm0, %%zmm2\n"
+            "\tvmovaps %%zmm0, %%zmm3\n"
+            "\tvmovaps %%zmm0, %%zmm4\n"
+            "\tvmovaps %%zmm0, %%zmm5\n"
+            "\tvmovaps %%zmm0, %%zmm6\n"
+            "\tvmovaps %%zmm0, %%zmm7\n"
+            "\tvmovaps %%zmm0, %%zmm8\n"
+            "\tvmovaps %%zmm0, %%zmm9\n"
+            "\tvmovaps %%zmm0, %%zmm10\n"
+            "\tvmovaps %%zmm0, %%zmm11\n"
+            "\tvpxord %%zmm12, %%zmm12, %%zmm12\n"
+            "\tvmovaps %%zmm12, %%zmm13\n"
+            "\tvmovaps %%zmm12, %%zmm14\n"
+            "\tvmovaps %%zmm12, %%zmm15\n"
+            "\tvmovaps %%zmm12, %%zmm16\n"
+            "\tvmovaps %%zmm12, %%zmm17\n"
+            "\tvmovaps %%zmm12, %%zmm18\n"
+            "\tvmovaps %%zmm12, %%zmm19\n"
+            "\tvmovaps %%zmm12, %%zmm20\n"
+            "\tvmovaps %%zmm12, %%zmm21\n"
+            "\tvmovaps %%zmm12, %%zmm22\n"
+            "\tvmovaps %%zmm12, %%zmm23\n"
+            "\tvmovaps %%zmm12, %%zmm30\n"
+            "\trdtscp\n"
+            "\tsalq $32, %%rdx\n"
+            "\tmovl %%eax, %%eax\n"
+            "\tmovq %%rdx, %%rbx\n"
+            "\torq %%rax, %%rbx\n"
+            "\tmovq %1, %%rdx\n"
+            "1:\n"
+            "\tvfmadd231pd %%zmm0, %%zmm0, %%zmm0\n"
+            "\tvfmadd231pd %%zmm1, %%zmm1, %%zmm1\n"
+            "\tvfmadd231pd %%zmm2, %%zmm2, %%zmm2\n"
+            "\tvfmadd231pd %%zmm3, %%zmm3, %%zmm3\n"
+            "\tvfmadd231pd %%zmm4, %%zmm4, %%zmm4\n"
+            "\tvfmadd231pd %%zmm5, %%zmm5, %%zmm5\n"
+            "\tvfmadd231pd %%zmm6, %%zmm6, %%zmm6\n"
+            "\tvfmadd231pd %%zmm7, %%zmm7, %%zmm7\n"
+            "\tvfmadd231pd %%zmm8, %%zmm8, %%zmm8\n"
+            "\tvfmadd231pd %%zmm9, %%zmm9, %%zmm9\n"
+            "\tvfmadd231pd %%zmm10, %%zmm10, %%zmm10\n"
+            "\tvfmadd231pd %%zmm11, %%zmm11, %%zmm11\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm12\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm13\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm14\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm15\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm16\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm17\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm18\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm19\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm20\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm21\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm22\n"
+            "\tvpermd %%zmm30, %%zmm30, %%zmm23\n"
+            "\tdec %%rdx\n"
+            "\tjg 1b\n"
+            "\trdtscp\n"
+            "\tsalq $32, %%rdx\n"
+            "\tmovl %%eax, %%eax\n"
+            "\torq %%rax, %%rdx\n"
+            "\tsubq %%rbx, %%rdx\n"
+            "\tmovq %%rdx, %0\n"
+            : "=r"(cycles)
+            : "r"(loopCount)
+            : "rax", "rbx", "rcx", "rdx", "zmm0", "zmm1", "zmm2", "zmm3", "zmm4", "zmm5", "zmm6",
+              "zmm7", "zmm8", "zmm9", "zmm10", "zmm11", "zmm12", "zmm13", "zmm14", "zmm15", "zmm16",
+              "zmm17", "zmm18", "zmm19", "zmm20", "zmm21", "zmm22", "zmm23", "zmm30");
 
     return cycles;
 }
@@ -170,81 +170,81 @@ timeFmaAndShuffleLoop(uint64_t loopCount)
  *                   execute 12 FMA instructions.
  * \return Number of cycles used for the loop.
  */
-uint64_t
-timeFmaOnlyLoop(uint64_t loopCount)
+uint64_t timeFmaOnlyLoop(uint64_t loopCount)
 {
     uint64_t cycles;
     // Unfortunately we need to resort to inline ASM since we are
     // making a choice based on timing, and without efficient optimization
     // (e.g. when doing debugging) the usual intrinsics are often implemented
     // as independent load/store operations, which completely screws up timing.
-    __asm__ __volatile__("\tvpxord %%zmm0, %%zmm0, %%zmm0\n"
-                         "\tvmovaps %%zmm0, %%zmm1\n"
-                         "\tvmovaps %%zmm0, %%zmm2\n"
-                         "\tvmovaps %%zmm0, %%zmm3\n"
-                         "\tvmovaps %%zmm0, %%zmm4\n"
-                         "\tvmovaps %%zmm0, %%zmm5\n"
-                         "\tvmovaps %%zmm0, %%zmm6\n"
-                         "\tvmovaps %%zmm0, %%zmm7\n"
-                         "\tvmovaps %%zmm0, %%zmm8\n"
-                         "\tvmovaps %%zmm0, %%zmm9\n"
-                         "\tvmovaps %%zmm0, %%zmm10\n"
-                         "\tvmovaps %%zmm0, %%zmm11\n"
-                         "\trdtscp\n"
-                         "\tsalq $32, %%rdx\n"
-                         "\tmovl %%eax, %%eax\n"
-                         "\tmovq %%rdx, %%rbx\n"
-                         "\torq %%rax, %%rbx\n"
-                         "\tmovq %1, %%rdx\n"
-                         "1:\n"
-                         "\tvfmadd231pd %%zmm0, %%zmm0, %%zmm0\n"
-                         "\tvfmadd231pd %%zmm1, %%zmm1, %%zmm1\n"
-                         "\tvfmadd231pd %%zmm2, %%zmm2, %%zmm2\n"
-                         "\tvfmadd231pd %%zmm3, %%zmm3, %%zmm3\n"
-                         "\tvfmadd231pd %%zmm4, %%zmm4, %%zmm4\n"
-                         "\tvfmadd231pd %%zmm5, %%zmm5, %%zmm5\n"
-                         "\tvfmadd231pd %%zmm6, %%zmm6, %%zmm6\n"
-                         "\tvfmadd231pd %%zmm7, %%zmm7, %%zmm7\n"
-                         "\tvfmadd231pd %%zmm8, %%zmm8, %%zmm8\n"
-                         "\tvfmadd231pd %%zmm9, %%zmm9, %%zmm9\n"
-                         "\tvfmadd231pd %%zmm10, %%zmm10, %%zmm10\n"
-                         "\tvfmadd231pd %%zmm11, %%zmm11, %%zmm11\n"
-                         "\tdec %%rdx\n"
-                         "\tjg 1b\n"
-                         "\trdtscp\n"
-                         "\tsalq $32, %%rdx\n"
-                         "\tmovl %%eax, %%eax\n"
-                         "\torq %%rax, %%rdx\n"
-                         "\tsubq %%rbx, %%rdx\n"
-                         "\tmovq %%rdx, %0\n"
-                         : "=r" (cycles) : "r" (loopCount)
-                         : "rax", "rbx", "rcx", "rdx", "zmm0", "zmm1", "zmm2", "zmm3",
-                         "zmm4", "zmm5", "zmm6", "zmm7", "zmm8", "zmm9", "zmm10", "zmm11");
+    __asm__ __volatile__(
+            "\tvpxord %%zmm0, %%zmm0, %%zmm0\n"
+            "\tvmovaps %%zmm0, %%zmm1\n"
+            "\tvmovaps %%zmm0, %%zmm2\n"
+            "\tvmovaps %%zmm0, %%zmm3\n"
+            "\tvmovaps %%zmm0, %%zmm4\n"
+            "\tvmovaps %%zmm0, %%zmm5\n"
+            "\tvmovaps %%zmm0, %%zmm6\n"
+            "\tvmovaps %%zmm0, %%zmm7\n"
+            "\tvmovaps %%zmm0, %%zmm8\n"
+            "\tvmovaps %%zmm0, %%zmm9\n"
+            "\tvmovaps %%zmm0, %%zmm10\n"
+            "\tvmovaps %%zmm0, %%zmm11\n"
+            "\trdtscp\n"
+            "\tsalq $32, %%rdx\n"
+            "\tmovl %%eax, %%eax\n"
+            "\tmovq %%rdx, %%rbx\n"
+            "\torq %%rax, %%rbx\n"
+            "\tmovq %1, %%rdx\n"
+            "1:\n"
+            "\tvfmadd231pd %%zmm0, %%zmm0, %%zmm0\n"
+            "\tvfmadd231pd %%zmm1, %%zmm1, %%zmm1\n"
+            "\tvfmadd231pd %%zmm2, %%zmm2, %%zmm2\n"
+            "\tvfmadd231pd %%zmm3, %%zmm3, %%zmm3\n"
+            "\tvfmadd231pd %%zmm4, %%zmm4, %%zmm4\n"
+            "\tvfmadd231pd %%zmm5, %%zmm5, %%zmm5\n"
+            "\tvfmadd231pd %%zmm6, %%zmm6, %%zmm6\n"
+            "\tvfmadd231pd %%zmm7, %%zmm7, %%zmm7\n"
+            "\tvfmadd231pd %%zmm8, %%zmm8, %%zmm8\n"
+            "\tvfmadd231pd %%zmm9, %%zmm9, %%zmm9\n"
+            "\tvfmadd231pd %%zmm10, %%zmm10, %%zmm10\n"
+            "\tvfmadd231pd %%zmm11, %%zmm11, %%zmm11\n"
+            "\tdec %%rdx\n"
+            "\tjg 1b\n"
+            "\trdtscp\n"
+            "\tsalq $32, %%rdx\n"
+            "\tmovl %%eax, %%eax\n"
+            "\torq %%rax, %%rdx\n"
+            "\tsubq %%rbx, %%rdx\n"
+            "\tmovq %%rdx, %0\n"
+            : "=r"(cycles)
+            : "r"(loopCount)
+            : "rax", "rbx", "rcx", "rdx", "zmm0", "zmm1", "zmm2", "zmm3", "zmm4", "zmm5", "zmm6",
+              "zmm7", "zmm8", "zmm9", "zmm10", "zmm11");
 
     return cycles;
 }
 
-bool
-checkDualAvx512FmaUnits()
+bool checkDualAvx512FmaUnits()
 {
-    uint64_t timeFmaAndShuf = static_cast<uint64_t>(1e9);             // Large value
+    uint64_t timeFmaAndShuf = static_cast<uint64_t>(1e9); // Large value
 
     // Make sure the CPU is in AVX512 mode by executing a fairly long loop.
     // Use the return value to make sure it is not optimized away. Later invocations
     // use fewer iterations, so they should always be faster.
-    uint64_t timeFmaOnly    = timeFmaOnlyLoop(100000);
+    uint64_t timeFmaOnly = timeFmaOnlyLoop(100000);
 
     // Execute the loops three times
     for (int i = 0; i < 3; i++)
     {
-        timeFmaAndShuf = std::min(timeFmaAndShuf, timeFmaAndShuffleLoop(1000) );
-        timeFmaOnly    = std::min(timeFmaOnly, timeFmaOnlyLoop(1000) );
+        timeFmaAndShuf = std::min(timeFmaAndShuf, timeFmaAndShuffleLoop(1000));
+        timeFmaOnly    = std::min(timeFmaOnly, timeFmaOnlyLoop(1000));
     }
 
     return timeFmaAndShuf > 1.5 * timeFmaOnly;
 }
 
-#endif  // GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
+#endif // GMX_X86_GCC_INLINE_ASM && SIMD_AVX_512_CXX_SUPPORTED
 
 
 /*! \brief Mutex to guard the execution of the timing test
@@ -254,17 +254,16 @@ checkDualAvx512FmaUnits()
  */
 std::mutex initMutex;
 
-}   // namespace
+} // namespace
 
-int
-identifyAvx512FmaUnits()
+int identifyAvx512FmaUnits()
 {
     static bool initialized = false;
     static int  result      = 0;
 
     if (!initialized)
     {
-        std::lock_guard<std::mutex>  lock(initMutex);
+        std::lock_guard<std::mutex> lock(initMutex);
 
         if (!initialized)
         {
@@ -298,8 +297,7 @@ identifyAvx512FmaUnits()
 } // namespace gmx
 
 #ifdef GMX_IDENTIFY_AVX512_FMA_UNITS_STANDALONE
-int
-main()
+int main()
 {
     printf("%d\n", gmx::identifyAvx512FmaUnits());
     return 0;

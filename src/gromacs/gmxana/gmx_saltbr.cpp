@@ -53,15 +53,16 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    char *label;
+typedef struct
+{
+    char* label;
     int   cg;
     real  q;
 } t_charge;
 
-static t_charge *mk_charge(const t_atoms *atoms, int *nncg)
+static t_charge* mk_charge(const t_atoms* atoms, int* nncg)
 {
-    t_charge *cg = nullptr;
+    t_charge* cg = nullptr;
     char      buf[32];
     int       i, ncg, resnr, anr;
     real      qq;
@@ -73,15 +74,12 @@ static t_charge *mk_charge(const t_atoms *atoms, int *nncg)
         qq = atoms->atom[i].q;
         if (std::abs(qq) > 1.0e-5)
         {
-            srenew(cg, ncg+1);
+            srenew(cg, ncg + 1);
             cg[ncg].q  = qq;
             cg[ncg].cg = i;
             anr        = i;
             resnr      = atoms->atom[anr].resind;
-            sprintf(buf, "%s%d-%d",
-                    *(atoms->resinfo[resnr].name),
-                    atoms->resinfo[resnr].nr,
-                    anr+1);
+            sprintf(buf, "%s%d-%d", *(atoms->resinfo[resnr].name), atoms->resinfo[resnr].nr, anr + 1);
             cg[ncg].label = gmx_strdup(buf);
             ncg++;
         }
@@ -90,8 +88,7 @@ static t_charge *mk_charge(const t_atoms *atoms, int *nncg)
 
     for (i = 0; (i < ncg); i++)
     {
-        printf("CG: %10s Q: %6g  Atoms:",
-               cg[i].label, cg[i].q);
+        printf("CG: %10s Q: %6g  Atoms:", cg[i].label, cg[i].q);
         printf(" %4d", cg[i].cg);
         printf("\n");
     }
@@ -99,62 +96,61 @@ static t_charge *mk_charge(const t_atoms *atoms, int *nncg)
     return cg;
 }
 
-int gmx_saltbr(int argc, char *argv[])
+int gmx_saltbr(int argc, char* argv[])
 {
-    const char     *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] plots the distance between all combination of charged groups",
         "as a function of time. The groups are combined in different ways.",
         "A minimum distance can be given (i.e. a cut-off), such that groups",
         "that are never closer than that distance will not be plotted.[PAR]",
         "Output will be in a number of fixed filenames, [TT]min-min.xvg[tt], [TT]plus-min.xvg[tt]",
         "and [TT]plus-plus.xvg[tt], or files for every individual ion pair if the [TT]-sep[tt]",
-        "option is selected. In this case, files are named as [TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
+        "option is selected. In this case, files are named as ",
+        "[TT]sb-(Resname)(Resnr)-(Atomnr)[tt].",
         "There may be [BB]many[bb] such files."
     };
     static gmx_bool bSep     = FALSE;
     static real     truncate = 1000.0;
-    t_pargs         pa[]     = {
-        { "-t",   FALSE, etREAL, {&truncate},
-          "Groups that are never closer than this distance are not plotted" },
-        { "-sep", FALSE, etBOOL, {&bSep},
-          "Use separate files for each interaction (may be MANY)" }
-    };
-    t_filenm        fnm[] = {
-        { efTRX, "-f",  nullptr, ffREAD },
-        { efTPR, nullptr,  nullptr, ffREAD },
+    t_pargs         pa[]     = { { "-t",
+                       FALSE,
+                       etREAL,
+                       { &truncate },
+                       "Groups that are never closer than this distance are not plotted" },
+                     { "-sep",
+                       FALSE,
+                       etBOOL,
+                       { &bSep },
+                       "Use separate files for each interaction (may be MANY)" } };
+    t_filenm        fnm[]    = {
+        { efTRX, "-f", nullptr, ffREAD },
+        { efTPR, nullptr, nullptr, ffREAD },
     };
 #define NFILE asize(fnm)
 
-    FILE              *out[3], *fp;
-    static const char *title[3] = {
-        "Distance between positively charged groups",
-        "Distance between negatively charged groups",
-        "Distance between oppositely charged groups"
-    };
-    static const char *fn[3] = {
-        "plus-plus.xvg",
-        "min-min.xvg",
-        "plus-min.xvg"
-    };
-    int                nset[3] = {0, 0, 0};
+    FILE *             out[3], *fp;
+    static const char* title[3] = { "Distance between positively charged groups",
+                                    "Distance between negatively charged groups",
+                                    "Distance between oppositely charged groups" };
+    static const char* fn[3]    = { "plus-plus.xvg", "min-min.xvg", "plus-min.xvg" };
+    int                nset[3]  = { 0, 0, 0 };
 
-    t_topology        *top;
-    int                ePBC;
-    char              *buf;
-    t_trxstatus       *status;
-    int                i, j, k, m, nnn, teller, ncg;
-    real               t, *time, qi, qj;
-    t_charge          *cg;
-    real            ***cgdist;
-    int              **nWithin;
+    t_topology*  top;
+    int          ePBC;
+    char*        buf;
+    t_trxstatus* status;
+    int          i, j, k, m, nnn, teller, ncg;
+    real         t, *time, qi, qj;
+    t_charge*    cg;
+    real***      cgdist;
+    int**        nWithin;
 
-    t_pbc              pbc;
-    rvec              *x;
-    matrix             box;
-    gmx_output_env_t  *oenv;
+    t_pbc             pbc;
+    rvec*             x;
+    matrix            box;
+    gmx_output_env_t* oenv;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -175,16 +171,16 @@ int gmx_saltbr(int argc, char *argv[])
     time   = nullptr;
     do
     {
-        srenew(time, teller+1);
+        srenew(time, teller + 1);
         time[teller] = t;
 
         set_pbc(&pbc, ePBC, box);
 
         for (i = 0; (i < ncg); i++)
         {
-            for (j = i+1; (j < ncg); j++)
+            for (j = i + 1; (j < ncg); j++)
             {
-                srenew(cgdist[i][j], teller+1);
+                srenew(cgdist[i][j], teller + 1);
                 rvec dx;
                 pbc_dx(&pbc, x[cg[i].cg], x[cg[j].cg], dx);
                 cgdist[i][j][teller] = norm(dx);
@@ -196,8 +192,7 @@ int gmx_saltbr(int argc, char *argv[])
         }
 
         teller++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trx(status);
 
@@ -206,7 +201,7 @@ int gmx_saltbr(int argc, char *argv[])
         snew(buf, 256);
         for (i = 0; (i < ncg); i++)
         {
-            for (j = i+1; (j < ncg); j++)
+            for (j = i + 1; (j < ncg); j++)
             {
                 if (nWithin[i][j])
                 {
@@ -234,17 +229,17 @@ int gmx_saltbr(int argc, char *argv[])
         for (i = 0; (i < ncg); i++)
         {
             qi = cg[i].q;
-            for (j = i+1; (j < ncg); j++)
+            for (j = i + 1; (j < ncg); j++)
             {
                 qj = cg[j].q;
                 if (nWithin[i][j])
                 {
                     sprintf(buf, "%s:%s", cg[i].label, cg[j].label);
-                    if (qi*qj < 0)
+                    if (qi * qj < 0)
                     {
                         nnn = 2;
                     }
-                    else if (qi+qj > 0)
+                    else if (qi + qj > 0)
                     {
                         nnn = 0;
                     }
@@ -269,7 +264,7 @@ int gmx_saltbr(int argc, char *argv[])
                         }
                     }
                     nset[nnn]++;
-                    nWithin[i][j] = nnn+1;
+                    nWithin[i][j] = nnn + 1;
                 }
             }
         }
@@ -282,12 +277,12 @@ int gmx_saltbr(int argc, char *argv[])
 
             for (i = 0; (i < ncg); i++)
             {
-                for (j = i+1; (j < ncg); j++)
+                for (j = i + 1; (j < ncg); j++)
                 {
                     nnn = nWithin[i][j];
                     if (nnn > 0)
                     {
-                        fprintf(out[nnn-1], "  %10g", cgdist[i][j][k]);
+                        fprintf(out[nnn - 1], "  %10g", cgdist[i][j][k]);
                     }
                 }
             }

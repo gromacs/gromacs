@@ -59,10 +59,9 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
-int gmx_nmtraj(int argc, char *argv[])
+int gmx_nmtraj(int argc, char* argv[])
 {
-    const char *desc[] =
-    {
+    const char* desc[] = {
         "[THISMODULE] generates an virtual trajectory from an eigenvector, ",
         "corresponding to a harmonic Cartesian oscillation around the average ",
         "structure. The eigenvectors should normally be mass-weighted, but you can ",
@@ -74,81 +73,77 @@ int gmx_nmtraj(int argc, char *argv[])
         "assuming equipartition of the energy over all modes. To make the motion clearly visible ",
         "in PyMol you might want to amplify it by setting an unrealistically high temperature. ",
         "However, be aware that both the linear Cartesian displacements and mass weighting will ",
-        "lead to serious structure deformation for high amplitudes - this is is simply a limitation ",
-        "of the Cartesian normal mode model. By default the selected eigenvector is set to 7, since ",
+        "lead to serious structure deformation for high amplitudes - this is is simply a ",
+        "limitation of the Cartesian normal mode model. By default the selected eigenvector ",
+        "is set to 7, since ",
         "the first six normal modes are the translational and rotational degrees of freedom."
     };
 
     static real        refamplitude = 0.25;
     static int         nframes      = 30;
     static real        temp         = 300.0;
-    static const char *eignrvec     = "7";
-    static const char *phasevec     = "0.0";
+    static const char* eignrvec     = "7";
+    static const char* phasevec     = "0.0";
 
-    t_pargs            pa[] =
-    {
-        { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
-        { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
-        { "-temp",      FALSE, etREAL, {&temp},      "Temperature (K)" },
-        { "-amplitude", FALSE, etREAL, {&refamplitude}, "Amplitude for modes with eigenvalue<=0" },
-        { "-nframes",   FALSE, etINT,  {&nframes},   "Number of frames to generate" }
+    t_pargs pa[] = {
+        { "-eignr", FALSE, etSTR, { &eignrvec }, "String of eigenvectors to use (first is 1)" },
+        { "-phases", FALSE, etSTR, { &phasevec }, "String of phases (default is 0.0)" },
+        { "-temp", FALSE, etREAL, { &temp }, "Temperature (K)" },
+        { "-amplitude", FALSE, etREAL, { &refamplitude }, "Amplitude for modes with eigenvalue<=0" },
+        { "-nframes", FALSE, etINT, { &nframes }, "Number of frames to generate" }
     };
 
 #define NPA asize(pa)
 
-    t_trxstatus      *out;
-    t_topology        top;
-    int               ePBC;
-    t_atoms          *atoms;
-    rvec             *xtop, *xref, *xav, *xout;
-    int               nvec, *eignr = nullptr;
-    rvec            **eigvec = nullptr;
-    matrix            box;
-    int               natoms;
-    int               i, j, k, kmode, d;
-    gmx_bool          bDMR, bDMA, bFit;
+    t_trxstatus* out;
+    t_topology   top;
+    int          ePBC;
+    t_atoms*     atoms;
+    rvec *       xtop, *xref, *xav, *xout;
+    int          nvec, *eignr = nullptr;
+    rvec**       eigvec = nullptr;
+    matrix       box;
+    int          natoms;
+    int          i, j, k, kmode, d;
+    gmx_bool     bDMR, bDMA, bFit;
 
-    real        *     eigval;
-    int        *      dummy;
-    real        *     invsqrtm;
-    int              *out_eigidx;
-    rvec        *     this_eigvec;
+    real*             eigval;
+    int*              dummy;
+    real*             invsqrtm;
+    int*              out_eigidx;
+    rvec*             this_eigvec;
     real              omega, Ekin, m, vel;
-    real             *amplitude;
-    gmx_output_env_t *oenv;
+    real*             amplitude;
+    gmx_output_env_t* oenv;
 
-    t_filenm          fnm[] =
-    {
-        { efTPS, nullptr,    nullptr,          ffREAD },
-        { efTRN, "-v",    "eigenvec",    ffREAD  },
-        { efTRO, "-o",    "nmtraj",      ffWRITE }
-    };
+    t_filenm fnm[] = { { efTPS, nullptr, nullptr, ffREAD },
+                       { efTRN, "-v", "eigenvec", ffREAD },
+                       { efTRO, "-o", "nmtraj", ffWRITE } };
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
-    read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit,
-                      &xref, &bDMR, &xav, &bDMA, &nvec, &eignr, &eigvec, &eigval);
+    read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit, &xref, &bDMR, &xav, &bDMA, &nvec,
+                      &eignr, &eigvec, &eigval);
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
 
     /* Find vectors and phases */
 
     std::vector<int> imodes;
-    for (const auto &imodeString : gmx::splitString(eignrvec))
+    for (const auto& imodeString : gmx::splitString(eignrvec))
     {
         imodes.emplace_back(gmx::fromStdString<int>(imodeString));
     }
-    int               nmodes = gmx::ssize(imodes);
+    int nmodes = gmx::ssize(imodes);
 
     std::vector<real> phases;
     phases.reserve(nmodes);
-    for (const auto &phaseString : gmx::splitString(phasevec))
+    for (const auto& phaseString : gmx::splitString(phasevec))
     {
         phases.emplace_back(gmx::fromStdString<int>(phaseString));
     }
@@ -161,7 +156,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     if (nmodes > nphases)
     {
-        printf("Warning: Setting phase of last %d modes to zero...\n", nmodes-nphases);
+        printf("Warning: Setting phase of last %d modes to zero...\n", nmodes - nphases);
         phases.resize(nmodes, 0);
     }
 
@@ -231,12 +226,12 @@ int gmx_nmtraj(int argc, char *argv[])
         kmode       = out_eigidx[i];
         this_eigvec = eigvec[kmode];
 
-        if ( (kmode >= 6) && (eigval[kmode] > 0))
+        if ((kmode >= 6) && (eigval[kmode] > 0))
         {
             /* Derive amplitude from temperature and eigenvalue if we can */
 
             /* Convert eigenvalue to angular frequency, in units s^(-1) */
-            omega = std::sqrt(eigval[kmode]*1.0E21/(AVOGADRO*AMU));
+            omega = std::sqrt(eigval[kmode] * 1.0E21 / (AVOGADRO * AMU));
             /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
              * The velocity is thus:
              *
@@ -258,18 +253,18 @@ int gmx_nmtraj(int argc, char *argv[])
                 m = atoms->atom[k].m;
                 for (d = 0; d < DIM; d++)
                 {
-                    vel   = omega*this_eigvec[k][d];
-                    Ekin += 0.5*0.5*m*vel*vel;
+                    vel = omega * this_eigvec[k][d];
+                    Ekin += 0.5 * 0.5 * m * vel * vel;
                 }
             }
 
             /* Convert Ekin from amu*(nm/s)^2 to J, i.e., kg*(m/s)^2
              * This will also be proportional to A^2
              */
-            Ekin *= AMU*1E-18;
+            Ekin *= AMU * 1E-18;
 
             /* Set the amplitude so the energy is kT/2 */
-            amplitude[i] = std::sqrt(0.5*BOLTZMANN*temp/Ekin);
+            amplitude[i] = std::sqrt(0.5 * BOLTZMANN * temp / Ekin);
         }
         else
         {
@@ -285,7 +280,7 @@ int gmx_nmtraj(int argc, char *argv[])
 
     for (i = 0; i < nframes; i++)
     {
-        real fraction = static_cast<real>(i)/static_cast<real>(nframes);
+        real fraction = static_cast<real>(i) / static_cast<real>(nframes);
         for (j = 0; j < natoms; j++)
         {
             copy_rvec(xav[j], xout[j]);
@@ -300,7 +295,8 @@ int gmx_nmtraj(int argc, char *argv[])
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    xout[j][d] += amplitude[k]*std::sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
+                    xout[j][d] += amplitude[k] * std::sin(2 * M_PI * (fraction + phases[k] / 360.0))
+                                  * this_eigvec[j][d];
                 }
             }
         }

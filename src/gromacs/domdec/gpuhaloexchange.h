@@ -59,68 +59,63 @@ namespace gmx
 class GpuHaloExchange
 {
 
-    public:
-        /*! \brief Creates GPU Halo Exchange object.
-         *
-         * Coordinate Halo exchange will be performed in \c
-         * StreamNonLocal, and the \c communicateHaloCoordinates
-         * method must be called before any subsequent operations that
-         * access non-local parts of the coordinate buffer (such as
-         * the non-local non-bonded kernels). It also must be called
-         * after the local coordinates buffer operations (where the
-         * coordinates are copied to the device and hence the \c
-         * coordinatesReadyOnDeviceEvent is recorded). Force Halo exchange
-         * will be performed in \c streamNonLocal (also potentally
-         * with buffer clearing in \c streamLocal)and the \c
-         * communicateHaloForces method must be called after the
-         * non-local buffer operations, after the local force buffer
-         * has been copied to the GPU (if CPU forces are present), and
-         * before the local buffer operations. The force halo exchange
-         * does not yet support virial steps.
-         *
-         * \param [inout] dd                       domdec structure
-         * \param [in]    mpi_comm_mysim           communicator used for simulation
-         * \param [in]    streamLocal              local NB CUDA stream.
-         * \param [in]    streamNonLocal           non-local NB CUDA stream.
-         */
-        GpuHaloExchange(gmx_domdec_t *dd,
-                        MPI_Comm      mpi_comm_mysim,
-                        void         *streamLocal,
-                        void         *streamNonLocal);
-        ~GpuHaloExchange();
+public:
+    /*! \brief Creates GPU Halo Exchange object.
+     *
+     * Coordinate Halo exchange will be performed in \c
+     * StreamNonLocal, and the \c communicateHaloCoordinates
+     * method must be called before any subsequent operations that
+     * access non-local parts of the coordinate buffer (such as
+     * the non-local non-bonded kernels). It also must be called
+     * after the local coordinates buffer operations (where the
+     * coordinates are copied to the device and hence the \c
+     * coordinatesReadyOnDeviceEvent is recorded). Force Halo exchange
+     * will be performed in \c streamNonLocal (also potentally
+     * with buffer clearing in \c streamLocal)and the \c
+     * communicateHaloForces method must be called after the
+     * non-local buffer operations, after the local force buffer
+     * has been copied to the GPU (if CPU forces are present), and
+     * before the local buffer operations. The force halo exchange
+     * does not yet support virial steps.
+     *
+     * \param [inout] dd                       domdec structure
+     * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    streamLocal              local NB CUDA stream.
+     * \param [in]    streamNonLocal           non-local NB CUDA stream.
+     */
+    GpuHaloExchange(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* streamLocal, void* streamNonLocal);
+    ~GpuHaloExchange();
 
-        /*! \brief
-         *
-         * Initialization for GPU halo exchange of coordinates buffer
-         * \param [in] d_coordinateBuffer   pointer to coordinates buffer in GPU memory
-         * \param [in] d_forcesBuffer   pointer to coordinates buffer in GPU memory
-         */
-        void reinitHalo(DeviceBuffer<float>  d_coordinateBuffer,
-                        DeviceBuffer<float>  d_forcesBuffer);
+    /*! \brief
+     *
+     * Initialization for GPU halo exchange of coordinates buffer
+     * \param [in] d_coordinateBuffer   pointer to coordinates buffer in GPU memory
+     * \param [in] d_forcesBuffer   pointer to coordinates buffer in GPU memory
+     */
+    void reinitHalo(DeviceBuffer<float> d_coordinateBuffer, DeviceBuffer<float> d_forcesBuffer);
 
 
-        /*! \brief GPU halo exchange of coordinates buffer.
-         *
-         * Must be called after local setCoordinates (which records an
-         * event when the coordinate data has been copied to the
-         * device).
-         * \param [in] box  Coordinate box (from which shifts will be constructed)
-         * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
-         */
-        void communicateHaloCoordinates(const matrix box, GpuEventSynchronizer *coordinatesReadyOnDeviceEvent);
+    /*! \brief GPU halo exchange of coordinates buffer.
+     *
+     * Must be called after local setCoordinates (which records an
+     * event when the coordinate data has been copied to the
+     * device).
+     * \param [in] box  Coordinate box (from which shifts will be constructed)
+     * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
+     */
+    void communicateHaloCoordinates(const matrix box, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
-        /*! \brief GPU halo exchange of force buffer.
-         * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set
-         */
-        void communicateHaloForces(bool accumulateForces);
+    /*! \brief GPU halo exchange of force buffer.
+     * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set
+     */
+    void communicateHaloForces(bool accumulateForces);
 
 
-    private:
-        class Impl;
-        gmx::PrivateImplPointer<Impl> impl_;
-
+private:
+    class Impl;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
-} //namespace gmx
+} // namespace gmx
 
 #endif

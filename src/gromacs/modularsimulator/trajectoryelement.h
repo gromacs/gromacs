@@ -78,145 +78,146 @@ enum class StartingBehavior;
  * write their part of the trajectory.
  */
 class TrajectoryElement final :
-    public              ISimulatorElement,
-    public              ISignaller,
-    public              ILastStepSignallerClient,
-    public              ILoggingSignallerClient
+    public ISimulatorElement,
+    public ISignaller,
+    public ILastStepSignallerClient,
+    public ILoggingSignallerClient
 {
-    public:
-        friend class TrajectoryElementBuilder;
+public:
+    friend class TrajectoryElementBuilder;
 
-        /*
-         * Methods for the signaller part of the element
-         */
+    /*
+     * Methods for the signaller part of the element
+     */
 
-        /*! \brief Prepare signaller
-         *
-         * Check that necessary registration was done
-         */
-        void signallerSetup() override;
+    /*! \brief Prepare signaller
+     *
+     * Check that necessary registration was done
+     */
+    void signallerSetup() override;
 
-        /*! \brief Run the signaller at a specific step / time
-         *
-         * Informs clients when energy or state will be written.
-         *
-         * @param step           The current time step
-         * @param time           The current time
-         */
-        void signal(Step step, Time time) override;
+    /*! \brief Run the signaller at a specific step / time
+     *
+     * Informs clients when energy or state will be written.
+     *
+     * @param step           The current time step
+     * @param time           The current time
+     */
+    void signal(Step step, Time time) override;
 
-        /*
-         * Methods for the trajectory writing part of the element
-         */
+    /*
+     * Methods for the trajectory writing part of the element
+     */
 
-        /*! \brief Prepare trajectory writer
-         *
-         * During setup, the trajectory writer will query the writer clients for
-         * their callbacks. It will also call the setup methods of the different
-         * clients. To be run before the main simulator run, but after all clients
-         * were registered.
-         */
-        void elementSetup() override;
+    /*! \brief Prepare trajectory writer
+     *
+     * During setup, the trajectory writer will query the writer clients for
+     * their callbacks. It will also call the setup methods of the different
+     * clients. To be run before the main simulator run, but after all clients
+     * were registered.
+     */
+    void elementSetup() override;
 
-        /*! \brief Register run function for step / time
-         *
-         * Registers a trajectory writing function if the current step / time is
-         * either a state or energy writing step, as defined by the signaller
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * Registers a trajectory writing function if the current step / time is
+     * either a state or energy writing step, as defined by the signaller
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        /*! \brief Teardown trajectory writer
-         *
-         * During teardown, the trajectory writer will call the teardown
-         * methods of the clients and perform some additional clean-up.
-         * To be run after the main simulator run.
-         */
-        void elementTeardown() override;
+    /*! \brief Teardown trajectory writer
+     *
+     * During teardown, the trajectory writer will call the teardown
+     * methods of the clients and perform some additional clean-up.
+     * To be run after the main simulator run.
+     */
+    void elementTeardown() override;
 
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow CheckpointHelper to use outf_ (TODO: Can we improve this?)
-        friend class CheckpointHelper;
-        //! @endcond
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow CheckpointHelper to use outf_ (TODO: Can we improve this?)
+    friend class CheckpointHelper;
+    //! @endcond
 
-    private:
-        //! Constructor
-        TrajectoryElement(
-            std::vector<SignallerCallbackPtr> signalEnergyCallbacks,
-            std::vector<SignallerCallbackPtr> signalStateCallbacks,
-            std::vector<ITrajectoryWriterClient*> writerClients,
-            FILE *fplog, int nfile, const t_filenm fnm[],
-            const MdrunOptions &mdrunOptions,
-            const t_commrec *cr,
-            IMDOutputProvider *outputProvider,
-            const MdModulesNotifier &mdModulesNotifier,
-            const t_inputrec *inputrec, gmx_mtop_t *top_global,
-            const gmx_output_env_t *oenv, gmx_wallcycle *wcycle,
-            StartingBehavior startingBehavior);
+private:
+    //! Constructor
+    TrajectoryElement(std::vector<SignallerCallbackPtr>     signalEnergyCallbacks,
+                      std::vector<SignallerCallbackPtr>     signalStateCallbacks,
+                      std::vector<ITrajectoryWriterClient*> writerClients,
+                      FILE*                                 fplog,
+                      int                                   nfile,
+                      const t_filenm                        fnm[],
+                      const MdrunOptions&                   mdrunOptions,
+                      const t_commrec*                      cr,
+                      IMDOutputProvider*                    outputProvider,
+                      const MdModulesNotifier&              mdModulesNotifier,
+                      const t_inputrec*                     inputrec,
+                      gmx_mtop_t*                           top_global,
+                      const gmx_output_env_t*               oenv,
+                      gmx_wallcycle*                        wcycle,
+                      StartingBehavior                      startingBehavior);
 
-        //! The next energy writing step
-        Step writeEnergyStep_;
-        //! The next state writing step
-        Step writeStateStep_;
-        //! The next communicated log writing step
-        Step logWritingStep_;
+    //! The next energy writing step
+    Step writeEnergyStep_;
+    //! The next state writing step
+    Step writeStateStep_;
+    //! The next communicated log writing step
+    Step logWritingStep_;
 
-        //! The output object
-        gmx_mdoutf *outf_;
+    //! The output object
+    gmx_mdoutf* outf_;
 
-        //! ILoggingSignallerClient implementation
-        SignallerCallbackPtr registerLoggingCallback() override;
+    //! ILoggingSignallerClient implementation
+    SignallerCallbackPtr registerLoggingCallback() override;
 
-        /*
-         * Signaller
-         */
-        //! Output frequencies
-        //! {
-        const int nstxout_;
-        const int nstvout_;
-        const int nstfout_;
-        const int nstxoutCompressed_;
-        const int tngBoxOut_;
-        const int tngLambdaOut_;
-        const int tngBoxOutCompressed_;
-        const int tngLambdaOutCompressed_;
-        const int nstenergy_;
-        //! }
+    /*
+     * Signaller
+     */
+    //! Output frequencies
+    //! {
+    const int nstxout_;
+    const int nstvout_;
+    const int nstfout_;
+    const int nstxoutCompressed_;
+    const int tngBoxOut_;
+    const int tngLambdaOut_;
+    const int tngBoxOutCompressed_;
+    const int tngLambdaOutCompressed_;
+    const int nstenergy_;
+    //! }
 
-        //! Callbacks to signal events
-        //! {
-        std::vector<SignallerCallbackPtr> signalEnergyCallbacks_;
-        std::vector<SignallerCallbackPtr> signalStateCallbacks_;
-        //! }
+    //! Callbacks to signal events
+    //! {
+    std::vector<SignallerCallbackPtr> signalEnergyCallbacks_;
+    std::vector<SignallerCallbackPtr> signalStateCallbacks_;
+    //! }
 
-        /*
-         * Last step client
-         */
-        Step lastStep_;
-        bool lastStepRegistrationDone_;
-        //! ILastStepSignallerClient implementation
-        SignallerCallbackPtr registerLastStepCallback() override;
+    /*
+     * Last step client
+     */
+    Step lastStep_;
+    bool lastStepRegistrationDone_;
+    //! ILastStepSignallerClient implementation
+    SignallerCallbackPtr registerLastStepCallback() override;
 
-        /*
-         * Trajectory writing
-         */
-        //! The trajectory writing clients
-        std::vector<ITrajectoryWriterClient*> writerClients_;
+    /*
+     * Trajectory writing
+     */
+    //! The trajectory writing clients
+    std::vector<ITrajectoryWriterClient*> writerClients_;
 
-        //! Callbacks to write trajectory
-        //! {
-        std::vector<ITrajectoryWriterCallbackPtr> runStateCallbacks_;
-        std::vector<ITrajectoryWriterCallbackPtr> runEnergyCallbacks_;
-        //! }
+    //! Callbacks to write trajectory
+    //! {
+    std::vector<ITrajectoryWriterCallbackPtr> runStateCallbacks_;
+    std::vector<ITrajectoryWriterCallbackPtr> runEnergyCallbacks_;
+    //! }
 
-        //! The writing function - calls the clients to get their contributions
-        void write(Step step, Time time, bool writeState, bool writeEnergy, bool writeLog);
+    //! The writing function - calls the clients to get their contributions
+    void write(Step step, Time time, bool writeState, bool writeEnergy, bool writeLog);
 };
 
 /*! \libinternal
@@ -229,53 +230,50 @@ class TrajectoryElement final :
  */
 class TrajectoryElementBuilder final
 {
-    public:
-        //! Allows clients to register to the signaller
-        void registerSignallerClient(
-            compat::not_null<ITrajectorySignallerClient*> client);
+public:
+    //! Allows clients to register to the signaller
+    void registerSignallerClient(compat::not_null<ITrajectorySignallerClient*> client);
 
-        //! Allows clients to register as trajectory writers
-        void registerWriterClient(
-            compat::not_null<ITrajectoryWriterClient*> client);
+    //! Allows clients to register as trajectory writers
+    void registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client);
 
-        //! Build the TrajectoryElement
-        template <typename ... Args>
-        std::unique_ptr<TrajectoryElement> build(Args && ... args);
+    //! Build the TrajectoryElement
+    template<typename... Args>
+    std::unique_ptr<TrajectoryElement> build(Args&&... args);
 
-    private:
-        //! List of signaller clients
-        std::vector<ITrajectorySignallerClient*> signallerClients_;
-        //! List of writer clients
-        std::vector<ITrajectoryWriterClient*>    writerClients_;
+private:
+    //! List of signaller clients
+    std::vector<ITrajectorySignallerClient*> signallerClients_;
+    //! List of writer clients
+    std::vector<ITrajectoryWriterClient*> writerClients_;
 };
 
-template<typename ... Args>
-std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args && ... args)
+template<typename... Args>
+std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args&&... args)
 {
     std::vector<SignallerCallbackPtr> signalEnergyCallbacks;
     std::vector<SignallerCallbackPtr> signalStateCallbacks;
     // Allow clients to register their callbacks
-    for (auto &client : signallerClients_)
+    for (auto& client : signallerClients_)
     {
         // don't register nullptr
-        if (auto energyCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::EnergyWritingStep))
+        if (auto energyCallback =
+                    client->registerTrajectorySignallerCallback(TrajectoryEvent::EnergyWritingStep))
         {
             signalEnergyCallbacks.emplace_back(std::move(energyCallback));
         }
-        if (auto stateCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::StateWritingStep))
+        if (auto stateCallback =
+                    client->registerTrajectorySignallerCallback(TrajectoryEvent::StateWritingStep))
         {
             signalStateCallbacks.emplace_back(std::move(stateCallback));
         }
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<TrajectoryElement>(
-            new TrajectoryElement(
-                    std::move(signalEnergyCallbacks),
-                    std::move(signalStateCallbacks),
-                    std::move(writerClients_),
-                    std::forward<Args>(args) ...));
+            new TrajectoryElement(std::move(signalEnergyCallbacks), std::move(signalStateCallbacks),
+                                  std::move(writerClients_), std::forward<Args>(args)...));
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_TRAJECTORYELEMENT_H

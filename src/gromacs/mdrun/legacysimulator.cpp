@@ -61,7 +61,8 @@ void LegacySimulator::run()
         case eiVVAK:
             if (!EI_DYNAMICS(inputrec->eI))
             {
-                GMX_THROW(APIError("do_md integrator would be called for a non-dynamical integrator"));
+                GMX_THROW(APIError(
+                        "do_md integrator would be called for a non-dynamical integrator"));
             }
             if (doRerun)
             {
@@ -82,18 +83,10 @@ void LegacySimulator::run()
                 do_mimic();
             }
             break;
-        case eiSteep:
-            do_steep();
-            break;
-        case eiCG:
-            do_cg();
-            break;
-        case eiNM:
-            do_nm();
-            break;
-        case eiLBFGS:
-            do_lbfgs();
-            break;
+        case eiSteep: do_steep(); break;
+        case eiCG: do_cg(); break;
+        case eiNM: do_nm(); break;
+        case eiLBFGS: do_lbfgs(); break;
         case eiTPI:
         case eiTPIC:
             if (!EI_TPI(inputrec->eI))
@@ -102,11 +95,9 @@ void LegacySimulator::run()
             }
             do_tpi();
             break;
-        case eiSD2_REMOVED:
-            GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
-        default:
-            GMX_THROW(APIError("Non existing integrator selected"));
+        case eiSD2_REMOVED: GMX_THROW(NotImplementedError("SD2 integrator has been removed"));
+        default: GMX_THROW(APIError("Non existing integrator selected"));
     }
 }
 
-}  // namespace gmx
+} // namespace gmx

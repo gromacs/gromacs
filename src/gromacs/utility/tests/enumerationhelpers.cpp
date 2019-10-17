@@ -56,7 +56,9 @@ namespace
 //! Type to use in testing
 enum class Foo
 {
-    Bar, Baz, Fooz,
+    Bar,
+    Baz,
+    Fooz,
     Count
 };
 
@@ -89,9 +91,7 @@ TEST(EnumerationHelpersTest, EnumerationWrapperWorks)
 TEST(EnumerationHelpersTest, EnumerationArrayWorks)
 {
     using FooArray = EnumerationArray<Foo, std::string>;
-    const FooArray fooStrings { {
-                                    "Bar", "Baz", "Fooz"
-                                } };
+    const FooArray fooStrings{ { "Bar", "Baz", "Fooz" } };
 
     // Keys give you the constants associated with each array index.
     int i = 0;
@@ -109,7 +109,7 @@ TEST(EnumerationHelpersTest, EnumerationArrayWorks)
 
     // Using iterators and operator[] gives the array values.
     i = 0;
-    for (const auto &s : fooStrings)
+    for (const auto& s : fooStrings)
     {
         EXPECT_EQ(s, fooStrings[i++]);
     }

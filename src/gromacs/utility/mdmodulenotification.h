@@ -98,40 +98,40 @@ namespace gmx
  * \note All added subscribers are required to out-live the MdModuleNotification
  *
  */
-template <class CallParameter, class MdModuleNotificationBase>
+template<class CallParameter, class MdModuleNotificationBase>
 class MdModuleNotification : public MdModuleNotificationBase
 {
-    public:
-        //! Make base class notification trigger available to this class
-        using MdModuleNotificationBase::notify;
-        //! Make base class subscription available to this class
-        using MdModuleNotificationBase::subscribe;
+public:
+    //! Make base class notification trigger available to this class
+    using MdModuleNotificationBase::notify;
+    //! Make base class subscription available to this class
+    using MdModuleNotificationBase::subscribe;
 
-        /*! \brief Trigger the subscribed notifications.
-         * \param[in] callParameter of the function to be called back
-         */
-        void notify(CallParameter callParameter) const
+    /*! \brief Trigger the subscribed notifications.
+     * \param[in] callParameter of the function to be called back
+     */
+    void notify(CallParameter callParameter) const
+    {
+        for (auto& callBack : callBackFunctions_)
         {
-            for (auto &callBack : callBackFunctions_)
-            {
-                callBack(callParameter);
-            }
+            callBack(callParameter);
         }
+    }
 
-        /*! \brief
-         * Add callback function to be called when notification is triggered.
-         *
-         * Notifications are distinguished by their call signature.
-         *
-         * \param[in] callBackFunction to be called from this class
-         */
-        void subscribe(std::function<void(CallParameter)> callBackFunction)
-        {
-            callBackFunctions_.emplace_back(callBackFunction);
-        }
+    /*! \brief
+     * Add callback function to be called when notification is triggered.
+     *
+     * Notifications are distinguished by their call signature.
+     *
+     * \param[in] callBackFunction to be called from this class
+     */
+    void subscribe(std::function<void(CallParameter)> callBackFunction)
+    {
+        callBackFunctions_.emplace_back(callBackFunction);
+    }
 
-    private:
-        std::vector < std::function < void(CallParameter)>> callBackFunctions_;
+private:
+    std::vector<std::function<void(CallParameter)>> callBackFunctions_;
 };
 
 /*! \internal
@@ -144,11 +144,12 @@ class MdModuleNotification : public MdModuleNotificationBase
  *
  * \tparam CallParameter all the event types to be registered
  */
-template <class ... CallParameter> struct registerMdModuleNotification;
+template<class... CallParameter>
+struct registerMdModuleNotification;
 
 /*! \internal \brief Template specialization to end parameter unpacking recursion.
  */
-template <>
+template<>
 struct registerMdModuleNotification<>
 {
     /*! \internal
@@ -159,11 +160,11 @@ struct registerMdModuleNotification<>
      */
     class NoCallParameter
     {
-        public:
-            //! Do nothing but provide MdModuleNotification::notify to derived class
-            void notify() {}
-            //! Do nothing but provide MdModuleNotification::subscribe to derived class
-            void subscribe() {}
+    public:
+        //! Do nothing but provide MdModuleNotification::notify to derived class
+        void notify() {}
+        //! Do nothing but provide MdModuleNotification::subscribe to derived class
+        void subscribe() {}
     };
     /*! \brief Defines a type if no notifications are managed.
      *
@@ -183,7 +184,7 @@ struct registerMdModuleNotification<>
  * \tparam CurrentCallParameter front of the template parameter pack
  * \tparam CallParameter rest of the event types
  */
-template <class CurrentCallParameter, class ... CallParameter>
+template<class CurrentCallParameter, class... CallParameter>
 struct registerMdModuleNotification<CurrentCallParameter, CallParameter...>
 {
     // private:
@@ -222,30 +223,27 @@ struct MdModulesEnergyOutputToDensityFittingRequestChecker
  */
 class EnergyCalculationFrequencyErrors
 {
-    public:
-        //! Construct by setting the energy calculation frequency
-        EnergyCalculationFrequencyErrors(int64_t energyCalculationIntervalInSteps) :
-            energyCalculationIntervalInSteps_(energyCalculationIntervalInSteps){}
-        //! Return the number of steps of an energy calculation interval
-        std::int64_t energyCalculationIntervalInSteps() const
-        {
-            return energyCalculationIntervalInSteps_;
-        }
-        //! Collect error messages
-        void addError(const std::string &errorMessage)
-        {
-            errorMessages_.push_back(errorMessage);
-        }
-        //! Return error messages
-        const std::vector<std::string> &errorMessages() const
-        {
-            return errorMessages_;
-        }
-    private:
-        //! The frequency of energy calculations
-        const std::int64_t       energyCalculationIntervalInSteps_;
-        //! The error messages
-        std::vector<std::string> errorMessages_;
+public:
+    //! Construct by setting the energy calculation frequency
+    EnergyCalculationFrequencyErrors(int64_t energyCalculationIntervalInSteps) :
+        energyCalculationIntervalInSteps_(energyCalculationIntervalInSteps)
+    {
+    }
+    //! Return the number of steps of an energy calculation interval
+    std::int64_t energyCalculationIntervalInSteps() const
+    {
+        return energyCalculationIntervalInSteps_;
+    }
+    //! Collect error messages
+    void addError(const std::string& errorMessage) { errorMessages_.push_back(errorMessage); }
+    //! Return error messages
+    const std::vector<std::string>& errorMessages() const { return errorMessages_; }
+
+private:
+    //! The frequency of energy calculations
+    const std::int64_t energyCalculationIntervalInSteps_;
+    //! The error messages
+    std::vector<std::string> errorMessages_;
 };
 
 struct SimulationTimeStep
@@ -256,20 +254,19 @@ struct SimulationTimeStep
 
 struct MdModulesNotifier
 {
-//! Register callback function types for MdModule
-    registerMdModuleNotification<
-        const t_commrec &,
-        EnergyCalculationFrequencyErrors *,
-        IndexGroupsAndNames,
-        KeyValueTreeObjectBuilder,
-        const KeyValueTreeObject &,
-        LocalAtomSetManager *,
-        MdModulesEnergyOutputToDensityFittingRequestChecker *,
-        MdModulesCheckpointReadingDataOnMaster,
-        MdModulesCheckpointReadingBroadcast,
-        MdModulesWriteCheckpointData,
-        PeriodicBoundaryConditionType,
-        const SimulationTimeStep &>::type notifier_;
+    //! Register callback function types for MdModule
+    registerMdModuleNotification<const t_commrec&,
+                                 EnergyCalculationFrequencyErrors*,
+                                 IndexGroupsAndNames,
+                                 KeyValueTreeObjectBuilder,
+                                 const KeyValueTreeObject&,
+                                 LocalAtomSetManager*,
+                                 MdModulesEnergyOutputToDensityFittingRequestChecker*,
+                                 MdModulesCheckpointReadingDataOnMaster,
+                                 MdModulesCheckpointReadingBroadcast,
+                                 MdModulesWriteCheckpointData,
+                                 PeriodicBoundaryConditionType,
+                                 const SimulationTimeStep&>::type notifier_;
 };
 
 } // namespace gmx

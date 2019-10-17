@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,19 +65,19 @@ namespace
 
 class DhdlTest : public CommandLineTestBase
 {
-    public:
-        void runTest()
-        {
-            auto &cmdline = commandLine();
+public:
+    void runTest()
+    {
+        auto& cmdline = commandLine();
 
-            setInputFile("-s", "dhdl.tpr");
-            setInputFile("-f", "dhdl.edr");
-            setOutputFile("-odh", "dhdl.xvg", XvgMatch());
+        setInputFile("-s", "dhdl.tpr");
+        setInputFile("-f", "dhdl.edr");
+        setOutputFile("-odh", "dhdl.xvg", XvgMatch());
 
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+        ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(DhdlTest, ExtractDhdl)
@@ -87,28 +87,28 @@ TEST_F(DhdlTest, ExtractDhdl)
 
 class OriresTest : public CommandLineTestBase
 {
-    public:
-        void runTest(const char *stringForStdin)
-        {
-            auto &cmdline = commandLine();
+public:
+    void runTest(const char* stringForStdin)
+    {
+        auto& cmdline = commandLine();
 
-            setInputFile("-s", "orires.tpr");
-            setInputFile("-f", "orires.edr");
-            test::XvgMatch    xvg;
-            test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-4));
+        setInputFile("-s", "orires.tpr");
+        setInputFile("-f", "orires.edr");
+        test::XvgMatch  xvg;
+        test::XvgMatch& toler = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, 1e-4));
 
-            setOutputFile("-oten", ".xvg", toler);
-            setOutputFile("-ora", ".xvg", toler);
-            setOutputFile("-ort", ".xvg", toler);
-            setOutputFile("-oda", ".xvg", toler);
-            setOutputFile("-odr", ".xvg", toler);
+        setOutputFile("-oten", ".xvg", toler);
+        setOutputFile("-ora", ".xvg", toler);
+        setOutputFile("-ort", ".xvg", toler);
+        setOutputFile("-oda", ".xvg", toler);
+        setOutputFile("-odr", ".xvg", toler);
 
-            StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin(stringForStdin);
-            ASSERT_EQ(0, gmx_nmr(cmdline.argc(), cmdline.argv()));
+        StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin(stringForStdin);
+        ASSERT_EQ(0, gmx_nmr(cmdline.argc(), cmdline.argv()));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(OriresTest, ExtractOrires)
@@ -118,25 +118,25 @@ TEST_F(OriresTest, ExtractOrires)
 
 class EnergyTest : public CommandLineTestBase
 {
-    public:
-        void runTest(const char *stringForStdin)
-        {
-            auto &cmdline = commandLine();
+public:
+    void runTest(const char* stringForStdin)
+    {
+        auto& cmdline = commandLine();
 
-            setInputFile("-f", "ener.edr");
-            setOutputFile("-o", "energy.xvg", XvgMatch());
+        setInputFile("-f", "ener.edr");
+        setOutputFile("-o", "energy.xvg", XvgMatch());
 
-            StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin(stringForStdin);
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+        StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin(stringForStdin);
+        ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
 
-            // All the .edr files used in the tests contain only
-            // single-precision values, so even from a
-            // double-precision build they should conform to
-            // tolerances suitable for single-precision values.
-            setDefaultTolerance(defaultFloatTolerance());
-            checkOutputFiles();
-        }
+        // All the .edr files used in the tests contain only
+        // single-precision values, so even from a
+        // double-precision build they should conform to
+        // tolerances suitable for single-precision values.
+        setDefaultTolerance(defaultFloatTolerance());
+        checkOutputFiles();
+    }
 };
 
 TEST_F(EnergyTest, ExtractEnergy)
@@ -156,34 +156,34 @@ TEST_F(EnergyTest, ExtractEnergyMixed)
 
 class ViscosityTest : public CommandLineTestBase
 {
-    public:
-        void runTest()
+public:
+    void runTest()
+    {
+        auto& cmdline = commandLine();
+        setInputFile("-f", "ener.edr");
+        setOutputFile("-vis", "visco.xvg", NoTextMatch());
+        setOutputFile("-o", "energy.xvg", NoTextMatch());
+
+        /* -vis can write a lot of non-conditional output files,
+            so we use temporary paths to clean up files that are
+            not the ones being tested in this test */
+        if (!cmdline.contains("-evisco"))
         {
-            auto &cmdline = commandLine();
-            setInputFile("-f", "ener.edr");
-            setOutputFile("-vis", "visco.xvg", NoTextMatch());
-            setOutputFile("-o", "energy.xvg", NoTextMatch());
-
-            /* -vis can write a lot of non-conditional output files,
-                so we use temporary paths to clean up files that are
-                not the ones being tested in this test */
-            if (!cmdline.contains("-evisco"))
-            {
-                setOutputFile("-evisco", "evisco.xvg", NoTextMatch());
-            }
-            if (!cmdline.contains("-eviscoi"))
-            {
-                setOutputFile("-eviscoi", "eviscoi.xvg", NoTextMatch());
-            }
-            if (!cmdline.contains("-corr"))
-            {
-                setOutputFile("-corr", "corr.xvg", NoTextMatch());
-            }
-
-            ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
-
-            checkOutputFiles();
+            setOutputFile("-evisco", "evisco.xvg", NoTextMatch());
         }
+        if (!cmdline.contains("-eviscoi"))
+        {
+            setOutputFile("-eviscoi", "eviscoi.xvg", NoTextMatch());
+        }
+        if (!cmdline.contains("-corr"))
+        {
+            setOutputFile("-corr", "corr.xvg", NoTextMatch());
+        }
+
+        ASSERT_EQ(0, gmx_energy(cmdline.argc(), cmdline.argv()));
+
+        checkOutputFiles();
+    }
 };
 
 TEST_F(ViscosityTest, EinsteinViscosity)

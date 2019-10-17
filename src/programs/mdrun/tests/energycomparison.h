@@ -65,32 +65,32 @@ using EnergyTermsToCompare = std::unordered_map<std::string, FloatingPointTolera
  * with all matching terms from test within the given tolerances. */
 class EnergyComparison
 {
-    public:
-        //! Defaults for energy comparisons
-        static const EnergyTermsToCompare s_defaultEnergyTermsToCompare;
-        //! Constructor
-        EnergyComparison(const EnergyTermsToCompare &energyTermsToCompare);
-        /*! \brief Return the names of energies that will be compared
-         *
-         * This function can be used to provide an input for
-         * openEnergyFileToReadTerms().
-         *
-         * \todo This returns a copy of the keys, which is convenient, but
-         * inefficient. Alternatively, this could return a view of the keys
-         * from a range rather than a container, but there's no implementation
-         * of that in C++11 at the moment. */
-        std::vector<std::string> getEnergyNames() const;
-        /*! \brief Compare \c reference with \c test within \c
-         * energyTermsToCompare_
-         *
-         * Ignore any key found in either \c reference or \c test that is not
-         * found in the other. For all keys found in both frames, compare the
-         * values with EXPECT_REAL_EQ_TOL and the given tolerance for that
-         * key. */
-        void operator()(const EnergyFrame &reference, const EnergyFrame &test) const;
+public:
+    //! Defaults for energy comparisons
+    static const EnergyTermsToCompare s_defaultEnergyTermsToCompare;
+    //! Constructor
+    EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare);
+    /*! \brief Return the names of energies that will be compared
+     *
+     * This function can be used to provide an input for
+     * openEnergyFileToReadTerms().
+     *
+     * \todo This returns a copy of the keys, which is convenient, but
+     * inefficient. Alternatively, this could return a view of the keys
+     * from a range rather than a container, but there's no implementation
+     * of that in C++11 at the moment. */
+    std::vector<std::string> getEnergyNames() const;
+    /*! \brief Compare \c reference with \c test within \c
+     * energyTermsToCompare_
+     *
+     * Ignore any key found in either \c reference or \c test that is not
+     * found in the other. For all keys found in both frames, compare the
+     * values with EXPECT_REAL_EQ_TOL and the given tolerance for that
+     * key. */
+    void operator()(const EnergyFrame& reference, const EnergyFrame& test) const;
 
-        //! Energy terms to match with given tolerances.
-        EnergyTermsToCompare energyTermsToCompare_;
+    //! Energy terms to match with given tolerances.
+    EnergyTermsToCompare energyTermsToCompare_;
 };
 
 /*! \brief Check a subset of the energies found in an energy file
@@ -106,12 +106,11 @@ class EnergyComparison
  * \todo This is quite similar to the functionality used in PmeTest,
  * and we should consider reducing the duplication.
  */
-void
-checkEnergiesAgainstReferenceData(const std::string          &energyFilename,
-                                  const EnergyTermsToCompare &energyTermsToCompare,
-                                  TestReferenceChecker       *checker);
+void checkEnergiesAgainstReferenceData(const std::string&          energyFilename,
+                                       const EnergyTermsToCompare& energyTermsToCompare,
+                                       TestReferenceChecker*       checker);
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

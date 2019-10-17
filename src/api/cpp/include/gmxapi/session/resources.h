@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,6 @@ namespace gmxapi
  */
 class SessionResources;
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_SESSION_RESOURCES_H
+#endif // GMXAPI_SESSION_RESOURCES_H

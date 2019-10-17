@@ -87,139 +87,142 @@ namespace
  *
  * \tparam FrameReader  Has readNextFrame() and frame() methods
  *                      useful for returning successive Frame objects */
-template <class FrameReader>
+template<class FrameReader>
 class ContinuationFramePairManager
 {
-    public:
-        //! Convenience typedef
-        typedef std::unique_ptr<FrameReader> FrameReaderPtr;
-        //! Constructor
-        ContinuationFramePairManager(FrameReaderPtr full,
-                                     FrameReaderPtr firstPart,
-                                     FrameReaderPtr secondPart) :
-            full_(std::move(full)),
-            firstPart_(std::move(firstPart)),
-            secondPart_(std::move(secondPart)),
-            isFirstPart_(true)
-        {}
-        /*! \brief Probe for a pair of valid frames, and return true if both are found.
-         *
-         * Gives a test failure if exactly one frame is found, because
-         * it is an error for either run to have missing or extra
-         * frames.  Note that the frame where the two-part run ends
-         * and begins is duplicated between the two output files by
-         * mdrun, and the test accommodates this.
-         *
-         * \todo This would be straightforward if velocity Verlet
-         * behaved like other integrators. */
-        bool shouldContinueComparing()
+public:
+    //! Convenience typedef
+    typedef std::unique_ptr<FrameReader> FrameReaderPtr;
+    //! Constructor
+    ContinuationFramePairManager(FrameReaderPtr full, FrameReaderPtr firstPart, FrameReaderPtr secondPart) :
+        full_(std::move(full)),
+        firstPart_(std::move(firstPart)),
+        secondPart_(std::move(secondPart)),
+        isFirstPart_(true)
+    {
+    }
+    /*! \brief Probe for a pair of valid frames, and return true if both are found.
+     *
+     * Gives a test failure if exactly one frame is found, because
+     * it is an error for either run to have missing or extra
+     * frames.  Note that the frame where the two-part run ends
+     * and begins is duplicated between the two output files by
+     * mdrun, and the test accommodates this.
+     *
+     * \todo This would be straightforward if velocity Verlet
+     * behaved like other integrators. */
+    bool shouldContinueComparing()
+    {
+        if (full_->readNextFrame())
         {
-            if (full_->readNextFrame())
+            if (isFirstPart_)
             {
-                if (isFirstPart_)
+                if (firstPart_->readNextFrame())
                 {
-                    if (firstPart_->readNextFrame())
-                    {
-                        // Two valid next frames exist, so we should continue comparing.
-                        return true;
-                    }
-                    else
-                    {
-                        // First part ran out of frames, move on to the second part
-                        isFirstPart_  = false;
-                        if (secondPart_->readNextFrame())
-                        {
-                            // Skip a second-part frame so the one we will
-                            // read can compare with the next full-run
-                            // frames.
-                            secondPart_->frame();
-                            if (secondPart_->readNextFrame())
-                            {
-                                // Two valid next frames exist, so we should continue comparing.
-                                return true;
-                            }
-                            else
-                            {
-                                ADD_FAILURE() << "Second-part energy file had no (new) frames";
-                            }
-                        }
-                        else
-                        {
-                            ADD_FAILURE() << "Second-part energy file had no frames";
-                        }
-                    }
+                    // Two valid next frames exist, so we should continue comparing.
+                    return true;
                 }
                 else
                 {
+                    // First part ran out of frames, move on to the second part
+                    isFirstPart_ = false;
                     if (secondPart_->readNextFrame())
                     {
-                        // Two valid next frames exist, so we should continue comparing.
-                        return true;
+                        // Skip a second-part frame so the one we will
+                        // read can compare with the next full-run
+                        // frames.
+                        secondPart_->frame();
+                        if (secondPart_->readNextFrame())
+                        {
+                            // Two valid next frames exist, so we should continue comparing.
+                            return true;
+                        }
+                        else
+                        {
+                            ADD_FAILURE() << "Second-part energy file had no (new) frames";
+                        }
                     }
                     else
                     {
-                        ADD_FAILURE() << "Full run energy file had at least one more frame than two-part run energy file";
+                        ADD_FAILURE() << "Second-part energy file had no frames";
                     }
                 }
             }
             else
             {
-                if (isFirstPart_)
+                if (secondPart_->readNextFrame())
                 {
-                    ADD_FAILURE() << "Full-run energy file ran out of frames before the first part of the two-part run completed";
+                    // Two valid next frames exist, so we should continue comparing.
+                    return true;
                 }
                 else
                 {
-                    if (secondPart_->readNextFrame())
-                    {
-                        ADD_FAILURE() << "Two-part run energy file had at least one more frame than full-run energy file";
-                    }
-                    else
-                    {
-                        // Both files ran out of frames at the same time, which is the expected behaviour.
-                    }
+                    ADD_FAILURE() << "Full run energy file had at least one more frame than "
+                                     "two-part run energy file";
                 }
             }
-            // At least one file is out of frames, so should not continue comparing.
-            return false;
         }
-        /*! \brief Compare all possible pairs of frames using \c compareTwoFrames.
-         *
-         * \tparam Frame  The type of frame used in the comparison (returned
-         *                by FrameReader and used by compareTwoFrames). */
-        template <class Frame>
-        void compareAllFramePairs(std::function<void(const Frame &, const Frame &)> compareTwoFrames)
+        else
         {
-            while (shouldContinueComparing())
+            if (isFirstPart_)
             {
-                EnergyFrame firstFrame  = full_->frame();
-                EnergyFrame secondFrame = isFirstPart_ ? firstPart_->frame() : secondPart_->frame();
-                SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '" + secondFrame.frameName() + "'");
-                compareTwoFrames(firstFrame, secondFrame);
+                ADD_FAILURE() << "Full-run energy file ran out of frames before the first part of "
+                                 "the two-part run completed";
             }
-
+            else
+            {
+                if (secondPart_->readNextFrame())
+                {
+                    ADD_FAILURE() << "Two-part run energy file had at least one more frame than "
+                                     "full-run energy file";
+                }
+                else
+                {
+                    // Both files ran out of frames at the same time, which is the expected behaviour.
+                }
+            }
         }
+        // At least one file is out of frames, so should not continue comparing.
+        return false;
+    }
+    /*! \brief Compare all possible pairs of frames using \c compareTwoFrames.
+     *
+     * \tparam Frame  The type of frame used in the comparison (returned
+     *                by FrameReader and used by compareTwoFrames). */
+    template<class Frame>
+    void compareAllFramePairs(std::function<void(const Frame&, const Frame&)> compareTwoFrames)
+    {
+        while (shouldContinueComparing())
+        {
+            EnergyFrame firstFrame  = full_->frame();
+            EnergyFrame secondFrame = isFirstPart_ ? firstPart_->frame() : secondPart_->frame();
+            SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '"
+                         + secondFrame.frameName() + "'");
+            compareTwoFrames(firstFrame, secondFrame);
+        }
+    }
 
-    private:
-        EnergyFrameReaderPtr full_;
-        EnergyFrameReaderPtr firstPart_;
-        EnergyFrameReaderPtr secondPart_;
-        bool                 isFirstPart_;
+private:
+    EnergyFrameReaderPtr full_;
+    EnergyFrameReaderPtr firstPart_;
+    EnergyFrameReaderPtr secondPart_;
+    bool                 isFirstPart_;
 };
 
 /*! \brief Run grompp for a normal mdrun, the same mdrun stopping part
  * way, doing a continuation, and compare the results. */
-void runTest(TestFileManager            *fileManager,
-             SimulationRunner           *runner,
-             const std::string          &simulationName,
+void runTest(TestFileManager*            fileManager,
+             SimulationRunner*           runner,
+             const std::string&          simulationName,
              int                         maxWarningsTolerated,
-             const MdpFieldValues       &mdpFieldValues,
-             const EnergyTermsToCompare &energyTermsToCompare)
+             const MdpFieldValues&       mdpFieldValues,
+             const EnergyTermsToCompare& energyTermsToCompare)
 {
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
-        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
                 simulationName.c_str(), numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
@@ -227,12 +230,12 @@ void runTest(TestFileManager            *fileManager,
     }
 
     // prepare some names for files to use with the two mdrun calls
-    std::string fullRunTprFileName              = fileManager->getTemporaryFilePath("full.tpr");
-    std::string firstPartRunTprFileName         = fileManager->getTemporaryFilePath("firstpart.tpr");
-    std::string fullRunEdrFileName              = fileManager->getTemporaryFilePath("full.edr");
-    std::string firstPartRunEdrFileName         = fileManager->getTemporaryFilePath("firstpart.edr");
-    std::string firstPartRunCheckpointFileName  = fileManager->getTemporaryFilePath("firstpart.cpt");
-    std::string secondPartRunEdrFileName        = fileManager->getTemporaryFilePath("secondpart");
+    std::string fullRunTprFileName             = fileManager->getTemporaryFilePath("full.tpr");
+    std::string firstPartRunTprFileName        = fileManager->getTemporaryFilePath("firstpart.tpr");
+    std::string fullRunEdrFileName             = fileManager->getTemporaryFilePath("full.edr");
+    std::string firstPartRunEdrFileName        = fileManager->getTemporaryFilePath("firstpart.edr");
+    std::string firstPartRunCheckpointFileName = fileManager->getTemporaryFilePath("firstpart.cpt");
+    std::string secondPartRunEdrFileName       = fileManager->getTemporaryFilePath("secondpart");
 
     // prepare the full run .tpr file, which will be used for the full
     // run, and for the second part of the two-part run.
@@ -256,7 +259,7 @@ void runTest(TestFileManager            *fileManager,
         caller.append("grompp");
         caller.addOption("-maxwarn", maxWarningsTolerated);
         runner->useTopGroAndNdxFromDatabase(simulationName);
-        auto firstPartMdpFieldValues = mdpFieldValues;
+        auto firstPartMdpFieldValues      = mdpFieldValues;
         firstPartMdpFieldValues["nsteps"] = "8";
         runner->useStringAsMdpFile(prepareMdpFileContents(firstPartMdpFieldValues));
         runner->tprFileName_ = firstPartRunTprFileName;
@@ -307,10 +310,10 @@ void runTest(TestFileManager            *fileManager,
     // TODO Here is an unnecessary copy of keys (ie. the energy term
     // names), for convenience. In the future, use a range.
     auto namesOfEnergiesToMatch = energyComparison.getEnergyNames();
-    ContinuationFramePairManager<EnergyFrameReader>
-         energyManager(openEnergyFileToReadTerms(fullRunEdrFileName, namesOfEnergiesToMatch),
-                  openEnergyFileToReadTerms(firstPartRunEdrFileName, namesOfEnergiesToMatch),
-                  openEnergyFileToReadTerms(secondPartRunEdrFileName, namesOfEnergiesToMatch));
+    ContinuationFramePairManager<EnergyFrameReader> energyManager(
+            openEnergyFileToReadTerms(fullRunEdrFileName, namesOfEnergiesToMatch),
+            openEnergyFileToReadTerms(firstPartRunEdrFileName, namesOfEnergiesToMatch),
+            openEnergyFileToReadTerms(secondPartRunEdrFileName, namesOfEnergiesToMatch));
     // Compare the energy frames.
     energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
 }
@@ -326,13 +329,13 @@ void runTest(TestFileManager            *fileManager,
  * without it?
  *
  * \todo Add FEP case. */
-class MdrunNoAppendContinuationIsExact : public MdrunTestFixture,
-                                         public ::testing::WithParamInterface <
-                                         std::tuple < std::string, std::string, std::string, std::string >>
+class MdrunNoAppendContinuationIsExact :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string, std::string, std::string>>
 {
-    public:
-        //! Constructor
-        MdrunNoAppendContinuationIsExact() {}
+public:
+    //! Constructor
+    MdrunNoAppendContinuationIsExact() {}
 };
 
 /* Listing all of these is tedious, but there's no other way to get a
@@ -351,14 +354,13 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     auto integrator          = std::get<1>(params);
     auto temperatureCoupling = std::get<2>(params);
     auto pressureCoupling    = std::get<3>(params);
-    SCOPED_TRACE(formatString("Comparing normal and two-part run of simulation '%s' "
-                              "with integrator '%s'",
-                              simulationName.c_str(), integrator.c_str()));
+    SCOPED_TRACE(
+            formatString("Comparing normal and two-part run of simulation '%s' "
+                         "with integrator '%s'",
+                         simulationName.c_str(), integrator.c_str()));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                temperatureCoupling.c_str(),
-                                                pressureCoupling.c_str());
+    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
+                                                temperatureCoupling.c_str(), pressureCoupling.c_str());
     // The exact lambda state choice is unimportant, so long as there
     // is one when using an FEP input.
     mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", 3);
@@ -370,18 +372,12 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // with forces on CPUs, but there is no real risk of a bug with
     // those propagators that would only be caught with a tighter
     // tolerance in this particular test.
-    EnergyTermsToCompare energyTermsToCompare
-    {{
-         {
-             interaction_function[F_EPOT].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 32, 64)
-         },
-     }};
+    EnergyTermsToCompare energyTermsToCompare{ {
+            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 32, 64) },
+    } };
 
     int numWarningsToTolerate = 1;
-    runTest(&fileManager_, &runner_,
-            simulationName,
-            numWarningsToTolerate, mdpFieldValues,
+    runTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues,
             energyTermsToCompare);
 }
 
@@ -390,53 +386,64 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
 
-INSTANTIATE_TEST_CASE_P(NormalIntegrators, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12", "spc2", "alanine_vsite_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "bd", "sd"),
-                                                   ::testing::Values("no"),
-                                                   ::testing::Values("no")));
+INSTANTIATE_TEST_CASE_P(
+        NormalIntegrators,
+        MdrunNoAppendContinuationIsExact,
+        ::testing::Combine(::testing::Values("argon12", "spc2", "alanine_vsite_vacuo"),
+                           ::testing::Values("md", "md-vv", "bd", "sd"),
+                           ::testing::Values("no"),
+                           ::testing::Values("no")));
 
-INSTANTIATE_TEST_CASE_P(NormalIntegratorsWithFEP, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "bd", "sd"),
-                                                   ::testing::Values("no"),
-                                                   ::testing::Values("no")));
+INSTANTIATE_TEST_CASE_P(NormalIntegratorsWithFEP,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                           ::testing::Values("md", "md-vv", "bd", "sd"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values("no")));
 
-INSTANTIATE_TEST_CASE_P(NormalNVT, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md", "md-vv"),
-                                                   ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
-                                                   ::testing::Values("no")));
+INSTANTIATE_TEST_CASE_P(
+        NormalNVT,
+        MdrunNoAppendContinuationIsExact,
+        ::testing::Combine(::testing::Values("argon12"),
+                           ::testing::Values("md", "md-vv"),
+                           ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
+                           ::testing::Values("no")));
 
-INSTANTIATE_TEST_CASE_P(LeapfrogNPH, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md"),
-                                                   ::testing::Values("no"),
-                                                   ::testing::Values("berendsen", "parrinello-rahman")));
+INSTANTIATE_TEST_CASE_P(LeapfrogNPH,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("argon12"),
+                                           ::testing::Values("md"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values("berendsen", "parrinello-rahman")));
 
-INSTANTIATE_TEST_CASE_P(LeapfrogNPT, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md"),
-                                                   ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
-                                                   ::testing::Values("berendsen", "parrinello-rahman")));
+INSTANTIATE_TEST_CASE_P(
+        LeapfrogNPT,
+        MdrunNoAppendContinuationIsExact,
+        ::testing::Combine(::testing::Values("argon12"),
+                           ::testing::Values("md"),
+                           ::testing::Values("berendsen", "v-rescale", "nose-hoover"),
+                           ::testing::Values("berendsen", "parrinello-rahman")));
 
-INSTANTIATE_TEST_CASE_P(VelocityVerletNPH, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md-vv"),
-                                                   ::testing::Values("no"),
-                                                   ::testing::Values("berendsen")));
+INSTANTIATE_TEST_CASE_P(VelocityVerletNPH,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("argon12"),
+                                           ::testing::Values("md-vv"),
+                                           ::testing::Values("no"),
+                                           ::testing::Values("berendsen")));
 
-INSTANTIATE_TEST_CASE_P(VelocityVerletNPT, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md-vv"),
-                                                   ::testing::Values("v-rescale"),
-                                                   ::testing::Values("berendsen")));
+INSTANTIATE_TEST_CASE_P(VelocityVerletNPT,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("argon12"),
+                                           ::testing::Values("md-vv"),
+                                           ::testing::Values("v-rescale"),
+                                           ::testing::Values("berendsen")));
 
-INSTANTIATE_TEST_CASE_P(MTTK, MdrunNoAppendContinuationIsExact,
-                            ::testing::Combine(::testing::Values("argon12"),
-                                                   ::testing::Values("md-vv"),
-                                                   ::testing::Values("nose-hoover"),
-                                                   ::testing::Values("mttk")));
+INSTANTIATE_TEST_CASE_P(MTTK,
+                        MdrunNoAppendContinuationIsExact,
+                        ::testing::Combine(::testing::Values("argon12"),
+                                           ::testing::Values("md-vv"),
+                                           ::testing::Values("nose-hoover"),
+                                           ::testing::Values("mttk")));
 
 #endif
 

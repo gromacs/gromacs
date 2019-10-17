@@ -110,7 +110,7 @@ enum ErrorCode
  *
  * This function does not throw.
  */
-const char *getErrorCodeString(int errorcode);
+const char* getErrorCodeString(int errorcode);
 
 /*!\}*/
 

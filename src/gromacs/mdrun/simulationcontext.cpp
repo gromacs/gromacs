@@ -54,8 +54,8 @@ SimulationContext::SimulationContext(MPI_Comm                          communica
                                      const ArrayRef<const std::string> multiSimDirectoryNames) :
     communicator_(communicator)
 {
-    GMX_RELEASE_ASSERT((GMX_LIB_MPI && (communicator != MPI_COMM_NULL)) ||
-                       (!GMX_LIB_MPI && (communicator == MPI_COMM_NULL)),
+    GMX_RELEASE_ASSERT((GMX_LIB_MPI && (communicator != MPI_COMM_NULL))
+                               || (!GMX_LIB_MPI && (communicator == MPI_COMM_NULL)),
                        "With real MPI, a non-null communicator is required. "
                        "Without it, the communicator must be null.");
     if (!multiSimDirectoryNames.empty())

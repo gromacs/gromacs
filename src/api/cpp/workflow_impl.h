@@ -55,8 +55,8 @@ namespace gmxapi
 
 class WorkflowKeyError : public BasicException<WorkflowKeyError>
 {
-    public:
-        using BasicException::BasicException;
+public:
+    using BasicException::BasicException;
 };
 
 /*!
@@ -64,38 +64,38 @@ class WorkflowKeyError : public BasicException<WorkflowKeyError>
  */
 class MDNodeSpecification : public NodeSpecification
 {
-    public:
-        //! Uses parameter type of base class.
-        using NodeSpecification::paramsType;
+public:
+    //! Uses parameter type of base class.
+    using NodeSpecification::paramsType;
 
-        /*!
-         * \brief Simulation node from file input
-         *
-         * \param filename TPR input filename.
-         */
-        explicit MDNodeSpecification(const std::string &filename);
+    /*!
+     * \brief Simulation node from file input
+     *
+     * \param filename TPR input filename.
+     */
+    explicit MDNodeSpecification(const std::string& filename);
 
-        /*
-         * \brief Implement NodeSpecification::clone()
-         *
-         * \returns a node to launch a simulation from the same input as this
-         *
-         * Returns nullptr if clone is not possible.
-         */
-        std::unique_ptr<NodeSpecification> clone() override;
+    /*
+     * \brief Implement NodeSpecification::clone()
+     *
+     * \returns a node to launch a simulation from the same input as this
+     *
+     * Returns nullptr if clone is not possible.
+     */
+    std::unique_ptr<NodeSpecification> clone() override;
 
-        /*! \brief Implement NodeSpecification::params()
-         *
-         * \return Copy of internal params value.
-         */
-        paramsType params() const noexcept override;
+    /*! \brief Implement NodeSpecification::params()
+     *
+     * \return Copy of internal params value.
+     */
+    paramsType params() const noexcept override;
 
-    private:
-        //! The TPR input filename, set during construction
-        paramsType tprfilename_;
+private:
+    //! The TPR input filename, set during construction
+    paramsType tprfilename_;
 };
 
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GROMACS_WORKFLOW_IMPL_H
+#endif // GROMACS_WORKFLOW_IMPL_H

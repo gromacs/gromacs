@@ -67,12 +67,12 @@ namespace test
 
 /*! \internal \brief Typed test fixture for infrastructure for
  * host-side memory used for GPU transfers. */
-template <typename T>
+template<typename T>
 class HostMemoryTest : public test::GpuTest
 {
-    public:
-        //! Convenience type
-        using ValueType = T;
+public:
+    //! Convenience type
+    using ValueType = T;
 };
 
 /*! \brief Convenience function to transform a view into one with base
@@ -86,19 +86,18 @@ class HostMemoryTest : public test::GpuTest
  * \param[in]    size   The size of the data pointer (in T).
  * \tparam       T      The base type of the container
  * */
-template <typename T>
-ArrayRef<char> charArrayRefFromArray(T *data, size_t size)
+template<typename T>
+ArrayRef<char> charArrayRefFromArray(T* data, size_t size)
 {
     // Make a type like T, but without its possible const qualifier.
     using NonConstT = std::remove_const_t<T>;
-    return arrayRefFromArray<char>(reinterpret_cast<char *>(const_cast<NonConstT *>(data)), size * sizeof(T));
+    return arrayRefFromArray<char>(reinterpret_cast<char*>(const_cast<NonConstT*>(data)),
+                                   size * sizeof(T));
 }
 
 //! Does a device transfer of \c input to the device in \c gpuInfo, and back to \c output.
-template <typename T>
-void runTest(const gmx_gpu_info_t &gpuInfo,
-             ArrayRef<T>           input,
-             ArrayRef<T>           output)
+template<typename T>
+void runTest(const gmx_gpu_info_t& gpuInfo, ArrayRef<T> input, ArrayRef<T> output)
 {
     // Convert the views of input and output to flat non-const chars,
     // so that there's no templating when we call doDeviceTransfers.
@@ -110,18 +109,19 @@ void runTest(const gmx_gpu_info_t &gpuInfo,
     compareViews(input, output);
 }
 
-struct MoveOnly {
+struct MoveOnly
+{
     MoveOnly(real x = 0) : x(x) {}
-    MoveOnly(const MoveOnly &)            = delete;
-    MoveOnly(MoveOnly &&)                 = default;
-    MoveOnly &operator=(const MoveOnly &) = delete;
-    MoveOnly &operator=(MoveOnly &&)      = default;
-    bool operator==(const MoveOnly &o) const { return x == o.x; }
-    real operator*=(int scaleFactor) { return x *= scaleFactor; }
-    real x;
+    MoveOnly(const MoveOnly&) = delete;
+    MoveOnly(MoveOnly&&)      = default;
+    MoveOnly& operator=(const MoveOnly&) = delete;
+    MoveOnly& operator=(MoveOnly&&) = default;
+    bool      operator==(const MoveOnly& o) const { return x == o.x; }
+    real      operator*=(int scaleFactor) { return x *= scaleFactor; }
+    real      x;
 };
 
-}   // namespace test
+} // namespace test
 
 namespace detail
 {
@@ -129,11 +129,11 @@ namespace detail
 template<>
 struct PaddingTraits<test::MoveOnly>
 {
-    using SimdBaseType = real;
+    using SimdBaseType                          = real;
     static constexpr int maxSimdWidthOfBaseType = GMX_REAL_MAX_SIMD_WIDTH;
 };
 
-}   // namespace detail
+} // namespace detail
 
 namespace test
 {
@@ -142,7 +142,7 @@ namespace test
 typedef ::testing::Types<int32_t, real, RVec, test::MoveOnly> TestTypes;
 
 //! Typed test fixture
-template <typename T>
+template<typename T>
 struct HostAllocatorTest : HostMemoryTest<T>
 {
     using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
@@ -150,7 +150,7 @@ struct HostAllocatorTest : HostMemoryTest<T>
 TYPED_TEST_CASE(HostAllocatorTest, TestTypes);
 
 //! Typed test fixture (no mem/gpu initializtion - much faster)
-template <typename T>
+template<typename T>
 struct HostAllocatorTestNoMem : ::testing::Test
 {
     using VectorType = PaddedHostVector<T>; //!< PaddedHostVector of type tested
@@ -158,15 +158,17 @@ struct HostAllocatorTestNoMem : ::testing::Test
 TYPED_TEST_CASE(HostAllocatorTestNoMem, TestTypes);
 
 //! Typed test fixture for tests requiring a copyable type
-template <typename T>
-struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T> {};
+template<typename T>
+struct HostAllocatorTestNoMemCopyable : HostAllocatorTestNoMem<T>
+{
+};
 //! The types used in testing minus move only types
 using TestTypesCopyable = ::testing::Types<int32_t, real, RVec>;
 
 TYPED_TEST_CASE(HostAllocatorTestNoMemCopyable, TestTypesCopyable);
 
 //! Typed test fixture for tests requiring a copyable type
-template <typename T>
+template<typename T>
 using HostAllocatorTestCopyable = HostAllocatorTest<T>;
 TYPED_TEST_CASE(HostAllocatorTestCopyable, TestTypesCopyable);
 
@@ -215,19 +217,19 @@ TYPED_TEST(HostAllocatorTestNoMem, CreateVector)
 {
     typename TestFixture::VectorType input1;
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
+    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, MoveAssignment)
 {
-    typename TestFixture::VectorType input1({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input1({ PinningPolicy::PinnedIfSupported });
     input1 = typename TestFixture::VectorType();
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 
     typename TestFixture::VectorType input2;
-    input2 = typename TestFixture::VectorType({PinningPolicy::PinnedIfSupported});
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    input2 = typename TestFixture::VectorType({ PinningPolicy::PinnedIfSupported });
+    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
@@ -236,7 +238,7 @@ TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
     typename TestFixture::VectorType input2(std::move(input1));
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 
-    typename TestFixture::VectorType input3({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input3({ PinningPolicy::PinnedIfSupported });
     typename TestFixture::VectorType input4(std::move(input3));
     EXPECT_TRUE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
@@ -244,13 +246,13 @@ TYPED_TEST(HostAllocatorTestNoMem, MoveConstruction)
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyAssignment)
 {
     typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
     input1 = input2;
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     input2 = input1;
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
 TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
@@ -259,7 +261,7 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
     typename TestFixture::VectorType input2(input1); //NOLINT(performance-unnecessary-copy-initialization)
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 
-    typename TestFixture::VectorType input3({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input3({ PinningPolicy::PinnedIfSupported });
     typename TestFixture::VectorType input4(input3); //NOLINT(performance-unnecessary-copy-initialization)
     EXPECT_FALSE(input4.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
@@ -267,21 +269,21 @@ TYPED_TEST(HostAllocatorTestNoMemCopyable, CopyConstruction)
 TYPED_TEST(HostAllocatorTestNoMem, Swap)
 {
     typename TestFixture::VectorType input1;
-    typename TestFixture::VectorType input2({PinningPolicy::PinnedIfSupported});
+    typename TestFixture::VectorType input2({ PinningPolicy::PinnedIfSupported });
     std::swap(input1, input2);
-    EXPECT_TRUE (input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     EXPECT_FALSE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
     std::swap(input2, input1);
     EXPECT_FALSE(input1.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
-    EXPECT_TRUE (input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
+    EXPECT_TRUE(input2.get_allocator().pinningPolicy() == PinningPolicy::PinnedIfSupported);
 }
 
 TYPED_TEST(HostAllocatorTestNoMem, Comparison)
 {
     using AllocatorType = typename TestFixture::VectorType::allocator_type;
-    EXPECT_EQ(AllocatorType {}, AllocatorType {});
-    //Should be false for different pinning policy
-    EXPECT_NE(AllocatorType {}, AllocatorType {PinningPolicy::PinnedIfSupported});
+    EXPECT_EQ(AllocatorType{}, AllocatorType{});
+    // Should be false for different pinning policy
+    EXPECT_NE(AllocatorType{}, AllocatorType{ PinningPolicy::PinnedIfSupported });
 }
 
 #if GMX_GPU == GMX_GPU_CUDA
@@ -306,10 +308,10 @@ TYPED_TEST(HostAllocatorTestCopyable, TransfersWithPinningWorkWithCuda)
 }
 
 //! Helper function for wrapping a call to isHostMemoryPinned.
-template <typename VectorType>
-bool isPinned(const VectorType &v)
+template<typename VectorType>
+bool isPinned(const VectorType& v)
 {
-    void *data = const_cast<void *>(static_cast<const void *>(v.data()));
+    void* data = const_cast<void*>(static_cast<const void*>(v.data()));
     return isHostMemoryPinned(data);
 }
 
@@ -364,16 +366,13 @@ TYPED_TEST(HostAllocatorTest, StatefulAllocatorUsesMemory)
 
 TEST(HostAllocatorUntypedTest, Comparison)
 {
-    //Should always be true for the same policy, indpendent of value_type
+    // Should always be true for the same policy, indpendent of value_type
     EXPECT_EQ(HostAllocator<float>{}, HostAllocator<double>{});
 }
 
 //! Declare allocator types to test.
-using AllocatorTypesToTest = ::testing::Types<HostAllocator<real>,
-                                              HostAllocator<int32_t>,
-                                              HostAllocator<RVec>,
-                                              HostAllocator<MoveOnly>
-                                              >;
+using AllocatorTypesToTest =
+        ::testing::Types<HostAllocator<real>, HostAllocator<int32_t>, HostAllocator<RVec>, HostAllocator<MoveOnly>>;
 
 TYPED_TEST_CASE(AllocatorTest, AllocatorTypesToTest);
 

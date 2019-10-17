@@ -57,134 +57,123 @@ namespace gmx
 /*! \brief switch for whether coordinates or force halo is being applied */
 enum class HaloQuantity
 {
-    HaloCoordinates, HaloForces
+    HaloCoordinates,
+    HaloForces
 };
 
 /*! \internal \brief Class with interfaces and data for GPU Halo Exchange */
 class GpuHaloExchange::Impl
 {
 
-    public:
-        /*! \brief Creates GPU Halo Exchange object.
-         *
-         * \param [inout] dd                       domdec structure
-         * \param [in]    mpi_comm_mysim           communicator used for simulation
-         * \param [in]    localStream              local NB CUDA stream
-         * \param [in]    nonLocalStream           non-local NB CUDA stream
-         */
-        Impl(gmx_domdec_t *dd,
-             MPI_Comm mpi_comm_mysim,
-             void *localStream,
-             void *nonLocalStream);
-        ~Impl();
+public:
+    /*! \brief Creates GPU Halo Exchange object.
+     *
+     * \param [inout] dd                       domdec structure
+     * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    localStream              local NB CUDA stream
+     * \param [in]    nonLocalStream           non-local NB CUDA stream
+     */
+    Impl(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* localStream, void* nonLocalStream);
+    ~Impl();
 
-        /*! \brief
-         * (Re-) Initialization for GPU halo exchange
-         * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
-         * \param [in] d_forcesBuffer   pointer to forces buffer in GPU memory
-         */
-        void reinitHalo(float3 *d_coordinatesBuffer,
-                        float3 *d_forcesBuffer);
+    /*! \brief
+     * (Re-) Initialization for GPU halo exchange
+     * \param [in] d_coordinatesBuffer  pointer to coordinates buffer in GPU memory
+     * \param [in] d_forcesBuffer   pointer to forces buffer in GPU memory
+     */
+    void reinitHalo(float3* d_coordinatesBuffer, float3* d_forcesBuffer);
 
 
-        /*! \brief
-         * GPU halo exchange of coordinates buffer
-         * \param [in] box  Coordinate box (from which shifts will be constructed)
-         * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
-         */
-        void communicateHaloCoordinates(const matrix          box,
-                                        GpuEventSynchronizer *coordinatesReadyOnDeviceEvent);
+    /*! \brief
+     * GPU halo exchange of coordinates buffer
+     * \param [in] box  Coordinate box (from which shifts will be constructed)
+     * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
+     */
+    void communicateHaloCoordinates(const matrix box, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
-        /*! \brief  GPU halo exchange of force buffer
-         * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set
-         */
-        void communicateHaloForces(bool accumulateForces);
+    /*! \brief  GPU halo exchange of force buffer
+     * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set
+     */
+    void communicateHaloForces(bool accumulateForces);
 
-    private:
+private:
+    /*! \brief Data transfer wrapper for GPU halo exchange
+     * \param [inout] d_ptr      pointer to coordinates or force buffer in GPU memory
+     * \param [in] haloQuantity  switch on whether X or F halo exchange is being performed
+     */
+    void communicateHaloData(float3* d_ptr, HaloQuantity haloQuantity);
 
-        /*! \brief Data transfer wrapper for GPU halo exchange
-         * \param [inout] d_ptr      pointer to coordinates or force buffer in GPU memory
-         * \param [in] haloQuantity  switch on whether X or F halo exchange is being performed
-         */
-        void communicateHaloData(float3      *d_ptr,
-                                 HaloQuantity haloQuantity);
+    /*! \brief Data transfer for GPU halo exchange using CUDA memcopies
+     * \param [inout] sendPtr    address to send data from
+     * \param [in] sendSize      number of atoms to be sent
+     * \param [in] sendRank      rank to send data to
+     * \param [inout] remotePtr  remote address to recv data
+     * \param [in] recvRank      rank to recv data from
+     */
+    void communicateHaloDataWithCudaDirect(void* sendPtr, int sendSize, int sendRank, void* remotePtr, int recvRank);
 
-        /*! \brief Data transfer for GPU halo exchange using CUDA memcopies
-         * \param [inout] sendPtr    address to send data from
-         * \param [in] sendSize      number of atoms to be sent
-         * \param [in] sendRank      rank to send data to
-         * \param [inout] remotePtr  remote address to recv data
-         * \param [in] recvRank      rank to recv data from
-         */
-        void communicateHaloDataWithCudaDirect(void        *sendPtr,
-                                               int          sendSize,
-                                               int          sendRank,
-                                               void       * remotePtr,
-                                               int          recvRank);
-
-        //! Domain decomposition object
-        gmx_domdec_t               *dd_                       = nullptr;
-        //! map of indices to be sent from this rank
-        gmx::HostVector<int>        h_indexMap_;
-        //! device copy of index map
-        int                        *d_indexMap_               = nullptr;
-        //! number of elements in index map array
-        int                         indexMapSize_             = -1;
-        //! number of elements allocated in index map array
-        int                         indexMapSizeAlloc_        = -1;
-        //! device buffer for sending packed data
-        float3                     *d_sendBuf_ = nullptr;
-        //! number of atoms in sendbuf array
-        int                         sendBufSize_              = -1;
-        //! number of atoms allocated in sendbuf array
-        int                         sendBufSizeAlloc_         = -1;
-        //! device buffer for receiving packed data
-        float3                     *d_recvBuf_                = nullptr;
-        //! maximum size of packed buffer
-        int                         maxPackedBufferSize_      = 0;
-        //! number of atoms in recvbuf array
-        int                         recvBufSize_              = -1;
-        //! number of atoms allocated in recvbuf array
-        int                         recvBufSizeAlloc_         = -1;
-        //! rank to send data to for X
-        int                         sendRankX_                = 0;
-        //! rank to recv data from for X
-        int                         recvRankX_                = 0;
-        //! rank to send data to for F
-        int                         sendRankF_                = 0;
-        //! rank to recv data from for F
-        int                         recvRankF_                = 0;
-        //! send copy size from this rank for X
-        int                         xSendSize_                = 0;
-        //! recv copy size to this rank for X
-        int                         xRecvSize_                = 0;
-        //! send copy size from this rank for F
-        int                         fSendSize_                = 0;
-        //! recv copy size to this rank for F
-        int                         fRecvSize_                = 0;
-        //! number of home atoms - offset of local halo region
-        int                         numHomeAtoms_             = 0;
-        //! remote GPU coordinates buffer pointer for pushing data
-        void                       *remoteXPtr_               = nullptr;
-        //! remote GPU force buffer pointer for pushing data
-        void                       *remoteFPtr_               = nullptr;
-        //! Periodic Boundary Conditions for this rank
-        bool                        usePBC_                   = false;
-        //! force shift buffer on device
-        float3 *                    d_fShift_                 = nullptr;
-        //! Event triggered when halo transfer has been launched with direct CUD memory copy
-        GpuEventSynchronizer       *haloDataTransferLaunched_ = nullptr;
-        //! MPI communicator used for simulation
-        MPI_Comm                    mpi_comm_mysim_;
-        //! CUDA stream for local non-bonded calculations
-        cudaStream_t                localStream_              = nullptr;
-        //! CUDA stream for non-local non-bonded calculations
-        cudaStream_t                nonLocalStream_           = nullptr;
-        //! full coordinates buffer in GPU memory
-        float3                     *d_x_                      = nullptr;
-        //! full forces buffer in GPU memory
-        float3                     *d_f_                      = nullptr;
-
+    //! Domain decomposition object
+    gmx_domdec_t* dd_ = nullptr;
+    //! map of indices to be sent from this rank
+    gmx::HostVector<int> h_indexMap_;
+    //! device copy of index map
+    int* d_indexMap_ = nullptr;
+    //! number of elements in index map array
+    int indexMapSize_ = -1;
+    //! number of elements allocated in index map array
+    int indexMapSizeAlloc_ = -1;
+    //! device buffer for sending packed data
+    float3* d_sendBuf_ = nullptr;
+    //! number of atoms in sendbuf array
+    int sendBufSize_ = -1;
+    //! number of atoms allocated in sendbuf array
+    int sendBufSizeAlloc_ = -1;
+    //! device buffer for receiving packed data
+    float3* d_recvBuf_ = nullptr;
+    //! maximum size of packed buffer
+    int maxPackedBufferSize_ = 0;
+    //! number of atoms in recvbuf array
+    int recvBufSize_ = -1;
+    //! number of atoms allocated in recvbuf array
+    int recvBufSizeAlloc_ = -1;
+    //! rank to send data to for X
+    int sendRankX_ = 0;
+    //! rank to recv data from for X
+    int recvRankX_ = 0;
+    //! rank to send data to for F
+    int sendRankF_ = 0;
+    //! rank to recv data from for F
+    int recvRankF_ = 0;
+    //! send copy size from this rank for X
+    int xSendSize_ = 0;
+    //! recv copy size to this rank for X
+    int xRecvSize_ = 0;
+    //! send copy size from this rank for F
+    int fSendSize_ = 0;
+    //! recv copy size to this rank for F
+    int fRecvSize_ = 0;
+    //! number of home atoms - offset of local halo region
+    int numHomeAtoms_ = 0;
+    //! remote GPU coordinates buffer pointer for pushing data
+    void* remoteXPtr_ = nullptr;
+    //! remote GPU force buffer pointer for pushing data
+    void* remoteFPtr_ = nullptr;
+    //! Periodic Boundary Conditions for this rank
+    bool usePBC_ = false;
+    //! force shift buffer on device
+    float3* d_fShift_ = nullptr;
+    //! Event triggered when halo transfer has been launched with direct CUD memory copy
+    GpuEventSynchronizer* haloDataTransferLaunched_ = nullptr;
+    //! MPI communicator used for simulation
+    MPI_Comm mpi_comm_mysim_;
+    //! CUDA stream for local non-bonded calculations
+    cudaStream_t localStream_ = nullptr;
+    //! CUDA stream for non-local non-bonded calculations
+    cudaStream_t nonLocalStream_ = nullptr;
+    //! full coordinates buffer in GPU memory
+    float3* d_x_ = nullptr;
+    //! full forces buffer in GPU memory
+    float3* d_f_ = nullptr;
 };
 
 } // namespace gmx

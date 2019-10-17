@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -88,50 +89,50 @@ namespace internal
  */
 class TestReferenceDataImpl
 {
-    public:
-        //! Initializes a checker in the given mode.
-        TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
+public:
+    //! Initializes a checker in the given mode.
+    TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
 
-        //! Performs final reference data processing when test ends.
-        void onTestEnd(bool testPassed);
+    //! Performs final reference data processing when test ends.
+    void onTestEnd(bool testPassed);
 
-        //! Full path of the reference data file.
-        std::string             fullFilename_;
-        /*! \brief
-         * Root entry for comparing the reference data.
-         *
-         * Null after construction iff in compare mode and reference data was
-         * not loaded successfully.
-         * In all write modes, copies are present for nodes added to
-         * \a outputRootEntry_, and ReferenceDataEntry::correspondingOutputEntry()
-         * points to the copy in the output tree.
-         */
-        ReferenceDataEntry::EntryPointer  compareRootEntry_;
-        /*! \brief
-         * Root entry for writing new reference data.
-         *
-         * Null if only comparing against existing data.  Otherwise, starts
-         * always as empty.
-         * When creating new reference data, this is maintained as a copy of
-         * \a compareRootEntry_.
-         * When updating existing data, entries are added either by copying
-         * from \a compareRootEntry_ (if they exist and comparison passes), or
-         * by creating new ones.
-         */
-        ReferenceDataEntry::EntryPointer  outputRootEntry_;
-        /*! \brief
-         * Whether updating existing reference data.
-         */
-        bool                    updateMismatchingEntries_;
-        //! `true` if self-testing (enables extra failure messages).
-        bool                    bSelfTestMode_;
-        /*! \brief
-         * Whether any reference checkers have been created for this data.
-         */
-        bool                    bInUse_;
+    //! Full path of the reference data file.
+    std::string fullFilename_;
+    /*! \brief
+     * Root entry for comparing the reference data.
+     *
+     * Null after construction iff in compare mode and reference data was
+     * not loaded successfully.
+     * In all write modes, copies are present for nodes added to
+     * \a outputRootEntry_, and ReferenceDataEntry::correspondingOutputEntry()
+     * points to the copy in the output tree.
+     */
+    ReferenceDataEntry::EntryPointer compareRootEntry_;
+    /*! \brief
+     * Root entry for writing new reference data.
+     *
+     * Null if only comparing against existing data.  Otherwise, starts
+     * always as empty.
+     * When creating new reference data, this is maintained as a copy of
+     * \a compareRootEntry_.
+     * When updating existing data, entries are added either by copying
+     * from \a compareRootEntry_ (if they exist and comparison passes), or
+     * by creating new ones.
+     */
+    ReferenceDataEntry::EntryPointer outputRootEntry_;
+    /*! \brief
+     * Whether updating existing reference data.
+     */
+    bool updateMismatchingEntries_;
+    //! `true` if self-testing (enables extra failure messages).
+    bool bSelfTestMode_;
+    /*! \brief
+     * Whether any reference checkers have been created for this data.
+     */
+    bool bInUse_;
 };
 
-}       // namespace internal
+} // namespace internal
 
 /********************************************************************
  * Internal helpers
@@ -141,8 +142,7 @@ namespace
 {
 
 //! Convenience typedef for a smart pointer to TestReferenceDataImpl.
-typedef std::shared_ptr<internal::TestReferenceDataImpl>
-    TestReferenceDataImplPointer;
+typedef std::shared_ptr<internal::TestReferenceDataImpl> TestReferenceDataImplPointer;
 
 /*! \brief
  * Global reference data instance.
@@ -154,7 +154,7 @@ typedef std::shared_ptr<internal::TestReferenceDataImpl>
  */
 TestReferenceDataImplPointer g_referenceData;
 //! Global reference data mode set with setReferenceDataMode().
-ReferenceDataMode            g_referenceDataMode = erefdataCompare;
+ReferenceDataMode g_referenceDataMode = erefdataCompare;
 
 //! Returns the global reference data mode.
 ReferenceDataMode getReferenceDataMode()
@@ -165,8 +165,7 @@ ReferenceDataMode getReferenceDataMode()
 //! Returns a reference to the global reference data object.
 TestReferenceDataImplPointer initReferenceDataInstance()
 {
-    GMX_RELEASE_ASSERT(!g_referenceData,
-                       "Test cannot create multiple TestReferenceData instances");
+    GMX_RELEASE_ASSERT(!g_referenceData, "Test cannot create multiple TestReferenceData instances");
     g_referenceData.reset(new internal::TestReferenceDataImpl(getReferenceDataMode(), false));
     return g_referenceData;
 }
@@ -187,40 +186,39 @@ TestReferenceDataImplPointer initReferenceDataInstanceForSelfTest(ReferenceDataM
 
 class ReferenceDataTestEventListener : public ::testing::EmptyTestEventListener
 {
-    public:
-        void OnTestEnd(const ::testing::TestInfo &test_info) override
+public:
+    void OnTestEnd(const ::testing::TestInfo& test_info) override
+    {
+        if (g_referenceData)
         {
-            if (g_referenceData)
-            {
-                GMX_RELEASE_ASSERT(g_referenceData.unique(),
-                                   "Test leaked TestRefeferenceData objects");
-                g_referenceData->onTestEnd(test_info.result()->Passed());
-                g_referenceData.reset();
-            }
+            GMX_RELEASE_ASSERT(g_referenceData.unique(), "Test leaked TestRefeferenceData objects");
+            g_referenceData->onTestEnd(test_info.result()->Passed());
+            g_referenceData.reset();
         }
+    }
 
-        void OnTestProgramEnd(const ::testing::UnitTest & /*unused*/) override
-        {
-            // Could be used e.g. to free internal buffers allocated by an XML parsing library
-        }
+    void OnTestProgramEnd(const ::testing::UnitTest& /*unused*/) override
+    {
+        // Could be used e.g. to free internal buffers allocated by an XML parsing library
+    }
 };
 
 //! Formats a path to a reference data entry with a non-null id.
-std::string formatEntryPath(const std::string &prefix, const std::string &id)
+std::string formatEntryPath(const std::string& prefix, const std::string& id)
 {
     return prefix + "/" + id;
 }
 
 //! Formats a path to a reference data entry with a null id.
-std::string formatSequenceEntryPath(const std::string &prefix, int seqIndex)
+std::string formatSequenceEntryPath(const std::string& prefix, int seqIndex)
 {
-    return formatString("%s/[%d]", prefix.c_str(), seqIndex+1);
+    return formatString("%s/[%d]", prefix.c_str(), seqIndex + 1);
 }
 
 //! Finds all entries that have not been checked under a given root.
-void gatherUnusedEntries(const ReferenceDataEntry &root,
-                         const std::string        &rootPath,
-                         std::vector<std::string> *unusedPaths)
+void gatherUnusedEntries(const ReferenceDataEntry& root,
+                         const std::string&        rootPath,
+                         std::vector<std::string>* unusedPaths)
 {
     if (!root.hasBeenChecked())
     {
@@ -228,7 +226,7 @@ void gatherUnusedEntries(const ReferenceDataEntry &root,
         return;
     }
     int seqIndex = 0;
-    for (const auto &child : root.children())
+    for (const auto& child : root.children())
     {
         std::string path;
         if (child->id().empty())
@@ -245,7 +243,7 @@ void gatherUnusedEntries(const ReferenceDataEntry &root,
 }
 
 //! Produces a GTest assertion of any entries under given root have not been checked.
-void checkUnusedEntries(const ReferenceDataEntry &root, const std::string &rootPath)
+void checkUnusedEntries(const ReferenceDataEntry& root, const std::string& rootPath)
 {
     std::vector<std::string> unusedPaths;
     gatherUnusedEntries(root, rootPath, &unusedPaths);
@@ -266,19 +264,17 @@ void checkUnusedEntries(const ReferenceDataEntry &root, const std::string &rootP
     }
 }
 
-}       // namespace
+} // namespace
 
-void initReferenceData(IOptionsContainer *options)
+void initReferenceData(IOptionsContainer* options)
 {
     // Needs to correspond to the enum order in refdata.h.
-    const char *const refDataEnum[] =
-    { "check", "create", "update-changed", "update-all" };
-    options->addOption(
-            EnumOption<ReferenceDataMode>("ref-data")
-                .enumValue(refDataEnum).store(&g_referenceDataMode)
-                .description("Operation mode for tests that use reference data"));
-    ::testing::UnitTest::GetInstance()->listeners().Append(
-            new ReferenceDataTestEventListener);
+    const char* const refDataEnum[] = { "check", "create", "update-changed", "update-all" };
+    options->addOption(EnumOption<ReferenceDataMode>("ref-data")
+                               .enumValue(refDataEnum)
+                               .store(&g_referenceDataMode)
+                               .description("Operation mode for tests that use reference data"));
+    ::testing::UnitTest::GetInstance()->listeners().Append(new ReferenceDataTestEventListener);
 }
 
 /********************************************************************
@@ -288,16 +284,15 @@ void initReferenceData(IOptionsContainer *options)
 namespace internal
 {
 
-TestReferenceDataImpl::TestReferenceDataImpl(
-        ReferenceDataMode mode, bool bSelfTestMode)
-    : updateMismatchingEntries_(false), bSelfTestMode_(bSelfTestMode), bInUse_(false)
+TestReferenceDataImpl::TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode) :
+    updateMismatchingEntries_(false),
+    bSelfTestMode_(bSelfTestMode),
+    bInUse_(false)
 {
-    const std::string dirname =
-        bSelfTestMode
-        ? TestFileManager::getGlobalOutputTempDirectory()
-        : TestFileManager::getInputDataDirectory();
+    const std::string dirname = bSelfTestMode ? TestFileManager::getGlobalOutputTempDirectory()
+                                              : TestFileManager::getInputDataDirectory();
     const std::string filename = TestFileManager::getTestSpecificFileName(".xml");
-    fullFilename_ = Path::join(dirname, "refdata", filename);
+    fullFilename_              = Path::join(dirname, "refdata", filename);
 
     switch (mode)
     {
@@ -365,7 +360,7 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed)
     }
 }
 
-}       // namespace internal
+} // namespace internal
 
 
 /********************************************************************
@@ -379,233 +374,241 @@ void TestReferenceDataImpl::onTestEnd(bool testPassed)
  */
 class TestReferenceChecker::Impl
 {
-    public:
-        //! String constant for naming XML elements for boolean values.
-        static const char * const    cBooleanNodeName;
-        //! String constant for naming XML elements for string values.
-        static const char * const    cStringNodeName;
-        //! String constant for naming XML elements for unsigned char values.
-        static const char * const    cUCharNodeName;
-        //! String constant for naming XML elements for integer values.
-        static const char * const    cIntegerNodeName;
-        //! String constant for naming XML elements for int32 values.
-        static const char * const    cInt32NodeName;
-        //! String constant for naming XML elements for unsigned int32 values.
-        static const char * const    cUInt32NodeName;
-        //! String constant for naming XML elements for int32 values.
-        static const char * const    cInt64NodeName;
-        //! String constant for naming XML elements for unsigned int64 values.
-        static const char * const    cUInt64NodeName;
-        //! String constant for naming XML elements for floating-point values.
-        static const char * const    cRealNodeName;
-        //! String constant for naming XML attribute for value identifiers.
-        static const char * const    cIdAttrName;
-        //! String constant for naming compounds for vectors.
-        static const char * const    cVectorType;
-        //! String constant for naming compounds for key-value tree objects.
-        static const char * const    cObjectType;
-        //! String constant for naming compounds for sequences.
-        static const char * const    cSequenceType;
-        //! String constant for value identifier for sequence length.
-        static const char * const    cSequenceLengthName;
+public:
+    //! String constant for naming XML elements for boolean values.
+    static const char* const cBooleanNodeName;
+    //! String constant for naming XML elements for string values.
+    static const char* const cStringNodeName;
+    //! String constant for naming XML elements for unsigned char values.
+    static const char* const cUCharNodeName;
+    //! String constant for naming XML elements for integer values.
+    static const char* const cIntegerNodeName;
+    //! String constant for naming XML elements for int32 values.
+    static const char* const cInt32NodeName;
+    //! String constant for naming XML elements for unsigned int32 values.
+    static const char* const cUInt32NodeName;
+    //! String constant for naming XML elements for int32 values.
+    static const char* const cInt64NodeName;
+    //! String constant for naming XML elements for unsigned int64 values.
+    static const char* const cUInt64NodeName;
+    //! String constant for naming XML elements for floating-point values.
+    static const char* const cRealNodeName;
+    //! String constant for naming XML attribute for value identifiers.
+    static const char* const cIdAttrName;
+    //! String constant for naming compounds for vectors.
+    static const char* const cVectorType;
+    //! String constant for naming compounds for key-value tree objects.
+    static const char* const cObjectType;
+    //! String constant for naming compounds for sequences.
+    static const char* const cSequenceType;
+    //! String constant for value identifier for sequence length.
+    static const char* const cSequenceLengthName;
 
-        //! Creates a checker that does nothing.
-        explicit Impl(bool initialized);
-        //! Creates a checker with a given root entry.
-        Impl(const std::string &path, ReferenceDataEntry *compareRootEntry,
-             ReferenceDataEntry *outputRootEntry, bool updateMismatchingEntries,
-             bool bSelfTestMode, const FloatingPointTolerance &defaultTolerance);
+    //! Creates a checker that does nothing.
+    explicit Impl(bool initialized);
+    //! Creates a checker with a given root entry.
+    Impl(const std::string&            path,
+         ReferenceDataEntry*           compareRootEntry,
+         ReferenceDataEntry*           outputRootEntry,
+         bool                          updateMismatchingEntries,
+         bool                          bSelfTestMode,
+         const FloatingPointTolerance& defaultTolerance);
 
-        //! Returns the path of this checker with \p id appended.
-        std::string appendPath(const char *id) const;
+    //! Returns the path of this checker with \p id appended.
+    std::string appendPath(const char* id) const;
 
-        //! Creates an entry with given parameters and fills it with \p checker.
-        ReferenceDataEntry::EntryPointer
-        createEntry(const char *type, const char *id,
-                    const IReferenceDataEntryChecker &checker) const
+    //! Creates an entry with given parameters and fills it with \p checker.
+    ReferenceDataEntry::EntryPointer createEntry(const char*                       type,
+                                                 const char*                       id,
+                                                 const IReferenceDataEntryChecker& checker) const
+    {
+        ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
+        checker.fillEntry(entry.get());
+        return entry;
+    }
+    //! Checks an entry for correct type and using \p checker.
+    ::testing::AssertionResult checkEntry(const ReferenceDataEntry&         entry,
+                                          const std::string&                fullId,
+                                          const char*                       type,
+                                          const IReferenceDataEntryChecker& checker) const
+    {
+        if (entry.type() != type)
         {
-            ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(type, id));
-            checker.fillEntry(entry.get());
-            return entry;
+            return ::testing::AssertionFailure() << "Mismatching reference data item type" << std::endl
+                                                 << "  In item: " << fullId << std::endl
+                                                 << "   Actual: " << type << std::endl
+                                                 << "Reference: " << entry.type();
         }
-        //! Checks an entry for correct type and using \p checker.
-        ::testing::AssertionResult
-        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId,
-                   const char *type, const IReferenceDataEntryChecker &checker) const
-        {
-            if (entry.type() != type)
-            {
-                return ::testing::AssertionFailure()
-                       << "Mismatching reference data item type" << std::endl
-                       << "  In item: " << fullId << std::endl
-                       << "   Actual: " << type << std::endl
-                       << "Reference: " << entry.type();
-            }
-            return checker.checkEntry(entry, fullId);
-        }
-        //! Finds an entry by id and updates the last found entry pointer.
-        ReferenceDataEntry *findEntry(const char *id);
-        /*! \brief
-         * Finds/creates a reference data entry to match against.
-         *
-         * \param[in]  type   Type of entry to create.
-         * \param[in]  id     Unique identifier of the entry (can be NULL, in
-         *      which case the next entry without an id is matched).
-         * \param[out] checker  Checker to use for filling out created entries.
-         * \returns    Matching entry, or NULL if no matching entry found
-         *      (NULL is never returned in write mode; new entries are created
-         *      instead).
-         */
-        ReferenceDataEntry *
-        findOrCreateEntry(const char *type, const char *id,
-                          const IReferenceDataEntryChecker &checker);
-        /*! \brief
-         * Helper method for checking a reference data value.
-         *
-         * \param[in]  name   Type of entry to find.
-         * \param[in]  id     Unique identifier of the entry (can be NULL, in
-         *     which case the next entry without an id is matched).
-         * \param[in]  checker  Checker that provides logic specific to the
-         *     type of the entry.
-         * \returns    Whether the reference data matched, including details
-         *     of the mismatch if the comparison failed.
-         * \throws     TestException if there is a problem parsing the
-         *     reference data.
-         *
-         * Performs common tasks in checking a reference value, such as
-         * finding or creating the correct entry.
-         * Caller needs to provide a checker object that provides the string
-         * value for a newly created entry and performs the actual comparison
-         * against a found entry.
-         */
-        ::testing::AssertionResult
-        processItem(const char *name, const char *id,
-                    const IReferenceDataEntryChecker &checker);
-        /*! \brief
-         * Whether the checker is initialized.
-         */
-        bool initialized() const { return initialized_; }
-        /*! \brief
-         * Whether the checker should ignore all validation calls.
-         *
-         * This is used to ignore any calls within compounds for which
-         * reference data could not be found, such that only one error is
-         * issued for the missing compound, instead of every individual value.
-         */
-        bool shouldIgnore() const
-        {
-            GMX_RELEASE_ASSERT(initialized(),
-                               "Accessing uninitialized reference data checker.");
-            return compareRootEntry_ == nullptr;
-        }
+        return checker.checkEntry(entry, fullId);
+    }
+    //! Finds an entry by id and updates the last found entry pointer.
+    ReferenceDataEntry* findEntry(const char* id);
+    /*! \brief
+     * Finds/creates a reference data entry to match against.
+     *
+     * \param[in]  type   Type of entry to create.
+     * \param[in]  id     Unique identifier of the entry (can be NULL, in
+     *      which case the next entry without an id is matched).
+     * \param[out] checker  Checker to use for filling out created entries.
+     * \returns    Matching entry, or NULL if no matching entry found
+     *      (NULL is never returned in write mode; new entries are created
+     *      instead).
+     */
+    ReferenceDataEntry* findOrCreateEntry(const char*                       type,
+                                          const char*                       id,
+                                          const IReferenceDataEntryChecker& checker);
+    /*! \brief
+     * Helper method for checking a reference data value.
+     *
+     * \param[in]  name   Type of entry to find.
+     * \param[in]  id     Unique identifier of the entry (can be NULL, in
+     *     which case the next entry without an id is matched).
+     * \param[in]  checker  Checker that provides logic specific to the
+     *     type of the entry.
+     * \returns    Whether the reference data matched, including details
+     *     of the mismatch if the comparison failed.
+     * \throws     TestException if there is a problem parsing the
+     *     reference data.
+     *
+     * Performs common tasks in checking a reference value, such as
+     * finding or creating the correct entry.
+     * Caller needs to provide a checker object that provides the string
+     * value for a newly created entry and performs the actual comparison
+     * against a found entry.
+     */
+    ::testing::AssertionResult processItem(const char*                       name,
+                                           const char*                       id,
+                                           const IReferenceDataEntryChecker& checker);
+    /*! \brief
+     * Whether the checker is initialized.
+     */
+    bool initialized() const { return initialized_; }
+    /*! \brief
+     * Whether the checker should ignore all validation calls.
+     *
+     * This is used to ignore any calls within compounds for which
+     * reference data could not be found, such that only one error is
+     * issued for the missing compound, instead of every individual value.
+     */
+    bool shouldIgnore() const
+    {
+        GMX_RELEASE_ASSERT(initialized(), "Accessing uninitialized reference data checker.");
+        return compareRootEntry_ == nullptr;
+    }
 
-        //! Whether initialized with other means than the default constructor.
-        bool                    initialized_;
-        //! Default floating-point comparison tolerance.
-        FloatingPointTolerance  defaultTolerance_;
-        /*! \brief
-         * Human-readable path to the root node of this checker.
-         *
-         * For the root checker, this will be "/", and for each compound, the
-         * id of the compound is added.  Used for reporting comparison
-         * mismatches.
-         */
-        std::string             path_;
-        /*! \brief
-         * Current entry under which reference data is searched for comparison.
-         *
-         * Points to either the TestReferenceDataImpl::compareRootEntry_, or to
-         * a compound entry in the tree rooted at that entry.
-         *
-         * Can be NULL, in which case this checker does nothing (doesn't even
-         * report errors, see shouldIgnore()).
-         */
-        ReferenceDataEntry     *compareRootEntry_;
-        /*! \brief
-         * Current entry under which entries for writing are created.
-         *
-         * Points to either the TestReferenceDataImpl::outputRootEntry_, or to
-         * a compound entry in the tree rooted at that entry.  NULL if only
-         * comparing, or if shouldIgnore() returns `false`.
-         */
-        ReferenceDataEntry     *outputRootEntry_;
-        /*! \brief
-         * Iterator to a child of \a compareRootEntry_ that was last found.
-         *
-         * If `compareRootEntry_->isValidChild()` returns false, no entry has
-         * been found yet.
-         * After every check, is updated to point to the entry that was used
-         * for the check.
-         * Subsequent checks start the search for the matching node on this
-         * node.
-         */
-        ReferenceDataEntry::ChildIterator lastFoundEntry_;
-        /*! \brief
-         * Whether the reference data is being written (true) or compared
-         * (false).
-         */
-        bool                    updateMismatchingEntries_;
-        //! `true` if self-testing (enables extra failure messages).
-        bool                    bSelfTestMode_;
-        /*! \brief
-         * Current number of unnamed elements in a sequence.
-         *
-         * It is the index of the current unnamed element.
-         */
-        int                     seqIndex_;
+    //! Whether initialized with other means than the default constructor.
+    bool initialized_;
+    //! Default floating-point comparison tolerance.
+    FloatingPointTolerance defaultTolerance_;
+    /*! \brief
+     * Human-readable path to the root node of this checker.
+     *
+     * For the root checker, this will be "/", and for each compound, the
+     * id of the compound is added.  Used for reporting comparison
+     * mismatches.
+     */
+    std::string path_;
+    /*! \brief
+     * Current entry under which reference data is searched for comparison.
+     *
+     * Points to either the TestReferenceDataImpl::compareRootEntry_, or to
+     * a compound entry in the tree rooted at that entry.
+     *
+     * Can be NULL, in which case this checker does nothing (doesn't even
+     * report errors, see shouldIgnore()).
+     */
+    ReferenceDataEntry* compareRootEntry_;
+    /*! \brief
+     * Current entry under which entries for writing are created.
+     *
+     * Points to either the TestReferenceDataImpl::outputRootEntry_, or to
+     * a compound entry in the tree rooted at that entry.  NULL if only
+     * comparing, or if shouldIgnore() returns `false`.
+     */
+    ReferenceDataEntry* outputRootEntry_;
+    /*! \brief
+     * Iterator to a child of \a compareRootEntry_ that was last found.
+     *
+     * If `compareRootEntry_->isValidChild()` returns false, no entry has
+     * been found yet.
+     * After every check, is updated to point to the entry that was used
+     * for the check.
+     * Subsequent checks start the search for the matching node on this
+     * node.
+     */
+    ReferenceDataEntry::ChildIterator lastFoundEntry_;
+    /*! \brief
+     * Whether the reference data is being written (true) or compared
+     * (false).
+     */
+    bool updateMismatchingEntries_;
+    //! `true` if self-testing (enables extra failure messages).
+    bool bSelfTestMode_;
+    /*! \brief
+     * Current number of unnamed elements in a sequence.
+     *
+     * It is the index of the current unnamed element.
+     */
+    int seqIndex_;
 };
 
-const char *const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";
-const char *const TestReferenceChecker::Impl::cStringNodeName     = "String";
-const char *const TestReferenceChecker::Impl::cUCharNodeName      = "UChar";
-const char *const TestReferenceChecker::Impl::cIntegerNodeName    = "Int";
-const char *const TestReferenceChecker::Impl::cInt32NodeName      = "Int32";
-const char *const TestReferenceChecker::Impl::cUInt32NodeName     = "UInt32";
-const char *const TestReferenceChecker::Impl::cInt64NodeName      = "Int64";
-const char *const TestReferenceChecker::Impl::cUInt64NodeName     = "UInt64";
-const char *const TestReferenceChecker::Impl::cRealNodeName       = "Real";
-const char *const TestReferenceChecker::Impl::cIdAttrName         = "Name";
-const char *const TestReferenceChecker::Impl::cVectorType         = "Vector";
-const char *const TestReferenceChecker::Impl::cObjectType         = "Object";
-const char *const TestReferenceChecker::Impl::cSequenceType       = "Sequence";
-const char *const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
+const char* const TestReferenceChecker::Impl::cBooleanNodeName    = "Bool";
+const char* const TestReferenceChecker::Impl::cStringNodeName     = "String";
+const char* const TestReferenceChecker::Impl::cUCharNodeName      = "UChar";
+const char* const TestReferenceChecker::Impl::cIntegerNodeName    = "Int";
+const char* const TestReferenceChecker::Impl::cInt32NodeName      = "Int32";
+const char* const TestReferenceChecker::Impl::cUInt32NodeName     = "UInt32";
+const char* const TestReferenceChecker::Impl::cInt64NodeName      = "Int64";
+const char* const TestReferenceChecker::Impl::cUInt64NodeName     = "UInt64";
+const char* const TestReferenceChecker::Impl::cRealNodeName       = "Real";
+const char* const TestReferenceChecker::Impl::cIdAttrName         = "Name";
+const char* const TestReferenceChecker::Impl::cVectorType         = "Vector";
+const char* const TestReferenceChecker::Impl::cObjectType         = "Object";
+const char* const TestReferenceChecker::Impl::cSequenceType       = "Sequence";
+const char* const TestReferenceChecker::Impl::cSequenceLengthName = "Length";
 
 
-TestReferenceChecker::Impl::Impl(bool initialized)
-    : initialized_(initialized), defaultTolerance_(defaultRealTolerance()),
-      compareRootEntry_(nullptr), outputRootEntry_(nullptr),
-      updateMismatchingEntries_(false), bSelfTestMode_(false), seqIndex_(-1)
+TestReferenceChecker::Impl::Impl(bool initialized) :
+    initialized_(initialized),
+    defaultTolerance_(defaultRealTolerance()),
+    compareRootEntry_(nullptr),
+    outputRootEntry_(nullptr),
+    updateMismatchingEntries_(false),
+    bSelfTestMode_(false),
+    seqIndex_(-1)
 {
 }
 
 
-TestReferenceChecker::Impl::Impl(const std::string &path,
-                                 ReferenceDataEntry *compareRootEntry,
-                                 ReferenceDataEntry *outputRootEntry,
-                                 bool updateMismatchingEntries, bool bSelfTestMode,
-                                 const FloatingPointTolerance &defaultTolerance)
-    : initialized_(true), defaultTolerance_(defaultTolerance), path_(path),
-      compareRootEntry_(compareRootEntry), outputRootEntry_(outputRootEntry),
-      lastFoundEntry_(compareRootEntry->children().end()),
-      updateMismatchingEntries_(updateMismatchingEntries),
-      bSelfTestMode_(bSelfTestMode), seqIndex_(-1)
+TestReferenceChecker::Impl::Impl(const std::string&            path,
+                                 ReferenceDataEntry*           compareRootEntry,
+                                 ReferenceDataEntry*           outputRootEntry,
+                                 bool                          updateMismatchingEntries,
+                                 bool                          bSelfTestMode,
+                                 const FloatingPointTolerance& defaultTolerance) :
+    initialized_(true),
+    defaultTolerance_(defaultTolerance),
+    path_(path),
+    compareRootEntry_(compareRootEntry),
+    outputRootEntry_(outputRootEntry),
+    lastFoundEntry_(compareRootEntry->children().end()),
+    updateMismatchingEntries_(updateMismatchingEntries),
+    bSelfTestMode_(bSelfTestMode),
+    seqIndex_(-1)
 {
 }
 
 
-std::string
-TestReferenceChecker::Impl::appendPath(const char *id) const
+std::string TestReferenceChecker::Impl::appendPath(const char* id) const
 {
-    return id != nullptr
-           ? formatEntryPath(path_, id)
-           : formatSequenceEntryPath(path_, seqIndex_);
+    return id != nullptr ? formatEntryPath(path_, id) : formatSequenceEntryPath(path_, seqIndex_);
 }
 
 
-ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
+ReferenceDataEntry* TestReferenceChecker::Impl::findEntry(const char* id)
 {
     ReferenceDataEntry::ChildIterator entry = compareRootEntry_->findChild(id, lastFoundEntry_);
-    seqIndex_ = (id == nullptr) ? seqIndex_+1 : -1;
+    seqIndex_                               = (id == nullptr) ? seqIndex_ + 1 : -1;
     if (compareRootEntry_->isValidChild(entry))
     {
         lastFoundEntry_ = entry;
@@ -614,12 +617,11 @@ ReferenceDataEntry *TestReferenceChecker::Impl::findEntry(const char *id)
     return nullptr;
 }
 
-ReferenceDataEntry *
-TestReferenceChecker::Impl::findOrCreateEntry(
-        const char *type, const char *id,
-        const IReferenceDataEntryChecker &checker)
+ReferenceDataEntry* TestReferenceChecker::Impl::findOrCreateEntry(const char* type,
+                                                                  const char* id,
+                                                                  const IReferenceDataEntryChecker& checker)
 {
-    ReferenceDataEntry *entry = findEntry(id);
+    ReferenceDataEntry* entry = findEntry(id);
     if (entry == nullptr && outputRootEntry_ != nullptr)
     {
         lastFoundEntry_ = compareRootEntry_->addChild(createEntry(type, id, checker));
@@ -628,20 +630,19 @@ TestReferenceChecker::Impl::findOrCreateEntry(
     return entry;
 }
 
-::testing::AssertionResult
-TestReferenceChecker::Impl::processItem(const char *type, const char *id,
-                                        const IReferenceDataEntryChecker &checker)
+::testing::AssertionResult TestReferenceChecker::Impl::processItem(const char* type,
+                                                                   const char* id,
+                                                                   const IReferenceDataEntryChecker& checker)
 {
     if (shouldIgnore())
     {
         return ::testing::AssertionSuccess();
     }
     std::string         fullId = appendPath(id);
-    ReferenceDataEntry *entry  = findOrCreateEntry(type, id, checker);
+    ReferenceDataEntry* entry  = findOrCreateEntry(type, id, checker);
     if (entry == nullptr)
     {
-        return ::testing::AssertionFailure()
-               << "Reference data item " << fullId << " not found";
+        return ::testing::AssertionFailure() << "Reference data item " << fullId << " not found";
     }
     entry->setChecked();
     ::testing::AssertionResult result(checkEntry(*entry, fullId, type, checker));
@@ -664,8 +665,8 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
         ReferenceDataEntry expected(type, id);
         checker.fillEntry(&expected);
         result << std::endl
-        << "String value: '" << expected.value() << "'" << std::endl
-        << " Ref. string: '" << entry->value() << "'";
+               << "String value: '" << expected.value() << "'" << std::endl
+               << " Ref. string: '" << entry->value() << "'";
     }
     return result;
 }
@@ -675,29 +676,23 @@ TestReferenceChecker::Impl::processItem(const char *type, const char *id,
  * TestReferenceData
  */
 
-TestReferenceData::TestReferenceData()
-    : impl_(initReferenceDataInstance())
+TestReferenceData::TestReferenceData() : impl_(initReferenceDataInstance()) {}
+
+
+TestReferenceData::TestReferenceData(ReferenceDataMode mode) :
+    impl_(initReferenceDataInstanceForSelfTest(mode))
 {
 }
 
 
-TestReferenceData::TestReferenceData(ReferenceDataMode mode)
-    : impl_(initReferenceDataInstanceForSelfTest(mode))
-{
-}
-
-
-TestReferenceData::~TestReferenceData()
-{
-}
+TestReferenceData::~TestReferenceData() {}
 
 
 TestReferenceChecker TestReferenceData::rootChecker()
 {
     if (!impl_->bInUse_ && !impl_->compareRootEntry_)
     {
-        ADD_FAILURE() << "Reference data file not found: "
-        << impl_->fullFilename_;
+        ADD_FAILURE() << "Reference data file not found: " << impl_->fullFilename_;
     }
     impl_->bInUse_ = true;
     if (!impl_->compareRootEntry_)
@@ -705,11 +700,9 @@ TestReferenceChecker TestReferenceData::rootChecker()
         return TestReferenceChecker(new TestReferenceChecker::Impl(true));
     }
     impl_->compareRootEntry_->setChecked();
-    return TestReferenceChecker(
-            new TestReferenceChecker::Impl("", impl_->compareRootEntry_.get(),
-                                           impl_->outputRootEntry_.get(),
-                                           impl_->updateMismatchingEntries_, impl_->bSelfTestMode_,
-                                           defaultRealTolerance()));
+    return TestReferenceChecker(new TestReferenceChecker::Impl(
+            "", impl_->compareRootEntry_.get(), impl_->outputRootEntry_.get(),
+            impl_->updateMismatchingEntries_, impl_->bSelfTestMode_, defaultRealTolerance()));
 }
 
 
@@ -717,36 +710,27 @@ TestReferenceChecker TestReferenceData::rootChecker()
  * TestReferenceChecker
  */
 
-TestReferenceChecker::TestReferenceChecker()
-    : impl_(new Impl(false))
+TestReferenceChecker::TestReferenceChecker() : impl_(new Impl(false)) {}
+
+TestReferenceChecker::TestReferenceChecker(Impl* impl) : impl_(impl) {}
+
+TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker& other) :
+    impl_(new Impl(*other.impl_))
 {
 }
 
-TestReferenceChecker::TestReferenceChecker(Impl *impl)
-    : impl_(impl)
+TestReferenceChecker::TestReferenceChecker(TestReferenceChecker&& other) noexcept :
+    impl_(std::move(other.impl_))
 {
 }
 
-TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
-    : impl_(new Impl(*other.impl_))
-{
-}
-
-TestReferenceChecker::TestReferenceChecker(TestReferenceChecker &&other) noexcept
-    : impl_(std::move(other.impl_))
-{
-}
-
-TestReferenceChecker &
-TestReferenceChecker::operator=(TestReferenceChecker &&other) noexcept
+TestReferenceChecker& TestReferenceChecker::operator=(TestReferenceChecker&& other) noexcept
 {
     impl_ = std::move(other.impl_);
     return *this;
 }
 
-TestReferenceChecker::~TestReferenceChecker()
-{
-}
+TestReferenceChecker::~TestReferenceChecker() {}
 
 bool TestReferenceChecker::isValid() const
 {
@@ -754,8 +738,7 @@ bool TestReferenceChecker::isValid() const
 }
 
 
-void TestReferenceChecker::setDefaultTolerance(
-        const FloatingPointTolerance &tolerance)
+void TestReferenceChecker::setDefaultTolerance(const FloatingPointTolerance& tolerance)
 {
     impl_->defaultTolerance_ = tolerance;
 }
@@ -772,22 +755,20 @@ void TestReferenceChecker::checkUnusedEntries()
 }
 
 
-bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
+bool TestReferenceChecker::checkPresent(bool bPresent, const char* id)
 {
     if (impl_->shouldIgnore() || impl_->outputRootEntry_ != nullptr)
     {
         return bPresent;
     }
-    ReferenceDataEntry::ChildIterator  entry
-        = impl_->compareRootEntry_->findChild(id, impl_->lastFoundEntry_);
-    const bool                         bFound
-        = impl_->compareRootEntry_->isValidChild(entry);
+    ReferenceDataEntry::ChildIterator entry =
+            impl_->compareRootEntry_->findChild(id, impl_->lastFoundEntry_);
+    const bool bFound = impl_->compareRootEntry_->isValidChild(entry);
     if (bFound != bPresent)
     {
-        ADD_FAILURE() << "Mismatch while checking reference data item '"
-        << impl_->appendPath(id) << "'\n"
-        << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
-        << "  Actual: " << (bFound ? "it is present." : "it is absent.");
+        ADD_FAILURE() << "Mismatch while checking reference data item '" << impl_->appendPath(id) << "'\n"
+                      << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
+                      << "  Actual: " << (bFound ? "it is present." : "it is absent.");
     }
     if (bFound && bPresent)
     {
@@ -798,7 +779,7 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
 }
 
 
-TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const char *id)
+TestReferenceChecker TestReferenceChecker::checkCompound(const char* type, const char* id)
 {
     if (impl_->shouldIgnore())
     {
@@ -806,7 +787,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     }
     std::string         fullId = impl_->appendPath(id);
     NullChecker         checker;
-    ReferenceDataEntry *entry  = impl_->findOrCreateEntry(type, id, checker);
+    ReferenceDataEntry* entry = impl_->findOrCreateEntry(type, id, checker);
     if (entry == nullptr)
     {
         ADD_FAILURE() << "Reference data item " << fullId << " not found";
@@ -830,13 +811,12 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
     {
         impl_->outputRootEntry_->addChild(entry->cloneToOutputEntry());
     }
-    return TestReferenceChecker(
-            new Impl(fullId, entry, entry->correspondingOutputEntry(),
-                     impl_->updateMismatchingEntries_, impl_->bSelfTestMode_,
-                     impl_->defaultTolerance_));
+    return TestReferenceChecker(new Impl(fullId, entry, entry->correspondingOutputEntry(),
+                                         impl_->updateMismatchingEntries_, impl_->bSelfTestMode_,
+                                         impl_->defaultTolerance_));
 }
 
-TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const std::string &id)
+TestReferenceChecker TestReferenceChecker::checkCompound(const char* type, const std::string& id)
 {
     return checkCompound(type, id.c_str());
 }
@@ -851,123 +831,119 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
  * \todo Eliminate this limitation of TinyXML2. See
  * e.g. https://github.com/leethomason/tinyxml2/issues/432
  */
-static void
-throwIfNonEmptyAndOnlyWhitespace(const std::string &s, const char *id)
+static void throwIfNonEmptyAndOnlyWhitespace(const std::string& s, const char* id)
 {
-    if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char &c){ return std::isspace(c); }))
+    if (!s.empty() && std::all_of(s.cbegin(), s.cend(), [](const char& c) { return std::isspace(c); }))
     {
         std::string message("String '" + s + "' with ");
         message += (id != nullptr) ? "null " : "";
         message += "ID ";
         message += (id != nullptr) ? "" : id;
-        message += " cannot be handled. We must refuse to write a refdata String"
-            "field for a non-empty string that contains only whitespace, "
-            "because it will not be read correctly by TinyXML2.";
+        message +=
+                " cannot be handled. We must refuse to write a refdata String"
+                "field for a non-empty string that contains only whitespace, "
+                "because it will not be read correctly by TinyXML2.";
         GMX_THROW(TestException(message));
     }
 }
 
-void TestReferenceChecker::checkBoolean(bool value, const char *id)
+void TestReferenceChecker::checkBoolean(bool value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cBooleanNodeName, id,
                                     ExactStringChecker(value ? "true" : "false")));
 }
 
 
-void TestReferenceChecker::checkString(const char *value, const char *id)
+void TestReferenceChecker::checkString(const char* value, const char* id)
 {
     throwIfNonEmptyAndOnlyWhitespace(value, id);
-    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
-                                    ExactStringChecker(value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id, ExactStringChecker(value)));
 }
 
 
-void TestReferenceChecker::checkString(const std::string &value, const char *id)
+void TestReferenceChecker::checkString(const std::string& value, const char* id)
 {
     throwIfNonEmptyAndOnlyWhitespace(value, id);
-    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
-                                    ExactStringChecker(value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id, ExactStringChecker(value)));
 }
 
 
-void TestReferenceChecker::checkTextBlock(const std::string &value,
-                                          const char        *id)
+void TestReferenceChecker::checkTextBlock(const std::string& value, const char* id)
 {
-    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
-                                    ExactStringBlockChecker(value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id, ExactStringBlockChecker(value)));
 }
 
 
-void TestReferenceChecker::checkUChar(unsigned char value, const char *id)
+void TestReferenceChecker::checkUChar(unsigned char value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,
                                     ExactStringChecker(formatString("%d", value))));
 }
 
-void TestReferenceChecker::checkInteger(int value, const char *id)
+void TestReferenceChecker::checkInteger(int value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
                                     ExactStringChecker(formatString("%d", value))));
 }
 
-void TestReferenceChecker::checkInt32(int32_t value, const char *id)
+void TestReferenceChecker::checkInt32(int32_t value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cInt32NodeName, id,
                                     ExactStringChecker(formatString("%" PRId32, value))));
 }
 
-void TestReferenceChecker::checkUInt32(uint32_t value, const char *id)
+void TestReferenceChecker::checkUInt32(uint32_t value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cUInt32NodeName, id,
                                     ExactStringChecker(formatString("%" PRIu32, value))));
 }
 
-void TestReferenceChecker::checkInt64(int64_t value, const char *id)
+void TestReferenceChecker::checkInt64(int64_t value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
                                     ExactStringChecker(formatString("%" PRId64, value))));
 }
 
-void TestReferenceChecker::checkUInt64(uint64_t value, const char *id)
+void TestReferenceChecker::checkUInt64(uint64_t value, const char* id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cUInt64NodeName, id,
                                     ExactStringChecker(formatString("%" PRIu64, value))));
 }
 
-void TestReferenceChecker::checkDouble(double value, const char *id)
+void TestReferenceChecker::checkDouble(double value, const char* id)
 {
     FloatingPointChecker<double> checker(value, impl_->defaultTolerance_);
     EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 
-void TestReferenceChecker::checkFloat(float value, const char *id)
+void TestReferenceChecker::checkFloat(float value, const char* id)
 {
     FloatingPointChecker<float> checker(value, impl_->defaultTolerance_);
     EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 
-void TestReferenceChecker::checkReal(float value, const char *id)
+void TestReferenceChecker::checkReal(float value, const char* id)
 {
     checkFloat(value, id);
 }
 
 
-void TestReferenceChecker::checkReal(double value, const char *id)
+void TestReferenceChecker::checkReal(double value, const char* id)
 {
     checkDouble(value, id);
 }
 
 
-void TestReferenceChecker::checkRealFromString(const std::string &value, const char *id)
+void TestReferenceChecker::checkRealFromString(const std::string& value, const char* id)
 {
     FloatingPointFromStringChecker<real> checker(value, impl_->defaultTolerance_);
     EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, checker));
 }
 
 
-void TestReferenceChecker::checkVector(const int value[3], const char *id)
+void TestReferenceChecker::checkVector(const int value[3], const char* id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cVectorType, id));
     compound.checkInteger(value[0], "X");
@@ -976,7 +952,7 @@ void TestReferenceChecker::checkVector(const int value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkVector(const float value[3], const char *id)
+void TestReferenceChecker::checkVector(const float value[3], const char* id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cVectorType, id));
     compound.checkReal(value[0], "X");
@@ -985,7 +961,7 @@ void TestReferenceChecker::checkVector(const float value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkVector(const double value[3], const char *id)
+void TestReferenceChecker::checkVector(const double value[3], const char* id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cVectorType, id));
     compound.checkReal(value[0], "X");
@@ -994,7 +970,7 @@ void TestReferenceChecker::checkVector(const double value[3], const char *id)
 }
 
 
-void TestReferenceChecker::checkAny(const Any &any, const char *id)
+void TestReferenceChecker::checkAny(const Any& any, const char* id)
 {
     if (any.isType<bool>())
     {
@@ -1039,10 +1015,10 @@ void TestReferenceChecker::checkAny(const Any &any, const char *id)
 }
 
 
-void TestReferenceChecker::checkKeyValueTreeObject(const KeyValueTreeObject &tree, const char *id)
+void TestReferenceChecker::checkKeyValueTreeObject(const KeyValueTreeObject& tree, const char* id)
 {
     TestReferenceChecker compound(checkCompound(Impl::cObjectType, id));
-    for (const auto &prop : tree.properties())
+    for (const auto& prop : tree.properties())
     {
         compound.checkKeyValueTreeValue(prop.value(), prop.key().c_str());
     }
@@ -1050,7 +1026,7 @@ void TestReferenceChecker::checkKeyValueTreeObject(const KeyValueTreeObject &tre
 }
 
 
-void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value, const char *id)
+void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue& value, const char* id)
 {
     if (value.isObject())
     {
@@ -1058,7 +1034,7 @@ void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value
     }
     else if (value.isArray())
     {
-        const auto &values = value.asArray().values();
+        const auto& values = value.asArray().values();
         checkSequence(values.begin(), values.end(), id);
     }
     else
@@ -1068,8 +1044,7 @@ void TestReferenceChecker::checkKeyValueTreeValue(const KeyValueTreeValue &value
 }
 
 
-TestReferenceChecker
-TestReferenceChecker::checkSequenceCompound(const char *id, size_t length)
+TestReferenceChecker TestReferenceChecker::checkSequenceCompound(const char* id, size_t length)
 {
     TestReferenceChecker compound(checkCompound(Impl::cSequenceType, id));
     compound.checkInteger(static_cast<int>(length), Impl::cSequenceLengthName);
@@ -1077,93 +1052,86 @@ TestReferenceChecker::checkSequenceCompound(const char *id, size_t length)
 }
 
 
-unsigned char TestReferenceChecker::readUChar(const char *id)
+unsigned char TestReferenceChecker::readUChar(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     int value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,
-                                    ValueExtractor<int>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id, ValueExtractor<int>(&value)));
     return value;
 }
 
 
-int TestReferenceChecker::readInteger(const char *id)
+int TestReferenceChecker::readInteger(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     int value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id,
-                                    ValueExtractor<int>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cIntegerNodeName, id, ValueExtractor<int>(&value)));
     return value;
 }
 
 
-int32_t TestReferenceChecker::readInt32(const char *id)
+int32_t TestReferenceChecker::readInt32(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     int32_t value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cInt32NodeName, id,
-                                    ValueExtractor<int32_t>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cInt32NodeName, id, ValueExtractor<int32_t>(&value)));
     return value;
 }
 
 
-int64_t TestReferenceChecker::readInt64(const char *id)
+int64_t TestReferenceChecker::readInt64(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     int64_t value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id,
-                                    ValueExtractor<int64_t>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cInt64NodeName, id, ValueExtractor<int64_t>(&value)));
     return value;
 }
 
 
-float TestReferenceChecker::readFloat(const char *id)
+float TestReferenceChecker::readFloat(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     float value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id,
-                                    ValueExtractor<float>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, ValueExtractor<float>(&value)));
     return value;
 }
 
 
-double TestReferenceChecker::readDouble(const char *id)
+double TestReferenceChecker::readDouble(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     double value = 0;
-    EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id,
-                                    ValueExtractor<double>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cRealNodeName, id, ValueExtractor<double>(&value)));
     return value;
 }
 
 
-std::string TestReferenceChecker::readString(const char *id)
+std::string TestReferenceChecker::readString(const char* id)
 {
     if (impl_->shouldIgnore())
     {
         GMX_THROW(TestException("Trying to read from non-existent reference data value"));
     }
     std::string value;
-    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
-                                    ValueExtractor<std::string>(&value)));
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id, ValueExtractor<std::string>(&value)));
     return value;
 }
 

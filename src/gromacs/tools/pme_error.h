@@ -40,6 +40,6 @@
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  */
-int gmx_pme_error(int argc, char *argv[]);
+int gmx_pme_error(int argc, char* argv[]);
 
 #endif

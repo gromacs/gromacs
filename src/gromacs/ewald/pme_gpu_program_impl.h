@@ -81,11 +81,11 @@ struct PmeGpuProgramImpl
 
     //! Conveniently all the PME kernels use the same single argument type
 #if GMX_GPU == GMX_GPU_CUDA
-    using PmeKernelHandle = void(*)(const struct PmeGpuCudaKernelParams);
+    using PmeKernelHandle = void (*)(const struct PmeGpuCudaKernelParams);
 #elif GMX_GPU == GMX_GPU_OPENCL
     using PmeKernelHandle = cl_kernel;
 #else
-    using PmeKernelHandle = void *;
+    using PmeKernelHandle = void*;
 #endif
 
     /*! \brief
@@ -100,13 +100,13 @@ struct PmeGpuProgramImpl
     /**
      * Spread/spline kernels are compiled only for order of 4.
      * There are multiple versions of each kernel, paramaretized according to
-     *   Number of threads per atom. Using either order(4) or order*order (16) threads per atom is supported
-     *   If the spline data is written in the spline/spread kernel and loaded in the gather
+     *   Number of threads per atom. Using either order(4) or order*order (16) threads per atom is
+     * supported If the spline data is written in the spline/spread kernel and loaded in the gather
      *   or recalculated in the gather.
      * Spreading kernels also have hardcoded X/Y indices wrapping parameters,
      * as a placeholder for implementing 1/2D decomposition.
      */
-    size_t          spreadWorkGroupSize;
+    size_t spreadWorkGroupSize;
 
     PmeKernelHandle splineKernel;
     PmeKernelHandle splineKernelThPerAtom4;
@@ -124,7 +124,7 @@ struct PmeGpuProgramImpl
      * Also similarly to the gather we can use either order(4) or order*order (16) threads per atom
      * and either recalculate the splines or read the ones written by the spread
      */
-    size_t          gatherWorkGroupSize;
+    size_t gatherWorkGroupSize;
 
     PmeKernelHandle gatherReduceWithInputKernel;
     PmeKernelHandle gatherReduceWithInputKernelThPerAtom4;
@@ -140,7 +140,7 @@ struct PmeGpuProgramImpl
     /** Solve kernel doesn't care about the interpolation order, but can optionally
      * compute energy and virial, and supports XYZ and YZX grid orderings.
      */
-    size_t          solveMaxWorkGroupSize;
+    size_t solveMaxWorkGroupSize;
 
     PmeKernelHandle solveYZXKernel;
     PmeKernelHandle solveXYZKernel;
@@ -150,13 +150,13 @@ struct PmeGpuProgramImpl
 
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device
-    explicit PmeGpuProgramImpl(const gmx_device_info_t *deviceInfo);
+    explicit PmeGpuProgramImpl(const gmx_device_info_t* deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 
-    private:
-        // Compiles kernels, if supported. Called by the constructor.
-        void compileKernels(const gmx_device_info_t *deviceInfo);
+private:
+    // Compiles kernels, if supported. Called by the constructor.
+    void compileKernels(const gmx_device_info_t* deviceInfo);
 };
 
 #endif

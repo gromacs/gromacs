@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,13 +42,12 @@
 namespace gmx
 {
 
-uint64_t
-makeRandomSeed()
+uint64_t makeRandomSeed()
 {
-    std::random_device  rd;
-    uint64_t            result;
-    std::size_t         deviceBits = std::numeric_limits<std::random_device::result_type>::digits;
-    std::size_t         resultBits = std::numeric_limits<uint64_t>::digits;
+    std::random_device rd;
+    uint64_t           result;
+    std::size_t        deviceBits = std::numeric_limits<std::random_device::result_type>::digits;
+    std::size_t        resultBits = std::numeric_limits<uint64_t>::digits;
 
     result = static_cast<uint64_t>(rd());
 
@@ -60,4 +59,4 @@ makeRandomSeed()
     return result;
 }
 
-}  // namespace gmx
+} // namespace gmx

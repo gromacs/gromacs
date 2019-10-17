@@ -46,11 +46,11 @@ struct MoleculePatchDatabase;
 struct InteractionsOfType;
 struct PreprocessResidue;
 
-void gen_pad(t_atoms                                        *atoms,
-             gmx::ArrayRef<const PreprocessResidue>          rtpFFDB,
-             gmx::ArrayRef<InteractionsOfType>               plist,
-             t_excls                                         excls[],
-             gmx::ArrayRef<MoleculePatchDatabase>            globalPatches,
-             bool                                            bAllowMissing);
+void gen_pad(t_atoms*                               atoms,
+             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+             gmx::ArrayRef<InteractionsOfType>      plist,
+             t_excls                                excls[],
+             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
+             bool                                   bAllowMissing);
 
 #endif

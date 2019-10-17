@@ -63,33 +63,31 @@ namespace test
  */
 class TrajectoryFrameWriterTest : public ModuleTest
 {
-    public:
-        /*! \brief
-         * Test basic behaviour without special requirements.
-         *
-         * \param[in] filename Name for output file.
-         */
-        void basicTest(const char *filename)
-        {
-            addTopology();
+public:
+    /*! \brief
+     * Test basic behaviour without special requirements.
+     *
+     * \param[in] filename Name for output file.
+     */
+    void basicTest(const char* filename)
+    {
+        addTopology();
 
-            OutputRequirements       requirements;
+        OutputRequirements requirements;
 
-            runTest(filename, requirements);
-        }
-        /*! \brief
-         * Test with extra requirements.
-         *
-         * \param[in] filename Name for output file.
-         * \param[in] requirements Specify extra reqs for output.
-         */
-        void testWithRequirements(const char               *filename,
-                                  const OutputRequirements &requirements)
-        {
-            addTopology();
-            runTest(filename, requirements);
-        }
-
+        runTest(filename, requirements);
+    }
+    /*! \brief
+     * Test with extra requirements.
+     *
+     * \param[in] filename Name for output file.
+     * \param[in] requirements Specify extra reqs for output.
+     */
+    void testWithRequirements(const char* filename, const OutputRequirements& requirements)
+    {
+        addTopology();
+        runTest(filename, requirements);
+    }
 };
 
 TEST_P(TrajectoryFrameWriterTest, WorksWithFormats)
@@ -104,33 +102,27 @@ TEST_F(TrajectoryFrameWriterTest, RejectsWrongFiletype)
 
 TEST_F(TrajectoryFrameWriterTest, BuilderFailsWithPdbAndNoAtoms)
 {
-    OutputRequirements       requirements;
+    OutputRequirements requirements;
     requirements.atoms = ChangeAtomsType::Never;
-    EXPECT_THROW(testWithRequirements("test.pdb",
-                                      requirements),
-                 InconsistentInputError);
+    EXPECT_THROW(testWithRequirements("test.pdb", requirements), InconsistentInputError);
 }
 
 TEST_F(TrajectoryFrameWriterTest, BuilderFailsWithGroAndNoAtoms)
 {
-    OutputRequirements       requirements;
+    OutputRequirements requirements;
     requirements.atoms = ChangeAtomsType::Never;
-    EXPECT_THROW(testWithRequirements("test.gro",
-                                      requirements),
-                 InconsistentInputError);
+    EXPECT_THROW(testWithRequirements("test.gro", requirements), InconsistentInputError);
 }
 
 TEST_F(TrajectoryFrameWriterTest, BuilderImplictlyAddsAtoms)
 {
-    OutputRequirements       requirements;
+    OutputRequirements requirements;
     requirements.atoms = ChangeAtomsType::PreservedIfPresent;
     {
-        EXPECT_NO_THROW(testWithRequirements("test.pdb",
-                                             requirements));
+        EXPECT_NO_THROW(testWithRequirements("test.pdb", requirements));
     }
     {
-        EXPECT_NO_THROW(testWithRequirements("test.gro",
-                                             requirements));
+        EXPECT_NO_THROW(testWithRequirements("test.gro", requirements));
     }
 }
 
@@ -145,19 +137,16 @@ TEST_F(TrajectoryFrameWriterTest, TNGOutputWorks)
 /*!\brief
  * Character array of different file names to test.
  */
-const char *const trajectoryFileNames[] = {
-    "spc2-traj.trr",
+const char* const trajectoryFileNames[] = { "spc2-traj.trr",
 #if GMX_USE_TNG
-    "spc2-traj.tng",
+                                            "spc2-traj.tng",
 #endif
-    "spc2-traj.xtc",
-    "spc2-traj.pdb",
-    "spc2-traj.gro",
-    "spc2-traj.g96"
-};
+                                            "spc2-traj.xtc", "spc2-traj.pdb",
+                                            "spc2-traj.gro", "spc2-traj.g96" };
 
 INSTANTIATE_TEST_CASE_P(CoordinateFileFileFormats,
-                        TrajectoryFrameWriterTest, ::testing::ValuesIn(trajectoryFileNames));
+                        TrajectoryFrameWriterTest,
+                        ::testing::ValuesIn(trajectoryFileNames));
 
 } // namespace test
 

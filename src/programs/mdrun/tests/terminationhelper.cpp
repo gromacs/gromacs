@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,16 +55,17 @@ namespace gmx
 namespace test
 {
 
-TerminationHelper::TerminationHelper(TestFileManager  *fileManager,
-                                     CommandLine      *mdrunCaller,
-                                     SimulationRunner *runner)
-    : mdrunCaller_(mdrunCaller), runner_(runner)
+TerminationHelper::TerminationHelper(TestFileManager*  fileManager,
+                                     CommandLine*      mdrunCaller,
+                                     SimulationRunner* runner) :
+    mdrunCaller_(mdrunCaller),
+    runner_(runner)
 {
     runner_->cptFileName_ = fileManager->getTemporaryFilePath(".cpt");
     runner_->useTopGroAndNdxFromDatabase("spc2");
 }
 
-void TerminationHelper::runFirstMdrun(const std::string &expectedCptFileName)
+void TerminationHelper::runFirstMdrun(const std::string& expectedCptFileName)
 {
     CommandLine firstPart(*mdrunCaller_);
     // Stop after 0.036 ms, which should be short enough that
@@ -73,7 +74,8 @@ void TerminationHelper::runFirstMdrun(const std::string &expectedCptFileName)
     firstPart.addOption("-nstlist", 1);
     firstPart.addOption("-cpo", runner_->cptFileName_);
     ASSERT_EQ(0, runner_->callMdrun(firstPart));
-    EXPECT_EQ(true, File::exists(expectedCptFileName, File::returnFalseOnError)) << expectedCptFileName << " was not found";
+    EXPECT_EQ(true, File::exists(expectedCptFileName, File::returnFalseOnError))
+            << expectedCptFileName << " was not found";
 }
 
 void TerminationHelper::runSecondMdrun()
@@ -93,5 +95,5 @@ void TerminationHelper::runSecondMdrunWithNoAppend()
     ASSERT_EQ(0, runner_->callMdrun(secondPart));
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

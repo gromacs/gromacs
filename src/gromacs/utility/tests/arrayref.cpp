@@ -74,28 +74,27 @@ TEST(EmptyConstArrayRefTest, IsEmpty)
 #ifdef GTEST_HAS_TYPED_TEST
 
 //! Define the types that end up being available as TypeParam in the test cases for both kinds of ArrayRef
-typedef ::testing::Types<
-        ArrayRef<char>,
-        ArrayRef<unsigned char>,
-        ArrayRef<int>,
-        ArrayRef<unsigned int>,
-        ArrayRef<long>,
-        ArrayRef<unsigned long>,
-        ArrayRef<int64_t>,
-        ArrayRef<uint64_t>,
-        ArrayRef<float>,
-        ArrayRef<double>,
-        ArrayRef<const char>,
-        ArrayRef<const unsigned char>,
-        ArrayRef<const int>,
-        ArrayRef<const unsigned int>,
-        ArrayRef<const long>,
-        ArrayRef<const unsigned long>,
-        ArrayRef<const int64_t>,
-        ArrayRef<const uint64_t>,
-        ArrayRef<const float>,
-        ArrayRef<const double>
-        > ArrayRefTypes;
+typedef ::testing::Types<ArrayRef<char>,
+                         ArrayRef<unsigned char>,
+                         ArrayRef<int>,
+                         ArrayRef<unsigned int>,
+                         ArrayRef<long>,
+                         ArrayRef<unsigned long>,
+                         ArrayRef<int64_t>,
+                         ArrayRef<uint64_t>,
+                         ArrayRef<float>,
+                         ArrayRef<double>,
+                         ArrayRef<const char>,
+                         ArrayRef<const unsigned char>,
+                         ArrayRef<const int>,
+                         ArrayRef<const unsigned int>,
+                         ArrayRef<const long>,
+                         ArrayRef<const unsigned long>,
+                         ArrayRef<const int64_t>,
+                         ArrayRef<const uint64_t>,
+                         ArrayRef<const float>,
+                         ArrayRef<const double>>
+        ArrayRefTypes;
 
 constexpr index aSize = 3;
 
@@ -103,35 +102,34 @@ constexpr index aSize = 3;
  *
  * The main objective is to verify that all the different kinds of
  * construction lead to the expected result. */
-template <typename TypeParam>
+template<typename TypeParam>
 class ArrayRefTest : public ::testing::Test
 {
-    public:
-        typedef TypeParam ArrayRefType;
-        typedef typename ArrayRefType::value_type ValueType;
-        typedef std::remove_const_t<ValueType> NonConstValueType;
+public:
+    typedef TypeParam                         ArrayRefType;
+    typedef typename ArrayRefType::value_type ValueType;
+    typedef std::remove_const_t<ValueType>    NonConstValueType;
 
-        /*! \brief Run the same tests all the time
-         *
-         * Note that test cases must call this->runTests(), because
-         * that's how the derived-class templates that implement
-         * type-parameterized tests actually work. */
-        void runTests(ValueType     *aData,
-                      ArrayRefType  &arrayRef)
+    /*! \brief Run the same tests all the time
+     *
+     * Note that test cases must call this->runTests(), because
+     * that's how the derived-class templates that implement
+     * type-parameterized tests actually work. */
+    void runTests(ValueType* aData, ArrayRefType& arrayRef)
+    {
+        ASSERT_EQ(aSize, arrayRef.size());
+        ASSERT_FALSE(arrayRef.empty());
+        EXPECT_EQ(aData, arrayRef.data());
+        EXPECT_EQ(a[0], arrayRef.front());
+        EXPECT_EQ(a[aSize - 1], arrayRef.back());
+        for (index i = 0; i != aSize; ++i)
         {
-            ASSERT_EQ(aSize, arrayRef.size());
-            ASSERT_FALSE(arrayRef.empty());
-            EXPECT_EQ(aData, arrayRef.data());
-            EXPECT_EQ(a[0], arrayRef.front());
-            EXPECT_EQ(a[aSize-1], arrayRef.back());
-            for (index i = 0; i != aSize; ++i)
-            {
-                EXPECT_EQ(a[i], arrayRef[i]);
-            }
+            EXPECT_EQ(a[i], arrayRef[i]);
         }
+    }
 
-        ValueType         a[aSize]  = { ValueType(1.2), ValueType(2.4), ValueType(3.1) };
-        NonConstValueType ma[aSize] = { ValueType(1.2), ValueType(2.4), ValueType(3.1) };
+    ValueType         a[aSize]  = { ValueType(1.2), ValueType(2.4), ValueType(3.1) };
+    NonConstValueType ma[aSize] = { ValueType(1.2), ValueType(2.4), ValueType(3.1) };
 };
 
 TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
@@ -178,9 +176,9 @@ using makeConstIf_t = std::conditional_t<c, const T, T>;
 
 TYPED_TEST(ArrayRefTest, ConstructFromVectorWorks)
 {
-    makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value,
-                  std::vector<typename TestFixture::NonConstValueType> > v(this->a, this->a + aSize);
-    typename TestFixture::ArrayRefType                                   arrayRef(v);
+    makeConstIf_t<std::is_const<typename TestFixture::ValueType>::value, std::vector<typename TestFixture::NonConstValueType>> v(
+            this->a, this->a + aSize);
+    typename TestFixture::ArrayRefType arrayRef(v);
     this->runTests(v.data(), arrayRef);
 }
 
@@ -192,12 +190,12 @@ TYPED_TEST(ArrayRefTest, ConstructFromNonConstVectorWorks)
 }
 
 //! Helper struct for the case actually used in mdrun signalling
-template <typename T>
+template<typename T>
 struct Helper
 {
-    public:
-        T   a[3];
-        int size;
+public:
+    T   a[3];
+    int size;
 };
 
 /*! \brief Test of the case actually used in mdrun signalling
@@ -221,21 +219,20 @@ TYPED_TEST(ArrayRefTest, ConstructFromStructFieldWithTemplateConstructorWorks)
     this->runTests(h.a, arrayRef);
 }
 
-#else   // GTEST_HAS_TYPED_TEST
+#else // GTEST_HAS_TYPED_TEST
 
 /* A dummy test that at least signals that something is missing if one runs the
  * unit test executable itself.
  */
 TEST(DISABLED_ArrayRefTest, GenericTests)
 {
-    ADD_FAILURE()
-    << "Tests for generic ArrayRef functionality require support for "
-    << "Google Test typed tests, which was not available when the tests "
-    << "were compiled.";
+    ADD_FAILURE() << "Tests for generic ArrayRef functionality require support for "
+                  << "Google Test typed tests, which was not available when the tests "
+                  << "were compiled.";
 }
 
 #endif // GTEST_HAS_TYPED_TEST
 
-}      // namespace
+} // namespace
 
-}      // namespace gmx
+} // namespace gmx

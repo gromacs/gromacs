@@ -64,11 +64,11 @@ struct DensityFittingForceProviderState
     /*! \brief The steps since the last force calculation.
      *  Used if density fitting is to be calculated every N steps.
      */
-    std::int64_t                  stepsSinceLastCalculation_ = 0;
+    std::int64_t stepsSinceLastCalculation_ = 0;
     //! The state of the exponential moving average of the similarity measure
     ExponentialMovingAverageState exponentialMovingAverageState_ = {};
     //! An additional factor scaling the force for adaptive force scaling
-    real                          adaptiveForceConstantScale_ = 1.0_real;
+    real adaptiveForceConstantScale_ = 1.0_real;
 };
 
 /*! \internal \brief
@@ -76,31 +76,31 @@ struct DensityFittingForceProviderState
  */
 class DensityFittingForceProvider final : public IForceProvider
 {
-    public:
-        //! Construct force provider for density fitting from its parameters
-        DensityFittingForceProvider(const DensityFittingParameters &parameters,
-                                    basic_mdspan<const float, dynamicExtents3D> referenceDensity,
-                                    const TranslateAndScale &transformationToDensityLattice,
-                                    const LocalAtomSet &localAtomSet,
-                                    int pbcType,
-                                    double simulationTimeStep,
-                                    const DensityFittingForceProviderState &state);
-        ~DensityFittingForceProvider();
-        /*!\brief Calculate forces that maximise goodness-of-fit with a reference density map.
-         * \param[in] forceProviderInput input for force provider
-         * \param[out] forceProviderOutput output for force provider
-         */
-        void calculateForces(const ForceProviderInput &forceProviderInput,
-                             ForceProviderOutput      *forceProviderOutput) override;
+public:
+    //! Construct force provider for density fitting from its parameters
+    DensityFittingForceProvider(const DensityFittingParameters&             parameters,
+                                basic_mdspan<const float, dynamicExtents3D> referenceDensity,
+                                const TranslateAndScale& transformationToDensityLattice,
+                                const LocalAtomSet&      localAtomSet,
+                                int                      pbcType,
+                                double                   simulationTimeStep,
+                                const DensityFittingForceProviderState& state);
+    ~DensityFittingForceProvider();
+    /*!\brief Calculate forces that maximise goodness-of-fit with a reference density map.
+     * \param[in] forceProviderInput input for force provider
+     * \param[out] forceProviderOutput output for force provider
+     */
+    void calculateForces(const ForceProviderInput& forceProviderInput,
+                         ForceProviderOutput*      forceProviderOutput) override;
 
-        //! Return the state of the forceprovider.
-        DensityFittingForceProviderState state();
+    //! Return the state of the forceprovider.
+    DensityFittingForceProviderState state();
 
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_APPLIED_FORCES_DENSITYFITTINGFORCEPROVIDER_H

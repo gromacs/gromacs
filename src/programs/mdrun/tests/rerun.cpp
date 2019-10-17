@@ -84,20 +84,21 @@ namespace
  * quantities from a normal run, because the accumulation order
  * differs. (Nor does it reproduce pair-search frames exactly,
  * either). */
-class MdrunRerunTest : public MdrunTestFixture,
-                       public ::testing::WithParamInterface <
-                       std::tuple < std::string, std::string>>
+class MdrunRerunTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string>>
 {
-    public:
-        //! Trajectory components to compare
-        static const TrajectoryFrameMatchSettings trajectoryMatchSettings;
+public:
+    //! Trajectory components to compare
+    static const TrajectoryFrameMatchSettings trajectoryMatchSettings;
 };
 
 // Compare box, positions and forces, but not velocities
 // (velocities are ignored in reruns)
-const TrajectoryFrameMatchSettings MdrunRerunTest::trajectoryMatchSettings =
-{
-    true, true, true,
+const TrajectoryFrameMatchSettings MdrunRerunTest::trajectoryMatchSettings = {
+    true,
+    true,
+    true,
     ComparisonConditions::MustCompare,
     ComparisonConditions::NoComparison,
     ComparisonConditions::MustCompare
@@ -108,32 +109,28 @@ TEST_P(MdrunRerunTest, WithinTolerances)
     auto params         = GetParam();
     auto simulationName = std::get<0>(params);
     auto integrator     = std::get<1>(params);
-    SCOPED_TRACE(formatString("Comparing normal and rerun of simulation '%s' "
-                              "with integrator '%s'",
-                              simulationName.c_str(), integrator.c_str()));
+    SCOPED_TRACE(
+            formatString("Comparing normal and rerun of simulation '%s' "
+                         "with integrator '%s'",
+                         simulationName.c_str(), integrator.c_str()));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                "no", "no");
+    auto mdpFieldValues =
+            prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(), "no", "no");
 
     // bd is much less reproducible in a rerun than the other integrators
     const int            toleranceScaleFactor = (integrator == "bd") ? 2 : 1;
-    EnergyTermsToCompare energyTermsToCompare
-    {{
-         {
-             interaction_function[F_EPOT].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 24 * toleranceScaleFactor, 40 * toleranceScaleFactor)
-         },
-     }};
+    EnergyTermsToCompare energyTermsToCompare{ {
+            { interaction_function[F_EPOT].longname,
+              relativeToleranceAsPrecisionDependentUlp(10.0, 24 * toleranceScaleFactor,
+                                                       40 * toleranceScaleFactor) },
+    } };
 
     // Specify how trajectory frame matching must work
-    TrajectoryComparison trajectoryComparison {
-        trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
-    };
+    TrajectoryComparison trajectoryComparison{ trajectoryMatchSettings,
+                                               TrajectoryComparison::s_defaultTrajectoryTolerances };
 
     int numWarningsToTolerate = 0;
-    executeRerunTest(&fileManager_, &runner_,
-                     simulationName, numWarningsToTolerate, mdpFieldValues,
+    executeRerunTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues,
                      energyTermsToCompare, trajectoryComparison);
 }
 
@@ -141,18 +138,22 @@ TEST_P(MdrunRerunTest, WithinTolerances)
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "bd", "sd")));
+INSTANTIATE_TEST_CASE_P(
+        NormalMdrunIsReproduced,
+        MdrunRerunTest,
+        ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
+                           ::testing::Values("md", "md-vv", "bd", "sd")));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_NormalMdrunIsReproduced, MdrunRerunTest,
-                            ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "bd", "sd")));
+INSTANTIATE_TEST_CASE_P(
+        DISABLED_NormalMdrunIsReproduced,
+        MdrunRerunTest,
+        ::testing::Combine(::testing::Values("argon12", "tip3p5", "alanine_vsite_vacuo"),
+                           ::testing::Values("md", "md-vv", "bd", "sd")));
 #endif
 
-class MdrunRerunFreeEnergyTest : public MdrunTestFixture,
-                                 public ::testing::WithParamInterface <
-                                 std::tuple < std::string, std::string, int>>
+class MdrunRerunFreeEnergyTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string, int>>
 {
 };
 
@@ -162,44 +163,33 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
     auto simulationName  = std::get<0>(params);
     auto integrator      = std::get<1>(params);
     auto initLambdaState = std::get<2>(params);
-    SCOPED_TRACE(formatString("Comparing normal and rerun of simulation '%s' "
-                              "with integrator '%s' for initial lambda state %d",
-                              simulationName.c_str(), integrator.c_str(), initLambdaState));
+    SCOPED_TRACE(
+            formatString("Comparing normal and rerun of simulation '%s' "
+                         "with integrator '%s' for initial lambda state %d",
+                         simulationName.c_str(), integrator.c_str(), initLambdaState));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                "no", "no");
+    auto mdpFieldValues =
+            prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(), "no", "no");
     mdpFieldValues["other"] += formatString("\ninit-lambda-state = %d", initLambdaState);
 
-    EnergyTermsToCompare energyTermsToCompare
-    {{
-         {
-             interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32)
-         },
-         {
-             interaction_function[F_DVDL_COUL].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8)
-         },
-         {
-             interaction_function[F_DVDL_VDW].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8)
-         },
-         {
-             interaction_function[F_DVDL_BONDED].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8)
-         },
-         {
-             interaction_function[F_DVDL_RESTRAINT].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8)
-         }
-     }};
+    EnergyTermsToCompare energyTermsToCompare{
+        { { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 24, 32) },
+          { interaction_function[F_DVDL_COUL].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
+          { interaction_function[F_DVDL_VDW].longname, relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
+          { interaction_function[F_DVDL_BONDED].longname,
+            relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) },
+          { interaction_function[F_DVDL_RESTRAINT].longname,
+            relativeToleranceAsPrecisionDependentUlp(1.0, 8, 8) } }
+    };
 
     // Specify how trajectory frame matching must work
-    TrajectoryComparison trajectoryComparison {
-        MdrunRerunTest::trajectoryMatchSettings, TrajectoryComparison::s_defaultTrajectoryTolerances
-    };
+    TrajectoryComparison trajectoryComparison{ MdrunRerunTest::trajectoryMatchSettings,
+                                               TrajectoryComparison::s_defaultTrajectoryTolerances };
 
     // The md integrator triggers a warning for nearly decoupled
     // states, which we need to suppress. TODO sometimes?
     int numWarningsToTolerate = (integrator == "md") ? 1 : 0;
-    executeRerunTest(&fileManager_, &runner_,
-                     simulationName, numWarningsToTolerate, mdpFieldValues,
+    executeRerunTest(&fileManager_, &runner_, simulationName, numWarningsToTolerate, mdpFieldValues,
                      energyTermsToCompare, trajectoryComparison);
 }
 
@@ -207,15 +197,17 @@ TEST_P(MdrunRerunFreeEnergyTest, WithinTolerances)
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(MdrunIsReproduced, MdrunRerunFreeEnergyTest,
-                            ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "sd"),
-                                                   ::testing::Range(0, 11)));
+INSTANTIATE_TEST_CASE_P(MdrunIsReproduced,
+                        MdrunRerunFreeEnergyTest,
+                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                           ::testing::Values("md", "md-vv", "sd"),
+                                           ::testing::Range(0, 11)));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_MdrunIsReproduced, MdrunRerunFreeEnergyTest,
-                            ::testing::Combine(::testing::Values("nonanol_vacuo"),
-                                                   ::testing::Values("md", "md-vv", "sd"),
-                                                   ::testing::Range(0, 11)));
+INSTANTIATE_TEST_CASE_P(DISABLED_MdrunIsReproduced,
+                        MdrunRerunFreeEnergyTest,
+                        ::testing::Combine(::testing::Values("nonanol_vacuo"),
+                                           ::testing::Values("md", "md-vv", "sd"),
+                                           ::testing::Range(0, 11)));
 #endif
 
 } // namespace

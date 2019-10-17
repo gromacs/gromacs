@@ -46,13 +46,18 @@ struct gmx_device_info_t;
  * incompatible driver/runtime. */
 typedef enum
 {
-    egpuCompatible = 0,  egpuNonexistent,  egpuIncompatible, egpuIncompatibleClusterSize, egpuInsane, egpuNR
+    egpuCompatible = 0,
+    egpuNonexistent,
+    egpuIncompatible,
+    egpuIncompatibleClusterSize,
+    egpuInsane,
+    egpuNR
 } e_gpu_detect_res_t;
 
 /*! \brief Names of the GPU detection/check results
  *
  * \todo Make a proper class enumeration with helper string */
-extern const char * const gpu_detect_res_str[egpuNR];
+extern const char* const gpu_detect_res_str[egpuNR];
 
 /*! \brief Information about GPU devices on this physical node.
  *
@@ -63,13 +68,13 @@ extern const char * const gpu_detect_res_str[egpuNR];
 struct gmx_gpu_info_t
 {
     //! Did we attempt GPU detection?
-    gmx_bool           bDetectGPUs;
+    gmx_bool bDetectGPUs;
     //! Total number of GPU devices detected on this physical node
-    int                n_dev;
+    int n_dev;
     //! Information about each GPU device detected on this physical node
-    gmx_device_info_t *gpu_dev;
+    gmx_device_info_t* gpu_dev;
     //! Number of GPU devices detected on this physical node that are compatible.
-    int                n_dev_compatible;
+    int n_dev_compatible;
 };
 
 #endif

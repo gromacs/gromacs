@@ -59,10 +59,10 @@ namespace
 {
 
 //! Add a new group to t_blocka
-void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> indices)
+void addGroupToBlocka(t_blocka* b, gmx::ArrayRef<const int> indices)
 {
-    srenew(b->index, b->nr+2);
-    srenew(b->a, b->nra+indices.size());
+    srenew(b->index, b->nr + 2);
+    srenew(b->a, b->nra + indices.size());
     for (index i = 0; i < indices.ssize(); i++)
     {
         b->a[b->nra++] = indices[i];
@@ -74,62 +74,61 @@ void addGroupToBlocka(t_blocka *b, gmx::ArrayRef<const int> indices)
 //! Fill ExclusionBlock with data.
 int fillExclusionBlock(gmx::ArrayRef<ExclusionBlock> b)
 {
-    std::vector < std::vector < int>> indices = {{0, 4, 7}, {1, 5, 8, 10}, {2, 6, 9, 11, 12}};
-    int nra = 0;
+    std::vector<std::vector<int>> indices = { { 0, 4, 7 }, { 1, 5, 8, 10 }, { 2, 6, 9, 11, 12 } };
+    int                           nra     = 0;
     for (index i = 0; i < b.ssize(); i++)
     {
         b[i].atomNumber.clear();
-        for (const auto &j : indices[i])
+        for (const auto& j : indices[i])
         {
             b[i].atomNumber.push_back(j);
         }
-        nra      += b[i].nra();
+        nra += b[i].nra();
     }
     return nra;
 }
 
 //! Fill the t_blocka with some datastructures
-void makeTestBlockAData(t_blocka *ba)
+void makeTestBlockAData(t_blocka* ba)
 {
     init_blocka(ba);
 
-    std::vector<int> indices = {12, 11, 9, 6, 2};
+    std::vector<int> indices = { 12, 11, 9, 6, 2 };
     addGroupToBlocka(ba, indices);
-    indices = {10, 8, 5, 1};
+    indices = { 10, 8, 5, 1 };
     addGroupToBlocka(ba, indices);
-    indices = {7, 4, 0};
+    indices = { 7, 4, 0 };
     addGroupToBlocka(ba, indices);
 }
 
 class ExclusionBlockTest : public ::testing::Test
 {
-    public:
-        ExclusionBlockTest()
-        {
-            const int natom = 3;
-            makeTestBlockAData(&ba_);
-            b_.resize(natom);
-        }
-        ~ExclusionBlockTest() override
-        {
-            done_blocka(&ba_);
-        }
+public:
+    ExclusionBlockTest()
+    {
+        const int natom = 3;
+        makeTestBlockAData(&ba_);
+        b_.resize(natom);
+    }
+    ~ExclusionBlockTest() override { done_blocka(&ba_); }
 
-        void compareBlocks()
+    void compareBlocks()
+    {
+        for (index i = 0; i < ssize(b_); i++)
         {
-            for (index i = 0; i < ssize(b_); i++)
+            int index = ba_.index[i];
+            for (int j = 0; j < b_[i].nra(); j++)
             {
-                int index  = ba_.index[i];
-                for (int j = 0; j < b_[i].nra(); j++)
-                {
-                    int pos = index + j;
-                    EXPECT_EQ(b_[i].atomNumber[j], ba_.a[pos])<< "Block mismatch at " << i << " , " << j << ".";
-                }
+                int pos = index + j;
+                EXPECT_EQ(b_[i].atomNumber[j], ba_.a[pos])
+                        << "Block mismatch at " << i << " , " << j << ".";
             }
         }
-    protected:
-        t_blocka                    ba_;
-        std::vector<ExclusionBlock> b_;
+    }
+
+protected:
+    t_blocka                    ba_;
+    std::vector<ExclusionBlock> b_;
 };
 
 TEST_F(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
@@ -140,9 +139,9 @@ TEST_F(ExclusionBlockTest, ConvertBlockAToExclusionBlocks)
 
 TEST_F(ExclusionBlockTest, ConvertExclusionBlockToBlocka)
 {
-    int             nra = fillExclusionBlock(b_);
-    srenew(ba_.a, nra+1);
-    srenew(ba_.index, b_.size()+1);
+    int nra = fillExclusionBlock(b_);
+    srenew(ba_.a, nra + 1);
+    srenew(ba_.index, b_.size() + 1);
     exclusionBlocksToBlocka(b_, &ba_);
     compareBlocks();
 }
@@ -153,8 +152,8 @@ TEST_F(ExclusionBlockTest, MergeExclusions)
     compareBlocks();
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace testing
+} // namespace testing
 
-}  // namespace gmx
+} // namespace gmx

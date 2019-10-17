@@ -45,75 +45,73 @@ struct ResidueTypeEntry;
 
 class ResidueType
 {
-    public:
-        //! Default constructor.
-        ResidueType();
-        //! Default destructor.
-        ~ResidueType();
+public:
+    //! Default constructor.
+    ResidueType();
+    //! Default destructor.
+    ~ResidueType();
 
-        //! Get handle to underlying residue type data.
-        ResidueTypeEntry *ResidueTypes();
+    //! Get handle to underlying residue type data.
+    ResidueTypeEntry* ResidueTypes();
 
-        //! Get number of entries in ResidueTypes.
-        int numberOfEntries() const;
-        /*! \brief
-         * Return true if residue \p residueName is found or false otherwise.
-         *
-         * \param[in] residueName Residue name to search database for.
-         * \returns true if successful.
-         */
-        bool nameIndexedInResidueTypes(const std::string &residueName);
-        /*! \brief
-         * Add entry to ResidueTypes if unique.
-         *
-         * \param[in] residueName Name of new residue.
-         * \param[in] residueType Type of new residue.
-         */
-        void addResidue(const std::string &residueName, const std::string &residueType);
-        /*! \brief
-         * Checks if the indicated \p residueName if of \p residueType.
-         *
-         * \param[in] residueName Residue that should be checked.
-         * \param[in] residueType Which ResidueType the residue should have.
-         * \returns If the check was successful.
-         */
-        bool namedResidueHasType(const std::string &residueName, const std::string &residueType);
-        /*! \brief
-         * Get index to entry in ResidueTypes with name \p residueName.
-         *
-         * \param[in] residueName Name of the residue being searched.
-         * \returns The index or -1 if not found.
-         */
-        int indexFromResidueName(const std::string &residueName) const;
-        /*! \brief
-         * Get the name of the entry in ResidueTypes with \p index.
-         *
-         * \param[in] index Which entry should be returned.
-         * \returns The name of the entry at \p index, or nullptr.
-         */
-        std::string nameFromResidueIndex(int index) const;
-        /*! \brief
-         * Return the residue type if a residue with that name exists, or "Other"
-         *
-         * \param[in] residueName Name of the residue to search for.
-         * \returns The residue type of any matching residue, or "Other"
-         */
-        std::string
-        typeOfNamedDatabaseResidue(const std::string &residueName);
-        /*! \brief
-         * Return an optional residue type if a residue with that name exists
-         *
-         * \param[in] residueName Name of the residue to search for.
-         * \returns An optional containing the residue type of any matching residue
-         */
-        gmx::compat::optional<std::string>
-        optionalTypeOfNamedDatabaseResidue(const std::string &residueName);
+    //! Get number of entries in ResidueTypes.
+    int numberOfEntries() const;
+    /*! \brief
+     * Return true if residue \p residueName is found or false otherwise.
+     *
+     * \param[in] residueName Residue name to search database for.
+     * \returns true if successful.
+     */
+    bool nameIndexedInResidueTypes(const std::string& residueName);
+    /*! \brief
+     * Add entry to ResidueTypes if unique.
+     *
+     * \param[in] residueName Name of new residue.
+     * \param[in] residueType Type of new residue.
+     */
+    void addResidue(const std::string& residueName, const std::string& residueType);
+    /*! \brief
+     * Checks if the indicated \p residueName if of \p residueType.
+     *
+     * \param[in] residueName Residue that should be checked.
+     * \param[in] residueType Which ResidueType the residue should have.
+     * \returns If the check was successful.
+     */
+    bool namedResidueHasType(const std::string& residueName, const std::string& residueType);
+    /*! \brief
+     * Get index to entry in ResidueTypes with name \p residueName.
+     *
+     * \param[in] residueName Name of the residue being searched.
+     * \returns The index or -1 if not found.
+     */
+    int indexFromResidueName(const std::string& residueName) const;
+    /*! \brief
+     * Get the name of the entry in ResidueTypes with \p index.
+     *
+     * \param[in] index Which entry should be returned.
+     * \returns The name of the entry at \p index, or nullptr.
+     */
+    std::string nameFromResidueIndex(int index) const;
+    /*! \brief
+     * Return the residue type if a residue with that name exists, or "Other"
+     *
+     * \param[in] residueName Name of the residue to search for.
+     * \returns The residue type of any matching residue, or "Other"
+     */
+    std::string typeOfNamedDatabaseResidue(const std::string& residueName);
+    /*! \brief
+     * Return an optional residue type if a residue with that name exists
+     *
+     * \param[in] residueName Name of the residue to search for.
+     * \returns An optional containing the residue type of any matching residue
+     */
+    gmx::compat::optional<std::string> optionalTypeOfNamedDatabaseResidue(const std::string& residueName);
 
-    private:
-        //! Implementation pointer.
-        class Impl;
+private:
+    //! Implementation pointer.
+    class Impl;
 
-        gmx::PrivateImplPointer<Impl> impl_;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
 #endif

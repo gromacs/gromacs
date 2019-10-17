@@ -52,20 +52,20 @@ struct mpi_in_place_buf_t
 {
     /* these buffers are used as destination buffers if MPI_IN_PLACE isn't
        supported.*/
-    int             *ibuf; /* for ints */
-    int              ibuf_alloc;
+    int* ibuf; /* for ints */
+    int  ibuf_alloc;
 
-    int64_t         *libuf;
-    int              libuf_alloc;
+    int64_t* libuf;
+    int      libuf_alloc;
 
-    float           *fbuf; /* for floats */
-    int              fbuf_alloc;
+    float* fbuf; /* for floats */
+    int    fbuf_alloc;
 
-    double          *dbuf; /* for doubles */
-    int              dbuf_alloc;
+    double* dbuf; /* for doubles */
+    int     dbuf_alloc;
 };
 
 //! Cleans up the buffers
-void done_mpi_in_place_buf(mpi_in_place_buf_t *buf);
+void done_mpi_in_place_buf(mpi_in_place_buf_t* buf);
 
 #endif

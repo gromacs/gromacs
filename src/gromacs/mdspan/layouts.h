@@ -98,128 +98,127 @@ namespace gmx
 class layout_right
 {
 
+public:
+    /*! \libinternal \brief Mapping from multidimensional indices within extents to 1D index.
+     * \tparam Extents the extents of the multidimensional integers for the mapping.
+     */
+    template<class Extents>
+    class mapping
+    {
+    private:
+        //! The extents.
+        Extents m_extents;
+
     public:
-        /*! \libinternal \brief Mapping from multidimensional indices within extents to 1D index.
-         * \tparam Extents the extents of the multidimensional integers for the mapping.
+        //! exposing the type of indices
+        using index_type = ptrdiff_t;
+        //! exposing the type of the extents
+        using extents_type = Extents;
+        //! Default constructor.
+        constexpr mapping() noexcept = default;
+        //! Default move constructor.
+        constexpr mapping(mapping&&) noexcept = default;
+        //! Default copy constructor.
+        constexpr mapping(const mapping&) noexcept = default;
+        //! Default move assignment
+        mapping& operator=(mapping&&) noexcept = default;
+        //! Default copy assignment
+        mapping& operator=(const mapping&) noexcept = default;
+        /*! \brief Construct mapping, setting extents
+         * \param[in] ext the extents
          */
-        template<class Extents>
-        class mapping
+        constexpr mapping(const Extents& ext) noexcept : m_extents(ext) {}
+        /*! \brief Return the extents.
+         * \returns extents
+         */
+        constexpr const Extents& extents() const noexcept { return m_extents; }
+
+    private:
+        /* \brief End recursion helper function for static offset calculation.
+         * \param[in] sum The accumulated offset over all dimensions
+         * \returns The offset.
+         */
+        static constexpr index_type offset(const size_t /*r*/, const ptrdiff_t sum) { return sum; }
+
+        /* \brief Statically calculate offset from index and extent.
+         * For a multidimensional index (i0,i1,..,in), in a right memory
+         * layout, 'i0' denotes the slowest moving dimension and
+         * 'in' the fastest moving dimension.
+         * The overall offset within extents N = (N0,..,Nn) is then
+         * offest = i0 * N1 * .. * Nn + i1 * N2 * .. * Nn + in-1 * Nn + in
+         *        = (((i0*N1+i1)*N2+i2)*N3+i3) ...
+         * \param[in] r current rank
+         * \param[in] sum current sum up to this rank
+         * \param[in] i index
+         * \oaram[in] indices The rest of the paramter pack.
+         * \returns The offset.
+         */
+        template<class... Indices>
+        inline constexpr index_type
+        offset(const size_t r, ptrdiff_t sum, const index_type i, Indices... indices) const noexcept
         {
-            private:
-                //! The extents.
-                Extents m_extents;
+            return offset(r + 1, sum * m_extents.extent(r) + i, indices...);
+        }
 
-            public:
-                //! exposing the type of indices
-                using index_type   = ptrdiff_t;
-                //! exposing the type of the extents
-                using extents_type = Extents;
-                //! Default constructor.
-                constexpr mapping() noexcept = default;
-                //! Default move constructor.
-                constexpr mapping( mapping && ) noexcept = default;
-                //! Default copy constructor.
-                constexpr mapping( const mapping & ) noexcept = default;
-                //! Default move assignment
-                mapping &operator= ( mapping && ) noexcept = default;
-                //! Default copy assignment
-                mapping &operator= ( const mapping & ) noexcept = default;
-                /*! \brief Construct mapping, setting extents
-                 * \param[in] ext the extents
-                 */
-                constexpr mapping( const Extents &ext ) noexcept
-                    : m_extents( ext ) {}
-                /*! \brief Return the extents.
-                 * \returns extents
-                 */
-                constexpr const Extents &extents() const noexcept { return m_extents; }
+    public:
+        /*! \brief Return the size of the underlying one-dimensional
+         * data structure, so that the mapping is always valid.
+         *
+         * \returns number of span elements
+         */
+        constexpr index_type required_span_size() const noexcept
+        {
+            index_type size = 1;
+            for (size_t r = 0; r < m_extents.rank(); r++)
+            {
+                size *= m_extents.extent(r);
+            }
+            return size;
+        }
 
-            private:
-                /* \brief End recursion helper function for static offset calculation.
-                 * \param[in] sum The accumulated offset over all dimensions
-                 * \returns The offset.
-                 */
-                static constexpr index_type
-                offset( const size_t /*r*/, const ptrdiff_t sum)
-                { return sum; }
+        /*! \brief Map the multidimensional indices to 1D.
+         * Requires number of indicies have the same dimensionality as the mapping.
+         * \tparam Indices type of the indices to be mapped
+         * \param[in] indices the indices to be mapped
+         * \returns One-dimensional integer index.
+         */
+        template<class... Indices>
+        std::enable_if_t<sizeof...(Indices) == Extents::rank(), index_type> constexpr
+        operator()(Indices... indices) const noexcept
+        {
+            return offset(0, 0, indices...);
+        }
 
-                /* \brief Statically calculate offset from index and extent.
-                 * For a multidimensional index (i0,i1,..,in), in a right memory
-                 * layout, 'i0' denotes the slowest moving dimension and
-                 * 'in' the fastest moving dimension.
-                 * The overall offset within extents N = (N0,..,Nn) is then
-                 * offest = i0 * N1 * .. * Nn + i1 * N2 * .. * Nn + in-1 * Nn + in
-                 *        = (((i0*N1+i1)*N2+i2)*N3+i3) ...
-                 * \param[in] r current rank
-                 * \param[in] sum current sum up to this rank
-                 * \param[in] i index
-                 * \oaram[in] indices The rest of the paramter pack.
-                 * \returns The offset.
-                 */
-                template<class ... Indices >
-                inline constexpr index_type
-                offset( const size_t r, ptrdiff_t sum, const index_type i, Indices... indices) const noexcept
-                {
-                    return offset( r+1, sum * m_extents.extent(r) + i, indices ...);
-                }
+        //! Report that this mapping is always unique.
+        static constexpr bool is_always_unique() noexcept { return true; }
+        //! Report that this mapping is always contiguous.
+        static constexpr bool is_always_contiguous() noexcept { return true; }
+        //! Report that this mapping is always strided.
+        static constexpr bool is_always_strided() noexcept { return true; }
 
-            public:
-                /*! \brief Return the size of the underlying one-dimensional
-                 * data structure, so that the mapping is always valid.
-                 *
-                 * \returns number of span elements
-                 */
-                constexpr index_type required_span_size() const noexcept
-                {
-                    index_type size = 1;
-                    for (size_t r = 0; r < m_extents.rank(); r++)
-                    {
-                        size *= m_extents.extent(r);
-                    }
-                    return size;
-                }
+        //! Report that this mapping is unique.
+        constexpr bool is_unique() const noexcept { return true; }
+        //! Report that this mapping is contiguous.
+        constexpr bool is_contiguous() const noexcept { return true; }
+        //! Report that this mapping is strided.
+        constexpr bool is_strided() const noexcept { return true; }
+        /*!\brief Return the stride of dimension r.
+         * \param[in] R rank of the stride to be queried.
+         * \returns the stride along dimension r.
+         */
+        constexpr index_type stride(const size_t R) const noexcept
+        {
+            ptrdiff_t stride = 1;
+            for (size_t r = m_extents.rank() - 1; r > R; r--)
+            {
+                stride *= m_extents.extent(r);
+            }
+            return stride;
+        }
 
-                /*! \brief Map the multidimensional indices to 1D.
-                 * Requires number of indicies have the same dimensionality as the mapping.
-                 * \tparam Indices type of the indices to be mapped
-                 * \param[in] indices the indices to be mapped
-                 * \returns One-dimensional integer index.
-                 */
-                template<class ... Indices >
-                std::enable_if_t<sizeof ... (Indices) == Extents::rank(), index_type>
-                constexpr operator()( Indices ... indices ) const noexcept
-                { return offset( 0, 0, indices ... ); }
+    }; // class mapping
 
-                //! Report that this mapping is always unique.
-                static constexpr bool is_always_unique()     noexcept { return true; }
-                //! Report that this mapping is always contiguous.
-                static constexpr bool is_always_contiguous() noexcept { return true; }
-                //! Report that this mapping is always strided.
-                static constexpr bool is_always_strided()    noexcept { return true; }
+}; // class layout_right
 
-                //! Report that this mapping is unique.
-                constexpr bool is_unique()     const noexcept { return true; }
-                //! Report that this mapping is contiguous.
-                constexpr bool is_contiguous() const noexcept { return true; }
-                //! Report that this mapping is strided.
-                constexpr bool is_strided()    const noexcept { return true; }
-                /*!\brief Return the stride of dimension r.
-                 * \param[in] R rank of the stride to be queried.
-                 * \returns the stride along dimension r.
-                 */
-                constexpr index_type stride(const size_t R) const noexcept
-                {
-                    ptrdiff_t stride = 1;
-                    for (size_t r = m_extents.rank()-1; r > R; r--)
-                    {
-                        stride *= m_extents.extent(r);
-                    }
-                    return stride;
-                }
-
-        }; // class mapping
-
-};         // class layout_right
-
-}          // namespace gmx
-#endif     /* end of include guard: MDSPAN_LAYOUTS_H */
+} // namespace gmx
+#endif /* end of include guard: MDSPAN_LAYOUTS_H */

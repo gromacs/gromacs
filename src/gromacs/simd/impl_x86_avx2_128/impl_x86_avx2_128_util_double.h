@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,23 +45,17 @@
 namespace gmx
 {
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdDouble    scalar,
-                        SimdDouble *  triplets0,
-                        SimdDouble *  triplets1,
-                        SimdDouble *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdDouble  scalar,
+                                                        SimdDouble* triplets0,
+                                                        SimdDouble* triplets1,
+                                                        SimdDouble* triplets2)
 {
     triplets0->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(0, 0));
     triplets1->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 0));
     triplets2->simdInternal_ = _mm_permute_pd(scalar.simdInternal_, _MM_SHUFFLE2(1, 1));
 }
 
-static inline double
-reduceIncr4ReturnSum(double *    m,
-                     SimdDouble  v0,
-                     SimdDouble  v1,
-                     SimdDouble  v2,
-                     SimdDouble  v3)
+static inline double reduceIncr4ReturnSum(double* m, SimdDouble v0, SimdDouble v1, SimdDouble v2, SimdDouble v3)
 {
     __m128d t1, t2, t3, t4;
 
@@ -83,9 +77,9 @@ reduceIncr4ReturnSum(double *    m,
     t1 = _mm_add_pd(t1, t3);
 
     t2 = _mm_add_sd(t1, _mm_permute_pd(t1, _MM_SHUFFLE2(1, 1)));
-    return *reinterpret_cast<double *>(&t2);
+    return *reinterpret_cast<double*>(&t2);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_UTIL_DOUBLE_H

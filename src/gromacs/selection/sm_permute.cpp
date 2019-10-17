@@ -57,13 +57,13 @@
 typedef struct
 {
     /** Positions to permute. */
-    gmx_ana_pos_t    p;
+    gmx_ana_pos_t p;
     /** Number of elements in the permutation. */
-    int              n;
+    int n;
     /** Array describing the permutation. */
-    int             *perm;
+    int* perm;
     /** Array that has the permutation reversed. */
-    int             *rperm;
+    int* rperm;
 } t_methoddata_permute;
 
 /*! \brief
@@ -76,8 +76,7 @@ typedef struct
  *
  * Allocates memory for a \p t_methoddata_permute structure.
  */
-static void *
-init_data_permute(int npar, gmx_ana_selparam_t *param);
+static void* init_data_permute(int npar, gmx_ana_selparam_t* param);
 /*! \brief
  * Initializes data for the \p permute selection modifier.
  *
@@ -87,8 +86,7 @@ init_data_permute(int npar, gmx_ana_selparam_t *param);
  * \param[in] data  Should point to a \p t_methoddata_permute.
  * \returns   0 if the input permutation is valid, -1 on error.
  */
-static void
-init_permute(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void init_permute(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief
  * Initializes output for the \p permute selection modifier.
  *
@@ -96,11 +94,9 @@ init_permute(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *d
  * \param[in,out] out   Pointer to output data structure.
  * \param[in,out] data  Should point to \c t_methoddata_permute.
  */
-static void
-init_output_permute(const gmx_mtop_t *top, gmx_ana_selvalue_t *out, void *data);
+static void init_output_permute(const gmx_mtop_t* top, gmx_ana_selvalue_t* out, void* data);
 /** Frees the memory allocated for the \p permute selection modifier. */
-static void
-free_data_permute(void *data);
+static void free_data_permute(void* data);
 /*! \brief
  * Evaluates the \p permute selection modifier.
  *
@@ -112,18 +108,19 @@ free_data_permute(void *data);
  * Throws if the size of \p p is not divisible by the number of
  * elements in the permutation.
  */
-static void
-evaluate_permute(const gmx::SelMethodEvalContext &context,
-                 gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_permute(const gmx::SelMethodEvalContext& context,
+                             gmx_ana_pos_t*                   p,
+                             gmx_ana_selvalue_t*              out,
+                             void*                            data);
 
 /** Parameters for the \p permute selection modifier. */
 static gmx_ana_selparam_t smparams_permute[] = {
-    {nullptr,       {POS_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
-    {nullptr,       {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_VARNUM},
+    { nullptr, { POS_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_VARNUM },
 };
 
 /** Help text for the \p permute selection modifier. */
-static const char *const help_permute[] = {
+static const char* const help_permute[] = {
     "::",
     "",
     "  permute P1 ... PN",
@@ -143,8 +140,11 @@ static const char *const help_permute[] = {
 
 /** Selection method data for the \p permute modifier. */
 gmx_ana_selmethod_t sm_permute = {
-    "permute", POS_VALUE, SMETH_MODIFIER,
-    asize(smparams_permute), smparams_permute,
+    "permute",
+    POS_VALUE,
+    SMETH_MODIFIER,
+    asize(smparams_permute),
+    smparams_permute,
     &init_data_permute,
     nullptr,
     &init_permute,
@@ -153,33 +153,30 @@ gmx_ana_selmethod_t sm_permute = {
     nullptr,
     nullptr,
     &evaluate_permute,
-    {"POSEXPR permute P1 ... PN",
-     "Permuting selections", asize(help_permute), help_permute},
+    { "POSEXPR permute P1 ... PN", "Permuting selections", asize(help_permute), help_permute },
 };
 
-static void *
-init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
+static void* init_data_permute(int /* npar */, gmx_ana_selparam_t* param)
 {
-    t_methoddata_permute *data = new t_methoddata_permute();
-    data->n          = 0;
-    data->perm       = nullptr;
-    data->rperm      = nullptr;
-    param[0].val.u.p = &data->p;
+    t_methoddata_permute* data = new t_methoddata_permute();
+    data->n                    = 0;
+    data->perm                 = nullptr;
+    data->rperm                = nullptr;
+    param[0].val.u.p           = &data->p;
     return data;
 }
 
-static void
-init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_permute(const gmx_mtop_t* /* top */, int /* npar */, gmx_ana_selparam_t* param, void* data)
 {
-    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
+    t_methoddata_permute* d = static_cast<t_methoddata_permute*>(data);
     int                   i;
 
     d->n    = param[1].val.nr;
     d->perm = param[1].val.u.i;
     if (d->p.count() % d->n != 0)
     {
-        GMX_THROW(gmx::InconsistentInputError(
-                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
+                "The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -201,15 +198,14 @@ init_permute(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *p
     }
 }
 
-static void
-init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void *data)
+static void init_output_permute(const gmx_mtop_t* /* top */, gmx_ana_selvalue_t* out, void* data)
 {
-    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
+    t_methoddata_permute* d = static_cast<t_methoddata_permute*>(data);
     int                   i, j, b;
 
     out->u.p->m.type = d->p.m.type;
-    gmx_ana_pos_reserve_for_append(out->u.p, d->p.count(), d->p.m.b.nra,
-                                   d->p.v != nullptr, d->p.f != nullptr);
+    gmx_ana_pos_reserve_for_append(out->u.p, d->p.count(), d->p.m.b.nra, d->p.v != nullptr,
+                                   d->p.f != nullptr);
     gmx_ana_pos_empty_init(out->u.p);
     for (i = 0; i < d->p.count(); i += d->n)
     {
@@ -226,27 +222,27 @@ init_output_permute(const gmx_mtop_t * /* top */, gmx_ana_selvalue_t *out, void 
  *
  * Frees the memory allocated for \c t_methoddata_permute.
  */
-static void
-free_data_permute(void *data)
+static void free_data_permute(void* data)
 {
-    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
+    t_methoddata_permute* d = static_cast<t_methoddata_permute*>(data);
 
     sfree(d->rperm);
     delete d;
 }
 
-static void
-evaluate_permute(const gmx::SelMethodEvalContext & /*context*/,
-                 gmx_ana_pos_t * /*p*/, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_permute(const gmx::SelMethodEvalContext& /*context*/,
+                             gmx_ana_pos_t* /*p*/,
+                             gmx_ana_selvalue_t* out,
+                             void*               data)
 {
-    t_methoddata_permute *d = static_cast<t_methoddata_permute *>(data);
+    t_methoddata_permute* d = static_cast<t_methoddata_permute*>(data);
     int                   i, j, b;
     int                   refid;
 
     if (d->p.count() % d->n != 0)
     {
-        GMX_THROW(gmx::InconsistentInputError(
-                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+        GMX_THROW(gmx::InconsistentInputError(gmx::formatString(
+                "The number of positions to be permuted is not divisible by %d", d->n)));
     }
     gmx_ana_pos_empty(out->u.p);
     for (i = 0; i < d->p.count(); i += d->n)

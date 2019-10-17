@@ -65,50 +65,44 @@ namespace gmx
 class MDAtoms
 {
     //! C-style mdatoms struct.
-    unique_cptr<t_mdatoms>      mdatoms_;
+    unique_cptr<t_mdatoms> mdatoms_;
     //! Memory for chargeA that can be set up for efficient GPU transfer.
     gmx::PaddedHostVector<real> chargeA_;
-    public:
-        // TODO make this private
-        MDAtoms();
-        ~MDAtoms();
-        //! Getter.
-        t_mdatoms *mdatoms()
-        {
-            return mdatoms_.get();
-        }
-        //! Const getter.
-        const t_mdatoms *mdatoms() const
-        {
-            return mdatoms_.get();
-        }
-        /*! \brief Resizes memory.
-         *
-         * \throws std::bad_alloc  If out of memory.
-         */
-        void resize(int newSize);
-        /*! \brief Reserves memory.
-         *
-         * \throws std::bad_alloc  If out of memory.
-         */
-        void reserve(int newCapacity);
-        //! Builder function.
-        friend std::unique_ptr<MDAtoms>
-        makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-                    bool rankHasPmeGpuTask);
+
+public:
+    // TODO make this private
+    MDAtoms();
+    ~MDAtoms();
+    //! Getter.
+    t_mdatoms* mdatoms() { return mdatoms_.get(); }
+    //! Const getter.
+    const t_mdatoms* mdatoms() const { return mdatoms_.get(); }
+    /*! \brief Resizes memory.
+     *
+     * \throws std::bad_alloc  If out of memory.
+     */
+    void resize(int newSize);
+    /*! \brief Reserves memory.
+     *
+     * \throws std::bad_alloc  If out of memory.
+     */
+    void reserve(int newCapacity);
+    //! Builder function.
+    friend std::unique_ptr<MDAtoms>
+    makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool rankHasPmeGpuTask);
 };
 
 //! Builder function for MdAtomsWrapper.
-std::unique_ptr<MDAtoms>
-makeMDAtoms(FILE *fp, const gmx_mtop_t &mtop, const t_inputrec &ir,
-            bool useGpuForPme);
+std::unique_ptr<MDAtoms> makeMDAtoms(FILE* fp, const gmx_mtop_t& mtop, const t_inputrec& ir, bool useGpuForPme);
 
-}  // namespace gmx
+} // namespace gmx
 
-void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
-              int nindex, const int *index,
-              int homenr,
-              gmx::MDAtoms *mdAtoms);
+void atoms2md(const gmx_mtop_t* mtop,
+              const t_inputrec* ir,
+              int               nindex,
+              const int*        index,
+              int               homenr,
+              gmx::MDAtoms*     mdAtoms);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  * For the masses the A-state (lambda=0) mass is used.
@@ -117,7 +111,7 @@ void atoms2md(const gmx_mtop_t *mtop, const t_inputrec *ir,
  * to set the masses corresponding to the value of lambda at each step.
  */
 
-void update_mdatoms(t_mdatoms *md, real lambda);
+void update_mdatoms(t_mdatoms* md, real lambda);
 /* When necessary, sets all the mass parameters to values corresponding
  * to the free-energy parameter lambda.
  * Sets md->lambda = lambda.

@@ -87,13 +87,13 @@ typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
  *
  * This function is intended to have the main responsibility for
  * making EnergyFrameReader objects. */
-EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string              &filename,
-                                               const std::vector<std::string> &requiredEnergyTermNames);
+EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string&              filename,
+                                               const std::vector<std::string>& requiredEnergyTermNames);
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<ener_file, done_ener_file> ener_file_ptr;
 //! Helper function to free resources (NB free_enxframe only frees the contents, not the pointer itself)
-void done_enxframe(t_enxframe *fr);
+void done_enxframe(t_enxframe* fr);
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_enxframe, done_enxframe> enxframe_ptr;
 
@@ -102,55 +102,55 @@ typedef unique_cptr<t_enxframe, done_enxframe> enxframe_ptr;
  * term values read from successive frames of an .edr file. */
 class EnergyFrameReader
 {
-    public:
-        /*! \brief Attempt to read the next frame from the energy file.
-         *
-         * \return Whether a frame was available to read.
-         *
-         * If true is returned, then frame() should be called
-         * to get access to the data. If false is returned, then no
-         * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
-         *
-         * \throws APIError  if an earlier probe has not been properly handled
-         *                   (by calling frame(), or stopping trying to read
-         *                   from the file). */
-        bool readNextFrame();
-        /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
-         *
-         * If the next frame has not been probed for, then probe for
-         * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
-         * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
-         * the frame exists.)
-         *
-         * \throws APIError        if no next frame exists.
-         * \throws std::bad_alloc  when out of memory. */
-        EnergyFrame frame();
-        /*! \brief Constructor
-         *
-         * \param[in] indicesOfEnergyTerms   Looks up energy terms by name to get the index into a t_enxframe structure read by the legacy API.
-         * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
-        explicit EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyTerms,
-                                   ener_file *energyFile);
-    private:
-        //! Convert energy term name to its index within a t_enxframe from this file.
-        std::map<std::string, int> indicesOfEnergyTerms_;
-        //! Owning handle of an open energy file ready to read frames.
-        const ener_file_ptr        energyFileGuard_;
-        //! Owning handle of contents of .edr file frame after reading.
-        const enxframe_ptr         enxframeGuard_;
-        //! Whether the API has been used properly (ie. probe before reading).
-        bool                       haveProbedForNextFrame_;
-        //! Whether there has been a probe that found a next frame.
-        bool                       nextFrameExists_;
+public:
+    /*! \brief Attempt to read the next frame from the energy file.
+     *
+     * \return Whether a frame was available to read.
+     *
+     * If true is returned, then frame() should be called
+     * to get access to the data. If false is returned, then no
+     * further data exists and no further call to
+     * readNextFrame() or frame() should occur.
+     *
+     * \throws APIError  if an earlier probe has not been properly handled
+     *                   (by calling frame(), or stopping trying to read
+     *                   from the file). */
+    bool readNextFrame();
+    /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
+     *
+     * If the next frame has not been probed for, then probe for
+     * it. If no next frame exists, then throw APIError, because
+     * user code should have called readNextFrame() itself if this
+     * is possible. (This permits user code to avoid making calls
+     * to readNextFrame() in a case where it already knows that
+     * the frame exists.)
+     *
+     * \throws APIError        if no next frame exists.
+     * \throws std::bad_alloc  when out of memory. */
+    EnergyFrame frame();
+    /*! \brief Constructor
+     *
+     * \param[in] indicesOfEnergyTerms   Looks up energy terms by name to get the index into a t_enxframe structure read by the legacy API.
+     * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
+    explicit EnergyFrameReader(const std::map<std::string, int>& indicesOfEnergyTerms, ener_file* energyFile);
 
-        // Multiple owners of these resources isn't very sensible, so prevent it
-        GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
+private:
+    //! Convert energy term name to its index within a t_enxframe from this file.
+    std::map<std::string, int> indicesOfEnergyTerms_;
+    //! Owning handle of an open energy file ready to read frames.
+    const ener_file_ptr energyFileGuard_;
+    //! Owning handle of contents of .edr file frame after reading.
+    const enxframe_ptr enxframeGuard_;
+    //! Whether the API has been used properly (ie. probe before reading).
+    bool haveProbedForNextFrame_;
+    //! Whether there has been a probe that found a next frame.
+    bool nextFrameExists_;
+
+    // Multiple owners of these resources isn't very sensible, so prevent it
+    GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

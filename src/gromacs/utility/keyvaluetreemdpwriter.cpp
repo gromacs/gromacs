@@ -55,12 +55,11 @@
 namespace gmx
 {
 
-void writeKeyValueTreeAsMdp(TextWriter               *writer,
-                            const KeyValueTreeObject &tree)
+void writeKeyValueTreeAsMdp(TextWriter* writer, const KeyValueTreeObject& tree)
 {
-    for (const auto &prop : tree.properties())
+    for (const auto& prop : tree.properties())
     {
-        const auto &value = prop.value();
+        const auto& value = prop.value();
         GMX_RELEASE_ASSERT(!value.isObject(), "Only flat key-value trees can be written as mdp");
 
         // Recognize a special key prefix that identifies comment
@@ -69,7 +68,8 @@ void writeKeyValueTreeAsMdp(TextWriter               *writer,
         // comments will need different handling then.
         if (prop.key().compare(0, 7, "comment") == 0)
         {
-            GMX_RELEASE_ASSERT(prop.value().isType<std::string>(), "Comments must have string-typed values");
+            GMX_RELEASE_ASSERT(prop.value().isType<std::string>(),
+                               "Comments must have string-typed values");
             auto comment = prop.value().cast<std::string>();
             // TODO Consider implementing an MdpTextWriter that can
             // format an array of strings suitably, e.g. by prefixing
@@ -86,7 +86,7 @@ void writeKeyValueTreeAsMdp(TextWriter               *writer,
             if (value.isArray())
             {
                 bool first = true;
-                for (const auto &elem : value.asArray().values())
+                for (const auto& elem : value.asArray().values())
                 {
                     GMX_RELEASE_ASSERT(!elem.isObject() && !elem.isArray(),
                                        "Arrays of objects not currently implemented");

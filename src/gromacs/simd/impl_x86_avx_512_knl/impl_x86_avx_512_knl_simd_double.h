@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,38 +45,26 @@
 namespace gmx
 {
 
-static inline SimdDouble gmx_simdcall
-rsqrt(SimdDouble x)
+static inline SimdDouble gmx_simdcall rsqrt(SimdDouble x)
 {
-    return {
-               _mm512_rsqrt28_pd(x.simdInternal_)
-    };
+    return { _mm512_rsqrt28_pd(x.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-rcp(SimdDouble x)
+static inline SimdDouble gmx_simdcall rcp(SimdDouble x)
 {
-    return {
-               _mm512_rcp28_pd(x.simdInternal_)
-    };
+    return { _mm512_rcp28_pd(x.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-maskzRsqrt(SimdDouble x, SimdDBool m)
+static inline SimdDouble gmx_simdcall maskzRsqrt(SimdDouble x, SimdDBool m)
 {
-    return {
-               _mm512_maskz_rsqrt28_pd(m.simdInternal_, x.simdInternal_)
-    };
+    return { _mm512_maskz_rsqrt28_pd(m.simdInternal_, x.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-maskzRcp(SimdDouble x, SimdDBool m)
+static inline SimdDouble gmx_simdcall maskzRcp(SimdDouble x, SimdDBool m)
 {
-    return {
-               _mm512_maskz_rcp28_pd(m.simdInternal_, x.simdInternal_)
-    };
+    return { _mm512_maskz_rcp28_pd(m.simdInternal_, x.simdInternal_) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_DOUBLE_H

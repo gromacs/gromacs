@@ -72,41 +72,35 @@ namespace
 
 class ExtractCluster : public TrajectoryAnalysisModule
 {
-    public:
-        ExtractCluster();
+public:
+    ExtractCluster();
 
-        ~ExtractCluster() override;
+    ~ExtractCluster() override;
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings  &settings,
-                          const TopologyInformation         &top) override;
-        void analyzeFrame(int frameNumber, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void optionsFinished(TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
+    void analyzeFrame(int frameNumber, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        //! Storage of objects that handle output files.
-        std::vector<TrajectoryFrameWriterPointer>         writers_;
-        //! Selection used for output.
-        Selection                                         sel_;
-        //! Name for output file.
-        std::string                                       outputNamePrefix_;
-        //! Name for index file.
-        std::string                                       indexFileName_;
-        //! Storage of requirements for creating output files.
-        OutputRequirementOptionDirector                   requirementsBuilder_;
-        //! Stores the index information for the clusters. TODO refactor this!
-        t_cluster_ndx                                    *clusterIndex_ = nullptr;
-
+private:
+    //! Storage of objects that handle output files.
+    std::vector<TrajectoryFrameWriterPointer> writers_;
+    //! Selection used for output.
+    Selection sel_;
+    //! Name for output file.
+    std::string outputNamePrefix_;
+    //! Name for index file.
+    std::string indexFileName_;
+    //! Storage of requirements for creating output files.
+    OutputRequirementOptionDirector requirementsBuilder_;
+    //! Stores the index information for the clusters. TODO refactor this!
+    t_cluster_ndx* clusterIndex_ = nullptr;
 };
 
-ExtractCluster::ExtractCluster()
-{
-}
+ExtractCluster::ExtractCluster() {}
 
 ExtractCluster::~ExtractCluster()
 {
@@ -131,10 +125,9 @@ ExtractCluster::~ExtractCluster()
 }
 
 
-void
-ExtractCluster::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void ExtractCluster::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] can be used to extract trajectory frames that correspond to clusters ",
         "obtained from running gmx cluster with the -clndx option.",
         "The module supports writing all GROMACS supported trajectory file formats.",
@@ -146,32 +139,32 @@ ExtractCluster::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettin
     };
 
     options->addOption(FileNameOption("clusters")
-                           .filetype(eftIndex)
-                           .inputFile()
-                           .required()
-                           .store(&indexFileName_)
-                           .defaultBasename("cluster")
-                           .description("Name of index file containing frame indices for each cluster, obtained from gmx cluster -clndx."));
+                               .filetype(eftIndex)
+                               .inputFile()
+                               .required()
+                               .store(&indexFileName_)
+                               .defaultBasename("cluster")
+                               .description("Name of index file containing frame indices for each "
+                                            "cluster, obtained from gmx cluster -clndx."));
 
-    options->addOption(SelectionOption("select")
-                           .store(&sel_)
-                           .onlyAtoms()
-                           .description("Selection of atoms to write to the file"));
+    options->addOption(SelectionOption("select").store(&sel_).onlyAtoms().description(
+            "Selection of atoms to write to the file"));
 
     options->addOption(FileNameOption("o")
-                           .filetype(eftTrajectory)
-                           .outputFile()
-                           .store(&outputNamePrefix_).defaultBasename("trajout")
-                           .required()
-                           .description("Prefix for the name of the trajectory file written for each cluster."));
+                               .filetype(eftTrajectory)
+                               .outputFile()
+                               .store(&outputNamePrefix_)
+                               .defaultBasename("trajout")
+                               .required()
+                               .description("Prefix for the name of the trajectory file written "
+                                            "for each cluster."));
 
     requirementsBuilder_.initOptions(options);
 
     settings->setHelpText(desc);
 }
 
-void
-ExtractCluster::optionsFinished(TrajectoryAnalysisSettings * settings)
+void ExtractCluster::optionsFinished(TrajectoryAnalysisSettings* settings)
 {
     int frameFlags = TRX_NEED_X;
 
@@ -183,27 +176,24 @@ ExtractCluster::optionsFinished(TrajectoryAnalysisSettings * settings)
 }
 
 
-void
-ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings    & /*settings*/,
-                             const TopologyInformation          &top)
+void ExtractCluster::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/,
+                                  const TopologyInformation& top)
 {
     int numberOfClusters = clusterIndex_->clust->nr;
     for (int i = 0; i < numberOfClusters; i++)
     {
-        std::string outputName =
-            Path::concatenateBeforeExtension(outputNamePrefix_,
-                                             formatString("_%s", clusterIndex_->grpname[i]));
-        writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(),
-                                                          sel_,
-                                                          outputName,
+        std::string outputName = Path::concatenateBeforeExtension(
+                outputNamePrefix_, formatString("_%s", clusterIndex_->grpname[i]));
+        writers_.emplace_back(createTrajectoryFrameWriter(top.mtop(), sel_, outputName,
                                                           top.hasTopology() ? top.copyAtoms() : nullptr,
                                                           requirementsBuilder_.process()));
     }
 }
 
-void
-ExtractCluster::analyzeFrame(int frameNumber, const t_trxframe &frame, t_pbc * /* pbc */,
-                             TrajectoryAnalysisModuleData * /*pdata*/)
+void ExtractCluster::analyzeFrame(int               frameNumber,
+                                  const t_trxframe& frame,
+                                  t_pbc* /* pbc */,
+                                  TrajectoryAnalysisModuleData* /*pdata*/)
 {
     // modify frame to write out correct number of coords
     // and actually write out
@@ -217,26 +207,18 @@ ExtractCluster::analyzeFrame(int frameNumber, const t_trxframe &frame, t_pbc * /
     {
         printf("Frame %d was not found in any cluster!", frameNumber);
     }
-
 }
 
-void
-ExtractCluster::finishAnalysis(int /*nframes*/)
-{
-}
+void ExtractCluster::finishAnalysis(int /*nframes*/) {}
 
 
+void ExtractCluster::writeOutput() {}
 
-void
-ExtractCluster::writeOutput()
-{
-}
+} // namespace
 
-}       // namespace
-
-const char ExtractClusterInfo::name[]             = "extract-cluster";
+const char ExtractClusterInfo::name[] = "extract-cluster";
 const char ExtractClusterInfo::shortDescription[] =
-    "Allows extracting frames corresponding to clusters from trajectory";
+        "Allows extracting frames corresponding to clusters from trajectory";
 
 TrajectoryAnalysisModulePointer ExtractClusterInfo::create()
 {

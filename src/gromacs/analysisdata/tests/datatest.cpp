@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,9 +65,10 @@ namespace test
  * AnalysisDataTestInputPointSet
  */
 
-AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(
-        int index, int dataSetIndex, int firstColumn)
-    : index_(index), dataSetIndex_(dataSetIndex), firstColumn_(firstColumn)
+AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(int index, int dataSetIndex, int firstColumn) :
+    index_(index),
+    dataSetIndex_(dataSetIndex),
+    firstColumn_(firstColumn)
 {
 }
 
@@ -76,48 +77,38 @@ AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(
  * AnalysisDataTestInputFrame
  */
 
-AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x)
-    : index_(index), x_(x)
-{
-}
+AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x) : index_(index), x_(x) {}
 
-AnalysisDataTestInputPointSet &
-AnalysisDataTestInputFrame::addPointSet(int dataSet, int firstColumn)
+AnalysisDataTestInputPointSet& AnalysisDataTestInputFrame::addPointSet(int dataSet, int firstColumn)
 {
-    pointSets_.push_back(
-            AnalysisDataTestInputPointSet(pointSets_.size(),
-                                          dataSet, firstColumn));
+    pointSets_.push_back(AnalysisDataTestInputPointSet(pointSets_.size(), dataSet, firstColumn));
     return pointSets_.back();
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(
-        int dataSet, int firstColumn, real y1)
+void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1)
 {
-    AnalysisDataTestInputPointSet &pointSet = addPointSet(dataSet, firstColumn);
+    AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(
-        int dataSet, int firstColumn, real y1, real y2)
+void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2)
 {
-    AnalysisDataTestInputPointSet &pointSet = addPointSet(dataSet, firstColumn);
+    AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
     pointSet.addValue(y2);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValues(
-        int dataSet, int firstColumn, real y1, real y2, real y3)
+void AnalysisDataTestInputFrame::addPointSetWithValues(int dataSet, int firstColumn, real y1, real y2, real y3)
 {
-    AnalysisDataTestInputPointSet &pointSet = addPointSet(dataSet, firstColumn);
+    AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValue(y1);
     pointSet.addValue(y2);
     pointSet.addValue(y3);
 }
 
-void AnalysisDataTestInputFrame::addPointSetWithValueAndError(
-        int dataSet, int firstColumn, real y1, real e1)
+void AnalysisDataTestInputFrame::addPointSetWithValueAndError(int dataSet, int firstColumn, real y1, real e1)
 {
-    AnalysisDataTestInputPointSet &pointSet = addPointSet(dataSet, firstColumn);
+    AnalysisDataTestInputPointSet& pointSet = addPointSet(dataSet, firstColumn);
     pointSet.addValueWithError(y1, e1);
 }
 
@@ -126,34 +117,31 @@ void AnalysisDataTestInputFrame::addPointSetWithValueAndError(
  * AnalysisDataTestInput
  */
 
-AnalysisDataTestInput::AnalysisDataTestInput(int dataSetCount, bool bMultipoint)
-    : columnCounts_(dataSetCount), bMultipoint_(bMultipoint)
+AnalysisDataTestInput::AnalysisDataTestInput(int dataSetCount, bool bMultipoint) :
+    columnCounts_(dataSetCount),
+    bMultipoint_(bMultipoint)
 {
 }
 
 
-AnalysisDataTestInput::~AnalysisDataTestInput()
-{
-}
+AnalysisDataTestInput::~AnalysisDataTestInput() {}
 
 
-const AnalysisDataTestInputFrame &AnalysisDataTestInput::frame(int index) const
+const AnalysisDataTestInputFrame& AnalysisDataTestInput::frame(int index) const
 {
-    GMX_RELEASE_ASSERT(index >= 0 && index < frameCount(),
-                       "Out-of-range frame index");
+    GMX_RELEASE_ASSERT(index >= 0 && index < frameCount(), "Out-of-range frame index");
     return frames_[index];
 }
 
 
 void AnalysisDataTestInput::setColumnCount(int dataSet, int columnCount)
 {
-    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
-                       "Out-of-range data set index");
+    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out-of-range data set index");
     columnCounts_[dataSet] = columnCount;
 }
 
 
-AnalysisDataTestInputFrame &AnalysisDataTestInput::addFrame(real x)
+AnalysisDataTestInputFrame& AnalysisDataTestInput::addFrame(real x)
 {
     frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), x));
     return frames_.back();
@@ -161,25 +149,25 @@ AnalysisDataTestInputFrame &AnalysisDataTestInput::addFrame(real x)
 
 void AnalysisDataTestInput::addFrameWithValues(real x, real y1)
 {
-    AnalysisDataTestInputFrame &frame = addFrame(x);
+    AnalysisDataTestInputFrame& frame = addFrame(x);
     frame.addPointSetWithValues(0, 0, y1);
 }
 
 void AnalysisDataTestInput::addFrameWithValues(real x, real y1, real y2)
 {
-    AnalysisDataTestInputFrame &frame = addFrame(x);
+    AnalysisDataTestInputFrame& frame = addFrame(x);
     frame.addPointSetWithValues(0, 0, y1, y2);
 }
 
 void AnalysisDataTestInput::addFrameWithValues(real x, real y1, real y2, real y3)
 {
-    AnalysisDataTestInputFrame &frame = addFrame(x);
+    AnalysisDataTestInputFrame& frame = addFrame(x);
     frame.addPointSetWithValues(0, 0, y1, y2, y3);
 }
 
 void AnalysisDataTestInput::addFrameWithValueAndError(real x, real y1, real e1)
 {
-    AnalysisDataTestInputFrame &frame = addFrame(x);
+    AnalysisDataTestInputFrame& frame = addFrame(x);
     frame.addPointSetWithValueAndError(0, 0, y1, e1);
 }
 
@@ -188,13 +176,10 @@ void AnalysisDataTestInput::addFrameWithValueAndError(real x, real y1, real e1)
  * AnalysisDataTest
  */
 
-AnalysisDataTestFixture::AnalysisDataTestFixture()
-{
-}
+AnalysisDataTestFixture::AnalysisDataTestFixture() {}
 
 
-void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput &input,
-                                              AnalysisData                *data)
+void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput& input, AnalysisData* data)
 {
     data->setDataSetCount(input.dataSetCount());
     for (int i = 0; i < input.dataSetCount(); ++i)
@@ -205,8 +190,7 @@ void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput &input
 }
 
 
-void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput &input,
-                                             AnalysisData                *data)
+void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput& input, AnalysisData* data)
 {
     gmx::AnalysisDataParallelOptions options;
     gmx::AnalysisDataHandle          handle = data->startData(options);
@@ -219,26 +203,23 @@ void AnalysisDataTestFixture::presentAllData(const AnalysisDataTestInput &input,
 }
 
 
-void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &input,
-                                               int row, AnalysisDataHandle handle)
+void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput& input, int row, AnalysisDataHandle handle)
 {
-    const AnalysisDataTestInputFrame &frame = input.frame(row);
+    const AnalysisDataTestInputFrame& frame = input.frame(row);
     handle.startFrame(row, frame.x(), frame.dx());
     for (int i = 0; i < frame.pointSetCount(); ++i)
     {
-        const AnalysisDataTestInputPointSet &points = frame.pointSet(i);
+        const AnalysisDataTestInputPointSet& points = frame.pointSet(i);
         handle.selectDataSet(points.dataSetIndex());
         for (int j = 0; j < points.size(); ++j)
         {
             if (points.hasError(j))
             {
-                handle.setPoint(j + points.firstColumn(),
-                                points.y(j), points.error(j), points.present(j));
+                handle.setPoint(j + points.firstColumn(), points.y(j), points.error(j), points.present(j));
             }
             else
             {
-                handle.setPoint(j + points.firstColumn(),
-                                points.y(j), points.present(j));
+                handle.setPoint(j + points.firstColumn(), points.y(j), points.present(j));
             }
         }
         if (input.isMultipoint())
@@ -250,9 +231,8 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
 }
 
 
-void
-AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &data,
-                                                AbstractAnalysisData        *source)
+void AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput& data,
+                                                     AbstractAnalysisData*        source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticCheck(data, source, false);
@@ -260,10 +240,8 @@ AnalysisDataTestFixture::addStaticCheckerModule(const AnalysisDataTestInput &dat
 }
 
 
-void
-AnalysisDataTestFixture::addStaticParallelCheckerModule(
-        const AnalysisDataTestInput &data,
-        AbstractAnalysisData        *source)
+void AnalysisDataTestFixture::addStaticParallelCheckerModule(const AnalysisDataTestInput& data,
+                                                             AbstractAnalysisData*        source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticCheck(data, source, true);
@@ -271,10 +249,10 @@ AnalysisDataTestFixture::addStaticParallelCheckerModule(
 }
 
 
-void
-AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInput &data,
-                                                      int firstcol, int n,
-                                                      AbstractAnalysisData *source)
+void AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInput& data,
+                                                           int                          firstcol,
+                                                           int                          n,
+                                                           AbstractAnalysisData*        source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticColumnCheck(data, firstcol, n, source);
@@ -282,10 +260,9 @@ AnalysisDataTestFixture::addStaticColumnCheckerModule(const AnalysisDataTestInpu
 }
 
 
-void
-AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInput &data,
-                                                       int                          storageCount,
-                                                       AbstractAnalysisData        *source)
+void AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInput& data,
+                                                            int                   storageCount,
+                                                            AbstractAnalysisData* source)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     module->setupStaticStorageCheck(data, storageCount, source);
@@ -293,11 +270,10 @@ AnalysisDataTestFixture::addStaticStorageCheckerModule(const AnalysisDataTestInp
 }
 
 
-void
-AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker   &checker,
-                                                   const char                   *id,
-                                                   AbstractAnalysisData         *source,
-                                                   const FloatingPointTolerance &tolerance)
+void AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker&   checker,
+                                                        const char*                   id,
+                                                        AbstractAnalysisData*         source,
+                                                        const FloatingPointTolerance& tolerance)
 {
     MockAnalysisDataModulePointer module(new MockAnalysisDataModule(0));
     TestReferenceChecker          tmpChecker(checker);
@@ -308,12 +284,9 @@ AnalysisDataTestFixture::addReferenceCheckerModule(const TestReferenceChecker   
 }
 
 
-void
-AnalysisDataTestFixture::addReferenceCheckerModule(const char           *id,
-                                                   AbstractAnalysisData *source)
+void AnalysisDataTestFixture::addReferenceCheckerModule(const char* id, AbstractAnalysisData* source)
 {
-    addReferenceCheckerModule(data_.rootChecker(), id, source,
-                              defaultRealTolerance());
+    addReferenceCheckerModule(data_.rootChecker(), id, source, defaultRealTolerance());
 }
 
 } // namespace test

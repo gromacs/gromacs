@@ -64,24 +64,24 @@
 #include "resall.h"
 
 #define DIHEDRAL_WAS_SET_IN_RTP 0
-static bool was_dihedral_set_in_rtp(const InteractionOfType &dih)
+static bool was_dihedral_set_in_rtp(const InteractionOfType& dih)
 {
     // This is a bad way to check this, but I don't know how to make this better now.
     gmx::ArrayRef<const real> forceParam = dih.forceParam();
-    return forceParam[MAXFORCEPARAM-1] == DIHEDRAL_WAS_SET_IN_RTP;
+    return forceParam[MAXFORCEPARAM - 1] == DIHEDRAL_WAS_SET_IN_RTP;
 }
 
-typedef bool (*peq)(const InteractionOfType &p1, const InteractionOfType &p2);
+typedef bool (*peq)(const InteractionOfType& p1, const InteractionOfType& p2);
 
-static bool acomp(const InteractionOfType &a1, const InteractionOfType &a2)
+static bool acomp(const InteractionOfType& a1, const InteractionOfType& a2)
 {
-    int            ac;
+    int ac;
 
-    if ((ac = (a1.aj()-a2.aj())) != 0)
+    if ((ac = (a1.aj() - a2.aj())) != 0)
     {
         return ac < 0;
     }
-    else if ((ac = (a1.ai()-a2.ai())) != 0)
+    else if ((ac = (a1.ai() - a2.ai())) != 0)
     {
         return ac < 0;
     }
@@ -91,11 +91,11 @@ static bool acomp(const InteractionOfType &a1, const InteractionOfType &a2)
     }
 }
 
-static bool pcomp(const InteractionOfType &a1, const InteractionOfType &a2)
+static bool pcomp(const InteractionOfType& a1, const InteractionOfType& a2)
 {
-    int            pc;
+    int pc;
 
-    if ((pc = (a1.ai()-a2.ai())) != 0)
+    if ((pc = (a1.ai() - a2.ai())) != 0)
     {
         return pc < 0;
     }
@@ -105,36 +105,34 @@ static bool pcomp(const InteractionOfType &a1, const InteractionOfType &a2)
     }
 }
 
-static bool dcomp(const InteractionOfType &d1, const InteractionOfType &d2)
+static bool dcomp(const InteractionOfType& d1, const InteractionOfType& d2)
 {
-    int            dc;
+    int dc;
 
     /* First sort by J & K (the two central) atoms */
-    if ((dc = (d1.aj()-d2.aj())) != 0)
+    if ((dc = (d1.aj() - d2.aj())) != 0)
     {
         return dc < 0;
     }
-    else if ((dc = (d1.ak()-d2.ak())) != 0)
+    else if ((dc = (d1.ak() - d2.ak())) != 0)
     {
         return dc < 0;
     }
     /* Then make sure to put rtp dihedrals before generated ones */
-    else if (was_dihedral_set_in_rtp(d1) &&
-             !was_dihedral_set_in_rtp(d2))
+    else if (was_dihedral_set_in_rtp(d1) && !was_dihedral_set_in_rtp(d2))
     {
         return true;
     }
-    else if (!was_dihedral_set_in_rtp(d1) &&
-             was_dihedral_set_in_rtp(d2))
+    else if (!was_dihedral_set_in_rtp(d1) && was_dihedral_set_in_rtp(d2))
     {
         return false;
     }
     /* Then sort by I and J (two outer) atoms */
-    else if ((dc = (d1.ai()-d2.ai())) != 0)
+    else if ((dc = (d1.ai() - d2.ai())) != 0)
     {
         return dc < 0;
     }
-    else if ((dc = (d1.al()-d2.al())) != 0)
+    else if ((dc = (d1.al() - d2.al())) != 0)
     {
         return dc < 0;
     }
@@ -142,34 +140,33 @@ static bool dcomp(const InteractionOfType &d1, const InteractionOfType &d2)
     {
         // AMBER force fields with type 9 dihedrals can reach here, where we sort on
         // the contents of the string that names the macro for the parameters.
-        return std::lexicographical_compare(d1.interactionTypeName().begin(),
-                                            d1.interactionTypeName().end(),
-                                            d2.interactionTypeName().begin(),
-                                            d2.interactionTypeName().end());
+        return std::lexicographical_compare(
+                d1.interactionTypeName().begin(), d1.interactionTypeName().end(),
+                d2.interactionTypeName().begin(), d2.interactionTypeName().end());
     }
 }
 
 
-static bool is_dihedral_on_same_bond(const InteractionOfType &p1, const InteractionOfType &p2)
+static bool is_dihedral_on_same_bond(const InteractionOfType& p1, const InteractionOfType& p2)
 {
-    return ((p1.aj() == p2.aj()) && (p1.ak() == p2.ak())) ||
-           ((p1.aj() == p2.ak()) && (p1.ak() == p2.aj()));
+    return ((p1.aj() == p2.aj()) && (p1.ak() == p2.ak()))
+           || ((p1.aj() == p2.ak()) && (p1.ak() == p2.aj()));
 }
 
 
-static bool preq(const InteractionOfType &p1, const InteractionOfType &p2)
+static bool preq(const InteractionOfType& p1, const InteractionOfType& p2)
 {
     return (p1.ai() == p2.ai()) && (p1.aj() == p2.aj());
 }
 
-static void rm2par(std::vector<InteractionOfType> *p, peq eq)
+static void rm2par(std::vector<InteractionOfType>* p, peq eq)
 {
     if (p->empty())
     {
         return;
     }
 
-    for (auto param = p->begin() + 1; param != p->end(); )
+    for (auto param = p->begin() + 1; param != p->end();)
     {
         auto prev = param - 1;
         if (eq(*param, *prev))
@@ -183,30 +180,28 @@ static void rm2par(std::vector<InteractionOfType> *p, peq eq)
     }
 }
 
-static void cppar(gmx::ArrayRef<const InteractionOfType>          types,
-                  gmx::ArrayRef<InteractionsOfType>               plist,
-                  int                                             ftype)
+static void cppar(gmx::ArrayRef<const InteractionOfType> types, gmx::ArrayRef<InteractionsOfType> plist, int ftype)
 {
     /* Keep old stuff */
-    for (const auto &type : types)
+    for (const auto& type : types)
     {
         plist[ftype].interactionTypes.push_back(type);
     }
 }
 
-static bool idcomp(const InteractionOfType &a, const InteractionOfType &b)
+static bool idcomp(const InteractionOfType& a, const InteractionOfType& b)
 {
-    int            d;
+    int d;
 
-    if ((d = (a.ai()-b.ai())) != 0)
+    if ((d = (a.ai() - b.ai())) != 0)
     {
         return d < 0;
     }
-    else if ((d = (a.al()-b.al())) != 0)
+    else if ((d = (a.al() - b.al())) != 0)
     {
         return d < 0;
     }
-    else if ((d = (a.aj()-b.aj())) != 0)
+    else if ((d = (a.aj() - b.aj())) != 0)
     {
         return d < 0;
     }
@@ -220,7 +215,7 @@ static void sort_id(gmx::ArrayRef<InteractionOfType> ps)
 {
     if (ps.size() > 1)
     {
-        for (auto &parm : ps)
+        for (auto& parm : ps)
         {
             parm.sortAtomIds();
         }
@@ -228,13 +223,13 @@ static void sort_id(gmx::ArrayRef<InteractionOfType> ps)
     }
 }
 
-static int n_hydro(gmx::ArrayRef<const int> a, char ***atomname)
+static int n_hydro(gmx::ArrayRef<const int> a, char*** atomname)
 {
-    int  nh = 0;
+    int nh = 0;
 
     for (auto atom = a.begin(); atom < a.end(); atom += 3)
     {
-        const char *aname = *atomname[*atom];
+        const char* aname = *atomname[*atom];
         char        c0    = toupper(aname[0]);
         if (c0 == 'H')
         {
@@ -256,17 +251,18 @@ static int n_hydro(gmx::ArrayRef<const int> a, char ***atomname)
  * file). */
 static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionOfType> dih,
                                                 gmx::ArrayRef<const InteractionOfType> improper,
-                                                t_atoms *atoms, bool bKeepAllGeneratedDihedrals,
+                                                t_atoms*                               atoms,
+                                                bool bKeepAllGeneratedDihedrals,
                                                 bool bRemoveDihedralIfWithImproper)
 {
     /* Construct the list of the indices of the dihedrals
      * (i.e. generated or read) that might be kept. */
-    std::vector < std::pair < InteractionOfType, int>> newDihedrals;
+    std::vector<std::pair<InteractionOfType, int>> newDihedrals;
     if (bKeepAllGeneratedDihedrals)
     {
         fprintf(stderr, "Keeping all generated dihedrals\n");
         int i = 0;
-        for (const auto &dihedral : dih)
+        for (const auto& dihedral : dih)
         {
             newDihedrals.emplace_back(std::pair<InteractionOfType, int>(dihedral, i++));
         }
@@ -284,16 +280,15 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
             /* Keep the dihedrals that were defined in the .rtp file,
              * and the dihedrals that were generated and different
              * from the last one (whether it was generated or not). */
-            if (was_dihedral_set_in_rtp(*dihedral) ||
-                dihedral == dih.begin() ||
-                !is_dihedral_on_same_bond(*dihedral, *(dihedral-1)))
+            if (was_dihedral_set_in_rtp(*dihedral) || dihedral == dih.begin()
+                || !is_dihedral_on_same_bond(*dihedral, *(dihedral - 1)))
             {
                 newDihedrals.emplace_back(std::pair<InteractionOfType, int>(*dihedral, i++));
             }
         }
     }
     int k = 0;
-    for (auto dihedral = newDihedrals.begin(); dihedral != newDihedrals.end(); )
+    for (auto dihedral = newDihedrals.begin(); dihedral != newDihedrals.end();)
     {
         bool bWasSetInRTP = was_dihedral_set_in_rtp(dihedral->first);
         bool bKeep        = true;
@@ -323,9 +318,7 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
                 int minh = 2;
                 int next = dihedral->second + 1;
                 for (int l = dihedral->second;
-                     (l < next &&
-                      is_dihedral_on_same_bond(dihedral->first, dih[l]));
-                     l++)
+                     (l < next && is_dihedral_on_same_bond(dihedral->first, dih[l])); l++)
                 {
                     int nh = n_hydro(dih[l].atoms(), atoms->atomname);
                     if (nh < minh)
@@ -353,34 +346,33 @@ static std::vector<InteractionOfType> clean_dih(gmx::ArrayRef<const InteractionO
     }
     std::vector<InteractionOfType> finalDihedrals;
     finalDihedrals.reserve(newDihedrals.size());
-    for (const auto &param : newDihedrals)
+    for (const auto& param : newDihedrals)
     {
         finalDihedrals.emplace_back(param.first);
     }
     return finalDihedrals;
 }
 
-static std::vector<InteractionOfType> get_impropers(t_atoms                             *atoms,
+static std::vector<InteractionOfType> get_impropers(t_atoms*                             atoms,
                                                     gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                                                    bool                                 bAllowMissing)
+                                                    bool bAllowMissing)
 {
     std::vector<InteractionOfType> improper;
 
     /* Add all the impropers from the residue database to the list. */
-    int start     = 0;
+    int start = 0;
     if (!globalPatches.empty())
     {
         for (int i = 0; (i < atoms->nres); i++)
         {
-            BondedInteractionList *impropers = &globalPatches[i].rb[ebtsIDIHS];
-            for (const auto &bondeds : impropers->b)
+            BondedInteractionList* impropers = &globalPatches[i].rb[ebtsIDIHS];
+            for (const auto& bondeds : impropers->b)
             {
-                bool                     bStop = false;
-                std::vector<int>         ai;
+                bool             bStop = false;
+                std::vector<int> ai;
                 for (int k = 0; (k < 4) && !bStop; k++)
                 {
-                    int entry = search_atom(bondeds.a[k].c_str(), start,
-                                            atoms, "improper", bAllowMissing);
+                    int entry = search_atom(bondeds.a[k].c_str(), start, atoms, "improper", bAllowMissing);
 
                     if (entry != -1)
                     {
@@ -407,11 +399,11 @@ static std::vector<InteractionOfType> get_impropers(t_atoms                     
     return improper;
 }
 
-static int nb_dist(t_nextnb *nnb, int ai, int aj)
+static int nb_dist(t_nextnb* nnb, int ai, int aj)
 {
     int  nre, nrx, NRE;
-    int *nrexcl;
-    int *a;
+    int* nrexcl;
+    int* a;
 
     if (ai == aj)
     {
@@ -434,13 +426,16 @@ static int nb_dist(t_nextnb *nnb, int ai, int aj)
     return NRE;
 }
 
-static bool is_hydro(t_atoms *atoms, int ai)
+static bool is_hydro(t_atoms* atoms, int ai)
 {
     return ((*(atoms->atomname[ai]))[0] == 'H');
 }
 
-static void get_atomnames_min(int n, gmx::ArrayRef<std::string> anm,
-                              int resind, t_atoms *atoms, gmx::ArrayRef<const int> a)
+static void get_atomnames_min(int                        n,
+                              gmx::ArrayRef<std::string> anm,
+                              int                        resind,
+                              t_atoms*                   atoms,
+                              gmx::ArrayRef<const int>   a)
 {
     /* Assume ascending residue numbering */
     for (int m = 0; m < n; m++)
@@ -461,42 +456,37 @@ static void get_atomnames_min(int n, gmx::ArrayRef<std::string> anm,
     }
 }
 
-static void gen_excls(t_atoms                             *atoms,
-                      t_excls                             *excls,
-                      gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-                      bool                                 bAllowMissing)
+static void gen_excls(t_atoms* atoms, t_excls* excls, gmx::ArrayRef<MoleculePatchDatabase> globalPatches, bool bAllowMissing)
 {
     int astart = 0;
     for (int a = 0; a < atoms->nr; a++)
     {
         int r = atoms->atom[a].resind;
-        if (a == atoms->nr-1 || atoms->atom[a+1].resind != r)
+        if (a == atoms->nr - 1 || atoms->atom[a + 1].resind != r)
         {
-            BondedInteractionList *hbexcl = &globalPatches[r].rb[ebtsEXCLS];
+            BondedInteractionList* hbexcl = &globalPatches[r].rb[ebtsEXCLS];
 
-            for (const auto &bondeds : hbexcl->b)
+            for (const auto& bondeds : hbexcl->b)
             {
-                const char *anm = bondeds.a[0].c_str();
-                int         i1  = search_atom(anm, astart, atoms,
-                                              "exclusion", bAllowMissing);
-                anm = bondeds.a[1].c_str();
-                int i2  = search_atom(anm, astart, atoms,
-                                      "exclusion", bAllowMissing);
+                const char* anm = bondeds.a[0].c_str();
+                int         i1  = search_atom(anm, astart, atoms, "exclusion", bAllowMissing);
+                anm             = bondeds.a[1].c_str();
+                int i2          = search_atom(anm, astart, atoms, "exclusion", bAllowMissing);
                 if (i1 != -1 && i2 != -1)
                 {
                     if (i1 > i2)
                     {
                         int itmp = i1;
-                        i1   = i2;
-                        i2   = itmp;
+                        i1       = i2;
+                        i2       = itmp;
                     }
-                    srenew(excls[i1].e, excls[i1].nr+1);
+                    srenew(excls[i1].e, excls[i1].nr + 1);
                     excls[i1].e[excls[i1].nr] = i2;
                     excls[i1].nr++;
                 }
             }
 
-            astart = a+1;
+            astart = a + 1;
         }
     }
 
@@ -504,27 +494,27 @@ static void gen_excls(t_atoms                             *atoms,
     {
         if (excls[a].nr > 1)
         {
-            std::sort(excls[a].e, excls[a].e+excls[a].nr);
+            std::sort(excls[a].e, excls[a].e + excls[a].nr);
         }
     }
 }
 
-static void remove_excl(t_excls *excls, int remove)
+static void remove_excl(t_excls* excls, int remove)
 {
     int i;
 
-    for (i = remove+1; i < excls->nr; i++)
+    for (i = remove + 1; i < excls->nr; i++)
     {
-        excls->e[i-1] = excls->e[i];
+        excls->e[i - 1] = excls->e[i];
     }
 
     excls->nr--;
 }
 
-static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
+static void clean_excls(t_nextnb* nnb, int nrexcl, t_excls excls[])
 {
     int      i, j, j1, k, k1, l, l1, e;
-    t_excls *excl;
+    t_excls* excl;
 
     if (nrexcl >= 1)
     {
@@ -586,9 +576,12 @@ static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 }
 
 /* Generate pairs, angles and dihedrals from .rtp settings */
-void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
-             gmx::ArrayRef<InteractionsOfType> plist, t_excls excls[], gmx::ArrayRef<MoleculePatchDatabase> globalPatches,
-             bool bAllowMissing)
+void gen_pad(t_atoms*                               atoms,
+             gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+             gmx::ArrayRef<InteractionsOfType>      plist,
+             t_excls                                excls[],
+             gmx::ArrayRef<MoleculePatchDatabase>   globalPatches,
+             bool                                   bAllowMissing)
 {
     t_nextnb nnb;
     init_nnb(&nnb, atoms->nr, 4);
@@ -599,12 +592,12 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
      * from the bonds. The ones that are already there from the rtp file
      * will be retained.
      */
-    std::vector<InteractionOfType>   ang;
-    std::vector<InteractionOfType>   dih;
-    std::vector<InteractionOfType>   pai;
-    std::vector<InteractionOfType>   improper;
+    std::vector<InteractionOfType> ang;
+    std::vector<InteractionOfType> dih;
+    std::vector<InteractionOfType> pai;
+    std::vector<InteractionOfType> improper;
 
-    std::array<std::string, 4>       anm;
+    std::array<std::string, 4> anm;
 
     if (!globalPatches.empty())
     {
@@ -614,7 +607,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         {
             for (int j = 0; j < ebtsNR; j++)
             {
-                for (auto &bondeds : globalPatches[i].rb[j].b)
+                for (auto& bondeds : globalPatches[i].rb[j].b)
                 {
                     bondeds.match = false;
                 }
@@ -640,7 +633,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                     /* Generate every angle only once */
                     if (i < k1)
                     {
-                        std::vector<int> atomNumbers = {i, j1, k1};
+                        std::vector<int> atomNumbers = { i, j1, k1 };
                         std::string      name;
                         if (!globalPatches.empty())
                         {
@@ -651,22 +644,22 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                 minres = std::min(minres, atoms->atom[atomNumbers[m]].resind);
                                 maxres = std::max(maxres, atoms->atom[atomNumbers[m]].resind);
                             }
-                            int res = 2*minres-maxres;
+                            int res = 2 * minres - maxres;
                             do
                             {
-                                res += maxres-minres;
+                                res += maxres - minres;
                                 get_atomnames_min(3, anm, res, atoms, atomNumbers);
-                                BondedInteractionList *hbang = &globalPatches[res].rb[ebtsANGLES];
-                                for (auto &bondeds : hbang->b)
+                                BondedInteractionList* hbang = &globalPatches[res].rb[ebtsANGLES];
+                                for (auto& bondeds : hbang->b)
                                 {
                                     if (anm[1] == bondeds.aj())
                                     {
                                         bool bFound = false;
                                         for (int m = 0; m < 3; m += 2)
                                         {
-                                            bFound = (bFound ||
-                                                      ((anm[m] == bondeds.ai()) &&
-                                                       (anm[2-m] == bondeds.ak())));
+                                            bFound = (bFound
+                                                      || ((anm[m] == bondeds.ai())
+                                                          && (anm[2 - m] == bondeds.ak())));
                                         }
                                         if (bFound)
                                         {
@@ -676,8 +669,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                         }
                                     }
                                 }
-                            }
-                            while (res < maxres);
+                            } while (res < maxres);
                         }
                         ang.push_back(InteractionOfType(atomNumbers, {}, name));
                     }
@@ -691,7 +683,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                             int l1 = nnb.a[k1][1][l];
                             if ((l1 != i) && (l1 != j1))
                             {
-                                std::vector<int> atomNumbers = {i, j1, k1, l1};
+                                std::vector<int> atomNumbers = { i, j1, k1, l1 };
                                 std::string      name;
                                 int              nFound = 0;
                                 if (!globalPatches.empty())
@@ -700,29 +692,25 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                     int maxres = minres;
                                     for (int m = 1; m < 4; m++)
                                     {
-                                        minres = std::min(
-                                                    minres,
-                                                    atoms->atom[atomNumbers[m]].resind);
-                                        maxres = std::max(
-                                                    maxres,
-                                                    atoms->atom[atomNumbers[m]].resind);
+                                        minres = std::min(minres, atoms->atom[atomNumbers[m]].resind);
+                                        maxres = std::max(maxres, atoms->atom[atomNumbers[m]].resind);
                                     }
-                                    int res = 2*minres-maxres;
+                                    int res = 2 * minres - maxres;
                                     do
                                     {
-                                        res += maxres-minres;
+                                        res += maxres - minres;
                                         get_atomnames_min(4, anm, res, atoms, atomNumbers);
-                                        BondedInteractionList *hbdih = &globalPatches[res].rb[ebtsPDIHS];
-                                        for (auto &bondeds : hbdih->b)
+                                        BondedInteractionList* hbdih = &globalPatches[res].rb[ebtsPDIHS];
+                                        for (auto& bondeds : hbdih->b)
                                         {
                                             bool bFound = false;
                                             for (int m = 0; m < 2; m++)
                                             {
-                                                bFound = (bFound ||
-                                                          ((anm[3*m] == bondeds.ai()) &&
-                                                           (anm[1+m] == bondeds.aj()) &&
-                                                           (anm[2-m] == bondeds.ak()) &&
-                                                           (anm[3-3*m] == bondeds.al())));
+                                                bFound = (bFound
+                                                          || ((anm[3 * m] == bondeds.ai())
+                                                              && (anm[1 + m] == bondeds.aj())
+                                                              && (anm[2 - m] == bondeds.ak())
+                                                              && (anm[3 - 3 * m] == bondeds.al())));
                                             }
                                             if (bFound)
                                             {
@@ -735,16 +723,16 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                                  */
                                                 nFound++;
                                                 dih.push_back(InteractionOfType(atomNumbers, {}, name));
-                                                dih.back().setForceParameter(MAXFORCEPARAM-1, DIHEDRAL_WAS_SET_IN_RTP);
+                                                dih.back().setForceParameter(
+                                                        MAXFORCEPARAM - 1, DIHEDRAL_WAS_SET_IN_RTP);
                                             }
                                         }
-                                    }
-                                    while (res < maxres);
+                                    } while (res < maxres);
                                 }
                                 if (nFound == 0)
                                 {
-                                    std::vector<int> atoms = {i, j1, k1, l1};
-                                    dih.push_back(InteractionOfType(atoms, {},   ""));
+                                    std::vector<int> atoms = { i, j1, k1, l1 };
+                                    dih.push_back(InteractionOfType(atoms, {}, ""));
                                 }
 
                                 int nbd = nb_dist(&nnb, i, l1);
@@ -759,10 +747,10 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                                     }
                                     if (!bExcl)
                                     {
-                                        if (rtpFFDB[0].bGenerateHH14Interactions ||
-                                            !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
+                                        if (rtpFFDB[0].bGenerateHH14Interactions
+                                            || !(is_hydro(atoms, i1) && is_hydro(atoms, i2)))
                                         {
-                                            std::vector<int> atoms = {i1, i2};
+                                            std::vector<int> atoms = { i1, i2 };
                                             pai.push_back(InteractionOfType(atoms, {}, ""));
                                         }
                                     }
@@ -785,8 +773,8 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
         for (int i = 0; i < atoms->nres; i++)
         {
             /* Add remaining angles from hackblock */
-            BondedInteractionList *hbang = &globalPatches[i].rb[ebtsANGLES];
-            for (auto &bondeds : hbang->b)
+            BondedInteractionList* hbang = &globalPatches[i].rb[ebtsANGLES];
+            for (auto& bondeds : hbang->b)
             {
                 if (bondeds.match)
                 {
@@ -798,7 +786,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                 bool             bFound = true;
                 for (int k = 0; k < 3 && bFound; k++)
                 {
-                    const char *p   = bondeds.a[k].c_str();
+                    const char* p   = bondeds.a[k].c_str();
                     int         res = i;
                     if (p[0] == '-')
                     {
@@ -811,7 +799,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         res++;
                     }
                     atomNumbers.emplace_back(search_res_atom(p, res, atoms, "angle", TRUE));
-                    bFound            = (atomNumbers.back() != -1);
+                    bFound = (atomNumbers.back() != -1);
                 }
 
                 if (bFound)
@@ -823,8 +811,8 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
             }
 
             /* Add remaining dihedrals from hackblock */
-            BondedInteractionList *hbdih = &globalPatches[i].rb[ebtsPDIHS];
-            for (auto &bondeds : hbdih->b)
+            BondedInteractionList* hbdih = &globalPatches[i].rb[ebtsPDIHS];
+            for (auto& bondeds : hbdih->b)
             {
                 if (bondeds.match)
                 {
@@ -836,7 +824,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                 bool             bFound = true;
                 for (int k = 0; k < 4 && bFound; k++)
                 {
-                    const char *p   = bondeds.a[k].c_str();
+                    const char* p   = bondeds.a[k].c_str();
                     int         res = i;
                     if (p[0] == '-')
                     {
@@ -849,7 +837,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
                         res++;
                     }
                     atomNumbers.emplace_back(search_res_atom(p, res, atoms, "dihedral", TRUE));
-                    bFound               = (atomNumbers.back() != -1);
+                    bFound = (atomNumbers.back() != -1);
                 }
 
                 if (bFound)
@@ -897,8 +885,7 @@ void gen_pad(t_atoms *atoms, gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
     if (!dih.empty())
     {
         fprintf(stderr, "Before cleaning: %zu dihedrals\n", dih.size());
-        dih = clean_dih(dih, improper, atoms,
-                        rtpFFDB[0].bKeepAllGeneratedDihedrals,
+        dih = clean_dih(dih, improper, atoms, rtpFFDB[0].bKeepAllGeneratedDihedrals,
                         rtpFFDB[0].bRemoveDihedralIfWithImproper);
     }
 

@@ -51,7 +51,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
-#include <clFFT.h>
+#    include <clFFT.h>
 #endif
 
 namespace gmx
@@ -67,10 +67,10 @@ namespace
  * initialize it more than once. */
 //! @{
 gmx_unused bool g_clfftInitialized = false;
-gmx::Mutex g_clfftMutex;
+gmx::Mutex      g_clfftMutex;
 //! @}
 
-}   // namespace
+} // namespace
 
 ClfftInitializer::ClfftInitializer()
 {
@@ -80,12 +80,14 @@ ClfftInitializer::ClfftInitializer()
     int                         initErrorCode = clfftInitSetupData(&fftSetup);
     if (initErrorCode != 0)
     {
-        GMX_THROW(InternalError(formatString("Failed to initialize the clFFT library, error code %d", initErrorCode)));
+        GMX_THROW(InternalError(formatString(
+                "Failed to initialize the clFFT library, error code %d", initErrorCode)));
     }
     initErrorCode = clfftSetup(&fftSetup);
     if (initErrorCode != 0)
     {
-        GMX_THROW(InternalError(formatString("Failed to initialize the clFFT library, error code %d", initErrorCode)));
+        GMX_THROW(InternalError(formatString(
+                "Failed to initialize the clFFT library, error code %d", initErrorCode)));
     }
     g_clfftInitialized = true;
 #else
@@ -106,4 +108,4 @@ ClfftInitializer::~ClfftInitializer()
 #endif
 }
 
-}  // namespace gmx
+} // namespace gmx

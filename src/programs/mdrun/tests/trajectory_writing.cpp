@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,29 +60,31 @@ namespace
 //! Test fixture for mdrun trajectory writing
 class TrajectoryWritingTest :
     public gmx::test::MdrunTestFixture,
-    public ::testing::WithParamInterface<const char *>
+    public ::testing::WithParamInterface<const char*>
 {
-    public:
-        //! The file name of the MDP file
-        std::string theMdpFile;
+public:
+    //! The file name of the MDP file
+    std::string theMdpFile;
 
-        //! Execute the trajectory writing test
-        void runTest()
-        {
-            runner_.useStringAsMdpFile(theMdpFile);
-            runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
-            EXPECT_EQ(0, runner_.callGrompp());
+    //! Execute the trajectory writing test
+    void runTest()
+    {
+        runner_.useStringAsMdpFile(theMdpFile);
+        runner_.useTopGroAndNdxFromDatabase("spc-and-methanol");
+        EXPECT_EQ(0, runner_.callGrompp());
 
-            runner_.fullPrecisionTrajectoryFileName_    = fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
-            runner_.reducedPrecisionTrajectoryFileName_ = fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
-            ASSERT_EQ(0, runner_.callMdrun());
-            // TODO When there is a way to sense something like the
-            // output of gmx check, compare the result with that from
-            // writing .trr and .xtc and assert the behaviour is
-            // correct. Note that TNG will always write the box, even
-            // when constant - this will be a source of
-            // trajectory-file differences.
-        }
+        runner_.fullPrecisionTrajectoryFileName_ =
+                fileManager_.getTemporaryFilePath("spc-and-methanol.tng");
+        runner_.reducedPrecisionTrajectoryFileName_ =
+                fileManager_.getTemporaryFilePath("spc-and-methanol-reduced.tng");
+        ASSERT_EQ(0, runner_.callMdrun());
+        // TODO When there is a way to sense something like the
+        // output of gmx check, compare the result with that from
+        // writing .trr and .xtc and assert the behaviour is
+        // correct. Note that TNG will always write the box, even
+        // when constant - this will be a source of
+        // trajectory-file differences.
+    }
 };
 
 //! Helper typedef for naming test cases like sentences
@@ -92,18 +94,19 @@ typedef TrajectoryWritingTest Trajectories;
    frequencies */
 TEST_P(Trajectories, ThatDifferInNstxout)
 {
-    theMdpFile = gmx::formatString("integrator = md\n"
-                                   "nsteps = 6\n"
-                                   "nstxout = %s\n"
-                                   "nstvout = 2\n"
-                                   "nstfout = 4\n"
-                                   "nstxout-compressed = 5\n"
-                                   "tcoupl = v-rescale\n"
-                                   "tc-grps = System\n"
-                                   "tau-t = 1\n"
-                                   "ref-t = 298\n"
-                                   "compressed-x-grps = Sol\n",
-                                   GetParam());
+    theMdpFile = gmx::formatString(
+            "integrator = md\n"
+            "nsteps = 6\n"
+            "nstxout = %s\n"
+            "nstvout = 2\n"
+            "nstfout = 4\n"
+            "nstxout-compressed = 5\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = 298\n"
+            "compressed-x-grps = Sol\n",
+            GetParam());
     runTest();
 }
 
@@ -113,31 +116,30 @@ typedef TrajectoryWritingTest NptTrajectories;
 /* This test ensures mdrun can write trajectories in TNG format from NPT ensembles. */
 TEST_P(NptTrajectories, WithDifferentPcoupl)
 {
-    theMdpFile = gmx::formatString("integrator = md\n"
-                                   "nsteps = 2\n"
-                                   "nstxout = 2\n"
-                                   "nstvout = 1\n"
-                                   "pcoupl = %s\n"
-                                   "tau-p = 1\n"
-                                   "ref-p = 1\n"
-                                   "compressibility = 4.5e-5\n"
-                                   "tcoupl = v-rescale\n"
-                                   "tc-grps = System\n"
-                                   "tau-t = 1\n"
-                                   "ref-t = 298\n",
-                                   GetParam());
+    theMdpFile = gmx::formatString(
+            "integrator = md\n"
+            "nsteps = 2\n"
+            "nstxout = 2\n"
+            "nstvout = 1\n"
+            "pcoupl = %s\n"
+            "tau-p = 1\n"
+            "ref-p = 1\n"
+            "compressibility = 4.5e-5\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = 298\n",
+            GetParam());
     runTest();
 }
 
 // TODO Consider spamming more of the parameter space when we don't
 // have to write .mdp and .tpr files to do it.
-INSTANTIATE_TEST_CASE_P(MdrunCanWrite,
-                        Trajectories,
-                            ::testing::Values("1", "2", "3"));
+INSTANTIATE_TEST_CASE_P(MdrunCanWrite, Trajectories, ::testing::Values("1", "2", "3"));
 
 INSTANTIATE_TEST_CASE_P(MdrunCanWrite,
                         NptTrajectories,
-                            ::testing::Values("no", "Berendsen", "Parrinello-Rahman"));
+                        ::testing::Values("no", "Berendsen", "Parrinello-Rahman"));
 
 #endif
 

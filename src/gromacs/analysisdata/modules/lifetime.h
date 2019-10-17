@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,40 +75,38 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataLifetimeModule : public AbstractAnalysisArrayData,
-                                   public AnalysisDataModuleSerial
+class AnalysisDataLifetimeModule : public AbstractAnalysisArrayData, public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataLifetimeModule();
-        ~AnalysisDataLifetimeModule() override;
+public:
+    AnalysisDataLifetimeModule();
+    ~AnalysisDataLifetimeModule() override;
 
-        /*! \brief
-         * Sets a cumulative histogram mode.
-         *
-         * \param[in] bCumulative If true, all subintervals of a long
-         *   interval are also explicitly added into the histogram.
-         *
-         * Does not throw.
-         */
-        void setCumulative(bool bCumulative);
+    /*! \brief
+     * Sets a cumulative histogram mode.
+     *
+     * \param[in] bCumulative If true, all subintervals of a long
+     *   interval are also explicitly added into the histogram.
+     *
+     * Does not throw.
+     */
+    void setCumulative(bool bCumulative);
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        void frameStarted(const AnalysisDataFrameHeader &header) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    void frameStarted(const AnalysisDataFrameHeader& header) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void dataFinished() override;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataLifetimeModule object.
-typedef std::shared_ptr<AnalysisDataLifetimeModule>
-    AnalysisDataLifetimeModulePointer;
+typedef std::shared_ptr<AnalysisDataLifetimeModule> AnalysisDataLifetimeModulePointer;
 
 } // namespace gmx
 

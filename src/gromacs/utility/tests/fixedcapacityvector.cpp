@@ -102,7 +102,7 @@ TEST(FixedCapacityVectorTest, EmplaceBackWorks)
 {
     FixedCapacityVector<std::vector<int>, 2> v;
 
-    const auto &elem = v.emplace_back(5);
+    const auto& elem = v.emplace_back(5);
     EXPECT_EQ(1U, v.size());
     EXPECT_EQ(5U, elem.size());
 }
@@ -121,7 +121,7 @@ TEST(FixedCapacityVectorTest, IteratorWorks)
 {
     FixedCapacityVector<int, 4> v;
 
-    std::vector<int>            ref = { 7, 4, 5 };
+    std::vector<int> ref = { 7, 4, 5 };
 
     for (auto elem : ref)
     {
@@ -144,7 +144,7 @@ TEST(FixedCapacityVectorTest, ReverseIteratorWorks)
 {
     FixedCapacityVector<int, 4> v;
 
-    std::vector<int>            ref = { 7, 4, 5 };
+    std::vector<int> ref = { 7, 4, 5 };
 
     for (auto elem : ref)
     {
@@ -171,6 +171,6 @@ TEST(FixedCapacityVectorTest, ZeroCapacityWorks)
     EXPECT_TRUE(v.empty());
 }
 
-}      // namespace
+} // namespace
 
-}      // namespace gmx
+} // namespace gmx

@@ -71,8 +71,12 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 
 class PullHistory;
 
-enum {
-    epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS, epgrppbcPREVSTEPCOM
+enum
+{
+    epgrppbcNONE,
+    epgrppbcREFAT,
+    epgrppbcCOS,
+    epgrppbcPREVSTEPCOM
 };
 
 /*! \internal
@@ -86,55 +90,53 @@ struct pull_group_work_t
      * \param[in] atomSet                 The global to local atom set manager
      * \param[in] setPbcRefToPrevStepCOM Does this pull group use the COM from the previous step as reference position?
      */
-    pull_group_work_t(const t_pull_group &params,
-                      gmx::LocalAtomSet   atomSet,
-                      bool                setPbcRefToPrevStepCOM);
+    pull_group_work_t(const t_pull_group& params, gmx::LocalAtomSet atomSet, bool setPbcRefToPrevStepCOM);
 
     /* Data only modified at initialization */
-    const t_pull_group params;        /**< The pull group parameters */
-    const int          epgrppbc;      /**< The type of pbc for this pull group, see enum above */
+    const t_pull_group params;   /**< The pull group parameters */
+    const int          epgrppbc; /**< The type of pbc for this pull group, see enum above */
     bool               needToCalcCom; /**< Do we need to calculate the COM? (Not for group 0 or if only used as cylinder group) */
     std::vector<real>  globalWeights; /**< Weights per atom set by the user and/or mass/friction coefficients, if empty all weights are equal */
 
     /* Data modified only at init or at domain decomposition */
-    gmx::LocalAtomSet                  atomSet;       /**< Global to local atom set mapper */
-    std::vector<real>                  localWeights;  /**< Weights for the local atoms */
-    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;    /**< Keeps index of the pbc reference atom.
-                                                           The stored LocalAtomSet consists of exactly one atom when pbc reference atom is required.
-                                                           When no pbc refence atom is used, this pointer shall be null. */
+    gmx::LocalAtomSet                  atomSet;      /**< Global to local atom set mapper */
+    std::vector<real>                  localWeights; /**< Weights for the local atoms */
+    std::unique_ptr<gmx::LocalAtomSet> pbcAtomSet;   /**< Keeps index of the pbc reference atom.
+                                                          The stored LocalAtomSet consists of exactly   one atom when pbc reference atom is required.
+                                                          When no pbc refence atom is used, this   pointer   shall be null. */
 
     /* Data, potentially, changed at every pull call */
-    real                                  mwscale;     /**< mass*weight scaling factor 1/sum w m */
-    real                                  wscale;      /**< scaling factor for the weights: sum w m/sum w w m */
-    real                                  invtm;       /**< inverse total mass of the group: 1/wscale sum w m */
-    std::vector < gmx::BasicVector < double>> mdw;     /**< mass*gradient(weight) for atoms */
-    std::vector<double>                   dv;          /**< distance to the other group(s) along vec */
-    dvec                                  x;           /**< COM before update */
-    dvec                                  xp;          /**< COM after update before constraining */
+    real mwscale; /**< mass*weight scaling factor 1/sum w m */
+    real wscale;  /**< scaling factor for the weights: sum w m/sum w w m */
+    real invtm;   /**< inverse total mass of the group: 1/wscale sum w m */
+    std::vector<gmx::BasicVector<double>> mdw; /**< mass*gradient(weight) for atoms */
+    std::vector<double>                   dv;  /**< distance to the other group(s) along vec */
+    dvec                                  x;   /**< COM before update */
+    dvec                                  xp;  /**< COM after update before constraining */
     dvec                                  x_prev_step; /**< center of mass of the previous step */
 };
 
 /* Struct describing the instantaneous spatial layout of a pull coordinate */
 struct PullCoordSpatialData
 {
-    dvec          dr01;       /* The direction vector of group 1 relative to group 0 */
-    dvec          dr23;       /* The direction vector of group 3 relative to group 2 */
-    dvec          dr45;       /* The direction vector of group 5 relative to group 4 */
-    dvec          vec;        /* The pull direction */
-    double        vec_len;    /* Length of vec for direction-relative */
-    dvec          ffrad;      /* conversion factor from vec to radial force */
-    double        cyl_dev;    /* The deviation from the reference position */
-    dvec          planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
-    dvec          planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
+    dvec   dr01;       /* The direction vector of group 1 relative to group 0 */
+    dvec   dr23;       /* The direction vector of group 3 relative to group 2 */
+    dvec   dr45;       /* The direction vector of group 5 relative to group 4 */
+    dvec   vec;        /* The pull direction */
+    double vec_len;    /* Length of vec for direction-relative */
+    dvec   ffrad;      /* conversion factor from vec to radial force */
+    double cyl_dev;    /* The deviation from the reference position */
+    dvec   planevec_m; /* Normal of plane for groups 0, 1, 2, 3 for geometry dihedral */
+    dvec   planevec_n; /* Normal of plane for groups 2, 3, 4, 5 for geometry dihedral */
 
-    double        value;      /* The current value of the coordinate, units of nm or rad */
+    double value; /* The current value of the coordinate, units of nm or rad */
 };
 
 /* Struct with parameters and force evaluation local data for a pull coordinate */
 struct pull_coord_work_t
 {
     /* Constructor */
-    pull_coord_work_t(const t_pull_coord &params) :
+    pull_coord_work_t(const t_pull_coord& params) :
         params(params),
         value_ref(0),
         spatialData(),
@@ -143,16 +145,16 @@ struct pull_coord_work_t
     {
     }
 
-    const t_pull_coord    params;      /* Pull coordinate parameters */
+    const t_pull_coord params; /* Pull coordinate parameters */
 
-    double                value_ref;   /* The reference value, usually init+rate*t, units of nm or rad */
+    double value_ref; /* The reference value, usually init+rate*t, units of nm or rad */
 
-    PullCoordSpatialData  spatialData; /* Data defining the current geometry */
+    PullCoordSpatialData spatialData; /* Data defining the current geometry */
 
-    double                scalarForce; /* Scalar force for this cooordinate */
+    double scalarForce; /* Scalar force for this cooordinate */
 
     /* For external-potential coordinates only, for checking if a provider has been registered */
-    bool          bExternalPotentialProviderHasBeenRegistered;
+    bool bExternalPotentialProviderHasBeenRegistered;
 };
 
 /* Struct for storing vectorial forces for a pull coordinate */
@@ -167,25 +169,25 @@ struct PullCoordVectorForces
 struct ComSums
 {
     /* For normal weighting */
-    double sum_wm;    /* Sum of weight*mass        */
-    double sum_wwm;   /* Sum of weight*weight*mass */
-    dvec   sum_wmx;   /* Sum of weight*mass*x      */
-    dvec   sum_wmxp;  /* Sum of weight*mass*xp     */
+    double sum_wm;   /* Sum of weight*mass        */
+    double sum_wwm;  /* Sum of weight*weight*mass */
+    dvec   sum_wmx;  /* Sum of weight*mass*x      */
+    dvec   sum_wmxp; /* Sum of weight*mass*xp     */
 
     /* For cosine weighting */
-    double sum_cm;    /* Sum of cos(x)*mass          */
-    double sum_sm;    /* Sum of sin(x)*mass          */
-    double sum_ccm;   /* Sum of cos(x)*cos(x)*mass   */
-    double sum_csm;   /* Sum of cos(x)*sin(x)*mass   */
-    double sum_ssm;   /* Sum of sin(x)*sin(x)*mass   */
-    double sum_cmp;   /* Sum of cos(xp)*sin(xp)*mass */
-    double sum_smp;   /* Sum of sin(xp)*sin(xp)*mass */
+    double sum_cm;  /* Sum of cos(x)*mass          */
+    double sum_sm;  /* Sum of sin(x)*mass          */
+    double sum_ccm; /* Sum of cos(x)*cos(x)*mass   */
+    double sum_csm; /* Sum of cos(x)*sin(x)*mass   */
+    double sum_ssm; /* Sum of sin(x)*sin(x)*mass   */
+    double sum_cmp; /* Sum of cos(xp)*sin(xp)*mass */
+    double sum_smp; /* Sum of sin(xp)*sin(xp)*mass */
 
     /* Dummy data to ensure adjacent elements in an array are separated
      * by a cache line size, max 128 bytes.
      * TODO: Replace this by some automated mechanism.
      */
-    int    dummy[32];
+    int dummy[32];
 };
 
 /*! \brief The normal COM buffer needs 3 elements per group */
@@ -196,21 +198,21 @@ static constexpr int c_cylinderBufferStride = 9;
 
 struct pull_comm_t
 {
-    gmx_bool    bParticipateAll; /* Do all ranks always participate in pulling? */
-    gmx_bool    bParticipate;    /* Does our rank participate in pulling? */
+    gmx_bool bParticipateAll; /* Do all ranks always participate in pulling? */
+    gmx_bool bParticipate;    /* Does our rank participate in pulling? */
 #if GMX_MPI
-    MPI_Comm    mpi_comm_com;    /* Communicator for pulling */
+    MPI_Comm mpi_comm_com; /* Communicator for pulling */
 #endif
-    int         nparticipate;    /* The number of ranks participating */
-    bool        isMasterRank;    /* Tells whether our rank is the master rank and thus should add the pull virial */
+    int  nparticipate; /* The number of ranks participating */
+    bool isMasterRank; /* Tells whether our rank is the master rank and thus should add the pull virial */
 
-    int64_t     setup_count;     /* The number of decomposition calls */
-    int64_t     must_count;      /* The last count our rank needed to be part */
+    int64_t setup_count; /* The number of decomposition calls */
+    int64_t must_count;  /* The last count our rank needed to be part */
 
     /* Buffers for parallel reductions */
-    std::vector<gmx::RVec>                pbcAtomBuffer;  /* COM calculation buffer */
-    std::vector < gmx::BasicVector < double>> comBuffer;  /* COM calculation buffer */
-    std::vector<double>                   cylinderBuffer; /* cylinder ref. groups calculation buffer */
+    std::vector<gmx::RVec>                pbcAtomBuffer; /* COM calculation buffer */
+    std::vector<gmx::BasicVector<double>> comBuffer;     /* COM calculation buffer */
+    std::vector<double> cylinderBuffer; /* cylinder ref. groups calculation buffer */
 };
 
 // The COM pull force calculation data structure
@@ -218,47 +220,47 @@ struct pull_comm_t
 struct pull_t
 {
     /* Global parameters */
-    pull_params_t      params;       /* The pull parameters, from inputrec */
+    pull_params_t params; /* The pull parameters, from inputrec */
 
-    gmx_bool           bPotential;   /* Are there coordinates with potential? */
-    gmx_bool           bConstraint;  /* Are there constrained coordinates? */
-    gmx_bool           bAngle;       /* Are there angle geometry coordinates? */
+    gmx_bool bPotential;  /* Are there coordinates with potential? */
+    gmx_bool bConstraint; /* Are there constrained coordinates? */
+    gmx_bool bAngle;      /* Are there angle geometry coordinates? */
 
-    int                ePBC;         /* the boundary conditions */
-    int                npbcdim;      /* do pbc in dims 0 <= dim < npbcdim */
-    gmx_bool           bRefAt;       /* do we need reference atoms for a group COM ? */
-    int                cosdim;       /* dimension for cosine weighting, -1 if none */
-    gmx_bool           bCylinder;    /* Is group 0 a cylinder group? */
+    int      ePBC;      /* the boundary conditions */
+    int      npbcdim;   /* do pbc in dims 0 <= dim < npbcdim */
+    gmx_bool bRefAt;    /* do we need reference atoms for a group COM ? */
+    int      cosdim;    /* dimension for cosine weighting, -1 if none */
+    gmx_bool bCylinder; /* Is group 0 a cylinder group? */
 
     /* Parameters + dynamic data for groups */
-    std::vector<pull_group_work_t>  group;  /* The pull group param and work data */
-    std::vector<pull_group_work_t>  dyna;   /* Dynamic groups for geom=cylinder */
+    std::vector<pull_group_work_t> group; /* The pull group param and work data */
+    std::vector<pull_group_work_t> dyna;  /* Dynamic groups for geom=cylinder */
 
     /* Parameters + dynamic data for coordinates */
-    std::vector<pull_coord_work_t> coord;  /* The pull group param and work data */
+    std::vector<pull_coord_work_t> coord; /* The pull group param and work data */
 
     /* Global dynamic data */
-    gmx_bool             bSetPBCatoms;      /* Do we need to set x_pbc for the groups? */
+    gmx_bool bSetPBCatoms; /* Do we need to set x_pbc for the groups? */
 
-    int                  nthreads;          /* Number of threads used by the pull code */
-    std::vector<ComSums> comSums;           /* Work array for summing for COM, 1 entry per thread */
+    int                  nthreads; /* Number of threads used by the pull code */
+    std::vector<ComSums> comSums;  /* Work array for summing for COM, 1 entry per thread */
 
-    pull_comm_t          comm;              /* Communication parameters, communicator and buffers */
+    pull_comm_t comm; /* Communication parameters, communicator and buffers */
 
-    FILE                *out_x;             /* Output file for pull data */
-    FILE                *out_f;             /* Output file for pull data */
+    FILE* out_x; /* Output file for pull data */
+    FILE* out_f; /* Output file for pull data */
 
-    bool                 bXOutAverage;      /* Output average pull coordinates */
-    bool                 bFOutAverage;      /* Output average pull forces */
+    bool bXOutAverage; /* Output average pull coordinates */
+    bool bFOutAverage; /* Output average pull forces */
 
-    PullHistory         *coordForceHistory; /* Pull coordinate and force history */
+    PullHistory* coordForceHistory; /* Pull coordinate and force history */
 
     /* The number of coordinates using an external potential */
-    int                numCoordinatesWithExternalPotential;
+    int numCoordinatesWithExternalPotential;
     /* Counter for checking external potential registration */
-    int                numUnregisteredExternalPotentials;
+    int numUnregisteredExternalPotentials;
     /* */
-    int                numExternalPotentialsStillToBeAppliedThisStep;
+    int numExternalPotentialsStillToBeAppliedThisStep;
 };
 
 /*! \brief Copies the pull group COM of the previous step from the checkpoint state to the pull state
@@ -266,14 +268,14 @@ struct pull_t
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The global state container
  */
-void setPrevStepPullComFromState(struct pull_t *pull, const t_state *state);
+void setPrevStepPullComFromState(struct pull_t* pull, const t_state* state);
 
 /*! \brief Resizes the vector, in the state container, containing the COMs from the previous step
  *
  * \param[in]   state The global state container
  * \param[in]   pull  The COM pull force calculation data structure
  */
-void allocStatePrevStepPullCom(t_state *state, const pull_t *pull);
+void allocStatePrevStepPullCom(t_state* state, const pull_t* pull);
 
 
 #endif

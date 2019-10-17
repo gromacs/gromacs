@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,43 +64,36 @@ class TestReferenceChecker;
 
 class MockAnalysisDataModule : public IAnalysisDataModule
 {
-    public:
-        explicit MockAnalysisDataModule(int flags);
-        ~MockAnalysisDataModule() override;
+public:
+    explicit MockAnalysisDataModule(int flags);
+    ~MockAnalysisDataModule() override;
 
-        int flags() const override;
+    int flags() const override;
 
-        MOCK_METHOD2(parallelDataStarted,
-                     bool(AbstractAnalysisData              *data,
-                          const AnalysisDataParallelOptions &options));
-        MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
-        MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
-        MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
-        MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader &header));
-        MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
-        MOCK_METHOD0(dataFinished, void());
+    MOCK_METHOD2(parallelDataStarted,
+                 bool(AbstractAnalysisData* data, const AnalysisDataParallelOptions& options));
+    MOCK_METHOD1(dataStarted, void(AbstractAnalysisData* data));
+    MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader& header));
+    MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef& points));
+    MOCK_METHOD1(frameFinished, void(const AnalysisDataFrameHeader& header));
+    MOCK_METHOD1(frameFinishedSerial, void(int frameIndex));
+    MOCK_METHOD0(dataFinished, void());
 
-        void setupStaticCheck(const AnalysisDataTestInput &data,
-                              AbstractAnalysisData        *source,
-                              bool                         bParallel);
-        void setupStaticColumnCheck(const AnalysisDataTestInput &data,
-                                    int firstcol, int n,
-                                    AbstractAnalysisData *source);
-        void setupStaticStorageCheck(const AnalysisDataTestInput &data,
-                                     int                          storageCount,
-                                     AbstractAnalysisData        *source);
-        void setupReferenceCheck(const TestReferenceChecker &checker,
-                                 AbstractAnalysisData       *source);
+    void setupStaticCheck(const AnalysisDataTestInput& data, AbstractAnalysisData* source, bool bParallel);
+    void setupStaticColumnCheck(const AnalysisDataTestInput& data, int firstcol, int n, AbstractAnalysisData* source);
+    void setupStaticStorageCheck(const AnalysisDataTestInput& data,
+                                 int                          storageCount,
+                                 AbstractAnalysisData*        source);
+    void setupReferenceCheck(const TestReferenceChecker& checker, AbstractAnalysisData* source);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an MockAnalysisDataModule object.
-typedef std::shared_ptr<MockAnalysisDataModule>
-    MockAnalysisDataModulePointer;
+typedef std::shared_ptr<MockAnalysisDataModule> MockAnalysisDataModulePointer;
 
 } // namespace test
 } // namespace gmx

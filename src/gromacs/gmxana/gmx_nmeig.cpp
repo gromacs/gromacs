@@ -70,69 +70,68 @@
 
 static double cv_corr(double nu, double T)
 {
-    double x  = PLANCK*nu/(BOLTZ*T);
+    double x  = PLANCK * nu / (BOLTZ * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ*KILO;
+        return BOLTZ * KILO;
     }
     else
     {
-        return BOLTZ*KILO*(ex*gmx::square(x)/gmx::square(ex-1) - 1);
+        return BOLTZ * KILO * (ex * gmx::square(x) / gmx::square(ex - 1) - 1);
     }
 }
 
 static double u_corr(double nu, double T)
 {
-    double x  = PLANCK*nu/(BOLTZ*T);
+    double x  = PLANCK * nu / (BOLTZ * T);
     double ex = std::exp(x);
 
     if (nu <= 0)
     {
-        return BOLTZ*T;
+        return BOLTZ * T;
     }
     else
     {
-        return BOLTZ*T*(0.5*x - 1 + x/(ex-1));
+        return BOLTZ * T * (0.5 * x - 1 + x / (ex - 1));
     }
 }
 
-static size_t get_nharm_mt(const gmx_moltype_t *mt)
+static size_t get_nharm_mt(const gmx_moltype_t* mt)
 {
-    static int   harm_func[] = { F_BONDS };
-    int          i, ft;
-    size_t       nh = 0;
+    static int harm_func[] = { F_BONDS };
+    int        i, ft;
+    size_t     nh = 0;
 
     for (i = 0; (i < asize(harm_func)); i++)
     {
-        ft  = harm_func[i];
-        nh += mt->ilist[ft].size()/(interaction_function[ft].nratoms+1);
+        ft = harm_func[i];
+        nh += mt->ilist[ft].size() / (interaction_function[ft].nratoms + 1);
     }
     return nh;
 }
 
-static int get_nharm(const gmx_mtop_t *mtop)
+static int get_nharm(const gmx_mtop_t* mtop)
 {
     int nh = 0;
 
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    for (const gmx_molblock_t& molb : mtop->molblock)
     {
         nh += molb.nmol * get_nharm_mt(&(mtop->moltype[molb.type]));
     }
     return nh;
 }
 
-static void
-nma_full_hessian(real                    *hess,
-                 int                      ndim,
-                 gmx_bool                 bM,
-                 const t_topology        *top,
-                 gmx::ArrayRef<const int> atom_index,
-                 int                      begin,
-                 int                      end,
-                 real                    *eigenvalues,
-                 real                    *eigenvectors)
+static void nma_full_hessian(real*                    hess,
+                             int                      ndim,
+                             gmx_bool                 bM,
+                             const t_topology*        top,
+                             gmx::ArrayRef<const int> atom_index,
+                             int                      begin,
+                             int                      end,
+                             real*                    eigenvalues,
+                             real*                    eigenvectors)
 {
     real mass_fac;
 
@@ -148,10 +147,10 @@ nma_full_hessian(real                    *hess,
                 for (int k = 0; (k < atom_index.ssize()); k++)
                 {
                     size_t ak = atom_index[k];
-                    mass_fac = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     for (size_t l = 0; (l < DIM); l++)
                     {
-                        hess[(i*DIM+j)*ndim+k*DIM+l] *= mass_fac;
+                        hess[(i * DIM + j) * ndim + k * DIM + l] *= mass_fac;
                     }
                 }
             }
@@ -163,20 +162,20 @@ nma_full_hessian(real                    *hess,
     fprintf(stderr, "\nDiagonalizing to find vectors %d through %d...\n", begin, end);
     fflush(stderr);
 
-    eigensolver(hess, ndim, begin-1, end-1, eigenvalues, eigenvectors);
+    eigensolver(hess, ndim, begin - 1, end - 1, eigenvalues, eigenvectors);
 
     /* And scale the output eigenvectors */
     if (bM && eigenvectors != nullptr)
     {
-        for (int i = 0; i < (end-begin+1); i++)
+        for (int i = 0; i < (end - begin + 1); i++)
         {
             for (gmx::index j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (size_t k = 0; (k < DIM); k++)
                 {
-                    eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
+                    eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
                 }
             }
         }
@@ -184,15 +183,13 @@ nma_full_hessian(real                    *hess,
 }
 
 
-
-static void
-nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
-                   gmx_bool                 bM,
-                   const t_topology        *top,
-                   gmx::ArrayRef<const int> atom_index,
-                   int                      neig,
-                   real                    *eigenvalues,
-                   real                    *eigenvectors)
+static void nma_sparse_hessian(gmx_sparsematrix_t*      sparse_hessian,
+                               gmx_bool                 bM,
+                               const t_topology*        top,
+                               gmx::ArrayRef<const int> atom_index,
+                               int                      neig,
+                               real*                    eigenvalues,
+                               real*                    eigenvectors)
 {
     int    i, k;
     int    row, col;
@@ -200,12 +197,13 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
     int    katom;
     size_t ndim;
 
-    ndim = DIM*atom_index.size();
+    ndim = DIM * atom_index.size();
 
     /* Cannot check symmetry since we only store half matrix */
     /* divide elements hess[i][j] by sqrt(mas[i])*sqrt(mas[j]) when required */
 
-    GMX_RELEASE_ASSERT(sparse_hessian != nullptr, "NULL matrix pointer provided to nma_sparse_hessian");
+    GMX_RELEASE_ASSERT(sparse_hessian != nullptr,
+                       "NULL matrix pointer provided to nma_sparse_hessian");
 
     if (bM)
     {
@@ -214,13 +212,13 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
             size_t ai = atom_index[iatom];
             for (size_t j = 0; (j < DIM); j++)
             {
-                row = DIM*iatom+j;
+                row = DIM * iatom + j;
                 for (k = 0; k < sparse_hessian->ndata[row]; k++)
                 {
                     col       = sparse_hessian->data[row][k].col;
-                    katom     = col/3;
+                    katom     = col / 3;
                     size_t ak = atom_index[katom];
-                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m*top->atoms.atom[ak].m);
+                    mass_fac  = gmx::invsqrt(top->atoms.atom[ai].m * top->atoms.atom[ak].m);
                     sparse_hessian->data[row][k].value *= mass_fac;
                 }
             }
@@ -239,10 +237,10 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
             for (gmx::index j = 0; j < atom_index.ssize(); j++)
             {
                 size_t aj = atom_index[j];
-                mass_fac = gmx::invsqrt(top->atoms.atom[aj].m);
+                mass_fac  = gmx::invsqrt(top->atoms.atom[aj].m);
                 for (k = 0; (k < DIM); k++)
                 {
-                    eigenvectors[i*ndim+j*DIM+k] *= mass_fac;
+                    eigenvectors[i * ndim + j * DIM + k] *= mass_fac;
                 }
             }
         }
@@ -251,8 +249,7 @@ nma_sparse_hessian(gmx_sparsematrix_t      *sparse_hessian,
 
 
 /* Returns a pointer for eigenvector storage */
-static real *allocateEigenvectors(int nrow, int first, int last,
-                                  bool ignoreBegin)
+static real* allocateEigenvectors(int nrow, int first, int last, bool ignoreBegin)
 {
     int numVector;
     if (ignoreBegin)
@@ -263,19 +260,20 @@ static real *allocateEigenvectors(int nrow, int first, int last,
     {
         numVector = last - first + 1;
     }
-    size_t vectorsSize = static_cast<size_t>(nrow)*static_cast<size_t>(numVector);
+    size_t vectorsSize = static_cast<size_t>(nrow) * static_cast<size_t>(numVector);
     /* We can't have more than INT_MAX elements.
      * Relaxing this restriction probably requires changing lots of loop
      * variable types in the linear algebra code.
      */
     if (vectorsSize > INT_MAX)
     {
-        gmx_fatal(FARGS, "You asked to store %d eigenvectors of size %d, which requires more than the supported %d elements; %sdecrease -last",
-                  numVector, nrow, INT_MAX,
-                  ignoreBegin ? "" : "increase -first and/or ");
+        gmx_fatal(FARGS,
+                  "You asked to store %d eigenvectors of size %d, which requires more than the "
+                  "supported %d elements; %sdecrease -last",
+                  numVector, nrow, INT_MAX, ignoreBegin ? "" : "increase -first and/or ");
     }
 
-    real *eigenvectors;
+    real* eigenvectors;
     snew(eigenvectors, vectorsSize);
 
     return eigenvectors;
@@ -285,14 +283,14 @@ static real *allocateEigenvectors(int nrow, int first, int last,
  */
 static double calcTranslationalHeatCapacity()
 {
-    return RGAS*1.5;
+    return RGAS * 1.5;
 }
 
 /*! \brief Compute internal energy due to translational motion
  */
 static double calcTranslationalInternalEnergy(double T)
 {
-    return BOLTZ*T*1.5;
+    return BOLTZ * T * 1.5;
 }
 
 /*! \brief Compute heat capacity due to rotational motion
@@ -305,11 +303,11 @@ static double calcRotationalInternalEnergy(gmx_bool linear, double T)
 {
     if (linear)
     {
-        return BOLTZ*T;
+        return BOLTZ * T;
     }
     else
     {
-        return BOLTZ*T*1.5;
+        return BOLTZ * T * 1.5;
     }
 }
 
@@ -326,12 +324,12 @@ static double calcRotationalHeatCapacity(gmx_bool linear)
     }
     else
     {
-        return RGAS*1.5;
+        return RGAS * 1.5;
     }
 }
 
-static void analyzeThermochemistry(FILE                    *fp,
-                                   const t_topology        &top,
+static void analyzeThermochemistry(FILE*                    fp,
+                                   const t_topology&        top,
                                    rvec                     top_x[],
                                    gmx::ArrayRef<const int> atom_index,
                                    real                     eigfreq[],
@@ -341,44 +339,40 @@ static void analyzeThermochemistry(FILE                    *fp,
                                    real                     scale_factor,
                                    real                     linear_toler)
 {
-    std::vector<int>       index(atom_index.begin(), atom_index.end());
+    std::vector<int> index(atom_index.begin(), atom_index.end());
 
-    rvec                   xcm;
-    double                 tmass = calc_xcm(top_x, index.size(),
-                                            index.data(), top.atoms.atom, xcm, FALSE);
-    double                 Strans = calcTranslationalEntropy(tmass, T, P);
+    rvec   xcm;
+    double tmass  = calc_xcm(top_x, index.size(), index.data(), top.atoms.atom, xcm, FALSE);
+    double Strans = calcTranslationalEntropy(tmass, T, P);
     std::vector<gmx::RVec> x_com;
     x_com.resize(top.atoms.nr);
     for (int i = 0; i < top.atoms.nr; i++)
     {
         copy_rvec(top_x[i], x_com[i]);
     }
-    (void) sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(),
-                   top.atoms.atom, xcm, FALSE);
+    (void)sub_xcm(as_rvec_array(x_com.data()), index.size(), index.data(), top.atoms.atom, xcm, FALSE);
 
     rvec   inertia;
     matrix trans;
-    principal_comp(index.size(), index.data(), top.atoms.atom,
-                   as_rvec_array(x_com.data()), trans, inertia);
-    bool   linear       = (inertia[XX]/inertia[YY] < linear_toler &&
-                           inertia[XX]/inertia[ZZ] < linear_toler);
+    principal_comp(index.size(), index.data(), top.atoms.atom, as_rvec_array(x_com.data()), trans, inertia);
+    bool linear = (inertia[XX] / inertia[YY] < linear_toler && inertia[XX] / inertia[ZZ] < linear_toler);
     // (kJ/mol ps)^2/(Dalton nm^2 kJ/mol K) =
     // KILO kg m^2 ps^2/(s^2 mol g/mol nm^2 K) =
     // KILO^2 10^18 / 10^24 K = 1/K
-    double rot_const = gmx::square(PLANCK)/(8*gmx::square(M_PI)*BOLTZ);
+    double rot_const = gmx::square(PLANCK) / (8 * gmx::square(M_PI) * BOLTZ);
     // Rotational temperature (1/K)
-    rvec   theta = { 0, 0, 0 };
+    rvec theta = { 0, 0, 0 };
     if (linear)
     {
         // For linear molecules the first element of the inertia
         // vector is zero.
-        theta[0] = rot_const/inertia[1];
+        theta[0] = rot_const / inertia[1];
     }
     else
     {
         for (int m = 0; m < DIM; m++)
         {
-            theta[m] = rot_const/inertia[m];
+            theta[m] = rot_const / inertia[m];
         }
     }
     if (debug)
@@ -388,32 +382,29 @@ static void analyzeThermochemistry(FILE                    *fp,
         pr_rvecs(debug, 0, "trans", trans, DIM);
         fprintf(debug, "linear molecule = %s\n", linear ? "true" : "no");
     }
-    size_t nFreq  = index.size()*DIM;
-    auto   eFreq  = gmx::arrayRefFromArray(eigfreq, nFreq);
-    double Svib   = calcQuasiHarmonicEntropy(eFreq, T, linear, scale_factor);
+    size_t nFreq = index.size() * DIM;
+    auto   eFreq = gmx::arrayRefFromArray(eigfreq, nFreq);
+    double Svib  = calcQuasiHarmonicEntropy(eFreq, T, linear, scale_factor);
 
-    double Srot   = calcRotationalEntropy(T, top.atoms.nr,
-                                          linear, theta, sigma_r);
+    double Srot = calcRotationalEntropy(T, top.atoms.nr, linear, theta, sigma_r);
     fprintf(fp, "Translational entropy %g J/mol K\n", Strans);
     fprintf(fp, "Rotational entropy    %g J/mol K\n", Srot);
     fprintf(fp, "Vibrational entropy   %g J/mol K\n", Svib);
-    fprintf(fp, "Total entropy         %g J/mol K\n", Svib+Strans+Srot);
-    double HeatCapacity = (calcTranslationalHeatCapacity() +
-                           calcRotationalHeatCapacity(linear) +
-                           calcVibrationalHeatCapacity(eFreq, T, linear, scale_factor));
+    fprintf(fp, "Total entropy         %g J/mol K\n", Svib + Strans + Srot);
+    double HeatCapacity = (calcTranslationalHeatCapacity() + calcRotationalHeatCapacity(linear)
+                           + calcVibrationalHeatCapacity(eFreq, T, linear, scale_factor));
     fprintf(fp, "Heat capacity         %g J/mol K\n", HeatCapacity);
-    double Evib   = (calcTranslationalInternalEnergy(T) +
-                     calcRotationalInternalEnergy(linear, T) +
-                     calcVibrationalInternalEnergy(eFreq, T, linear, scale_factor));
+    double Evib = (calcTranslationalInternalEnergy(T) + calcRotationalInternalEnergy(linear, T)
+                   + calcVibrationalInternalEnergy(eFreq, T, linear, scale_factor));
     fprintf(fp, "Internal energy       %g kJ/mol\n", Evib);
-    double ZPE    = calcZeroPointEnergy(eFreq, scale_factor);
+    double ZPE = calcZeroPointEnergy(eFreq, scale_factor);
     fprintf(fp, "Zero-point energy     %g kJ/mol\n", ZPE);
 }
 
 
-int gmx_nmeig(int argc, char *argv[])
+int gmx_nmeig(int argc, char* argv[])
 {
-    const char            *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] calculates the eigenvectors/values of a (Hessian) matrix,",
         "which can be calculated with [gmx-mdrun].",
         "The eigenvectors are written to a trajectory file ([TT]-v[tt]).",
@@ -438,7 +429,8 @@ int gmx_nmeig(int argc, char *argv[])
         "you need to analyze the [TT]quant_corr.xvg[tt] file yourself.[PAR]",
         "To make things more flexible, the program can also take virtual sites into account",
         "when computing quantum corrections. When selecting [TT]-constr[tt] and",
-        "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as well.[PAR]",
+        "[TT]-qc[tt], the [TT]-begin[tt] and [TT]-end[tt] options will be set automatically as ",
+        "well.[PAR]",
         "Based on a harmonic analysis of the normal mode frequencies,",
         "thermochemical properties S0 (Standard Entropy),",
         "Cv (Heat capacity at constant volume), Zero-point energy and the internal energy are",
@@ -446,73 +438,94 @@ int gmx_nmeig(int argc, char *argv[])
         "programs."
     };
 
-    static gmx_bool        bM           = TRUE, bCons = FALSE;
-    static int             begin        = 1, end = 50, maxspec = 4000, sigma_r = 1;
-    static real            T            = 298.15, width = 1, P = 1, scale_factor = 1;
-    static real            linear_toler = 1e-5;
+    static gmx_bool bM = TRUE, bCons = FALSE;
+    static int      begin = 1, end = 50, maxspec = 4000, sigma_r = 1;
+    static real     T = 298.15, width = 1, P = 1, scale_factor = 1;
+    static real     linear_toler = 1e-5;
 
-    t_pargs                pa[]  =
-    {
-        { "-m",  FALSE, etBOOL, {&bM},
+    t_pargs pa[] = {
+        { "-m",
+          FALSE,
+          etBOOL,
+          { &bM },
           "Divide elements of Hessian by product of sqrt(mass) of involved "
           "atoms prior to diagonalization. This should be used for 'Normal Modes' "
           "analysis" },
-        { "-first", FALSE, etINT, {&begin},
-          "First eigenvector to write away" },
-        { "-last",  FALSE, etINT, {&end},
+        { "-first", FALSE, etINT, { &begin }, "First eigenvector to write away" },
+        { "-last",
+          FALSE,
+          etINT,
+          { &end },
           "Last eigenvector to write away. -1 is use all dimensions." },
-        { "-maxspec", FALSE, etINT, {&maxspec},
+        { "-maxspec",
+          FALSE,
+          etINT,
+          { &maxspec },
           "Highest frequency (1/cm) to consider in the spectrum" },
-        { "-T",     FALSE, etREAL, {&T},
-          "Temperature for computing entropy, quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations" },
-        { "-P",     FALSE, etREAL, {&P},
-          "Pressure (bar) when computing entropy" },
-        { "-sigma", FALSE, etINT, {&sigma_r},
-          "Number of symmetric copies used when computing entropy. E.g. for water the number is 2, for NH3 it is 3 and for methane it is 12." },
-        { "-scale", FALSE, etREAL, {&scale_factor},
+        { "-T",
+          FALSE,
+          etREAL,
+          { &T },
+          "Temperature for computing entropy, quantum heat capacity and enthalpy when "
+          "using normal mode calculations to correct classical simulations" },
+        { "-P", FALSE, etREAL, { &P }, "Pressure (bar) when computing entropy" },
+        { "-sigma",
+          FALSE,
+          etINT,
+          { &sigma_r },
+          "Number of symmetric copies used when computing entropy. E.g. for water the "
+          "number is 2, for NH3 it is 3 and for methane it is 12." },
+        { "-scale",
+          FALSE,
+          etREAL,
+          { &scale_factor },
           "Factor to scale frequencies before computing thermochemistry values" },
-        { "-linear_toler", FALSE, etREAL, {&linear_toler},
-          "Tolerance for determining whether a compound is linear as determined from the ration of the moments inertion Ix/Iy and Ix/Iz." },
-        { "-constr", FALSE, etBOOL, {&bCons},
-          "If constraints were used in the simulation but not in the normal mode analysis you will need to set this for computing the quantum corrections." },
-        { "-width",  FALSE, etREAL, {&width},
+        { "-linear_toler",
+          FALSE,
+          etREAL,
+          { &linear_toler },
+          "Tolerance for determining whether a compound is linear as determined from the "
+          "ration of the moments inertion Ix/Iy and Ix/Iz." },
+        { "-constr",
+          FALSE,
+          etBOOL,
+          { &bCons },
+          "If constraints were used in the simulation but not in the normal mode analysis "
+          "you will need to set this for computing the quantum corrections." },
+        { "-width",
+          FALSE,
+          etREAL,
+          { &width },
           "Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum" }
     };
-    FILE                  *out, *qc, *spec;
-    t_topology             top;
-    gmx_mtop_t             mtop;
-    rvec                  *top_x;
-    matrix                 box;
-    real                  *eigenvalues;
-    real                  *eigenvectors;
-    real                   qcvtot, qutot, qcv, qu;
-    int                    i, j, k;
-    real                   value, omega, nu;
-    real                   factor_gmx_to_omega2;
-    real                   factor_omega_to_wavenumber;
-    real                  *spectrum = nullptr;
-    real                   wfac;
-    gmx_output_env_t      *oenv;
-    const char            *qcleg[] = {
-        "Heat Capacity cV (J/mol K)",
-        "Enthalpy H (kJ/mol)"
-    };
-    real *                 full_hessian   = nullptr;
-    gmx_sparsematrix_t *   sparse_hessian = nullptr;
+    FILE *              out, *qc, *spec;
+    t_topology          top;
+    gmx_mtop_t          mtop;
+    rvec*               top_x;
+    matrix              box;
+    real*               eigenvalues;
+    real*               eigenvectors;
+    real                qcvtot, qutot, qcv, qu;
+    int                 i, j, k;
+    real                value, omega, nu;
+    real                factor_gmx_to_omega2;
+    real                factor_omega_to_wavenumber;
+    real*               spectrum = nullptr;
+    real                wfac;
+    gmx_output_env_t*   oenv;
+    const char*         qcleg[]        = { "Heat Capacity cV (J/mol K)", "Enthalpy H (kJ/mol)" };
+    real*               full_hessian   = nullptr;
+    gmx_sparsematrix_t* sparse_hessian = nullptr;
 
-    t_filenm               fnm[] = {
-        { efMTX, "-f", "hessian",    ffREAD  },
-        { efTPR, nullptr, nullptr,         ffREAD  },
-        { efXVG, "-of", "eigenfreq", ffWRITE },
-        { efXVG, "-ol", "eigenval",  ffWRITE },
-        { efXVG, "-os", "spectrum",  ffOPTWR },
-        { efXVG, "-qc", "quant_corr",  ffOPTWR },
-        { efTRN, "-v", "eigenvec",  ffWRITE }
+    t_filenm fnm[] = {
+        { efMTX, "-f", "hessian", ffREAD },     { efTPR, nullptr, nullptr, ffREAD },
+        { efXVG, "-of", "eigenfreq", ffWRITE }, { efXVG, "-ol", "eigenval", ffWRITE },
+        { efXVG, "-os", "spectrum", ffOPTWR },  { efXVG, "-qc", "quant_corr", ffOPTWR },
+        { efTRN, "-v", "eigenvec", ffWRITE }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -522,8 +535,7 @@ int gmx_nmeig(int argc, char *argv[])
     snew(top_x, tpx.natoms);
 
     int natoms_tpx;
-    read_tpx(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms_tpx,
-             top_x, nullptr, &mtop);
+    read_tpx(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms_tpx, top_x, nullptr, &mtop);
     int nharm = 0;
     if (bCons)
     {
@@ -534,7 +546,7 @@ int gmx_nmeig(int argc, char *argv[])
     top = gmx_mtop_t_to_t_topology(&mtop, true);
 
     bM       = TRUE;
-    int ndim = DIM*atom_index.size();
+    int ndim = DIM * atom_index.size();
 
     if (opt2bSet("-qc", NFILE, fnm))
     {
@@ -563,20 +575,23 @@ int gmx_nmeig(int argc, char *argv[])
     {
         fprintf(stderr, "Cannot use sparse Hessian to calculate all eigenvectors.\n");
 
-        fprintf(stderr, "Will try to allocate memory and convert to full matrix representation...\n");
+        fprintf(stderr,
+                "Will try to allocate memory and convert to full matrix representation...\n");
 
-        size_t hessianSize = static_cast<size_t>(nrow)*static_cast<size_t>(ncol);
+        size_t hessianSize = static_cast<size_t>(nrow) * static_cast<size_t>(ncol);
         /* Allowing  Hessians larger than INT_MAX probably only makes sense
          * with (OpenMP) parallel diagonalization routines, since with a single
          * thread it will takes months.
          */
         if (hessianSize > INT_MAX)
         {
-            gmx_fatal(FARGS, "Hessian size is %d x %d, which is larger than the maximum allowed %d elements.",
+            gmx_fatal(FARGS,
+                      "Hessian size is %d x %d, which is larger than the maximum allowed %d "
+                      "elements.",
                       nrow, ncol, INT_MAX);
         }
         snew(full_hessian, hessianSize);
-        for (i = 0; i < nrow*ncol; i++)
+        for (i = 0; i < nrow * ncol; i++)
         {
             full_hessian[i] = 0;
         }
@@ -585,10 +600,10 @@ int gmx_nmeig(int argc, char *argv[])
         {
             for (j = 0; j < sparse_hessian->ndata[i]; j++)
             {
-                k                      = sparse_hessian->data[i][j].col;
-                value                  = sparse_hessian->data[i][j].value;
-                full_hessian[i*ndim+k] = value;
-                full_hessian[k*ndim+i] = value;
+                k                          = sparse_hessian->data[i][j].col;
+                value                      = sparse_hessian->data[i][j].value;
+                full_hessian[i * ndim + k] = value;
+                full_hessian[k * ndim + i] = value;
             }
         }
         gmx_sparsematrix_destroy(sparse_hessian);
@@ -603,8 +618,7 @@ int gmx_nmeig(int argc, char *argv[])
         /* Using full matrix storage */
         eigenvectors = allocateEigenvectors(nrow, begin, end, false);
 
-        nma_full_hessian(full_hessian, nrow, bM, &top, atom_index, begin, end,
-                         eigenvalues, eigenvectors);
+        nma_full_hessian(full_hessian, nrow, bM, &top, atom_index, begin, end, eigenvalues, eigenvectors);
     }
     else
     {
@@ -617,7 +631,7 @@ int gmx_nmeig(int argc, char *argv[])
 
     /* check the output, first 6 eigenvalues should be reasonably small */
     gmx_bool bSuck = FALSE;
-    for (i = begin-1; (i < 6); i++)
+    for (i = begin - 1; (i < 6); i++)
     {
         if (std::abs(eigenvalues[i]) > 1.0e-3)
         {
@@ -632,10 +646,9 @@ int gmx_nmeig(int argc, char *argv[])
     }
 
     /* now write the output */
-    fprintf (stderr, "Writing eigenvalues...\n");
-    out = xvgropen(opt2fn("-ol", NFILE, fnm),
-                   "Eigenvalues", "Eigenvalue index", "Eigenvalue [Gromacs units]",
-                   oenv);
+    fprintf(stderr, "Writing eigenvalues...\n");
+    out = xvgropen(opt2fn("-ol", NFILE, fnm), "Eigenvalues", "Eigenvalue index",
+                   "Eigenvalue [Gromacs units]", oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         if (bM)
@@ -648,9 +661,9 @@ int gmx_nmeig(int argc, char *argv[])
         }
     }
 
-    for (i = 0; i <= (end-begin); i++)
+    for (i = 0; i <= (end - begin); i++)
     {
-        fprintf (out, "%6d %15g\n", begin+i, eigenvalues[i]);
+        fprintf(out, "%6d %15g\n", begin + i, eigenvalues[i]);
     }
     xvgrclose(out);
 
@@ -667,9 +680,8 @@ int gmx_nmeig(int argc, char *argv[])
     }
     printf("Writing eigenfrequencies - negative eigenvalues will be set to zero.\n");
 
-    out = xvgropen(opt2fn("-of", NFILE, fnm),
-                   "Eigenfrequencies", "Eigenvector index", "Wavenumber [cm\\S-1\\N]",
-                   oenv);
+    out = xvgropen(opt2fn("-of", NFILE, fnm), "Eigenfrequencies", "Eigenvector index",
+                   "Wavenumber [cm\\S-1\\N]", oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
         if (bM)
@@ -688,9 +700,7 @@ int gmx_nmeig(int argc, char *argv[])
         snew(spectrum, maxspec);
         spec = xvgropen(opt2fn("-os", NFILE, fnm),
                         "Vibrational spectrum based on harmonic approximation",
-                        "\\f{12}w\\f{4} (cm\\S-1\\N)",
-                        "Intensity [Gromacs units]",
-                        oenv);
+                        "\\f{12}w\\f{4} (cm\\S-1\\N)", "Intensity [Gromacs units]", oenv);
         for (i = 0; (i < maxspec); i++)
         {
             spectrum[i] = 0;
@@ -705,41 +715,41 @@ int gmx_nmeig(int argc, char *argv[])
      * light. Do this by first converting to omega^2 (units 1/s), take the square
      * root, and finally divide by the speed of light (nm/ps in gromacs).
      */
-    factor_gmx_to_omega2       = 1.0E21/(AVOGADRO*AMU);
-    factor_omega_to_wavenumber = 1.0E-5/(2.0*M_PI*SPEED_OF_LIGHT);
+    factor_gmx_to_omega2       = 1.0E21 / (AVOGADRO * AMU);
+    factor_omega_to_wavenumber = 1.0E-5 / (2.0 * M_PI * SPEED_OF_LIGHT);
 
     value = 0;
     for (i = begin; (i <= end); i++)
     {
-        value = eigenvalues[i-begin];
+        value = eigenvalues[i - begin];
         if (value < 0)
         {
             value = 0;
         }
-        omega = std::sqrt(value*factor_gmx_to_omega2);
-        nu    = 1e-12*omega/(2*M_PI);
-        value = omega*factor_omega_to_wavenumber;
-        fprintf (out, "%6d %15g\n", i, value);
+        omega = std::sqrt(value * factor_gmx_to_omega2);
+        nu    = 1e-12 * omega / (2 * M_PI);
+        value = omega * factor_omega_to_wavenumber;
+        fprintf(out, "%6d %15g\n", i, value);
         if (nullptr != spec)
         {
-            wfac = eigenvalues[i-begin]/(width*std::sqrt(2*M_PI));
+            wfac = eigenvalues[i - begin] / (width * std::sqrt(2 * M_PI));
             for (j = 0; (j < maxspec); j++)
             {
-                spectrum[j] += wfac*std::exp(-gmx::square(j-value)/(2*gmx::square(width)));
+                spectrum[j] += wfac * std::exp(-gmx::square(j - value) / (2 * gmx::square(width)));
             }
         }
         if (nullptr != qc)
         {
             qcv = cv_corr(nu, T);
             qu  = u_corr(nu, T);
-            if (i > end-nharm)
+            if (i > end - nharm)
             {
-                qcv += BOLTZ*KILO;
-                qu  += BOLTZ*T;
+                qcv += BOLTZ * KILO;
+                qu += BOLTZ * T;
             }
-            fprintf (qc, "%6d %15g %15g\n", i, qcv, qu);
+            fprintf(qc, "%6d %15g %15g\n", i, qcv, qu);
             qcvtot += qcv;
-            qutot  += qu;
+            qutot += qu;
         }
     }
     xvgrclose(out);
@@ -753,7 +763,7 @@ int gmx_nmeig(int argc, char *argv[])
     {
         for (j = 0; (j < maxspec); j++)
         {
-            fprintf(spec, "%10g  %10g\n", 1.0*j, spectrum[j]);
+            fprintf(spec, "%10g  %10g\n", 1.0 * j, spectrum[j]);
         }
         xvgrclose(spec);
     }
@@ -772,7 +782,7 @@ int gmx_nmeig(int argc, char *argv[])
      * nma_full_hessian() or nma_sparse_hessian() routines. Mass scaled vectors
      * will not be strictly orthogonal in plain cartesian scalar products.
      */
-    const real *eigenvectorPtr;
+    const real* eigenvectorPtr;
     if (full_hessian != nullptr)
     {
         eigenvectorPtr = eigenvectors;
@@ -780,15 +790,15 @@ int gmx_nmeig(int argc, char *argv[])
     else
     {
         /* The sparse matrix diagonalization store all eigenvectors up to end */
-        eigenvectorPtr = eigenvectors + (begin - 1)*atom_index.size();
+        eigenvectorPtr = eigenvectors + (begin - 1) * atom_index.size();
     }
-    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin, end,
-                       eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
+    write_eigenvectors(opt2fn("-v", NFILE, fnm), atom_index.size(), eigenvectorPtr, FALSE, begin,
+                       end, eWXR_NO, nullptr, FALSE, top_x, bM, eigenvalues);
 
     if (begin == 1)
     {
-        analyzeThermochemistry(stdout, top, top_x, atom_index, eigenvalues,
-                               T, P, sigma_r, scale_factor, linear_toler);
+        analyzeThermochemistry(stdout, top, top_x, atom_index, eigenvalues, T, P, sigma_r,
+                               scale_factor, linear_toler);
         please_cite(stdout, "Spoel2018a");
     }
     else

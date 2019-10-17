@@ -64,11 +64,11 @@ struct ExponentialMovingAverageState
 };
 
 //! Convert the exponential moving average state as key-value-tree object
-void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder builder, const ExponentialMovingAverageState &state);
+void exponentialMovingAverageStateAsKeyValueTree(KeyValueTreeObjectBuilder            builder,
+                                                 const ExponentialMovingAverageState& state);
 
 //! Sets the expoential moving average state from a key-value-tree object
-ExponentialMovingAverageState
-exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject &object);
+ExponentialMovingAverageState exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject& object);
 
 /*! \libinternal
  * \brief Evaluate the exponential moving average with bias correction.
@@ -84,38 +84,36 @@ exponentialMovingAverageStateFromKeyValueTree(const KeyValueTreeObject &object);
  */
 class ExponentialMovingAverage
 {
-    public:
-        /*! \brief Construct by setting the time constant and state.
-         * Allows reinitiating with data from memory.
-         * \param[in] timeConstant time in number of data points
-         * \param[in] state of the exponential moving average
-         * \throws InconsistentInputError if timeConstant < 1
-         */
-        ExponentialMovingAverage(real                                 timeConstant,
-                                 const ExponentialMovingAverageState &state = {}
-                                 );
+public:
+    /*! \brief Construct by setting the time constant and state.
+     * Allows reinitiating with data from memory.
+     * \param[in] timeConstant time in number of data points
+     * \param[in] state of the exponential moving average
+     * \throws InconsistentInputError if timeConstant < 1
+     */
+    ExponentialMovingAverage(real timeConstant, const ExponentialMovingAverageState& state = {});
 
-        //! Update the moving average with a data point
-        void updateWithDataPoint(real dataPoint);
+    //! Update the moving average with a data point
+    void updateWithDataPoint(real dataPoint);
 
-        //! The exponential weighted average with bias correction
-        real biasCorrectedAverage() const;
+    //! The exponential weighted average with bias correction
+    real biasCorrectedAverage() const;
 
-        //! Returns true if last added data point increased the average
-        bool increasing() const;
+    //! Returns true if last added data point increased the average
+    bool increasing() const;
 
-        //! Return the current state of the exponential moving average
-        const ExponentialMovingAverageState &state() const;
+    //! Return the current state of the exponential moving average
+    const ExponentialMovingAverageState& state() const;
 
-        //! The inverse time constant for the exponential moving average
-        real inverseTimeConstant() const;
-    private:
+    //! The inverse time constant for the exponential moving average
+    real inverseTimeConstant() const;
 
-        //! The current state of the exponential moving average
-        ExponentialMovingAverageState state_;
+private:
+    //! The current state of the exponential moving average
+    ExponentialMovingAverageState state_;
 
-        //! The inverse time constant for the exponential moving average
-        real inverseTimeConstant_;
+    //! The inverse time constant for the exponential moving average
+    real inverseTimeConstant_;
 };
 
 } // namespace gmx

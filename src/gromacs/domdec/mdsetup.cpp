@@ -58,21 +58,21 @@
  * The final solution should be an MD algorithm base class with methods
  * for initialization and atom-data setup.
  */
-void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
-                               const t_inputrec *ir,
-                               const gmx_mtop_t &top_global,
-                               gmx_localtop_t   *top,
-                               t_forcerec       *fr,
-                               t_graph         **graph,
-                               gmx::MDAtoms     *mdAtoms,
-                               gmx::Constraints *constr,
-                               gmx_vsite_t      *vsite,
-                               gmx_shellfc_t    *shellfc)
+void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
+                               const t_inputrec* ir,
+                               const gmx_mtop_t& top_global,
+                               gmx_localtop_t*   top,
+                               t_forcerec*       fr,
+                               t_graph**         graph,
+                               gmx::MDAtoms*     mdAtoms,
+                               gmx::Constraints* constr,
+                               gmx_vsite_t*      vsite,
+                               gmx_shellfc_t*    shellfc)
 {
-    bool  usingDomDec = DOMAINDECOMP(cr);
+    bool usingDomDec = DOMAINDECOMP(cr);
 
-    int   numAtomIndex, numHomeAtoms;
-    int  *atomIndex;
+    int  numAtomIndex, numHomeAtoms;
+    int* atomIndex;
 
     if (usingDomDec)
     {
@@ -105,8 +105,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
             /* The vsites were already assigned by the domdec topology code.
              * We only need to do the thread division here.
              */
-            split_vsites_over_threads(top->idef.il, top->idef.iparams,
-                                      mdatoms, vsite);
+            split_vsites_over_threads(top->idef.il, top->idef.iparams, mdatoms, vsite);
         }
         else
         {
@@ -136,10 +135,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec  *cr,
         make_local_shells(cr, mdatoms, shellfc);
     }
 
-    setup_bonded_threading(fr->bondedThreading,
-                           fr->natoms_force,
-                           fr->gpuBonded != nullptr,
-                           top->idef);
+    setup_bonded_threading(fr->bondedThreading, fr->natoms_force, fr->gpuBonded != nullptr, top->idef);
 
     if (EEL_PME(fr->ic->eeltype) && (cr->duty & DUTY_PME))
     {

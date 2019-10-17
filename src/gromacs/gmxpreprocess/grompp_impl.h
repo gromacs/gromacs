@@ -54,71 +54,71 @@
  */
 class InteractionOfType
 {
-    public:
-        //! Constructor that initializes vectors.
-        InteractionOfType(gmx::ArrayRef<const int>  atoms,
-                          gmx::ArrayRef<const real> params,
-                          const std::string        &name = "");
-        /*!@{*/
-        //! Access the individual elements set for the parameter.
-        const int       &ai() const;
-        const int       &aj() const;
-        const int       &ak() const;
-        const int       &al() const;
-        const int       &am() const;
+public:
+    //! Constructor that initializes vectors.
+    InteractionOfType(gmx::ArrayRef<const int>  atoms,
+                      gmx::ArrayRef<const real> params,
+                      const std::string&        name = "");
+    /*!@{*/
+    //! Access the individual elements set for the parameter.
+    const int& ai() const;
+    const int& aj() const;
+    const int& ak() const;
+    const int& al() const;
+    const int& am() const;
 
-        const real &c0() const;
-        const real &c1() const;
-        const real &c2() const;
+    const real& c0() const;
+    const real& c1() const;
+    const real& c2() const;
 
-        const std::string &interactionTypeName() const;
-        /*!@}*/
+    const std::string& interactionTypeName() const;
+    /*!@}*/
 
-        /*! \brief Renumbers atom Ids.
-         *
-         *  Enforces that ai() is less than the opposite terminal atom index,
-         *  with the number depending on the interaction type.
-         */
-        void sortAtomIds();
+    /*! \brief Renumbers atom Ids.
+     *
+     *  Enforces that ai() is less than the opposite terminal atom index,
+     *  with the number depending on the interaction type.
+     */
+    void sortAtomIds();
 
-        //! Set single force field parameter.
-        void setForceParameter(int pos, real value);
+    //! Set single force field parameter.
+    void setForceParameter(int pos, real value);
 
-        //! View on all atoms numbers that are actually set.
-        gmx::ArrayRef<int> atoms() { return atoms_; }
-        //! Const view on all atoms numbers that are actually set.
-        gmx::ArrayRef<const int> atoms() const { return atoms_; }
-        //! View on all of the force field parameters
-        gmx::ArrayRef<const real> forceParam() const { return forceParam_; }
-        //! View on all of the force field parameters
-        gmx::ArrayRef<real> forceParam() { return forceParam_; }
+    //! View on all atoms numbers that are actually set.
+    gmx::ArrayRef<int> atoms() { return atoms_; }
+    //! Const view on all atoms numbers that are actually set.
+    gmx::ArrayRef<const int> atoms() const { return atoms_; }
+    //! View on all of the force field parameters
+    gmx::ArrayRef<const real> forceParam() const { return forceParam_; }
+    //! View on all of the force field parameters
+    gmx::ArrayRef<real> forceParam() { return forceParam_; }
 
-    private:
-        //! Return if we have a bond parameter, means two atoms right now.
-        bool isBond() const { return atoms_.size() == 2; }
-        //! Return if we have an angle parameter, means three atoms right now.
-        bool isAngle() const { return atoms_.size() == 3; }
-        //! Return if we have a dihedral parameter, means four atoms right now.
-        bool isDihedral() const { return atoms_.size() == 4; }
-        //! Return if we have a cmap parameter, means five atoms right now.
-        bool isCmap() const { return atoms_.size() == 5; }
-        //! Enforce that atom id ai() is less than aj().
-        void sortBondAtomIds();
-        //! Enforce that atom id ai() is less than ak(). Does not change aj().
-        void sortAngleAtomIds();
-        /*! \brief Enforce order of atoms in dihedral.
-         *
-         * Changes atom order if needed to enforce that ai() is less than al().
-         * If ai() and al() are swapped, aj() and ak() are swapped as well,
-         * independent of their previous order.
-         */
-        void sortDihedralAtomIds();
-        //! The atom list (eg. bonds: particle, i = atoms[0] (ai), j = atoms[1] (aj))
-        std::vector<int>                atoms_;
-        //! Force parameters (eg. b0 = forceParam[0])
-        std::array<real, MAXFORCEPARAM> forceParam_;
-        //! Used with forcefields whose .rtp files name the interaction types (e.g. GROMOS), rather than look them up from the atom names.
-        std::string                     interactionTypeName_;
+private:
+    //! Return if we have a bond parameter, means two atoms right now.
+    bool isBond() const { return atoms_.size() == 2; }
+    //! Return if we have an angle parameter, means three atoms right now.
+    bool isAngle() const { return atoms_.size() == 3; }
+    //! Return if we have a dihedral parameter, means four atoms right now.
+    bool isDihedral() const { return atoms_.size() == 4; }
+    //! Return if we have a cmap parameter, means five atoms right now.
+    bool isCmap() const { return atoms_.size() == 5; }
+    //! Enforce that atom id ai() is less than aj().
+    void sortBondAtomIds();
+    //! Enforce that atom id ai() is less than ak(). Does not change aj().
+    void sortAngleAtomIds();
+    /*! \brief Enforce order of atoms in dihedral.
+     *
+     * Changes atom order if needed to enforce that ai() is less than al().
+     * If ai() and al() are swapped, aj() and ak() are swapped as well,
+     * independent of their previous order.
+     */
+    void sortDihedralAtomIds();
+    //! The atom list (eg. bonds: particle, i = atoms[0] (ai), j = atoms[1] (aj))
+    std::vector<int> atoms_;
+    //! Force parameters (eg. b0 = forceParam[0])
+    std::array<real, MAXFORCEPARAM> forceParam_;
+    //! Used with forcefields whose .rtp files name the interaction types (e.g. GROMOS), rather than look them up from the atom names.
+    std::string interactionTypeName_;
 };
 
 /*! \libinternal \brief
@@ -131,30 +131,30 @@ class InteractionOfType
  * topology file definition.
  */
 struct InteractionsOfType
-{                       // NOLINT (clang-analyzer-optin.performance.Padding)
+{ // NOLINT (clang-analyzer-optin.performance.Padding)
     //! The different parameters in the system.
     std::vector<InteractionOfType> interactionTypes;
     //! CMAP grid spacing.
-    int                            cmakeGridSpacing = -1;
+    int cmakeGridSpacing = -1;
     //! Number of cmap angles.
-    int                            cmapAngles = -1;
+    int cmapAngles = -1;
     //! CMAP grid data.
-    std::vector<real>              cmap;
+    std::vector<real> cmap;
     //! The five atomtypes followed by a number that identifies the type.
-    std::vector<int>               cmapAtomTypes;
+    std::vector<int> cmapAtomTypes;
 
     //! Number of parameters.
     size_t size() const { return interactionTypes.size(); }
     //! Elements in cmap grid data.
-    int    ncmap() const { return cmap.size(); }
+    int ncmap() const { return cmap.size(); }
     //! Number of elements in cmapAtomTypes.
-    int    nct() const { return cmapAtomTypes.size(); }
+    int nct() const { return cmapAtomTypes.size(); }
 };
 
 struct t_excls
 {
-    int            nr;      /* The number of exclusions             */
-    int           *e;       /* The excluded atoms                   */
+    int  nr; /* The number of exclusions             */
+    int* e;  /* The excluded atoms                   */
 };
 
 
@@ -164,21 +164,21 @@ struct t_excls
 struct MoleculeInformation
 {
     //! Name of the molecule.
-    char                                       **name = nullptr;
-    //!Number of exclusions per atom.
-    int                                          nrexcl = 0;
+    char** name = nullptr;
+    //! Number of exclusions per atom.
+    int nrexcl = 0;
     //! Have exclusions been generated?.
-    bool                                         excl_set = false;
+    bool excl_set = false;
     //! Has the mol been processed.
-    bool                                         bProcessed = false;
+    bool bProcessed = false;
     //! Atoms in the moelcule.
-    t_atoms                                      atoms;
+    t_atoms atoms;
     //! Molecules separated in datastructure.
-    t_block                                      mols;
+    t_block mols;
     //! Exclusions in the molecule.
-    t_blocka                                     excls;
+    t_blocka excls;
     //! Interactions of a defined type.
-    std::array<InteractionsOfType, F_NRE>        interactions;
+    std::array<InteractionsOfType, F_NRE> interactions;
 
     /*! \brief
      * Initializer.

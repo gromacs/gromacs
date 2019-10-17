@@ -59,42 +59,74 @@ struct t_nrnb;
 struct t_pbc;
 
 /*! \brief Calculate bond-angle. No PBC is taken into account (use mol-shift) */
-real bond_angle(const rvec xi, const rvec xj, const rvec xk,
-                const struct t_pbc *pbc,
-                rvec r_ij, rvec r_kj, real *costh,
-                int *t1, int *t2);  /* out */
+real bond_angle(const rvec          xi,
+                const rvec          xj,
+                const rvec          xk,
+                const struct t_pbc* pbc,
+                rvec                r_ij,
+                rvec                r_kj,
+                real*               costh,
+                int*                t1,
+                int*                t2); /* out */
 
 /*! \brief Calculate dihedral-angle. No PBC is taken into account (use mol-shift) */
-real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
-               const struct t_pbc *pbc,
-               rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n, /* out */
-               int *t1, int *t2, int *t3);
+real dih_angle(const rvec          xi,
+               const rvec          xj,
+               const rvec          xk,
+               const rvec          xl,
+               const struct t_pbc* pbc,
+               rvec                r_ij,
+               rvec                r_kj,
+               rvec                r_kl,
+               rvec                m,
+               rvec                n, /* out */
+               int*                t1,
+               int*                t2,
+               int*                t3);
 
 /*! \brief Do an update of the forces for dihedral potentials */
-void do_dih_fup(int i, int j, int k, int l, real ddphi,
-                rvec r_ij, rvec r_kj, rvec r_kl,
-                rvec m, rvec n, rvec4 f[], rvec fshift[],
-                const struct t_pbc *pbc, const struct t_graph *g,
-                const rvec *x, int t1, int t2, int t3);
+void do_dih_fup(int                   i,
+                int                   j,
+                int                   k,
+                int                   l,
+                real                  ddphi,
+                rvec                  r_ij,
+                rvec                  r_kj,
+                rvec                  r_kl,
+                rvec                  m,
+                rvec                  n,
+                rvec4                 f[],
+                rvec                  fshift[],
+                const struct t_pbc*   pbc,
+                const struct t_graph* g,
+                const rvec*           x,
+                int                   t1,
+                int                   t2,
+                int                   t3);
 
 /*! \brief Make a dihedral fall in the range (-pi,pi) */
-void make_dp_periodic(real *dp);
+void make_dp_periodic(real* dp);
 
 /*! \brief Compute CMAP dihedral energies and forces */
-real
-    cmap_dihs(int nbonds,
-              const t_iatom forceatoms[], const t_iparams forceparams[],
-              const gmx_cmap_t *cmap_grid,
-              const rvec x[], rvec4 f[], rvec fshift[],
-              const struct t_pbc *pbc, const struct t_graph *g,
-              real gmx_unused lambda, real gmx_unused *dvdlambda,
-              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
-              int  gmx_unused *global_atom_index);
+real cmap_dihs(int                   nbonds,
+               const t_iatom         forceatoms[],
+               const t_iparams       forceparams[],
+               const gmx_cmap_t*     cmap_grid,
+               const rvec            x[],
+               rvec4                 f[],
+               rvec                  fshift[],
+               const struct t_pbc*   pbc,
+               const struct t_graph* g,
+               real gmx_unused lambda,
+               real gmx_unused* dvdlambda,
+               const t_mdatoms gmx_unused* md,
+               t_fcdata gmx_unused* fcd,
+               int gmx_unused* global_atom_index);
 
 /*! \brief For selecting which flavor of bonded kernel is used for simple bonded types */
 enum class BondedKernelFlavor
 {
-    ForcesSimdWhenAvailable,  //!< Compute only forces, use SIMD when available; should not be used with perturbed parameters
+    ForcesSimdWhenAvailable, //!< Compute only forces, use SIMD when available; should not be used with perturbed parameters
     ForcesNoSimd,             //!< Compute only forces, do not use SIMD
     ForcesAndVirialAndEnergy, //!< Compute forces, virial and energy (no SIMD)
     ForcesAndEnergy,          //!< Compute forces and energy (no SIMD)
@@ -104,8 +136,8 @@ enum class BondedKernelFlavor
 /*! \brief Returns whether the energy should be computed */
 static constexpr inline bool computeEnergy(const BondedKernelFlavor flavor)
 {
-    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy ||
-            flavor == BondedKernelFlavor::ForcesAndEnergy);
+    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy
+            || flavor == BondedKernelFlavor::ForcesAndEnergy);
 }
 
 /*! \brief Returns whether the virial should be computed */
@@ -117,8 +149,8 @@ static constexpr inline bool computeVirial(const BondedKernelFlavor flavor)
 /*! \brief Returns whether the energy and/or virial should be computed */
 static constexpr inline bool computeEnergyOrVirial(const BondedKernelFlavor flavor)
 {
-    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy ||
-            flavor == BondedKernelFlavor::ForcesAndEnergy);
+    return (flavor == BondedKernelFlavor::ForcesAndVirialAndEnergy
+            || flavor == BondedKernelFlavor::ForcesAndEnergy);
 }
 
 /*! \brief Calculates bonded interactions for simple bonded types
@@ -127,15 +159,20 @@ static constexpr inline bool computeEnergyOrVirial(const BondedKernelFlavor flav
  * All pointers should be non-null, except for pbc and g which can be nullptr.
  * \returns the energy or 0 when \p bondedKernelFlavor did not request the energy.
  */
-real calculateSimpleBond(int ftype,
-                         int numForceatoms, const t_iatom forceatoms[],
-                         const t_iparams forceparams[],
-                         const rvec x[], rvec4 f[], rvec fshift[],
-                         const struct t_pbc *pbc,
-                         const struct t_graph gmx_unused *g,
-                         real lambda, real *dvdlambda,
-                         const t_mdatoms *md, t_fcdata *fcd,
-                         int gmx_unused *global_atom_index,
+real calculateSimpleBond(int                  ftype,
+                         int                  numForceatoms,
+                         const t_iatom        forceatoms[],
+                         const t_iparams      forceparams[],
+                         const rvec           x[],
+                         rvec4                f[],
+                         rvec                 fshift[],
+                         const struct t_pbc*  pbc,
+                         const struct t_graph gmx_unused* g,
+                         real                             lambda,
+                         real*                            dvdlambda,
+                         const t_mdatoms*                 md,
+                         t_fcdata*                        fcd,
+                         int gmx_unused*    global_atom_index,
                          BondedKernelFlavor bondedKernelFlavor);
 
 //! Getter for finding the flop count for an \c ftype interaction.

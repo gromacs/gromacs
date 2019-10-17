@@ -78,7 +78,8 @@ namespace gmxapi
 
 ContextImpl::ContextImpl()
 {
-    GMX_ASSERT(session_.expired(), "This implementation assumes an expired weak_ptr at initialization.");
+    GMX_ASSERT(session_.expired(),
+               "This implementation assumes an expired weak_ptr at initialization.");
 }
 
 std::shared_ptr<gmxapi::ContextImpl> ContextImpl::create()
@@ -87,11 +88,11 @@ std::shared_ptr<gmxapi::ContextImpl> ContextImpl::create()
     return impl;
 }
 
-std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
+std::shared_ptr<Session> ContextImpl::launch(const Workflow& work)
 {
     using namespace gmx;
-    // Much of this implementation is not easily testable: we need tools to inspect simulation results and to modify
-    // simulation inputs.
+    // Much of this implementation is not easily testable: we need tools to inspect simulation
+    // results and to modify simulation inputs.
 
     std::shared_ptr<Session> launchedSession = nullptr;
 
@@ -102,7 +103,7 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         // Check workflow spec, build graph for current context, launch and return new session.
         // \todo This is specific to the session implementation...
         auto        mdNode = work.getNode("MD");
-        std::string filename {};
+        std::string filename{};
         if (mdNode != nullptr)
         {
             filename = mdNode->params();
@@ -130,37 +131,37 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
          * A future gmxapi version should avoid changing directories once the
          * process starts and instead manage files (paths) in an absolute and
          * immutable way, with abstraction provided through the Context chain-of-responsibility.
-         * TODO: API abstractions for initializing simulations that may be new or partially complete.
-         * Reference gmxapi milestone 13 at https://redmine.gromacs.org/issues/2585
+         * TODO: API abstractions for initializing simulations that may be new or partially
+         * complete. Reference gmxapi milestone 13 at https://redmine.gromacs.org/issues/2585
          */
 
         // Create a mock argv. Note that argv[0] is expected to hold the program name.
         const int  offset = 1;
         const auto argc   = static_cast<size_t>(mdArgs_.size() + offset);
-        auto       argv   = std::vector<char *>(argc, nullptr);
+        auto       argv   = std::vector<char*>(argc, nullptr);
         // argv[0] is ignored, but should be a valid string (e.g. null terminated array of char)
         argv[0]  = new char[1];
         *argv[0] = '\0';
         for (size_t argvIndex = offset; argvIndex < argc; ++argvIndex)
         {
-            const auto &mdArg = mdArgs_[argvIndex - offset];
-            argv[argvIndex] = new char[mdArg.length() + 1];
+            const auto& mdArg = mdArgs_[argvIndex - offset];
+            argv[argvIndex]   = new char[mdArg.length() + 1];
             strcpy(argv[argvIndex], mdArg.c_str());
         }
 
-        auto        mdModules = std::make_unique<MDModules>();
+        auto mdModules = std::make_unique<MDModules>();
 
-        const char *desc[]  = {"gmxapi placeholder text"};
+        const char* desc[] = { "gmxapi placeholder text" };
         if (options_.updateFromCommandLine(argc, argv.data(), desc) == 0)
         {
             return nullptr;
         }
 
         ArrayRef<const std::string> multiSimDirectoryNames =
-            opt2fnsIfOptionSet("-multidir", ssize(options_.filenames), options_.filenames.data());
+                opt2fnsIfOptionSet("-multidir", ssize(options_.filenames), options_.filenames.data());
         // Set up the communicator, where possible (see docs for
         // SimulationContext).
-        MPI_Comm          communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
+        MPI_Comm communicator = GMX_LIB_MPI ? MPI_COMM_WORLD : MPI_COMM_NULL;
         // The SimulationContext is necessary with gmxapi so that
         // resources owned by the client code can have suitable
         // lifetime. The gmx wrapper binary uses the same infrastructure,
@@ -169,16 +170,13 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         SimulationContext simulationContext(communicator, multiSimDirectoryNames);
 
 
-        StartingBehavior  startingBehavior = StartingBehavior::NewSimulation;
-        LogFilePtr        logFileGuard     = nullptr;
-        gmx_multisim_t   *ms               = simulationContext.multiSimulation_.get();
-        std::tie(startingBehavior,
-                 logFileGuard) = handleRestart(findIsSimulationMasterRank(ms, communicator),
-                                               communicator,
-                                               ms,
-                                               options_.mdrunOptions.appendingBehavior,
-                                               ssize(options_.filenames),
-                                               options_.filenames.data());
+        StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+        LogFilePtr       logFileGuard     = nullptr;
+        gmx_multisim_t*  ms               = simulationContext.multiSimulation_.get();
+        std::tie(startingBehavior, logFileGuard) =
+                handleRestart(findIsSimulationMasterRank(ms, communicator), communicator, ms,
+                              options_.mdrunOptions.appendingBehavior, ssize(options_.filenames),
+                              options_.filenames.data());
 
         auto builder = MdrunnerBuilder(std::move(mdModules),
                                        compat::not_null<SimulationContext*>(&simulationContext));
@@ -203,13 +201,11 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
         builder.addLogFile(logFileGuard.get());
 
         // Note, creation is not mature enough to be exposed in the external API yet.
-        launchedSession = createSession(shared_from_this(),
-                                        std::move(builder),
-                                        std::move(simulationContext),
-                                        std::move(logFileGuard));
+        launchedSession = createSession(shared_from_this(), std::move(builder),
+                                        std::move(simulationContext), std::move(logFileGuard));
 
         // Clean up argv once builder is no longer in use
-        for (auto && string : argv)
+        for (auto&& string : argv)
         {
             if (string != nullptr)
             {
@@ -217,7 +213,6 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
                 string = nullptr;
             }
         }
-
     }
     else
     {
@@ -233,24 +228,22 @@ std::shared_ptr<Session> ContextImpl::launch(const Workflow &work)
 }
 
 // As of gmxapi 0.0.3 there is only one Context type
-Context::Context() :
-    Context {ContextImpl::create()}
+Context::Context() : Context{ ContextImpl::create() }
 {
     GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
 }
 
-std::shared_ptr<Session> Context::launch(const Workflow &work)
+std::shared_ptr<Session> Context::launch(const Workflow& work)
 {
     return impl_->launch(work);
 }
 
-Context::Context(std::shared_ptr<ContextImpl> impl) :
-    impl_ {std::move(impl)}
+Context::Context(std::shared_ptr<ContextImpl> impl) : impl_{ std::move(impl) }
 {
     GMX_ASSERT(impl_, "Context requires a non-null implementation member.");
 }
 
-void Context::setMDArgs(const MDArgs &mdArgs)
+void Context::setMDArgs(const MDArgs& mdArgs)
 {
     impl_->mdArgs_ = mdArgs;
 }

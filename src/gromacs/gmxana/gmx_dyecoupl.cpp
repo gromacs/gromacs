@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,10 +49,9 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-int gmx_dyecoupl(int argc, char *argv[])
+int gmx_dyecoupl(int argc, char* argv[])
 {
-    const char *desc[] =
-    {
+    const char* desc[] = {
         "[THISMODULE] extracts dye dynamics from trajectory files.",
         "Currently, R and kappa^2 between dyes is extracted for (F)RET",
         "simulations with assumed dipolar coupling as in the Foerster equation.",
@@ -73,62 +72,57 @@ int gmx_dyecoupl(int argc, char *argv[])
 
     static gmx_bool   bPBCdist = FALSE, bNormHist = FALSE;
     int               histbins = 50;
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
     real              R0 = -1;
 
-    t_pargs           pa[] =
-    {
+    t_pargs pa[] = {
         { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
         { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },
-        { "-bins", FALSE, etINT, {&histbins}, "# of histogram bins" },
-        { "-R0", FALSE, etREAL, {&R0}, "Foerster radius including kappa^2=2/3 in nm" }
+        { "-bins", FALSE, etINT, { &histbins }, "# of histogram bins" },
+        { "-R0", FALSE, etREAL, { &R0 }, "Foerster radius including kappa^2=2/3 in nm" }
     };
 #define NPA asize(pa)
 
-    t_filenm fnm[] =
-    {
-        { efTRX, "-f", nullptr, ffREAD },
-        { efNDX, nullptr, nullptr, ffREAD },
-        { efXVG, "-ot", "rkappa", ffOPTWR },
-        { efXVG, "-oe", "insteff", ffOPTWR },
-        { efDAT, "-o", "rkappa", ffOPTWR },
-        { efXVG, "-rhist", "rhist", ffOPTWR },
-        { efXVG, "-khist", "khist", ffOPTWR }
-    };
+    t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },     { efNDX, nullptr, nullptr, ffREAD },
+                       { efXVG, "-ot", "rkappa", ffOPTWR },  { efXVG, "-oe", "insteff", ffOPTWR },
+                       { efDAT, "-o", "rkappa", ffOPTWR },   { efXVG, "-rhist", "rhist", ffOPTWR },
+                       { efXVG, "-khist", "khist", ffOPTWR } };
 #define NFILE asize(fnm)
 
 
-    const char  *in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr, *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr, *out_datfile = nullptr;
+    const char *in_trajfile, *out_xvgrkfile = nullptr, *out_xvginstefffile = nullptr,
+                             *out_xvgrhistfile = nullptr, *out_xvgkhistfile = nullptr,
+                             *out_datfile = nullptr;
     gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
     int          ndon, nacc;
-    int         *donindex, *accindex;
-    char        *grpnm;
-    t_trxstatus *status;
+    int *        donindex, *accindex;
+    char*        grpnm;
+    t_trxstatus* status;
     t_trxframe   fr;
 
-    int          flags;
-    int          allocblock = 1000;
-    real         histexpand = 1e-6;
-    rvec         donvec, accvec, donpos, accpos, dist, distnorm;
-    int          natoms;
+    int  flags;
+    int  allocblock = 1000;
+    real histexpand = 1e-6;
+    rvec donvec, accvec, donpos, accpos, dist, distnorm;
+    int  natoms;
 
     /*we rely on PBC autodetection (...currently)*/
-    int         ePBC = -1;
+    int ePBC = -1;
 
-    real       *rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
-    t_pbc      *pbc     = nullptr;
-    int         i, bin;
-    FILE       *rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
-    gmx_bool    bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
+    real *   rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
+    t_pbc*   pbc = nullptr;
+    int      i, bin;
+    FILE *   rkfp = nullptr, *rhfp = nullptr, *khfp = nullptr, *datfp = nullptr, *iefp = nullptr;
+    gmx_bool bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
 
-    const char *rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
-    const char *rhleg[1] = { "p(R)" };
-    const char *khleg[1] = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
-    const char *ieleg[1] = { "E\\sRET\\N(t)" };
+    const char* rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
+    const char* rhleg[1] = { "p(R)" };
+    const char* khleg[1] = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
+    const char* ieleg[1] = { "E\\sRET\\N(t)" };
 
-    real        R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
-                rrange, krange, rincr, kincr, Rfrac;
-    int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
+    real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
+                             rrange, krange, rincr, kincr, Rfrac;
+    int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     if (!parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT,
                            NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
@@ -233,19 +227,15 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bRKout)
             {
-                rkfp = xvgropen(out_xvgrkfile,
-                                "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
-                                "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
-                                oenv);
+                rkfp = xvgropen(out_xvgrkfile, "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
+                                "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N", oenv);
                 xvgr_legend(rkfp, 2, rkleg, oenv);
             }
 
             if (bInstEffout)
             {
-                iefp = xvgropen(out_xvginstefffile,
-                                "Instantaneous RET Efficiency",
-                                "Time (ps)", "RET Efficiency",
-                                oenv);
+                iefp = xvgropen(out_xvginstefffile, "Instantaneous RET Efficiency", "Time (ps)",
+                                "RET Efficiency", oenv);
                 xvgr_legend(iefp, 1, ieleg, oenv);
             }
 
@@ -303,13 +293,13 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 unitv(dist, distnorm);
-                R       = norm(dist);
-                kappa2  = iprod(donvec, accvec)- 3.* (iprod(donvec, distnorm) * iprod(distnorm, accvec));
+                R = norm(dist);
+                kappa2 = iprod(donvec, accvec) - 3. * (iprod(donvec, distnorm) * iprod(distnorm, accvec));
                 kappa2 *= kappa2;
                 if (R0 > 0)
                 {
-                    Rfrac     = R/R0;
-                    insteff   = 1/(1+(Rfrac*Rfrac*Rfrac*Rfrac*Rfrac*Rfrac)*2/3/kappa2);
+                    Rfrac = R / R0;
+                    insteff = 1 / (1 + (Rfrac * Rfrac * Rfrac * Rfrac * Rfrac * Rfrac) * 2 / 3 / kappa2);
                     insteffs += insteff;
 
                     if (bInstEffout)
@@ -319,7 +309,7 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
 
-                Rs      += R;
+                Rs += R;
                 kappa2s += kappa2;
                 rkcount++;
 
@@ -335,27 +325,26 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 if (bRhistout)
                 {
-                    rvalues[rkcount-1] = R;
+                    rvalues[rkcount - 1] = R;
                     if (rkcount % allocblock == 0)
                     {
-                        srenew(rvalues, allocblock*(rblocksallocated+1));
+                        srenew(rvalues, allocblock * (rblocksallocated + 1));
                         rblocksallocated += 1;
                     }
                 }
 
                 if (bKhistout)
                 {
-                    kappa2values[rkcount-1] = kappa2;
+                    kappa2values[rkcount - 1] = kappa2;
                     if (rkcount % allocblock == 0)
                     {
-                        srenew(kappa2values, allocblock*(kblocksallocated+1));
+                        srenew(kappa2values, allocblock * (kblocksallocated + 1));
                         kblocksallocated += 1;
                     }
                 }
 
                 bHaveNextFrame = read_next_frame(oenv, status, &fr);
-            }
-            while (bHaveNextFrame);
+            } while (bHaveNextFrame);
 
             if (bRKout)
             {
@@ -397,28 +386,27 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin         = static_cast<int>((rvalues[i] - rmin) / rincr);
+                    bin = static_cast<int>((rvalues[i] - rmin) / rincr);
                     rhist[bin] += 1;
                 }
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
                     {
-                        rhist[i] /= rkcount * rrange/histbins;
+                        rhist[i] /= rkcount * rrange / histbins;
                     }
-                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                                    "R (nm)", "Normalized Probability", oenv);
+                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution", "R (nm)",
+                                    "Normalized Probability", oenv);
                 }
                 else
                 {
-                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                                    "R (nm)", "Probability", oenv);
+                    rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution", "R (nm)",
+                                    "Probability", oenv);
                 }
                 xvgr_legend(rhfp, 1, rhleg, oenv);
                 for (i = 0; i < histbins; i++)
                 {
-                    fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin,
-                            rhist[i]);
+                    fprintf(rhfp, "%12.7f %12.7f\n", (i + 0.5) * rincr + rmin, rhist[i]);
                 }
                 xvgrclose(rhfp);
             }
@@ -431,38 +419,33 @@ int gmx_dyecoupl(int argc, char *argv[])
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin         = static_cast<int>((kappa2values[i] - kmin) / kincr);
+                    bin = static_cast<int>((kappa2values[i] - kmin) / kincr);
                     khist[bin] += 1;
                 }
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
                     {
-                        khist[i] /= rkcount * krange/histbins;
+                        khist[i] /= rkcount * krange / histbins;
                     }
-                    khfp = xvgropen(out_xvgkhistfile,
-                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                                    "\\f{Symbol}k\\f{}\\S2\\N",
-                                    "Normalized Probability", oenv);
+                    khfp = xvgropen(out_xvgkhistfile, "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N", "Normalized Probability", oenv);
                 }
                 else
                 {
-                    khfp = xvgropen(out_xvgkhistfile,
-                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                    khfp = xvgropen(out_xvgkhistfile, "\\f{Symbol}k\\f{}\\S2\\N Distribution",
                                     "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
                 }
                 xvgr_legend(khfp, 1, khleg, oenv);
                 for (i = 0; i < histbins; i++)
                 {
-                    fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin,
-                            khist[i]);
+                    fprintf(khfp, "%12.7f %12.7f\n", (i + 0.5) * kincr + kmin, khist[i]);
                 }
                 xvgrclose(khfp);
             }
 
             printf("\nAverages:\n");
-            printf("R_avg   = %8.4f nm\nKappa^2 = %8.4f\n", Rs / rkcount,
-                   kappa2s / rkcount);
+            printf("R_avg   = %8.4f nm\nKappa^2 = %8.4f\n", Rs / rkcount, kappa2s / rkcount);
             if (R0 > 0)
             {
                 printf("E_RETavg   = %8.4f\n", insteffs / rkcount);

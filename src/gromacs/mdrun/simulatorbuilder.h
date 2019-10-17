@@ -93,27 +93,23 @@ struct MdrunOptions;
  */
 class SimulatorBuilder
 {
-    public:
-        /*! \brief Build a Simulator object based on input data
-         *
-         * Return a pointer to a simulation object. The use of a parameter
-         * pack insulates the builder from changes to the arguments of the
-         * Simulator objects.
-         *
-         * @return  Unique pointer to a Simulator object
-         */
-        template<typename ... Args>
-        std::unique_ptr<ISimulator> build(
-            bool        inputIsCompatibleWithModularSimulator,
-            Args && ... args);
+public:
+    /*! \brief Build a Simulator object based on input data
+     *
+     * Return a pointer to a simulation object. The use of a parameter
+     * pack insulates the builder from changes to the arguments of the
+     * Simulator objects.
+     *
+     * @return  Unique pointer to a Simulator object
+     */
+    template<typename... Args>
+    std::unique_ptr<ISimulator> build(bool inputIsCompatibleWithModularSimulator, Args&&... args);
 };
 
 
 //! Build a Simulator object
-template<typename ... Args>
-std::unique_ptr<ISimulator> SimulatorBuilder::build(
-        bool        inputIsCompatibleWithModularSimulator,
-        Args && ... args)
+template<typename... Args>
+std::unique_ptr<ISimulator> SimulatorBuilder::build(bool inputIsCompatibleWithModularSimulator, Args&&... args)
 {
     // GMX_DISABLE_MODULAR_SIMULATOR allows to disable modular simulator for all uses
     const auto disableModularSimulator = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
@@ -121,16 +117,12 @@ std::unique_ptr<ISimulator> SimulatorBuilder::build(
     if (!disableModularSimulator && inputIsCompatibleWithModularSimulator)
     {
         // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-        return std::unique_ptr<ModularSimulator>(
-                new ModularSimulator(
-                        std::forward<Args>(args) ...));
+        return std::unique_ptr<ModularSimulator>(new ModularSimulator(std::forward<Args>(args)...));
     }
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
-    return std::unique_ptr<LegacySimulator>(
-            new LegacySimulator(
-                    std::forward<Args>(args) ...));
+    return std::unique_ptr<LegacySimulator>(new LegacySimulator(std::forward<Args>(args)...));
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDRUN_SIMULATORBUILDER_SIMULATORBUILDER_H

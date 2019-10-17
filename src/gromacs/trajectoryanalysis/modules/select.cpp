@@ -91,54 +91,55 @@ namespace
  */
 class IndexFileWriterModule : public AnalysisDataModuleSerial
 {
-    public:
-        IndexFileWriterModule();
-        ~IndexFileWriterModule() override;
+public:
+    IndexFileWriterModule();
+    ~IndexFileWriterModule() override;
 
-        //! Sets the file name to write the index file to.
-        void setFileName(const std::string &fnm);
-        /*! \brief
-         * Adds information about a group to be printed.
-         *
-         * Must be called for each group present in the input data.
-         */
-        void addGroup(const std::string &name, bool bDynamic);
+    //! Sets the file name to write the index file to.
+    void setFileName(const std::string& fnm);
+    /*! \brief
+     * Adds information about a group to be printed.
+     *
+     * Must be called for each group present in the input data.
+     */
+    void addGroup(const std::string& name, bool bDynamic);
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        void frameStarted(const AnalysisDataFrameHeader &header) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    void frameStarted(const AnalysisDataFrameHeader& header) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void dataFinished() override;
 
-    private:
-        void closeFile();
+private:
+    void closeFile();
 
-        struct GroupInfo
-        {
-            GroupInfo(const std::string &name, bool bDynamic)
-                : name(name), bDynamic(bDynamic)
-            { }
+    struct GroupInfo
+    {
+        GroupInfo(const std::string& name, bool bDynamic) : name(name), bDynamic(bDynamic) {}
 
-            std::string         name;
-            bool                bDynamic;
-        };
+        std::string name;
+        bool        bDynamic;
+    };
 
-        std::string             fnm_;
-        std::vector<GroupInfo>  groups_;
-        FILE                   *fp_;
-        int                     currentGroup_;
-        int                     currentSize_;
-        bool                    bAnyWritten_;
+    std::string            fnm_;
+    std::vector<GroupInfo> groups_;
+    FILE*                  fp_;
+    int                    currentGroup_;
+    int                    currentSize_;
+    bool                   bAnyWritten_;
 };
 
 /********************************************************************
  * IndexFileWriterModule
  */
 
-IndexFileWriterModule::IndexFileWriterModule()
-    : fp_(nullptr), currentGroup_(-1), currentSize_(0), bAnyWritten_(false)
+IndexFileWriterModule::IndexFileWriterModule() :
+    fp_(nullptr),
+    currentGroup_(-1),
+    currentSize_(0),
+    bAnyWritten_(false)
 {
 }
 
@@ -159,13 +160,13 @@ void IndexFileWriterModule::closeFile()
 }
 
 
-void IndexFileWriterModule::setFileName(const std::string &fnm)
+void IndexFileWriterModule::setFileName(const std::string& fnm)
 {
     fnm_ = fnm;
 }
 
 
-void IndexFileWriterModule::addGroup(const std::string &name, bool bDynamic)
+void IndexFileWriterModule::addGroup(const std::string& name, bool bDynamic)
 {
     std::string newName(name);
     std::replace(newName.begin(), newName.end(), ' ', '_');
@@ -179,7 +180,7 @@ int IndexFileWriterModule::flags() const
 }
 
 
-void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
+void IndexFileWriterModule::dataStarted(AbstractAnalysisData* /*data*/)
 {
     if (!fnm_.empty())
     {
@@ -188,15 +189,14 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 }
 
 
-void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
+void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader& /*header*/)
 {
     bAnyWritten_  = false;
     currentGroup_ = -1;
 }
 
 
-void
-IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     if (fp_ == nullptr)
     {
@@ -206,8 +206,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
     if (points.firstColumn() == 0)
     {
         ++currentGroup_;
-        GMX_RELEASE_ASSERT(currentGroup_ < ssize(groups_),
-                           "Too few groups initialized");
+        GMX_RELEASE_ASSERT(currentGroup_ < ssize(groups_), "Too few groups initialized");
         if (bFirstFrame || groups_[currentGroup_].bDynamic)
         {
             if (!bFirstFrame || currentGroup_ > 0)
@@ -239,9 +238,7 @@ IndexFileWriterModule::pointsAdded(const AnalysisDataPointSetRef &points)
 }
 
 
-void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
-{
-}
+void IndexFileWriterModule::frameFinished(const AnalysisDataFrameHeader& /*header*/) {}
 
 
 void IndexFileWriterModule::dataFinished()
@@ -271,62 +268,63 @@ enum PdbAtomsSelection
     PdbAtomsSelection_Selected
 };
 //! String values corresponding to ResidueNumbering.
-const char *const     cResNumberEnum[] = { "number", "index" };
+const char* const cResNumberEnum[] = { "number", "index" };
 //! String values corresponding to PdbAtomsSelection.
-const char *const     cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
+const char* const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
 
 class Select : public TrajectoryAnalysisModule
 {
-    public:
-        Select();
+public:
+    Select();
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                          const TopologyInformation        &top) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void optionsFinished(TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
 
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        SelectionList                       sel_;
+private:
+    SelectionList sel_;
 
-        std::string                         fnSize_;
-        std::string                         fnFrac_;
-        std::string                         fnIndex_;
-        std::string                         fnNdx_;
-        std::string                         fnMask_;
-        std::string                         fnOccupancy_;
-        std::string                         fnPDB_;
-        std::string                         fnLifetime_;
-        bool                                bTotNorm_;
-        bool                                bFracNorm_;
-        bool                                bResInd_;
-        bool                                bCumulativeLifetimes_;
-        ResidueNumbering                    resNumberType_;
-        PdbAtomsSelection                   pdbAtoms_;
+    std::string       fnSize_;
+    std::string       fnFrac_;
+    std::string       fnIndex_;
+    std::string       fnNdx_;
+    std::string       fnMask_;
+    std::string       fnOccupancy_;
+    std::string       fnPDB_;
+    std::string       fnLifetime_;
+    bool              bTotNorm_;
+    bool              bFracNorm_;
+    bool              bResInd_;
+    bool              bCumulativeLifetimes_;
+    ResidueNumbering  resNumberType_;
+    PdbAtomsSelection pdbAtoms_;
 
-        //! The input topology.
-        const TopologyInformation          *top_;
-        std::vector<int>                    totsize_;
-        AnalysisData                        sdata_;
-        AnalysisData                        cdata_;
-        AnalysisData                        idata_;
-        AnalysisData                        mdata_;
-        AnalysisDataAverageModulePointer    occupancyModule_;
-        AnalysisDataLifetimeModulePointer   lifetimeModule_;
+    //! The input topology.
+    const TopologyInformation*        top_;
+    std::vector<int>                  totsize_;
+    AnalysisData                      sdata_;
+    AnalysisData                      cdata_;
+    AnalysisData                      idata_;
+    AnalysisData                      mdata_;
+    AnalysisDataAverageModulePointer  occupancyModule_;
+    AnalysisDataLifetimeModulePointer lifetimeModule_;
 };
 
-Select::Select()
-    : bTotNorm_(false), bFracNorm_(false), bResInd_(false),
-      bCumulativeLifetimes_(true), resNumberType_(ResidueNumbering_ByNumber),
-      pdbAtoms_(PdbAtomsSelection_All), top_(nullptr),
-      occupancyModule_(new AnalysisDataAverageModule()),
-      lifetimeModule_(new AnalysisDataLifetimeModule())
+Select::Select() :
+    bTotNorm_(false),
+    bFracNorm_(false),
+    bResInd_(false),
+    bCumulativeLifetimes_(true),
+    resNumberType_(ResidueNumbering_ByNumber),
+    pdbAtoms_(PdbAtomsSelection_All),
+    top_(nullptr),
+    occupancyModule_(new AnalysisDataAverageModule()),
+    lifetimeModule_(new AnalysisDataLifetimeModule())
 {
     mdata_.addModule(occupancyModule_);
     mdata_.addModule(lifetimeModule_);
@@ -343,10 +341,9 @@ Select::Select()
 }
 
 
-void
-Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Select::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
@@ -424,51 +421,77 @@ Select::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *sett
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultBasename("size")
-                           .description("Number of positions in each selection"));
-    options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultBasename("cfrac")
-                           .description("Covered fraction for each selection"));
-    options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultBasename("index")
-                           .description("Indices selected by each selection"));
-    options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultBasename("index")
-                           .description("Index file from the selection"));
-    options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultBasename("mask")
-                           .description("Mask for selected positions"));
-    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
-                           .store(&fnOccupancy_).defaultBasename("occupancy")
-                           .description("Occupied fraction for selected positions"));
-    options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile()
-                           .store(&fnPDB_).defaultBasename("occupancy")
-                           .description("PDB file with occupied fraction for selected positions"));
-    options->addOption(FileNameOption("olt").filetype(eftPlot).outputFile()
-                           .store(&fnLifetime_).defaultBasename("lifetime")
-                           .description("Lifetime histogram"));
+    options->addOption(FileNameOption("os")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnSize_)
+                               .defaultBasename("size")
+                               .description("Number of positions in each selection"));
+    options->addOption(FileNameOption("oc")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnFrac_)
+                               .defaultBasename("cfrac")
+                               .description("Covered fraction for each selection"));
+    options->addOption(FileNameOption("oi")
+                               .filetype(eftGenericData)
+                               .outputFile()
+                               .store(&fnIndex_)
+                               .defaultBasename("index")
+                               .description("Indices selected by each selection"));
+    options->addOption(FileNameOption("on")
+                               .filetype(eftIndex)
+                               .outputFile()
+                               .store(&fnNdx_)
+                               .defaultBasename("index")
+                               .description("Index file from the selection"));
+    options->addOption(FileNameOption("om")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnMask_)
+                               .defaultBasename("mask")
+                               .description("Mask for selected positions"));
+    options->addOption(FileNameOption("of")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnOccupancy_)
+                               .defaultBasename("occupancy")
+                               .description("Occupied fraction for selected positions"));
+    options->addOption(
+            FileNameOption("ofpdb")
+                    .filetype(eftPDB)
+                    .outputFile()
+                    .store(&fnPDB_)
+                    .defaultBasename("occupancy")
+                    .description("PDB file with occupied fraction for selected positions"));
+    options->addOption(FileNameOption("olt")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnLifetime_)
+                               .defaultBasename("lifetime")
+                               .description("Lifetime histogram"));
 
-    options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().multiValue()
-                           .description("Selections to analyze"));
+    options->addOption(SelectionOption("select").storeVector(&sel_).required().multiValue().description(
+            "Selections to analyze"));
 
-    options->addOption(BooleanOption("norm").store(&bTotNorm_)
-                           .description("Normalize by total number of positions with -os"));
-    options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
-                           .description("Normalize by covered fraction with -os"));
-    options->addOption(EnumOption<ResidueNumbering>("resnr").store(&resNumberType_)
-                           .enumValue(cResNumberEnum)
-                           .description("Residue number output type with -oi and -on"));
-    options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms").store(&pdbAtoms_)
-                           .enumValue(cPDBAtomsEnum)
-                           .description("Atoms to write with -ofpdb"));
-    options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)
-                           .description("Cumulate subintervals of longer intervals in -olt"));
+    options->addOption(
+            BooleanOption("norm").store(&bTotNorm_).description("Normalize by total number of positions with -os"));
+    options->addOption(
+            BooleanOption("cfnorm").store(&bFracNorm_).description("Normalize by covered fraction with -os"));
+    options->addOption(EnumOption<ResidueNumbering>("resnr")
+                               .store(&resNumberType_)
+                               .enumValue(cResNumberEnum)
+                               .description("Residue number output type with -oi and -on"));
+    options->addOption(EnumOption<PdbAtomsSelection>("pdbatoms")
+                               .store(&pdbAtoms_)
+                               .enumValue(cPDBAtomsEnum)
+                               .description("Atoms to write with -ofpdb"));
+    options->addOption(BooleanOption("cumlt")
+                               .store(&bCumulativeLifetimes_)
+                               .description("Cumulate subintervals of longer intervals in -olt"));
 }
 
-void
-Select::optionsFinished(TrajectoryAnalysisSettings *settings)
+void Select::optionsFinished(TrajectoryAnalysisSettings* settings)
 {
     if (!fnPDB_.empty())
     {
@@ -477,9 +500,7 @@ Select::optionsFinished(TrajectoryAnalysisSettings *settings)
     }
 }
 
-void
-Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                     const TopologyInformation        &top)
+void Select::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
 {
     bResInd_ = (resNumberType_ == ResidueNumbering_ByIndex);
 
@@ -497,8 +518,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!fnSize_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnSize_);
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
@@ -513,8 +533,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     cdata_.setColumnCount(0, sel_.size());
     if (!fnFrac_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnFrac_);
         plot->setTitle("Covered fraction");
         plot->setXAxisIsTime();
@@ -530,8 +549,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // TODO: For large systems, a float may not have enough precision
     if (!fnIndex_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnIndex_);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
@@ -556,8 +574,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     lifetimeModule_->setCumulative(bCumulativeLifetimes_);
     if (!fnMask_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnMask_);
         plot->setTitle("Selection mask");
         plot->setXAxisIsTime();
@@ -568,8 +585,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!fnOccupancy_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnOccupancy_);
         plot->setTitle("Fraction of time selection matches");
         plot->setXLabel("Selected position");
@@ -582,8 +598,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     }
     if (!fnLifetime_.empty())
     {
-        AnalysisDataPlotModulePointer plot(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plot(new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnLifetime_);
         plot->setTitle("Lifetime histogram");
         plot->setXAxisIsTime();
@@ -599,15 +614,13 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                     TrajectoryAnalysisModuleData *pdata)
+void Select::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* /* pbc */, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
     AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
     AnalysisDataHandle   idh = pdata->dataHandle(idata_);
     AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
-    const SelectionList &sel = pdata->parallelSelections(sel_);
+    const SelectionList& sel = pdata->parallelSelections(sel_);
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -635,7 +648,7 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
         idh.finishPointSet();
         for (int i = 0; i < sel[g].posCount(); ++i)
         {
-            const SelectionPosition &p = sel[g].position(i);
+            const SelectionPosition& p = sel[g].position(i);
             if (sel[g].type() == INDEX_RES && !bResInd_)
             {
                 idh.setPoint(1, top_->atoms()->resinfo[p.mappedId()].nr);
@@ -666,14 +679,10 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
 }
 
 
-void
-Select::finishAnalysis(int /*nframes*/)
-{
-}
+void Select::finishAnalysis(int /*nframes*/) {}
 
 
-void
-Select::writeOutput()
+void Select::writeOutput()
 {
     if (!fnPDB_.empty())
     {
@@ -693,8 +702,7 @@ Select::writeOutput()
         {
             for (int i = 0; i < sel_[g].posCount(); ++i)
             {
-                ArrayRef<const int>                 atomIndices
-                    = sel_[g].position(i).atomIndices();
+                ArrayRef<const int>                 atomIndices = sel_[g].position(i).atomIndices();
                 ArrayRef<const int>::const_iterator ai;
                 for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                 {
@@ -717,7 +725,7 @@ Select::writeOutput()
         {
             case PdbAtomsSelection_All:
             {
-                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                t_trxstatus* status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe(status, &fr, nullptr);
                 close_trx(status);
                 break;
@@ -730,11 +738,9 @@ Select::writeOutput()
                     ArrayRef<const int> atomIndices = sel_[g].atomIndices();
                     atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
                 }
-                std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
-                                                 atomIndicesSet.end());
-                t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
-                write_trxframe_indexed(status, &fr, allAtomIndices.size(),
-                                       allAtomIndices.data(), nullptr);
+                std::vector<int> allAtomIndices(atomIndicesSet.begin(), atomIndicesSet.end());
+                t_trxstatus*     status = open_trx(fnPDB_.c_str(), "w");
+                write_trxframe_indexed(status, &fr, allAtomIndices.size(), allAtomIndices.data(), nullptr);
                 close_trx(status);
                 break;
             }
@@ -748,7 +754,7 @@ Select::writeOutput()
                         indices.push_back(i);
                     }
                 }
-                t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+                t_trxstatus* status = open_trx(fnPDB_.c_str(), "w");
                 write_trxframe_indexed(status, &fr, indices.size(), indices.data(), nullptr);
                 close_trx(status);
                 break;
@@ -760,11 +766,10 @@ Select::writeOutput()
     }
 }
 
-}       // namespace
+} // namespace
 
 const char SelectInfo::name[]             = "select";
-const char SelectInfo::shortDescription[] =
-    "Print general information about selections";
+const char SelectInfo::shortDescription[] = "Print general information about selections";
 
 TrajectoryAnalysisModulePointer SelectInfo::create()
 {

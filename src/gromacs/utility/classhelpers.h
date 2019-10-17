@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,11 +60,11 @@ namespace gmx
  *
  * \ingroup module_utility
  */
-#define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)
+#    define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)
 #else
-#define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
-    ClassName &operator=(const ClassName &) = delete;   \
-    ClassName(const ClassName &)            = delete
+#    define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName)      \
+        ClassName& operator=(const ClassName&) = delete; \
+        ClassName(const ClassName&)            = delete
 #endif
 /*! \brief
  * Macro to declare a class non-assignable.
@@ -73,9 +73,9 @@ namespace gmx
  *
  * \ingroup module_utility
  */
-#define GMX_DISALLOW_ASSIGN(ClassName) \
-    ClassName &operator=(const ClassName &) = delete
+#define GMX_DISALLOW_ASSIGN(ClassName) ClassName& operator=(const ClassName&) = delete
 
+// clang-format off
 #ifdef DOXYGEN
 /*! \brief
  * Macro to declare default constructors
@@ -85,15 +85,16 @@ namespace gmx
  *
  * \ingroup module_utility
  */
-#define GMX_DEFAULT_CONSTRUCTORS(ClassName)
+#    define GMX_DEFAULT_CONSTRUCTORS(ClassName)
 #else
-#define GMX_DEFAULT_CONSTRUCTORS(ClassName) \
-    ClassName()                                             = default;    \
-    ClassName                 &operator=(const ClassName &) = default; /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */ \
-    ClassName(const ClassName &)                            = default;    \
-    ClassName                 &operator=(ClassName &&)      = default; /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */ \
-    ClassName(ClassName &&)                                 = default  /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */
+#    define GMX_DEFAULT_CONSTRUCTORS(ClassName)                                                                           \
+        ClassName() = default;                                                                                            \
+        ClassName& operator=(const ClassName&) = default; /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */ \
+        ClassName(const ClassName&) = default;                                                                            \
+        ClassName& operator=(ClassName&&) = default; /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */      \
+        ClassName(ClassName&&) = default /* NOLINT(misc-macro-parentheses,bugprone-macro-parentheses) */
 #endif
+//clang-format on
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
@@ -156,54 +157,54 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_utility
  */
-template <class Impl>
+template<class Impl>
 class PrivateImplPointer
 {
-    public:
-        //! Allow implicit initialization from nullptr to support comparison.
-        PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
-        //! Initialize with the given implementation class.
-        explicit PrivateImplPointer(Impl *ptr) : ptr_(ptr) {}
-        //! \cond
-        // Explicitly declared to work around MSVC problems.
-        PrivateImplPointer(PrivateImplPointer &&other) noexcept : ptr_(std::move(other.ptr_)) {}
-        PrivateImplPointer &operator=(PrivateImplPointer &&other) noexcept
-        {
-            ptr_ = std::move(other.ptr_);
-            return *this;
-        }
-        //! \endcond
+public:
+    //! Allow implicit initialization from nullptr to support comparison.
+    PrivateImplPointer(std::nullptr_t) : ptr_(nullptr) {}
+    //! Initialize with the given implementation class.
+    explicit PrivateImplPointer(Impl* ptr) : ptr_(ptr) {}
+    //! \cond
+    // Explicitly declared to work around MSVC problems.
+    PrivateImplPointer(PrivateImplPointer&& other) noexcept : ptr_(std::move(other.ptr_)) {}
+    PrivateImplPointer& operator=(PrivateImplPointer&& other) noexcept
+    {
+        ptr_ = std::move(other.ptr_);
+        return *this;
+    }
+    //! \endcond
 
-        /*! \brief
-         * Sets a new implementation class and destructs the previous one.
-         *
-         * Needed, e.g., to implement lazily initializable or copy-assignable
-         * classes.
-         */
-        void reset(Impl *ptr) { ptr_.reset(ptr); }
-        //! Access the raw pointer.
-        Impl *get() { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        Impl *operator->() { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        Impl &operator*() { return *ptr_; }
-        //! Access the implementation class as with a raw pointer.
-        const Impl *operator->() const { return ptr_.get(); }
-        //! Access the implementation class as with a raw pointer.
-        const Impl &operator*() const { return *ptr_; }
+    /*! \brief
+     * Sets a new implementation class and destructs the previous one.
+     *
+     * Needed, e.g., to implement lazily initializable or copy-assignable
+     * classes.
+     */
+    void reset(Impl* ptr) { ptr_.reset(ptr); }
+    //! Access the raw pointer.
+    Impl* get() { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    Impl* operator->() { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    Impl& operator*() { return *ptr_; }
+    //! Access the implementation class as with a raw pointer.
+    const Impl* operator->() const { return ptr_.get(); }
+    //! Access the implementation class as with a raw pointer.
+    const Impl& operator*() const { return *ptr_; }
 
-        //! Allows testing whether the implementation is initialized.
-        explicit operator bool() const { return ptr_ != nullptr; }
+    //! Allows testing whether the implementation is initialized.
+    explicit operator bool() const { return ptr_ != nullptr; }
 
-        //! Tests for equality (mainly useful against nullptr).
-        bool operator==(const PrivateImplPointer &other) const { return ptr_ == other.ptr_; }
-        //! Tests for inequality (mainly useful against nullptr).
-        bool operator!=(const PrivateImplPointer &other) const { return ptr_ != other.ptr_; }
+    //! Tests for equality (mainly useful against nullptr).
+    bool operator==(const PrivateImplPointer& other) const { return ptr_ == other.ptr_; }
+    //! Tests for inequality (mainly useful against nullptr).
+    bool operator!=(const PrivateImplPointer& other) const { return ptr_ != other.ptr_; }
 
-    private:
-        std::unique_ptr<Impl> ptr_;
+private:
+    std::unique_ptr<Impl> ptr_;
 
-        // Copy construction and assignment disabled by the unique_ptr member.
+    // Copy construction and assignment disabled by the unique_ptr member.
 };
 
 } // namespace gmx

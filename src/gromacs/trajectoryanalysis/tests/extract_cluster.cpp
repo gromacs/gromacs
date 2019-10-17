@@ -70,11 +70,12 @@ namespace
  */
 
 //! Helper struct to combine filename, path and FileMatcher
-struct ManualOutputFile {
+struct ManualOutputFile
+{
     //! Generated file name.
-    std::string        filename;
+    std::string filename;
     //! Full generated file path.
-    std::string        fullFilepath;
+    std::string fullFilepath;
     //! Corresponding file matcher to compare to reference.
     FileMatcherPointer matcher;
 };
@@ -82,22 +83,22 @@ struct ManualOutputFile {
 //! Test fixture for the convert-trj analysis module.
 class ExtractClusterModuleTest : public AbstractTrajectoryAnalysisModuleTestFixture
 {
-    protected:
-        TrajectoryAnalysisModulePointer createModule() override
-        {
-            return analysismodules::ExtractClusterInfo::create();
-        }
+protected:
+    TrajectoryAnalysisModulePointer createModule() override
+    {
+        return analysismodules::ExtractClusterInfo::create();
+    }
 
-    public:
-        //! Constructor
-        ExtractClusterModuleTest();
+public:
+    //! Constructor
+    ExtractClusterModuleTest();
 
-        //! Compare generated files to expected ones.
-        void compareFiles();
+    //! Compare generated files to expected ones.
+    void compareFiles();
 
-    private:
-        //! Array of names and paths for generated files.
-        std::array<ManualOutputFile, 8> generatedFiles;
+private:
+    //! Array of names and paths for generated files.
+    std::array<ManualOutputFile, 8> generatedFiles;
 };
 
 ExtractClusterModuleTest::ExtractClusterModuleTest()
@@ -113,11 +114,10 @@ ExtractClusterModuleTest::ExtractClusterModuleTest()
     setInputFile("-clusters", "extract_cluster.ndx");
 
     int fileNumber = 1;
-    for (auto &generatedFile : generatedFiles)
+    for (auto& generatedFile : generatedFiles)
     {
         generatedFile.filename = gmx::Path::concatenateBeforeExtension(
-                    "test.g96",
-                    gmx::formatString("_Cluster_000%d", fileNumber));
+                "test.g96", gmx::formatString("_Cluster_000%d", fileNumber));
         generatedFile.matcher      = TextFileMatch(ExactTextMatch()).createFileMatcher();
         generatedFile.fullFilepath = fileManager().getTemporaryFilePath(generatedFile.filename);
         fileNumber++;
@@ -126,12 +126,10 @@ ExtractClusterModuleTest::ExtractClusterModuleTest()
 
 void ExtractClusterModuleTest::compareFiles()
 {
-    TestReferenceChecker outputChecker(
-            rootChecker().checkCompound("ClusterOutputFiles", "Files"));
-    for (const auto &file : generatedFiles)
+    TestReferenceChecker outputChecker(rootChecker().checkCompound("ClusterOutputFiles", "Files"));
+    for (const auto& file : generatedFiles)
     {
-        TestReferenceChecker manualFileChecker(
-                outputChecker.checkCompound("File", file.filename.c_str()));
+        TestReferenceChecker manualFileChecker(outputChecker.checkCompound("File", file.filename.c_str()));
         file.matcher->checkFile(file.fullFilepath, &manualFileChecker);
     }
 }
@@ -139,9 +137,7 @@ void ExtractClusterModuleTest::compareFiles()
 TEST_F(ExtractClusterModuleTest, WorksWithAllAtoms)
 {
     std::string       realFileName = TestFileManager::getTestSpecificFileName("test.g96");
-    const char *const cmdline[]    = {
-        "extract-cluster", "-o", realFileName.c_str()
-    };
+    const char* const cmdline[]    = { "extract-cluster", "-o", realFileName.c_str() };
 
     runTest(CommandLine(cmdline));
     compareFiles();
@@ -150,9 +146,8 @@ TEST_F(ExtractClusterModuleTest, WorksWithAllAtoms)
 TEST_F(ExtractClusterModuleTest, WorksWithAtomSubset)
 {
     std::string       realFileName = TestFileManager::getTestSpecificFileName("test.g96");
-    const char *const cmdline[]    = {
-        "extract-cluster", "-o", realFileName.c_str(), "-select", "atomnr 1 2"
-    };
+    const char* const cmdline[]    = { "extract-cluster", "-o", realFileName.c_str(), "-select",
+                                    "atomnr 1 2" };
 
     runTest(CommandLine(cmdline));
     compareFiles();

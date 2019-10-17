@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,11 +70,13 @@ TEST_P(ReplicaExchangeEnsembleTest, ExitsNormally)
 /* Note, not all preprocessor implementations nest macro expansions
    the same way / at all, if we would try to duplicate less code. */
 #if GMX_LIB_MPI
-INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+INSTANTIATE_TEST_CASE_P(WithDifferentControlVariables,
+                        ReplicaExchangeEnsembleTest,
+                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables, ReplicaExchangeEnsembleTest,
-                            ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
+INSTANTIATE_TEST_CASE_P(DISABLED_WithDifferentControlVariables,
+                        ReplicaExchangeEnsembleTest,
+                        ::testing::Values("pcoupl = no", "pcoupl = Berendsen"));
 #endif
 
 //! Convenience typedef
@@ -86,5 +88,5 @@ TEST_F(ReplicaExchangeTerminationTest, WritesCheckpointAfterMaxhTerminationAndTh
     runMaxhTest();
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

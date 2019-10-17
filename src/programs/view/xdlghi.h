@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,16 +44,22 @@
 #include "x11.h"
 #include "xdlg.h"
 
-typedef struct {
+typedef struct
+{
     int         nitem;
     int         w, h;
-    t_dlgitem **list;
+    t_dlgitem** list;
 } t_dlgitemlist;
 
-extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
-                                          t_id GroupID, int nrb, t_id rb[],
-                                          int nSelect,
-                                          char *szRB[], int x0, int y0);
+extern t_dlgitem** CreateRadioButtonGroup(t_x11* x11,
+                                          char*  szTitle,
+                                          t_id   GroupID,
+                                          int    nrb,
+                                          t_id   rb[],
+                                          int    nSelect,
+                                          char*  szRB[],
+                                          int    x0,
+                                          int    y0);
 /* This routine creates a radio button group at the
  * specified position. The return values is a pointer to an
  * array of dlgitems, the array has length (nrb+1) with the +1
@@ -61,19 +67,24 @@ extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
  * nSelect is the ordinal of the selected button.
  */
 
-extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
-                                      t_id GroupID, int x0, int y0,
-                                      int nitem, ...);
+extern t_dlgitem**
+CreateDlgitemGroup(t_x11* x11, const char* szTitle, t_id GroupID, int x0, int y0, int nitem, ...);
 /* This routine creates a dlgitem group at the
  * specified position. The return values is a pointer to an
  * array of dlgitems, the array has length (nitem+1) with the +1
  * because of the groupbox.
  */
 
-extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
-                      const char *infile,
-                      int x0, int y0, bool bAutoPosition, bool bUseMon,
-                      DlgCallback *cb, void *data);
+extern t_dlg* ReadDlg(t_x11*       x11,
+                      Window       Parent,
+                      const char*  title,
+                      const char*  infile,
+                      int          x0,
+                      int          y0,
+                      bool         bAutoPosition,
+                      bool         bUseMon,
+                      DlgCallback* cb,
+                      void*        data);
 /* Read a dialog box from a template file */
 
-#endif  /* _xdlghi_h */
+#endif /* _xdlghi_h */

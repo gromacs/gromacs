@@ -49,24 +49,24 @@
 
 namespace gmx
 {
-TrajectoryElement::TrajectoryElement(
-        std::vector<SignallerCallbackPtr> signalEnergyCallbacks,
-        std::vector<SignallerCallbackPtr> signalStateCallbacks,
-        std::vector<ITrajectoryWriterClient*> writerClients,
-        FILE *fplog, int nfile, const t_filenm fnm[],
-        const MdrunOptions &mdrunOptions,
-        const t_commrec *cr,
-        gmx::IMDOutputProvider *outputProvider,
-        const MdModulesNotifier &mdModulesNotifier,
-        const t_inputrec *inputrec, gmx_mtop_t *top_global,
-        const gmx_output_env_t *oenv, gmx_wallcycle *wcycle,
-        StartingBehavior startingBehavior) :
+TrajectoryElement::TrajectoryElement(std::vector<SignallerCallbackPtr>     signalEnergyCallbacks,
+                                     std::vector<SignallerCallbackPtr>     signalStateCallbacks,
+                                     std::vector<ITrajectoryWriterClient*> writerClients,
+                                     FILE*                                 fplog,
+                                     int                                   nfile,
+                                     const t_filenm                        fnm[],
+                                     const MdrunOptions&                   mdrunOptions,
+                                     const t_commrec*                      cr,
+                                     gmx::IMDOutputProvider*               outputProvider,
+                                     const MdModulesNotifier&              mdModulesNotifier,
+                                     const t_inputrec*                     inputrec,
+                                     gmx_mtop_t*                           top_global,
+                                     const gmx_output_env_t*               oenv,
+                                     gmx_wallcycle*                        wcycle,
+                                     StartingBehavior                      startingBehavior) :
     writeEnergyStep_(-1),
     writeStateStep_(-1),
-    outf_(init_mdoutf(
-                  fplog, nfile, fnm, mdrunOptions, cr,
-                  outputProvider, mdModulesNotifier, inputrec, top_global, oenv, wcycle,
-                  startingBehavior)),
+    outf_(init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec, top_global, oenv, wcycle, startingBehavior)),
     nstxout_(inputrec->nstxout),
     nstvout_(inputrec->nstvout),
     nstfout_(inputrec->nstfout),
@@ -81,28 +81,24 @@ TrajectoryElement::TrajectoryElement(
     lastStep_(-1),
     lastStepRegistrationDone_(false),
     writerClients_(std::move(writerClients))
-{}
+{
+}
 
 void TrajectoryElement::signallerSetup()
 {
-    GMX_ASSERT(
-            lastStepRegistrationDone_,
-            "TrajectoryElement needs to be registered to LastStepSignaller.");
+    GMX_ASSERT(lastStepRegistrationDone_,
+               "TrajectoryElement needs to be registered to LastStepSignaller.");
 }
 
 void TrajectoryElement::signal(Step step, Time time)
 {
-    if (do_per_step(step, nstxout_) ||
-        do_per_step(step, nstvout_) ||
-        do_per_step(step, nstfout_) ||
-        do_per_step(step, nstxoutCompressed_) ||
-        do_per_step(step, tngBoxOut_) ||
-        do_per_step(step, tngLambdaOut_) ||
-        do_per_step(step, tngBoxOutCompressed_) ||
-        do_per_step(step, tngLambdaOutCompressed_))
+    if (do_per_step(step, nstxout_) || do_per_step(step, nstvout_) || do_per_step(step, nstfout_)
+        || do_per_step(step, nstxoutCompressed_) || do_per_step(step, tngBoxOut_)
+        || do_per_step(step, tngLambdaOut_) || do_per_step(step, tngBoxOutCompressed_)
+        || do_per_step(step, tngLambdaOutCompressed_))
     {
         writeStateStep_ = step;
-        for (const auto &callback : signalStateCallbacks_)
+        for (const auto& callback : signalStateCallbacks_)
         {
             (*callback)(step, time);
         }
@@ -111,7 +107,7 @@ void TrajectoryElement::signal(Step step, Time time)
     if (do_per_step(step, nstenergy_) || step == lastStep_)
     {
         writeEnergyStep_ = step;
-        for (const auto &callback : signalEnergyCallbacks_)
+        for (const auto& callback : signalEnergyCallbacks_)
         {
             (*callback)(step, time);
         }
@@ -120,16 +116,14 @@ void TrajectoryElement::signal(Step step, Time time)
 
 void TrajectoryElement::elementSetup()
 {
-    for (auto &client : writerClients_)
+    for (auto& client : writerClients_)
     {
-        auto callback = client->registerTrajectoryWriterCallback(
-                    TrajectoryEvent::StateWritingStep);
+        auto callback = client->registerTrajectoryWriterCallback(TrajectoryEvent::StateWritingStep);
         if (callback)
         {
             runStateCallbacks_.emplace_back(std::move(callback));
         }
-        callback = client->registerTrajectoryWriterCallback(
-                    TrajectoryEvent::EnergyWritingStep);
+        callback = client->registerTrajectoryWriterCallback(TrajectoryEvent::EnergyWritingStep);
         if (callback)
         {
             runEnergyCallbacks_.emplace_back(std::move(callback));
@@ -138,8 +132,7 @@ void TrajectoryElement::elementSetup()
     }
 }
 
-void TrajectoryElement::scheduleTask(
-        Step step, Time time, const RegisterRunFunctionPtr &registerRunFunction)
+void TrajectoryElement::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     const bool writeEnergyThisStep = writeEnergyStep_ == step;
     const bool writeStateThisStep  = writeStateStep_ == step;
@@ -147,16 +140,15 @@ void TrajectoryElement::scheduleTask(
     if (writeEnergyThisStep || writeStateThisStep || writeLogThisStep)
     {
         (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                                       [this, step, time, writeStateThisStep,
-                                        writeEnergyThisStep, writeLogThisStep]()
-                                       {write(step, time, writeStateThisStep,
-                                              writeEnergyThisStep, writeLogThisStep); }));
+                [this, step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep]() {
+                    write(step, time, writeStateThisStep, writeEnergyThisStep, writeLogThisStep);
+                }));
     }
 }
 
 void TrajectoryElement::elementTeardown()
 {
-    for (auto &client : writerClients_)
+    for (auto& client : writerClients_)
     {
         client->trajectoryWriterTeardown(outf_);
     }
@@ -164,19 +156,18 @@ void TrajectoryElement::elementTeardown()
     done_mdoutf(outf_);
 }
 
-void TrajectoryElement::write(
-        Step step, Time time, bool writeState, bool writeEnergy, bool writeLog)
+void TrajectoryElement::write(Step step, Time time, bool writeState, bool writeEnergy, bool writeLog)
 {
     if (writeState || writeLog)
     {
-        for (auto &callback : runStateCallbacks_)
+        for (auto& callback : runStateCallbacks_)
         {
             (*callback)(outf_, step, time, writeState, writeLog);
         }
     }
     if (writeEnergy || writeLog)
     {
-        for (auto &callback : runEnergyCallbacks_)
+        for (auto& callback : runEnergyCallbacks_)
         {
             (*callback)(outf_, step, time, writeEnergy, writeLog);
         }
@@ -187,25 +178,23 @@ SignallerCallbackPtr TrajectoryElement::registerLastStepCallback()
 {
     lastStepRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time){this->lastStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
 }
 
 SignallerCallbackPtr TrajectoryElement::registerLoggingCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time){logWritingStep_ = step; });
+            [this](Step step, Time /*unused*/) { logWritingStep_ = step; });
 }
 
-void TrajectoryElementBuilder::registerSignallerClient(
-        compat::not_null<ITrajectorySignallerClient*> client)
+void TrajectoryElementBuilder::registerSignallerClient(compat::not_null<ITrajectorySignallerClient*> client)
 {
     signallerClients_.emplace_back(client);
 }
 
-void TrajectoryElementBuilder::registerWriterClient(
-        compat::not_null<ITrajectoryWriterClient*> client)
+void TrajectoryElementBuilder::registerWriterClient(compat::not_null<ITrajectoryWriterClient*> client)
 {
     writerClients_.emplace_back(client);
 }
 
-}  // namespace gmx
+} // namespace gmx

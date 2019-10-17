@@ -72,17 +72,10 @@ PairlistParams::PairlistParams(const Nbnxm::KernelType kernelType,
     {
         switch (Nbnxm::JClusterSizePerKernelType[kernelType])
         {
-            case 2:
-                pairlistType = PairlistType::Simple4x2;
-                break;
-            case 4:
-                pairlistType = PairlistType::Simple4x4;
-                break;
-            case 8:
-                pairlistType = PairlistType::Simple4x8;
-                break;
-            default:
-                GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
+            case 2: pairlistType = PairlistType::Simple4x2; break;
+            case 4: pairlistType = PairlistType::Simple4x4; break;
+            case 8: pairlistType = PairlistType::Simple4x8; break;
+            default: GMX_RELEASE_ASSERT(false, "Kernel type does not have a pairlist type");
         }
     }
 }

@@ -81,9 +81,9 @@ struct OutputRequirements;
  *                                   OutputAdapters should be registered.
  * \throws    InconsistentInputError When user input and requirements don't match.
  */
-std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t  *top,
-                                                                   const Selection   &sel,
-                                                                   const std::string &filename,
+std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t*  top,
+                                                                   const Selection&   sel,
+                                                                   const std::string& filename,
                                                                    AtomsDataPtr       atoms,
                                                                    OutputRequirements requirements);
 
@@ -96,58 +96,60 @@ std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mto
  */
 class TrajectoryFileOpener
 {
-    public:
-        /*! \brief
-         * Constructor, taking all arguments needed to open valid coordinate files of any type.
-         *
-         * \param[in] name Name of the file to create.
-         * \param[in] filetype Internal filetype to know which kind we are going to have.
-         * \param[in] sel Reference to selection of atoms to write. Needs to be valid for
-         *                longer than the lifetime of the object created here.
-         * \param[in] mtop Topology used to create TNG output. Needs to be valid for longer
-         *                 than the object created here.
-         */
-        TrajectoryFileOpener(const std::string        &name,
-                             int                       filetype,
-                             const Selection          &sel,
-                             const gmx_mtop_t         *mtop) :
-            outputFileName_(name), outputFile_(nullptr), filetype_(filetype), sel_(sel), mtop_(mtop)
-        {}
+public:
+    /*! \brief
+     * Constructor, taking all arguments needed to open valid coordinate files of any type.
+     *
+     * \param[in] name Name of the file to create.
+     * \param[in] filetype Internal filetype to know which kind we are going to have.
+     * \param[in] sel Reference to selection of atoms to write. Needs to be valid for
+     *                longer than the lifetime of the object created here.
+     * \param[in] mtop Topology used to create TNG output. Needs to be valid for longer
+     *                 than the object created here.
+     */
+    TrajectoryFileOpener(const std::string& name, int filetype, const Selection& sel, const gmx_mtop_t* mtop) :
+        outputFileName_(name),
+        outputFile_(nullptr),
+        filetype_(filetype),
+        sel_(sel),
+        mtop_(mtop)
+    {
+    }
 
-        /*! \brief
-         * Closes new trajectory file after finishing the writing to it.
-         */
-        ~TrajectoryFileOpener();
+    /*! \brief
+     * Closes new trajectory file after finishing the writing to it.
+     */
+    ~TrajectoryFileOpener();
 
-        /*! \brief
-         * Get access to initialized output file object.
-         *
-         * Performs lazy initialization if needed.
-         */
-        t_trxstatus *outputFile();
+    /*! \brief
+     * Get access to initialized output file object.
+     *
+     * Performs lazy initialization if needed.
+     */
+    t_trxstatus* outputFile();
 
-    private:
-        //! Name for the new coordinate file.
-        std::string  outputFileName_;
+private:
+    //! Name for the new coordinate file.
+    std::string outputFileName_;
 
-        //! File pointer to the coordinate file being written.
-        t_trxstatus *outputFile_;
+    //! File pointer to the coordinate file being written.
+    t_trxstatus* outputFile_;
 
-        //! Storage of file type for determing what kind of file will be written to disk.
-        int          filetype_;
+    //! Storage of file type for determing what kind of file will be written to disk.
+    int filetype_;
 
-        /*! \brief
-         * Selection of atoms to write out.
-         *
-         * Currently, CoordinateFile expects that the lifetime of the selection is longer
-         * than that of itself, and that the selection remains unchanged during this lifetime.
-         * A better approach will be to pass the selection to it and expect it to
-         * manage the lifetime instead.
-         */
-        const Selection   &sel_;
+    /*! \brief
+     * Selection of atoms to write out.
+     *
+     * Currently, CoordinateFile expects that the lifetime of the selection is longer
+     * than that of itself, and that the selection remains unchanged during this lifetime.
+     * A better approach will be to pass the selection to it and expect it to
+     * manage the lifetime instead.
+     */
+    const Selection& sel_;
 
-        //! Pointer to topology information if available.
-        const gmx_mtop_t *mtop_;
+    //! Pointer to topology information if available.
+    const gmx_mtop_t* mtop_;
 };
 
 /*!\brief
@@ -164,60 +166,59 @@ class TrajectoryFileOpener
  */
 class TrajectoryFrameWriter
 {
-    public:
-        friend std::unique_ptr<TrajectoryFrameWriter>
-        createTrajectoryFrameWriter(const gmx_mtop_t  *top,
-                                    const Selection   &sel,
-                                    const std::string &filename,
-                                    AtomsDataPtr       atoms,
-                                    OutputRequirements requirements);
+public:
+    friend std::unique_ptr<TrajectoryFrameWriter> createTrajectoryFrameWriter(const gmx_mtop_t* top,
+                                                                              const Selection&  sel,
+                                                                              const std::string& filename,
+                                                                              AtomsDataPtr atoms,
+                                                                              OutputRequirements requirements);
 
-        /*! \brief
-         * Writes the input frame, after applying any IOutputAdapters.
-         *
-         * \param[in] framenumber Number of frame being currently processed.
-         * \param[in] input View of the constant t_trxframe object provided by the
-         *                  method that calls the output manager.
-         */
-        void prepareAndWriteFrame(int framenumber, const t_trxframe &input);
+    /*! \brief
+     * Writes the input frame, after applying any IOutputAdapters.
+     *
+     * \param[in] framenumber Number of frame being currently processed.
+     * \param[in] input View of the constant t_trxframe object provided by the
+     *                  method that calls the output manager.
+     */
+    void prepareAndWriteFrame(int framenumber, const t_trxframe& input);
 
-    private:
-        /*! \brief
-         * Creates fully initialized object.
-         *
-         * \param[in] name Name of the file to create.
-         * \param[in] filetype Internal filetype to know which kind we are going to have.
-         * \param[in] sel Reference to selection of atoms to write. Needs to be valid for
-         *                longer than the lifetime of the object created here.
-         * \param[in] mtop Topology used to create TNG output. Needs to be valid for longer
-         *                 than the object created here.
-         * \param[in] adapters Container of methods that can modify the information written
-         *                     to the new file.
-         */
-        TrajectoryFrameWriter(const std::string        &name,
-                              int                       filetype,
-                              const Selection          &sel,
-                              const gmx_mtop_t         *mtop,
-                              OutputAdapterContainer    adapters) :
-            file_(name, filetype, sel, mtop),
-            outputAdapters_(std::move(adapters))
-        {
-        }
+private:
+    /*! \brief
+     * Creates fully initialized object.
+     *
+     * \param[in] name Name of the file to create.
+     * \param[in] filetype Internal filetype to know which kind we are going to have.
+     * \param[in] sel Reference to selection of atoms to write. Needs to be valid for
+     *                longer than the lifetime of the object created here.
+     * \param[in] mtop Topology used to create TNG output. Needs to be valid for longer
+     *                 than the object created here.
+     * \param[in] adapters Container of methods that can modify the information written
+     *                     to the new file.
+     */
+    TrajectoryFrameWriter(const std::string&     name,
+                          int                    filetype,
+                          const Selection&       sel,
+                          const gmx_mtop_t*      mtop,
+                          OutputAdapterContainer adapters) :
+        file_(name, filetype, sel, mtop),
+        outputAdapters_(std::move(adapters))
+    {
+    }
 
-        //! Underlying object for open/writing to file.
-        TrajectoryFileOpener file_;
+    //! Underlying object for open/writing to file.
+    TrajectoryFileOpener file_;
 
-        //! Storage for list of output adapters.
-        OutputAdapterContainer outputAdapters_;
+    //! Storage for list of output adapters.
+    OutputAdapterContainer outputAdapters_;
 
-        //! Local storage for modified positions.
-        std::vector<RVec> localX_;
-        //! Local storage for modified velocities.
-        std::vector<RVec> localV_;
-        //! Local storage for modified forces.
-        std::vector<RVec> localF_;
-        //! Local storage for modified indices.
-        std::vector<int>  localIndex_;
+    //! Local storage for modified positions.
+    std::vector<RVec> localX_;
+    //! Local storage for modified velocities.
+    std::vector<RVec> localV_;
+    //! Local storage for modified forces.
+    std::vector<RVec> localF_;
+    //! Local storage for modified indices.
+    std::vector<int> localIndex_;
 };
 
 //! Smart pointer to manage the TrajectoryFrameWriter object.

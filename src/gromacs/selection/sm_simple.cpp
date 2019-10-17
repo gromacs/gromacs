@@ -54,25 +54,30 @@
 #include "selmethod_impl.h"
 
 /** Evaluates the \p all selection keyword. */
-static void
-evaluate_all(const gmx::SelMethodEvalContext &context,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_all(const gmx::SelMethodEvalContext& context,
+                         gmx_ana_index_t*                 g,
+                         gmx_ana_selvalue_t*              out,
+                         void*                            data);
 /** Evaluates the \p none selection keyword. */
-static void
-evaluate_none(const gmx::SelMethodEvalContext &context,
-              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_none(const gmx::SelMethodEvalContext& context,
+                          gmx_ana_index_t*                 g,
+                          gmx_ana_selvalue_t*              out,
+                          void*                            data);
 /** Evaluates the \p atomnr selection keyword. */
-static void
-evaluate_atomnr(const gmx::SelMethodEvalContext &context,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_atomnr(const gmx::SelMethodEvalContext& context,
+                            gmx_ana_index_t*                 g,
+                            gmx_ana_selvalue_t*              out,
+                            void*                            data);
 /** Evaluates the \p resnr selection keyword. */
-static void
-evaluate_resnr(const gmx::SelMethodEvalContext &context,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_resnr(const gmx::SelMethodEvalContext& context,
+                           gmx_ana_index_t*                 g,
+                           gmx_ana_selvalue_t*              out,
+                           void*                            data);
 /** Evaluates the \p resindex selection keyword. */
-static void
-evaluate_resindex(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_resindex(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 /*! \brief
  * Checks whether molecule information is present in the topology.
  *
@@ -84,20 +89,22 @@ evaluate_resindex(const gmx::SelMethodEvalContext &context,
  *
  * If molecule information is not found, also prints an error message.
  */
-static void
-check_molecules(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void check_molecules(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p molindex selection keyword. */
-static void
-evaluate_molindex(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_molindex(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 /** Evaluates the \p atomname selection keyword. */
-static void
-evaluate_atomname(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_atomname(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 /** Evaluates the \p pdbatomname selection keyword. */
-static void
-evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_pdbatomname(const gmx::SelMethodEvalContext& context,
+                                 gmx_ana_index_t*                 g,
+                                 gmx_ana_selvalue_t*              out,
+                                 void*                            data);
 /*! \brief
  * Checks whether atom types are present in the topology.
  *
@@ -106,24 +113,27 @@ evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
  * \param     param Not used.
  * \param     data Not used.
  */
-static void
-check_atomtype(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void check_atomtype(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p atomtype selection keyword. */
-static void
-evaluate_atomtype(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_atomtype(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 /** Evaluates the \p insertcode selection keyword. */
-static void
-evaluate_insertcode(const gmx::SelMethodEvalContext &context,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_insertcode(const gmx::SelMethodEvalContext& context,
+                                gmx_ana_index_t*                 g,
+                                gmx_ana_selvalue_t*              out,
+                                void*                            data);
 /** Evaluates the \p chain selection keyword. */
-static void
-evaluate_chain(const gmx::SelMethodEvalContext &context,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_chain(const gmx::SelMethodEvalContext& context,
+                           gmx_ana_index_t*                 g,
+                           gmx_ana_selvalue_t*              out,
+                           void*                            data);
 /** Evaluates the \p mass selection keyword. */
-static void
-evaluate_mass(const gmx::SelMethodEvalContext &context,
-              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_mass(const gmx::SelMethodEvalContext& context,
+                          gmx_ana_index_t*                 g,
+                          gmx_ana_selvalue_t*              out,
+                          void*                            data);
 /*! \brief
  * Checks whether charges are present in the topology.
  *
@@ -132,12 +142,12 @@ evaluate_mass(const gmx::SelMethodEvalContext &context,
  * \param     param Not used.
  * \param     data Not used.
  */
-static void
-check_charge(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void check_charge(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p charge selection keyword. */
-static void
-evaluate_charge(const gmx::SelMethodEvalContext &context,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_charge(const gmx::SelMethodEvalContext& context,
+                            gmx_ana_index_t*                 g,
+                            gmx_ana_selvalue_t*              out,
+                            void*                            data);
 /*! \brief
  * Checks whether PDB info is present in the topology.
  *
@@ -149,42 +159,48 @@ evaluate_charge(const gmx::SelMethodEvalContext &context,
  *
  * If PDB info is not found, also prints an error message.
  */
-static void
-check_pdbinfo(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void check_pdbinfo(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Evaluates the \p altloc selection keyword. */
-static void
-evaluate_altloc(const gmx::SelMethodEvalContext &context,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_altloc(const gmx::SelMethodEvalContext& context,
+                            gmx_ana_index_t*                 g,
+                            gmx_ana_selvalue_t*              out,
+                            void*                            data);
 /** Evaluates the \p occupancy selection keyword. */
-static void
-evaluate_occupancy(const gmx::SelMethodEvalContext &context,
-                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_occupancy(const gmx::SelMethodEvalContext& context,
+                               gmx_ana_index_t*                 g,
+                               gmx_ana_selvalue_t*              out,
+                               void*                            data);
 /** Evaluates the \p betafactor selection keyword. */
-static void
-evaluate_betafactor(const gmx::SelMethodEvalContext &context,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_betafactor(const gmx::SelMethodEvalContext& context,
+                                gmx_ana_index_t*                 g,
+                                gmx_ana_selvalue_t*              out,
+                                void*                            data);
 /** Evaluates the \p resname selection keyword. */
-static void
-evaluate_resname(const gmx::SelMethodEvalContext &context,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_resname(const gmx::SelMethodEvalContext& context,
+                             gmx_ana_index_t*                 g,
+                             gmx_ana_selvalue_t*              out,
+                             void*                            data);
 
 /** Evaluates the \p x selection keyword. */
-static void
-evaluate_x(const gmx::SelMethodEvalContext &context,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_x(const gmx::SelMethodEvalContext& context,
+                       gmx_ana_pos_t*                   pos,
+                       gmx_ana_selvalue_t*              out,
+                       void*                            data);
 /** Evaluates the \p y selection keyword. */
-static void
-evaluate_y(const gmx::SelMethodEvalContext &context,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_y(const gmx::SelMethodEvalContext& context,
+                       gmx_ana_pos_t*                   pos,
+                       gmx_ana_selvalue_t*              out,
+                       void*                            data);
 /** Evaluates the \p z selection keyword. */
-static void
-evaluate_z(const gmx::SelMethodEvalContext &context,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_z(const gmx::SelMethodEvalContext& context,
+                       gmx_ana_pos_t*                   pos,
+                       gmx_ana_selvalue_t*              out,
+                       void*                            data);
 
 //! Help title for atom name selection keywords.
-static const char        helptitle_atomname[] = "Selecting atoms by name";
+static const char helptitle_atomname[] = "Selecting atoms by name";
 //! Help text for atom name selection keywords.
-static const char *const help_atomname[] = {
+static const char* const help_atomname[] = {
     "::",
     "",
     "  name",
@@ -207,9 +223,9 @@ static const char *const help_atomname[] = {
 };
 
 //! Help title for residue index selection keywords.
-static const char        helptitle_resindex[] = "Selecting atoms by residue number";
+static const char helptitle_resindex[] = "Selecting atoms by residue number";
 //! Help text for residue index selection keywords.
-static const char *const help_resindex[] = {
+static const char* const help_resindex[] = {
     "::",
     "",
     "  resnr",
@@ -230,152 +246,93 @@ static const char *const help_resindex[] = {
 
 /** Selection method data for \p all selection keyword. */
 gmx_ana_selmethod_t sm_all = {
-    "all", GROUP_VALUE, 0,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_all,
-    nullptr,
+    "all",   GROUP_VALUE, 0,       0,       nullptr,       nullptr, nullptr,
+    nullptr, nullptr,     nullptr, nullptr, &evaluate_all, nullptr,
 };
 
 /** Selection method data for \p none selection keyword. */
 gmx_ana_selmethod_t sm_none = {
-    "none", GROUP_VALUE, 0,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_none,
-    nullptr,
+    "none",  GROUP_VALUE, 0,       0,       nullptr,        nullptr, nullptr,
+    nullptr, nullptr,     nullptr, nullptr, &evaluate_none, nullptr,
 };
 
 /** Selection method data for \p atomnr selection keyword. */
 gmx_ana_selmethod_t sm_atomnr = {
-    "atomnr", INT_VALUE, 0,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_atomnr,
-    nullptr,
+    "atomnr", INT_VALUE, 0,       0,       nullptr,          nullptr, nullptr,
+    nullptr,  nullptr,   nullptr, nullptr, &evaluate_atomnr, nullptr,
 };
 
 /** Selection method data for \p resnr selection keyword. */
 gmx_ana_selmethod_t sm_resnr = {
-    "resnr", INT_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_resnr,
-    nullptr,
-    {nullptr, helptitle_resindex, asize(help_resindex), help_resindex}
+    "resnr",      INT_VALUE,
+    SMETH_REQTOP, 0,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      &evaluate_resnr,
+    nullptr,      { nullptr, helptitle_resindex, asize(help_resindex), help_resindex }
 };
 
 /** Selection method data for \p resindex selection keyword. */
 gmx_ana_selmethod_t sm_resindex = {
-    "resindex", INT_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_resindex,
-    nullptr,
-    {nullptr, helptitle_resindex, asize(help_resindex), help_resindex}
+    "resindex",   INT_VALUE,
+    SMETH_REQTOP, 0,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      &evaluate_resindex,
+    nullptr,      { nullptr, helptitle_resindex, asize(help_resindex), help_resindex }
 };
 
 /** Selection method data for \p molindex selection keyword. */
 gmx_ana_selmethod_t sm_molindex = {
-    "molindex", INT_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_molecules,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_molindex,
+    "molindex", INT_VALUE,        SMETH_REQTOP, 0,       nullptr, nullptr,
+    nullptr,    &check_molecules, nullptr,      nullptr, nullptr, &evaluate_molindex,
     nullptr,
 };
 
 /** Selection method data for \p atomname selection keyword. */
 gmx_ana_selmethod_t sm_atomname = {
-    "atomname", STR_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_atomname,
-    nullptr,
-    {nullptr, helptitle_atomname, asize(help_atomname), help_atomname}
+    "atomname",   STR_VALUE,
+    SMETH_REQTOP, 0,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      nullptr,
+    nullptr,      &evaluate_atomname,
+    nullptr,      { nullptr, helptitle_atomname, asize(help_atomname), help_atomname }
 };
 
 /** Selection method data for \p pdbatomname selection keyword. */
 gmx_ana_selmethod_t sm_pdbatomname = {
-    "pdbatomname", STR_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_pdbinfo,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_pdbatomname,
-    nullptr,
-    {nullptr, helptitle_atomname, asize(help_atomname), help_atomname}
+    "pdbatomname", STR_VALUE,
+    SMETH_REQTOP,  0,
+    nullptr,       nullptr,
+    nullptr,       &check_pdbinfo,
+    nullptr,       nullptr,
+    nullptr,       &evaluate_pdbatomname,
+    nullptr,       { nullptr, helptitle_atomname, asize(help_atomname), help_atomname }
 };
 
 /** Selection method data for \p atomtype selection keyword. */
 gmx_ana_selmethod_t sm_atomtype = {
-    "atomtype", STR_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_atomtype,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_atomtype,
+    "atomtype", STR_VALUE,       SMETH_REQTOP, 0,       nullptr, nullptr,
+    nullptr,    &check_atomtype, nullptr,      nullptr, nullptr, &evaluate_atomtype,
     nullptr,
 };
 
 /** Selection method data for \p resname selection keyword. */
 gmx_ana_selmethod_t sm_resname = {
-    "resname", STR_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_resname,
-    nullptr,
+    "resname", STR_VALUE, SMETH_REQTOP, 0,       nullptr,           nullptr, nullptr,
+    nullptr,   nullptr,   nullptr,      nullptr, &evaluate_resname, nullptr,
 };
 
 /** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_insertcode = {
-    "insertcode", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
-    0, nullptr,
+    "insertcode",
+    STR_VALUE,
+    SMETH_REQTOP | SMETH_CHARVAL,
+    0,
+    nullptr,
     nullptr,
     nullptr,
     nullptr,
@@ -389,127 +346,63 @@ gmx_ana_selmethod_t sm_insertcode = {
 /** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_chain = {
     "chain", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_chain,
+    0,       nullptr,   nullptr,
+    nullptr, nullptr,   nullptr,
+    nullptr, nullptr,   &evaluate_chain,
     nullptr,
 };
 
 /** Selection method data for \p mass selection keyword. */
 gmx_ana_selmethod_t sm_mass = {
-    "mass", REAL_VALUE, SMETH_REQMASS,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_mass,
-    nullptr,
+    "mass",  REAL_VALUE, SMETH_REQMASS, 0,       nullptr,        nullptr, nullptr,
+    nullptr, nullptr,    nullptr,       nullptr, &evaluate_mass, nullptr,
 };
 
 /** Selection method data for \p charge selection keyword. */
 gmx_ana_selmethod_t sm_charge = {
-    "charge", REAL_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_charge,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_charge,
-    nullptr,
+    "charge",      REAL_VALUE, SMETH_REQTOP, 0,       nullptr,          nullptr, nullptr,
+    &check_charge, nullptr,    nullptr,      nullptr, &evaluate_charge, nullptr,
 };
 
 /** Selection method data for \p chain selection keyword. */
 gmx_ana_selmethod_t sm_altloc = {
-    "altloc", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_pdbinfo,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_altloc,
+    "altloc", STR_VALUE,      SMETH_REQTOP | SMETH_CHARVAL,
+    0,        nullptr,        nullptr,
+    nullptr,  &check_pdbinfo, nullptr,
+    nullptr,  nullptr,        &evaluate_altloc,
     nullptr,
 };
 
 /** Selection method data for \p occupancy selection keyword. */
 gmx_ana_selmethod_t sm_occupancy = {
-    "occupancy", REAL_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_pdbinfo,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_occupancy,
+    "occupancy", REAL_VALUE,     SMETH_REQTOP, 0,       nullptr, nullptr,
+    nullptr,     &check_pdbinfo, nullptr,      nullptr, nullptr, &evaluate_occupancy,
     nullptr,
 };
 
 /** Selection method data for \p betafactor selection keyword. */
 gmx_ana_selmethod_t sm_betafactor = {
-    "betafactor", REAL_VALUE, SMETH_REQTOP,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    &check_pdbinfo,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_betafactor,
+    "betafactor", REAL_VALUE,     SMETH_REQTOP, 0,       nullptr, nullptr,
+    nullptr,      &check_pdbinfo, nullptr,      nullptr, nullptr, &evaluate_betafactor,
     nullptr,
 };
 
 /** Selection method data for \p x selection keyword. */
 gmx_ana_selmethod_t sm_x = {
-    "x", REAL_VALUE, SMETH_DYNAMIC,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_x,
+    "x",     REAL_VALUE, SMETH_DYNAMIC, 0,       nullptr, nullptr,     nullptr,
+    nullptr, nullptr,    nullptr,       nullptr, nullptr, &evaluate_x,
 };
 
 /** Selection method data for \p y selection keyword. */
 gmx_ana_selmethod_t sm_y = {
-    "y", REAL_VALUE, SMETH_DYNAMIC,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_y,
+    "y",     REAL_VALUE, SMETH_DYNAMIC, 0,       nullptr, nullptr,     nullptr,
+    nullptr, nullptr,    nullptr,       nullptr, nullptr, &evaluate_y,
 };
 
 /** Selection method data for \p z selection keyword. */
 gmx_ana_selmethod_t sm_z = {
-    "z", REAL_VALUE, SMETH_DYNAMIC,
-    0, nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    nullptr,
-    &evaluate_z,
+    "z",     REAL_VALUE, SMETH_DYNAMIC, 0,       nullptr, nullptr,     nullptr,
+    nullptr, nullptr,    nullptr,       nullptr, nullptr, &evaluate_z,
 };
 
 /*!
@@ -518,9 +411,10 @@ gmx_ana_selmethod_t sm_z = {
  *
  * Copies \p g to \p out->u.g.
  */
-static void
-evaluate_all(const gmx::SelMethodEvalContext & /*context*/,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_all(const gmx::SelMethodEvalContext& /*context*/,
+                         gmx_ana_index_t*    g,
+                         gmx_ana_selvalue_t* out,
+                         void* /* data */)
 {
     gmx_ana_index_copy(out->u.g, g, false);
 }
@@ -531,9 +425,10 @@ evaluate_all(const gmx::SelMethodEvalContext & /*context*/,
  *
  * Returns an empty \p out->u.g.
  */
-static void
-evaluate_none(const gmx::SelMethodEvalContext & /*context*/,
-              gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_none(const gmx::SelMethodEvalContext& /*context*/,
+                          gmx_ana_index_t* /* g */,
+                          gmx_ana_selvalue_t* out,
+                          void* /* data */)
 {
     out->u.g->isize = 0;
 }
@@ -544,11 +439,12 @@ evaluate_none(const gmx::SelMethodEvalContext & /*context*/,
  *
  * Returns the indices for each atom in \p out->u.i.
  */
-static void
-evaluate_atomnr(const gmx::SelMethodEvalContext & /*context*/,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_atomnr(const gmx::SelMethodEvalContext& /*context*/,
+                            gmx_ana_index_t*    g,
+                            gmx_ana_selvalue_t* out,
+                            void* /* data */)
 {
-    int  i;
+    int i;
 
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
@@ -563,16 +459,16 @@ evaluate_atomnr(const gmx::SelMethodEvalContext & /*context*/,
  *
  * Returns the residue numbers for each atom in \p out->u.i.
  */
-static void
-evaluate_resnr(const gmx::SelMethodEvalContext &context,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_resnr(const gmx::SelMethodEvalContext& context,
+                           gmx_ana_index_t*                 g,
+                           gmx_ana_selvalue_t*              out,
+                           void* /* data */)
 {
     out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        mtopGetAtomAndResidueName(context.top, g->index[i], &molb,
-                                  nullptr, &out->u.i[i], nullptr, nullptr);
+        mtopGetAtomAndResidueName(context.top, g->index[i], &molb, nullptr, &out->u.i[i], nullptr, nullptr);
     }
 }
 
@@ -582,23 +478,22 @@ evaluate_resnr(const gmx::SelMethodEvalContext &context,
  *
  * Returns the residue indices for each atom in \p out->u.i.
  */
-static void
-evaluate_resindex(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_resindex(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void* /* data */)
 {
     out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
         int resind;
-        mtopGetAtomAndResidueName(context.top, g->index[i], &molb,
-                                  nullptr, nullptr, nullptr, &resind);
+        mtopGetAtomAndResidueName(context.top, g->index[i], &molb, nullptr, nullptr, nullptr, &resind);
         out->u.i[i] = resind + 1;
     }
 }
 
-static void
-check_molecules(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+static void check_molecules(const gmx_mtop_t* top, int /* npar */, gmx_ana_selparam_t* /* param */, void* /* data */)
 {
     bool bOk;
 
@@ -615,9 +510,10 @@ check_molecules(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* p
  *
  * Returns the molecule indices for each atom in \p out->u.i.
  */
-static void
-evaluate_molindex(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_molindex(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void* /* data */)
 {
     out->nr  = g->isize;
     int molb = 0;
@@ -633,18 +529,18 @@ evaluate_molindex(const gmx::SelMethodEvalContext &context,
  *
  * Returns the atom name for each atom in \p out->u.s.
  */
-static void
-evaluate_atomname(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_atomname(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        const char *atom_name;
-        mtopGetAtomAndResidueName(context.top, g->index[i], &molb,
-                                  &atom_name, nullptr, nullptr, nullptr);
-        out->u.s[i] = const_cast<char *>(atom_name);
+        const char* atom_name;
+        mtopGetAtomAndResidueName(context.top, g->index[i], &molb, &atom_name, nullptr, nullptr, nullptr);
+        out->u.s[i] = const_cast<char*>(atom_name);
     }
 }
 
@@ -654,25 +550,25 @@ evaluate_atomname(const gmx::SelMethodEvalContext &context,
  *
  * Returns the PDB atom name for each atom in \p out->u.s.
  */
-static void
-evaluate_pdbatomname(const gmx::SelMethodEvalContext &context,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_pdbatomname(const gmx::SelMethodEvalContext& context,
+                                 gmx_ana_index_t*                 g,
+                                 gmx_ana_selvalue_t*              out,
+                                 void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
-        const char *s = mtopGetAtomPdbInfo(context.top, g->index[i], &molb).atomnm;
+        const char* s = mtopGetAtomPdbInfo(context.top, g->index[i], &molb).atomnm;
         while (std::isspace(*s))
         {
             ++s;
         }
-        out->u.s[i] = const_cast<char *>(s);
+        out->u.s[i] = const_cast<char*>(s);
     }
 }
 
-static void
-check_atomtype(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+static void check_atomtype(const gmx_mtop_t* top, int /* npar */, gmx_ana_selparam_t* /* param */, void* /* data */)
 {
     if (!gmx_mtop_has_atomtypes(top))
     {
@@ -687,19 +583,19 @@ check_atomtype(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* pa
  * Returns the atom type for each atom in \p out->u.s.
  * Segfaults if atom types are not found in the topology.
  */
-static void
-evaluate_atomtype(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_atomtype(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
         int atomIndexInMolecule;
-        mtopGetMolblockIndex(context.top, g->index[i], &molb,
-                             nullptr, &atomIndexInMolecule);
-        const gmx_moltype_t &moltype = context.top->moltype[context.top->molblock[molb].type];
-        out->u.s[i] = *moltype.atoms.atomtype[atomIndexInMolecule];
+        mtopGetMolblockIndex(context.top, g->index[i], &molb, nullptr, &atomIndexInMolecule);
+        const gmx_moltype_t& moltype = context.top->moltype[context.top->molblock[molb].type];
+        out->u.s[i]                  = *moltype.atoms.atomtype[atomIndexInMolecule];
     }
 }
 
@@ -709,11 +605,12 @@ evaluate_atomtype(const gmx::SelMethodEvalContext &context,
  *
  * Returns the residue name for each atom in \p out->u.s.
  */
-static void
-evaluate_resname(const gmx::SelMethodEvalContext &context,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_resname(const gmx::SelMethodEvalContext& context,
+                             gmx_ana_index_t*                 g,
+                             gmx_ana_selvalue_t*              out,
+                             void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -727,11 +624,12 @@ evaluate_resname(const gmx::SelMethodEvalContext &context,
  *
  * Returns the insertion code for each atom in \p out->u.s.
  */
-static void
-evaluate_insertcode(const gmx::SelMethodEvalContext &context,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_insertcode(const gmx::SelMethodEvalContext& context,
+                                gmx_ana_index_t*                 g,
+                                gmx_ana_selvalue_t*              out,
+                                void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -745,11 +643,12 @@ evaluate_insertcode(const gmx::SelMethodEvalContext &context,
  *
  * Returns the chain for each atom in \p out->u.s.
  */
-static void
-evaluate_chain(const gmx::SelMethodEvalContext &context,
-               gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_chain(const gmx::SelMethodEvalContext& context,
+                           gmx_ana_index_t*                 g,
+                           gmx_ana_selvalue_t*              out,
+                           void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -763,13 +662,13 @@ evaluate_chain(const gmx::SelMethodEvalContext &context,
  *
  * Returns the mass for each atom in \p out->u.r.
  */
-static void
-evaluate_mass(const gmx::SelMethodEvalContext &context,
-              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_mass(const gmx::SelMethodEvalContext& context,
+                          gmx_ana_index_t*                 g,
+                          gmx_ana_selvalue_t*              out,
+                          void* /* data */)
 {
-    GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top),
-                       "Masses not available for evaluation");
-    out->nr = g->isize;
+    GMX_RELEASE_ASSERT(gmx_mtop_has_masses(context.top), "Masses not available for evaluation");
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -778,8 +677,7 @@ evaluate_mass(const gmx::SelMethodEvalContext &context,
 }
 
 
-static void
-check_charge(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+static void check_charge(const gmx_mtop_t* top, int /* npar */, gmx_ana_selparam_t* /* param */, void* /* data */)
 {
     if (!gmx_mtop_has_charges(top))
     {
@@ -793,11 +691,12 @@ check_charge(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* para
  *
  * Returns the charge for each atom in \p out->u.r.
  */
-static void
-evaluate_charge(const gmx::SelMethodEvalContext &context,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_charge(const gmx::SelMethodEvalContext& context,
+                            gmx_ana_index_t*                 g,
+                            gmx_ana_selvalue_t*              out,
+                            void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -805,8 +704,7 @@ evaluate_charge(const gmx::SelMethodEvalContext &context,
     }
 }
 
-static void
-check_pdbinfo(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* param */, void * /* data */)
+static void check_pdbinfo(const gmx_mtop_t* top, int /* npar */, gmx_ana_selparam_t* /* param */, void* /* data */)
 {
     if (!gmx_mtop_has_pdbinfo(top))
     {
@@ -820,11 +718,12 @@ check_pdbinfo(const gmx_mtop_t *top, int /* npar */, gmx_ana_selparam_t * /* par
  *
  * Returns the alternate location identifier for each atom in \p out->u.s.
  */
-static void
-evaluate_altloc(const gmx::SelMethodEvalContext &context,
-                gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_altloc(const gmx::SelMethodEvalContext& context,
+                            gmx_ana_index_t*                 g,
+                            gmx_ana_selvalue_t*              out,
+                            void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -839,11 +738,12 @@ evaluate_altloc(const gmx::SelMethodEvalContext &context,
  * Returns the occupancy numbers for each atom in \p out->u.r.
  * Segfaults if PDB info is not found in the topology.
  */
-static void
-evaluate_occupancy(const gmx::SelMethodEvalContext &context,
-                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_occupancy(const gmx::SelMethodEvalContext& context,
+                               gmx_ana_index_t*                 g,
+                               gmx_ana_selvalue_t*              out,
+                               void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -858,11 +758,12 @@ evaluate_occupancy(const gmx::SelMethodEvalContext &context,
  * Returns the B-factors for each atom in \p out->u.r.
  * Segfaults if PDB info is not found in the topology.
  */
-static void
-evaluate_betafactor(const gmx::SelMethodEvalContext &context,
-                    gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void * /* data */)
+static void evaluate_betafactor(const gmx::SelMethodEvalContext& context,
+                                gmx_ana_index_t*                 g,
+                                gmx_ana_selvalue_t*              out,
+                                void* /* data */)
 {
-    out->nr = g->isize;
+    out->nr  = g->isize;
     int molb = 0;
     for (int i = 0; i < g->isize; ++i)
     {
@@ -880,8 +781,7 @@ evaluate_betafactor(const gmx::SelMethodEvalContext &context,
  * This function is used internally by evaluate_x(), evaluate_y() and
  * evaluate_z() to do the actual evaluation.
  */
-static void
-evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
+static void evaluate_coord(real out[], gmx_ana_pos_t* pos, int d)
 {
     for (int i = 0; i < pos->count(); ++i)
     {
@@ -898,9 +798,10 @@ evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
  *
  * Returns the \p x coordinate for each position in \p out->u.r.
  */
-static void
-evaluate_x(const gmx::SelMethodEvalContext & /*context*/,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
+static void evaluate_x(const gmx::SelMethodEvalContext& /*context*/,
+                       gmx_ana_pos_t*      pos,
+                       gmx_ana_selvalue_t* out,
+                       void* /*data*/)
 {
     out->nr = pos->count();
     evaluate_coord(out->u.r, pos, XX);
@@ -912,9 +813,10 @@ evaluate_x(const gmx::SelMethodEvalContext & /*context*/,
  *
  * Returns the \p y coordinate for each position in \p out->u.r.
  */
-static void
-evaluate_y(const gmx::SelMethodEvalContext & /*context*/,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
+static void evaluate_y(const gmx::SelMethodEvalContext& /*context*/,
+                       gmx_ana_pos_t*      pos,
+                       gmx_ana_selvalue_t* out,
+                       void* /*data*/)
 {
     out->nr = pos->count();
     evaluate_coord(out->u.r, pos, YY);
@@ -926,9 +828,10 @@ evaluate_y(const gmx::SelMethodEvalContext & /*context*/,
  *
  * Returns the \p z coordinate for each position in \p out->u.r.
  */
-static void
-evaluate_z(const gmx::SelMethodEvalContext & /*context*/,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
+static void evaluate_z(const gmx::SelMethodEvalContext& /*context*/,
+                       gmx_ana_pos_t*      pos,
+                       gmx_ana_selvalue_t* out,
+                       void* /*data*/)
 {
     out->nr = pos->count();
     evaluate_coord(out->u.r, pos, ZZ);

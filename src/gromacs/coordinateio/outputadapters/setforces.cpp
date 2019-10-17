@@ -51,19 +51,18 @@
 namespace gmx
 {
 
-void
-SetForces::checkAbilityDependencies(unsigned long abilities) const
+void SetForces::checkAbilityDependencies(unsigned long abilities) const
 {
     if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
-        std::string errorMessage = "Output file type does not support writing forces. "
-            "Only TNG and TRR support this output.";
+        std::string errorMessage =
+                "Output file type does not support writing forces. "
+                "Only TNG and TRR support this output.";
         GMX_THROW(InconsistentInputError(errorMessage.c_str()));
     }
 }
 
-void
-SetForces::processFrame(const int /*framenumber*/, t_trxframe *input)
+void SetForces::processFrame(const int /*framenumber*/, t_trxframe* input)
 {
     switch (force_)
     {
@@ -74,11 +73,11 @@ SetForces::processFrame(const int /*framenumber*/, t_trxframe *input)
         case (ChangeSettingType::Always):
             if (!input->bF)
             {
-                GMX_THROW(InconsistentInputError("Force output requested but current frame has no forces"));
+                GMX_THROW(InconsistentInputError(
+                        "Force output requested but current frame has no forces"));
             }
             break;
-        default:
-            GMX_THROW(InconsistentInputError("Value for force flag is not supported"));
+        default: GMX_THROW(InconsistentInputError("Value for force flag is not supported"));
     }
 }
 

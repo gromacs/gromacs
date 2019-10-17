@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 struct gmx_tng_trajectory;
-typedef struct gmx_tng_trajectory *gmx_tng_trajectory_t;
+typedef struct gmx_tng_trajectory* gmx_tng_trajectory_t;
 struct t_trxframe;
 
 /*! \brief Open a TNG trajectory file
@@ -57,12 +57,10 @@ struct t_trxframe;
  *
  * Handles all I/O errors internally via fatal error
  */
-void gmx_tng_open(const char           *filename,
-                  char                  mode,
-                  gmx_tng_trajectory_t *tng_data_p);
+void gmx_tng_open(const char* filename, char mode, gmx_tng_trajectory_t* tng_data_p);
 
 /*! \brief Finish writing a TNG trajectory file */
-void gmx_tng_close(gmx_tng_trajectory_t *tng);
+void gmx_tng_close(gmx_tng_trajectory_t* tng);
 
 /*!\brief Add molecular topology information to TNG output (if
  * available)
@@ -70,8 +68,7 @@ void gmx_tng_close(gmx_tng_trajectory_t *tng);
  * \param tng   Valid handle to a TNG trajectory
  * \param mtop  Pointer to a topology (can be NULL)
  */
-void gmx_tng_add_mtop(gmx_tng_trajectory_t  tng,
-                      const gmx_mtop_t     *mtop);
+void gmx_tng_add_mtop(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop);
 
 /*! \brief Do all TNG preparation for full-precision whole-system
  * trajectory writing during MD simulations.
@@ -80,16 +77,13 @@ void gmx_tng_add_mtop(gmx_tng_trajectory_t  tng,
  * \param mtop  Global topology
  * \param ir    Input settings (for writing frequencies)
  */
-void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t  tng,
-                                const gmx_mtop_t     *mtop,
-                                const t_inputrec     *ir);
+void gmx_tng_prepare_md_writing(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop, const t_inputrec* ir);
 
 /*! \brief Set the default compression precision for TNG writing
  *
  * \param tng   Valid handle to a TNG trajectory
  * \param prec  GROMACS-style precision setting (i.e. 1000 for 3 digits of precision) */
-void gmx_tng_set_compression_precision(gmx_tng_trajectory_t tng,
-                                       real                 prec);
+void gmx_tng_set_compression_precision(gmx_tng_trajectory_t tng, real prec);
 
 /*! \brief Do all TNG preparation for low-precision selection-based
  * trajectory writing during MD simulations.
@@ -98,9 +92,7 @@ void gmx_tng_set_compression_precision(gmx_tng_trajectory_t tng,
  * \param mtop  Global topology
  * \param ir    Input settings (for writing frequencies)
  */
-void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t  tng,
-                                      const gmx_mtop_t     *mtop,
-                                      const t_inputrec     *ir);
+void gmx_tng_prepare_low_prec_writing(gmx_tng_trajectory_t tng, const gmx_mtop_t* mtop, const t_inputrec* ir);
 
 /*! \brief Write a frame to a TNG file
  *
@@ -122,11 +114,11 @@ void gmx_fwrite_tng(gmx_tng_trajectory_t tng,
                     int64_t              step,
                     real                 elapsedPicoSeconds,
                     real                 lambda,
-                    const rvec          *box,
+                    const rvec*          box,
                     int                  nAtoms,
-                    const rvec          *x,
-                    const rvec          *v,
-                    const rvec          *f);
+                    const rvec*          x,
+                    const rvec*          v,
+                    const rvec*          f);
 
 /*! \brief Write the current frame set to disk. Perform compression
  * etc.
@@ -143,14 +135,14 @@ void fflush_tng(gmx_tng_trajectory_t tng);
 float gmx_tng_get_time_of_final_frame(gmx_tng_trajectory_t tng);
 
 /*! \brief Prepare to write TNG output from trajectory conversion tools */
-void gmx_prepare_tng_writing(const char              *filename,
+void gmx_prepare_tng_writing(const char*              filename,
                              char                     mode,
-                             gmx_tng_trajectory_t    *in,
-                             gmx_tng_trajectory_t    *out,
+                             gmx_tng_trajectory_t*    in,
+                             gmx_tng_trajectory_t*    out,
                              int                      nAtoms,
-                             const struct gmx_mtop_t *mtop,
+                             const struct gmx_mtop_t* mtop,
                              gmx::ArrayRef<const int> index,
-                             const char              *indexGroupName);
+                             const char*              indexGroupName);
 
 /*! \brief Write a trxframe to a TNG file
  *
@@ -162,49 +154,44 @@ void gmx_prepare_tng_writing(const char              *filename,
  * parameter natoms supports writing an index-group subset of the
  * atoms.
  */
-void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t    output,
-                                 const t_trxframe       *frame,
-                                 int                     natoms);
+void gmx_write_tng_from_trxframe(gmx_tng_trajectory_t output, const t_trxframe* frame, int natoms);
 
 /*! \brief Creates a molecule containing only the indexed atoms and sets
  * the number of all other molecules to 0. Works similar to a
  * selection group. */
-void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t     tng,
-                                 gmx::ArrayRef<const int> ind,
-                                 const char              *name);
+void gmx_tng_setup_atom_subgroup(gmx_tng_trajectory_t tng, gmx::ArrayRef<const int> ind, const char* name);
 
 /*! \brief Read the first/next TNG frame. */
-gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t        input,
-                                 struct t_trxframe          *fr,
-                                 int64_t                    *requestedIds,
-                                 int                         numRequestedIds);
+gmx_bool gmx_read_next_tng_frame(gmx_tng_trajectory_t input,
+                                 struct t_trxframe*   fr,
+                                 int64_t*             requestedIds,
+                                 int                  numRequestedIds);
 
 /*! \brief Print the molecule system to stream */
-void gmx_print_tng_molecule_system(gmx_tng_trajectory_t input,
-                                   FILE                *stream);
+void gmx_print_tng_molecule_system(gmx_tng_trajectory_t input, FILE* stream);
 
 /*! \brief Get a list of block IDs present in the next frame with data. */
 gmx_bool gmx_get_tng_data_block_types_of_next_frame(gmx_tng_trajectory_t input,
                                                     int                  frame,
                                                     int                  nRequestedIds,
-                                                    int64_t             *requestedIds,
-                                                    int64_t             *nextFrame,
-                                                    int64_t             *nBlocks,
-                                                    int64_t            **blockIds);
+                                                    int64_t*             requestedIds,
+                                                    int64_t*             nextFrame,
+                                                    int64_t*             nBlocks,
+                                                    int64_t**            blockIds);
 
 /*! \brief Get data of the next frame with data from the data block
  * with the specified block ID. */
 gmx_bool gmx_get_tng_data_next_frame_of_block_type(gmx_tng_trajectory_t input,
                                                    int64_t              blockId,
-                                                   real               **values,
-                                                   int64_t             *frameNumber,
-                                                   double              *frameTime,
-                                                   int64_t             *nValuesPerFrame,
-                                                   int64_t             *nAtoms,
-                                                   real                *prec,
-                                                   char                *name,
+                                                   real**               values,
+                                                   int64_t*             frameNumber,
+                                                   double*              frameTime,
+                                                   int64_t*             nValuesPerFrame,
+                                                   int64_t*             nAtoms,
+                                                   real*                prec,
+                                                   char*                name,
                                                    int                  maxLen,
-                                                   gmx_bool            *bOK);
+                                                   gmx_bool*            bOK);
 
 /*! \brief Get the output interval of box size.
  *

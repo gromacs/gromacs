@@ -50,20 +50,20 @@
 namespace gmx
 {
 
-SimulationWorkload createSimulationWorkload(bool              useGpuForNonbonded,
-                                            PmeRunMode        pmeRunMode,
-                                            bool              useGpuForBonded,
-                                            bool              useGpuForUpdate,
-                                            bool              useGpuForBufferOps,
-                                            bool              useGpuHaloExchange,
-                                            bool              useGpuPmePpComm,
-                                            bool              haveEwaldSurfaceContribution)
+SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
+                                            PmeRunMode pmeRunMode,
+                                            bool       useGpuForBonded,
+                                            bool       useGpuForUpdate,
+                                            bool       useGpuForBufferOps,
+                                            bool       useGpuHaloExchange,
+                                            bool       useGpuPmePpComm,
+                                            bool       haveEwaldSurfaceContribution)
 {
     SimulationWorkload simulationWorkload;
-    simulationWorkload.useCpuNonbonded              = !useGpuForNonbonded;
-    simulationWorkload.useGpuNonbonded              = useGpuForNonbonded;
-    simulationWorkload.useCpuPme                    = (pmeRunMode == PmeRunMode::CPU);
-    simulationWorkload.useGpuPme                    = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
+    simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
+    simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
+    simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
+    simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft                 = (pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuBonded                 = useGpuForBonded;
     simulationWorkload.useGpuUpdate                 = useGpuForUpdate;
@@ -76,4 +76,4 @@ SimulationWorkload createSimulationWorkload(bool              useGpuForNonbonded
     return simulationWorkload;
 }
 
-}  // namespace gmx
+} // namespace gmx

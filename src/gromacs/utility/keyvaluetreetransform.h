@@ -90,28 +90,27 @@ class KeyValueTreeTransformerImpl;
  */
 class IKeyValueTreeTransformRules
 {
-    public:
-        /*! \brief
-         * Creates a new rule.
-         *
-         * Properties of the new rule must be specified using the returned
-         * builder.
-         */
-        virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
-        /*! \brief
-         * Creates a scoped set of rules, where all rules use a target sub-tree.
-         *
-         * \param[in] scope Prefix defining the scope in the target tree
-         *
-         * Any rules added to the returned scope will have `scope` prefixed to
-         * their target paths, i.e., it is not possible to produce elements
-         * outside the specified subtree.
-         */
-        virtual KeyValueTreeTransformRulesScoped
-        scopedTransform(const KeyValueTreePath &scope) = 0;
+public:
+    /*! \brief
+     * Creates a new rule.
+     *
+     * Properties of the new rule must be specified using the returned
+     * builder.
+     */
+    virtual KeyValueTreeTransformRuleBuilder addRule() = 0;
+    /*! \brief
+     * Creates a scoped set of rules, where all rules use a target sub-tree.
+     *
+     * \param[in] scope Prefix defining the scope in the target tree
+     *
+     * Any rules added to the returned scope will have `scope` prefixed to
+     * their target paths, i.e., it is not possible to produce elements
+     * outside the specified subtree.
+     */
+    virtual KeyValueTreeTransformRulesScoped scopedTransform(const KeyValueTreePath& scope) = 0;
 
-    protected:
-        virtual ~IKeyValueTreeTransformRules();
+protected:
+    virtual ~IKeyValueTreeTransformRules();
 };
 
 /*! \libinternal \brief
@@ -122,24 +121,23 @@ class IKeyValueTreeTransformRules
  */
 class KeyValueTreeTransformRulesScoped
 {
-    public:
-        //! Internal constructor for creating the scope.
-        KeyValueTreeTransformRulesScoped(
-            internal::KeyValueTreeTransformerImpl *impl,
-            const KeyValueTreePath                &prefix);
-        //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
-        KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped &&other) noexcept;
-        //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
-        KeyValueTreeTransformRulesScoped &operator=(KeyValueTreeTransformRulesScoped &&other) noexcept;
-        ~KeyValueTreeTransformRulesScoped();
+public:
+    //! Internal constructor for creating the scope.
+    KeyValueTreeTransformRulesScoped(internal::KeyValueTreeTransformerImpl* impl,
+                                     const KeyValueTreePath&                prefix);
+    //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
+    KeyValueTreeTransformRulesScoped(KeyValueTreeTransformRulesScoped&& other) noexcept;
+    //! Supports returning the object from IKeyValueTreeTransformRules::scopedTransform().
+    KeyValueTreeTransformRulesScoped& operator=(KeyValueTreeTransformRulesScoped&& other) noexcept;
+    ~KeyValueTreeTransformRulesScoped();
 
-        //! Returns the interface for adding rules to this scope.
-        IKeyValueTreeTransformRules *rules();
+    //! Returns the interface for adding rules to this scope.
+    IKeyValueTreeTransformRules* rules();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief
@@ -162,245 +160,227 @@ class KeyValueTreeTransformRulesScoped
  */
 class KeyValueTreeTransformRuleBuilder
 {
+public:
+    /*! \internal \brief
+     * Base class used for implementing parameter provider objects.
+     */
+    class Base
+    {
+    protected:
+        //! Creates a parameter provider object within given builder.
+        explicit Base(KeyValueTreeTransformRuleBuilder* builder) : builder_(builder) {}
+
+        //! The parent builder.
+        KeyValueTreeTransformRuleBuilder* builder_;
+    };
+
+    /*! \libinternal \brief
+     * Properties that can be specified after from().to().
+     *
+     * \tparam FromType Type specified for from() to map from.
+     * \tparam ToType Type specified for to() to map to.
+     */
+    template<typename FromType, typename ToType>
+    class ToValue : public Base
+    {
     public:
-        /*! \internal \brief
-         * Base class used for implementing parameter provider objects.
-         */
-        class Base
-        {
-            protected:
-                //! Creates a parameter provider object within given builder.
-                explicit Base(KeyValueTreeTransformRuleBuilder *builder)
-                    : builder_(builder)
-                {
-                }
-
-                //! The parent builder.
-                KeyValueTreeTransformRuleBuilder *builder_;
-        };
-
-        /*! \libinternal \brief
-         * Properties that can be specified after from().to().
-         *
-         * \tparam FromType Type specified for from() to map from.
-         * \tparam ToType Type specified for to() to map to.
-         */
-        template <typename FromType, typename ToType>
-        class ToValue : public Base
-        {
-            public:
-                //! Creates a parameter provider object within given builder.
-                explicit ToValue(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                /*! \brief
-                 * Specifies the transformation function to convert the value
-                 * from FromType to ToType.
-                 */
-                void transformWith(std::function<ToType(const FromType &)> transform)
-                {
-                    builder_->addTransformToAny(
-                            [transform] (const Any &value)
-                            {
-                                return Any::create<ToType>(transform(value.cast<FromType>()));
-                            });
-                }
-        };
-
-        /*! \libinternal \brief
-         * Properties that can be specified after from().toObject().
-         *
-         * \tparam FromType Type specified for from() to map from.
-         */
-        template <typename FromType>
-        class ToObject : public Base
-        {
-            public:
-                //! Creates a parameter provider object within given builder.
-                explicit ToObject(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                /*! \brief
-                 * Specifies the transformation function to build the output
-                 * object.
-                 *
-                 * The transform should build the output object with the
-                 * provided builder.
-                 */
-                void transformWith(std::function<void(KeyValueTreeObjectBuilder *, const FromType &)> transform)
-                {
-                    builder_->addTransformToObject(
-                            [transform] (KeyValueTreeObjectBuilder *builder, const Any &value)
-                            {
-                                transform(builder, value.cast<FromType>());
-                            });
-                }
-        };
-
-        /*! \libinternal \brief
-         * Properties that can be specified after from().
-         *
-         * \tparam FromType Type specified for from() to map from.
-         */
-        template <typename FromType>
-        class AfterFrom : public Base
-        {
-            public:
-                //! Creates a parameter provider object within given builder.
-                explicit AfterFrom(KeyValueTreeTransformRuleBuilder *builder)
-                    : Base(builder)
-                {
-                }
-
-                /*! \brief
-                 * Specifies a rule that maps to a value at given path.
-                 *
-                 * \tparam ToType  Type to map to.
-                 * \param[in] path Path to map to.
-                 *
-                 * It is an error if multiple rules map to the same path, or to
-                 * a parent path of the target of an existing rule.
-                 * Note that it is possible to have a to() rule map to a child
-                 * of a toObject() rule, provided that the path is not created
-                 * by the object rule.
-                 */
-                template <typename ToType>
-                ToValue<FromType, ToType> to(const KeyValueTreePath &path)
-                {
-                    builder_->setToPath(path);
-                    return ToValue<FromType, ToType>(builder_);
-                }
-
-                /*! \brief
-                 * Specifies a rule that maps to an object (collection of named
-                 * values) at given path.
-                 *
-                 * \param[in] path Path to map to.
-                 *
-                 * It is an error if multiple rules map to the same path, or to
-                 * a parent path of the target of an existing rule.
-                 * However, it is allowed to have two toObject() rules map to
-                 * the same path, provided that the properties they produce are
-                 * distinct.
-                 */
-                ToObject<FromType> toObject(const KeyValueTreePath &path)
-                {
-                    builder_->setToPath(path);
-                    return ToObject<FromType>(builder_);
-                }
-        };
-
-        //! Internal constructor for creating a builder.
-        KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl *impl,
-                                         const KeyValueTreePath                &prefix);
-        //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
-        KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder &&)            = default;
-        //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
-        KeyValueTreeTransformRuleBuilder &operator=(KeyValueTreeTransformRuleBuilder &&) = default;
-        ~KeyValueTreeTransformRuleBuilder(); // NOLINT(bugprone-exception-escape)
+        //! Creates a parameter provider object within given builder.
+        explicit ToValue(KeyValueTreeTransformRuleBuilder* builder) : Base(builder) {}
 
         /*! \brief
-         * Specifies a rule that maps a value at given path.
-         *
-         * \tparam FromType Type of value expected at `path`.
-         * \param[in] path Path to map in this rule.
-         *
-         * If the input tree has `path`, but it is not of type `FromType`,
-         * the transform will produce an error.
-         *
-         * It is an error to use the same path in two from() rules.  Similarly,
-         * it is an error to use a child path of a path used in a different
-         * from() rule.
+         * Specifies the transformation function to convert the value
+         * from FromType to ToType.
          */
-        template <typename FromType>
-        AfterFrom<FromType> from(const KeyValueTreePath &path)
+        void transformWith(std::function<ToType(const FromType&)> transform)
         {
-            setFromPath(path);
-            setExpectedType(typeid(FromType));
-            return AfterFrom<FromType>(this);
+            builder_->addTransformToAny([transform](const Any& value) {
+                return Any::create<ToType>(transform(value.cast<FromType>()));
+            });
         }
+    };
+
+    /*! \libinternal \brief
+     * Properties that can be specified after from().toObject().
+     *
+     * \tparam FromType Type specified for from() to map from.
+     */
+    template<typename FromType>
+    class ToObject : public Base
+    {
+    public:
+        //! Creates a parameter provider object within given builder.
+        explicit ToObject(KeyValueTreeTransformRuleBuilder* builder) : Base(builder) {}
+
         /*! \brief
-         * Specifies how strings are matched when matching rules against a path.
+         * Specifies the transformation function to build the output
+         * object.
          *
-         * For properties of the object at `path`, `keyMatchType` is used for
-         * string comparison.
-         *
-         * This rule must be specified first for a path, before any other
-         * from() rule specifies the path or a subpath.
-         * The rule only applies to immediate properties at the given path, not
-         * recursively.
-         * It is an error to specify the match type multiple times for a path.
+         * The transform should build the output object with the
+         * provided builder.
          */
-        void keyMatchType(const KeyValueTreePath &path, StringCompareType keyMatchType)
+        void transformWith(std::function<void(KeyValueTreeObjectBuilder*, const FromType&)> transform)
         {
-            setFromPath(path);
-            setKeyMatchType(keyMatchType);
+            builder_->addTransformToObject([transform](KeyValueTreeObjectBuilder* builder, const Any& value) {
+                transform(builder, value.cast<FromType>());
+            });
+        }
+    };
+
+    /*! \libinternal \brief
+     * Properties that can be specified after from().
+     *
+     * \tparam FromType Type specified for from() to map from.
+     */
+    template<typename FromType>
+    class AfterFrom : public Base
+    {
+    public:
+        //! Creates a parameter provider object within given builder.
+        explicit AfterFrom(KeyValueTreeTransformRuleBuilder* builder) : Base(builder) {}
+
+        /*! \brief
+         * Specifies a rule that maps to a value at given path.
+         *
+         * \tparam ToType  Type to map to.
+         * \param[in] path Path to map to.
+         *
+         * It is an error if multiple rules map to the same path, or to
+         * a parent path of the target of an existing rule.
+         * Note that it is possible to have a to() rule map to a child
+         * of a toObject() rule, provided that the path is not created
+         * by the object rule.
+         */
+        template<typename ToType>
+        ToValue<FromType, ToType> to(const KeyValueTreePath& path)
+        {
+            builder_->setToPath(path);
+            return ToValue<FromType, ToType>(builder_);
         }
 
-    private:
-        void setFromPath(const KeyValueTreePath &path);
-        void setExpectedType(const std::type_index &type);
-        void setToPath(const KeyValueTreePath &path);
-        void setKeyMatchType(StringCompareType keyMatchType);
-        void addTransformToAny(const std::function<Any(const Any &)> &transform);
-        void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder *, const Any &)> &transform);
+        /*! \brief
+         * Specifies a rule that maps to an object (collection of named
+         * values) at given path.
+         *
+         * \param[in] path Path to map to.
+         *
+         * It is an error if multiple rules map to the same path, or to
+         * a parent path of the target of an existing rule.
+         * However, it is allowed to have two toObject() rules map to
+         * the same path, provided that the properties they produce are
+         * distinct.
+         */
+        ToObject<FromType> toObject(const KeyValueTreePath& path)
+        {
+            builder_->setToPath(path);
+            return ToObject<FromType>(builder_);
+        }
+    };
 
-        class Data;
+    //! Internal constructor for creating a builder.
+    KeyValueTreeTransformRuleBuilder(internal::KeyValueTreeTransformerImpl* impl,
+                                     const KeyValueTreePath&                prefix);
+    //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
+    KeyValueTreeTransformRuleBuilder(KeyValueTreeTransformRuleBuilder&&) = default;
+    //! Supports returning the builder from IKeyValueTreeTransformRules::addRule().
+    KeyValueTreeTransformRuleBuilder& operator=(KeyValueTreeTransformRuleBuilder&&) = default;
+    ~KeyValueTreeTransformRuleBuilder(); // NOLINT(bugprone-exception-escape)
 
-        internal::KeyValueTreeTransformerImpl *impl_;
-        std::unique_ptr<Data>                  data_;
+    /*! \brief
+     * Specifies a rule that maps a value at given path.
+     *
+     * \tparam FromType Type of value expected at `path`.
+     * \param[in] path Path to map in this rule.
+     *
+     * If the input tree has `path`, but it is not of type `FromType`,
+     * the transform will produce an error.
+     *
+     * It is an error to use the same path in two from() rules.  Similarly,
+     * it is an error to use a child path of a path used in a different
+     * from() rule.
+     */
+    template<typename FromType>
+    AfterFrom<FromType> from(const KeyValueTreePath& path)
+    {
+        setFromPath(path);
+        setExpectedType(typeid(FromType));
+        return AfterFrom<FromType>(this);
+    }
+    /*! \brief
+     * Specifies how strings are matched when matching rules against a path.
+     *
+     * For properties of the object at `path`, `keyMatchType` is used for
+     * string comparison.
+     *
+     * This rule must be specified first for a path, before any other
+     * from() rule specifies the path or a subpath.
+     * The rule only applies to immediate properties at the given path, not
+     * recursively.
+     * It is an error to specify the match type multiple times for a path.
+     */
+    void keyMatchType(const KeyValueTreePath& path, StringCompareType keyMatchType)
+    {
+        setFromPath(path);
+        setKeyMatchType(keyMatchType);
+    }
+
+private:
+    void setFromPath(const KeyValueTreePath& path);
+    void setExpectedType(const std::type_index& type);
+    void setToPath(const KeyValueTreePath& path);
+    void setKeyMatchType(StringCompareType keyMatchType);
+    void addTransformToAny(const std::function<Any(const Any&)>& transform);
+    void addTransformToObject(const std::function<void(KeyValueTreeObjectBuilder*, const Any&)>& transform);
+
+    class Data;
+
+    internal::KeyValueTreeTransformerImpl* impl_;
+    std::unique_ptr<Data>                  data_;
 };
 
 class KeyValueTreeTransformer
 {
-    public:
-        KeyValueTreeTransformer();
-        ~KeyValueTreeTransformer();
+public:
+    KeyValueTreeTransformer();
+    ~KeyValueTreeTransformer();
 
-        IKeyValueTreeTransformRules *rules();
+    IKeyValueTreeTransformRules* rules();
 
-        std::vector<KeyValueTreePath> mappedPaths() const;
+    std::vector<KeyValueTreePath> mappedPaths() const;
 
-        KeyValueTreeTransformResult
-        transform(const KeyValueTreeObject  &tree,
-                  IKeyValueTreeErrorHandler *errorHandler) const;
+    KeyValueTreeTransformResult transform(const KeyValueTreeObject&  tree,
+                                          IKeyValueTreeErrorHandler* errorHandler) const;
 
-    private:
-        PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
+private:
+    PrivateImplPointer<internal::KeyValueTreeTransformerImpl> impl_;
 };
 
 class IKeyValueTreeBackMapping
 {
-    public:
-        virtual ~IKeyValueTreeBackMapping();
+public:
+    virtual ~IKeyValueTreeBackMapping();
 
-        virtual KeyValueTreePath
-        originalPath(const KeyValueTreePath &path) const = 0;
+    virtual KeyValueTreePath originalPath(const KeyValueTreePath& path) const = 0;
 };
 
 class KeyValueTreeTransformResult
 {
-    public:
-        KeyValueTreeObject object() { return std::move(object_); }
-        const IKeyValueTreeBackMapping &backMapping() const { return *mapping_; }
+public:
+    KeyValueTreeObject              object() { return std::move(object_); }
+    const IKeyValueTreeBackMapping& backMapping() const { return *mapping_; }
 
-    private:
-        typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
+private:
+    typedef std::unique_ptr<IKeyValueTreeBackMapping> MappingPointer;
 
-        KeyValueTreeTransformResult(KeyValueTreeObject &&object,
-                                    MappingPointer     &&mapping)
-            : object_(std::move(object)), mapping_(std::move(mapping))
-        {
-        }
+    KeyValueTreeTransformResult(KeyValueTreeObject&& object, MappingPointer&& mapping) :
+        object_(std::move(object)),
+        mapping_(std::move(mapping))
+    {
+    }
 
-        KeyValueTreeObject  object_;
-        MappingPointer      mapping_;
+    KeyValueTreeObject object_;
+    MappingPointer     mapping_;
 
-        friend class internal::KeyValueTreeTransformerImpl;
+    friend class internal::KeyValueTreeTransformerImpl;
 };
 
 } // namespace gmx

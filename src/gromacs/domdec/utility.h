@@ -48,23 +48,21 @@
 #include "domdec_internal.h"
 
 /*! \brief Returns true if the DLB state indicates that the balancer is on. */
-static inline bool isDlbOn(const gmx_domdec_comm_t *comm)
+static inline bool isDlbOn(const gmx_domdec_comm_t* comm)
 {
-    return (comm->dlbState == DlbState::onCanTurnOff ||
-            comm->dlbState == DlbState::onUser);
+    return (comm->dlbState == DlbState::onCanTurnOff || comm->dlbState == DlbState::onUser);
 };
 
 /*! \brief Returns true if the DLB state indicates that the balancer is off/disabled.
  */
-static inline bool isDlbDisabled(const DlbState &dlbState)
+static inline bool isDlbDisabled(const DlbState& dlbState)
 {
-    return (dlbState == DlbState::offUser ||
-            dlbState == DlbState::offForever);
+    return (dlbState == DlbState::offUser || dlbState == DlbState::offForever);
 };
 
 /*! \brief Returns true if the DLB state indicates that the balancer is off/disabled.
  */
-static inline bool isDlbDisabled(const gmx_domdec_comm_t *comm)
+static inline bool isDlbDisabled(const gmx_domdec_comm_t* comm)
 {
     return isDlbDisabled(comm->dlbState);
 };
@@ -79,8 +77,7 @@ void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm);
 void check_screw_box(const matrix box);
 
 /*! \brief Return the charge group information flags for charge group cg */
-static inline int ddcginfo(const cginfo_mb_t *cginfo_mb,
-                           int                cg)
+static inline int ddcginfo(const cginfo_mb_t* cginfo_mb, int cg)
 {
     while (cg >= cginfo_mb->cg_end)
     {
@@ -91,7 +88,7 @@ static inline int ddcginfo(const cginfo_mb_t *cginfo_mb,
 };
 
 /*! \brief Returns the number of MD steps for which load has been recorded */
-static inline int dd_load_count(const gmx_domdec_comm_t *comm)
+static inline int dd_load_count(const gmx_domdec_comm_t* comm)
 {
     return (comm->ddSettings.eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
 }
@@ -102,9 +99,7 @@ static inline int dd_load_count(const gmx_domdec_comm_t *comm)
  * \param[in]  f       The vector of forces to be resized
  * \param[out] natoms  New number of atoms to accommodate
  */
-void dd_resize_state(t_state                          *state,
-                     gmx::PaddedHostVector<gmx::RVec> *f,
-                     int                               natoms);
+void dd_resize_state(t_state* state, gmx::PaddedHostVector<gmx::RVec>* f, int natoms);
 
 /*! \brief Enrsure fr, state and f, if != nullptr, can hold numChargeGroups atoms for the Verlet scheme and charge groups for the group scheme
  *
@@ -113,28 +108,21 @@ void dd_resize_state(t_state                          *state,
  * \param[in]  f                The force buffer
  * \param[out] numChargeGroups  Number of charged groups
  */
-void dd_check_alloc_ncg(t_forcerec                       *fr,
-                        t_state                          *state,
-                        gmx::PaddedHostVector<gmx::RVec> *f,
-                        int                               numChargeGroups);
+void dd_check_alloc_ncg(t_forcerec* fr, t_state* state, gmx::PaddedHostVector<gmx::RVec>* f, int numChargeGroups);
 
 /*! \brief Returns a domain-to-domain cutoff distance given an atom-to-atom cutoff */
-static inline real
-atomToAtomIntoDomainToDomainCutoff(const DDSystemInfo &systemInfo,
-                                   real                cutoff)
+static inline real atomToAtomIntoDomainToDomainCutoff(const DDSystemInfo& systemInfo, real cutoff)
 {
     if (systemInfo.useUpdateGroups)
     {
-        cutoff += 2*systemInfo.maxUpdateGroupRadius;
+        cutoff += 2 * systemInfo.maxUpdateGroupRadius;
     }
 
     return cutoff;
 }
 
 /*! \brief Returns an atom-to-domain cutoff distance given a domain-to-domain cutoff */
-static inline real
-domainToDomainIntoAtomToDomainCutoff(const DDSystemInfo &systemInfo,
-                                     real                cutoff)
+static inline real domainToDomainIntoAtomToDomainCutoff(const DDSystemInfo& systemInfo, real cutoff)
 {
     if (systemInfo.useUpdateGroups)
     {

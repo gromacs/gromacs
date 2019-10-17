@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,25 +62,22 @@ class TestFileManager;
  */
 class StdioTestHelper
 {
-    public:
-        //! Creates a helper using the given file manager.
-        explicit StdioTestHelper(TestFileManager *fileManager)
-            : fileManager_(*fileManager)
-        {
-        }
+public:
+    //! Creates a helper using the given file manager.
+    explicit StdioTestHelper(TestFileManager* fileManager) : fileManager_(*fileManager) {}
 
-        /*! \brief Accepts a string as input, writes it to a temporary
-         * file and then reopens stdin to read the contents of that
-         * string.
-         *
-         * \throws FileIOError  when the freopen() fails
-         */
-        void redirectStringToStdin(const char *theString);
+    /*! \brief Accepts a string as input, writes it to a temporary
+     * file and then reopens stdin to read the contents of that
+     * string.
+     *
+     * \throws FileIOError  when the freopen() fails
+     */
+    void redirectStringToStdin(const char* theString);
 
-    private:
-        TestFileManager &fileManager_;
+private:
+    TestFileManager& fileManager_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(StdioTestHelper);
+    GMX_DISALLOW_COPY_AND_ASSIGN(StdioTestHelper);
 };
 
 } // namespace test

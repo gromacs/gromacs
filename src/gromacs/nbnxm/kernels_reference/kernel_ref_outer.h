@@ -33,17 +33,17 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#define UNROLLI    4
-#define UNROLLJ    4
+#define UNROLLI 4
+#define UNROLLJ 4
 
 static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-cluster size");
 
 /* We could use nbat->xstride and nbat->fstride, but macros might be faster */
-#define X_STRIDE   3
-#define F_STRIDE   3
+#define X_STRIDE 3
+#define F_STRIDE 3
 /* Local i-atom buffer strides */
-#define XI_STRIDE  3
-#define FI_STRIDE  3
+#define XI_STRIDE 3
+#define FI_STRIDE 3
 
 
 /* All functionality defines are set here, except for:
@@ -55,112 +55,112 @@ static_assert(UNROLLI == c_nbnxnCpuIClusterSize, "UNROLLI should match the i-clu
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecRF ## ljt ## feg ## _ref
+#    define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecRF##ljt##feg##_ref
 #endif
 #ifdef CALC_COUL_TAB
-#ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTab ## ljt ## feg ## _ref
-#else
-#define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel ## _ElecQSTabTwinCut ## ljt ## feg ## _ref
-#endif
+#    ifndef VDW_CUTOFF_CHECK
+#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTab##ljt##feg##_ref
+#    else
+#        define NBK_FUNC_NAME2(ljt, feg) nbnxn_kernel##_ElecQSTabTwinCut##ljt##feg##_ref
+#    endif
 #endif
 
 #if defined LJ_CUT && !defined LJ_EWALD
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
+#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJ, feg)
 #elif defined LJ_FORCE_SWITCH
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
+#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJFsw, feg)
 #elif defined LJ_POT_SWITCH
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
+#    define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJPsw, feg)
 #elif defined LJ_EWALD
-#ifdef LJ_EWALD_COMB_GEOM
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombGeom, feg)
+#    ifdef LJ_EWALD_COMB_GEOM
+#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombGeom, feg)
+#    else
+#        define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombLB, feg)
+#    endif
 #else
-#define NBK_FUNC_NAME(feg) NBK_FUNC_NAME2(_VdwLJEwCombLB, feg)
-#endif
-#else
-#error "No VdW type defined"
+#    error "No VdW type defined"
 #endif
 
 void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(_F)     // NOLINT(misc-definitions-in-headers)
+        NBK_FUNC_NAME(_F) // NOLINT(misc-definitions-in-headers)
 #else
-#ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(_VF)    // NOLINT(misc-definitions-in-headers)
-#else
-NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
-#endif
+#    ifndef ENERGY_GROUPS
+        NBK_FUNC_NAME(_VF) // NOLINT(misc-definitions-in-headers)
+#    else
+        NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
+#    endif
 #endif
 #undef NBK_FUNC_NAME
 #undef NBK_FUNC_NAME2
-(const NbnxnPairlistCpu     *nbl,
- const nbnxn_atomdata_t     *nbat,
- const interaction_const_t  *ic,
- const rvec                 *shift_vec,
- nbnxn_atomdata_output_t    *out)
+        (const NbnxnPairlistCpu*    nbl,
+         const nbnxn_atomdata_t*    nbat,
+         const interaction_const_t* ic,
+         const rvec*                shift_vec,
+         nbnxn_atomdata_output_t*   out)
 {
     /* Unpack pointers for output */
-    real               *f      = out->f.data();
+    real* f = out->f.data();
 #ifdef CALC_SHIFTFORCES
-    real               *fshift = out->fshift.data();
+    real* fshift = out->fshift.data();
 #endif
 #ifdef CALC_ENERGIES
-    real               *Vvdw   = out->Vvdw.data();
-    real               *Vc     = out->Vc.data();
+    real* Vvdw = out->Vvdw.data();
+    real* Vc   = out->Vc.data();
 #endif
 
-    const nbnxn_cj_t   *l_cj;
-    real                rcut2;
+    const nbnxn_cj_t* l_cj;
+    real              rcut2;
 #ifdef VDW_CUTOFF_CHECK
-    real                rvdw2;
+    real rvdw2;
 #endif
-    int                 ntype2;
-    real                facel;
-    int                 ci, ci_sh;
-    int                 ish, ishf;
-    gmx_bool            do_LJ, half_LJ, do_coul;
-    int                 cjind0, cjind1, cjind;
+    int      ntype2;
+    real     facel;
+    int      ci, ci_sh;
+    int      ish, ishf;
+    gmx_bool do_LJ, half_LJ, do_coul;
+    int      cjind0, cjind1, cjind;
 
-    real                xi[UNROLLI*XI_STRIDE];
-    real                fi[UNROLLI*FI_STRIDE];
-    real                qi[UNROLLI];
+    real xi[UNROLLI * XI_STRIDE];
+    real fi[UNROLLI * FI_STRIDE];
+    real qi[UNROLLI];
 
 #ifdef CALC_ENERGIES
-#ifndef ENERGY_GROUPS
+#    ifndef ENERGY_GROUPS
 
-    real       Vvdw_ci, Vc_ci;
-#else
-    int        egp_mask;
-    int        egp_sh_i[UNROLLI];
-#endif
+    real Vvdw_ci, Vc_ci;
+#    else
+    int         egp_mask;
+    int         egp_sh_i[UNROLLI];
+#    endif
 #endif
 #ifdef LJ_POT_SWITCH
-    real       swV3, swV4, swV5;
-    real       swF2, swF3, swF4;
+    real swV3, swV4, swV5;
+    real swF2, swF3, swF4;
 #endif
 #ifdef LJ_EWALD
-    real        lje_coeff2, lje_coeff6_6;
-#ifdef CALC_ENERGIES
-    real        lje_vc;
-#endif
+    real lje_coeff2, lje_coeff6_6;
+#    ifdef CALC_ENERGIES
+    real lje_vc;
+#    endif
 #endif
 
 #ifdef CALC_COUL_RF
-    real       k_rf2;
-#ifdef CALC_ENERGIES
-    real       k_rf, c_rf;
-#endif
+    real k_rf2;
+#    ifdef CALC_ENERGIES
+    real k_rf, c_rf;
+#    endif
 #endif
 #ifdef CALC_COUL_TAB
-#ifdef CALC_ENERGIES
-    real       halfsp;
-#endif
-#if !GMX_DOUBLE
-    const real            *tab_coul_FDV0;
-#else
-    const real            *tab_coul_F;
-    const real gmx_unused *tab_coul_V;
-#endif
+#    ifdef CALC_ENERGIES
+    real halfsp;
+#    endif
+#    if !GMX_DOUBLE
+    const real* tab_coul_FDV0;
+#    else
+    const real* tab_coul_F;
+    const real gmx_unused* tab_coul_V;
+#    endif
 #endif
 
 #ifdef COUNT_PAIRS
@@ -171,42 +171,42 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
     swV3 = ic->vdw_switch.c3;
     swV4 = ic->vdw_switch.c4;
     swV5 = ic->vdw_switch.c5;
-    swF2 = 3*ic->vdw_switch.c3;
-    swF3 = 4*ic->vdw_switch.c4;
-    swF4 = 5*ic->vdw_switch.c5;
+    swF2 = 3 * ic->vdw_switch.c3;
+    swF3 = 4 * ic->vdw_switch.c4;
+    swF4 = 5 * ic->vdw_switch.c5;
 #endif
 
-    const nbnxn_atomdata_t::Params &nbatParams = nbat->params();
+    const nbnxn_atomdata_t::Params& nbatParams = nbat->params();
 
 #ifdef LJ_EWALD
-    lje_coeff2   = ic->ewaldcoeff_lj*ic->ewaldcoeff_lj;
-    lje_coeff6_6 = lje_coeff2*lje_coeff2*lje_coeff2/6.0;
-#ifdef CALC_ENERGIES
-    lje_vc       = ic->sh_lj_ewald;
-#endif
+    lje_coeff2   = ic->ewaldcoeff_lj * ic->ewaldcoeff_lj;
+    lje_coeff6_6 = lje_coeff2 * lje_coeff2 * lje_coeff2 / 6.0;
+#    ifdef CALC_ENERGIES
+    lje_vc = ic->sh_lj_ewald;
+#    endif
 
-    const real *ljc = nbatParams.nbfp_comb.data();
+    const real* ljc = nbatParams.nbfp_comb.data();
 #endif
 
 #ifdef CALC_COUL_RF
-    k_rf2 = 2*ic->k_rf;
-#ifdef CALC_ENERGIES
+    k_rf2 = 2 * ic->k_rf;
+#    ifdef CALC_ENERGIES
     k_rf = ic->k_rf;
     c_rf = ic->c_rf;
-#endif
+#    endif
 #endif
 #ifdef CALC_COUL_TAB
     const real tab_coul_scale = ic->coulombEwaldTables->scale;
-#ifdef CALC_ENERGIES
-    halfsp = 0.5/tab_coul_scale;
-#endif
+#    ifdef CALC_ENERGIES
+    halfsp = 0.5 / tab_coul_scale;
+#    endif
 
-#if !GMX_DOUBLE
+#    if !GMX_DOUBLE
     tab_coul_FDV0 = ic->coulombEwaldTables->tableFDV0.data();
-#else
-    tab_coul_F    = ic->coulombEwaldTables->tableF.data();
-    tab_coul_V    = ic->coulombEwaldTables->tableV.data();
-#endif
+#    else
+    tab_coul_F = ic->coulombEwaldTables->tableF.data();
+    tab_coul_V = ic->coulombEwaldTables->tableV.data();
+#    endif
 #endif
 
 #ifdef ENERGY_GROUPS
@@ -214,33 +214,33 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
 #endif
 
 
-    rcut2                = ic->rcoulomb*ic->rcoulomb;
+    rcut2 = ic->rcoulomb * ic->rcoulomb;
 #ifdef VDW_CUTOFF_CHECK
-    rvdw2                = ic->rvdw*ic->rvdw;
+    rvdw2 = ic->rvdw * ic->rvdw;
 #endif
 
-    ntype2               = nbatParams.numTypes*2;
-    const real *nbfp     = nbatParams.nbfp.data();
-    const real *q        = nbatParams.q.data();
-    const int  *type     = nbatParams.type.data();
+    ntype2               = nbatParams.numTypes * 2;
+    const real* nbfp     = nbatParams.nbfp.data();
+    const real* q        = nbatParams.q.data();
+    const int*  type     = nbatParams.type.data();
     facel                = ic->epsfac;
-    const real *shiftvec = shift_vec[0];
-    const real *x        = nbat->x().data();
+    const real* shiftvec = shift_vec[0];
+    const real* x        = nbat->x().data();
 
     l_cj = nbl->cj.data();
 
-    for (const nbnxn_ci_t &ciEntry : nbl->ci)
+    for (const nbnxn_ci_t& ciEntry : nbl->ci)
     {
         int i, d;
 
-        ish              = (ciEntry.shift & NBNXN_CI_SHIFT);
+        ish = (ciEntry.shift & NBNXN_CI_SHIFT);
         /* x, f and fshift are assumed to be stored with stride 3 */
-        ishf             = ish*DIM;
-        cjind0           = ciEntry.cj_ind_start;
-        cjind1           = ciEntry.cj_ind_end;
+        ishf   = ish * DIM;
+        cjind0 = ciEntry.cj_ind_start;
+        cjind1 = ciEntry.cj_ind_end;
         /* Currently only works super-cells equal to sub-cells */
-        ci               = ciEntry.ci;
-        ci_sh            = (ish == CENTRAL ? ci : -1);
+        ci    = ciEntry.ci;
+        ci_sh = (ish == CENTRAL ? ci : -1);
 
         /* We have 5 LJ/C combinations, but use only three inner loops,
          * as the other combinations are unlikely and/or not much faster:
@@ -253,32 +253,33 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
         half_LJ = (((ciEntry.shift & NBNXN_CI_HALF_LJ(0)) != 0) || !do_LJ) && do_coul;
 #ifdef CALC_ENERGIES
 
-#ifdef LJ_EWALD
+#    ifdef LJ_EWALD
         gmx_bool do_self = TRUE;
-#else
+#    else
         gmx_bool do_self = do_coul;
-#endif
+#    endif
 
-#ifndef ENERGY_GROUPS
+#    ifndef ENERGY_GROUPS
         Vvdw_ci = 0;
         Vc_ci   = 0;
-#else
+#    else
         for (i = 0; i < UNROLLI; i++)
         {
-            egp_sh_i[i] = ((nbatParams.energrp[ci] >> (i*nbatParams.neg_2log)) & egp_mask)*nbatParams.nenergrp;
+            egp_sh_i[i] = ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask)
+                          * nbatParams.nenergrp;
         }
-#endif
+#    endif
 #endif
 
         for (i = 0; i < UNROLLI; i++)
         {
             for (d = 0; d < DIM; d++)
             {
-                xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
-                fi[i*FI_STRIDE+d] = 0;
+                xi[i * XI_STRIDE + d] = x[(ci * UNROLLI + i) * X_STRIDE + d] + shiftvec[ishf + d];
+                fi[i * FI_STRIDE + d] = 0;
             }
 
-            qi[i] = facel*q[ci*UNROLLI+i];
+            qi[i] = facel * q[ci * UNROLLI + i];
         }
 
 #ifdef CALC_ENERGIES
@@ -286,38 +287,42 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
         {
             real Vc_sub_self;
 
-#ifdef CALC_COUL_RF
-            Vc_sub_self = 0.5*c_rf;
-#endif
-#ifdef CALC_COUL_TAB
-#if GMX_DOUBLE
-            Vc_sub_self = 0.5*tab_coul_V[0];
-#else
-            Vc_sub_self = 0.5*tab_coul_FDV0[2];
-#endif
-#endif
+#    ifdef CALC_COUL_RF
+            Vc_sub_self = 0.5 * c_rf;
+#    endif
+#    ifdef CALC_COUL_TAB
+#        if GMX_DOUBLE
+            Vc_sub_self = 0.5 * tab_coul_V[0];
+#        else
+            Vc_sub_self = 0.5 * tab_coul_FDV0[2];
+#        endif
+#    endif
 
             if (l_cj[ciEntry.cj_ind_start].cj == ci_sh)
             {
                 for (i = 0; i < UNROLLI; i++)
                 {
                     int egp_ind;
-#ifdef ENERGY_GROUPS
-                    egp_ind = egp_sh_i[i] + ((nbatParams.energrp[ci] >> (i*nbatParams.neg_2log)) & egp_mask);
-#else
+#    ifdef ENERGY_GROUPS
+                    egp_ind = egp_sh_i[i]
+                              + ((nbatParams.energrp[ci] >> (i * nbatParams.neg_2log)) & egp_mask);
+#    else
                     egp_ind = 0;
-#endif
+#    endif
                     /* Coulomb self interaction */
-                    Vc[egp_ind]   -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
+                    Vc[egp_ind] -= qi[i] * q[ci * UNROLLI + i] * Vc_sub_self;
 
-#ifdef LJ_EWALD
+#    ifdef LJ_EWALD
                     /* LJ Ewald self interaction */
-                    Vvdw[egp_ind] += 0.5*nbatParams.nbfp[nbatParams.type[ci*UNROLLI+i]*(nbatParams.numTypes + 1)*2]/6*lje_coeff6_6;
-#endif
+                    Vvdw[egp_ind] +=
+                            0.5
+                            * nbatParams.nbfp[nbatParams.type[ci * UNROLLI + i] * (nbatParams.numTypes + 1) * 2]
+                            / 6 * lje_coeff6_6;
+#    endif
                 }
             }
         }
-#endif  /* CALC_ENERGIES */
+#endif /* CALC_ENERGIES */
 
         cjind = cjind0;
         while (cjind < cjind1 && nbl->cj[cjind].excl != 0xffff)
@@ -372,7 +377,7 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
         {
             for (d = 0; d < DIM; d++)
             {
-                f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
+                f[(ci * UNROLLI + i) * F_STRIDE + d] += fi[i * FI_STRIDE + d];
             }
         }
 #ifdef CALC_SHIFTFORCES
@@ -383,17 +388,17 @@ NBK_FUNC_NAME(_VgrpF) // NOLINT(misc-definitions-in-headers)
             {
                 for (d = 0; d < DIM; d++)
                 {
-                    fshift[ishf+d] += fi[i*FI_STRIDE+d];
+                    fshift[ishf + d] += fi[i * FI_STRIDE + d];
                 }
             }
         }
 #endif
 
 #ifdef CALC_ENERGIES
-#ifndef ENERGY_GROUPS
+#    ifndef ENERGY_GROUPS
         *Vvdw += Vvdw_ci;
-        *Vc   += Vc_ci;
-#endif
+        *Vc += Vc_ci;
+#    endif
 #endif
     }
 

@@ -81,15 +81,12 @@ namespace test
  * \throws InconsistentInputError When builder can not create the CoordinateFile.
  * \returns unique_ptr to new CoordinateFile object.
  */
-inline TrajectoryFrameWriterPointer
-createMinimalTrajectoryFrameWriter(const std::string         &filename,
-                                   const TopologyInformation &topology,
-                                   const Selection           &selection,
-                                   OutputRequirements         requirements)
+inline TrajectoryFrameWriterPointer createMinimalTrajectoryFrameWriter(const std::string& filename,
+                                                                       const TopologyInformation& topology,
+                                                                       const Selection& selection,
+                                                                       OutputRequirements requirements)
 {
-    return createTrajectoryFrameWriter(topology.mtop(),
-                                       selection,
-                                       filename,
+    return createTrajectoryFrameWriter(topology.mtop(), selection, filename,
                                        topology.hasTopology() ? topology.copyAtoms() : nullptr,
                                        requirements);
 }
@@ -98,55 +95,53 @@ createMinimalTrajectoryFrameWriter(const std::string         &filename,
  */
 class ModuleSelection
 {
-    public:
-        ModuleSelection() : manager_(&sc_)
-        {
-            options_.addManager(&manager_);
-            sc_.setReferencePosType("atom");
-            sc_.setOutputPosType("atom");
-            top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb"));
-            sc_.setTopology(top_.mtop(), 0);
-        }
+public:
+    ModuleSelection() : manager_(&sc_)
+    {
+        options_.addManager(&manager_);
+        sc_.setReferencePosType("atom");
+        sc_.setOutputPosType("atom");
+        top_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb"));
+        sc_.setTopology(top_.mtop(), 0);
+    }
 
-        /*! \brief
-         * Method to add a valid selection option to the Module, or an invalid
-         * one for testing.
-         *
-         * \param[in] sel Selection to add option to.
-         * \param[in] useValid Set if the added selection should be valid for the module.
-         */
-        void addOptionForSelection(Selection *sel, bool useValid);
+    /*! \brief
+     * Method to add a valid selection option to the Module, or an invalid
+     * one for testing.
+     *
+     * \param[in] sel Selection to add option to.
+     * \param[in] useValid Set if the added selection should be valid for the module.
+     */
+    void addOptionForSelection(Selection* sel, bool useValid);
 
-        /*! \brief
-         * Set the actual values for the selection.
-         *
-         * \param[in] options Option to set values for.
-         * \param[in] sel Selection to use.
-         * \param[in] useValid Set if the added selection should be valid for the module.
-         */
-        void setSelectionOptionValues(Options *options, Selection *sel, bool useValid);
+    /*! \brief
+     * Set the actual values for the selection.
+     *
+     * \param[in] options Option to set values for.
+     * \param[in] sel Selection to use.
+     * \param[in] useValid Set if the added selection should be valid for the module.
+     */
+    void setSelectionOptionValues(Options* options, Selection* sel, bool useValid);
 
-        /*! \brief
-         * Get pointer to options to set values.
-         *
-         * \returns Pointer to options.
-         */
-        Options *getOption() { return &options_; }
+    /*! \brief
+     * Get pointer to options to set values.
+     *
+     * \returns Pointer to options.
+     */
+    Options* getOption() { return &options_; }
 
-    private:
-        //! Selection collection used for handling test selection.
-        SelectionCollection    sc_;
-        //! Selection manager for test selection.
-        SelectionOptionManager manager_;
-        //! Options manager for test selection input.
-        Options                options_;
-        //! Topology information needed for test selection atoms.
-        TopologyInformation    top_;
-
+private:
+    //! Selection collection used for handling test selection.
+    SelectionCollection sc_;
+    //! Selection manager for test selection.
+    SelectionOptionManager manager_;
+    //! Options manager for test selection input.
+    Options options_;
+    //! Topology information needed for test selection atoms.
+    TopologyInformation top_;
 };
 
-inline void
-ModuleSelection::addOptionForSelection(Selection *sel, bool useValid)
+inline void ModuleSelection::addOptionForSelection(Selection* sel, bool useValid)
 {
     if (useValid)
     {
@@ -158,8 +153,7 @@ ModuleSelection::addOptionForSelection(Selection *sel, bool useValid)
     }
 }
 
-inline void
-ModuleSelection::setSelectionOptionValues(Options *options, Selection *sel, bool useValid)
+inline void ModuleSelection::setSelectionOptionValues(Options* options, Selection* sel, bool useValid)
 {
     OptionsAssigner assigner(options);
     assigner.start();
@@ -182,35 +176,29 @@ ModuleSelection::setSelectionOptionValues(Options *options, Selection *sel, bool
 /*! \libinternal \brief
  * Test fixture to test matching file types for modules.
  */
-class ModuleTest : public gmx::test::CommandLineTestBase,
-                   public ::testing::WithParamInterface<const char *>
+class ModuleTest : public gmx::test::CommandLineTestBase, public ::testing::WithParamInterface<const char*>
 {
-    public:
-        /*! \brief
-         * Run the builder to create an TrajectoryFrameWriter during tests.
-         *
-         * \param[in] filename Name for output file, to determine filetype during construction.
-         * \param[in] requirements Requirements for adding to the object.
-         * \returns The newly created object.
-         */
-        TrajectoryFrameWriterPointer
-        runTest(const char *filename, const OutputRequirements &requirements)
-        {
-            return createMinimalTrajectoryFrameWriter(filename,
-                                                      dummyTopology_,
-                                                      dummySelection_,
-                                                      requirements);
-        }
-        //! Add topology information to test if needed.
-        void addTopology()
-        {
-            dummyTopology_.fillFromInputFile(
-                    TestFileManager::getInputFilePath("lysozyme.pdb"));
-        }
-        //! Dummy topology to use to create CoordinateFile.
-        TopologyInformation          dummyTopology_;
-        //! Dummy selection.
-        Selection                    dummySelection_;
+public:
+    /*! \brief
+     * Run the builder to create an TrajectoryFrameWriter during tests.
+     *
+     * \param[in] filename Name for output file, to determine filetype during construction.
+     * \param[in] requirements Requirements for adding to the object.
+     * \returns The newly created object.
+     */
+    TrajectoryFrameWriterPointer runTest(const char* filename, const OutputRequirements& requirements)
+    {
+        return createMinimalTrajectoryFrameWriter(filename, dummyTopology_, dummySelection_, requirements);
+    }
+    //! Add topology information to test if needed.
+    void addTopology()
+    {
+        dummyTopology_.fillFromInputFile(TestFileManager::getInputFilePath("lysozyme.pdb"));
+    }
+    //! Dummy topology to use to create CoordinateFile.
+    TopologyInformation dummyTopology_;
+    //! Dummy selection.
+    Selection dummySelection_;
 };
 
 } // namespace test

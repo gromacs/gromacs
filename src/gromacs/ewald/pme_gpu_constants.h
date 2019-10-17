@@ -54,7 +54,7 @@
 #include "config.h"
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
+#    include "gromacs/gpu_utils/cuda_arch_utils.cuh" // for warp_size
 #endif
 
 /* General settings for PME GPU behaviour */
@@ -125,7 +125,7 @@ constexpr int c_pmeGpuOrder = 4;
  * The assumption is currently that any thread processes only a single atom's contributions.
  * TODO: this assumption leads to minimum execution width of 16. See Redmine #2516
  */
-constexpr int c_pmeSpreadGatherThreadsPerAtom  = c_pmeGpuOrder*c_pmeGpuOrder;
+constexpr int c_pmeSpreadGatherThreadsPerAtom = c_pmeGpuOrder * c_pmeGpuOrder;
 
 //! Number of threads per atom when order threads are used
 constexpr int c_pmeSpreadGatherThreadsPerAtom4ThPerAtom = c_pmeGpuOrder;
@@ -135,7 +135,7 @@ constexpr int c_pmeSpreadGatherThreadsPerAtom4ThPerAtom = c_pmeGpuOrder;
  * Due to the one thread per atom and order=4 implementation constraints, order^2 threads
  * should execute without synchronization needed. See c_pmeSpreadGatherThreadsPerAtom
  */
-constexpr int c_pmeSpreadGatherMinWarpSize  = c_pmeSpreadGatherThreadsPerAtom;
+constexpr int c_pmeSpreadGatherMinWarpSize = c_pmeSpreadGatherThreadsPerAtom;
 
 //! Minimum warp size if order threads pera atom are used instead of order^2
 constexpr int c_pmeSpreadGatherMinWarpSize4ThPerAtom = c_pmeSpreadGatherThreadsPerAtom4ThPerAtom;
@@ -161,8 +161,8 @@ constexpr int c_pmeAtomDataAlignment = 64;
 //! Spreading max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime in most cases
 constexpr int c_spreadMaxWarpsPerBlock = 8;
 
-//! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max. occupancy and min. runtime
-//! (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
+//! Solving kernel max block width in warps picked among powers of 2 (2, 4, 8, 16) for max.
+//! occupancy and min. runtime (560Ti (CC2.1), 660Ti (CC3.0) and 750 (CC5.0)))
 constexpr int c_solveMaxWarpsPerBlock = 8;
 
 //! Gathering max block width in warps - picked empirically among 2, 4, 8, 16 for max. occupancy and min. runtime
@@ -179,13 +179,14 @@ constexpr int c_gatherMaxWarpsPerBlock = 4;
 
 /*! \brief
  * The number of atoms processed by a single warp in spread/gather.
- * This macro depends on the templated order parameter (2 atoms per warp for order 4 and warp_size of 32).
- * It is mostly used for spline data layout tweaked for coalesced access.
+ * This macro depends on the templated order parameter (2 atoms per warp for order 4 and warp_size
+ * of 32). It is mostly used for spline data layout tweaked for coalesced access.
  */
-constexpr int c_pmeSpreadGatherAtomsPerWarp  = (warp_size / c_pmeSpreadGatherThreadsPerAtom);
+constexpr int c_pmeSpreadGatherAtomsPerWarp = (warp_size / c_pmeSpreadGatherThreadsPerAtom);
 
 //! number of atoms per warp when order threads are used per atom
-constexpr int c_pmeSpreadGatherAtomsPerWarp4ThPerAtom = (warp_size / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom);
+constexpr int c_pmeSpreadGatherAtomsPerWarp4ThPerAtom =
+        (warp_size / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom);
 
 //! Spreading max block size in threads
 constexpr int c_spreadMaxThreadsPerBlock = c_spreadMaxWarpsPerBlock * warp_size;

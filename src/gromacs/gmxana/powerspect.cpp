@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,47 +44,45 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-static void addtoavgenergy(t_complex *list, real *result, int size, int tsteps)
+static void addtoavgenergy(t_complex* list, real* result, int size, int tsteps)
 {
     int i;
     for (i = 0; i < size; i++)
     {
-        result[i] += cabs2(list[i])/tsteps;
+        result[i] += cabs2(list[i]) / tsteps;
     }
-
 }
 
 
-void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins,
-                   gmx::ArrayRef<const std::string> outfiles)
+void powerspectavg(real*** intftab, int tsteps, int xbins, int ybins, gmx::ArrayRef<const std::string> outfiles)
 {
     /*Fourier plans and output;*/
     gmx_fft_t  fftp;
-    t_complex *ftspect1;            /* Spatial FFT of interface for each time frame and interface ftint[time,xycoord][0], ftintf[time,xycoord][1] for interface 1 and 2                 respectively */
-    t_complex *ftspect2;
-    real      *pspectavg1;          /*power -spectrum 1st interface*/
-    real      *pspectavg2;          /* -------------- 2nd interface*/
-    real      *temp;
-    FILE      *datfile1, *datfile2; /*data-files with interface data*/
+    t_complex* ftspect1; /* Spatial FFT of interface for each time frame and interface ftint[time,xycoord][0], ftintf[time,xycoord][1] for interface 1 and 2                 respectively */
+    t_complex* ftspect2;
+    real*      pspectavg1; /*power -spectrum 1st interface*/
+    real*      pspectavg2; /* -------------- 2nd interface*/
+    real*      temp;
+    FILE *     datfile1, *datfile2; /*data-files with interface data*/
     int        n;                   /*time index*/
-    int        fy  = ybins/2+1;     /* number of (symmetric) fourier y elements; */
-    int        rfl = xbins*fy;      /*length of real - DFT == Symmetric 2D matrix*/
+    int        fy  = ybins / 2 + 1; /* number of (symmetric) fourier y elements; */
+    int        rfl = xbins * fy;    /*length of real - DFT == Symmetric 2D matrix*/
 
-/*Prepare data structures for FFT, with time averaging of power spectrum*/
+    /*Prepare data structures for FFT, with time averaging of power spectrum*/
     if (gmx_fft_init_2d_real(&fftp, xbins, ybins, GMX_FFT_FLAG_NONE) != 0)
     {
         gmx_fatal(FARGS, "Error allocating FFT");
     }
 
-/*Initialize arrays*/
+    /*Initialize arrays*/
     snew(ftspect1, rfl);
     snew(ftspect2, rfl);
     snew(temp, rfl);
     snew(pspectavg1, rfl);
     snew(pspectavg2, rfl);
 
-/*Fouriertransform directly (no normalization or anything)*/
-/*NB! Check carefully indexes here*/
+    /*Fouriertransform directly (no normalization or anything)*/
+    /*NB! Check carefully indexes here*/
 
     for (n = 0; n < tsteps; n++)
     {
@@ -101,29 +99,27 @@ void powerspectavg(real ***intftab, int tsteps, int xbins, int ybins,
     datfile1 = gmx_ffopen(outfiles[0], "w");
     datfile2 = gmx_ffopen(outfiles[1], "w");
 
-/*Filling dat files with spectral data*/
+    /*Filling dat files with spectral data*/
     fprintf(datfile1, "%s\n", "kx\t ky\t\tPower(kx,ky)");
     fprintf(datfile2, "%s\n", "kx\t ky\t\tPower(kx,ky)");
     for (n = 0; n < rfl; n++)
     {
         fprintf(datfile1, "%d\t%d\t %8.6f\n", (n / fy), (n % fy), pspectavg1[n]);
-        fprintf(datfile2, "%d\t%d\t %8.6f\n", (n /fy), (n % fy), pspectavg2[n]);
+        fprintf(datfile2, "%d\t%d\t %8.6f\n", (n / fy), (n % fy), pspectavg2[n]);
     }
     gmx_ffclose(datfile1);
     gmx_ffclose(datfile2);
 
     sfree(ftspect1);
     sfree(ftspect2);
-
 }
 
-void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t, int xb, int yb,
-                        gmx::ArrayRef<const std::string> outfiles)
+void powerspectavg_intf(t_interf*** if1, t_interf*** if2, int t, int xb, int yb, gmx::ArrayRef<const std::string> outfiles)
 {
-    real ***surf;
+    real*** surf;
 
-    int     xy = xb*yb;
-    int     i, n;
+    int xy = xb * yb;
+    int i, n;
 
     snew(surf, 2);
     snew(surf[0], t);

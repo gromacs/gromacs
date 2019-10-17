@@ -75,83 +75,72 @@ class GridSet;
  */
 class PairlistSet
 {
-    public:
-        //! Constructor: initializes the pairlist set as empty
-        PairlistSet(gmx::InteractionLocality    locality,
-                    const PairlistParams       &listParams);
+public:
+    //! Constructor: initializes the pairlist set as empty
+    PairlistSet(gmx::InteractionLocality locality, const PairlistParams& listParams);
 
-        ~PairlistSet();
+    ~PairlistSet();
 
-        //! Constructs the pairlists in the set using the coordinates in \p nbat
-        void constructPairlists(const Nbnxm::GridSet          &gridSet,
-                                gmx::ArrayRef<PairsearchWork>  searchWork,
-                                nbnxn_atomdata_t              *nbat,
-                                const t_blocka                *excl,
-                                int                            minimumIlistCountForGpuBalancing,
-                                t_nrnb                        *nrnb,
-                                SearchCycleCounting           *searchCycleCounting);
+    //! Constructs the pairlists in the set using the coordinates in \p nbat
+    void constructPairlists(const Nbnxm::GridSet&         gridSet,
+                            gmx::ArrayRef<PairsearchWork> searchWork,
+                            nbnxn_atomdata_t*             nbat,
+                            const t_blocka*               excl,
+                            int                           minimumIlistCountForGpuBalancing,
+                            t_nrnb*                       nrnb,
+                            SearchCycleCounting*          searchCycleCounting);
 
-        //! Dispatch the kernel for dynamic pairlist pruning
-        void dispatchPruneKernel(const nbnxn_atomdata_t *nbat,
-                                 const rvec             *shift_vec);
+    //! Dispatch the kernel for dynamic pairlist pruning
+    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* shift_vec);
 
-        //! Returns the locality
-        gmx::InteractionLocality locality() const
+    //! Returns the locality
+    gmx::InteractionLocality locality() const { return locality_; }
+
+    //! Returns the lists of CPU pairlists
+    gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
+
+    //! Returns a pointer to the GPU pairlist, nullptr when not present
+    const NbnxnPairlistGpu* gpuList() const
+    {
+        if (!gpuLists_.empty())
         {
-            return locality_;
+            return &gpuLists_[0];
         }
-
-        //! Returns the lists of CPU pairlists
-        gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const
+        else
         {
-            return cpuLists_;
+            return nullptr;
         }
+    }
 
-        //! Returns a pointer to the GPU pairlist, nullptr when not present
-        const NbnxnPairlistGpu *gpuList() const
-        {
-            if (!gpuLists_.empty())
-            {
-                return &gpuLists_[0];
-            }
-            else
-            {
-                return nullptr;
-            }
-        }
+    //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
+    gmx::ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
 
-        //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
-        gmx::ArrayRef < const std::unique_ptr < t_nblist>> fepLists() const
-        {
-            return fepLists_;
-        }
+private:
+    //! The locality of the pairlist set
+    gmx::InteractionLocality locality_;
+    //! List of pairlists in CPU layout
+    std::vector<NbnxnPairlistCpu> cpuLists_;
+    //! List of working list for rebalancing CPU lists
+    std::vector<NbnxnPairlistCpu> cpuListsWork_;
+    //! List of pairlists in GPU layout
+    std::vector<NbnxnPairlistGpu> gpuLists_;
+    //! Pairlist parameters describing setup and ranges
+    const PairlistParams& params_;
+    //! Tells whether multiple lists get merged into one (the first) after creation
+    bool combineLists_;
+    //! Tells whether the lists is of CPU type, otherwise GPU type
+    gmx_bool isCpuType_;
+    //! Lists for perturbed interactions in simple atom-atom layout
+    std::vector<std::unique_ptr<t_nblist>> fepLists_;
 
-    private:
-        //! The locality of the pairlist set
-        gmx::InteractionLocality       locality_;
-        //! List of pairlists in CPU layout
-        std::vector<NbnxnPairlistCpu>  cpuLists_;
-        //! List of working list for rebalancing CPU lists
-        std::vector<NbnxnPairlistCpu>  cpuListsWork_;
-        //! List of pairlists in GPU layout
-        std::vector<NbnxnPairlistGpu>  gpuLists_;
-        //! Pairlist parameters describing setup and ranges
-        const PairlistParams          &params_;
-        //! Tells whether multiple lists get merged into one (the first) after creation
-        bool                           combineLists_;
-        //! Tells whether the lists is of CPU type, otherwise GPU type
-        gmx_bool                       isCpuType_;
-        //! Lists for perturbed interactions in simple atom-atom layout
-        std::vector < std::unique_ptr < t_nblist>> fepLists_;
-
-    public:
-        /* Pair counts for flop counting */
-        //! Total number of atom pairs for LJ+Q kernel
-        int natpair_ljq_;
-        //! Total number of atom pairs for LJ kernel
-        int natpair_lj_;
-        //! Total number of atom pairs for Q kernel
-        int natpair_q_;
+public:
+    /* Pair counts for flop counting */
+    //! Total number of atom pairs for LJ+Q kernel
+    int natpair_ljq_;
+    //! Total number of atom pairs for LJ kernel
+    int natpair_lj_;
+    //! Total number of atom pairs for Q kernel
+    int natpair_q_;
 };
 
 #endif

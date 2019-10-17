@@ -62,26 +62,26 @@
  * \param[in]     cellOffset        first cell
  * \param[in]     numAtomsPerCell   number of atoms per cell
  */
-__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColumns,
-                                             float *  __restrict__       xnb,
-                                             bool                        setFillerCoords,
-                                             const rvec *  __restrict__  x,
-                                             const int *  __restrict__   a,
-                                             const int *  __restrict__   cxy_na,
-                                             const int *  __restrict__   cxy_ind,
-                                             int                         cellOffset,
-                                             int                         numAtomsPerCell);
+__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
+                                             float* __restrict__ xnb,
+                                             bool setFillerCoords,
+                                             const rvec* __restrict__ x,
+                                             const int* __restrict__ a,
+                                             const int* __restrict__ cxy_na,
+                                             const int* __restrict__ cxy_ind,
+                                             int cellOffset,
+                                             int numAtomsPerCell);
 
 
-__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColumns,
-                                             float *  __restrict__       xnb,
-                                             bool                        setFillerCoords,
-                                             const rvec *  __restrict__  x,
-                                             const int *  __restrict__   a,
-                                             const int *  __restrict__   cxy_na,
-                                             const int *  __restrict__   cxy_ind,
-                                             int                         cellOffset,
-                                             int                         numAtomsPerCell)
+__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
+                                             float* __restrict__ xnb,
+                                             bool setFillerCoords,
+                                             const rvec* __restrict__ x,
+                                             const int* __restrict__ a,
+                                             const int* __restrict__ cxy_na,
+                                             const int* __restrict__ cxy_ind,
+                                             int cellOffset,
+                                             int numAtomsPerCell)
 {
 
 
@@ -94,13 +94,12 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
     {
 
         int na = cxy_na[cxy];
-        int a0 = (cellOffset + cxy_ind[cxy])*numAtomsPerCell;
+        int a0 = (cellOffset + cxy_ind[cxy]) * numAtomsPerCell;
         int na_round;
         if (setFillerCoords)
         {
             // TODO: This can be done more efficiently
-            na_round =
-                (cxy_ind[cxy+1] - cxy_ind[cxy])*numAtomsPerCell;
+            na_round = (cxy_ind[cxy + 1] - cxy_ind[cxy]) * numAtomsPerCell;
         }
         else
         {
@@ -114,19 +113,19 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
         /* map parallelism within a cell to x component of CUDA block index linearized
          * with threads within a block */
         int i, j0;
-        i = blockIdx.x*blockDim.x+threadIdx.x;
+        i = blockIdx.x * blockDim.x + threadIdx.x;
 
-        j0 = a0*STRIDE_XYZQ;
+        j0 = a0 * STRIDE_XYZQ;
 
         // destination address where x shoud be stored in nbnxm layout
-        float3 *x_dest = (float3 *)&xnb[j0 + 4*i];
+        float3* x_dest = (float3*)&xnb[j0 + 4 * i];
 
         /* perform conversion of each element */
         if (i < na_round)
         {
             if (i < na)
             {
-                *x_dest = *((float3 *)x[a[a0 + i]]);
+                *x_dest = *((float3*)x[a[a0 + i]]);
             }
             else
             {
@@ -134,7 +133,6 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
             }
         }
     }
-
 }
 
 /*! \brief CUDA kernel to sum up the force components
@@ -149,38 +147,36 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int                         numColu
  * \param[in]     atomStart        Start atom index.
  * \param[in]     numAtoms         Number of atoms.
  */
-template <bool accumulateForce, bool addPmeForce>
-__global__ void
-nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__  d_fNB,
-                                 const float3 *__restrict__  d_fPme,
-                                 float3                     *d_fTotal,
-                                 const int *__restrict__     d_cell,
-                                 const int                   atomStart,
-                                 const int                   numAtoms);
-template <bool accumulateForce, bool addPmeForce>
-__global__ void
-nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__  d_fNB,
-                                 const float3 *__restrict__  d_fPme,
-                                 float3                     *d_fTotal,
-                                 const int *__restrict__     d_cell,
-                                 const int                   atomStart,
-                                 const int                   numAtoms)
+template<bool accumulateForce, bool addPmeForce>
+__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ d_fNB,
+                                                 const float3* __restrict__ d_fPme,
+                                                 float3* d_fTotal,
+                                                 const int* __restrict__ d_cell,
+                                                 const int atomStart,
+                                                 const int numAtoms);
+template<bool accumulateForce, bool addPmeForce>
+__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ d_fNB,
+                                                 const float3* __restrict__ d_fPme,
+                                                 float3* d_fTotal,
+                                                 const int* __restrict__ d_cell,
+                                                 const int atomStart,
+                                                 const int numAtoms)
 {
 
     /* map particle-level parallelism to 1D CUDA thread and block index */
-    int threadIndex = blockIdx.x*blockDim.x+threadIdx.x;
+    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
     /* perform addition for each particle*/
     if (threadIndex < numAtoms)
     {
 
-        int     i        = d_cell[atomStart+threadIndex];
-        float3 *fDest    = (float3 *)&d_fTotal[atomStart+threadIndex];
+        int     i     = d_cell[atomStart + threadIndex];
+        float3* fDest = (float3*)&d_fTotal[atomStart + threadIndex];
         float3  temp;
 
         if (accumulateForce)
         {
-            temp  = *fDest;
+            temp = *fDest;
             temp += d_fNB[i];
         }
         else
@@ -189,10 +185,9 @@ nbnxn_gpu_add_nbat_f_to_f_kernel(const float3 *__restrict__  d_fNB,
         }
         if (addPmeForce)
         {
-            temp += d_fPme[atomStart+threadIndex];
+            temp += d_fPme[atomStart + threadIndex];
         }
         *fDest = temp;
-
     }
     return;
 }

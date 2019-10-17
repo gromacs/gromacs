@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,45 +45,32 @@
 namespace gmx
 {
 
-static inline double gmx_simdcall
-reduce(SimdDouble a)
+static inline double gmx_simdcall reduce(SimdDouble a)
 {
     __m128d b = _mm_add_sd(a.simdInternal_, _mm_permute_pd(a.simdInternal_, _MM_SHUFFLE2(1, 1)));
-    return *reinterpret_cast<double *>(&b);
+    return *reinterpret_cast<double*>(&b);
 }
 
-static inline SimdDouble gmx_simdcall
-fma(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    return {
-               _mm_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-fms(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    return {
-               _mm_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-fnma(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fnma(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    return {
-               _mm_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fnmadd_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-fnms(SimdDouble a, SimdDouble b, SimdDouble c)
+static inline SimdDouble gmx_simdcall fnms(SimdDouble a, SimdDouble b, SimdDouble c)
 {
-    return {
-               _mm_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fnmsub_pd(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_SIMD_DOUBLE_H

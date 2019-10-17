@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/utility/bitmask.h"
 
 //! Implemenation of BITMASK_CLASSNAME
-#define BITMASK_CLASSNAME_(S) BitmaskTest ## S
+#define BITMASK_CLASSNAME_(S) BitmaskTest##S
 //! Returns name of Bitmask test fixture class
 #define BITMASK_CLASSNAME(S) BITMASK_CLASSNAME_(S)
 //! Implementation of BITMASK_TEST_P
@@ -111,7 +111,7 @@ BITMASK_TEST_P(Union) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m1, m2;
     int           i = GetParam();
-    int           j = (i + BITMASK_SIZE/2)%BITMASK_SIZE;
+    int           j = (i + BITMASK_SIZE / 2) % BITMASK_SIZE;
     bitmask_init_bit(&m1, i);
     bitmask_init_bit(&m2, j);
     bitmask_union(&m1, m2);
@@ -135,6 +135,6 @@ BITMASK_TEST_P(ToHex) //NOLINT(misc-definitions-in-headers)
 {
     gmx_bitmask_t m;
     bitmask_clear(&m);
-    bitmask_set_bit(&m, BITMASK_SIZE-1);
-    EXPECT_EQ(to_hex_string(m), "8" + std::string(BITMASK_SIZE/4-1, '0'));
+    bitmask_set_bit(&m, BITMASK_SIZE - 1);
+    EXPECT_EQ(to_hex_string(m), "8" + std::string(BITMASK_SIZE / 4 - 1, '0'));
 }

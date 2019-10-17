@@ -54,19 +54,20 @@ namespace gmx
 
 class DensityFittingAmplitudeLookupTest : public ::testing::Test
 {
-    public:
-        DensityFittingAmplitudeLookupTest()
-        {
-            atoms_.nr      = numberOfAtoms_;
-            atoms_.massT   = masses_.data();
-            atoms_.chargeA = charges_.data();
-        }
-    protected:
-        int               numberOfAtoms_ = 3;
-        std::vector<real> masses_        = {2, 3, 4};
-        std::vector<real> charges_       = {20, 30, 40};
-        t_mdatoms         atoms_         = {};
-        std::vector<int>  lookupIndices_ = { 1, 2 };
+public:
+    DensityFittingAmplitudeLookupTest()
+    {
+        atoms_.nr      = numberOfAtoms_;
+        atoms_.massT   = masses_.data();
+        atoms_.chargeA = charges_.data();
+    }
+
+protected:
+    int               numberOfAtoms_ = 3;
+    std::vector<real> masses_        = { 2, 3, 4 };
+    std::vector<real> charges_       = { 20, 30, 40 };
+    t_mdatoms         atoms_         = {};
+    std::vector<int>  lookupIndices_ = { 1, 2 };
 };
 
 TEST_F(DensityFittingAmplitudeLookupTest, Unity)

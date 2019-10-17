@@ -63,53 +63,54 @@ namespace gmx
 class Constraints;
 class ImdSession;
 class MdrunScheduleWorkload;
-}
+} // namespace gmx
 
 /* Initialization function, also predicts the initial shell postions.
  */
-gmx_shellfc_t *init_shell_flexcon(FILE *fplog,
-                                  const gmx_mtop_t *mtop, int nflexcon,
-                                  int nstcalcenergy,
-                                  bool usingDomainDecomposition);
+gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
+                                  const gmx_mtop_t* mtop,
+                                  int               nflexcon,
+                                  int               nstcalcenergy,
+                                  bool              usingDomainDecomposition);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE                                     *log,
-                         const t_commrec                          *cr,
-                         const gmx_multisim_t                     *ms,
-                         gmx_bool                                  bVerbose,
-                         gmx_enfrot                               *enforcedRotation,
-                         int64_t                                   mdstep,
-                         const t_inputrec                         *inputrec,
-                         gmx::ImdSession                          *imdSession,
-                         pull_t                                   *pull_work,
-                         gmx_bool                                  bDoNS,
-                         int                                       force_flags,
-                         const gmx_localtop_t                     *top,
-                         gmx::Constraints                         *constr,
-                         gmx_enerdata_t                           *enerd,
-                         t_fcdata                                 *fcd,
-                         int                                       natoms,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       x,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       v,
-                         const matrix                              box,
-                         gmx::ArrayRef<real>                       lambda,
-                         history_t                                *hist,
-                         gmx::ArrayRefWithPadding<gmx::RVec>       f,
-                         tensor                                    force_vir,
-                         const t_mdatoms                          *md,
-                         t_nrnb                                   *nrnb,
-                         gmx_wallcycle_t                           wcycle,
-                         t_graph                                  *graph,
-                         gmx_shellfc_t                            *shfc,
-                         t_forcerec                               *fr,
-                         gmx::MdrunScheduleWorkload               *runScheduleWork,
-                         double                                    t,
-                         rvec                                      mu_tot,
-                         const gmx_vsite_t                        *vsite,
-                         const DDBalanceRegionHandler             &ddBalanceRegionHandler);
+void relax_shell_flexcon(FILE*                               log,
+                         const t_commrec*                    cr,
+                         const gmx_multisim_t*               ms,
+                         gmx_bool                            bVerbose,
+                         gmx_enfrot*                         enforcedRotation,
+                         int64_t                             mdstep,
+                         const t_inputrec*                   inputrec,
+                         gmx::ImdSession*                    imdSession,
+                         pull_t*                             pull_work,
+                         gmx_bool                            bDoNS,
+                         int                                 force_flags,
+                         const gmx_localtop_t*               top,
+                         gmx::Constraints*                   constr,
+                         gmx_enerdata_t*                     enerd,
+                         t_fcdata*                           fcd,
+                         int                                 natoms,
+                         gmx::ArrayRefWithPadding<gmx::RVec> x,
+                         gmx::ArrayRefWithPadding<gmx::RVec> v,
+                         const matrix                        box,
+                         gmx::ArrayRef<real>                 lambda,
+                         history_t*                          hist,
+                         gmx::ArrayRefWithPadding<gmx::RVec> f,
+                         tensor                              force_vir,
+                         const t_mdatoms*                    md,
+                         t_nrnb*                             nrnb,
+                         gmx_wallcycle_t                     wcycle,
+                         t_graph*                            graph,
+                         gmx_shellfc_t*                      shfc,
+                         t_forcerec*                         fr,
+                         gmx::MdrunScheduleWorkload*         runScheduleWork,
+                         double                              t,
+                         rvec                                mu_tot,
+                         const gmx_vsite_t*                  vsite,
+                         const DDBalanceRegionHandler&       ddBalanceRegionHandler);
 
 /* Print some final output */
-void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);
+void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
 
 /*! \brief Count the different particle types in a system
  *
@@ -119,7 +120,6 @@ void done_shellfc(FILE *fplog, gmx_shellfc_t *shellfc, int64_t numSteps);
  * \param[in]  mtop  Molecular topology.
  * \returns Array holding the number of particles of a type
  */
-std::array<int, eptNR> countPtypes(FILE             *fplog,
-                                   const gmx_mtop_t *mtop);
+std::array<int, eptNR> countPtypes(FILE* fplog, const gmx_mtop_t* mtop);
 
 #endif

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,60 +42,83 @@
 #include "x11.h"
 #include "xutil.h"
 
-typedef enum {
-    edlgBN, edlgRB, edlgGB, edlgCB, edlgPM, edlgST, edlgET, edlgNR
+typedef enum
+{
+    edlgBN,
+    edlgRB,
+    edlgGB,
+    edlgCB,
+    edlgPM,
+    edlgST,
+    edlgET,
+    edlgNR
 } edlgitem;
-#define XCARET  2
+#define XCARET 2
 
-enum {
-    ITEMOK, RBPRESSED, BNPRESSED, CBPRESSED, ETCHANGED, HELPPRESSED, ENTERPRESSED
+enum
+{
+    ITEMOK,
+    RBPRESSED,
+    BNPRESSED,
+    CBPRESSED,
+    ETCHANGED,
+    HELPPRESSED,
+    ENTERPRESSED
 };
 
 typedef int t_id;
 
-typedef struct {
-    bool bDefault;  /* This is the default button */
+typedef struct
+{
+    bool bDefault; /* This is the default button */
 } t_button;
 
-typedef struct {
-    bool bSelect;   /* Is this rb selected ? */
+typedef struct
+{
+    bool bSelect; /* Is this rb selected ? */
 } t_radiobutton;
 
-typedef struct {
-    bool bChecked;  /* Is this cb checked ? */
+typedef struct
+{
+    bool bChecked; /* Is this cb checked ? */
 } t_checkbox;
 
-typedef struct {
-    Pixmap pm;      /* The pixmap bits */
+typedef struct
+{
+    Pixmap pm; /* The pixmap bits */
 } t_pixmap;
 
-typedef struct {
+typedef struct
+{
     int    nlines;
-    char **lines;
+    char** lines;
 } t_statictext;
 
-typedef struct {
-    int  buflen, strbegin; /* Length of the screen buf and begin of string  */
-    int  pos;              /* Current length of the string and pos of caret */
+typedef struct
+{
+    int buflen, strbegin; /* Length of the screen buf and begin of string  */
+    int pos;              /* Current length of the string and pos of caret */
     /* Pos is relative to strbegin, and is the pos   */
     /* in the window.                                */
-    bool     bChanged;
-    char    *buf;
+    bool  bChanged;
+    char* buf;
 } t_edittext;
 
-typedef struct {
+typedef struct
+{
     int   nitems;
-    t_id *item;
+    t_id* item;
 } t_groupbox;
 
 
-typedef struct t_dlgitem {
-    t_windata         win;
-    t_id              ID, GroupID;
-    bool              bUseMon;
-    char             *set, *get, *help;
-    edlgitem          type;
-    int       (*WndProc)(t_x11 *x11, struct t_dlgitem *dlgitem, XEvent *event);
+typedef struct t_dlgitem
+{
+    t_windata win;
+    t_id      ID, GroupID;
+    bool      bUseMon;
+    char *    set, *get, *help;
+    edlgitem  type;
+    int (*WndProc)(t_x11* x11, struct t_dlgitem* dlgitem, XEvent* event);
     union {
         t_button      button;
         t_radiobutton radiobutton;
@@ -121,37 +144,51 @@ typedef struct t_dlgitem {
  * on the dlg box, and if wished resize them.
  *
  ****************************/
-extern t_dlgitem *CreateButton(t_x11 *x11, const char *szLab, bool bDef,
-                               t_id id, t_id groupid,
-                               int x0, int y0, int w, int h, int bw);
+extern t_dlgitem*
+CreateButton(t_x11* x11, const char* szLab, bool bDef, t_id id, t_id groupid, int x0, int y0, int w, int h, int bw);
 
-extern t_dlgitem *CreateRadioButton(t_x11 *x11,
-                                    const char *szLab, bool bSet, t_id id,
-                                    t_id groupid,
-                                    int x0, int y0, int w, int h, int bw);
+extern t_dlgitem*
+CreateRadioButton(t_x11* x11, const char* szLab, bool bSet, t_id id, t_id groupid, int x0, int y0, int w, int h, int bw);
 
-extern t_dlgitem *CreateGroupBox(t_x11 *x11, const char *szLab, t_id id,
-                                 int nitems, t_id items[],
-                                 int x0, int y0, int w, int h, int bw);
+extern t_dlgitem*
+CreateGroupBox(t_x11* x11, const char* szLab, t_id id, int nitems, t_id items[], int x0, int y0, int w, int h, int bw);
 
-extern t_dlgitem *CreateCheckBox(t_x11 *x11, const char *szLab,
-                                 bool bCheckedInitial,
-                                 t_id id, t_id groupid,
-                                 int x0, int y0, int w, int h, int bw);
+extern t_dlgitem* CreateCheckBox(t_x11*      x11,
+                                 const char* szLab,
+                                 bool        bCheckedInitial,
+                                 t_id        id,
+                                 t_id        groupid,
+                                 int         x0,
+                                 int         y0,
+                                 int         w,
+                                 int         h,
+                                 int         bw);
 
-extern t_dlgitem *CreatePixmap(Pixmap pm, t_id id, t_id groupid,
-                               int x0, int y0, int w, int h, int bw);
+extern t_dlgitem* CreatePixmap(Pixmap pm, t_id id, t_id groupid, int x0, int y0, int w, int h, int bw);
 
-extern t_dlgitem *CreateStaticText(t_x11 *x11,
-                                   int nlines, const char * const *lines,
-                                   t_id id, t_id groupid,
-                                   int x0, int y0, int w, int h, int bw);
+extern t_dlgitem* CreateStaticText(t_x11*             x11,
+                                   int                nlines,
+                                   const char* const* lines,
+                                   t_id               id,
+                                   t_id               groupid,
+                                   int                x0,
+                                   int                y0,
+                                   int                w,
+                                   int                h,
+                                   int                bw);
 
-extern t_dlgitem *CreateEditText(t_x11 *x11, const char *title,
-                                 int screenbuf, char *buf, t_id id, t_id groupid,
-                                 int x0, int y0, int w, int h, int bw);
+extern t_dlgitem* CreateEditText(t_x11*      x11,
+                                 const char* title,
+                                 int         screenbuf,
+                                 char*       buf,
+                                 t_id        id,
+                                 t_id        groupid,
+                                 int         x0,
+                                 int         y0,
+                                 int         w,
+                                 int         h,
+                                 int         bw);
 
-extern void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
-                           char *set, char *get, char *help);
+extern void SetDlgitemOpts(t_dlgitem* dlgitem, bool bUseMon, char* set, char* get, char* help);
 
-#endif  /* _xdlgitem_h */
+#endif /* _xdlgitem_h */

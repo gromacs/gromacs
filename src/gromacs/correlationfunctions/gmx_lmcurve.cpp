@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,8 +50,8 @@
 #include <cmath>
 
 #if HAVE_LMFIT
-#include <lmmin.h>
-#include <lmstruct.h>
+#    include <lmmin.h>
+#    include <lmstruct.h>
 #endif
 
 #include "gromacs/correlationfunctions/expfit.h"
@@ -61,7 +61,8 @@
 
 #if HAVE_LMFIT
 
-typedef struct {
+typedef struct
+{
     const double* t;
     const double* y;
     const double* dy;
@@ -69,9 +70,7 @@ typedef struct {
 } lmcurve_data_struct;
 
 //! Callback function used by lmmin
-static void lmcurve_evaluate(
-        const double* par, const int m_dat, const void* data, double* fvec,
-        int* info)
+static void lmcurve_evaluate(const double* par, const int m_dat, const void* data, double* fvec, int* info)
 {
     const lmcurve_data_struct* D = reinterpret_cast<const lmcurve_data_struct*>(data);
     for (int i = 0; i < m_dat; i++)
@@ -81,22 +80,25 @@ static void lmcurve_evaluate(
         {
             dy = 1;
         }
-        fvec[i] = (D->y[i] - D->f(D->t[i], par))/dy;
+        fvec[i] = (D->y[i] - D->f(D->t[i], par)) / dy;
     }
     *info = 0;
 }
 
 //! Calls lmmin with the given data, with callback function \c f.
-static void gmx_lmcurve(
-        const int n_par, double* par, const int m_dat,
-        const double* t, const double* y, const double *dy,
-        double (*f)(double t, const double* par),
-        const lm_control_struct* control, lm_status_struct* status)
+static void gmx_lmcurve(const int     n_par,
+                        double*       par,
+                        const int     m_dat,
+                        const double* t,
+                        const double* y,
+                        const double* dy,
+                        double (*f)(double t, const double* par),
+                        const lm_control_struct* control,
+                        lm_status_struct*        status)
 {
     lmcurve_data_struct data = { t, y, dy, f };
 
-    lmmin(n_par, par, m_dat, nullptr, &data, lmcurve_evaluate,
-          control, status);
+    lmmin(n_par, par, m_dat, nullptr, &data, lmcurve_evaluate, control, status);
 }
 
 #endif
@@ -112,33 +114,32 @@ bool lmfit_exp(int          nfit,
 {
     if ((eFitFn < 0) || (eFitFn >= effnNR))
     {
-        fprintf(stderr, "fitfn = %d, should be in the range 0..%d\n",
-                eFitFn, effnNR-1);
+        fprintf(stderr, "fitfn = %d, should be in the range 0..%d\n", eFitFn, effnNR - 1);
         return false;
     }
 #if HAVE_LMFIT
-    double             chisq, ochisq;
-    gmx_bool           bCont;
-    int                j;
-    int                maxiter = 100;
-    lm_control_struct  control;
-    lm_status_struct  *status;
-    int                nparam = effnNparams(eFitFn);
-    int                p2;
-    gmx_bool           bSkipLast;
+    double            chisq, ochisq;
+    gmx_bool          bCont;
+    int               j;
+    int               maxiter = 100;
+    lm_control_struct control;
+    lm_status_struct* status;
+    int               nparam = effnNparams(eFitFn);
+    int               p2;
+    gmx_bool          bSkipLast;
 
     /* Using default control structure for double precision fitting that
      * comes with the lmfit package (i.e. from the include file).
      */
-    control            = lm_control_double;
-    control.verbosity  = (bVerbose ? 1 : 0);
-    control.n_maxpri   = 0;
-    control.m_maxpri   = 0;
+    control           = lm_control_double;
+    control.verbosity = (bVerbose ? 1 : 0);
+    control.n_maxpri  = 0;
+    control.m_maxpri  = 0;
 
     snew(status, 1);
     /* Initial params */
-    chisq  = 1e12;
-    j      = 0;
+    chisq = 1e12;
+    j     = 0;
     if (bVerbose)
     {
         printf("%4s  %10s  Parameters\n", "Step", "chi^2");
@@ -148,15 +149,14 @@ bool lmfit_exp(int          nfit,
     {
         do
         {
-            p2        = 1 << (nparam-1);
+            p2        = 1 << (nparam - 1);
             bSkipLast = ((p2 & nfix) == p2);
             if (bSkipLast)
             {
                 nparam--;
                 nfix -= p2;
             }
-        }
-        while ((nparam > 0) && (bSkipLast));
+        } while ((nparam > 0) && (bSkipLast));
         if (bVerbose)
         {
             printf("Using %d out of %d parameters\n", nparam, effnNparams(eFitFn));
@@ -165,14 +165,12 @@ bool lmfit_exp(int          nfit,
     do
     {
         ochisq = chisq;
-        gmx_lmcurve(nparam, parm, nfit, x, y, dy,
-                    lmcurves[eFitFn], &control, status);
+        gmx_lmcurve(nparam, parm, nfit, x, y, dy, lmcurves[eFitFn], &control, status);
         chisq = gmx::square(status->fnorm);
         if (bVerbose)
         {
-            printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n",
-                   status->fnorm, status->nfev, status->userbreak,
-                   lm_infmsg[status->outcome]);
+            printf("status: fnorm = %g, nfev = %d, userbreak = %d\noutcome = %s\n", status->fnorm,
+                   status->nfev, status->userbreak, lm_infmsg[status->outcome]);
         }
         if (bVerbose)
         {
@@ -185,13 +183,13 @@ bool lmfit_exp(int          nfit,
             printf("\n");
         }
         j++;
-        bCont = (fabs(ochisq - chisq) > fabs(control.ftol*chisq));
-    }
-    while (bCont && (j < maxiter));
+        bCont = (fabs(ochisq - chisq) > fabs(control.ftol * chisq));
+    } while (bCont && (j < maxiter));
 
     sfree(status);
 #else
-    gmx_fatal(FARGS, "This build of GROMACS was not configured with support "
+    gmx_fatal(FARGS,
+              "This build of GROMACS was not configured with support "
               "for lmfit, so the requested fitting cannot be performed. "
               "See the install guide for instructions on how to build "
               "GROMACS with lmfit supported.");

@@ -57,17 +57,17 @@ namespace gmx
 {
 class MDLogger;
 class PhysicalNodeCommunicator;
-}
+} // namespace gmx
 
 //! Destroy a forcerec.
-void done_forcerec(t_forcerec *fr, int numMolBlocks);
+void done_forcerec(t_forcerec* fr, int numMolBlocks);
 
 /*! \brief Print the contents of the forcerec to a file
  *
  * \param[in] fplog The log file to print to
  * \param[in] fr    The forcerec structure
  */
-void pr_forcerec(FILE *fplog, t_forcerec *fr);
+void pr_forcerec(FILE* fplog, t_forcerec* fr);
 
 /*! \brief Set the number of charge groups and atoms.
  *
@@ -79,10 +79,7 @@ void pr_forcerec(FILE *fplog, t_forcerec *fr);
  * \param[in]    natoms_f_novirsum   Number of atoms for which
  *                                   force is to be compute but no virial
  */
-void
-forcerec_set_ranges(t_forcerec *fr,
-                    int natoms_force,
-                    int natoms_force_constr, int natoms_f_novirsum);
+void forcerec_set_ranges(t_forcerec* fr, int natoms_force, int natoms_force_constr, int natoms_f_novirsum);
 
 /*! \brief Initiate table constants
  *
@@ -90,8 +87,7 @@ forcerec_set_ranges(t_forcerec *fr,
  * \param[in] fp   File for debugging output
  * \param[in] ic   Structure holding the table constant
  */
-void init_interaction_const_tables(FILE                   *fp,
-                                   interaction_const_t    *ic);
+void init_interaction_const_tables(FILE* fp, interaction_const_t* ic);
 
 /*! \brief Initialize forcerec structure.
  *
@@ -113,23 +109,23 @@ void init_interaction_const_tables(FILE                   *fp,
  * \param[in]  print_force        Print forces for atoms with force >= print_force
  * \param[out] wcycle             Pointer to cycle counter object
  */
-void init_forcerec(FILE                             *fplog,
-                   const gmx::MDLogger              &mdlog,
-                   t_forcerec                       *fr,
-                   t_fcdata                         *fcd,
-                   const t_inputrec                 *ir,
-                   const gmx_mtop_t                 *mtop,
-                   const t_commrec                  *cr,
-                   matrix                            box,
-                   const char                       *tabfn,
-                   const char                       *tabpfn,
-                   gmx::ArrayRef<const std::string>  tabbfnm,
-                   const gmx_hw_info_t              &hardwareInfo,
-                   const gmx_device_info_t          *deviceInfo,
-                   bool                              useGpuForBonded,
-                   bool                              pmeOnlyRankUsesGpu,
-                   real                              print_force,
-                   gmx_wallcycle                    *wcycle);
+void init_forcerec(FILE*                            fplog,
+                   const gmx::MDLogger&             mdlog,
+                   t_forcerec*                      fr,
+                   t_fcdata*                        fcd,
+                   const t_inputrec*                ir,
+                   const gmx_mtop_t*                mtop,
+                   const t_commrec*                 cr,
+                   matrix                           box,
+                   const char*                      tabfn,
+                   const char*                      tabpfn,
+                   gmx::ArrayRef<const std::string> tabbfnm,
+                   const gmx_hw_info_t&             hardwareInfo,
+                   const gmx_device_info_t*         deviceInfo,
+                   bool                             useGpuForBonded,
+                   bool                             pmeOnlyRankUsesGpu,
+                   real                             print_force,
+                   gmx_wallcycle*                   wcycle);
 
 /*! \brief Divide exclusions over threads
  *
@@ -137,11 +133,10 @@ void init_forcerec(FILE                             *fplog,
  * \param[out] fr  The force record
  * \param[in]  top The topology
  */
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
+void forcerec_set_excl_load(t_forcerec* fr, const gmx_localtop_t* top);
 
-void free_gpu_resources(t_forcerec                          *fr,
-                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator,
-                        const gmx_gpu_info_t                &gpu_info);
+void free_gpu_resources(t_forcerec*                          fr,
+                        const gmx::PhysicalNodeCommunicator& physicalNodeCommunicator,
+                        const gmx_gpu_info_t&                gpu_info);
 
 #endif

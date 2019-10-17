@@ -55,11 +55,16 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void print_one(const gmx_output_env_t *oenv, const char *base, const char *name,
-               const char *title, const char *ylabel, int nf, real time[],
-               real data[])
+void print_one(const gmx_output_env_t* oenv,
+               const char*             base,
+               const char*             name,
+               const char*             title,
+               const char*             ylabel,
+               int                     nf,
+               real                    time[],
+               real                    data[])
 {
-    FILE *fp;
+    FILE* fp;
     char  buf[256], t2[256];
     int   k;
 
@@ -79,9 +84,9 @@ static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused cor
 {
     /* multiplicity and core_frac NOT used,
      * just given to enable use of pt-to-fn in caller low_ana_dih_trans*/
-    static const real r30  = M_PI/6.0;
-    static const real r90  = M_PI/2.0;
-    static const real r150 = M_PI*5.0/6.0;
+    static const real r30  = M_PI / 6.0;
+    static const real r90  = M_PI / 2.0;
+    static const real r150 = M_PI * 5.0 / 6.0;
 
     if ((phi < r30) && (phi > -r30))
     {
@@ -100,7 +105,7 @@ static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused cor
 
 static int calc_Nbin(real phi, int multiplicity, real core_frac)
 {
-    static const real r360 = 360*DEG2RAD;
+    static const real r360 = 360 * DEG2RAD;
     real              rot_width, core_width, core_offset, low, hi;
     int               bin;
     /* with multiplicity 3 and core_frac 0.5
@@ -113,15 +118,15 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
         phi += r360;
     }
 
-    rot_width   = 360./multiplicity;
+    rot_width   = 360. / multiplicity;
     core_width  = core_frac * rot_width;
-    core_offset = (rot_width - core_width)/2.0;
+    core_offset = (rot_width - core_width) / 2.0;
     for (bin = 1; bin <= multiplicity; bin++)
     {
-        low  = ((bin - 1) * rot_width ) + core_offset;
-        hi   = ((bin - 1) * rot_width ) + core_offset + core_width;
+        low = ((bin - 1) * rot_width) + core_offset;
+        hi  = ((bin - 1) * rot_width) + core_offset + core_width;
         low *= DEG2RAD;
-        hi  *= DEG2RAD;
+        hi *= DEG2RAD;
         if ((phi > low) && (phi < hi))
         {
             return bin;
@@ -130,15 +135,20 @@ static int calc_Nbin(real phi, int multiplicity, real core_frac)
     return 0;
 }
 
-void ana_dih_trans(const char *fn_trans, const char *fn_histo,
-                   real **dih, int nframes, int nangles,
-                   const char *grpname, real *time, gmx_bool bRb,
-                   const gmx_output_env_t *oenv)
+void ana_dih_trans(const char*             fn_trans,
+                   const char*             fn_histo,
+                   real**                  dih,
+                   int                     nframes,
+                   int                     nangles,
+                   const char*             grpname,
+                   real*                   time,
+                   gmx_bool                bRb,
+                   const gmx_output_env_t* oenv)
 {
     /* just a wrapper; declare extra args, then chuck away at end. */
     int      maxchi = 0;
-    t_dlist *dlist;
-    int     *multiplicity;
+    t_dlist* dlist;
+    int*     multiplicity;
     int      nlist = nangles;
     int      k;
 
@@ -149,37 +159,45 @@ void ana_dih_trans(const char *fn_trans, const char *fn_histo,
         multiplicity[k] = 3;
     }
 
-    low_ana_dih_trans(TRUE, fn_trans, TRUE, fn_histo, maxchi,
-                      dih, nlist, dlist, nframes,
-                      nangles, grpname, multiplicity, time, bRb, 0.5, oenv);
+    low_ana_dih_trans(TRUE, fn_trans, TRUE, fn_histo, maxchi, dih, nlist, dlist, nframes, nangles,
+                      grpname, multiplicity, time, bRb, 0.5, oenv);
     sfree(dlist);
     sfree(multiplicity);
-
 }
 
-void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
-                       gmx_bool bHisto, const char *fn_histo, int maxchi,
-                       real **dih, int nlist, t_dlist dlist[], int nframes,
-                       int nangles, const char *grpname, int multiplicity[],
-                       real *time, gmx_bool bRb, real core_frac,
-                       const gmx_output_env_t *oenv)
+void low_ana_dih_trans(gmx_bool                bTrans,
+                       const char*             fn_trans,
+                       gmx_bool                bHisto,
+                       const char*             fn_histo,
+                       int                     maxchi,
+                       real**                  dih,
+                       int                     nlist,
+                       t_dlist                 dlist[],
+                       int                     nframes,
+                       int                     nangles,
+                       const char*             grpname,
+                       int                     multiplicity[],
+                       real*                   time,
+                       gmx_bool                bRb,
+                       real                    core_frac,
+                       const gmx_output_env_t* oenv)
 {
-    FILE *fp;
-    int  *tr_f, *tr_h;
+    FILE* fp;
+    int * tr_f, *tr_h;
     char  title[256];
     int   i, j, k, Dih, ntrans;
     int   cur_bin, new_bin;
     real  ttime;
-    real *rot_occ[NROT];
-    int   (*calc_bin)(real, int, real);
-    real  dt;
+    real* rot_occ[NROT];
+    int (*calc_bin)(real, int, real);
+    real dt;
 
     if (1 <= nframes)
     {
         return;
     }
     /* Assumes the frames are equally spaced in time */
-    dt = (time[nframes-1]-time[0])/(nframes-1);
+    dt = (time[nframes - 1] - time[0]) / (nframes - 1);
 
     /* Analysis of dihedral transitions */
     fprintf(stderr, "Now calculating transitions...\n");
@@ -234,21 +252,21 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
             }
 #else
             /* why is all this md rubbish periodic? Remove 360 degree periodicity */
-            if ( (dih[i][j] - prev) > M_PI)
+            if ((dih[i][j] - prev) > M_PI)
             {
-                dih[i][j] -= 2*M_PI;
+                dih[i][j] -= 2 * M_PI;
             }
-            else if ( (dih[i][j] - prev) < -M_PI)
+            else if ((dih[i][j] - prev) < -M_PI)
             {
-                dih[i][j] += 2*M_PI;
+                dih[i][j] += 2 * M_PI;
             }
 
             prev = dih[i][j];
 
             mind = std::min(mind, dih[i][j]);
             maxd = std::max(maxd, dih[i][j]);
-            if ( (maxd - mind) > 2*M_PI/3) /* or 120 degrees, assuming       */
-            {                              /* multiplicity 3. Not so general.*/
+            if ((maxd - mind) > 2 * M_PI / 3) /* or 120 degrees, assuming       */
+            {                                 /* multiplicity 3. Not so general.*/
                 tr_f[j]++;
                 tr_h[i]++;
                 maxd = mind = dih[i][j]; /* get ready for next transition  */
@@ -264,7 +282,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     fprintf(stderr, "Total number of transitions: %10d\n", ntrans);
     if (ntrans > 0)
     {
-        ttime = (dt*nframes*nangles)/ntrans;
+        ttime = (dt * nframes * nangles) / ntrans;
         fprintf(stderr, "Time between transitions:    %10.3f ps\n", ttime);
     }
 
@@ -273,13 +291,12 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
      * based on fn histogramming in g_chi. diff roles for i and j here */
 
     j = 0;
-    for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+    for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
-            if (((Dih  < edOmega) ) ||
-                ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i])))) ||
-                ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)))
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
                 dlist[i].ntr[Dih] = tr_h[j];
@@ -315,21 +332,18 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     {
         tr_f[tr_h[i]]++;
     }
-    for (j = nframes; ((tr_f[j-1] == 0) && (j > 0)); j--)
-    {
-        ;
-    }
+    for (j = nframes; ((tr_f[j - 1] == 0) && (j > 0)); j--) {}
 
-    ttime = dt*nframes;
+    ttime = dt * nframes;
     if (bHisto)
     {
         sprintf(title, "Transition time: %s", grpname);
         fp = xvgropen(fn_histo, title, "Time (ps)", "#", oenv);
-        for (i = j-1; (i > 0); i--)
+        for (i = j - 1; (i > 0); i--)
         {
             if (tr_f[i] != 0)
             {
-                fprintf(fp, "%10.3f  %10d\n", ttime/i, tr_f[i]);
+                fprintf(fp, "%10.3f  %10d\n", ttime / i, tr_f[i]);
             }
         }
         xvgrclose(fp);
@@ -341,11 +355,9 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
     {
         sfree(rot_occ[k]);
     }
-
 }
 
-void mk_multiplicity_lookup (int *multiplicity, int maxchi,
-                             int nlist, t_dlist dlist[], int nangles)
+void mk_multiplicity_lookup(int* multiplicity, int maxchi, int nlist, t_dlist dlist[], int nangles)
 {
     /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
      * and store in multiplicity[j]
@@ -355,15 +367,14 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
     char name[4];
 
     j = 0;
-    for (Dih = 0; (Dih < NONCHI+maxchi); Dih++)
+    for (Dih = 0; (Dih < NONCHI + maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
             std::strncpy(name, dlist[i].name, 3);
             name[3] = '\0';
-            if (((Dih  < edOmega) ) ||
-                ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i])))) ||
-                ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)))
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* default - we will correct the rest below */
                 multiplicity[j] = 3;
@@ -375,18 +386,18 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                 }
 
                 /* dihedrals to aromatic rings, COO, CONH2 or guanidinium are 2fold*/
-                if (Dih > edOmega && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1))
+                if (Dih > edOmega && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1))
                 {
-                    if ( ((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "PTR") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "TRP") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "HIS") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "GLU") != nullptr) && (Dih == edChi3))  ||
-                         ((std::strstr(name, "ASP") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "GLN") != nullptr) && (Dih == edChi3))  ||
-                         ((std::strstr(name, "ASN") != nullptr) && (Dih == edChi2))  ||
-                         ((std::strstr(name, "ARG") != nullptr) && (Dih == edChi4))  )
+                    if (((std::strstr(name, "PHE") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "TYR") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "PTR") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "TRP") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "HIS") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "GLU") != nullptr) && (Dih == edChi3))
+                        || ((std::strstr(name, "ASP") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "GLN") != nullptr) && (Dih == edChi3))
+                        || ((std::strstr(name, "ASN") != nullptr) && (Dih == edChi2))
+                        || ((std::strstr(name, "ARG") != nullptr) && (Dih == edChi4)))
                     {
                         multiplicity[j] = 2;
                     }
@@ -397,19 +408,16 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi,
     }
     if (j < nangles)
     {
-        fprintf(stderr, "WARNING: not all dihedrals found in topology (only %d out of %d)!\n",
-                j, nangles);
+        fprintf(stderr, "WARNING: not all dihedrals found in topology (only %d out of %d)!\n", j, nangles);
     }
     /* Check for remaining dihedrals */
     for (; (j < nangles); j++)
     {
         multiplicity[j] = 3;
     }
-
 }
 
-void mk_chi_lookup (int **lookup, int maxchi,
-                    int nlist, t_dlist dlist[])
+void mk_chi_lookup(int** lookup, int maxchi, int nlist, t_dlist dlist[])
 {
 
     /* by grs. should rewrite everything to use this. (but haven't,
@@ -421,14 +429,13 @@ void mk_chi_lookup (int **lookup, int maxchi,
 
     j = 0;
     /* NONCHI points to chi1, therefore we have to start counting there. */
-    for (Dih = NONCHI; (Dih < NONCHI+maxchi); Dih++)
+    for (Dih = NONCHI; (Dih < NONCHI + maxchi); Dih++)
     {
         for (i = 0; (i < nlist); i++)
         {
             Chi = Dih - NONCHI;
-            if (((Dih  < edOmega) ) ||
-                ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i])))) ||
-                ((Dih  > edOmega) && (dlist[i].atm.Cn[Dih-NONCHI+3] != -1)))
+            if (((Dih < edOmega)) || ((Dih == edOmega) && (has_dihedral(edOmega, &(dlist[i]))))
+                || ((Dih > edOmega) && (dlist[i].atm.Cn[Dih - NONCHI + 3] != -1)))
             {
                 /* grs debug  printf("Not OK? i %d j %d Dih %d \n", i, j, Dih) ; */
                 if (Dih > edOmega)
@@ -443,26 +450,34 @@ void mk_chi_lookup (int **lookup, int maxchi,
             }
         }
     }
-
 }
 
 
-void get_chi_product_traj (real **dih, int nframes, int nlist,
-                           int maxchi, t_dlist dlist[], real time[],
-                           int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
-                           real core_frac, gmx_bool bAll, const char *fnall,
-                           const gmx_output_env_t *oenv)
+void get_chi_product_traj(real**                  dih,
+                          int                     nframes,
+                          int                     nlist,
+                          int                     maxchi,
+                          t_dlist                 dlist[],
+                          real                    time[],
+                          int**                   lookup,
+                          int*                    multiplicity,
+                          gmx_bool                bRb,
+                          gmx_bool                bNormalize,
+                          real                    core_frac,
+                          gmx_bool                bAll,
+                          const char*             fnall,
+                          const gmx_output_env_t* oenv)
 {
 
     gmx_bool bRotZero, bHaveChi = FALSE;
     int      accum = 0, index, i, j, k, Xi, n, b;
-    real    *chi_prtrj;
-    int     *chi_prhist;
+    real*    chi_prtrj;
+    int*     chi_prhist;
     int      nbin;
-    FILE    *fp, *fpall;
+    FILE *   fp, *fpall;
     char     hisfile[256], histitle[256], *namept;
 
-    int      (*calc_bin)(real, int, real);
+    int (*calc_bin)(real, int, real);
 
     /* Analysis of dihedral transitions */
     fprintf(stderr, "Now calculating Chi product trajectories...\n");
@@ -499,7 +514,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
             if (index >= 0)
             {
                 n    = multiplicity[index];
-                nbin = n*nbin;
+                nbin = n * nbin;
             }
         }
         nbin += 1; /* for the "zero rotamer", outside the core region */
@@ -546,9 +561,9 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
             else
             {
                 chi_prtrj[j] = accum;
-                if (accum+1 > nbin)
+                if (accum + 1 > nbin)
                 {
-                    nbin = accum+1;
+                    nbin = accum + 1;
                 }
             }
         }
@@ -581,7 +596,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
                 {
                     if (bNormalize)
                     {
-                        fprintf(fp, "%5d  %10g\n", k, (1.0*chi_prhist[k])/nframes);
+                        fprintf(fp, "%5d  %10g\n", k, (1.0 * chi_prhist[k]) / nframes);
                     }
                     else
                     {
@@ -601,7 +616,7 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
             {
                 if (bNormalize)
                 {
-                    fprintf(fpall, "  %10g", (1.0*chi_prhist[k])/nframes);
+                    fprintf(fpall, "  %10g", (1.0 * chi_prhist[k]) / nframes);
                 }
                 else
                 {
@@ -618,12 +633,9 @@ void get_chi_product_traj (real **dih, int nframes, int nlist,
     sfree(chi_prtrj);
     xvgrclose(fpall);
     fprintf(stderr, "\n");
-
 }
 
-void calc_distribution_props(int nh, const int histo[], real start,
-                             int nkkk, t_karplus kkk[],
-                             real *S2)
+void calc_distribution_props(int nh, const int histo[], real start, int nkkk, t_karplus kkk[], real* S2)
 {
     real d, dc, ds, c1, c2, tdc, tds;
     real fac, ang, invth, Jc;
@@ -633,7 +645,7 @@ void calc_distribution_props(int nh, const int histo[], real start,
     {
         gmx_fatal(FARGS, "No points in histogram (%s, %d)", __FILE__, __LINE__);
     }
-    fac = 2*M_PI/nh;
+    fac = 2 * M_PI / nh;
 
     /* Compute normalisation factor */
     th = 0;
@@ -641,42 +653,42 @@ void calc_distribution_props(int nh, const int histo[], real start,
     {
         th += histo[j];
     }
-    invth = 1.0/th;
+    invth = 1.0 / th;
 
     for (i = 0; (i < nkkk); i++)
     {
         kkk[i].Jc    = 0;
         kkk[i].Jcsig = 0;
     }
-    tdc = 0; tds = 0;
+    tdc = 0;
+    tds = 0;
     for (j = 0; (j < nh); j++)
     {
-        d    = invth*histo[j];
-        ang  = j*fac-start;
-        c1   = std::cos(ang);
-        dc   = d*c1;
-        ds   = d*std::sin(ang);
+        d   = invth * histo[j];
+        ang = j * fac - start;
+        c1  = std::cos(ang);
+        dc  = d * c1;
+        ds  = d * std::sin(ang);
         tdc += dc;
         tds += ds;
         for (i = 0; (i < nkkk); i++)
         {
-            c1            = std::cos(ang+kkk[i].offset);
-            c2            = c1*c1;
-            Jc            = (kkk[i].A*c2 + kkk[i].B*c1 + kkk[i].C);
-            kkk[i].Jc    += histo[j]*Jc;
-            kkk[i].Jcsig += histo[j]*gmx::square(Jc);
+            c1 = std::cos(ang + kkk[i].offset);
+            c2 = c1 * c1;
+            Jc = (kkk[i].A * c2 + kkk[i].B * c1 + kkk[i].C);
+            kkk[i].Jc += histo[j] * Jc;
+            kkk[i].Jcsig += histo[j] * gmx::square(Jc);
         }
     }
     for (i = 0; (i < nkkk); i++)
     {
-        kkk[i].Jc    /= th;
-        kkk[i].Jcsig  = std::sqrt(kkk[i].Jcsig/th-gmx::square(kkk[i].Jc));
+        kkk[i].Jc /= th;
+        kkk[i].Jcsig = std::sqrt(kkk[i].Jcsig / th - gmx::square(kkk[i].Jc));
     }
-    *S2 = tdc*tdc+tds*tds;
+    *S2 = tdc * tdc + tds * tds;
 }
 
-static void calc_angles(struct t_pbc *pbc,
-                        int n3, int index[], real ang[], rvec x_s[])
+static void calc_angles(struct t_pbc* pbc, int n3, int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
     rvec r_ij, r_kj;
@@ -684,13 +696,13 @@ static void calc_angles(struct t_pbc *pbc,
 
     for (i = ix = 0; (ix < n3); i++, ix += 3)
     {
-        ang[i] = bond_angle(x_s[index[ix]], x_s[index[ix+1]], x_s[index[ix+2]],
-                            pbc, r_ij, r_kj, &costh, &t1, &t2);
+        ang[i] = bond_angle(x_s[index[ix]], x_s[index[ix + 1]], x_s[index[ix + 2]], pbc, r_ij, r_kj,
+                            &costh, &t1, &t2);
     }
     if (debug)
     {
-        fprintf(debug, "Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
-                ang[0], costh, index[0], index[1], index[2]);
+        fprintf(debug, "Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n", ang[0], costh, index[0],
+                index[1], index[2]);
         pr_rvec(debug, 0, "rij", r_ij, DIM, TRUE);
         pr_rvec(debug, 0, "rkj", r_kj, DIM, TRUE);
     }
@@ -719,9 +731,9 @@ static real calc_fraction(const real angles[], int nangles)
             gauche += 1.0;
         }
     }
-    if (trans+gauche > 0)
+    if (trans + gauche > 0)
     {
-        return trans/(trans+gauche);
+        return trans / (trans + gauche);
     }
     else
     {
@@ -729,8 +741,7 @@ static real calc_fraction(const real angles[], int nangles)
     }
 }
 
-static void calc_dihs(struct t_pbc *pbc,
-                      int n4, const int index[], real ang[], rvec x_s[])
+static void calc_dihs(struct t_pbc* pbc, int n4, const int index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
@@ -738,18 +749,14 @@ static void calc_dihs(struct t_pbc *pbc,
 
     for (i = ix = 0; (ix < n4); i++, ix += 4)
     {
-        aaa = dih_angle(x_s[index[ix]], x_s[index[ix+1]], x_s[index[ix+2]],
-                        x_s[index[ix+3]], pbc,
-                        r_ij, r_kj, r_kl, m, n,
-                        &t1, &t2, &t3);
+        aaa = dih_angle(x_s[index[ix]], x_s[index[ix + 1]], x_s[index[ix + 2]], x_s[index[ix + 3]],
+                        pbc, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
 
         ang[i] = aaa; /* not taking into account ryckaert bellemans yet */
     }
 }
 
-void make_histo(FILE *log,
-                int ndata, real data[], int npoints, int histo[],
-                real minx, real maxx)
+void make_histo(FILE* log, int ndata, real data[], int npoints, int histo[], real minx, real maxx)
 {
     double dx;
     int    i, ind;
@@ -764,16 +771,15 @@ void make_histo(FILE *log,
         }
         fprintf(log, "Min data: %10g  Max data: %10g\n", minx, maxx);
     }
-    dx = npoints/(maxx-minx);
+    dx = npoints / (maxx - minx);
     if (debug)
     {
-        fprintf(debug,
-                "Histogramming: ndata=%d, nhisto=%d, minx=%g,maxx=%g,dx=%g\n",
-                ndata, npoints, minx, maxx, dx);
+        fprintf(debug, "Histogramming: ndata=%d, nhisto=%d, minx=%g,maxx=%g,dx=%g\n", ndata,
+                npoints, minx, maxx, dx);
     }
     for (i = 0; (i < ndata); i++)
     {
-        ind = static_cast<int>((data[i]-minx)*dx);
+        ind = static_cast<int>((data[i] - minx) * dx);
         if ((ind >= 0) && (ind < npoints))
         {
             histo[ind]++;
@@ -793,53 +799,59 @@ void normalize_histo(int npoints, const int histo[], real dx, real normhisto[])
     d = 0;
     for (i = 0; (i < npoints); i++)
     {
-        d += dx*histo[i];
+        d += dx * histo[i];
     }
     if (d == 0)
     {
         fprintf(stderr, "Empty histogram!\n");
         return;
     }
-    fac = 1.0/d;
+    fac = 1.0 / d;
     for (i = 0; (i < npoints); i++)
     {
-        normhisto[i] = fac*histo[i];
+        normhisto[i] = fac * histo[i];
     }
 }
 
-void read_ang_dih(const char *trj_fn,
-                  gmx_bool bAngles, gmx_bool bSaveAll, gmx_bool bRb, gmx_bool bPBC,
-                  int maxangstat, int angstat[],
-                  int *nframes, real **time,
-                  int isize, int index[],
-                  real **trans_frac,
-                  real **aver_angle,
-                  real *dih[],
-                  const gmx_output_env_t *oenv)
+void read_ang_dih(const char*             trj_fn,
+                  gmx_bool                bAngles,
+                  gmx_bool                bSaveAll,
+                  gmx_bool                bRb,
+                  gmx_bool                bPBC,
+                  int                     maxangstat,
+                  int                     angstat[],
+                  int*                    nframes,
+                  real**                  time,
+                  int                     isize,
+                  int                     index[],
+                  real**                  trans_frac,
+                  real**                  aver_angle,
+                  real*                   dih[],
+                  const gmx_output_env_t* oenv)
 {
-    struct t_pbc *pbc;
-    t_trxstatus  *status;
+    struct t_pbc* pbc;
+    t_trxstatus*  status;
     int           i, angind, total, teller;
     int           nangles, n_alloc;
     real          t, fraction, pifac, aa, angle;
-    real         *angles[2];
+    real*         angles[2];
     matrix        box;
-    rvec         *x;
+    rvec*         x;
     int           cur = 0;
-#define prev (1-cur)
+#define prev (1 - cur)
 
     snew(pbc, 1);
     read_first_x(oenv, &status, trj_fn, &t, &x, box);
 
     if (bAngles)
     {
-        nangles = isize/3;
+        nangles = isize / 3;
         pifac   = M_PI;
     }
     else
     {
-        nangles = isize/4;
-        pifac   = 2.0*M_PI;
+        nangles = isize / 4;
+        pifac   = 2.0 * M_PI;
     }
     snew(angles[cur], nangles);
     snew(angles[prev], nangles);
@@ -900,7 +912,7 @@ void read_ang_dih(const char *trj_fn,
                 {
                     if (angles[cur][i] <= 0.0)
                     {
-                        angles[cur][i] += 2*M_PI;
+                        angles[cur][i] += 2 * M_PI;
                     }
                 }
             }
@@ -910,7 +922,7 @@ void read_ang_dih(const char *trj_fn,
             {
                 for (i = 0; (i < nangles); i++)
                 {
-                    real dd = angles[cur][i];
+                    real dd        = angles[cur][i];
                     angles[cur][i] = std::atan2(std::sin(dd), std::cos(dd));
                 }
             }
@@ -922,11 +934,11 @@ void read_ang_dih(const char *trj_fn,
                     {
                         while (angles[cur][i] <= angles[prev][i] - M_PI)
                         {
-                            angles[cur][i] += 2*M_PI;
+                            angles[cur][i] += 2 * M_PI;
                         }
                         while (angles[cur][i] > angles[prev][i] + M_PI)
                         {
-                            angles[cur][i] -= 2*M_PI;
+                            angles[cur][i] -= 2 * M_PI;
                         }
                     }
                 }
@@ -937,7 +949,7 @@ void read_ang_dih(const char *trj_fn,
         aa = 0;
         for (i = 0; (i < nangles); i++)
         {
-            aa = aa+angles[cur][i];
+            aa = aa + angles[cur][i];
 
             /* angle in rad / 2Pi * max determines bin. bins go from 0 to maxangstat,
                even though scale goes from -pi to pi (dihedral) or -pi/2 to pi/2
@@ -950,27 +962,26 @@ void read_ang_dih(const char *trj_fn,
             {
                 while (angle < -M_PI)
                 {
-                    angle += 2*M_PI;
+                    angle += 2 * M_PI;
                 }
                 while (angle >= M_PI)
                 {
-                    angle -= 2*M_PI;
+                    angle -= 2 * M_PI;
                 }
 
                 angle += M_PI;
             }
 
             /* Update the distribution histogram */
-            angind = gmx::roundToInt((angle*maxangstat)/pifac);
+            angind = gmx::roundToInt((angle * maxangstat) / pifac);
             if (angind == maxangstat)
             {
                 angind = 0;
             }
-            if ( (angind < 0) || (angind >= maxangstat) )
+            if ((angind < 0) || (angind >= maxangstat))
             {
                 /* this will never happen */
-                gmx_fatal(FARGS, "angle (%f) index out of range (0..%d) : %d\n",
-                          angle, maxangstat, angind);
+                gmx_fatal(FARGS, "angle (%f) index out of range (0..%d) : %d\n", angle, maxangstat, angind);
             }
 
             angstat[angind]++;
@@ -983,7 +994,7 @@ void read_ang_dih(const char *trj_fn,
         }
 
         /* average over all angles */
-        (*aver_angle)[teller] = (aa/nangles);
+        (*aver_angle)[teller] = (aa / nangles);
 
         /* this copies all current dih. angles to dih[i], teller is frame */
         if (bSaveAll)
@@ -999,8 +1010,7 @@ void read_ang_dih(const char *trj_fn,
 
         /* Increment loop counter */
         teller++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 
     sfree(x);

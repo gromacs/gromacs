@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,49 +59,50 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static int index2(const int *ibox, int x, int y)
+static int index2(const int* ibox, int x, int y)
 {
-    return (ibox[1]*x+y);
+    return (ibox[1] * x + y);
 }
 
-static int index3(const int *ibox, int x, int y, int z)
+static int index3(const int* ibox, int x, int y, int z)
 {
-    return (ibox[2]*(ibox[1]*x+y)+z);
+    return (ibox[2] * (ibox[1] * x + y) + z);
 }
 
-static int64_t indexn(int ndim, const int *ibox, const int *nxyz)
+static int64_t indexn(int ndim, const int* ibox, const int* nxyz)
 {
-    int64_t         d, dd;
-    int             k, kk;
+    int64_t d, dd;
+    int     k, kk;
 
     /* Compute index in 1-D array */
     d = 0;
     for (k = 0; (k < ndim); k++)
     {
         dd = nxyz[k];
-        for (kk = k+1; (kk < ndim); kk++)
+        for (kk = k + 1; (kk < ndim); kk++)
         {
-            dd = dd*ibox[kk];
+            dd = dd * ibox[kk];
         }
         d += dd;
     }
     return d;
 }
 
-typedef struct {
-    int    Nx;      /* x grid points in unit cell */
-    int    Ny;      /* y grid points in unit cell */
-    int    Nz;      /* z grid points in unit cell */
-    int    dmin[3]; /* starting point x,y,z*/
-    int    dmax[3]; /* ending point x,y,z */
-    real   cell[6]; /* usual cell parameters */
-    real * ed;      /* data */
+typedef struct
+{
+    int   Nx;      /* x grid points in unit cell */
+    int   Ny;      /* y grid points in unit cell */
+    int   Nz;      /* z grid points in unit cell */
+    int   dmin[3]; /* starting point x,y,z*/
+    int   dmax[3]; /* ending point x,y,z */
+    real  cell[6]; /* usual cell parameters */
+    real* ed;      /* data */
 } XplorMap;
 
-static void lo_write_xplor(XplorMap * map, const char * file)
+static void lo_write_xplor(XplorMap* map, const char* file)
 {
-    FILE * fp;
-    int    z, i, j, n;
+    FILE* fp;
+    int   z, i, j, n;
 
     fp = gmx_ffopen(file, "w");
     /* The REMARKS part is the worst part of the XPLOR format
@@ -110,12 +111,9 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     fprintf(fp, "\n       2 !NTITLE\n");
     fprintf(fp, " REMARKS Energy Landscape from GROMACS\n");
     fprintf(fp, " REMARKS DATE: 2004-12-21 \n");
-    fprintf(fp, " %7d %7d %7d %7d %7d %7d %7d %7d %7d\n",
-            map->Nx, map->dmin[0], map->dmax[0],
-            map->Ny, map->dmin[1], map->dmax[1],
-            map->Nz, map->dmin[2], map->dmax[2]);
-    fprintf(fp, "%12.5E%12.5E%12.5E%12.5E%12.5E%12.5E\n",
-            map->cell[0], map->cell[1], map->cell[2],
+    fprintf(fp, " %7d %7d %7d %7d %7d %7d %7d %7d %7d\n", map->Nx, map->dmin[0], map->dmax[0],
+            map->Ny, map->dmin[1], map->dmax[1], map->Nz, map->dmin[2], map->dmax[2]);
+    fprintf(fp, "%12.5E%12.5E%12.5E%12.5E%12.5E%12.5E\n", map->cell[0], map->cell[1], map->cell[2],
             map->cell[3], map->cell[4], map->cell[5]);
     fprintf(fp, "ZYX\n");
 
@@ -123,13 +121,13 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     for (n = 0; n < map->Nz; n++, z++)
     {
         fprintf(fp, "%8d\n", z);
-        for (i = 0; i < map->Nx*map->Ny; i += 6)
+        for (i = 0; i < map->Nx * map->Ny; i += 6)
         {
             for (j = 0; j < 6; j++)
             {
-                if (i+j < map->Nx*map->Ny)
+                if (i + j < map->Nx * map->Ny)
                 {
-                    fprintf(fp, "%12.5E", map->ed[n*map->Nx*map->Ny+i+j]);
+                    fprintf(fp, "%12.5E", map->ed[n * map->Nx * map->Ny + i + j]);
                 }
             }
             fprintf(fp, "\n");
@@ -139,16 +137,16 @@ static void lo_write_xplor(XplorMap * map, const char * file)
     gmx_ffclose(fp);
 }
 
-static void write_xplor(const char *file, const real *data, int *ibox, const real dmin[], const real dmax[])
+static void write_xplor(const char* file, const real* data, int* ibox, const real dmin[], const real dmax[])
 {
-    XplorMap *xm;
+    XplorMap* xm;
     int       i, j, k, n;
 
     snew(xm, 1);
     xm->Nx = ibox[XX];
     xm->Ny = ibox[YY];
     xm->Nz = ibox[ZZ];
-    snew(xm->ed, xm->Nx*xm->Ny*xm->Nz);
+    snew(xm->ed, xm->Nx * xm->Ny * xm->Nz);
     n = 0;
     for (k = 0; (k < xm->Nz); k++)
     {
@@ -160,15 +158,15 @@ static void write_xplor(const char *file, const real *data, int *ibox, const rea
             }
         }
     }
-    xm->cell[0] = dmax[XX]-dmin[XX];
-    xm->cell[1] = dmax[YY]-dmin[YY];
-    xm->cell[2] = dmax[ZZ]-dmin[ZZ];
+    xm->cell[0] = dmax[XX] - dmin[XX];
+    xm->cell[1] = dmax[YY] - dmin[YY];
+    xm->cell[2] = dmax[ZZ] - dmin[ZZ];
     xm->cell[3] = xm->cell[4] = xm->cell[5] = 90;
 
     clear_ivec(xm->dmin);
-    xm->dmax[XX] = ibox[XX]-1;
-    xm->dmax[YY] = ibox[YY]-1;
-    xm->dmax[ZZ] = ibox[ZZ]-1;
+    xm->dmax[XX] = ibox[XX] - 1;
+    xm->dmax[YY] = ibox[YY] - 1;
+    xm->dmax[ZZ] = ibox[ZZ] - 1;
 
     lo_write_xplor(xm, file);
 
@@ -176,7 +174,7 @@ static void write_xplor(const char *file, const real *data, int *ibox, const rea
     sfree(xm);
 }
 
-static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmin)
+static void normalize_p_e(int len, double* P, const int* nbin, real* E, real pmin)
 {
     int    i;
     double Ptot = 0;
@@ -186,13 +184,13 @@ static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmi
         Ptot += P[i];
         if (nbin[i] > 0)
         {
-            E[i] = E[i]/nbin[i];
+            E[i] = E[i] / nbin[i];
         }
     }
     printf("Ptot = %g\n", Ptot);
     for (i = 0; (i < len); i++)
     {
-        P[i] = P[i]/Ptot;
+        P[i] = P[i] / Ptot;
         /* Have to check for pmin after normalizing to prevent "stretching"
          * the energies.
          */
@@ -203,15 +201,17 @@ static void normalize_p_e(int len, double *P, const int *nbin, real *E, real pmi
     }
 }
 
-typedef struct {
-    int64_t         index;
-    real            ener;
+typedef struct
+{
+    int64_t index;
+    real    ener;
 } t_minimum;
 
-static int comp_minima(const void *a, const void *b)
+static int comp_minima(const void* a, const void* b)
 {
-    const t_minimum *ma = reinterpret_cast<const t_minimum*>(a);
-    const t_minimum *mb = reinterpret_cast<const t_minimum*>(b);;
+    const t_minimum* ma = reinterpret_cast<const t_minimum*>(a);
+    const t_minimum* mb = reinterpret_cast<const t_minimum*>(b);
+
 
     if (ma->ener < mb->ener)
     {
@@ -227,54 +227,49 @@ static int comp_minima(const void *a, const void *b)
     }
 }
 
-static inline
-void print_minimum(FILE *fp, int num, const t_minimum *min)
+static inline void print_minimum(FILE* fp, int num, const t_minimum* min)
 {
     fprintf(fp,
-            "Minimum %d at index " "%" PRId64 " energy %10.3f\n",
+            "Minimum %d at index "
+            "%" PRId64 " energy %10.3f\n",
             num, min->index, min->ener);
 }
 
-static inline
-void add_minimum(FILE *fp, int num, const t_minimum *min, t_minimum *mm)
+static inline void add_minimum(FILE* fp, int num, const t_minimum* min, t_minimum* mm)
 {
     print_minimum(fp, num, min);
     mm[num].index = min->index;
     mm[num].ener  = min->ener;
 }
 
-static inline
-gmx_bool is_local_minimum_from_below(const t_minimum       *this_min,
-                                     int                    dimension_index,
-                                     int                    dimension_min,
-                                     int                    neighbour_index,
-                                     const real            *W)
+static inline gmx_bool is_local_minimum_from_below(const t_minimum* this_min,
+                                                   int              dimension_index,
+                                                   int              dimension_min,
+                                                   int              neighbour_index,
+                                                   const real*      W)
 {
-    return ((dimension_index == dimension_min) ||
-            ((dimension_index > dimension_min) &&
-             (this_min->ener < W[neighbour_index])));
+    return ((dimension_index == dimension_min)
+            || ((dimension_index > dimension_min) && (this_min->ener < W[neighbour_index])));
     /* Note over/underflow within W cannot occur. */
 }
 
-static inline
-gmx_bool is_local_minimum_from_above(const t_minimum       *this_min,
-                                     int                    dimension_index,
-                                     int                    dimension_max,
-                                     int                    neighbour_index,
-                                     const real            *W)
+static inline gmx_bool is_local_minimum_from_above(const t_minimum* this_min,
+                                                   int              dimension_index,
+                                                   int              dimension_max,
+                                                   int              neighbour_index,
+                                                   const real*      W)
 {
-    return ((dimension_index == dimension_max) ||
-            ((dimension_index < dimension_max) &&
-             (this_min->ener < W[neighbour_index])));
+    return ((dimension_index == dimension_max)
+            || ((dimension_index < dimension_max) && (this_min->ener < W[neighbour_index])));
     /* Note over/underflow within W cannot occur. */
 }
 
-static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real W[])
+static void pick_minima(const char* logfile, int* ibox, int ndim, int len, real W[])
 {
-    FILE      *fp;
+    FILE*      fp;
     int        i, j, k, nmin;
     t_minimum *mm, this_min;
-    int       *this_point;
+    int*       this_point;
     int        loopmax, loopcounter;
 
     snew(mm, len);
@@ -296,10 +291,10 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                     /* Get the index of this point in the flat array */
                     this_min.index = index2(ibox, i, j);
                     this_min.ener  = W[this_min.index];
-                    if (is_local_minimum_from_below(&this_min, i, 0,         index2(ibox, i-1, j  ), W) &&
-                        is_local_minimum_from_above(&this_min, i, ibox[0]-1, index2(ibox, i+1, j  ), W) &&
-                        is_local_minimum_from_below(&this_min, j, 0,         index2(ibox, i, j-1), W) &&
-                        is_local_minimum_from_above(&this_min, j, ibox[1]-1, index2(ibox, i, j+1), W))
+                    if (is_local_minimum_from_below(&this_min, i, 0, index2(ibox, i - 1, j), W)
+                        && is_local_minimum_from_above(&this_min, i, ibox[0] - 1, index2(ibox, i + 1, j), W)
+                        && is_local_minimum_from_below(&this_min, j, 0, index2(ibox, i, j - 1), W)
+                        && is_local_minimum_from_above(&this_min, j, ibox[1] - 1, index2(ibox, i, j + 1), W))
                     {
                         add_minimum(fp, nmin, &this_min, mm);
                         nmin++;
@@ -317,12 +312,15 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                         /* Get the index of this point in the flat array */
                         this_min.index = index3(ibox, i, j, k);
                         this_min.ener  = W[this_min.index];
-                        if (is_local_minimum_from_below(&this_min, i, 0,         index3(ibox, i-1, j, k  ), W) &&
-                            is_local_minimum_from_above(&this_min, i, ibox[0]-1, index3(ibox, i+1, j, k  ), W) &&
-                            is_local_minimum_from_below(&this_min, j, 0,         index3(ibox, i, j-1, k  ), W) &&
-                            is_local_minimum_from_above(&this_min, j, ibox[1]-1, index3(ibox, i, j+1, k  ), W) &&
-                            is_local_minimum_from_below(&this_min, k, 0,         index3(ibox, i, j, k-1), W) &&
-                            is_local_minimum_from_above(&this_min, k, ibox[2]-1, index3(ibox, i, j, k+1), W))
+                        if (is_local_minimum_from_below(&this_min, i, 0, index3(ibox, i - 1, j, k), W)
+                            && is_local_minimum_from_above(&this_min, i, ibox[0] - 1,
+                                                           index3(ibox, i + 1, j, k), W)
+                            && is_local_minimum_from_below(&this_min, j, 0, index3(ibox, i, j - 1, k), W)
+                            && is_local_minimum_from_above(&this_min, j, ibox[1] - 1,
+                                                           index3(ibox, i, j + 1, k), W)
+                            && is_local_minimum_from_below(&this_min, k, 0, index3(ibox, i, j, k - 1), W)
+                            && is_local_minimum_from_above(&this_min, k, ibox[2] - 1,
+                                                           index3(ibox, i, j, k + 1), W))
                         {
                             add_minimum(fp, nmin, &this_min, mm);
                             nmin++;
@@ -365,11 +363,13 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                      * this_point array for use with indexn(). */
                     int index = this_point[i];
                     this_point[i]--;
-                    bMin = bMin &&
-                        is_local_minimum_from_below(&this_min, index, 0,         indexn(ndim, ibox, this_point), W);
+                    bMin = bMin
+                           && is_local_minimum_from_below(&this_min, index, 0,
+                                                          indexn(ndim, ibox, this_point), W);
                     this_point[i] += 2;
-                    bMin           = bMin &&
-                        is_local_minimum_from_above(&this_min, index, ibox[i]-1, indexn(ndim, ibox, this_point), W);
+                    bMin = bMin
+                           && is_local_minimum_from_above(&this_min, index, ibox[i] - 1,
+                                                          indexn(ndim, ibox, this_point), W);
                     this_point[i]--;
                 }
                 if (bMin)
@@ -385,7 +385,7 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
                 if (loopmax > loopcounter)
                 {
                     /* update this_point non-recursively */
-                    i = ndim-1;
+                    i = ndim - 1;
                     this_point[i]++;
                     while (ibox[i] == this_point[i])
                     {
@@ -411,34 +411,50 @@ static void pick_minima(const char *logfile, int *ibox, int ndim, int len, real 
     sfree(mm);
 }
 
-static void do_sham(const char *fn, const char *ndx,
-                    const char *xpmP, const char *xpm, const char *xpm2,
-                    const char *xpm3, const char *pdb,
-                    const char *logf,
-                    int n, int neig, real **eig,
-                    gmx_bool bGE, int nenerT, real **enerT,
-                    real Tref,
-                    real pmax, real gmax,
-                    const real *emin, const real *emax, int nlevels, real pmin,
-                    const int *idim, int *ibox,
-                    gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
+static void do_sham(const char* fn,
+                    const char* ndx,
+                    const char* xpmP,
+                    const char* xpm,
+                    const char* xpm2,
+                    const char* xpm3,
+                    const char* pdb,
+                    const char* logf,
+                    int         n,
+                    int         neig,
+                    real**      eig,
+                    gmx_bool    bGE,
+                    int         nenerT,
+                    real**      enerT,
+                    real        Tref,
+                    real        pmax,
+                    real        gmax,
+                    const real* emin,
+                    const real* emax,
+                    int         nlevels,
+                    real        pmin,
+                    const int*  idim,
+                    int*        ibox,
+                    gmx_bool    bXmin,
+                    real*       xmin,
+                    gmx_bool    bXmax,
+                    real*       xmax)
 {
-    FILE        *fp;
-    real        *min_eig, *max_eig;
-    real        *axis_x, *axis_y, *axis_z, *axis = nullptr;
-    double      *P;
-    real       **PP, *W, *E, **WW, **EE, *S, **SS, *M, *bE;
+    FILE*        fp;
+    real *       min_eig, *max_eig;
+    real *       axis_x, *axis_y, *axis_z, *axis = nullptr;
+    double*      P;
+    real **      PP, *W, *E, **WW, **EE, *S, **SS, *M, *bE;
     rvec         xxx;
-    char        *buf;
-    double      *bfac, efac, bref, Pmax, Wmin, Wmax, Winf, Emin, Emax, Einf, Smin, Smax, Sinf;
-    real        *delta;
+    char*        buf;
+    double *     bfac, efac, bref, Pmax, Wmin, Wmax, Winf, Emin, Emax, Einf, Smin, Smax, Sinf;
+    real*        delta;
     int          i, j, k, imin, len, index, *nbin, *bindex, bi;
-    int         *nxyz, maxbox;
-    t_blocka    *b;
+    int *        nxyz, maxbox;
+    t_blocka*    b;
     gmx_bool     bOutside;
     unsigned int flags;
-    t_rgb        rlo  = { 0, 0, 0 };
-    t_rgb        rhi  = { 1, 1, 1 };
+    t_rgb        rlo = { 0, 0, 0 };
+    t_rgb        rhi = { 1, 1, 1 };
 
     /* Determine extremes for the eigenvectors */
     snew(min_eig, neig);
@@ -455,7 +471,7 @@ static void do_sham(const char *fn, const char *ndx,
         {
             min_eig[i] = std::min(min_eig[i], eig[i][j]);
             max_eig[i] = std::max(max_eig[i], eig[i][j]);
-            delta[i]   = (max_eig[i]-min_eig[i])/(2.0*ibox[i]);
+            delta[i]   = (max_eig[i] - min_eig[i]) / (2.0 * ibox[i]);
         }
         /* Add some extra space, half a bin on each side, unless the
          * user has set the limits.
@@ -464,7 +480,8 @@ static void do_sham(const char *fn, const char *ndx,
         {
             if (max_eig[i] > xmax[i])
             {
-                gmx_warning("Your xmax[%d] value %f is smaller than the largest data point %f", i, xmax[i], max_eig[i]);
+                gmx_warning("Your xmax[%d] value %f is smaller than the largest data point %f", i,
+                            xmax[i], max_eig[i]);
             }
             max_eig[i] = xmax[i];
         }
@@ -477,7 +494,8 @@ static void do_sham(const char *fn, const char *ndx,
         {
             if (min_eig[i] < xmin[i])
             {
-                gmx_warning("Your xmin[%d] value %f is larger than the smallest data point %f", i, xmin[i], min_eig[i]);
+                gmx_warning("Your xmin[%d] value %f is larger than the smallest data point %f", i,
+                            xmin[i], min_eig[i]);
             }
             min_eig[i] = xmin[i];
         }
@@ -485,10 +503,10 @@ static void do_sham(const char *fn, const char *ndx,
         {
             min_eig[i] -= delta[i];
         }
-        bfac[i]     = ibox[i]/(max_eig[i]-min_eig[i]);
+        bfac[i] = ibox[i] / (max_eig[i] - min_eig[i]);
     }
     /* Do the binning */
-    bref = 1/(BOLTZ*Tref);
+    bref = 1 / (BOLTZ * Tref);
     snew(bE, n);
     if (bGE || nenerT == 2)
     {
@@ -498,13 +516,13 @@ static void do_sham(const char *fn, const char *ndx,
         {
             if (bGE)
             {
-                bE[j] = bref*enerT[0][j];
+                bE[j] = bref * enerT[0][j];
             }
             else
             {
-                bE[j] = (bref - 1/(BOLTZ*enerT[1][j]))*enerT[0][j];
+                bE[j] = (bref - 1 / (BOLTZ * enerT[1][j])) * enerT[0][j];
             }
-            Emin  = std::min(Emin, static_cast<double>(bE[j]));
+            Emin = std::min(Emin, static_cast<double>(bE[j]));
         }
     }
     else
@@ -514,10 +532,9 @@ static void do_sham(const char *fn, const char *ndx,
     len = 1;
     for (i = 0; (i < neig); i++)
     {
-        len = len*ibox[i];
+        len = len * ibox[i];
     }
-    printf("There are %d bins in the %d-dimensional histogram. Beta-Emin = %g\n",
-           len, neig, Emin);
+    printf("There are %d bins in the %d-dimensional histogram. Beta-Emin = %g\n", len, neig, Emin);
     snew(P, len);
     snew(W, len);
     snew(E, len);
@@ -534,7 +551,7 @@ static void do_sham(const char *fn, const char *ndx,
         bOutside = FALSE;
         for (i = 0; (i < neig); i++)
         {
-            nxyz[i] = static_cast<int>(bfac[i]*(eig[i][j]-min_eig[i]));
+            nxyz[i] = static_cast<int>(bfac[i] * (eig[i][j] - min_eig[i]));
             if (nxyz[i] < 0 || nxyz[i] >= ibox[i])
             {
                 bOutside = TRUE;
@@ -547,7 +564,7 @@ static void do_sham(const char *fn, const char *ndx,
             /* Compute the exponential factor */
             if (enerT)
             {
-                efac = std::exp(-bE[j]+Emin);
+                efac = std::exp(-bE[j] + Emin);
             }
             else
             {
@@ -566,7 +583,7 @@ static void do_sham(const char *fn, const char *ndx,
                 }
                 else if (idim[i] == -1)
                 {
-                    efac /= std::sin(DEG2RAD*eig[i][j]);
+                    efac /= std::sin(DEG2RAD * eig[i][j]);
                 }
             }
             /* Update the probability */
@@ -596,7 +613,7 @@ static void do_sham(const char *fn, const char *ndx,
         if (P[i] != 0)
         {
             Pmax = std::max(P[i], Pmax);
-            W[i] = -BOLTZ*Tref*std::log(P[i]);
+            W[i] = -BOLTZ * Tref * std::log(P[i]);
             if (W[i] < Wmin)
             {
                 Wmin = W[i];
@@ -619,11 +636,11 @@ static void do_sham(const char *fn, const char *ndx,
     {
         Wmax -= Wmin;
     }
-    Winf = Wmax+1;
-    Einf = Emax+1;
-    Smin = Emin-Wmax;
-    Smax = Emax-Smin;
-    Sinf = Smax+1;
+    Winf = Wmax + 1;
+    Einf = Emax + 1;
+    Smin = Emin - Wmax;
+    Smax = Emax - Smin;
+    Sinf = Smax + 1;
     /* Write out the free energy as a function of bin index */
     fp = gmx_ffopen(fn, "w");
     for (i = 0; (i < len); i++)
@@ -631,7 +648,7 @@ static void do_sham(const char *fn, const char *ndx,
         if (P[i] != 0)
         {
             W[i] -= Wmin;
-            S[i]  = E[i]-W[i]-Smin;
+            S[i] = E[i] - W[i] - Smin;
             fprintf(fp, "%5d  %10.5e  %10.5e  %10.5e\n", i, W[i], E[i], S[i]);
         }
         else
@@ -644,18 +661,18 @@ static void do_sham(const char *fn, const char *ndx,
     gmx_ffclose(fp);
     /* Organize the structures in the bins */
     snew(b, 1);
-    snew(b->index, len+1);
+    snew(b->index, len + 1);
     snew(b->a, n);
     b->index[0] = 0;
     for (i = 0; (i < len); i++)
     {
-        b->index[i+1] = b->index[i]+nbin[i];
-        nbin[i]       = 0;
+        b->index[i + 1] = b->index[i] + nbin[i];
+        nbin[i]         = 0;
     }
     for (i = 0; (i < n); i++)
     {
-        bi = bindex[i];
-        b->a[b->index[bi]+nbin[bi]] = i;
+        bi                            = bindex[i];
+        b->a[b->index[bi] + nbin[bi]] = i;
         nbin[bi]++;
     }
     /* Consistency check */
@@ -674,21 +691,21 @@ static void do_sham(const char *fn, const char *ndx,
         if (nbin[i] > 0)
         {
             fprintf(fp, "[ %d ]\n", i);
-            for (j = b->index[i]; (j < b->index[i+1]); j++)
+            for (j = b->index[i]; (j < b->index[i + 1]); j++)
             {
-                fprintf(fp, "%d\n", b->a[j]+1);
+                fprintf(fp, "%d\n", b->a[j] + 1);
             }
         }
     }
     gmx_ffclose(fp);
-    snew(axis_x, ibox[0]+1);
-    snew(axis_y, ibox[1]+1);
-    snew(axis_z, ibox[2]+1);
+    snew(axis_x, ibox[0] + 1);
+    snew(axis_y, ibox[1] + 1);
+    snew(axis_z, ibox[2] + 1);
     maxbox = std::max(ibox[0], std::max(ibox[1], ibox[2]));
-    snew(PP, maxbox*maxbox);
-    snew(WW, maxbox*maxbox);
-    snew(EE, maxbox*maxbox);
-    snew(SS, maxbox*maxbox);
+    snew(PP, maxbox * maxbox);
+    snew(WW, maxbox * maxbox);
+    snew(EE, maxbox * maxbox);
+    snew(SS, maxbox * maxbox);
     for (i = 0; (i < std::min(neig, 3)); i++)
     {
         switch (i)
@@ -700,7 +717,7 @@ static void do_sham(const char *fn, const char *ndx,
         }
         for (j = 0; j <= ibox[i]; j++)
         {
-            axis[j] = min_eig[i] + j/bfac[i];
+            axis[j] = min_eig[i] + j / bfac[i];
         }
     }
 
@@ -719,28 +736,27 @@ static void do_sham(const char *fn, const char *ndx,
             snew(PP[i], ibox[1]);
             for (j = 0; j < ibox[1]; j++)
             {
-                PP[i][j] = P[i*ibox[1]+j];
+                PP[i][j] = P[i * ibox[1] + j];
             }
-            WW[i] = &(W[i*ibox[1]]);
-            EE[i] = &(E[i*ibox[1]]);
-            SS[i] = &(S[i*ibox[1]]);
+            WW[i] = &(W[i * ibox[1]]);
+            EE[i] = &(E[i * ibox[1]]);
+            SS[i] = &(S[i * ibox[1]]);
         }
         fp = gmx_ffopen(xpmP, "w");
-        write_xpm(fp, flags, "Probability Distribution", "", "PC1", "PC2",
-                  ibox[0], ibox[1], axis_x, axis_y, PP, 0, Pmax, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "Probability Distribution", "", "PC1", "PC2", ibox[0], ibox[1], axis_x,
+                  axis_y, PP, 0, Pmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         fp = gmx_ffopen(xpm, "w");
-        write_xpm(fp, flags, "Gibbs Energy Landscape", "G (kJ/mol)", "PC1", "PC2",
-                  ibox[0], ibox[1], axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "Gibbs Energy Landscape", "G (kJ/mol)", "PC1", "PC2", ibox[0], ibox[1],
+                  axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         fp = gmx_ffopen(xpm2, "w");
-        write_xpm(fp, flags, "Enthalpy Landscape", "H (kJ/mol)", "PC1", "PC2",
-                  ibox[0], ibox[1], axis_x, axis_y, EE,
-                  emin ? *emin : Emin, emax ? *emax : Einf, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "Enthalpy Landscape", "H (kJ/mol)", "PC1", "PC2", ibox[0], ibox[1],
+                  axis_x, axis_y, EE, emin ? *emin : Emin, emax ? *emax : Einf, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         fp = gmx_ffopen(xpm3, "w");
-        write_xpm(fp, flags, "Entropy Landscape", "TDS (kJ/mol)", "PC1", "PC2",
-                  ibox[0], ibox[1], axis_x, axis_y, SS, 0, Sinf, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "Entropy Landscape", "TDS (kJ/mol)", "PC1", "PC2", ibox[0], ibox[1],
+                  axis_x, axis_y, SS, 0, Sinf, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
     }
     else if (neig == 3)
@@ -749,27 +765,27 @@ static void do_sham(const char *fn, const char *ndx,
         fp = gmx_ffopen(pdb, "w");
         for (i = 0; (i < ibox[0]); i++)
         {
-            xxx[XX] = 3*i+1.5*(1-ibox[0]);
+            xxx[XX] = 3 * i + 1.5 * (1 - ibox[0]);
             for (j = 0; (j < ibox[1]); j++)
             {
-                xxx[YY] = 3*j+1.5*(1-ibox[1]);
+                xxx[YY] = 3 * j + 1.5 * (1 - ibox[1]);
                 for (k = 0; (k < ibox[2]); k++)
                 {
-                    xxx[ZZ] = 3*k+1.5*(1-ibox[2]);
+                    xxx[ZZ] = 3 * k + 1.5 * (1 - ibox[2]);
                     index   = index3(ibox, i, j, k);
                     if (P[index] > 0)
                     {
                         fprintf(fp, "%-6s%5d  %-4.4s%3.3s  %4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                                "ATOM", (index+1) %10000, "H", "H", (index+1)%10000,
-                                xxx[XX], xxx[YY], xxx[ZZ], 1.0, W[index]);
+                                "ATOM", (index + 1) % 10000, "H", "H", (index + 1) % 10000, xxx[XX],
+                                xxx[YY], xxx[ZZ], 1.0, W[index]);
                     }
                 }
             }
         }
         gmx_ffclose(fp);
         write_xplor("out.xplor", W, ibox, min_eig, max_eig);
-        nxyz[XX] = imin/(ibox[1]*ibox[2]);
-        nxyz[YY] = (imin-nxyz[XX]*ibox[1]*ibox[2])/ibox[2];
+        nxyz[XX] = imin / (ibox[1] * ibox[2]);
+        nxyz[YY] = (imin - nxyz[XX] * ibox[1] * ibox[2]) / ibox[2];
         nxyz[ZZ] = imin % ibox[2];
         for (i = 0; (i < ibox[0]); i++)
         {
@@ -779,12 +795,12 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, i, j, nxyz[ZZ])];
             }
         }
-        snew(buf, std::strlen(xpm)+4);
+        snew(buf, std::strlen(xpm) + 4);
         sprintf(buf, "%s", xpm);
-        sprintf(&buf[std::strlen(xpm)-4], "12.xpm");
+        sprintf(&buf[std::strlen(xpm) - 4], "12.xpm");
         fp = gmx_ffopen(buf, "w");
-        write_xpm(fp, flags, "Gibbs Energy Landscape", "W (kJ/mol)", "PC1", "PC2",
-                  ibox[0], ibox[1], axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "Gibbs Energy Landscape", "W (kJ/mol)", "PC1", "PC2", ibox[0], ibox[1],
+                  axis_x, axis_y, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         for (i = 0; (i < ibox[0]); i++)
         {
@@ -793,10 +809,10 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, i, nxyz[YY], j)];
             }
         }
-        sprintf(&buf[std::strlen(xpm)-4], "13.xpm");
+        sprintf(&buf[std::strlen(xpm) - 4], "13.xpm");
         fp = gmx_ffopen(buf, "w");
-        write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC1", "PC3",
-                  ibox[0], ibox[2], axis_x, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC1", "PC3", ibox[0], ibox[2],
+                  axis_x, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         for (i = 0; (i < ibox[1]); i++)
         {
@@ -805,24 +821,24 @@ static void do_sham(const char *fn, const char *ndx,
                 WW[i][j] = W[index3(ibox, nxyz[XX], i, j)];
             }
         }
-        sprintf(&buf[std::strlen(xpm)-4], "23.xpm");
+        sprintf(&buf[std::strlen(xpm) - 4], "23.xpm");
         fp = gmx_ffopen(buf, "w");
-        write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC2", "PC3",
-                  ibox[1], ibox[2], axis_y, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
+        write_xpm(fp, flags, "SHAM Energy Landscape", "kJ/mol", "PC2", "PC3", ibox[1], ibox[2],
+                  axis_y, axis_z, WW, 0, gmax, rlo, rhi, &nlevels);
         gmx_ffclose(fp);
         sfree(buf);
     }
 }
 
-static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *oenv)
+static void ehisto(const char* fh, int n, real** enerT, const gmx_output_env_t* oenv)
 {
-    FILE  *fp;
-    int    i, j, k, nbin, blength;
-    int   *bindex;
-    real  *T, bmin, bmax, bwidth;
-    int  **histo;
+    FILE* fp;
+    int   i, j, k, nbin, blength;
+    int*  bindex;
+    real *T, bmin, bmax, bwidth;
+    int** histo;
 
-    bmin =  1e8;
+    bmin = 1e8;
     bmax = -1e8;
     snew(bindex, n);
     snew(T, n);
@@ -847,7 +863,7 @@ static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *
         bmax = std::max(enerT[0][j], bmax);
     }
     bwidth  = 1.0;
-    blength = static_cast<int>((bmax - bmin)/bwidth + 2);
+    blength = static_cast<int>((bmax - bmin) / bwidth + 2);
     snew(histo, nbin);
     for (i = 0; (i < nbin); i++)
     {
@@ -855,13 +871,13 @@ static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *
     }
     for (j = 0; (j < n); j++)
     {
-        k = static_cast<int>((enerT[0][j]-bmin)/bwidth);
+        k = static_cast<int>((enerT[0][j] - bmin) / bwidth);
         histo[bindex[j]][k]++;
     }
     fp = xvgropen(fh, "Energy distribution", "E (kJ/mol)", "", oenv);
     for (j = 0; (j < blength); j++)
     {
-        fprintf(fp, "%8.3f", bmin+j*bwidth);
+        fprintf(fp, "%8.3f", bmin + j * bwidth);
         for (k = 0; (k < nbin); k++)
         {
             fprintf(fp, "  %6d", histo[k][j]);
@@ -871,9 +887,9 @@ static void ehisto(const char *fh, int n, real **enerT, const gmx_output_env_t *
     xvgrclose(fp);
 }
 
-int gmx_sham(int argc, char *argv[])
+int gmx_sham(int argc, char* argv[])
 {
-    const char        *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] makes multi-dimensional free-energy, enthalpy and entropy plots.",
         "[THISMODULE] reads one or more [REF].xvg[ref] files and analyzes data sets.",
         "The basic purpose of [THISMODULE] is to plot Gibbs free energy landscapes",
@@ -914,90 +930,94 @@ int gmx_sham(int argc, char *argv[])
         "is the natural quantity to use, as it will produce bins of the same",
         "volume."
     };
-    static real        tb        = -1, te = -1;
-    static gmx_bool    bHaveT    = TRUE, bDer = FALSE;
-    static gmx_bool    bSham     = TRUE;
-    static real        Tref      = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
-    static rvec        nrdim     = {1, 1, 1};
-    static rvec        nrbox     = {32, 32, 32};
-    static rvec        xmin      = {0, 0, 0}, xmax = {1, 1, 1};
-    static int         nsets_in  = 1, nlevels = 25;
-    t_pargs            pa[]      = {
-        { "-time",    FALSE, etBOOL, {&bHaveT},
-          "Expect a time in the input" },
-        { "-b",       FALSE, etREAL, {&tb},
-          "First time to read from set" },
-        { "-e",       FALSE, etREAL, {&te},
-          "Last time to read from set" },
-        { "-ttol",     FALSE, etREAL, {&ttol},
-          "Tolerance on time in appropriate units (usually ps)" },
-        { "-n",       FALSE, etINT, {&nsets_in},
+    static real     tb = -1, te = -1;
+    static gmx_bool bHaveT = TRUE, bDer = FALSE;
+    static gmx_bool bSham = TRUE;
+    static real     Tref = 298.15, pmin = 0, ttol = 0, pmax = 0, gmax = 0, emin = 0, emax = 0;
+    static rvec     nrdim = { 1, 1, 1 };
+    static rvec     nrbox = { 32, 32, 32 };
+    static rvec     xmin = { 0, 0, 0 }, xmax = { 1, 1, 1 };
+    static int      nsets_in = 1, nlevels = 25;
+    t_pargs         pa[] = {
+        { "-time", FALSE, etBOOL, { &bHaveT }, "Expect a time in the input" },
+        { "-b", FALSE, etREAL, { &tb }, "First time to read from set" },
+        { "-e", FALSE, etREAL, { &te }, "Last time to read from set" },
+        { "-ttol", FALSE, etREAL, { &ttol }, "Tolerance on time in appropriate units (usually ps)" },
+        { "-n",
+          FALSE,
+          etINT,
+          { &nsets_in },
           "Read this number of sets separated by lines containing only an ampersand" },
-        { "-d",       FALSE, etBOOL, {&bDer},
-          "Use the derivative" },
-        { "-sham",    FALSE, etBOOL, {&bSham},
+        { "-d", FALSE, etBOOL, { &bDer }, "Use the derivative" },
+        { "-sham",
+          FALSE,
+          etBOOL,
+          { &bSham },
           "Turn off energy weighting even if energies are given" },
-        { "-tsham",   FALSE, etREAL, {&Tref},
-          "Temperature for single histogram analysis" },
-        { "-pmin",    FALSE, etREAL, {&pmin},
+        { "-tsham", FALSE, etREAL, { &Tref }, "Temperature for single histogram analysis" },
+        { "-pmin",
+          FALSE,
+          etREAL,
+          { &pmin },
           "Minimum probability. Anything lower than this will be set to zero" },
-        { "-dim",     FALSE, etRVEC, {nrdim},
-          "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will get the same value as the last)" },
-        { "-ngrid",   FALSE, etRVEC, {nrbox},
-          "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same value as the last)" },
-        { "-xmin",    FALSE, etRVEC, {xmin},
+        { "-dim",
+          FALSE,
+          etRVEC,
+          { nrdim },
+          "Dimensions for distances, used for volume correction (max 3 values, dimensions > 3 will "
+          "get the same value as the last)" },
+        { "-ngrid",
+          FALSE,
+          etRVEC,
+          { nrbox },
+          "Number of bins for energy landscapes (max 3 values, dimensions > 3 will get the same "
+          "value as the last)" },
+        { "-xmin",
+          FALSE,
+          etRVEC,
+          { xmin },
           "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
-        { "-xmax",    FALSE, etRVEC, {xmax},
+        { "-xmax",
+          FALSE,
+          etRVEC,
+          { xmax },
           "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
-        { "-pmax",    FALSE, etREAL, {&pmax},
-          "Maximum probability in output, default is calculate" },
-        { "-gmax",    FALSE, etREAL, {&gmax},
-          "Maximum free energy in output, default is calculate" },
-        { "-emin",    FALSE, etREAL, {&emin},
-          "Minimum enthalpy in output, default is calculate" },
-        { "-emax",    FALSE, etREAL, {&emax},
-          "Maximum enthalpy in output, default is calculate" },
-        { "-nlevels", FALSE, etINT,  {&nlevels},
-          "Number of levels for energy landscape" },
+        { "-pmax", FALSE, etREAL, { &pmax }, "Maximum probability in output, default is calculate" },
+        { "-gmax", FALSE, etREAL, { &gmax }, "Maximum free energy in output, default is calculate" },
+        { "-emin", FALSE, etREAL, { &emin }, "Minimum enthalpy in output, default is calculate" },
+        { "-emax", FALSE, etREAL, { &emax }, "Maximum enthalpy in output, default is calculate" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels for energy landscape" },
     };
 #define NPA asize(pa)
 
     int               n, e_n, nset, e_nset = 0, i, *idim, *ibox;
-    real            **val, **et_val, *t, *e_t, e_dt, dt;
-    real             *rmin, *rmax;
-    const char       *fn_ge, *fn_ene;
-    gmx_output_env_t *oenv;
+    real **           val, **et_val, *t, *e_t, e_dt, dt;
+    real *            rmin, *rmax;
+    const char *      fn_ge, *fn_ene;
+    gmx_output_env_t* oenv;
     int64_t           num_grid_points;
 
-    t_filenm          fnm[] = {
-        { efXVG, "-f",    "graph",    ffREAD   },
-        { efXVG, "-ge",   "gibbs",    ffOPTRD  },
-        { efXVG, "-ene",  "esham",    ffOPTRD  },
-        { efXVG, "-dist", "ener",     ffOPTWR  },
-        { efXVG, "-histo", "edist",    ffOPTWR  },
-        { efNDX, "-bin",  "bindex",   ffOPTWR  },
-        { efXPM, "-lp",   "prob",     ffOPTWR  },
-        { efXPM, "-ls",   "gibbs",    ffOPTWR  },
-        { efXPM, "-lsh",  "enthalpy", ffOPTWR  },
-        { efXPM, "-lss",  "entropy",  ffOPTWR  },
-        { efPDB, "-ls3",  "gibbs3",   ffOPTWR  },
-        { efLOG, "-g",    "shamlog",  ffOPTWR  }
+    t_filenm fnm[] = {
+        { efXVG, "-f", "graph", ffREAD },       { efXVG, "-ge", "gibbs", ffOPTRD },
+        { efXVG, "-ene", "esham", ffOPTRD },    { efXVG, "-dist", "ener", ffOPTWR },
+        { efXVG, "-histo", "edist", ffOPTWR },  { efNDX, "-bin", "bindex", ffOPTWR },
+        { efXPM, "-lp", "prob", ffOPTWR },      { efXPM, "-ls", "gibbs", ffOPTWR },
+        { efXPM, "-lsh", "enthalpy", ffOPTWR }, { efXPM, "-lss", "entropy", ffOPTWR },
+        { efPDB, "-ls3", "gibbs3", ffOPTWR },   { efLOG, "-g", "shamlog", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
-    int     npargs;
+    int npargs;
 
     npargs = asize(pa);
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, npargs, pa, asize(desc), desc, 0,
+                           nullptr, &oenv))
     {
         return 0;
     }
 
-    val = read_xvg_time(opt2fn("-f", NFILE, fnm), bHaveT,
-                        opt2parg_bSet("-b", npargs, pa), tb-ttol,
-                        opt2parg_bSet("-e", npargs, pa), te+ttol,
-                        nsets_in, &nset, &n, &dt, &t);
+    val = read_xvg_time(opt2fn("-f", NFILE, fnm), bHaveT, opt2parg_bSet("-b", npargs, pa), tb - ttol,
+                        opt2parg_bSet("-e", npargs, pa), te + ttol, nsets_in, &nset, &n, &dt, &t);
     printf("Read %d sets of %d points, dt = %g\n\n", nset, n, dt);
 
     fn_ge  = opt2fn_null("-ge", NFILE, fnm);
@@ -1010,29 +1030,28 @@ int gmx_sham(int argc, char *argv[])
 
     if (fn_ge || fn_ene)
     {
-        et_val = read_xvg_time(fn_ge ? fn_ge : fn_ene, bHaveT,
-                               opt2parg_bSet("-b", npargs, pa), tb-ttol,
-                               opt2parg_bSet("-e", npargs, pa), te+ttol,
-                               1, &e_nset, &e_n, &e_dt, &e_t);
+        et_val = read_xvg_time(fn_ge ? fn_ge : fn_ene, bHaveT, opt2parg_bSet("-b", npargs, pa),
+                               tb - ttol, opt2parg_bSet("-e", npargs, pa), te + ttol, 1, &e_nset,
+                               &e_n, &e_dt, &e_t);
         if (fn_ge)
         {
             if (e_nset != 1)
             {
-                gmx_fatal(FARGS, "Can only handle one free energy component in %s",
-                          fn_ge);
+                gmx_fatal(FARGS, "Can only handle one free energy component in %s", fn_ge);
             }
         }
         else
         {
             if (e_nset != 1 && e_nset != 2)
             {
-                gmx_fatal(FARGS, "Can only handle one energy component or one energy and one T in %s",
-                          fn_ene);
+                gmx_fatal(FARGS,
+                          "Can only handle one energy component or one energy and one T in %s", fn_ene);
             }
         }
         if (e_n != n)
         {
-            gmx_fatal(FARGS, "Number of energies (%d) does not match number of entries (%d) in %s", e_n, n, opt2fn("-f", NFILE, fnm));
+            gmx_fatal(FARGS, "Number of energies (%d) does not match number of entries (%d) in %s",
+                      e_n, n, opt2fn("-f", NFILE, fnm));
         }
     }
     else
@@ -1078,19 +1097,12 @@ int gmx_sham(int argc, char *argv[])
     }
     /* The number of grid points fits in a int64_t. */
 
-    do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm),
-            opt2fn("-lp", NFILE, fnm),
-            opt2fn("-ls", NFILE, fnm), opt2fn("-lsh", NFILE, fnm),
-            opt2fn("-lss", NFILE, fnm),
-            opt2fn("-ls3", NFILE, fnm), opt2fn("-g", NFILE, fnm),
-            n, nset, val, fn_ge != nullptr, e_nset, et_val, Tref,
-            pmax, gmax,
-            opt2parg_bSet("-emin", NPA, pa) ? &emin : nullptr,
-            opt2parg_bSet("-emax", NPA, pa) ? &emax : nullptr,
-            nlevels, pmin,
-            idim, ibox,
-            opt2parg_bSet("-xmin", NPA, pa), rmin,
-            opt2parg_bSet("-xmax", NPA, pa), rmax);
+    do_sham(opt2fn("-dist", NFILE, fnm), opt2fn("-bin", NFILE, fnm), opt2fn("-lp", NFILE, fnm),
+            opt2fn("-ls", NFILE, fnm), opt2fn("-lsh", NFILE, fnm), opt2fn("-lss", NFILE, fnm),
+            opt2fn("-ls3", NFILE, fnm), opt2fn("-g", NFILE, fnm), n, nset, val, fn_ge != nullptr,
+            e_nset, et_val, Tref, pmax, gmax, opt2parg_bSet("-emin", NPA, pa) ? &emin : nullptr,
+            opt2parg_bSet("-emax", NPA, pa) ? &emax : nullptr, nlevels, pmin, idim, ibox,
+            opt2parg_bSet("-xmin", NPA, pa), rmin, opt2parg_bSet("-xmax", NPA, pa), rmax);
 
     return 0;
 }

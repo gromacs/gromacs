@@ -83,93 +83,91 @@ typedef std::unique_ptr<CheckBondedInteractionsCallback> CheckBondedInteractions
  * steps. This allows elements to be aware of any changes before
  * deciding what functionality they need to run.
  */
-class DomDecHelper final :
-    public         INeighborSearchSignallerClient
+class DomDecHelper final : public INeighborSearchSignallerClient
 {
-    public:
-        //! Constructor
-        DomDecHelper(
-            bool                               isVerbose,
-            int                                verbosePrintInterval,
-            StatePropagatorData               *statePropagatorData,
-            TopologyHolder                    *topologyHolder,
-            CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback,
-            int                                nstglobalcomm,
-            FILE                              *fplog,
-            t_commrec                         *cr,
-            const MDLogger                    &mdlog,
-            Constraints                       *constr,
-            t_inputrec                        *inputrec,
-            MDAtoms                           *mdAtoms,
-            t_nrnb                            *nrnb,
-            gmx_wallcycle                     *wcycle,
-            t_forcerec                        *fr,
-            gmx_vsite_t                       *vsite,
-            ImdSession                        *imdSession,
-            pull_t                            *pull_work);
+public:
+    //! Constructor
+    DomDecHelper(bool                               isVerbose,
+                 int                                verbosePrintInterval,
+                 StatePropagatorData*               statePropagatorData,
+                 TopologyHolder*                    topologyHolder,
+                 CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback,
+                 int                                nstglobalcomm,
+                 FILE*                              fplog,
+                 t_commrec*                         cr,
+                 const MDLogger&                    mdlog,
+                 Constraints*                       constr,
+                 t_inputrec*                        inputrec,
+                 MDAtoms*                           mdAtoms,
+                 t_nrnb*                            nrnb,
+                 gmx_wallcycle*                     wcycle,
+                 t_forcerec*                        fr,
+                 gmx_vsite_t*                       vsite,
+                 ImdSession*                        imdSession,
+                 pull_t*                            pull_work);
 
-        /*! \brief Run domain decomposition
-         *
-         * Does domain decomposition partitioning at neighbor searching steps
-         *
-         * @param step  The step number
-         * @param time  The time
-         */
-        void run(Step step, Time time);
+    /*! \brief Run domain decomposition
+     *
+     * Does domain decomposition partitioning at neighbor searching steps
+     *
+     * @param step  The step number
+     * @param time  The time
+     */
+    void run(Step step, Time time);
 
-        /*! \brief The initial domain decomposition partitioning
-         *
-         */
-        void setup();
+    /*! \brief The initial domain decomposition partitioning
+     *
+     */
+    void setup();
 
-    private:
-        //! INeighborSearchSignallerClient implementation
-        SignallerCallbackPtr registerNSCallback() override;
+private:
+    //! INeighborSearchSignallerClient implementation
+    SignallerCallbackPtr registerNSCallback() override;
 
-        //! The next NS step
-        Step       nextNSStep_;
-        //! Whether we're being verbose
-        const bool isVerbose_;
-        //! If we're being verbose, how often?
-        const int  verbosePrintInterval_;
-        //! The global communication frequency
-        const int  nstglobalcomm_;
+    //! The next NS step
+    Step nextNSStep_;
+    //! Whether we're being verbose
+    const bool isVerbose_;
+    //! If we're being verbose, how often?
+    const int verbosePrintInterval_;
+    //! The global communication frequency
+    const int nstglobalcomm_;
 
-        //! Pointer to the micro state
-        StatePropagatorData               *statePropagatorData_;
-        //! Pointer to the topology
-        TopologyHolder                    *topologyHolder_;
-        //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
-        CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the topology
+    TopologyHolder* topologyHolder_;
+    //! Pointer to the ComputeGlobalsHelper object - to ask for # of bonded interaction checking
+    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE           *fplog_;
-        //! Handles communication.
-        t_commrec      *cr_;
-        //! Handles logging.
-        const MDLogger &mdlog_;
-        //! Handles constraints.
-        Constraints    *constr_;
-        //! Contains user input mdp options.
-        t_inputrec     *inputrec_;
-        //! Atom parameters for this domain.
-        MDAtoms        *mdAtoms_;
-        //! Manages flop accounting.
-        t_nrnb         *nrnb_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle  *wcycle_;
-        //! Parameters for force calculations.
-        t_forcerec     *fr_;
-        //! Handles virtual sites.
-        gmx_vsite_t    *vsite_;
-        //! The Interactive Molecular Dynamics session.
-        ImdSession     *imdSession_;
-        //! The pull work object.
-        pull_t         *pull_work_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    t_commrec* cr_;
+    //! Handles logging.
+    const MDLogger& mdlog_;
+    //! Handles constraints.
+    Constraints* constr_;
+    //! Contains user input mdp options.
+    t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    MDAtoms* mdAtoms_;
+    //! Manages flop accounting.
+    t_nrnb* nrnb_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
+    //! Parameters for force calculations.
+    t_forcerec* fr_;
+    //! Handles virtual sites.
+    gmx_vsite_t* vsite_;
+    //! The Interactive Molecular Dynamics session.
+    ImdSession* imdSession_;
+    //! The pull work object.
+    pull_t* pull_work_;
 };
 
 //! \}
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_DOMDECHELPER_H

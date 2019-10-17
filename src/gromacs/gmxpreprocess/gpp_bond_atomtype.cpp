@@ -50,17 +50,17 @@
 
 class PreprocessingBondAtomType::Impl
 {
-    public:
-        //! The atom type names.
-        std::vector<char **> typeNames;
+public:
+    //! The atom type names.
+    std::vector<char**> typeNames;
 };
 
-int PreprocessingBondAtomType::bondAtomTypeFromName(const std::string &str) const
+int PreprocessingBondAtomType::bondAtomTypeFromName(const std::string& str) const
 {
     /* Atom types are always case sensitive */
-    auto found = std::find_if(impl_->typeNames.begin(), impl_->typeNames.end(),
-                              [&str](const auto &type)
-                              { return str == const_cast<const char*>(*type); });
+    auto found =
+            std::find_if(impl_->typeNames.begin(), impl_->typeNames.end(),
+                         [&str](const auto& type) { return str == const_cast<const char*>(*type); });
     if (found == impl_->typeNames.end())
     {
         return NOTSET;
@@ -71,20 +71,16 @@ int PreprocessingBondAtomType::bondAtomTypeFromName(const std::string &str) cons
     }
 }
 
-const char *PreprocessingBondAtomType::atomNameFromBondAtomType(int nt) const
+const char* PreprocessingBondAtomType::atomNameFromBondAtomType(int nt) const
 {
     return isSet(nt) ? *impl_->typeNames[nt] : nullptr;
 }
 
-PreprocessingBondAtomType::PreprocessingBondAtomType()
-    : impl_(new Impl)
-{}
+PreprocessingBondAtomType::PreprocessingBondAtomType() : impl_(new Impl) {}
 
-PreprocessingBondAtomType::~PreprocessingBondAtomType()
-{}
+PreprocessingBondAtomType::~PreprocessingBondAtomType() {}
 
-int PreprocessingBondAtomType::addBondAtomType(t_symtab          *tab,
-                                               const std::string &name)
+int PreprocessingBondAtomType::addBondAtomType(t_symtab* tab, const std::string& name)
 {
     int position = bondAtomTypeFromName(name);
     if (position == NOTSET)

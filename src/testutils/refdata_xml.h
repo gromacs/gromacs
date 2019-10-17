@@ -64,8 +64,7 @@ class ReferenceDataEntry;
  *
  * \ingroup module_testutils
  */
-ReferenceDataEntry::EntryPointer
-readReferenceDataFile(const std::string &path);
+ReferenceDataEntry::EntryPointer readReferenceDataFile(const std::string& path);
 /*! \internal
  * \brief
  * Saves reference data to an XML file.
@@ -76,8 +75,7 @@ readReferenceDataFile(const std::string &path);
  *
  * \ingroup module_testutils
  */
-void writeReferenceDataFile(const std::string        &path,
-                            const ReferenceDataEntry &root);
+void writeReferenceDataFile(const std::string& path, const ReferenceDataEntry& root);
 //! \endcond
 
 } // namespace test

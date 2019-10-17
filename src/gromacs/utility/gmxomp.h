@@ -54,9 +54,9 @@
 #include <stdio.h>
 
 #if GMX_NATIVE_WINDOWS
-#include <windows.h>
+#    include <windows.h>
 #elif HAVE_XMMINTRIN_H
-#include <xmmintrin.h>
+#    include <xmmintrin.h>
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
@@ -112,7 +112,7 @@ void gmx_omp_set_num_threads(int num_threads);
  * allocated for \p *message.
  * If the return value is `true`, \p *message is NULL.
  */
-gmx_bool gmx_omp_check_thread_affinity(char **message);
+gmx_bool gmx_omp_check_thread_affinity(char** message);
 
 /*! \brief
  * Pause for use in a spin-wait loop.

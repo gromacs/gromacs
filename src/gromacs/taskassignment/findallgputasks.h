@@ -50,9 +50,10 @@ namespace gmx
 enum class GpuTask;
 enum class TaskTarget;
 class PhysicalNodeCommunicator;
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 //! Container of compute tasks suitable to run on a GPU e.g. on each rank of a node.
-using GpuTasksOnRanks = std::vector< std::vector<GpuTask> >;
+using GpuTasksOnRanks = std::vector<std::vector<GpuTask>>;
 
 /*! \brief Returns container of all tasks on this rank
  * that are eligible for GPU execution.
@@ -69,16 +70,15 @@ using GpuTasksOnRanks = std::vector< std::vector<GpuTask> >;
  * \param[in]  rankHasPpTask              Whether this rank has a PP task
  * \param[in]  rankHasPmeTask             Whether this rank has a PME task
  */
-std::vector<GpuTask>
-findGpuTasksOnThisRank(bool       haveGpusOnThisPhysicalNode,
-                       TaskTarget nonbondedTarget,
-                       TaskTarget pmeTarget,
-                       TaskTarget bondedTarget,
-                       TaskTarget updateTarget,
-                       bool       useGpuForNonbonded,
-                       bool       useGpuForPme,
-                       bool       rankHasPpTask,
-                       bool       rankHasPmeTask);
+std::vector<GpuTask> findGpuTasksOnThisRank(bool       haveGpusOnThisPhysicalNode,
+                                            TaskTarget nonbondedTarget,
+                                            TaskTarget pmeTarget,
+                                            TaskTarget bondedTarget,
+                                            TaskTarget updateTarget,
+                                            bool       useGpuForNonbonded,
+                                            bool       useGpuForPme,
+                                            bool       rankHasPpTask,
+                                            bool       rankHasPmeTask);
 
 /*! \brief Returns container of all tasks on all ranks of this node
  * that are eligible for GPU execution.
@@ -86,10 +86,9 @@ findGpuTasksOnThisRank(bool       haveGpusOnThisPhysicalNode,
  * Perform all necessary communication for preparing for task
  * assignment. Separating this aspect makes it possible to unit test
  * the logic of task assignment. */
-GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
-                          const PhysicalNodeCommunicator &physicalNodeComm);
+GpuTasksOnRanks findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
+                                          const PhysicalNodeCommunicator& physicalNodeComm);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

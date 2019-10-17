@@ -63,43 +63,43 @@ namespace gmx
  */
 class SetPrecision : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetPrecision object with user defined value.
-         *
-         * Can be used to initialize SetPrecision from outside of trajectoryanalysis
-         * with the user specified option to change precision or not.
-         *
-         * \param[in] precision User defined value for output precision in file types that support it.
-         */
-        explicit SetPrecision(int precision) : precision_(precision)
+public:
+    /*! \brief
+     * Construct SetPrecision object with user defined value.
+     *
+     * Can be used to initialize SetPrecision from outside of trajectoryanalysis
+     * with the user specified option to change precision or not.
+     *
+     * \param[in] precision User defined value for output precision in file types that support it.
+     */
+    explicit SetPrecision(int precision) : precision_(precision)
+    {
+        // Only request special treatment if precision is not the default.
+        if (precision == 3)
         {
-            // Only request special treatment if precision is not the default.
-            if (precision == 3)
-            {
-                moduleRequirements_ = CoordinateFileFlags::Base;
-            }
-            else
-            {
-                moduleRequirements_ = CoordinateFileFlags::RequireChangedOutputPrecision;
-            }
+            moduleRequirements_ = CoordinateFileFlags::Base;
         }
-        /*! \brief
-         *  Move constructor for SetPrecision.
-         */
-        SetPrecision(SetPrecision &&old) noexcept = default;
+        else
+        {
+            moduleRequirements_ = CoordinateFileFlags::RequireChangedOutputPrecision;
+        }
+    }
+    /*! \brief
+     *  Move constructor for SetPrecision.
+     */
+    SetPrecision(SetPrecision&& old) noexcept = default;
 
-        ~SetPrecision() override {}
+    ~SetPrecision() override {}
 
-        void processFrame(int /*framenumber*/, t_trxframe *input) override;
+    void processFrame(int /*framenumber*/, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long abilities) const override;
+    void checkAbilityDependencies(unsigned long abilities) const override;
 
-    private:
-        //! User specified changes to default precision.
-        int                 precision_;
-        //! Module requirements dependent on user input.
-        CoordinateFileFlags moduleRequirements_;
+private:
+    //! User specified changes to default precision.
+    int precision_;
+    //! Module requirements dependent on user input.
+    CoordinateFileFlags moduleRequirements_;
 };
 
 //! Smart pointer to manage the outputselector object.

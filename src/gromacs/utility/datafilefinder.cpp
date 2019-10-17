@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,24 +66,22 @@ namespace gmx
 
 class DataFileFinder::Impl
 {
-    public:
-        static std::string getDefaultPath();
+public:
+    static std::string getDefaultPath();
 
-        Impl() : envName_(nullptr), bEnvIsSet_(false) {}
+    Impl() : envName_(nullptr), bEnvIsSet_(false) {}
 
-        const char               *envName_;
-        bool                      bEnvIsSet_;
-        std::vector<std::string>  searchPath_;
+    const char*              envName_;
+    bool                     bEnvIsSet_;
+    std::vector<std::string> searchPath_;
 };
 
 std::string DataFileFinder::Impl::getDefaultPath()
 {
-    const InstallationPrefixInfo installPrefix
-        = getProgramContext().installationPrefix();
+    const InstallationPrefixInfo installPrefix = getProgramContext().installationPrefix();
     if (!isNullOrEmpty(installPrefix.path))
     {
-        const char *const dataPath
-            = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
+        const char* const dataPath = installPrefix.bSourceLayout ? "share" : GMX_INSTALL_GMXDATADIR;
         return Path::join(installPrefix.path, dataPath, "top");
     }
     return std::string();
@@ -93,32 +91,27 @@ std::string DataFileFinder::Impl::getDefaultPath()
  * DataFileFinder
  */
 
-DataFileFinder::DataFileFinder()
-    : impl_(nullptr)
-{
-}
+DataFileFinder::DataFileFinder() : impl_(nullptr) {}
 
-DataFileFinder::~DataFileFinder()
-{
-}
+DataFileFinder::~DataFileFinder() {}
 
-void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
+void DataFileFinder::setSearchPathFromEnv(const char* envVarName)
 {
     if (!impl_)
     {
         impl_.reset(new Impl());
     }
-    impl_->envName_ = envVarName;
-    const char *const lib = getenv(envVarName);
+    impl_->envName_       = envVarName;
+    const char* const lib = getenv(envVarName);
     if (!isNullOrEmpty(lib))
     {
-        std::vector<std::string>   &path        = impl_->searchPath_; // convenience
-        const std::string           defaultPath = impl_->getDefaultPath();
-        std::vector<std::string>    tmpPath;
+        std::vector<std::string>& path        = impl_->searchPath_; // convenience
+        const std::string         defaultPath = impl_->getDefaultPath();
+        std::vector<std::string>  tmpPath;
         Path::splitPathEnvironment(lib, &tmpPath);
-        std::set<std::string>       pathsSeen;
+        std::set<std::string> pathsSeen;
         pathsSeen.insert(defaultPath);
-        for (auto &d : tmpPath)
+        for (auto& d : tmpPath)
         {
             if (!pathsSeen.count(d))
             {
@@ -130,7 +123,7 @@ void DataFileFinder::setSearchPathFromEnv(const char *envVarName)
     }
 }
 
-FilePtr DataFileFinder::openFile(const DataFileOptions &options) const
+FilePtr DataFileFinder::openFile(const DataFileOptions& options) const
 {
     // TODO: There is a small race here, since there is some time between
     // the exists() calls and actually opening the file.  It would be better
@@ -150,7 +143,7 @@ FilePtr DataFileFinder::openFile(const DataFileOptions &options) const
     return TextInputFile::openRawHandle(filename);
 }
 
-std::string DataFileFinder::findFile(const DataFileOptions &options) const
+std::string DataFileFinder::findFile(const DataFileOptions& options) const
 {
     if (options.bCurrentDir_ && Path::exists(options.filename_))
     {
@@ -170,7 +163,7 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
             }
         }
     }
-    const std::string &defaultPath = Impl::getDefaultPath();
+    const std::string& defaultPath = Impl::getDefaultPath();
     if (!defaultPath.empty())
     {
         std::string testPath = Path::join(defaultPath, options.filename_);
@@ -181,10 +174,9 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
     }
     if (options.bThrow_)
     {
-        const char *const envName   = (impl_ != nullptr ? impl_->envName_ : nullptr);
+        const char* const envName   = (impl_ != nullptr ? impl_->envName_ : nullptr);
         const bool        bEnvIsSet = (impl_ != nullptr ? impl_->bEnvIsSet_ : false);
-        std::string       message(
-                formatString("Library file '%s' not found", options.filename_));
+        std::string       message(formatString("Library file '%s' not found", options.filename_));
         if (options.bCurrentDir_)
         {
             message.append(" in current dir nor");
@@ -219,15 +211,15 @@ std::string DataFileFinder::findFile(const DataFileOptions &options) const
         {
             message.append(
                     formatString("\nYou can set additional directories to search "
-                                 "with the %s path variable.", envName));
+                                 "with the %s path variable.",
+                                 envName));
         }
         GMX_THROW(FileIOError(message));
     }
     return std::string();
 }
 
-std::vector<DataFileInfo>
-DataFileFinder::enumerateFiles(const DataFileOptions &options) const
+std::vector<DataFileInfo> DataFileFinder::enumerateFiles(const DataFileOptions& options) const
 {
     // TODO: Consider if not being able to list one of the directories should
     // really be a fatal error. Or alternatively, check somewhere else that
@@ -236,9 +228,8 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
     std::vector<std::string>::const_iterator i;
     if (options.bCurrentDir_)
     {
-        std::vector<std::string> files
-            = DirectoryEnumerator::enumerateFilesWithExtension(
-                        ".", options.filename_, false);
+        std::vector<std::string> files =
+                DirectoryEnumerator::enumerateFilesWithExtension(".", options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
             result.emplace_back(".", *i, false);
@@ -249,21 +240,19 @@ DataFileFinder::enumerateFiles(const DataFileOptions &options) const
         std::vector<std::string>::const_iterator j;
         for (j = impl_->searchPath_.begin(); j != impl_->searchPath_.end(); ++j)
         {
-            std::vector<std::string> files
-                = DirectoryEnumerator::enumerateFilesWithExtension(
-                            j->c_str(), options.filename_, false);
+            std::vector<std::string> files = DirectoryEnumerator::enumerateFilesWithExtension(
+                    j->c_str(), options.filename_, false);
             for (i = files.begin(); i != files.end(); ++i)
             {
                 result.emplace_back(*j, *i, false);
             }
         }
     }
-    const std::string &defaultPath = Impl::getDefaultPath();
+    const std::string& defaultPath = Impl::getDefaultPath();
     if (!defaultPath.empty())
     {
-        std::vector<std::string> files
-            = DirectoryEnumerator::enumerateFilesWithExtension(
-                        defaultPath.c_str(), options.filename_, false);
+        std::vector<std::string> files = DirectoryEnumerator::enumerateFilesWithExtension(
+                defaultPath.c_str(), options.filename_, false);
         for (i = files.begin(); i != files.end(); ++i)
         {
             result.emplace_back(defaultPath, *i, true);

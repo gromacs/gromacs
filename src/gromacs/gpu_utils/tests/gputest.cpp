@@ -74,5 +74,5 @@ bool GpuTest::haveValidGpus() const
     return gpuInfo_->n_dev_compatible > 0;
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

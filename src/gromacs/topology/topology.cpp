@@ -54,27 +54,17 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
-static gmx::EnumerationArray<SimulationAtomGroupType, const char *>
-c_simulationAtomGroupTypeShortNames
-    = { {
-            "T-Coupling",
-            "Energy Mon.",
-            "Acceleration",
-            "Freeze",
-            "User1",
-            "User2",
-            "VCM",
-            "Compressed X",
-            "Or. Res. Fit",
-            "QMMM"
-        } };
+static gmx::EnumerationArray<SimulationAtomGroupType, const char*> c_simulationAtomGroupTypeShortNames = {
+    { "T-Coupling", "Energy Mon.", "Acceleration", "Freeze", "User1", "User2", "VCM",
+      "Compressed X", "Or. Res. Fit", "QMMM" }
+};
 
-const char *shortName(SimulationAtomGroupType type)
+const char* shortName(SimulationAtomGroupType type)
 {
     return c_simulationAtomGroupTypeShortNames[type];
 }
 
-void init_top(t_topology *top)
+void init_top(t_topology* top)
 {
     top->name = nullptr;
     init_idef(&top->idef);
@@ -86,9 +76,7 @@ void init_top(t_topology *top)
 }
 
 
-gmx_moltype_t::gmx_moltype_t() :
-    name(nullptr),
-    excls()
+gmx_moltype_t::gmx_moltype_t() : name(nullptr), excls()
 {
     init_t_atoms(&atoms, 0, FALSE);
 }
@@ -114,7 +102,7 @@ gmx_mtop_t::~gmx_mtop_t()
     done_atomtypes(&atomtypes);
 }
 
-void done_top(t_topology *top)
+void done_top(t_topology* top)
 {
     done_idef(&top->idef);
     done_atom(&(top->atoms));
@@ -127,7 +115,7 @@ void done_top(t_topology *top)
     done_blocka(&(top->excls));
 }
 
-void done_top_mtop(t_topology *top, gmx_mtop_t *mtop)
+void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
 {
     if (mtop != nullptr)
     {
@@ -163,7 +151,7 @@ gmx_localtop_t::~gmx_localtop_t()
     }
 }
 
-bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
+bool gmx_mtop_has_masses(const gmx_mtop_t* mtop)
 {
     if (mtop == nullptr)
     {
@@ -172,7 +160,7 @@ bool gmx_mtop_has_masses(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.haveMass;
 }
 
-bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
+bool gmx_mtop_has_charges(const gmx_mtop_t* mtop)
 {
     if (mtop == nullptr)
     {
@@ -181,11 +169,11 @@ bool gmx_mtop_has_charges(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.haveCharge;
 }
 
-bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop)
+bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t& mtop)
 {
-    for (const gmx_moltype_t &moltype : mtop.moltype)
+    for (const gmx_moltype_t& moltype : mtop.moltype)
     {
-        const t_atoms &atoms = moltype.atoms;
+        const t_atoms& atoms = moltype.atoms;
         if (atoms.haveBState)
         {
             for (int a = 0; a < atoms.nr; a++)
@@ -200,7 +188,7 @@ bool gmx_mtop_has_perturbed_charges(const gmx_mtop_t &mtop)
     return false;
 }
 
-bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
+bool gmx_mtop_has_atomtypes(const gmx_mtop_t* mtop)
 {
     if (mtop == nullptr)
     {
@@ -209,7 +197,7 @@ bool gmx_mtop_has_atomtypes(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.haveType;
 }
 
-bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
+bool gmx_mtop_has_pdbinfo(const gmx_mtop_t* mtop)
 {
     if (mtop == nullptr)
     {
@@ -218,16 +206,14 @@ bool gmx_mtop_has_pdbinfo(const gmx_mtop_t *mtop)
     return mtop->moltype.empty() || mtop->moltype[0].atoms.havePdbInfo;
 }
 
-static void pr_grps(FILE                                 *fp,
-                    const char                           *title,
-                    gmx::ArrayRef<const AtomGroupIndices> grps,
-                    char                               ***grpname)
+static void pr_grps(FILE* fp, const char* title, gmx::ArrayRef<const AtomGroupIndices> grps, char*** grpname)
 {
     int index = 0;
-    for (const auto &group : grps)
+    for (const auto& group : grps)
     {
-        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index], group.size());
-        for (const auto &entry : group)
+        fprintf(fp, "%s[%-12s] nr=%zu, name=[", title, c_simulationAtomGroupTypeShortNames[index],
+                group.size());
+        for (const auto& entry : group)
         {
             fprintf(fp, " %s", *(grpname[entry]));
         }
@@ -236,19 +222,15 @@ static void pr_grps(FILE                                 *fp,
     }
 }
 
-static void pr_groups(FILE *fp, int indent,
-                      const SimulationGroups &groups,
-                      gmx_bool bShowNumbers)
+static void pr_groups(FILE* fp, int indent, const SimulationGroups& groups, gmx_bool bShowNumbers)
 {
-    pr_grps(fp,
-            "grp",
-            groups.groups,
-            const_cast<char ***>(groups.groupNames.data()));
-    pr_strings(fp, indent, "grpname", const_cast<char ***>(groups.groupNames.data()), groups.groupNames.size(), bShowNumbers);
+    pr_grps(fp, "grp", groups.groups, const_cast<char***>(groups.groupNames.data()));
+    pr_strings(fp, indent, "grpname", const_cast<char***>(groups.groupNames.data()),
+               groups.groupNames.size(), bShowNumbers);
 
     pr_indent(fp, indent);
     fprintf(fp, "groups          ");
-    for (const auto &group : c_simulationAtomGroupTypeShortNames)
+    for (const auto& group : c_simulationAtomGroupTypeShortNames)
     {
         printf(" %5.5s", group);
     }
@@ -283,18 +265,21 @@ static void pr_groups(FILE *fp, int indent,
             for (auto group : keysOf(groups.groups))
             {
                 fprintf(fp, "  %3d ",
-                        !groups.groupNumbers[group].empty() ?
-                        groups.groupNumbers[group][i] : 0);
+                        !groups.groupNumbers[group].empty() ? groups.groupNumbers[group][i] : 0);
             }
             fprintf(fp, "\n");
         }
     }
 }
 
-static void pr_moltype(FILE *fp, int indent, const char *title,
-                       const gmx_moltype_t *molt, int n,
-                       const gmx_ffparams_t *ffparams,
-                       gmx_bool bShowNumbers, gmx_bool bShowParameters)
+static void pr_moltype(FILE*                 fp,
+                       int                   indent,
+                       const char*           title,
+                       const gmx_moltype_t*  molt,
+                       int                   n,
+                       const gmx_ffparams_t* ffparams,
+                       gmx_bool              bShowNumbers,
+                       gmx_bool              bShowParameters)
 {
     int j;
 
@@ -305,20 +290,21 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
     pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
     for (j = 0; (j < F_NRE); j++)
     {
-        pr_ilist(fp, indent, interaction_function[j].longname,
-                 ffparams->functype.data(), molt->ilist[j],
-                 bShowNumbers, bShowParameters, ffparams->iparams.data());
+        pr_ilist(fp, indent, interaction_function[j].longname, ffparams->functype.data(),
+                 molt->ilist[j], bShowNumbers, bShowParameters, ffparams->iparams.data());
     }
 }
 
-static void pr_molblock(FILE *fp, int indent, const char *title,
-                        const gmx_molblock_t *molb, int n,
-                        const std::vector<gmx_moltype_t> &molt)
+static void pr_molblock(FILE*                             fp,
+                        int                               indent,
+                        const char*                       title,
+                        const gmx_molblock_t*             molb,
+                        int                               n,
+                        const std::vector<gmx_moltype_t>& molt)
 {
     indent = pr_title_n(fp, indent, title, n);
     pr_indent(fp, indent);
-    fprintf(fp, "%-20s = %d \"%s\"\n",
-            "moltype", molb->type, *(molt[molb->type].name));
+    fprintf(fp, "%-20s = %d \"%s\"\n", "moltype", molb->type, *(molt[molb->type].name));
     pr_int(fp, indent, "#molecules", molb->nmol);
     pr_int(fp, indent, "#posres_xA", molb->posres_xA.size());
     if (!molb->posres_xA.empty())
@@ -332,8 +318,7 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
     }
 }
 
-void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
-             gmx_bool bShowNumbers, gmx_bool bShowParameters)
+void pr_mtop(FILE* fp, int indent, const char* title, const gmx_mtop_t* mtop, gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     if (available(fp, mtop, indent, title))
     {
@@ -353,8 +338,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
             for (int j = 0; j < F_NRE; j++)
             {
                 pr_ilist(fp, indent, interaction_function[j].longname,
-                         mtop->ffparams.functype.data(),
-                         (*mtop->intermolecular_ilist)[j],
+                         mtop->ffparams.functype.data(), (*mtop->intermolecular_ilist)[j],
                          bShowNumbers, bShowParameters, mtop->ffparams.iparams.data());
             }
         }
@@ -362,15 +346,14 @@ void pr_mtop(FILE *fp, int indent, const char *title, const gmx_mtop_t *mtop,
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
         for (size_t mt = 0; mt < mtop->moltype.size(); mt++)
         {
-            pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
-                       &mtop->ffparams, bShowNumbers, bShowParameters);
+            pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt, &mtop->ffparams, bShowNumbers,
+                       bShowParameters);
         }
         pr_groups(fp, indent, mtop->groups, bShowNumbers);
     }
 }
 
-void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
-            gmx_bool bShowNumbers, gmx_bool bShowParameters)
+void pr_top(FILE* fp, int indent, const char* title, const t_topology* top, gmx_bool bShowNumbers, gmx_bool bShowParameters)
 {
     if (available(fp, top, indent, title))
     {
@@ -387,8 +370,13 @@ void pr_top(FILE *fp, int indent, const char *title, const t_topology *top,
     }
 }
 
-static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
-                      const t_iparams &ip1, const t_iparams &ip2, real relativeTolerance, real absoluteTolerance)
+static void cmp_iparm(FILE*            fp,
+                      const char*      s,
+                      t_functype       ft,
+                      const t_iparams& ip1,
+                      const t_iparams& ip2,
+                      real             relativeTolerance,
+                      real             absoluteTolerance)
 {
     int      i;
     gmx_bool bDiff;
@@ -407,8 +395,7 @@ static void cmp_iparm(FILE *fp, const char *s, t_functype ft,
     }
 }
 
-static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
-                         const t_iparams &ip1, real relativeTolerance, real absoluteTolerance)
+static void cmp_iparm_AB(FILE* fp, const char* s, t_functype ft, const t_iparams& ip1, real relativeTolerance, real absoluteTolerance)
 {
     int      nrfpA, nrfpB, p0, i;
     gmx_bool bDiff;
@@ -430,7 +417,8 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
     bDiff = FALSE;
     for (i = 0; i < nrfpB && !bDiff; i++)
     {
-        bDiff = !equal_real(ip1.generic.buf[p0+i], ip1.generic.buf[nrfpA+i], relativeTolerance, absoluteTolerance);
+        bDiff = !equal_real(ip1.generic.buf[p0 + i], ip1.generic.buf[nrfpA + i], relativeTolerance,
+                            absoluteTolerance);
     }
     if (bDiff)
     {
@@ -439,7 +427,7 @@ static void cmp_iparm_AB(FILE *fp, const char *s, t_functype ft,
     }
 }
 
-static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2, real relativeTolerance, real absoluteTolerance)
+static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2, real relativeTolerance, real absoluteTolerance)
 {
     int cmap1_ngrid = (cmap1 ? cmap1->cmapdata.size() : 0);
     int cmap2_ngrid = (cmap2 ? cmap2->cmapdata.size() : 0);
@@ -452,8 +440,7 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
     }
 
     cmp_int(fp, "cmap grid_spacing", -1, cmap1->grid_spacing, cmap2->grid_spacing);
-    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() &&
-        cmap1->grid_spacing == cmap2->grid_spacing)
+    if (cmap1->cmapdata.size() == cmap2->cmapdata.size() && cmap1->grid_spacing == cmap2->grid_spacing)
     {
         for (size_t g = 0; g < cmap1->cmapdata.size(); g++)
         {
@@ -461,15 +448,16 @@ static void cmp_cmap(FILE *fp, const gmx_cmap_t *cmap1, const gmx_cmap_t *cmap2,
 
             fprintf(fp, "comparing cmap %zu\n", g);
 
-            for (i = 0; i < 4*cmap1->grid_spacing*cmap1->grid_spacing; i++)
+            for (i = 0; i < 4 * cmap1->grid_spacing * cmap1->grid_spacing; i++)
             {
-                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i], relativeTolerance, absoluteTolerance);
+                cmp_real(fp, "", i, cmap1->cmapdata[g].cmap[i], cmap2->cmapdata[g].cmap[i],
+                         relativeTolerance, absoluteTolerance);
             }
         }
     }
 }
 
-static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const char *s)
+static void cmp_blocka(FILE* fp, const t_blocka* b1, const t_blocka* b2, const char* s)
 {
     char buf[32];
 
@@ -480,7 +468,11 @@ static void cmp_blocka(FILE *fp, const t_blocka *b1, const t_blocka *b2, const c
     cmp_int(fp, buf, -1, b1->nra, b2->nra);
 }
 
-static void compareFfparams(FILE *fp, const gmx_ffparams_t &ff1, const gmx_ffparams_t &ff2, real relativeTolerance, real absoluteTolerance)
+static void compareFfparams(FILE*                 fp,
+                            const gmx_ffparams_t& ff1,
+                            const gmx_ffparams_t& ff2,
+                            real                  relativeTolerance,
+                            real                  absoluteTolerance)
 {
     fprintf(fp, "comparing force field parameters\n");
     cmp_int(fp, "numTypes", -1, ff1.numTypes(), ff2.numTypes());
@@ -493,12 +485,12 @@ static void compareFfparams(FILE *fp, const gmx_ffparams_t &ff1, const gmx_ffpar
         std::string buf = gmx::formatString("ffparams->functype[%d]", i);
         cmp_int(fp, buf.c_str(), i, ff1.functype[i], ff2.functype[i]);
         buf = gmx::formatString("ffparams->iparams[%d]", i);
-        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i], relativeTolerance, absoluteTolerance);
+        cmp_iparm(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], ff2.iparams[i],
+                  relativeTolerance, absoluteTolerance);
     }
-
 }
 
-static void compareFfparamAB(FILE *fp, const gmx_ffparams_t &ff1, real relativeTolerance,   real absoluteTolerance)
+static void compareFfparamAB(FILE* fp, const gmx_ffparams_t& ff1, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing free energy parameters\n");
     for (int i = 0; i < ff1.numTypes(); i++)
@@ -507,7 +499,7 @@ static void compareFfparamAB(FILE *fp, const gmx_ffparams_t &ff1, real relativeT
         cmp_iparm_AB(fp, buf.c_str(), ff1.functype[i], ff1.iparams[i], relativeTolerance, absoluteTolerance);
     }
 }
-static void compareInteractionLists(FILE *fp, const InteractionLists *il1, const InteractionLists *il2)
+static void compareInteractionLists(FILE* fp, const InteractionLists* il1, const InteractionLists* il2)
 {
     fprintf(fp, "comparing InteractionLists\n");
     if ((il1 || il2) && (!il1 || !il2))
@@ -528,7 +520,11 @@ static void compareInteractionLists(FILE *fp, const InteractionLists *il1, const
     }
 }
 
-static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gmx::ArrayRef<const gmx_moltype_t> mt2, real relativeTolerance, real absoluteTolerance)
+static void compareMoltypes(FILE*                              fp,
+                            gmx::ArrayRef<const gmx_moltype_t> mt1,
+                            gmx::ArrayRef<const gmx_moltype_t> mt2,
+                            real                               relativeTolerance,
+                            real                               absoluteTolerance)
 {
     fprintf(fp, "comparing molecule types\n");
     cmp_int(fp, "moltype size", -1, mt1.size(), mt2.size());
@@ -542,7 +538,7 @@ static void compareMoltypes(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, gm
     }
 }
 
-static void compareMoletypeAB(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, real relativeTolerance, real absoluteTolerance)
+static void compareMoletypeAB(FILE* fp, gmx::ArrayRef<const gmx_moltype_t> mt1, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing free energy molecule types\n");
     for (gmx::index i = 0; i < mt1.ssize(); i++)
@@ -550,7 +546,9 @@ static void compareMoletypeAB(FILE *fp, gmx::ArrayRef<const gmx_moltype_t> mt1, 
         compareAtoms(fp, &mt1[i].atoms, nullptr, relativeTolerance, absoluteTolerance);
     }
 }
-static void compareMolblocks(FILE *fp, gmx::ArrayRef<const gmx_molblock_t> mb1, gmx::ArrayRef<const gmx_molblock_t> mb2)
+static void compareMolblocks(FILE*                               fp,
+                             gmx::ArrayRef<const gmx_molblock_t> mb1,
+                             gmx::ArrayRef<const gmx_molblock_t> mb2)
 {
     fprintf(fp, "comparing molecule blocks\n");
     cmp_int(fp, "molblock size", -1, mb1.size(), mb2.size());
@@ -563,10 +561,9 @@ static void compareMolblocks(FILE *fp, gmx::ArrayRef<const gmx_molblock_t> mb1, 
         cmp_int(fp, "posres_xA size", i, mb1[i].posres_xA.size(), mb2[i].posres_xA.size());
         cmp_int(fp, "posres_xB size", i, mb1[i].posres_xB.size(), mb2[i].posres_xB.size());
     }
-
 }
 
-static void compareAtomtypes(FILE *fp, const t_atomtypes &at1, const t_atomtypes &at2)
+static void compareAtomtypes(FILE* fp, const t_atomtypes& at1, const t_atomtypes& at2)
 {
     fprintf(fp, "comparing atomtypes\n");
     cmp_int(fp, "nr", -1, at1.nr, at2.nr);
@@ -577,7 +574,9 @@ static void compareAtomtypes(FILE *fp, const t_atomtypes &at1, const t_atomtypes
     }
 }
 
-static void compareIntermolecularExclusions(FILE *fp, gmx::ArrayRef<const int> ime1, gmx::ArrayRef<const int> ime2)
+static void compareIntermolecularExclusions(FILE*                    fp,
+                                            gmx::ArrayRef<const int> ime1,
+                                            gmx::ArrayRef<const int> ime2)
 {
     fprintf(fp, "comparing intermolecular exclusions\n");
     cmp_int(fp, "exclusion number", -1, ime1.size(), ime2.size());
@@ -588,7 +587,9 @@ static void compareIntermolecularExclusions(FILE *fp, gmx::ArrayRef<const int> i
     }
 }
 
-static void compareBlockIndices(FILE *fp, gmx::ArrayRef<const MoleculeBlockIndices> mbi1, gmx::ArrayRef<const MoleculeBlockIndices> mbi2)
+static void compareBlockIndices(FILE*                                     fp,
+                                gmx::ArrayRef<const MoleculeBlockIndices> mbi1,
+                                gmx::ArrayRef<const MoleculeBlockIndices> mbi2)
 {
     fprintf(fp, "comparing moleculeBlockIndices\n");
     cmp_int(fp, "size", -1, mbi1.size(), mbi2.size());
@@ -603,14 +604,15 @@ static void compareBlockIndices(FILE *fp, gmx::ArrayRef<const MoleculeBlockIndic
     }
 }
 
-void compareMtop(FILE *fp, const gmx_mtop_t &mtop1, const gmx_mtop_t &mtop2, real relativeTolerance, real absoluteTolerance)
+void compareMtop(FILE* fp, const gmx_mtop_t& mtop1, const gmx_mtop_t& mtop2, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing mtop topology\n");
     cmp_str(fp, "Name", -1, *mtop1.name, *mtop2.name);
     cmp_int(fp, "natoms", -1, mtop1.natoms, mtop2.natoms);
     cmp_int(fp, "maxres_renum", -1, mtop1.maxres_renum, mtop2.maxres_renum);
     cmp_int(fp, "maxresnr", -1, mtop1.maxresnr, mtop2.maxresnr);
-    cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions, mtop2.bIntermolecularInteractions);
+    cmp_bool(fp, "bIntermolecularInteractions", -1, mtop1.bIntermolecularInteractions,
+             mtop2.bIntermolecularInteractions);
     cmp_bool(fp, "haveMoleculeIndices", -1, mtop1.haveMoleculeIndices, mtop2.haveMoleculeIndices);
 
     compareFfparams(fp, mtop1.ffparams, mtop2.ffparams, relativeTolerance, absoluteTolerance);
@@ -619,19 +621,19 @@ void compareMtop(FILE *fp, const gmx_mtop_t &mtop1, const gmx_mtop_t &mtop2, rea
     compareInteractionLists(fp, mtop1.intermolecular_ilist.get(), mtop2.intermolecular_ilist.get());
     compareAtomtypes(fp, mtop1.atomtypes, mtop2.atomtypes);
     compareAtomGroups(fp, mtop1.groups, mtop2.groups, mtop1.natoms, mtop2.natoms);
-    compareIntermolecularExclusions(fp, mtop1.intermolecularExclusionGroup, mtop2.intermolecularExclusionGroup);
+    compareIntermolecularExclusions(fp, mtop1.intermolecularExclusionGroup,
+                                    mtop2.intermolecularExclusionGroup);
     compareBlockIndices(fp, mtop1.moleculeBlockIndices, mtop2.moleculeBlockIndices);
 }
 
-void compareMtopAB(FILE *fp, const gmx_mtop_t &mtop1, real relativeTolerance, real absoluteTolerance)
+void compareMtopAB(FILE* fp, const gmx_mtop_t& mtop1, real relativeTolerance, real absoluteTolerance)
 {
     fprintf(fp, "comparing topAB\n");
     compareFfparamAB(fp, mtop1.ffparams, relativeTolerance, absoluteTolerance);
     compareMoletypeAB(fp, mtop1.moltype, relativeTolerance, absoluteTolerance);
 }
 
-void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGroups &g1,
-                       int natoms0, int natoms1)
+void compareAtomGroups(FILE* fp, const SimulationGroups& g0, const SimulationGroups& g1, int natoms0, int natoms1)
 {
     fprintf(fp, "comparing groups\n");
 
@@ -644,18 +646,19 @@ void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGro
             for (gmx::index j = 0; j < gmx::ssize(g0.groups[group]); j++)
             {
                 buf = gmx::formatString("grps[%d].name[%zd]", static_cast<int>(group), j);
-                cmp_str(fp, buf.c_str(), -1,
-                        *g0.groupNames[g0.groups[group][j]],
+                cmp_str(fp, buf.c_str(), -1, *g0.groupNames[g0.groups[group][j]],
                         *g1.groupNames[g1.groups[group][j]]);
             }
         }
-        cmp_int(fp, "ngrpnr", static_cast<int>(group), g0.numberOfGroupNumbers(group), g1.numberOfGroupNumbers(group));
-        if (g0.numberOfGroupNumbers(group) == g1.numberOfGroupNumbers(group) && natoms0 == natoms1 &&
-            (!g0.groupNumbers[group].empty() || !g1.groupNumbers[group].empty()))
+        cmp_int(fp, "ngrpnr", static_cast<int>(group), g0.numberOfGroupNumbers(group),
+                g1.numberOfGroupNumbers(group));
+        if (g0.numberOfGroupNumbers(group) == g1.numberOfGroupNumbers(group) && natoms0 == natoms1
+            && (!g0.groupNumbers[group].empty() || !g1.groupNumbers[group].empty()))
         {
             for (int j = 0; j < natoms0; j++)
             {
-                cmp_int(fp, c_simulationAtomGroupTypeShortNames[group], j, getGroupType(g0, group, j), getGroupType(g1, group, j));
+                cmp_int(fp, c_simulationAtomGroupTypeShortNames[group], j,
+                        getGroupType(g0, group, j), getGroupType(g1, group, j));
             }
         }
     }
@@ -664,17 +667,17 @@ void compareAtomGroups(FILE *fp, const SimulationGroups &g0, const SimulationGro
      */
 }
 
-int getGroupType(const SimulationGroups &group, SimulationAtomGroupType type, int atom)
+int getGroupType(const SimulationGroups& group, SimulationAtomGroupType type, int atom)
 {
     return (group.groupNumbers[type].empty() ? 0 : group.groupNumbers[type][atom]);
 }
 
-void copy_moltype(const gmx_moltype_t *src, gmx_moltype_t *dst)
+void copy_moltype(const gmx_moltype_t* src, gmx_moltype_t* dst)
 {
     dst->name = src->name;
     copy_blocka(&src->excls, &dst->excls);
-    t_atoms *atomsCopy = copy_t_atoms(&src->atoms);
-    dst->atoms = *atomsCopy;
+    t_atoms* atomsCopy = copy_t_atoms(&src->atoms);
+    dst->atoms         = *atomsCopy;
     sfree(atomsCopy);
 
     for (int i = 0; i < F_NRE; ++i)

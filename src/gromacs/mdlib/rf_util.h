@@ -44,9 +44,7 @@ struct gmx_mtop_t;
 struct t_forcerec;
 struct t_inputrec;
 
-void calc_rffac(FILE *fplog, real eps_r, real eps_rf,
-                real Rc,
-                real *krf, real *crf);
+void calc_rffac(FILE* fplog, real eps_r, real eps_rf, real Rc, real* krf, real* crf);
 /* Determine the reaction-field constants */
 
 #endif

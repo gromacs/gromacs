@@ -70,17 +70,12 @@ using gmx::test::NoTextMatch;
  */
 
 //! Test fixture for the `rdf` analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::RdfInfo>
-    RdfModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::RdfInfo> RdfModuleTest;
 
 TEST_F(RdfModuleTest, BasicTest)
 {
-    const char *const cmdline[] = {
-        "rdf",
-        "-bin", "0.05",
-        "-ref", "name OW",
-        "-sel", "name OW", "not name OW"
-    };
+    const char* const cmdline[] = { "rdf",     "-bin", "0.05",    "-ref",
+                                    "name OW", "-sel", "name OW", "not name OW" };
     setTopology("spc216.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");
@@ -89,14 +84,11 @@ TEST_F(RdfModuleTest, BasicTest)
 
 TEST_F(RdfModuleTest, SelectionsSolelyFromIndexFileWork)
 {
-    const char *const cmdline[] = {
-        "rdf",
-        "-bin", "0.05",
-        // Use selection that names a group in the index file
-        "-ref", "name_OW",
-        // Use selections that name groups in the index file
-        "-sel", "name_OW", "not_name_OW"
-    };
+    const char* const cmdline[] = { "rdf", "-bin", "0.05",
+                                    // Use selection that names a group in the index file
+                                    "-ref", "name_OW",
+                                    // Use selections that name groups in the index file
+                                    "-sel", "name_OW", "not_name_OW" };
     // Note not supplying a topology file to -s
     setTrajectory("spc216.gro");
     setInputFile("-n", "index.ndx");
@@ -107,14 +99,11 @@ TEST_F(RdfModuleTest, SelectionsSolelyFromIndexFileWork)
 
 TEST_F(RdfModuleTest, SelectionsFromBothTopologyFileAndIndexFileWork)
 {
-    const char *const cmdline[] = {
-        "rdf",
-        "-bin", "0.05",
-        // Use selection whose parsing requires topology file
-        "-ref", "name OW",
-        // Use selections that name groups in the index file
-        "-sel", "name_OW", "not_name_OW"
-    };
+    const char* const cmdline[] = { "rdf", "-bin", "0.05",
+                                    // Use selection whose parsing requires topology file
+                                    "-ref", "name OW",
+                                    // Use selections that name groups in the index file
+                                    "-sel", "name_OW", "not_name_OW" };
     // Note supplying a topology file to -s
     setTopology("spc216.gro");
     setInputFile("-n", "index.ndx");
@@ -125,12 +114,16 @@ TEST_F(RdfModuleTest, SelectionsFromBothTopologyFileAndIndexFileWork)
 
 TEST_F(RdfModuleTest, CalculatesSurf)
 {
-    const char *const cmdline[] = {
-        "rdf",
-        "-bin", "0.05", "-surf", "res",
-        "-ref", "within 0.5 of (resnr 1 and name OW)",
-        "-sel", "name OW", "not name OW"
-    };
+    const char* const cmdline[] = { "rdf",
+                                    "-bin",
+                                    "0.05",
+                                    "-surf",
+                                    "res",
+                                    "-ref",
+                                    "within 0.5 of (resnr 1 and name OW)",
+                                    "-sel",
+                                    "name OW",
+                                    "not name OW" };
     setTopology("spc216.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");
@@ -139,12 +132,8 @@ TEST_F(RdfModuleTest, CalculatesSurf)
 
 TEST_F(RdfModuleTest, CalculatesXY)
 {
-    const char *const cmdline[] = {
-        "rdf",
-        "-bin", "0.05", "-xy",
-        "-ref", "name OW",
-        "-sel", "name OW", "not name OW"
-    };
+    const char* const cmdline[] = { "rdf",     "-bin", "0.05",    "-xy",        "-ref",
+                                    "name OW", "-sel", "name OW", "not name OW" };
     setTopology("spc216.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     excludeDataset("pairdist");

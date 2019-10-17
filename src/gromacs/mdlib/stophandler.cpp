@@ -52,11 +52,10 @@
 namespace gmx
 {
 
-StopHandler::StopHandler(
-        compat::not_null<SimulationSignal*>         signal,
-        bool                                        simulationShareState,
-        std::vector < std::function<StopSignal()> > stopConditions,
-        bool                                        neverUpdateNeighborList) :
+StopHandler::StopHandler(compat::not_null<SimulationSignal*>      signal,
+                         bool                                     simulationShareState,
+                         std::vector<std::function<StopSignal()>> stopConditions,
+                         bool                                     neverUpdateNeighborList) :
     signal_(*signal),
     stopConditions_(std::move(stopConditions)),
     neverUpdateNeighborlist_(neverUpdateNeighborList)
@@ -67,30 +66,28 @@ StopHandler::StopHandler(
     }
 }
 
-StopConditionSignal::StopConditionSignal(
-        int  nstList,
-        bool makeBinaryReproducibleSimulation,
-        int  nstSignalComm) :
+StopConditionSignal::StopConditionSignal(int nstList, bool makeBinaryReproducibleSimulation, int nstSignalComm) :
     handledStopCondition_(gmx_stop_cond_none),
     makeBinaryReproducibleSimulation_(makeBinaryReproducibleSimulation),
     nstSignalComm_(nstSignalComm),
     nstList_(nstList)
-{}
+{
+}
 
-StopSignal StopConditionSignal::getSignal(FILE *fplog)
+StopSignal StopConditionSignal::getSignal(FILE* fplog)
 {
     StopSignal signal = StopSignal::noSignal;
 
     /* Check whether everything is still alright */
     if (static_cast<int>(gmx_get_stop_condition()) > handledStopCondition_)
     {
-        int nsteps_stop   = -1;
+        int nsteps_stop = -1;
 
         /* this just makes signals[].sig compatible with the hack
            of sending signals around by MPI_Reduce together with
            other floats */
-        if ((gmx_get_stop_condition() == gmx_stop_cond_next_ns) ||
-            (makeBinaryReproducibleSimulation_ && gmx_get_stop_condition() == gmx_stop_cond_next))
+        if ((gmx_get_stop_condition() == gmx_stop_cond_next_ns)
+            || (makeBinaryReproducibleSimulation_ && gmx_get_stop_condition() == gmx_stop_cond_next))
         {
             /* We need at least two global communication steps to pass
              * around the signal. We stop at a pair-list creation step
@@ -109,13 +106,11 @@ StopSignal StopConditionSignal::getSignal(FILE *fplog)
         }
         if (fplog)
         {
-            fprintf(fplog,
-                    "\n\nReceived the %s signal, stopping within %d steps\n\n",
+            fprintf(fplog, "\n\nReceived the %s signal, stopping within %d steps\n\n",
                     gmx_get_signal_name(), nsteps_stop);
             fflush(fplog);
         }
-        fprintf(stderr,
-                "\n\nReceived the %s signal, stopping within %d steps\n\n",
+        fprintf(stderr, "\n\nReceived the %s signal, stopping within %d steps\n\n",
                 gmx_get_signal_name(), nsteps_stop);
         fflush(stderr);
         handledStopCondition_ = static_cast<int>(gmx_get_stop_condition());
@@ -124,41 +119,38 @@ StopSignal StopConditionSignal::getSignal(FILE *fplog)
     return signal;
 }
 
-StopConditionTime::StopConditionTime(
-        int  nstList,
-        real maximumHoursToRun,
-        int  nstSignalComm) :
+StopConditionTime::StopConditionTime(int nstList, real maximumHoursToRun, int nstSignalComm) :
     signalSent_(false),
     maximumHoursToRun_(maximumHoursToRun),
     nstList_(nstList),
     nstSignalComm_(nstSignalComm),
     neverUpdateNeighborlist_(nstList <= 0)
-{}
+{
+}
 
-StopSignal StopConditionTime::getSignal(
-        bool                      bNS,
-        int64_t                   step,
-        FILE                     *fplog,
-        gmx_walltime_accounting_t walltime_accounting)
+StopSignal StopConditionTime::getSignal(bool bNS, int64_t step, FILE* fplog, gmx_walltime_accounting_t walltime_accounting)
 {
     if (signalSent_)
     {
         // We only want to send it once, but might be called again before run is terminated
         return StopSignal::noSignal;
     }
-    if ((bNS || neverUpdateNeighborlist_) &&
-        walltime_accounting_get_time_since_start(walltime_accounting) > maximumHoursToRun_ * 60.0 * 60.0 * 0.99)
+    if ((bNS || neverUpdateNeighborlist_)
+        && walltime_accounting_get_time_since_start(walltime_accounting)
+                   > maximumHoursToRun_ * 60.0 * 60.0 * 0.99)
     {
         /* Signal to terminate the run */
         char sbuf[STEPSTRSIZE];
         int  nsteps_stop = std::max(nstList_, 2 * nstSignalComm_);
         if (fplog)
         {
-            fprintf(fplog, "\nStep %s: Run time exceeded %.3f hours, "
+            fprintf(fplog,
+                    "\nStep %s: Run time exceeded %.3f hours, "
                     "will terminate the run within %d steps\n",
                     gmx_step_str(step, sbuf), maximumHoursToRun_ * 0.99, nsteps_stop);
         }
-        fprintf(stderr, "\nStep %s: Run time exceeded %.3f hours, "
+        fprintf(stderr,
+                "\nStep %s: Run time exceeded %.3f hours, "
                 "will terminate the run within %d steps\n",
                 gmx_step_str(step, sbuf), maximumHoursToRun_ * 0.99, nsteps_stop);
         signalSent_ = true;
@@ -172,42 +164,40 @@ void StopHandlerBuilder::registerStopCondition(std::function<StopSignal()> stopC
     stopConditions_.emplace_back(std::move(stopCondition));
 };
 
-std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD (
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationShareState,
-        bool                                isMaster,
-        int                                 nstList,
-        bool                                makeBinaryReproducibleSimulation,
-        int                                 nstSignalComm,
-        real                                maximumHoursToRun,
-        bool                                neverUpdateNeighborList,
-        FILE                               *fplog,
-        const int64_t                      &step,
-        const gmx_bool                     &bNS,
-        gmx_walltime_accounting_t           walltime_accounting)
+std::unique_ptr<StopHandler> StopHandlerBuilder::getStopHandlerMD(compat::not_null<SimulationSignal*> signal,
+                                                                  bool simulationShareState,
+                                                                  bool isMaster,
+                                                                  int  nstList,
+                                                                  bool makeBinaryReproducibleSimulation,
+                                                                  int   nstSignalComm,
+                                                                  real  maximumHoursToRun,
+                                                                  bool  neverUpdateNeighborList,
+                                                                  FILE* fplog,
+                                                                  const int64_t&  step,
+                                                                  const gmx_bool& bNS,
+                                                                  gmx_walltime_accounting_t walltime_accounting)
 {
     if (!GMX_THREAD_MPI || isMaster)
     {
         // Using shared ptr because move-only callable not supported by std::function.
         // Would require replacement such as fu2::function or cxx_function.
         auto stopConditionSignal = std::make_shared<StopConditionSignal>(
-                    nstList, makeBinaryReproducibleSimulation, nstSignalComm);
+                nstList, makeBinaryReproducibleSimulation, nstSignalComm);
         registerStopCondition(
-                [stopConditionSignal, fplog]()
-                {return stopConditionSignal->getSignal(fplog); });
+                [stopConditionSignal, fplog]() { return stopConditionSignal->getSignal(fplog); });
     }
 
     if (isMaster && maximumHoursToRun > 0)
     {
-        auto stopConditionTime = std::make_shared<StopConditionTime>(
-                    nstList, maximumHoursToRun, nstSignalComm);
-        registerStopCondition(
-                [stopConditionTime, &bNS, &step, fplog, walltime_accounting]()
-                {return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting); });
+        auto stopConditionTime =
+                std::make_shared<StopConditionTime>(nstList, maximumHoursToRun, nstSignalComm);
+        registerStopCondition([stopConditionTime, &bNS, &step, fplog, walltime_accounting]() {
+            return stopConditionTime->getSignal(bNS, step, fplog, walltime_accounting);
+        });
     }
 
-    return std::make_unique<StopHandler>(
-            signal, simulationShareState, stopConditions_, neverUpdateNeighborList);
+    return std::make_unique<StopHandler>(signal, simulationShareState, stopConditions_,
+                                         neverUpdateNeighborList);
 }
 
 } // namespace gmx

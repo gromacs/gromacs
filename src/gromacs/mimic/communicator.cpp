@@ -44,8 +44,8 @@
 #include "gromacs/utility/fatalerror.h"
 
 #if GMX_MIMIC
-#include <DataTypes.h>
-#include <MessageApi.h>
+#    include <DataTypes.h>
+#    include <MessageApi.h>
 #endif
 
 // When not built in a configuration with QMMM support, much of this
@@ -60,25 +60,31 @@ constexpr int TYPE_INT = 0, TYPE_DOUBLE = 0;
 /*! \brief Stub communication library function to call in case if
  * GROMACS is compiled without MiMiC. Calling causes GROMACS to exit!
  */
-static void MCL_init_client(const char *) // NOLINT(readability-named-parameter)
+static void MCL_init_client(const char*) // NOLINT(readability-named-parameter)
 {
-    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(
+            GMX_MIMIC,
+            "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
  * GROMACS is compiled without MiMiC. Calling causes GROMACS to exit!
  */
-static void MCL_send(void *, int, int, int) // NOLINT(readability-named-parameter)
+static void MCL_send(void*, int, int, int) // NOLINT(readability-named-parameter)
 {
-    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(
+            GMX_MIMIC,
+            "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
  * GROMACS is compiled without MiMiC. Calling causes GROMACS to exit!
  */
-static void MCL_receive(void *, int, int, int) // NOLINT(readability-named-parameter)
+static void MCL_receive(void*, int, int, int) // NOLINT(readability-named-parameter)
 {
-    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(
+            GMX_MIMIC,
+            "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 
 /*! \brief Stub communication library function to call in case if
@@ -86,7 +92,9 @@ static void MCL_receive(void *, int, int, int) // NOLINT(readability-named-param
  */
 static void MCL_destroy()
 {
-    GMX_RELEASE_ASSERT(GMX_MIMIC, "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
+    GMX_RELEASE_ASSERT(
+            GMX_MIMIC,
+            "GROMACS is compiled without MiMiC support! Please, recompile with -DGMX_MIMIC=ON");
 }
 #endif
 
@@ -97,8 +105,7 @@ void gmx::MimicCommunicator::init()
     return MCL_init_client(path);
 }
 
-void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
-                                          PaddedHostVector<gmx::RVec>  coords)
+void gmx::MimicCommunicator::sendInitData(gmx_mtop_t* mtop, PaddedHostVector<gmx::RVec> coords)
 {
     MCL_send(&mtop->natoms, 1, TYPE_INT, 0);
     MCL_send(&mtop->atomtypes.nr, 1, TYPE_INT, 0);
@@ -117,23 +124,24 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
     charges.reserve(static_cast<size_t>(mtop->natoms));
 
     int offset = 0;
-    for (const gmx_molblock_t &molblock : mtop->molblock)
+    for (const gmx_molblock_t& molblock : mtop->molblock)
     {
-        gmx_moltype_t  *type     = &mtop->moltype[molblock.type];
+        gmx_moltype_t* type = &mtop->moltype[molblock.type];
         for (int mol = 0; mol < molblock.nmol; ++mol)
         {
-            int      nconstr  = type->ilist[F_CONSTR].size() / 3;
-            int      nconstrc = type->ilist[F_CONSTRNC].size() / 3;
-            int      nsettle  = type->ilist[F_SETTLE].size() / 4;
+            int nconstr  = type->ilist[F_CONSTR].size() / 3;
+            int nconstrc = type->ilist[F_CONSTRNC].size() / 3;
+            int nsettle  = type->ilist[F_SETTLE].size() / 4;
 
             for (int ncon = 0; ncon < nconstr + nconstrc; ++ncon)
             {
-                int      contype = type->ilist[F_CONSTR].iatoms[0];
-                int      at1     = type->ilist[F_CONSTR].iatoms[1];
-                int      at2     = type->ilist[F_CONSTR].iatoms[2];
+                int contype = type->ilist[F_CONSTR].iatoms[0];
+                int at1     = type->ilist[F_CONSTR].iatoms[1];
+                int at2     = type->ilist[F_CONSTR].iatoms[2];
                 bonds.push_back(offset + at1 + 1);
                 bonds.push_back(offset + at2 + 1);
-                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA) / BOHR2NM);
+                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
+                                      / BOHR2NM);
             }
 
             for (int ncon = 0; ncon < nsettle; ++ncon)
@@ -142,7 +150,7 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
                 t_iatom h1;
                 t_iatom h2;
 
-                int     contype = type->ilist[F_SETTLE].iatoms[0];
+                int contype = type->ilist[F_SETTLE].iatoms[0];
 
                 ox = type->ilist[F_SETTLE].iatoms[1];
                 h1 = type->ilist[F_SETTLE].iatoms[2];
@@ -156,9 +164,12 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
 
                 bonds.push_back(offset + h1 + 1);
                 bonds.push_back(offset + h2 + 1);
-                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA) / BOHR2NM);
-                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA) / BOHR2NM);
-                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dB) / BOHR2NM);
+                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
+                                      / BOHR2NM);
+                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dA)
+                                      / BOHR2NM);
+                bondLengths.push_back(static_cast<double>(mtop->ffparams.iparams[contype].constr.dB)
+                                      / BOHR2NM);
             }
 
             nAtomsMol.push_back(type->atoms.nr);
@@ -221,7 +232,7 @@ void gmx::MimicCommunicator::sendInitData(gmx_mtop_t                  *mtop,
     MCL_send(&*elements.begin(), mtop->atomtypes.nr, TYPE_INT, 0);
 
     std::vector<double> convertedCoords;
-    for (auto &coord : coords)
+    for (auto& coord : coords)
     {
         convertedCoords.push_back(static_cast<double>(coord[0]) / BOHR2NM);
         convertedCoords.push_back(static_cast<double>(coord[1]) / BOHR2NM);
@@ -239,7 +250,7 @@ int64_t gmx::MimicCommunicator::getStepNumber()
     return steps;
 }
 
-void gmx::MimicCommunicator::getCoords(PaddedHostVector<RVec> *x, const int natoms)
+void gmx::MimicCommunicator::getCoords(PaddedHostVector<RVec>* x, const int natoms)
 {
     std::vector<double> coords(natoms * 3);
     MCL_receive(&*coords.begin(), 3 * natoms, TYPE_DOUBLE, 0);

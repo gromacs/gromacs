@@ -80,59 +80,53 @@ namespace
 
 class ElectricFieldTest : public ::testing::Test
 {
-    public:
-        void test(int  dim,
-                  real E0,
-                  real omega,
-                  real t0,
-                  real sigma,
-                  real expectedValue)
+public:
+    void test(int dim, real E0, real omega, real t0, real sigma, real expectedValue)
+    {
+        // Make the electric field module
+        auto module = createElectricFieldModule();
+
+        // Fill the module as if from .mdp inputs
         {
-            // Make the electric field module
-            auto module = createElectricFieldModule();
+            const char* dimXYZ[3] = { "x", "y", "z" };
+            GMX_RELEASE_ASSERT(dim >= 0 && dim < DIM, "Dimension should be 0, 1 or 2");
 
-            // Fill the module as if from .mdp inputs
-            {
-                const char *dimXYZ[3] = { "x", "y", "z" };
-                GMX_RELEASE_ASSERT(dim >= 0 && dim < DIM, "Dimension should be 0, 1 or 2");
+            KeyValueTreeBuilder mdpValues;
+            mdpValues.rootObject().addValue(formatString("electric-field-%s", dimXYZ[dim]),
+                                            formatString("%g %g %g %g", E0, omega, t0, sigma));
 
-                KeyValueTreeBuilder mdpValues;
-                mdpValues.rootObject().addValue(formatString("electric-field-%s", dimXYZ[dim]),
-                                                formatString("%g %g %g %g", E0, omega, t0, sigma));
-
-                KeyValueTreeTransformer transform;
-                transform.rules()->addRule()
-                    .keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
-                module->mdpOptionProvider()->initMdpTransform(transform.rules());
-                auto    result = transform.transform(mdpValues.build(), nullptr);
-                Options moduleOptions;
-                module->mdpOptionProvider()->initMdpOptions(&moduleOptions);
-                assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
-            }
-
-            // Prepare a ForceProviderInput
-            t_mdatoms         md;
-            std::vector<real> chargeA { 1 };
-            md.homenr  = ssize(chargeA);
-            md.chargeA = chargeA.data();
-            CommrecHandle        cr       = init_commrec(MPI_COMM_WORLD, nullptr);
-            matrix               boxDummy = { {0, 0, 0}, {0, 0, 0}, {0, 0, 0} };
-            ForceProviderInput   forceProviderInput({}, md, 0.0, boxDummy, *cr);
-
-            // Prepare a ForceProviderOutput
-            PaddedVector<RVec>   f = { {0, 0, 0} };
-            ForceWithVirial      forceWithVirial(f, true);
-            gmx_enerdata_t       enerdDummy(1, 0);
-            ForceProviderOutput  forceProviderOutput(&forceWithVirial, &enerdDummy);
-
-            // Use the ForceProviders to calculate forces
-            ForceProviders forceProviders;
-            module->initForceProviders(&forceProviders);
-            forceProviders.calculateForces(forceProviderInput, &forceProviderOutput);
-
-            FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 0.005));
-            EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
+            KeyValueTreeTransformer transform;
+            transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
+            module->mdpOptionProvider()->initMdpTransform(transform.rules());
+            auto    result = transform.transform(mdpValues.build(), nullptr);
+            Options moduleOptions;
+            module->mdpOptionProvider()->initMdpOptions(&moduleOptions);
+            assignOptionsFromKeyValueTree(&moduleOptions, result.object(), nullptr);
         }
+
+        // Prepare a ForceProviderInput
+        t_mdatoms         md;
+        std::vector<real> chargeA{ 1 };
+        md.homenr                   = ssize(chargeA);
+        md.chargeA                  = chargeA.data();
+        CommrecHandle      cr       = init_commrec(MPI_COMM_WORLD, nullptr);
+        matrix             boxDummy = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
+        ForceProviderInput forceProviderInput({}, md, 0.0, boxDummy, *cr);
+
+        // Prepare a ForceProviderOutput
+        PaddedVector<RVec>  f = { { 0, 0, 0 } };
+        ForceWithVirial     forceWithVirial(f, true);
+        gmx_enerdata_t      enerdDummy(1, 0);
+        ForceProviderOutput forceProviderOutput(&forceWithVirial, &enerdDummy);
+
+        // Use the ForceProviders to calculate forces
+        ForceProviders forceProviders;
+        module->initForceProviders(&forceProviders);
+        forceProviders.calculateForces(forceProviderInput, &forceProviderOutput);
+
+        FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 0.005));
+        EXPECT_REAL_EQ_TOL(f[0][dim], expectedValue, tolerance);
+    }
 };
 
 TEST_F(ElectricFieldTest, Static)

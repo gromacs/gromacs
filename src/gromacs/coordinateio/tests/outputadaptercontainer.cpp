@@ -70,9 +70,8 @@ TEST(OutputAdapterContainer, MakeEmpty)
 TEST(OutputAdapterContainer, AddAdapter)
 {
     OutputAdapterContainer container(CoordinateFileFlags::Base);
-    container.addAdapter(
-            std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
-            CoordinateFileFlags::RequireNewFrameStartTime);
+    container.addAdapter(std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
+                         CoordinateFileFlags::RequireNewFrameStartTime);
     EXPECT_FALSE(container.isEmpty());
 }
 
@@ -89,26 +88,22 @@ TEST(OutputAdapterContainer, RejectBadAdapter)
 TEST(OutputAdapterContainer, RejectDuplicateAdapter)
 {
     OutputAdapterContainer container(CoordinateFileFlags::Base);
-    EXPECT_NO_THROW(container.addAdapter(
-                            std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
-                            CoordinateFileFlags::RequireNewFrameStartTime));
+    EXPECT_NO_THROW(container.addAdapter(std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
+                                         CoordinateFileFlags::RequireNewFrameStartTime));
     EXPECT_FALSE(container.isEmpty());
-    EXPECT_THROW(container.addAdapter(
-                         std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
-                         CoordinateFileFlags::RequireNewFrameStartTime),
+    EXPECT_THROW(container.addAdapter(std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
+                                      CoordinateFileFlags::RequireNewFrameStartTime),
                  InternalError);
 }
 
 TEST(OutputAdapterContainer, AcceptMultipleAdapters)
 {
     OutputAdapterContainer container(CoordinateFileFlags::Base);
-    EXPECT_NO_THROW(container.addAdapter(
-                            std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
-                            CoordinateFileFlags::RequireForceOutput));
+    EXPECT_NO_THROW(container.addAdapter(std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
+                                         CoordinateFileFlags::RequireForceOutput));
     EXPECT_FALSE(container.isEmpty());
-    EXPECT_NO_THROW(container.addAdapter(
-                            std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
-                            CoordinateFileFlags::RequireVelocityOutput));
+    EXPECT_NO_THROW(container.addAdapter(std::make_unique<DummyOutputModule>(CoordinateFileFlags::Base),
+                                         CoordinateFileFlags::RequireVelocityOutput));
     EXPECT_FALSE(container.isEmpty());
 }
 

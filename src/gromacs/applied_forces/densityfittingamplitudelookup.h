@@ -66,8 +66,9 @@ enum class DensityFittingAmplitudeMethod
 };
 
 //! The names of the methods to determine the amplitude of the atoms to be spread on a grid
-const EnumerationArray<DensityFittingAmplitudeMethod, const char * const>
-c_densityFittingAmplitudeMethodNames = {{"unity", "mass", "charge"}};
+const EnumerationArray<DensityFittingAmplitudeMethod, const char* const> c_densityFittingAmplitudeMethodNames = {
+    { "unity", "mass", "charge" }
+};
 
 class DensityFittingAmplitudeLookupImpl;
 
@@ -76,29 +77,29 @@ class DensityFittingAmplitudeLookupImpl;
  */
 class DensityFittingAmplitudeLookup
 {
-    public:
-        //! Construct force provider for density fitting from its parameters
-        explicit DensityFittingAmplitudeLookup(const DensityFittingAmplitudeMethod &method);
-        ~DensityFittingAmplitudeLookup();
-        //! Copy constructor
-        DensityFittingAmplitudeLookup(const DensityFittingAmplitudeLookup &other);
-        //! Copy assignment
-        DensityFittingAmplitudeLookup &operator=(const DensityFittingAmplitudeLookup &other);
-        //! Move constructor
-        DensityFittingAmplitudeLookup(DensityFittingAmplitudeLookup &&other) noexcept;
-        //! Move assignment
-        DensityFittingAmplitudeLookup &operator=(DensityFittingAmplitudeLookup &&other) noexcept;
-        /*! \brief Return the amplitudes for spreading atoms of a given local index.
-         * \param[in] atoms the atom information
-         * \param[in] localIndex the local atom indices
-         * \returns amplitudes
-         */
-        const std::vector<real> &operator()(const t_mdatoms     &atoms,
-                                            ArrayRef<const int>  localIndex);
-    private:
-        std::unique_ptr<DensityFittingAmplitudeLookupImpl> impl_;
+public:
+    //! Construct force provider for density fitting from its parameters
+    explicit DensityFittingAmplitudeLookup(const DensityFittingAmplitudeMethod& method);
+    ~DensityFittingAmplitudeLookup();
+    //! Copy constructor
+    DensityFittingAmplitudeLookup(const DensityFittingAmplitudeLookup& other);
+    //! Copy assignment
+    DensityFittingAmplitudeLookup& operator=(const DensityFittingAmplitudeLookup& other);
+    //! Move constructor
+    DensityFittingAmplitudeLookup(DensityFittingAmplitudeLookup&& other) noexcept;
+    //! Move assignment
+    DensityFittingAmplitudeLookup& operator=(DensityFittingAmplitudeLookup&& other) noexcept;
+    /*! \brief Return the amplitudes for spreading atoms of a given local index.
+     * \param[in] atoms the atom information
+     * \param[in] localIndex the local atom indices
+     * \returns amplitudes
+     */
+    const std::vector<real>& operator()(const t_mdatoms& atoms, ArrayRef<const int> localIndex);
+
+private:
+    std::unique_ptr<DensityFittingAmplitudeLookupImpl> impl_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_APPLIED_FORCES_DENSITYFITTINGAMPLITUDELOOKUP_H

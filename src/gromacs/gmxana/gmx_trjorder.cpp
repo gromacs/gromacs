@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,14 +56,15 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
-    int     i;
-    real    d2;
+typedef struct
+{
+    int  i;
+    real d2;
 } t_order;
 
-static t_order *order;
+static t_order* order;
 
-static int ocomp(const void *a, const void *b)
+static int ocomp(const void* a, const void* b)
 {
     const t_order *oa, *ob;
 
@@ -80,9 +81,9 @@ static int ocomp(const void *a, const void *b)
     }
 }
 
-int gmx_trjorder(int argc, char *argv[])
+int gmx_trjorder(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] orders molecules according to the smallest distance",
         "to atoms in a reference group",
         "or on z-coordinate (with option [TT]-z[tt]).",
@@ -107,48 +108,50 @@ int gmx_trjorder(int argc, char *argv[])
         "With option [TT]-nshell[tt] the number of molecules within a shell",
         "of radius [TT]-r[tt] around the reference group are printed."
     };
-    static int        na   = 3, ref_a = 1;
-    static real       rcut = 0;
-    static gmx_bool   bCOM = FALSE, bZ = FALSE;
-    t_pargs           pa[] = {
-        { "-na", FALSE, etINT,  {&na},
-          "Number of atoms in a molecule" },
-        { "-da", FALSE, etINT,  {&ref_a},
-          "Atom used for the distance calculation, 0 is COM" },
-        { "-com", FALSE, etBOOL, {&bCOM},
+    static int      na = 3, ref_a = 1;
+    static real     rcut = 0;
+    static gmx_bool bCOM = FALSE, bZ = FALSE;
+    t_pargs         pa[] = {
+        { "-na", FALSE, etINT, { &na }, "Number of atoms in a molecule" },
+        { "-da", FALSE, etINT, { &ref_a }, "Atom used for the distance calculation, 0 is COM" },
+        { "-com",
+          FALSE,
+          etBOOL,
+          { &bCOM },
           "Use the distance to the center of mass of the reference group" },
-        { "-r",  FALSE, etREAL, {&rcut},
-          "Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein" },
-        { "-z", FALSE, etBOOL, {&bZ},
-          "Order molecules on z-coordinate" }
+        { "-r",
+          FALSE,
+          etREAL,
+          { &rcut },
+          "Cutoff used for the distance calculation when computing the number of molecules in a "
+          "shell around e.g. a protein" },
+        { "-z", FALSE, etBOOL, { &bZ }, "Order molecules on z-coordinate" }
     };
-    FILE             *fp;
-    t_trxstatus      *out;
-    t_trxstatus      *status;
+    FILE*             fp;
+    t_trxstatus*      out;
+    t_trxstatus*      status;
     gmx_bool          bNShell, bPDBout;
     t_topology        top;
     int               ePBC;
-    rvec             *x, *xsol, xcom, dx;
+    rvec *            x, *xsol, xcom, dx;
     matrix            box;
     t_pbc             pbc;
     gmx_rmpbc_t       gpbc;
     real              t, totmass, mass, rcut2 = 0, n2;
     int               natoms, nwat, ncut;
-    char            **grpname;
-    int               i, j, d, *isize, isize_ref = 0, isize_sol;
+    char**            grpname;
+    int               i, j, d, *isize, isize_ref      = 0, isize_sol;
     int               sa, sr, *swi, **index, *ind_ref = nullptr, *ind_sol;
-    gmx_output_env_t *oenv;
-    t_filenm          fnm[] = {
-        { efTRX, "-f", nullptr, ffREAD  },
-        { efTPS, nullptr, nullptr, ffREAD  },
-        { efNDX, nullptr, nullptr, ffOPTRD },
-        { efTRO, "-o", "ordered", ffOPTWR },
-        { efXVG, "-nshell", "nshell", ffOPTWR }
-    };
+    gmx_output_env_t* oenv;
+    t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
+                       { efTPS, nullptr, nullptr, ffREAD },
+                       { efNDX, nullptr, nullptr, ffOPTRD },
+                       { efTRO, "-o", "ordered", ffOPTWR },
+                       { efXVG, "-nshell", "nshell", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -157,13 +160,11 @@ int gmx_trjorder(int argc, char *argv[])
     sfree(x);
 
     /* get index groups */
-    printf("Select %sa group of molecules to be ordered:\n",
-           bZ ? "" : "a group of reference atoms and ");
+    printf("Select %sa group of molecules to be ordered:\n", bZ ? "" : "a group of reference atoms and ");
     snew(grpname, 2);
     snew(index, 2);
     snew(isize, 2);
-    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2,
-              isize, index, grpname);
+    get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), bZ ? 1 : 2, isize, index, grpname);
 
     if (!bZ)
     {
@@ -189,7 +190,10 @@ int gmx_trjorder(int argc, char *argv[])
         {
             if (index[i][j] > natoms)
             {
-                gmx_fatal(FARGS, "An atom number in group %s is larger than the number of atoms in the trajectory", grpname[i]);
+                gmx_fatal(FARGS,
+                          "An atom number in group %s is larger than the number of atoms in the "
+                          "trajectory",
+                          grpname[i]);
             }
         }
     }
@@ -200,10 +204,11 @@ int gmx_trjorder(int argc, char *argv[])
                   isize[1], na);
     }
 
-    nwat = isize_sol/na;
+    nwat = isize_sol / na;
     if (ref_a > na)
     {
-        gmx_fatal(FARGS, "The reference atom can not be larger than the number of atoms in a molecule");
+        gmx_fatal(FARGS,
+                  "The reference atom can not be larger than the number of atoms in a molecule");
     }
     ref_a--;
     snew(xsol, nwat);
@@ -216,16 +221,13 @@ int gmx_trjorder(int argc, char *argv[])
 
     out     = nullptr;
     fp      = nullptr;
-    bNShell = ((opt2bSet("-nshell", NFILE, fnm)) ||
-               (opt2parg_bSet("-r", asize(pa), pa)));
+    bNShell = ((opt2bSet("-nshell", NFILE, fnm)) || (opt2parg_bSet("-r", asize(pa), pa)));
     bPDBout = FALSE;
     if (bNShell)
     {
-        rcut2   = rcut*rcut;
-        fp      = xvgropen(opt2fn("-nshell", NFILE, fnm), "Number of molecules",
-                           "Time (ps)", "N", oenv);
-        printf("Will compute the number of molecules within a radius of %g\n",
-               rcut);
+        rcut2 = rcut * rcut;
+        fp = xvgropen(opt2fn("-nshell", NFILE, fnm), "Number of molecules", "Time (ps)", "N", oenv);
+        printf("Will compute the number of molecules within a radius of %g\n", rcut);
     }
     if (!bNShell || opt2bSet("-o", NFILE, fnm))
     {
@@ -252,15 +254,15 @@ int gmx_trjorder(int argc, char *argv[])
                 clear_rvec(xsol[i]);
                 for (j = 0; j < na; j++)
                 {
-                    sa       = ind_sol[i*na+j];
-                    mass     = top.atoms.atom[sa].m;
+                    sa   = ind_sol[i * na + j];
+                    mass = top.atoms.atom[sa].m;
                     totmass += mass;
                     for (d = 0; d < DIM; d++)
                     {
-                        xsol[i][d] += mass*x[sa][d];
+                        xsol[i][d] += mass * x[sa][d];
                     }
                 }
-                svmul(1.0/totmass, xsol[i], xsol[i]);
+                svmul(1.0 / totmass, xsol[i], xsol[i]);
             }
         }
         else
@@ -268,7 +270,7 @@ int gmx_trjorder(int argc, char *argv[])
             /* Copy the reference atom of all solvent molecules */
             for (i = 0; i < nwat; i++)
             {
-                copy_rvec(x[ind_sol[i*na+ref_a]], xsol[i]);
+                copy_rvec(x[ind_sol[i * na + ref_a]], xsol[i]);
             }
         }
 
@@ -276,9 +278,9 @@ int gmx_trjorder(int argc, char *argv[])
         {
             for (i = 0; (i < nwat); i++)
             {
-                sa           = ind_sol[na*i];
-                order[i].i   = sa;
-                order[i].d2  = xsol[i][ZZ];
+                sa          = ind_sol[na * i];
+                order[i].i  = sa;
+                order[i].d2 = xsol[i][ZZ];
             }
         }
         else if (bCOM)
@@ -287,20 +289,20 @@ int gmx_trjorder(int argc, char *argv[])
             clear_rvec(xcom);
             for (i = 0; i < isize_ref; i++)
             {
-                mass     = top.atoms.atom[ind_ref[i]].m;
+                mass = top.atoms.atom[ind_ref[i]].m;
                 totmass += mass;
                 for (j = 0; j < DIM; j++)
                 {
-                    xcom[j] += mass*x[ind_ref[i]][j];
+                    xcom[j] += mass * x[ind_ref[i]][j];
                 }
             }
-            svmul(1/totmass, xcom, xcom);
+            svmul(1 / totmass, xcom, xcom);
             for (i = 0; (i < nwat); i++)
             {
-                sa = ind_sol[na*i];
+                sa = ind_sol[na * i];
                 pbc_dx(&pbc, xcom, xsol[i], dx);
-                order[i].i   = sa;
-                order[i].d2  = norm2(dx);
+                order[i].i  = sa;
+                order[i].d2 = norm2(dx);
             }
         }
         else
@@ -308,10 +310,10 @@ int gmx_trjorder(int argc, char *argv[])
             /* Set distance to first atom */
             for (i = 0; (i < nwat); i++)
             {
-                sa = ind_sol[na*i];
+                sa = ind_sol[na * i];
                 pbc_dx(&pbc, x[ind_ref[0]], xsol[i], dx);
-                order[i].i   = sa;
-                order[i].d2  = norm2(dx);
+                order[i].i  = sa;
+                order[i].d2 = norm2(dx);
             }
             for (j = 1; (j < isize_ref); j++)
             {
@@ -322,7 +324,7 @@ int gmx_trjorder(int argc, char *argv[])
                     n2 = norm2(dx);
                     if (n2 < order[i].d2)
                     {
-                        order[i].d2  = n2;
+                        order[i].d2 = n2;
                     }
                 }
             }
@@ -347,7 +349,7 @@ int gmx_trjorder(int argc, char *argv[])
             {
                 for (j = 0; (j < na); j++)
                 {
-                    swi[ind_sol[na*i]+j] = order[i].i+j;
+                    swi[ind_sol[na * i] + j] = order[i].i + j;
                 }
             }
 
@@ -358,14 +360,13 @@ int gmx_trjorder(int argc, char *argv[])
                 {
                     for (j = 0; (j < na); j++)
                     {
-                        top.atoms.pdbinfo[order[i].i+j].bfac = std::sqrt(order[i].d2);
+                        top.atoms.pdbinfo[order[i].i + j].bfac = std::sqrt(order[i].d2);
                     }
                 }
             }
             write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, nullptr, nullptr);
         }
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
     if (out)
     {

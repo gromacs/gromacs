@@ -59,7 +59,7 @@ struct PpRanks
 namespace gmx
 {
 
-template <typename T>
+template<typename T>
 class ArrayRef;
 
 /*! \libinternal
@@ -67,33 +67,32 @@ class ArrayRef;
 class PmeForceSenderGpu
 {
 
-    public:
-        /*! \brief Creates PME GPU Force sender object
-         * \param[in] pmeStream       CUDA stream used for PME computations
-         * \param[in] comm            Communicator used for simulation
-         * \param[in] ppRanks         List of PP ranks
-         */
-        PmeForceSenderGpu(void *pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
-        ~PmeForceSenderGpu();
+public:
+    /*! \brief Creates PME GPU Force sender object
+     * \param[in] pmeStream       CUDA stream used for PME computations
+     * \param[in] comm            Communicator used for simulation
+     * \param[in] ppRanks         List of PP ranks
+     */
+    PmeForceSenderGpu(void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
+    ~PmeForceSenderGpu();
 
-        /*! \brief
-         * Initialization of GPU PME Force sender
-         * \param[in] d_f   force buffer in GPU memory
-         */
-        void sendForceBufferAddressToPpRanks(rvec *d_f);
+    /*! \brief
+     * Initialization of GPU PME Force sender
+     * \param[in] d_f   force buffer in GPU memory
+     */
+    void sendForceBufferAddressToPpRanks(rvec* d_f);
 
-        /*! \brief
-         * Send PP data to PP rank
-         * \param[in] ppRank           PP rank to receive data
-         */
-        void sendFToPpCudaDirect(int ppRank);
+    /*! \brief
+     * Send PP data to PP rank
+     * \param[in] ppRank           PP rank to receive data
+     */
+    void sendFToPpCudaDirect(int ppRank);
 
-    private:
-        class Impl;
-        gmx::PrivateImplPointer<Impl> impl_;
-
+private:
+    class Impl;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
-} //namespace gmx
+} // namespace gmx
 
 #endif

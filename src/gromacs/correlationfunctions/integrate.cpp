@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,8 +51,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 /*! \brief Integrate a function and printe the integral value. */
-real print_and_integrate(FILE *fp, int n, real dt, const real c[],
-                         const real *fit, int nskip)
+real print_and_integrate(FILE* fp, int n, real dt, const real c[], const real* fit, int nskip)
 {
     real c0, sum;
     int  j;
@@ -64,11 +63,11 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[],
         c0 = c[j];
         if (fp && (nskip == 0 || j % nskip == 0))
         {
-            fprintf(fp, "%10.3f  %10.5f\n", j*dt, c0);
+            fprintf(fp, "%10.3f  %10.5f\n", j * dt, c0);
         }
         if (j > 0)
         {
-            sum += dt*(c0+c[j-1]);
+            sum += dt * (c0 + c[j - 1]);
         }
     }
     if (fp)
@@ -80,29 +79,26 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[],
             {
                 if (nskip == 0 || j % nskip == 0)
                 {
-                    fprintf(fp, "%10.3f  %10.5f\n", j*dt, fit[j]);
+                    fprintf(fp, "%10.3f  %10.5f\n", j * dt, fit[j]);
                 }
             }
             fprintf(fp, "&\n");
         }
     }
-    return sum*0.5;
+    return sum * 0.5;
 }
 
 /*! \brief Compute and return the integral of a function. */
-real evaluate_integral(int n, const real x[], const real y[],
-                       const real dy[], real aver_start,
-                       real *stddev)
+real evaluate_integral(int n, const real x[], const real y[], const real dy[], real aver_start, real* stddev)
 {
     double sum, sum_var, w;
     double sum_tail = 0, sum2_tail = 0;
-    int    j, nsum_tail = 0;
+    int    j, nsum_tail            = 0;
 
     /* Use trapezoidal rule for calculating integral */
     if (n <= 0)
     {
-        gmx_fatal(FARGS, "Evaluating integral: n = %d (file %s, line %d)",
-                  n, __FILE__, __LINE__);
+        gmx_fatal(FARGS, "Evaluating integral: n = %d (file %s, line %d)", n, __FILE__, __LINE__);
     }
 
     sum     = 0;
@@ -112,22 +108,22 @@ real evaluate_integral(int n, const real x[], const real y[],
         w = 0;
         if (j > 0)
         {
-            w += 0.5*(x[j] - x[j-1]);
+            w += 0.5 * (x[j] - x[j - 1]);
         }
-        if (j < n-1)
+        if (j < n - 1)
         {
-            w += 0.5*(x[j+1] - x[j]);
+            w += 0.5 * (x[j + 1] - x[j]);
         }
-        sum += w*y[j];
+        sum += w * y[j];
         if (dy)
         {
             /* Assume all errors are uncorrelated */
-            sum_var += gmx::square(w*dy[j]);
+            sum_var += gmx::square(w * dy[j]);
         }
 
         if ((aver_start > 0) && (x[j] >= aver_start))
         {
-            sum_tail  += sum;
+            sum_tail += sum;
             sum2_tail += std::sqrt(sum_var);
             nsum_tail += 1;
         }
@@ -135,9 +131,9 @@ real evaluate_integral(int n, const real x[], const real y[],
 
     if (nsum_tail > 0)
     {
-        sum = sum_tail/nsum_tail;
+        sum = sum_tail / nsum_tail;
         /* This is a worst case estimate, assuming all stddev's are correlated. */
-        *stddev = sum2_tail/nsum_tail;
+        *stddev = sum2_tail / nsum_tail;
     }
     else
     {

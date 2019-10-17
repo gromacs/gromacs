@@ -61,113 +61,108 @@ namespace gmx
 class LeapFrogCuda
 {
 
-    public:
+public:
+    /*! \brief Constructor.
+     *
+     * \param[in] commandStream  Device command stream to use.
+     */
+    LeapFrogCuda(CommandStream commandStream);
+    ~LeapFrogCuda();
 
-        /*! \brief Constructor.
-         *
-         * \param[in] commandStream  Device command stream to use.
-         */
-        LeapFrogCuda(CommandStream commandStream);
-        ~LeapFrogCuda();
+    /*! \brief
+     * Update PBC data.
+     *
+     * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
+     *
+     * \param[in] pbc The PBC data in t_pbc format.
+     */
+    void setPbc(const t_pbc* pbc);
 
-        /*! \brief
-         * Update PBC data.
-         *
-         * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
-         *
-         * \param[in] pbc The PBC data in t_pbc format.
-         */
-        void setPbc(const t_pbc *pbc);
+    /*! \brief Integrate
+     *
+     * Integrates the equation of motion using Leap-Frog algorithm.
+     * Updates coordinates and velocities on the GPU. The current coordinates are saved for constraints.
+     *
+     * \param[in,out] d_x                    Coordinates to update
+     * \param[out]    d_xp                   Place to save the values of initial coordinates coordinates to.
+     * \param[in,out] d_v                    Velocities (will be updated).
+     * \param[in]     d_f                    Forces.
+     * \param[in]     dt                     Timestep.
+     * \param[in]     doTempCouple           If the temperature coupling should be applied.
+     * \param[in]     tcstat                 Temperature coupling data.
+     * \param[in]     doPressureCouple       If the temperature coupling should be applied.
+     * \param[in]     dtPressureCouple       Period between pressure coupling steps
+     * \param[in]     velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     */
+    void integrate(const float3*                     d_x,
+                   float3*                           d_xp,
+                   float3*                           d_v,
+                   const float3*                     d_f,
+                   const real                        dt,
+                   const bool                        doTempCouple,
+                   gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                   const bool                        doPressureCouple,
+                   const float                       dtPressureCouple,
+                   const matrix                      velocityScalingMatrix);
 
-        /*! \brief Integrate
-         *
-         * Integrates the equation of motion using Leap-Frog algorithm.
-         * Updates coordinates and velocities on the GPU. The current coordinates are saved for constraints.
-         *
-         * \param[in,out] d_x                    Coordinates to update
-         * \param[out]    d_xp                   Place to save the values of initial coordinates coordinates to.
-         * \param[in,out] d_v                    Velocities (will be updated).
-         * \param[in]     d_f                    Forces.
-         * \param[in]     dt                     Timestep.
-         * \param[in]     doTempCouple           If the temperature coupling should be applied.
-         * \param[in]     tcstat                 Temperature coupling data.
-         * \param[in]     doPressureCouple       If the temperature coupling should be applied.
-         * \param[in]     dtPressureCouple       Period between pressure coupling steps
-         * \param[in]     velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
-         */
-        void integrate(const float3                     *d_x,
-                       float3                           *d_xp,
-                       float3                           *d_v,
-                       const float3                     *d_f,
-                       const real                        dt,
-                       const bool                        doTempCouple,
-                       gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                       const bool                        doPressureCouple,
-                       const float                       dtPressureCouple,
-                       const matrix                      velocityScalingMatrix);
+    /*! \brief Set the integrator
+     *
+     * Allocates memory for inverse masses, and, if needed for temperature scaling factor(s)
+     * and temperature coupling groups. Copies inverse masses and temperature coupling groups
+     * to the GPU.
+     *
+     * \param[in] md                  MD atoms, from which inverse masses are taken.
+     * \param[in] numTempScaleValues  Number of temperature scale groups.
+     * \param[in] tempScaleGroups     Maps the atom index to temperature scale value.
+     */
+    void set(const t_mdatoms& md, int numTempScaleValues, const unsigned short* tempScaleGroups);
 
-        /*! \brief Set the integrator
-         *
-         * Allocates memory for inverse masses, and, if needed for temperature scaling factor(s)
-         * and temperature coupling groups. Copies inverse masses and temperature coupling groups
-         * to the GPU.
-         *
-         * \param[in] md                  MD atoms, from which inverse masses are taken.
-         * \param[in] numTempScaleValues  Number of temperature scale groups.
-         * \param[in] tempScaleGroups     Maps the atom index to temperature scale value.
-         */
-        void set(const t_mdatoms      &md,
-                 int                   numTempScaleValues,
-                 const unsigned short *tempScaleGroups);
+    /*! \brief Class with hardware-specific interfaces and implementations.*/
+    class Impl;
 
-        /*! \brief Class with hardware-specific interfaces and implementations.*/
-        class Impl;
+private:
+    //! CUDA stream
+    CommandStream commandStream_;
+    //! CUDA kernel launch config
+    KernelLaunchConfig kernelLaunchConfig_;
+    //! Periodic boundary data
+    PbcAiuc pbcAiuc_;
+    //! Number of atoms
+    int numAtoms_;
 
-    private:
+    //! 1/mass for all atoms (GPU)
+    real* d_inverseMasses_;
+    //! Current size of the reciprocal masses array
+    int numInverseMasses_ = -1;
+    //! Maximum size of the reciprocal masses array
+    int numInverseMassesAlloc_ = -1;
 
-        //! CUDA stream
-        CommandStream          commandStream_;
-        //! CUDA kernel launch config
-        KernelLaunchConfig     kernelLaunchConfig_;
-        //! Periodic boundary data
-        PbcAiuc                pbcAiuc_;
-        //! Number of atoms
-        int                    numAtoms_;
-
-        //! 1/mass for all atoms (GPU)
-        real                  *d_inverseMasses_;
-        //! Current size of the reciprocal masses array
-        int                    numInverseMasses_ = -1;
-        //! Maximum size of the reciprocal masses array
-        int                    numInverseMassesAlloc_ = -1;
-
-        //! Number of temperature coupling groups (zero = no coupling)
-        int                    numTempScaleValues_ = 0;
-        /*! \brief Array with temperature scaling factors.
-         * This is temporary solution to remap data from t_grp_tcstat into plain array
-         * \todo Replace with better solution.
-         */
-        gmx::HostVector<float> h_lambdas_;
-        //! Device-side temperature scaling factors
-        float                 *d_lambdas_;
-        //! Current size of the array with temperature scaling factors (lambdas)
-        int                    numLambdas_ = -1;
-        //! Maximum size of the array with temperature scaling factors (lambdas)
-        int                    numLambdasAlloc_ = -1;
+    //! Number of temperature coupling groups (zero = no coupling)
+    int numTempScaleValues_ = 0;
+    /*! \brief Array with temperature scaling factors.
+     * This is temporary solution to remap data from t_grp_tcstat into plain array
+     * \todo Replace with better solution.
+     */
+    gmx::HostVector<float> h_lambdas_;
+    //! Device-side temperature scaling factors
+    float* d_lambdas_;
+    //! Current size of the array with temperature scaling factors (lambdas)
+    int numLambdas_ = -1;
+    //! Maximum size of the array with temperature scaling factors (lambdas)
+    int numLambdasAlloc_ = -1;
 
 
-        //! Array that maps atom index onto the temperature scaling group to get scaling parameter
-        unsigned short        *d_tempScaleGroups_;
-        //! Current size of the temperature coupling groups array
-        int                    numTempScaleGroups_ = -1;
-        //! Maximum size of the temperature coupling groups array
-        int                    numTempScaleGroupsAlloc_ = -1;
+    //! Array that maps atom index onto the temperature scaling group to get scaling parameter
+    unsigned short* d_tempScaleGroups_;
+    //! Current size of the temperature coupling groups array
+    int numTempScaleGroups_ = -1;
+    //! Maximum size of the temperature coupling groups array
+    int numTempScaleGroupsAlloc_ = -1;
 
-        //! Vector with diagonal elements of the pressure coupling velocity rescale factors
-        float3                 velocityScalingMatrixDiagonal_;
-
+    //! Vector with diagonal elements of the pressure coupling velocity rescale factors
+    float3 velocityScalingMatrixDiagonal_;
 };
 
-} //namespace gmx
+} // namespace gmx
 
 #endif

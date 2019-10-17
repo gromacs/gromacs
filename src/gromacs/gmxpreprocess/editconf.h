@@ -35,6 +35,6 @@
 #ifndef GMX_GMXPREPROCESS_EDITCONF_H
 #define GMX_GMXPREPROCESS_EDITCONF_H
 
-int gmx_editconf(int argc, char *argv[]);
+int gmx_editconf(int argc, char* argv[]);
 
 #endif

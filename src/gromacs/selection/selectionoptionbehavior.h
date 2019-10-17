@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -78,33 +78,33 @@ class SelectionCollection;
  */
 class ITopologyProvider
 {
-    public:
-        /*! \brief
-         * Returns the topology to use.
-         *
-         * \param[in] required  Whether the topology is required by the caller.
-         *
-         * Can return NULL if \p required is `false` and the topology is not
-         * provided by the user.
-         * If \p required is `true`, should throw an error if the topology
-         * cannot be loaded.
-         *
-         * This method may get called multiple times, potentially with
-         * different values of \p required.  Subsequent calls should just
-         * return the same topology that was loaded in the first call.
-         */
-        virtual gmx_mtop_t *getTopology(bool required) = 0;
-        /*! \brief
-         * Returns the number of atoms.
-         *
-         * This method is only called if getTopology() returns NULL.
-         * It should return the number of atoms that at most need to be
-         * selected by the selections.
-         */
-        virtual int getAtomCount()                     = 0;
+public:
+    /*! \brief
+     * Returns the topology to use.
+     *
+     * \param[in] required  Whether the topology is required by the caller.
+     *
+     * Can return NULL if \p required is `false` and the topology is not
+     * provided by the user.
+     * If \p required is `true`, should throw an error if the topology
+     * cannot be loaded.
+     *
+     * This method may get called multiple times, potentially with
+     * different values of \p required.  Subsequent calls should just
+     * return the same topology that was loaded in the first call.
+     */
+    virtual gmx_mtop_t* getTopology(bool required) = 0;
+    /*! \brief
+     * Returns the number of atoms.
+     *
+     * This method is only called if getTopology() returns NULL.
+     * It should return the number of atoms that at most need to be
+     * selected by the selections.
+     */
+    virtual int getAtomCount() = 0;
 
-    protected:
-        virtual ~ITopologyProvider();
+protected:
+    virtual ~ITopologyProvider();
 };
 
 /*! \brief
@@ -142,39 +142,38 @@ class ITopologyProvider
  */
 class SelectionOptionBehavior : public IOptionsBehavior
 {
-    public:
-        /*! \brief
-         * Creates a behavior to use selections.
-         *
-         * \param[in,out] selections  Selection collection to use.
-         * \param[in]     topologyProvider  Callback to load/provide topology
-         *     information to selections when required.
-         *
-         * The methods in \p topologyProvider are called after all options have
-         * been parsed and finished, so the caller can, e.g., load the topology
-         * from a file specified by a file option.
-         */
-        SelectionOptionBehavior(SelectionCollection *selections,
-                                ITopologyProvider   *topologyProvider);
-        ~SelectionOptionBehavior() override;
+public:
+    /*! \brief
+     * Creates a behavior to use selections.
+     *
+     * \param[in,out] selections  Selection collection to use.
+     * \param[in]     topologyProvider  Callback to load/provide topology
+     *     information to selections when required.
+     *
+     * The methods in \p topologyProvider are called after all options have
+     * been parsed and finished, so the caller can, e.g., load the topology
+     * from a file specified by a file option.
+     */
+    SelectionOptionBehavior(SelectionCollection* selections, ITopologyProvider* topologyProvider);
+    ~SelectionOptionBehavior() override;
 
-        /*! \brief
-         * Add common options for controlling selections.
-         *
-         * This method is separate from the constructor so that the caller can
-         * control the order of options better.
-         */
-        void initOptions(IOptionsContainer *options);
+    /*! \brief
+     * Add common options for controlling selections.
+     *
+     * This method is separate from the constructor so that the caller can
+     * control the order of options better.
+     */
+    void initOptions(IOptionsContainer* options);
 
-        // From IOptionsBehavior
-        void initBehavior(Options *options) override;
-        void optionsFinishing(Options * /*options*/) override {}
-        void optionsFinished() override;
+    // From IOptionsBehavior
+    void initBehavior(Options* options) override;
+    void optionsFinishing(Options* /*options*/) override {}
+    void optionsFinished() override;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 

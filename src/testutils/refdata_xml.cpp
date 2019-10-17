@@ -60,15 +60,16 @@ namespace
 {
 
 //! XML version declaration used when writing the reference data.
-const char *const c_VersionDeclarationString = "xml version=\"1.0\"";
+const char* const c_VersionDeclarationString = "xml version=\"1.0\"";
 //! XML stylesheet declaration used for writing the reference data.
-const char *const c_StyleSheetDeclarationString = "xml-stylesheet type=\"text/xsl\" href=\"referencedata.xsl\"";
+const char* const c_StyleSheetDeclarationString =
+        "xml-stylesheet type=\"text/xsl\" href=\"referencedata.xsl\"";
 //! Name of the root element in reference data XML files.
-const char *const c_RootNodeName = "ReferenceData";
+const char* const c_RootNodeName = "ReferenceData";
 //! Name of the XML attribute used to store identifying strings for reference data elements.
-const char *const c_IdAttrName = "Name";
+const char* const c_IdAttrName = "Name";
 
-}       // namespace
+} // namespace
 
 /********************************************************************
  * XML reading
@@ -78,25 +79,23 @@ namespace
 {
 
 //! Convenience typedef
-typedef tinyxml2::XMLDocument *XMLDocumentPtr;
+typedef tinyxml2::XMLDocument* XMLDocumentPtr;
 //! Convenience typedef
-typedef tinyxml2::XMLNode *XMLNodePtr;
+typedef tinyxml2::XMLNode* XMLNodePtr;
 //! Convenience typedef
-typedef tinyxml2::XMLElement *XMLElementPtr;
+typedef tinyxml2::XMLElement* XMLElementPtr;
 //! Convenience typedef
-typedef tinyxml2::XMLText *XMLTextPtr;
+typedef tinyxml2::XMLText* XMLTextPtr;
 
 //! \name Helper functions for XML reading
 //! \{
 
-void readEntry(XMLNodePtr node, ReferenceDataEntry *entry);
+void readEntry(XMLNodePtr node, ReferenceDataEntry* entry);
 
 XMLNodePtr getCDataChildNode(XMLNodePtr node)
 {
     XMLNodePtr cdata = node->FirstChild();
-    while (cdata != nullptr &&
-           cdata->ToText() != nullptr &&
-           !cdata->ToText()->CData())
+    while (cdata != nullptr && cdata->ToText() != nullptr && !cdata->ToText()->CData())
     {
         cdata = cdata->NextSibling();
     }
@@ -129,7 +128,7 @@ std::string getValueFromLeafElement(XMLNodePtr node)
 {
     std::string value;
 
-    XMLNodePtr  childNode = getNextTextChildNode(node->FirstChild());
+    XMLNodePtr childNode = getNextTextChildNode(node->FirstChild());
     while (childNode != nullptr)
     {
         value += std::string(childNode->Value());
@@ -155,13 +154,13 @@ std::string getValueFromLeafElement(XMLNodePtr node)
 //! Make a new entry from \c element.
 ReferenceDataEntry::EntryPointer createEntry(XMLElementPtr element)
 {
-    const char *id = element->Attribute(c_IdAttrName);
+    const char*                      id = element->Attribute(c_IdAttrName);
     ReferenceDataEntry::EntryPointer entry(new ReferenceDataEntry(element->Value(), id));
     return entry;
 }
 
 //! Read the child entries of \c parentElement and transfer the contents to \c entry
-void readChildEntries(XMLNodePtr parentElement, ReferenceDataEntry *entry)
+void readChildEntries(XMLNodePtr parentElement, ReferenceDataEntry* entry)
 {
     XMLElementPtr childElement = parentElement->FirstChildElement();
     while (childElement != nullptr)
@@ -180,7 +179,7 @@ bool isCompoundElement(XMLNodePtr node)
 }
 
 //! Read \c element and transfer the contents to \c entry
-void readEntry(XMLNodePtr element, ReferenceDataEntry *entry)
+void readEntry(XMLNodePtr element, ReferenceDataEntry* entry)
 {
     if (isCompoundElement(element))
     {
@@ -198,18 +197,17 @@ void readEntry(XMLNodePtr element, ReferenceDataEntry *entry)
 
 //! \}
 
-}       // namespace
+} // namespace
 
 //! \cond internal
-ReferenceDataEntry::EntryPointer
-readReferenceDataFile(const std::string &path)
+ReferenceDataEntry::EntryPointer readReferenceDataFile(const std::string& path)
 {
     tinyxml2::XMLDocument document;
     document.LoadFile(path.c_str());
     if (document.Error())
     {
-        const char *errorStr1 = document.GetErrorStr1();
-        const char *errorStr2 = document.GetErrorStr2();
+        const char* errorStr1 = document.GetErrorStr1();
+        const char* errorStr2 = document.GetErrorStr2();
         std::string errorString("Error was ");
         if (errorStr1)
         {
@@ -223,7 +221,8 @@ readReferenceDataFile(const std::string &path)
         {
             errorString += "not specified.";
         }
-        GMX_THROW(TestException("Reference data not parsed successfully: " + path + "\n." + errorString + "\n"));
+        GMX_THROW(TestException("Reference data not parsed successfully: " + path + "\n."
+                                + errorString + "\n"));
     }
     XMLElementPtr rootNode = document.RootElement();
     if (rootNode == nullptr)
@@ -251,10 +250,9 @@ namespace
 //! \name Helper functions for XML writing
 //! \{
 
-void createElementAndContents(XMLElementPtr             parentElement,
-                              const ReferenceDataEntry &entry);
+void createElementAndContents(XMLElementPtr parentElement, const ReferenceDataEntry& entry);
 
-void setIdAttribute(XMLElementPtr element, const std::string &id)
+void setIdAttribute(XMLElementPtr element, const std::string& id)
 {
     if (!id.empty())
     {
@@ -262,7 +260,7 @@ void setIdAttribute(XMLElementPtr element, const std::string &id)
     }
 }
 
-XMLElementPtr createElement(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
+XMLElementPtr createElement(XMLElementPtr parentElement, const ReferenceDataEntry& entry)
 {
     XMLElementPtr element = parentElement->GetDocument()->NewElement(entry.type().c_str());
     parentElement->InsertEndChild(element);
@@ -270,9 +268,9 @@ XMLElementPtr createElement(XMLElementPtr parentElement, const ReferenceDataEntr
     return element;
 }
 
-void createChildElements(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
+void createChildElements(XMLElementPtr parentElement, const ReferenceDataEntry& entry)
 {
-    const ReferenceDataEntry::ChildList &children(entry.children());
+    const ReferenceDataEntry::ChildList& children(entry.children());
     ReferenceDataEntry::ChildIterator    child;
     for (child = children.begin(); child != children.end(); ++child)
     {
@@ -291,7 +289,7 @@ void createChildElements(XMLElementPtr parentElement, const ReferenceDataEntry &
  * This is an edge case that is unimportant for GROMACS refdata, but
  * it is preferable to know that the infrastructure won't break.
  */
-std::vector<std::string> breakUpAnyCdataEndTags(const std::string &input)
+std::vector<std::string> breakUpAnyCdataEndTags(const std::string& input)
 {
     std::vector<std::string> strings;
     std::size_t              startPos = 0;
@@ -307,13 +305,12 @@ std::vector<std::string> breakUpAnyCdataEndTags(const std::string &input)
         }
         strings.push_back(input.substr(startPos, endPos));
         startPos = endPos;
-    }
-    while (endPos != std::string::npos);
+    } while (endPos != std::string::npos);
 
     return strings;
 }
 
-void createElementContents(XMLElementPtr element, const ReferenceDataEntry &entry)
+void createElementContents(XMLElementPtr element, const ReferenceDataEntry& entry)
 {
     // TODO: Figure out if \r and \r\n can be handled without them
     // changing to \n in the roundtrip.
@@ -328,7 +325,7 @@ void createElementContents(XMLElementPtr element, const ReferenceDataEntry &entr
         // of the starting CDATA tag).
         const std::string        adjustedValue = "\n" + entry.value();
         std::vector<std::string> cdataStrings  = breakUpAnyCdataEndTags(adjustedValue);
-        for (auto const &s : cdataStrings)
+        for (auto const& s : cdataStrings)
         {
             XMLTextPtr textNode = element->GetDocument()->NewText(s.c_str());
             textNode->SetCData(true);
@@ -342,7 +339,7 @@ void createElementContents(XMLElementPtr element, const ReferenceDataEntry &entr
     }
 }
 
-void createElementAndContents(XMLElementPtr parentElement, const ReferenceDataEntry &entry)
+void createElementAndContents(XMLElementPtr parentElement, const ReferenceDataEntry& entry)
 {
     XMLElementPtr element = createElement(parentElement, entry);
     createElementContents(element, entry);
@@ -357,16 +354,15 @@ XMLElementPtr createRootElement(XMLDocumentPtr document)
 
 //! \}
 
-}       // namespace
+} // namespace
 
 //! \cond internal
-void writeReferenceDataFile(const std::string        &path,
-                            const ReferenceDataEntry &rootEntry)
+void writeReferenceDataFile(const std::string& path, const ReferenceDataEntry& rootEntry)
 {
     // TODO: Error checking
-    tinyxml2::XMLDocument     document;
+    tinyxml2::XMLDocument document;
 
-    tinyxml2::XMLDeclaration *declaration = document.NewDeclaration(c_VersionDeclarationString);
+    tinyxml2::XMLDeclaration* declaration = document.NewDeclaration(c_VersionDeclarationString);
     document.InsertEndChild(declaration);
 
     declaration = document.NewDeclaration(c_StyleSheetDeclarationString);

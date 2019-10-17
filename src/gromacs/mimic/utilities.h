@@ -55,6 +55,6 @@ struct gmx_mtop_t;
  * \param[in]    mtop   Global topology object
  * \return              The list of global IDs of QM atoms
  */
-std::vector<int> genQmmmIndices(const gmx_mtop_t &mtop);
+std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop);
 
-#endif //GMX_MIMIC_MIMICUTILS_H
+#endif // GMX_MIMIC_MIMICUTILS_H

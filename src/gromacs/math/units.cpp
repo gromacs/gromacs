@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,30 +44,18 @@ double convert2gmx(double x, int unit)
 {
     switch (unit)
     {
-        case eg2cAngstrom:
-            return x*A2NM;
-        case eg2cNm:
-            return x;
-        case eg2cBohr:
-            return x*BOHR2NM;
-        case eg2cKcal_Mole:
-            return x/CAL2JOULE;
-        case eg2cHartree:
-            return x*ONE_4PI_EPS0/BOHR2NM;
-        case eg2cHartree_e:
-            return x*ONE_4PI_EPS0/BOHR2NM;
-        case eg2cAngstrom3:
-            return x*A2NM*A2NM*A2NM;
-        case eg2cCoulomb:
-            return x/E_CHARGE;
-        case eg2cDebye:
-            return x*DEBYE2ENM;
-        case eg2cElectron:
-            return x;
-        case eg2cBuckingham:
-            return x*A2NM*DEBYE2ENM;
-        default:
-            fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
+        case eg2cAngstrom: return x * A2NM;
+        case eg2cNm: return x;
+        case eg2cBohr: return x * BOHR2NM;
+        case eg2cKcal_Mole: return x / CAL2JOULE;
+        case eg2cHartree: return x * ONE_4PI_EPS0 / BOHR2NM;
+        case eg2cHartree_e: return x * ONE_4PI_EPS0 / BOHR2NM;
+        case eg2cAngstrom3: return x * A2NM * A2NM * A2NM;
+        case eg2cCoulomb: return x / E_CHARGE;
+        case eg2cDebye: return x * DEBYE2ENM;
+        case eg2cElectron: return x;
+        case eg2cBuckingham: return x * A2NM * DEBYE2ENM;
+        default: fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }
     return x;
 }
@@ -76,42 +64,28 @@ double gmx2convert(double x, int unit)
 {
     switch (unit)
     {
-        case eg2cAngstrom:
-            return x/A2NM;
-        case eg2cNm:
-            return x;
-        case eg2cBohr:
-            return x/BOHR2NM;
-        case eg2cKcal_Mole:
-            return x*CAL2JOULE;
-        case eg2cHartree:
-            return x/(ONE_4PI_EPS0/BOHR2NM);
-        case eg2cHartree_e:
-            return x/(ONE_4PI_EPS0/BOHR2NM);
-        case eg2cAngstrom3:
-            return x/(A2NM*A2NM*A2NM);
-        case eg2cCoulomb:
-            return x*E_CHARGE;
-        case eg2cDebye:
-            return x/DEBYE2ENM;
-        case eg2cElectron:
-            return x;
-        case eg2cBuckingham:
-            return x/(A2NM*DEBYE2ENM);
-        default:
-            fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
+        case eg2cAngstrom: return x / A2NM;
+        case eg2cNm: return x;
+        case eg2cBohr: return x / BOHR2NM;
+        case eg2cKcal_Mole: return x * CAL2JOULE;
+        case eg2cHartree: return x / (ONE_4PI_EPS0 / BOHR2NM);
+        case eg2cHartree_e: return x / (ONE_4PI_EPS0 / BOHR2NM);
+        case eg2cAngstrom3: return x / (A2NM * A2NM * A2NM);
+        case eg2cCoulomb: return x * E_CHARGE;
+        case eg2cDebye: return x / DEBYE2ENM;
+        case eg2cElectron: return x;
+        case eg2cBuckingham: return x / (A2NM * DEBYE2ENM);
+        default: fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }
     return x;
 }
 
 /* This has to have the same order as the enums. */
-static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Bohr", "Kcal_Mole",
-    "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
-    "Debye", "Electron", "Buckingham"
-};
+static const char* eg2c_names[eg2cNR] = { "Angstrom", "Nm",        "Bohr",      "Kcal_Mole",
+                                          "Hartree",  "Hartree_e", "Angstrom3", "Coulomb",
+                                          "Debye",    "Electron",  "Buckingham" };
 
-int string2unit(char *string)
+int string2unit(char* string)
 {
     int i;
 
@@ -125,7 +99,7 @@ int string2unit(char *string)
     return -1;
 }
 
-const char *unit2string(int unit)
+const char* unit2string(int unit)
 {
     if ((unit >= 0) && (unit < eg2cNR))
     {

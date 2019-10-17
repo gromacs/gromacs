@@ -59,20 +59,21 @@ class TestFileManager;
  */
 class TprAndFileManager
 {
-    public:
-        /*! \brief
-         * Generates the file when needed.
-         *
-         * \param[in] name The basename of the input files and the generated TPR.
-         */
-        TprAndFileManager(const std::string &name);
-        //! Access to the string.
-        const std::string &tprName() const { return tprFileName_; }
-    private:
-        //! Tpr file name.
-        std::string     tprFileName_;
-        //! Filemanager, needed to clean up the file later.
-        TestFileManager fileManager_;
+public:
+    /*! \brief
+     * Generates the file when needed.
+     *
+     * \param[in] name The basename of the input files and the generated TPR.
+     */
+    TprAndFileManager(const std::string& name);
+    //! Access to the string.
+    const std::string& tprName() const { return tprFileName_; }
+
+private:
+    //! Tpr file name.
+    std::string tprFileName_;
+    //! Filemanager, needed to clean up the file later.
+    TestFileManager fileManager_;
 };
 
 } // namespace test

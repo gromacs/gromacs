@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,38 +54,38 @@
 /*! \cond */
 #if GMX_LIB_MPI
 /* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
-#define MPICH_SKIP_MPICXX 1
-#define OMPI_SKIP_MPICXX 1
+#    define MPICH_SKIP_MPICXX 1
+#    define OMPI_SKIP_MPICXX 1
 /* disable bindings for SGI MPT also */
-#define MPI_NO_CPPBIND 1
-#include <mpi.h>
+#    define MPI_NO_CPPBIND 1
+#    include <mpi.h>
 /* Starting with 2.2 MPI_INT64_T is required. Earlier version still might have it.
    In theory MPI_Datatype doesn't have to be a #define, but current available MPI
    implementations (OpenMPI + MPICH (+derivates)) use #define and future versions
    should support 2.2. */
-#if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
-#include <limits.h>
-#if LONG_MAX == 9223372036854775807L
-#define MPI_INT64_T MPI_LONG
-#elif LONG_LONG_MAX == 9223372036854775807L
-#define MPI_INT64_T MPI_LONG_LONG
+#    if (MPI_VERSION == 1 || (MPI_VERSION == 2 && MPI_SUBVERSION < 2)) && !defined MPI_INT64_T
+#        include <limits.h>
+#        if LONG_MAX == 9223372036854775807L
+#            define MPI_INT64_T MPI_LONG
+#        elif LONG_LONG_MAX == 9223372036854775807L
+#            define MPI_INT64_T MPI_LONG_LONG
+#        else
+#            error No MPI_INT64_T and no 64 bit integer found.
+#        endif
+#    endif /*MPI_INT64_T*/
 #else
-#error No MPI_INT64_T and no 64 bit integer found.
-#endif
-#endif /*MPI_INT64_T*/
-#else
-#if GMX_THREAD_MPI
-#include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
-#include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
-#else
+#    if GMX_THREAD_MPI
+#        include "thread_mpi/mpi_bindings.h" /* IWYU pragma: export */
+#        include "thread_mpi/tmpi.h"         /* IWYU pragma: export */
+#    else
 typedef void* MPI_Comm;
 typedef void* MPI_Request;
 typedef void* MPI_Status;
 typedef void* MPI_Group;
-#define MPI_COMM_NULL  nullptr
-#define MPI_GROUP_NULL nullptr
-#define MPI_COMM_WORLD nullptr
-#endif
+#        define MPI_COMM_NULL nullptr
+#        define MPI_GROUP_NULL nullptr
+#        define MPI_COMM_WORLD nullptr
+#    endif
 #endif
 //! \endcond
 

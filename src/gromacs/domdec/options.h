@@ -77,32 +77,32 @@ enum class DlbOption
 struct DomdecOptions
 {
     //! If true, check that all bonded interactions have been assigned to exactly one domain/rank.
-    bool              checkBondedInteractions = true;
+    bool checkBondedInteractions = true;
     //! If true, don't communicate all atoms between the non-bonded cut-off and the larger bonded cut-off, but only those that have non-local bonded interactions. This significantly reduces the communication volume.
-    bool              useBondedCommunication = true;
+    bool useBondedCommunication = true;
     //! The domain decomposition grid cell count, 0 means let domdec choose based on the number of ranks.
-    ivec              numCells = {0};
+    ivec numCells = { 0 };
     //! The number of separate PME ranks requested, -1 = auto.
-    int               numPmeRanks = -1;
+    int numPmeRanks = -1;
     //! Ordering of the PP and PME ranks, values from enum above.
-    DdRankOrder       rankOrder = DdRankOrder::interleave;
+    DdRankOrder rankOrder = DdRankOrder::interleave;
     //! The minimum communication range, used for extended the communication range for bonded interactions (nm).
-    real              minimumCommunicationRange = 0;
+    real minimumCommunicationRange = 0;
     //! Communication range for atom involved in constraints (P-LINCS) (nm).
-    real              constraintCommunicationRange = 0;
+    real constraintCommunicationRange = 0;
     //! Dynamic load balancing option, values from enum above.
-    DlbOption         dlbOption = DlbOption::turnOnWhenUseful;
+    DlbOption dlbOption = DlbOption::turnOnWhenUseful;
     /*! \brief Fraction in (0,1) by whose reciprocal the initial
      * DD cell size will be increased in order to provide a margin
      * in which dynamic load balancing can act, while preserving
      * the minimum cell size. */
-    real              dlbScaling = 0.8;
+    real dlbScaling = 0.8;
     //! String containing a vector of the relative sizes in the x direction of the corresponding DD cells.
-    const char       *cellSizeX = nullptr;
+    const char* cellSizeX = nullptr;
     //! String containing a vector of the relative sizes in the y direction of the corresponding DD cells.
-    const char       *cellSizeY = nullptr;
+    const char* cellSizeY = nullptr;
     //! String containing a vector of the relative sizes in the z direction of the corresponding DD cells.
-    const char       *cellSizeZ = nullptr;
+    const char* cellSizeZ = nullptr;
 };
 
 } // namespace gmx

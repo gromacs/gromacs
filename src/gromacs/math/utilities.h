@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,38 +45,38 @@
 #include "gromacs/utility/real.h"
 
 #ifndef M_PI
-#define M_PI        3.14159265358979323846
+#    define M_PI 3.14159265358979323846
 #endif
 
 #ifndef M_PI_2
-#define M_PI_2      1.57079632679489661923
+#    define M_PI_2 1.57079632679489661923
 #endif
 
 #ifndef M_2PI
-#define M_2PI       6.28318530717958647692
+#    define M_2PI 6.28318530717958647692
 #endif
 
 #ifndef M_SQRT2
-#define M_SQRT2 sqrt(2.0)
+#    define M_SQRT2 sqrt(2.0)
 #endif
 
 #ifndef M_1_PI
-#define M_1_PI      0.31830988618379067154
+#    define M_1_PI 0.31830988618379067154
 #endif
 
 #ifndef M_FLOAT_1_SQRTPI /* used in GPU kernels */
 /* 1.0 / sqrt(M_PI) */
-#define M_FLOAT_1_SQRTPI 0.564189583547756f
+#    define M_FLOAT_1_SQRTPI 0.564189583547756f
 #endif
 
 #ifndef M_1_SQRTPI
 /* 1.0 / sqrt(M_PI) */
-#define M_1_SQRTPI 0.564189583547756
+#    define M_1_SQRTPI 0.564189583547756
 #endif
 
 #ifndef M_2_SQRTPI
 /* 2.0 / sqrt(M_PI) */
-#define M_2_SQRTPI  1.128379167095513
+#    define M_2_SQRTPI 1.128379167095513
 #endif
 
 /*! \brief Enum to select safe or highly unsafe (faster) math functions.
@@ -97,8 +97,8 @@
  */
 enum class MathOptimization
 {
-    Safe,    //!< Don't do unsafe optimizations. This should always be default.
-    Unsafe   //!< Allow optimizations that can be VERY dangerous for general code.
+    Safe,  //!< Don't do unsafe optimizations. This should always be default.
+    Unsafe //!< Allow optimizations that can be VERY dangerous for general code.
 };
 
 /*! \brief Check if two numbers are within a tolerance
@@ -121,10 +121,7 @@ enum class MathOptimization
  *
  *  \return 1 if the relative difference is within tolerance, 0 if not.
  */
-bool
-gmx_within_tol(double   f1,
-               double   f2,
-               double   tol);
+bool gmx_within_tol(double f1, double f2, double tol);
 
 /*!
  * \brief Check if a number is smaller than some preset safe minimum
@@ -135,24 +132,19 @@ gmx_within_tol(double   f1,
  *
  * \return 1  if 'almost' numerically zero, 0 otherwise.
  */
-bool
-gmx_numzero(double a);
+bool gmx_numzero(double a);
 
 /*! \brief Multiply two large ints
  *
  * \return False iff overflow occurred
  */
-gmx_bool
-check_int_multiply_for_overflow(int64_t  a,
-                                int64_t  b,
-                                int64_t *result);
+gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result);
 
 /*! \brief Find greatest common divisor of two numbers
  *
  * \return GCD of the two inputs
  */
-int
-gmx_greatest_common_divisor(int p, int q);
+int gmx_greatest_common_divisor(int p, int q);
 
 
 /*! \brief Enable floating-point exceptions if supported on OS

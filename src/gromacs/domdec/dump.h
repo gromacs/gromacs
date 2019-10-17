@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,16 +54,19 @@ struct gmx_mtop_t;
 struct t_commrec;
 
 //! Write the DD grid to a PDB file
-void write_dd_grid_pdb(const char *fn, int64_t step,
-                       gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox);
+void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix box, gmx_ddbox_t* ddbox);
 
 /*! \brief Dump a pdb file with the current DD home + communicated atoms.
  *
  * When natoms=-1, dump all known atoms.
  */
-void write_dd_pdb(const char *fn, int64_t step, const char *title,
-                  const gmx_mtop_t *mtop,
-                  const t_commrec *cr,
-                  int natoms, const rvec x[], const matrix box);
+void write_dd_pdb(const char*       fn,
+                  int64_t           step,
+                  const char*       title,
+                  const gmx_mtop_t* mtop,
+                  const t_commrec*  cr,
+                  int               natoms,
+                  const rvec        x[],
+                  const matrix      box);
 
 #endif

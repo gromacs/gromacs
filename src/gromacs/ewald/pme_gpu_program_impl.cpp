@@ -45,11 +45,12 @@
 
 #include "pme_gpu_program_impl.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t * /*unused*/) :
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t* /*unused*/) :
     warpSize(0),
     spreadWorkGroupSize(0),
     gatherWorkGroupSize(0),
     solveMaxWorkGroupSize(0)
-{}
+{
+}
 
 PmeGpuProgramImpl::~PmeGpuProgramImpl() = default;

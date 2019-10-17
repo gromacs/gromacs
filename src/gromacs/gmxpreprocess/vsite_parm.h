@@ -45,11 +45,13 @@ struct gmx_moltype_t;
 struct t_atoms;
 struct InteractionsOfType;
 
-int set_vsites(bool bVerbose, t_atoms *atoms,  PreprocessingAtomTypes *atype,
+int set_vsites(bool                              bVerbose,
+               t_atoms*                          atoms,
+               PreprocessingAtomTypes*           atype,
                gmx::ArrayRef<InteractionsOfType> plist);
 /* set parameters for virtual sites, return number of virtual sites */
 
-void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t* molt);
 /* set ptype to VSite for virtual sites */
 
 /*! \brief Clean up the bonded interactions

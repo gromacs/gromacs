@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,41 +46,33 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-int gmx_saxs(int argc, char *argv[])
+int gmx_saxs(int argc, char* argv[])
 {
-    const char       *desc[] = {
-        "[THISMODULE] calculates SAXS structure factors for given index",
-        "groups based on Cromer's method.",
-        "Both topology and trajectory files are required."
-    };
+    const char* desc[] = { "[THISMODULE] calculates SAXS structure factors for given index",
+                           "groups based on Cromer's method.",
+                           "Both topology and trajectory files are required." };
 
-    static real       start_q = 0.0, end_q = 60.0, energy = 12.0;
-    static int        ngroups = 1;
+    static real start_q = 0.0, end_q = 60.0, energy = 12.0;
+    static int  ngroups = 1;
 
-    t_pargs           pa[] = {
-        { "-ng",       FALSE, etINT, {&ngroups},
-          "Number of groups to compute SAXS" },
-        {"-startq", FALSE, etREAL, {&start_q},
-         "Starting q (1/nm) "},
-        {"-endq", FALSE, etREAL, {&end_q},
-         "Ending q (1/nm)"},
-        {"-energy", FALSE, etREAL, {&energy},
-         "Energy of the incoming X-ray (keV) "}
+    t_pargs pa[] = {
+        { "-ng", FALSE, etINT, { &ngroups }, "Number of groups to compute SAXS" },
+        { "-startq", FALSE, etREAL, { &start_q }, "Starting q (1/nm) " },
+        { "-endq", FALSE, etREAL, { &end_q }, "Ending q (1/nm)" },
+        { "-energy", FALSE, etREAL, { &energy }, "Energy of the incoming X-ray (keV) " }
     };
 #define NPA asize(pa)
-    const char       *fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
-    gmx_output_env_t *oenv;
+    const char *      fnTPS, *fnTRX, *fnNDX, *fnDAT = nullptr;
+    gmx_output_env_t* oenv;
 
-    t_filenm          fnm[] = {
-        { efTRX, "-f",  nullptr,      ffREAD },
-        { efTPS, nullptr,  nullptr,      ffREAD },
-        { efNDX, nullptr,  nullptr,      ffOPTRD },
-        { efDAT, "-d",  "sfactor", ffOPTRD },
-        { efXVG, "-sq", "sq",      ffWRITE },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD }, { efDAT, "-d", "sfactor", ffOPTRD },
+        { efXVG, "-sq", "sq", ffWRITE },
     };
 #define NFILE asize(fnm)
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
+                           nullptr, &oenv))
     {
         return 0;
     }
@@ -90,9 +82,8 @@ int gmx_saxs(int argc, char *argv[])
     fnDAT = ftp2fn(efDAT, NFILE, fnm);
     fnNDX = ftp2fn_null(efNDX, NFILE, fnm);
 
-    do_scattering_intensity(fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm),
-                            fnTRX, fnDAT,
-                            start_q, end_q, energy, ngroups, oenv);
+    do_scattering_intensity(fnTPS, fnNDX, opt2fn("-sq", NFILE, fnm), fnTRX, fnDAT, start_q, end_q,
+                            energy, ngroups, oenv);
 
     please_cite(stdout, "Cromer1968a");
 

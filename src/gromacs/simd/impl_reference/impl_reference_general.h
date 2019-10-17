@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,12 +67,11 @@ namespace gmx
  *        but if the pointer is not aligned the prefetch might start at the
  *        lower cache line boundary (meaning fewer bytes are prefetched).
  */
-static inline void gmx_unused
-simdPrefetch(void gmx_unused * m)
+static inline void gmx_unused simdPrefetch(void gmx_unused* m)
 {
     // Do nothing for reference implementation
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_REFERENCE_GENERAL_H

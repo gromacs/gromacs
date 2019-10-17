@@ -84,164 +84,163 @@ TEST(EmptyArrayRefTest, IsEmpty)
     EXPECT_TRUE(empty.empty());
 }
 
-#ifdef GTEST_HAS_TYPED_TEST
+#    ifdef GTEST_HAS_TYPED_TEST
 
 /*! \brief Permit all the tests to run on all kinds of ArrayRefs
  *
  * The main objective is to verify that all the different kinds of
  * construction lead to the expected result. */
-template <typename TypeParam>
+template<typename TypeParam>
 class ArrayRefTest : public test::SimdTest
 {
-    public:
-        using ArrayRefType = TypeParam;
-        using PointerType  = typename ArrayRefType::pointer;
-        using ValueType    = typename ArrayRefType::value_type;
-        using ElementType  = std::remove_const_t < typename gmx::internal::SimdTraits < ValueType>::type>;
-        static constexpr int width = gmx::internal::SimdTraits<ValueType>::width;
+public:
+    using ArrayRefType = TypeParam;
+    using PointerType  = typename ArrayRefType::pointer;
+    using ValueType    = typename ArrayRefType::value_type;
+    using ElementType  = std::remove_const_t<typename gmx::internal::SimdTraits<ValueType>::type>;
+    static constexpr int width = gmx::internal::SimdTraits<ValueType>::width;
 
-        /*! \brief Run the same tests all the time
-         *
-         * Note that test cases must call this->runTests(), because
-         * that's how the derived-class templates that implement
-         * type-parameterized tests actually work. */
-        void runReadOnlyTests(PointerType   a,
-                              size_t        aSize,
-                              ArrayRefType &arrayRef)
+    /*! \brief Run the same tests all the time
+     *
+     * Note that test cases must call this->runTests(), because
+     * that's how the derived-class templates that implement
+     * type-parameterized tests actually work. */
+    void runReadOnlyTests(PointerType a, size_t aSize, ArrayRefType& arrayRef)
+    {
+        ASSERT_EQ(aSize, arrayRef.size());
+        ASSERT_FALSE(arrayRef.empty());
+
+        GMX_EXPECT_SIMD_EQ(load<ValueType>(a), arrayRef.front());
+        GMX_EXPECT_SIMD_EQ(load<ValueType>(a + (aSize - 1) * width), arrayRef.back());
+
+        auto it = arrayRef.begin();
+        for (size_t i = 0; i != aSize; ++i, ++it)
         {
-            ASSERT_EQ(aSize, arrayRef.size());
-            ASSERT_FALSE(arrayRef.empty());
-
-            GMX_EXPECT_SIMD_EQ(load<ValueType>(a), arrayRef.front());
-            GMX_EXPECT_SIMD_EQ(load<ValueType>(a+(aSize-1)*width), arrayRef.back());
-
-            auto it = arrayRef.begin();
-            for (size_t i = 0; i != aSize; ++i, ++it)
-            {
-                GMX_EXPECT_SIMD_EQ(load<ValueType>(a+i*width), arrayRef[i]);
-                GMX_EXPECT_SIMD_EQ(load<ValueType>(a+i*width), *it);
-            }
-
-            EXPECT_EQ(aSize, arrayRef.end()-arrayRef.begin());
-            EXPECT_EQ(arrayRef.begin()+1, arrayRef.end()-(aSize-1));
-            EXPECT_LT(arrayRef.end()-1, arrayRef.end());
-            EXPECT_GT(arrayRef.begin()+1, arrayRef.begin());
-            EXPECT_LE(arrayRef.end()-1, arrayRef.end());
-            EXPECT_GE(arrayRef.begin()+1, arrayRef.begin());
-
-            it = arrayRef.begin();
-            it++;
-            ASSERT_EQ(arrayRef.begin()+1, it);
-            it--;
-            ASSERT_EQ(arrayRef.begin(), it);
-            it += 1;
-            ASSERT_EQ(arrayRef.begin()+1, it);
-            it -= 1;
-            ASSERT_EQ(arrayRef.begin(), it);
-            ++it;
-            ASSERT_EQ(arrayRef.begin()+1, it);
-            --it;
-            ASSERT_EQ(arrayRef.begin(), it);
+            GMX_EXPECT_SIMD_EQ(load<ValueType>(a + i * width), arrayRef[i]);
+            GMX_EXPECT_SIMD_EQ(load<ValueType>(a + i * width), *it);
         }
+
+        EXPECT_EQ(aSize, arrayRef.end() - arrayRef.begin());
+        EXPECT_EQ(arrayRef.begin() + 1, arrayRef.end() - (aSize - 1));
+        EXPECT_LT(arrayRef.end() - 1, arrayRef.end());
+        EXPECT_GT(arrayRef.begin() + 1, arrayRef.begin());
+        EXPECT_LE(arrayRef.end() - 1, arrayRef.end());
+        EXPECT_GE(arrayRef.begin() + 1, arrayRef.begin());
+
+        it = arrayRef.begin();
+        it++;
+        ASSERT_EQ(arrayRef.begin() + 1, it);
+        it--;
+        ASSERT_EQ(arrayRef.begin(), it);
+        it += 1;
+        ASSERT_EQ(arrayRef.begin() + 1, it);
+        it -= 1;
+        ASSERT_EQ(arrayRef.begin(), it);
+        ++it;
+        ASSERT_EQ(arrayRef.begin() + 1, it);
+        --it;
+        ASSERT_EQ(arrayRef.begin(), it);
+    }
 };
 
-using ArrayRefTypes = ::testing::Types<ArrayRef<SimdReal>, ArrayRef<const SimdReal>,
-                                       ArrayRef<SimdInt32>, ArrayRef<const SimdInt32> >;
+using ArrayRefTypes =
+        ::testing::Types<ArrayRef<SimdReal>, ArrayRef<const SimdReal>, ArrayRef<SimdInt32>, ArrayRef<const SimdInt32>>;
 TYPED_TEST_CASE(ArrayRefTest, ArrayRefTypes);
 
 TYPED_TEST(ArrayRefTest, ConstructFromPointersWorks)
 {
-    alignas(TestFixture::width*sizeof(typename TestFixture::ElementType))
-    std::array<typename TestFixture::ElementType, TestFixture::width*3> a;
+    alignas(TestFixture::width * sizeof(typename TestFixture::ElementType))
+            std::array<typename TestFixture::ElementType, TestFixture::width * 3>
+                    a;
 
     std::iota(a.begin(), a.end(), 0);
-    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data()+a.size());
+    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data() + a.size());
     this->runReadOnlyTests(a.data(), 3, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromArrayRefWorks)
 {
-    alignas(TestFixture::width*sizeof(typename TestFixture::ElementType))
-    std::array<typename TestFixture::ElementType, TestFixture::width*3> a;
+    alignas(TestFixture::width * sizeof(typename TestFixture::ElementType))
+            std::array<typename TestFixture::ElementType, TestFixture::width * 3>
+                    a;
 
     std::iota(a.begin(), a.end(), 0);
-    ArrayRef < std::remove_const_t < typename TestFixture::ValueType>>
-    ref(a.data(), a.data()+a.size());
-    typename TestFixture::ArrayRefType        arrayRef(ref);
+    ArrayRef<std::remove_const_t<typename TestFixture::ValueType>> ref(a.data(), a.data() + a.size());
+    typename TestFixture::ArrayRefType                             arrayRef(ref);
     this->runReadOnlyTests(a.data(), 3, arrayRef);
 }
 
 TYPED_TEST(ArrayRefTest, ConstructFromArrayWorks)
 {
-    alignas(TestFixture::width*sizeof(typename TestFixture::ElementType))
-    std::array<typename TestFixture::ElementType, TestFixture::width*3> a;
+    alignas(TestFixture::width * sizeof(typename TestFixture::ElementType))
+            std::array<typename TestFixture::ElementType, TestFixture::width * 3>
+                    a;
 
     std::iota(a.begin(), a.end(), 0);
     typename TestFixture::ArrayRefType arrayRef(a);
     this->runReadOnlyTests(a.data(), 3, arrayRef);
 }
 
-template <typename TypeParam>
+template<typename TypeParam>
 using ArrayRefReadWriteTest = ArrayRefTest<TypeParam>;
 
-using ArrayRefReadWriteTypes = ::testing::Types< ArrayRef<SimdReal>, ArrayRef<SimdInt32> >;
+using ArrayRefReadWriteTypes = ::testing::Types<ArrayRef<SimdReal>, ArrayRef<SimdInt32>>;
 TYPED_TEST_CASE(ArrayRefReadWriteTest, ArrayRefReadWriteTypes);
 
 TYPED_TEST(ArrayRefReadWriteTest, Assignment)
 {
     constexpr int width = TestFixture::width;
 
-    alignas(width*sizeof(typename TestFixture::ElementType))
-    std::array<typename TestFixture::ElementType, width*4> a;
+    alignas(width * sizeof(typename TestFixture::ElementType)) std::array<typename TestFixture::ElementType, width * 4> a;
 
-    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data()+a.size());
+    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data() + a.size());
 
     arrayRef.front() = 1;
-    EXPECT_EQ(1, a[0*width]);
+    EXPECT_EQ(1, a[0 * width]);
     (arrayRef.front() = 1) = 2;
-    EXPECT_EQ(2, a[0*width]);
+    EXPECT_EQ(2, a[0 * width]);
 
     arrayRef[1] = 2;
-    EXPECT_EQ(2, a[1*width]);
-    *(arrayRef.begin()+2) = 3;
-    EXPECT_EQ(3, a[2*width]);
+    EXPECT_EQ(2, a[1 * width]);
+    *(arrayRef.begin() + 2) = 3;
+    EXPECT_EQ(3, a[2 * width]);
     arrayRef.back() = 4;
-    EXPECT_EQ(4, a[3*width]);
+    EXPECT_EQ(4, a[3 * width]);
 }
 
-template <typename TypeParam>
+template<typename TypeParam>
 using ArrayRefArithmeticTest = ArrayRefTest<TypeParam>;
 
-using ArrayRefArithmeticTypes = ::testing::Types< ArrayRef<SimdReal>
-#if GMX_SIMD_HAVE_INT32_ARITHMETICS
-                                                  , ArrayRef<SimdInt32>
-#endif
-                                                  >;
+using ArrayRefArithmeticTypes = ::testing::Types<ArrayRef<SimdReal>
+#        if GMX_SIMD_HAVE_INT32_ARITHMETICS
+                                                 ,
+                                                 ArrayRef<SimdInt32>
+#        endif
+                                                 >;
 TYPED_TEST_CASE(ArrayRefArithmeticTest, ArrayRefArithmeticTypes);
 
 TYPED_TEST(ArrayRefArithmeticTest, Basic)
 {
     constexpr int width = TestFixture::width;
 
-    alignas(width*sizeof(typename TestFixture::ElementType))
-    std::array<typename TestFixture::ElementType, width> a;
+    alignas(width * sizeof(typename TestFixture::ElementType)) std::array<typename TestFixture::ElementType, width> a;
 
-    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data()+a.size());
+    typename TestFixture::ArrayRefType arrayRef(a.data(), a.data() + a.size());
 
     arrayRef.front() = 1;
-    ASSERT_EQ(1, a[0*width]);
+    ASSERT_EQ(1, a[0 * width]);
     arrayRef.front() += 1;
-    ASSERT_EQ(2, a[0*width]);
+    ASSERT_EQ(2, a[0 * width]);
     arrayRef.front() *= 2;
-    ASSERT_EQ(4, a[0*width]);
+    ASSERT_EQ(4, a[0 * width]);
     arrayRef.front() -= 3;
-    ASSERT_EQ(1, a[0*width]);
+    ASSERT_EQ(1, a[0 * width]);
 }
 
-#endif // GTEST_HAS_TYPED_TEST
+#    endif // GTEST_HAS_TYPED_TEST
 
-}      // namespace
+} // namespace
 
 #endif // GMX_HAVE_SIMD_REAL
 
-}      // namespace gmx
+} // namespace gmx

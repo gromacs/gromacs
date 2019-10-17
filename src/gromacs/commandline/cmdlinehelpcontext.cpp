@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@ namespace
  *
  * \ingroup module_commandline
  */
-const CommandLineHelpContext *g_globalContext = nullptr;
+const CommandLineHelpContext* g_globalContext = nullptr;
 
-}   // namespace
+} // namespace
 
 /*! \internal \brief
  * Private implementation class for CommandLineHelpContext.
@@ -72,75 +72,72 @@ const CommandLineHelpContext *g_globalContext = nullptr;
  */
 class CommandLineHelpContext::Impl
 {
-    public:
-        //! Creates the implementation class and the low-level context.
-        Impl(TextWriter *writer, HelpOutputFormat format,
-             const HelpLinks *links)
-            : writerContext_(writer, format, links), moduleDisplayName_("gmx"),
-              completionWriter_(nullptr), bHidden_(false)
-        {
-        }
-        //! Creates an implementation class from a low-level context.
-        explicit Impl(const HelpWriterContext &writerContext)
-            : writerContext_(writerContext),
-              completionWriter_(nullptr), bHidden_(false)
-        {
-        }
+public:
+    //! Creates the implementation class and the low-level context.
+    Impl(TextWriter* writer, HelpOutputFormat format, const HelpLinks* links) :
+        writerContext_(writer, format, links),
+        moduleDisplayName_("gmx"),
+        completionWriter_(nullptr),
+        bHidden_(false)
+    {
+    }
+    //! Creates an implementation class from a low-level context.
+    explicit Impl(const HelpWriterContext& writerContext) :
+        writerContext_(writerContext),
+        completionWriter_(nullptr),
+        bHidden_(false)
+    {
+    }
 
-        //! Wrapped lower-level context.
-        HelpWriterContext      writerContext_;
-        //! Display name for the module for which help is written.
-        std::string            moduleDisplayName_;
-        //! Shell completion writer (`NULL` if not doing completions).
-        ShellCompletionWriter *completionWriter_;
-        //! Whether hidden options should be shown in help output.
-        bool                   bHidden_;
+    //! Wrapped lower-level context.
+    HelpWriterContext writerContext_;
+    //! Display name for the module for which help is written.
+    std::string moduleDisplayName_;
+    //! Shell completion writer (`NULL` if not doing completions).
+    ShellCompletionWriter* completionWriter_;
+    //! Whether hidden options should be shown in help output.
+    bool bHidden_;
 };
 
-CommandLineHelpContext::CommandLineHelpContext(
-        TextWriter *writer, HelpOutputFormat format,
-        const HelpLinks *links, const std::string &programName)
-    : impl_(new Impl(writer, format, links))
+CommandLineHelpContext::CommandLineHelpContext(TextWriter*        writer,
+                                               HelpOutputFormat   format,
+                                               const HelpLinks*   links,
+                                               const std::string& programName) :
+    impl_(new Impl(writer, format, links))
 {
     impl_->writerContext_.setReplacement("[PROGRAM]", programName);
 }
 
-CommandLineHelpContext::CommandLineHelpContext(
-        const HelpWriterContext &writerContext)
-    : impl_(new Impl(writerContext))
+CommandLineHelpContext::CommandLineHelpContext(const HelpWriterContext& writerContext) :
+    impl_(new Impl(writerContext))
 {
 }
 
-CommandLineHelpContext::CommandLineHelpContext(
-        ShellCompletionWriter *writer)
-    : impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, nullptr))
+CommandLineHelpContext::CommandLineHelpContext(ShellCompletionWriter* writer) :
+    impl_(new Impl(&writer->outputWriter(), eHelpOutputFormat_Other, nullptr))
 {
     impl_->completionWriter_ = writer;
 }
 
-CommandLineHelpContext::CommandLineHelpContext(
-        const CommandLineHelpContext &other)
-    : impl_(new Impl(*other.impl_))
+CommandLineHelpContext::CommandLineHelpContext(const CommandLineHelpContext& other) :
+    impl_(new Impl(*other.impl_))
 {
 }
 
-CommandLineHelpContext::CommandLineHelpContext(CommandLineHelpContext &&other) noexcept
-    : impl_(std::move(other.impl_))
+CommandLineHelpContext::CommandLineHelpContext(CommandLineHelpContext&& other) noexcept :
+    impl_(std::move(other.impl_))
 {
 }
 
-CommandLineHelpContext &CommandLineHelpContext::operator=(
-        CommandLineHelpContext &&other) noexcept
+CommandLineHelpContext& CommandLineHelpContext::operator=(CommandLineHelpContext&& other) noexcept
 {
     impl_ = std::move(other.impl_);
     return *this;
 }
 
-CommandLineHelpContext::~CommandLineHelpContext()
-{
-}
+CommandLineHelpContext::~CommandLineHelpContext() {}
 
-void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
+void CommandLineHelpContext::setModuleDisplayName(const std::string& name)
 {
     impl_->writerContext_.setReplacement("[THISMODULE]", "[TT]" + name + "[tt]");
     impl_->moduleDisplayName_ = name;
@@ -151,17 +148,17 @@ void CommandLineHelpContext::setShowHidden(bool bHidden)
     impl_->bHidden_ = bHidden;
 }
 
-void CommandLineHelpContext::enterSubSection(const std::string &title)
+void CommandLineHelpContext::enterSubSection(const std::string& title)
 {
     impl_->writerContext_.enterSubSection(title);
 }
 
-const HelpWriterContext &CommandLineHelpContext::writerContext() const
+const HelpWriterContext& CommandLineHelpContext::writerContext() const
 {
     return impl_->writerContext_;
 }
 
-const char *CommandLineHelpContext::moduleDisplayName() const
+const char* CommandLineHelpContext::moduleDisplayName() const
 {
     return impl_->moduleDisplayName_.c_str();
 }
@@ -176,10 +173,9 @@ bool CommandLineHelpContext::isCompletionExport() const
     return impl_->completionWriter_ != nullptr;
 }
 
-ShellCompletionWriter &CommandLineHelpContext::shellCompletionWriter() const
+ShellCompletionWriter& CommandLineHelpContext::shellCompletionWriter() const
 {
-    GMX_RELEASE_ASSERT(isCompletionExport(),
-                       "Invalid call when not writing shell completions");
+    GMX_RELEASE_ASSERT(isCompletionExport(), "Invalid call when not writing shell completions");
     return *impl_->completionWriter_;
 }
 
@@ -188,16 +184,14 @@ ShellCompletionWriter &CommandLineHelpContext::shellCompletionWriter() const
  */
 
 // static
-const CommandLineHelpContext *GlobalCommandLineHelpContext::get()
+const CommandLineHelpContext* GlobalCommandLineHelpContext::get()
 {
     return g_globalContext;
 }
 
-GlobalCommandLineHelpContext::GlobalCommandLineHelpContext(
-        const CommandLineHelpContext &context)
+GlobalCommandLineHelpContext::GlobalCommandLineHelpContext(const CommandLineHelpContext& context)
 {
-    GMX_RELEASE_ASSERT(g_globalContext == nullptr,
-                       "Global context set more than once");
+    GMX_RELEASE_ASSERT(g_globalContext == nullptr, "Global context set more than once");
     g_globalContext = &context;
 }
 

@@ -62,12 +62,12 @@
 #include "gromacs/utility/txtdump.h"
 
 //! Macro to select a bool name
-#define EBOOL(e)       gmx::boolToString(e)
+#define EBOOL(e) gmx::boolToString(e)
 
 /* The minimum number of integration steps required for reasonably accurate
  * integration of first and second order coupling algorithms.
  */
-const int nstmin_berendsen_tcouple =  5;
+const int nstmin_berendsen_tcouple = 5;
 const int nstmin_berendsen_pcouple = 10;
 const int nstmin_harmonic          = 20;
 
@@ -86,7 +86,7 @@ t_inputrec::~t_inputrec()
     done_inputrec(this);
 }
 
-static int nst_wanted(const t_inputrec *ir)
+static int nst_wanted(const t_inputrec* ir)
 {
     if (ir->nstlist > 0)
     {
@@ -98,7 +98,7 @@ static int nst_wanted(const t_inputrec *ir)
     }
 }
 
-int ir_optimal_nstcalcenergy(const t_inputrec *ir)
+int ir_optimal_nstcalcenergy(const t_inputrec* ir)
 {
     return nst_wanted(ir);
 }
@@ -109,32 +109,23 @@ int tcouple_min_integration_steps(int etc)
 
     switch (etc)
     {
-        case etcNO:
-            n = 0;
-            break;
+        case etcNO: n = 0; break;
         case etcBERENDSEN:
-        case etcYES:
-            n = nstmin_berendsen_tcouple;
-            break;
+        case etcYES: n = nstmin_berendsen_tcouple; break;
         case etcVRESCALE:
             /* V-rescale supports instantaneous rescaling */
             n = 0;
             break;
-        case etcNOSEHOOVER:
-            n = nstmin_harmonic;
-            break;
+        case etcNOSEHOOVER: n = nstmin_harmonic; break;
         case etcANDERSEN:
-        case etcANDERSENMASSIVE:
-            n = 1;
-            break;
-        default:
-            gmx_incons("Unknown etc value");
+        case etcANDERSENMASSIVE: n = 1; break;
+        default: gmx_incons("Unknown etc value");
     }
 
     return n;
 }
 
-int ir_optimal_nsttcouple(const t_inputrec *ir)
+int ir_optimal_nsttcouple(const t_inputrec* ir)
 {
     int  nmin, nwanted, n;
     real tau_min;
@@ -156,13 +147,13 @@ int ir_optimal_nsttcouple(const t_inputrec *ir)
         }
     }
 
-    if (nmin == 0 || ir->delta_t*nwanted <= tau_min)
+    if (nmin == 0 || ir->delta_t * nwanted <= tau_min)
     {
         n = nwanted;
     }
     else
     {
-        n = static_cast<int>(tau_min/(ir->delta_t*nmin) + 0.001);
+        n = static_cast<int>(tau_min / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;
@@ -182,39 +173,32 @@ int pcouple_min_integration_steps(int epc)
 
     switch (epc)
     {
-        case epcNO:
-            n = 0;
-            break;
+        case epcNO: n = 0; break;
         case etcBERENDSEN:
-        case epcISOTROPIC:
-            n = nstmin_berendsen_pcouple;
-            break;
+        case epcISOTROPIC: n = nstmin_berendsen_pcouple; break;
         case epcPARRINELLORAHMAN:
-        case epcMTTK:
-            n = nstmin_harmonic;
-            break;
-        default:
-            gmx_incons("Unknown epc value");
+        case epcMTTK: n = nstmin_harmonic; break;
+        default: gmx_incons("Unknown epc value");
     }
 
     return n;
 }
 
-int ir_optimal_nstpcouple(const t_inputrec *ir)
+int ir_optimal_nstpcouple(const t_inputrec* ir)
 {
-    int  nmin, nwanted, n;
+    int nmin, nwanted, n;
 
     nmin = pcouple_min_integration_steps(ir->epc);
 
     nwanted = nst_wanted(ir);
 
-    if (nmin == 0 || ir->delta_t*nwanted <= ir->tau_p)
+    if (nmin == 0 || ir->delta_t * nwanted <= ir->tau_p)
     {
         n = nwanted;
     }
     else
     {
-        n = static_cast<int>(ir->tau_p/(ir->delta_t*nmin) + 0.001);
+        n = static_cast<int>(ir->tau_p / (ir->delta_t * nmin) + 0.001);
         if (n < 1)
         {
             n = 1;
@@ -228,50 +212,41 @@ int ir_optimal_nstpcouple(const t_inputrec *ir)
     return n;
 }
 
-gmx_bool ir_coulomb_switched(const t_inputrec *ir)
+gmx_bool ir_coulomb_switched(const t_inputrec* ir)
 {
-    return (ir->coulombtype == eelSWITCH ||
-            ir->coulombtype == eelSHIFT ||
-            ir->coulombtype == eelENCADSHIFT ||
-            ir->coulombtype == eelPMESWITCH ||
-            ir->coulombtype == eelPMEUSERSWITCH ||
-            ir->coulomb_modifier == eintmodPOTSWITCH ||
-            ir->coulomb_modifier == eintmodFORCESWITCH);
+    return (ir->coulombtype == eelSWITCH || ir->coulombtype == eelSHIFT || ir->coulombtype == eelENCADSHIFT
+            || ir->coulombtype == eelPMESWITCH || ir->coulombtype == eelPMEUSERSWITCH
+            || ir->coulomb_modifier == eintmodPOTSWITCH || ir->coulomb_modifier == eintmodFORCESWITCH);
 }
 
-gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec *ir)
+gmx_bool ir_coulomb_is_zero_at_cutoff(const t_inputrec* ir)
 {
-    return (ir->cutoff_scheme == ecutsVERLET ||
-            ir_coulomb_switched(ir) || ir->coulomb_modifier != eintmodNONE ||
-            ir->coulombtype == eelRF_ZERO);
+    return (ir->cutoff_scheme == ecutsVERLET || ir_coulomb_switched(ir)
+            || ir->coulomb_modifier != eintmodNONE || ir->coulombtype == eelRF_ZERO);
 }
 
-gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec *ir)
+gmx_bool ir_coulomb_might_be_zero_at_cutoff(const t_inputrec* ir)
 {
     return (ir_coulomb_is_zero_at_cutoff(ir) || ir->coulombtype == eelUSER || ir->coulombtype == eelPMEUSER);
 }
 
-gmx_bool ir_vdw_switched(const t_inputrec *ir)
+gmx_bool ir_vdw_switched(const t_inputrec* ir)
 {
-    return (ir->vdwtype == evdwSWITCH ||
-            ir->vdwtype == evdwSHIFT ||
-            ir->vdwtype == evdwENCADSHIFT ||
-            ir->vdw_modifier == eintmodPOTSWITCH ||
-            ir->vdw_modifier == eintmodFORCESWITCH);
+    return (ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT || ir->vdwtype == evdwENCADSHIFT
+            || ir->vdw_modifier == eintmodPOTSWITCH || ir->vdw_modifier == eintmodFORCESWITCH);
 }
 
-gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec *ir)
+gmx_bool ir_vdw_is_zero_at_cutoff(const t_inputrec* ir)
 {
-    return (ir->cutoff_scheme == ecutsVERLET ||
-            ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
+    return (ir->cutoff_scheme == ecutsVERLET || ir_vdw_switched(ir) || ir->vdw_modifier != eintmodNONE);
 }
 
-gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec *ir)
+gmx_bool ir_vdw_might_be_zero_at_cutoff(const t_inputrec* ir)
 {
     return (ir_vdw_is_zero_at_cutoff(ir) || ir->vdwtype == evdwUSER);
 }
 
-static void done_pull_group(t_pull_group *pgrp)
+static void done_pull_group(t_pull_group* pgrp)
 {
     if (pgrp->nat > 0)
     {
@@ -280,11 +255,11 @@ static void done_pull_group(t_pull_group *pgrp)
     }
 }
 
-static void done_pull_params(pull_params_t *pull)
+static void done_pull_params(pull_params_t* pull)
 {
     int i;
 
-    for (i = 0; i < pull->ngroup+1; i++)
+    for (i = 0; i < pull->ngroup + 1; i++)
     {
         done_pull_group(pull->group);
     }
@@ -293,7 +268,7 @@ static void done_pull_params(pull_params_t *pull)
     sfree(pull->coord);
 }
 
-static void done_lambdas(t_lambda *fep)
+static void done_lambdas(t_lambda* fep)
 {
     if (fep->n_lambda > 0)
     {
@@ -305,7 +280,7 @@ static void done_lambdas(t_lambda *fep)
     sfree(fep->all_lambda);
 }
 
-void done_inputrec(t_inputrec *ir)
+void done_inputrec(t_inputrec* ir)
 {
     sfree(ir->opts.nrdf);
     sfree(ir->opts.ref_t);
@@ -345,7 +320,7 @@ void done_inputrec(t_inputrec *ir)
     delete ir->params;
 }
 
-static void pr_qm_opts(FILE *fp, int indent, const char *title, const t_grpopts *opts)
+static void pr_qm_opts(FILE* fp, int indent, const char* title, const t_grpopts* opts)
 {
     fprintf(fp, "%s:\n", title);
 
@@ -365,8 +340,7 @@ static void pr_qm_opts(FILE *fp, int indent, const char *title, const t_grpopts 
     }
 }
 
-static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopts *opts,
-                        gmx_bool bMDPformat)
+static void pr_grp_opts(FILE* out, int indent, const char* title, const t_grpopts* opts, gmx_bool bMDPformat)
 {
     int i, m, j;
 
@@ -462,7 +436,7 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopt
         fprintf(out, "energygrp-flags[%3d]:", i);
         for (m = 0; (m < opts->ngener); m++)
         {
-            fprintf(out, " %d", opts->egp_flags[opts->ngener*i+m]);
+            fprintf(out, " %d", opts->egp_flags[opts->ngener * i + m]);
         }
         fprintf(out, "\n");
     }
@@ -470,13 +444,12 @@ static void pr_grp_opts(FILE *out, int indent, const char *title, const t_grpopt
     fflush(out);
 }
 
-static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
-                      gmx_bool bMDPformat)
+static void pr_matrix(FILE* fp, int indent, const char* title, const rvec* m, gmx_bool bMDPformat)
 {
     if (bMDPformat)
     {
-        fprintf(fp, "%-10s    = %g %g %g %g %g %g\n", title,
-                m[XX][XX], m[YY][YY], m[ZZ][ZZ], m[XX][YY], m[XX][ZZ], m[YY][ZZ]);
+        fprintf(fp, "%-10s    = %g %g %g %g %g %g\n", title, m[XX][XX], m[YY][YY], m[ZZ][ZZ],
+                m[XX][YY], m[XX][ZZ], m[YY][ZZ]);
     }
     else
     {
@@ -490,7 +463,7 @@ static void pr_matrix(FILE *fp, int indent, const char *title, const rvec *m,
 #define PR(t, s) pr_real(fp, indent, t, s)
 #define PD(t, s) pr_double(fp, indent, t, s)
 
-static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
+static void pr_pull_group(FILE* fp, int indent, int g, const t_pull_group* pgrp)
 {
     pr_indent(fp, indent);
     fprintf(fp, "pull-group %d:\n", g);
@@ -500,7 +473,7 @@ static void pr_pull_group(FILE *fp, int indent, int g, const t_pull_group *pgrp)
     PI("pbcatom", pgrp->pbcatom);
 }
 
-static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
+static void pr_pull_coord(FILE* fp, int indent, int c, const t_pull_coord* pcrd)
 {
     int g;
 
@@ -529,7 +502,7 @@ static void pr_pull_coord(FILE *fp, int indent, int c, const t_pull_coord *pcrd)
     PR("kB", pcrd->kB);
 }
 
-static void pr_simtempvals(FILE *fp, int indent, const t_simtemp *simtemp, int n_lambda)
+static void pr_simtempvals(FILE* fp, int indent, const t_simtemp* simtemp, int n_lambda)
 {
     PS("simulated-tempering-scaling", ESIMTEMP(simtemp->eSimTempScale));
     PR("sim-temp-low", simtemp->simtemp_low);
@@ -537,7 +510,7 @@ static void pr_simtempvals(FILE *fp, int indent, const t_simtemp *simtemp, int n
     pr_rvec(fp, indent, "simulated tempering temperatures", simtemp->temperatures, n_lambda, TRUE);
 }
 
-static void pr_expandedvals(FILE *fp, int indent, const t_expanded *expand, int n_lambda)
+static void pr_expandedvals(FILE* fp, int indent, const t_expanded* expand, int n_lambda)
 {
 
     PI("nstexpanded", expand->nstexpanded);
@@ -583,7 +556,7 @@ static void pr_expandedvals(FILE *fp, int indent, const t_expanded *expand, int 
     PS("init-weights", EBOOL(expand->bInit_weights));
 }
 
-static void pr_fepvals(FILE *fp, int indent, const t_lambda *fep, gmx_bool bMDPformat)
+static void pr_fepvals(FILE* fp, int indent, const t_lambda* fep, gmx_bool bMDPformat)
 {
     int i, j;
 
@@ -638,7 +611,7 @@ static void pr_fepvals(FILE *fp, int indent, const t_lambda *fep, gmx_bool bMDPf
     PS("dhdl-derivatives", DHDLDERIVATIVESTYPE(fep->dhdl_derivatives));
 };
 
-static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
+static void pr_pull(FILE* fp, int indent, const pull_params_t* pull)
 {
     int g;
 
@@ -664,11 +637,11 @@ static void pr_pull(FILE *fp, int indent, const pull_params_t *pull)
     }
 }
 
-static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParams, const char *prefix)
+static void pr_awh_bias_dim(FILE* fp, int indent, gmx::AwhDimParams* awhDimParams, const char* prefix)
 {
     pr_indent(fp, indent);
     indent++;
-    fprintf(fp,  "%s:\n", prefix);
+    fprintf(fp, "%s:\n", prefix);
     PS("coord-provider", EAWHCOORDPROVIDER(awhDimParams->eCoordProvider));
     PI("coord-index", awhDimParams->coordIndex + 1);
     PR("start", awhDimParams->origin);
@@ -681,7 +654,7 @@ static void pr_awh_bias_dim(FILE *fp, int indent, gmx::AwhDimParams *awhDimParam
     PR("cover-diameter", awhDimParams->coverDiameter);
 }
 
-static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams, const char *prefix)
+static void pr_awh_bias(FILE* fp, int indent, gmx::AwhBiasParams* awhBiasParams, const char* prefix)
 {
     char opt[STRLEN];
 
@@ -712,7 +685,7 @@ static void pr_awh_bias(FILE *fp, int indent, gmx::AwhBiasParams *awhBiasParams,
     }
 }
 
-static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
+static void pr_awh(FILE* fp, int indent, gmx::AwhParams* awhParams)
 {
     PS("awh-potential", EAWHPOTENTIAL(awhParams->ePotential));
     PI("awh-seed", awhParams->seed);
@@ -729,7 +702,7 @@ static void pr_awh(FILE *fp, int indent, gmx::AwhParams *awhParams)
     }
 }
 
-static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
+static void pr_rotgrp(FILE* fp, int indent, int g, const t_rotgrp* rotg)
 {
     pr_indent(fp, indent);
     fprintf(fp, "rot-group %d:\n", g);
@@ -750,7 +723,7 @@ static void pr_rotgrp(FILE *fp, int indent, int g, const t_rotgrp *rotg)
     PR("rot-potfit-step", rotg->PotAngle_step);
 }
 
-static void pr_rot(FILE *fp, int indent, const t_rot *rot)
+static void pr_rot(FILE* fp, int indent, const t_rot* rot)
 {
     int g;
 
@@ -764,13 +737,15 @@ static void pr_rot(FILE *fp, int indent, const t_rot *rot)
 }
 
 
-static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
+static void pr_swap(FILE* fp, int indent, const t_swapcoords* swap)
 {
     char str[STRLEN];
 
     /* Enums for better readability of the code */
-    enum {
-        eCompA = 0, eCompB
+    enum
+    {
+        eCompA = 0,
+        eCompB
     };
 
 
@@ -809,7 +784,7 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
     {
         for (int ig = eSwapFixedGrpNR; ig < swap->ngrp; ig++)
         {
-            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A'+ic);
+            snprintf(str, STRLEN, "%s-in-%c", swap->grp[ig].molname, 'A' + ic);
             PI(str, swap->grp[ig].nmolReq[ic]);
         }
     }
@@ -820,17 +795,16 @@ static void pr_swap(FILE *fp, int indent, const t_swapcoords *swap)
 }
 
 
-static void pr_imd(FILE *fp, int indent, const t_IMD *imd)
+static void pr_imd(FILE* fp, int indent, const t_IMD* imd)
 {
     PI("IMD-atoms", imd->nat);
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
 
-void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
-                 gmx_bool bMDPformat)
+void pr_inputrec(FILE* fp, int indent, const char* title, const t_inputrec* ir, gmx_bool bMDPformat)
 {
-    const char *infbuf = "inf";
+    const char* infbuf = "inf";
 
     if (available(fp, ir, indent, title))
     {
@@ -939,10 +913,10 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
 
         if (bMDPformat)
         {
-            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX],
-                    ir->posres_com[YY], ir->posres_com[ZZ]);
-            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX],
-                    ir->posres_comB[YY], ir->posres_comB[ZZ]);
+            fprintf(fp, "posres-com  = %g %g %g\n", ir->posres_com[XX], ir->posres_com[YY],
+                    ir->posres_com[ZZ]);
+            fprintf(fp, "posres-comB = %g %g %g\n", ir->posres_comB[XX], ir->posres_comB[YY],
+                    ir->posres_comB[ZZ]);
         }
         else
         {
@@ -1072,12 +1046,12 @@ void pr_inputrec(FILE *fp, int indent, const char *title, const t_inputrec *ir,
 #undef PR
 #undef PI
 
-static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, real ftol, real abstol)
+static void cmp_grpopts(FILE* fp, const t_grpopts* opt1, const t_grpopts* opt2, real ftol, real abstol)
 {
     int  i, j;
     char buf1[256], buf2[256];
 
-    cmp_int(fp, "inputrec->grpopts.ngtc", -1,  opt1->ngtc, opt2->ngtc);
+    cmp_int(fp, "inputrec->grpopts.ngtc", -1, opt1->ngtc, opt2->ngtc);
     cmp_int(fp, "inputrec->grpopts.ngacc", -1, opt1->ngacc, opt2->ngacc);
     cmp_int(fp, "inputrec->grpopts.ngfrz", -1, opt1->ngfrz, opt2->ngfrz);
     cmp_int(fp, "inputrec->grpopts.ngener", -1, opt1->ngener, opt2->ngener);
@@ -1087,8 +1061,8 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
         cmp_real(fp, "inputrec->grpopts.ref_t", i, opt1->ref_t[i], opt2->ref_t[i], ftol, abstol);
         cmp_real(fp, "inputrec->grpopts.tau_t", i, opt1->tau_t[i], opt2->tau_t[i], ftol, abstol);
         cmp_int(fp, "inputrec->grpopts.annealing", i, opt1->annealing[i], opt2->annealing[i]);
-        cmp_int(fp, "inputrec->grpopts.anneal_npoints", i,
-                opt1->anneal_npoints[i], opt2->anneal_npoints[i]);
+        cmp_int(fp, "inputrec->grpopts.anneal_npoints", i, opt1->anneal_npoints[i],
+                opt2->anneal_npoints[i]);
         if (opt1->anneal_npoints[i] == opt2->anneal_npoints[i])
         {
             sprintf(buf1, "inputrec->grpopts.anneal_time[%d]", i);
@@ -1107,9 +1081,8 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
             for (j = i; j < opt1->ngener; j++)
             {
                 sprintf(buf1, "inputrec->grpopts.egp_flags[%d]", i);
-                cmp_int(fp, buf1, j,
-                        opt1->egp_flags[opt1->ngener*i+j],
-                        opt2->egp_flags[opt1->ngener*i+j]);
+                cmp_int(fp, buf1, j, opt1->egp_flags[opt1->ngener * i + j],
+                        opt2->egp_flags[opt1->ngener * i + j]);
             }
         }
     }
@@ -1123,34 +1096,56 @@ static void cmp_grpopts(FILE *fp, const t_grpopts *opt1, const t_grpopts *opt2, 
     }
 }
 
-static void cmp_pull(FILE *fp)
+static void cmp_pull(FILE* fp)
 {
-    fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
+    fprintf(fp,
+            "WARNING: Both files use COM pulling, but comparing of the pull struct is not "
+            "implemented (yet). The pull parameters could be the same or different.\n");
 }
 
-static void cmp_awhDimParams(FILE *fp, const gmx::AwhDimParams *dimp1, const gmx::AwhDimParams *dimp2, int dimIndex, real ftol, real abstol)
+static void cmp_awhDimParams(FILE*                    fp,
+                             const gmx::AwhDimParams* dimp1,
+                             const gmx::AwhDimParams* dimp2,
+                             int                      dimIndex,
+                             real                     ftol,
+                             real                     abstol)
 {
     /* Note that we have double index here, but the compare functions only
      * support one index, so here we only print the dim index and not the bias.
      */
-    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex, dimp2->coordIndex);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period, dimp2->period, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion, dimp2->diffusion, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin, dimp2->origin, ftol, abstol);
+    cmp_int(fp, "inputrec.awhParams->bias?->dim->coord_index", dimIndex, dimp1->coordIndex,
+            dimp2->coordIndex);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->period", dimIndex, dimp1->period,
+               dimp2->period, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->diffusion", dimIndex, dimp1->diffusion,
+               dimp2->diffusion, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->origin", dimIndex, dimp1->origin,
+               dimp2->origin, ftol, abstol);
     cmp_double(fp, "inputrec->awhParams->bias?->dim->end", dimIndex, dimp1->end, dimp2->end, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex, dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter, dimp2->coverDiameter, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->coord_value_init", dimIndex,
+               dimp1->coordValueInit, dimp2->coordValueInit, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->bias?->dim->coverDiameter", dimIndex, dimp1->coverDiameter,
+               dimp2->coverDiameter, ftol, abstol);
 }
 
-static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const gmx::AwhBiasParams *bias2, int biasIndex, real ftol, real abstol)
+static void cmp_awhBiasParams(FILE*                     fp,
+                              const gmx::AwhBiasParams* bias1,
+                              const gmx::AwhBiasParams* bias2,
+                              int                       biasIndex,
+                              real                      ftol,
+                              real                      abstol)
 {
     cmp_int(fp, "inputrec->awhParams->ndim", biasIndex, bias1->ndim, bias2->ndim);
     cmp_int(fp, "inputrec->awhParams->biaseTarget", biasIndex, bias1->eTarget, bias2->eTarget);
-    cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex, bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
-    cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff, bias2->targetCutoff, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->biastargetBetaScaling", biasIndex,
+               bias1->targetBetaScaling, bias2->targetBetaScaling, ftol, abstol);
+    cmp_double(fp, "inputrec->awhParams->biastargetCutoff", biasIndex, bias1->targetCutoff,
+               bias2->targetCutoff, ftol, abstol);
     cmp_int(fp, "inputrec->awhParams->biaseGrowth", biasIndex, bias1->eGrowth, bias2->eGrowth);
-    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0, bias2->bUserData != 0);
-    cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial, bias2->errorInitial, ftol, abstol);
+    cmp_bool(fp, "inputrec->awhParams->biasbUserData", biasIndex, bias1->bUserData != 0,
+             bias2->bUserData != 0);
+    cmp_double(fp, "inputrec->awhParams->biaserror_initial", biasIndex, bias1->errorInitial,
+               bias2->errorInitial, ftol, abstol);
     cmp_int(fp, "inputrec->awhParams->biasShareGroup", biasIndex, bias1->shareGroup, bias2->shareGroup);
 
     for (int dim = 0; dim < std::min(bias1->ndim, bias2->ndim); dim++)
@@ -1159,15 +1154,17 @@ static void cmp_awhBiasParams(FILE *fp, const gmx::AwhBiasParams *bias1, const g
     }
 }
 
-static void cmp_awhParams(FILE *fp, const gmx::AwhParams *awh1, const gmx::AwhParams *awh2, real ftol, real abstol)
+static void cmp_awhParams(FILE* fp, const gmx::AwhParams* awh1, const gmx::AwhParams* awh2, real ftol, real abstol)
 {
     cmp_int(fp, "inputrec->awhParams->nbias", -1, awh1->numBias, awh2->numBias);
     cmp_int64(fp, "inputrec->awhParams->seed", awh1->seed, awh2->seed);
     cmp_int(fp, "inputrec->awhParams->nstout", -1, awh1->nstOut, awh2->nstOut);
     cmp_int(fp, "inputrec->awhParams->nstsample_coord", -1, awh1->nstSampleCoord, awh2->nstSampleCoord);
-    cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1, awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
+    cmp_int(fp, "inputrec->awhParams->nsamples_update_free_energy", -1,
+            awh1->numSamplesUpdateFreeEnergy, awh2->numSamplesUpdateFreeEnergy);
     cmp_int(fp, "inputrec->awhParams->ePotential", -1, awh1->ePotential, awh2->ePotential);
-    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim, awh2->shareBiasMultisim);
+    cmp_bool(fp, "inputrec->awhParams->shareBiasMultisim", -1, awh1->shareBiasMultisim,
+             awh2->shareBiasMultisim);
 
     if (awh1->numBias == awh2->numBias)
     {
@@ -1178,19 +1175,32 @@ static void cmp_awhParams(FILE *fp, const gmx::AwhParams *awh1, const gmx::AwhPa
     }
 }
 
-static void cmp_simtempvals(FILE *fp, const t_simtemp *simtemp1, const t_simtemp *simtemp2, int n_lambda, real ftol, real abstol)
+static void cmp_simtempvals(FILE*            fp,
+                            const t_simtemp* simtemp1,
+                            const t_simtemp* simtemp2,
+                            int              n_lambda,
+                            real             ftol,
+                            real             abstol)
 {
     int i;
     cmp_int(fp, "inputrec->simtempvals->eSimTempScale", -1, simtemp1->eSimTempScale, simtemp2->eSimTempScale);
-    cmp_real(fp, "inputrec->simtempvals->simtemp_high", -1, simtemp1->simtemp_high, simtemp2->simtemp_high, ftol, abstol);
-    cmp_real(fp, "inputrec->simtempvals->simtemp_low", -1, simtemp1->simtemp_low, simtemp2->simtemp_low, ftol, abstol);
+    cmp_real(fp, "inputrec->simtempvals->simtemp_high", -1, simtemp1->simtemp_high,
+             simtemp2->simtemp_high, ftol, abstol);
+    cmp_real(fp, "inputrec->simtempvals->simtemp_low", -1, simtemp1->simtemp_low,
+             simtemp2->simtemp_low, ftol, abstol);
     for (i = 0; i < n_lambda; i++)
     {
-        cmp_real(fp, "inputrec->simtempvals->temperatures", -1, simtemp1->temperatures[i], simtemp2->temperatures[i], ftol, abstol);
+        cmp_real(fp, "inputrec->simtempvals->temperatures", -1, simtemp1->temperatures[i],
+                 simtemp2->temperatures[i], ftol, abstol);
     }
 }
 
-static void cmp_expandedvals(FILE *fp, const t_expanded *expand1, const t_expanded *expand2, int n_lambda, real ftol, real abstol)
+static void cmp_expandedvals(FILE*             fp,
+                             const t_expanded* expand1,
+                             const t_expanded* expand2,
+                             int               n_lambda,
+                             real              ftol,
+                             real              abstol)
 {
     int i;
 
@@ -1207,41 +1217,53 @@ static void cmp_expandedvals(FILE *fp, const t_expanded *expand1, const t_expand
     cmp_int(fp, "inputrec->expandedvals->lambda-mc-move", -1, expand1->elmcmove, expand2->elmcmove);
     cmp_int(fp, "inputrec->expandedvals->lmc-repeats", -1, expand1->lmc_repeats, expand2->lmc_repeats);
     cmp_int(fp, "inputrec->expandedvals->lmc-gibbsdelta", -1, expand1->gibbsdeltalam, expand2->gibbsdeltalam);
-    cmp_int(fp, "inputrec->expandedvals->lmc-forced-nstart", -1, expand1->lmc_forced_nstart, expand2->lmc_forced_nstart);
+    cmp_int(fp, "inputrec->expandedvals->lmc-forced-nstart", -1, expand1->lmc_forced_nstart,
+            expand2->lmc_forced_nstart);
     cmp_int(fp, "inputrec->expandedvals->lambda-weights-equil", -1, expand1->elmceq, expand2->elmceq);
-    cmp_int(fp, "inputrec->expandedvals->,weight-equil-number-all-lambda", -1, expand1->equil_n_at_lam, expand2->equil_n_at_lam);
-    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-samples", -1, expand1->equil_samples, expand2->equil_samples);
-    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-steps", -1, expand1->equil_steps, expand2->equil_steps);
-    cmp_real(fp, "inputrec->expandedvals->weight-equil-wl-delta", -1, expand1->equil_wl_delta, expand2->equil_wl_delta, ftol, abstol);
-    cmp_real(fp, "inputrec->expandedvals->weight-equil-count-ratio", -1, expand1->equil_ratio, expand2->equil_ratio, ftol, abstol);
-    cmp_bool(fp, "inputrec->expandedvals->symmetrized-transition-matrix", -1, expand1->bSymmetrizedTMatrix, expand2->bSymmetrizedTMatrix);
+    cmp_int(fp, "inputrec->expandedvals->,weight-equil-number-all-lambda", -1,
+            expand1->equil_n_at_lam, expand2->equil_n_at_lam);
+    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-samples", -1, expand1->equil_samples,
+            expand2->equil_samples);
+    cmp_int(fp, "inputrec->expandedvals->weight-equil-number-steps", -1, expand1->equil_steps,
+            expand2->equil_steps);
+    cmp_real(fp, "inputrec->expandedvals->weight-equil-wl-delta", -1, expand1->equil_wl_delta,
+             expand2->equil_wl_delta, ftol, abstol);
+    cmp_real(fp, "inputrec->expandedvals->weight-equil-count-ratio", -1, expand1->equil_ratio,
+             expand2->equil_ratio, ftol, abstol);
+    cmp_bool(fp, "inputrec->expandedvals->symmetrized-transition-matrix", -1,
+             expand1->bSymmetrizedTMatrix, expand2->bSymmetrizedTMatrix);
     cmp_int(fp, "inputrec->expandedvals->nstTij", -1, expand1->nstTij, expand2->nstTij);
-    cmp_int(fp, "inputrec->expandedvals->mininum-var-min", -1, expand1->minvarmin, expand2->minvarmin); /*default is reasonable */
-    cmp_int(fp, "inputrec->expandedvals->weight-c-range", -1, expand1->c_range, expand2->c_range);      /* default is just C=0 */
+    cmp_int(fp, "inputrec->expandedvals->mininum-var-min", -1, expand1->minvarmin,
+            expand2->minvarmin); /*default is reasonable */
+    cmp_int(fp, "inputrec->expandedvals->weight-c-range", -1, expand1->c_range, expand2->c_range); /* default is just C=0 */
     cmp_real(fp, "inputrec->expandedvals->wl-scale", -1, expand1->wl_scale, expand2->wl_scale, ftol, abstol);
-    cmp_real(fp, "inputrec->expandedvals->init-wl-delta", -1, expand1->init_wl_delta, expand2->init_wl_delta, ftol, abstol);
+    cmp_real(fp, "inputrec->expandedvals->init-wl-delta", -1, expand1->init_wl_delta,
+             expand2->init_wl_delta, ftol, abstol);
     cmp_real(fp, "inputrec->expandedvals->wl-ratio", -1, expand1->wl_ratio, expand2->wl_ratio, ftol, abstol);
     cmp_int(fp, "inputrec->expandedvals->nstexpanded", -1, expand1->nstexpanded, expand2->nstexpanded);
     cmp_int(fp, "inputrec->expandedvals->lmc-seed", -1, expand1->lmc_seed, expand2->lmc_seed);
-    cmp_real(fp, "inputrec->expandedvals->mc-temperature", -1, expand1->mc_temp, expand2->mc_temp, ftol, abstol);
+    cmp_real(fp, "inputrec->expandedvals->mc-temperature", -1, expand1->mc_temp, expand2->mc_temp,
+             ftol, abstol);
 }
 
-static void cmp_fepvals(FILE *fp, const t_lambda *fep1, const t_lambda *fep2, real ftol, real abstol)
+static void cmp_fepvals(FILE* fp, const t_lambda* fep1, const t_lambda* fep2, real ftol, real abstol)
 {
     int i, j;
     cmp_int(fp, "inputrec->nstdhdl", -1, fep1->nstdhdl, fep2->nstdhdl);
-    cmp_double(fp, "inputrec->fepvals->init_fep_state", -1, fep1->init_fep_state, fep2->init_fep_state, ftol, abstol);
-    cmp_double(fp, "inputrec->fepvals->delta_lambda", -1, fep1->delta_lambda, fep2->delta_lambda, ftol, abstol);
+    cmp_double(fp, "inputrec->fepvals->init_fep_state", -1, fep1->init_fep_state,
+               fep2->init_fep_state, ftol, abstol);
+    cmp_double(fp, "inputrec->fepvals->delta_lambda", -1, fep1->delta_lambda, fep2->delta_lambda,
+               ftol, abstol);
     cmp_int(fp, "inputrec->fepvals->n_lambda", -1, fep1->n_lambda, fep2->n_lambda);
     for (i = 0; i < efptNR; i++)
     {
         for (j = 0; j < std::min(fep1->n_lambda, fep2->n_lambda); j++)
         {
-            cmp_double(fp, "inputrec->fepvals->all_lambda", -1, fep1->all_lambda[i][j], fep2->all_lambda[i][j], ftol, abstol);
+            cmp_double(fp, "inputrec->fepvals->all_lambda", -1, fep1->all_lambda[i][j],
+                       fep2->all_lambda[i][j], ftol, abstol);
         }
     }
-    cmp_int(fp, "inputrec->fepvals->lambda_neighbors", 1, fep1->lambda_neighbors,
-            fep2->lambda_neighbors);
+    cmp_int(fp, "inputrec->fepvals->lambda_neighbors", 1, fep1->lambda_neighbors, fep2->lambda_neighbors);
     cmp_real(fp, "inputrec->fepvals->sc_alpha", -1, fep1->sc_alpha, fep2->sc_alpha, ftol, abstol);
     cmp_int(fp, "inputrec->fepvals->sc_power", -1, fep1->sc_power, fep2->sc_power);
     cmp_real(fp, "inputrec->fepvals->sc_r_power", -1, fep1->sc_r_power, fep2->sc_r_power, ftol, abstol);
@@ -1251,10 +1273,11 @@ static void cmp_fepvals(FILE *fp, const t_lambda *fep1, const t_lambda *fep2, re
     cmp_int(fp, "inputrec->separate_dhdl_file", -1, fep1->separate_dhdl_file, fep2->separate_dhdl_file);
     cmp_int(fp, "inputrec->dhdl_derivatives", -1, fep1->dhdl_derivatives, fep2->dhdl_derivatives);
     cmp_int(fp, "inputrec->dh_hist_size", -1, fep1->dh_hist_size, fep2->dh_hist_size);
-    cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing, ftol, abstol);
+    cmp_double(fp, "inputrec->dh_hist_spacing", -1, fep1->dh_hist_spacing, fep2->dh_hist_spacing,
+               ftol, abstol);
 }
 
-void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real ftol, real abstol)
+void cmp_inputrec(FILE* fp, const t_inputrec* ir1, const t_inputrec* ir2, real ftol, real abstol)
 {
     fprintf(fp, "comparing inputrec\n");
 
@@ -1284,7 +1307,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->nstxout_compressed", -1, ir1->nstxout_compressed, ir2->nstxout_compressed);
     cmp_double(fp, "inputrec->init_t", -1, ir1->init_t, ir2->init_t, ftol, abstol);
     cmp_double(fp, "inputrec->delta_t", -1, ir1->delta_t, ir2->delta_t, ftol, abstol);
-    cmp_real(fp, "inputrec->x_compression_precision", -1, ir1->x_compression_precision, ir2->x_compression_precision, ftol, abstol);
+    cmp_real(fp, "inputrec->x_compression_precision", -1, ir1->x_compression_precision,
+             ir2->x_compression_precision, ftol, abstol);
     cmp_real(fp, "inputrec->fourierspacing", -1, ir1->fourier_spacing, ir2->fourier_spacing, ftol, abstol);
     cmp_int(fp, "inputrec->nkx", -1, ir1->nkx, ir2->nkx);
     cmp_int(fp, "inputrec->nky", -1, ir1->nky, ir2->nky);
@@ -1293,10 +1317,13 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->ewald_rtol", -1, ir1->ewald_rtol, ir2->ewald_rtol, ftol, abstol);
     cmp_int(fp, "inputrec->ewald_geometry", -1, ir1->ewald_geometry, ir2->ewald_geometry);
     cmp_real(fp, "inputrec->epsilon_surface", -1, ir1->epsilon_surface, ir2->epsilon_surface, ftol, abstol);
-    cmp_int(fp, "inputrec->bContinuation", -1, static_cast<int>(ir1->bContinuation), static_cast<int>(ir2->bContinuation));
-    cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR), static_cast<int>(ir2->bShakeSOR));
+    cmp_int(fp, "inputrec->bContinuation", -1, static_cast<int>(ir1->bContinuation),
+            static_cast<int>(ir2->bContinuation));
+    cmp_int(fp, "inputrec->bShakeSOR", -1, static_cast<int>(ir1->bShakeSOR),
+            static_cast<int>(ir2->bShakeSOR));
     cmp_int(fp, "inputrec->etc", -1, ir1->etc, ir2->etc);
-    cmp_int(fp, "inputrec->bPrintNHChains", -1, static_cast<int>(ir1->bPrintNHChains), static_cast<int>(ir2->bPrintNHChains));
+    cmp_int(fp, "inputrec->bPrintNHChains", -1, static_cast<int>(ir1->bPrintNHChains),
+            static_cast<int>(ir2->bPrintNHChains));
     cmp_int(fp, "inputrec->epc", -1, ir1->epc, ir2->epc);
     cmp_int(fp, "inputrec->epct", -1, ir1->epct, ir2->epct);
     cmp_real(fp, "inputrec->tau_p", -1, ir1->tau_p, ir2->tau_p, ftol, abstol);
@@ -1317,7 +1344,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_real(fp, "inputrec->rcoulomb_switch", -1, ir1->rcoulomb_switch, ir2->rcoulomb_switch, ftol, abstol);
     cmp_real(fp, "inputrec->rcoulomb", -1, ir1->rcoulomb, ir2->rcoulomb, ftol, abstol);
     cmp_int(fp, "inputrec->vdwtype", -1, ir1->vdwtype, ir2->vdwtype);
-    cmp_int(fp, "inputrec->vdw_modifier", -1, ir1->vdw_modifier, ir2->vdw_modifier);  cmp_real(fp, "inputrec->rvdw_switch", -1, ir1->rvdw_switch, ir2->rvdw_switch, ftol, abstol);
+    cmp_int(fp, "inputrec->vdw_modifier", -1, ir1->vdw_modifier, ir2->vdw_modifier);
+    cmp_real(fp, "inputrec->rvdw_switch", -1, ir1->rvdw_switch, ir2->rvdw_switch, ftol, abstol);
     cmp_real(fp, "inputrec->rvdw", -1, ir1->rvdw, ir2->rvdw, ftol, abstol);
     cmp_real(fp, "inputrec->epsilon_r", -1, ir1->epsilon_r, ir2->epsilon_r, ftol, abstol);
     cmp_real(fp, "inputrec->epsilon_rf", -1, ir1->epsilon_rf, ir2->epsilon_rf, ftol, abstol);
@@ -1330,12 +1358,15 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->bSimTemp", -1, static_cast<int>(ir1->bSimTemp), static_cast<int>(ir2->bSimTemp));
     if ((ir1->bSimTemp == ir2->bSimTemp) && (ir1->bSimTemp))
     {
-        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_simtempvals(fp, ir1->simtempvals, ir2->simtempvals,
+                        std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
-    cmp_int(fp, "inputrec->bExpanded", -1, static_cast<int>(ir1->bExpanded), static_cast<int>(ir2->bExpanded));
+    cmp_int(fp, "inputrec->bExpanded", -1, static_cast<int>(ir1->bExpanded),
+            static_cast<int>(ir2->bExpanded));
     if ((ir1->bExpanded == ir2->bExpanded) && (ir1->bExpanded))
     {
-        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals, std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
+        cmp_expandedvals(fp, ir1->expandedvals, ir2->expandedvals,
+                         std::min(ir1->fepvals->n_lambda, ir2->fepvals->n_lambda), ftol, abstol);
     }
     cmp_int(fp, "inputrec->nwall", -1, ir1->nwall, ir2->nwall);
     cmp_int(fp, "inputrec->wall_type", -1, ir1->wall_type, ir2->wall_type);
@@ -1360,7 +1391,8 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
     cmp_real(fp, "inputrec->dr_fc", -1, ir1->dr_fc, ir2->dr_fc, ftol, abstol);
     cmp_int(fp, "inputrec->eDisreWeighting", -1, ir1->eDisreWeighting, ir2->eDisreWeighting);
-    cmp_int(fp, "inputrec->bDisreMixed", -1, static_cast<int>(ir1->bDisreMixed), static_cast<int>(ir2->bDisreMixed));
+    cmp_int(fp, "inputrec->bDisreMixed", -1, static_cast<int>(ir1->bDisreMixed),
+            static_cast<int>(ir2->bDisreMixed));
     cmp_int(fp, "inputrec->nstdisreout", -1, ir1->nstdisreout, ir2->nstdisreout);
     cmp_real(fp, "inputrec->dr_tau", -1, ir1->dr_tau, ir2->dr_tau, ftol, abstol);
     cmp_real(fp, "inputrec->orires_fc", -1, ir1->orires_fc, ir2->orires_fc, ftol, abstol);
@@ -1397,7 +1429,7 @@ void cmp_inputrec(FILE *fp, const t_inputrec *ir1, const t_inputrec *ir2, real f
     gmx::compareKeyValueTrees(&writer, *ir1->params, *ir2->params, ftol, abstol);
 }
 
-void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
+void comp_pull_AB(FILE* fp, pull_params_t* pull, real ftol, real abstol)
 {
     int i;
 
@@ -1408,58 +1440,55 @@ void comp_pull_AB(FILE *fp, pull_params_t *pull, real ftol, real abstol)
     }
 }
 
-gmx_bool inputrecDeform(const t_inputrec *ir)
+gmx_bool inputrecDeform(const t_inputrec* ir)
 {
-    return (ir->deform[XX][XX] != 0 || ir->deform[YY][YY] != 0 || ir->deform[ZZ][ZZ] != 0 ||
-            ir->deform[YY][XX] != 0 || ir->deform[ZZ][XX] != 0 || ir->deform[ZZ][YY] != 0);
+    return (ir->deform[XX][XX] != 0 || ir->deform[YY][YY] != 0 || ir->deform[ZZ][ZZ] != 0
+            || ir->deform[YY][XX] != 0 || ir->deform[ZZ][XX] != 0 || ir->deform[ZZ][YY] != 0);
 }
 
-gmx_bool inputrecDynamicBox(const t_inputrec *ir)
+gmx_bool inputrecDynamicBox(const t_inputrec* ir)
 {
     return (ir->epc != epcNO || ir->eI == eiTPI || inputrecDeform(ir));
 }
 
-gmx_bool inputrecPreserveShape(const t_inputrec *ir)
+gmx_bool inputrecPreserveShape(const t_inputrec* ir)
 {
-    return  (ir->epc != epcNO && ir->deform[XX][XX] == 0 &&
-             (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
+    return (ir->epc != epcNO && ir->deform[XX][XX] == 0
+            && (ir->epct == epctISOTROPIC || ir->epct == epctSEMIISOTROPIC));
 }
 
-gmx_bool inputrecNeedMutot(const t_inputrec *ir)
+gmx_bool inputrecNeedMutot(const t_inputrec* ir)
 {
-    return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype)) &&
-            (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
+    return ((ir->coulombtype == eelEWALD || EEL_PME(ir->coulombtype))
+            && (ir->ewald_geometry == eewg3DC || ir->epsilon_surface != 0));
 }
 
-gmx_bool inputrecExclForces(const t_inputrec *ir)
+gmx_bool inputrecExclForces(const t_inputrec* ir)
 {
     return (EEL_FULL(ir->coulombtype) || (EEL_RF(ir->coulombtype)));
 }
 
-gmx_bool inputrecNptTrotter(const t_inputrec *ir)
+gmx_bool inputrecNptTrotter(const t_inputrec* ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == epcMTTK) && (ir->etc == etcNOSEHOOVER));
 }
 
-gmx_bool inputrecNvtTrotter(const t_inputrec *ir)
+gmx_bool inputrecNvtTrotter(const t_inputrec* ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc != epcMTTK) && (ir->etc == etcNOSEHOOVER));
 }
 
-gmx_bool inputrecNphTrotter(const t_inputrec *ir)
+gmx_bool inputrecNphTrotter(const t_inputrec* ir)
 {
-    return ( ( (ir->eI == eiVV) || (ir->eI == eiVVAK) ) &&
-             (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER) );
+    return (((ir->eI == eiVV) || (ir->eI == eiVVAK)) && (ir->epc == epcMTTK) && (ir->etc != etcNOSEHOOVER));
 }
 
-bool inputrecPbcXY2Walls(const t_inputrec *ir)
+bool inputrecPbcXY2Walls(const t_inputrec* ir)
 {
     return (ir->ePBC == epbcXY && ir->nwall == 2);
 }
 
-bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
+bool integratorHasConservedEnergyQuantity(const t_inputrec* ir)
 {
     if (!EI_MD(ir->eI))
     {
@@ -1475,19 +1504,19 @@ bool integratorHasConservedEnergyQuantity(const t_inputrec *ir)
     {
         // Shear stress with Parrinello-Rahman is not supported (tedious)
         bool shearWithPR =
-            ((ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK) &&
-             (ir->ref_p[YY][XX] != 0 || ir->ref_p[ZZ][XX] != 0 || ir->ref_p[ZZ][YY] != 0));
+                ((ir->epc == epcPARRINELLORAHMAN || ir->epc == epcMTTK)
+                 && (ir->ref_p[YY][XX] != 0 || ir->ref_p[ZZ][XX] != 0 || ir->ref_p[ZZ][YY] != 0));
 
         return !ETC_ANDERSEN(ir->etc) && !shearWithPR;
     }
 }
 
-bool integratorHasReferenceTemperature(const t_inputrec *ir)
+bool integratorHasReferenceTemperature(const t_inputrec* ir)
 {
     return ((ir->etc != etcNO) || EI_SD(ir->eI) || (ir->eI == eiBD) || EI_TPI(ir->eI));
 }
 
-int inputrec2nboundeddim(const t_inputrec *ir)
+int inputrec2nboundeddim(const t_inputrec* ir)
 {
     if (inputrecPbcXY2Walls(ir))
     {
@@ -1499,30 +1528,23 @@ int inputrec2nboundeddim(const t_inputrec *ir)
     }
 }
 
-int ndof_com(const t_inputrec *ir)
+int ndof_com(const t_inputrec* ir)
 {
     int n = 0;
 
     switch (ir->ePBC)
     {
         case epbcXYZ:
-        case epbcNONE:
-            n = 3;
-            break;
-        case epbcXY:
-            n = (ir->nwall == 0 ? 3 : 2);
-            break;
-        case epbcSCREW:
-            n = 1;
-            break;
-        default:
-            gmx_incons("Unknown pbc in calc_nrdf");
+        case epbcNONE: n = 3; break;
+        case epbcXY: n = (ir->nwall == 0 ? 3 : 2); break;
+        case epbcSCREW: n = 1; break;
+        default: gmx_incons("Unknown pbc in calc_nrdf");
     }
 
     return n;
 }
 
-real maxReferenceTemperature(const t_inputrec &ir)
+real maxReferenceTemperature(const t_inputrec& ir)
 {
     if (EI_ENERGY_MINIMIZATION(ir.eI) || ir.eI == eiNM)
     {
@@ -1550,8 +1572,7 @@ real maxReferenceTemperature(const t_inputrec &ir)
     return maxTemperature;
 }
 
-bool haveEwaldSurfaceContribution(const t_inputrec &ir)
+bool haveEwaldSurfaceContribution(const t_inputrec& ir)
 {
-    return EEL_PME_EWALD(ir.coulombtype) && (ir.ewald_geometry == eewg3DC ||
-                                             ir.epsilon_surface != 0);
+    return EEL_PME_EWALD(ir.coulombtype) && (ir.ewald_geometry == eewg3DC || ir.epsilon_surface != 0);
 }

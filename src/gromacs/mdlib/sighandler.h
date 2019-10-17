@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ typedef enum
 
 /* Our names for the stop conditions.
    These must match the number given in gmx_stop_cond_t.*/
-extern const char *gmx_stop_cond_name[];
+extern const char* gmx_stop_cond_name[];
 
 /* the externally visible functions: */
 
@@ -84,7 +84,7 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 void gmx_reset_stop_condition();
 
 /* get the signal name that lead to the current stop condition. */
-const char *gmx_get_signal_name();
+const char* gmx_get_signal_name();
 
 /* check whether we received a USR1 signal.
    The condition is reset once a TRUE value is returned, so this function

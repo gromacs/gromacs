@@ -50,9 +50,9 @@
 
 /* Define the single-cutoff version of the kernel */
 
-#define NB_INDIRECT_1(x, eel, vdw, y) x ## eel ## vdw ## y
+#define NB_INDIRECT_1(x, eel, vdw, y) x##eel##vdw##y
 #define NB_INDIRECT_2(x, eel, vdw, y) NB_INDIRECT_1(x, eel, vdw, y)
-#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x, EELNAME, VDWNAME, y)
+#define NB_KERNEL_FUNC_NAME(x, y) NB_INDIRECT_2(x, EELNAME, VDWNAME, y)
 
 #include "nbnxm_ocl_kernel.clh"
 
@@ -60,9 +60,9 @@
 
 /* Define the twin-cutoff version of the kernel */
 
-#define NB_INDIRECT_1_TWINCUT(x, eel, vdw, y) x ## eel ## TwinCut ## vdw ## y
+#define NB_INDIRECT_1_TWINCUT(x, eel, vdw, y) x##eel##TwinCut##vdw##y
 #define NB_INDIRECT_2_TWINCUT(x, eel, vdw, y) NB_INDIRECT_1_TWINCUT(x, eel, vdw, y)
-#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2_TWINCUT(x, EELNAME, VDWNAME, y)
+#define NB_KERNEL_FUNC_NAME(x, y) NB_INDIRECT_2_TWINCUT(x, EELNAME, VDWNAME, y)
 
 #define VDW_CUTOFF_CHECK
 

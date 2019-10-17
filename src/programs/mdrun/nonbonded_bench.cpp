@@ -64,27 +64,23 @@ namespace
 
 class NonbondedBenchmark : public ICommandLineOptionsModule
 {
-    public:
-        NonbondedBenchmark()
-        {}
+public:
+    NonbondedBenchmark() {}
 
-        // From ICommandLineOptionsModule
-        void init(CommandLineModuleSettings * /*settings*/) override
-        {
-        }
-        void initOptions(IOptionsContainer                 *options,
-                         ICommandLineOptionsModuleSettings *settings) override;
-        void optionsFinished() override;
-        int run() override;
-    private:
-        int                       sizeFactor_     = 1;
-        Nbnxm::KernelBenchOptions benchmarkOptions_;
+    // From ICommandLineOptionsModule
+    void init(CommandLineModuleSettings* /*settings*/) override {}
+    void initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings) override;
+    void optionsFinished() override;
+    int  run() override;
+
+private:
+    int                       sizeFactor_ = 1;
+    Nbnxm::KernelBenchOptions benchmarkOptions_;
 };
 
-void NonbondedBenchmark::initOptions(IOptionsContainer                 *options,
-                                     ICommandLineOptionsModuleSettings *settings)
+void NonbondedBenchmark::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
 {
-    std::vector<const char *>        desc = {
+    std::vector<const char*> desc = {
         "[THISMODULE] runs benchmarks for one or more so-called Nbnxm",
         "non-bonded pair kernels. The non-bonded pair kernels are",
         "the most compute intensive part of MD simulations",
@@ -161,67 +157,58 @@ void NonbondedBenchmark::initOptions(IOptionsContainer                 *options,
 
     settings->setHelpText(desc);
 
-    const char *const cNbnxmSimdStrings[] = {
-        "auto", "no", "4xm", "2xmm"
-    };
-    const char *const cCombRuleStrings[] = {
-        "geometric", "lb", "none"
-    };
-    const char *const cCoulombTypeStrings[] = {
-        "ewald", "reaction-field"
-    };
+    const char* const cNbnxmSimdStrings[]   = { "auto", "no", "4xm", "2xmm" };
+    const char* const cCombRuleStrings[]    = { "geometric", "lb", "none" };
+    const char* const cCoulombTypeStrings[] = { "ewald", "reaction-field" };
 
-    options->addOption(IntegerOption("size")
-                           .store(&sizeFactor_)
-                           .description("The system size is 3000 atoms times this value"));
-    options->addOption(IntegerOption("nt")
-                           .store(&benchmarkOptions_.numThreads)
-                           .description("The number of OpenMP threads to use"));
+    options->addOption(
+            IntegerOption("size").store(&sizeFactor_).description("The system size is 3000 atoms times this value"));
+    options->addOption(
+            IntegerOption("nt").store(&benchmarkOptions_.numThreads).description("The number of OpenMP threads to use"));
     options->addOption(EnumOption<Nbnxm::BenchMarkKernels>("simd")
-                           .store(&benchmarkOptions_.nbnxmSimd)
-                           .enumValue(cNbnxmSimdStrings)
-                           .description("SIMD type, auto runs all supported SIMD setups or no SIMD when SIMD is not supported"));
+                               .store(&benchmarkOptions_.nbnxmSimd)
+                               .enumValue(cNbnxmSimdStrings)
+                               .description("SIMD type, auto runs all supported SIMD setups or no "
+                                            "SIMD when SIMD is not supported"));
     options->addOption(EnumOption<Nbnxm::BenchMarkCoulomb>("coulomb")
-                           .store(&benchmarkOptions_.coulombType)
-                           .enumValue(cCoulombTypeStrings)
-                           .description("The functional form for the Coulomb interactions"));
-    options->addOption(BooleanOption("table")
-                           .store(&benchmarkOptions_.useTabulatedEwaldCorr)
-                           .description("Use lookup table for Ewald correction instead of analytical"));
+                               .store(&benchmarkOptions_.coulombType)
+                               .enumValue(cCoulombTypeStrings)
+                               .description("The functional form for the Coulomb interactions"));
+    options->addOption(
+            BooleanOption("table")
+                    .store(&benchmarkOptions_.useTabulatedEwaldCorr)
+                    .description("Use lookup table for Ewald correction instead of analytical"));
     options->addOption(EnumOption<Nbnxm::BenchMarkCombRule>("combrule")
-                           .store(&benchmarkOptions_.ljCombinationRule)
-                           .enumValue(cCombRuleStrings)
-                           .description("The LJ combination rule"));
+                               .store(&benchmarkOptions_.ljCombinationRule)
+                               .enumValue(cCombRuleStrings)
+                               .description("The LJ combination rule"));
     options->addOption(BooleanOption("halflj")
-                           .store(&benchmarkOptions_.useHalfLJOptimization)
-                           .description("Use optimization for LJ on half of the atoms"));
+                               .store(&benchmarkOptions_.useHalfLJOptimization)
+                               .description("Use optimization for LJ on half of the atoms"));
     options->addOption(BooleanOption("energy")
-                           .store(&benchmarkOptions_.computeVirialAndEnergy)
-                           .description("Compute energies in addition to forces"));
-    options->addOption(BooleanOption("all")
-                           .store(&benchmarkOptions_.doAll)
-                           .description("Run all 12 combinations of options for coulomb, halflj, combrule"));
+                               .store(&benchmarkOptions_.computeVirialAndEnergy)
+                               .description("Compute energies in addition to forces"));
+    options->addOption(
+            BooleanOption("all").store(&benchmarkOptions_.doAll).description("Run all 12 combinations of options for coulomb, halflj, combrule"));
     options->addOption(RealOption("cutoff")
-                           .store(&benchmarkOptions_.pairlistCutoff)
-                           .description("Pair-list and interaction cut-off distance"));
+                               .store(&benchmarkOptions_.pairlistCutoff)
+                               .description("Pair-list and interaction cut-off distance"));
     options->addOption(IntegerOption("iter")
-                           .store(&benchmarkOptions_.numIterations)
-                           .description("The number of iterations for each kernel"));
+                               .store(&benchmarkOptions_.numIterations)
+                               .description("The number of iterations for each kernel"));
     options->addOption(IntegerOption("warmup")
-                           .store(&benchmarkOptions_.numWarmupIterations)
-                           .description("The number of iterations for initial warmup"));
+                               .store(&benchmarkOptions_.numWarmupIterations)
+                               .description("The number of iterations for initial warmup"));
     options->addOption(BooleanOption("cycles")
-                           .store(&benchmarkOptions_.cyclesPerPair)
-                           .description("Report cycles/pair instead of pairs/cycle"));
-
+                               .store(&benchmarkOptions_.cyclesPerPair)
+                               .description("Report cycles/pair instead of pairs/cycle"));
 }
 
 void NonbondedBenchmark::optionsFinished()
 {
     // We compute the Ewald coefficient here to avoid a dependency of the Nbnxm on the Ewald module
-    const real ewald_rtol     = 1e-5;
-    benchmarkOptions_.ewaldcoeff_q      = calc_ewaldcoeff_q(benchmarkOptions_.pairlistCutoff,
-                                                            ewald_rtol);
+    const real ewald_rtol          = 1e-5;
+    benchmarkOptions_.ewaldcoeff_q = calc_ewaldcoeff_q(benchmarkOptions_.pairlistCutoff, ewald_rtol);
 }
 
 int NonbondedBenchmark::run()
@@ -231,15 +218,15 @@ int NonbondedBenchmark::run()
     return 0;
 }
 
-}   // namespace
+} // namespace
 
-const char NonbondedBenchmarkInfo::name[]             = "nonbonded-benchmark";
+const char NonbondedBenchmarkInfo::name[] = "nonbonded-benchmark";
 const char NonbondedBenchmarkInfo::shortDescription[] =
-    "Benchmarking tool for the non-bonded pair kernels.";
+        "Benchmarking tool for the non-bonded pair kernels.";
 
 ICommandLineOptionsModulePointer NonbondedBenchmarkInfo::create()
 {
     return ICommandLineOptionsModulePointer(std::make_unique<NonbondedBenchmark>());
 }
 
-} //i namespace gmx
+} // namespace gmx

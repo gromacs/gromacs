@@ -68,7 +68,7 @@ namespace detail
 namespace py = pybind11;
 
 
-void export_exceptions(pybind11::module &m)
+void export_exceptions(pybind11::module& m)
 {
     // These two lines could cause exceptions, but they are already handled,
     // causing an ImportError for the _gmxapi submodule raised from the
@@ -84,43 +84,43 @@ void export_exceptions(pybind11::module &m)
 
     // Developer note: as of pybind11 2.2.4, the py::exception template argument
     // is unused internally, but required.
-    struct UnknownExceptionPlaceHolder {};
-    static py::exception<UnknownExceptionPlaceHolder> unknownException(
-            m,
-            "UnknownException",
-            baseException.ptr());
-    unknownException.doc() = "GROMACS library produced an exception that is "
-        "not mapped in gmxapi or which should have been "
-        "caught at a lower level. I.e. a bug. (Please report.)";
+    struct UnknownExceptionPlaceHolder
+    {
+    };
+    static py::exception<UnknownExceptionPlaceHolder> unknownException(m, "UnknownException",
+                                                                       baseException.ptr());
+    unknownException.doc() =
+            "GROMACS library produced an exception that is "
+            "not mapped in gmxapi or which should have been "
+            "caught at a lower level. I.e. a bug. (Please report.)";
 
     // Catch unexpected/unbound exceptions from libgromacs or libgmxapi.
-    py::register_exception_translator(
-            [](std::exception_ptr p) {
-                try
-                {
-                    if (p)
-                    {
-                        std::rethrow_exception(p);
-                    }
-                }
-                catch (const gmxapi::Exception &e)
-                {
-                    // Nothing should be throwing the base exception and all gmxapi
-                    // exceptions should be mapped in this module. Differences
-                    // between GROMACS version and Python package version could leave
-                    // some exceptions unmapped, but we should add an alert in case
-                    // an exception gets overlooked.
-                    std::string message = "Generic gmxapi exception caught: ";
-                    message += e.what();
-                    baseException(message.c_str());
-                }
-                catch (const std::exception &e)
-                {
-                    std::string message = "Please report GROMACS bug. Unhandled C++ exception: ";
-                    message += e.what();
-                    unknownException(message.c_str());
-                }
-            });
+    py::register_exception_translator([](std::exception_ptr p) {
+        try
+        {
+            if (p)
+            {
+                std::rethrow_exception(p);
+            }
+        }
+        catch (const gmxapi::Exception& e)
+        {
+            // Nothing should be throwing the base exception and all gmxapi
+            // exceptions should be mapped in this module. Differences
+            // between GROMACS version and Python package version could leave
+            // some exceptions unmapped, but we should add an alert in case
+            // an exception gets overlooked.
+            std::string message = "Generic gmxapi exception caught: ";
+            message += e.what();
+            baseException(message.c_str());
+        }
+        catch (const std::exception& e)
+        {
+            std::string message = "Please report GROMACS bug. Unhandled C++ exception: ";
+            message += e.what();
+            unknownException(message.c_str());
+        }
+    });
 
     // Map gmxapi exceptions from gmxapi/exceptions.h to Python package exceptions.
     // Note: C++ exception translation occurs in revers order of registration,
@@ -129,22 +129,25 @@ void export_exceptions(pybind11::module &m)
     //   by linking to online docs or if we had a way to reuse doxygen docs.
 
     {
-        auto exception = py::register_exception<gmxapi::ProtocolError>(m, "ProtocolError", baseException.ptr());
+        auto exception =
+                py::register_exception<gmxapi::ProtocolError>(m, "ProtocolError", baseException.ptr());
         exception.doc() = "Behavioral protocol violated.";
     }
 
     {
-        auto exception = py::register_exception<gmxapi::NotImplementedError>(m, "NotImplementedError", baseException.ptr());
+        auto exception = py::register_exception<gmxapi::NotImplementedError>(
+                m, "NotImplementedError", baseException.ptr());
         exception.doc() = "Expected feature is not implemented.";
     }
 
     {
-        auto exception = py::register_exception<gmxapi::UsageError>(m, "UsageError", baseException.ptr());
+        auto exception =
+                py::register_exception<gmxapi::UsageError>(m, "UsageError", baseException.ptr());
         exception.doc() = "Unacceptable API usage.";
     }
 }
 
 
-} // end namespace gmxpy::detail
+} // namespace detail
 
 } // end namespace gmxpy

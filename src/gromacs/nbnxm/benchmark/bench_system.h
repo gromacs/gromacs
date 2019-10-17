@@ -68,25 +68,25 @@ struct BenchmarkSystem
     BenchmarkSystem(int multiplicationFactor);
 
     //! Number of different atom types in test system.
-    int                    numAtomTypes;
+    int numAtomTypes;
     //! Storage for parameters for short range interactions.
-    std::vector<real>      nonbondedParameters;
+    std::vector<real> nonbondedParameters;
     //! Storage for atom type parameters.
-    std::vector<int>       atomTypes;
+    std::vector<int> atomTypes;
     //! Storage for atom partial charges.
-    std::vector<real>      charges;
+    std::vector<real> charges;
     //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int>       atomInfoAllVdw;
+    std::vector<int> atomInfoAllVdw;
     //! Atom info where only oxygen atoms are marked to have Van der Waals interactions
-    std::vector<int>       atomInfoOxygenVdw;
+    std::vector<int> atomInfoOxygenVdw;
     //! Information about exclusions.
-    t_blocka               excls;
+    t_blocka excls;
     //! Storage for atom positions.
     std::vector<gmx::RVec> coordinates;
     //! System simulation box.
-    matrix                 box;
+    matrix box;
     //! Forcerec with only the entries used in the benchmark set
-    t_forcerec             forceRec;
+    t_forcerec forceRec;
 };
 
 } // namespace gmx

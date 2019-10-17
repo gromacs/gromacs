@@ -60,7 +60,7 @@ std::string Version::release()
     return c_release;
 }
 
-bool Version::hasFeature(const std::string &featurename)
+bool Version::hasFeature(const std::string& featurename)
 {
     // For features introduced without an incompatible API change or where
     // semantic versioning is otherwise insufficient, we can consult a map, TBD.
@@ -68,9 +68,7 @@ bool Version::hasFeature(const std::string &featurename)
     return false;
 }
 
-bool Version::isAtLeast(version_t major,
-                        version_t minor,
-                        version_t patch)
+bool Version::isAtLeast(version_t major, version_t minor, version_t patch)
 {
     if (Version::majorVersion() < major)
     {

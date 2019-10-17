@@ -63,49 +63,49 @@ namespace gmx
  */
 class SetVelocities : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetVelocities object with choice for boolean value.
-         *
-         * Can be used to initialize SetVelocities from outside of trajectoryanalysis
-         * with the user specified option to write coordinate velocities or not.
-         */
-        explicit SetVelocities(ChangeSettingType velocity) : velocity_(velocity)
+public:
+    /*! \brief
+     * Construct SetVelocities object with choice for boolean value.
+     *
+     * Can be used to initialize SetVelocities from outside of trajectoryanalysis
+     * with the user specified option to write coordinate velocities or not.
+     */
+    explicit SetVelocities(ChangeSettingType velocity) : velocity_(velocity)
+    {
+        if (velocity_ == ChangeSettingType::Never)
         {
-            if (velocity_ == ChangeSettingType::Never)
-            {
-                moduleRequirements_ = CoordinateFileFlags::Base;
-            }
-            else
-            {
-                moduleRequirements_ = CoordinateFileFlags::RequireVelocityOutput;
-            }
+            moduleRequirements_ = CoordinateFileFlags::Base;
         }
-        /*! \brief
-         *  Move constructor for SetVelocities.
-         */
-        SetVelocities(SetVelocities &&old) noexcept = default;
+        else
+        {
+            moduleRequirements_ = CoordinateFileFlags::RequireVelocityOutput;
+        }
+    }
+    /*! \brief
+     *  Move constructor for SetVelocities.
+     */
+    SetVelocities(SetVelocities&& old) noexcept = default;
 
-        ~SetVelocities() override {}
+    ~SetVelocities() override {}
 
-        /*! \brief
-         * Change coordinate frame information for output.
-         *
-         * In this case, the correct flag for writing the velocities is applied
-         * to the output frame, depending on user selection and availability
-         * in the input data.
-         *
-         * \param[in] input Coordinate frame to be modified later.
-         */
-        void processFrame(int /*framenumber*/, t_trxframe *input) override;
+    /*! \brief
+     * Change coordinate frame information for output.
+     *
+     * In this case, the correct flag for writing the velocities is applied
+     * to the output frame, depending on user selection and availability
+     * in the input data.
+     *
+     * \param[in] input Coordinate frame to be modified later.
+     */
+    void processFrame(int /*framenumber*/, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long abilities) const override;
+    void checkAbilityDependencies(unsigned long abilities) const override;
 
-    private:
-        //! Flag to specify if velocities should be written.
-        ChangeSettingType                            velocity_;
-        //! Local requirements determined from user input.
-        CoordinateFileFlags moduleRequirements_;
+private:
+    //! Flag to specify if velocities should be written.
+    ChangeSettingType velocity_;
+    //! Local requirements determined from user input.
+    CoordinateFileFlags moduleRequirements_;
 };
 
 //! Smart pointer to manage the object.

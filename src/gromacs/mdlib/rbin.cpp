@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,16 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/smalloc.h"
 
-t_bin *mk_bin()
+t_bin* mk_bin()
 {
-    t_bin *b;
+    t_bin* b;
 
     snew(b, 1);
 
     return b;
 }
 
-void destroy_bin(t_bin *b)
+void destroy_bin(t_bin* b)
 {
     if (b->maxreal > 0)
     {
@@ -62,79 +62,79 @@ void destroy_bin(t_bin *b)
     sfree(b);
 }
 
-void reset_bin(t_bin *b)
+void reset_bin(t_bin* b)
 {
     b->nreal = 0;
 }
 
-int add_binr(t_bin *b, int nr, const real r[])
+int add_binr(t_bin* b, int nr, const real r[])
 {
 #define MULT 4
     int     i, rest, index;
-    double *rbuf;
+    double* rbuf;
 
-    if (b->nreal+nr > b->maxreal)
+    if (b->nreal + nr > b->maxreal)
     {
-        b->maxreal = b->nreal+nr;
+        b->maxreal = b->nreal + nr;
         rest       = b->maxreal % MULT;
         if (rest != 0)
         {
-            b->maxreal += MULT-rest;
+            b->maxreal += MULT - rest;
         }
         srenew(b->rbuf, b->maxreal);
     }
     /* Copy pointer */
-    rbuf = b->rbuf+b->nreal;
+    rbuf = b->rbuf + b->nreal;
 
 #if (defined __ICC && __ICC >= 1500 || defined __ICL && __ICL >= 1500) && defined __MIC__
-#pragma novector /* Work-around for incorrect vectorization */
+#    pragma novector /* Work-around for incorrect vectorization */
 #endif
     for (i = 0; (i < nr); i++)
     {
         rbuf[i] = r[i];
     }
 
-    index     = b->nreal;
+    index = b->nreal;
     b->nreal += nr;
 
     return index;
 }
 
-int add_binr(t_bin *b, gmx::ArrayRef<const real> r)
+int add_binr(t_bin* b, gmx::ArrayRef<const real> r)
 {
     return add_binr(b, r.size(), r.data());
 }
 
-int add_bind(t_bin *b, int nr, const double r[])
+int add_bind(t_bin* b, int nr, const double r[])
 {
 #define MULT 4
     int     i, rest, index;
-    double *rbuf;
+    double* rbuf;
 
-    if (b->nreal+nr > b->maxreal)
+    if (b->nreal + nr > b->maxreal)
     {
-        b->maxreal = b->nreal+nr;
+        b->maxreal = b->nreal + nr;
         rest       = b->maxreal % MULT;
         if (rest != 0)
         {
-            b->maxreal += MULT-rest;
+            b->maxreal += MULT - rest;
         }
         srenew(b->rbuf, b->maxreal);
     }
     /* Copy pointer */
-    rbuf = b->rbuf+b->nreal;
+    rbuf = b->rbuf + b->nreal;
     for (i = 0; (i < nr); i++)
     {
         rbuf[i] = r[i];
     }
 
-    index     = b->nreal;
+    index = b->nreal;
     b->nreal += nr;
 
     return index;
 }
 
-void sum_bin(t_bin *b, const t_commrec *cr)
+void sum_bin(t_bin* b, const t_commrec* cr)
 {
     int i;
 
@@ -145,29 +145,29 @@ void sum_bin(t_bin *b, const t_commrec *cr)
     gmx_sumd(b->maxreal, b->rbuf, cr);
 }
 
-void extract_binr(t_bin *b, int index, int nr, real r[])
+void extract_binr(t_bin* b, int index, int nr, real r[])
 {
     int     i;
-    double *rbuf;
+    double* rbuf;
 
-    rbuf = b->rbuf+index;
+    rbuf = b->rbuf + index;
     for (i = 0; (i < nr); i++)
     {
         r[i] = rbuf[i];
     }
 }
 
-void extract_binr(t_bin *b, int index, gmx::ArrayRef<real> r)
+void extract_binr(t_bin* b, int index, gmx::ArrayRef<real> r)
 {
     extract_binr(b, index, r.size(), r.data());
 }
 
-void extract_bind(t_bin *b, int index, int nr, double r[])
+void extract_bind(t_bin* b, int index, int nr, double r[])
 {
     int     i;
-    double *rbuf;
+    double* rbuf;
 
-    rbuf = b->rbuf+index;
+    rbuf = b->rbuf + index;
     for (i = 0; (i < nr); i++)
     {
         r[i] = rbuf[i];

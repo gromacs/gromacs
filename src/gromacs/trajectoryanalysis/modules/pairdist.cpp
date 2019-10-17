@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,92 +94,92 @@ enum GroupType
 };
 
 //! Strings corresponding to DistanceType.
-const char *const           c_distanceTypes[] = { "min", "max" };
+const char* const c_distanceTypes[] = { "min", "max" };
 //! Strings corresponding to GroupType.
-const char *const           c_groupTypes[]    = { "all", "res", "mol", "none" };
+const char* const c_groupTypes[] = { "all", "res", "mol", "none" };
 
 /*! \brief
  * Implements `gmx pairdist` trajectory analysis module.
  */
 class PairDistance : public TrajectoryAnalysisModule
 {
-    public:
-        PairDistance();
+public:
+    PairDistance();
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                          const TopologyInformation        &top) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
 
-        TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections) override;
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    TrajectoryAnalysisModuleDataPointer startFrames(const AnalysisDataParallelOptions& opt,
+                                                    const SelectionCollection& selections) override;
+    void                                analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        /*! \brief
-         * Computed distances as a function of time.
-         *
-         * There is one data set for each selection in `sel_`.
-         * Within each data set, there is one column for each distance to be
-         * computed, as explained in the `-h` text.
-         */
-        AnalysisData            distances_;
+private:
+    /*! \brief
+     * Computed distances as a function of time.
+     *
+     * There is one data set for each selection in `sel_`.
+     * Within each data set, there is one column for each distance to be
+     * computed, as explained in the `-h` text.
+     */
+    AnalysisData distances_;
 
-        /*! \brief
-         * Reference selection to compute distances to.
-         *
-         * mappedId() identifies the group (of type `refGroupType_`) into which
-         * each position belogs.
-         */
-        Selection               refSel_;
-        /*! \brief
-         * Selections to compute distances from.
-         *
-         * mappedId() identifies the group (of type `selGroupType_`) into which
-         * each position belogs.
-         */
-        SelectionList           sel_;
+    /*! \brief
+     * Reference selection to compute distances to.
+     *
+     * mappedId() identifies the group (of type `refGroupType_`) into which
+     * each position belogs.
+     */
+    Selection refSel_;
+    /*! \brief
+     * Selections to compute distances from.
+     *
+     * mappedId() identifies the group (of type `selGroupType_`) into which
+     * each position belogs.
+     */
+    SelectionList sel_;
 
-        std::string             fnDist_;
+    std::string fnDist_;
 
-        double                  cutoff_;
-        DistanceType            distanceType_;
-        GroupType               refGroupType_;
-        GroupType               selGroupType_;
+    double       cutoff_;
+    DistanceType distanceType_;
+    GroupType    refGroupType_;
+    GroupType    selGroupType_;
 
-        //! Number of groups in `refSel_`.
-        int                     refGroupCount_;
-        //! Maximum number of pairs of groups for one selection.
-        int                     maxGroupCount_;
-        //! Initial squared distance for distance accumulation.
-        real                    initialDist2_;
-        //! Cutoff squared for use in the actual calculation.
-        real                    cutoff2_;
+    //! Number of groups in `refSel_`.
+    int refGroupCount_;
+    //! Maximum number of pairs of groups for one selection.
+    int maxGroupCount_;
+    //! Initial squared distance for distance accumulation.
+    real initialDist2_;
+    //! Cutoff squared for use in the actual calculation.
+    real cutoff2_;
 
-        //! Neighborhood search object for the pair search.
-        AnalysisNeighborhood    nb_;
+    //! Neighborhood search object for the pair search.
+    AnalysisNeighborhood nb_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
-PairDistance::PairDistance()
-    : cutoff_(0.0), distanceType_(eDistanceType_Min),
-      refGroupType_(eGroupType_All), selGroupType_(eGroupType_All),
-      refGroupCount_(0), maxGroupCount_(0), initialDist2_(0.0), cutoff2_(0.0)
+PairDistance::PairDistance() :
+    cutoff_(0.0),
+    distanceType_(eDistanceType_Min),
+    refGroupType_(eGroupType_All),
+    selGroupType_(eGroupType_All),
+    refGroupCount_(0),
+    maxGroupCount_(0),
+    initialDist2_(0.0),
+    cutoff2_(0.0)
 {
     registerAnalysisDataset(&distances_, "dist");
 }
 
 
-void
-PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void PairDistance::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] calculates pairwise distances between one reference",
         "selection (given with [TT]-ref[tt]) and one or more other selections",
         "(given with [TT]-sel[tt]).  It can calculate either the minimum",
@@ -216,46 +216,53 @@ PairDistance::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile().required()
-                           .store(&fnDist_).defaultBasename("dist")
-                           .description("Distances as function of time"));
+    options->addOption(FileNameOption("o")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .required()
+                               .store(&fnDist_)
+                               .defaultBasename("dist")
+                               .description("Distances as function of time"));
 
-    options->addOption(DoubleOption("cutoff").store(&cutoff_)
-                           .description("Maximum distance to consider"));
-    options->addOption(EnumOption<DistanceType>("type").store(&distanceType_)
-                           .enumValue(c_distanceTypes)
-                           .description("Type of distances to calculate"));
-    options->addOption(EnumOption<GroupType>("refgrouping").store(&refGroupType_)
-                           .enumValue(c_groupTypes)
-                           .description("Grouping of -ref positions to compute the min/max over"));
-    options->addOption(EnumOption<GroupType>("selgrouping").store(&selGroupType_)
-                           .enumValue(c_groupTypes)
-                           .description("Grouping of -sel positions to compute the min/max over"));
+    options->addOption(
+            DoubleOption("cutoff").store(&cutoff_).description("Maximum distance to consider"));
+    options->addOption(EnumOption<DistanceType>("type")
+                               .store(&distanceType_)
+                               .enumValue(c_distanceTypes)
+                               .description("Type of distances to calculate"));
+    options->addOption(
+            EnumOption<GroupType>("refgrouping")
+                    .store(&refGroupType_)
+                    .enumValue(c_groupTypes)
+                    .description("Grouping of -ref positions to compute the min/max over"));
+    options->addOption(
+            EnumOption<GroupType>("selgrouping")
+                    .store(&selGroupType_)
+                    .enumValue(c_groupTypes)
+                    .description("Grouping of -sel positions to compute the min/max over"));
 
-    options->addOption(SelectionOption("ref").store(&refSel_).required()
-                           .description("Reference positions to calculate distances from"));
-    options->addOption(SelectionOption("sel").storeVector(&sel_).required().multiValue()
-                           .description("Positions to calculate distances for"));
+    options->addOption(SelectionOption("ref").store(&refSel_).required().description(
+            "Reference positions to calculate distances from"));
+    options->addOption(SelectionOption("sel").storeVector(&sel_).required().multiValue().description(
+            "Positions to calculate distances for"));
 }
 
 //! Helper function to initialize the grouping for a selection.
-int initSelectionGroups(Selection *sel, const gmx_mtop_t *top, int type)
+int initSelectionGroups(Selection* sel, const gmx_mtop_t* top, int type)
 {
     e_index_t indexType = INDEX_UNKNOWN;
     switch (type)
     {
-        case eGroupType_All:      indexType = INDEX_ALL; break;
-        case eGroupType_Residue:  indexType = INDEX_RES; break;
+        case eGroupType_All: indexType = INDEX_ALL; break;
+        case eGroupType_Residue: indexType = INDEX_RES; break;
         case eGroupType_Molecule: indexType = INDEX_MOL; break;
-        case eGroupType_None:     indexType = INDEX_ATOM; break;
+        case eGroupType_None: indexType = INDEX_ATOM; break;
     }
     return sel->initOriginalIdsToGroup(top, indexType);
 }
 
 
-void
-PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                           const TopologyInformation        &top)
+void PairDistance::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
 {
     refGroupCount_ = initSelectionGroups(&refSel_, top.mtop(), refGroupType_);
 
@@ -263,17 +270,15 @@ PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
     distances_.setDataSetCount(sel_.size());
     for (size_t i = 0; i < sel_.size(); ++i)
     {
-        const int selGroupCount
-            = initSelectionGroups(&sel_[i], top.mtop(), selGroupType_);
-        const int columnCount = refGroupCount_ * selGroupCount;
-        maxGroupCount_ = std::max(maxGroupCount_, columnCount);
+        const int selGroupCount = initSelectionGroups(&sel_[i], top.mtop(), selGroupType_);
+        const int columnCount   = refGroupCount_ * selGroupCount;
+        maxGroupCount_          = std::max(maxGroupCount_, columnCount);
         distances_.setColumnCount(i, columnCount);
     }
 
     if (!fnDist_.empty())
     {
-        AnalysisDataPlotModulePointer plotm(
-                new AnalysisDataPlotModule(settings.plotSettings()));
+        AnalysisDataPlotModulePointer plotm(new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnDist_);
         if (distanceType_ == eDistanceType_Max)
         {
@@ -317,100 +322,95 @@ PairDistance::initAnalysis(const TrajectoryAnalysisSettings &settings,
  */
 class PairDistanceModuleData : public TrajectoryAnalysisModuleData
 {
-    public:
-        /*! \brief
-         * Reserves memory for the frame-local data.
-         */
-        PairDistanceModuleData(TrajectoryAnalysisModule          *module,
-                               const AnalysisDataParallelOptions &opt,
-                               const SelectionCollection         &selections,
-                               int                                refGroupCount,
-                               const Selection                   &refSel,
-                               int                                maxGroupCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections)
+public:
+    /*! \brief
+     * Reserves memory for the frame-local data.
+     */
+    PairDistanceModuleData(TrajectoryAnalysisModule*          module,
+                           const AnalysisDataParallelOptions& opt,
+                           const SelectionCollection&         selections,
+                           int                                refGroupCount,
+                           const Selection&                   refSel,
+                           int                                maxGroupCount) :
+        TrajectoryAnalysisModuleData(module, opt, selections)
+    {
+        distArray_.resize(maxGroupCount);
+        countArray_.resize(maxGroupCount);
+        refCountArray_.resize(refGroupCount);
+        if (!refSel.isDynamic())
         {
-            distArray_.resize(maxGroupCount);
-            countArray_.resize(maxGroupCount);
-            refCountArray_.resize(refGroupCount);
-            if (!refSel.isDynamic())
-            {
-                initRefCountArray(refSel);
-            }
+            initRefCountArray(refSel);
         }
+    }
 
-        void finish() override { finishDataHandles(); }
+    void finish() override { finishDataHandles(); }
 
-        /*! \brief
-         * Computes the number of positions in each group in \p refSel
-         * and stores them into `refCountArray_`.
-         */
-        void initRefCountArray(const Selection &refSel)
+    /*! \brief
+     * Computes the number of positions in each group in \p refSel
+     * and stores them into `refCountArray_`.
+     */
+    void initRefCountArray(const Selection& refSel)
+    {
+        std::fill(refCountArray_.begin(), refCountArray_.end(), 0);
+        int refPos = 0;
+        while (refPos < refSel.posCount())
         {
-            std::fill(refCountArray_.begin(), refCountArray_.end(), 0);
-            int refPos = 0;
-            while (refPos < refSel.posCount())
+            const int refIndex = refSel.position(refPos).mappedId();
+            const int startPos = refPos;
+            ++refPos;
+            while (refPos < refSel.posCount() && refSel.position(refPos).mappedId() == refIndex)
             {
-                const int refIndex = refSel.position(refPos).mappedId();
-                const int startPos = refPos;
                 ++refPos;
-                while (refPos < refSel.posCount()
-                       && refSel.position(refPos).mappedId() == refIndex)
-                {
-                    ++refPos;
-                }
-                refCountArray_[refIndex] = refPos - startPos;
             }
+            refCountArray_[refIndex] = refPos - startPos;
         }
+    }
 
-        /*! \brief
-         * Squared distance between each group
-         *
-         * One entry for each group pair for the current selection.
-         * Enough memory is allocated to fit the largest calculation selection.
-         * This is needed to support neighborhood searching, which may not
-         * return the pairs in order: for each group pair, we need to search
-         * through all the position pairs and update this array to find the
-         * minimum/maximum distance between them.
-         */
-        std::vector<real> distArray_;
-        /*! \brief
-         * Number of pairs within the cutoff that have contributed to the value
-         * in `distArray_`.
-         *
-         * This is needed to identify whether there were any pairs inside the
-         * cutoff and whether there were additional pairs outside the cutoff
-         * that were not covered by the neihborhood search.
-         */
-        std::vector<int>  countArray_;
-        /*! \brief
-         * Number of positions within each reference group.
-         *
-         * This is used to more efficiently compute the total number of pairs
-         * (for comparison with `countArray_`), as otherwise these numbers
-         * would need to be recomputed for each selection.
-         */
-        std::vector<int>  refCountArray_;
+    /*! \brief
+     * Squared distance between each group
+     *
+     * One entry for each group pair for the current selection.
+     * Enough memory is allocated to fit the largest calculation selection.
+     * This is needed to support neighborhood searching, which may not
+     * return the pairs in order: for each group pair, we need to search
+     * through all the position pairs and update this array to find the
+     * minimum/maximum distance between them.
+     */
+    std::vector<real> distArray_;
+    /*! \brief
+     * Number of pairs within the cutoff that have contributed to the value
+     * in `distArray_`.
+     *
+     * This is needed to identify whether there were any pairs inside the
+     * cutoff and whether there were additional pairs outside the cutoff
+     * that were not covered by the neihborhood search.
+     */
+    std::vector<int> countArray_;
+    /*! \brief
+     * Number of positions within each reference group.
+     *
+     * This is used to more efficiently compute the total number of pairs
+     * (for comparison with `countArray_`), as otherwise these numbers
+     * would need to be recomputed for each selection.
+     */
+    std::vector<int> refCountArray_;
 };
 
-TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(
-        const AnalysisDataParallelOptions &opt,
-        const SelectionCollection         &selections)
+TrajectoryAnalysisModuleDataPointer PairDistance::startFrames(const AnalysisDataParallelOptions& opt,
+                                                              const SelectionCollection& selections)
 {
-    return TrajectoryAnalysisModuleDataPointer(
-            new PairDistanceModuleData(this, opt, selections, refGroupCount_,
-                                       refSel_, maxGroupCount_));
+    return TrajectoryAnalysisModuleDataPointer(new PairDistanceModuleData(
+            this, opt, selections, refGroupCount_, refSel_, maxGroupCount_));
 }
 
-void
-PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                           TrajectoryAnalysisModuleData *pdata)
+void PairDistance::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
-    AnalysisDataHandle         dh            = pdata->dataHandle(distances_);
-    const Selection           &refSel        = pdata->parallelSelection(refSel_);
-    const SelectionList       &sel           = pdata->parallelSelections(sel_);
-    PairDistanceModuleData    &frameData     = *static_cast<PairDistanceModuleData *>(pdata);
-    std::vector<real>         &distArray     = frameData.distArray_;
-    std::vector<int>          &countArray    = frameData.countArray_;
+    AnalysisDataHandle      dh         = pdata->dataHandle(distances_);
+    const Selection&        refSel     = pdata->parallelSelection(refSel_);
+    const SelectionList&    sel        = pdata->parallelSelections(sel_);
+    PairDistanceModuleData& frameData  = *static_cast<PairDistanceModuleData*>(pdata);
+    std::vector<real>&      distArray  = frameData.distArray_;
+    std::vector<int>&       countArray = frameData.countArray_;
 
     if (cutoff_ > 0.0 && refSel.isDynamic())
     {
@@ -422,9 +422,9 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         // and it has been initialized in the constructor of the data object.
         frameData.initRefCountArray(refSel);
     }
-    const std::vector<int>    &refCountArray = frameData.refCountArray_;
+    const std::vector<int>& refCountArray = frameData.refCountArray_;
 
-    AnalysisNeighborhoodSearch nbsearch  = nb_.initSearch(pbc, refSel);
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refSel);
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
     {
@@ -438,8 +438,8 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         AnalysisNeighborhoodPair       pair;
         while (pairSearch.findNextPair(&pair))
         {
-            const SelectionPosition &refPos   = refSel.position(pair.refIndex());
-            const SelectionPosition &selPos   = sel[g].position(pair.testIndex());
+            const SelectionPosition& refPos   = refSel.position(pair.refIndex());
+            const SelectionPosition& selPos   = sel[g].position(pair.testIndex());
             const int                refIndex = refPos.mappedId();
             const int                selIndex = selPos.mappedId();
             const int                index    = selIndex * refGroupCount_ + refIndex;
@@ -482,8 +482,7 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 const int selIndex = sel[g].position(selPos).mappedId();
                 const int startPos = selPos;
                 ++selPos;
-                while (selPos < sel[g].posCount()
-                       && sel[g].position(selPos).mappedId() == selIndex)
+                while (selPos < sel[g].posCount() && sel[g].position(selPos).mappedId() == selIndex)
                 {
                     ++selPos;
                 }
@@ -526,23 +525,17 @@ PairDistance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     dh.finishFrame();
 }
 
-void
-PairDistance::finishAnalysis(int /*nframes*/)
-{
-}
+void PairDistance::finishAnalysis(int /*nframes*/) {}
 
-void
-PairDistance::writeOutput()
-{
-}
+void PairDistance::writeOutput() {}
 
 //! \}
 
-}       // namespace
+} // namespace
 
-const char PairDistanceInfo::name[]             = "pairdist";
+const char PairDistanceInfo::name[] = "pairdist";
 const char PairDistanceInfo::shortDescription[] =
-    "Calculate pairwise distances between groups of positions";
+        "Calculate pairwise distances between groups of positions";
 
 TrajectoryAnalysisModulePointer PairDistanceInfo::create()
 {

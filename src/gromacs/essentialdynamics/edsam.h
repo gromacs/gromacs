@@ -74,19 +74,20 @@ enum class StartingBehavior;
 class Constraints;
 class EssentialDynamics
 {
-    public:
-        EssentialDynamics();
-        ~EssentialDynamics();
+public:
+    EssentialDynamics();
+    ~EssentialDynamics();
 
-        /*! \brief Getter for working data
-         *
-         * This is needed while the module is still under
-         * construction. */
-        gmx_edsam *getLegacyED();
-    private:
-        class Impl;
+    /*! \brief Getter for working data
+     *
+     * This is needed while the module is still under
+     * construction. */
+    gmx_edsam* getLegacyED();
 
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+
+    PrivateImplPointer<Impl> impl_;
 };
 class MDLogger;
 } // namespace gmx
@@ -101,8 +102,13 @@ class MDLogger;
  * \param box               The simulation box.
  * \param ed                The essential dynamics data.
  */
-void do_edsam(const t_inputrec *ir, int64_t step,
-              const t_commrec *cr, rvec xs[], rvec v[], const matrix box, gmx_edsam *ed);
+void do_edsam(const t_inputrec* ir,
+              int64_t           step,
+              const t_commrec*  cr,
+              rvec              xs[],
+              rvec              v[],
+              const matrix      box,
+              gmx_edsam*        ed);
 
 
 /*! \brief Initializes the essential dynamics and flooding module.
@@ -121,18 +127,17 @@ void do_edsam(const t_inputrec *ir, int64_t step,
  *
  * \returns                 A pointer to the ED data structure.
  */
-std::unique_ptr<gmx::EssentialDynamics> init_edsam(
-        const gmx::MDLogger    &mdlog,
-        const char             *ediFileName,
-        const char             *edoFileName,
-        const gmx_mtop_t       *mtop,
-        const t_inputrec       *ir,
-        const t_commrec        *cr,
-        gmx::Constraints       *constr,
-        const t_state          *globalState,
-        ObservablesHistory     *oh,
-        const gmx_output_env_t *oenv,
-        gmx::StartingBehavior   startingBehavior);
+std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&    mdlog,
+                                                   const char*             ediFileName,
+                                                   const char*             edoFileName,
+                                                   const gmx_mtop_t*       mtop,
+                                                   const t_inputrec*       ir,
+                                                   const t_commrec*        cr,
+                                                   gmx::Constraints*       constr,
+                                                   const t_state*          globalState,
+                                                   ObservablesHistory*     oh,
+                                                   const gmx_output_env_t* oenv,
+                                                   gmx::StartingBehavior   startingBehavior);
 
 /*! \brief Make a selection of the home atoms for the ED groups.
  *
@@ -141,7 +146,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(
  * \param dd                Domain decomposition data.
  * \param ed                Essential dynamics and flooding data.
  */
-void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam * ed);
+void dd_make_local_ed_indices(gmx_domdec_t* dd, gmx_edsam* ed);
 
 
 /*! \brief Evaluate the flooding potential(s) and forces as requested in the .edi input file.
@@ -155,11 +160,11 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam * ed);
  * \param step              Number of the time step.
  * \param bNS               Are we in a neighbor searching step?
  */
-void do_flood(const t_commrec  *cr,
-              const t_inputrec *ir,
+void do_flood(const t_commrec*  cr,
+              const t_inputrec* ir,
               const rvec        x[],
               rvec              force[],
-              gmx_edsam        *ed,
+              gmx_edsam*        ed,
               const matrix      box,
               int64_t           step,
               gmx_bool          bNS);

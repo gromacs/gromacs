@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,7 +94,7 @@ TEST(MutexBasicTest, CanBeUsedInLockGuard)
 }
 
 //! A shared value for a mutex to protect
-int   g_sharedValue;
+int g_sharedValue;
 //! A mutex to protect a shared value
 Mutex g_sharedValueMutex;
 
@@ -138,21 +138,18 @@ int updateSharedValueWithTryLock()
  * implementation underlying it. */
 class DifferentTasksTest : public ::testing::TestWithParam<TaskType>
 {
-    public:
-        DifferentTasksTest()
-        {
-            g_sharedValue = 0;
-        }
-        //! Check the results
-        void checkResults()
-        {
-            int result = 0;
-            EXPECT_NO_THROW(result = futureResult_.get()) << "Future should not contain an exception";
-            EXPECT_EQ(1, result) << "Task should have run";
-            EXPECT_EQ(1, g_sharedValue) << "Shared value should be updated";
-        }
-        //! Contains the result the task returns.
-        std::future<int> futureResult_;
+public:
+    DifferentTasksTest() { g_sharedValue = 0; }
+    //! Check the results
+    void checkResults()
+    {
+        int result = 0;
+        EXPECT_NO_THROW(result = futureResult_.get()) << "Future should not contain an exception";
+        EXPECT_EQ(1, result) << "Task should have run";
+        EXPECT_EQ(1, g_sharedValue) << "Shared value should be updated";
+    }
+    //! Contains the result the task returns.
+    std::future<int> futureResult_;
 };
 
 TEST_P(DifferentTasksTest, StdAsyncWorksWithDefaultPolicy)
@@ -172,12 +169,17 @@ TEST_P(DifferentTasksTest, StdAsyncWorksWithAsyncLaunchPolicy)
 TEST_P(DifferentTasksTest, StdAsyncWorksWithDeferredLaunchPolicy)
 {
     auto task = GetParam();
-    EXPECT_NO_THROW(futureResult_ = std::async(std::launch::deferred, task)) << "Async should succeed";
+    EXPECT_NO_THROW(futureResult_ = std::async(std::launch::deferred, task))
+            << "Async should succeed";
     checkResults();
 }
 
 // Test that the different launch policies work with the different tasks
-INSTANTIATE_TEST_CASE_P(WithAndWithoutMutex, DifferentTasksTest, ::testing::Values(updateSharedValue, updateSharedValueWithLock, updateSharedValueWithTryLock));
+INSTANTIATE_TEST_CASE_P(WithAndWithoutMutex,
+                        DifferentTasksTest,
+                        ::testing::Values(updateSharedValue,
+                                          updateSharedValueWithLock,
+                                          updateSharedValueWithTryLock));
 
 TEST(MutexTaskTest, MutualExclusionWorksWithLock)
 {
@@ -216,7 +218,7 @@ TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnOtherThread)
 
 TEST(MutexTaskTest, MutualExclusionWorksWithTryLockOnSameThread)
 {
-    g_sharedValue = 0;
+    g_sharedValue        = 0;
     int finalSharedValue = GMX_NATIVE_WINDOWS ? 1 : 0;
     {
         // Hold the mutex and launch a try_lock attempt on this

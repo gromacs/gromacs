@@ -48,54 +48,71 @@
 struct t_symtab;
 
 /* The particle type */
-enum {
-    eptAtom, eptNucleus, eptShell, eptBond, eptVSite, eptNR
+enum
+{
+    eptAtom,
+    eptNucleus,
+    eptShell,
+    eptBond,
+    eptVSite,
+    eptNR
 };
 
 /* The particle type names */
-extern const char *ptype_str[eptNR+1];
+extern const char* ptype_str[eptNR + 1];
 
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file
  */
-enum PDB_record {
-    epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND,
-    epdbMODEL,  epdbENDMDL, epdbTER,    epdbHEADER, epdbTITLE, epdbREMARK,
-    epdbCONECT, epdbNR
+enum PDB_record
+{
+    epdbATOM,
+    epdbHETATM,
+    epdbANISOU,
+    epdbCRYST1,
+    epdbCOMPND,
+    epdbMODEL,
+    epdbENDMDL,
+    epdbTER,
+    epdbHEADER,
+    epdbTITLE,
+    epdbREMARK,
+    epdbCONECT,
+    epdbNR
 };
 
 typedef struct t_atom
 {
-    real           m, q;        /* Mass and charge                      */
-    real           mB, qB;      /* Mass and charge for Free Energy calc */
-    unsigned short type;        /* Atom type                            */
-    unsigned short typeB;       /* Atom type for Free Energy calc       */
-    int            ptype;       /* Particle type                        */
-    int            resind;      /* Index into resinfo (in t_atoms)      */
-    int            atomnumber;  /* Atomic Number or 0                   */
-    char           elem[4];     /* Element name                         */
+    real           m, q;       /* Mass and charge                      */
+    real           mB, qB;     /* Mass and charge for Free Energy calc */
+    unsigned short type;       /* Atom type                            */
+    unsigned short typeB;      /* Atom type for Free Energy calc       */
+    int            ptype;      /* Particle type                        */
+    int            resind;     /* Index into resinfo (in t_atoms)      */
+    int            atomnumber; /* Atomic Number or 0                   */
+    char           elem[4];    /* Element name                         */
 } t_atom;
 
 typedef struct t_resinfo
 {
-    char          **name;       /* Pointer to the residue name          */
-    int             nr;         /* Residue number                       */
-    unsigned char   ic;         /* Code for insertion of residues       */
-    int             chainnum;   /* Iincremented at TER or new chain id  */
-    char            chainid;    /* Chain identifier written/read to pdb */
-    char          **rtp;        /* rtp building block name (optional)   */
+    char**        name;     /* Pointer to the residue name          */
+    int           nr;       /* Residue number                       */
+    unsigned char ic;       /* Code for insertion of residues       */
+    int           chainnum; /* Iincremented at TER or new chain id  */
+    char          chainid;  /* Chain identifier written/read to pdb */
+    char**        rtp;      /* rtp building block name (optional)   */
 } t_resinfo;
 
 typedef struct t_pdbinfo
 {
-    int      type;              /* PDB record name                      */
-    int      atomnr;            /* PDB atom number                      */
-    char     altloc;            /* Alternate location indicator         */
-    char     atomnm[6];         /* True atom name including leading spaces */
-    real     occup;             /* Occupancy                            */
-    real     bfac;              /* B-factor                             */
-    gmx_bool bAnisotropic;      /* (an)isotropic switch                 */
-    int      uij[6];            /* Anisotropic B-factor                 */
+    int      type;         /* PDB record name                      */
+    int      atomnr;       /* PDB atom number                      */
+    char     altloc;       /* Alternate location indicator         */
+    char     atomnm[6];    /* True atom name including leading spaces */
+    real     occup;        /* Occupancy                            */
+    real     bfac;         /* B-factor                             */
+    gmx_bool bAnisotropic; /* (an)isotropic switch                 */
+    int      uij[6];       /* Anisotropic B-factor                 */
 } t_pdbinfo;
 
 //! Contains indices into group names for different groups.
@@ -103,68 +120,71 @@ using AtomGroupIndices = std::vector<int>;
 
 typedef struct t_atoms
 {
-    int          nr;            /* Nr of atoms                          */
-    t_atom      *atom;          /* Array of atoms (dim: nr)             */
-                                /* The following entries will not       */
-                                /* always be used (nres==0)             */
-    char      ***atomname;      /* Array of pointers to atom name       */
-                                /* use: (*(atomname[i]))                */
-    char      ***atomtype;      /* Array of pointers to atom types      */
-                                /* use: (*(atomtype[i]))                */
-    char      ***atomtypeB;     /* Array of pointers to B atom types    */
-                                /* use: (*(atomtypeB[i]))               */
-    int          nres;          /* The number of resinfo entries        */
-    t_resinfo   *resinfo;       /* Array of residue names and numbers   */
-    t_pdbinfo   *pdbinfo;       /* PDB Information, such as aniso. Bfac */
+    int     nr;         /* Nr of atoms                          */
+    t_atom* atom;       /* Array of atoms (dim: nr)             */
+                        /* The following entries will not       */
+                        /* always be used (nres==0)             */
+    char*** atomname;   /* Array of pointers to atom name       */
+                        /* use: (*(atomname[i]))                */
+    char*** atomtype;   /* Array of pointers to atom types      */
+                        /* use: (*(atomtype[i]))                */
+    char*** atomtypeB;  /* Array of pointers to B atom types    */
+                        /* use: (*(atomtypeB[i]))               */
+    int        nres;    /* The number of resinfo entries        */
+    t_resinfo* resinfo; /* Array of residue names and numbers   */
+    t_pdbinfo* pdbinfo; /* PDB Information, such as aniso. Bfac */
 
     /* Flags that tell if properties are set for all nr atoms.
      * For B-state parameters, both haveBState and the mass/charge/type
      * flag should be TRUE.
      */
-    gmx_bool     haveMass;      /* Mass available                       */
-    gmx_bool     haveCharge;    /* Charge available                     */
-    gmx_bool     haveType;      /* Atom type available                  */
-    gmx_bool     haveBState;    /* B-state parameters available         */
-    gmx_bool     havePdbInfo;   /* pdbinfo available                    */
+    gmx_bool haveMass;    /* Mass available                       */
+    gmx_bool haveCharge;  /* Charge available                     */
+    gmx_bool haveType;    /* Atom type available                  */
+    gmx_bool haveBState;  /* B-state parameters available         */
+    gmx_bool havePdbInfo; /* pdbinfo available                    */
 } t_atoms;
 
 typedef struct t_atomtypes
 {
-    int           nr;           /* number of atomtypes                          */
-    int          *atomnumber;   /* Atomic number, used for QM/MM                */
+    int  nr;         /* number of atomtypes                          */
+    int* atomnumber; /* Atomic number, used for QM/MM                */
 } t_atomtypes;
 
 #define PERTURBED(a) (((a).mB != (a).m) || ((a).qB != (a).q) || ((a).typeB != (a).type))
 
-void init_atom(t_atoms *at);
-void init_atomtypes(t_atomtypes *at);
-void done_atom(t_atoms *at);
-void done_and_delete_atoms(t_atoms *atoms);
-void done_atomtypes(t_atomtypes *at);
+void init_atom(t_atoms* at);
+void init_atomtypes(t_atomtypes* at);
+void done_atom(t_atoms* at);
+void done_and_delete_atoms(t_atoms* atoms);
+void done_atomtypes(t_atomtypes* at);
 
-void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
+void init_t_atoms(t_atoms* atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */
 
-void gmx_pdbinfo_init_default(t_pdbinfo *pdbinfo);
+void gmx_pdbinfo_init_default(t_pdbinfo* pdbinfo);
 
-t_atoms *copy_t_atoms(const t_atoms *src);
+t_atoms* copy_t_atoms(const t_atoms* src);
 /* copy an atoms struct from src to a new one */
 
-void add_t_atoms(t_atoms *atoms, int natom_extra, int nres_extra);
+void add_t_atoms(t_atoms* atoms, int natom_extra, int nres_extra);
 /* allocate extra space for more atoms and or residues */
 
-void t_atoms_set_resinfo(t_atoms *atoms, int atom_ind, struct t_symtab *symtab,
-                         const char *resname, int resnr, unsigned char ic,
-                         int chainnum, char chainid);
+void t_atoms_set_resinfo(t_atoms*         atoms,
+                         int              atom_ind,
+                         struct t_symtab* symtab,
+                         const char*      resname,
+                         int              resnr,
+                         unsigned char    ic,
+                         int              chainnum,
+                         char             chainid);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */
 
-void pr_atoms(FILE *fp, int indent, const char *title, const t_atoms *atoms,
-              gmx_bool bShownumbers);
-void pr_atomtypes(FILE *fp, int indent, const char *title,
-                  const t_atomtypes *atomtypes, gmx_bool bShowNumbers);
+void pr_atoms(FILE* fp, int indent, const char* title, const t_atoms* atoms, gmx_bool bShownumbers);
+void pr_atomtypes(FILE* fp, int indent, const char* title, const t_atomtypes* atomtypes, gmx_bool bShowNumbers);
 
 /*! \brief Compare information in the t_atoms data structure.
  *
@@ -174,11 +194,7 @@ void pr_atomtypes(FILE *fp, int indent, const char *title,
  * \param[in] relativeTolerance Relative floating point comparison tolerance.
  * \param[in] absoluteTolerance Absolute floating point comparison tolerance.
  */
-void compareAtoms(FILE          *fp,
-                  const t_atoms *a1,
-                  const t_atoms *a2,
-                  real           relativeTolerance,
-                  real           absoluteTolerance);
+void compareAtoms(FILE* fp, const t_atoms* a1, const t_atoms* a2, real relativeTolerance, real absoluteTolerance);
 
 /*! \brief Set mass for each atom using the atom and residue names using a database
  *
@@ -186,7 +202,7 @@ void compareAtoms(FILE          *fp,
  * If printMissingMasss = TRUE, prints details for first 10 missing masses
  * to stderr.
  */
-void atomsSetMassesBasedOnNames(t_atoms *atoms, gmx_bool printMissingMasses);
+void atomsSetMassesBasedOnNames(t_atoms* atoms, gmx_bool printMissingMasses);
 
 //! Deleter for t_atoms, needed until it has a proper destructor.
 using AtomsDataPtr = gmx::unique_cptr<t_atoms, done_and_delete_atoms>;

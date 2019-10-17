@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2013,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,17 +39,16 @@
 
 #include <stdio.h>
 
-double **alloc_matrix(int n, int m);
+double** alloc_matrix(int n, int m);
 
-void free_matrix(double **a);
+void free_matrix(double** a);
 
-void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z);
+void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z);
 
 /* Return 0 if OK or row number where inversion failed otherwise. */
-int matrix_invert(FILE *fp, int n, double **a);
+int matrix_invert(FILE* fp, int n, double** a);
 
-double multi_regression(FILE *fp, int ny, double *y,
-                        int nx, double **xx, double *a0);
+double multi_regression(FILE* fp, int ny, double* y, int nx, double** xx, double* a0);
 /* Perform a regression analysis to fit
  * y' = a0[0] xx[0] + a0[1] xx[1] ... + a0[nx-1] xx[nx-1]
  * with ny data points in each vector.

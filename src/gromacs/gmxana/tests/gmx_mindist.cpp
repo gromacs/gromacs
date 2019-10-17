@@ -60,29 +60,29 @@ namespace
 {
 
 using gmx::test::CommandLine;
-using gmx::test::XvgMatch;
 using gmx::test::StdioTestHelper;
+using gmx::test::XvgMatch;
 
 class MindistTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        MindistTest()
-        {
-            setInputFile("-f", "mindist_coords.gro");
-            setInputFile("-s", "mindist_coords.gro");
-            setInputFile("-n", "mindist.ndx");
-        }
+public:
+    MindistTest()
+    {
+        setInputFile("-f", "mindist_coords.gro");
+        setInputFile("-s", "mindist_coords.gro");
+        setInputFile("-n", "mindist.ndx");
+    }
 
-        void runTest(const CommandLine &args, const char * stringForStdin)
-        {
-            StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin(stringForStdin);
+    void runTest(const CommandLine& args, const char* stringForStdin)
+    {
+        StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin(stringForStdin);
 
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
-            ASSERT_EQ(0, gmx_mindist(cmdline.argc(), cmdline.argv()));
-            checkOutputFiles();
-        }
+        CommandLine& cmdline = commandLine();
+        cmdline.merge(args);
+        ASSERT_EQ(0, gmx_mindist(cmdline.argc(), cmdline.argv()));
+        checkOutputFiles();
+    }
 };
 
 /* mindist_coords.pdb has 3 beads spaced out in a 5 nm box, with the same yz coordinates
@@ -99,10 +99,8 @@ class MindistTest : public gmx::test::CommandLineTestBase
 TEST_F(MindistTest, mindistWorksWithSingleAtoms)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist"
-    };
-    const char * const stdIn = "0 1";
+    const char* const cmdline[] = { "mindist" };
+    const char* const stdIn     = "0 1";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -110,10 +108,8 @@ TEST_F(MindistTest, mindistWorksWithSingleAtoms)
 TEST_F(MindistTest, mindistWorksWithMultipleAtoms)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist"
-    };
-    const char * const stdIn = "2 3";
+    const char* const cmdline[] = { "mindist" };
+    const char* const stdIn     = "2 3";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -121,10 +117,8 @@ TEST_F(MindistTest, mindistWorksWithMultipleAtoms)
 TEST_F(MindistTest, mindistDoesNotPickUpContacts)
 {
     setOutputFile("-on", "ncontacts.xvg", XvgMatch());
-    const char * const cmdline[] = {
-        "mindist"
-    };
-    const char * const stdIn = "0 1";
+    const char* const cmdline[] = { "mindist" };
+    const char* const stdIn     = "0 1";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -132,20 +126,24 @@ TEST_F(MindistTest, mindistDoesNotPickUpContacts)
 TEST_F(MindistTest, mindistPicksUpContacts)
 {
     setOutputFile("-on", "ncontacts.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-d", "2.5",
+    const char* const cmdline[] = {
+        "mindist",
+        "-d",
+        "2.5",
     };
-    const char * const stdIn = "0 1";
+    const char* const stdIn = "0 1";
     runTest(CommandLine(cmdline), stdIn);
 }
 
 TEST_F(MindistTest, ngWorks)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-ng", "2",
+    const char* const cmdline[] = {
+        "mindist",
+        "-ng",
+        "2",
     };
-    const char * const stdIn = "0 1 2";
+    const char* const stdIn = "0 1 2";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -153,10 +151,8 @@ TEST_F(MindistTest, ngWorks)
 TEST_F(MindistTest, groupWorks)
 {
     setOutputFile("-on", "ncontacts.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-group", "-d", "3"
-    };
-    const char * const stdIn = "3, 2";
+    const char* const cmdline[] = { "mindist", "-group", "-d", "3" };
+    const char* const stdIn     = "3, 2";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -164,10 +160,8 @@ TEST_F(MindistTest, groupWorks)
 TEST_F(MindistTest, maxDistWorks)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-max"
-    };
-    const char * const stdIn = "2 3";
+    const char* const cmdline[] = { "mindist", "-max" };
+    const char* const stdIn     = "2 3";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -176,10 +170,8 @@ TEST_F(MindistTest, maxDistWorks)
 TEST_F(MindistTest, noPbcWorks)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-nopbc"
-    };
-    const char * const stdIn = "0 1";
+    const char* const cmdline[] = { "mindist", "-nopbc" };
+    const char* const stdIn     = "0 1";
     runTest(CommandLine(cmdline), stdIn);
 }
 
@@ -187,23 +179,19 @@ TEST_F(MindistTest, noPbcWorks)
 TEST_F(MindistTest, resPerTimeWorks)
 {
     setOutputFile("-or", "respertime.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-respertime"
-    };
-    const char * const stdIn = "3 2";
+    const char* const cmdline[] = { "mindist", "-respertime" };
+    const char* const stdIn     = "3 2";
     runTest(CommandLine(cmdline), stdIn);
 }
 
 TEST_F(MindistTest, matrixWorks)
 {
     setOutputFile("-od", "mindist.xvg", XvgMatch());
-    const char *const  cmdline[] = {
-        "mindist", "-matrix"
-    };
-    const char * const stdIn = "5";
+    const char* const cmdline[] = { "mindist", "-matrix" };
+    const char* const stdIn     = "5";
     runTest(CommandLine(cmdline), stdIn);
 }
 
 // TODO test periodic image - needs a tpr?
 
-} //namespace
+} // namespace

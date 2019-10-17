@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,19 +53,18 @@ namespace gmx
 
 void invertBoxMatrix(const matrix src, matrix dest)
 {
-    double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
-    if (std::fabs(tmp) <= 100*GMX_REAL_MIN)
+    double tmp = src[XX][XX] * src[YY][YY] * src[ZZ][ZZ];
+    if (std::fabs(tmp) <= 100 * GMX_REAL_MIN)
     {
         gmx_fatal(FARGS, "Can not invert matrix, determinant is zero");
     }
 
-    dest[XX][XX] = 1/src[XX][XX];
-    dest[YY][YY] = 1/src[YY][YY];
-    dest[ZZ][ZZ] = 1/src[ZZ][ZZ];
-    dest[ZZ][XX] = (src[YY][XX]*src[ZZ][YY]*dest[YY][YY]
-                    - src[ZZ][XX])*dest[XX][XX]*dest[ZZ][ZZ];
-    dest[YY][XX] = -src[YY][XX]*dest[XX][XX]*dest[YY][YY];
-    dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[ZZ][ZZ];
+    dest[XX][XX] = 1 / src[XX][XX];
+    dest[YY][YY] = 1 / src[YY][YY];
+    dest[ZZ][ZZ] = 1 / src[ZZ][ZZ];
+    dest[ZZ][XX] = (src[YY][XX] * src[ZZ][YY] * dest[YY][YY] - src[ZZ][XX]) * dest[XX][XX] * dest[ZZ][ZZ];
+    dest[YY][XX] = -src[YY][XX] * dest[XX][XX] * dest[YY][YY];
+    dest[ZZ][YY] = -src[ZZ][YY] * dest[YY][YY] * dest[ZZ][ZZ];
     dest[XX][YY] = 0.0;
     dest[XX][ZZ] = 0.0;
     dest[YY][ZZ] = 0.0;
@@ -76,9 +75,9 @@ void invertMatrix(const matrix src, matrix dest)
     const real smallreal = 1.0e-24_real;
     const real largereal = 1.0e24_real;
 
-    real       determinant = det(src);
-    real       c           = 1.0_real/determinant;
-    real       fc          = std::fabs(c);
+    real determinant = det(src);
+    real c           = 1.0_real / determinant;
+    real fc          = std::fabs(c);
 
     if ((fc <= smallreal) || (fc >= largereal))
     {
@@ -86,15 +85,15 @@ void invertMatrix(const matrix src, matrix dest)
     }
     GMX_ASSERT(dest != src, "Cannot do in-place inversion of matrix");
 
-    dest[XX][XX] = c*(src[YY][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[YY][ZZ]);
-    dest[XX][YY] = -c*(src[XX][YY]*src[ZZ][ZZ]-src[ZZ][YY]*src[XX][ZZ]);
-    dest[XX][ZZ] = c*(src[XX][YY]*src[YY][ZZ]-src[YY][YY]*src[XX][ZZ]);
-    dest[YY][XX] = -c*(src[YY][XX]*src[ZZ][ZZ]-src[ZZ][XX]*src[YY][ZZ]);
-    dest[YY][YY] = c*(src[XX][XX]*src[ZZ][ZZ]-src[ZZ][XX]*src[XX][ZZ]);
-    dest[YY][ZZ] = -c*(src[XX][XX]*src[YY][ZZ]-src[YY][XX]*src[XX][ZZ]);
-    dest[ZZ][XX] = c*(src[YY][XX]*src[ZZ][YY]-src[ZZ][XX]*src[YY][YY]);
-    dest[ZZ][YY] = -c*(src[XX][XX]*src[ZZ][YY]-src[ZZ][XX]*src[XX][YY]);
-    dest[ZZ][ZZ] = c*(src[XX][XX]*src[YY][YY]-src[YY][XX]*src[XX][YY]);
+    dest[XX][XX] = c * (src[YY][YY] * src[ZZ][ZZ] - src[ZZ][YY] * src[YY][ZZ]);
+    dest[XX][YY] = -c * (src[XX][YY] * src[ZZ][ZZ] - src[ZZ][YY] * src[XX][ZZ]);
+    dest[XX][ZZ] = c * (src[XX][YY] * src[YY][ZZ] - src[YY][YY] * src[XX][ZZ]);
+    dest[YY][XX] = -c * (src[YY][XX] * src[ZZ][ZZ] - src[ZZ][XX] * src[YY][ZZ]);
+    dest[YY][YY] = c * (src[XX][XX] * src[ZZ][ZZ] - src[ZZ][XX] * src[XX][ZZ]);
+    dest[YY][ZZ] = -c * (src[XX][XX] * src[YY][ZZ] - src[YY][XX] * src[XX][ZZ]);
+    dest[ZZ][XX] = c * (src[YY][XX] * src[ZZ][YY] - src[ZZ][XX] * src[YY][YY]);
+    dest[ZZ][YY] = -c * (src[XX][XX] * src[ZZ][YY] - src[ZZ][XX] * src[XX][YY]);
+    dest[ZZ][ZZ] = c * (src[XX][XX] * src[YY][YY] - src[YY][XX] * src[XX][YY]);
 }
 
-}  // namespace gmx
+} // namespace gmx

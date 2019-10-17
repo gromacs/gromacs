@@ -53,7 +53,7 @@
  *
  * \ingroup module_utility
  */
-const char *gmx_version();
+const char* gmx_version();
 /*! \brief
  * Full git hash of the latest commit.
  *
@@ -61,7 +61,7 @@ const char *gmx_version();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_full_hash();
+const char* gmx_version_git_full_hash();
 /*! \brief
  * Full git hash of the latest commit in a central \Gromacs repository.
  *
@@ -71,7 +71,7 @@ const char *gmx_version_git_full_hash();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_central_base_hash();
+const char* gmx_version_git_central_base_hash();
 
 /*! \brief
  * Defined if ``libgromacs`` has been compiled in double precision.
@@ -94,25 +94,25 @@ void gmx_is_double_precision();
 void gmx_is_single_precision();
 
 /*! \brief Return a string describing what kind of GPU suport was configured in the build. */
-const char *getGpuImplementationString();
+const char* getGpuImplementationString();
 
 /*! \brief
  * DOI string, or empty when not a release build.
  */
-const char *gmxDOI();
+const char* gmxDOI();
 
 /*! \brief
  * Hash of the complete source released in the tarball.
  *
  * Empty when not a release tarball build.
  */
-const char *gmxReleaseSourceChecksum();
+const char* gmxReleaseSourceChecksum();
 
 /*! \brief
  * Hash of the complete source actually used when building.
  *
  * Always computed when building from tarball.
  */
-const char *gmxCurrentSourceChecksum();
+const char* gmxCurrentSourceChecksum();
 
 #endif

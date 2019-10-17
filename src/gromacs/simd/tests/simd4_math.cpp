@@ -54,7 +54,7 @@ namespace test
 {
 
 
-#if GMX_SIMD4_HAVE_REAL
+#    if GMX_SIMD4_HAVE_REAL
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
@@ -85,35 +85,35 @@ namespace
 
 TEST_F(Simd4MathTest, invsqrt)
 {
-    const real      x0   = std::numeric_limits<float>::min();
-    const real      x1   = std::numeric_limits<float>::max();
-    const real      x2   = M_PI;
+    const real x0 = std::numeric_limits<float>::min();
+    const real x1 = std::numeric_limits<float>::max();
+    const real x2 = M_PI;
 
-    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0/sqrt(x0), 1.0/sqrt(x1), 1.0/sqrt(x2)),
+    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0 / sqrt(x0), 1.0 / sqrt(x1), 1.0 / sqrt(x2)),
                                invsqrt(setSimd4RealFrom3R(x0, x1, x2)));
 }
 
 TEST_F(Simd4MathTest, invsqrtSingleAccuracy)
 {
-    const real      x0   = std::numeric_limits<float>::min();
-    const real      x1   = std::numeric_limits<float>::max();
-    const real      x2   = M_PI;
+    const real x0 = std::numeric_limits<float>::min();
+    const real x1 = std::numeric_limits<float>::max();
+    const real x2 = M_PI;
 
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
 
-    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0/sqrt(x0), 1.0/sqrt(x1), 1.0/sqrt(x2)),
+    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0 / sqrt(x0), 1.0 / sqrt(x1), 1.0 / sqrt(x2)),
                                invsqrtSingleAccuracy(setSimd4RealFrom3R(x0, x1, x2)));
 }
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
+} // namespace
 
-#endif // GMX_SIMD4_HAVE_REAL
+#    endif // GMX_SIMD4_HAVE_REAL
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD

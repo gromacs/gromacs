@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -73,7 +73,7 @@ namespace
 /*! \brief
  * Quotes a string if it contains spaces.
  */
-std::string quoteIfNecessary(const char *str)
+std::string quoteIfNecessary(const char* str)
 {
     const bool bSpaces = (std::strchr(str, ' ') != nullptr);
     if (bSpaces)
@@ -91,29 +91,23 @@ std::string quoteIfNecessary(const char *str)
  */
 class DefaultExecutableEnvironment : public IExecutableEnvironment
 {
-    public:
-        //! Allocates a default environment.
-        static ExecutableEnvironmentPointer create()
-        {
-            return ExecutableEnvironmentPointer(new DefaultExecutableEnvironment());
-        }
+public:
+    //! Allocates a default environment.
+    static ExecutableEnvironmentPointer create()
+    {
+        return ExecutableEnvironmentPointer(new DefaultExecutableEnvironment());
+    }
 
-        DefaultExecutableEnvironment()
-            : initialWorkingDirectory_(Path::getWorkingDirectory())
-        {
-        }
+    DefaultExecutableEnvironment() : initialWorkingDirectory_(Path::getWorkingDirectory()) {}
 
-        std::string getWorkingDirectory() const override
-        {
-            return initialWorkingDirectory_;
-        }
-        std::vector<std::string> getExecutablePaths() const override
-        {
-            return Path::getExecutablePaths();
-        }
+    std::string getWorkingDirectory() const override { return initialWorkingDirectory_; }
+    std::vector<std::string> getExecutablePaths() const override
+    {
+        return Path::getExecutablePaths();
+    }
 
-    private:
-        std::string   initialWorkingDirectory_;
+private:
+    std::string initialWorkingDirectory_;
 };
 
 /*! \brief
@@ -126,8 +120,7 @@ class DefaultExecutableEnvironment : public IExecutableEnvironment
  * If a binary with the given name cannot be located, \p invokedName is
  * returned.
  */
-std::string findFullBinaryPath(const std::string            &invokedName,
-                               const IExecutableEnvironment &env)
+std::string findFullBinaryPath(const std::string& invokedName, const IExecutableEnvironment& env)
 {
     std::string searchName = invokedName;
     // On Windows & Cygwin we need to add the .exe extension,
@@ -145,7 +138,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
         std::vector<std::string>::const_iterator i;
         for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
         {
-            const std::string &dir      = i->empty() ? env.getWorkingDirectory() : *i;
+            const std::string& dir      = i->empty() ? env.getWorkingDirectory() : *i;
             std::string        testPath = Path::join(dir, searchName);
             if (File::exists(testPath, File::returnFalseOnError))
             {
@@ -169,7 +162,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
  *
  * Only checks for a single file that has an uncommon enough name.
  */
-bool isAcceptableLibraryPath(const std::string &path)
+bool isAcceptableLibraryPath(const std::string& path)
 {
     return Path::exists(Path::join(path, "residuetypes.dat"));
 }
@@ -184,7 +177,7 @@ bool isAcceptableLibraryPath(const std::string &path)
  * files have been installed:  appends the relative installation path of the
  * data files and calls isAcceptableLibraryPath().
  */
-bool isAcceptableLibraryPathPrefix(const std::string &path)
+bool isAcceptableLibraryPathPrefix(const std::string& path)
 {
     std::string testPath = Path::join(path, GMX_INSTALL_GMXDATADIR, "top");
     return isAcceptableLibraryPath(testPath);
@@ -235,8 +228,7 @@ std::string findFallbackInstallationPrefixPath()
  * Extra logic is present to allow running binaries from the build tree such
  * that they use up-to-date data files from the source tree.
  */
-std::string findInstallationPrefixPath(const std::string &binaryPath,
-                                       bool              *bSourceLayout)
+std::string findInstallationPrefixPath(const std::string& binaryPath, bool* bSourceLayout)
 {
     *bSourceLayout = false;
     // Don't search anything if binary cannot be found.
@@ -248,11 +240,11 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
         // directory.
 #if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
         std::string buildBinPath;
-#ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
+#    ifdef CMAKE_INTDIR /*In multi-configuration build systems the output subdirectory*/
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin", CMAKE_INTDIR);
-#else
+#    else
         buildBinPath = Path::join(CMAKE_BINARY_DIR, "bin");
-#endif
+#    endif
         if (Path::isEquivalent(searchPath, buildBinPath))
         {
             std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
@@ -283,7 +275,7 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineProgramContext::Impl
@@ -291,40 +283,37 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
 
 class CommandLineProgramContext::Impl
 {
-    public:
-        Impl();
-        Impl(int argc, const char *const argv[],
-             ExecutableEnvironmentPointer env);
+public:
+    Impl();
+    Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env);
 
-        /*! \brief
-         * Finds the full binary path if it isn't searched yet.
-         *
-         * Sets \a fullBinaryPath_ if it isn't set yet.
-         *
-         * The \a binaryPathMutex_ should be locked by the caller before
-         * calling this function.
-         */
-        void findBinaryPath() const;
+    /*! \brief
+     * Finds the full binary path if it isn't searched yet.
+     *
+     * Sets \a fullBinaryPath_ if it isn't set yet.
+     *
+     * The \a binaryPathMutex_ should be locked by the caller before
+     * calling this function.
+     */
+    void findBinaryPath() const;
 
-        ExecutableEnvironmentPointer  executableEnv_;
-        std::string                   invokedName_;
-        std::string                   programName_;
-        std::string                   displayName_;
-        std::string                   commandLine_;
-        mutable std::string           fullBinaryPath_;
-        mutable std::string           installationPrefix_;
-        mutable bool                  bSourceLayout_;
-        mutable Mutex                 binaryPathMutex_;
+    ExecutableEnvironmentPointer executableEnv_;
+    std::string                  invokedName_;
+    std::string                  programName_;
+    std::string                  displayName_;
+    std::string                  commandLine_;
+    mutable std::string          fullBinaryPath_;
+    mutable std::string          installationPrefix_;
+    mutable bool                 bSourceLayout_;
+    mutable Mutex                binaryPathMutex_;
 };
 
-CommandLineProgramContext::Impl::Impl()
-    : programName_("GROMACS"), bSourceLayout_(false)
-{
-}
+CommandLineProgramContext::Impl::Impl() : programName_("GROMACS"), bSourceLayout_(false) {}
 
-CommandLineProgramContext::Impl::Impl(int argc, const char *const argv[],
-                                      ExecutableEnvironmentPointer env)
-    : executableEnv_(std::move(env)), invokedName_(argc != 0 ? argv[0] : ""), bSourceLayout_(false)
+CommandLineProgramContext::Impl::Impl(int argc, const char* const argv[], ExecutableEnvironmentPointer env) :
+    executableEnv_(std::move(env)),
+    invokedName_(argc != 0 ? argv[0] : ""),
+    bSourceLayout_(false)
 {
     programName_ = Path::getFilename(invokedName_);
     programName_ = stripSuffixIfPresent(programName_, ".exe");
@@ -354,57 +343,49 @@ void CommandLineProgramContext::Impl::findBinaryPath() const
  * CommandLineProgramContext
  */
 
-CommandLineProgramContext::CommandLineProgramContext()
-    : impl_(new Impl)
+CommandLineProgramContext::CommandLineProgramContext() : impl_(new Impl) {}
+
+CommandLineProgramContext::CommandLineProgramContext(const char* binaryName) :
+    impl_(new Impl(1, &binaryName, DefaultExecutableEnvironment::create()))
 {
 }
 
-CommandLineProgramContext::CommandLineProgramContext(const char *binaryName)
-    : impl_(new Impl(1, &binaryName, DefaultExecutableEnvironment::create()))
+CommandLineProgramContext::CommandLineProgramContext(int argc, const char* const argv[]) :
+    impl_(new Impl(argc, argv, DefaultExecutableEnvironment::create()))
 {
 }
 
-CommandLineProgramContext::CommandLineProgramContext(
-        int argc, const char *const argv[])
-    : impl_(new Impl(argc, argv, DefaultExecutableEnvironment::create()))
+CommandLineProgramContext::CommandLineProgramContext(int                          argc,
+                                                     const char* const            argv[],
+                                                     ExecutableEnvironmentPointer env) :
+    impl_(new Impl(argc, argv, move(env)))
 {
 }
 
-CommandLineProgramContext::CommandLineProgramContext(
-        int argc, const char *const argv[], ExecutableEnvironmentPointer env)
-    : impl_(new Impl(argc, argv, move(env)))
-{
-}
+CommandLineProgramContext::~CommandLineProgramContext() {}
 
-CommandLineProgramContext::~CommandLineProgramContext()
+void CommandLineProgramContext::setDisplayName(const std::string& name)
 {
-}
-
-void CommandLineProgramContext::setDisplayName(const std::string &name)
-{
-    GMX_RELEASE_ASSERT(impl_->displayName_.empty(),
-                       "Can only set display name once");
+    GMX_RELEASE_ASSERT(impl_->displayName_.empty(), "Can only set display name once");
     impl_->displayName_ = name;
 }
 
-const char *CommandLineProgramContext::programName() const
+const char* CommandLineProgramContext::programName() const
 {
     return impl_->programName_.c_str();
 }
 
-const char *CommandLineProgramContext::displayName() const
+const char* CommandLineProgramContext::displayName() const
 {
-    return impl_->displayName_.empty()
-           ? impl_->programName_.c_str()
-           : impl_->displayName_.c_str();
+    return impl_->displayName_.empty() ? impl_->programName_.c_str() : impl_->displayName_.c_str();
 }
 
-const char *CommandLineProgramContext::commandLine() const
+const char* CommandLineProgramContext::commandLine() const
 {
     return impl_->commandLine_.c_str();
 }
 
-const char *CommandLineProgramContext::fullBinaryPath() const
+const char* CommandLineProgramContext::fullBinaryPath() const
 {
     lock_guard<Mutex> lock(impl_->binaryPathMutex_);
     impl_->findBinaryPath();
@@ -417,13 +398,10 @@ InstallationPrefixInfo CommandLineProgramContext::installationPrefix() const
     if (impl_->installationPrefix_.empty())
     {
         impl_->findBinaryPath();
-        impl_->installationPrefix_ =
-            Path::normalize(findInstallationPrefixPath(impl_->fullBinaryPath_,
-                                                       &impl_->bSourceLayout_));
+        impl_->installationPrefix_ = Path::normalize(
+                findInstallationPrefixPath(impl_->fullBinaryPath_, &impl_->bSourceLayout_));
     }
-    return InstallationPrefixInfo(
-            impl_->installationPrefix_.c_str(),
-            impl_->bSourceLayout_);
+    return InstallationPrefixInfo(impl_->installationPrefix_.c_str(), impl_->bSourceLayout_);
 }
 
 } // namespace gmx

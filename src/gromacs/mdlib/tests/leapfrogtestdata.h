@@ -69,68 +69,67 @@ namespace test
  */
 class LeapFrogTestData
 {
-    public:
-        //! Number of atoms in the system
-        int                     numAtoms_;
-        //! Integration timestep
-        real                    timestep_;
+public:
+    //! Number of atoms in the system
+    int numAtoms_;
+    //! Integration timestep
+    real timestep_;
 
-        //! Initial coordinates
-        PaddedVector<RVec>      x0_;
-        //! Current coordinates
-        PaddedVector<RVec>      x_;
-        //! Coordinates after integrator update
-        PaddedVector<RVec>      xPrime_;
-        //! Initial velocities
-        PaddedVector<RVec>      v0_;
-        //! Current velocities
-        PaddedVector<RVec>      v_;
-        //! External forces
-        PaddedVector<RVec>      f_;
-        //! Inverse masses of the particles
-        PaddedVector<real>      inverseMasses_;
-        //! Inverse masses of the particles per dimension
-        PaddedVector<RVec>      inverseMassesPerDim_;
+    //! Initial coordinates
+    PaddedVector<RVec> x0_;
+    //! Current coordinates
+    PaddedVector<RVec> x_;
+    //! Coordinates after integrator update
+    PaddedVector<RVec> xPrime_;
+    //! Initial velocities
+    PaddedVector<RVec> v0_;
+    //! Current velocities
+    PaddedVector<RVec> v_;
+    //! External forces
+    PaddedVector<RVec> f_;
+    //! Inverse masses of the particles
+    PaddedVector<real> inverseMasses_;
+    //! Inverse masses of the particles per dimension
+    PaddedVector<RVec> inverseMassesPerDim_;
 
-        //! MD atoms structure in which inverse masses will be passed to the integrator
-        t_mdatoms               mdAtoms_;
-        //! Input record (to get integrator type, temperature and pressure coupling)
-        t_inputrec              inputRecord_;
-        //! System state
-        t_state                 state_;
-        //! Force calculation data
-        t_fcdata                forceCalculationData_;
-        //! Kinetic energy data (to disable non-equilibrium MD integration)
-        gmx_ekindata_t          kineticEnergyData_;
-        //! Update data
-        std::unique_ptr<Update> update_;
+    //! MD atoms structure in which inverse masses will be passed to the integrator
+    t_mdatoms mdAtoms_;
+    //! Input record (to get integrator type, temperature and pressure coupling)
+    t_inputrec inputRecord_;
+    //! System state
+    t_state state_;
+    //! Force calculation data
+    t_fcdata forceCalculationData_;
+    //! Kinetic energy data (to disable non-equilibrium MD integration)
+    gmx_ekindata_t kineticEnergyData_;
+    //! Update data
+    std::unique_ptr<Update> update_;
 
-        //! Number of temperature coupling groups
-        int                     numTCoupleGroups_;
+    //! Number of temperature coupling groups
+    int numTCoupleGroups_;
 
-        //! If the pressure coupling is enabled
-        bool                    doPressureCouple_;
-        //! Period between pressure coupling steps
-        float                   dtPressureCouple_;
-        //! Matrix for Parrinello-Rahman velocity scaling
-        matrix                  velocityScalingMatrix_;
+    //! If the pressure coupling is enabled
+    bool doPressureCouple_;
+    //! Period between pressure coupling steps
+    float dtPressureCouple_;
+    //! Matrix for Parrinello-Rahman velocity scaling
+    matrix velocityScalingMatrix_;
 
-        /*! \brief Constructor.
-         *
-         * \param[in]  numAtoms          Number of atoms in the system
-         * \param[in]  timestep          Integration timestep
-         * \param[in]  v0                Initial velocity (same for all particles)
-         * \param[in]  f0                External constant force, acting on all particles
-         * \param[in]  numTCoupleGroups  Number of temperature coupling groups (zero for no temperature coupling)
-         * \param[in]  nstpcouple        Number of steps between pressure coupling steps (zero for no pressure coupling)
-         */
-        LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0,
-                         int numTCoupleGroups, int nstpcouple);
+    /*! \brief Constructor.
+     *
+     * \param[in]  numAtoms          Number of atoms in the system
+     * \param[in]  timestep          Integration timestep
+     * \param[in]  v0                Initial velocity (same for all particles)
+     * \param[in]  f0                External constant force, acting on all particles
+     * \param[in]  numTCoupleGroups  Number of temperature coupling groups (zero for no temperature coupling)
+     * \param[in]  nstpcouple        Number of steps between pressure coupling steps (zero for no pressure coupling)
+     */
+    LeapFrogTestData(int numAtoms, real timestep, const rvec v0, const rvec f0, int numTCoupleGroups, int nstpcouple);
 
-        ~LeapFrogTestData();
+    ~LeapFrogTestData();
 };
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_LEAPFROGTESTDATA_H

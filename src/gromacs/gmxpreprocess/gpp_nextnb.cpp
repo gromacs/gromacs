@@ -50,12 +50,12 @@
 
 /* #define DEBUG_NNB */
 
-typedef struct {
+typedef struct
+{
     int ai, aj;
 } sortable;
 
-static int
-bond_sort (const void *a, const void *b)
+static int bond_sort(const void* a, const void* b)
 {
     const sortable *sa, *sb;
 
@@ -64,24 +64,23 @@ bond_sort (const void *a, const void *b)
 
     if (sa->ai == sb->ai)
     {
-        return (sa->aj-sb->aj);
+        return (sa->aj - sb->aj);
     }
     else
     {
-        return (sa->ai-sb->ai);
+        return (sa->ai - sb->ai);
     }
 }
 
-static int
-compare_int (const void * a, const void * b)
+static int compare_int(const void* a, const void* b)
 {
-    return ( *reinterpret_cast<const int*>(a) - *reinterpret_cast<const int*>(b) );
+    return (*reinterpret_cast<const int*>(a) - *reinterpret_cast<const int*>(b));
 }
 
 
 #ifdef DEBUG
-#define prints(str, n, s) __prints(str, n, s)
-static void __prints(char *str, int n, sortable *s)
+#    define prints(str, n, s) __prints(str, n, s)
+static void __prints(char* str, int n, sortable* s)
 {
     int i;
 
@@ -98,10 +97,10 @@ static void __prints(char *str, int n, sortable *s)
     }
 }
 #else
-#define prints(str, n, s)
+#    define prints(str, n, s)
 #endif
 
-void init_nnb(t_nextnb *nnb, int nr, int nrex)
+void init_nnb(t_nextnb* nnb, int nr, int nrex)
 {
     int i;
 
@@ -113,19 +112,19 @@ void init_nnb(t_nextnb *nnb, int nr, int nrex)
     snew(nnb->nrexcl, nr);
     for (i = 0; (i < nr); i++)
     {
-        snew(nnb->a[i], nrex+1);
-        snew(nnb->nrexcl[i], nrex+1);
+        snew(nnb->a[i], nrex + 1);
+        snew(nnb->nrexcl[i], nrex + 1);
     }
 }
 
-static void add_nnb (t_nextnb *nnb, int nre, int i, int j)
+static void add_nnb(t_nextnb* nnb, int nre, int i, int j)
 {
-    srenew(nnb->a[i][nre], nnb->nrexcl[i][nre]+1);
+    srenew(nnb->a[i][nre], nnb->nrexcl[i][nre] + 1);
     nnb->a[i][nre][nnb->nrexcl[i][nre]] = j;
     nnb->nrexcl[i][nre]++;
 }
 
-void done_nnb (t_nextnb *nnb)
+void done_nnb(t_nextnb* nnb)
 {
     int i, nre;
 
@@ -135,20 +134,20 @@ void done_nnb (t_nextnb *nnb)
         {
             if (nnb->nrexcl[i][nre] > 0)
             {
-                sfree (nnb->a[i][nre]);
+                sfree(nnb->a[i][nre]);
             }
         }
-        sfree (nnb->nrexcl[i]);
-        sfree (nnb->a[i]);
+        sfree(nnb->nrexcl[i]);
+        sfree(nnb->a[i]);
     }
-    sfree (nnb->a);
-    sfree (nnb->nrexcl);
+    sfree(nnb->a);
+    sfree(nnb->nrexcl);
     nnb->nr   = 0;
     nnb->nrex = 0;
 }
 
 #ifdef DEBUG_NNB
-void __print_nnb(t_nextnb *nnb, char *s)
+void __print_nnb(t_nextnb* nnb, char* s)
 {
     int i, j, k;
 
@@ -173,13 +172,13 @@ void __print_nnb(t_nextnb *nnb, char *s)
 }
 #endif
 
-static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
+static void nnb2excl(t_nextnb* nnb, t_blocka* excl)
 {
     int       i, j, j_index;
     int       nre, nrx, nrs, nr_of_sortables;
-    sortable *s;
+    sortable* s;
 
-    srenew(excl->index, nnb->nr+1);
+    srenew(excl->index, nnb->nr + 1);
     excl->index[0] = 0;
     for (i = 0; (i < nnb->nr); i++)
     {
@@ -211,7 +210,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         prints("nnb2excl before qsort", nr_of_sortables, s);
         if (nr_of_sortables > 1)
         {
-            qsort (s, nr_of_sortables, static_cast<size_t>(sizeof(s[0])), bond_sort);
+            qsort(s, nr_of_sortables, static_cast<size_t>(sizeof(s[0])), bond_sort);
             prints("nnb2excl after qsort", nr_of_sortables, s);
         }
 
@@ -221,29 +220,29 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
         {
             for (j = 1; (j < nr_of_sortables); j++)
             {
-                if ((s[j].ai != s[j-1].ai) || (s[j].aj != s[j-1].aj))
+                if ((s[j].ai != s[j - 1].ai) || (s[j].aj != s[j - 1].aj))
                 {
-                    s[j_index++] = s[j-1];
+                    s[j_index++] = s[j - 1];
                 }
             }
-            s[j_index++] = s[j-1];
+            s[j_index++] = s[j - 1];
         }
         nr_of_sortables = j_index;
         prints("after rm-double", j_index, s);
 
         /* make space for arrays */
-        srenew(excl->a, excl->nra+nr_of_sortables);
+        srenew(excl->a, excl->nra + nr_of_sortables);
 
         /* put the sorted exclusions in the target list */
         for (nrs = 0; (nrs < nr_of_sortables); nrs++)
         {
-            excl->a[excl->nra+nrs] = s[nrs].aj;
+            excl->a[excl->nra + nrs] = s[nrs].aj;
         }
-        excl->nra       += nr_of_sortables;
-        excl->index[i+1] = excl->nra;
+        excl->nra += nr_of_sortables;
+        excl->index[i + 1] = excl->nra;
 
         /* cleanup temporary space */
-        sfree (s);
+        sfree(s);
     }
 }
 
@@ -264,11 +263,7 @@ static void nnb2excl(t_nextnb *nnb, t_blocka *excl)
  *         the routine will return true if the query atom is already listed as
  *         first or second neighbor (exclusion) in nnb.
  */
-static bool
-atom_is_present_in_nnb(const t_nextnb *   nnb,
-                       int                atom,
-                       int                highest_order,
-                       int                query)
+static bool atom_is_present_in_nnb(const t_nextnb* nnb, int atom, int highest_order, int query)
 {
     GMX_RELEASE_ASSERT(highest_order < nnb->nrex, "Inconsistent nnb seach parameters");
 
@@ -286,8 +281,8 @@ atom_is_present_in_nnb(const t_nextnb *   nnb,
 }
 
 static void do_gen(int       nrbonds, /* total number of bonds in s	*/
-                   sortable *s,       /* bidirectional list of bonds    */
-                   t_nextnb *nnb)     /* the tmp storage for excl     */
+                   sortable* s,       /* bidirectional list of bonds    */
+                   t_nextnb* nnb)     /* the tmp storage for excl     */
 /* Assume excl is initalised and s[] contains all bonds bidirectional */
 {
     int i, j, k, n, nb;
@@ -330,27 +325,25 @@ static void do_gen(int       nrbonds, /* total number of bonds in s	*/
                     // with high exclusion order
                     if (!atom_is_present_in_nnb(nnb, i, n, nnb->a[nb][n][k]))
                     {
-                        add_nnb(nnb, n+1, i, nnb->a[nb][n][k]);
+                        add_nnb(nnb, n + 1, i, nnb->a[nb][n][k]);
                     }
                 }
             }
         }
     }
     print_nnb(nnb, "After exclude rest");
-
 }
 
-static void add_b(InteractionsOfType *bonds, int *nrf, sortable *s)
+static void add_b(InteractionsOfType* bonds, int* nrf, sortable* s)
 {
     int i = 0;
-    for (const auto &bond : bonds->interactionTypes)
+    for (const auto& bond : bonds->interactionTypes)
     {
         int ai = bond.ai();
         int aj = bond.aj();
         if ((ai < 0) || (aj < 0))
         {
-            gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d",
-                      i, ai, aj);
+            gmx_fatal(FARGS, "Impossible atom numbers in bond %d: ai=%d, aj=%d", i, ai, aj);
         }
         /* Add every bond twice */
         s[(*nrf)].ai   = ai;
@@ -361,9 +354,9 @@ static void add_b(InteractionsOfType *bonds, int *nrf, sortable *s)
     }
 }
 
-void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionsOfType> plist)
+void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist)
 {
-    sortable *s;
+    sortable* s;
     int       nrbonds, nrf;
 
     nrbonds = 0;
@@ -372,7 +365,7 @@ void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionsOfType> plist)
         if (IS_CHEMBOND(i))
         {
             /* we need every bond twice (bidirectional) */
-            nrbonds += 2*plist[i].size();
+            nrbonds += 2 * plist[i].size();
         }
     }
 
@@ -399,8 +392,7 @@ void gen_nnb(t_nextnb *nnb, gmx::ArrayRef<InteractionsOfType> plist)
     sfree(s);
 }
 
-static void
-sort_and_purge_nnb(t_nextnb *nnb)
+static void sort_and_purge_nnb(t_nextnb* nnb)
 {
     int  i, j, k, m, n, cnt, prev, idx;
     bool found;
@@ -440,10 +432,7 @@ sort_and_purge_nnb(t_nextnb *nnb)
 }
 
 
-void generate_excl (int                               nrexcl,
-                    int                               nratoms,
-                    gmx::ArrayRef<InteractionsOfType> plist,
-                    t_blocka                         *excl)
+void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, t_blocka* excl)
 {
     t_nextnb nnb;
     if (nrexcl < 0)
@@ -454,6 +443,6 @@ void generate_excl (int                               nrexcl,
     gen_nnb(&nnb, plist);
     excl->nr = nratoms;
     sort_and_purge_nnb(&nnb);
-    nnb2excl (&nnb, excl);
+    nnb2excl(&nnb, excl);
     done_nnb(&nnb);
 }

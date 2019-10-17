@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,50 +47,25 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static const char *type[] = {
-    "button", "radiobuttons", "groupbox", "checkbox",
-    "pixmap", "statictext",   "edittext", "defbutton"
-};
+static const char* type[] = { "button", "radiobuttons", "groupbox", "checkbox",
+                              "pixmap", "statictext",   "edittext", "defbutton" };
 
-static void ReadDlgError(const char *infile, eDLGERR err, const char *s,
-                         const char *file, int line)
+static void ReadDlgError(const char* infile, eDLGERR err, const char* s, const char* file, int line)
 {
     std::fprintf(stderr, "Error: ");
     switch (err)
     {
-        case eNOVALS:
-            std::fprintf(stderr, "Not enough values for %s", s);
-            break;
-        case eGRIDEXP:
-            std::fprintf(stderr, "'grid' expected instead of %s", s);
-            break;
-        case eACCOEXP:
-            std::fprintf(stderr, "'{' expected instead of %s", s);
-            break;
-        case eACCCEXP:
-            std::fprintf(stderr, "'}' expected instead of %s", s);
-            break;
-        case eGRPEXP:
-            std::fprintf(stderr, "'group' expected instead of %s", s);
-            break;
-        case eITEMEXP:
-            std::fprintf(stderr, "item expected instead of %s", s);
-            break;
-        case eSAMEPOINT:
-            std::fprintf(stderr, "grid point for %s already in use", s);
-            break;
-        case eTOOWIDE:
-            std::fprintf(stderr, "grid too wide for %s", s);
-            break;
-        case eTOOHIGH:
-            std::fprintf(stderr, "grid too high for %s", s);
-            break;
-        case eQUOTE:
-            std::fprintf(stderr, "quote expected instead of %s", s);
-            break;
-        default:
-            std::fprintf(stderr, "????");
-            break;
+        case eNOVALS: std::fprintf(stderr, "Not enough values for %s", s); break;
+        case eGRIDEXP: std::fprintf(stderr, "'grid' expected instead of %s", s); break;
+        case eACCOEXP: std::fprintf(stderr, "'{' expected instead of %s", s); break;
+        case eACCCEXP: std::fprintf(stderr, "'}' expected instead of %s", s); break;
+        case eGRPEXP: std::fprintf(stderr, "'group' expected instead of %s", s); break;
+        case eITEMEXP: std::fprintf(stderr, "item expected instead of %s", s); break;
+        case eSAMEPOINT: std::fprintf(stderr, "grid point for %s already in use", s); break;
+        case eTOOWIDE: std::fprintf(stderr, "grid too wide for %s", s); break;
+        case eTOOHIGH: std::fprintf(stderr, "grid too high for %s", s); break;
+        case eQUOTE: std::fprintf(stderr, "quote expected instead of %s", s); break;
+        default: std::fprintf(stderr, "????"); break;
     }
     std::fprintf(stderr, " in file %s\n", infile);
     std::fprintf(stderr, "source file: %s, line: %d\n", file, line);
@@ -99,7 +74,7 @@ static void ReadDlgError(const char *infile, eDLGERR err, const char *s,
 
 #define ReadDlgErr(in, er, es) ReadDlgError(in, er, es, __FILE__, __LINE__)
 
-static void ReadAccOpen(const char *infile, FILE *in)
+static void ReadAccOpen(const char* infile, FILE* in)
 {
     char buf[STRLEN];
     int  result;
@@ -111,7 +86,7 @@ static void ReadAccOpen(const char *infile, FILE *in)
     }
 }
 
-static void ReadAccClose(const char *infile, FILE *in)
+static void ReadAccClose(const char* infile, FILE* in)
 {
     char buf[STRLEN];
     int  result;
@@ -123,7 +98,7 @@ static void ReadAccClose(const char *infile, FILE *in)
     }
 }
 
-void ReadQuoteString(const char *infile, FILE *in, char *buf)
+void ReadQuoteString(const char* infile, FILE* in, char* buf)
 {
     char c[2];
     int  i = 0;
@@ -145,7 +120,7 @@ void ReadQuoteString(const char *infile, FILE *in, char *buf)
     buf[i] = '\0';
 }
 
-static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
+static void ReadQuoteStringOrAccClose(FILE* in, char* buf)
 {
     char c;
     int  i = 0;
@@ -160,8 +135,7 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
             buf[1] = '\0';
             return;
         }
-    }
-    while (c != '"');
+    } while (c != '"');
 
     /* Read until second quote */
     while ((c = std::fgetc(in)) != '"')
@@ -171,14 +145,14 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
     buf[i] = '\0';
 }
 
-static bool bNotAccClose(const char *buf)
+static bool bNotAccClose(const char* buf)
 {
     return (std::strcmp(buf, "}") != 0);
 }
 
-static t_fitem *NewFItem(void)
+static t_fitem* NewFItem(void)
 {
-    t_fitem *fitem;
+    t_fitem* fitem;
 
     snew(fitem, 1);
     fitem->nname = 0;
@@ -191,24 +165,24 @@ static t_fitem *NewFItem(void)
     return fitem;
 }
 
-static t_fsimple *NewFSimple(void)
+static t_fsimple* NewFSimple(void)
 {
-    t_fsimple *fsimple;
+    t_fsimple* fsimple;
 
     snew(fsimple, 1);
 
     return fsimple;
 }
 
-static void AddFItemName(t_fitem *fitem, char *name)
+static void AddFItemName(t_fitem* fitem, char* name)
 {
     srenew(fitem->name, ++fitem->nname);
-    fitem->name[fitem->nname-1] = gmx_strdup(name);
+    fitem->name[fitem->nname - 1] = gmx_strdup(name);
 }
 
-static t_fgroup *NewFGroup(void)
+static t_fgroup* NewFGroup(void)
 {
-    t_fgroup *fgroup;
+    t_fgroup* fgroup;
 
     snew(fgroup, 1);
     fgroup->name   = nullptr;
@@ -218,29 +192,29 @@ static t_fgroup *NewFGroup(void)
     return fgroup;
 }
 
-static void AddFGroupFItem(t_fgroup *fgroup, t_fitem *fitem)
+static void AddFGroupFItem(t_fgroup* fgroup, t_fitem* fitem)
 {
     srenew(fgroup->fitem, ++fgroup->nfitem);
-    fgroup->fitem[fgroup->nfitem-1] = fitem;
+    fgroup->fitem[fgroup->nfitem - 1] = fitem;
 }
 
-static t_fgroup *AddFGridFGroup(t_fgrid *fgrid)
+static t_fgroup* AddFGridFGroup(t_fgrid* fgrid)
 {
     srenew(fgrid->fgroup, ++fgrid->nfgroup);
-    fgrid->fgroup[fgrid->nfgroup-1] = NewFGroup();
-    return fgrid->fgroup[fgrid->nfgroup-1];
+    fgrid->fgroup[fgrid->nfgroup - 1] = NewFGroup();
+    return fgrid->fgroup[fgrid->nfgroup - 1];
 }
 
-static t_fsimple *AddFGridFSimple(t_fgrid *fgrid)
+static t_fsimple* AddFGridFSimple(t_fgrid* fgrid)
 {
     srenew(fgrid->fsimple, ++fgrid->nfsimple);
-    fgrid->fsimple[fgrid->nfsimple-1] = NewFSimple();
-    return fgrid->fsimple[fgrid->nfsimple-1];
+    fgrid->fsimple[fgrid->nfsimple - 1] = NewFSimple();
+    return fgrid->fsimple[fgrid->nfsimple - 1];
 }
 
-static t_fgrid *NewFGrid(void)
+static t_fgrid* NewFGrid(void)
 {
-    t_fgrid *fgrid;
+    t_fgrid* fgrid;
 
     snew(fgrid, 1);
     fgrid->w        = 0;
@@ -253,7 +227,7 @@ static t_fgrid *NewFGrid(void)
     return fgrid;
 }
 
-static void DoneFItem(t_fitem *fitem)
+static void DoneFItem(t_fitem* fitem)
 {
     int i;
 
@@ -268,7 +242,7 @@ static void DoneFItem(t_fitem *fitem)
     sfree(fitem->help);
 }
 
-static void DoneFGroup(t_fgroup *fgroup)
+static void DoneFGroup(t_fgroup* fgroup)
 {
     int i;
 
@@ -280,13 +254,13 @@ static void DoneFGroup(t_fgroup *fgroup)
     sfree(fgroup->fitem);
 }
 
-static void DoneFSimple(t_fsimple *fsimple)
+static void DoneFSimple(t_fsimple* fsimple)
 {
     DoneFItem(fsimple->fitem);
     sfree(fsimple->fitem);
 }
 
-void DoneFGrid(t_fgrid *fgrid)
+void DoneFGrid(t_fgrid* fgrid)
 {
     int i;
 
@@ -302,15 +276,15 @@ void DoneFGrid(t_fgrid *fgrid)
     sfree(fgrid->fsimple);
 }
 
-static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
+static t_fitem* ScanFItem(const char* infile, FILE* in, char* buf)
 {
     char     set[STRLEN], get[STRLEN], help[STRLEN], def[STRLEN];
     int      edlg;
-    t_fitem *fitem;
+    t_fitem* fitem;
 
     fitem = NewFItem();
 
-    for (edlg = 0; (edlg < edlgNR+1); edlg++)
+    for (edlg = 0; (edlg < edlgNR + 1); edlg++)
     {
         if (std::strcmp(buf, type[edlg]) == 0)
         {
@@ -323,7 +297,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
         edlg        = edlgBN;
         fitem->bDef = true;
     }
-    if (edlg == edlgNR+1)
+    if (edlg == edlgNR + 1)
     {
         ReadDlgErr(infile, eITEMEXP, buf);
     }
@@ -348,11 +322,8 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
             }
             break;
         case edlgPM:
-        case edlgGB:
-            ReadDlgErr(infile, eITEMEXP, type[edlg]);
-            break;
-        default:
-            break;
+        case edlgGB: ReadDlgErr(infile, eITEMEXP, type[edlg]); break;
+        default: break;
     }
     ReadQuoteString(infile, in, set);
     ReadQuoteString(infile, in, get);
@@ -366,19 +337,19 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
     return fitem;
 }
 
-t_fgrid *FGridFromFile(const char *infile)
+t_fgrid* FGridFromFile(const char* infile)
 {
-    char         buf[STRLEN];
-    int          result;
+    char buf[STRLEN];
+    int  result;
 
-    t_fgrid     *fgrid;
-    t_fgroup    *fgroup;
-    t_fsimple   *fsimple;
-    int          gridx, gridy;
+    t_fgrid*   fgrid;
+    t_fgroup*  fgroup;
+    t_fsimple* fsimple;
+    int        gridx, gridy;
 
     gmx::FilePtr inGuard = gmx::openLibraryFile(infile);
-    FILE        *in      = inGuard.get();
-    result = std::fscanf(in, "%6s", buf);
+    FILE*        in      = inGuard.get();
+    result               = std::fscanf(in, "%6s", buf);
     if ((1 != result) || std::strcmp(buf, "grid") != 0)
     {
         ReadDlgErr(infile, eGRIDEXP, buf);
@@ -403,11 +374,11 @@ t_fgrid *FGridFromFile(const char *infile)
             {
                 ReadDlgErr(infile, eNOVALS, "group x,y,w,h");
             }
-            if (fgroup->x+fgroup->w > gridx)
+            if (fgroup->x + fgroup->w > gridx)
             {
                 ReadDlgErr(infile, eTOOWIDE, buf);
             }
-            if (fgroup->y+fgroup->h > gridy)
+            if (fgroup->y + fgroup->h > gridy)
             {
                 ReadDlgErr(infile, eTOOHIGH, buf);
             }
@@ -426,11 +397,11 @@ t_fgrid *FGridFromFile(const char *infile)
             {
                 ReadDlgErr(infile, eNOVALS, "simple x,y,w,h");
             }
-            if (fsimple->x+fsimple->w > gridx)
+            if (fsimple->x + fsimple->w > gridx)
             {
                 ReadDlgErr(infile, eTOOWIDE, "simple");
             }
-            if (fsimple->y+fsimple->h > gridy)
+            if (fsimple->y + fsimple->h > gridy)
             {
                 ReadDlgErr(infile, eTOOHIGH, "simple");
             }
@@ -458,12 +429,12 @@ t_fgrid *FGridFromFile(const char *infile)
     return fgrid;
 }
 
-static void DumpFItem(t_fitem *fitem)
+static void DumpFItem(t_fitem* fitem)
 {
     int i;
 
-    std::printf("  type: %s, set: '%s', get: '%s', def: '%s', help: '%s'\n  {",
-                type[fitem->edlg], fitem->set, fitem->get, fitem->def, fitem->help);
+    std::printf("  type: %s, set: '%s', get: '%s', def: '%s', help: '%s'\n  {", type[fitem->edlg],
+                fitem->set, fitem->get, fitem->def, fitem->help);
     for (i = 0; (i < fitem->nname); i++)
     {
         std::printf("  '%s'", fitem->name[i]);
@@ -471,13 +442,13 @@ static void DumpFItem(t_fitem *fitem)
     std::printf("  }\n");
 }
 
-static void DumpFSimple(t_fsimple *fsimple)
+static void DumpFSimple(t_fsimple* fsimple)
 {
     std::printf("Simple %dx%d at %d,%d\n", fsimple->w, fsimple->h, fsimple->x, fsimple->y);
     DumpFItem(fsimple->fitem);
 }
 
-static void DumpFGroup(t_fgroup *fgroup)
+static void DumpFGroup(t_fgroup* fgroup)
 {
     int i;
 
@@ -488,7 +459,7 @@ static void DumpFGroup(t_fgroup *fgroup)
     }
 }
 
-void DumpFGrid(t_fgrid *fgrid)
+void DumpFGrid(t_fgrid* fgrid)
 {
     int i;
 

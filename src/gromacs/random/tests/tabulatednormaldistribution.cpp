@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,12 +57,12 @@ namespace
 
 TEST(TabulatedNormalDistributionTest, Output14)
 {
-    gmx::test::TestReferenceData         data;
-    gmx::test::TestReferenceChecker      checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<2>                 rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<>   dist(2.0, 5.0); // Use default 14-bit resolution
-    std::vector<float>                   result;
+    gmx::ThreeFry2x64<2>               rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<> dist(2.0, 5.0); // Use default 14-bit resolution
+    std::vector<float>                 result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
@@ -74,12 +74,12 @@ TEST(TabulatedNormalDistributionTest, Output14)
 
 TEST(TabulatedNormalDistributionTest, Output16)
 {
-    gmx::test::TestReferenceData                  data;
-    gmx::test::TestReferenceChecker               checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<2>                          rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<float, 16>   dist(2.0, 5.0); // Use larger 16-bit table
-    std::vector<float>                            result;
+    gmx::ThreeFry2x64<2>                        rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<float, 16> dist(2.0, 5.0); // Use larger 16-bit table
+    std::vector<float>                          result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
@@ -91,12 +91,12 @@ TEST(TabulatedNormalDistributionTest, Output16)
 
 TEST(TabulatedNormalDistributionTest, OutputDouble14)
 {
-    gmx::test::TestReferenceData                  data;
-    gmx::test::TestReferenceChecker               checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<2>                          rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<double>      dist(2.0, 5.0);
-    std::vector<double>                           result;
+    gmx::ThreeFry2x64<2>                     rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<double> dist(2.0, 5.0);
+    std::vector<double>                      result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
@@ -108,11 +108,11 @@ TEST(TabulatedNormalDistributionTest, OutputDouble14)
 
 TEST(TabulatedNormalDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<2>                 rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<>   distA(2.0, 5.0);
-    gmx::TabulatedNormalDistribution<>   distB(2.0, 5.0);
-    gmx::TabulatedNormalDistribution<>   distC(3.0, 5.0);
-    gmx::TabulatedNormalDistribution<>   distD(2.0, 4.0);
+    gmx::ThreeFry2x64<2>               rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<> distA(2.0, 5.0);
+    gmx::TabulatedNormalDistribution<> distB(2.0, 5.0);
+    gmx::TabulatedNormalDistribution<> distC(3.0, 5.0);
+    gmx::TabulatedNormalDistribution<> distD(2.0, 4.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -122,10 +122,10 @@ TEST(TabulatedNormalDistributionTest, Logical)
 
 TEST(TabulatedNormalDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<2>                                      rng(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<>                        distA(2.0, 5.0);
-    gmx::TabulatedNormalDistribution<>                        distB(2.0, 5.0);
-    gmx::TabulatedNormalDistribution<>::result_type           valA, valB;
+    gmx::ThreeFry2x64<2>                            rng(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<>              distA(2.0, 5.0);
+    gmx::TabulatedNormalDistribution<>              distB(2.0, 5.0);
+    gmx::TabulatedNormalDistribution<>::result_type valA, valB;
 
     valA = distA(rng);
 
@@ -140,11 +140,11 @@ TEST(TabulatedNormalDistributionTest, Reset)
 
 TEST(TabulatedNormalDistributionTest, AltParam)
 {
-    gmx::ThreeFry2x64<2>                            rngA(123456, gmx::RandomDomain::Other);
-    gmx::ThreeFry2x64<2>                            rngB(123456, gmx::RandomDomain::Other);
-    gmx::TabulatedNormalDistribution<>              distA(2.0, 5.0);
-    gmx::TabulatedNormalDistribution<>              distB;
-    gmx::TabulatedNormalDistribution<>::param_type  paramA(2.0, 5.0);
+    gmx::ThreeFry2x64<2>                           rngA(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<2>                           rngB(123456, gmx::RandomDomain::Other);
+    gmx::TabulatedNormalDistribution<>             distA(2.0, 5.0);
+    gmx::TabulatedNormalDistribution<>             distB;
+    gmx::TabulatedNormalDistribution<>::param_type paramA(2.0, 5.0);
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();
@@ -164,11 +164,11 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     double sumOfSquares = 0.0;
     // accept errors of a few ULP since the exact value of the summation
     // below will depend on whether the compiler issues FMA instructions
-    auto   tolerance    = gmx::test::ulpTolerance(10);
-    for (size_t i = 0, iFromEnd = table.size()-1; i < halfSize; ++i, --iFromEnd)
+    auto tolerance = gmx::test::ulpTolerance(10);
+    for (size_t i = 0, iFromEnd = table.size() - 1; i < halfSize; ++i, --iFromEnd)
     {
         EXPECT_REAL_EQ_TOL(table.at(i), -table.at(iFromEnd), tolerance)
-        << "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
+                << "Table is not an odd-valued function for entries " << i << " and " << iFromEnd;
         // Add up the squares of the table values in order of ascending
         // magnitude (to minimize accumulation of round-off error).
         sumOfSquares += table.at(i) * table.at(i) + table.at(iFromEnd) * table.at(iFromEnd);
@@ -178,6 +178,6 @@ TEST(TabulatedNormalDistributionTableTest, HasValidProperties)
     EXPECT_REAL_EQ_TOL(1.0, variance, tolerance) << "Table should have unit variance";
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

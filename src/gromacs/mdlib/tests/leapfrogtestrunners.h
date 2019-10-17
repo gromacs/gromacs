@@ -56,8 +56,7 @@ namespace test
  * \param[in]     testData  Data needed for the integrator
  * \param[in]     numSteps  Total number of steps to run integration for.
  */
-void integrateLeapFrogSimple(LeapFrogTestData *testData,
-                             int               numSteps);
+void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps);
 
 /*! \brief Integrate using CUDA version of Leap-Frog
  *
@@ -68,10 +67,9 @@ void integrateLeapFrogSimple(LeapFrogTestData *testData,
  * \param[in]     testData  Data needed for the integrator
  * \param[in]     numSteps  Total number of steps to run integration for.
  */
-void integrateLeapFrogGpu(LeapFrogTestData *testData,
-                          int               numSteps);
+void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps);
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_LEAPFROGTESTRUNNERS_H

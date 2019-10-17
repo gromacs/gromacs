@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,23 +49,36 @@
 #include "gromacs/utility/real.h"
 
 //! Abstract container type
-typedef struct gmx_stats *gmx_stats_t;
+typedef struct gmx_stats* gmx_stats_t;
 
 //! Error codes returned by the routines
-enum {
-    estatsOK, estatsNO_POINTS, estatsNO_MEMORY, estatsERROR,
-    estatsINVALID_INPUT, estatsNOT_IMPLEMENTED, estatsNR
+enum
+{
+    estatsOK,
+    estatsNO_POINTS,
+    estatsNO_MEMORY,
+    estatsERROR,
+    estatsINVALID_INPUT,
+    estatsNOT_IMPLEMENTED,
+    estatsNR
 };
 
 //! Enum for statistical weights
-enum {
-    elsqWEIGHT_NONE, elsqWEIGHT_X, elsqWEIGHT_Y,
-    elsqWEIGHT_XY, elsqWEIGHT_NR
+enum
+{
+    elsqWEIGHT_NONE,
+    elsqWEIGHT_X,
+    elsqWEIGHT_Y,
+    elsqWEIGHT_XY,
+    elsqWEIGHT_NR
 };
 
 //! Enum determining which coordinate to histogram
-enum {
-    ehistoX, ehistoY, ehistoNR
+enum
+{
+    ehistoX,
+    ehistoY,
+    ehistoNR
 };
 
 /*! \brief
@@ -98,8 +111,7 @@ int gmx_stats_remove_outliers(gmx_stats_t stats, double level);
  * \param[in] dy  The error in the y value
  * \return error code
  */
-int gmx_stats_add_point(gmx_stats_t stats, double x, double y,
-                        double dx, double dy);
+int gmx_stats_add_point(gmx_stats_t stats, double x, double y, double dx, double dy);
 
 /*! \brief
  * Add a series of datapoints at once. The arrays dx and dy may
@@ -113,8 +125,7 @@ int gmx_stats_add_point(gmx_stats_t stats, double x, double y,
  * \param[in] dy  The error in the y value
  * \return error code
  */
-int gmx_stats_add_points(gmx_stats_t stats, int n, real *x, real *y,
-                         real *dx, real *dy);
+int gmx_stats_add_points(gmx_stats_t stats, int n, real* x, real* y, real* dx, real* dy);
 
 /*! \brief
  * Delivers data points from the statistics.
@@ -135,8 +146,7 @@ int gmx_stats_add_points(gmx_stats_t stats, int n, real *x, real *y,
  * \param[in]  level sigma level (see above)
  * \return error code
  */
-int gmx_stats_get_point(gmx_stats_t stats, real *x, real *y,
-                        real *dx, real *dy, real level);
+int gmx_stats_get_point(gmx_stats_t stats, real* x, real* y, real* dx, real* dy, real level);
 
 /*! \brief
  * Fit the data to y = ax + b, possibly weighted, if uncertainties
@@ -151,9 +161,7 @@ int gmx_stats_get_point(gmx_stats_t stats, real *x, real *y,
  * \param[out] Rfit correlation coefficient
  * \return error code
  */
-int gmx_stats_get_ab(gmx_stats_t stats, int weight,
-                     real *a, real *b,
-                     real *da, real *db, real *chi2, real *Rfit);
+int gmx_stats_get_ab(gmx_stats_t stats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit);
 
 /*! \brief
  * Fit the data to y = ax, possibly weighted, if uncertainties have
@@ -166,8 +174,7 @@ int gmx_stats_get_ab(gmx_stats_t stats, int weight,
  * \param[out] Rfit correlation coefficient
  * \return error code
  */
-int gmx_stats_get_a(gmx_stats_t stats, int weight,
-                    real *a, real *da, real *chi2, real *Rfit);
+int gmx_stats_get_a(gmx_stats_t stats, int weight, real* a, real* da, real* chi2, real* Rfit);
 
 /*! \brief
  * Get the correlation coefficient.
@@ -175,7 +182,7 @@ int gmx_stats_get_a(gmx_stats_t stats, int weight,
  * \param[out] R the correlation coefficient between the data (x and y) as input to the structure.
  * \return error code
  */
-int gmx_stats_get_corr_coeff(gmx_stats_t stats, real *R);
+int gmx_stats_get_corr_coeff(gmx_stats_t stats, real* R);
 
 /*! \brief
  * Get the root mean square deviation.
@@ -183,7 +190,7 @@ int gmx_stats_get_corr_coeff(gmx_stats_t stats, real *R);
  * \param[out] rmsd  the root mean square deviation between x and y values.
  * \return error code
  */
-int gmx_stats_get_rmsd(gmx_stats_t stats, real *rmsd);
+int gmx_stats_get_rmsd(gmx_stats_t stats, real* rmsd);
 
 /*! \brief
  * Get the number of points.
@@ -191,7 +198,7 @@ int gmx_stats_get_rmsd(gmx_stats_t stats, real *rmsd);
  * \param[out] N     number of data points
  * \return error code
  */
-int gmx_stats_get_npoints(gmx_stats_t stats, int *N);
+int gmx_stats_get_npoints(gmx_stats_t stats, int* N);
 
 /*! \brief
  * Computes and returns the average value.
@@ -199,7 +206,7 @@ int gmx_stats_get_npoints(gmx_stats_t stats, int *N);
  * \param[out] aver  Average value
  * \return error code
  */
-int gmx_stats_get_average(gmx_stats_t stats, real *aver);
+int gmx_stats_get_average(gmx_stats_t stats, real* aver);
 
 /*! \brief
  * Computes and returns the standard deviation.
@@ -207,7 +214,7 @@ int gmx_stats_get_average(gmx_stats_t stats, real *aver);
  * \param[out] sigma  Standard deviation
  * \return error code
  */
-int gmx_stats_get_sigma(gmx_stats_t stats, real *sigma);
+int gmx_stats_get_sigma(gmx_stats_t stats, real* sigma);
 
 /*! \brief
  * Computes and returns the standard error.
@@ -215,7 +222,7 @@ int gmx_stats_get_sigma(gmx_stats_t stats, real *sigma);
  * \param[out] error Standard error
  * \return error code
  */
-int gmx_stats_get_error(gmx_stats_t stats, real *error);
+int gmx_stats_get_error(gmx_stats_t stats, real* error);
 
 /*! \brief
  * Pointers may be null, in which case no assignment will be done.
@@ -225,7 +232,7 @@ int gmx_stats_get_error(gmx_stats_t stats, real *error);
  * \param[out] error Standard error
  * \return error code
  */
-int gmx_stats_get_ase(gmx_stats_t stats, real *aver, real *sigma, real *error);
+int gmx_stats_get_ase(gmx_stats_t stats, real* aver, real* sigma, real* error);
 
 /*! \brief
  * Dump the x, y, dx, dy data to a text file
@@ -233,7 +240,7 @@ int gmx_stats_get_ase(gmx_stats_t stats, real *aver, real *sigma, real *error);
  * \param[in] fp  File pointer
  * \return error code
  */
-int gmx_stats_dump_xy(gmx_stats_t stats, FILE *fp);
+int gmx_stats_dump_xy(gmx_stats_t stats, FILE* fp);
 
 /*! \brief
  * Make a histogram of the data present.
@@ -256,15 +263,19 @@ int gmx_stats_dump_xy(gmx_stats_t stats, FILE *fp);
  * \param[out] y see above
  * \return error code
  */
-int gmx_stats_make_histogram(gmx_stats_t stats, real binwidth, int *nbins,
-                             int ehisto,
-                             int normalized, real **x, real **y);
+int gmx_stats_make_histogram(gmx_stats_t stats,
+                             real        binwidth,
+                             int*        nbins,
+                             int         ehisto,
+                             int         normalized,
+                             real**      x,
+                             real**      y);
 
 /*! \brief
  * Return message belonging to error code
  * \param[in] estats error code
  */
-const char *gmx_stats_message(int estats);
+const char* gmx_stats_message(int estats);
 
 /****************************************************
  * Some statistics utilities for convenience: useful when a complete data
@@ -279,7 +290,7 @@ const char *gmx_stats_message(int estats);
  * \param[out] a slope
  * \return error code
  */
-int lsq_y_ax(int n, real x[], real y[], real *a);
+int lsq_y_ax(int n, real x[], real y[], real* a);
 
 /*! \brief
  * Fit a straight line y=ax+b thru the n data points x, y.
@@ -292,13 +303,11 @@ int lsq_y_ax(int n, real x[], real y[], real *a);
  * \param[out] chi2 quality of fit
  * \return error code
  */
-int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r,
-               real *chi2);
+int lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2);
 
 /*! \copydoc lsq_y_ax_b
  */
-int lsq_y_ax_b_xdouble(int n, double x[], real y[],
-                       real *a, real *b, real *r, real *chi2);
+int lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2);
 
 /*! \brief
  * Fit a straight line y=ax+b thru the n data points x, y.
@@ -314,8 +323,6 @@ int lsq_y_ax_b_xdouble(int n, double x[], real y[],
  * \param[out] chi2 quality of fit
  * \return error code
  */
-int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-                     real *a, real *b, real *da, real *db,
-                     real *r, real *chi2);
+int lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2);
 
 #endif

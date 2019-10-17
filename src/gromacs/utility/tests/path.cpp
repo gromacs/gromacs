@@ -63,34 +63,23 @@ TEST(PathTest, StripSourcePrefixWorks)
     EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("foo.cpp"));
     EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("some/dir/foo.cpp"));
     EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("src/some/dir/foo.cpp"));
-    EXPECT_STREQ("foo.cpp",
-                 Path::stripSourcePrefix("srcx/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp",
-                 Path::stripSourcePrefix("src/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp",
-                 Path::stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
+    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("srcx/gromacs/foo.cpp"));
+    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("src/gromacs/foo.cpp"));
+    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
     // TODO: For in-source builds, this might not work.
-    EXPECT_EQ(Path::normalize("src/gromacs/utility/tests/path.cpp"),
-              Path::stripSourcePrefix(__FILE__))
-    << "stripSourcePrefix() does not work with compiler-produced file names. "
-    << "This only affects source paths reported in fatal error messages.";
+    EXPECT_EQ(Path::normalize("src/gromacs/utility/tests/path.cpp"), Path::stripSourcePrefix(__FILE__))
+            << "stripSourcePrefix() does not work with compiler-produced file names. "
+            << "This only affects source paths reported in fatal error messages.";
 }
 
 TEST(PathTest, SearchOperationsWork)
 {
     gmx::test::TestReferenceData    data;
     gmx::test::TestReferenceChecker rootChecker(data.rootChecker());
-    for (const std::string &input : { "",
-                                      "md.log",
-                                      "md",
-                                      "/tmp/absolute.txt",
-                                      "simpledir/traj.tng",
-                                      "simpledir/traj",
-                                      "windowsdir\\traj.tng",
-                                      "complex.dir/traj.tng",
-                                      "complex.dir/traj",
-                                      "nested/dir/conf.pdb",
-                                      "/tmp/absolutedir/conf.pdb"})
+    for (const std::string& input :
+         { "", "md.log", "md", "/tmp/absolute.txt", "simpledir/traj.tng", "simpledir/traj",
+           "windowsdir\\traj.tng", "complex.dir/traj.tng", "complex.dir/traj",
+           "nested/dir/conf.pdb", "/tmp/absolutedir/conf.pdb" })
     {
         SCOPED_TRACE(std::string("for input '") + input + "'");
         auto checker = rootChecker.checkCompound("PathToTest", input);

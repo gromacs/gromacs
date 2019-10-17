@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@
  *
  * Does not throw.
  */
-int gmx_gethostname(char *buf, size_t len);
+int gmx_gethostname(char* buf, size_t len);
 
 /*! \brief
  * Returns the process ID of the current process.
@@ -89,15 +89,14 @@ int gmx_getuid();
  *
  * Does not throw.
  */
-int gmx_getusername(char *buf, size_t len);
+int gmx_getusername(char* buf, size_t len);
 
 /*! \brief
  * Portable version of ctime_r.
  *
  * \throws std::bad_alloc when out of memory.
  */
-std::string
-gmx_ctime_r(const time_t *clock);
+std::string gmx_ctime_r(const time_t* clock);
 /*! \brief
  * Gets the current time as a string.
  *

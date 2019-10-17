@@ -53,8 +53,8 @@
 #include "gromacs/utility/smalloc.h"
 
 /* these MUST correspond to the enum in hackblock.h */
-const char *btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
-const int   btsNiatoms[ebtsNR] = { 2,       3,        4,           4,           2,             5 };
+const char* btsNames[ebtsNR] = { "bonds", "angles", "dihedrals", "impropers", "exclusions", "cmap" };
+const int   btsNiatoms[ebtsNR] = { 2, 3, 4, 4, 2, 5 };
 
 MoleculePatchType MoleculePatch::type() const
 {
@@ -76,7 +76,7 @@ MoleculePatchType MoleculePatch::type() const
     }
 }
 
-void clearModificationBlock(MoleculePatchDatabase *globalPatches)
+void clearModificationBlock(MoleculePatchDatabase* globalPatches)
 {
     globalPatches->name.clear();
     globalPatches->hack.clear();
@@ -88,7 +88,7 @@ void clearModificationBlock(MoleculePatchDatabase *globalPatches)
 
 #define safe_strdup(str) (((str) != NULL) ? gmx_strdup(str) : NULL)
 
-static bool contains_char(const BondedInteraction &s, char c)
+static bool contains_char(const BondedInteraction& s, char c)
 {
 
     bool bRet = false;
@@ -103,12 +103,13 @@ static bool contains_char(const BondedInteraction &s, char c)
     return bRet;
 }
 
-static int
-rbonded_find_atoms_in_list(const BondedInteraction &b, gmx::ArrayRef<const BondedInteraction> blist, int natoms)
+static int rbonded_find_atoms_in_list(const BondedInteraction&               b,
+                                      gmx::ArrayRef<const BondedInteraction> blist,
+                                      int                                    natoms)
 {
-    int      foundPos = -1;
+    int foundPos = -1;
 
-    for (auto it = blist.begin(); (it != blist.end()) && ( foundPos < 0); it++)
+    for (auto it = blist.begin(); (it != blist.end()) && (foundPos < 0); it++)
     {
         bool atomsMatch = true;
         for (int k = 0; k < natoms && atomsMatch; k++)
@@ -121,7 +122,7 @@ rbonded_find_atoms_in_list(const BondedInteraction &b, gmx::ArrayRef<const Bonde
             atomsMatch = true;
             for (int k = 0; k < natoms && atomsMatch; k++)
             {
-                atomsMatch = atomsMatch && (b.a[k] == it->a[natoms-1-k]);
+                atomsMatch = atomsMatch && (b.a[k] == it->a[natoms - 1 - k]);
             }
         }
         if (atomsMatch)
@@ -169,7 +170,7 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
              */
             int nbHackblockStart = d[i].b.size();
 
-            for (const auto &b : s[i].b)
+            for (const auto& b : s[i].b)
             {
                 /* Check if this bonded string already exists before adding.
                  * We are merging from the main RTP to the hackblocks, so this
@@ -194,8 +195,7 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
                  */
                 if (index < 0 || index >= nbHackblockStart)
                 {
-                    if (!(bMin && contains_char(b, '-'))
-                        && !(bPlus && contains_char(b, '+')))
+                    if (!(bMin && contains_char(b, '-')) && !(bPlus && contains_char(b, '+')))
                     {
                         d[i].b.push_back(b);
                     }
@@ -216,21 +216,21 @@ bool mergeBondedInteractionList(gmx::ArrayRef<const BondedInteractionList> s,
     return bBondsRemoved;
 }
 
-void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d, t_symtab *symtab)
+void copyPreprocessResidues(const PreprocessResidue& s, PreprocessResidue* d, t_symtab* symtab)
 {
-    *d         = s;
+    *d = s;
     d->atom.clear();
-    for (const auto &a : s.atom)
+    for (const auto& a : s.atom)
     {
         d->atom.push_back(a);
     }
     d->atomname.clear();
-    for (const auto &a : s.atomname)
+    for (const auto& a : s.atomname)
     {
         d->atomname.push_back(put_symtab(symtab, *a));
     }
     d->cgnr.clear();
-    for (const auto &c : s.cgnr)
+    for (const auto& c : s.cgnr)
     {
         d->cgnr.push_back(c);
     }
@@ -242,24 +242,24 @@ void copyPreprocessResidues(const PreprocessResidue &s, PreprocessResidue *d, t_
     mergeBondedInteractionList(s.rb, d->rb, FALSE, FALSE);
 }
 
-void mergeAtomModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void mergeAtomModifications(const MoleculePatchDatabase& s, MoleculePatchDatabase* d)
 {
-    for (const auto &h : s.hack)
+    for (const auto& h : s.hack)
     {
         d->hack.push_back(h);
     }
 }
 
-void mergeAtomAndBondModifications(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void mergeAtomAndBondModifications(const MoleculePatchDatabase& s, MoleculePatchDatabase* d)
 {
     mergeAtomModifications(s, d);
     mergeBondedInteractionList(s.rb, d->rb, FALSE, FALSE);
 }
 
-void copyModificationBlocks(const MoleculePatchDatabase &s, MoleculePatchDatabase *d)
+void copyModificationBlocks(const MoleculePatchDatabase& s, MoleculePatchDatabase* d)
 {
-    *d       = s;
-    d->name  = s.name;
+    *d      = s;
+    d->name = s.name;
     d->hack.clear();
     for (int i = 0; i < ebtsNR; i++)
     {

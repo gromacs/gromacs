@@ -50,34 +50,29 @@
 #include "pairlist.h"
 
 
-void SearchCycleCounting::printCycles(FILE                               *fp,
-                                      gmx::ArrayRef<const PairsearchWork> work) const
+void SearchCycleCounting::printCycles(FILE* fp, gmx::ArrayRef<const PairsearchWork> work) const
 {
     fprintf(fp, "\n");
-    fprintf(fp, "ns %4d grid %4.1f search %4.1f",
-            cc_[enbsCCgrid].count(),
-            cc_[enbsCCgrid].averageMCycles(),
-            cc_[enbsCCsearch].averageMCycles());
+    fprintf(fp, "ns %4d grid %4.1f search %4.1f", cc_[enbsCCgrid].count(),
+            cc_[enbsCCgrid].averageMCycles(), cc_[enbsCCsearch].averageMCycles());
 
     if (work.size() > 1)
     {
         if (cc_[enbsCCcombine].count() > 0)
         {
-            fprintf(fp, " comb %5.2f",
-                    cc_[enbsCCcombine].averageMCycles());
+            fprintf(fp, " comb %5.2f", cc_[enbsCCcombine].averageMCycles());
         }
         fprintf(fp, " s. th");
-        for (const PairsearchWork &workEntry : work)
+        for (const PairsearchWork& workEntry : work)
         {
-            fprintf(fp, " %4.1f",
-                    workEntry.cycleCounter.averageMCycles());
+            fprintf(fp, " %4.1f", workEntry.cycleCounter.averageMCycles());
         }
     }
     fprintf(fp, "\n");
 }
 
 /*! \brief Frees the contents of a legacy t_nblist struct */
-static void free_nblist(t_nblist *nl)
+static void free_nblist(t_nblist* nl)
 {
     sfree(nl->iinr);
     sfree(nl->gid);
@@ -90,12 +85,11 @@ static void free_nblist(t_nblist *nl)
 #ifndef DOXYGEN
 
 PairsearchWork::PairsearchWork() :
-    cp0({{0}}
-        ),
-    buffer_flags({0, nullptr, 0}),
+    cp0({ { 0 } }),
+    buffer_flags({ 0, nullptr, 0 }),
     ndistc(0),
     nbl_fep(new t_nblist),
-    cp1({{0}})
+    cp1({ { 0 } })
 {
     nbnxn_init_pairlist_fep(nbl_fep.get());
 }
@@ -111,8 +105,8 @@ PairsearchWork::~PairsearchWork()
 
 PairSearch::PairSearch(const int                 ePBC,
                        const bool                doTestParticleInsertion,
-                       const ivec               *numDDCells,
-                       const gmx_domdec_zones_t *ddZones,
+                       const ivec*               numDDCells,
+                       const gmx_domdec_zones_t* ddZones,
                        const PairlistType        pairlistType,
                        const bool                haveFep,
                        const int                 maxNumThreads,

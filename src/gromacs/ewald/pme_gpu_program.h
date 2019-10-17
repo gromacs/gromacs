@@ -54,12 +54,12 @@ struct gmx_device_info_t;
 
 class PmeGpuProgram
 {
-    public:
-        explicit PmeGpuProgram(const gmx_device_info_t *deviceInfo);
-        ~PmeGpuProgram();
+public:
+    explicit PmeGpuProgram(const gmx_device_info_t* deviceInfo);
+    ~PmeGpuProgram();
 
-        // TODO: design getters for information inside, if needed for PME, and make this private?
-        std::unique_ptr<PmeGpuProgramImpl> impl_;
+    // TODO: design getters for information inside, if needed for PME, and make this private?
+    std::unique_ptr<PmeGpuProgramImpl> impl_;
 };
 
 /*! \brief This is an owning handle for the compiled PME GPU kernels.
@@ -69,11 +69,11 @@ using PmeGpuProgramStorage = std::unique_ptr<PmeGpuProgram>;
 /*! \brief This is a handle for passing references to PME GPU program data.
  * TODO: it should be a const reference, but for that the PmeGpu types need to be C++
  */
-using PmeGpuProgramHandle = const PmeGpuProgram *;
+using PmeGpuProgramHandle = const PmeGpuProgram*;
 
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.
  */
-PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t * /*deviceInfo*/);
+PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t* /*deviceInfo*/);
 
 #endif

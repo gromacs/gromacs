@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,32 +42,33 @@
 
 struct t_commrec;
 
-typedef struct {
+typedef struct
+{
     int     nreal;
     int     maxreal;
-    double *rbuf;
+    double* rbuf;
 } t_bin;
 
-t_bin *mk_bin();
+t_bin* mk_bin();
 /* Create a real bin */
 
-void destroy_bin(t_bin *b);
+void destroy_bin(t_bin* b);
 /* Destroy the bin structure */
 
-void reset_bin(t_bin *b);
+void reset_bin(t_bin* b);
 /* Reset number of entries to zero */
 
-int add_binr(t_bin *b, int nr, const real r[]);
-int add_binr(t_bin *b, gmx::ArrayRef<const real> r);
-int add_bind(t_bin *b, int nr, const double r[]);
+int add_binr(t_bin* b, int nr, const real r[]);
+int add_binr(t_bin* b, gmx::ArrayRef<const real> r);
+int add_bind(t_bin* b, int nr, const double r[]);
 /* Add reals to the bin. Returns index */
 
-void sum_bin(t_bin *b, const t_commrec *cr);
+void sum_bin(t_bin* b, const t_commrec* cr);
 /* Globally sum the reals in the bin */
 
-void extract_binr(t_bin *b, int index, int nr, real r[]);
-void extract_binr(t_bin *b, int index, gmx::ArrayRef<real> r);
-void extract_bind(t_bin *b, int index, int nr, double r[]);
+void extract_binr(t_bin* b, int index, int nr, real r[]);
+void extract_binr(t_bin* b, int index, gmx::ArrayRef<real> r);
+void extract_bind(t_bin* b, int index, int nr, double r[]);
 /* Extract values from the bin, starting from index (see add_bin) */
 
 #endif

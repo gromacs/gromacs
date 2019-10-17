@@ -53,7 +53,7 @@ struct ExclusionBlock
     //! Atom numbers for exclusion.
     std::vector<int> atomNumber;
     //! Number of atoms in the exclusion.
-    int              nra() const { return atomNumber.size(); }
+    int nra() const { return atomNumber.size(); }
 };
 
 /*! \brief Merge the contents of \c b2 into \c excl.
@@ -61,7 +61,7 @@ struct ExclusionBlock
  * Requires that \c b2 and \c excl describe the same number of
  * particles, if \c b2 describes a non-zero number.
  */
-void mergeExclusions(t_blocka *excl, gmx::ArrayRef<ExclusionBlock> b2);
+void mergeExclusions(t_blocka* excl, gmx::ArrayRef<ExclusionBlock> b2);
 
 /*! \brief
  * Convert the exclusions.
@@ -72,10 +72,10 @@ void mergeExclusions(t_blocka *excl, gmx::ArrayRef<ExclusionBlock> b2);
  * \param[in] b Exclusions in t_blocka form.
  * \param[inout] b2 ExclusionBlocks to populate with t_blocka exclusions.
  */
-void blockaToExclusionBlocks(const t_blocka *b, gmx::ArrayRef<ExclusionBlock> b2);
+void blockaToExclusionBlocks(const t_blocka* b, gmx::ArrayRef<ExclusionBlock> b2);
 
 //! Convert the exclusions expressed in \c b into t_blocka form
-void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka *b);
+void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka* b);
 
 } // namespace gmx
 

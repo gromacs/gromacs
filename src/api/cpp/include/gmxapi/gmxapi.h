@@ -392,111 +392,111 @@ static constexpr const char MDHolder_Name[] = "__GMXAPI_MDHolder_v1__";
  */
 class MDHolder
 {
-    public:
-        /*!
-         * \brief Declare the schema for extra checks before casting.
-         *
-         * MDHolder exists for cases where API objects can only be passed by
-         * casting pointers. api_name is suitable as a descriptor of the schema
-         * of the object pointed to. See, for instance, usage of the PyCapsule_IsValid
-         * Python C API function.
-         */
-        static const char* api_name;
+public:
+    /*!
+     * \brief Declare the schema for extra checks before casting.
+     *
+     * MDHolder exists for cases where API objects can only be passed by
+     * casting pointers. api_name is suitable as a descriptor of the schema
+     * of the object pointed to. See, for instance, usage of the PyCapsule_IsValid
+     * Python C API function.
+     */
+    static const char* api_name;
 
-        MDHolder();
+    MDHolder();
 
-        /*!
-         * \brief For convenience and logging, give the object an identifying string.
-         *
-         * \param name
-         */
-        explicit MDHolder(std::string name);
+    /*!
+     * \brief For convenience and logging, give the object an identifying string.
+     *
+     * \param name
+     */
+    explicit MDHolder(std::string name);
 
-        /*!
-         * \brief Wrap a Molecular Dynamics work specification.
-         *
-         * The container allows portable specification of MD work to be performed.
-         * It is used when setting up and then launching the simulation.
-         *
-         * \param spec references a container with interfaces for client and library APIs
-         *
-         * Example:
-         *
-         *     # With `system` as a gmxapi::System object
-         *     auto spec = system->getSpec();
-         *     auto holder = std::make_unique<gmxapi::MDHolder>(spec);
-         *
-         * A PyCapsule object with the name given by gmxapi::MDHolder_Name is assumed to
-         * contain a pointer to an MDHolder and to have an appropriate deleter attached.
-         *
-         * Example:
-         *
-         *     auto deleter = [](PyObject *o) {
-         *         if (PyCapsule_IsValid(o, gmxapi::MDHolder_Name))
-         *         {
-         *             auto holder_ptr = (gmxapi::MDHolder *) PyCapsule_GetPointer(o, gmxapi::MDHolder_Name);
-         *             delete holder_ptr;
-         *         };
-         *     };
-         *     # With pybind11 PyCapsule bindings:
-         *     auto capsule = py::capsule(holder,
-         *                                gmxapi::MDHolder_Name,
-         *                                deleter);
-         *
-         * The gmxapi Python package gives modules a chance to associate themselves with a
-         * gmxapi::System object by passing such a PyCapsule to its `bind` method, if implemented.
-         *
-         * Such a bind method could be implemented as follows. Assume object.ptr() returns a
-         * `PyObject*`
-         *
-         * Example:
-         *
-         *    PyObject* capsule = object.ptr();
-         *    if (PyCapsule_IsValid(capsule, gmxapi::MDHolder::api_name))
-         *    {
-         *        auto holder = static_cast<gmxapi::MDHolder*>(PyCapsule_GetPointer(capsule,
-         *            gmxapi::MDHolder::api_name));
-         *        auto workSpec = holder->getSpec();
-         *        workSpec->addModule(module);
-         *    }
-         *    else
-         *    {
-         *        throw gmxapi::ProtocolError("bind method requires a python capsule as input");
-         *    }
-         */
-        explicit MDHolder(std::shared_ptr<MDWorkSpec> spec);
+    /*!
+     * \brief Wrap a Molecular Dynamics work specification.
+     *
+     * The container allows portable specification of MD work to be performed.
+     * It is used when setting up and then launching the simulation.
+     *
+     * \param spec references a container with interfaces for client and library APIs
+     *
+     * Example:
+     *
+     *     # With `system` as a gmxapi::System object
+     *     auto spec = system->getSpec();
+     *     auto holder = std::make_unique<gmxapi::MDHolder>(spec);
+     *
+     * A PyCapsule object with the name given by gmxapi::MDHolder_Name is assumed to
+     * contain a pointer to an MDHolder and to have an appropriate deleter attached.
+     *
+     * Example:
+     *
+     *     auto deleter = [](PyObject *o) {
+     *         if (PyCapsule_IsValid(o, gmxapi::MDHolder_Name))
+     *         {
+     *             auto holder_ptr = (gmxapi::MDHolder *) PyCapsule_GetPointer(o,
+     * gmxapi::MDHolder_Name); delete holder_ptr;
+     *         };
+     *     };
+     *     # With pybind11 PyCapsule bindings:
+     *     auto capsule = py::capsule(holder,
+     *                                gmxapi::MDHolder_Name,
+     *                                deleter);
+     *
+     * The gmxapi Python package gives modules a chance to associate themselves with a
+     * gmxapi::System object by passing such a PyCapsule to its `bind` method, if implemented.
+     *
+     * Such a bind method could be implemented as follows. Assume object.ptr() returns a
+     * `PyObject*`
+     *
+     * Example:
+     *
+     *    PyObject* capsule = object.ptr();
+     *    if (PyCapsule_IsValid(capsule, gmxapi::MDHolder::api_name))
+     *    {
+     *        auto holder = static_cast<gmxapi::MDHolder*>(PyCapsule_GetPointer(capsule,
+     *            gmxapi::MDHolder::api_name));
+     *        auto workSpec = holder->getSpec();
+     *        workSpec->addModule(module);
+     *    }
+     *    else
+     *    {
+     *        throw gmxapi::ProtocolError("bind method requires a python capsule as input");
+     *    }
+     */
+    explicit MDHolder(std::shared_ptr<MDWorkSpec> spec);
 
-        /*!
-         * \brief Get client-provided name.
-         *
-         * \return Name as string.
-         */
-        std::string name() const;
+    /*!
+     * \brief Get client-provided name.
+     *
+     * \return Name as string.
+     */
+    std::string name() const;
 
-        /*! \brief Instance name.
-         */
-        std::string name_ {};
+    /*! \brief Instance name.
+     */
+    std::string name_{};
 
-        /// \{
-        /*!
-         * \brief Get the wrapped work specification
-         * \return shared ownership of the api object.
-         */
-        std::shared_ptr<MDWorkSpec> getSpec();
-        /*!
-         * \brief Get the wrapped work specification
-         * \return smart pointer to const object
-         */
-        std::shared_ptr<const MDWorkSpec> getSpec() const;
-        /// \}
-    private:
-        /*! \cond internal
-         * \brief private implementation class
-         */
-        class Impl;
-        /// \brief opaque pointer to implementation
-        std::shared_ptr<Impl> impl_ {nullptr};
-        /*! \endcond */
+    /// \{
+    /*!
+     * \brief Get the wrapped work specification
+     * \return shared ownership of the api object.
+     */
+    std::shared_ptr<MDWorkSpec> getSpec();
+    /*!
+     * \brief Get the wrapped work specification
+     * \return smart pointer to const object
+     */
+    std::shared_ptr<const MDWorkSpec> getSpec() const;
+    /// \}
+private:
+    /*! \cond internal
+     * \brief private implementation class
+     */
+    class Impl;
+    /// \brief opaque pointer to implementation
+    std::shared_ptr<Impl> impl_{ nullptr };
+    /*! \endcond */
 };
 
 /*!
@@ -521,6 +521,6 @@ enum class GmxapiType
     STRING,   //! string with metadata
     NDARRAY,  //! multi-dimensional array with metadata
 };
-}             // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif        // header guard
+#endif // header guard

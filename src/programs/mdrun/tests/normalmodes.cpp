@@ -85,9 +85,9 @@ using MdpField = MdpFieldValues::value_type;
  * a reproducible eigenvalues following diagonalization.
  *
  * The choices for tolerance are arbitrary but sufficient. */
-class NormalModesTest : public MdrunTestFixture,
-                        public ::testing::WithParamInterface <
-                        std::tuple < std::string, std::string>>
+class NormalModesTest :
+    public MdrunTestFixture,
+    public ::testing::WithParamInterface<std::tuple<std::string, std::string>>
 {
 };
 
@@ -96,22 +96,21 @@ TEST_P(NormalModesTest, WithinTolerances)
     auto params         = GetParam();
     auto simulationName = std::get<0>(params);
     auto integrator     = std::get<1>(params);
-    SCOPED_TRACE(formatString("Comparing normal modes for '%s'",
-                              simulationName.c_str()));
+    SCOPED_TRACE(formatString("Comparing normal modes for '%s'", simulationName.c_str()));
 
     // TODO At some point we should also test PME-only ranks.
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
-        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
                 simulationName.c_str(), numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
         return;
     }
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                "no", "no");
+    auto mdpFieldValues =
+            prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(), "no", "no");
     mdpFieldValues["nsteps"]      = "1";
     mdpFieldValues["rcoulomb"]    = "5.6";
     mdpFieldValues["rlist"]       = "5.6";
@@ -136,10 +135,10 @@ TEST_P(NormalModesTest, WithinTolerances)
     {
         ASSERT_EQ(0, runner_.callNmeig());
         TestReferenceData refData;
-        auto              checker  = refData.rootChecker()
-                .checkCompound("System", simulationName)
-                .checkCompound("Integrator", integrator);
-        auto          settings = XvgMatchSettings();
+        auto              checker = refData.rootChecker()
+                               .checkCompound("System", simulationName)
+                               .checkCompound("Integrator", integrator);
+        auto settings      = XvgMatchSettings();
         settings.tolerance = relativeToleranceAsFloatingPoint(1.0, 1e-05);
         TextInputFile input("eigenval.xvg");
         checkXvgFile(&input, &checker, settings);
@@ -148,7 +147,8 @@ TEST_P(NormalModesTest, WithinTolerances)
 
 //! Containers of systems and integrators to test.
 //! \{
-std::vector<std::string> systemsToTest_g     = { "scaled-water", "villin", "spc-dimer", "one-tip5p", "sw-dimer" };
+std::vector<std::string> systemsToTest_g     = { "scaled-water", "villin", "spc-dimer", "one-tip5p",
+                                             "sw-dimer" };
 std::vector<std::string> integratorsToTest_g = { "nm" };
 
 //! \}
@@ -159,9 +159,10 @@ std::vector<std::string> integratorsToTest_g = { "nm" };
 // lifetime of the whole test binary process, these tests should run in
 // such configurations.
 #if GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(NormalModesWorks, NormalModesTest,
-                            ::testing::Combine(::testing::ValuesIn(systemsToTest_g),
-                                                   ::testing::ValuesIn(integratorsToTest_g)));
+INSTANTIATE_TEST_CASE_P(NormalModesWorks,
+                        NormalModesTest,
+                        ::testing::Combine(::testing::ValuesIn(systemsToTest_g),
+                                           ::testing::ValuesIn(integratorsToTest_g)));
 #endif
 } // namespace
 } // namespace test

@@ -61,7 +61,7 @@
 namespace gmx
 {
 
-void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
+void initCorrelationGridHistory(CorrelationGridHistory* correlationGridHistory,
                                 int                     numCorrelationTensors,
                                 int                     tensorSize,
                                 int                     blockDataListSize)
@@ -70,21 +70,22 @@ void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
     correlationGridHistory->tensorSize            = tensorSize;
     correlationGridHistory->blockDataListSize     = blockDataListSize;
 
-    correlationGridHistory->blockDataBuffer.resize(numCorrelationTensors*tensorSize*blockDataListSize);
+    correlationGridHistory->blockDataBuffer.resize(numCorrelationTensors * tensorSize * blockDataListSize);
 }
 
-CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid &correlationGrid)
+CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid& correlationGrid)
 {
     CorrelationGridHistory correlationGridHistory;
 
-    initCorrelationGridHistory(&correlationGridHistory, correlationGrid.tensors().size(), correlationGrid.tensorSize(), correlationGrid.blockDataListSize());
+    initCorrelationGridHistory(&correlationGridHistory, correlationGrid.tensors().size(),
+                               correlationGrid.tensorSize(), correlationGrid.blockDataListSize());
 
     return correlationGridHistory;
 }
 
 /* Update the correlation grid history for checkpointing. */
-void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
-                                  const CorrelationGrid  &correlationGrid)
+void updateCorrelationGridHistory(CorrelationGridHistory* correlationGridHistory,
+                                  const CorrelationGrid&  correlationGrid)
 {
     GMX_RELEASE_ASSERT(correlationGridHistory != nullptr, "We need a valid history object");
 
@@ -92,30 +93,30 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
 
     /* Store the grid in a linear array */
     gmx::index bufferIndex = 0;
-    for (const CorrelationTensor &tensor : correlationGrid.tensors())
+    for (const CorrelationTensor& tensor : correlationGrid.tensors())
     {
-        const int                numDims    = tensor.blockDataList()[0].coordData().size();
-        const int                tensorSize = tensor.blockDataList()[0].correlationIntegral().size();
+        const int numDims    = tensor.blockDataList()[0].coordData().size();
+        const int tensorSize = tensor.blockDataList()[0].correlationIntegral().size();
 
         /* Loop of the tensor elements, ignore the symmetric data */
-        int       d1         = 0;
-        int       d2         = 0;
+        int d1 = 0;
+        int d2 = 0;
         for (int k = 0; k < tensorSize; k++)
         {
             /* BlockData for each correlation element */
-            for (const CorrelationBlockData &blockData : tensor.blockDataList())
+            for (const CorrelationBlockData& blockData : tensor.blockDataList())
             {
-                const CorrelationBlockData::CoordData &cx  = blockData.coordData()[d1];
-                const CorrelationBlockData::CoordData &cy  = blockData.coordData()[d2];
+                const CorrelationBlockData::CoordData& cx = blockData.coordData()[d1];
+                const CorrelationBlockData::CoordData& cy = blockData.coordData()[d2];
 
-                CorrelationBlockDataHistory           &bdh = blockDataBuffer[bufferIndex];
+                CorrelationBlockDataHistory& bdh = blockDataBuffer[bufferIndex];
 
-                bdh.blockSumWeight                       = blockData.blockSumWeight();
-                bdh.blockSumSquareWeight                 = blockData.blockSumSquareWeight();
-                bdh.blockSumWeightX                      = cx.blockSumWeightX;
-                bdh.blockSumWeightY                      = cy.blockSumWeightX;
-                bdh.sumOverBlocksSquareBlockWeight       = blockData.sumOverBlocksSquareBlockWeight();
-                bdh.sumOverBlocksBlockSquareWeight       = blockData.sumOverBlocksBlockSquareWeight();
+                bdh.blockSumWeight                 = blockData.blockSumWeight();
+                bdh.blockSumSquareWeight           = blockData.blockSumSquareWeight();
+                bdh.blockSumWeightX                = cx.blockSumWeightX;
+                bdh.blockSumWeightY                = cy.blockSumWeightX;
+                bdh.sumOverBlocksSquareBlockWeight = blockData.sumOverBlocksSquareBlockWeight();
+                bdh.sumOverBlocksBlockSquareWeight = blockData.sumOverBlocksBlockSquareWeight();
                 bdh.sumOverBlocksBlockWeightBlockWeightX = cx.sumOverBlocksBlockWeightBlockWeightX;
                 bdh.sumOverBlocksBlockWeightBlockWeightY = cy.sumOverBlocksBlockWeightBlockWeightX;
                 bdh.previousBlockIndex                   = blockData.previousBlockIndex();
@@ -134,12 +135,13 @@ void updateCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory
         }
     }
 
-    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.ssize(), "We should store exactly as many elements as the buffer size");
+    GMX_RELEASE_ASSERT(bufferIndex == blockDataBuffer.ssize(),
+                       "We should store exactly as many elements as the buffer size");
 }
 
-void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory                  &blockHistory,
-                                              const std::vector<CorrelationBlockData::CoordData> &coordData,
-                                              const std::vector<double>                          &correlationIntegral)
+void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory& blockHistory,
+                                              const std::vector<CorrelationBlockData::CoordData>& coordData,
+                                              const std::vector<double>& correlationIntegral)
 {
     blockSumWeight_                 = blockHistory.blockSumWeight;
     blockSumSquareWeight_           = blockHistory.blockSumSquareWeight;
@@ -152,11 +154,11 @@ void CorrelationBlockData::restoreFromHistory(const CorrelationBlockDataHistory 
 }
 
 /* Restore a correlation element from history. */
-void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDataHistory> &blockDataBuffer,
-                                           size_t                                         *bufferIndex)
+void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDataHistory>& blockDataBuffer,
+                                           size_t* bufferIndex)
 {
     /* Blockdata for each correlation element */
-    for (CorrelationBlockData &blockData : blockDataList_)
+    for (CorrelationBlockData& blockData : blockDataList_)
     {
         /* Correlation elements for each tensor */
         const int numDims    = blockDataList_[0].coordData().size();
@@ -171,19 +173,24 @@ void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDat
         {
             if (*bufferIndex >= blockDataBuffer.size())
             {
-                GMX_THROW(InvalidInputError("Mismatch of the correlation tensor size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
+                GMX_THROW(InvalidInputError(
+                        "Mismatch of the correlation tensor size for the force correlation between "
+                        "checkpoint and simulation. Likely you have provided a checkpoint from a "
+                        "different simulation."));
             }
-            const CorrelationBlockDataHistory &blockHistory = blockDataBuffer[*bufferIndex];
+            const CorrelationBlockDataHistory& blockHistory = blockDataBuffer[*bufferIndex];
 
             /* To simplify the checkpointing, CorrelationBlockDataHistory
              * duplicates some weight data for all tensor elements.
              * Here we collect the coordinate and tensor data
              * in temporary buffers.
              */
-            coordData[d1].blockSumWeightX                      = blockHistory.blockSumWeightX;
-            coordData[d2].blockSumWeightX                      = blockHistory.blockSumWeightY;
-            coordData[d1].sumOverBlocksBlockWeightBlockWeightX = blockHistory.sumOverBlocksBlockWeightBlockWeightX;
-            coordData[d2].sumOverBlocksBlockWeightBlockWeightX = blockHistory.sumOverBlocksBlockWeightBlockWeightY;
+            coordData[d1].blockSumWeightX = blockHistory.blockSumWeightX;
+            coordData[d2].blockSumWeightX = blockHistory.blockSumWeightY;
+            coordData[d1].sumOverBlocksBlockWeightBlockWeightX =
+                    blockHistory.sumOverBlocksBlockWeightBlockWeightX;
+            coordData[d2].sumOverBlocksBlockWeightBlockWeightX =
+                    blockHistory.sumOverBlocksBlockWeightBlockWeightY;
 
             correlationIntegral[k] = blockHistory.correlationIntegral;
 
@@ -206,24 +213,28 @@ void CorrelationTensor::restoreFromHistory(const std::vector<CorrelationBlockDat
 }
 
 /* Restores the correlation grid state from the correlation grid history. */
-void CorrelationGrid::restoreStateFromHistory(const CorrelationGridHistory &correlationGridHistory)
+void CorrelationGrid::restoreStateFromHistory(const CorrelationGridHistory& correlationGridHistory)
 {
     if (tensors_.size() != static_cast<size_t>(correlationGridHistory.numCorrelationTensors))
     {
-        GMX_THROW(InvalidInputError("Mismatch of the grid size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
+        GMX_THROW(InvalidInputError(
+                "Mismatch of the grid size for the force correlation between checkpoint and "
+                "simulation. Likely you have provided a checkpoint from a different simulation."));
     }
 
     /* Extract the state from the linear history array */
     size_t bufferIndex = 0;
-    for (CorrelationTensor &tensor : tensors_)
+    for (CorrelationTensor& tensor : tensors_)
     {
-        tensor.restoreFromHistory(correlationGridHistory.blockDataBuffer,
-                                  &bufferIndex);
+        tensor.restoreFromHistory(correlationGridHistory.blockDataBuffer, &bufferIndex);
     }
 
     if (bufferIndex != correlationGridHistory.blockDataBuffer.size())
     {
-        GMX_THROW(InvalidInputError("Mismatch of the correlation tensor size for the force correlation between checkpoint and simulation. Likely you have provided a checkpoint from a different simulation."));
+        GMX_THROW(
+                InvalidInputError("Mismatch of the correlation tensor size for the force "
+                                  "correlation between checkpoint and simulation. Likely you have "
+                                  "provided a checkpoint from a different simulation."));
     }
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ struct CorrelationGridHistory;
  * \param[in,out] corrGrid      Correlation grid state to initialize with.
  * \returns the correlation grid history struct.
  */
-CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid &corrGrid);
+CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid& corrGrid);
 
 /*! \brief
  * Restores the correlation grid state from the correlation grid history.
@@ -72,7 +72,8 @@ CorrelationGridHistory initCorrelationGridHistoryFromState(const CorrelationGrid
  * \param[in] corrGridHist  Correlation grid history to read.
  * \param[in,out] corrGrid  Correlation grid state to set.
  */
-void restoreCorrelationGridStateFromHistory(const CorrelationGridHistory &corrGridHist, CorrelationGrid *corrGrid);
+void restoreCorrelationGridStateFromHistory(const CorrelationGridHistory& corrGridHist,
+                                            CorrelationGrid*              corrGrid);
 
 /*! \brief
  * Update the correlation grid history for checkpointing.
@@ -80,8 +81,8 @@ void restoreCorrelationGridStateFromHistory(const CorrelationGridHistory &corrGr
  * \param[in,out] corrGridHist  Correlation grid history to set.
  * \param[in]     corrGrid      Correlation grid state to read.
  */
-void updateCorrelationGridHistory(CorrelationGridHistory *corrGridHist, const CorrelationGrid &corrGrid);
+void updateCorrelationGridHistory(CorrelationGridHistory* corrGridHist, const CorrelationGrid& corrGrid);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_CORRELATIONHISTORY_H */

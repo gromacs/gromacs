@@ -69,7 +69,7 @@ void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm)
 {
     if (YY < npbcdim)
     {
-        tcm[YY][XX] = -box[YY][XX]/box[YY][YY];
+        tcm[YY][XX] = -box[YY][XX] / box[YY][YY];
     }
     else
     {
@@ -77,8 +77,8 @@ void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm)
     }
     if (ZZ < npbcdim)
     {
-        tcm[ZZ][XX] = -(box[ZZ][YY]*tcm[YY][XX] + box[ZZ][XX])/box[ZZ][ZZ];
-        tcm[ZZ][YY] = -box[ZZ][YY]/box[ZZ][ZZ];
+        tcm[ZZ][XX] = -(box[ZZ][YY] * tcm[YY][XX] + box[ZZ][XX]) / box[ZZ][ZZ];
+        tcm[ZZ][YY] = -box[ZZ][YY] / box[ZZ][ZZ];
     }
     else
     {
@@ -92,7 +92,8 @@ void check_screw_box(const matrix box)
     /* Mathematical limitation */
     if (box[YY][XX] != 0 || box[ZZ][XX] != 0)
     {
-        gmx_fatal(FARGS, "With screw pbc the unit cell can not have non-zero off-diagonal x-components");
+        gmx_fatal(FARGS,
+                  "With screw pbc the unit cell can not have non-zero off-diagonal x-components");
     }
 
     /* Limitation due to the asymmetry of the eighth shell method */
@@ -102,9 +103,7 @@ void check_screw_box(const matrix box)
     }
 }
 /*! \brief Resize the state and f*/
-void dd_resize_state(t_state                     *state,
-                     PaddedHostVector<gmx::RVec> *f,
-                     int                          natoms)
+void dd_resize_state(t_state* state, PaddedHostVector<gmx::RVec>* f, int natoms)
 {
     if (debug)
     {
@@ -127,10 +126,7 @@ void dd_resize_state(t_state                     *state,
  *
  * todo refactor this now that group scheme is removed
  */
-void dd_check_alloc_ncg(t_forcerec                  *fr,
-                        t_state                     *state,
-                        PaddedHostVector<gmx::RVec> *f,
-                        int                          numChargeGroups)
+void dd_check_alloc_ncg(t_forcerec* fr, t_state* state, PaddedHostVector<gmx::RVec>* f, int numChargeGroups)
 {
     fr->cginfo.resize(numChargeGroups);
 

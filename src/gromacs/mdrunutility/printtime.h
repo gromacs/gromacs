@@ -51,8 +51,11 @@ struct t_commrec;
 struct t_inputrec;
 
 //! Print time to \c out.
-void print_time(FILE *out, gmx_walltime_accounting *walltime_accounting,
-                int64_t step, const t_inputrec *ir, const t_commrec *cr);
+void print_time(FILE*                    out,
+                gmx_walltime_accounting* walltime_accounting,
+                int64_t                  step,
+                const t_inputrec*        ir,
+                const t_commrec*         cr);
 
 /*! \brief Print date, time, MPI rank and a description of this point
  * in time.
@@ -62,12 +65,9 @@ void print_time(FILE *out, gmx_walltime_accounting *walltime_accounting,
  * \param[in] title     Description to include in the output
  * \param[in] the_time  Seconds since the epoch, e.g. as reported by gmx_gettime
  */
-void print_date_and_time(FILE *log, int rank, const char *title,
-                         double the_time);
+void print_date_and_time(FILE* log, int rank, const char* title, double the_time);
 
 //! Print start time to \c fplog.
-void print_start(FILE *fplog, const t_commrec *cr,
-                 gmx_walltime_accounting *walltime_accounting,
-                 const char *name);
+void print_start(FILE* fplog, const t_commrec* cr, gmx_walltime_accounting* walltime_accounting, const char* name);
 
 #endif

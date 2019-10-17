@@ -62,35 +62,35 @@ namespace gmx
  */
 class StepWorkload
 {
-    public:
-        //! Whether the state has changed, always set unless TPI is used.
-        bool stateChanged = false;
-        //! Whether the box might have changed
-        bool haveDynamicBox = false;
-        //! Whether neighbor searching needs to be done this step
-        bool doNeighborSearch = false;
-        //! Whether virial needs to be computed this step
-        bool computeVirial = false;
-        //! Whether energies need to be computed this step this step
-        bool computeEnergy = false;
-        //! Whether (any) forces need to be computed this step, not only energies
-        bool computeForces = false;
-        //! Whether nonbonded forces need to be computed this step
-        bool computeNonbondedForces = false;
-        //! Whether listed forces need to be computed this step
-        bool computeListedForces = false;
-        //! Whether this step DHDL needs to be computed
-        bool computeDhdl = false;
-        /*! \brief Whether coordinate buffer ops are done on the GPU this step
-         * \note This technically belongs to DomainLifetimeWorkload but due
-         * to needing the flag before DomainLifetimeWorkload is built we keep
-         * it here for now.
-         */
-        bool useGpuXBufferOps  = false;
-        //! Whether force buffer ops are done on the GPU this step
-        bool useGpuFBufferOps  = false;
-        //! Whether PME forces are reduced with other contributions on the GPU this step
-        bool useGpuPmeFReduction = false; // TODO: add this flag to the internal PME GPU data structures too
+public:
+    //! Whether the state has changed, always set unless TPI is used.
+    bool stateChanged = false;
+    //! Whether the box might have changed
+    bool haveDynamicBox = false;
+    //! Whether neighbor searching needs to be done this step
+    bool doNeighborSearch = false;
+    //! Whether virial needs to be computed this step
+    bool computeVirial = false;
+    //! Whether energies need to be computed this step this step
+    bool computeEnergy = false;
+    //! Whether (any) forces need to be computed this step, not only energies
+    bool computeForces = false;
+    //! Whether nonbonded forces need to be computed this step
+    bool computeNonbondedForces = false;
+    //! Whether listed forces need to be computed this step
+    bool computeListedForces = false;
+    //! Whether this step DHDL needs to be computed
+    bool computeDhdl = false;
+    /*! \brief Whether coordinate buffer ops are done on the GPU this step
+     * \note This technically belongs to DomainLifetimeWorkload but due
+     * to needing the flag before DomainLifetimeWorkload is built we keep
+     * it here for now.
+     */
+    bool useGpuXBufferOps = false;
+    //! Whether force buffer ops are done on the GPU this step
+    bool useGpuFBufferOps = false;
+    //! Whether PME forces are reduced with other contributions on the GPU this step
+    bool useGpuPmeFReduction = false; // TODO: add this flag to the internal PME GPU data structures too
 };
 
 /*! \libinternal
@@ -108,23 +108,23 @@ class StepWorkload
  */
 class DomainLifetimeWorkload
 {
-    public:
-        //! Whether the current nstlist step-range has bonded work to run on a GPU.
-        bool haveGpuBondedWork = false;
-        //! Whether the current nstlist step-range has bonded work to run on he CPU.
-        bool haveCpuBondedWork = false;
-        //! Whether the current nstlist step-range has restraints work to run on he CPU.
-        bool haveRestraintsWork = false;
-        //! Whether the current nstlist step-range has listed forces work to run on he CPU.
-        //  Note: currently this is haveCpuBondedWork | haveRestraintsWork
-        bool haveCpuListedForceWork = false;
-        //! Whether the current nstlist step-range has special forces on the CPU.
-        bool haveSpecialForces = false;
-        //! Whether there are currently any local forces to be computed on the CPU
-        bool haveCpuLocalForceWork = false;
+public:
+    //! Whether the current nstlist step-range has bonded work to run on a GPU.
+    bool haveGpuBondedWork = false;
+    //! Whether the current nstlist step-range has bonded work to run on he CPU.
+    bool haveCpuBondedWork = false;
+    //! Whether the current nstlist step-range has restraints work to run on he CPU.
+    bool haveRestraintsWork = false;
+    //! Whether the current nstlist step-range has listed forces work to run on he CPU.
+    //  Note: currently this is haveCpuBondedWork | haveRestraintsWork
+    bool haveCpuListedForceWork = false;
+    //! Whether the current nstlist step-range has special forces on the CPU.
+    bool haveSpecialForces = false;
+    //! Whether there are currently any local forces to be computed on the CPU
+    bool haveCpuLocalForceWork = false;
 
-        //! Whether the current nstlist step-range Free energy work on the CPU.
-        bool haveFreeEnergyWork = false;
+    //! Whether the current nstlist step-range Free energy work on the CPU.
+    bool haveFreeEnergyWork = false;
 };
 
 /*! \libinternal
@@ -141,46 +141,46 @@ class DomainLifetimeWorkload
  */
 class SimulationWorkload
 {
-    public:
-        //! If we have calculation of short range nonbondeds on CPU
-        bool useCpuNonbonded           = false;
-        //! If we have calculation of short range nonbondeds on GPU
-        bool useGpuNonbonded           = false;
-        //! If we have calculation of long range PME in GPU
-        bool useCpuPme                 = false;
-        //! If we have calculation of long range PME in GPU
-        bool useGpuPme                 = false;
-        //! If PME FFT solving is done on GPU.
-        bool useGpuPmeFft              = false;
-        //! If bonded interactions are calculated on GPU.
-        bool useGpuBonded              = false;
-        //! If update and constraint solving is performed on GPU.
-        bool useGpuUpdate              = false;
-        //! If buffer operations are performed on GPU.
-        bool useGpuBufferOps           = false;
-        //! If domain decomposition halo exchange is performed on GPU.
-        bool useGpuHaloExchange        = false;
-        //! If direct PP-PME communication between GPU is used.
-        bool useGpuPmePpCommunication  = false;
-        //! If direct GPU-GPU communication is enabled.
-        bool useGpuDirectCommunication = false;
-        //! If there is an Ewald surface (dipole) term to compute
-        bool haveEwaldSurfaceContribution = false;
+public:
+    //! If we have calculation of short range nonbondeds on CPU
+    bool useCpuNonbonded = false;
+    //! If we have calculation of short range nonbondeds on GPU
+    bool useGpuNonbonded = false;
+    //! If we have calculation of long range PME in GPU
+    bool useCpuPme = false;
+    //! If we have calculation of long range PME in GPU
+    bool useGpuPme = false;
+    //! If PME FFT solving is done on GPU.
+    bool useGpuPmeFft = false;
+    //! If bonded interactions are calculated on GPU.
+    bool useGpuBonded = false;
+    //! If update and constraint solving is performed on GPU.
+    bool useGpuUpdate = false;
+    //! If buffer operations are performed on GPU.
+    bool useGpuBufferOps = false;
+    //! If domain decomposition halo exchange is performed on GPU.
+    bool useGpuHaloExchange = false;
+    //! If direct PP-PME communication between GPU is used.
+    bool useGpuPmePpCommunication = false;
+    //! If direct GPU-GPU communication is enabled.
+    bool useGpuDirectCommunication = false;
+    //! If there is an Ewald surface (dipole) term to compute
+    bool haveEwaldSurfaceContribution = false;
 };
 
 class MdrunScheduleWorkload
 {
-    public:
-        //! Workload descriptor for information constant for an entire run
-        SimulationWorkload     simulationWork;
+public:
+    //! Workload descriptor for information constant for an entire run
+    SimulationWorkload simulationWork;
 
-        //! Workload descriptor for information constant for an nstlist range of steps
-        DomainLifetimeWorkload domainWork;
+    //! Workload descriptor for information constant for an nstlist range of steps
+    DomainLifetimeWorkload domainWork;
 
-        //! Workload descriptor for information that may change per-step
-        StepWorkload           stepWork;
+    //! Workload descriptor for information that may change per-step
+    StepWorkload stepWork;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDTYPES_SIMULATION_WORKLOAD_H

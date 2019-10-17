@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,11 +76,11 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
     // The location and value of the MSD maximum for the exact displacement
     // is described in the source file. We need to divide the maximum given
     // there by 2, since sigma2 is per DOF for the 2 DOF constraint rotation.
-    const real sigma2RelMaxLocation  = 4.5119;
-    const real sigma2RelMaxValue     = 2.5695/2;
+    const real sigma2RelMaxLocation = 4.5119;
+    const real sigma2RelMaxValue    = 2.5695 / 2;
 
     // Our max of our current estimate is 3% above the exact value.
-    const real sigma2RelMaxMargin    = 1.04;
+    const real sigma2RelMaxMargin = 1.04;
 
     // The exact parameter values here don't actually matter.
     real mass = 10;
@@ -92,7 +92,7 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
     prop.q        = 0;
     prop.bConstr  = TRUE;
     prop.con_mass = mass;
-    prop.con_len  = 2*arm;
+    prop.con_len  = 2 * arm;
 
     // We scan a range of rotation distributions by scanning over T.
     int  numPointsBeforeMax = 0;
@@ -100,9 +100,9 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
     real sigma2_2d_prev     = 0;
     for (int i = 0; i <= 200; i++)
     {
-        real ktFac = i*0.01;
+        real ktFac = i * 0.01;
         // The rotational displacement is Gaussian with a sigma^2 of:
-        real sigma2_rot = ktFac/(2*mass);
+        real sigma2_rot = ktFac / (2 * mass);
 
         // Get the estimate for the Cartesian displacement.
         real sigma2_2d, sigma2_3d;
@@ -115,11 +115,12 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
 
         // Check that we don't underestimate sigma2_rot beyond the real maximum
         // and that our overestimate is tight.
-        real sigma2Rel = sigma2_rot/gmx::square(arm);
+        real sigma2Rel = sigma2_rot / gmx::square(arm);
         if (sigma2Rel >= sigma2RelMaxLocation)
         {
-            EXPECT_EQ(std::max(sigma2_2d, sigma2RelMaxValue*gmx::square(arm)), sigma2_2d);
-            EXPECT_EQ(std::min(sigma2_2d, sigma2RelMaxMargin*sigma2RelMaxValue*gmx::square(arm)), sigma2_2d);
+            EXPECT_EQ(std::max(sigma2_2d, sigma2RelMaxValue * gmx::square(arm)), sigma2_2d);
+            EXPECT_EQ(std::min(sigma2_2d, sigma2RelMaxMargin * sigma2RelMaxValue * gmx::square(arm)),
+                      sigma2_2d);
 
             numPointsAfterMax++;
         }
@@ -132,9 +133,12 @@ TEST_F(VerletBufferConstraintTest, EqualMasses)
         EXPECT_REAL_EQ_TOL(sigma2_rot, sigma2_3d, test::defaultRealTolerance());
     }
 
-    GMX_RELEASE_ASSERT(numPointsBeforeMax >= 20 && numPointsAfterMax >= 20, "This test only provides full coverage when we test a sufficient number of points before and after the location of the maximum value for the exact formula.");
+    GMX_RELEASE_ASSERT(
+            numPointsBeforeMax >= 20 && numPointsAfterMax >= 20,
+            "This test only provides full coverage when we test a sufficient number of points "
+            "before and after the location of the maximum value for the exact formula.");
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

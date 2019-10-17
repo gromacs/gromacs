@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -151,138 +151,138 @@ TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
 // Basic input data for gmx::AnalysisData tests.
 class SimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
-#ifndef STATIC_ANON_NAMESPACE_BUG
-            static SimpleInputData singleton;
-            return singleton.data_;
-#else
-            static SimpleInputData singleton_analysisdata;
-            return singleton_analysisdata.data_;
-#endif
-        }
+public:
+    static const AnalysisDataTestInput& get()
+    {
+#    ifndef STATIC_ANON_NAMESPACE_BUG
+        static SimpleInputData singleton;
+        return singleton.data_;
+#    else
+        static SimpleInputData singleton_analysisdata;
+        return singleton_analysisdata.data_;
+#    endif
+    }
 
-        SimpleInputData() : data_(1, false)
-        {
-            data_.setColumnCount(0, 3);
-            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
-            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
-            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
-        }
+    SimpleInputData() : data_(1, false)
+    {
+        data_.setColumnCount(0, 3);
+        data_.addFrameWithValues(1.0, 0.0, 1.0, 2.0);
+        data_.addFrameWithValues(2.0, 1.0, 1.0, 1.0);
+        data_.addFrameWithValues(3.0, 2.0, 0.0, 0.0);
+    }
 
-    private:
-        AnalysisDataTestInput  data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Input data with multiple data sets for gmx::AnalysisData tests.
 class DataSetsInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
-#ifndef STATIC_ANON_NAMESPACE_BUG
-            static DataSetsInputData singleton;
-            return singleton.data_;
-#else
-            static DataSetsInputData singleton_analysisdata;
-            return singleton_analysisdata.data_;
-#endif
-        }
+public:
+    static const AnalysisDataTestInput& get()
+    {
+#    ifndef STATIC_ANON_NAMESPACE_BUG
+        static DataSetsInputData singleton;
+        return singleton.data_;
+#    else
+        static DataSetsInputData singleton_analysisdata;
+        return singleton_analysisdata.data_;
+#    endif
+    }
 
-        DataSetsInputData() : data_(2, false)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 3);
-            data_.setColumnCount(1, 2);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(1, 0, 2.1, 1.1);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
-            frame2.addPointSetWithValues(1, 0, 0.1, 2.1);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
-            frame3.addPointSetWithValues(1, 0, 1.1, 1.1);
-        }
+    DataSetsInputData() : data_(2, false)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 3);
+        data_.setColumnCount(1, 2);
+        AnalysisDataTestInputFrame& frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+        frame1.addPointSetWithValues(1, 0, 2.1, 1.1);
+        AnalysisDataTestInputFrame& frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
+        frame2.addPointSetWithValues(1, 0, 0.1, 2.1);
+        AnalysisDataTestInputFrame& frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+        frame3.addPointSetWithValues(1, 0, 1.1, 1.1);
+    }
 
-    private:
-        AnalysisDataTestInput  data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Input data for multipoint gmx::AnalysisData tests.
 class MultipointInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
-#ifndef STATIC_ANON_NAMESPACE_BUG
-            static MultipointInputData singleton;
-            return singleton.data_;
-#else
-            static MultipointInputData singleton_analysisdata;
-            return singleton_analysisdata.data_;
-#endif
-        }
+public:
+    static const AnalysisDataTestInput& get()
+    {
+#    ifndef STATIC_ANON_NAMESPACE_BUG
+        static MultipointInputData singleton;
+        return singleton.data_;
+#    else
+        static MultipointInputData singleton_analysisdata;
+        return singleton_analysisdata.data_;
+#    endif
+    }
 
-        MultipointInputData() : data_(1, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 3);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 0, 1.1, 2.1, 1.1);
-            frame1.addPointSetWithValues(0, 0, 2.2, 1.2, 0.2);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 1, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 0, 2.1, 1.1, 0.1);
-            frame2.addPointSetWithValues(0, 2, 1.2);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
-            frame3.addPointSetWithValues(0, 0, 3.1, 2.1);
-            frame3.addPointSetWithValues(0, 1, 2.2, 1.2);
-        }
+    MultipointInputData() : data_(1, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 3);
+        AnalysisDataTestInputFrame& frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+        frame1.addPointSetWithValues(0, 0, 1.1, 2.1, 1.1);
+        frame1.addPointSetWithValues(0, 0, 2.2, 1.2, 0.2);
+        AnalysisDataTestInputFrame& frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 1, 1.0, 1.0);
+        frame2.addPointSetWithValues(0, 0, 2.1, 1.1, 0.1);
+        frame2.addPointSetWithValues(0, 2, 1.2);
+        AnalysisDataTestInputFrame& frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+        frame3.addPointSetWithValues(0, 0, 3.1, 2.1);
+        frame3.addPointSetWithValues(0, 1, 2.2, 1.2);
+    }
 
-    private:
-        AnalysisDataTestInput  data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 // Input data with multiple multipoint data sets for gmx::AnalysisData tests.
 class MultipointDataSetsInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
-#ifndef STATIC_ANON_NAMESPACE_BUG
-            static MultipointDataSetsInputData singleton;
-            return singleton.data_;
-#else
-            static MultipointDataSetsInputData singleton_analysisdata;
-            return singleton_analysisdata.data_;
-#endif
-        }
+public:
+    static const AnalysisDataTestInput& get()
+    {
+#    ifndef STATIC_ANON_NAMESPACE_BUG
+        static MultipointDataSetsInputData singleton;
+        return singleton.data_;
+#    else
+        static MultipointDataSetsInputData singleton_analysisdata;
+        return singleton_analysisdata.data_;
+#    endif
+    }
 
-        MultipointDataSetsInputData() : data_(2, true)
-        {
-            using gmx::test::AnalysisDataTestInputFrame;
-            data_.setColumnCount(0, 3);
-            data_.setColumnCount(1, 2);
-            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 1, 2.1, 1.1);
-            frame1.addPointSetWithValues(1, 0, 2.01, 1.01);
-            frame1.addPointSetWithValues(1, 1, 0.11);
-            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 0, 0.1, 2.1);
-            frame2.addPointSetWithValues(1, 1, 1.01);
-            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
-            frame3.addPointSetWithValues(0, 1, 1.1);
-        }
+    MultipointDataSetsInputData() : data_(2, true)
+    {
+        using gmx::test::AnalysisDataTestInputFrame;
+        data_.setColumnCount(0, 3);
+        data_.setColumnCount(1, 2);
+        AnalysisDataTestInputFrame& frame1 = data_.addFrame(1.0);
+        frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+        frame1.addPointSetWithValues(0, 1, 2.1, 1.1);
+        frame1.addPointSetWithValues(1, 0, 2.01, 1.01);
+        frame1.addPointSetWithValues(1, 1, 0.11);
+        AnalysisDataTestInputFrame& frame2 = data_.addFrame(2.0);
+        frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
+        frame2.addPointSetWithValues(0, 0, 0.1, 2.1);
+        frame2.addPointSetWithValues(1, 1, 1.01);
+        AnalysisDataTestInputFrame& frame3 = data_.addFrame(3.0);
+        frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+        frame3.addPointSetWithValues(0, 1, 1.1);
+    }
 
-    private:
-        AnalysisDataTestInput  data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 /********************************************************************
@@ -293,63 +293,46 @@ using gmx::test::AnalysisDataTestFixture;
 
 class AnalysisDataTest : public AnalysisDataTestFixture
 {
-    public:
-        explicit AnalysisDataTest(const AnalysisDataTestInput &input)
-            : input_(input)
-        {
-        }
+public:
+    explicit AnalysisDataTest(const AnalysisDataTestInput& input) : input_(input) {}
 
-        void SetUp() override
-        {
-            ASSERT_NO_THROW_GMX(setupDataObject(input_, &data_));
-        }
+    void SetUp() override { ASSERT_NO_THROW_GMX(setupDataObject(input_, &data_)); }
 
-        void addStaticCheckerModule()
-        {
-            AnalysisDataTestFixture::addStaticCheckerModule(input_, &data_);
-        }
-        void addStaticParallelCheckerModule()
-        {
-            AnalysisDataTestFixture::addStaticParallelCheckerModule(input_, &data_);
-        }
-        void addStaticColumnCheckerModule(int firstColumn, int columnCount)
-        {
-            AnalysisDataTestFixture::addStaticColumnCheckerModule(
-                    input_, firstColumn, columnCount, &data_);
-        }
-        void addStaticStorageCheckerModule(int storageCount)
-        {
-            AnalysisDataTestFixture::addStaticStorageCheckerModule(
-                    input_, storageCount, &data_);
-        }
-        void presentAllData()
-        {
-            AnalysisDataTestFixture::presentAllData(input_, &data_);
-        }
+    void addStaticCheckerModule()
+    {
+        AnalysisDataTestFixture::addStaticCheckerModule(input_, &data_);
+    }
+    void addStaticParallelCheckerModule()
+    {
+        AnalysisDataTestFixture::addStaticParallelCheckerModule(input_, &data_);
+    }
+    void addStaticColumnCheckerModule(int firstColumn, int columnCount)
+    {
+        AnalysisDataTestFixture::addStaticColumnCheckerModule(input_, firstColumn, columnCount, &data_);
+    }
+    void addStaticStorageCheckerModule(int storageCount)
+    {
+        AnalysisDataTestFixture::addStaticStorageCheckerModule(input_, storageCount, &data_);
+    }
+    void presentAllData() { AnalysisDataTestFixture::presentAllData(input_, &data_); }
 
-        const AnalysisDataTestInput &input_;
-        gmx::AnalysisData            data_;
+    const AnalysisDataTestInput& input_;
+    gmx::AnalysisData            data_;
 };
 
-template <class InputDataType>
+template<class InputDataType>
 class AnalysisDataCommonTest : public AnalysisDataTest
 {
-    public:
-        AnalysisDataCommonTest() : AnalysisDataTest(InputDataType::get())
-        {
-        }
+public:
+    AnalysisDataCommonTest() : AnalysisDataTest(InputDataType::get()) {}
 };
 
 //! Test fixture for tests that are only applicable to simple data.
-typedef AnalysisDataCommonTest<SimpleInputData>     AnalysisDataSimpleTest;
+typedef AnalysisDataCommonTest<SimpleInputData> AnalysisDataSimpleTest;
 //! Test fixture for tests that are only applicable to multipoint data.
 typedef AnalysisDataCommonTest<MultipointInputData> AnalysisDataMultipointTest;
 //! List of input data types for tests applicable to all types of data.
-typedef ::testing::Types<SimpleInputData,
-                         DataSetsInputData,
-                         MultipointInputData,
-                         MultipointDataSetsInputData>
-    AllInputDataTypes;
+typedef ::testing::Types<SimpleInputData, DataSetsInputData, MultipointInputData, MultipointDataSetsInputData> AllInputDataTypes;
 TYPED_TEST_CASE(AnalysisDataCommonTest, AllInputDataTypes);
 
 /*
@@ -460,10 +443,9 @@ TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
  */
 TEST(DISABLED_AnalysisDataCommonTest, GenericTests)
 {
-    ADD_FAILURE()
-    << "Tests for generic AnalysisData functionality require support for "
-    << "Google Test typed tests, which was not available when the tests "
-    << "were compiled.";
+    ADD_FAILURE() << "Tests for generic AnalysisData functionality require support for "
+                  << "Google Test typed tests, which was not available when the tests "
+                  << "were compiled.";
 }
 
 #endif

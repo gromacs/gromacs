@@ -42,34 +42,33 @@
 #include "gromacs/utility/gmxassert.h"
 
 /* Prune a single NbnxnPairlistCpu entry with distance rlistInner */
-void
-nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
-                       const nbnxn_atomdata_t *   nbat,
-                       const rvec * gmx_restrict  shift_vec,
-                       real                       rlistInner)
+void nbnxn_kernel_prune_ref(NbnxnPairlistCpu*       nbl,
+                            const nbnxn_atomdata_t* nbat,
+                            const rvec* gmx_restrict shift_vec,
+                            real                     rlistInner)
 {
     /* We avoid push_back() for efficiency reasons and resize after filling */
     nbl->ci.resize(nbl->ciOuter.size());
     nbl->cj.resize(nbl->cjOuter.size());
 
-    const nbnxn_ci_t * gmx_restrict ciOuter  = nbl->ciOuter.data();
-    nbnxn_ci_t       * gmx_restrict ciInner  = nbl->ci.data();
+    const nbnxn_ci_t* gmx_restrict ciOuter = nbl->ciOuter.data();
+    nbnxn_ci_t* gmx_restrict ciInner       = nbl->ci.data();
 
-    const nbnxn_cj_t * gmx_restrict cjOuter   = nbl->cjOuter.data();
-    nbnxn_cj_t       * gmx_restrict cjInner   = nbl->cj.data();
+    const nbnxn_cj_t* gmx_restrict cjOuter = nbl->cjOuter.data();
+    nbnxn_cj_t* gmx_restrict cjInner       = nbl->cj.data();
 
-    const real       * gmx_restrict shiftvec = shift_vec[0];
-    const real       * gmx_restrict x        = nbat->x().data();
+    const real* gmx_restrict shiftvec = shift_vec[0];
+    const real* gmx_restrict x        = nbat->x().data();
 
-    const real                      rlist2   = rlistInner*rlistInner;
+    const real rlist2 = rlistInner * rlistInner;
 
     /* Use compile time constants to speed up the code */
-    constexpr int c_xStride  = 3;
+    constexpr int c_xStride = 3;
     GMX_ASSERT(c_xStride == nbat->xstride, "xStride should match nbat->xstride");
     constexpr int c_xiStride = 3;
 
-    constexpr int c_iUnroll  = c_nbnxnCpuIClusterSize;
-    constexpr int c_jUnroll  = c_nbnxnCpuIClusterSize;
+    constexpr int c_iUnroll = c_nbnxnCpuIClusterSize;
+    constexpr int c_jUnroll = c_nbnxnCpuIClusterSize;
 
     /* Initialize the new list as empty and add pairs that are in range */
     int       nciInner = 0;
@@ -77,7 +76,7 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
     const int nciOuter = nbl->ciOuter.size();
     for (int ciIndex = 0; ciIndex < nciOuter; ciIndex++)
     {
-        const nbnxn_ci_t * gmx_restrict ciEntry = &ciOuter[ciIndex];
+        const nbnxn_ci_t* gmx_restrict ciEntry = &ciOuter[ciIndex];
 
         /* Copy the original list entry to the pruned entry */
         ciInner[nciInner].ci           = ciEntry->ci;
@@ -89,32 +88,33 @@ nbnxn_kernel_prune_ref(NbnxnPairlistCpu *         nbl,
         int ci  = ciEntry->ci;
 
         /* Load i atom coordinates */
-        real xi[c_iUnroll*c_xiStride];
+        real xi[c_iUnroll * c_xiStride];
         for (int i = 0; i < c_iUnroll; i++)
         {
             for (int d = 0; d < DIM; d++)
             {
-                xi[i*c_xiStride + d] = x[(ci*c_iUnroll + i)*c_xStride + d] + shiftvec[ish*DIM + d];
+                xi[i * c_xiStride + d] =
+                        x[(ci * c_iUnroll + i) * c_xStride + d] + shiftvec[ish * DIM + d];
             }
         }
 
         for (int cjind = ciEntry->cj_ind_start; cjind < ciEntry->cj_ind_end; cjind++)
         {
             /* j-cluster index */
-            int  cj        = cjOuter[cjind].cj;
+            int cj = cjOuter[cjind].cj;
 
             bool isInRange = false;
             for (int i = 0; i < c_iUnroll && !isInRange; i++)
             {
                 for (int j = 0; j < c_jUnroll; j++)
                 {
-                    int  aj  = cj*c_jUnroll + j;
+                    int aj = cj * c_jUnroll + j;
 
-                    real dx  = xi[i*c_xiStride + XX] - x[aj*c_xStride + XX];
-                    real dy  = xi[i*c_xiStride + YY] - x[aj*c_xStride + YY];
-                    real dz  = xi[i*c_xiStride + ZZ] - x[aj*c_xStride + ZZ];
+                    real dx = xi[i * c_xiStride + XX] - x[aj * c_xStride + XX];
+                    real dy = xi[i * c_xiStride + YY] - x[aj * c_xStride + YY];
+                    real dz = xi[i * c_xiStride + ZZ] - x[aj * c_xStride + ZZ];
 
-                    real rsq = dx*dx + dy*dy + dz*dz;
+                    real rsq = dx * dx + dy * dy + dz * dz;
 
                     if (rsq < rlist2)
                     {

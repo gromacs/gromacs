@@ -65,8 +65,7 @@
  * \return          The value of the splitting coefficient that
  *                  produces the required dtol at rc.
  */
-real
-calc_ewaldcoeff_q(real rc, real rtol);
+real calc_ewaldcoeff_q(real rc, real rtol);
 
 /*! \brief Computes the Ewald splitting coefficient for LJ
  *
@@ -80,8 +79,7 @@ calc_ewaldcoeff_q(real rc, real rtol);
  * \return          The value of the splitting coefficient that
  *                  produces the required dtol at rc.
  */
-real
-calc_ewaldcoeff_lj(real rc, real rtol);
+real calc_ewaldcoeff_lj(real rc, real rtol);
 
 
 /*! \libinternal \brief Class to handle box scaling for Ewald and PME.
@@ -94,48 +92,47 @@ calc_ewaldcoeff_lj(real rc, real rtol);
 class EwaldBoxZScaler
 {
 
-    private:
-        bool scaleWithWalls_; /**< True if the simulation uses two walls and the box needs to be scaled in PME */
-        real scalingFactor_;  /**< Box The scaling factor PME uses with walls */
+private:
+    bool scaleWithWalls_; /**< True if the simulation uses two walls and the box needs to be scaled in PME */
+    real scalingFactor_; /**< Box The scaling factor PME uses with walls */
 
-    public:
-        EwaldBoxZScaler() = delete;
+public:
+    EwaldBoxZScaler() = delete;
 
-        /*! \brief Constructor that takes the input record to initialize Ewald box scaling appropriately. */
-        EwaldBoxZScaler(const t_inputrec &ir)
+    /*! \brief Constructor that takes the input record to initialize Ewald box scaling appropriately. */
+    EwaldBoxZScaler(const t_inputrec& ir)
+    {
+        if (inputrecPbcXY2Walls(&ir))
         {
-            if (inputrecPbcXY2Walls(&ir))
-            {
-                scaleWithWalls_ = true;
-                scalingFactor_  = ir.wall_ewald_zfac;
-            }
-            else
-            {
-                scaleWithWalls_ = false;
-                scalingFactor_  = 1;
-            }
+            scaleWithWalls_ = true;
+            scalingFactor_  = ir.wall_ewald_zfac;
         }
-
-        /*! \brief Copy and scale the box for PME.
-         *
-         * When PME is used with 2D periodicity and two walls, the
-         * copy of the \p box passed is scaled with the Z scaling factor.
-         *
-         * \param[in] box        The current box matrix
-         * \param[out] scaledBox Scaled copy of the box matrix.
-         */
-        void scaleBox(const matrix box,
-                      matrix       scaledBox)
+        else
         {
-            GMX_ASSERT(box, "invalid source box pointer");
-            GMX_ASSERT(scaledBox, "invalid target box pointer");
-
-            copy_mat(box, scaledBox);
-            if (scaleWithWalls_)
-            {
-                svmul(scalingFactor_, scaledBox[ZZ], scaledBox[ZZ]);
-            }
+            scaleWithWalls_ = false;
+            scalingFactor_  = 1;
         }
+    }
+
+    /*! \brief Copy and scale the box for PME.
+     *
+     * When PME is used with 2D periodicity and two walls, the
+     * copy of the \p box passed is scaled with the Z scaling factor.
+     *
+     * \param[in] box        The current box matrix
+     * \param[out] scaledBox Scaled copy of the box matrix.
+     */
+    void scaleBox(const matrix box, matrix scaledBox)
+    {
+        GMX_ASSERT(box, "invalid source box pointer");
+        GMX_ASSERT(scaledBox, "invalid target box pointer");
+
+        copy_mat(box, scaledBox);
+        if (scaleWithWalls_)
+        {
+            svmul(scalingFactor_, scaledBox[ZZ], scaledBox[ZZ]);
+        }
+    }
 };
 
 #endif

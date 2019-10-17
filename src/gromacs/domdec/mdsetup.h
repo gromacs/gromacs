@@ -58,7 +58,7 @@ namespace gmx
 {
 class Constraints;
 class MDAtoms;
-}
+} // namespace gmx
 
 /*! \brief Gets the local shell with domain decomposition
  *
@@ -66,9 +66,7 @@ class MDAtoms;
  * \param[in]     md        The MD atom data
  * \param[in,out] shfc      The shell/flexible-constraint data
  */
-void make_local_shells(const t_commrec *cr,
-                       const t_mdatoms *md,
-                       gmx_shellfc_t   *shfc);
+void make_local_shells(const t_commrec* cr, const t_mdatoms* md, gmx_shellfc_t* shfc);
 
 /*! \brief Sets atom data for several MD algorithms
  *
@@ -88,15 +86,15 @@ void make_local_shells(const t_commrec *cr,
  * \param[in,out] vsite      The virtual site data, can be NULL
  * \param[in,out] shellfc    The shell/flexible-constraint data, can be NULL
  */
-void mdAlgorithmsSetupAtomData(const t_commrec                 *cr,
-                               const t_inputrec                *ir,
-                               const gmx_mtop_t                &top_global,
-                               gmx_localtop_t                  *top,
-                               t_forcerec                      *fr,
-                               t_graph                        **graph,
-                               gmx::MDAtoms                    *mdAtoms,
-                               gmx::Constraints                *constr,
-                               gmx_vsite_t                     *vsite,
-                               gmx_shellfc_t                   *shellfc);
+void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
+                               const t_inputrec* ir,
+                               const gmx_mtop_t& top_global,
+                               gmx_localtop_t*   top,
+                               t_forcerec*       fr,
+                               t_graph**         graph,
+                               gmx::MDAtoms*     mdAtoms,
+                               gmx::Constraints* constr,
+                               gmx_vsite_t*      vsite,
+                               gmx_shellfc_t*    shellfc);
 
 #endif

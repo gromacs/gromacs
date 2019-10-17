@@ -50,16 +50,11 @@ struct t_atoms;
  * when bondtype="check" no error/warning is issued.
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
-int search_atom(const char *type, int start,
-                const t_atoms *atoms,
-                const char *bondtype, bool bAllowMissing);
+int search_atom(const char* type, int start, const t_atoms* atoms, const char* bondtype, bool bAllowMissing);
 
 /* Similar to search_atom, but this routine searches for the specified
  * atom in residue resind.
  */
-int
-search_res_atom(const char *type, int resind,
-                const t_atoms *atoms,
-                const char *bondtype, bool bAllowMissing);
+int search_res_atom(const char* type, int resind, const t_atoms* atoms, const char* bondtype, bool bAllowMissing);
 
 #endif

@@ -53,28 +53,24 @@ namespace gmx
 namespace test
 {
 
-MockThreadAffinityAccess::MockThreadAffinityAccess()
-    : supported_(true)
+MockThreadAffinityAccess::MockThreadAffinityAccess() : supported_(true)
 {
     using ::testing::_;
     using ::testing::Return;
 #ifndef __clang_analyzer__
-    ON_CALL(*this, setCurrentThreadAffinityToCore(_))
-        .WillByDefault(Return(true));
+    ON_CALL(*this, setCurrentThreadAffinityToCore(_)).WillByDefault(Return(true));
 #endif
 }
 
-MockThreadAffinityAccess::~MockThreadAffinityAccess()
-{
-}
+MockThreadAffinityAccess::~MockThreadAffinityAccess() {}
 
 
 ThreadAffinityTestHelper::ThreadAffinityTestHelper()
 {
     snew(cr_, 1);
-    cr_->nnodes         = gmx_node_num();
-    cr_->nodeid         = gmx_node_rank();
-    cr_->duty           = DUTY_PP;
+    cr_->nnodes = gmx_node_num();
+    cr_->nodeid = gmx_node_rank();
+    cr_->duty   = DUTY_PP;
 #if GMX_MPI
     cr_->mpi_comm_mysim = MPI_COMM_WORLD;
 #endif

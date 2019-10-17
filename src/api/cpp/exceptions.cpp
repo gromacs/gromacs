@@ -45,13 +45,13 @@ Exception::Exception() = default;
 
 Exception::~Exception() = default;
 
-Exception::Exception(const Exception &) = default;
+Exception::Exception(const Exception&) = default;
 
-Exception &Exception::operator=(const Exception &) = default;
+Exception& Exception::operator=(const Exception&) = default;
 
-Exception::Exception(Exception &&) noexcept = default;
+Exception::Exception(Exception&&) noexcept = default;
 
-Exception &Exception::operator=(Exception &&) noexcept = default;
+Exception& Exception::operator=(Exception&&) noexcept = default;
 
 const char* Exception::what() const noexcept
 {

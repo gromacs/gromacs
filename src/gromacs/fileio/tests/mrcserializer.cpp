@@ -74,9 +74,9 @@ TEST(MrcSerializer, DefaultHeaderHasRightSerialSize)
     const MrcDensityMapHeader inputHeader = {};
 
     serializeMrcDensityMapHeader(&serializer, inputHeader);
-    const auto                serializedHeader = serializer.finishAndGetBuffer();
+    const auto serializedHeader = serializer.finishAndGetBuffer();
 
-    constexpr size_t          c_defaultMrcHeaderSize = 1024;
+    constexpr size_t c_defaultMrcHeaderSize = 1024;
     EXPECT_EQ(c_defaultMrcHeaderSize, serializedHeader.size());
 }
 
@@ -86,10 +86,10 @@ TEST(MrcSerializer, DefaultHeaderIdenticalAfterRoundTrip)
     const MrcDensityMapHeader inputHeader = {};
 
     serializeMrcDensityMapHeader(&serializer, inputHeader);
-    const auto                serializedHeader = serializer.finishAndGetBuffer();
+    const auto serializedHeader = serializer.finishAndGetBuffer();
 
-    InMemoryDeserializer      deserializer(serializedHeader, false);
-    const auto                deserializedHeader = deserializeMrcDensityMapHeader(&deserializer);
+    InMemoryDeserializer deserializer(serializedHeader, false);
+    const auto           deserializedHeader = deserializeMrcDensityMapHeader(&deserializer);
 
     // comparing serialized results saves MrcDensityHeaders comparison implementation
     serializeMrcDensityMapHeader(&serializer, deserializedHeader);

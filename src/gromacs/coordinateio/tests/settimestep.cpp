@@ -62,39 +62,36 @@ namespace test
  */
 class SetTimeStepTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        SetTimeStepTest()
+public:
+    SetTimeStepTest() { clear_trxframe(frame(), true); }
+    /*! \brief
+     * Get access to the method for changing frame time information.
+     *
+     * \param[in] timeStep User supplied time step to test.
+     */
+    SetTimeStep* setTimeStep(real timeStep)
+    {
+        if (!setTimeStep_)
         {
-            clear_trxframe(frame(), true);
+            setTimeStep_ = std::make_unique<SetTimeStep>(timeStep);
         }
-        /*! \brief
-         * Get access to the method for changing frame time information.
-         *
-         * \param[in] timeStep User supplied time step to test.
-         */
-        SetTimeStep *setTimeStep(real timeStep)
-        {
-            if (!setTimeStep_)
-            {
-                setTimeStep_ = std::make_unique<SetTimeStep>(timeStep);
-            }
-            return setTimeStep_.get();
-        }
-        //! Get access to trajectoryframe to mess with.
-        t_trxframe *frame() { return &frame_; }
+        return setTimeStep_.get();
+    }
+    //! Get access to trajectoryframe to mess with.
+    t_trxframe* frame() { return &frame_; }
 
-    private:
-        //! Object to use for tests
-        SetTimeStepPointer     setTimeStep_;
-        //! Storage of trajectoryframe.
-        t_trxframe             frame_;
+private:
+    //! Object to use for tests
+    SetTimeStepPointer setTimeStep_;
+    //! Storage of trajectoryframe.
+    t_trxframe frame_;
 };
 
 TEST_F(SetTimeStepTest, SetTimeStepWorks)
 {
     frame()->time = 23;
     // Set start time to nonsense to make sure it is ignored.
-    SetTimeStep *method = setTimeStep(7);
+    SetTimeStep* method = setTimeStep(7);
     EXPECT_NO_THROW(method->processFrame(0, frame()));
     EXPECT_EQ(frame()->time, 23);
     // No matter what the next time in the frame is, ignore it.

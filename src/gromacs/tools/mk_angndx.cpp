@@ -51,9 +51,9 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static int calc_ntype(int nft, const int *ft, const t_idef *idef)
+static int calc_ntype(int nft, const int* ft, const t_idef* idef)
 {
-    int  i, f, nf = 0;
+    int i, f, nf = 0;
 
     for (i = 0; (i < idef->ntypes); i++)
     {
@@ -69,8 +69,7 @@ static int calc_ntype(int nft, const int *ft, const t_idef *idef)
     return nf;
 }
 
-static void fill_ft_ind(int nft, const int *ft, const t_idef *idef,
-                        int ft_ind[], char *grpnames[])
+static void fill_ft_ind(int nft, const int* ft, const t_idef* idef, int ft_ind[], char* grpnames[])
 {
     char buf[125];
     int  i, f, ftype, ind = 0;
@@ -119,15 +118,15 @@ static void fill_ft_ind(int nft, const int *ft, const t_idef *idef,
                     case F_RBDIHS:
                         sprintf(buf, "RB-A1=%.2f", idef->iparams[i].rbdihs.rbcA[1]);
                         break;
-                    case  F_RESTRANGLES:
+                    case F_RESTRANGLES:
                         sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case  F_RESTRDIHS:
+                    case F_RESTRDIHS:
                         sprintf(buf, "Theta=%.1f_%.2f", idef->iparams[i].harmonic.rA,
                                 idef->iparams[i].harmonic.krA);
                         break;
-                    case  F_CBTDIHS:
+                    case F_CBTDIHS:
                         sprintf(buf, "CBT-A1=%.2f", idef->iparams[i].cbtdihs.cbtcA[1]);
                         break;
 
@@ -142,15 +141,21 @@ static void fill_ft_ind(int nft, const int *ft, const t_idef *idef,
     }
 }
 
-static void fill_ang(int nft, const int *ft, int fac,
-                     int nr[], int *index[], const int ft_ind[], const t_topology *top,
-                     gmx_bool bNoH, real hq)
+static void fill_ang(int               nft,
+                     const int*        ft,
+                     int               fac,
+                     int               nr[],
+                     int*              index[],
+                     const int         ft_ind[],
+                     const t_topology* top,
+                     gmx_bool          bNoH,
+                     real              hq)
 {
     int           f, ftype, i, j, indg, nr_fac;
     gmx_bool      bUse;
-    const t_idef *idef;
-    t_atom       *atom;
-    t_iatom      *ia;
+    const t_idef* idef;
+    t_atom*       atom;
+    t_iatom*      ia;
 
 
     idef = &top->idef;
@@ -160,7 +165,7 @@ static void fill_ang(int nft, const int *ft, int fac,
     {
         ftype = ft[f];
         ia    = idef->il[ftype].iatoms;
-        for (i = 0; (i < idef->il[ftype].nr); )
+        for (i = 0; (i < idef->il[ftype].nr);)
         {
             indg = ft_ind[ia[0]];
             if (indg == -1)
@@ -172,7 +177,7 @@ static void fill_ang(int nft, const int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5)
+                    if (atom[ia[1 + j]].m < 1.5)
                     {
                         bUse = FALSE;
                     }
@@ -182,7 +187,7 @@ static void fill_ang(int nft, const int *ft, int fac,
             {
                 for (j = 0; j < fac; j++)
                 {
-                    if (atom[ia[1+j]].m < 1.5 && std::abs(atom[ia[1+j]].q) < hq)
+                    if (atom[ia[1 + j]].m < 1.5 && std::abs(atom[ia[1 + j]].q) < hq)
                     {
                         bUse = FALSE;
                     }
@@ -192,22 +197,22 @@ static void fill_ang(int nft, const int *ft, int fac,
             {
                 if (nr[indg] % 1000 == 0)
                 {
-                    srenew(index[indg], fac*(nr[indg]+1000));
+                    srenew(index[indg], fac * (nr[indg] + 1000));
                 }
-                nr_fac = fac*nr[indg];
+                nr_fac = fac * nr[indg];
                 for (j = 0; (j < fac); j++)
                 {
-                    index[indg][nr_fac+j] = ia[j+1];
+                    index[indg][nr_fac + j] = ia[j + 1];
                 }
                 nr[indg]++;
             }
-            ia += interaction_function[ftype].nratoms+1;
-            i  += interaction_function[ftype].nratoms+1;
+            ia += interaction_function[ftype].nratoms + 1;
+            i += interaction_function[ftype].nratoms + 1;
         }
     }
 }
 
-static int *select_ftype(const char *opt, int *nft, int *mult)
+static int* select_ftype(const char* opt, int* nft, int* mult)
 {
     int *ft = nullptr, ftype;
 
@@ -216,12 +221,11 @@ static int *select_ftype(const char *opt, int *nft, int *mult)
         *mult = 3;
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if ((interaction_function[ftype].flags & IF_ATYPE) ||
-                ftype == F_TABANGLES)
+            if ((interaction_function[ftype].flags & IF_ATYPE) || ftype == F_TABANGLES)
             {
                 (*nft)++;
                 srenew(ft, *nft);
-                ft[*nft-1] = ftype;
+                ft[*nft - 1] = ftype;
             }
         }
     }
@@ -232,59 +236,49 @@ static int *select_ftype(const char *opt, int *nft, int *mult)
         snew(ft, *nft);
         switch (opt[0])
         {
-            case 'd':
-                ft[0] = F_PDIHS;
-                break;
-            case 'i':
-                ft[0] = F_IDIHS;
-                break;
-            case 'r':
-                ft[0] = F_RBDIHS;
-                break;
-            default:
-                break;
+            case 'd': ft[0] = F_PDIHS; break;
+            case 'i': ft[0] = F_IDIHS; break;
+            case 'r': ft[0] = F_RBDIHS; break;
+            default: break;
         }
     }
 
     return ft;
 }
 
-int gmx_mk_angndx(int argc, char *argv[])
+int gmx_mk_angndx(int argc, char* argv[])
 {
-    static const char *desc[] = {
+    static const char* desc[] = {
         "[THISMODULE] makes an index file for calculation of",
         "angle distributions etc. It uses a run input file ([REF].tpx[ref]) for the",
         "definitions of the angles, dihedrals etc."
     };
-    static const char *opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans", nullptr };
+    static const char* opt[] = { nullptr, "angle", "dihedral", "improper", "ryckaert-bellemans",
+                                 nullptr };
     static gmx_bool    bH    = TRUE;
     static real        hq    = -1;
-    t_pargs            pa[]  = {
-        { "-type", FALSE, etENUM, {opt},
-          "Type of angle" },
-        { "-hyd", FALSE, etBOOL, {&bH},
-          "Include angles with atoms with mass < 1.5" },
-        { "-hq", FALSE, etREAL, {&hq},
-          "Ignore angles with atoms with mass < 1.5 and magnitude of their charge less than this value" }
-    };
+    t_pargs            pa[]  = { { "-type", FALSE, etENUM, { opt }, "Type of angle" },
+                     { "-hyd", FALSE, etBOOL, { &bH }, "Include angles with atoms with mass < 1.5" },
+                     { "-hq",
+                       FALSE,
+                       etREAL,
+                       { &hq },
+                       "Ignore angles with atoms with mass < 1.5 and magnitude of their charge "
+                       "less than this value" } };
 
-    gmx_output_env_t  *oenv;
-    FILE              *out;
-    t_topology        *top;
-    int                i, j, ntype;
-    int                nft = 0, *ft, mult = 0;
-    int              **index;
-    int               *ft_ind;
-    int               *nr;
-    char             **grpnames;
-    t_filenm           fnm[] = {
-        { efTPR, nullptr, nullptr, ffREAD  },
-        { efNDX, nullptr, "angle", ffWRITE }
-    };
+    gmx_output_env_t* oenv;
+    FILE*             out;
+    t_topology*       top;
+    int               i, j, ntype;
+    int               nft = 0, *ft, mult = 0;
+    int**             index;
+    int*              ft_ind;
+    int*              nr;
+    char**            grpnames;
+    t_filenm fnm[] = { { efTPR, nullptr, nullptr, ffREAD }, { efNDX, nullptr, "angle", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -310,9 +304,9 @@ int gmx_mk_angndx(int argc, char *argv[])
         if (nr[i] > 0)
         {
             fprintf(out, "[ %s ]\n", grpnames[i]);
-            for (j = 0; (j < nr[i]*mult); j++)
+            for (j = 0; (j < nr[i] * mult); j++)
             {
-                fprintf(out, " %5d", index[i][j]+1);
+                fprintf(out, " %5d", index[i][j] + 1);
                 if ((j % 12) == 11)
                 {
                     fprintf(out, "\n");

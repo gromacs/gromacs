@@ -42,17 +42,21 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 
-enum {
-    egCOULSR, egLJSR, egBHAMSR,
-    egCOUL14, egLJ14, egNR
+enum
+{
+    egCOULSR,
+    egLJSR,
+    egBHAMSR,
+    egCOUL14,
+    egLJ14,
+    egNR
 };
 
 struct gmx_grppairener_t
 {
-    gmx_grppairener_t(int numEnergyGroups) :
-        nener(numEnergyGroups*numEnergyGroups)
+    gmx_grppairener_t(int numEnergyGroups) : nener(numEnergyGroups * numEnergyGroups)
     {
-        for (auto &elem : ener)
+        for (auto& elem : ener)
         {
             elem.resize(nener);
         }
@@ -64,22 +68,21 @@ struct gmx_grppairener_t
 
 struct gmx_enerdata_t
 {
-    gmx_enerdata_t(int numEnergyGroups,
-                   int numFepLambdas);
+    gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
 
-    real                     term[F_NRE]         = { 0 }; /* The energies for all different interaction types */
+    real term[F_NRE] = { 0 }; /* The energies for all different interaction types */
     struct gmx_grppairener_t grpp;
-    double                   dvdl_lin[efptNR]    = { 0 }; /* Contributions to dvdl with linear lam-dependence */
-    double                   dvdl_nonlin[efptNR] = { 0 }; /* Idem, but non-linear dependence                  */
+    double dvdl_lin[efptNR]    = { 0 }; /* Contributions to dvdl with linear lam-dependence */
+    double dvdl_nonlin[efptNR] = { 0 }; /* Idem, but non-linear dependence                  */
     /* The idea is that dvdl terms with linear lambda dependence will be added
      * automatically to enerpart_lambda. Terms with non-linear lambda dependence
      * should explicitly determine the energies at foreign lambda points
      * when n_lambda > 0. */
 
-    int                      fep_state = 0;               /*current fep state -- just for printing */
-    std::vector<double>      enerpart_lambda;             /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
-    real                     foreign_term[F_NRE] = { 0 }; /* alternate array for storing foreign lambda energies */
-    struct gmx_grppairener_t foreign_grpp;                /* alternate array for storing foreign lambda energies */
+    int                 fep_state = 0; /*current fep state -- just for printing */
+    std::vector<double> enerpart_lambda; /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
+    real foreign_term[F_NRE] = { 0 };      /* alternate array for storing foreign lambda energies */
+    struct gmx_grppairener_t foreign_grpp; /* alternate array for storing foreign lambda energies */
 };
 
 #endif

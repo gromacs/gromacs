@@ -48,28 +48,28 @@
 namespace gmx
 {
 
-void blockaToExclusionBlocks(const t_blocka *b, gmx::ArrayRef<ExclusionBlock> b2)
+void blockaToExclusionBlocks(const t_blocka* b, gmx::ArrayRef<ExclusionBlock> b2)
 {
     for (int i = 0; (i < b->nr); i++)
     {
-        for (int j = b->index[i]; (j < b->index[i+1]); j++)
+        for (int j = b->index[i]; (j < b->index[i + 1]); j++)
         {
             b2[i].atomNumber.push_back(b->a[j]);
         }
     }
 }
 
-void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka *b)
+void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka* b)
 {
     int nra = 0;
     int i   = 0;
-    for (const auto &block : b2)
+    for (const auto& block : b2)
     {
         b->index[i] = nra;
-        int j = 0;
-        for (const auto &entry : block.atomNumber)
+        int j       = 0;
+        for (const auto& entry : block.atomNumber)
         {
-            b->a[nra+j] = entry;
+            b->a[nra + j] = entry;
             j++;
         }
         nra += block.nra();
@@ -79,13 +79,14 @@ void exclusionBlocksToBlocka(gmx::ArrayRef<const ExclusionBlock> b2, t_blocka *b
     b->index[i] = nra;
 }
 
-void mergeExclusions(t_blocka *excl, gmx::ArrayRef<ExclusionBlock> b2)
+void mergeExclusions(t_blocka* excl, gmx::ArrayRef<ExclusionBlock> b2)
 {
     if (b2.empty())
     {
         return;
     }
-    GMX_RELEASE_ASSERT(b2.ssize() == excl->nr, "Cannot merge exclusions for "
+    GMX_RELEASE_ASSERT(b2.ssize() == excl->nr,
+                       "Cannot merge exclusions for "
                        "blocks that do not describe the same number "
                        "of particles");
 
@@ -94,15 +95,16 @@ void mergeExclusions(t_blocka *excl, gmx::ArrayRef<ExclusionBlock> b2)
 
     /* Count and sort the exclusions */
     int nra = 0;
-    for (auto &block : b2)
+    for (auto& block : b2)
     {
         if (block.nra() > 0)
         {
             /* remove double entries */
             std::sort(block.atomNumber.begin(), block.atomNumber.end());
-            for (auto atom = block.atomNumber.begin() + 1; atom != block.atomNumber.end(); )
+            for (auto atom = block.atomNumber.begin() + 1; atom != block.atomNumber.end();)
             {
-                GMX_RELEASE_ASSERT(atom < block.atomNumber.end(), "Need to stay in range of the size of the blocks");
+                GMX_RELEASE_ASSERT(atom < block.atomNumber.end(),
+                                   "Need to stay in range of the size of the blocks");
                 auto prev = atom - 1;
                 if (*prev == *atom)
                 {
@@ -113,7 +115,7 @@ void mergeExclusions(t_blocka *excl, gmx::ArrayRef<ExclusionBlock> b2)
                     ++atom;
                 }
             }
-            nra       += block.nra();
+            nra += block.nra();
         }
     }
     excl->nra = nra;

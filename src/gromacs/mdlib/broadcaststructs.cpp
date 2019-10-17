@@ -44,16 +44,18 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/state.h"
 
-template <typename AllocatorType>
-static void bcastPaddedRVecVector(const t_commrec *cr, gmx::PaddedVector<gmx::RVec, AllocatorType> *v, int numAtoms)
+template<typename AllocatorType>
+static void bcastPaddedRVecVector(const t_commrec* cr, gmx::PaddedVector<gmx::RVec, AllocatorType>* v, int numAtoms)
 {
     v->resizeWithPadding(numAtoms);
     nblock_bc(cr, makeArrayRef(*v));
 }
 
-void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
+void broadcastStateWithoutDynamics(const t_commrec* cr, t_state* state)
 {
-    GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr), "broadcastStateWithoutDynamics should only be used for special cases without domain decomposition");
+    GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr),
+                       "broadcastStateWithoutDynamics should only be used for special cases "
+                       "without domain decomposition");
 
     if (!PAR(cr))
     {
@@ -72,27 +74,21 @@ void broadcastStateWithoutDynamics(const t_commrec *cr, t_state *state)
         {
             switch (i)
             {
-                case estLAMBDA:
-                    nblock_bc(cr, efptNR, state->lambda.data());
-                    break;
-                case estFEPSTATE:
-                    block_bc(cr, state->fep_state);
-                    break;
-                case estBOX:
-                    block_bc(cr, state->box);
-                    break;
-                case estX:
-                    bcastPaddedRVecVector(cr, &state->x, state->natoms);
-                    break;
+                case estLAMBDA: nblock_bc(cr, efptNR, state->lambda.data()); break;
+                case estFEPSTATE: block_bc(cr, state->fep_state); break;
+                case estBOX: block_bc(cr, state->box); break;
+                case estX: bcastPaddedRVecVector(cr, &state->x, state->natoms); break;
                 default:
-                    GMX_RELEASE_ASSERT(false, "The state has a dynamic entry, while no dynamic entries should be present");
+                    GMX_RELEASE_ASSERT(false,
+                                       "The state has a dynamic entry, while no dynamic entries "
+                                       "should be present");
                     break;
             }
         }
     }
 }
 
-static void bc_tpxheader(const t_commrec *cr, TpxFileHeader *tpx)
+static void bc_tpxheader(const t_commrec* cr, TpxFileHeader* tpx)
 {
     block_bc(cr, tpx->bIr);
     block_bc(cr, tpx->bBox);
@@ -110,7 +106,7 @@ static void bc_tpxheader(const t_commrec *cr, TpxFileHeader *tpx)
     block_bc(cr, tpx->isDouble);
 }
 
-static void bc_tprCharBuffer(const t_commrec *cr, std::vector<char> *charBuffer)
+static void bc_tprCharBuffer(const t_commrec* cr, std::vector<char>* charBuffer)
 {
     int elements = charBuffer->size();
     block_bc(cr, elements);
@@ -118,17 +114,12 @@ static void bc_tprCharBuffer(const t_commrec *cr, std::vector<char> *charBuffer)
     nblock_abc(cr, elements, charBuffer);
 }
 
-void init_parallel(t_commrec                  *cr,
-                   t_inputrec                 *inputrec,
-                   gmx_mtop_t                 *mtop,
-                   PartialDeserializedTprFile *partialDeserializedTpr)
+void init_parallel(t_commrec* cr, t_inputrec* inputrec, gmx_mtop_t* mtop, PartialDeserializedTprFile* partialDeserializedTpr)
 {
     bc_tpxheader(cr, &partialDeserializedTpr->header);
     bc_tprCharBuffer(cr, &partialDeserializedTpr->body);
     if (!MASTER(cr))
     {
-        completeTprDeserialization(partialDeserializedTpr,
-                                   inputrec,
-                                   mtop);
+        completeTprDeserialization(partialDeserializedTpr, inputrec, mtop);
     }
 }

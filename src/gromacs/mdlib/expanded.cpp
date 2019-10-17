@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +70,7 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-static void init_df_history_weights(df_history_t *dfhist, const t_expanded *expand, int nlim)
+static void init_df_history_weights(df_history_t* dfhist, const t_expanded* expand, int nlim)
 {
     int i;
     dfhist->wl_delta = expand->init_wl_delta;
@@ -82,7 +83,7 @@ static void init_df_history_weights(df_history_t *dfhist, const t_expanded *expa
 
 /* Eventually should contain all the functions needed to initialize expanded ensemble
    before the md loop starts */
-void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec *ir, df_history_t *dfhist)
+void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec* ir, df_history_t* dfhist)
 {
     if (!bStateFromCP)
     {
@@ -90,7 +91,7 @@ void init_expanded_ensemble(gmx_bool bStateFromCP, const t_inputrec *ir, df_hist
     }
 }
 
-static void GenerateGibbsProbabilities(const real *ene, double *p_k, double *pks, int minfep, int maxfep)
+static void GenerateGibbsProbabilities(const real* ene, double* p_k, double* pks, int minfep, int maxfep)
 {
 
     int  i;
@@ -109,21 +110,22 @@ static void GenerateGibbsProbabilities(const real *ene, double *p_k, double *pks
     /* find the denominator */
     for (i = minfep; i <= maxfep; i++)
     {
-        *pks += std::exp(ene[i]-maxene);
+        *pks += std::exp(ene[i] - maxene);
     }
     /*numerators*/
     for (i = minfep; i <= maxfep; i++)
     {
-        p_k[i] = std::exp(ene[i]-maxene) / *pks;
+        p_k[i] = std::exp(ene[i] - maxene) / *pks;
     }
 }
 
-static void GenerateWeightedGibbsProbabilities(const real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
+static void
+GenerateWeightedGibbsProbabilities(const real* ene, double* p_k, double* pks, int nlim, real* nvals, real delta)
 {
 
     int   i;
     real  maxene;
-    real *nene;
+    real* nene;
     *pks = 0.0;
 
     snew(nene, nlim);
@@ -133,7 +135,7 @@ static void GenerateWeightedGibbsProbabilities(const real *ene, double *p_k, dou
         {
             /* add the delta, since we need to make sure it's greater than zero, and
                we need a non-arbitrary number? */
-            nene[i] = ene[i] + std::log(nvals[i]+delta);
+            nene[i] = ene[i] + std::log(nvals[i] + delta);
         }
         else
         {
@@ -171,7 +173,7 @@ static void GenerateWeightedGibbsProbabilities(const real *ene, double *p_k, dou
     sfree(nene);
 }
 
-static int FindMinimum(const real *min_metric, int N)
+static int FindMinimum(const real* min_metric, int N)
 {
 
     real min_val;
@@ -191,7 +193,7 @@ static int FindMinimum(const real *min_metric, int N)
     return min_nval;
 }
 
-static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
+static gmx_bool CheckHistogramRatios(int nhisto, const real* histo, real ratio)
 {
 
     int      i;
@@ -216,7 +218,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
     for (i = 0; i < nhisto; i++)
     {
         /* make sure that all points are in the ratio < x <  1/ratio range  */
-        if (!((histo[i]/nmean < 1.0/ratio) && (histo[i]/nmean > ratio)))
+        if (!((histo[i] / nmean < 1.0 / ratio) && (histo[i] / nmean > ratio)))
         {
             bIfFlat = FALSE;
             break;
@@ -225,7 +227,7 @@ static gmx_bool CheckHistogramRatios(int nhisto, const real *histo, real ratio)
     return bIfFlat;
 }
 
-static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, const df_history_t *dfhist, int64_t step)
+static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded* expand, const df_history_t* dfhist, int64_t step)
 {
 
     int      i, totalsamples;
@@ -237,8 +239,9 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, con
     {
         for (i = 0; i < nlim; i++)
         {
-            if (dfhist->n_at_lam[i] < expand->lmc_forced_nstart) /* we are still doing the initial sweep, so we're definitely not
-                                                                    done equilibrating*/
+            if (dfhist->n_at_lam[i]
+                < expand->lmc_forced_nstart) /* we are still doing the initial sweep, so we're
+                                                definitely not done equilibrating*/
             {
                 bDoneEquilibrating = FALSE;
                 break;
@@ -282,10 +285,11 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, con
             case elmceqNUMATLAM:
                 for (i = 0; i < nlim; i++)
                 {
-                    if (dfhist->n_at_lam[i] < expand->equil_n_at_lam) /* we are still doing the initial sweep, so we're definitely not
-                                                                         done equilibrating*/
+                    if (dfhist->n_at_lam[i]
+                        < expand->equil_n_at_lam) /* we are still doing the initial sweep, so we're
+                                                     definitely not done equilibrating*/
                     {
-                        bDoneEquilibrating  = FALSE;
+                        bDoneEquilibrating = FALSE;
                         break;
                     }
                 }
@@ -308,14 +312,14 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, con
 
                 if (!(EWL(expand->elamstats) || expand->elamstats == elamstatsMINVAR))
                 {
-                    /* we want to use flatness -avoiding- the forced-through samples.  Plus, we need to convert to
-                       floats for this histogram function. */
+                    /* we want to use flatness -avoiding- the forced-through samples.  Plus, we need
+                       to convert to floats for this histogram function. */
 
-                    real *modhisto;
+                    real* modhisto;
                     snew(modhisto, nlim);
                     for (i = 0; i < nlim; i++)
                     {
-                        modhisto[i] = 1.0*(dfhist->n_at_lam[i]-expand->lmc_forced_nstart);
+                        modhisto[i] = 1.0 * (dfhist->n_at_lam[i] - expand->lmc_forced_nstart);
                     }
                     bIfFlat = CheckHistogramRatios(nlim, modhisto, expand->equil_ratio);
                     sfree(modhisto);
@@ -325,29 +329,33 @@ static gmx_bool CheckIfDoneEquilibrating(int nlim, const t_expanded *expand, con
                     }
                 }
                 break;
-            default:
-                bDoneEquilibrating = TRUE;
-                break;
+            default: bDoneEquilibrating = TRUE; break;
         }
     }
     return bDoneEquilibrating;
 }
 
-static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist,
-                              int fep_state, const real *scaled_lamee, const real *weighted_lamee, int64_t step)
+static gmx_bool UpdateWeights(int           nlim,
+                              t_expanded*   expand,
+                              df_history_t* dfhist,
+                              int           fep_state,
+                              const real*   scaled_lamee,
+                              const real*   weighted_lamee,
+                              int64_t       step)
 {
-    gmx_bool  bSufficientSamples;
-    int       i;
-    int       n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
-    real      omega_m1_0, omega_p1_0, clam_osum;
-    real      de, de_function;
-    real      cnval, zero_sum_weights;
-    real     *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;
-    real      clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
-    real     *lam_variance, *lam_dg;
-    double   *p_k;
-    double    pks = 0;
-    real      chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
+    gmx_bool bSufficientSamples;
+    int      i;
+    int      n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
+    real     omega_m1_0, omega_p1_0, clam_osum;
+    real     de, de_function;
+    real     cnval, zero_sum_weights;
+    real *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array,
+            *dwp_array, *dwm_array;
+    real    clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
+    real *  lam_variance, *lam_dg;
+    double* p_k;
+    double  pks = 0;
+    real    chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
 
     /* if we have equilibrated the weights, exit now */
     if (dfhist->bEquil)
@@ -372,17 +380,17 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
     if (EWL(expand->elamstats))
     {
-        if (expand->elamstats == elamstatsWL)  /* Standard Wang-Landau */
+        if (expand->elamstats == elamstatsWL) /* Standard Wang-Landau */
         {
             dfhist->sum_weights[fep_state] -= dfhist->wl_delta;
-            dfhist->wl_histo[fep_state]    += 1.0;
+            dfhist->wl_histo[fep_state] += 1.0;
         }
         else if (expand->elamstats == elamstatsWWL) /* Weighted Wang-Landau */
         {
             snew(p_k, nlim);
 
             /* first increment count */
-            GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, 0, nlim-1);
+            GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, 0, nlim - 1);
             for (i = 0; i < nlim; i++)
             {
                 dfhist->wl_histo[i] += static_cast<real>(p_k[i]);
@@ -390,11 +398,12 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
             /* then increment weights (uses count) */
             pks = 0.0;
-            GenerateWeightedGibbsProbabilities(weighted_lamee, p_k, &pks, nlim, dfhist->wl_histo, dfhist->wl_delta);
+            GenerateWeightedGibbsProbabilities(weighted_lamee, p_k, &pks, nlim, dfhist->wl_histo,
+                                               dfhist->wl_delta);
 
             for (i = 0; i < nlim; i++)
             {
-                dfhist->sum_weights[i] -= dfhist->wl_delta*static_cast<real>(p_k[i]);
+                dfhist->sum_weights[i] -= dfhist->wl_delta * static_cast<real>(p_k[i]);
             }
             /* Alternate definition, using logarithms. Shouldn't make very much difference! */
             /*
@@ -408,18 +417,19 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             sfree(p_k);
         }
 
-        zero_sum_weights =  dfhist->sum_weights[0];
+        zero_sum_weights = dfhist->sum_weights[0];
         for (i = 0; i < nlim; i++)
         {
             dfhist->sum_weights[i] -= zero_sum_weights;
         }
     }
 
-    if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMETROPOLIS || expand->elamstats == elamstatsMINVAR)
+    if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMETROPOLIS
+        || expand->elamstats == elamstatsMINVAR)
     {
 
-        de_function = 0;  /* to get rid of warnings, but this value will not be used because of the logic */
-        maxc        = 2*expand->c_range+1;
+        de_function = 0; /* to get rid of warnings, but this value will not be used because of the logic */
+        maxc = 2 * expand->c_range + 1;
 
         snew(lam_dg, nlim);
         snew(lam_variance, nlim);
@@ -436,24 +446,25 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
         /* unpack the current lambdas -- we will only update 2 of these */
 
-        for (i = 0; i < nlim-1; i++)
-        {   /* only through the second to last */
-            lam_dg[i]       = dfhist->sum_dg[i+1] - dfhist->sum_dg[i];
-            lam_variance[i] = gmx::square(dfhist->sum_variance[i+1]) - gmx::square(dfhist->sum_variance[i]);
+        for (i = 0; i < nlim - 1; i++)
+        { /* only through the second to last */
+            lam_dg[i] = dfhist->sum_dg[i + 1] - dfhist->sum_dg[i];
+            lam_variance[i] =
+                    gmx::square(dfhist->sum_variance[i + 1]) - gmx::square(dfhist->sum_variance[i]);
         }
 
         /* accumulate running averages */
         for (nval = 0; nval < maxc; nval++)
         {
             /* constants for later use */
-            cnval = static_cast<real>(nval-expand->c_range);
+            cnval = static_cast<real>(nval - expand->c_range);
             /* actually, should be able to rewrite it w/o exponential, for better numerical stability */
             if (fep_state > 0)
             {
-                de = std::exp(cnval - (scaled_lamee[fep_state]-scaled_lamee[fep_state-1]));
+                de = std::exp(cnval - (scaled_lamee[fep_state] - scaled_lamee[fep_state - 1]));
                 if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMINVAR)
                 {
-                    de_function = 1.0/(1.0+de);
+                    de_function = 1.0 / (1.0 + de);
                 }
                 else if (expand->elamstats == elamstatsMETROPOLIS)
                 {
@@ -463,19 +474,19 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
                     }
                     else
                     {
-                        de_function = 1.0/de;
+                        de_function = 1.0 / de;
                     }
                 }
-                dfhist->accum_m[fep_state][nval]  += de_function;
-                dfhist->accum_m2[fep_state][nval] += de_function*de_function;
+                dfhist->accum_m[fep_state][nval] += de_function;
+                dfhist->accum_m2[fep_state][nval] += de_function * de_function;
             }
 
-            if (fep_state < nlim-1)
+            if (fep_state < nlim - 1)
             {
-                de = std::exp(-cnval + (scaled_lamee[fep_state+1]-scaled_lamee[fep_state]));
+                de = std::exp(-cnval + (scaled_lamee[fep_state + 1] - scaled_lamee[fep_state]));
                 if (expand->elamstats == elamstatsBARKER || expand->elamstats == elamstatsMINVAR)
                 {
-                    de_function = 1.0/(1.0+de);
+                    de_function = 1.0 / (1.0 + de);
                 }
                 else if (expand->elamstats == elamstatsMETROPOLIS)
                 {
@@ -485,27 +496,27 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
                     }
                     else
                     {
-                        de_function = 1.0/de;
+                        de_function = 1.0 / de;
                     }
                 }
-                dfhist->accum_p[fep_state][nval]  += de_function;
-                dfhist->accum_p2[fep_state][nval] += de_function*de_function;
+                dfhist->accum_p[fep_state][nval] += de_function;
+                dfhist->accum_p2[fep_state][nval] += de_function * de_function;
             }
 
             /* Metropolis transition and Barker transition (unoptimized Bennett) acceptance weight determination */
 
-            n0  = dfhist->n_at_lam[fep_state];
+            n0 = dfhist->n_at_lam[fep_state];
             if (fep_state > 0)
             {
-                nm1 = dfhist->n_at_lam[fep_state-1];
+                nm1 = dfhist->n_at_lam[fep_state - 1];
             }
             else
             {
                 nm1 = 0;
             }
-            if (fep_state < nlim-1)
+            if (fep_state < nlim - 1)
             {
-                np1 = dfhist->n_at_lam[fep_state+1];
+                np1 = dfhist->n_at_lam[fep_state + 1];
             }
             else
             {
@@ -517,22 +528,22 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
             if (n0 > 0)
             {
-                chi_m1_0 = dfhist->accum_m[fep_state][nval]/n0;
-                chi_p1_0 = dfhist->accum_p[fep_state][nval]/n0;
-                chi_m2_0 = dfhist->accum_m2[fep_state][nval]/n0;
-                chi_p2_0 = dfhist->accum_p2[fep_state][nval]/n0;
+                chi_m1_0 = dfhist->accum_m[fep_state][nval] / n0;
+                chi_p1_0 = dfhist->accum_p[fep_state][nval] / n0;
+                chi_m2_0 = dfhist->accum_m2[fep_state][nval] / n0;
+                chi_p2_0 = dfhist->accum_p2[fep_state][nval] / n0;
             }
 
-            if ((fep_state > 0 ) && (nm1 > 0))
+            if ((fep_state > 0) && (nm1 > 0))
             {
-                chi_p1_m1 = dfhist->accum_p[fep_state-1][nval]/nm1;
-                chi_p2_m1 = dfhist->accum_p2[fep_state-1][nval]/nm1;
+                chi_p1_m1 = dfhist->accum_p[fep_state - 1][nval] / nm1;
+                chi_p2_m1 = dfhist->accum_p2[fep_state - 1][nval] / nm1;
             }
 
-            if ((fep_state < nlim-1) && (np1 > 0))
+            if ((fep_state < nlim - 1) && (np1 > 0))
             {
-                chi_m1_p1 = dfhist->accum_m[fep_state+1][nval]/np1;
-                chi_m2_p1 = dfhist->accum_m2[fep_state+1][nval]/np1;
+                chi_m1_p1 = dfhist->accum_m[fep_state + 1][nval] / np1;
+                chi_m2_p1 = dfhist->accum_m2[fep_state + 1][nval] / np1;
             }
 
             omega_m1_0    = 0;
@@ -546,68 +557,67 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             {
                 if (n0 > 0)
                 {
-                    omega_m1_0 = chi_m2_0/(chi_m1_0*chi_m1_0) - 1.0;
+                    omega_m1_0 = chi_m2_0 / (chi_m1_0 * chi_m1_0) - 1.0;
                     if (nm1 > 0)
                     {
-                        real omega_p1_m1 = chi_p2_m1/(chi_p1_m1*chi_p1_m1) - 1.0;
-                        clam_weightsm = (std::log(chi_m1_0) - std::log(chi_p1_m1)) + cnval;
-                        clam_varm     = (1.0/n0)*(omega_m1_0) + (1.0/nm1)*(omega_p1_m1);
+                        real omega_p1_m1 = chi_p2_m1 / (chi_p1_m1 * chi_p1_m1) - 1.0;
+                        clam_weightsm    = (std::log(chi_m1_0) - std::log(chi_p1_m1)) + cnval;
+                        clam_varm        = (1.0 / n0) * (omega_m1_0) + (1.0 / nm1) * (omega_p1_m1);
                     }
                 }
             }
 
-            if (fep_state < nlim-1)
+            if (fep_state < nlim - 1)
             {
                 if (n0 > 0)
                 {
-                    omega_p1_0 = chi_p2_0/(chi_p1_0*chi_p1_0) - 1.0;
+                    omega_p1_0 = chi_p2_0 / (chi_p1_0 * chi_p1_0) - 1.0;
                     if (np1 > 0)
                     {
-                        real omega_m1_p1 = chi_m2_p1/(chi_m1_p1*chi_m1_p1) - 1.0;
-                        clam_weightsp = (std::log(chi_m1_p1) - std::log(chi_p1_0)) + cnval;
-                        clam_varp     = (1.0/np1)*(omega_m1_p1) + (1.0/n0)*(omega_p1_0);
+                        real omega_m1_p1 = chi_m2_p1 / (chi_m1_p1 * chi_m1_p1) - 1.0;
+                        clam_weightsp    = (std::log(chi_m1_p1) - std::log(chi_p1_0)) + cnval;
+                        clam_varp        = (1.0 / np1) * (omega_m1_p1) + (1.0 / n0) * (omega_p1_0);
                     }
                 }
             }
 
             if (n0 > 0)
             {
-                omegam_array[nval]             = omega_m1_0;
+                omegam_array[nval] = omega_m1_0;
             }
             else
             {
-                omegam_array[nval]             = 0;
+                omegam_array[nval] = 0;
             }
-            weightsm_array[nval]           = clam_weightsm;
-            varm_array[nval]               = clam_varm;
+            weightsm_array[nval] = clam_weightsm;
+            varm_array[nval]     = clam_varm;
             if (nm1 > 0)
             {
-                dwm_array[nval]  = fabs( (cnval + std::log((1.0*n0)/nm1)) - lam_dg[fep_state-1] );
+                dwm_array[nval] = fabs((cnval + std::log((1.0 * n0) / nm1)) - lam_dg[fep_state - 1]);
             }
             else
             {
-                dwm_array[nval]  = std::fabs( cnval - lam_dg[fep_state-1] );
+                dwm_array[nval] = std::fabs(cnval - lam_dg[fep_state - 1]);
             }
 
             if (n0 > 0)
             {
-                omegap_array[nval]             = omega_p1_0;
+                omegap_array[nval] = omega_p1_0;
             }
             else
             {
-                omegap_array[nval]             = 0;
+                omegap_array[nval] = 0;
             }
-            weightsp_array[nval]           = clam_weightsp;
-            varp_array[nval]               = clam_varp;
+            weightsp_array[nval] = clam_weightsp;
+            varp_array[nval]     = clam_varp;
             if ((np1 > 0) && (n0 > 0))
             {
-                dwp_array[nval]  = fabs( (cnval + std::log((1.0*np1)/n0)) - lam_dg[fep_state] );
+                dwp_array[nval] = fabs((cnval + std::log((1.0 * np1) / n0)) - lam_dg[fep_state]);
             }
             else
             {
-                dwp_array[nval]  = std::fabs( cnval - lam_dg[fep_state] );
+                dwp_array[nval] = std::fabs(cnval - lam_dg[fep_state]);
             }
-
         }
 
         /* find the C's closest to the old weights value */
@@ -626,16 +636,16 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
         clam_minvar = 0;
         if (clam_osum > 0)
         {
-            clam_minvar = 0.5*std::log(clam_osum);
+            clam_minvar = 0.5 * std::log(clam_osum);
         }
 
         if (fep_state > 0)
         {
-            lam_dg[fep_state-1]       = clam_weightsm;
-            lam_variance[fep_state-1] = clam_varm;
+            lam_dg[fep_state - 1]       = clam_weightsm;
+            lam_variance[fep_state - 1] = clam_varm;
         }
 
-        if (fep_state < nlim-1)
+        if (fep_state < nlim - 1)
         {
             lam_dg[fep_state]       = clam_weightsp;
             lam_variance[fep_state] = clam_varp;
@@ -659,7 +669,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
                 {
                     for (i = 0; i < nlim; i++)
                     {
-                        dfhist->sum_minvar[i] += (expand->minvar_const-clam_minvar);
+                        dfhist->sum_minvar[i] += (expand->minvar_const - clam_minvar);
                     }
                     expand->minvar_const          = clam_minvar;
                     dfhist->sum_minvar[fep_state] = 0.0;
@@ -678,9 +688,10 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
         for (i = 1; i < nlim; i++)
         {
-            dfhist->sum_dg[i]       = lam_dg[i-1] + dfhist->sum_dg[i-1];
-            dfhist->sum_variance[i] = std::sqrt(lam_variance[i-1] + gmx::square(dfhist->sum_variance[i-1]));
-            dfhist->sum_weights[i]  = dfhist->sum_dg[i] + dfhist->sum_minvar[i];
+            dfhist->sum_dg[i] = lam_dg[i - 1] + dfhist->sum_dg[i - 1];
+            dfhist->sum_variance[i] =
+                    std::sqrt(lam_variance[i - 1] + gmx::square(dfhist->sum_variance[i - 1]));
+            dfhist->sum_weights[i] = dfhist->sum_dg[i] + dfhist->sum_minvar[i];
         }
 
         sfree(lam_dg);
@@ -699,26 +710,32 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfhist, int fep_state,
-                           const real *weighted_lamee, double *p_k,
-                           int64_t seed, int64_t step)
+static int ChooseNewLambda(int               nlim,
+                           const t_expanded* expand,
+                           df_history_t*     dfhist,
+                           int               fep_state,
+                           const real*       weighted_lamee,
+                           double*           p_k,
+                           int64_t           seed,
+                           int64_t           step)
 {
     /* Choose new lambda value, and update transition matrix */
 
-    int                                  i, ifep, minfep, maxfep, lamnew, lamtrial, starting_fep_state;
-    real                                 r1, r2, de, trialprob, tprob = 0;
-    double                              *propose, *accept, *remainder;
-    double                               pks;
-    real                                 pnorm;
-    gmx::ThreeFry2x64<0>                 rng(seed, gmx::RandomDomain::ExpandedEnsemble); // We only draw once, so zero bits internal counter is fine
-    gmx::UniformRealDistribution<real>   dist;
+    int                  i, ifep, minfep, maxfep, lamnew, lamtrial, starting_fep_state;
+    real                 r1, r2, de, trialprob, tprob = 0;
+    double *             propose, *accept, *remainder;
+    double               pks;
+    real                 pnorm;
+    gmx::ThreeFry2x64<0> rng(
+            seed, gmx::RandomDomain::ExpandedEnsemble); // We only draw once, so zero bits internal counter is fine
+    gmx::UniformRealDistribution<real> dist;
 
     starting_fep_state = fep_state;
     lamnew             = fep_state; /* so that there is a default setting -- stays the same */
 
-    if (!EWL(expand->elamstats))    /* ignore equilibrating the weights if using WL */
+    if (!EWL(expand->elamstats)) /* ignore equilibrating the weights if using WL */
     {
-        if ((expand->lmc_forced_nstart > 0) && (dfhist->n_at_lam[nlim-1] <= expand->lmc_forced_nstart))
+        if ((expand->lmc_forced_nstart > 0) && (dfhist->n_at_lam[nlim - 1] <= expand->lmc_forced_nstart))
         {
             /* Use a marching method to run through the lambdas and get preliminary free energy data,
                before starting 'free' sampling.  We start free sampling when we have enough at each lambda */
@@ -727,8 +744,8 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
 
             if (dfhist->n_at_lam[fep_state] == expand->lmc_forced_nstart)
             {
-                lamnew = fep_state+1;
-                if (lamnew == nlim)  /* whoops, stepped too far! */
+                lamnew = fep_state + 1;
+                if (lamnew == nlim) /* whoops, stepped too far! */
                 {
                     lamnew -= 1;
                 }
@@ -761,8 +778,8 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
             /* use the Gibbs sampler, with restricted range */
             if (expand->gibbsdeltalam < 0)
             {
-                minfep      = 0;
-                maxfep      = nlim-1;
+                minfep = 0;
+                maxfep = nlim - 1;
             }
             else
             {
@@ -772,9 +789,9 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                 {
                     minfep = 0;
                 }
-                if (maxfep > nlim-1)
+                if (maxfep > nlim - 1)
                 {
-                    maxfep = nlim-1;
+                    maxfep = nlim - 1;
                 }
             }
 
@@ -821,7 +838,7 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                     {
                         if (ifep != fep_state)
                         {
-                            propose[ifep] = p_k[ifep]/remainder[fep_state];
+                            propose[ifep] = p_k[ifep] / remainder[fep_state];
                         }
                         else
                         {
@@ -832,7 +849,7 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                     r1 = dist(rng);
                     for (lamtrial = minfep; lamtrial <= maxfep; lamtrial++)
                     {
-                        pnorm = p_k[lamtrial]/remainder[fep_state];
+                        pnorm = p_k[lamtrial] / remainder[fep_state];
                         if (lamtrial != fep_state)
                         {
                             if (r1 <= pnorm)
@@ -846,7 +863,7 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                     /* we have now selected lamtrial according to p(lamtrial)/1-p(fep_state) */
                     tprob = 1.0;
                     /* trial probability is min{1,\frac{1 - p(old)}{1-p(new)} MRS 1/8/2008 */
-                    trialprob = (remainder[fep_state])/(remainder[lamtrial]);
+                    trialprob = (remainder[fep_state]) / (remainder[lamtrial]);
                     if (trialprob < tprob)
                     {
                         tprob = trialprob;
@@ -868,7 +885,7 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                     tprob = 1.0;
                     if (remainder[ifep] != 0)
                     {
-                        trialprob = (remainder[fep_state])/(remainder[ifep]);
+                        trialprob = (remainder[fep_state]) / (remainder[ifep]);
                     }
                     else
                     {
@@ -886,7 +903,7 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
             if (lamnew > maxfep)
             {
                 /* it's possible some rounding is failing */
-                if (gmx_within_tol(remainder[fep_state], 0, 50*GMX_DOUBLE_EPS))
+                if (gmx_within_tol(remainder[fep_state], 0, 50 * GMX_DOUBLE_EPS))
                 {
                     /* numerical rounding error -- no state other than the original has weight */
                     lamnew = fep_state;
@@ -895,15 +912,21 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                 {
                     /* probably not a numerical issue */
                     int   loc    = 0;
-                    int   nerror = 200+(maxfep-minfep+1)*60;
-                    char *errorstr;
+                    int   nerror = 200 + (maxfep - minfep + 1) * 60;
+                    char* errorstr;
                     snew(errorstr, nerror);
-                    /* if its greater than maxfep, then something went wrong -- probably underflow in the calculation
-                       of sum weights. Generated detailed info for failure */
-                    loc += sprintf(errorstr, "Something wrong in choosing new lambda state with a Gibbs move -- probably underflow in weight determination.\nDenominator is: %3d%17.10e\n  i                dE        numerator          weights\n", 0, pks);
+                    /* if its greater than maxfep, then something went wrong -- probably underflow
+                       in the calculation of sum weights. Generated detailed info for failure */
+                    loc += sprintf(
+                            errorstr,
+                            "Something wrong in choosing new lambda state with a Gibbs move -- "
+                            "probably underflow in weight determination.\nDenominator is: "
+                            "%3d%17.10e\n  i                dE        numerator          weights\n",
+                            0, pks);
                     for (ifep = minfep; ifep <= maxfep; ifep++)
                     {
-                        loc += sprintf(&errorstr[loc], "%3d %17.10e%17.10e%17.10e\n", ifep, weighted_lamee[ifep], p_k[ifep], dfhist->sum_weights[ifep]);
+                        loc += sprintf(&errorstr[loc], "%3d %17.10e%17.10e%17.10e\n", ifep,
+                                       weighted_lamee[ifep], p_k[ifep], dfhist->sum_weights[ifep]);
                     }
                     gmx_fatal(FARGS, "%s", errorstr);
                 }
@@ -921,18 +944,18 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                 }
                 else
                 {
-                    lamtrial = fep_state-1;
+                    lamtrial = fep_state - 1;
                 }
             }
             else
             {
-                if (fep_state == nlim-1)
+                if (fep_state == nlim - 1)
                 {
                     lamtrial = fep_state;
                 }
                 else
                 {
-                    lamtrial = fep_state+1;
+                    lamtrial = fep_state + 1;
                 }
             }
 
@@ -947,18 +970,19 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
                 }
                 propose[fep_state] = 0;
                 propose[lamtrial]  = 1.0; /* note that this overwrites the above line if fep_state = ntrial, which only occurs at the ends */
-                accept[fep_state]  = 1.0; /* doesn't actually matter, never proposed unless fep_state = ntrial, in which case it's 1.0 anyway */
-                accept[lamtrial]   = tprob;
-
+                accept[fep_state] =
+                        1.0; /* doesn't actually matter, never proposed unless fep_state = ntrial, in which case it's 1.0 anyway */
+                accept[lamtrial] = tprob;
             }
             else if (expand->elmcmove == elmcmoveBARKER)
             {
-                tprob = 1.0/(1.0+std::exp(-de));
+                tprob = 1.0 / (1.0 + std::exp(-de));
 
-                propose[fep_state] = (1-tprob);
-                propose[lamtrial] += tprob; /* we add, to account for the fact that at the end, they might be the same point */
-                accept[fep_state]  = 1.0;
-                accept[lamtrial]   = 1.0;
+                propose[fep_state] = (1 - tprob);
+                propose[lamtrial] +=
+                        tprob; /* we add, to account for the fact that at the end, they might be the same point */
+                accept[fep_state] = 1.0;
+                accept[lamtrial]  = 1.0;
             }
 
             r2 = dist(rng);
@@ -974,8 +998,8 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
 
         for (ifep = 0; ifep < nlim; ifep++)
         {
-            dfhist->Tij[fep_state][ifep]      += propose[ifep]*accept[ifep];
-            dfhist->Tij[fep_state][fep_state] += propose[ifep]*(1.0-accept[ifep]);
+            dfhist->Tij[fep_state][ifep] += propose[ifep] * accept[ifep];
+            dfhist->Tij[fep_state][fep_state] += propose[ifep] * (1.0 - accept[ifep]);
         }
         fep_state = lamnew;
     }
@@ -990,13 +1014,19 @@ static int ChooseNewLambda(int nlim, const t_expanded *expand, df_history_t *dfh
 }
 
 /* print out the weights to the log, along with current state */
-void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expanded *expand,
-                               const t_simtemp *simtemp, const df_history_t *dfhist,
-                               int fep_state, int frequency, int64_t step)
+void PrintFreeEnergyInfoToFile(FILE*               outfile,
+                               const t_lambda*     fep,
+                               const t_expanded*   expand,
+                               const t_simtemp*    simtemp,
+                               const df_history_t* dfhist,
+                               int                 fep_state,
+                               int                 frequency,
+                               int64_t             step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, Tprint;
-    const char *print_names[efptNR] = {" FEPL", "MassL", "CoulL", " VdwL", "BondL", "RestT", "Temp.(K)"};
+    const char* print_names[efptNR] = { " FEPL", "MassL", "CoulL",   " VdwL",
+                                        "BondL", "RestT", "Temp.(K)" };
     gmx_bool    bSimTemp            = FALSE;
 
     nlim = fep->n_lambda;
@@ -1035,7 +1065,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
         }
         for (ifep = 0; ifep < nlim; ifep++)
         {
-            if (ifep == nlim-1)
+            if (ifep == nlim - 1)
             {
                 dw = 0.0;
                 dg = 0.0;
@@ -1043,11 +1073,12 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
             }
             else
             {
-                dw = dfhist->sum_weights[ifep+1] - dfhist->sum_weights[ifep];
-                dg = dfhist->sum_dg[ifep+1] - dfhist->sum_dg[ifep];
-                dv = std::sqrt(gmx::square(dfhist->sum_variance[ifep+1]) - gmx::square(dfhist->sum_variance[ifep]));
+                dw = dfhist->sum_weights[ifep + 1] - dfhist->sum_weights[ifep];
+                dg = dfhist->sum_dg[ifep + 1] - dfhist->sum_dg[ifep];
+                dv = std::sqrt(gmx::square(dfhist->sum_variance[ifep + 1])
+                               - gmx::square(dfhist->sum_variance[ifep]));
             }
-            fprintf(outfile, "%3d", (ifep+1));
+            fprintf(outfile, "%3d", (ifep + 1));
             for (i = 0; i < efptNR; i++)
             {
                 if (fep->separate_dvdl[i])
@@ -1059,7 +1090,8 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     fprintf(outfile, "%9.3f", simtemp->temperatures[ifep]);
                 }
             }
-            if (EWL(expand->elamstats) && (!(dfhist->bEquil)))  /* if performing WL and still haven't equilibrated */
+            if (EWL(expand->elamstats)
+                && (!(dfhist->bEquil))) /* if performing WL and still haven't equilibrated */
             {
                 if (expand->elamstats == elamstatsWL)
                 {
@@ -1070,13 +1102,14 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     fprintf(outfile, " %8.3f", dfhist->wl_histo[ifep]);
                 }
             }
-            else   /* we have equilibrated weights */
+            else /* we have equilibrated weights */
             {
                 fprintf(outfile, " %8d", dfhist->n_at_lam[ifep]);
             }
             if (expand->elamstats == elamstatsMINVAR)
             {
-                fprintf(outfile, " %10.5f %10.5f %10.5f %10.5f", dfhist->sum_weights[ifep], dfhist->sum_dg[ifep], dg, dv);
+                fprintf(outfile, " %10.5f %10.5f %10.5f %10.5f", dfhist->sum_weights[ifep],
+                        dfhist->sum_dg[ifep], dg, dv);
             }
             else
             {
@@ -1098,7 +1131,7 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
             fprintf(outfile, "                     Transition Matrix\n");
             for (ifep = 0; ifep < nlim; ifep++)
             {
-                fprintf(outfile, "%12d", (ifep+1));
+                fprintf(outfile, "%12d", (ifep + 1));
             }
             fprintf(outfile, "\n");
             for (ifep = 0; ifep < nlim; ifep++)
@@ -1109,11 +1142,12 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     {
                         if (expand->bSymmetrizedTMatrix)
                         {
-                            Tprint = (dfhist->Tij[ifep][jfep]+dfhist->Tij[jfep][ifep])/(dfhist->n_at_lam[ifep]+dfhist->n_at_lam[jfep]);
+                            Tprint = (dfhist->Tij[ifep][jfep] + dfhist->Tij[jfep][ifep])
+                                     / (dfhist->n_at_lam[ifep] + dfhist->n_at_lam[jfep]);
                         }
                         else
                         {
-                            Tprint = (dfhist->Tij[ifep][jfep])/(dfhist->n_at_lam[ifep]);
+                            Tprint = (dfhist->Tij[ifep][jfep]) / (dfhist->n_at_lam[ifep]);
                         }
                     }
                     else
@@ -1122,13 +1156,13 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     }
                     fprintf(outfile, "%12.8f", Tprint);
                 }
-                fprintf(outfile, "%3d\n", (ifep+1));
+                fprintf(outfile, "%3d\n", (ifep + 1));
             }
 
             fprintf(outfile, "                  Empirical Transition Matrix\n");
             for (ifep = 0; ifep < nlim; ifep++)
             {
-                fprintf(outfile, "%12d", (ifep+1));
+                fprintf(outfile, "%12d", (ifep + 1));
             }
             fprintf(outfile, "\n");
             for (ifep = 0; ifep < nlim; ifep++)
@@ -1139,11 +1173,12 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     {
                         if (expand->bSymmetrizedTMatrix)
                         {
-                            Tprint = (dfhist->Tij_empirical[ifep][jfep]+dfhist->Tij_empirical[jfep][ifep])/(dfhist->n_at_lam[ifep]+dfhist->n_at_lam[jfep]);
+                            Tprint = (dfhist->Tij_empirical[ifep][jfep] + dfhist->Tij_empirical[jfep][ifep])
+                                     / (dfhist->n_at_lam[ifep] + dfhist->n_at_lam[jfep]);
                         }
                         else
                         {
-                            Tprint = dfhist->Tij_empirical[ifep][jfep]/(dfhist->n_at_lam[ifep]);
+                            Tprint = dfhist->Tij_empirical[ifep][jfep] / (dfhist->n_at_lam[ifep]);
                         }
                     }
                     else
@@ -1152,25 +1187,31 @@ void PrintFreeEnergyInfoToFile(FILE *outfile, const t_lambda *fep, const t_expan
                     }
                     fprintf(outfile, "%12.8f", Tprint);
                 }
-                fprintf(outfile, "%3d\n", (ifep+1));
+                fprintf(outfile, "%3d\n", (ifep + 1));
             }
         }
     }
 }
 
-int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
-                             int64_t step,
-                             rvec *v, const t_mdatoms *mdatoms)
+int ExpandedEnsembleDynamics(FILE*                 log,
+                             const t_inputrec*     ir,
+                             const gmx_enerdata_t* enerd,
+                             t_state*              state,
+                             t_extmass*            MassQ,
+                             int                   fep_state,
+                             df_history_t*         dfhist,
+                             int64_t               step,
+                             rvec*                 v,
+                             const t_mdatoms*      mdatoms)
 /* Note that the state variable is only needed for simulated tempering, not
    Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {
-    real       *pfep_lamee, *scaled_lamee, *weighted_lamee;
-    double     *p_k;
+    real *      pfep_lamee, *scaled_lamee, *weighted_lamee;
+    double*     p_k;
     int         i, nlim, lamnew, totalsamples;
     real        oneovert, maxscaled = 0, maxweighted = 0;
-    t_expanded *expand;
-    t_simtemp  *simtemp;
+    t_expanded* expand;
+    t_simtemp*  simtemp;
     gmx_bool    bIfReset, bSwitchtoOneOverT, bDoneEquilibrating = FALSE;
 
     expand  = ir->expandedvals;
@@ -1185,8 +1226,8 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
     /* update the count at the current lambda*/
     dfhist->n_at_lam[fep_state]++;
 
-    /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda state that's
-       pressure controlled.*/
+    /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda
+       state that's pressure controlled.*/
     /*
        pVTerm = 0;
        where does this PV term go?
@@ -1207,12 +1248,17 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
             if (ir->bSimTemp)
             {
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
-                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(simtemp->temperatures[i]*BOLTZ)
-                    + enerd->term[F_EPOT]*(1.0/(simtemp->temperatures[i])- 1.0/(simtemp->temperatures[fep_state]))/BOLTZ;
+                scaled_lamee[i] = (enerd->enerpart_lambda[i + 1] - enerd->enerpart_lambda[0])
+                                          / (simtemp->temperatures[i] * BOLTZ)
+                                  + enerd->term[F_EPOT]
+                                            * (1.0 / (simtemp->temperatures[i])
+                                               - 1.0 / (simtemp->temperatures[fep_state]))
+                                            / BOLTZ;
             }
             else
             {
-                scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(expand->mc_temp*BOLTZ);
+                scaled_lamee[i] = (enerd->enerpart_lambda[i + 1] - enerd->enerpart_lambda[0])
+                                  / (expand->mc_temp * BOLTZ);
                 /* mc_temp is currently set to the system reft unless otherwise defined */
             }
 
@@ -1227,7 +1273,9 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
         {
             for (i = 0; i < nlim; i++)
             {
-                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/simtemp->temperatures[i] - 1.0/simtemp->temperatures[fep_state])/BOLTZ;
+                scaled_lamee[i] =
+                        enerd->term[F_EPOT]
+                        * (1.0 / simtemp->temperatures[i] - 1.0 / simtemp->temperatures[fep_state]) / BOLTZ;
             }
         }
     }
@@ -1257,18 +1305,20 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
 
     for (i = 0; i < nlim; i++)
     {
-        scaled_lamee[i]   -= maxscaled;
+        scaled_lamee[i] -= maxscaled;
         weighted_lamee[i] -= maxweighted;
     }
 
     /* update weights - we decide whether or not to actually do this inside */
 
-    bDoneEquilibrating = UpdateWeights(nlim, expand, dfhist, fep_state, scaled_lamee, weighted_lamee, step);
+    bDoneEquilibrating =
+            UpdateWeights(nlim, expand, dfhist, fep_state, scaled_lamee, weighted_lamee, step);
     if (bDoneEquilibrating)
     {
         if (log)
         {
-            fprintf(log, "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n", step, elmceq_names[expand->elmceq]);
+            fprintf(log, "\nStep %" PRId64 ": Weights have equilibrated, using criteria: %s\n",
+                    step, elmceq_names[expand->elmceq]);
         }
     }
 
@@ -1278,7 +1328,7 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
     if (ir->bSimTemp && (lamnew != fep_state)) /* only need to change the temperatures if we change the state */
     {
         int   i, j, n, d;
-        real *buf_ngtc;
+        real* buf_ngtc;
         real  told;
         int   nstart, nend, gt;
 
@@ -1289,8 +1339,8 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
             if (ir->opts.ref_t[i] > 0)
             {
                 told              = ir->opts.ref_t[i];
-                ir->opts.ref_t[i] =  simtemp->temperatures[lamnew];
-                buf_ngtc[i]       = std::sqrt(ir->opts.ref_t[i]/told); /* using the buffer as temperature scaling */
+                ir->opts.ref_t[i] = simtemp->temperatures[lamnew];
+                buf_ngtc[i]       = std::sqrt(ir->opts.ref_t[i] / told); /* using the buffer as temperature scaling */
             }
         }
 
@@ -1319,14 +1369,14 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
             {
                 for (j = 0; j < ir->opts.nhchainlength; j++)
                 {
-                    state->nhpres_vxi[i+j] *= buf_ngtc[i];
+                    state->nhpres_vxi[i + j] *= buf_ngtc[i];
                 }
             }
             for (i = 0; i < ir->opts.ngtc; i++)
             {
                 for (j = 0; j < ir->opts.nhchainlength; j++)
                 {
-                    state->nosehoover_vxi[i+j] *= buf_ngtc[i];
+                    state->nosehoover_vxi[i + j] *= buf_ngtc[i];
                 }
             }
         }
@@ -1345,18 +1395,19 @@ int ExpandedEnsembleDynamics(FILE *log, const t_inputrec *ir, const gmx_enerdata
             {
                 totalsamples += dfhist->n_at_lam[i];
             }
-            oneovert = (1.0*nlim)/totalsamples;
+            oneovert = (1.0 * nlim) / totalsamples;
             /* oneovert has decreasd by a bit since last time, so we actually make sure its within one of this number */
             /* switch to 1/t incrementing when wl_delta has decreased at least once, and wl_delta is now less than 1/t */
-            if ((dfhist->wl_delta <= ((totalsamples)/(totalsamples-1.00001))*oneovert) &&
-                (dfhist->wl_delta < expand->init_wl_delta))
+            if ((dfhist->wl_delta <= ((totalsamples) / (totalsamples - 1.00001)) * oneovert)
+                && (dfhist->wl_delta < expand->init_wl_delta))
             {
                 bSwitchtoOneOverT = TRUE;
             }
         }
         if (bSwitchtoOneOverT)
         {
-            dfhist->wl_delta = oneovert; /* now we reduce by this each time, instead of only at flatness */
+            dfhist->wl_delta =
+                    oneovert; /* now we reduce by this each time, instead of only at flatness */
         }
         else
         {

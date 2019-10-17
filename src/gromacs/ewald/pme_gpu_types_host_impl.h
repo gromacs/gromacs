@@ -51,11 +51,11 @@
 #include <vector>
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
-#include "gromacs/gpu_utils/gpuregiontimer.cuh"
+#    include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#    include "gromacs/gpu_utils/gpuregiontimer.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
-#include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
+#    include "gromacs/gpu_utils/gpueventsynchronizer_ocl.h"
+#    include "gromacs/gpu_utils/gpuregiontimer_ocl.h"
 #endif
 
 #include "gromacs/timing/gpu_timing.h" // for gtPME_EVENT_COUNT
@@ -89,19 +89,19 @@ struct PmeGpuSpecific
     bool performOutOfPlaceFFT;
     /*! \brief A boolean which tells if the GPU timing events are enabled.
      *  False by default, can be enabled by setting the environment variable GMX_ENABLE_GPU_TIMING.
-     *  Note: will not be reliable when multiple GPU tasks are running concurrently on the same device context,
-     * as CUDA events on multiple streams are untrustworthy.
+     *  Note: will not be reliable when multiple GPU tasks are running concurrently on the same
+     * device context, as CUDA events on multiple streams are untrustworthy.
      */
-    bool                                             useTiming;
+    bool useTiming;
 
     //! Vector of FFT setups
-    std::vector<std::unique_ptr<GpuParallel3dFft > > fftSetup;
+    std::vector<std::unique_ptr<GpuParallel3dFft>> fftSetup;
 
     //! All the timers one might use
-    std::array<GpuRegionTimer, gtPME_EVENT_COUNT>    timingEvents;
+    std::array<GpuRegionTimer, gtPME_EVENT_COUNT> timingEvents;
 
     //! Indices of timingEvents actually used
-    std::set<size_t>                                 activeTimers;
+    std::set<size_t> activeTimers;
 
     /* GPU arrays element counts (not the arrays sizes in bytes!).
      * They might be larger than the actual meaningful data sizes.

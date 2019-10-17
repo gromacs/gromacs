@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,19 +41,20 @@
 #include "x11.h"
 #include "xutil.h"
 
-typedef struct {
-    XFontStruct *bigfont;
-    XFontStruct *smallfont;
+typedef struct
+{
+    XFontStruct* bigfont;
+    XFontStruct* smallfont;
     t_windata    wd;
     bool         bQuitOnClick;
 } t_logo;
 
-extern void show_logo(t_x11 *x11, t_logo *logo);
+extern void show_logo(t_x11* x11, t_logo* logo);
 
-extern void hide_logo(t_x11 *x11, t_logo *logo);
+extern void hide_logo(t_x11* x11, t_logo* logo);
 
-extern t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick);
+extern t_logo* init_logo(t_x11* x11, Window parent, bool bQuitOnClick);
 
-extern void done_logo(t_x11 *x11, t_logo *logo);
+extern void done_logo(t_x11* x11, t_logo* logo);
 
-#endif  /* _logo_h */
+#endif /* _logo_h */

@@ -48,8 +48,9 @@
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/arraysize.h"
 
-typedef struct {
-    const char *name;
+typedef struct
+{
+    const char* name;
     int         flop;
 } t_nrnb_data;
 
@@ -58,34 +59,34 @@ static const t_nrnb_data nbdata[eNRNB] = {
     /* These are re-used for different NB kernels, since there are so many.
      * The actual number of flops is set dynamically.
      */
-    { "NB VdW [V&F]",                    1 },
-    { "NB VdW [F]",                      1 },
-    { "NB Elec. [V&F]",                  1 },
-    { "NB Elec. [F]",                    1 },
-    { "NB Elec. [W3,V&F]",               1 },
-    { "NB Elec. [W3,F]",                 1 },
-    { "NB Elec. [W3-W3,V&F]",            1 },
-    { "NB Elec. [W3-W3,F]",              1 },
-    { "NB Elec. [W4,V&F]",               1 },
-    { "NB Elec. [W4,F]",                 1 },
-    { "NB Elec. [W4-W4,V&F]",            1 },
-    { "NB Elec. [W4-W4,F]",              1 },
-    { "NB VdW & Elec. [V&F]",            1 },
-    { "NB VdW & Elec. [F]",              1 },
-    { "NB VdW & Elec. [W3,V&F]",         1 },
-    { "NB VdW & Elec. [W3,F]",           1 },
-    { "NB VdW & Elec. [W3-W3,V&F]",      1 },
-    { "NB VdW & Elec. [W3-W3,F]",        1 },
-    { "NB VdW & Elec. [W4,V&F]",         1 },
-    { "NB VdW & Elec. [W4,F]",           1 },
-    { "NB VdW & Elec. [W4-W4,V&F]",      1 },
-    { "NB VdW & Elec. [W4-W4,F]",        1 },
+    { "NB VdW [V&F]", 1 },
+    { "NB VdW [F]", 1 },
+    { "NB Elec. [V&F]", 1 },
+    { "NB Elec. [F]", 1 },
+    { "NB Elec. [W3,V&F]", 1 },
+    { "NB Elec. [W3,F]", 1 },
+    { "NB Elec. [W3-W3,V&F]", 1 },
+    { "NB Elec. [W3-W3,F]", 1 },
+    { "NB Elec. [W4,V&F]", 1 },
+    { "NB Elec. [W4,F]", 1 },
+    { "NB Elec. [W4-W4,V&F]", 1 },
+    { "NB Elec. [W4-W4,F]", 1 },
+    { "NB VdW & Elec. [V&F]", 1 },
+    { "NB VdW & Elec. [F]", 1 },
+    { "NB VdW & Elec. [W3,V&F]", 1 },
+    { "NB VdW & Elec. [W3,F]", 1 },
+    { "NB VdW & Elec. [W3-W3,V&F]", 1 },
+    { "NB VdW & Elec. [W3-W3,F]", 1 },
+    { "NB VdW & Elec. [W4,V&F]", 1 },
+    { "NB VdW & Elec. [W4,F]", 1 },
+    { "NB VdW & Elec. [W4-W4,V&F]", 1 },
+    { "NB VdW & Elec. [W4-W4,F]", 1 },
 
-    { "NB Generic kernel",               1 },
-    { "NB Generic charge grp kernel",    1 },
-    { "NB Free energy kernel",           1 },
+    { "NB Generic kernel", 1 },
+    { "NB Generic charge grp kernel", 1 },
+    { "NB Free energy kernel", 1 },
 
-    { "Pair Search distance check",      9 }, /* nbnxn pair dist. check */
+    { "Pair Search distance check", 9 }, /* nbnxn pair dist. check */
     /* nbnxn kernel flops are based on inner-loops without exclusion checks.
      * Plain Coulomb runs through the RF kernels, except with GPUs.
      * invsqrt is counted as 6 flops: 1 for _mm_rsqt_ps + 5 for iteration.
@@ -96,99 +97,99 @@ static const t_nrnb_data nbdata[eNRNB] = {
      * - GPU always does exclusions, which requires 2-4 flops, but as invsqrt
      *   is always counted as 6 flops, this roughly compensates.
      */
-    { "NxN RF Elec. + LJ [F]",          38 }, /* nbnxn kernel LJ+RF, no ener */
-    { "NxN RF Elec. + LJ [V&F]",        54 },
-    { "NxN QSTab Elec. + LJ [F]",       41 }, /* nbnxn kernel LJ+tab, no en */
-    { "NxN QSTab Elec. + LJ [V&F]",     59 },
-    { "NxN Ewald Elec. + LJ [F]",       66 }, /* nbnxn kernel LJ+Ewald, no en */
-    { "NxN Ewald Elec. + LJ [V&F]",    107 },
-    { "NxN LJ [F]",                     33 }, /* nbnxn kernel LJ, no ener */
-    { "NxN LJ [V&F]",                   43 },
-    { "NxN RF Electrostatics [F]",      31 }, /* nbnxn kernel RF, no ener */
-    { "NxN RF Electrostatics [V&F]",    36 },
-    { "NxN QSTab Elec. [F]",            34 }, /* nbnxn kernel tab, no ener */
-    { "NxN QSTab Elec. [V&F]",          41 },
-    { "NxN Ewald Elec. [F]",            61 }, /* nbnxn kernel Ewald, no ener */
-    { "NxN Ewald Elec. [V&F]",          84 },
+    { "NxN RF Elec. + LJ [F]", 38 }, /* nbnxn kernel LJ+RF, no ener */
+    { "NxN RF Elec. + LJ [V&F]", 54 },
+    { "NxN QSTab Elec. + LJ [F]", 41 }, /* nbnxn kernel LJ+tab, no en */
+    { "NxN QSTab Elec. + LJ [V&F]", 59 },
+    { "NxN Ewald Elec. + LJ [F]", 66 }, /* nbnxn kernel LJ+Ewald, no en */
+    { "NxN Ewald Elec. + LJ [V&F]", 107 },
+    { "NxN LJ [F]", 33 }, /* nbnxn kernel LJ, no ener */
+    { "NxN LJ [V&F]", 43 },
+    { "NxN RF Electrostatics [F]", 31 }, /* nbnxn kernel RF, no ener */
+    { "NxN RF Electrostatics [V&F]", 36 },
+    { "NxN QSTab Elec. [F]", 34 }, /* nbnxn kernel tab, no ener */
+    { "NxN QSTab Elec. [V&F]", 41 },
+    { "NxN Ewald Elec. [F]", 61 }, /* nbnxn kernel Ewald, no ener */
+    { "NxN Ewald Elec. [V&F]", 84 },
     /* The switch function flops should be added to the LJ kernels above */
-    { "NxN LJ add F-switch [F]",        12 }, /* extra cost for LJ F-switch */
-    { "NxN LJ add F-switch [V&F]",      22 },
-    { "NxN LJ add P-switch [F]",        27 }, /* extra cost for LJ P-switch */
-    { "NxN LJ add P-switch [V&F]",      20 },
-    { "NxN LJ add LJ Ewald [F]",        36 }, /* extra cost for LJ Ewald */
-    { "NxN LJ add LJ Ewald [V&F]",      33 },
-    { "1,4 nonbonded interactions",     90 },
-    { "Calc Weights",                   36 },
-    { "Spread Q",                        6 },
-    { "Spread Q Bspline",                2 },
-    { "Gather F",                      23  },
-    { "Gather F Bspline",              6   },
-    { "3D-FFT",                        8   },
-    { "Convolution",                   4   },
-    { "Solve PME",                     64  },
-    { "NS-Pairs",                      21  },
-    { "Reset In Box",                  3   },
-    { "Shift-X",                       6   },
-    { "CG-CoM",                        3   },
-    { "Sum Forces",                    1   },
-    { "Bonds",                         59  },
-    { "G96Bonds",                      44  },
-    { "FENE Bonds",                    58  },
-    { "Tab. Bonds",                    62  },
-    { "Restraint Potential",           86  },
-    { "Linear Angles",                 57  },
-    { "Angles",                        168 },
-    { "G96Angles",                     150 },
-    { "Quartic Angles",                160 },
-    { "Tab. Angles",                   169 },
-    { "Propers",                       229 },
-    { "Impropers",                     208 },
-    { "RB-Dihedrals",                  247 },
-    { "Four. Dihedrals",               247 },
-    { "Tab. Dihedrals",                227 },
-    { "Dist. Restr.",                  200 },
-    { "Orient. Restr.",                200 },
-    { "Dihedral Restr.",               200 },
-    { "Pos. Restr.",                   50  },
-    { "Flat-bottom posres",            50  },
-    { "Angle Restr.",                  191 },
-    { "Angle Restr. Z",                164 },
-    { "Morse Potent.",                 83  },
-    { "Cubic Bonds",                   54  },
-    { "Walls",                         31  },
-    { "Polarization",                  59  },
-    { "Anharmonic Polarization",       72  },
-    { "Water Pol.",                    62  },
-    { "Thole Pol.",                    296 },
-    { "Virial",                        18  },
-    { "Update",                        31  },
-    { "Ext.ens. Update",               54  },
-    { "Stop-CM",                       10  },
-    { "P-Coupling",                    6   },
-    { "Calc-Ekin",                     27  },
-    { "Lincs",                         60  },
-    { "Lincs-Mat",                     4   },
-    { "Shake",                         30  },
-    { "Constraint-V",                   8  },
-    { "Shake-Init",                    10  },
-    { "Constraint-Vir",                24  },
-    { "Settle",                        323 },
-    { "Virtual Site 2",                23  },
-    { "Virtual Site 2fd",              63  },
-    { "Virtual Site 3",                37  },
-    { "Virtual Site 3fd",              95  },
-    { "Virtual Site 3fad",             176 },
-    { "Virtual Site 3out",             87  },
-    { "Virtual Site 4fd",              110 },
-    { "Virtual Site 4fdn",             254 },
-    { "Virtual Site N",                 15 },
-    { "CMAP",                         1700 }, // Estimate!
-    { "Urey-Bradley",                  183 },
-    { "Cross-Bond-Bond",               163 },
-    { "Cross-Bond-Angle",              163 }
+    { "NxN LJ add F-switch [F]", 12 }, /* extra cost for LJ F-switch */
+    { "NxN LJ add F-switch [V&F]", 22 },
+    { "NxN LJ add P-switch [F]", 27 }, /* extra cost for LJ P-switch */
+    { "NxN LJ add P-switch [V&F]", 20 },
+    { "NxN LJ add LJ Ewald [F]", 36 }, /* extra cost for LJ Ewald */
+    { "NxN LJ add LJ Ewald [V&F]", 33 },
+    { "1,4 nonbonded interactions", 90 },
+    { "Calc Weights", 36 },
+    { "Spread Q", 6 },
+    { "Spread Q Bspline", 2 },
+    { "Gather F", 23 },
+    { "Gather F Bspline", 6 },
+    { "3D-FFT", 8 },
+    { "Convolution", 4 },
+    { "Solve PME", 64 },
+    { "NS-Pairs", 21 },
+    { "Reset In Box", 3 },
+    { "Shift-X", 6 },
+    { "CG-CoM", 3 },
+    { "Sum Forces", 1 },
+    { "Bonds", 59 },
+    { "G96Bonds", 44 },
+    { "FENE Bonds", 58 },
+    { "Tab. Bonds", 62 },
+    { "Restraint Potential", 86 },
+    { "Linear Angles", 57 },
+    { "Angles", 168 },
+    { "G96Angles", 150 },
+    { "Quartic Angles", 160 },
+    { "Tab. Angles", 169 },
+    { "Propers", 229 },
+    { "Impropers", 208 },
+    { "RB-Dihedrals", 247 },
+    { "Four. Dihedrals", 247 },
+    { "Tab. Dihedrals", 227 },
+    { "Dist. Restr.", 200 },
+    { "Orient. Restr.", 200 },
+    { "Dihedral Restr.", 200 },
+    { "Pos. Restr.", 50 },
+    { "Flat-bottom posres", 50 },
+    { "Angle Restr.", 191 },
+    { "Angle Restr. Z", 164 },
+    { "Morse Potent.", 83 },
+    { "Cubic Bonds", 54 },
+    { "Walls", 31 },
+    { "Polarization", 59 },
+    { "Anharmonic Polarization", 72 },
+    { "Water Pol.", 62 },
+    { "Thole Pol.", 296 },
+    { "Virial", 18 },
+    { "Update", 31 },
+    { "Ext.ens. Update", 54 },
+    { "Stop-CM", 10 },
+    { "P-Coupling", 6 },
+    { "Calc-Ekin", 27 },
+    { "Lincs", 60 },
+    { "Lincs-Mat", 4 },
+    { "Shake", 30 },
+    { "Constraint-V", 8 },
+    { "Shake-Init", 10 },
+    { "Constraint-Vir", 24 },
+    { "Settle", 323 },
+    { "Virtual Site 2", 23 },
+    { "Virtual Site 2fd", 63 },
+    { "Virtual Site 3", 37 },
+    { "Virtual Site 3fd", 95 },
+    { "Virtual Site 3fad", 176 },
+    { "Virtual Site 3out", 87 },
+    { "Virtual Site 4fd", 110 },
+    { "Virtual Site 4fdn", 254 },
+    { "Virtual Site N", 15 },
+    { "CMAP", 1700 }, // Estimate!
+    { "Urey-Bradley", 183 },
+    { "Cross-Bond-Bond", 163 },
+    { "Cross-Bond-Angle", 163 }
 };
 
-static void pr_two(FILE *out, int c, int i)
+static void pr_two(FILE* out, int c, int i)
 {
     if (i < 10)
     {
@@ -200,17 +201,17 @@ static void pr_two(FILE *out, int c, int i)
     }
 }
 
-static void pr_difftime(FILE *out, double dt)
+static void pr_difftime(FILE* out, double dt)
 {
-    int        ndays, nhours, nmins, nsecs;
-    gmx_bool   bPrint, bPrinted;
+    int      ndays, nhours, nmins, nsecs;
+    gmx_bool bPrint, bPrinted;
 
-    ndays    = static_cast<int>(dt/(24*3600));
-    dt       = dt-24*3600*ndays;
-    nhours   = static_cast<int>(dt/3600);
-    dt       = dt-3600*nhours;
-    nmins    = static_cast<int>(dt/60);
-    dt       = dt-nmins*60;
+    ndays    = static_cast<int>(dt / (24 * 3600));
+    dt       = dt - 24 * 3600 * ndays;
+    nhours   = static_cast<int>(dt / 3600);
+    dt       = dt - 3600 * nhours;
+    nmins    = static_cast<int>(dt / 60);
+    dt       = dt - nmins * 60;
     nsecs    = static_cast<int>(dt);
     bPrint   = (ndays > 0);
     bPrinted = bPrint;
@@ -255,7 +256,7 @@ static void pr_difftime(FILE *out, double dt)
     fprintf(out, "\n");
 }
 
-void clear_nrnb(t_nrnb *nrnb)
+void clear_nrnb(t_nrnb* nrnb)
 {
     int i;
 
@@ -265,17 +266,17 @@ void clear_nrnb(t_nrnb *nrnb)
     }
 }
 
-void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2)
+void add_nrnb(t_nrnb* dest, t_nrnb* s1, t_nrnb* s2)
 {
     int i;
 
     for (i = 0; (i < eNRNB); i++)
     {
-        dest->n[i] = s1->n[i]+s2->n[i];
+        dest->n[i] = s1->n[i] + s2->n[i];
     }
 }
 
-void print_nrnb(FILE *out, t_nrnb *nrnb)
+void print_nrnb(FILE* out, t_nrnb* nrnb)
 {
     int i;
 
@@ -288,12 +289,12 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
     }
 }
 
-void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char gmx_unused *file, int gmx_unused line)
+void _inc_nrnb(t_nrnb* nrnb, int enr, int inc, char gmx_unused* file, int gmx_unused line)
 {
     nrnb->n[enr] += inc;
 #ifdef DEBUG_NRNB
-    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
-           nbdata[enr].name, enr, inc, file, line);
+    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n", nbdata[enr].name, enr, inc,
+           file, line);
 #endif
 }
 
@@ -309,40 +310,41 @@ static gmx_bool nrnb_is_nbnxn_kernel_addition(int enr)
     return (enr >= eNR_NBNXN_ADD_LJ_FSW && enr <= eNR_NBNXN_ADD_LJ_EWALD_E);
 }
 
-void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
+void print_flop(FILE* out, t_nrnb* nrnb, double* nbfs, double* mflop)
 {
-    int           i, j;
-    double        mni, frac, tfrac, tflop;
-    const char   *myline = "-----------------------------------------------------------------------------";
+    int         i, j;
+    double      mni, frac, tfrac, tflop;
+    const char* myline =
+            "-----------------------------------------------------------------------------";
 
     *nbfs = 0.0;
     for (i = 0; (i < eNR_NBKERNEL_TOTAL_NR); i++)
     {
         if (std::strstr(nbdata[i].name, "W3-W3") != nullptr)
         {
-            *nbfs += 9e-6*nrnb->n[i];
+            *nbfs += 9e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W3") != nullptr)
         {
-            *nbfs += 3e-6*nrnb->n[i];
+            *nbfs += 3e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W4-W4") != nullptr)
         {
-            *nbfs += 10e-6*nrnb->n[i];
+            *nbfs += 10e-6 * nrnb->n[i];
         }
         else if (std::strstr(nbdata[i].name, "W4") != nullptr)
         {
-            *nbfs += 4e-6*nrnb->n[i];
+            *nbfs += 4e-6 * nrnb->n[i];
         }
         else
         {
-            *nbfs += 1e-6*nrnb->n[i];
+            *nbfs += 1e-6 * nrnb->n[i];
         }
     }
     tflop = 0;
     for (i = 0; (i < eNRNB); i++)
     {
-        tflop += 1e-6*nrnb->n[i]*nbdata[i].flop;
+        tflop += 1e-6 * nrnb->n[i] * nbdata[i].flop;
     }
 
     if (tflop == 0)
@@ -362,15 +364,14 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         fprintf(out, " W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
         fprintf(out, " V&F=Potential and force  V=Potential only  F=Force only\n\n");
 
-        fprintf(out, " %-32s %16s %15s  %7s\n",
-                "Computing:", "M-Number", "M-Flops", "% Flops");
+        fprintf(out, " %-32s %16s %15s  %7s\n", "Computing:", "M-Number", "M-Flops", "% Flops");
         fprintf(out, "%s\n", myline);
     }
     *mflop = 0.0;
     tfrac  = 0.0;
     for (i = 0; (i < eNRNB); i++)
     {
-        mni     = 1e-6*nrnb->n[i];
+        mni = 1e-6 * nrnb->n[i];
         /* Skip empty entries and nbnxn additional flops,
          * which have been added to the kernel entry.
          */
@@ -378,7 +379,7 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
         {
             int flop;
 
-            flop    = nbdata[i].flop;
+            flop = nbdata[i].flop;
             if (nrnb_is_nbnxn_vdw_kernel(i))
             {
                 /* Possibly add the cost of an LJ switch/Ewald function */
@@ -395,21 +396,19 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
                     }
                 }
             }
-            *mflop += mni*flop;
-            frac    = 100.0*mni*flop/tflop;
-            tfrac  += frac;
+            *mflop += mni * flop;
+            frac = 100.0 * mni * flop / tflop;
+            tfrac += frac;
             if (out != nullptr)
             {
-                fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
-                        nbdata[i].name, mni, mni*flop, frac);
+                fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n", nbdata[i].name, mni, mni * flop, frac);
             }
         }
     }
     if (out)
     {
         fprintf(out, "%s\n", myline);
-        fprintf(out, " %-32s %16s %15.3f  %6.1f\n",
-                "Total", "", *mflop, tfrac);
+        fprintf(out, " %-32s %16s %15.3f  %6.1f\n", "Total", "", *mflop, tfrac);
         fprintf(out, "%s\n\n", myline);
 
         if (nrnb->n[eNR_NBKERNEL_GENERIC] > 0)
@@ -423,9 +422,13 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     }
 }
 
-void print_perf(FILE *out, double time_per_thread, double time_per_node,
-                int64_t nsteps, double delta_t,
-                double nbfs, double mflop)
+void print_perf(FILE*   out,
+                double  time_per_thread,
+                double  time_per_node,
+                int64_t nsteps,
+                double  delta_t,
+                double  nbfs,
+                double  mflop)
 {
     double wallclocktime;
 
@@ -434,53 +437,47 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
     if (time_per_node > 0)
     {
         fprintf(out, "%12s %12s %12s %10s\n", "", "Core t (s)", "Wall t (s)", "(%)");
-        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:",
-                time_per_thread, time_per_node, 100.0*time_per_thread/time_per_node);
+        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:", time_per_thread, time_per_node,
+                100.0 * time_per_thread / time_per_node);
         /* only print day-hour-sec format if time_per_node is more than 30 min */
-        if (time_per_node > 30*60)
+        if (time_per_node > 30 * 60)
         {
             fprintf(out, "%12s %12s", "", "");
             pr_difftime(out, time_per_node);
         }
         if (delta_t > 0)
         {
-            mflop         = mflop/time_per_node;
-            wallclocktime = nsteps*delta_t;
+            mflop         = mflop / time_per_node;
+            wallclocktime = nsteps * delta_t;
 
             if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
-                fprintf(out, "%12s %12s %12s\n",
-                        "", "(ns/day)", "(hour/ns)");
-                fprintf(out, "%12s %12.3f %12.3f\n", "Performance:",
-                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
+                fprintf(out, "%12s %12s %12s\n", "", "(ns/day)", "(hour/ns)");
+                fprintf(out, "%12s %12.3f %12.3f\n", "Performance:", wallclocktime * 24 * 3.6 / time_per_node,
+                        1000 * time_per_node / (3600 * wallclocktime));
             }
             else
             {
-                fprintf(out, "%12s %12s %12s %12s %12s\n",
-                        "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
-                        "(ns/day)", "(hour/ns)");
-                fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:",
-                        nbfs/time_per_node, (mflop > 1000) ? (mflop/1000) : mflop,
-                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
+                fprintf(out, "%12s %12s %12s %12s %12s\n", "", "(Mnbf/s)",
+                        (mflop > 1000) ? "(GFlops)" : "(MFlops)", "(ns/day)", "(hour/ns)");
+                fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:", nbfs / time_per_node,
+                        (mflop > 1000) ? (mflop / 1000) : mflop, wallclocktime * 24 * 3.6 / time_per_node,
+                        1000 * time_per_node / (3600 * wallclocktime));
             }
         }
         else
         {
             if (getenv("GMX_DETAILED_PERF_STATS") == nullptr)
             {
-                fprintf(out, "%12s %14s\n",
-                        "", "(steps/hour)");
-                fprintf(out, "%12s %14.1f\n", "Performance:",
-                        nsteps*3600.0/time_per_node);
+                fprintf(out, "%12s %14s\n", "", "(steps/hour)");
+                fprintf(out, "%12s %14.1f\n", "Performance:", nsteps * 3600.0 / time_per_node);
             }
             else
             {
-                fprintf(out, "%12s %12s %12s %14s\n",
-                        "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
-                        "(steps/hour)");
-                fprintf(out, "%12s %12.3f %12.3f %14.1f\n", "Performance:",
-                        nbfs/time_per_node, (mflop > 1000) ? (mflop/1000) : mflop,
-                        nsteps*3600.0/time_per_node);
+                fprintf(out, "%12s %12s %12s %14s\n", "", "(Mnbf/s)",
+                        (mflop > 1000) ? "(GFlops)" : "(MFlops)", "(steps/hour)");
+                fprintf(out, "%12s %12.3f %12.3f %14.1f\n", "Performance:", nbfs / time_per_node,
+                        (mflop > 1000) ? (mflop / 1000) : mflop, nsteps * 3600.0 / time_per_node);
             }
         }
     }
@@ -491,26 +488,22 @@ int cost_nrnb(int enr)
     return nbdata[enr].flop;
 }
 
-const char *nrnb_str(int enr)
+const char* nrnb_str(int enr)
 {
     return nbdata[enr].name;
 }
 
-static const int    force_index[] = {
-    eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER,
-    eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
-    eNR_FBPOSRES, eNR_NS,
+static const int force_index[] = {
+    eNR_BONDS,  eNR_ANGLES, eNR_PROPER, eNR_IMPROPER, eNR_RB,
+    eNR_DISRES, eNR_ORIRES, eNR_POSRES, eNR_FBPOSRES, eNR_NS,
 };
 #define NFORCE_INDEX asize(force_index)
 
-static const int    constr_index[] = {
-    eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
-    eNR_CONSTR_VIR, eNR_CONSTR_V
-};
+static const int constr_index[] = { eNR_SHAKE,  eNR_SHAKE_RIJ,  eNR_SETTLE,  eNR_UPDATE,
+                                    eNR_PCOUPL, eNR_CONSTR_VIR, eNR_CONSTR_V };
 #define NCONSTR_INDEX asize(constr_index)
 
-static double pr_av(FILE *log, t_commrec *cr,
-                    double fav, const double ftot[], const char *title)
+static double pr_av(FILE* log, t_commrec* cr, double fav, const double ftot[], const char* title)
 {
     int    i, perc;
     double dperc, unb;
@@ -522,14 +515,14 @@ static double pr_av(FILE *log, t_commrec *cr,
         fprintf(log, "\n %-26s", title);
         for (i = 0; (i < cr->nnodes); i++)
         {
-            dperc = (100.0*ftot[i])/fav;
+            dperc = (100.0 * ftot[i]) / fav;
             unb   = std::max(unb, dperc);
             perc  = static_cast<int>(dperc);
             fprintf(log, "%3d ", perc);
         }
         if (unb > 0)
         {
-            perc = static_cast<int>(10000.0/unb);
+            perc = static_cast<int>(10000.0 / unb);
             fprintf(log, "%6d%%\n\n", perc);
         }
         else
@@ -540,9 +533,9 @@ static double pr_av(FILE *log, t_commrec *cr,
     return unb;
 }
 
-void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
+void pr_load(FILE* log, t_commrec* cr, t_nrnb nrnb[])
 {
-    t_nrnb              av;
+    t_nrnb av;
 
     std::vector<double> ftot(cr->nnodes);
     std::vector<double> stot(cr->nnodes);
@@ -552,21 +545,21 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
         /* Cost due to forces */
         for (int j = 0; (j < eNR_NBKERNEL_TOTAL_NR); j++)
         {
-            ftot[i] += nrnb[i].n[j]*cost_nrnb(j);
+            ftot[i] += nrnb[i].n[j] * cost_nrnb(j);
         }
         for (int j = 0; (j < NFORCE_INDEX); j++)
         {
-            ftot[i] += nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
+            ftot[i] += nrnb[i].n[force_index[j]] * cost_nrnb(force_index[j]);
         }
         /* Due to shake */
         for (int j = 0; (j < NCONSTR_INDEX); j++)
         {
-            stot[i] += nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
+            stot[i] += nrnb[i].n[constr_index[j]] * cost_nrnb(constr_index[j]);
         }
     }
     for (int j = 0; (j < eNRNB); j++)
     {
-        av.n[j] = av.n[j]/static_cast<double>(cr->nnodes - cr->npmenodes);
+        av.n[j] = av.n[j] / static_cast<double>(cr->nnodes - cr->npmenodes);
     }
 
     fprintf(log, "\nDetailed load balancing info in percentage of average\n");
@@ -594,14 +587,14 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
             fprintf(log, " %-26s", nrnb_str(j));
             for (int i = 0; (i < cr->nnodes); i++)
             {
-                dperc = (100.0*nrnb[i].n[j])/av.n[j];
+                dperc = (100.0 * nrnb[i].n[j]) / av.n[j];
                 unb   = std::max(unb, dperc);
                 perc  = static_cast<int>(dperc);
                 fprintf(log, "%3d ", perc);
             }
             if (unb > 0)
             {
-                perc = static_cast<int>(10000.0/unb);
+                perc = static_cast<int>(10000.0 / unb);
                 fprintf(log, "%6d%%\n", perc);
             }
             else
@@ -620,10 +613,10 @@ void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
     double uf = pr_av(log, cr, fav, ftot.data(), "Total Force");
     double us = pr_av(log, cr, sav, stot.data(), "Total Constr.");
 
-    double unb = (uf*fav+us*sav)/(fav+sav);
+    double unb = (uf * fav + us * sav) / (fav + sav);
     if (unb > 0)
     {
-        unb = 10000.0/unb;
+        unb = 10000.0 / unb;
         fprintf(log, "\nTotal Scaling: %.0f%% of max performance\n\n", unb);
     }
 }

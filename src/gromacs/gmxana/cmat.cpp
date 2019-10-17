@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,9 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-t_mat *init_mat(int n1, gmx_bool b1D)
+t_mat* init_mat(int n1, gmx_bool b1D)
 {
-    t_mat *m;
+    t_mat* m;
 
     snew(m, 1);
     m->n1     = n1;
@@ -67,7 +67,7 @@ t_mat *init_mat(int n1, gmx_bool b1D)
     return m;
 }
 
-void copy_t_mat(t_mat *dst, t_mat *src)
+void copy_t_mat(t_mat* dst, t_mat* src)
 {
     int i, j;
 
@@ -90,33 +90,33 @@ void copy_t_mat(t_mat *dst, t_mat *src)
     }
 }
 
-void enlarge_mat(t_mat *m, int deltan)
+void enlarge_mat(t_mat* m, int deltan)
 {
     int i, j;
 
-    srenew(m->erow, m->nn+deltan);
-    srenew(m->m_ind, m->nn+deltan);
-    srenew(m->mat, m->nn+deltan);
+    srenew(m->erow, m->nn + deltan);
+    srenew(m->m_ind, m->nn + deltan);
+    srenew(m->mat, m->nn + deltan);
 
     /* Reallocate existing rows in the matrix, and set them to zero */
     for (i = 0; (i < m->nn); i++)
     {
-        srenew(m->mat[i], m->nn+deltan);
-        for (j = m->nn; (j < m->nn+deltan); j++)
+        srenew(m->mat[i], m->nn + deltan);
+        for (j = m->nn; (j < m->nn + deltan); j++)
         {
             m->mat[i][j] = 0;
         }
     }
     /* Allocate new rows of the matrix, set energies to zero */
-    for (i = m->nn; (i < m->nn+deltan); i++)
+    for (i = m->nn; (i < m->nn + deltan); i++)
     {
-        m->erow[i]  = 0;
-        snew(m->mat[i], m->nn+deltan);
+        m->erow[i] = 0;
+        snew(m->mat[i], m->nn + deltan);
     }
     m->nn += deltan;
 }
 
-void reset_index(t_mat *m)
+void reset_index(t_mat* m)
 {
     int i;
 
@@ -126,19 +126,19 @@ void reset_index(t_mat *m)
     }
 }
 
-void set_mat_entry(t_mat *m, int i, int j, real val)
+void set_mat_entry(t_mat* m, int i, int j, real val)
 {
     m->mat[i][j] = m->mat[j][i] = val;
-    m->maxrms    = std::max(m->maxrms, val);
+    m->maxrms                   = std::max(m->maxrms, val);
     if (j != i)
     {
-        m->minrms  = std::min(m->minrms, val);
+        m->minrms = std::min(m->minrms, val);
     }
-    m->sumrms   += val;
-    m->nn        = std::max(m->nn, std::max(j+1, i+1));
+    m->sumrms += val;
+    m->nn = std::max(m->nn, std::max(j + 1, i + 1));
 }
 
-void done_mat(t_mat **m)
+void done_mat(t_mat** m)
 {
     done_matrix((*m)->n1, &((*m)->mat));
     sfree((*m)->m_ind);
@@ -147,19 +147,19 @@ void done_mat(t_mat **m)
     *m = nullptr;
 }
 
-real mat_energy(t_mat *m)
+real mat_energy(t_mat* m)
 {
     int  j;
     real emat = 0;
 
-    for (j = 0; (j < m->nn-1); j++)
+    for (j = 0; (j < m->nn - 1); j++)
     {
-        emat += gmx::square(m->mat[j][j+1]);
+        emat += gmx::square(m->mat[j][j + 1]);
     }
     return emat;
 }
 
-void swap_rows(t_mat *m, int iswap, int jswap)
+void swap_rows(t_mat* m, int iswap, int jswap)
 {
     real *tmp, ttt;
     int   i, itmp;
@@ -183,9 +183,9 @@ void swap_rows(t_mat *m, int iswap, int jswap)
     }
 }
 
-void swap_mat(t_mat *m)
+void swap_mat(t_mat* m)
 {
-    t_mat *tmp;
+    t_mat* tmp;
     int    i, j;
 
     tmp = init_mat(m->nn, FALSE);
@@ -207,20 +207,19 @@ void swap_mat(t_mat *m)
     done_mat(&tmp);
 }
 
-void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
-                   const gmx_output_env_t *oenv)
+void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_output_env_t* oenv)
 {
-    FILE   *fp;
-    int     i, j, *histo, x;
-    real    fac;
+    FILE* fp;
+    int   i, j, *histo, x;
+    real  fac;
 
-    fac = 100/maxrms;
+    fac = 100 / maxrms;
     snew(histo, 101);
     for (i = 0; i < nn; i++)
     {
-        for (j = i+1; j < nn; j++)
+        for (j = i + 1; j < nn; j++)
         {
-            x = gmx::roundToInt(fac*mat[i][j]);
+            x = gmx::roundToInt(fac * mat[i][j]);
             if (x <= 100)
             {
                 histo[x]++;
@@ -231,20 +230,20 @@ void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
     fp = xvgropen(fn, "RMS Distribution", "RMS (nm)", "a.u.", oenv);
     for (i = 0; (i < 101); i++)
     {
-        fprintf(fp, "%10g  %10d\n", i/fac, histo[i]);
+        fprintf(fp, "%10g  %10d\n", i / fac, histo[i]);
     }
     xvgrclose(fp);
     sfree(histo);
 }
 
-void rmsd_distribution(const char *fn, t_mat *rms, const gmx_output_env_t *oenv)
+void rmsd_distribution(const char* fn, t_mat* rms, const gmx_output_env_t* oenv)
 {
     low_rmsd_dist(fn, rms->maxrms, rms->nn, rms->mat, oenv);
 }
 
-t_clustid *new_clustid(int n1)
+t_clustid* new_clustid(int n1)
 {
-    t_clustid *c;
+    t_clustid* c;
     int        i;
 
     snew(c, n1);

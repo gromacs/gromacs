@@ -48,9 +48,9 @@
 #include "pycontext.h"
 #include "pysystem.h"
 
-// Note that PyCapsule symbols from Python.h should be imported by way of the pybind headers, so let's not
-// muddy the waters by explicitly including Python.h here unless we want to get more particular about the
-// CMake configuration.
+// Note that PyCapsule symbols from Python.h should be imported by way of the pybind headers, so
+// let's not muddy the waters by explicitly including Python.h here unless we want to get more
+// particular about the CMake configuration.
 
 namespace gmxpy
 {
@@ -61,7 +61,7 @@ namespace detail
 namespace py = pybind11;
 
 
-void export_system(py::module &m)
+void export_system(py::module& m)
 {
     using ::gmxapi::System;
 
@@ -73,24 +73,25 @@ void export_system(py::module &m)
     // self-documents intent. Future implementations could refactor Session as a
     // dynamically accessed facet of the Context, which the API client would be
     // required to maintain and to pass to the API.
-    py::class_ < ::gmxapi::Session, std::shared_ptr < ::gmxapi::Session>> session(m, "MDSession");
+    py::class_<::gmxapi::Session, std::shared_ptr<::gmxapi::Session>> session(m, "MDSession");
     session.def("run", &::gmxapi::Session::run, "Run the simulation workflow");
-    session.def("close", &::gmxapi::Session::close, "Shut down the execution environment and close the session.");
+    session.def("close", &::gmxapi::Session::close,
+                "Shut down the execution environment and close the session.");
 
     // Export system container class
-    py::class_<System, std::shared_ptr<System> > system(m, "MDSystem");
+    py::class_<System, std::shared_ptr<System>> system(m, "MDSystem");
     system.def("launch",
-               [](System* system, std::shared_ptr<PyContext> context)
-               {
+               [](System* system, std::shared_ptr<PyContext> context) {
                    auto newSession = system->launch(context->get());
                    return newSession;
                },
                "Launch the configured workflow in the provided context.");
 
     // Module-level function
-    m.def("from_tpr", &gmxpy::from_tpr, "Return a system container initialized from the given input record.");
+    m.def("from_tpr", &gmxpy::from_tpr,
+          "Return a system container initialized from the given input record.");
 }
 
-} // end namespace gmxpy::detail
+} // namespace detail
 
 } // end namespace gmxpy

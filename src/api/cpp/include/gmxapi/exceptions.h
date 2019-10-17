@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,18 +63,18 @@ namespace gmxapi
  */
 class Exception : public std::exception
 {
-    public:
-        //! \cond
-        Exception();
-        ~Exception() override;
-        Exception(const Exception &);
-        Exception &operator=(const Exception &);
+public:
+    //! \cond
+    Exception();
+    ~Exception() override;
+    Exception(const Exception& /*unused*/);
+    Exception& operator=(const Exception& /*unused*/);
 
-        Exception(Exception &&) noexcept;
-        Exception &operator=(Exception &&) noexcept;
+    Exception(Exception&& /*unused*/) noexcept;
+    Exception& operator=(Exception&& /*unused*/) noexcept;
 
-        const char* what() const noexcept override;
-        //! \endcond
+    const char* what() const noexcept override;
+    //! \endcond
 };
 
 /*!
@@ -102,42 +102,34 @@ class Exception : public std::exception
 template<class E>
 class BasicException : public Exception
 {
-    private:
-        //! Store the usual exception message as a std::string instead of C string.
-        std::string what_;
-    public:
-        //! Initialize with empty message.
-        BasicException() : BasicException{std::string()}
-        {}
+private:
+    //! Store the usual exception message as a std::string instead of C string.
+    std::string what_;
 
-        /*!
-         * \brief Copy a string to use for the exception message.
-         *
-         * \param message
-         * \{
-         */
-        explicit BasicException(std::string message) noexcept :
-            what_ {std::move(message)}
-        {}
+public:
+    //! Initialize with empty message.
+    BasicException() : BasicException{ std::string() } {}
 
-        explicit BasicException(const char* message)
-        {
-            what_ = message;
-        }
-        //! \}
+    /*!
+     * \brief Copy a string to use for the exception message.
+     *
+     * \param message
+     * \{
+     */
+    explicit BasicException(std::string message) noexcept : what_{ std::move(message) } {}
 
-        /*!
-         * \brief Get message.
-         *
-         * \return pointer to C string.
-         *
-         * It is the responsibility of the caller to keep the Exception object alive while the char
-         * pointer is in use.
-         */
-        const char* what() const noexcept override
-        {
-            return what_.c_str();
-        }
+    explicit BasicException(const char* message) { what_ = message; }
+    //! \}
+
+    /*!
+     * \brief Get message.
+     *
+     * \return pointer to C string.
+     *
+     * It is the responsibility of the caller to keep the Exception object alive while the char
+     * pointer is in use.
+     */
+    const char* what() const noexcept override { return what_.c_str(); }
 };
 
 /*! \brief Behavioral protocol violated.
@@ -153,8 +145,8 @@ class BasicException : public Exception
  */
 class ProtocolError : public BasicException<ProtocolError>
 {
-    public:
-        using BasicException<ProtocolError>::BasicException;
+public:
+    using BasicException<ProtocolError>::BasicException;
 };
 
 /*!
@@ -168,8 +160,8 @@ class ProtocolError : public BasicException<ProtocolError>
  */
 class NotImplementedError : public BasicException<NotImplementedError>
 {
-    public:
-        using BasicException<NotImplementedError>::BasicException;
+public:
+    using BasicException<NotImplementedError>::BasicException;
 };
 
 /*!
@@ -181,10 +173,10 @@ class NotImplementedError : public BasicException<NotImplementedError>
  */
 class UsageError : public BasicException<UsageError>
 {
-    public:
-        using BasicException<UsageError>::BasicException;
+public:
+    using BasicException<UsageError>::BasicException;
 };
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
 #endif // header guard

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static gmx_bool ip_pert(int ftype, const t_iparams *ip)
+static gmx_bool ip_pert(int ftype, const t_iparams* ip)
 {
     gmx_bool bPert;
     int      i;
@@ -64,32 +64,26 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_ANGLES:
         case F_G96ANGLES:
         case F_IDIHS:
-            bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
-                     ip->harmonic.krA != ip->harmonic.krB);
+            bPert = (ip->harmonic.rA != ip->harmonic.rB || ip->harmonic.krA != ip->harmonic.krB);
             break;
         case F_MORSE:
-            bPert = (ip->morse.b0A  != ip->morse.b0B ||
-                     ip->morse.cbA  != ip->morse.cbB ||
-                     ip->morse.betaA  != ip->morse.betaB);
+            bPert = (ip->morse.b0A != ip->morse.b0B || ip->morse.cbA != ip->morse.cbB
+                     || ip->morse.betaA != ip->morse.betaB);
             break;
         case F_RESTRBONDS:
-            bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
-                     ip->restraint.up1A  != ip->restraint.up1B ||
-                     ip->restraint.up2A  != ip->restraint.up2B ||
-                     ip->restraint.kA    != ip->restraint.kB);
+            bPert = (ip->restraint.lowA != ip->restraint.lowB || ip->restraint.up1A != ip->restraint.up1B
+                     || ip->restraint.up2A != ip->restraint.up2B
+                     || ip->restraint.kA != ip->restraint.kB);
             break;
         case F_UREY_BRADLEY:
-            bPert = (ip->u_b.thetaA  != ip->u_b.thetaB  ||
-                     ip->u_b.kthetaA != ip->u_b.kthetaB ||
-                     ip->u_b.r13A    != ip->u_b.r13B    ||
-                     ip->u_b.kUBA    != ip->u_b.kUBB);
+            bPert = (ip->u_b.thetaA != ip->u_b.thetaB || ip->u_b.kthetaA != ip->u_b.kthetaB
+                     || ip->u_b.r13A != ip->u_b.r13B || ip->u_b.kUBA != ip->u_b.kUBB);
             break;
         case F_PDIHS:
         case F_PIDIHS:
         case F_ANGRES:
         case F_ANGRESZ:
-            bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
-                     ip->pdihs.cpA  != ip->pdihs.cpB);
+            bPert = (ip->pdihs.phiA != ip->pdihs.phiB || ip->pdihs.cpA != ip->pdihs.cpB);
             break;
         case F_RBDIHS:
             bPert = FALSE;
@@ -104,32 +98,25 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_TABBONDS:
         case F_TABBONDSNC:
         case F_TABANGLES:
-        case F_TABDIHS:
-            bPert = (ip->tab.kA != ip->tab.kB);
-            break;
+        case F_TABDIHS: bPert = (ip->tab.kA != ip->tab.kB); break;
         case F_POSRES:
             bPert = FALSE;
             for (i = 0; i < DIM; i++)
             {
-                if (ip->posres.pos0A[i] != ip->posres.pos0B[i] ||
-                    ip->posres.fcA[i]   != ip->posres.fcB[i])
+                if (ip->posres.pos0A[i] != ip->posres.pos0B[i] || ip->posres.fcA[i] != ip->posres.fcB[i])
                 {
                     bPert = TRUE;
                 }
             }
             break;
         case F_DIHRES:
-            bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
-                     (ip->dihres.dphiA != ip->dihres.dphiB) ||
-                     (ip->dihres.kfacA != ip->dihres.kfacB));
+            bPert = ((ip->dihres.phiA != ip->dihres.phiB) || (ip->dihres.dphiA != ip->dihres.dphiB)
+                     || (ip->dihres.kfacA != ip->dihres.kfacB));
             break;
         case F_LJ14:
-            bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
-                     ip->lj14.c12A != ip->lj14.c12B);
+            bPert = (ip->lj14.c6A != ip->lj14.c6B || ip->lj14.c12A != ip->lj14.c12B);
             break;
-        case F_CMAP:
-            bPert = FALSE;
-            break;
+        case F_CMAP: bPert = FALSE; break;
         case F_RESTRANGLES:
         case F_RESTRDIHS:
         case F_CBTDIHS:
@@ -143,20 +130,18 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
     return bPert;
 }
 
-static gmx_bool ip_q_pert(int ftype, const t_iatom *ia,
-                          const t_iparams *ip, const real *qA, const real *qB)
+static gmx_bool ip_q_pert(int ftype, const t_iatom* ia, const t_iparams* ip, const real* qA, const real* qB)
 {
     /* 1-4 interactions do not have the charges stored in the iparams list,
      * so we need a separate check for those.
      */
-    return (ip_pert(ftype, ip+ia[0]) ||
-            (ftype == F_LJ14 && (qA[ia[1]] != qB[ia[1]] ||
-                                 qA[ia[2]] != qB[ia[2]])));
+    return (ip_pert(ftype, ip + ia[0])
+            || (ftype == F_LJ14 && (qA[ia[1]] != qB[ia[1]] || qA[ia[2]] != qB[ia[2]])));
 }
 
-gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
+gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t* mtop)
 {
-    const gmx_ffparams_t *ffparams = &mtop->ffparams;
+    const gmx_ffparams_t* ffparams = &mtop->ffparams;
 
     /* Loop over all the function types and compare the A/B parameters */
     gmx_bool bPert = FALSE;
@@ -173,15 +158,14 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     }
 
     /* Check perturbed charges for 1-4 interactions */
-    for (const gmx_molblock_t &molb : mtop->molblock)
+    for (const gmx_molblock_t& molb : mtop->molblock)
     {
-        const t_atom             *atom = mtop->moltype[molb.type].atoms.atom;
-        const InteractionList    &il   = mtop->moltype[molb.type].ilist[F_LJ14];
-        gmx::ArrayRef<const int>  ia   = il.iatoms;
+        const t_atom*            atom = mtop->moltype[molb.type].atoms.atom;
+        const InteractionList&   il   = mtop->moltype[molb.type].ilist[F_LJ14];
+        gmx::ArrayRef<const int> ia   = il.iatoms;
         for (int i = 0; i < il.size(); i += 3)
         {
-            if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||
-                atom[ia[i+2]].q != atom[ia[i+2]].qB)
+            if (atom[ia[i + 1]].q != atom[ia[i + 1]].qB || atom[ia[i + 2]].q != atom[ia[i + 2]].qB)
             {
                 bPert = TRUE;
             }
@@ -191,13 +175,13 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     return bPert;
 }
 
-void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
+void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
 {
-    int        ftype, nral, i, ic, ib, a;
-    t_ilist   *ilist;
-    t_iatom   *iatoms;
-    t_iatom   *iabuf;
-    int        iabuf_nalloc;
+    int      ftype, nral, i, ic, ib, a;
+    t_ilist* ilist;
+    t_iatom* iatoms;
+    t_iatom* iabuf;
+    int      iabuf_nalloc;
 
     if (qB == nullptr)
     {
@@ -207,7 +191,7 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
     iabuf_nalloc = 0;
     iabuf        = nullptr;
 
-    const t_iparams *iparams = idef->iparams;
+    const t_iparams* iparams = idef->iparams;
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -222,15 +206,15 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
             while (i < ilist->nr)
             {
                 /* Check if this interaction is perturbed */
-                if (ip_q_pert(ftype, iatoms+i, iparams, qA, qB))
+                if (ip_q_pert(ftype, iatoms + i, iparams, qA, qB))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)
                     {
-                        iabuf_nalloc = over_alloc_large(ib+1+nral);
+                        iabuf_nalloc = over_alloc_large(ib + 1 + nral);
                         srenew(iabuf, iabuf_nalloc);
                     }
-                    for (a = 0; a < 1+nral; a++)
+                    for (a = 0; a < 1 + nral; a++)
                     {
                         iabuf[ib++] = iatoms[i++];
                     }
@@ -238,7 +222,7 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
                 else
                 {
                     /* Copy in place */
-                    for (a = 0; a < 1+nral; a++)
+                    for (a = 0; a < 1 + nral; a++)
                     {
                         iatoms[ic++] = iatoms[i++];
                     }
@@ -255,10 +239,8 @@ void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
 
             if (debug)
             {
-                fprintf(debug, "%s non-pert %d pert %d\n",
-                        interaction_function[ftype].longname,
-                        ilist->nr_nonperturbed,
-                        ilist->nr-ilist->nr_nonperturbed);
+                fprintf(debug, "%s non-pert %d pert %d\n", interaction_function[ftype].longname,
+                        ilist->nr_nonperturbed, ilist->nr - ilist->nr_nonperturbed);
             }
         }
     }

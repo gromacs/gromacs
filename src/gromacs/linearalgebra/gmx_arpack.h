@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2004 David van der Spoel, Erik Lindahl, University of Groningen.
- * Copyright (c) 2012,2013,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -95,25 +95,23 @@
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
-void
-    F77_FUNC(dsaupd, DSAUPD) (int *     ido,
-                              const char *    bmat,
-                              int *     n,
-                              const char *      which,
-                              int *     nev,
-                              double *  tol,
-                              double *  resid,
-                              int *     ncv,
-                              double *  v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              double *  workd,
-                              int *     iwork,
-                              double *  workl,
-                              int *     lworkl,
-                              int *     info);
-
+void F77_FUNC(dsaupd, DSAUPD)(int*        ido,
+                              const char* bmat,
+                              int*        n,
+                              const char* which,
+                              int*        nev,
+                              double*     tol,
+                              double*     resid,
+                              int*        ncv,
+                              double*     v,
+                              int*        ldv,
+                              int*        iparam,
+                              int*        ipntr,
+                              double*     workd,
+                              int*        iwork,
+                              double*     workl,
+                              int*        lworkl,
+                              int*        info);
 
 
 /*! \brief Get eigenvalues/vectors after Arnoldi iteration, double prec.
@@ -154,32 +152,28 @@ void
  *  \param lworkl  Provide the same argument as you did to dsaupd()
  *  \param info    Provide the same argument as you did to dsaupd()
  */
-void
-    F77_FUNC(dseupd, DSEUPD) (int *     rvec,
-                              const char *    howmny,
-                              int *     select,
-                              double *  d,
-                              double *  z,
-                              int *     ldz,
-                              double *  sigma,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              double *  tol,
-                              double *  resid,
-                              int *     ncv,
-                              double *  v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              double *  workd,
-                              double *  workl,
-                              int *     lworkl,
-                              int *     info);
-
-
-
+void F77_FUNC(dseupd, DSEUPD)(int*        rvec,
+                              const char* howmny,
+                              int*        select,
+                              double*     d,
+                              double*     z,
+                              int*        ldz,
+                              double*     sigma,
+                              const char* bmat,
+                              int*        n,
+                              const char* which,
+                              int*        nev,
+                              double*     tol,
+                              double*     resid,
+                              int*        ncv,
+                              double*     v,
+                              int*        ldv,
+                              int*        iparam,
+                              int*        ipntr,
+                              double*     workd,
+                              double*     workl,
+                              int*        lworkl,
+                              int*        info);
 
 
 /*! \brief Implicitly Restarted Arnoldi Iteration, single precision.
@@ -226,27 +220,23 @@ void
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
-void
-    F77_FUNC(ssaupd, SSAUPD) (int *     ido,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              float *   tol,
-                              float *   resid,
-                              int *     ncv,
-                              float *   v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              float *   workd,
-                              int *     iwork,
-                              float *   workl,
-                              int *     lworkl,
-                              int *     info);
-
-
-
+void F77_FUNC(ssaupd, SSAUPD)(int*        ido,
+                              const char* bmat,
+                              int*        n,
+                              const char* which,
+                              int*        nev,
+                              float*      tol,
+                              float*      resid,
+                              int*        ncv,
+                              float*      v,
+                              int*        ldv,
+                              int*        iparam,
+                              int*        ipntr,
+                              float*      workd,
+                              int*        iwork,
+                              float*      workl,
+                              int*        lworkl,
+                              int*        info);
 
 
 /*! \brief Get eigenvalues/vectors after Arnoldi iteration, single prec.
@@ -287,28 +277,27 @@ void
  *  \param lworkl  Provide the same argument as you did to ssaupd()
  *  \param info    Provide the same argument as you did to ssaupd()
  */
-void
-    F77_FUNC(sseupd, SSEUPD) (int *     rvec,
-                              const char *    howmny,
-                              int *     select,
-                              float *   d,
-                              float *   z,
-                              int *     ldz,
-                              float *   sigma,
-                              const char *    bmat,
-                              int *     n,
-                              const char *    which,
-                              int *     nev,
-                              float *   tol,
-                              float *   resid,
-                              int *     ncv,
-                              float *   v,
-                              int *     ldv,
-                              int *     iparam,
-                              int *     ipntr,
-                              float *   workd,
-                              float *   workl,
-                              int *     lworkl,
-                              int *     info);
+void F77_FUNC(sseupd, SSEUPD)(int*        rvec,
+                              const char* howmny,
+                              int*        select,
+                              float*      d,
+                              float*      z,
+                              int*        ldz,
+                              float*      sigma,
+                              const char* bmat,
+                              int*        n,
+                              const char* which,
+                              int*        nev,
+                              float*      tol,
+                              float*      resid,
+                              int*        ncv,
+                              float*      v,
+                              int*        ldv,
+                              int*        iparam,
+                              int*        ipntr,
+                              float*      workd,
+                              float*      workl,
+                              int*        lworkl,
+                              int*        info);
 
 #endif

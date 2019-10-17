@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,15 +71,15 @@ int g_numThreads = 1;
 //! \cond
 GMX_TEST_OPTIONS(ThreadMpiTestOptions, options)
 {
-    options->addOption(IntegerOption("ntmpi").store(&g_numThreads)
-                           .description("Number of thread-MPI threads/ranks for the test"));
+    options->addOption(
+            IntegerOption("ntmpi").store(&g_numThreads).description("Number of thread-MPI threads/ranks for the test"));
 }
 //! \endcond
 
 //! Thread entry function for other thread-MPI threads.
-void threadStartFunc(const void *data)
+void threadStartFunc(const void* data)
 {
-    const std::function<void()> &testBody = *reinterpret_cast<const std::function<void()> *>(data);
+    const std::function<void()>& testBody = *reinterpret_cast<const std::function<void()>*>(data);
     try
     {
         testBody();
@@ -88,24 +88,23 @@ void threadStartFunc(const void *data)
 }
 
 //! Helper function for starting thread-MPI threads for a test.
-bool startThreads(std::function<void()> *testBody)
+bool startThreads(std::function<void()>* testBody)
 {
-    int ret = tMPI_Init_fn(TRUE, g_numThreads, TMPI_AFFINITY_NONE,
-                           threadStartFunc, testBody);
+    int ret = tMPI_Init_fn(TRUE, g_numThreads, TMPI_AFFINITY_NONE, threadStartFunc, testBody);
     return ret == TMPI_SUCCESS;
 }
 
 class InTestGuard
 {
-    public:
-        explicit InTestGuard(bool *inTest) : inTest_(inTest) { *inTest = true; }
-        ~InTestGuard() { *inTest_ = false; }
+public:
+    explicit InTestGuard(bool* inTest) : inTest_(inTest) { *inTest = true; }
+    ~InTestGuard() { *inTest_ = false; }
 
-    private:
-        bool *inTest_;
+private:
+    bool* inTest_;
 };
 
-}       // namespace
+} // namespace
 
 //! \cond internal
 bool threadMpiTestRunner(std::function<void()> testBody)
@@ -116,11 +115,10 @@ bool threadMpiTestRunner(std::function<void()> testBody)
     {
         return true;
     }
-#if GMX_THREAD_MPI && !defined(GTEST_IS_THREADSAFE)
-    ADD_FAILURE()
-    << "Google Test is not thread safe on this platform. "
-    << "Cannot run multi-rank tests with thread-MPI.";
-#else
+#    if GMX_THREAD_MPI && !defined(GTEST_IS_THREADSAFE)
+    ADD_FAILURE() << "Google Test is not thread safe on this platform. "
+                  << "Cannot run multi-rank tests with thread-MPI.";
+#    else
     InTestGuard guard(&inTest);
     if (!startThreads(&testBody))
     {
@@ -132,7 +130,7 @@ bool threadMpiTestRunner(std::function<void()> testBody)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     tMPI_Finalize();
-#endif
+#    endif
     return false;
 }
 //! \endcond

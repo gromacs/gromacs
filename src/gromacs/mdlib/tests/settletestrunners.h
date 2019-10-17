@@ -56,8 +56,8 @@ namespace test
 
 /*! \brief Apply SETTLE using CPU version of the algorithm
  *
- * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities and
- * virial are updated in the testData object.
+ * Initializes SETTLE object, applies algorithm, destroys the object. The coordinates, velocities
+ * and virial are updated in the testData object.
  *
  * \param[in,out] testData          An object, containing all the data structures needed by SETTLE.
  * \param[in]     pbc               Periodic boundary setup.
@@ -65,11 +65,11 @@ namespace test
  * \param[in]     calcVirial        If the virial should be computed.
  * \param[in]     testDescription   Brief description that will be printed in case of test failure.
  */
-void applySettle(SettleTestData    *testData,
+void applySettle(SettleTestData*    testData,
                  t_pbc              pbc,
                  bool               updateVelocities,
                  bool               calcVirial,
-                 const std::string &testDescription);
+                 const std::string& testDescription);
 
 /*! \brief Apply SETTLE using GPU version of the algorithm
  *
@@ -82,13 +82,13 @@ void applySettle(SettleTestData    *testData,
  * \param[in]     calcVirial        If the virial should be computed.
  * \param[in]     testDescription   Brief description that will be printed in case of test failure.
  */
-void applySettleGpu(SettleTestData    *testData,
+void applySettleGpu(SettleTestData*    testData,
                     t_pbc              pbc,
                     bool               updateVelocities,
                     bool               calcVirial,
-                    const std::string &testDescription);
+                    const std::string& testDescription);
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_SETTLETESTRUNNERS_H

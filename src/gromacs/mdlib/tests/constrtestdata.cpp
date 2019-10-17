@@ -57,15 +57,25 @@ namespace gmx
 namespace test
 {
 
-ConstraintsTestData::ConstraintsTestData(const std::string &title,
-                                         int numAtoms, std::vector<real> masses,
-                                         std::vector<int> constraints, std::vector<real> constraintsR0,
-                                         bool computeVirial, tensor virialScaledRef,
-                                         bool compute_dHdLambda, float dHdLambdaRef,
-                                         real initialTime, real timestep,
-                                         const std::vector<RVec> &x, const std::vector<RVec> &xPrime, const std::vector<RVec> &v,
-                                         real shakeTolerance, gmx_bool shakeUseSOR,
-                                         int lincsNumIterations, int lincsExpansionOrder, real lincsWarnAngle)
+ConstraintsTestData::ConstraintsTestData(const std::string&       title,
+                                         int                      numAtoms,
+                                         std::vector<real>        masses,
+                                         std::vector<int>         constraints,
+                                         std::vector<real>        constraintsR0,
+                                         bool                     computeVirial,
+                                         tensor                   virialScaledRef,
+                                         bool                     compute_dHdLambda,
+                                         float                    dHdLambdaRef,
+                                         real                     initialTime,
+                                         real                     timestep,
+                                         const std::vector<RVec>& x,
+                                         const std::vector<RVec>& xPrime,
+                                         const std::vector<RVec>& v,
+                                         real                     shakeTolerance,
+                                         gmx_bool                 shakeUseSOR,
+                                         int                      lincsNumIterations,
+                                         int                      lincsExpansionOrder,
+                                         real                     lincsWarnAngle)
 {
     title_    = title;    // Human-friendly name of the system
     numAtoms_ = numAtoms; // Number of atoms
@@ -76,14 +86,14 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
 
     for (int i = 0; i < numAtoms; i++)
     {
-        invmass_[i] = 1.0/masses.at(i);
+        invmass_[i] = 1.0 / masses.at(i);
     }
 
     // Saving constraints to check if they are satisfied after algorithm was applied
     constraints_   = constraints;   // Constraints indices (in type-i-j format)
     constraintsR0_ = constraintsR0; // Equilibrium distances for each type of constraint
 
-    invdt_  = 1.0/timestep;         // Inverse timestep
+    invdt_ = 1.0 / timestep; // Inverse timestep
 
     // Communication record
     cr_.nnodes = 1;
@@ -94,10 +104,10 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
     ms_.nsim = 1;
 
     // Input record - data that usually comes from configuration file (.mdp)
-    ir_.efep           = 0;
-    ir_.init_t         = initialTime;
-    ir_.delta_t        = timestep;
-    ir_.eI             = 0;
+    ir_.efep    = 0;
+    ir_.init_t  = initialTime;
+    ir_.delta_t = timestep;
+    ir_.eI      = 0;
 
     // MD atoms data
     md_.nMassPerturbed = 0;
@@ -126,13 +136,13 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
     dHdLambda_         = 0;
     if (compute_dHdLambda_)
     {
-        ir_.efep                    = efepYES;
-        dHdLambdaRef_               = dHdLambdaRef;
+        ir_.efep      = efepYES;
+        dHdLambdaRef_ = dHdLambdaRef;
     }
     else
     {
-        ir_.efep                    = efepNO;
-        dHdLambdaRef_               = 0;
+        ir_.efep      = efepNO;
+        dHdLambdaRef_ = 0;
     }
 
     // Constraints and their parameters (local topology)
@@ -140,7 +150,7 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
     {
         idef_.il[i].nr = 0;
     }
-    idef_.il[F_CONSTR].nr   = constraints.size();
+    idef_.il[F_CONSTR].nr = constraints.size();
 
     snew(idef_.il[F_CONSTR].iatoms, constraints.size());
     int maxType = 0;
@@ -156,10 +166,10 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
         idef_.il[F_CONSTR].iatoms[i] = constraints.at(i);
     }
     snew(idef_.iparams, maxType + 1);
-    for (index i = 0; i < ssize(constraints)/3; i++)
+    for (index i = 0; i < ssize(constraints) / 3; i++)
     {
-        idef_.iparams[constraints.at(3*i)].constr.dA = constraintsR0.at(constraints.at(3*i));
-        idef_.iparams[constraints.at(3*i)].constr.dB = constraintsR0.at(constraints.at(3*i));
+        idef_.iparams[constraints.at(3 * i)].constr.dA = constraintsR0.at(constraints.at(3 * i));
+        idef_.iparams[constraints.at(3 * i)].constr.dB = constraintsR0.at(constraints.at(3 * i));
     }
 
     // Constraints and their parameters (global topology)
@@ -206,8 +216,8 @@ ConstraintsTestData::ConstraintsTestData(const std::string &title,
     std::copy(v.begin(), v.end(), v0_.begin());
 
     // SHAKE-specific parameters
-    ir_.shake_tol            = shakeTolerance;
-    ir_.bShakeSOR            = shakeUseSOR;
+    ir_.shake_tol = shakeTolerance;
+    ir_.bShakeSOR = shakeUseSOR;
 
     // LINCS-specific parameters
     ir_.nLincsIter     = lincsNumIterations;
@@ -238,7 +248,7 @@ void ConstraintsTestData::reset()
             }
         }
     }
-    dHdLambda_         = 0;
+    dHdLambda_ = 0;
 }
 
 /*! \brief

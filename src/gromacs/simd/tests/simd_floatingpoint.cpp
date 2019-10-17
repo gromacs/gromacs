@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD_HAVE_REAL
+#    if GMX_SIMD_HAVE_REAL
 
 /*! \brief Test fixture for floating-point tests (identical to the generic \ref SimdTest) */
 typedef SimdTest SimdFloatingpointTest;
@@ -73,40 +73,37 @@ TEST_F(SimdFloatingpointTest, setZero)
 
 TEST_F(SimdFloatingpointTest, set)
 {
-    const real *p  = &c0;
+    const real* p = &c0;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(c1), SimdReal(c1));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom1R(c0), SimdReal(*p));
 }
 
 TEST_F(SimdFloatingpointTest, add)
 {
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 + c3, c1 + c4, c2 + c5 ),
-                              rSimd_c0c1c2 + rSimd_c3c4c5);
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 + c3, c1 + c4, c2 + c5), rSimd_c0c1c2 + rSimd_c3c4c5);
 }
 
 TEST_F(SimdFloatingpointTest, maskAdd)
 {
     SimdBool m = setSimdRealFrom3R(c6, 0, c7) != setZero();
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 + c3, c1 + 0.0, c2 + c5 ),
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 + c3, c1 + 0.0, c2 + c5),
                               maskAdd(rSimd_c0c1c2, rSimd_c3c4c5, m));
 }
 
 TEST_F(SimdFloatingpointTest, sub)
 {
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 - c3, c1 - c4, c2 - c5 ),
-                              rSimd_c0c1c2 - rSimd_c3c4c5);
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 - c3, c1 - c4, c2 - c5), rSimd_c0c1c2 - rSimd_c3c4c5);
 }
 
 TEST_F(SimdFloatingpointTest, mul)
 {
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 * c3, c1 * c4, c2 * c5 ),
-                              rSimd_c0c1c2 * rSimd_c3c4c5);
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 * c3, c1 * c4, c2 * c5), rSimd_c0c1c2 * rSimd_c3c4c5);
 }
 
 TEST_F(SimdFloatingpointTest, maskzMul)
 {
     SimdBool m = setSimdRealFrom3R(c1, 0, c1) != setZero();
-    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 * c3, 0.0, c2 * c5 ),
+    GMX_EXPECT_SIMD_REAL_NEAR(setSimdRealFrom3R(c0 * c3, 0.0, c2 * c5),
                               maskzMul(rSimd_c0c1c2, rSimd_c3c4c5, m));
 }
 
@@ -159,17 +156,15 @@ TEST_F(SimdFloatingpointTest, neg)
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_c0c1c2, -(rSimd_m0m1m2)); // fneg(-x)=x
 }
 
-#if GMX_SIMD_HAVE_LOGICAL
+#        if GMX_SIMD_HAVE_LOGICAL
 TEST_F(SimdFloatingpointTest, and)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_logicalResultAnd,
-                            (rSimd_logicalA & rSimd_logicalB));
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_logicalResultAnd, (rSimd_logicalA & rSimd_logicalB));
 }
 
 TEST_F(SimdFloatingpointTest, or)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(rSimd_logicalResultOr,
-                            (rSimd_logicalA | rSimd_logicalB));
+    GMX_EXPECT_SIMD_REAL_EQ(rSimd_logicalResultOr, (rSimd_logicalA | rSimd_logicalB));
 }
 
 TEST_F(SimdFloatingpointTest, xor)
@@ -188,23 +183,24 @@ TEST_F(SimdFloatingpointTest, andNot)
      * to extract the sign bit, and then use andnot to take absolute values.
      */
     SimdReal signbit = SimdReal(c1) ^ SimdReal(-c1);
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c2, c3, c4), andNot(signbit, setSimdRealFrom3R(-c2, c3, -c4)));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c2, c3, c4),
+                            andNot(signbit, setSimdRealFrom3R(-c2, c3, -c4)));
 }
 
-#endif
+#        endif
 
 TEST_F(SimdFloatingpointTest, max)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c3,  c1,  c4), max(rSimd_c0c1c2, rSimd_c3c0c4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c3,  c1,  c4), max(rSimd_c3c0c4, rSimd_c0c1c2));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c3, c1, c4), max(rSimd_c0c1c2, rSimd_c3c0c4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c3, c1, c4), max(rSimd_c3c0c4, rSimd_c0c1c2));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c0, -c0, -c2), max(rSimd_m0m1m2, rSimd_m3m0m4));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c0, -c0, -c2), max(rSimd_m3m0m4, rSimd_m0m1m2));
 }
 
 TEST_F(SimdFloatingpointTest, min)
 {
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c0,  c0,  c2), min(rSimd_c0c1c2, rSimd_c3c0c4));
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R( c0,  c0,  c2), min(rSimd_c3c0c4, rSimd_c0c1c2));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, c0, c2), min(rSimd_c0c1c2, rSimd_c3c0c4));
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, c0, c2), min(rSimd_c3c0c4, rSimd_c0c1c2));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c3, -c1, -c4), min(rSimd_m0m1m2, rSimd_m3m0m4));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(-c3, -c1, -c4), min(rSimd_m3m0m4, rSimd_m0m1m2));
 }
@@ -220,8 +216,8 @@ TEST_F(SimdFloatingpointTest, round)
 TEST_F(SimdFloatingpointTest, roundMode)
 {
     /* Rounding mode needs to be consistent between round and cvtR2I */
-    SimdReal x0  = setSimdRealFrom3R(0.5, 11.5, 99.5);
-    SimdReal x1  = setSimdRealFrom3R(-0.5, -11.5, -99.5);
+    SimdReal x0 = setSimdRealFrom3R(0.5, 11.5, 99.5);
+    SimdReal x1 = setSimdRealFrom3R(-0.5, -11.5, -99.5);
 
     GMX_EXPECT_SIMD_REAL_EQ(round(x0), cvtI2R(cvtR2I(x0)));
     GMX_EXPECT_SIMD_REAL_EQ(round(x1), cvtI2R(cvtR2I(x1)));
@@ -246,22 +242,20 @@ TEST_F(SimdFloatingpointTest, frexp)
 
     fraction = frexp(rSimd_Exp, &exponent);
 
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128,
-                                              0.5833690139241746175358116,
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.609548660288905419513128, 0.5833690139241746175358116,
                                               -0.584452007502232362412542),
                             fraction);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(61, -40, 55), exponent);
 
 
-#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+#        if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     fraction = frexp(rSimd_ExpDouble, &exponent);
 
-    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.6206306194761728178832527,
-                                              0.5236473618795619566768096,
+    GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0.6206306194761728178832527, 0.5236473618795619566768096,
                                               -0.9280331023751380303821179),
                             fraction);
     GMX_EXPECT_SIMD_INT_EQ(setSimdIntFrom3I(588, -461, 673), exponent);
-#endif
+#        endif
 }
 
 TEST_F(SimdFloatingpointTest, ldexp)
@@ -270,10 +264,10 @@ TEST_F(SimdFloatingpointTest, ldexp)
 
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 60.0), pow(2.0, -41.0), pow(2.0, 54.0)),
                             ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(60, -41, 54)));
-#if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
+#        if GMX_SIMD_HAVE_DOUBLE && GMX_DOUBLE
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(pow(2.0, 587.0), pow(2.0, -462.0), pow(2.0, 672.0)),
                             ldexp<MathOptimization::Unsafe>(one, setSimdIntFrom3I(587, -462, 672)));
-#endif
+#        endif
     // The default safe version must be able to handle very negative arguments too
     GMX_EXPECT_SIMD_REAL_EQ(setZero(), ldexp(one, setSimdIntFrom3I(-2000, -1000000, -1000000000)));
 }
@@ -285,9 +279,9 @@ TEST_F(SimdFloatingpointTest, ldexp)
 
 TEST_F(SimdFloatingpointTest, rsqrt)
 {
-    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    SimdReal        ref                = setSimdRealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    SimdReal x   = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal ref = setSimdRealFrom3R(0.5, 1.0 / std::sqrt(M_PI), 1.0 / std::sqrt(1234567890.0));
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -303,11 +297,11 @@ TEST_F(SimdFloatingpointTest, rsqrt)
 
 TEST_F(SimdFloatingpointTest, maskzRsqrt)
 {
-    SimdReal        x                  = setSimdRealFrom3R(M_PI, -4.0, 0.0);
+    SimdReal x = setSimdRealFrom3R(M_PI, -4.0, 0.0);
     // simdCmpLe is tested separately further down
-    SimdBool        m                  = setZero() < x;
-    SimdReal        ref                = setSimdRealFrom3R(1.0/std::sqrt(M_PI), 0.0, 0.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    SimdBool m         = setZero() < x;
+    SimdReal ref       = setSimdRealFrom3R(1.0 / std::sqrt(M_PI), 0.0, 0.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -323,9 +317,9 @@ TEST_F(SimdFloatingpointTest, maskzRsqrt)
 
 TEST_F(SimdFloatingpointTest, rcp)
 {
-    SimdReal        x                  = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
-    SimdReal        ref                = setSimdRealFrom3R(0.25, 1.0/M_PI, 1.0/1234567890.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+    SimdReal x         = setSimdRealFrom3R(4.0, M_PI, 1234567890.0);
+    SimdReal ref       = setSimdRealFrom3R(0.25, 1.0 / M_PI, 1.0 / 1234567890.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RCP_BITS;
 
     if (shiftbits < 0)
     {
@@ -341,10 +335,10 @@ TEST_F(SimdFloatingpointTest, rcp)
 
 TEST_F(SimdFloatingpointTest, maskzRcp)
 {
-    SimdReal        x                  = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
-    SimdBool        m                  = (x != setZero());
-    SimdReal        ref                = setSimdRealFrom3R(1.0/M_PI, 0.0, -1.0/1234567890.0);
-    int             shiftbits          = std::numeric_limits<real>::digits-GMX_SIMD_RCP_BITS;
+    SimdReal x         = setSimdRealFrom3R(M_PI, 0.0, -1234567890.0);
+    SimdBool m         = (x != setZero());
+    SimdReal ref       = setSimdRealFrom3R(1.0 / M_PI, 0.0, -1.0 / 1234567890.0);
+    int      shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RCP_BITS;
 
     if (shiftbits < 0)
     {
@@ -360,63 +354,63 @@ TEST_F(SimdFloatingpointTest, maskzRcp)
 
 TEST_F(SimdFloatingpointTest, cmpEqAndSelectByMask)
 {
-    SimdBool eq   = rSimd_c4c6c8 == rSimd_c6c7c8;
+    SimdBool eq = rSimd_c4c6c8 == rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, c2), selectByMask(rSimd_c0c1c2, eq));
 }
 
 TEST_F(SimdFloatingpointTest, selectByNotMask)
 {
-    SimdBool eq   = rSimd_c4c6c8 == rSimd_c6c7c8;
+    SimdBool eq = rSimd_c4c6c8 == rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, c1, 0), selectByNotMask(rSimd_c0c1c2, eq));
 }
 
 TEST_F(SimdFloatingpointTest, cmpNe)
 {
-    SimdBool eq   = rSimd_c4c6c8 != rSimd_c6c7c8;
+    SimdBool eq = rSimd_c4c6c8 != rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, c1, 0), selectByMask(rSimd_c0c1c2, eq));
 }
 
 TEST_F(SimdFloatingpointTest, cmpLe)
 {
-    SimdBool le   = rSimd_c4c6c8 <= rSimd_c6c7c8;
+    SimdBool le = rSimd_c4c6c8 <= rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_c0c1c2, selectByMask(rSimd_c0c1c2, le));
 }
 
 TEST_F(SimdFloatingpointTest, cmpLt)
 {
-    SimdBool lt   = rSimd_c4c6c8 < rSimd_c6c7c8;
+    SimdBool lt = rSimd_c4c6c8 < rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, c1, 0), selectByMask(rSimd_c0c1c2, lt));
 }
 
-#if GMX_SIMD_HAVE_INT32_LOGICAL || GMX_SIMD_HAVE_LOGICAL
+#        if GMX_SIMD_HAVE_INT32_LOGICAL || GMX_SIMD_HAVE_LOGICAL
 TEST_F(SimdFloatingpointTest, testBits)
 {
-    SimdBool eq   = testBits(setSimdRealFrom3R(c1, 0, c1));
+    SimdBool eq = testBits(setSimdRealFrom3R(c1, 0, c1));
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c0, 0, c2), selectByMask(rSimd_c0c1c2, eq));
 
     // Test if we detect only the sign bit being set
-    eq            = testBits(setSimdRealFrom1R(GMX_REAL_NEGZERO));
+    eq = testBits(setSimdRealFrom1R(GMX_REAL_NEGZERO));
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_c0c1c2, selectByMask(rSimd_c0c1c2, eq));
 }
-#endif
+#        endif
 
 TEST_F(SimdFloatingpointTest, andB)
 {
-    SimdBool eq   = rSimd_c4c6c8 == rSimd_c6c7c8;
-    SimdBool le   = rSimd_c4c6c8 <= rSimd_c6c7c8;
+    SimdBool eq = rSimd_c4c6c8 == rSimd_c6c7c8;
+    SimdBool le = rSimd_c4c6c8 <= rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(0, 0, c2), selectByMask(rSimd_c0c1c2, (eq && le)));
 }
 
 TEST_F(SimdFloatingpointTest, orB)
 {
-    SimdBool eq   = rSimd_c4c6c8 == rSimd_c6c7c8;
-    SimdBool lt   = rSimd_c4c6c8  < rSimd_c6c7c8;
+    SimdBool eq = rSimd_c4c6c8 == rSimd_c6c7c8;
+    SimdBool lt = rSimd_c4c6c8 < rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(rSimd_c0c1c2, selectByMask(rSimd_c0c1c2, (eq || lt)));
 }
 
 TEST_F(SimdFloatingpointTest, anyTrueB)
 {
-    alignas(GMX_SIMD_ALIGNMENT) std::array<real, GMX_SIMD_REAL_WIDTH> mem {};
+    alignas(GMX_SIMD_ALIGNMENT) std::array<real, GMX_SIMD_REAL_WIDTH> mem{};
 
     // Test the false case
     EXPECT_FALSE(anyTrue(setZero() < load<SimdReal>(mem.data())));
@@ -426,13 +420,14 @@ TEST_F(SimdFloatingpointTest, anyTrueB)
     {
         mem.fill(0.0);
         mem[i] = 1.0;
-        EXPECT_TRUE(anyTrue(setZero() < load<SimdReal>(mem.data()))) << "Not detecting true in element " << i;
+        EXPECT_TRUE(anyTrue(setZero() < load<SimdReal>(mem.data())))
+                << "Not detecting true in element " << i;
     }
 }
 
 TEST_F(SimdFloatingpointTest, blend)
 {
-    SimdBool lt   = rSimd_c4c6c8 < rSimd_c6c7c8;
+    SimdBool lt = rSimd_c4c6c8 < rSimd_c6c7c8;
     GMX_EXPECT_SIMD_REAL_EQ(setSimdRealFrom3R(c3, c4, c2), blend(rSimd_c0c1c2, rSimd_c3c4c5, lt));
 }
 
@@ -448,39 +443,39 @@ TEST_F(SimdFloatingpointTest, reduce)
         sum += v[i];
     }
 
-    EXPECT_REAL_EQ_TOL(sum, reduce(rSimd_c3c4c5), defaultRealTolerance() );
+    EXPECT_REAL_EQ_TOL(sum, reduce(rSimd_c3c4c5), defaultRealTolerance());
 }
 
-#endif      // GMX_SIMD_HAVE_REAL
+#    endif // GMX_SIMD_HAVE_REAL
 
-#if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
+#    if GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 {
-    alignas(GMX_SIMD_ALIGNMENT) float   f[GMX_SIMD_FLOAT_WIDTH];
-    alignas(GMX_SIMD_ALIGNMENT) double  d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
+    alignas(GMX_SIMD_ALIGNMENT) float f[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double d[GMX_SIMD_FLOAT_WIDTH]; // Yes, double array length should be same as float
 
-    int                               i;
-    SimdFloat                         vf;
-    SimdDouble                        vd0;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    int                    i;
+    SimdFloat              vf;
+    SimdDouble             vd0;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         // Scale by 1+100*eps to use low bits too.
         // Due to the conversions we want to avoid being too sensitive to fluctuations in last bit
-        f[i] = i * (1.0 + 100*GMX_FLOAT_EPS);
+        f[i] = i * (1.0 + 100 * GMX_FLOAT_EPS);
     }
 
     vf = load<SimdFloat>(f);
-#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+#        if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1;
     cvtF2DD(vf, &vd0, &vd1);
     store(d + GMX_SIMD_DOUBLE_WIDTH, vd1); // Store upper part halfway through array
-#elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
+#        elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
     vd0 = cvtF2D(vf);
-#else
-#    error Width of float SIMD must either be identical to double, or twice the width.
-#endif
+#        else
+#            error Width of float SIMD must either be identical to double, or twice the width.
+#        endif
     store(d, vd0); // store lower (or whole) part from start of vector
 
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
@@ -491,30 +486,30 @@ TEST_F(SimdFloatingpointTest, cvtFloat2Double)
 
 TEST_F(SimdFloatingpointTest, cvtDouble2Float)
 {
-    alignas(GMX_SIMD_ALIGNMENT) float     f[GMX_SIMD_FLOAT_WIDTH];
-    alignas(GMX_SIMD_ALIGNMENT) double    d[GMX_SIMD_FLOAT_WIDTH];  // Yes, double array length should be same as float
-    int                               i;
-    SimdFloat                         vf;
-    SimdDouble                        vd0;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    alignas(GMX_SIMD_ALIGNMENT) float f[GMX_SIMD_FLOAT_WIDTH];
+    alignas(GMX_SIMD_ALIGNMENT) double d[GMX_SIMD_FLOAT_WIDTH]; // Yes, double array length should be same as float
+    int                    i;
+    SimdFloat              vf;
+    SimdDouble             vd0;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // This fills elements for pd1 too when double width is 2*single width
     for (i = 0; i < GMX_SIMD_FLOAT_WIDTH; i++)
     {
         // Scale by 1+eps to use low bits too.
         // Due to the conversions we want to avoid being too sensitive to fluctuations in last bit
-        d[i] = i * (1.0 + 100*GMX_FLOAT_EPS);
+        d[i] = i * (1.0 + 100 * GMX_FLOAT_EPS);
     }
 
     vd0 = load<SimdDouble>(d);
-#if (GMX_SIMD_FLOAT_WIDTH == 2*GMX_SIMD_DOUBLE_WIDTH)
+#        if (GMX_SIMD_FLOAT_WIDTH == 2 * GMX_SIMD_DOUBLE_WIDTH)
     SimdDouble vd1 = load<SimdDouble>(d + GMX_SIMD_DOUBLE_WIDTH); // load upper half of data
-    vf = cvtDD2F(vd0, vd1);
-#elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
-    vf = cvtD2F(vd0);
-#else
-#    error Width of float SIMD must either be identical to double, or twice the width.
-#endif
+    vf             = cvtDD2F(vd0, vd1);
+#        elif (GMX_SIMD_FLOAT_WIDTH == GMX_SIMD_DOUBLE_WIDTH)
+    vf  = cvtD2F(vd0);
+#        else
+#            error Width of float SIMD must either be identical to double, or twice the width.
+#        endif
     store(f, vf);
 
     // This will check elements in pd1 too when double width is 2*single width
@@ -523,13 +518,13 @@ TEST_F(SimdFloatingpointTest, cvtDouble2Float)
         EXPECT_FLOAT_EQ_TOL(d[i], f[i], tolerance);
     }
 }
-#endif      // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
+#    endif // GMX_SIMD_HAVE_FLOAT && GMX_SIMD_HAVE_DOUBLE
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace test
-}      // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD

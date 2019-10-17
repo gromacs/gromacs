@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,8 +60,7 @@
 namespace gmx
 {
 
-std::size_t
-countWords(const char *s)
+std::size_t countWords(const char* s)
 {
     std::size_t nWords = 0;
     // Use length variable to avoid N^2 complexity when executing strlen(s) every iteration
@@ -86,14 +86,13 @@ countWords(const char *s)
 }
 
 
-std::size_t
-countWords(const std::string &str)
+std::size_t countWords(const std::string& str)
 {
     // Under out beautiful C++ interface hides an ugly c-string implementation :-)
     return countWords(str.c_str());
 }
 
-bool endsWith(const char *str, const char *suffix)
+bool endsWith(const char* str, const char* suffix)
 {
     if (isNullOrEmpty(suffix))
     {
@@ -101,11 +100,10 @@ bool endsWith(const char *str, const char *suffix)
     }
     const size_t strLength    = std::strlen(str);
     const size_t suffixLength = std::strlen(suffix);
-    return (strLength >= suffixLength
-            && std::strcmp(&str[strLength - suffixLength], suffix) == 0);
+    return (strLength >= suffixLength && std::strcmp(&str[strLength - suffixLength], suffix) == 0);
 }
 
-std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
+std::string stripSuffixIfPresent(const std::string& str, const char* suffix)
 {
     if (suffix != nullptr)
     {
@@ -118,7 +116,7 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
     return str;
 }
 
-std::string stripString(const std::string &str)
+std::string stripString(const std::string& str)
 {
     std::string::const_iterator start = str.begin();
     std::string::const_iterator end   = str.end();
@@ -133,22 +131,22 @@ std::string stripString(const std::string &str)
     return std::string(start, end);
 }
 
-std::string formatString(gmx_fmtstr const char *fmt, ...)
+std::string formatString(gmx_fmtstr const char* fmt, ...)
 {
-    va_list     ap;
+    va_list ap;
     va_start(ap, fmt);
     std::string result = formatStringV(fmt, ap);
     va_end(ap);
     return result;
 }
 
-std::string formatStringV(const char *fmt, va_list ap)
+std::string formatStringV(const char* fmt, va_list ap)
 {
     va_list           ap_copy;
     char              staticBuf[1024];
     int               length = 1024;
     std::vector<char> dynamicBuf;
-    char             *buf = staticBuf;
+    char*             buf = staticBuf;
 
     // TODO: There may be a better way of doing this on Windows, Microsoft
     // provides their own way of doing things...
@@ -175,7 +173,7 @@ std::string formatStringV(const char *fmt, va_list ap)
     }
 }
 
-std::vector<std::string> splitString(const std::string &str)
+std::vector<std::string> splitString(const std::string& str)
 {
     std::vector<std::string>          result;
     std::string::const_iterator       currPos = str.begin();
@@ -199,7 +197,7 @@ std::vector<std::string> splitString(const std::string &str)
     return result;
 }
 
-std::vector<std::string> splitDelimitedString(const std::string &str, char delim)
+std::vector<std::string> splitDelimitedString(const std::string& str, char delim)
 {
     std::vector<std::string> result;
     size_t                   currPos = 0;
@@ -212,13 +210,12 @@ std::vector<std::string> splitDelimitedString(const std::string &str, char delim
             nextDelim = str.find(delim, currPos);
             result.push_back(str.substr(currPos, nextDelim - currPos));
             currPos = nextDelim < len ? nextDelim + 1 : len;
-        }
-        while (currPos < len || nextDelim < len);
+        } while (currPos < len || nextDelim < len);
     }
     return result;
 }
 
-std::vector<std::string> splitAndTrimDelimitedString(const std::string &str, char delim)
+std::vector<std::string> splitAndTrimDelimitedString(const std::string& str, char delim)
 {
     std::vector<std::string> result;
 
@@ -254,12 +251,9 @@ bool isWordChar(char c)
  *
  * \ingroup module_utility
  */
-std::string
-replaceInternal(const std::string &input, const char *from, const char *to,
-                bool bWholeWords)
+std::string replaceInternal(const std::string& input, const char* from, const char* to, bool bWholeWords)
 {
-    GMX_RELEASE_ASSERT(from != nullptr && to != nullptr,
-                       "Replacement strings must not be NULL");
+    GMX_RELEASE_ASSERT(from != nullptr && to != nullptr, "Replacement strings must not be NULL");
     size_t      matchLength = std::strlen(from);
     std::string result;
     size_t      inputPos = 0;
@@ -269,13 +263,12 @@ replaceInternal(const std::string &input, const char *from, const char *to,
         size_t matchEnd = matchPos + matchLength;
         if (bWholeWords)
         {
-            if (!((matchPos == 0 || !isWordChar(input[matchPos-1]))
+            if (!((matchPos == 0 || !isWordChar(input[matchPos - 1]))
                   && (matchEnd == input.length() || !isWordChar(input[matchEnd]))))
             {
                 matchPos = input.find(from, matchPos + 1);
                 continue;
             }
-
         }
         result.append(input, inputPos, matchPos - inputPos);
         result.append(to);
@@ -286,45 +279,37 @@ replaceInternal(const std::string &input, const char *from, const char *to,
     return result;
 }
 
-}   // namespace
+} // namespace
 
-std::string
-replaceAll(const std::string &input, const char *from, const char *to)
+std::string replaceAll(const std::string& input, const char* from, const char* to)
 {
     return replaceInternal(input, from, to, false);
 }
 
-std::string
-replaceAll(const std::string &input, const std::string &from,
-           const std::string &to)
+std::string replaceAll(const std::string& input, const std::string& from, const std::string& to)
 {
     return replaceInternal(input, from.c_str(), to.c_str(), false);
 }
 
-std::string
-replaceAllWords(const std::string &input, const char *from, const char *to)
+std::string replaceAllWords(const std::string& input, const char* from, const char* to)
 {
     return replaceInternal(input, from, to, true);
 }
 
-std::string
-replaceAllWords(const std::string &input, const std::string &from,
-                const std::string &to)
+std::string replaceAllWords(const std::string& input, const std::string& from, const std::string& to)
 {
     return replaceInternal(input, from.c_str(), to.c_str(), true);
 }
 
-bool equalCaseInsensitive(const std::string &source, const std::string &target)
+bool equalCaseInsensitive(const std::string& source, const std::string& target)
 {
-    return source.length() == target.length() &&
-           std::equal(source.begin(), source.end(), target.begin(),
-                      [](const char &s, const char &t)
-                      { return std::tolower(s) == std::tolower(t); });
+    return source.length() == target.length()
+           && std::equal(source.begin(), source.end(), target.begin(), [](const char& s, const char& t) {
+                  return std::tolower(s) == std::tolower(t);
+              });
 }
 
-bool equalCaseInsensitive(const std::string &source,
-                          const std::string &target,
-                          size_t             maxLengthOfComparison)
+bool equalCaseInsensitive(const std::string& source, const std::string& target, size_t maxLengthOfComparison)
 {
     std::string::const_iterator comparisonEnd;
     if (source.length() < maxLengthOfComparison)
@@ -344,17 +329,19 @@ bool equalCaseInsensitive(const std::string &source,
         comparisonEnd = source.begin() + maxLengthOfComparison;
     }
     return std::equal(source.begin(), comparisonEnd, target.begin(),
-                      [](const char &s, const char &t)
-                      { return std::tolower(s) == std::tolower(t); });
+                      [](const char& s, const char& t) { return std::tolower(s) == std::tolower(t); });
 }
 
 /********************************************************************
  * TextLineWrapperSettings
  */
 
-TextLineWrapperSettings::TextLineWrapperSettings()
-    : maxLength_(0), indent_(0), firstLineIndent_(-1),
-      bKeepFinalSpaces_(false), continuationChar_('\0')
+TextLineWrapperSettings::TextLineWrapperSettings() :
+    maxLength_(0),
+    indent_(0),
+    firstLineIndent_(-1),
+    bKeepFinalSpaces_(false),
+    continuationChar_('\0')
 {
 }
 
@@ -365,12 +352,10 @@ TextLineWrapperSettings::TextLineWrapperSettings()
 
 bool TextLineWrapper::isTrivial() const
 {
-    return settings_.lineLength() == 0 && settings_.indent() == 0
-           && settings_.firstLineIndent_ <= 0;
+    return settings_.lineLength() == 0 && settings_.indent() == 0 && settings_.firstLineIndent_ <= 0;
 }
 
-size_t
-TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
+size_t TextLineWrapper::findNextLine(const char* input, size_t lineStart) const
 {
     size_t inputLength = std::strlen(input);
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
@@ -385,37 +370,31 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
     }
 
     int    indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
-    size_t lastAllowedBreakPoint
-        = (settings_.lineLength() > 0
-           ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
-           : inputLength);
+    size_t lastAllowedBreakPoint =
+            (settings_.lineLength() > 0 ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
+                                        : inputLength);
     // Ignore trailing whitespace.
     lastAllowedBreakPoint += std::strspn(input + lastAllowedBreakPoint, " ");
     size_t lineEnd = lineStart;
     do
     {
-        const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
-        size_t      nextBreak
-            = (nextBreakPtr != nullptr ? nextBreakPtr - input : inputLength);
+        const char* nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
+        size_t      nextBreak    = (nextBreakPtr != nullptr ? nextBreakPtr - input : inputLength);
         if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
         {
             break;
         }
         lineEnd = nextBreak + 1;
-    }
-    while (lineEnd < lastAllowedBreakPoint && input[lineEnd - 1] != '\n');
+    } while (lineEnd < lastAllowedBreakPoint && input[lineEnd - 1] != '\n');
     return (lineEnd < inputLength ? lineEnd : inputLength);
 }
 
-size_t
-TextLineWrapper::findNextLine(const std::string &input, size_t lineStart) const
+size_t TextLineWrapper::findNextLine(const std::string& input, size_t lineStart) const
 {
     return findNextLine(input.c_str(), lineStart);
 }
 
-std::string
-TextLineWrapper::formatLine(const std::string &input,
-                            size_t lineStart, size_t lineEnd) const
+std::string TextLineWrapper::formatLine(const std::string& input, size_t lineStart, size_t lineEnd) const
 {
     size_t inputLength = input.length();
     bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
@@ -461,8 +440,7 @@ TextLineWrapper::formatLine(const std::string &input,
     return result;
 }
 
-std::string
-TextLineWrapper::wrapToString(const std::string &input) const
+std::string TextLineWrapper::wrapToString(const std::string& input) const
 {
     std::string result;
     size_t      lineStart = 0;
@@ -471,8 +449,7 @@ TextLineWrapper::wrapToString(const std::string &input) const
     {
         size_t nextLineStart = findNextLine(input, lineStart);
         result.append(formatLine(input, lineStart, nextLineStart));
-        if (nextLineStart < length
-            || (nextLineStart == length && input[length - 1] == '\n'))
+        if (nextLineStart < length || (nextLineStart == length && input[length - 1] == '\n'))
         {
             result.append("\n");
         }
@@ -481,8 +458,7 @@ TextLineWrapper::wrapToString(const std::string &input) const
     return result;
 }
 
-std::vector<std::string>
-TextLineWrapper::wrapToVector(const std::string &input) const
+std::vector<std::string> TextLineWrapper::wrapToVector(const std::string& input) const
 {
     std::vector<std::string> result;
     size_t                   lineStart = 0;

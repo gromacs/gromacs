@@ -50,11 +50,11 @@
 
 //! \brief A device-side buffer of ValueTypes
 template<typename ValueType>
-using DeviceBuffer = ValueType *;
+using DeviceBuffer = ValueType*;
 
 #elif GMX_GPU == GMX_GPU_OPENCL
 
-#include "gromacs/gpu_utils/gputraits_ocl.h"
+#    include "gromacs/gpu_utils/gputraits_ocl.h"
 
 /*! \libinternal \brief
  * A minimal cl_mem wrapper that remembers its allocation type.
@@ -63,17 +63,22 @@ using DeviceBuffer = ValueType *;
 template<typename ValueType>
 class TypedClMemory
 {
-    private:
-        /*! \brief Underlying data
-         *
-         *  \todo Make it nullptr when there are no snew()'s around
-         */
-        cl_mem data_;
-    public:
-        //! \brief An assignment operator - the purpose is to make allocation/zeroing work
-        TypedClMemory &operator=(cl_mem data){data_ = data; return *this; }
-        //! \brief Returns underlying cl_mem transparently
-        operator cl_mem() {return data_; }
+private:
+    /*! \brief Underlying data
+     *
+     *  \todo Make it nullptr when there are no snew()'s around
+     */
+    cl_mem data_;
+
+public:
+    //! \brief An assignment operator - the purpose is to make allocation/zeroing work
+    TypedClMemory& operator=(cl_mem data)
+    {
+        data_ = data;
+        return *this;
+    }
+    //! \brief Returns underlying cl_mem transparently
+    operator cl_mem() { return data_; }
 };
 
 //! \libinternal \brief A device-side buffer of ValueTypes
@@ -84,9 +89,9 @@ using DeviceBuffer = TypedClMemory<ValueType>;
 
 //! \brief A device-side buffer of ValueTypes
 template<typename ValueType>
-using DeviceBuffer = void *;
+using DeviceBuffer = void*;
 
 #endif
 
 
-#endif  // GMX_GPU_UTILS_DEVICEBUFFER_DATATYPE_H
+#endif // GMX_GPU_UTILS_DEVICEBUFFER_DATATYPE_H

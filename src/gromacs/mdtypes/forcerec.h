@@ -62,7 +62,7 @@ class GpuBonded;
 class ForceProviders;
 class StatePropagatorDataGpu;
 class PmePpCommGpu;
-}
+} // namespace gmx
 
 /* macros for the cginfo data in forcerec
  *
@@ -73,23 +73,23 @@ class PmePpCommGpu;
  * because we only have space for 6 bits in cginfo,
  * this cg size entry is actually only read with domain decomposition.
  */
-#define SET_CGINFO_GID(cgi, gid)     (cgi) = (((cgi)  &  ~255) | (gid))
-#define GET_CGINFO_GID(cgi)        ( (cgi)            &   255)
-#define SET_CGINFO_FEP(cgi)          (cgi) =  ((cgi)  |  (1<<15))
-#define GET_CGINFO_FEP(cgi)        ( (cgi)            &  (1<<15))
-#define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
-#define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
-#define SET_CGINFO_CONSTR(cgi)       (cgi) =  ((cgi)  |  (1<<20))
-#define GET_CGINFO_CONSTR(cgi)     ( (cgi)            &  (1<<20))
-#define SET_CGINFO_SETTLE(cgi)       (cgi) =  ((cgi)  |  (1<<21))
-#define GET_CGINFO_SETTLE(cgi)     ( (cgi)            &  (1<<21))
+#define SET_CGINFO_GID(cgi, gid) (cgi) = (((cgi) & ~255) | (gid))
+#define GET_CGINFO_GID(cgi) ((cgi)&255)
+#define SET_CGINFO_FEP(cgi) (cgi) = ((cgi) | (1 << 15))
+#define GET_CGINFO_FEP(cgi) ((cgi) & (1 << 15))
+#define SET_CGINFO_EXCL_INTER(cgi) (cgi) = ((cgi) | (1 << 17))
+#define GET_CGINFO_EXCL_INTER(cgi) ((cgi) & (1 << 17))
+#define SET_CGINFO_CONSTR(cgi) (cgi) = ((cgi) | (1 << 20))
+#define GET_CGINFO_CONSTR(cgi) ((cgi) & (1 << 20))
+#define SET_CGINFO_SETTLE(cgi) (cgi) = ((cgi) | (1 << 21))
+#define GET_CGINFO_SETTLE(cgi) ((cgi) & (1 << 21))
 /* This bit is only used with bBondComm in the domain decomposition */
-#define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
-#define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
-#define SET_CGINFO_HAS_VDW(cgi)      (cgi) =  ((cgi)  |  (1<<23))
-#define GET_CGINFO_HAS_VDW(cgi)    ( (cgi)            &  (1<<23))
-#define SET_CGINFO_HAS_Q(cgi)        (cgi) =  ((cgi)  |  (1<<24))
-#define GET_CGINFO_HAS_Q(cgi)      ( (cgi)            &  (1<<24))
+#define SET_CGINFO_BOND_INTER(cgi) (cgi) = ((cgi) | (1 << 22))
+#define GET_CGINFO_BOND_INTER(cgi) ((cgi) & (1 << 22))
+#define SET_CGINFO_HAS_VDW(cgi) (cgi) = ((cgi) | (1 << 23))
+#define GET_CGINFO_HAS_VDW(cgi) ((cgi) & (1 << 23))
+#define SET_CGINFO_HAS_Q(cgi) (cgi) = ((cgi) | (1 << 24))
+#define GET_CGINFO_HAS_Q(cgi) ((cgi) & (1 << 24))
 
 
 /* Value to be used in mdrun for an infinite cut-off.
@@ -99,8 +99,13 @@ class PmePpCommGpu;
 #define GMX_CUTOFF_INF 1E+18
 
 /* enums for the neighborlist type */
-enum {
-    enbvdwNONE, enbvdwLJ, enbvdwBHAM, enbvdwTAB, enbvdwNR
+enum
+{
+    enbvdwNONE,
+    enbvdwLJ,
+    enbvdwBHAM,
+    enbvdwTAB,
+    enbvdwNR
 };
 
 struct cginfo_mb_t
@@ -108,7 +113,7 @@ struct cginfo_mb_t
     int  cg_start;
     int  cg_end;
     int  cg_mod;
-    int *cginfo;
+    int* cginfo;
 };
 
 
@@ -117,7 +122,8 @@ struct gmx_ewald_tab_t;
 
 struct ewald_corr_thread_t;
 
-struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
+struct t_forcerec
+{ // NOLINT (clang-analyzer-optin.performance.Padding)
     // Declare an explicit constructor and destructor, so they can be
     // implemented in a single source file, so that not every source
     // file that includes this one needs to understand how to find the
@@ -125,19 +131,19 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     t_forcerec();
     ~t_forcerec();
 
-    struct interaction_const_t *ic = nullptr;
+    struct interaction_const_t* ic = nullptr;
 
     /* PBC stuff */
-    int                         ePBC = 0;
+    int ePBC = 0;
     //! Tells whether atoms inside a molecule can be in different periodic images,
     //  i.e. whether we need to take into account PBC when computing distances inside molecules.
     //  This determines whether PBC must be considered for e.g. bonded interactions.
-    gmx_bool                    bMolPBC     = FALSE;
-    int                         rc_scaling  = 0;
-    rvec                        posres_com  = { 0 };
-    rvec                        posres_comB = { 0 };
+    gmx_bool bMolPBC     = FALSE;
+    int      rc_scaling  = 0;
+    rvec     posres_com  = { 0 };
+    rvec     posres_comB = { 0 };
 
-    gmx_bool                    use_simd_kernels = FALSE;
+    gmx_bool use_simd_kernels = FALSE;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
@@ -171,36 +177,36 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     real fudgeQQ = 0;
 
     /* Table stuff */
-    gmx_bool             bcoultab = FALSE;
-    gmx_bool             bvdwtab  = FALSE;
+    gmx_bool bcoultab = FALSE;
+    gmx_bool bvdwtab  = FALSE;
 
-    t_forcetable        *pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
+    t_forcetable* pairsTable = nullptr; /* for 1-4 interactions, [pairs] and [pairs_nb] */
 
     /* Free energy */
-    int      efep          = 0;
-    real     sc_alphavdw   = 0;
-    real     sc_alphacoul  = 0;
-    int      sc_power      = 0;
-    real     sc_r_power    = 0;
-    real     sc_sigma6_def = 0;
-    real     sc_sigma6_min = 0;
+    int  efep          = 0;
+    real sc_alphavdw   = 0;
+    real sc_alphacoul  = 0;
+    int  sc_power      = 0;
+    real sc_r_power    = 0;
+    real sc_sigma6_def = 0;
+    real sc_sigma6_min = 0;
 
     /* Information about atom properties for the molecule blocks in the system */
-    struct cginfo_mb_t *cginfo_mb                    = nullptr;
+    struct cginfo_mb_t* cginfo_mb = nullptr;
     /* Information about atom properties for local and non-local atoms */
-    std::vector<int>    cginfo;
+    std::vector<int> cginfo;
 
-    rvec               *shift_vec                    = nullptr;
+    rvec* shift_vec = nullptr;
 
-    int                 cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
-    gmx_bool            bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
+    int      cutoff_scheme = 0;     /* group- or Verlet-style cutoff */
+    gmx_bool bNonbonded    = FALSE; /* true if nonbonded calculations are *not* turned off */
 
     /* The Nbnxm Verlet non-bonded machinery */
     std::unique_ptr<nonbonded_verlet_t> nbv;
 
     /* The wall tables (if used) */
-    int                    nwall    = 0;
-    t_forcetable        ***wall_tab = nullptr;
+    int             nwall    = 0;
+    t_forcetable*** wall_tab = nullptr;
 
     /* The number of atoms participating in do_force_lowlevel */
     int natoms_force = 0;
@@ -213,16 +219,16 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
      * PPPM/PME/Ewald/posres/ForceProviders
      */
     /* True when we have contributions that are directly added to the virial */
-    bool                   haveDirectVirialContributions = false;
+    bool haveDirectVirialContributions = false;
     /* Force buffer for force computation with direct virial contributions */
     std::vector<gmx::RVec> forceBufferForDirectVirialContributions;
 
     /* Data for PPPM/PME/Ewald */
-    struct gmx_pme_t *pmedata                = nullptr;
+    struct gmx_pme_t* pmedata                = nullptr;
     int               ljpme_combination_rule = 0;
 
     /* PME/Ewald stuff */
-    struct gmx_ewald_tab_t *ewald_table = nullptr;
+    struct gmx_ewald_tab_t* ewald_table = nullptr;
 
     /* Shift force array for computing the virial, size SHIFTS */
     std::vector<gmx::RVec> shiftForces;
@@ -230,11 +236,11 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     /* Non bonded Parameter lists */
     int      ntype        = 0; /* Number of atom types */
     gmx_bool bBHAM        = FALSE;
-    real    *nbfp         = nullptr;
-    real    *ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
+    real*    nbfp         = nullptr;
+    real*    ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
-    int *egp_flags = nullptr;
+    int* egp_flags = nullptr;
 
     /* Shell molecular dynamics flexible constraints */
     real fc_stepsize = 0;
@@ -248,10 +254,10 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
 
     /* QMMM stuff */
     gmx_bool          bQMMM = FALSE;
-    struct t_QMMMrec *qr    = nullptr;
+    struct t_QMMMrec* qr    = nullptr;
 
     /* QM-MM neighborlists */
-    struct t_nblist        *QMMMlist = nullptr;
+    struct t_nblist* QMMMlist = nullptr;
 
     /* Limit for printing large forces, negative is don't print */
     real print_force = 0;
@@ -267,21 +273,21 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
     real userreal4 = 0;
 
     /* Pointer to struct for managing threading of bonded force calculation */
-    struct bonded_threading_t *bondedThreading = nullptr;
+    struct bonded_threading_t* bondedThreading = nullptr;
 
     /* TODO: Replace the pointer by an object once we got rid of C */
-    gmx::GpuBonded *gpuBonded = nullptr;
+    gmx::GpuBonded* gpuBonded = nullptr;
 
     /* Ewald correction thread local virial and energy data */
     int                         nthread_ewc = 0;
-    struct ewald_corr_thread_t *ewc_t       = nullptr;
+    struct ewald_corr_thread_t* ewc_t       = nullptr;
 
-    gmx::ForceProviders        *forceProviders = nullptr;
+    gmx::ForceProviders* forceProviders = nullptr;
 
     // The stateGpu object is created in runner, forcerec just keeps the copy of the pointer.
     // TODO: This is not supposed to be here. StatePropagatorDataGpu should be a part of
     //       general StatePropagatorData object that is passed around
-    gmx::StatePropagatorDataGpu  *stateGpu = nullptr;
+    gmx::StatePropagatorDataGpu* stateGpu = nullptr;
 
     /* For PME-PP GPU communication */
     std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;
@@ -291,10 +297,10 @@ struct t_forcerec { // NOLINT (clang-analyzer-optin.performance.Padding)
  * been scaled by 6.0 or 12.0 to save flops in the kernels. We have corrected this everywhere
  * in the code, but beware if you are using these macros externally.
  */
-#define C6(nbfp, ntp, ai, aj)     (nbfp)[2*((ntp)*(ai)+(aj))]
-#define C12(nbfp, ntp, ai, aj)    (nbfp)[2*((ntp)*(ai)+(aj))+1]
-#define BHAMC(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))]
-#define BHAMA(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+1]
-#define BHAMB(nbfp, ntp, ai, aj)  (nbfp)[3*((ntp)*(ai)+(aj))+2]
+#define C6(nbfp, ntp, ai, aj) (nbfp)[2 * ((ntp) * (ai) + (aj))]
+#define C12(nbfp, ntp, ai, aj) (nbfp)[2 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMC(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj))]
+#define BHAMA(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj)) + 1]
+#define BHAMB(nbfp, ntp, ai, aj) (nbfp)[3 * ((ntp) * (ai) + (aj)) + 2]
 
 #endif

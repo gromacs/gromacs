@@ -44,29 +44,71 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
+typedef struct gmx_wallcycle* gmx_wallcycle_t;
 struct t_commrec;
 static constexpr gmx_wallcycle* nullWallcycle = nullptr;
 
-enum {
-    ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
-    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU,
-    ewcMOVEX, ewcFORCE, ewcMOVEF, ewcPMEMESH,
-    ewcPME_REDISTXF, ewcPME_SPREAD, ewcPME_GATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
-    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF,
-    ewcWAIT_GPU_PME_SPREAD, ewcPME_FFT_MIXED_MODE, ewcPME_SOLVE_MIXED_MODE,
-    ewcWAIT_GPU_PME_GATHER, ewcWAIT_GPU_BONDED, ewcPME_GPU_F_REDUCTION,
-    ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcPULLPOT, ewcAWH,
-    ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
-    ewcTEST, ewcNR
+enum
+{
+    ewcRUN,
+    ewcSTEP,
+    ewcPPDURINGPME,
+    ewcDOMDEC,
+    ewcDDCOMMLOAD,
+    ewcDDCOMMBOUND,
+    ewcVSITECONSTR,
+    ewcPP_PMESENDX,
+    ewcNS,
+    ewcLAUNCH_GPU,
+    ewcMOVEX,
+    ewcFORCE,
+    ewcMOVEF,
+    ewcPMEMESH,
+    ewcPME_REDISTXF,
+    ewcPME_SPREAD,
+    ewcPME_GATHER,
+    ewcPME_FFT,
+    ewcPME_FFTCOMM,
+    ewcLJPME,
+    ewcPME_SOLVE,
+    ewcPMEWAITCOMM,
+    ewcPP_PMEWAITRECVF,
+    ewcWAIT_GPU_PME_SPREAD,
+    ewcPME_FFT_MIXED_MODE,
+    ewcPME_SOLVE_MIXED_MODE,
+    ewcWAIT_GPU_PME_GATHER,
+    ewcWAIT_GPU_BONDED,
+    ewcPME_GPU_F_REDUCTION,
+    ewcWAIT_GPU_NB_NL,
+    ewcWAIT_GPU_NB_L,
+    ewcNB_XF_BUF_OPS,
+    ewcVSITESPREAD,
+    ewcPULLPOT,
+    ewcAWH,
+    ewcTRAJ,
+    ewcUPDATE,
+    ewcCONSTR,
+    ewcMoveE,
+    ewcROT,
+    ewcROTadd,
+    ewcSWAP,
+    ewcIMD,
+    ewcTEST,
+    ewcNR
 };
 
-enum {
-    ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
-    ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
-    ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
-    ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+enum
+{
+    ewcsDD_REDIST,
+    ewcsDD_GRID,
+    ewcsDD_SETUPCOMM,
+    ewcsDD_MAKETOP,
+    ewcsDD_MAKECONSTR,
+    ewcsDD_TOPOTHER,
+    ewcsNBS_GRID_LOCAL,
+    ewcsNBS_GRID_NONLOCAL,
+    ewcsNBS_SEARCH_LOCAL,
+    ewcsNBS_SEARCH_NONLOCAL,
     ewcsLISTED,
     ewcsLISTED_FEP,
     ewcsRESTRAINTS,
@@ -89,7 +131,7 @@ enum {
 gmx_bool wallcycle_have_counter();
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);
+gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, struct t_commrec* cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
@@ -109,7 +151,7 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc);
 /* Only increment call count for ewc by one */
 
-void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
+void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c);
 /* Returns the cumulative count and cycle count for ewc */
 
 void wallcycle_reset_all(gmx_wallcycle_t wc);

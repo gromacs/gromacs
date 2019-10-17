@@ -43,20 +43,20 @@
 // Some double precision SIMD architectures use single precision in the first
 // step, so although the double precision criterion would allow smaller rsq,
 // we need to stay in single precision with some margin for the N-R iterations.
-#define NBNXN_MIN_RSQ         1.0e-36
+#    define NBNXN_MIN_RSQ 1.0e-36
 #else
 // The worst intermediate value we might evaluate is r^-12, which
 // means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
-#define NBNXN_MIN_RSQ         3.82e-07f  // r > 6.2e-4
+#    define NBNXN_MIN_RSQ 3.82e-07f // r > 6.2e-4
 #endif
 
 
 /* The number of clusters in a super-cluster, used for GPU */
-#define c_nbnxnGpuNumClusterPerSupercluster  8
+#define c_nbnxnGpuNumClusterPerSupercluster 8
 
 /* With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.
  */
-#define c_nbnxnGpuJgroupSize (32/c_nbnxnGpuNumClusterPerSupercluster)
+#define c_nbnxnGpuJgroupSize (32 / c_nbnxnGpuNumClusterPerSupercluster)
 
 #endif

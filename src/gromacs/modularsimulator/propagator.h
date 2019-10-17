@@ -119,81 +119,76 @@ typedef std::unique_ptr<PropagatorCallback> PropagatorCallbackPtr;
  *
  * @tparam algorithm  The integration types
  */
-template <IntegrationStep algorithm>
-class Propagator final :
-    public       ISimulatorElement
+template<IntegrationStep algorithm>
+class Propagator final : public ISimulatorElement
 {
-    public:
-        //! Constructor
-        Propagator(
-            double               timestep,
-            StatePropagatorData *statePropagatorData,
-            const MDAtoms       *mdAtoms,
-            gmx_wallcycle       *wcycle);
+public:
+    //! Constructor
+    Propagator(double               timestep,
+               StatePropagatorData* statePropagatorData,
+               const MDAtoms*       mdAtoms,
+               gmx_wallcycle*       wcycle);
 
-        /*! \brief Register run function for step / time
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! No element setup needed
-        void elementSetup() override {}
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! No element setup needed
+    void elementSetup() override {}
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-        //! Set the number of velocity scaling variables
-        void setNumVelocityScalingVariables(int numVelocityScalingVariables);
-        //! Get view on the velocity scaling vector
-        ArrayRef<real> viewOnVelocityScaling();
-        //! Get velocity scaling callback
-        PropagatorCallbackPtr velocityScalingCallback();
+    //! Set the number of velocity scaling variables
+    void setNumVelocityScalingVariables(int numVelocityScalingVariables);
+    //! Get view on the velocity scaling vector
+    ArrayRef<real> viewOnVelocityScaling();
+    //! Get velocity scaling callback
+    PropagatorCallbackPtr velocityScalingCallback();
 
-        //! Get view on the full PR scaling matrix
-        ArrayRef<rvec> viewOnPRScalingMatrix();
-        //! Get PR scaling callback
-        PropagatorCallbackPtr prScalingCallback();
+    //! Get view on the full PR scaling matrix
+    ArrayRef<rvec> viewOnPRScalingMatrix();
+    //! Get PR scaling callback
+    PropagatorCallbackPtr prScalingCallback();
 
-    private:
-        //! The actual propagation
-        template <NumVelocityScalingValues numVelocityScalingValues,
-                  ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
-        void run();
+private:
+    //! The actual propagation
+    template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+    void run();
 
-        //! The time step
-        const real timestep_;
+    //! The time step
+    const real timestep_;
 
-        //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
 
-        //! Whether we're doing single-value velocity scaling
-        bool              doSingleVelocityScaling;
-        //! Wether we're doing group-wise velocity scaling
-        bool              doGroupVelocityScaling;
-        //! The vector of velocity scaling values
-        std::vector<real> velocityScaling_;
-        //! The next velocity scaling step
-        Step              scalingStepVelocity_;
+    //! Whether we're doing single-value velocity scaling
+    bool doSingleVelocityScaling;
+    //! Wether we're doing group-wise velocity scaling
+    bool doGroupVelocityScaling;
+    //! The vector of velocity scaling values
+    std::vector<real> velocityScaling_;
+    //! The next velocity scaling step
+    Step scalingStepVelocity_;
 
-        //! The diagonal of the PR scaling matrix
-        rvec   diagPR;
-        //! The full PR scaling matrix
-        matrix matrixPR;
-        //! The next PR scaling step
-        Step   scalingStepPR_;
+    //! The diagonal of the PR scaling matrix
+    rvec diagPR;
+    //! The full PR scaling matrix
+    matrix matrixPR;
+    //! The next PR scaling step
+    Step scalingStepPR_;
 
-        // Access to ISimulator data
-        //! Atom parameters for this domain.
-        const MDAtoms *mdAtoms_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle *wcycle_;
+    // Access to ISimulator data
+    //! Atom parameters for this domain.
+    const MDAtoms* mdAtoms_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
 };
 
 //! \}
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_PROPAGATOR_H

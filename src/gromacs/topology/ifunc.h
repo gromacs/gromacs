@@ -90,28 +90,30 @@ constexpr unsigned int IF_LIMZERO    = 1 << 7;
 
 struct t_interaction_function // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    const char *name;         /* the name of this function			*/
-    const char *longname;     /* The name for printing etc.                   */
+    const char* name;         /* the name of this function			*/
+    const char* longname;     /* The name for printing etc.                   */
     int         nratoms;      /* nr of atoms needed for this function		*/
     int         nrfpA, nrfpB; /* number of parameters for this function.      */
                               /* this corresponds to the number of params in  */
                               /* iparams struct! (see idef.h)                 */
     /* A and B are for normal and free energy components respectively.    */
-    unsigned int    flags;    /* Flags (see above)                            */
+    unsigned int flags; /* Flags (see above)                            */
 };
 
 #define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)
 #define NRFPB(ftype) (interaction_function[(ftype)].nrfpB)
-#define NRFP(ftype)  (NRFPA(ftype)+NRFPB(ftype))
+#define NRFP(ftype) (NRFPA(ftype) + NRFPB(ftype))
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
-#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms == 2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
+#define IS_CHEMBOND(ftype) \
+    (interaction_function[(ftype)].nratoms == 2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
 /* IS_ANGLE tells if a function type ftype represents an angle
  * Per Larsson, 2007-11-06
  */
-#define IS_ANGLE(ftype) (interaction_function[(ftype)].nratoms == 3 && (interaction_function[(ftype)].flags & IF_ATYPE))
+#define IS_ANGLE(ftype) \
+    (interaction_function[(ftype)].nratoms == 3 && (interaction_function[(ftype)].flags & IF_ATYPE))
 #define IS_VSITE(ftype) (interaction_function[(ftype)].flags & IF_VSITE)
 
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)
@@ -213,16 +215,14 @@ enum
     F_DVDL_BONDED,
     F_DVDL_RESTRAINT,
     F_DVDL_TEMPERATURE, /* not calculated for now, but should just be the energy (NVT) or enthalpy (NPT), or 0 (NVE) */
-    F_NRE               /* This number is for the total number of energies      */
+    F_NRE /* This number is for the total number of energies      */
 };
 
 static inline bool IS_RESTRAINT_TYPE(int ifunc)
 {
-    return
-        ifunc == F_POSRES || ifunc == F_FBPOSRES ||
-        ifunc == F_DISRES || ifunc == F_RESTRBONDS || ifunc == F_DISRESVIOL ||
-        ifunc == F_ORIRES || ifunc == F_ORIRESDEV ||
-        ifunc == F_ANGRES || ifunc == F_ANGRESZ || ifunc == F_DIHRES;
+    return ifunc == F_POSRES || ifunc == F_FBPOSRES || ifunc == F_DISRES || ifunc == F_RESTRBONDS
+           || ifunc == F_DISRESVIOL || ifunc == F_ORIRES || ifunc == F_ORIRESDEV
+           || ifunc == F_ANGRES || ifunc == F_ANGRESZ || ifunc == F_DIHRES;
 }
 
 /* Maximum allowed number of atoms, parameters and terms in interaction_function.

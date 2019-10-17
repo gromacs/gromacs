@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,12 +57,12 @@ namespace
 
 TEST(NormalDistributionTest, Output)
 {
-    gmx::test::TestReferenceData        data;
-    gmx::test::TestReferenceChecker     checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>       dist(2.0, 5.0);
-    std::vector<real>                   result;
+    gmx::ThreeFry2x64<8>          rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real> dist(2.0, 5.0);
+    std::vector<real>             result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
@@ -75,11 +75,11 @@ TEST(NormalDistributionTest, Output)
 
 TEST(NormalDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>           rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>  distA(2.0, 5.0);
-    gmx::NormalDistribution<real>  distB(2.0, 5.0);
-    gmx::NormalDistribution<real>  distC(3.0, 5.0);
-    gmx::NormalDistribution<real>  distD(2.0, 4.0);
+    gmx::ThreeFry2x64<8>          rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real> distA(2.0, 5.0);
+    gmx::NormalDistribution<real> distB(2.0, 5.0);
+    gmx::NormalDistribution<real> distC(3.0, 5.0);
+    gmx::NormalDistribution<real> distD(2.0, 4.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -89,10 +89,10 @@ TEST(NormalDistributionTest, Logical)
 
 TEST(NormalDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
-    gmx::NormalDistribution<real>                       distA(2.0, 5.0);
-    gmx::NormalDistribution<real>                       distB(2.0, 5.0);
-    gmx::NormalDistribution<real>::result_type          valA, valB;
+    gmx::ThreeFry2x64<8>                       rng(123456, gmx::RandomDomain::Other);
+    gmx::NormalDistribution<real>              distA(2.0, 5.0);
+    gmx::NormalDistribution<real>              distB(2.0, 5.0);
+    gmx::NormalDistribution<real>::result_type valA, valB;
 
     valA = distA(rng);
 
@@ -132,6 +132,6 @@ TEST(NormalDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(valA, valB, gmx::test::ulpTolerance(0));
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

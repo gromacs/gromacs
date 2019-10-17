@@ -56,11 +56,9 @@ namespace
 
 TEST(OutputNamesTest, CanBeSuffixed)
 {
-    std::vector<t_filenm> filenames = {
-        { efTRR, nullptr, nullptr, ffREAD, {"input.trr"}},
-        { efTRR, nullptr, nullptr, ffWRITE, {"output.trr"}},
-        { efCPT, nullptr, nullptr, ffWRITE, {"output.cpt"}}
-    };
+    std::vector<t_filenm> filenames = { { efTRR, nullptr, nullptr, ffREAD, { "input.trr" } },
+                                        { efTRR, nullptr, nullptr, ffWRITE, { "output.trr" } },
+                                        { efCPT, nullptr, nullptr, ffWRITE, { "output.cpt" } } };
     add_suffix_to_output_names(filenames.data(), filenames.size(), "_suffix");
     EXPECT_EQ(filenames[0].filenames[0], "input.trr");
     EXPECT_EQ(filenames[1].filenames[0], "output_suffix.trr");
@@ -83,16 +81,16 @@ TEST(OutputNamesTest, HasSuffixFromNoAppend)
 TEST(OutputNamesTest, CanHavePartNumberAdded)
 {
     std::vector<t_filenm> filenames = {
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.equil.part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part0001.part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.equil.part0001.part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part0002"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"part0002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part02.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output.part002.log"}},
-        { efLOG, nullptr, nullptr, ffWRITE, {"output"}}
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.part0002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.equil.part0002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.part0001.part0002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.equil.part0001.part0002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.part0002" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "part0002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.part02.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output.part002.log" } },
+        { efLOG, nullptr, nullptr, ffWRITE, { "output" } }
     };
     add_suffix_to_output_names(filenames.data(), filenames.size(), ".part0003");
     EXPECT_EQ(filenames[0].filenames[0], "output.part0003.log");

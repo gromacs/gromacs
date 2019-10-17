@@ -52,11 +52,13 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-int ocl_copy_H2D(cl_mem d_dest, const void* h_src,
-                 size_t offset, size_t bytes,
+int ocl_copy_H2D(cl_mem             d_dest,
+                 const void*        h_src,
+                 size_t             offset,
+                 size_t             bytes,
                  GpuApiCallBehavior transferKind,
-                 cl_command_queue command_queue,
-                 cl_event *copy_event)
+                 cl_command_queue   command_queue,
+                 cl_event*          copy_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -68,19 +70,20 @@ int ocl_copy_H2D(cl_mem d_dest, const void* h_src,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src, 0, nullptr, copy_event);
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_FALSE, offset, bytes, h_src,
+                                            0, nullptr, copy_event);
             assert(cl_error == CL_SUCCESS);
             // TODO: handle errors
             break;
 
         case GpuApiCallBehavior::Sync:
-            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0, nullptr, copy_event);
+            cl_error = clEnqueueWriteBuffer(command_queue, d_dest, CL_TRUE, offset, bytes, h_src, 0,
+                                            nullptr, copy_event);
             assert(cl_error == CL_SUCCESS);
             // TODO: handle errors
             break;
 
-        default:
-            throw;
+        default: throw;
     }
 
     return 0;
@@ -92,28 +95,30 @@ int ocl_copy_H2D(cl_mem d_dest, const void* h_src,
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_H2D_async(cl_mem d_dest, const void * h_src,
-                       size_t offset, size_t bytes,
+int ocl_copy_H2D_async(cl_mem           d_dest,
+                       const void*      h_src,
+                       size_t           offset,
+                       size_t           bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event)
+                       cl_event*        copy_event)
 {
     return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
 
 /*! \brief Launches synchronous host to device memory copy.
  */
-int ocl_copy_H2D_sync(cl_mem d_dest, const void * h_src,
-                      size_t offset, size_t bytes,
-                      cl_command_queue command_queue)
+int ocl_copy_H2D_sync(cl_mem d_dest, const void* h_src, size_t offset, size_t bytes, cl_command_queue command_queue)
 {
     return ocl_copy_H2D(d_dest, h_src, offset, bytes, GpuApiCallBehavior::Sync, command_queue, nullptr);
 }
 
-int ocl_copy_D2H(void * h_dest, cl_mem d_src,
-                 size_t offset, size_t bytes,
+int ocl_copy_D2H(void*              h_dest,
+                 cl_mem             d_src,
+                 size_t             offset,
+                 size_t             bytes,
                  GpuApiCallBehavior transferKind,
-                 cl_command_queue command_queue,
-                 cl_event *copy_event)
+                 cl_command_queue   command_queue,
+                 cl_event*          copy_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -125,19 +130,20 @@ int ocl_copy_D2H(void * h_dest, cl_mem d_src,
     switch (transferKind)
     {
         case GpuApiCallBehavior::Async:
-            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0, nullptr, copy_event);
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_FALSE, offset, bytes, h_dest, 0,
+                                           nullptr, copy_event);
             assert(cl_error == CL_SUCCESS);
             // TODO: handle errors
             break;
 
         case GpuApiCallBehavior::Sync:
-            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0, nullptr, copy_event);
+            cl_error = clEnqueueReadBuffer(command_queue, d_src, CL_TRUE, offset, bytes, h_dest, 0,
+                                           nullptr, copy_event);
             assert(cl_error == CL_SUCCESS);
             // TODO: handle errors
             break;
 
-        default:
-            throw;
+        default: throw;
     }
 
     return 0;
@@ -149,10 +155,12 @@ int ocl_copy_D2H(void * h_dest, cl_mem d_src,
  *  identifying this particular host to device operation. The event can further
  *  be used to queue a wait for this operation or to query profiling information.
  */
-int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
-                       size_t offset, size_t bytes,
+int ocl_copy_D2H_async(void*            h_dest,
+                       cl_mem           d_src,
+                       size_t           offset,
+                       size_t           bytes,
                        cl_command_queue command_queue,
-                       cl_event *copy_event)
+                       cl_event*        copy_event)
 {
     return ocl_copy_D2H(h_dest, d_src, offset, bytes, GpuApiCallBehavior::Async, command_queue, copy_event);
 }
@@ -166,12 +174,12 @@ int ocl_copy_D2H_async(void * h_dest, cl_mem d_src,
  * \param[in,out]    h_ptr   Pointer where to store the address of the newly allocated buffer.
  * \param[in]        nbytes  Size in bytes of the buffer to be allocated.
  */
-void pmalloc(void **h_ptr, size_t nbytes)
+void pmalloc(void** h_ptr, size_t nbytes)
 {
     /* Need a temporary type whose size is 1 byte, so that the
      * implementation of snew_aligned can cope without issuing
      * warnings. */
-    char **temporary = reinterpret_cast<char **>(h_ptr);
+    char** temporary = reinterpret_cast<char**>(h_ptr);
 
     /* 16-byte alignment is required by the neighbour-searching code,
      * because it uses four-wide SIMD for bounding-box calculation.
@@ -185,7 +193,7 @@ void pmalloc(void **h_ptr, size_t nbytes)
  *
  * \param[in]    h_ptr   Buffer allocated with pmalloc that needs to be freed.
  */
-void pfree(void *h_ptr)
+void pfree(void* h_ptr)
 {
 
     if (h_ptr)
@@ -269,7 +277,6 @@ std::string ocl_get_error_string(cl_int error)
         case -1003: return "CL_INVALID_D3D10_RESOURCE_KHR";
         case -1004: return "CL_D3D10_RESOURCE_ALREADY_ACQUIRED_KHR";
         case -1005: return "CL_D3D10_RESOURCE_NOT_ACQUIRED_KHR";
-        default:    return "Unknown OpenCL error: " +
-                   std::to_string(static_cast<int32_t>(error));
+        default: return "Unknown OpenCL error: " + std::to_string(static_cast<int32_t>(error));
     }
 }

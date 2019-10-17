@@ -53,19 +53,18 @@
 namespace gmx
 {
 
-void
-SetAtoms::checkAbilityDependencies(unsigned long abilities) const
+void SetAtoms::checkAbilityDependencies(unsigned long abilities) const
 {
     if ((abilities & convertFlag(moduleRequirements_)) == 0U)
     {
-        std::string errorMessage = "Output file type does not support writing atom information. "
-            "You need to use PDB, GRO or TNG as the file type for this.";
+        std::string errorMessage =
+                "Output file type does not support writing atom information. "
+                "You need to use PDB, GRO or TNG as the file type for this.";
         GMX_THROW(InconsistentInputError(errorMessage.c_str()));
     }
 }
 
-void
-SetAtoms::processFrame(const int /*framenumber*/, t_trxframe *input)
+void SetAtoms::processFrame(const int /*framenumber*/, t_trxframe* input)
 {
     switch (atomFlag_)
     {
@@ -76,8 +75,9 @@ SetAtoms::processFrame(const int /*framenumber*/, t_trxframe *input)
         case (ChangeAtomsType::Always):
             if (!haveAtoms(*input))
             {
-                GMX_THROW(InconsistentInputError("Atoms needed by output but not "
-                                                 "available in input frame or topology"));
+                GMX_THROW(
+                        InconsistentInputError("Atoms needed by output but not "
+                                               "available in input frame or topology"));
             }
             input->bAtoms = true;
             if (haveStructureFileAtoms())
@@ -85,24 +85,22 @@ SetAtoms::processFrame(const int /*framenumber*/, t_trxframe *input)
                 input->atoms = atoms();
             }
             break;
-        case (ChangeAtomsType::PreservedIfPresent):
-            break;
+        case (ChangeAtomsType::PreservedIfPresent): break;
         case (ChangeAtomsType::AlwaysFromStructure):
             if (!haveStructureFileAtoms())
             {
-                GMX_THROW(InconsistentInputError("Requested to add atoms information "
-                                                 "to coordinate frame when it was not available"));
+                GMX_THROW(
+                        InconsistentInputError("Requested to add atoms information "
+                                               "to coordinate frame when it was not available"));
             }
             input->bAtoms = true;
             input->atoms  = atoms();
             break;
-        default:
-            GMX_THROW(InconsistentInputError("Value for atom flag not understood"));
+        default: GMX_THROW(InconsistentInputError("Value for atom flag not understood"));
     }
 }
 
-bool
-SetAtoms::haveFrameAtoms(const t_trxframe &input) const
+bool SetAtoms::haveFrameAtoms(const t_trxframe& input) const
 {
     return input.bAtoms;
 }

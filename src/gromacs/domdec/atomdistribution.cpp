@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,15 +51,13 @@
 /*! \brief Returns the total number of rank, determined from the DD grid dimensions */
 static int numRanks(const ivec numCells)
 {
-    return numCells[XX]*numCells[YY]*numCells[ZZ];
+    return numCells[XX] * numCells[YY] * numCells[ZZ];
 }
 
-AtomDistribution::AtomDistribution(const ivec numCells,
-                                   int        numAtomGroups,
-                                   int        numAtoms) :
+AtomDistribution::AtomDistribution(const ivec numCells, int numAtomGroups, int numAtoms) :
     domainGroups(numRanks(numCells)),
     atomGroups(numAtomGroups),
-    intBuffer(2*numRanks(numCells)),
+    intBuffer(2 * numRanks(numCells)),
     rvecBuffer(numRanks(numCells) > c_maxNumRanksUseSendRecvForScatterAndGather ? numAtoms : 0)
 {
     for (int d = 0; d < DIM; d++)
@@ -68,19 +66,17 @@ AtomDistribution::AtomDistribution(const ivec numCells,
     }
 }
 
-void get_commbuffer_counts(AtomDistribution  *ma,
-                           int              **counts,
-                           int              **disps)
+void get_commbuffer_counts(AtomDistribution* ma, int** counts, int** disps)
 {
     GMX_ASSERT(ma != nullptr, "Need a valid AtomDistribution struct (on the master rank)");
 
     /* Make the rvec count and displacement arrays */
-    int numRanks = ma->intBuffer.size()/2;
+    int numRanks = ma->intBuffer.size() / 2;
     *counts      = ma->intBuffer.data();
     *disps       = ma->intBuffer.data() + numRanks;
     for (int rank = 0; rank < numRanks; rank++)
     {
-        (*counts)[rank] = ma->domainGroups[rank].numAtoms*sizeof(rvec);
+        (*counts)[rank] = ma->domainGroups[rank].numAtoms * sizeof(rvec);
         (*disps)[rank]  = (rank == 0 ? 0 : (*disps)[rank - 1] + (*counts)[rank - 1]);
     }
 }

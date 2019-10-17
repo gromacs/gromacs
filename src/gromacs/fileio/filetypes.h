@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,19 +40,45 @@
 #include "gromacs/utility/basedefinitions.h"
 
 /* this enum should correspond to the array deffile in filetypes.cpp */
-enum GromacsFileType {
+enum GromacsFileType
+{
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efCOMPRESSED, efXTC, efTNG,
+    efTRX,
+    efTRO,
+    efTRN,
+    efTRR,
+    efCOMPRESSED,
+    efXTC,
+    efTNG,
     efEDR,
-    efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR,
+    efSTX,
+    efSTO,
+    efGRO,
+    efG96,
+    efPDB,
+    efBRK,
+    efENT,
+    efESP,
+    efPQR,
     efCPT,
-    efLOG, efXVG, efOUT,
+    efLOG,
+    efXVG,
+    efOUT,
     efNDX,
-    efTOP, efITP,
-    efTPS, efTPR,
-    efTEX, efRTP, efATP, efHDB,
-    efDAT, efDLG,
-    efMAP, efEPS, efMAT, efM2P,
+    efTOP,
+    efITP,
+    efTPS,
+    efTPR,
+    efTEX,
+    efRTP,
+    efATP,
+    efHDB,
+    efDAT,
+    efDLG,
+    efMAP,
+    efEPS,
+    efMAT,
+    efM2P,
     efMTX,
     efEDI,
     efCUB,
@@ -61,35 +87,35 @@ enum GromacsFileType {
     efNR
 };
 
-const char *ftp2ext(int ftp);
+const char* ftp2ext(int ftp);
 /* Return extension for filetype */
 
-const char *ftp2ext_generic(int ftp);
+const char* ftp2ext_generic(int ftp);
 /* Return extension for filetype, and a generic name for generic types
    (e.g. trx)*/
 
-const char *ftp2ext_with_dot(int ftp);
+const char* ftp2ext_with_dot(int ftp);
 /* Return extension for filetype with a leading dot */
 
 int ftp2generic_count(int ftp);
 /* Return the number of filetypes for a generic filetype */
 
-const int *ftp2generic_list(int ftp);
+const int* ftp2generic_list(int ftp);
 /* Return the list of filetypes for a generic filetype */
 
-const char *ftp2desc(int ftp);
+const char* ftp2desc(int ftp);
 /* Return description for file type */
 
-const char *ftp2defnm(int ftp);
+const char* ftp2defnm(int ftp);
 /* Return default file name for file type */
 
-const char *ftp2defopt(int ftp);
+const char* ftp2defopt(int ftp);
 /* Return default option name for file type */
 
 gmx_bool ftp_is_text(int ftp);
 gmx_bool ftp_is_xdr(int ftp);
 
-int fn2ftp(const char *fn);
+int fn2ftp(const char* fn);
 /* Return the filetype corrsponding to filename */
 
 #endif

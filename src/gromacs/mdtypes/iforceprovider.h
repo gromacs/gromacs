@@ -59,7 +59,7 @@ struct t_mdatoms;
 namespace gmx
 {
 
-template <typename T>
+template<typename T>
 class ArrayRef;
 class ForceWithVirial;
 
@@ -78,35 +78,39 @@ class ForceWithVirial;
  */
 class ForceProviderInput
 {
-    public:
-        /*! \brief Constructor assembles all necessary force provider input data
-         *
-         * \param[in]  x        Atomic positions
-         * \param[in]  cr       Communication record structure
-         * \param[in]  box      The simulation box
-         * \param[in]  time     The current time in the simulation
-         * \param[in]  mdatoms  The atomic data
-         */
-        ForceProviderInput(ArrayRef<const RVec> x,
-                           const t_mdatoms     &mdatoms,
-                           double               time,
-                           const matrix         box,
-                           const t_commrec     &cr)
-            : x_(x), mdatoms_(mdatoms), t_(time), cr_(cr)
-        {
-            copy_mat(box, box_);
-        }
+public:
+    /*! \brief Constructor assembles all necessary force provider input data
+     *
+     * \param[in]  x        Atomic positions
+     * \param[in]  cr       Communication record structure
+     * \param[in]  box      The simulation box
+     * \param[in]  time     The current time in the simulation
+     * \param[in]  mdatoms  The atomic data
+     */
+    ForceProviderInput(ArrayRef<const RVec> x,
+                       const t_mdatoms&     mdatoms,
+                       double               time,
+                       const matrix         box,
+                       const t_commrec&     cr) :
+        x_(x),
+        mdatoms_(mdatoms),
+        t_(time),
+        cr_(cr)
+    {
+        copy_mat(box, box_);
+    }
 
-        ArrayRef<const RVec> x_;                                        //!< The atomic positions
-        const t_mdatoms     &mdatoms_;                                  //!< Atomic data
-        double               t_;                                        //!< The current time in the simulation
-        matrix               box_ = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};  //!< The simulation box
-        const t_commrec     &cr_;                                       //!< Communication record structure
+    ArrayRef<const RVec> x_;       //!< The atomic positions
+    const t_mdatoms&     mdatoms_; //!< Atomic data
+    double               t_;       //!< The current time in the simulation
+    matrix               box_ = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } }; //!< The simulation box
+    const t_commrec&     cr_; //!< Communication record structure
 };
 
 /*! \brief Take pointer, check if valid, return reference
  */
-template <class T> T &makeRefFromPointer(T *ptr)
+template<class T>
+T& makeRefFromPointer(T* ptr)
 {
     GMX_ASSERT(ptr != nullptr, "got null pointer");
     return *ptr;
@@ -119,20 +123,20 @@ template <class T> T &makeRefFromPointer(T *ptr)
  */
 class ForceProviderOutput
 {
-    public:
-        /*! \brief Constructor assembles all necessary force provider output data
-         *
-         * \param[in,out]  forceWithVirial  Container for force and virial
-         * \param[in,out]  enerd            Structure containing energy data
-         */
-        ForceProviderOutput(ForceWithVirial *forceWithVirial,
-                            gmx_enerdata_t  *enerd)
-            : forceWithVirial_(makeRefFromPointer(forceWithVirial)), enerd_(makeRefFromPointer(enerd))
-        {
-        }
+public:
+    /*! \brief Constructor assembles all necessary force provider output data
+     *
+     * \param[in,out]  forceWithVirial  Container for force and virial
+     * \param[in,out]  enerd            Structure containing energy data
+     */
+    ForceProviderOutput(ForceWithVirial* forceWithVirial, gmx_enerdata_t* enerd) :
+        forceWithVirial_(makeRefFromPointer(forceWithVirial)),
+        enerd_(makeRefFromPointer(enerd))
+    {
+    }
 
-        ForceWithVirial &forceWithVirial_; //!< Container for force and virial
-        gmx_enerdata_t  &enerd_;           //!< Structure containing energy data
+    ForceWithVirial& forceWithVirial_; //!< Container for force and virial
+    gmx_enerdata_t&  enerd_;           //!< Structure containing energy data
 };
 
 
@@ -155,18 +159,18 @@ class ForceProviderOutput
  */
 class IForceProvider
 {
-    public:
-        /*! \brief
-         * Computes forces.
-         *
-         * \param[in]    forceProviderInput    struct that collects input data for the force providers
-         * \param[in,out] forceProviderOutput   struct that collects output data of the force providers
-         */
-        virtual void calculateForces(const ForceProviderInput &forceProviderInput,
-                                     ForceProviderOutput      *forceProviderOutput) = 0;
+public:
+    /*! \brief
+     * Computes forces.
+     *
+     * \param[in]    forceProviderInput    struct that collects input data for the force providers
+     * \param[in,out] forceProviderOutput   struct that collects output data of the force providers
+     */
+    virtual void calculateForces(const ForceProviderInput& forceProviderInput,
+                                 ForceProviderOutput*      forceProviderOutput) = 0;
 
-    protected:
-        ~IForceProvider() {}
+protected:
+    ~IForceProvider() {}
 };
 
 /*! \libinternal \brief
@@ -177,26 +181,26 @@ class IForceProvider
  */
 class ForceProviders
 {
-    public:
-        ForceProviders();
-        ~ForceProviders();
+public:
+    ForceProviders();
+    ~ForceProviders();
 
-        /*! \brief
-         * Adds a provider.
-         */
-        void addForceProvider(gmx::IForceProvider *provider);
+    /*! \brief
+     * Adds a provider.
+     */
+    void addForceProvider(gmx::IForceProvider* provider);
 
-        //! Whether there are modules added.
-        bool hasForceProvider() const;
+    //! Whether there are modules added.
+    bool hasForceProvider() const;
 
-        //! Computes forces.
-        void calculateForces(const gmx::ForceProviderInput &forceProviderInput,
-                             gmx::ForceProviderOutput      *forceProviderOutput) const;
+    //! Computes forces.
+    void calculateForces(const gmx::ForceProviderInput& forceProviderInput,
+                         gmx::ForceProviderOutput*      forceProviderOutput) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        gmx::PrivateImplPointer<Impl> impl_;
+    gmx::PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

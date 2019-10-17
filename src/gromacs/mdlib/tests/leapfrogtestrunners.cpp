@@ -70,8 +70,7 @@ namespace gmx
 namespace test
 {
 
-void integrateLeapFrogSimple(LeapFrogTestData *testData,
-                             int               numSteps)
+void integrateLeapFrogSimple(LeapFrogTestData* testData, int numSteps)
 {
     testData->state_.x.resizeWithPadding(testData->numAtoms_);
     testData->state_.v.resizeWithPadding(testData->numAtoms_);
@@ -85,26 +84,12 @@ void integrateLeapFrogSimple(LeapFrogTestData *testData,
 
     for (int step = 0; step < numSteps; step++)
     {
-        update_coords(step,
-                      &testData->inputRecord_,
-                      &testData->mdAtoms_,
-                      &testData->state_,
-                      testData->f_,
-                      &testData->forceCalculationData_,
-                      &testData->kineticEnergyData_,
-                      testData->velocityScalingMatrix_,
-                      testData->update_.get(),
-                      etrtNONE,
-                      nullptr,
+        update_coords(step, &testData->inputRecord_, &testData->mdAtoms_, &testData->state_,
+                      testData->f_, &testData->forceCalculationData_, &testData->kineticEnergyData_,
+                      testData->velocityScalingMatrix_, testData->update_.get(), etrtNONE, nullptr,
                       nullptr);
-        finish_update(&testData->inputRecord_,
-                      &testData->mdAtoms_,
-                      &testData->state_,
-                      nullptr,
-                      nullptr,
-                      nullptr,
-                      testData->update_.get(),
-                      nullptr);
+        finish_update(&testData->inputRecord_, &testData->mdAtoms_, &testData->state_, nullptr,
+                      nullptr, nullptr, testData->update_.get(), nullptr);
     }
     auto xp = makeArrayRef(*testData->update_->xp()).subArray(0, testData->numAtoms_);
     for (int i = 0; i < testData->numAtoms_; i++)
@@ -120,13 +105,12 @@ void integrateLeapFrogSimple(LeapFrogTestData *testData,
 
 #if GMX_GPU != GMX_GPU_CUDA
 
-void integrateLeapFrogGpu(gmx_unused  LeapFrogTestData *testData,
-                          gmx_unused  int               numSteps)
+void integrateLeapFrogGpu(gmx_unused LeapFrogTestData* testData, gmx_unused int numSteps)
 {
     FAIL() << "Dummy Leap-Frog CUDA function was called instead of the real one.";
 }
 
 #endif // GMX_GPU != GMX_GPU_CUDA
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx

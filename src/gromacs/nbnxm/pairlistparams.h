@@ -73,7 +73,8 @@ static constexpr int c_gpuNumClusterPerCellY = 2;
 //! The number of clusters along X in a pair-search grid cell for GPU lists
 static constexpr int c_gpuNumClusterPerCellX = 2;
 //! The number of clusters in a pair-search grid cell for GPU lists
-static constexpr int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumClusterPerCellY*c_gpuNumClusterPerCellX;
+static constexpr int c_gpuNumClusterPerCell =
+        c_gpuNumClusterPerCellZ * c_gpuNumClusterPerCellY * c_gpuNumClusterPerCellX;
 
 
 /*! \brief The number of sub-parts used for data storage for a GPU cluster pair
@@ -84,7 +85,8 @@ static constexpr int c_gpuNumClusterPerCell  = c_gpuNumClusterPerCellZ*c_gpuNumC
 static constexpr int c_nbnxnGpuClusterpairSplit = 2;
 
 //! The fixed size of the exclusion mask array for a half GPU cluster pair
-static constexpr int c_nbnxnGpuExclSize = c_nbnxnGpuClusterSize*c_nbnxnGpuClusterSize/c_nbnxnGpuClusterpairSplit;
+static constexpr int c_nbnxnGpuExclSize =
+        c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
 
 //! The available pair list types
 enum class PairlistType : int
@@ -97,21 +99,13 @@ enum class PairlistType : int
 };
 
 //! Gives the i-cluster size for each pairlist type
-static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType =
-{ {
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnCpuIClusterSize,
-      c_nbnxnGpuClusterSize
-  } };
+static constexpr gmx::EnumerationArray<PairlistType, int> IClusterSizePerListType = {
+    { c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnGpuClusterSize }
+};
 //! Gives the j-cluster size for each pairlist type
-static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType =
-{ {
-      2,
-      4,
-      8,
-      c_nbnxnGpuClusterSize
-  } };
+static constexpr gmx::EnumerationArray<PairlistType, int> JClusterSizePerListType = {
+    { 2, 4, 8, c_nbnxnGpuClusterSize }
+};
 
 /*! \internal
  * \brief The setup for generating and pruning the nbnxn pair list.
@@ -122,10 +116,7 @@ struct PairlistParams
 {
     /*! \brief Constructor producing a struct with dynamic pruning disabled
      */
-    PairlistParams(Nbnxm::KernelType kernelType,
-                   bool              haveFep,
-                   real              rlist,
-                   bool              haveMultipleDomains);
+    PairlistParams(Nbnxm::KernelType kernelType, bool haveFep, real rlist, bool haveMultipleDomains);
 
     PairlistType pairlistType;           //!< The type of cluster-pair list
     bool         haveFep;                //!< Tells whether we have perturbed interactions

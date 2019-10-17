@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,17 +70,16 @@ struct ReplicaExchangeParameters
 };
 
 //! Abstract type for replica exchange
-typedef struct gmx_repl_ex *gmx_repl_ex_t;
+typedef struct gmx_repl_ex* gmx_repl_ex_t;
 
 /*! \brief Setup function.
  *
  * Should only be called on the master ranks */
-gmx_repl_ex_t
-init_replica_exchange(FILE                            *fplog,
-                      const gmx_multisim_t            *ms,
-                      int                              numAtomsInSystem,
-                      const t_inputrec                *ir,
-                      const ReplicaExchangeParameters &replExParams);
+gmx_repl_ex_t init_replica_exchange(FILE*                            fplog,
+                                    const gmx_multisim_t*            ms,
+                                    int                              numAtomsInSystem,
+                                    const t_inputrec*                ir,
+                                    const ReplicaExchangeParameters& replExParams);
 
 /*! \brief Attempts replica exchange.
  *
@@ -92,17 +91,19 @@ init_replica_exchange(FILE                            *fplog,
  *
  * \returns TRUE if the state has been exchanged.
  */
-gmx_bool replica_exchange(FILE *fplog,
-                          const t_commrec *cr,
-                          const gmx_multisim_t *ms,
-                          gmx_repl_ex_t re,
-                          t_state *state, const gmx_enerdata_t *enerd,
-                          t_state *state_local,
-                          int64_t step, real time);
+gmx_bool replica_exchange(FILE*                 fplog,
+                          const t_commrec*      cr,
+                          const gmx_multisim_t* ms,
+                          gmx_repl_ex_t         re,
+                          t_state*              state,
+                          const gmx_enerdata_t* enerd,
+                          t_state*              state_local,
+                          int64_t               step,
+                          real                  time);
 
 /*! \brief Prints replica exchange statistics to the log file.
  *
  * Should only be called on the master ranks */
-void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
+void print_replica_exchange_statistics(FILE* fplog, gmx_repl_ex_t re);
 
 #endif

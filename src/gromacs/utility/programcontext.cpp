@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,29 +64,29 @@ namespace
  */
 class DefaultProgramContext : public IProgramContext
 {
-    public:
-        DefaultProgramContext() {}
+public:
+    DefaultProgramContext() {}
 
-        const char *programName() const override { return "GROMACS"; }
-        const char *displayName() const override { return "GROMACS"; }
-        const char *fullBinaryPath() const override { return ""; }
-        InstallationPrefixInfo installationPrefix() const override
-        {
-            return InstallationPrefixInfo("", false);
-        }
-        const char *commandLine() const override { return ""; }
+    const char*            programName() const override { return "GROMACS"; }
+    const char*            displayName() const override { return "GROMACS"; }
+    const char*            fullBinaryPath() const override { return ""; }
+    InstallationPrefixInfo installationPrefix() const override
+    {
+        return InstallationPrefixInfo("", false);
+    }
+    const char* commandLine() const override { return ""; }
 };
 
 //! Global program info; stores the object set with setProgramContext().
-const IProgramContext         *g_programContext;
+const IProgramContext* g_programContext;
 //! Default program context if nothing is set.
-const DefaultProgramContext    g_defaultContext;
+const DefaultProgramContext g_defaultContext;
 
 //! \}
 
-}   // namespace
+} // namespace
 
-const IProgramContext &getProgramContext()
+const IProgramContext& getProgramContext()
 {
     if (g_programContext != nullptr)
     {
@@ -95,7 +95,7 @@ const IProgramContext &getProgramContext()
     return g_defaultContext;
 }
 
-void setProgramContext(const IProgramContext *programContext)
+void setProgramContext(const IProgramContext* programContext)
 {
     g_programContext = programContext;
 }

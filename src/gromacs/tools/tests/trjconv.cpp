@@ -52,28 +52,29 @@
 namespace
 {
 
-class TrjconvWithIndexGroupSubset : public gmx::test::CommandLineTestBase,
-                                    public ::testing::WithParamInterface<const char *>
+class TrjconvWithIndexGroupSubset :
+    public gmx::test::CommandLineTestBase,
+    public ::testing::WithParamInterface<const char*>
 {
-    public:
-        void runTest(const char *fileName)
-        {
-            auto &cmdline = commandLine();
+public:
+    void runTest(const char* fileName)
+    {
+        auto& cmdline = commandLine();
 
-            setInputFile("-s", "spc2.gro");
-            setInputFile("-f", fileName);
-            setInputFile("-n", "spc2.ndx");
-            setOutputFile("-o", "spc-traj.tng", gmx::test::NoTextMatch());
+        setInputFile("-s", "spc2.gro");
+        setInputFile("-f", fileName);
+        setInputFile("-n", "spc2.ndx");
+        setOutputFile("-o", "spc-traj.tng", gmx::test::NoTextMatch());
 
-            gmx::test::StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+        gmx::test::StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
-            /* TODO Ideally, we would then check that the output file
-               has only 3 of the 6 atoms (which it does), but the
-               infrastructure for doing that automatically is still
-               being built. This would also fix the TODO below. */
-            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
-        }
+        /* TODO Ideally, we would then check that the output file
+           has only 3 of the 6 atoms (which it does), but the
+           infrastructure for doing that automatically is still
+           being built. This would also fix the TODO below. */
+        ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    }
 };
 /* TODO These tests are actually not very effective, because trjconv
  * can only return 0 or exit via gmx_fatal() (which currently also
@@ -90,41 +91,38 @@ TEST_P(TrjconvWithIndexGroupSubset, WithDifferentInputFormats)
  * database. These all have two identical frames of two SPC water
  * molecules, which were generated via trjconv from the .gro
  * version. */
-const char *const trajectoryFileNames[] = {
-    "spc2-traj.trr",
+const char* const trajectoryFileNames[] = { "spc2-traj.trr",
 #if GMX_USE_TNG
-    "spc2-traj.tng",
+                                            "spc2-traj.tng",
 #endif
-    "spc2-traj.xtc",
-    "spc2-traj.gro",
-    "spc2-traj.pdb",
-    "spc2-traj.g96"
-};
+                                            "spc2-traj.xtc", "spc2-traj.gro",
+                                            "spc2-traj.pdb", "spc2-traj.g96" };
 
 INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithIndexGroupSubset,
-                            ::testing::ValuesIn(trajectoryFileNames));
+                        ::testing::ValuesIn(trajectoryFileNames));
 
-class TrjconvWithoutTopologyFile : public gmx::test::CommandLineTestBase,
-                                   public ::testing::WithParamInterface<const char *>
+class TrjconvWithoutTopologyFile :
+    public gmx::test::CommandLineTestBase,
+    public ::testing::WithParamInterface<const char*>
 {
-    public:
-        void runTest(const char *fileName)
-        {
-            auto &cmdline = commandLine();
+public:
+    void runTest(const char* fileName)
+    {
+        auto& cmdline = commandLine();
 
-            setInputFile("-f", fileName);
-            setInputFile("-n", "spc2.ndx");
-            setOutputFile("-o", "spc-traj.trr", gmx::test::NoTextMatch());
+        setInputFile("-f", fileName);
+        setInputFile("-n", "spc2.ndx");
+        setOutputFile("-o", "spc-traj.trr", gmx::test::NoTextMatch());
 
-            gmx::test::StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
+        gmx::test::StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin("SecondWaterMolecule\n");
 
-            /* As mentioned above, the tests don't check much besides
-             * that trjconv does not crash.
-             */
-            ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
-        }
+        /* As mentioned above, the tests don't check much besides
+         * that trjconv does not crash.
+         */
+        ASSERT_EQ(0, gmx_trjconv(cmdline.argc(), cmdline.argv()));
+    }
 };
 
 TEST_P(TrjconvWithoutTopologyFile, WithDifferentInputFormats)
@@ -134,5 +132,5 @@ TEST_P(TrjconvWithoutTopologyFile, WithDifferentInputFormats)
 
 INSTANTIATE_TEST_CASE_P(NoFatalErrorWhenWritingFrom,
                         TrjconvWithoutTopologyFile,
-                            ::testing::ValuesIn(trajectoryFileNames));
+                        ::testing::ValuesIn(trajectoryFileNames));
 } // namespace

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,14 @@
 namespace gmx
 {
 
-bool AnalysisDataModuleSerial::parallelDataStarted(
-        AbstractAnalysisData              *data,
-        const AnalysisDataParallelOptions  & /*options*/)
+bool AnalysisDataModuleSerial::parallelDataStarted(AbstractAnalysisData* data,
+                                                   const AnalysisDataParallelOptions& /*options*/)
 {
     dataStarted(data);
     return false;
 }
 
-void AnalysisDataModuleParallel::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataModuleParallel::dataStarted(AbstractAnalysisData* data)
 {
     AnalysisDataParallelOptions options;
     (void)parallelDataStarted(data, options);

@@ -74,118 +74,115 @@ class StatePropagatorData;
  * The force element manages the call to do_force(...)
  */
 class ForceElement final :
-    public         ISimulatorElement,
-    public         ITopologyHolderClient,
-    public         INeighborSearchSignallerClient,
-    public         IEnergySignallerClient
+    public ISimulatorElement,
+    public ITopologyHolderClient,
+    public INeighborSearchSignallerClient,
+    public IEnergySignallerClient
 {
-    public:
-        //! Constructor
-        ForceElement(
-            StatePropagatorData           *statePropagatorData,
-            EnergyElement                 *energyElement,
-            FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-            bool                           isDynamicBox,
-            FILE                          *fplog,
-            const t_commrec               *cr,
-            const t_inputrec              *inputrec,
-            const MDAtoms                 *mdAtoms,
-            t_nrnb                        *nrnb,
-            t_forcerec                    *fr,
-            t_fcdata                      *fcd,
-            gmx_wallcycle                 *wcycle,
-            MdrunScheduleWorkload         *runScheduleWork,
-            gmx_vsite_t                   *vsite,
-            ImdSession                    *imdSession,
-            pull_t                        *pull_work,
-            gmx_enfrot                    *enforcedRotation);
+public:
+    //! Constructor
+    ForceElement(StatePropagatorData*           statePropagatorData,
+                 EnergyElement*                 energyElement,
+                 FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                 bool                           isDynamicBox,
+                 FILE*                          fplog,
+                 const t_commrec*               cr,
+                 const t_inputrec*              inputrec,
+                 const MDAtoms*                 mdAtoms,
+                 t_nrnb*                        nrnb,
+                 t_forcerec*                    fr,
+                 t_fcdata*                      fcd,
+                 gmx_wallcycle*                 wcycle,
+                 MdrunScheduleWorkload*         runScheduleWork,
+                 gmx_vsite_t*                   vsite,
+                 ImdSession*                    imdSession,
+                 pull_t*                        pull_work,
+                 gmx_enfrot*                    enforcedRotation);
 
-        /*! \brief Register force calculation for step / time
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register force calculation for step / time
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! Check that we got the local topology
-        void elementSetup() override;
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! Check that we got the local topology
+    void elementSetup() override;
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-    private:
-        //! ITopologyHolderClient implementation
-        void setTopology(const gmx_localtop_t *top) override;
-        //! INeighborSearchSignallerClient implementation
-        SignallerCallbackPtr registerNSCallback() override;
-        //! IEnergySignallerClient implementation
-        SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
-        //! The actual do_force call
-        void run(Step step, Time time, unsigned int flags);
+private:
+    //! ITopologyHolderClient implementation
+    void setTopology(const gmx_localtop_t* top) override;
+    //! INeighborSearchSignallerClient implementation
+    SignallerCallbackPtr registerNSCallback() override;
+    //! IEnergySignallerClient implementation
+    SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
+    //! The actual do_force call
+    void run(Step step, Time time, unsigned int flags);
 
-        //! The next NS step
-        Step nextNSStep_;
-        //! The next energy calculation step
-        Step nextEnergyCalculationStep_;
-        //! The next energy calculation step
-        Step nextVirialCalculationStep_;
-        //! The next free energy calculation step
-        Step nextFreeEnergyCalculationStep_;
+    //! The next NS step
+    Step nextNSStep_;
+    //! The next energy calculation step
+    Step nextEnergyCalculationStep_;
+    //! The next energy calculation step
+    Step nextVirialCalculationStep_;
+    //! The next free energy calculation step
+    Step nextFreeEnergyCalculationStep_;
 
-        //! Pointer to the micro state
-        StatePropagatorData           *statePropagatorData_;
-        //! Pointer to the energy element
-        EnergyElement                 *energyElement_;
-        //! Pointer to the free energy perturbation element
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
+    //! Pointer to the energy element
+    EnergyElement* energyElement_;
+    //! Pointer to the free energy perturbation element
+    FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
-        //! The local topology - updated by Topology via Client system
-        const gmx_localtop_t *localTopology_;
+    //! The local topology - updated by Topology via Client system
+    const gmx_localtop_t* localTopology_;
 
-        //! Whether we're having a dynamic box
-        const bool isDynamicBox_;
+    //! Whether we're having a dynamic box
+    const bool isDynamicBox_;
 
-        //! DD / DLB helper object
-        const DDBalanceRegionHandler ddBalanceRegionHandler_;
+    //! DD / DLB helper object
+    const DDBalanceRegionHandler ddBalanceRegionHandler_;
 
-        /* \brief The FEP lambda vector
-         *
-         * Used if FEP is off, since do_force
-         * requires lambda to be allocated anyway
-         */
-        std::array<real, efptNR> lambda_;
+    /* \brief The FEP lambda vector
+     *
+     * Used if FEP is off, since do_force
+     * requires lambda to be allocated anyway
+     */
+    std::array<real, efptNR> lambda_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE                  *fplog_;
-        //! Handles communication.
-        const t_commrec       *cr_;
-        //! Contains user input mdp options.
-        const t_inputrec      *inputrec_;
-        //! Atom parameters for this domain.
-        const MDAtoms         *mdAtoms_;
-        //! Manages flop accounting.
-        t_nrnb                *nrnb_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle         *wcycle_;
-        //! Parameters for force calculations.
-        t_forcerec            *fr_;
-        //! Handles virtual sites.
-        gmx_vsite_t           *vsite_;
-        //! The Interactive Molecular Dynamics session.
-        ImdSession            *imdSession_;
-        //! The pull work object.
-        pull_t                *pull_work_;
-        //! Helper struct for force calculations.
-        t_fcdata              *fcd_;
-        //! Schedule of work for each MD step for this task.
-        MdrunScheduleWorkload *runScheduleWork_;
-        //! Handles enforced rotation.
-        gmx_enfrot            *enforcedRotation_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    const t_commrec* cr_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    const MDAtoms* mdAtoms_;
+    //! Manages flop accounting.
+    t_nrnb* nrnb_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
+    //! Parameters for force calculations.
+    t_forcerec* fr_;
+    //! Handles virtual sites.
+    gmx_vsite_t* vsite_;
+    //! The Interactive Molecular Dynamics session.
+    ImdSession* imdSession_;
+    //! The pull work object.
+    pull_t* pull_work_;
+    //! Helper struct for force calculations.
+    t_fcdata* fcd_;
+    //! Schedule of work for each MD step for this task.
+    MdrunScheduleWorkload* runScheduleWork_;
+    //! Handles enforced rotation.
+    gmx_enfrot* enforcedRotation_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_FORCEELEMENT_H

@@ -63,24 +63,21 @@ namespace test
 
 class ReportMethodsTest : public ::testing::Test
 {
-    protected:
-        // TODO this is changed in newer googletest versions
-        //! Prepare shared resources.
-        static void SetUpTestCase()
-        {
-            s_tprFileHandle = new TprAndFileManager("lysozyme");
-        }
-        //! Clean up shared resources.
-        static void TearDownTestCase()
-        {
-            delete s_tprFileHandle;
-            s_tprFileHandle = nullptr;
-        }
-        //! Storage for opened file handles.
-        static TprAndFileManager *s_tprFileHandle;
+protected:
+    // TODO this is changed in newer googletest versions
+    //! Prepare shared resources.
+    static void SetUpTestCase() { s_tprFileHandle = new TprAndFileManager("lysozyme"); }
+    //! Clean up shared resources.
+    static void TearDownTestCase()
+    {
+        delete s_tprFileHandle;
+        s_tprFileHandle = nullptr;
+    }
+    //! Storage for opened file handles.
+    static TprAndFileManager* s_tprFileHandle;
 };
 
-TprAndFileManager *ReportMethodsTest::s_tprFileHandle = nullptr;
+TprAndFileManager* ReportMethodsTest::s_tprFileHandle = nullptr;
 
 /*! \brief
  * Reads a tpr for the test.
@@ -91,11 +88,11 @@ TprAndFileManager *ReportMethodsTest::s_tprFileHandle = nullptr;
  * \param[in] mtop Pointer to topology datastructure to populate.
  * \param[in] ir Pointer to inputrec to populate.
  */
-static void readTprInput(const TprAndFileManager *tprHandle, gmx_mtop_t *mtop, t_inputrec *ir)
+static void readTprInput(const TprAndFileManager* tprHandle, gmx_mtop_t* mtop, t_inputrec* ir)
 {
-// read tpr into variables needed for output
+    // read tpr into variables needed for output
     {
-        t_state     state;
+        t_state state;
         read_tpx_state(tprHandle->tprName().c_str(), ir, &state, mtop);
     }
 }
@@ -134,8 +131,9 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
         writeSystemInformation(&test, top, true);
 
-        std::string referenceString = "\\subsection{Simulation system}\n"
-            "A system of 1 molecules (156 atoms) was simulated.\n";
+        std::string referenceString =
+                "\\subsection{Simulation system}\n"
+                "A system of 1 molecules (156 atoms) was simulated.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
@@ -146,8 +144,9 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
         writeSystemInformation(&test, top, false);
 
-        std::string referenceString = "subsection: Simulation system\n"
-            "A system of 1 molecules (156 atoms) was simulated.\n";
+        std::string referenceString =
+                "subsection: Simulation system\n"
+                "A system of 1 molecules (156 atoms) was simulated.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
@@ -159,12 +158,13 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
         writeParameterInformation(&test, ir, true);
 
-        std::string referenceString = "\\subsection{Simulation settings}\n"
-            "A total of 0 ns were simulated with a time step of 1 fs.\n"
-            "Neighbor searching was performed every 10 steps.\n"
-            "The Cut-off algorithm was used for electrostatic interactions.\n"
-            "with a cut-off of 1 nm.\nA single cut-off of 1.1 nm was used "
-            "for Van der Waals interactions.\n";
+        std::string referenceString =
+                "\\subsection{Simulation settings}\n"
+                "A total of 0 ns were simulated with a time step of 1 fs.\n"
+                "Neighbor searching was performed every 10 steps.\n"
+                "The Cut-off algorithm was used for electrostatic interactions.\n"
+                "with a cut-off of 1 nm.\nA single cut-off of 1.1 nm was used "
+                "for Van der Waals interactions.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
@@ -172,13 +172,10 @@ TEST_F(ReportMethodsTest, WritesCorrectInformation)
 
 TEST_F(ReportMethodsTest, ToolEndToEndTest)
 {
-    const char *const  command[]     = {
-        "report-methods", "-s", s_tprFileHandle->tprName().c_str()
-    };
-    CommandLine        cmdline(command);
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::ReportMethodsInfo::create, &cmdline));
-
+    const char* const command[] = { "report-methods", "-s", s_tprFileHandle->tprName().c_str() };
+    CommandLine       cmdline(command);
+    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create,
+                                                                    &cmdline));
 }
 
 } // namespace test

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +52,8 @@
 namespace gmx
 {
 
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 
 class AnalysisDataPlotSettings;
 class ICommandLineOptionsModuleSettings;
@@ -81,164 +83,164 @@ class TrajectoryAnalysisRunnerCommon;
  */
 class TrajectoryAnalysisSettings
 {
-    public:
-        //! Recognized flags.
-        enum
-        {
-            /*! \brief
-             * Forces loading of a topology file.
-             *
-             * If this flag is not specified, the topology file is loaded only
-             * if it is provided on the command line explicitly.
-             */
-            efRequireTop     = 1<<0,
-            /*! \brief
-             * Requests topology coordinates.
-             *
-             * If this flag is specified, the position coordinates loaded from the
-             * topology can be accessed, otherwise they are not loaded.
-             *
-             * \see TopologyInformation
-             */
-            efUseTopX        = 1<<1,
-            /*! \brief
-             * Requests topology coordinates.
-             *
-             * If this flag is specified, the velocity coordinates loaded from the
-             * topology can be accessed, otherwise they are not loaded.
-             *
-             * \see TopologyInformation
-             */
-            efUseTopV        = 1<<2,
-            /*! \brief
-             * Disallows the user from changing PBC handling.
-             *
-             * If this option is not specified, the analysis module (see
-             * TrajectoryAnalysisModule::analyzeFrame()) may be passed a NULL
-             * PBC structure, and it should be able to handle such a situation.
-             *
-             * \see setPBC()
-             */
-            efNoUserPBC      = 1<<4,
-            /*! \brief
-             * Disallows the user from changing PBC removal.
-             *
-             * \see setRmPBC()
-             */
-            efNoUserRmPBC    = 1<<5,
-        };
-
-        //! Initializes default settings.
-        TrajectoryAnalysisSettings();
-        ~TrajectoryAnalysisSettings();
-
-        //! Injects command line options module settings for some methods to use.
-        void setOptionsModuleSettings(ICommandLineOptionsModuleSettings *settings);
-
-        //! Returns the time unit the user has requested.
-        TimeUnit timeUnit() const;
-        //! Returns common settings for analysis data plot modules.
-        const AnalysisDataPlotSettings &plotSettings() const;
-
-        //! Returns the currently set flags.
-        unsigned long flags() const;
-        //! Tests whether a flag has been set.
-        bool hasFlag(unsigned long flag) const;
+public:
+    //! Recognized flags.
+    enum
+    {
         /*! \brief
-         * Returns whether PBC should be used.
+         * Forces loading of a topology file.
          *
-         * Returns the value set with setPBC() and/or overridden by the user.
-         * The user-provided value can be accessed in
-         * TrajectoryAnalysisModule::optionsFinished(), and can be overridden
-         * with a call to setPBC().
+         * If this flag is not specified, the topology file is loaded only
+         * if it is provided on the command line explicitly.
          */
-        bool hasPBC() const;
+        efRequireTop = 1 << 0,
         /*! \brief
-         * Returns whether molecules should be made whole.
+         * Requests topology coordinates.
          *
-         * See hasPBC() for information on accessing or overriding the
-         * user-provided value.
+         * If this flag is specified, the position coordinates loaded from the
+         * topology can be accessed, otherwise they are not loaded.
+         *
+         * \see TopologyInformation
          */
-        bool hasRmPBC() const;
-        //! Returns the currently set frame flags.
-        int frflags() const;
-
+        efUseTopX = 1 << 1,
         /*! \brief
-         * Sets flags.
+         * Requests topology coordinates.
          *
-         * Overrides any earlier set flags.
-         * By default, no flags are set.
+         * If this flag is specified, the velocity coordinates loaded from the
+         * topology can be accessed, otherwise they are not loaded.
+         *
+         * \see TopologyInformation
          */
-        void setFlags(unsigned long flags);
-        //! Sets or clears an individual flag.
-        void setFlag(unsigned long flag, bool bSet = true);
+        efUseTopV = 1 << 2,
         /*! \brief
-         * Sets whether PBC are used.
+         * Disallows the user from changing PBC handling.
          *
-         * \param[in]  bPBC   true if PBC should be used.
+         * If this option is not specified, the analysis module (see
+         * TrajectoryAnalysisModule::analyzeFrame()) may be passed a NULL
+         * PBC structure, and it should be able to handle such a situation.
          *
-         * If called in TrajectoryAnalysisModule::initOptions(), this function
-         * sets the default for whether PBC are used in the analysis.
-         * If \ref efNoUserPBC is not set, a command-line option is provided
-         * for the user to override the default value.
-         * If called later, it overrides the setting provided by the user or an
-         * earlier call.
-         *
-         * If this function is not called, the default is to use PBC.
-         *
-         * If PBC are not used, the \p pbc pointer passed to
-         * TrajectoryAnalysisModule::analyzeFrame() is NULL.
-         * The value of the flag can also be accessed with hasPBC().
-         *
-         * \see efNoUserPBC
+         * \see setPBC()
          */
-        void setPBC(bool bPBC);
+        efNoUserPBC = 1 << 4,
         /*! \brief
-         * Sets whether molecules are made whole.
+         * Disallows the user from changing PBC removal.
          *
-         * \param[in]     bRmPBC true if molecules should be made whole.
-         *
-         * If called in TrajectoryAnalysisModule::initOptions(), this function
-         * sets the default for whether molecules are made whole.
-         * If \ref efNoUserRmPBC is not set, a command-line option is provided
-         * for the user to override the default value.
-         * If called later, it overrides the setting provided by the user or an
-         * earlier call.
-         *
-         * If this function is not called, the default is to make molecules
-         * whole.
-         *
-         * The main use of this function is to call it with \c false if your
-         * analysis program does not require whole molecules as this can
-         * increase the performance.
-         * In such a case, you can also specify \ref efNoUserRmPBC to not to
-         * confuse the user with an option that would only slow the program
-         * down.
-         *
-         * \see efNoUserRmPBC
+         * \see setRmPBC()
          */
-        void setRmPBC(bool bRmPBC);
-        /*! \brief
-         * Sets flags that determine what to read from the trajectory.
-         *
-         * \param[in]     frflags Flags for what to read from the trajectory file.
-         *
-         * If this function is not called, the flags default to TRX_NEED_X.
-         * If the analysis module needs some other information (velocities,
-         * forces), it can call this function to load additional information
-         * from the trajectory.
-         */
-        void setFrameFlags(int frflags);
+        efNoUserRmPBC = 1 << 5,
+    };
 
-        //! \copydoc ICommandLineOptionsModuleSettings::setHelpText()
-        void setHelpText(const ArrayRef<const char *const> &help);
+    //! Initializes default settings.
+    TrajectoryAnalysisSettings();
+    ~TrajectoryAnalysisSettings();
 
-    private:
-        class Impl;
+    //! Injects command line options module settings for some methods to use.
+    void setOptionsModuleSettings(ICommandLineOptionsModuleSettings* settings);
 
-        PrivateImplPointer<Impl> impl_;
+    //! Returns the time unit the user has requested.
+    TimeUnit timeUnit() const;
+    //! Returns common settings for analysis data plot modules.
+    const AnalysisDataPlotSettings& plotSettings() const;
 
-        friend class TrajectoryAnalysisRunnerCommon;
+    //! Returns the currently set flags.
+    unsigned long flags() const;
+    //! Tests whether a flag has been set.
+    bool hasFlag(unsigned long flag) const;
+    /*! \brief
+     * Returns whether PBC should be used.
+     *
+     * Returns the value set with setPBC() and/or overridden by the user.
+     * The user-provided value can be accessed in
+     * TrajectoryAnalysisModule::optionsFinished(), and can be overridden
+     * with a call to setPBC().
+     */
+    bool hasPBC() const;
+    /*! \brief
+     * Returns whether molecules should be made whole.
+     *
+     * See hasPBC() for information on accessing or overriding the
+     * user-provided value.
+     */
+    bool hasRmPBC() const;
+    //! Returns the currently set frame flags.
+    int frflags() const;
+
+    /*! \brief
+     * Sets flags.
+     *
+     * Overrides any earlier set flags.
+     * By default, no flags are set.
+     */
+    void setFlags(unsigned long flags);
+    //! Sets or clears an individual flag.
+    void setFlag(unsigned long flag, bool bSet = true);
+    /*! \brief
+     * Sets whether PBC are used.
+     *
+     * \param[in]  bPBC   true if PBC should be used.
+     *
+     * If called in TrajectoryAnalysisModule::initOptions(), this function
+     * sets the default for whether PBC are used in the analysis.
+     * If \ref efNoUserPBC is not set, a command-line option is provided
+     * for the user to override the default value.
+     * If called later, it overrides the setting provided by the user or an
+     * earlier call.
+     *
+     * If this function is not called, the default is to use PBC.
+     *
+     * If PBC are not used, the \p pbc pointer passed to
+     * TrajectoryAnalysisModule::analyzeFrame() is NULL.
+     * The value of the flag can also be accessed with hasPBC().
+     *
+     * \see efNoUserPBC
+     */
+    void setPBC(bool bPBC);
+    /*! \brief
+     * Sets whether molecules are made whole.
+     *
+     * \param[in]     bRmPBC true if molecules should be made whole.
+     *
+     * If called in TrajectoryAnalysisModule::initOptions(), this function
+     * sets the default for whether molecules are made whole.
+     * If \ref efNoUserRmPBC is not set, a command-line option is provided
+     * for the user to override the default value.
+     * If called later, it overrides the setting provided by the user or an
+     * earlier call.
+     *
+     * If this function is not called, the default is to make molecules
+     * whole.
+     *
+     * The main use of this function is to call it with \c false if your
+     * analysis program does not require whole molecules as this can
+     * increase the performance.
+     * In such a case, you can also specify \ref efNoUserRmPBC to not to
+     * confuse the user with an option that would only slow the program
+     * down.
+     *
+     * \see efNoUserRmPBC
+     */
+    void setRmPBC(bool bRmPBC);
+    /*! \brief
+     * Sets flags that determine what to read from the trajectory.
+     *
+     * \param[in]     frflags Flags for what to read from the trajectory file.
+     *
+     * If this function is not called, the flags default to TRX_NEED_X.
+     * If the analysis module needs some other information (velocities,
+     * forces), it can call this function to load additional information
+     * from the trajectory.
+     */
+    void setFrameFlags(int frflags);
+
+    //! \copydoc ICommandLineOptionsModuleSettings::setHelpText()
+    void setHelpText(const ArrayRef<const char* const>& help);
+
+private:
+    class Impl;
+
+    PrivateImplPointer<Impl> impl_;
+
+    friend class TrajectoryAnalysisRunnerCommon;
 };
 
 } // namespace gmx

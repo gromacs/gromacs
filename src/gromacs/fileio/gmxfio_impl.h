@@ -60,26 +60,26 @@
 
 struct t_fileio
 {
-    FILE           *fp;                /* the file pointer */
-    gmx_bool        bRead,             /* the file is open for reading */
-                    bDouble,           /* write doubles instead of floats */
-                    bReadWrite;        /* the file is open for reading and writing */
-    char        *fn;                   /* the file name */
-    XDR         *xdr;                  /* the xdr data pointer */
-    enum xdr_op  xdrmode;              /* the xdr mode */
-    int          iFTP;                 /* the file type identifier */
+    FILE*    fp;         /* the file pointer */
+    gmx_bool bRead,      /* the file is open for reading */
+            bDouble,     /* write doubles instead of floats */
+            bReadWrite;  /* the file is open for reading and writing */
+    char*       fn;      /* the file name */
+    XDR*        xdr;     /* the xdr data pointer */
+    enum xdr_op xdrmode; /* the xdr mode */
+    int         iFTP;    /* the file type identifier */
 
-    t_fileio    *next, *prev;          /* next and previous file pointers in the
-                                          linked list */
-    tMPI_Lock_t  mtx;                  /* content locking mutex. This is a fast lock
-                                          for performance reasons: in some cases every
-                                          single byte that gets read/written requires
-                                          a lock */
+    t_fileio *next, *prev; /* next and previous file pointers in the
+                              linked list */
+    tMPI_Lock_t mtx;       /* content locking mutex. This is a fast lock
+                              for performance reasons: in some cases every
+                              single byte that gets read/written requires
+                              a lock */
 };
 
 /** lock the mutex associated with a fio  */
-void gmx_fio_lock(t_fileio *fio);
+void gmx_fio_lock(t_fileio* fio);
 /** unlock the mutex associated with a fio  */
-void gmx_fio_unlock(t_fileio *fio);
+void gmx_fio_unlock(t_fileio* fio);
 
 #endif

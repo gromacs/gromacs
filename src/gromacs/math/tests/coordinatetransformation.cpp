@@ -60,11 +60,14 @@ namespace test
 using ::testing::Pointwise;
 class TranslateAndScaleTest : public ::testing::Test
 {
-    protected:
-        RVec              identityScale_       = {1, 1, 1};
-        RVec              identityTranslation_ = {0, 0, 0};
-        std::vector<RVec> testVectors_         = {{0, 0, 0}, {1, 0, 0}, {0, -1, -1}, {1e10, 1e1, 1e-2}, {3, -6, 2.5}};
-
+protected:
+    RVec              identityScale_       = { 1, 1, 1 };
+    RVec              identityTranslation_ = { 0, 0, 0 };
+    std::vector<RVec> testVectors_         = { { 0, 0, 0 },
+                                       { 1, 0, 0 },
+                                       { 0, -1, -1 },
+                                       { 1e10, 1e1, 1e-2 },
+                                       { 3, -6, 2.5 } };
 };
 
 TEST_F(TranslateAndScaleTest, identityTransformation)
@@ -77,25 +80,31 @@ TEST_F(TranslateAndScaleTest, identityTransformation)
 
 TEST_F(TranslateAndScaleTest, translationWithIdentityScaling)
 {
-    TranslateAndScale          translateAndScale(identityScale_, {1, -1, 2});
+    TranslateAndScale translateAndScale(identityScale_, { 1, -1, 2 });
     translateAndScale(testVectors_);
-    std::vector<RVec>          expected = { {1, -1, 2}, {2, -1, 2}, {1, -2, 1}, {1e10+1, 1e1-1, 1e-2+2}, { 4, -7, 4.5 } };
+    std::vector<RVec> expected = {
+        { 1, -1, 2 }, { 2, -1, 2 }, { 1, -2, 1 }, { 1e10 + 1, 1e1 - 1, 1e-2 + 2 }, { 4, -7, 4.5 }
+    };
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
 TEST_F(TranslateAndScaleTest, scalingWithZeroTranslation)
 {
-    TranslateAndScale          translateAndScale({-1e10, 2, 0}, identityTranslation_);
+    TranslateAndScale translateAndScale({ -1e10, 2, 0 }, identityTranslation_);
     translateAndScale(testVectors_);
-    std::vector<RVec>          expected = {{0, 0, 0}, {-1e10, 0, 0}, {0, -2, 0}, {-1e20, 2e1, 0}, {-3e10, -12, 0}};
+    std::vector<RVec> expected = {
+        { 0, 0, 0 }, { -1e10, 0, 0 }, { 0, -2, 0 }, { -1e20, 2e1, 0 }, { -3e10, -12, 0 }
+    };
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
 TEST_F(TranslateAndScaleTest, translationAndScalingNonTrivial)
 {
-    TranslateAndScale translateAndScale({-1e10, 2, 0}, {1, -1, 2});
+    TranslateAndScale translateAndScale({ -1e10, 2, 0 }, { 1, -1, 2 });
     translateAndScale(testVectors_);
-    std::vector<RVec> expected = {{-1e+10, -2, 0}, {-2e+10, -2, 0}, {-1e+10, -4, 0}, {-1e+20, 18, 0}, {-4e+10, -14, 0}};
+    std::vector<RVec> expected = {
+        { -1e+10, -2, 0 }, { -2e+10, -2, 0 }, { -1e+10, -4, 0 }, { -1e+20, 18, 0 }, { -4e+10, -14, 0 }
+    };
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
@@ -109,15 +118,17 @@ TEST_F(TranslateAndScaleTest, scalingIdentity)
 
 TEST_F(TranslateAndScaleTest, scalingNonTrivial)
 {
-    ScaleCoordinates  scale({-100, 0.1, 0});
-    std::vector<RVec> expected = {{0, 0, 0}, {-100, 0, 0}, {0, -0.1, 0}, {-1e12, 1e0, 0}, {-300, -0.6, 0}};
+    ScaleCoordinates  scale({ -100, 0.1, 0 });
+    std::vector<RVec> expected = {
+        { 0, 0, 0 }, { -100, 0, 0 }, { 0, -0.1, 0 }, { -1e12, 1e0, 0 }, { -300, -0.6, 0 }
+    };
     scale(testVectors_);
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));
 }
 
 TEST_F(TranslateAndScaleTest, scalingInverseNoZero)
 {
-    ScaleCoordinates scale({-100, 0.1, 3});
+    ScaleCoordinates scale({ -100, 0.1, 3 });
     auto             expected = testVectors_;
     scale(testVectors_);
     scale.inverseIgnoringZeroScale(testVectors_);
@@ -126,8 +137,8 @@ TEST_F(TranslateAndScaleTest, scalingInverseNoZero)
 
 TEST_F(TranslateAndScaleTest, scalingInverseWithOneScaleDimensionZero)
 {
-    ScaleCoordinates  scale({-100, 0.1, 0});
-    std::vector<RVec> expected = {{0, 0, 0}, {1, 0, 0}, {0, -1, 0}, {1e10, 1e1, 0}, {3, -6, 0}};
+    ScaleCoordinates scale({ -100, 0.1, 0 });
+    std::vector<RVec> expected = { { 0, 0, 0 }, { 1, 0, 0 }, { 0, -1, 0 }, { 1e10, 1e1, 0 }, { 3, -6, 0 } };
     scale(testVectors_);
     scale.inverseIgnoringZeroScale(testVectors_);
     EXPECT_THAT(expected, Pointwise(RVecEq(defaultFloatTolerance()), testVectors_));

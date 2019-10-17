@@ -53,9 +53,9 @@ namespace
 /*! \brief Initializes a basic topology with 9 atoms with settle*/
 void createBasicTop(gmx_mtop_t* mtop)
 {
-    gmx_moltype_t     moltype;
+    gmx_moltype_t moltype;
     moltype.atoms.nr             = NRAL(F_SETTLE);
-    std::vector<int> &iatoms     = moltype.ilist[F_SETTLE].iatoms;
+    std::vector<int>& iatoms     = moltype.ilist[F_SETTLE].iatoms;
     const int         settleType = 0;
     iatoms.push_back(settleType);
     iatoms.push_back(0);
@@ -74,7 +74,7 @@ TEST(MtopTest, RangeBasedLoop)
 {
     gmx_mtop_t mtop;
     createBasicTop(&mtop);
-    int        count = 0;
+    int count = 0;
     for (const AtomProxy atomP : AtomRange(mtop))
     {
         EXPECT_EQ(atomP.globalAtomNumber(), count);
@@ -85,22 +85,22 @@ TEST(MtopTest, RangeBasedLoop)
 
 TEST(MtopTest, Operators)
 {
-    gmx_mtop_t   mtop;
+    gmx_mtop_t mtop;
     createBasicTop(&mtop);
     AtomIterator it(mtop);
     AtomIterator otherIt(mtop);
     EXPECT_EQ((*it).globalAtomNumber(), 0);
     EXPECT_EQ(it->globalAtomNumber(), 0);
-    EXPECT_TRUE (it == otherIt);
+    EXPECT_TRUE(it == otherIt);
     EXPECT_FALSE(it != otherIt);
     ++it;
     EXPECT_EQ(it->globalAtomNumber(), 1);
     it++;
     EXPECT_EQ(it->globalAtomNumber(), 2);
-    EXPECT_TRUE (it != otherIt);
+    EXPECT_TRUE(it != otherIt);
     EXPECT_FALSE(it == otherIt);
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

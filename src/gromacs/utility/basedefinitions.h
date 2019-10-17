@@ -54,11 +54,11 @@ typedef bool gmx_bool;
 
 #ifndef FALSE
 /** False value for ::gmx_bool. */
-#  define FALSE   false
+#    define FALSE false
 #endif
 #ifndef TRUE
 /** True value for ::gmx_bool. */
-#  define TRUE    true
+#    define TRUE true
 #endif
 /** Number of gmx_bool values. */
 #define BOOL_NR 2
@@ -73,8 +73,11 @@ using index = std::ptrdiff_t;
 
 //! Return signed size of container
 template<typename T>
-index ssize(const T &t) { return t.size(); }
-}  // namespace gmx
+index ssize(const T& t)
+{
+    return t.size();
+}
+} // namespace gmx
 
 /* ICC, GCC, MSVC, Pathscale, PGI, XLC support __restrict.
  * Any other compiler can be added here. */
@@ -99,24 +102,24 @@ index ssize(const T &t) { return t.size(); }
  * (e.g. MPI).
  */
 #ifndef gmx_unused
-#ifdef __GNUC__
+#    ifdef __GNUC__
 /* GCC, clang, and some ICC pretending to be GCC */
-#  define gmx_unused __attribute__ ((unused))
-#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
+#        define gmx_unused __attribute__((unused))
+#    elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
 /* ICC on *nix */
-#  define gmx_unused __attribute__ ((unused))
-#elif defined(__PGI)
+#        define gmx_unused __attribute__((unused))
+#    elif defined(__PGI)
 /* Portland group compilers */
-#  define gmx_unused __attribute__ ((unused))
-#elif defined _MSC_VER
+#        define gmx_unused __attribute__((unused))
+#    elif defined _MSC_VER
 /* MSVC */
-#  define gmx_unused /*@unused@*/
-#elif defined(__xlC__)
+#        define gmx_unused /*@unused@*/
+#    elif defined(__xlC__)
 /* IBM */
-#  define gmx_unused __attribute__ ((unused))
-#else
-#  define gmx_unused
-#endif
+#        define gmx_unused __attribute__((unused))
+#    else
+#        define gmx_unused
+#    endif
 #endif
 
 /*! \brief Attribute to explicitly indicate that a parameter or
@@ -125,14 +128,14 @@ index ssize(const T &t) { return t.size(); }
  * \ingroup module_utility
  */
 #ifdef NDEBUG
-#define gmx_used_in_debug gmx_unused
+#    define gmx_used_in_debug gmx_unused
 #else
-#define gmx_used_in_debug
+#    define gmx_used_in_debug
 #endif
 
 #ifndef __has_feature
 /** For compatibility with non-clang compilers. */
-#define __has_feature(x) 0
+#    define __has_feature(x) 0
 #endif
 
 /*! \brief
@@ -145,15 +148,15 @@ index ssize(const T &t) { return t.size(); }
 #define GMX_UNUSED_VALUE(value) (void)value
 
 #ifdef __clang__
-#define DO_PRAGMA(x) _Pragma (#x)
-#define CLANG_DIAGNOSTIC_IGNORE(warning) _Pragma("clang diagnostic push") \
-    DO_PRAGMA(clang diagnostic ignored #warning)
-#define DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
+#    define DO_PRAGMA(x) _Pragma(#    x)
+#    define CLANG_DIAGNOSTIC_IGNORE(warning) \
+        _Pragma("clang diagnostic push") DO_PRAGMA(clang diagnostic ignored #warning)
+#    define DIAGNOSTIC_RESET _Pragma("clang diagnostic pop")
 #else
 //! Ignore specified clang warning until DIAGNOSTIC_RESET
-#define CLANG_DIAGNOSTIC_IGNORE(warning)
+#    define CLANG_DIAGNOSTIC_IGNORE(warning)
 //! Reset all diagnostics to default
-#define DIAGNOSTIC_RESET
+#    define DIAGNOSTIC_RESET
 #endif
 
 namespace gmx
@@ -166,13 +169,13 @@ namespace internal
  *
  * \ingroup module_utility
  */
-template <typename T>
-static inline void ignoreValueHelper(const T & /*unused*/)
+template<typename T>
+static inline void ignoreValueHelper(const T& /*unused*/)
 {
 }
 //! \endcond
-}   // namespace internal
-}   // namespace gmx
+} // namespace internal
+} // namespace gmx
 
 /*! \brief
  * Macro to explicitly ignore a return value of a call.
@@ -187,7 +190,6 @@ static inline void ignoreValueHelper(const T & /*unused*/)
  *
  * \ingroup module_utility
  */
-#define GMX_IGNORE_RETURN_VALUE(call) \
-        ::gmx::internal::ignoreValueHelper(call)
+#define GMX_IGNORE_RETURN_VALUE(call) ::gmx::internal::ignoreValueHelper(call)
 
 #endif

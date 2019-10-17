@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,12 @@ using gmx::Path;
 
 #if GMX_NATIVE_WINDOWS || GMX_CYGWIN
 //! Extension for executable files on the platform.
-#define EXECUTABLE_EXTENSION ".exe"
+#    define EXECUTABLE_EXTENSION ".exe"
 #else
 //! Extension for executable files on the platform.
-#define EXECUTABLE_EXTENSION ""
+#    define EXECUTABLE_EXTENSION ""
 //! Defined if the platform supports symlinks and those can be tested.
-#define TEST_SYMLINKS
+#    define TEST_SYMLINKS
 #endif
 
 namespace
@@ -74,56 +74,43 @@ namespace
 
 class TestExecutableEnvironment : public gmx::IExecutableEnvironment
 {
-    public:
-        TestExecutableEnvironment()
-            : workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
-        {
-        }
+public:
+    TestExecutableEnvironment() :
+        workingDirectory_(CMAKE_BINARY_DIR "/src/gromacs/commandline/tests/test-bin")
+    {
+    }
 
-        std::string getWorkingDirectory() const override
-        {
-            return workingDirectory_;
-        }
-        std::vector<std::string> getExecutablePaths() const override
-        {
-            return path_;
-        }
+    std::string              getWorkingDirectory() const override { return workingDirectory_; }
+    std::vector<std::string> getExecutablePaths() const override { return path_; }
 
-        std::string               workingDirectory_;
-        std::vector<std::string>  path_;
+    std::string              workingDirectory_;
+    std::vector<std::string> path_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestExecutableEnvironment);
 };
 
 //! Shorthand for a smart pointer to TestExecutableEnvironment.
-typedef std::unique_ptr<TestExecutableEnvironment>
-    TestExecutableEnvironmentPointer;
+typedef std::unique_ptr<TestExecutableEnvironment> TestExecutableEnvironmentPointer;
 
 class CommandLineProgramContextTest : public ::testing::Test
 {
-    public:
-        CommandLineProgramContextTest()
-            : env_(new TestExecutableEnvironment())
-        {
-            expectedExecutable_ =
-                Path::normalize(
-                        Path::join(env_->getWorkingDirectory(),
-                                   "bin/test-exe" EXECUTABLE_EXTENSION));
-        }
+public:
+    CommandLineProgramContextTest() : env_(new TestExecutableEnvironment())
+    {
+        expectedExecutable_ = Path::normalize(
+                Path::join(env_->getWorkingDirectory(), "bin/test-exe" EXECUTABLE_EXTENSION));
+    }
 
-        void testBinaryPathSearch(const char *argv0)
-        {
-            ASSERT_TRUE(env_.get() != nullptr);
-            gmx::CommandLineProgramContext  info(1, &argv0, move(env_));
-            EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
-        }
-        void testBinaryPathSearch(const std::string &argv0)
-        {
-            testBinaryPathSearch(argv0.c_str());
-        }
+    void testBinaryPathSearch(const char* argv0)
+    {
+        ASSERT_TRUE(env_.get() != nullptr);
+        gmx::CommandLineProgramContext info(1, &argv0, move(env_));
+        EXPECT_EQ(expectedExecutable_, info.fullBinaryPath());
+    }
+    void testBinaryPathSearch(const std::string& argv0) { testBinaryPathSearch(argv0.c_str()); }
 
-        std::string                      expectedExecutable_;
-        TestExecutableEnvironmentPointer env_;
+    std::string                      expectedExecutable_;
+    TestExecutableEnvironmentPointer env_;
 };
 
 TEST_F(CommandLineProgramContextTest, FindsBinaryWithAbsolutePath)

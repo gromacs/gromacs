@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,15 +41,15 @@
 
 typedef struct t_symbuf
 {
-    int               bufsize;
-    char            **buf;
-    struct t_symbuf  *next;
+    int              bufsize;
+    char**           buf;
+    struct t_symbuf* next;
 } t_symbuf;
 
 typedef struct t_symtab
 {
     int       nr;
-    t_symbuf *symbuf;
+    t_symbuf* symbuf;
 } t_symtab;
 
 /*
@@ -63,11 +63,11 @@ typedef struct t_symtab
  * back to a text string handle by get_symtab_handle().
  */
 
-void open_symtab(t_symtab *symtab);
+void open_symtab(t_symtab* symtab);
 /* Initialises the symbol table symtab.
  */
 
-void close_symtab(t_symtab *symtab);
+void close_symtab(t_symtab* symtab);
 /* Undoes the effect of open_symtab(), after invoking this function,
  * no value can be added to the symbol table, only values can be
  * retrieved using get_symtab().
@@ -76,47 +76,47 @@ void close_symtab(t_symtab *symtab);
  */
 
 /*! \brief Returns a deep copy of \c symtab. */
-t_symtab *duplicateSymtab(const t_symtab *symtab);
+t_symtab* duplicateSymtab(const t_symtab* symtab);
 
-void free_symtab(t_symtab *symtab);
+void free_symtab(t_symtab* symtab);
 /* Frees the space allocated by the symbol table itself */
 
-void done_symtab(t_symtab *symtab);
+void done_symtab(t_symtab* symtab);
 /* Frees the space allocated by the symbol table, including all
  * entries in it */
 
-char **put_symtab(t_symtab *symtab, const char *name);
+char** put_symtab(t_symtab* symtab, const char* name);
 /* Enters a string into the symbol table symtab, if it was not
  * available, a reference to a copy is returned else a reference
  * to the earlier entered value is returned. Strings are trimmed
  * of spaces.
  */
 
-int lookup_symtab(t_symtab *symtab, char **name);
+int lookup_symtab(t_symtab* symtab, char** name);
 /* Returns a unique handle for **name, without a memory reference.
  * It is a failure when name cannot be found in the symbol table,
  * it should be entered before with put_symtab().
  */
 
-char **get_symtab_handle(t_symtab *symtab, int name);
+char** get_symtab_handle(t_symtab* symtab, int name);
 /* Returns a text string handle for name. Name should be a value
  * returned from lookup_symtab(). So get_symtab_handle() and
  * lookup_symtab() are inverse functions.
  */
 
-long wr_symtab(FILE *fp, t_symtab *symtab);
+long wr_symtab(FILE* fp, t_symtab* symtab);
 /* Writes the symbol table symtab to the file, specified by fp.
  * The function returns the number of bytes written.
  */
 
-long rd_symtab(FILE *fp, t_symtab *symtab);
+long rd_symtab(FILE* fp, t_symtab* symtab);
 /* Reads the symbol table symtab from the file, specified by fp.
  * This will include allocating the needed space. The function
  * returns the number of bytes read. The symtab is in the closed
  * state afterwards, so no strings can be added to it.
  */
 
-void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab);
+void pr_symtab(FILE* fp, int indent, const char* title, t_symtab* symtab);
 /* This routine prints out a (human) readable representation of
  * the symbol table symtab to the file fp. Ident specifies the
  * number of spaces the text should be indented. Title is used

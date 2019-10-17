@@ -70,7 +70,7 @@
 const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
 #define maxcontrol asize(ncontrol)
 
-void print_ab(FILE *out, const MoleculePatch &hack, const char *nname)
+void print_ab(FILE* out, const MoleculePatch& hack, const char* nname)
 {
     fprintf(out, "%d\t%d\t%s", hack.nr, hack.tp, nname);
     for (int i = 0; (i < hack.nctl); i++)
@@ -81,7 +81,7 @@ void print_ab(FILE *out, const MoleculePatch &hack, const char *nname)
 }
 
 
-void read_ab(char *line, const char *fn, MoleculePatch *hack)
+void read_ab(char* line, const char* fn, MoleculePatch* hack)
 {
     int  nh, tp, ns;
     char a[4][12];
@@ -97,13 +97,17 @@ void read_ab(char *line, const char *fn, MoleculePatch *hack)
     hack->tp = tp;
     if ((tp < 1) || (tp >= maxcontrol))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s", fn, maxcontrol-1, line);
+        gmx_fatal(FARGS, "Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s", fn,
+                  maxcontrol - 1, line);
     }
 
     hack->nctl = ns - 3;
     if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
     {
-        gmx_fatal(FARGS, "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on line:\n%s\n", fn, hack->nctl, ncontrol[hack->tp], line);
+        gmx_fatal(FARGS,
+                  "Error in hdb file %s:\nWrong number of control atoms (%d instead of %d) on "
+                  "line:\n%s\n",
+                  fn, hack->nctl, ncontrol[hack->tp], line);
     }
     for (int i = 0; (i < hack->nctl); i++)
     {
@@ -120,9 +124,9 @@ void read_ab(char *line, const char *fn, MoleculePatch *hack)
     }
 }
 
-static void read_h_db_file(const char *hfn, std::vector<MoleculePatchDatabase> *globalPatches)
+static void read_h_db_file(const char* hfn, std::vector<MoleculePatchDatabase>* globalPatches)
 {
-    char         filebase[STRLEN], line[STRLEN], buf[STRLEN];
+    char filebase[STRLEN], line[STRLEN], buf[STRLEN];
 
     fflib_filename_base(hfn, filebase, STRLEN);
     /* Currently filebase is read and set, but not used.
@@ -130,9 +134,9 @@ static void read_h_db_file(const char *hfn, std::vector<MoleculePatchDatabase> *
      * in any rtp file.
      */
 
-    FILE *in = fflib_open(hfn);
+    FILE* in = fflib_open(hfn);
 
-    while (fgets2(line, STRLEN-1, in))
+    while (fgets2(line, STRLEN - 1, in))
     {
         // Skip lines that are only whitespace
         if (gmx::countWords(line) == 0)
@@ -143,26 +147,26 @@ static void read_h_db_file(const char *hfn, std::vector<MoleculePatchDatabase> *
         if (sscanf(line, "%s%n", buf, &n) != 1)
         {
             int size = globalPatches->size();
-            fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n",
-                    size, line);
+            fprintf(stderr, "Error in hdb file: nah = %d\nline = '%s'\n", size, line);
             break;
         }
         globalPatches->emplace_back(MoleculePatchDatabase());
-        MoleculePatchDatabase *block = &globalPatches->back();
+        MoleculePatchDatabase* block = &globalPatches->back();
         clearModificationBlock(block);
         block->name     = buf;
         block->filebase = filebase;
 
         int nab;
-        if (sscanf(line+n, "%d", &nab) == 1)
+        if (sscanf(line + n, "%d", &nab) == 1)
         {
             for (int i = 0; (i < nab); i++)
             {
                 if (feof(in))
                 {
-                    gmx_fatal(FARGS, "Expected %d lines of hydrogens, found only %d "
+                    gmx_fatal(FARGS,
+                              "Expected %d lines of hydrogens, found only %d "
                               "while reading Hydrogen Database %s residue %s",
-                              nab, i-1, block->name.c_str(), hfn);
+                              nab, i - 1, block->name.c_str(), hfn);
                 }
                 if (nullptr == fgets(buf, STRLEN, in))
                 {
@@ -179,15 +183,17 @@ static void read_h_db_file(const char *hfn, std::vector<MoleculePatchDatabase> *
     {
         /* Sort the list for searching later */
         std::sort(globalPatches->begin(), globalPatches->end(),
-                  [](const MoleculePatchDatabase &a1, const MoleculePatchDatabase &a2)
-                  { return std::lexicographical_compare(a1.name.begin(), a1.name.end(),
-                                                        a2.name.begin(), a2.name.end(),
-                                                        [](const char &c1, const char &c2)
-                                                        { return std::toupper(c1) < std::toupper(c2); }); });
+                  [](const MoleculePatchDatabase& a1, const MoleculePatchDatabase& a2) {
+                      return std::lexicographical_compare(
+                              a1.name.begin(), a1.name.end(), a2.name.begin(), a2.name.end(),
+                              [](const char& c1, const char& c2) {
+                                  return std::toupper(c1) < std::toupper(c2);
+                              });
+                  });
     }
 }
 
-int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatches)
+int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatches)
 {
     /* Read the hydrogen database file(s).
      * Do not generate an error when no files are found.
@@ -195,7 +201,7 @@ int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatch
 
     std::vector<std::string> hdbf = fflib_search_file_end(ffdir, ".hdb", FALSE);
     globalPatches->clear();
-    for (const auto &filename : hdbf)
+    for (const auto& filename : hdbf)
     {
         read_h_db_file(filename.c_str(), globalPatches);
     }
@@ -203,9 +209,9 @@ int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatch
 }
 
 gmx::ArrayRef<const MoleculePatchDatabase>::iterator
-search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char *key)
+search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key)
 {
-    return std::find_if(globalPatches.begin(), globalPatches.end(),
-                        [&key](const MoleculePatchDatabase &a)
-                        { return gmx::equalCaseInsensitive(key, a.name); });
+    return std::find_if(
+            globalPatches.begin(), globalPatches.end(),
+            [&key](const MoleculePatchDatabase& a) { return gmx::equalCaseInsensitive(key, a.name); });
 }

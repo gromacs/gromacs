@@ -47,16 +47,16 @@
 #include <cstdlib>
 
 #ifndef GMX_TESTUTILS_SETENV_H
-#define GMX_TESTUTILS_SETENV_H
+#    define GMX_TESTUTILS_SETENV_H
 
 namespace gmx
 {
 namespace test
 {
 //! Workaround to make setenv work on Windows
-inline int gmxSetenv(const char * name, const char * value, int overwrite)
+inline int gmxSetenv(const char* name, const char* value, int overwrite)
 {
-#if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
     if (!overwrite)
     {
         size_t size  = 0;
@@ -67,21 +67,21 @@ inline int gmxSetenv(const char * name, const char * value, int overwrite)
         }
     }
     return _putenv_s(name, value);
-#else
+#    else
     return setenv(name, value, overwrite);
-#endif
+#    endif
 }
 
 //! Workaround to make unsetenv work on Windows
-inline int gmxUnsetenv(const char * name)
+inline int gmxUnsetenv(const char* name)
 {
-#if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
     return _putenv_s(name, "");
-#else
+#    else
     return unsetenv(name);
-#endif
+#    endif
 }
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_TESTUTILS_SETENV_H

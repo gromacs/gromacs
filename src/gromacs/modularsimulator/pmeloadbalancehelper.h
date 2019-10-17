@@ -69,71 +69,68 @@ class StatePropagatorData;
  * steps. This allows elements to be aware of any changes before
  * deciding what functionality they need to run.
  */
-class PmeLoadBalanceHelper final :
-    public                 INeighborSearchSignallerClient
+class PmeLoadBalanceHelper final : public INeighborSearchSignallerClient
 {
-    public:
-        //! Constructor
-        PmeLoadBalanceHelper(
-            bool                 isVerbose,
-            StatePropagatorData *statePropagatorData,
-            FILE                *fplog,
-            t_commrec           *cr,
-            const MDLogger      &mdlog,
-            const t_inputrec    *inputrec,
-            gmx_wallcycle       *wcycle,
-            t_forcerec          *fr);
+public:
+    //! Constructor
+    PmeLoadBalanceHelper(bool                 isVerbose,
+                         StatePropagatorData* statePropagatorData,
+                         FILE*                fplog,
+                         t_commrec*           cr,
+                         const MDLogger&      mdlog,
+                         const t_inputrec*    inputrec,
+                         gmx_wallcycle*       wcycle,
+                         t_forcerec*          fr);
 
-        //! Initialize the load balancing object
-        void setup();
-        //! Do load balancing
-        void run(Step step, Time time);
-        //! Final printout and deconstruction of the load balancing object
-        void teardown();
-        //! Whether PME load balancing printing is active \todo Check this!
-        bool pmePrinting();
+    //! Initialize the load balancing object
+    void setup();
+    //! Do load balancing
+    void run(Step step, Time time);
+    //! Final printout and deconstruction of the load balancing object
+    void teardown();
+    //! Whether PME load balancing printing is active \todo Check this!
+    bool pmePrinting();
 
-        //! Whether we're doing PME load balancing
-        static bool doPmeLoadBalancing(
-            const MdrunOptions &mdrunOptions,
-            const t_inputrec   *inputrec,
-            const t_forcerec   *fr);
+    //! Whether we're doing PME load balancing
+    static bool doPmeLoadBalancing(const MdrunOptions& mdrunOptions,
+                                   const t_inputrec*   inputrec,
+                                   const t_forcerec*   fr);
 
-        //! Direct access to the load balancing object - used by reset counter
-        const pme_load_balancing_t* loadBalancingObject();
+    //! Direct access to the load balancing object - used by reset counter
+    const pme_load_balancing_t* loadBalancingObject();
 
-    private:
-        //! The PME load balancing object - used by reset counter
-        pme_load_balancing_t *pme_loadbal_;
+private:
+    //! The PME load balancing object - used by reset counter
+    pme_load_balancing_t* pme_loadbal_;
 
-        //! INeighborSearchSignallerClient implementation
-        SignallerCallbackPtr registerNSCallback() override;
+    //! INeighborSearchSignallerClient implementation
+    SignallerCallbackPtr registerNSCallback() override;
 
-        //! The next NS step
-        Step       nextNSStep_;
-        //! Whether we're being verbose
-        const bool isVerbose_;
-        //! Whether PME load balancing printing is active \todo Check this!
-        bool       bPMETunePrinting_;
+    //! The next NS step
+    Step nextNSStep_;
+    //! Whether we're being verbose
+    const bool isVerbose_;
+    //! Whether PME load balancing printing is active \todo Check this!
+    bool bPMETunePrinting_;
 
-        //! Pointer to the micro state
-        StatePropagatorData *statePropagatorData_;
+    //! Pointer to the micro state
+    StatePropagatorData* statePropagatorData_;
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE             *fplog_;
-        //! Handles communication.
-        t_commrec        *cr_;
-        //! Handles logging.
-        const MDLogger   &mdlog_;
-        //! Contains user input mdp options.
-        const t_inputrec *inputrec_;
-        //! Manages wall cycle accounting.
-        gmx_wallcycle    *wcycle_;
-        //! Parameters for force calculations.
-        t_forcerec       *fr_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    t_commrec* cr_;
+    //! Handles logging.
+    const MDLogger& mdlog_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Manages wall cycle accounting.
+    gmx_wallcycle* wcycle_;
+    //! Parameters for force calculations.
+    t_forcerec* fr_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_PMELOADBALANCEHELPER_H

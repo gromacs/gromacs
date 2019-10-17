@@ -74,20 +74,19 @@
 namespace gmx
 {
 
-void Bias::warnForHistogramAnomalies(double t, int64_t step, FILE *fplog)
+void Bias::warnForHistogramAnomalies(double t, int64_t step, FILE* fplog)
 {
-    const int    maxNumWarningsInCheck = 1;   /* The maximum number of warnings to print per check */
-    const int    maxNumWarningsInRun   = 10;  /* The maximum number of warnings to print in a run */
+    const int maxNumWarningsInCheck = 1;  /* The maximum number of warnings to print per check */
+    const int maxNumWarningsInRun   = 10; /* The maximum number of warnings to print in a run */
 
-    if (fplog == nullptr || numWarningsIssued_ >= maxNumWarningsInRun || state_.inInitialStage() ||
-        !params_.isCheckHistogramForAnomaliesStep(step))
+    if (fplog == nullptr || numWarningsIssued_ >= maxNumWarningsInRun || state_.inInitialStage()
+        || !params_.isCheckHistogramForAnomaliesStep(step))
     {
         return;
     }
 
     numWarningsIssued_ +=
-        state_.warnForHistogramAnomalies(grid_, biasIndex(), t, fplog,
-                                         maxNumWarningsInCheck);
+            state_.warnForHistogramAnomalies(grid_, biasIndex(), t, fplog, maxNumWarningsInCheck);
 
     if (numWarningsIssued_ >= maxNumWarningsInRun)
     {
@@ -103,25 +102,25 @@ void Bias::doSkippedUpdatesForAllPoints()
     }
 }
 
-gmx::ArrayRef<const double>
-Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
-                             double               *awhPotential,
-                             double               *potentialJump,
-                             const t_commrec      *commRecord,
-                             const gmx_multisim_t *ms,
-                             double                t,
-                             int64_t               step,
-                             int64_t               seed,
-                             FILE                 *fplog)
+gmx::ArrayRef<const double> Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
+                                                         double*               awhPotential,
+                                                         double*               potentialJump,
+                                                         const t_commrec*      commRecord,
+                                                         const gmx_multisim_t* ms,
+                                                         double                t,
+                                                         int64_t               step,
+                                                         int64_t               seed,
+                                                         FILE*                 fplog)
 {
     if (step < 0)
     {
-        GMX_THROW(InvalidInputError("The step number is negative which is not supported by the AWH code."));
+        GMX_THROW(InvalidInputError(
+                "The step number is negative which is not supported by the AWH code."));
     }
 
     state_.setCoordValue(grid_, coordValue);
 
-    std::vector < double, AlignedAllocator < double>> &probWeightNeighbor = alignedTempWorkSpace_;
+    std::vector<double, AlignedAllocator<double>>& probWeightNeighbor = alignedTempWorkSpace_;
 
     /* If the convolved force is needed or this is a sampling step,
      * the bias in the current neighborhood needs to be up-to-date
@@ -137,7 +136,8 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
             state_.doSkippedUpdatesInNeighborhood(params_, grid_);
         }
 
-        convolvedBias = state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid_, &probWeightNeighbor);
+        convolvedBias =
+                state_.updateProbabilityWeightsAndConvolvedBias(dimParams_, grid_, &probWeightNeighbor);
 
         if (sampleCoord)
         {
@@ -147,7 +147,7 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
         }
     }
 
-    const CoordState &coordState = state_.coordState();
+    const CoordState& coordState = state_.coordState();
 
     /* Set the bias force and get the potential contribution from this bias.
      * The potential jump occurs at different times depending on how
@@ -159,18 +159,18 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     double potential;
     if (params_.convolveForce)
     {
-        state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor,
-                                  tempForce_, biasForce_);
+        state_.calcConvolvedForce(dimParams_, grid_, probWeightNeighbor, tempForce_, biasForce_);
 
-        potential = -convolvedBias*params_.invBeta;
+        potential = -convolvedBias * params_.invBeta;
     }
     else
     {
         /* Umbrella force */
         GMX_RELEASE_ASSERT(state_.points()[coordState.umbrellaGridpoint()].inTargetRegion(),
-                           "AWH bias grid point for the umbrella reference value is outside of the target region.");
-        potential =
-            state_.calcUmbrellaForceAndPotential(dimParams_, grid_, coordState.umbrellaGridpoint(), biasForce_);
+                           "AWH bias grid point for the umbrella reference value is outside of the "
+                           "target region.");
+        potential = state_.calcUmbrellaForceAndPotential(
+                dimParams_, grid_, coordState.umbrellaGridpoint(), biasForce_);
 
         /* Moving the umbrella results in a force correction and
          * a new potential. The umbrella center is sampled as often as
@@ -179,7 +179,8 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
          */
         if (moveUmbrella)
         {
-            double newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor, biasForce_, step, seed, params_.biasIndex);
+            double newPotential = state_.moveUmbrella(dimParams_, grid_, probWeightNeighbor,
+                                                      biasForce_, step, seed, params_.biasIndex);
             *potentialJump      = newPotential - potential;
         }
     }
@@ -187,16 +188,13 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
     /* Update the free energy estimates and bias and other history dependent method parameters */
     if (params_.isUpdateFreeEnergyStep(step))
     {
-        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid_,
-                                                        params_,
-                                                        commRecord, ms,
-                                                        t, step, fplog,
-                                                        &updateList_);
+        state_.updateFreeEnergyAndAddSamplesToHistogram(dimParams_, grid_, params_, commRecord, ms,
+                                                        t, step, fplog, &updateList_);
 
         if (params_.convolveForce)
         {
             /* The update results in a potential jump, so we need the new convolved potential. */
-            double newPotential = -calcConvolvedBias(coordState.coordValue())*params_.invBeta;
+            double newPotential = -calcConvolvedBias(coordState.coordValue()) * params_.invBeta;
             *potentialJump      = newPotential - potential;
         }
     }
@@ -216,10 +214,10 @@ Bias::calcForceAndUpdateBias(const awh_dvec        coordValue,
  * \param[in] pointState  The state of the points in a bias.
  * \returns the total sample count.
  */
-static int64_t countSamples(const std::vector<PointState> &pointState)
+static int64_t countSamples(const std::vector<PointState>& pointState)
 {
     double numSamples = 0;
-    for (const PointState &point : pointState)
+    for (const PointState& point : pointState)
     {
         numSamples += point.weightSumTot();
     }
@@ -235,20 +233,20 @@ static int64_t countSamples(const std::vector<PointState> &pointState)
  * \param[in] params  The parameters of the bias.
  * \param[in] state   The state of the bias.
  */
-static void ensureStateAndRunConsistency(const BiasParams &params,
-                                         const BiasState  &state)
+static void ensureStateAndRunConsistency(const BiasParams& params, const BiasState& state)
 {
-    int64_t numSamples            = countSamples(state.points());
-    int64_t numUpdatesFromSamples = numSamples/(params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate);
-    int64_t numUpdatesExpected    = state.histogramSize().numUpdates();
+    int64_t numSamples = countSamples(state.points());
+    int64_t numUpdatesFromSamples =
+            numSamples / (params.numSamplesUpdateFreeEnergy_ * params.numSharedUpdate);
+    int64_t numUpdatesExpected = state.histogramSize().numUpdates();
     if (numUpdatesFromSamples != numUpdatesExpected)
     {
-        std::string mesg = gmx::formatString("The number of AWH updates in the checkpoint file (%" PRId64 ") does not match the total number of AWH samples divided by the number of samples per update for %d sharing AWH bias(es) (%" PRId64 "/%d=%" PRId64 ")",
-                                             numUpdatesExpected,
-                                             params.numSharedUpdate,
-                                             numSamples,
-                                             params.numSamplesUpdateFreeEnergy_*params.numSharedUpdate,
-                                             numUpdatesFromSamples);
+        std::string mesg = gmx::formatString(
+                "The number of AWH updates in the checkpoint file (%" PRId64
+                ") does not match the total number of AWH samples divided by the number of samples "
+                "per update for %d sharing AWH bias(es) (%" PRId64 "/%d=%" PRId64 ")",
+                numUpdatesExpected, params.numSharedUpdate, numSamples,
+                params.numSamplesUpdateFreeEnergy_ * params.numSharedUpdate, numUpdatesFromSamples);
         mesg += " Maybe you changed AWH parameters.";
         /* Unfortunately we currently do not store the number of simulations
          * sharing the bias or the state to checkpoint. But we can hint at
@@ -256,22 +254,24 @@ static void ensureStateAndRunConsistency(const BiasParams &params,
          */
         if (numUpdatesFromSamples % state.histogramSize().numUpdates() == 0)
         {
-            mesg += gmx::formatString(" Or the run you continued from used %" PRId64 " sharing simulations, whereas you now specified %d sharing simulations.",
-                                      numUpdatesFromSamples/state.histogramSize().numUpdates(),
-                                      params.numSharedUpdate);
+            mesg += gmx::formatString(
+                    " Or the run you continued from used %" PRId64
+                    " sharing simulations, whereas you now specified %d sharing simulations.",
+                    numUpdatesFromSamples / state.histogramSize().numUpdates(), params.numSharedUpdate);
         }
         GMX_THROW(InvalidInputError(mesg));
     }
 }
 
-void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
-                                   const t_commrec      *cr)
+void Bias::restoreStateFromHistory(const AwhBiasHistory* biasHistory, const t_commrec* cr)
 {
-    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MASTER(cr), "The master rank should do I/O, the other ranks should not");
+    GMX_RELEASE_ASSERT(thisRankDoesIO_ == MASTER(cr),
+                       "The master rank should do I/O, the other ranks should not");
 
     if (MASTER(cr))
     {
-        GMX_RELEASE_ASSERT(biasHistory != nullptr, "On the master rank we need a valid history object to restore from");
+        GMX_RELEASE_ASSERT(biasHistory != nullptr,
+                           "On the master rank we need a valid history object to restore from");
         state_.restoreFromHistory(*biasHistory, grid_);
 
         /* Ensure that the state is consistent with our current run setup,
@@ -292,7 +292,7 @@ void Bias::restoreStateFromHistory(const AwhBiasHistory *biasHistory,
     }
 }
 
-void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
+void Bias::initHistoryFromState(AwhBiasHistory* biasHistory) const
 {
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
@@ -304,7 +304,7 @@ void Bias::initHistoryFromState(AwhBiasHistory *biasHistory) const
     }
 }
 
-void Bias::updateHistory(AwhBiasHistory *biasHistory) const
+void Bias::updateHistory(AwhBiasHistory* biasHistory) const
 {
     GMX_RELEASE_ASSERT(biasHistory != nullptr, "Need a valid biasHistory");
 
@@ -316,19 +316,27 @@ void Bias::updateHistory(AwhBiasHistory *biasHistory) const
     }
 }
 
-Bias::Bias(int                             biasIndexInCollection,
-           const AwhParams                &awhParams,
-           const AwhBiasParams            &awhBiasParams,
-           const std::vector<DimParams>   &dimParamsInit,
-           double                          beta,
-           double                          mdTimeStep,
-           int                             numSharingSimulations,
-           const std::string              &biasInitFilename,
-           ThisRankWillDoIO                thisRankWillDoIO,
-           BiasParams::DisableUpdateSkips  disableUpdateSkips) :
+Bias::Bias(int                            biasIndexInCollection,
+           const AwhParams&               awhParams,
+           const AwhBiasParams&           awhBiasParams,
+           const std::vector<DimParams>&  dimParamsInit,
+           double                         beta,
+           double                         mdTimeStep,
+           int                            numSharingSimulations,
+           const std::string&             biasInitFilename,
+           ThisRankWillDoIO               thisRankWillDoIO,
+           BiasParams::DisableUpdateSkips disableUpdateSkips) :
     dimParams_(dimParamsInit),
     grid_(dimParamsInit, awhBiasParams.dimParams),
-    params_(awhParams, awhBiasParams, dimParams_, beta, mdTimeStep, disableUpdateSkips, numSharingSimulations, grid_.axis(), biasIndexInCollection),
+    params_(awhParams,
+            awhBiasParams,
+            dimParams_,
+            beta,
+            mdTimeStep,
+            disableUpdateSkips,
+            numSharingSimulations,
+            grid_.axis(),
+            biasIndexInCollection),
     state_(awhBiasParams, params_.initialHistogramSize, dimParams_, grid_),
     thisRankDoesIO_(thisRankWillDoIO == ThisRankWillDoIO::Yes),
     biasForce_(ndim()),
@@ -350,42 +358,41 @@ Bias::Bias(int                             biasIndexInCollection,
          */
         double blockLength = 0;
         /* Construct the force correlation object. */
-        forceCorrelationGrid_ =
-            std::make_unique<CorrelationGrid>(state_.points().size(), ndim(),
-                                              blockLength, CorrelationGrid::BlockLengthMeasure::Time,
-                                              awhParams.nstSampleCoord*mdTimeStep);
+        forceCorrelationGrid_ = std::make_unique<CorrelationGrid>(
+                state_.points().size(), ndim(), blockLength,
+                CorrelationGrid::BlockLengthMeasure::Time, awhParams.nstSampleCoord * mdTimeStep);
 
         writer_ = std::make_unique<BiasWriter>(*this);
     }
 }
 
-void Bias::printInitializationToLog(FILE *fplog) const
+void Bias::printInitializationToLog(FILE* fplog) const
 {
     if (fplog != nullptr && forceCorrelationGrid_ != nullptr)
     {
-        std::string prefix =
-            gmx::formatString("\nawh%d:", params_.biasIndex + 1);
+        std::string prefix = gmx::formatString("\nawh%d:", params_.biasIndex + 1);
 
         fprintf(fplog,
                 "%s initial force correlation block length = %g %s"
                 "%s force correlation number of blocks = %d",
                 prefix.c_str(), forceCorrelationGrid().getBlockLength(),
-                forceCorrelationGrid().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight ? "" : "ps",
+                forceCorrelationGrid().blockLengthMeasure == CorrelationGrid::BlockLengthMeasure::Weight
+                        ? ""
+                        : "ps",
                 prefix.c_str(), forceCorrelationGrid().getNumBlocks());
     }
 }
 
-void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeighbor,
-                                      double                      t)
+void Bias::updateForceCorrelationGrid(gmx::ArrayRef<const double> probWeightNeighbor, double t)
 {
     if (forceCorrelationGrid_ == nullptr)
     {
         return;
     }
 
-    const std::vector<int> &neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
+    const std::vector<int>& neighbor = grid_.point(state_.coordState().gridpointIndex()).neighbor;
 
-    gmx::ArrayRef<double>   forceFromNeighbor = tempForce_;
+    gmx::ArrayRef<double> forceFromNeighbor = tempForce_;
     for (size_t n = 0; n < neighbor.size(); n++)
     {
         double weightNeighbor = probWeightNeighbor[n];
@@ -412,7 +419,7 @@ int Bias::numEnergySubblocksToWrite() const
 }
 
 /* Write bias data blocks to energy subblocks. */
-int Bias::writeToEnergySubblocks(t_enxsubblock *subblock) const
+int Bias::writeToEnergySubblocks(t_enxsubblock* subblock) const
 {
     GMX_RELEASE_ASSERT(writer_ != nullptr, "Should only request data from an initialized writer");
 

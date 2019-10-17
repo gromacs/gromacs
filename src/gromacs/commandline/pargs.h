@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,7 +59,15 @@ struct gmx_output_env_t;
 /** Command line argument type. */
 enum
 {
-    etINT, etINT64, etREAL, etTIME, etSTR, etBOOL, etRVEC, etENUM, etNR
+    etINT,
+    etINT64,
+    etREAL,
+    etTIME,
+    etSTR,
+    etBOOL,
+    etRVEC,
+    etENUM,
+    etNR
 };
 
 /*! \brief
@@ -70,11 +78,11 @@ enum
 typedef struct
 {
     /** Name of the argument (with leading dash included). */
-    const char *option;
+    const char* option;
     /** Whether the argument is set (should be initialized to `FALSE`). */
-    gmx_bool    bSet;
+    gmx_bool bSet;
     /** Type of the argument (one of the enums in pargs.h). */
-    int         type;
+    int type;
     /*! \brief
      * Pointer to variable that is to receive the value.
      *
@@ -83,20 +91,19 @@ typedef struct
      * changed.  In other words, the initial value for the variable defines the
      * default value.
      */
-    union
-    {
+    union {
         /*! \brief
          * Generic pointer for operations that do not need type information.
          *
          * Needs to be the first member to use initialized arrays.
          */
-        void            *v;
+        void* v;
         /** Integer value for etINT. */
-        int             *i;
+        int* i;
         /** Integer value for etINT64. */
-        int64_t         *is;
+        int64_t* is;
         /** Real value for etREAL and etTIME. */
-        real            *r;
+        real* r;
         /*! \brief
          * String value for etSTR and etENUM.
          *
@@ -110,19 +117,19 @@ typedef struct
          * value.  After the arguments are parsed, the first element in the array
          * points to the selected enum value (pointers will be equal).
          */
-        const char     **c;
+        const char** c;
         /** Boolean value for etBOOL. */
-        gmx_bool        *b;
+        gmx_bool* b;
         /** Vector value for etRVEC. */
-        rvec            *rv;
-    }           u;
+        rvec* rv;
+    } u;
     /*! \brief
      * Description for the argument.
      *
      * If the string starts with `HIDDEN`, then the argument is hidden from
      * normal help listing and shell completions.
      */
-    const char *desc;
+    const char* desc;
 } t_pargs;
 
 /*! \brief
@@ -136,7 +143,7 @@ typedef struct
  * Note that the return value starts at one instead of zero: if the first enum
  * value is selected, this returns 1.
  */
-int nenum(const char *const enumc[]);
+int nenum(const char* const enumc[]);
 
 /*! \brief
  * Returns value of an etINT option.
@@ -148,7 +155,7 @@ int nenum(const char *const enumc[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-int opt2parg_int(const char *option, int nparg, t_pargs pa[]);
+int opt2parg_int(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns value of an etBOOL option.
@@ -160,7 +167,7 @@ int opt2parg_int(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-gmx_bool opt2parg_bool(const char *option, int nparg, t_pargs pa[]);
+gmx_bool opt2parg_bool(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns value of an etREAL/etTIME option.
@@ -172,7 +179,7 @@ gmx_bool opt2parg_bool(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-real opt2parg_real(const char *option, int nparg, t_pargs pa[]);
+real opt2parg_real(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns value of an etSTR option.
@@ -184,7 +191,7 @@ real opt2parg_real(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-const char *opt2parg_str(const char *option, int nparg, t_pargs pa[]);
+const char* opt2parg_str(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns value of an etENUM option.
@@ -196,7 +203,7 @@ const char *opt2parg_str(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa of the correct type.
  */
-const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
+const char* opt2parg_enum(const char* option, int nparg, t_pargs pa[]);
 
 /*! \brief
  * Returns whether an argument has been set.
@@ -208,27 +215,27 @@ const char *opt2parg_enum(const char *option, int nparg, t_pargs pa[]);
  *
  * \p option must specify a valid argument in \p pa.
  */
-gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa);
+gmx_bool opt2parg_bSet(const char* option, int nparg, const t_pargs* pa);
 
 
 /** Add option -w to view output files (must be implemented in program). */
-#define PCA_CAN_VIEW       (1<<5)
+#define PCA_CAN_VIEW (1 << 5)
 /** Add option to set begin time for trajectory reading. */
-#define PCA_CAN_BEGIN      (1<<6)
+#define PCA_CAN_BEGIN (1 << 6)
 /** Add option to set end time for trajectory reading. */
-#define PCA_CAN_END        (1<<7)
+#define PCA_CAN_END (1 << 7)
 /** Add option to set time step for trajectory reading. */
-#define PCA_CAN_DT         (1<<14)
+#define PCA_CAN_DT (1 << 14)
 /** Add all options for trajectory time control. */
-#define PCA_CAN_TIME       (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
+#define PCA_CAN_TIME (PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_DT)
 /** Add option -tu to set time unit for output. */
-#define PCA_TIME_UNIT      (1<<15)
+#define PCA_TIME_UNIT (1 << 15)
 /** Add option -deffnm to set default for all file options. */
-#define PCA_CAN_SET_DEFFNM (1<<10)
+#define PCA_CAN_SET_DEFFNM (1 << 10)
 /** Do not raise a fatal error when invalid options are encountered. */
-#define PCA_NOEXIT_ON_ARGS (1<<11)
+#define PCA_NOEXIT_ON_ARGS (1 << 11)
 /** Don't do any special processing for ffREAD files */
-#define PCA_DISABLE_INPUT_FILE_CHECKING (1<<17)
+#define PCA_DISABLE_INPUT_FILE_CHECKING (1 << 17)
 
 /*! \brief
  * Parse command-line arguments.
@@ -250,11 +257,18 @@ gmx_bool opt2parg_bSet(const char *option, int nparg, const t_pargs *pa);
  *
  * \see gmx_run_cmain().
  */
-gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
-                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                           int ndesc, const char **desc,
-                           int nbugs, const char **bugs,
-                           gmx_output_env_t **oenv);
+gmx_bool parse_common_args(int*               argc,
+                           char*              argv[],
+                           unsigned long      Flags,
+                           int                nfile,
+                           t_filenm           fnm[],
+                           int                npargs,
+                           t_pargs*           pa,
+                           int                ndesc,
+                           const char**       desc,
+                           int                nbugs,
+                           const char**       bugs,
+                           gmx_output_env_t** oenv);
 
 /*! \} */
 

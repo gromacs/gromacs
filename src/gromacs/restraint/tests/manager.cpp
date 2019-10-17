@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,30 +44,23 @@ namespace
 
 class DummyRestraint : public gmx::IRestraintPotential
 {
-    public:
-        ~DummyRestraint() override = default;
+public:
+    ~DummyRestraint() override = default;
 
-        gmx::PotentialPointData evaluate(gmx::Vector gmx_unused r1,
-                                         gmx::Vector gmx_unused r2,
-                                         double      gmx_unused t) override
-        {
-            return {};
-        }
+    gmx::PotentialPointData evaluate(gmx::Vector gmx_unused r1,
+                                     gmx::Vector gmx_unused r2,
+                                     double gmx_unused t) override
+    {
+        return {};
+    }
 
-        void update(gmx::Vector gmx_unused v,
-                    gmx::Vector gmx_unused v0,
-                    double      gmx_unused t) override
-        {}
+    void update(gmx::Vector gmx_unused v, gmx::Vector gmx_unused v0, double gmx_unused t) override
+    {
+    }
 
-        std::vector<int> sites() const override
-        {
-            return std::vector<int>();
-        }
+    std::vector<int> sites() const override { return std::vector<int>(); }
 
-        void bindSession(gmxapi::SessionResources *session) override
-        {
-            (void)session;
-        }
+    void bindSession(gmxapi::SessionResources* session) override { (void)session; }
 };
 
 TEST(RestraintManager, restraintList)

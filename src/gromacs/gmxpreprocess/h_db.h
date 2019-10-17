@@ -49,7 +49,7 @@ struct MoleculePatchDatabase;
 
 /* functions for the h-database */
 
-void read_ab(char *line, const char *fn, MoleculePatch *ab);
+void read_ab(char* line, const char* fn, MoleculePatch* ab);
 /* Read one add block */
 
 /*! \brief
@@ -59,9 +59,9 @@ void read_ab(char *line, const char *fn, MoleculePatch *ab);
  * \param[inout] globalPatches The database for atom modifications to populate.
  * \returns The number of modifications stored.
  */
-int read_h_db(const char *ffdir, std::vector<MoleculePatchDatabase> *globalPatches);
+int read_h_db(const char* ffdir, std::vector<MoleculePatchDatabase>* globalPatches);
 
-void print_ab(FILE *out, const MoleculePatch &ab, const char *nname);
+void print_ab(FILE* out, const MoleculePatch& ab, const char* nname);
 /* print one add block */
 
 /*! \brief
@@ -71,7 +71,7 @@ void print_ab(FILE *out, const MoleculePatch &ab, const char *nname);
  * \param[in] key Name to search for.
  */
 gmx::ArrayRef<const MoleculePatchDatabase>::iterator
-search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char *key);
+search_h_db(gmx::ArrayRef<const MoleculePatchDatabase> globalPatches, const char* key);
 /* Search for an entry in the database */
 
 #endif

@@ -73,15 +73,15 @@ namespace gmx
 
 struct settleparam_t
 {
-    real   mO;
-    real   mH;
-    real   wh;
-    real   dOH;
-    real   dHH;
-    real   ra;
-    real   rb;
-    real   rc;
-    real   irc2;
+    real mO;
+    real mH;
+    real wh;
+    real dOH;
+    real dHH;
+    real ra;
+    real rb;
+    real rc;
+    real irc2;
     /* For projection */
     real   imO;
     real   imH;
@@ -92,37 +92,36 @@ struct settleparam_t
 
 struct settledata
 {
-    settleparam_t massw;    /* Parameters for SETTLE for coordinates */
-    settleparam_t mass1;    /* Parameters with all masses 1, for forces */
+    settleparam_t massw; /* Parameters for SETTLE for coordinates */
+    settleparam_t mass1; /* Parameters with all masses 1, for forces */
 
-    int           nsettle;  /* The number of settles on our rank */
-    int          *ow1;      /* Index to OW1 atoms, size nsettle + SIMD padding */
-    int          *hw2;      /* Index to HW2 atoms, size nsettle + SIMD padding */
-    int          *hw3;      /* Index to HW3 atoms, size nsettle + SIMD padding */
-    real         *virfac;   /* Virial factor 0 or 1, size nsettle + SIMD pad. */
-    int           nalloc;   /* Allocation size of ow1, hw2, hw3, virfac */
+    int   nsettle; /* The number of settles on our rank */
+    int*  ow1;     /* Index to OW1 atoms, size nsettle + SIMD padding */
+    int*  hw2;     /* Index to HW2 atoms, size nsettle + SIMD padding */
+    int*  hw3;     /* Index to HW3 atoms, size nsettle + SIMD padding */
+    real* virfac;  /* Virial factor 0 or 1, size nsettle + SIMD pad. */
+    int   nalloc;  /* Allocation size of ow1, hw2, hw3, virfac */
 
-    bool          bUseSimd; /* Use SIMD intrinsics code, if possible */
+    bool bUseSimd; /* Use SIMD intrinsics code, if possible */
 };
 
 
 //! Initializes a projection matrix.
-static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH,
-                             matrix inverseCouplingMatrix)
+static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH, matrix inverseCouplingMatrix)
 {
     /* We normalize the inverse masses with invmO for the matrix inversion.
      * so we can keep using masses of almost zero for frozen particles,
      * without running out of the float range in invertMatrix.
      */
     double invmORelative = 1.0;
-    double invmHRelative = invmH/static_cast<double>(invmO);
-    double distanceRatio = dHH/static_cast<double>(dOH);
+    double invmHRelative = invmH / static_cast<double>(invmO);
+    double distanceRatio = dHH / static_cast<double>(dOH);
 
     /* Construct the constraint coupling matrix */
     matrix mat;
     mat[0][0] = invmORelative + invmHRelative;
-    mat[0][1] = invmORelative*(1.0 - 0.5*gmx::square(distanceRatio));
-    mat[0][2] = invmHRelative*0.5*distanceRatio;
+    mat[0][1] = invmORelative * (1.0 - 0.5 * gmx::square(distanceRatio));
+    mat[0][2] = invmHRelative * 0.5 * distanceRatio;
     mat[1][1] = mat[0][0];
     mat[1][2] = mat[0][2];
     mat[2][2] = invmHRelative + invmHRelative;
@@ -132,13 +131,11 @@ static void init_proj_matrix(real invmO, real invmH, real dOH, real dHH,
 
     invertMatrix(mat, inverseCouplingMatrix);
 
-    msmul(inverseCouplingMatrix, 1/invmO, inverseCouplingMatrix);
+    msmul(inverseCouplingMatrix, 1 / invmO, inverseCouplingMatrix);
 }
 
 //! Initializes settle parameters.
-static void settleparam_init(settleparam_t *p,
-                             real mO, real mH, real invmO, real invmH,
-                             real dOH, real dHH)
+static void settleparam_init(settleparam_t* p, real mO, real mH, real invmO, real invmH, real dOH, real dHH)
 {
     /* We calculate parameters in double precision to minimize errors.
      * The velocity correction applied during SETTLE coordinate constraining
@@ -149,45 +146,43 @@ static void settleparam_init(settleparam_t *p,
 
     p->mO     = mO;
     p->mH     = mH;
-    wohh      = mO + 2.0*mH;
-    p->wh     = mH/wohh;
+    wohh      = mO + 2.0 * mH;
+    p->wh     = mH / wohh;
     p->dOH    = dOH;
     p->dHH    = dHH;
-    double rc = dHH/2.0;
-    double ra = 2.0*mH*std::sqrt(dOH*dOH - rc*rc)/wohh;
-    p->rb     = std::sqrt(dOH*dOH - rc*rc) - ra;
+    double rc = dHH / 2.0;
+    double ra = 2.0 * mH * std::sqrt(dOH * dOH - rc * rc) / wohh;
+    p->rb     = std::sqrt(dOH * dOH - rc * rc) - ra;
     p->rc     = rc;
     p->ra     = ra;
-    p->irc2   = 1.0/dHH;
+    p->irc2   = 1.0 / dHH;
 
     /* For projection: inverse masses and coupling matrix inversion */
-    p->imO    = invmO;
-    p->imH    = invmH;
+    p->imO = invmO;
+    p->imH = invmH;
 
-    p->invdOH = 1.0/dOH;
-    p->invdHH = 1.0/dHH;
+    p->invdOH = 1.0 / dOH;
+    p->invdHH = 1.0 / dHH;
 
     init_proj_matrix(invmO, invmH, dOH, dHH, p->invmat);
 
     if (debug)
     {
-        fprintf(debug, "wh =%g, rc = %g, ra = %g\n",
-                p->wh, p->rc, p->ra);
-        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n",
-                p->rb, p->irc2, p->dHH, p->dOH);
+        fprintf(debug, "wh =%g, rc = %g, ra = %g\n", p->wh, p->rc, p->ra);
+        fprintf(debug, "rb = %g, irc2 = %g, dHH = %g, dOH = %g\n", p->rb, p->irc2, p->dHH, p->dOH);
     }
 }
 
-settledata *settle_init(const gmx_mtop_t &mtop)
+settledata* settle_init(const gmx_mtop_t& mtop)
 {
     /* Check that we have only one settle type */
-    int                    settle_type = -1;
-    gmx_mtop_ilistloop_t   iloop       = gmx_mtop_ilistloop_init(mtop);
-    int                    nmol;
-    const int              nral1       = 1 + NRAL(F_SETTLE);
-    while (const InteractionLists *ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
+    int                  settle_type = -1;
+    gmx_mtop_ilistloop_t iloop       = gmx_mtop_ilistloop_init(mtop);
+    int                  nmol;
+    const int            nral1 = 1 + NRAL(F_SETTLE);
+    while (const InteractionLists* ilists = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        const InteractionList &ilist = (*ilists)[F_SETTLE];
+        const InteractionList& ilist = (*ilists)[F_SETTLE];
         for (int i = 0; i < ilist.size(); i += nral1)
         {
             if (settle_type == -1)
@@ -197,10 +192,12 @@ settledata *settle_init(const gmx_mtop_t &mtop)
             else if (ilist.iatoms[i] != settle_type)
             {
                 gmx_fatal(FARGS,
-                          "The [molecules] section of your topology specifies more than one block of\n"
+                          "The [molecules] section of your topology specifies more than one block "
+                          "of\n"
                           "a [moleculetype] with a [settles] block. Only one such is allowed.\n"
                           "If you are trying to partition your solvent into different *groups*\n"
-                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong approach. Index\n"
+                          "(e.g. for freezing, T-coupling, etc.), you are using the wrong "
+                          "approach. Index\n"
                           "files specify groups. Otherwise, you may wish to change the least-used\n"
                           "block of molecules with SETTLE constraints into 3 normal constraints.");
             }
@@ -208,7 +205,7 @@ settledata *settle_init(const gmx_mtop_t &mtop)
     }
     GMX_RELEASE_ASSERT(settle_type >= 0, "settle_init called without settles");
 
-    settledata *settled;
+    settledata* settled;
 
     snew(settled, 1);
 
@@ -234,7 +231,7 @@ settledata *settle_init(const gmx_mtop_t &mtop)
     return settled;
 }
 
-void settle_free(settledata *settled)
+void settle_free(settledata* settled)
 {
     sfree_aligned(settled->ow1);
     sfree_aligned(settled->hw2);
@@ -243,9 +240,7 @@ void settle_free(settledata *settled)
     sfree(settled);
 }
 
-void settle_set_constraints(settledata       *settled,
-                            const t_ilist    *il_settle,
-                            const t_mdatoms  &mdatoms)
+void settle_set_constraints(settledata* settled, const t_ilist* il_settle, const t_mdatoms& mdatoms)
 {
 #if GMX_SIMD_HAVE_REAL
     const int pack_size = GMX_SIMD_REAL_WIDTH;
@@ -253,25 +248,21 @@ void settle_set_constraints(settledata       *settled,
     const int pack_size = 1;
 #endif
 
-    const int nral1     = 1 + NRAL(F_SETTLE);
-    int       nsettle   = il_settle->nr/nral1;
-    settled->nsettle = nsettle;
+    const int nral1   = 1 + NRAL(F_SETTLE);
+    int       nsettle = il_settle->nr / nral1;
+    settled->nsettle  = nsettle;
 
     if (nsettle > 0)
     {
-        const t_iatom *iatoms = il_settle->iatoms;
+        const t_iatom* iatoms = il_settle->iatoms;
 
         /* Here we initialize the normal SETTLE parameters */
         if (settled->massw.mO < 0)
         {
             int firstO = iatoms[1];
             int firstH = iatoms[2];
-            settleparam_init(&settled->massw,
-                             mdatoms.massT[firstO],
-                             mdatoms.massT[firstH],
-                             mdatoms.invmass[firstO],
-                             mdatoms.invmass[firstH],
-                             settled->mass1.dOH,
+            settleparam_init(&settled->massw, mdatoms.massT[firstO], mdatoms.massT[firstH],
+                             mdatoms.invmass[firstO], mdatoms.invmass[firstH], settled->mass1.dOH,
                              settled->mass1.dHH);
         }
 
@@ -290,20 +281,20 @@ void settle_set_constraints(settledata       *settled,
 
         for (int i = 0; i < nsettle; i++)
         {
-            settled->ow1[i]    = iatoms[i*nral1 + 1];
-            settled->hw2[i]    = iatoms[i*nral1 + 2];
-            settled->hw3[i]    = iatoms[i*nral1 + 3];
+            settled->ow1[i] = iatoms[i * nral1 + 1];
+            settled->hw2[i] = iatoms[i * nral1 + 2];
+            settled->hw3[i] = iatoms[i * nral1 + 3];
             /* We should avoid double counting of virial contributions for
              * SETTLEs that appear in multiple DD domains, so we only count
              * the contribution on the home range of the oxygen atom.
              */
-            settled->virfac[i] = (iatoms[i*nral1 + 1] < mdatoms.homenr ? 1 : 0);
+            settled->virfac[i] = (iatoms[i * nral1 + 1] < mdatoms.homenr ? 1 : 0);
         }
 
         /* Pack the index array to the full SIMD width with copies from
          * the last normal entry, but with no virial contribution.
          */
-        int end_packed = ((nsettle + pack_size - 1)/pack_size)*pack_size;
+        int end_packed = ((nsettle + pack_size - 1) / pack_size) * pack_size;
         for (int i = nsettle; i < end_packed; i++)
         {
             settled->ow1[i]    = settled->ow1[nsettle - 1];
@@ -314,19 +305,23 @@ void settle_set_constraints(settledata       *settled,
     }
 }
 
-void settle_proj(settledata *settled, ConstraintVariable econq,
-                 int nsettle, const t_iatom iatoms[],
-                 const t_pbc *pbc,
-                 const rvec x[],
-                 rvec *der, rvec *derp,
-                 int calcvir_atom_end, tensor vir_r_m_dder)
+void settle_proj(settledata*        settled,
+                 ConstraintVariable econq,
+                 int                nsettle,
+                 const t_iatom      iatoms[],
+                 const t_pbc*       pbc,
+                 const rvec         x[],
+                 rvec*              der,
+                 rvec*              derp,
+                 int                calcvir_atom_end,
+                 tensor             vir_r_m_dder)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
      * Berk Hess 2008-1-10
      */
 
-    settleparam_t *p;
+    settleparam_t* p;
     real           imO, imH, dOH, dHH, invdOH, invdHH;
     matrix         invmat;
     int            i, m, m2, ow1, hw2, hw3;
@@ -342,8 +337,8 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
     {
         p = &settled->massw;
     }
-    imO    = p->imO;
-    imH    = p->imH;
+    imO = p->imO;
+    imH = p->imH;
     copy_mat(p->invmat, invmat);
     dOH    = p->dOH;
     dHH    = p->dHH;
@@ -354,9 +349,9 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
 
     for (i = 0; i < nsettle; i++)
     {
-        ow1 = iatoms[i*nral1 + 1];
-        hw2 = iatoms[i*nral1 + 2];
-        hw3 = iatoms[i*nral1 + 3];
+        ow1 = iatoms[i * nral1 + 1];
+        hw2 = iatoms[i * nral1 + 2];
+        hw3 = iatoms[i * nral1 + 3];
 
         if (pbc == nullptr)
         {
@@ -379,9 +374,9 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
         clear_rvec(dc);
         for (m = 0; m < DIM; m++)
         {
-            dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
-            dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
-            dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
+            dc[0] += (der[ow1][m] - der[hw2][m]) * roh2[m];
+            dc[1] += (der[ow1][m] - der[hw3][m]) * roh3[m];
+            dc[2] += (der[hw2][m] - der[hw3][m]) * rhh[m];
         }
         /* 27 flops */
 
@@ -392,9 +387,9 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
         /* Subtract the corrections from derp */
         for (m = 0; m < DIM; m++)
         {
-            derp[ow1][m] -= imO*( fc[0]*roh2[m] + fc[1]*roh3[m]);
-            derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
-            derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
+            derp[ow1][m] -= imO * (fc[0] * roh2[m] + fc[1] * roh3[m]);
+            derp[hw2][m] -= imH * (-fc[0] * roh2[m] + fc[2] * rhh[m]);
+            derp[hw3][m] -= imH * (-fc[1] * roh3[m] - fc[2] * rhh[m]);
         }
 
         /* 45 flops */
@@ -409,10 +404,9 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
             {
                 for (m2 = 0; m2 < DIM; m2++)
                 {
-                    vir_r_m_dder[m][m2] +=
-                        dOH*roh2[m]*roh2[m2]*fc[0] +
-                        dOH*roh3[m]*roh3[m2]*fc[1] +
-                        dHH*rhh [m]*rhh [m2]*fc[2];
+                    vir_r_m_dder[m][m2] += dOH * roh2[m] * roh2[m2] * fc[0]
+                                           + dOH * roh3[m] * roh3[m2] * fc[1]
+                                           + dHH * rhh[m] * rhh[m2] * fc[2];
                 }
             }
         }
@@ -421,17 +415,17 @@ void settle_proj(settledata *settled, ConstraintVariable econq,
 
 
 /*! \brief The actual settle code, templated for real/SimdReal and for optimization */
-template<typename T, typename TypeBool, int packSize,
-         typename TypePbc,
-         bool bCorrectVelocity,
-         bool bCalcVirial>
-static void settleTemplate(const settledata *settled,
-                           int settleStart, int settleEnd,
-                           const TypePbc pbc,
-                           const real *x, real *xprime,
-                           real invdt, real * gmx_restrict v,
-                           tensor vir_r_m_dr,
-                           bool *bErrorHasOccurred)
+template<typename T, typename TypeBool, int packSize, typename TypePbc, bool bCorrectVelocity, bool bCalcVirial>
+static void settleTemplate(const settledata* settled,
+                           int               settleStart,
+                           int               settleEnd,
+                           const TypePbc     pbc,
+                           const real*       x,
+                           real*             xprime,
+                           real              invdt,
+                           real* gmx_restrict v,
+                           tensor             vir_r_m_dr,
+                           bool*              bErrorHasOccurred)
 {
     /* ******************************************************************* */
     /*                                                                  ** */
@@ -449,11 +443,11 @@ static void settleTemplate(const settledata *settled,
     /* ******************************************************************* */
 
     assert(settleStart % packSize == 0);
-    assert(settleEnd   % packSize == 0);
+    assert(settleEnd % packSize == 0);
 
-    TypeBool             bError = TypeBool(false);
+    TypeBool bError = TypeBool(false);
 
-    const settleparam_t *p    = &settled->massw;
+    const settleparam_t* p    = &settled->massw;
     T                    wh   = T(p->wh);
     T                    rc   = T(p->rc);
     T                    ra   = T(p->ra);
@@ -462,9 +456,9 @@ static void settleTemplate(const settledata *settled,
     T                    mO   = T(p->mO);
     T                    mH   = T(p->mH);
 
-    T                    almost_zero = T(1e-12);
+    T almost_zero = T(1e-12);
 
-    T                    sum_r_m_dr[DIM][DIM];
+    T sum_r_m_dr[DIM][DIM];
 
     if (bCalcVirial)
     {
@@ -483,11 +477,11 @@ static void settleTemplate(const settledata *settled,
          * This gives correct results, since we store (not increment) all
          * output, so we store the same output multiple times.
          */
-        const int *ow1 = settled->ow1 + i;
-        const int *hw2 = settled->hw2 + i;
-        const int *hw3 = settled->hw3 + i;
+        const int* ow1 = settled->ow1 + i;
+        const int* hw2 = settled->hw2 + i;
+        const int* hw3 = settled->hw3 + i;
 
-        T          x_ow1[DIM], x_hw2[DIM], x_hw3[DIM];
+        T x_ow1[DIM], x_hw2[DIM], x_hw3[DIM];
 
         gatherLoadUTranspose<3>(x, ow1, &x_ow1[XX], &x_ow1[YY], &x_ow1[ZZ]);
         gatherLoadUTranspose<3>(x, hw2, &x_hw2[XX], &x_hw2[YY], &x_hw2[ZZ]);
@@ -536,12 +530,12 @@ static void settleTemplate(const settledata *settled,
         T b1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            b1[d]  = xprime_hw2[d] - com[d];
+            b1[d] = xprime_hw2[d] - com[d];
         }
         T c1[DIM];
         for (int d = 0; d < DIM; d++)
         {
-            c1[d]  = xprime_hw3[d] - com[d];
+            c1[d] = xprime_hw3[d] - com[d];
         }
         /* 15 flops */
 
@@ -593,30 +587,30 @@ static void settleTemplate(const settledata *settled,
 
         T tmp, tmp2;
 
-        T sinphi = a1d_z * gmx::invsqrt(ra*ra);
+        T sinphi = a1d_z * gmx::invsqrt(ra * ra);
         tmp2     = 1.0 - sinphi * sinphi;
 
         /* If tmp2 gets close to or beyond zero we have severly distorted
          * water molecules and we should terminate the simulation.
          * Below we take the max with almost_zero to continue the loop.
          */
-        bError   = bError || (tmp2 <= almost_zero);
+        bError = bError || (tmp2 <= almost_zero);
 
         tmp2     = max(tmp2, almost_zero);
         tmp      = gmx::invsqrt(tmp2);
-        T cosphi = tmp2*tmp;
+        T cosphi = tmp2 * tmp;
         T sinpsi = (b1d[ZZ] - c1d[ZZ]) * irc2 * tmp;
         tmp2     = 1.0 - sinpsi * sinpsi;
 
-        T cospsi = tmp2*gmx::invsqrt(tmp2);
+        T cospsi = tmp2 * gmx::invsqrt(tmp2);
         /* 46 flops */
 
-        T a2d_y  =  ra * cosphi;
-        T b2d_x  = -rc * cospsi;
-        T t1     = -rb * cosphi;
-        T t2     =  rc * sinpsi * sinphi;
-        T b2d_y  =  t1 - t2;
-        T c2d_y  =  t1 + t2;
+        T a2d_y = ra * cosphi;
+        T b2d_x = -rc * cospsi;
+        T t1    = -rb * cosphi;
+        T t2    = rc * sinpsi * sinphi;
+        T b2d_y = t1 - t2;
+        T c2d_y = t1 + t2;
         /* 7 flops */
 
         /*     --- Step3  al,be,ga            --- */
@@ -625,38 +619,38 @@ static void settleTemplate(const settledata *settled,
         T gamma  = b0d[XX] * b1d[YY] - b1d[XX] * b0d[YY] + c0d[XX] * c1d[YY] - c1d[XX] * c0d[YY];
         T al2be2 = alpha * alpha + beta * beta;
         tmp2     = (al2be2 - gamma * gamma);
-        T sinthe = (alpha * gamma - beta * tmp2*gmx::invsqrt(tmp2)) * gmx::invsqrt(al2be2*al2be2);
+        T sinthe = (alpha * gamma - beta * tmp2 * gmx::invsqrt(tmp2)) * gmx::invsqrt(al2be2 * al2be2);
         /* 47 flops */
 
         /*  --- Step4  A3' --- */
         tmp2     = 1.0 - sinthe * sinthe;
-        T costhe = tmp2*gmx::invsqrt(tmp2);
+        T costhe = tmp2 * gmx::invsqrt(tmp2);
 
         T a3d[DIM], b3d[DIM], c3d[DIM];
 
-        a3d[XX]  = -a2d_y * sinthe;
-        a3d[YY]  = a2d_y * costhe;
-        a3d[ZZ]  = a1d_z;
-        b3d[XX]  = b2d_x * costhe - b2d_y * sinthe;
-        b3d[YY]  = b2d_x * sinthe + b2d_y * costhe;
-        b3d[ZZ]  = b1d[ZZ];
-        c3d[XX]  = -b2d_x * costhe - c2d_y * sinthe;
-        c3d[YY]  = -b2d_x * sinthe + c2d_y * costhe;
-        c3d[ZZ]  = c1d[ZZ];
+        a3d[XX] = -a2d_y * sinthe;
+        a3d[YY] = a2d_y * costhe;
+        a3d[ZZ] = a1d_z;
+        b3d[XX] = b2d_x * costhe - b2d_y * sinthe;
+        b3d[YY] = b2d_x * sinthe + b2d_y * costhe;
+        b3d[ZZ] = b1d[ZZ];
+        c3d[XX] = -b2d_x * costhe - c2d_y * sinthe;
+        c3d[YY] = -b2d_x * sinthe + c2d_y * costhe;
+        c3d[ZZ] = c1d[ZZ];
         /* 26 flops */
 
         /*    --- Step5  A3 --- */
         T a3[DIM], b3[DIM], c3[DIM];
 
-        a3[XX] = trns1[XX]*a3d[XX] + trns1[YY]*a3d[YY] + trns1[ZZ]*a3d[ZZ];
-        a3[YY] = trns2[XX]*a3d[XX] + trns2[YY]*a3d[YY] + trns2[ZZ]*a3d[ZZ];
-        a3[ZZ] = trns3[XX]*a3d[XX] + trns3[YY]*a3d[YY] + trns3[ZZ]*a3d[ZZ];
-        b3[XX] = trns1[XX]*b3d[XX] + trns1[YY]*b3d[YY] + trns1[ZZ]*b3d[ZZ];
-        b3[YY] = trns2[XX]*b3d[XX] + trns2[YY]*b3d[YY] + trns2[ZZ]*b3d[ZZ];
-        b3[ZZ] = trns3[XX]*b3d[XX] + trns3[YY]*b3d[YY] + trns3[ZZ]*b3d[ZZ];
-        c3[XX] = trns1[XX]*c3d[XX] + trns1[YY]*c3d[YY] + trns1[ZZ]*c3d[ZZ];
-        c3[YY] = trns2[XX]*c3d[XX] + trns2[YY]*c3d[YY] + trns2[ZZ]*c3d[ZZ];
-        c3[ZZ] = trns3[XX]*c3d[XX] + trns3[YY]*c3d[YY] + trns3[ZZ]*c3d[ZZ];
+        a3[XX] = trns1[XX] * a3d[XX] + trns1[YY] * a3d[YY] + trns1[ZZ] * a3d[ZZ];
+        a3[YY] = trns2[XX] * a3d[XX] + trns2[YY] * a3d[YY] + trns2[ZZ] * a3d[ZZ];
+        a3[ZZ] = trns3[XX] * a3d[XX] + trns3[YY] * a3d[YY] + trns3[ZZ] * a3d[ZZ];
+        b3[XX] = trns1[XX] * b3d[XX] + trns1[YY] * b3d[YY] + trns1[ZZ] * b3d[ZZ];
+        b3[YY] = trns2[XX] * b3d[XX] + trns2[YY] * b3d[YY] + trns2[ZZ] * b3d[ZZ];
+        b3[ZZ] = trns3[XX] * b3d[XX] + trns3[YY] * b3d[YY] + trns3[ZZ] * b3d[ZZ];
+        c3[XX] = trns1[XX] * c3d[XX] + trns1[YY] * c3d[YY] + trns1[ZZ] * c3d[ZZ];
+        c3[YY] = trns2[XX] * c3d[XX] + trns2[YY] * c3d[YY] + trns2[ZZ] * c3d[ZZ];
+        c3[ZZ] = trns3[XX] * c3d[XX] + trns3[YY] * c3d[YY] + trns3[ZZ] * c3d[ZZ];
         /* 45 flops */
 
         /* Compute and store the corrected new coordinate */
@@ -666,7 +660,7 @@ static void settleTemplate(const settledata *settled,
         }
         for (int d = 0; d < DIM; d++)
         {
-            xprime_hw2[d] = com[d] + b3[d] + sh_hw2[d];;
+            xprime_hw2[d] = com[d] + b3[d] + sh_hw2[d];
         }
         for (int d = 0; d < DIM; d++)
         {
@@ -727,26 +721,25 @@ static void settleTemplate(const settledata *settled,
             {
                 /* Filter out the non-local settles */
                 T filter = load<T>(settled->virfac + i);
-                T mOf    = filter*mO;
-                T mHf    = filter*mH;
+                T mOf    = filter * mO;
+                T mHf    = filter * mH;
 
                 T mdo[DIM], mdb[DIM], mdc[DIM];
 
                 for (int d = 0; d < DIM; d++)
                 {
-                    mdb[d] = mHf*db[d];
-                    mdc[d] = mHf*dc[d];
-                    mdo[d] = mOf*da[d] + mdb[d] + mdc[d];
+                    mdb[d] = mHf * db[d];
+                    mdc[d] = mHf * dc[d];
+                    mdo[d] = mOf * da[d] + mdb[d] + mdc[d];
                 }
 
                 for (int d2 = 0; d2 < DIM; d2++)
                 {
                     for (int d = 0; d < DIM; d++)
                     {
-                        sum_r_m_dr[d2][d] = sum_r_m_dr[d2][d] -
-                            (x_ow1[d2]*mdo[d] +
-                             dist21[d2]*mdb[d] +
-                             dist31[d2]*mdc[d]);
+                        sum_r_m_dr[d2][d] =
+                                sum_r_m_dr[d2][d]
+                                - (x_ow1[d2] * mdo[d] + dist21[d2] * mdb[d] + dist31[d2] * mdc[d]);
                     }
                 }
                 /* 71 flops */
@@ -772,111 +765,81 @@ static void settleTemplate(const settledata *settled,
  * and instantiates the core template with instantiated booleans.
  */
 template<typename T, typename TypeBool, int packSize, typename TypePbc>
-static void settleTemplateWrapper(settledata *settled,
-                                  int nthread, int thread,
-                                  TypePbc pbc,
-                                  const real x[], real xprime[],
-                                  real invdt, real *v,
-                                  bool bCalcVirial, tensor vir_r_m_dr,
-                                  bool *bErrorHasOccurred)
+static void settleTemplateWrapper(settledata* settled,
+                                  int         nthread,
+                                  int         thread,
+                                  TypePbc     pbc,
+                                  const real  x[],
+                                  real        xprime[],
+                                  real        invdt,
+                                  real*       v,
+                                  bool        bCalcVirial,
+                                  tensor      vir_r_m_dr,
+                                  bool*       bErrorHasOccurred)
 {
     /* We need to assign settles to threads in groups of pack_size */
-    int numSettlePacks = (settled->nsettle + packSize - 1)/packSize;
+    int numSettlePacks = (settled->nsettle + packSize - 1) / packSize;
     /* Round the end value up to give thread 0 more work */
-    int settleStart    = ((numSettlePacks* thread      + nthread - 1)/nthread)*packSize;
-    int settleEnd      = ((numSettlePacks*(thread + 1) + nthread - 1)/nthread)*packSize;
+    int settleStart = ((numSettlePacks * thread + nthread - 1) / nthread) * packSize;
+    int settleEnd   = ((numSettlePacks * (thread + 1) + nthread - 1) / nthread) * packSize;
 
     if (v != nullptr)
     {
         if (!bCalcVirial)
         {
-            settleTemplate<T, TypeBool, packSize,
-                           TypePbc,
-                           true,
-                           false>
-                (settled, settleStart, settleEnd,
-                pbc,
-                x, xprime,
-                invdt, v,
-                nullptr,
-                bErrorHasOccurred);
+            settleTemplate<T, TypeBool, packSize, TypePbc, true, false>(
+                    settled, settleStart, settleEnd, pbc, x, xprime, invdt, v, nullptr, bErrorHasOccurred);
         }
         else
         {
-            settleTemplate<T, TypeBool, packSize,
-                           TypePbc,
-                           true,
-                           true>
-                (settled, settleStart, settleEnd,
-                pbc,
-                x, xprime,
-                invdt, v,
-                vir_r_m_dr,
-                bErrorHasOccurred);
+            settleTemplate<T, TypeBool, packSize, TypePbc, true, true>(
+                    settled, settleStart, settleEnd, pbc, x, xprime, invdt, v, vir_r_m_dr, bErrorHasOccurred);
         }
     }
     else
     {
         if (!bCalcVirial)
         {
-            settleTemplate<T, TypeBool, packSize,
-                           TypePbc,
-                           false,
-                           false>
-                (settled, settleStart, settleEnd,
-                pbc,
-                x, xprime,
-                invdt, v,
-                nullptr,
-                bErrorHasOccurred);
+            settleTemplate<T, TypeBool, packSize, TypePbc, false, false>(
+                    settled, settleStart, settleEnd, pbc, x, xprime, invdt, v, nullptr, bErrorHasOccurred);
         }
         else
         {
-            settleTemplate<T, TypeBool, packSize,
-                           TypePbc,
-                           false,
-                           true>
-                (settled, settleStart, settleEnd,
-                pbc,
-                x, xprime,
-                invdt, v,
-                vir_r_m_dr,
-                bErrorHasOccurred);
+            settleTemplate<T, TypeBool, packSize, TypePbc, false, true>(
+                    settled, settleStart, settleEnd, pbc, x, xprime, invdt, v, vir_r_m_dr, bErrorHasOccurred);
         }
     }
 }
 
-void csettle(settledata *settled,
-             int nthread, int thread,
-             const t_pbc *pbc,
-             const real x[], real xprime[],
-             real invdt, real *v,
-             bool bCalcVirial, tensor vir_r_m_dr,
-             bool *bErrorHasOccurred)
+void csettle(settledata*  settled,
+             int          nthread,
+             int          thread,
+             const t_pbc* pbc,
+             const real   x[],
+             real         xprime[],
+             real         invdt,
+             real*        v,
+             bool         bCalcVirial,
+             tensor       vir_r_m_dr,
+             bool*        bErrorHasOccurred)
 {
 #if GMX_SIMD_HAVE_REAL
     if (settled->bUseSimd)
     {
         /* Convert the pbc struct for SIMD */
-        alignas(GMX_SIMD_ALIGNMENT) real    pbcSimd[9*GMX_SIMD_REAL_WIDTH];
+        alignas(GMX_SIMD_ALIGNMENT) real pbcSimd[9 * GMX_SIMD_REAL_WIDTH];
         set_pbc_simd(pbc, pbcSimd);
 
-        settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH,
-                              const real *>(settled,
-                                            nthread, thread,
-                                            pbcSimd,
-                                            x, xprime,
-                                            invdt,
-                                            v,
-                                            bCalcVirial, vir_r_m_dr,
-                                            bErrorHasOccurred);
+        settleTemplateWrapper<SimdReal, SimdBool, GMX_SIMD_REAL_WIDTH, const real*>(
+                settled, nthread, thread, pbcSimd, x, xprime, invdt, v, bCalcVirial, vir_r_m_dr,
+                bErrorHasOccurred);
     }
     else
 #endif
     {
         /* This construct is needed because pbc_dx_aiuc doesn't accept pbc=NULL */
         t_pbc        pbcNo;
-        const t_pbc *pbcNonNull;
+        const t_pbc* pbcNonNull;
 
         if (pbc != nullptr)
         {
@@ -888,16 +851,10 @@ void csettle(settledata *settled,
             pbcNonNull = &pbcNo;
         }
 
-        settleTemplateWrapper<real, bool, 1,
-                              const t_pbc *>(settled,
-                                             nthread, thread,
-                                             pbcNonNull,
-                                             x, xprime,
-                                             invdt,
-                                             v,
-                                             bCalcVirial, vir_r_m_dr,
-                                             bErrorHasOccurred);
+        settleTemplateWrapper<real, bool, 1, const t_pbc*>(settled, nthread, thread, pbcNonNull, x,
+                                                           xprime, invdt, v, bCalcVirial,
+                                                           vir_r_m_dr, bErrorHasOccurred);
     }
 }
 
-}  // namespace gmx
+} // namespace gmx

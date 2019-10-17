@@ -66,15 +66,16 @@ namespace gmx
  * to declare makeConstraints() as a template friend function. */
 struct Constraints::CreationHelper : public Constraints
 {
-    public:
-        /*! \brief Constructor that can call the private constructor
-         * of Constraints.
-         *
-         * The parameter pack insulates this helper type from changes
-         * to the arguments to the constructor. */
-        template<typename ... Args>
-        CreationHelper(Args && ... args)
-            : Constraints(std::forward<Args>(args) ...) {}
+public:
+    /*! \brief Constructor that can call the private constructor
+     * of Constraints.
+     *
+     * The parameter pack insulates this helper type from changes
+     * to the arguments to the constructor. */
+    template<typename... Args>
+    CreationHelper(Args&&... args) : Constraints(std::forward<Args>(args)...)
+    {
+    }
 };
 
 /*! \brief Factory function for Constraints.
@@ -93,29 +94,28 @@ struct Constraints::CreationHelper : public Constraints
  * Using the parameter pack insulates the factory function from
  * changes to the type signature of the constructor that don't
  * affect the logic here. */
-template<typename ... Args>
-std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t &mtop,
-                                             const t_inputrec &ir,
-                                             pull_t           *pull_work,
+template<typename... Args>
+std::unique_ptr<Constraints> makeConstraints(const gmx_mtop_t& mtop,
+                                             const t_inputrec& ir,
+                                             pull_t*           pull_work,
                                              bool              doEssentialDynamics,
-                                             Args && ...       args)
+                                             Args&&... args)
 {
-    int numConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) +
-                          gmx_mtop_ftype_count(mtop, F_CONSTRNC));
+    int numConstraints = (gmx_mtop_ftype_count(mtop, F_CONSTR) + gmx_mtop_ftype_count(mtop, F_CONSTRNC));
     int numSettles = gmx_mtop_ftype_count(mtop, F_SETTLE);
     GMX_RELEASE_ASSERT(!ir.bPull || pull_work != nullptr,
-                       "When COM pulling is active, it must be initialized before constraints are initialized");
+                       "When COM pulling is active, it must be initialized before constraints are "
+                       "initialized");
     bool doPullingWithConstraints = ir.bPull && pull_have_constraint(pull_work);
-    if (numConstraints + numSettles == 0 &&
-        !doPullingWithConstraints && !doEssentialDynamics)
+    if (numConstraints + numSettles == 0 && !doPullingWithConstraints && !doEssentialDynamics)
     {
         // No work, so don't make a Constraints object.
         return nullptr;
     }
-    return std::make_unique<Constraints::CreationHelper>
-               (mtop, ir, pull_work, std::forward<Args>(args) ..., numConstraints, numSettles);
+    return std::make_unique<Constraints::CreationHelper>(
+            mtop, ir, pull_work, std::forward<Args>(args)..., numConstraints, numSettles);
 }
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

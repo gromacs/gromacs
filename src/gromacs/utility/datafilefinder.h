@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,49 +75,50 @@ class DataFileFinder;
  */
 class DataFileOptions
 {
-    public:
-        /*! \brief
-         * Constructs default options for searching for a file with the
-         * specified name.
-         *
-         * \param[in] filename  File name to search for.
-         *
-         * This constructor is not explicit to allow passing a simple string to
-         * DataFileFinder methods to search for the string with the default
-         * parameters.
-         */
-        DataFileOptions(const char *filename)
-            : filename_(filename), bCurrentDir_(true), bThrow_(true)
-        {
-        }
-        //! \copydoc DataFileOptions(const char *)
-        DataFileOptions(const std::string &filename)
-            : filename_(filename.c_str()), bCurrentDir_(true), bThrow_(true)
-        {
-        }
+public:
+    /*! \brief
+     * Constructs default options for searching for a file with the
+     * specified name.
+     *
+     * \param[in] filename  File name to search for.
+     *
+     * This constructor is not explicit to allow passing a simple string to
+     * DataFileFinder methods to search for the string with the default
+     * parameters.
+     */
+    DataFileOptions(const char* filename) : filename_(filename), bCurrentDir_(true), bThrow_(true)
+    {
+    }
+    //! \copydoc DataFileOptions(const char *)
+    DataFileOptions(const std::string& filename) :
+        filename_(filename.c_str()),
+        bCurrentDir_(true),
+        bThrow_(true)
+    {
+    }
 
-        //! Sets whether to search first in the current (working) directory.
-        DataFileOptions &includeCurrentDir(bool bInclude)
-        {
-            bCurrentDir_ = bInclude;
-            return *this;
-        }
-        //! Sets whether an exception is thrown if the file could not be found.
-        DataFileOptions &throwIfNotFound(bool bThrow)
-        {
-            bThrow_ = bThrow;
-            return *this;
-        }
+    //! Sets whether to search first in the current (working) directory.
+    DataFileOptions& includeCurrentDir(bool bInclude)
+    {
+        bCurrentDir_ = bInclude;
+        return *this;
+    }
+    //! Sets whether an exception is thrown if the file could not be found.
+    DataFileOptions& throwIfNotFound(bool bThrow)
+    {
+        bThrow_ = bThrow;
+        return *this;
+    }
 
-    private:
-        const char *filename_;
-        bool        bCurrentDir_;
-        bool        bThrow_;
+private:
+    const char* filename_;
+    bool        bCurrentDir_;
+    bool        bThrow_;
 
-        /*! \brief
-         * Needed to access the members without otherwise unnecessary accessors.
-         */
-        friend class DataFileFinder;
+    /*! \brief
+     * Needed to access the members without otherwise unnecessary accessors.
+     */
+    friend class DataFileFinder;
 };
 
 /*! \brief
@@ -129,8 +130,10 @@ class DataFileOptions
 struct DataFileInfo
 {
     //! Initializes the structure with given values.
-    DataFileInfo(const std::string &dir, const std::string &name, bool bDefault)
-        : dir(dir), name(name), bFromDefaultDir(bDefault)
+    DataFileInfo(const std::string& dir, const std::string& name, bool bDefault) :
+        dir(dir),
+        name(name),
+        bFromDefaultDir(bDefault)
     {
     }
 
@@ -156,7 +159,7 @@ struct DataFileInfo
      * Consider replacing with an enum that identifies the source (current dir,
      * GMXLIB, default).
      */
-    bool        bFromDefaultDir;
+    bool bFromDefaultDir;
 };
 
 /*! \brief
@@ -167,91 +170,91 @@ struct DataFileInfo
  */
 class DataFileFinder
 {
-    public:
-        /*! \brief
-         * Constructs a default data file finder.
-         *
-         * The constructed finder searches only in the directory specified by
-         * the global program context (see IProgramContext), and
-         * optionally in the current directory.
-         *
-         * Does not throw.
-         */
-        DataFileFinder();
-        ~DataFileFinder();
+public:
+    /*! \brief
+     * Constructs a default data file finder.
+     *
+     * The constructed finder searches only in the directory specified by
+     * the global program context (see IProgramContext), and
+     * optionally in the current directory.
+     *
+     * Does not throw.
+     */
+    DataFileFinder();
+    ~DataFileFinder();
 
-        /*! \brief
-         * Adds search path from an environment variable.
-         *
-         * \param[in] envVarName  Name of the environment variable to use.
-         * \throws std::bad_alloc if out of memory.
-         *
-         * If the specified environment variable is set, it is interpreted like
-         * a `PATH` environment variable on the platform (split at appropriate
-         * separators), and each path found is added to the search path this
-         * finder searches.  The added paths take precedence over the default
-         * directory specified by the global program context, but the current
-         * directory is searched first.
-         */
-        void setSearchPathFromEnv(const char *envVarName);
+    /*! \brief
+     * Adds search path from an environment variable.
+     *
+     * \param[in] envVarName  Name of the environment variable to use.
+     * \throws std::bad_alloc if out of memory.
+     *
+     * If the specified environment variable is set, it is interpreted like
+     * a `PATH` environment variable on the platform (split at appropriate
+     * separators), and each path found is added to the search path this
+     * finder searches.  The added paths take precedence over the default
+     * directory specified by the global program context, but the current
+     * directory is searched first.
+     */
+    void setSearchPathFromEnv(const char* envVarName);
 
-        /*! \brief
-         * Opens a data file (if found) in an RAII-style `FILE` handle.
-         *
-         * \param[in] options  Identifies the file to be searched for.
-         * \returns The opened file handle, or `NULL` if the file could not be
-         *     found and exceptions were turned off.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError if
-         *   - no such file can be found, and \p options specifies that an
-         *     exception should be thrown, or
-         *   - there is an error opening the file (note that a file is skipped
-         *     during the search if the user does not have rights to open the
-         *     file at all).
-         *
-         * See findFile() for more details.
-         */
-        FilePtr openFile(const DataFileOptions &options) const;
-        /*! \brief
-         * Finds a full path to a data file if found.
-         *
-         * \param[in] options  Identifies the file to be searched for.
-         * \returns Full path to the data file, or an empty string if the file
-         *     could not be found and exceptions were turned off.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError if no such file can be found, and \p options
-         *     specifies that an exception should be thrown.
-         *
-         * Searches for a data file in the search paths configured for the
-         * finder, as well as in the current directory if so required.
-         * Returns the full path to the first file found.
-         */
-        std::string findFile(const DataFileOptions &options) const;
-        /*! \brief
-         * Enumerates files in the data directories.
-         *
-         * \param[in] options  Idenfies files to be searched for.
-         * \returns Information about each found file.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  FileIOError if no such file can be found, and \p options
-         *     specifies that an exception should be thrown.
-         *
-         * Enumerates all files in the data directories that have the
-         * extension/suffix specified by the file name in \p options.
-         * Unlike findFile() and openFile(), this only works on files that are
-         * in the actual data directories, not for any entry within
-         * subdirectories of those.
-         * See DataFileInfo for details on what is returned for each found
-         * file.
-         * Files from the same directory will be returned as a continuous block
-         * in the returned vector.
-         */
-        std::vector<DataFileInfo> enumerateFiles(const DataFileOptions &options) const;
+    /*! \brief
+     * Opens a data file (if found) in an RAII-style `FILE` handle.
+     *
+     * \param[in] options  Identifies the file to be searched for.
+     * \returns The opened file handle, or `NULL` if the file could not be
+     *     found and exceptions were turned off.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  FileIOError if
+     *   - no such file can be found, and \p options specifies that an
+     *     exception should be thrown, or
+     *   - there is an error opening the file (note that a file is skipped
+     *     during the search if the user does not have rights to open the
+     *     file at all).
+     *
+     * See findFile() for more details.
+     */
+    FilePtr openFile(const DataFileOptions& options) const;
+    /*! \brief
+     * Finds a full path to a data file if found.
+     *
+     * \param[in] options  Identifies the file to be searched for.
+     * \returns Full path to the data file, or an empty string if the file
+     *     could not be found and exceptions were turned off.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  FileIOError if no such file can be found, and \p options
+     *     specifies that an exception should be thrown.
+     *
+     * Searches for a data file in the search paths configured for the
+     * finder, as well as in the current directory if so required.
+     * Returns the full path to the first file found.
+     */
+    std::string findFile(const DataFileOptions& options) const;
+    /*! \brief
+     * Enumerates files in the data directories.
+     *
+     * \param[in] options  Idenfies files to be searched for.
+     * \returns Information about each found file.
+     * \throws  std::bad_alloc if out of memory.
+     * \throws  FileIOError if no such file can be found, and \p options
+     *     specifies that an exception should be thrown.
+     *
+     * Enumerates all files in the data directories that have the
+     * extension/suffix specified by the file name in \p options.
+     * Unlike findFile() and openFile(), this only works on files that are
+     * in the actual data directories, not for any entry within
+     * subdirectories of those.
+     * See DataFileInfo for details on what is returned for each found
+     * file.
+     * Files from the same directory will be returned as a continuous block
+     * in the returned vector.
+     */
+    std::vector<DataFileInfo> enumerateFiles(const DataFileOptions& options) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

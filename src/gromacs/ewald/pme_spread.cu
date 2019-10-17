@@ -59,28 +59,28 @@
  * Optional second stage of the spline_and_spread_kernel.
  *
  * \tparam[in] order                PME interpolation order.
- * \tparam[in] wrapX                A boolean which tells if the grid overlap in dimension X should be wrapped.
- * \tparam[in] wrapY                A boolean which tells if the grid overlap in dimension Y should be wrapped.
- * \tparam[in] useOrderThreads      A boolean which Tells if we should use order threads per atom (order*order used if false)
- * \param[in]  kernelParams         Input PME CUDA data in constant memory.
- * \param[in]  atomIndexOffset      Starting atom index for the execution block w.r.t. global memory.
- * \param[in]  atomCharge           Atom charge/coefficient of atom processed by thread.
- * \param[in]  sm_gridlineIndices   Atom gridline indices in the shared memory.
- * \param[in]  sm_theta             Atom spline values in the shared memory.
+ * \tparam[in] wrapX                A boolean which tells if the grid overlap in dimension X should
+ * be wrapped. \tparam[in] wrapY                A boolean which tells if the grid overlap in
+ * dimension Y should be wrapped. \tparam[in] useOrderThreads      A boolean which Tells if we
+ * should use order threads per atom (order*order used if false) \param[in]  kernelParams Input PME
+ * CUDA data in constant memory. \param[in]  atomIndexOffset      Starting atom index for the
+ * execution block w.r.t. global memory. \param[in]  atomCharge           Atom charge/coefficient of
+ * atom processed by thread. \param[in]  sm_gridlineIndices   Atom gridline indices in the shared
+ * memory. \param[in]  sm_theta             Atom spline values in the shared memory.
  */
-template <
-    const int order, const bool wrapX, const bool wrapY,  const bool useOrderThreads >
-__device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams           kernelParams,
-                                               int                                    atomIndexOffset,
-                                               const float *                          atomCharge,
-                                               const int * __restrict__               sm_gridlineIndices,
-                                               const float * __restrict__             sm_theta)
+template<const int order, const bool wrapX, const bool wrapY, const bool useOrderThreads>
+__device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams kernelParams,
+                                               int                          atomIndexOffset,
+                                               const float*                 atomCharge,
+                                               const int* __restrict__ sm_gridlineIndices,
+                                               const float* __restrict__ sm_theta)
 {
     /* Global memory pointer to the output grid */
-    float * __restrict__ gm_grid = kernelParams.grid.d_realGrid;
+    float* __restrict__ gm_grid = kernelParams.grid.d_realGrid;
 
 
-    const int atomsPerWarp = useOrderThreads ? c_pmeSpreadGatherAtomsPerWarp4ThPerAtom : c_pmeSpreadGatherAtomsPerWarp;
+    const int atomsPerWarp = useOrderThreads ? c_pmeSpreadGatherAtomsPerWarp4ThPerAtom
+                                             : c_pmeSpreadGatherAtomsPerWarp;
 
     const int nx  = kernelParams.grid.realGridSize[XX];
     const int ny  = kernelParams.grid.realGridSize[YY];
@@ -98,7 +98,7 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
     if (chargeCheck & globalCheck)
     {
         // Spline Z coordinates
-        const int ithz   = threadIdx.x;
+        const int ithz = threadIdx.x;
 
         const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX] - offx;
         const int iyBase = sm_gridlineIndices[atomIndexLocal * DIM + YY] - offy;
@@ -108,30 +108,30 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
             iz -= nz;
         }
         /* Atom index w.r.t. warp - alternating 0 1 0 1 .. */
-        const int    atomWarpIndex   = atomIndexLocal % atomsPerWarp;
+        const int atomWarpIndex = atomIndexLocal % atomsPerWarp;
         /* Warp index w.r.t. block - could probably be obtained easier? */
-        const int    warpIndex       = atomIndexLocal / atomsPerWarp;
+        const int warpIndex = atomIndexLocal / atomsPerWarp;
 
-        const int    splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
-        const int    splineIndexZ    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
-        const float  thetaZ          = sm_theta[splineIndexZ];
+        const int splineIndexBase = getSplineParamIndexBase<order, atomsPerWarp>(warpIndex, atomWarpIndex);
+        const int splineIndexZ = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, ZZ, ithz);
+        const float thetaZ     = sm_theta[splineIndexZ];
 
         /* loop not used if order*order threads per atom */
         const int ithyMin = useOrderThreads ? 0 : threadIdx.y;
         const int ithyMax = useOrderThreads ? order : threadIdx.y + 1;
         for (int ithy = ithyMin; ithy < ithyMax; ithy++)
         {
-            int       iy     = iyBase + ithy;
+            int iy = iyBase + ithy;
             if (wrapY & (iy >= ny))
             {
                 iy -= ny;
             }
 
-            const int    splineIndexY    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
-            float        thetaY          = sm_theta[splineIndexY];
-            const float  Val             = thetaZ * thetaY * (*atomCharge);
+            const int splineIndexY = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, YY, ithy);
+            float       thetaY = sm_theta[splineIndexY];
+            const float Val    = thetaZ * thetaY * (*atomCharge);
             assert(isfinite(Val));
-            const int    offset     = iy * pnz + iz;
+            const int offset = iy * pnz + iz;
 
 #pragma unroll
             for (int ithx = 0; (ithx < order); ithx++)
@@ -141,9 +141,10 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
                 {
                     ix -= nx;
                 }
-                const int   gridIndexGlobal = ix * pny * pnz + offset;
-                const int   splineIndexX    = getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
-                const float thetaX          = sm_theta[splineIndexX];
+                const int gridIndexGlobal = ix * pny * pnz + offset;
+                const int splineIndexX =
+                        getSplineParamIndex<order, atomsPerWarp>(splineIndexBase, XX, ithx);
+                const float thetaX = sm_theta[splineIndexX];
                 assert(isfinite(thetaX));
                 assert(isfinite(gm_grid[gridIndexGlobal]));
                 atomicAdd(gm_grid + gridIndexGlobal, thetaX * Val);
@@ -169,44 +170,36 @@ __device__ __forceinline__ void spread_charges(const PmeGpuCudaKernelParams     
  * \tparam[in] useOrderThreads         A boolean which tells if we should use order threads per atom (order*order used if false).
  * \param[in]  kernelParams         Input PME CUDA data in constant memory.
  */
-template <
-    const int order,
-    const bool computeSplines,
-    const bool spreadCharges,
-    const bool wrapX,
-    const bool wrapY,
-    const bool writeGlobal,
-    const bool useOrderThreads
-    >
-__launch_bounds__(c_spreadMaxThreadsPerBlock)
-CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE
-__global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams)
+template<const int order, const bool computeSplines, const bool spreadCharges, const bool wrapX, const bool wrapY, const bool writeGlobal, const bool useOrderThreads>
+__launch_bounds__(c_spreadMaxThreadsPerBlock) CLANG_DISABLE_OPTIMIZATION_ATTRIBUTE __global__
+        void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams)
 {
-    const int            atomsPerBlock = useOrderThreads ? c_spreadMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom :
-        c_spreadMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom;
+    const int atomsPerBlock =
+            useOrderThreads ? c_spreadMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
+                            : c_spreadMaxThreadsPerBlock / c_pmeSpreadGatherThreadsPerAtom;
     // Gridline indices, ivec
-    __shared__ int       sm_gridlineIndices[atomsPerBlock * DIM];
+    __shared__ int sm_gridlineIndices[atomsPerBlock * DIM];
     // Spline values
-    __shared__ float     sm_theta[atomsPerBlock * DIM * order];
-    float                dtheta;
+    __shared__ float sm_theta[atomsPerBlock * DIM * order];
+    float            dtheta;
 
-    const int            atomsPerWarp = useOrderThreads ? c_pmeSpreadGatherAtomsPerWarp4ThPerAtom :
-        c_pmeSpreadGatherAtomsPerWarp;
+    const int atomsPerWarp = useOrderThreads ? c_pmeSpreadGatherAtomsPerWarp4ThPerAtom
+                                             : c_pmeSpreadGatherAtomsPerWarp;
 
-    float3               atomX;
-    float                atomCharge;
+    float3 atomX;
+    float  atomCharge;
 
-    const int            blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
-    const int            atomIndexOffset = blockIndex * atomsPerBlock;
+    const int blockIndex      = blockIdx.y * gridDim.x + blockIdx.x;
+    const int atomIndexOffset = blockIndex * atomsPerBlock;
 
     /* Thread index w.r.t. block */
-    const int threadLocalId = (threadIdx.z * (blockDim.x * blockDim.y))
-        + (threadIdx.y * blockDim.x) + threadIdx.x;
+    const int threadLocalId =
+            (threadIdx.z * (blockDim.x * blockDim.y)) + (threadIdx.y * blockDim.x) + threadIdx.x;
     /* Warp index w.r.t. block - could probably be obtained easier? */
     const int warpIndex = threadLocalId / warp_size;
 
     /* Atom index w.r.t. warp */
-    const int atomWarpIndex = threadIdx.z %atomsPerWarp;
+    const int atomWarpIndex = threadIdx.z % atomsPerWarp;
     /* Atom index w.r.t. block/shared memory */
     const int atomIndexLocal = warpIndex * atomsPerWarp + atomWarpIndex;
     /* Atom index w.r.t. global memory */
@@ -223,13 +216,14 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     if (c_useAtomDataPrefetch)
     {
         __shared__ float sm_coefficients[atomsPerBlock];
-        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients, kernelParams.atoms.d_coefficients);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, 1>(kernelParams, sm_coefficients,
+                                                         kernelParams.atoms.d_coefficients);
         __syncthreads();
         atomCharge = sm_coefficients[atomIndexLocal];
     }
     else
     {
-        atomCharge =  kernelParams.atoms.d_coefficients[atomIndexGlobal];
+        atomCharge = kernelParams.atoms.d_coefficients[atomIndexGlobal];
     }
 
     if (computeSplines)
@@ -240,21 +234,21 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
             __shared__ float sm_coordinates[DIM * atomsPerBlock];
 
             /* Staging coordinates */
-            pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates, kernelParams.atoms.d_coordinates);
+            pme_gpu_stage_atom_data<float, atomsPerBlock, DIM>(kernelParams, sm_coordinates,
+                                                               kernelParams.atoms.d_coordinates);
             __syncthreads();
-            atomX.x    = sm_coordinates[atomIndexLocal*DIM+XX];
-            atomX.y    = sm_coordinates[atomIndexLocal*DIM+YY];
-            atomX.z    = sm_coordinates[atomIndexLocal*DIM+ZZ];
+            atomX.x = sm_coordinates[atomIndexLocal * DIM + XX];
+            atomX.y = sm_coordinates[atomIndexLocal * DIM + YY];
+            atomX.z = sm_coordinates[atomIndexLocal * DIM + ZZ];
         }
         else
         {
-            atomX.x    =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + XX];
-            atomX.y    =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + YY];
-            atomX.z    =  kernelParams.atoms.d_coordinates[ atomIndexGlobal*DIM + ZZ];
+            atomX.x = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + XX];
+            atomX.y = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + YY];
+            atomX.z = kernelParams.atoms.d_coordinates[atomIndexGlobal * DIM + ZZ];
         }
-        calculate_splines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal>
-            (kernelParams, atomIndexOffset, atomX, atomCharge,
-            sm_theta, &dtheta, sm_gridlineIndices);
+        calculate_splines<order, atomsPerBlock, atomsPerWarp, false, writeGlobal>(
+                kernelParams, atomIndexOffset, atomX, atomCharge, sm_theta, &dtheta, sm_gridlineIndices);
         __syncwarp();
     }
     else
@@ -264,9 +258,11 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
          * as in after running the spline kernel)
          */
         /* Spline data - only thetas (dthetas will only be needed in gather) */
-        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(kernelParams, sm_theta, kernelParams.atoms.d_theta);
+        pme_gpu_stage_atom_data<float, atomsPerBlock, DIM * order>(kernelParams, sm_theta,
+                                                                   kernelParams.atoms.d_theta);
         /* Gridline indices */
-        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(kernelParams, sm_gridlineIndices, kernelParams.atoms.d_gridlineIndices);
+        pme_gpu_stage_atom_data<int, atomsPerBlock, DIM>(kernelParams, sm_gridlineIndices,
+                                                         kernelParams.atoms.d_gridlineIndices);
 
         __syncthreads();
     }
@@ -274,20 +270,27 @@ __global__ void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernel
     /* Spreading */
     if (spreadCharges)
     {
-        spread_charges<order, wrapX, wrapY, useOrderThreads>(kernelParams, atomIndexOffset, &atomCharge,
-                                                             sm_gridlineIndices, sm_theta);
+        spread_charges<order, wrapX, wrapY, useOrderThreads>(
+                kernelParams, atomIndexOffset, &atomCharge, sm_gridlineIndices, sm_theta);
     }
 }
 
 //! Kernel instantiations
 template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true, true, true>(const PmeGpuCudaKernelParams);
-template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, true, false, true, true, true, true>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, false, true, true, true, true, true>(const PmeGpuCudaKernelParams);
 
-template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true, false, true>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, true, true, true, true, false, true>(const PmeGpuCudaKernelParams);
 
-template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_spline_and_spread_kernel<4, true, false, true, true, true, false>(const PmeGpuCudaKernelParams);
-template __global__ void pme_spline_and_spread_kernel<4, false, true, true, true, true, false>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, true, true, true, true, true, false>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, true, false, true, true, true, false>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, false, true, true, true, true, false>(const PmeGpuCudaKernelParams);
 
-template __global__ void pme_spline_and_spread_kernel<4, true, true, true, true, false, false>(const PmeGpuCudaKernelParams);
+template __global__ void
+pme_spline_and_spread_kernel<4, true, true, true, true, false, false>(const PmeGpuCudaKernelParams);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,21 +65,21 @@ using gmx::test::MockHelpTopic;
 
 class HelpTestBase : public gmx::test::StringTestBase
 {
-    public:
-        HelpTestBase();
+public:
+    HelpTestBase();
 
-        MockHelpTopic              rootTopic_;
-        gmx::StringOutputStream    helpFile_;
-        gmx::TextWriter            writer_;
-        gmx::HelpWriterContext     context_;
-        gmx::HelpManager           manager_;
+    MockHelpTopic           rootTopic_;
+    gmx::StringOutputStream helpFile_;
+    gmx::TextWriter         writer_;
+    gmx::HelpWriterContext  context_;
+    gmx::HelpManager        manager_;
 };
 
-HelpTestBase::HelpTestBase()
-    : rootTopic_("", nullptr, "Root topic text"),
-      writer_(&helpFile_),
-      context_(&writer_, gmx::eHelpOutputFormat_Console),
-      manager_(rootTopic_, context_)
+HelpTestBase::HelpTestBase() :
+    rootTopic_("", nullptr, "Root topic text"),
+    writer_(&helpFile_),
+    context_(&writer_, gmx::eHelpOutputFormat_Console),
+    manager_(rootTopic_, context_)
 {
 }
 
@@ -99,10 +99,8 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
-    MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", nullptr);
-    MockHelpTopic &firstSub =
-        first.addSubTopic("firstsub", "First subtopic", nullptr);
+    MockHelpTopic& first    = rootTopic_.addSubTopic("first", "First topic", nullptr);
+    MockHelpTopic& firstSub = first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 
     using ::testing::_;
@@ -114,8 +112,7 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
 {
-    MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", nullptr);
+    MockHelpTopic& first = rootTopic_.addSubTopic("first", "First topic", nullptr);
     first.addSubTopic("firstsub", "First subtopic", nullptr);
     rootTopic_.addSubTopic("second", "Second topic", nullptr);
 
@@ -134,20 +131,17 @@ struct TestHelpText
 {
     static const char        name[];
     static const char        title[];
-    static const char *const text[];
+    static const char* const text[];
 };
 
 const char        TestHelpText::name[]  = "testtopic";
 const char        TestHelpText::title[] = "Topic title";
-const char *const TestHelpText::text[]  = {
-    "Test topic text.[PAR]",
-    "Another paragraph of text."
-};
+const char* const TestHelpText::text[]  = { "Test topic text.[PAR]", "Another paragraph of text." };
 
 class HelpTopicFormattingTest : public HelpTestBase
 {
-    public:
-        void checkHelpFormatting();
+public:
+    void checkHelpFormatting();
 };
 
 void HelpTopicFormattingTest::checkHelpFormatting()
@@ -161,8 +155,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
 
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
 {
-    rootTopic_.addSubTopic(gmx::HelpTopicPointer(
-                                   new gmx::SimpleHelpTopic<TestHelpText>));
+    rootTopic_.addSubTopic(gmx::HelpTopicPointer(new gmx::SimpleHelpTopic<TestHelpText>));
     checkHelpFormatting();
 }
 

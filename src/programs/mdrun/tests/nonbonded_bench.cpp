@@ -60,15 +60,13 @@ namespace
 
 TEST(NonbondedBenchTest, BasicEndToEndTest)
 {
-    const char *const command[] = {
-        "nonbonded-benchmark"
-    };
+    const char* const command[] = { "nonbonded-benchmark" };
     CommandLine       cmdline(command);
     cmdline.addOption("-iter", 1);
     EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::NonbondedBenchmarkInfo::create, &cmdline));
+                         &gmx::NonbondedBenchmarkInfo::create, &cmdline));
 }
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

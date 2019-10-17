@@ -64,15 +64,15 @@ class OptionSectionHandle;
  */
 class OptionSection : public AbstractOptionSection
 {
-    public:
-        //! AbstractOptionSectionHandle corresponding to this option type.
-        typedef OptionSectionHandle HandleType;
+public:
+    //! AbstractOptionSectionHandle corresponding to this option type.
+    typedef OptionSectionHandle HandleType;
 
-        //! Creates a section with the given name.
-        explicit OptionSection(const char *name) : AbstractOptionSection(name) {}
+    //! Creates a section with the given name.
+    explicit OptionSection(const char* name) : AbstractOptionSection(name) {}
 
-    private:
-        std::unique_ptr<IOptionSectionStorage> createStorage() const override;
+private:
+    std::unique_ptr<IOptionSectionStorage> createStorage() const override;
 };
 
 /*! \brief
@@ -87,22 +87,22 @@ class OptionSection : public AbstractOptionSection
  */
 class OptionSectionHandle : public AbstractOptionSectionHandle
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit OptionSectionHandle(internal::OptionSectionImpl *section)
-            : AbstractOptionSectionHandle(section)
-        {
-        }
+public:
+    //! Wraps a given section storage object.
+    explicit OptionSectionHandle(internal::OptionSectionImpl* section) :
+        AbstractOptionSectionHandle(section)
+    {
+    }
 };
 
 class OptionSectionInfo : public AbstractOptionSectionInfo
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit OptionSectionInfo(internal::OptionSectionImpl *section)
-            : AbstractOptionSectionInfo(section)
-        {
-        }
+public:
+    //! Wraps a given section storage object.
+    explicit OptionSectionInfo(internal::OptionSectionImpl* section) :
+        AbstractOptionSectionInfo(section)
+    {
+    }
 };
 
 } // namespace gmx

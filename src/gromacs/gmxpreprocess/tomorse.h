@@ -43,6 +43,6 @@
 class PreprocessingAtomTypes;
 struct MoleculeInformation;
 
-void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAtomTypes *atype);
+void convert_harmonics(gmx::ArrayRef<MoleculeInformation> mols, PreprocessingAtomTypes* atype);
 
 #endif

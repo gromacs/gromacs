@@ -68,12 +68,12 @@ namespace gmxapi
  *
  * \return Ownership of new Session implementation instance.
  */
-std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
-                                       gmx::MdrunnerBuilder        &&runnerBuilder,
-                                       gmx::SimulationContext      &&simulationContext,
-                                       gmx::LogFilePtr               logFilehandle);
+std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl> context,
+                                       gmx::MdrunnerBuilder&&       runnerBuilder,
+                                       gmx::SimulationContext&&     simulationContext,
+                                       gmx::LogFilePtr              logFilehandle);
 
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_LIBRARY_SESSION_H
+#endif // GMXAPI_LIBRARY_SESSION_H

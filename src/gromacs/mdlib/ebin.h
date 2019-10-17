@@ -63,37 +63,40 @@
 struct t_ebin
 {
     //! Number of thermodynamic terms
-    int             nener;
+    int nener;
     //! Name and units for each term
-    gmx_enxnm_t    *enm;
+    gmx_enxnm_t* enm;
     //! Number of steps used for sum (for energy history)
-    int64_t         nsteps;
+    int64_t nsteps;
     //! Number of values added to the sum so far
-    int64_t         nsum;
+    int64_t nsum;
     //! Term values: each structure stores current, running average and sum.
-    t_energy       *e;
+    t_energy* e;
     //! Total number of steps saved (for energy history)
-    int64_t         nsteps_sim;
+    int64_t nsteps_sim;
     //! Total number of values added to sum (used when printing average values at the end of the run)
-    int64_t         nsum_sim;
+    int64_t nsum_sim;
     //! Energy values throughout the entire simulation: structure stores current, average and sum, but only sum value is used to compute averages
-    t_energy       *e_sim;
+    t_energy* e_sim;
 };
 
 /* \brief Type of expected output: normal or average.
  */
-enum {
-    eprNORMAL, eprAVER, eprNR
+enum
+{
+    eprNORMAL,
+    eprAVER,
+    eprNR
 };
 
 /*! \brief Create the structure to store thermodynamic properties*/
-t_ebin *mk_ebin();
+t_ebin* mk_ebin();
 
 /*! \brief Destroy the \c eb structure.
  *
  * \param[in,out] eb  Pointer to the structure to destroy.
  */
-void done_ebin(t_ebin *eb);
+void done_ebin(t_ebin* eb);
 
 /*! \brief Create space for the extra thermodynamic term(s) and register its(their) name(s).
  *
@@ -106,12 +109,12 @@ void done_ebin(t_ebin *eb);
  *
  * \returns          A serial number (index) for the newly allocated terms.
  */
-int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *unit);
+int get_ebin_space(t_ebin* eb, int nener, const char* const enm[], const char* unit);
 
 /*! \brief Add current value of the thermodynamic term(s) to the bin(s).
  *
- * Add nener reals (eg. energies, box-lengths, pressures) to the at position specified by \c entryIndex.
- * If bSum is TRUE then the reals are also added to the sum and sum of squares.
+ * Add nener reals (eg. energies, box-lengths, pressures) to the at position specified by \c
+ * entryIndex. If bSum is TRUE then the reals are also added to the sum and sum of squares.
  *
  * \param[in] eb          Structure that stores the thermodynamic values.
  * \param[in] entryIndex  Internal index of the term(s) to add.
@@ -119,7 +122,7 @@ int get_ebin_space(t_ebin *eb, int nener, const char *const enm[], const char *u
  * \param[in] ener        Value(s) of thermodynamic term(s) (nener ptc.)
  * \param[in] bSum        If the average value should be accumulated for this term(s).
  */
-void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool bSum);
+void add_ebin(t_ebin* eb, int entryIndex, int nener, const real ener[], gmx_bool bSum);
 
 
 /*! \brief Add values from array to the bins if the matching entry in \c shouldUse is true.
@@ -134,8 +137,11 @@ void add_ebin(t_ebin *eb, int entryIndex, int nener, const real ener[], gmx_bool
  * \param[in] ener        Values of thermodinamic terms to add.
  * \param[in] bSum        If the average value should be accumulated for these terms.
  */
-void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
-                      gmx::ArrayRef<const real> ener, gmx_bool bSum);
+void add_ebin_indexed(t_ebin*                   eb,
+                      int                       entryIndex,
+                      gmx::ArrayRef<bool>       shouldUse,
+                      gmx::ArrayRef<const real> ener,
+                      gmx_bool                  bSum);
 
 /*! \brief Increase the counters for the sums.
  *
@@ -145,14 +151,14 @@ void add_ebin_indexed(t_ebin *eb, int entryIndex, gmx::ArrayRef<bool> shouldUse,
  * \param[in] eb          Structure that stores the thermodynamic values.
  * \param[in] bSum        If the sums counters should be increased as well.
  */
-void ebin_increase_count(int increment, t_ebin *eb, gmx_bool bSum);
+void ebin_increase_count(int increment, t_ebin* eb, gmx_bool bSum);
 
 
 /*! \brief Reset the average and fluctuation sums.
  *
  * \param[in] eb          Structure that stores the thermodynamic values.
  */
-void reset_ebin_sums(t_ebin *eb);
+void reset_ebin_sums(t_ebin* eb);
 
 
 /*! \brief Print the contents of some energy bins.
@@ -176,7 +182,6 @@ void reset_ebin_sums(t_ebin *eb);
  * \param[in] prmode      Print current (eprNORMAL) or average (eprAVER) values.
  * \param[in] bPrHead     If the header should be printed.
  */
-void pr_ebin(FILE *fp, t_ebin *eb, int entryIndex, int nener, int nperline,
-             int prmode, gmx_bool bPrHead);
+void pr_ebin(FILE* fp, t_ebin* eb, int entryIndex, int nener, int nperline, int prmode, gmx_bool bPrHead);
 
 #endif

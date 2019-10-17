@@ -57,81 +57,76 @@
 namespace gmx
 {
 //! Update velocities
-template <NumVelocityScalingValues numVelocityScalingValues,
-          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
-static void inline
-updateVelocities(int                       a,
-                 real                      dt,
-                 real                      lambda,
-                 const rvec * gmx_restrict invMassPerDim,
-                 rvec       * gmx_restrict v,
-                 const rvec * gmx_restrict f,
-                 const rvec                diagPR,
-                 const matrix              matrixPR)
+template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+static void inline updateVelocities(int         a,
+                                    real        dt,
+                                    real        lambda,
+                                    const rvec* gmx_restrict invMassPerDim,
+                                    rvec* gmx_restrict v,
+                                    const rvec* gmx_restrict f,
+                                    const rvec               diagPR,
+                                    const matrix             matrixPR)
 {
     for (int d = 0; d < DIM; d++)
     {
         // TODO: Extract this into policy classes
-        if (numVelocityScalingValues != NumVelocityScalingValues::None &&
-            parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
+        if (numVelocityScalingValues != NumVelocityScalingValues::None
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
         {
             v[a][d] *= lambda;
         }
-        if (numVelocityScalingValues != NumVelocityScalingValues::None &&
-            parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
+        if (numVelocityScalingValues != NumVelocityScalingValues::None
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
         {
             v[a][d] *= (lambda - diagPR[d]);
         }
-        if (numVelocityScalingValues != NumVelocityScalingValues::None &&
-            parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
+        if (numVelocityScalingValues != NumVelocityScalingValues::None
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
         {
-            v[a][d] = lambda*v[a][d] - iprod(matrixPR[d], v[a]);
+            v[a][d] = lambda * v[a][d] - iprod(matrixPR[d], v[a]);
         }
-        if (numVelocityScalingValues == NumVelocityScalingValues::None &&
-            parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
+        if (numVelocityScalingValues == NumVelocityScalingValues::None
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Diagonal)
         {
-            v[a][d] *= (1-diagPR[d]);
+            v[a][d] *= (1 - diagPR[d]);
         }
-        if (numVelocityScalingValues == NumVelocityScalingValues::None &&
-            parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
+        if (numVelocityScalingValues == NumVelocityScalingValues::None
+            && parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::Full)
         {
             v[a][d] -= iprod(matrixPR[d], v[a]);
         }
-        v[a][d] += f[a][d]*invMassPerDim[a][d]*dt;
+        v[a][d] += f[a][d] * invMassPerDim[a][d] * dt;
     }
 }
 
 //! Update positions
-static void inline
-updatePositions(int                       a,
-                real                      dt,
-                const rvec * gmx_restrict x,
-                rvec       * gmx_restrict xprime,
-                const rvec * gmx_restrict v)
+static void inline updatePositions(int         a,
+                                   real        dt,
+                                   const rvec* gmx_restrict x,
+                                   rvec* gmx_restrict xprime,
+                                   const rvec* gmx_restrict v)
 {
     for (int d = 0; d < DIM; d++)
     {
-        xprime[a][d]  = x[a][d] + v[a][d]*dt;
+        xprime[a][d] = x[a][d] + v[a][d] * dt;
     }
 }
 
 //! Propagation (position only)
-template <>
-template <NumVelocityScalingValues numVelocityScalingValues,
-          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+template<>
+template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 void Propagator<IntegrationStep::PositionsOnly>::run()
 {
     wallcycle_start(wcycle_, ewcUPDATE);
 
     auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto x  = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto v  = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
+    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
+    auto v = as_rvec_array(statePropagatorData_->constVelocitiesView().paddedArrayRef().data());
 
-    int  nth    = gmx_omp_nthreads_get(emntUpdate);
-    int  homenr = mdAtoms_->mdatoms()->homenr;
+    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int homenr = mdAtoms_->mdatoms()->homenr;
 
-    #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-    shared(nth, homenr, x, xp, v)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth, homenr, x, xp, v)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -150,20 +145,20 @@ void Propagator<IntegrationStep::PositionsOnly>::run()
 }
 
 //! Propagation (velocity only)
-template <>
-template <NumVelocityScalingValues numVelocityScalingValues,
-          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+template<>
+template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
 void Propagator<IntegrationStep::VelocitiesOnly>::run()
 {
     wallcycle_start(wcycle_, ewcUPDATE);
 
-    auto       v             = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto       f             = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
-    auto       invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
-    const real lambda = (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
+    const real lambda =
+            (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
 
-    bool       doDiagonalScaling = false;
+    bool doDiagonalScaling = false;
     if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
     {
         // TODO: Could we know in advance whether the matrix is diagonal?
@@ -176,116 +171,13 @@ void Propagator<IntegrationStep::VelocitiesOnly>::run()
         }
     }
 
-    int  nth    = gmx_omp_nthreads_get(emntUpdate);
-    int  homenr = mdAtoms_->mdatoms()->homenr;
+    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int homenr = mdAtoms_->mdatoms()->homenr;
 
-    // lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-    // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-    #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-    shared(nth, homenr, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
-    for (int th = 0; th < nth; th++)
-    {
-        try
-        {
-            int start_th, end_th;
-            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
-
-            for (int a = start_th; a < end_th; a++)
-            {
-                if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
-                {
-                    if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
-                    {
-                        updateVelocities<NumVelocityScalingValues::Multiple,
-                                         ParrinelloRahmanVelocityScaling::No>(
-                                a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                invMassPerDim, v, f, diagPR, matrixPR);
-                    }
-                    else
-                    {
-                        updateVelocities<numVelocityScalingValues,
-                                         ParrinelloRahmanVelocityScaling::No>(
-                                a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
-                    }
-                }
-                else
-                {
-                    if (doDiagonalScaling)
-                    {
-                        if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
-                        {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
-                        }
-                        else
-                        {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
-                        }
-                    }
-                    else
-                    {
-                        if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
-                        {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Full>(
-                                    a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
-                                    invMassPerDim, v, f, diagPR, matrixPR);
-                        }
-                        else
-                        {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Full>(
-                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
-                        }
-                    }
-                }
-            }
-        }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    }
-    wallcycle_stop(wcycle_, ewcUPDATE);
-}
-
-//! Propagation (leapfrog case - position and velocity)
-template <>
-template <NumVelocityScalingValues numVelocityScalingValues,
-          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
-void Propagator<IntegrationStep::LeapFrog>::run()
-{
-    wallcycle_start(wcycle_, ewcUPDATE);
-
-    auto       xp            = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto       x             = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto       v             = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto       f             = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
-    auto       invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
-
-    const real lambda = (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
-
-    bool       doDiagonalScaling = false;
-    if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
-    {
-        // TODO: Could we know in advance whether the matrix is diagonal?
-        doDiagonalScaling = (matrixPR[YY][XX] == 0 && matrixPR[ZZ][XX] == 0 && matrixPR[ZZ][YY] == 0);
-        if (doDiagonalScaling)
-        {
-            diagPR[XX] = matrixPR[XX][XX];
-            diagPR[YY] = matrixPR[YY][YY];
-            diagPR[ZZ] = matrixPR[ZZ][ZZ];
-        }
-    }
-
-    int  nth           = gmx_omp_nthreads_get(emntUpdate);
-    int  homenr        = mdAtoms_->mdatoms()->homenr;
-
-    // lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-    // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-    #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-    shared(nth, homenr, x, xp, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
+// lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
+// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, homenr, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -315,15 +207,13 @@ void Propagator<IntegrationStep::LeapFrog>::run()
                     {
                         if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
                         {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
                                     invMassPerDim, v, f, diagPR, matrixPR);
                         }
                         else
                         {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
                                     a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
                         }
                     }
@@ -331,20 +221,17 @@ void Propagator<IntegrationStep::LeapFrog>::run()
                     {
                         if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
                         {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Full>(
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
                                     a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
                                     invMassPerDim, v, f, diagPR, matrixPR);
                         }
                         else
                         {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Full>(
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
                                     a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
                         }
                     }
                 }
-                updatePositions(a, timestep_, x, xp, v);
             }
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -352,26 +239,23 @@ void Propagator<IntegrationStep::LeapFrog>::run()
     wallcycle_stop(wcycle_, ewcUPDATE);
 }
 
-//! Propagation (velocity verlet stage 2 - velocity and position)
-template <>
-template <NumVelocityScalingValues numVelocityScalingValues,
-          ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
-void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
+//! Propagation (leapfrog case - position and velocity)
+template<>
+template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+void Propagator<IntegrationStep::LeapFrog>::run()
 {
     wallcycle_start(wcycle_, ewcUPDATE);
 
-    auto       xp            = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-    auto       x             = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
-    auto       v             = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-    auto       f             = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
-    auto       invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+    auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
+    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
 
-    int        nth           = gmx_omp_nthreads_get(emntUpdate);
-    int        homenr        = mdAtoms_->mdatoms()->homenr;
+    const real lambda =
+            (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
 
-    const real lambda = (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
-
-    bool       doDiagonalScaling = false;
+    bool doDiagonalScaling = false;
     if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
     {
         // TODO: Could we know in advance whether the matrix is diagonal?
@@ -384,10 +268,13 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
         }
     }
 
-    // lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
-    // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
-    #pragma omp parallel for num_threads(nth) schedule(static) default(none) \
-    shared(nth, homenr, x, xp, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
+    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int homenr = mdAtoms_->mdatoms()->homenr;
+
+// lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
+// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, homenr, x, xp, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
     for (int th = 0; th < nth; th++)
     {
         try
@@ -401,16 +288,14 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
                 {
                     if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
                     {
-                        updateVelocities<NumVelocityScalingValues::Multiple,
-                                         ParrinelloRahmanVelocityScaling::No>(
-                                a, 0.5*timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                        updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>(
+                                a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
                                 invMassPerDim, v, f, diagPR, matrixPR);
                     }
                     else
                     {
-                        updateVelocities<numVelocityScalingValues,
-                                         ParrinelloRahmanVelocityScaling::No>(
-                                a, 0.5*timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                        updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::No>(
+                                a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
                     }
                 }
                 else
@@ -419,32 +304,28 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
                     {
                         if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
                         {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, 0.5*timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
+                                    a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
                                     invMassPerDim, v, f, diagPR, matrixPR);
                         }
                         else
                         {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Diagonal>(
-                                    a, 0.5*timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
                         }
                     }
                     else
                     {
                         if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
                         {
-                            updateVelocities<NumVelocityScalingValues::Multiple,
-                                             ParrinelloRahmanVelocityScaling::Full>(
-                                    a, 0.5*timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
+                                    a, timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
                                     invMassPerDim, v, f, diagPR, matrixPR);
                         }
                         else
                         {
-                            updateVelocities<numVelocityScalingValues,
-                                             ParrinelloRahmanVelocityScaling::Full>(
-                                    a, 0.5*timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
+                                    a, timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
                         }
                     }
                 }
@@ -456,12 +337,109 @@ void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
     wallcycle_stop(wcycle_, ewcUPDATE);
 }
 
-template <IntegrationStep algorithm>
-Propagator<algorithm>::Propagator(
-        double               timestep,
-        StatePropagatorData *statePropagatorData,
-        const MDAtoms       *mdAtoms,
-        gmx_wallcycle       *wcycle) :
+//! Propagation (velocity verlet stage 2 - velocity and position)
+template<>
+template<NumVelocityScalingValues numVelocityScalingValues, ParrinelloRahmanVelocityScaling parrinelloRahmanVelocityScaling>
+void Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>::run()
+{
+    wallcycle_start(wcycle_, ewcUPDATE);
+
+    auto xp = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
+    auto x = as_rvec_array(statePropagatorData_->constPreviousPositionsView().paddedArrayRef().data());
+    auto v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+    auto f = as_rvec_array(statePropagatorData_->constForcesView().paddedArrayRef().data());
+    auto invMassPerDim = mdAtoms_->mdatoms()->invMassPerDim;
+
+    int nth    = gmx_omp_nthreads_get(emntUpdate);
+    int homenr = mdAtoms_->mdatoms()->homenr;
+
+    const real lambda =
+            (numVelocityScalingValues == NumVelocityScalingValues::Single) ? velocityScaling_[0] : 1.0;
+
+    bool doDiagonalScaling = false;
+    if (parrinelloRahmanVelocityScaling != ParrinelloRahmanVelocityScaling::No)
+    {
+        // TODO: Could we know in advance whether the matrix is diagonal?
+        doDiagonalScaling = (matrixPR[YY][XX] == 0 && matrixPR[ZZ][XX] == 0 && matrixPR[ZZ][YY] == 0);
+        if (doDiagonalScaling)
+        {
+            diagPR[XX] = matrixPR[XX][XX];
+            diagPR[YY] = matrixPR[YY][YY];
+            diagPR[ZZ] = matrixPR[ZZ][ZZ];
+        }
+    }
+
+// lambda could be shared, but gcc-8 & gcc-9 don't agree how to write that...
+// https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) \
+        shared(nth, homenr, x, xp, v, f, invMassPerDim, doDiagonalScaling) firstprivate(lambda)
+    for (int th = 0; th < nth; th++)
+    {
+        try
+        {
+            int start_th, end_th;
+            getThreadAtomRange(nth, th, homenr, &start_th, &end_th);
+
+            for (int a = start_th; a < end_th; a++)
+            {
+                if (parrinelloRahmanVelocityScaling == ParrinelloRahmanVelocityScaling::No)
+                {
+                    if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
+                    {
+                        updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>(
+                                a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                                invMassPerDim, v, f, diagPR, matrixPR);
+                    }
+                    else
+                    {
+                        updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::No>(
+                                a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                    }
+                }
+                else
+                {
+                    if (doDiagonalScaling)
+                    {
+                        if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
+                        {
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Diagonal>(
+                                    a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                                    invMassPerDim, v, f, diagPR, matrixPR);
+                        }
+                        else
+                        {
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Diagonal>(
+                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                        }
+                    }
+                    else
+                    {
+                        if (numVelocityScalingValues == NumVelocityScalingValues::Multiple)
+                        {
+                            updateVelocities<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>(
+                                    a, 0.5 * timestep_, velocityScaling_[mdAtoms_->mdatoms()->cTC[a]],
+                                    invMassPerDim, v, f, diagPR, matrixPR);
+                        }
+                        else
+                        {
+                            updateVelocities<numVelocityScalingValues, ParrinelloRahmanVelocityScaling::Full>(
+                                    a, 0.5 * timestep_, lambda, invMassPerDim, v, f, diagPR, matrixPR);
+                        }
+                    }
+                }
+                updatePositions(a, timestep_, x, xp, v);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+    }
+    wallcycle_stop(wcycle_, ewcUPDATE);
+}
+
+template<IntegrationStep algorithm>
+Propagator<algorithm>::Propagator(double               timestep,
+                                  StatePropagatorData* statePropagatorData,
+                                  const MDAtoms*       mdAtoms,
+                                  gmx_wallcycle*       wcycle) :
     timestep_(timestep),
     statePropagatorData_(statePropagatorData),
     doSingleVelocityScaling(false),
@@ -475,13 +453,13 @@ Propagator<algorithm>::Propagator(
     clear_mat(matrixPR);
 }
 
-template <IntegrationStep algorithm>
-void Propagator<algorithm>::scheduleTask(
-        Step gmx_unused step, Time gmx_unused time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+template<IntegrationStep algorithm>
+void Propagator<algorithm>::scheduleTask(Step gmx_unused step,
+                                         Time gmx_unused               time,
+                                         const RegisterRunFunctionPtr& registerRunFunction)
 {
-    const bool doSingleVScalingThisStep   = (doSingleVelocityScaling && (step == scalingStepVelocity_));
-    const bool doGroupVScalingThisStep    = (doGroupVelocityScaling && (step == scalingStepVelocity_));
+    const bool doSingleVScalingThisStep = (doSingleVelocityScaling && (step == scalingStepVelocity_));
+    const bool doGroupVScalingThisStep = (doGroupVelocityScaling && (step == scalingStepVelocity_));
 
     const bool doParrinelloRahmanThisStep = (step == scalingStepPR_);
 
@@ -489,56 +467,50 @@ void Propagator<algorithm>::scheduleTask(
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::Single,
-                                         ParrinelloRahmanVelocityScaling::Full>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::Full>();
+            }));
         }
         else
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::Single,
-                                         ParrinelloRahmanVelocityScaling::No>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::Single, ParrinelloRahmanVelocityScaling::No>();
+            }));
         }
     }
     else if (doGroupVScalingThisStep)
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::Multiple,
-                                         ParrinelloRahmanVelocityScaling::Full>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::Full>();
+            }));
         }
         else
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::Multiple,
-                                         ParrinelloRahmanVelocityScaling::No>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::Multiple, ParrinelloRahmanVelocityScaling::No>();
+            }));
         }
     }
     else
     {
         if (doParrinelloRahmanThisStep)
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::None,
-                                         ParrinelloRahmanVelocityScaling::Full>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::Full>();
+            }));
         }
         else
         {
-            (*registerRunFunction)(
-                    std::make_unique<SimulatorRunFunction>(
-                            [this](){run<NumVelocityScalingValues::None,
-                                         ParrinelloRahmanVelocityScaling::No>(); }));
+            (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() {
+                run<NumVelocityScalingValues::None, ParrinelloRahmanVelocityScaling::No>();
+            }));
         }
     }
 }
 
-template <IntegrationStep algorithm>
+template<IntegrationStep algorithm>
 void Propagator<algorithm>::setNumVelocityScalingVariables(int numVelocityScalingVariables)
 {
     if (algorithm == IntegrationStep::PositionsOnly)
@@ -553,36 +525,35 @@ void Propagator<algorithm>::setNumVelocityScalingVariables(int numVelocityScalin
     doGroupVelocityScaling  = numVelocityScalingVariables > 1;
 }
 
-template <IntegrationStep algorithm>
+template<IntegrationStep algorithm>
 ArrayRef<real> Propagator<algorithm>::viewOnVelocityScaling()
 {
     if (algorithm == IntegrationStep::PositionsOnly)
     {
         gmx_fatal(FARGS, "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
     }
-    GMX_ASSERT(!velocityScaling_.empty(),
-               "Number of velocity scaling variables not set.");
+    GMX_ASSERT(!velocityScaling_.empty(), "Number of velocity scaling variables not set.");
 
     return velocityScaling_;
 }
 
-template <IntegrationStep algorithm>
-std::unique_ptr< std::function<void(Step)> > Propagator<algorithm>::velocityScalingCallback()
+template<IntegrationStep algorithm>
+std::unique_ptr<std::function<void(Step)>> Propagator<algorithm>::velocityScalingCallback()
 {
     if (algorithm == IntegrationStep::PositionsOnly)
     {
         gmx_fatal(FARGS, "Velocity scaling not implemented for IntegrationStep::PositionsOnly.");
     }
 
-    return std::make_unique<PropagatorCallback>(
-            [this](Step step){scalingStepVelocity_ = step; });
+    return std::make_unique<PropagatorCallback>([this](Step step) { scalingStepVelocity_ = step; });
 }
 
-template <IntegrationStep algorithm>
+template<IntegrationStep algorithm>
 ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
 {
-    GMX_RELEASE_ASSERT(algorithm != IntegrationStep::PositionsOnly,
-                       "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(
+            algorithm != IntegrationStep::PositionsOnly,
+            "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
 
     clear_mat(matrixPR);
     // gcc-5 needs this to be explicit (all other tested compilers would be ok
@@ -590,14 +561,14 @@ ArrayRef<rvec> Propagator<algorithm>::viewOnPRScalingMatrix()
     return ArrayRef<rvec>(matrixPR);
 }
 
-template <IntegrationStep algorithm>
+template<IntegrationStep algorithm>
 PropagatorCallbackPtr Propagator<algorithm>::prScalingCallback()
 {
-    GMX_RELEASE_ASSERT(algorithm != IntegrationStep::PositionsOnly,
-                       "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
+    GMX_RELEASE_ASSERT(
+            algorithm != IntegrationStep::PositionsOnly,
+            "Parrinello-Rahman scaling not implemented for IntegrationStep::PositionsOnly.");
 
-    return std::make_unique<PropagatorCallback>(
-            [this](Step step){scalingStepPR_ = step; });
+    return std::make_unique<PropagatorCallback>([this](Step step) { scalingStepPR_ = step; });
 }
 
 //! Explicit template initialization
@@ -608,4 +579,4 @@ template class Propagator<IntegrationStep::LeapFrog>;
 template class Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>;
 //! @}
 
-}  // namespace gmx
+} // namespace gmx

@@ -55,7 +55,7 @@
 namespace gmx
 {
 
-void writeHeader(TextWriter *writer, const std::string &text, const std::string &section, bool writeFormattedText)
+void writeHeader(TextWriter* writer, const std::string& text, const std::string& section, bool writeFormattedText)
 {
     std::string formattedText;
     if (writeFormattedText)
@@ -69,11 +69,11 @@ void writeHeader(TextWriter *writer, const std::string &text, const std::string 
     writer->writeString(formattedText);
 }
 
-void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writeFormattedText)
+void writeSystemInformation(TextWriter* writer, const gmx_mtop_t& top, bool writeFormattedText)
 {
     int                       nmol, nvsite = 0;
     gmx_mtop_atomloop_block_t aloop;
-    const t_atom             *atom;
+    const t_atom*             atom;
 
     writeHeader(writer, "Simulation system", "subsection", writeFormattedText);
     aloop = gmx_mtop_atomloop_block_init(&top);
@@ -86,7 +86,7 @@ void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writ
     }
     {
         writer->writeLine(formatString("A system of %d molecules (%d atoms) was simulated.",
-                                       gmx_mtop_num_molecules(top), top.natoms-nvsite));
+                                       gmx_mtop_num_molecules(top), top.natoms - nvsite));
     }
     if (nvsite)
     {
@@ -95,20 +95,24 @@ void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writ
     writer->ensureEmptyLine();
 }
 
-void writeParameterInformation(TextWriter *writer, const t_inputrec &ir, bool writeFormattedText)
+void writeParameterInformation(TextWriter* writer, const t_inputrec& ir, bool writeFormattedText)
 {
     writeHeader(writer, "Simulation settings", "subsection", writeFormattedText);
     writer->writeLine(formatString("A total of %g ns were simulated with a time step of %g fs.",
-                                   ir.nsteps*ir.delta_t*0.001, 1000*ir.delta_t));
+                                   ir.nsteps * ir.delta_t * 0.001, 1000 * ir.delta_t));
     writer->writeLine(formatString("Neighbor searching was performed every %d steps.", ir.nstlist));
     writer->writeLine(formatString("The %s algorithm was used for electrostatic interactions.",
                                    EELTYPE(ir.coulombtype)));
     writer->writeLine(formatString("with a cut-off of %g nm.", ir.rcoulomb));
     if (ir.coulombtype == eelPME)
     {
-        writer->writeLine(formatString("A reciprocal grid of %d x %d x %d cells was used with %dth order B-spline interpolation.", ir.nkx, ir.nky, ir.nkz, ir.pme_order));
+        writer->writeLine(
+                formatString("A reciprocal grid of %d x %d x %d cells was used with %dth order "
+                             "B-spline interpolation.",
+                             ir.nkx, ir.nky, ir.nkz, ir.pme_order));
     }
-    writer->writeLine(formatString("A single cut-off of %g nm was used for Van der Waals interactions.", ir.rlist));
+    writer->writeLine(formatString(
+            "A single cut-off of %g nm was used for Van der Waals interactions.", ir.rlist));
     if (ir.etc != 0)
     {
         writer->writeLine(formatString("Temperature coupling was done with the %s algorithm.",
@@ -122,10 +126,13 @@ void writeParameterInformation(TextWriter *writer, const t_inputrec &ir, bool wr
     writer->ensureEmptyLine();
 }
 
-void writeInformation(TextOutputFile *outputStream, const t_inputrec &ir,
-                      const gmx_mtop_t &top, bool writeFormattedText, bool notStdout)
+void writeInformation(TextOutputFile*   outputStream,
+                      const t_inputrec& ir,
+                      const gmx_mtop_t& top,
+                      bool              writeFormattedText,
+                      bool              notStdout)
 {
-    TextWriter              writer(outputStream);
+    TextWriter writer(outputStream);
     writer.ensureEmptyLine();
     writeHeader(&writer, "Methods", "section", writeFormattedText);
     writeSystemInformation(&writer, top, writeFormattedText);
@@ -143,73 +150,66 @@ namespace
 
 class ReportMethods : public ICommandLineOptionsModule
 {
-    public:
-        ReportMethods()
-            : writeLatex_(false), writePlainText_(false)
-        {
-        }
+public:
+    ReportMethods() : writeLatex_(false), writePlainText_(false) {}
 
-        // From ICommandLineOptionsModule
-        void init(CommandLineModuleSettings * /*settings*/) override
-        {
-        }
-        void initOptions(IOptionsContainer                 *options,
-                         ICommandLineOptionsModuleSettings *settings) override;
-        void optionsFinished() override;
-        int run() override;
+    // From ICommandLineOptionsModule
+    void init(CommandLineModuleSettings* /*settings*/) override {}
+    void initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings) override;
+    void optionsFinished() override;
+    int  run() override;
 
-    private:
-
-        //! File name for the output LaTeX file or empty.
-        std::string         outputFileLatex_;
-        //! File name for the unformatted output file or empty.
-        std::string         outputFileUnformatted_;
-        //! File name of the run input file with full topology.
-        std::string         inputTopology_;
-        //! Boolean reporting if writing to the LaTeX output file is requested.
-        bool                writeLatex_;
-        //! Boolean reporting if writing to unformatted output is requested.
-        bool                writePlainText_;
+private:
+    //! File name for the output LaTeX file or empty.
+    std::string outputFileLatex_;
+    //! File name for the unformatted output file or empty.
+    std::string outputFileUnformatted_;
+    //! File name of the run input file with full topology.
+    std::string inputTopology_;
+    //! Boolean reporting if writing to the LaTeX output file is requested.
+    bool writeLatex_;
+    //! Boolean reporting if writing to unformatted output is requested.
+    bool writePlainText_;
 };
 
-void ReportMethods::initOptions(IOptionsContainer                 *options,
-                                ICommandLineOptionsModuleSettings *settings)
+void ReportMethods::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
 {
-    const char *const desc[] = {
-        "[THISMODULE] reports basic system information for the run input",
-        "file specfied with [TT]-s[tt] either to the",
-        "terminal, to a LaTeX formatted output file if run with",
-        "the [TT]-m[tt] option or to an unformatted file with",
-        "the [TT]-o[tt] option.",
-        "The functionality has been moved here from its previous",
-        "place in [gmx-check]."
-    };
+    const char* const desc[] = { "[THISMODULE] reports basic system information for the run input",
+                                 "file specfied with [TT]-s[tt] either to the",
+                                 "terminal, to a LaTeX formatted output file if run with",
+                                 "the [TT]-m[tt] option or to an unformatted file with",
+                                 "the [TT]-o[tt] option.",
+                                 "The functionality has been moved here from its previous",
+                                 "place in [gmx-check]." };
 
     settings->setHelpText(desc);
 
     options->addOption(FileNameOption("s")
-                           .filetype(eftTopology).inputFile().required()
-                           .store(&inputTopology_)
-                           .defaultBasename("topol")
-                           .description("Run input file for report"));
+                               .filetype(eftTopology)
+                               .inputFile()
+                               .required()
+                               .store(&inputTopology_)
+                               .defaultBasename("topol")
+                               .description("Run input file for report"));
 
     // TODO: Replace use of legacyType.
     options->addOption(FileNameOption("m")
-                           .legacyType(efTEX).outputFile()
-                           .store(&outputFileLatex_).storeIsSet(&writeLatex_)
-                           .defaultBasename("report")
-                           .description("LaTeX formatted report output"));
+                               .legacyType(efTEX)
+                               .outputFile()
+                               .store(&outputFileLatex_)
+                               .storeIsSet(&writeLatex_)
+                               .defaultBasename("report")
+                               .description("LaTeX formatted report output"));
     options->addOption(FileNameOption("o")
-                           .legacyType(efOUT).outputFile()
-                           .store(&outputFileUnformatted_).storeIsSet(&writePlainText_)
-                           .defaultBasename("report")
-                           .description("Unformatted report output to file"));
-
+                               .legacyType(efOUT)
+                               .outputFile()
+                               .store(&outputFileUnformatted_)
+                               .storeIsSet(&writePlainText_)
+                               .defaultBasename("report")
+                               .description("Unformatted report output to file"));
 }
 
-void ReportMethods::optionsFinished()
-{
-}
+void ReportMethods::optionsFinished() {}
 
 int ReportMethods::run()
 {
@@ -227,18 +227,18 @@ int ReportMethods::run()
         TextOutputFile file(outputFileUnformatted_);
         writeInformation(&file, ir, top, false, true);
     }
-    TextOutputFile         &stdoutFile = TextOutputFile::standardOutput();
+    TextOutputFile& stdoutFile = TextOutputFile::standardOutput();
     writeInformation(&stdoutFile, ir, top, false, false);
 
     return 0;
 }
 
-}   // namespace
+} // namespace
 
-const char ReportMethodsInfo::name[]             = "report-methods";
+const char ReportMethodsInfo::name[] = "report-methods";
 const char ReportMethodsInfo::shortDescription[] =
-    "Write short summary about the simulation setup to a text file "
-    "and/or to the standard output.";
+        "Write short summary about the simulation setup to a text file "
+        "and/or to the standard output.";
 ICommandLineOptionsModulePointer ReportMethodsInfo::create()
 {
     return ICommandLineOptionsModulePointer(std::make_unique<ReportMethods>());

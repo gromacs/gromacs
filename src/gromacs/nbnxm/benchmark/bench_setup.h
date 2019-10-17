@@ -84,35 +84,35 @@ enum class BenchMarkCoulomb : int
 struct KernelBenchOptions
 {
     //! Whether to use a GPU, currently GPUs are not supported
-    bool              useGpu                 = false;
+    bool useGpu = false;
     //! The number of OpenMP threads to use
-    int               numThreads             = 1;
+    int numThreads = 1;
     //! The SIMD type for the kernel
-    BenchMarkKernels  nbnxmSimd  = BenchMarkKernels::SimdAuto;
+    BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
     //! The LJ combination rule
     BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
     //! Use i-cluster half-LJ optimization for clusters with <= half LJ
-    bool              useHalfLJOptimization  = false;
+    bool useHalfLJOptimization = false;
     //! The pairlist and interaction cut-off
-    real              pairlistCutoff         = 1.0;
+    real pairlistCutoff = 1.0;
     //! The Coulomb Ewald coefficient
-    real              ewaldcoeff_q           = 0;
+    real ewaldcoeff_q = 0;
     //! Whether to compute energies (shift forces for virial are always computed on CPU)
-    bool              computeVirialAndEnergy = false;
+    bool computeVirialAndEnergy = false;
     //! The Coulomb interaction function
-    BenchMarkCoulomb  coulombType = BenchMarkCoulomb::Pme;
+    BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
     //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
-    bool              useTabulatedEwaldCorr  = false;
+    bool useTabulatedEwaldCorr = false;
     //! Whether to run all combinations of Coulomb type, combination rule and SIMD
-    bool              doAll                  = false;
+    bool doAll = false;
     //! Number of iterations to run before running each kernel benchmark, currently always 1
-    int               numPreIterations       = 1;
+    int numPreIterations = 1;
     //! The number of iterations for each kernel
-    int               numIterations          = 100;
+    int numIterations = 100;
     //! The number of (untimed) iterations to run at startup to warm up the CPU
-    int               numWarmupIterations    = 0;
+    int numWarmupIterations = 0;
     //! Print cycles/pair instead of pairs/cycle
-    bool              cyclesPerPair          = false;
+    bool cyclesPerPair = false;
 };
 
 /*! \brief
@@ -126,8 +126,7 @@ struct KernelBenchOptions
  * \param[in] sizeFactor How much should the system size be increased.
  * \param[in] options How the benchmark will be run.
  */
-void bench(int                       sizeFactor,
-           const KernelBenchOptions &options);
+void bench(int sizeFactor, const KernelBenchOptions& options);
 
 } // namespace Nbnxm
 

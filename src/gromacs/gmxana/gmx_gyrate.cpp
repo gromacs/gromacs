@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,12 +59,21 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
-                      rvec gvec, rvec d, gmx_bool bQ, gmx_bool bRot, gmx_bool bMOI, matrix trans)
+static real calc_gyro(rvec     x[],
+                      int      gnx,
+                      int      index[],
+                      t_atom   atom[],
+                      real     tm,
+                      rvec     gvec,
+                      rvec     d,
+                      gmx_bool bQ,
+                      gmx_bool bRot,
+                      gmx_bool bMOI,
+                      matrix   trans)
 {
-    int    i, ii, m;
-    real   gyro, dx2, m0, Itot;
-    rvec   comp;
+    int  i, ii, m;
+    real gyro, dx2, m0, Itot;
+    rvec comp;
 
     if (bRot)
     {
@@ -76,7 +85,7 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
         }
         for (m = 0; (m < DIM); m++)
         {
-            d[m] = std::sqrt(d[m]/tm);
+            d[m] = std::sqrt(d[m] / tm);
         }
         /* rotate_atoms(gnx,index,x,trans); */
     }
@@ -94,26 +103,24 @@ static real calc_gyro(rvec x[], int gnx, int index[], t_atom atom[], real tm,
         }
         for (m = 0; (m < DIM); m++)
         {
-            dx2      = x[ii][m]*x[ii][m];
-            comp[m] += dx2*m0;
+            dx2 = x[ii][m] * x[ii][m];
+            comp[m] += dx2 * m0;
         }
     }
-    gyro = comp[XX]+comp[YY]+comp[ZZ];
+    gyro = comp[XX] + comp[YY] + comp[ZZ];
 
     for (m = 0; (m < DIM); m++)
     {
-        gvec[m] = std::sqrt((gyro-comp[m])/tm);
+        gvec[m] = std::sqrt((gyro - comp[m]) / tm);
     }
 
-    return std::sqrt(gyro/tm);
+    return std::sqrt(gyro / tm);
 }
 
-static void calc_gyro_z(rvec x[], matrix box,
-                        int gnx, const int index[], t_atom atom[],
-                        int nz, real time, FILE *out)
+static void calc_gyro_z(rvec x[], matrix box, int gnx, const int index[], t_atom atom[], int nz, real time, FILE* out)
 {
-    static dvec   *inertia = nullptr;
-    static double *tm      = nullptr;
+    static dvec*   inertia = nullptr;
+    static double* tm      = nullptr;
     int            i, ii, j, zi;
     real           zf, w, sdet, e1, e2;
 
@@ -132,7 +139,7 @@ static void calc_gyro_z(rvec x[], matrix box,
     for (i = 0; (i < gnx); i++)
     {
         ii = index[i];
-        zf = nz*x[ii][ZZ]/box[ZZ][ZZ];
+        zf = nz * x[ii][ZZ] / box[ZZ][ZZ];
         if (zf >= nz)
         {
             zf -= nz;
@@ -148,11 +155,11 @@ static void calc_gyro_z(rvec x[], matrix box,
             {
                 zi = 0;
             }
-            w               = atom[ii].m*(1 + std::cos(M_PI*(zf - zi)));
-            inertia[zi][0] += w*gmx::square(x[ii][YY]);
-            inertia[zi][1] += w*gmx::square(x[ii][XX]);
-            inertia[zi][2] -= w*x[ii][XX]*x[ii][YY];
-            tm[zi]         += w;
+            w = atom[ii].m * (1 + std::cos(M_PI * (zf - zi)));
+            inertia[zi][0] += w * gmx::square(x[ii][YY]);
+            inertia[zi][1] += w * gmx::square(x[ii][XX]);
+            inertia[zi][2] -= w * x[ii][XX] * x[ii][YY];
+            tm[zi] += w;
         }
     }
     fprintf(out, "%10g", time);
@@ -162,18 +169,18 @@ static void calc_gyro_z(rvec x[], matrix box,
         {
             inertia[j][i] /= tm[j];
         }
-        sdet = std::sqrt(gmx::square(inertia[j][0] - inertia[j][1]) + 4*gmx::square(inertia[j][2]));
-        e1   = std::sqrt(0.5*(inertia[j][0] + inertia[j][1] + sdet));
-        e2   = std::sqrt(0.5*(inertia[j][0] + inertia[j][1] - sdet));
+        sdet = std::sqrt(gmx::square(inertia[j][0] - inertia[j][1]) + 4 * gmx::square(inertia[j][2]));
+        e1   = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] + sdet));
+        e2   = std::sqrt(0.5 * (inertia[j][0] + inertia[j][1] - sdet));
         fprintf(out, " %5.3f %5.3f", e1, e2);
     }
     fprintf(out, "\n");
 }
 
 
-int gmx_gyrate(int argc, char *argv[])
+int gmx_gyrate(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
@@ -186,57 +193,66 @@ int gmx_gyrate(int argc, char *argv[])
         "With the option [TT]-nz[tt] 2D radii of gyration in the [IT]x-y[it] plane",
         "of slices along the [IT]z[it]-axis are calculated."
     };
-    static int        nmol = 1, nz = 0;
-    static gmx_bool   bQ   = FALSE, bRot = FALSE, bMOI = FALSE;
-    t_pargs           pa[] = {
-        { "-nmol", FALSE, etINT, {&nmol},
-          "The number of molecules to analyze" },
-        { "-q", FALSE, etBOOL, {&bQ},
+    static int      nmol = 1, nz = 0;
+    static gmx_bool bQ = FALSE, bRot = FALSE, bMOI = FALSE;
+    t_pargs         pa[] = {
+        { "-nmol", FALSE, etINT, { &nmol }, "The number of molecules to analyze" },
+        { "-q",
+          FALSE,
+          etBOOL,
+          { &bQ },
           "Use absolute value of the charge of an atom as weighting factor instead of mass" },
-        { "-p", FALSE, etBOOL, {&bRot},
+        { "-p",
+          FALSE,
+          etBOOL,
+          { &bRot },
           "Calculate the radii of gyration about the principal axes." },
-        { "-moi", FALSE, etBOOL, {&bMOI},
+        { "-moi",
+          FALSE,
+          etBOOL,
+          { &bMOI },
           "Calculate the moments of inertia (defined by the principal axes)." },
-        { "-nz", FALSE, etINT, {&nz},
+        { "-nz",
+          FALSE,
+          etINT,
+          { &nz },
           "Calculate the 2D radii of gyration of this number of slices along the z-axis" },
     };
-    FILE             *out;
-    t_trxstatus      *status;
+    FILE*             out;
+    t_trxstatus*      status;
     t_topology        top;
     int               ePBC;
-    rvec             *x, *x_s;
+    rvec *            x, *x_s;
     rvec              xcm, gvec, gvec1;
     matrix            box, trans;
     gmx_bool          bACF;
-    real            **moi_trans = nullptr;
-    int               max_moi   = 0, delta_moi = 100;
+    real**            moi_trans = nullptr;
+    int               max_moi = 0, delta_moi = 100;
     rvec              d, d1; /* eigenvalues of inertia tensor */
     real              t, t0, tm, gyro;
     int               natoms;
-    char             *grpname;
+    char*             grpname;
     int               j, m, gnx, nam, mol;
-    int              *index;
-    gmx_output_env_t *oenv;
+    int*              index;
+    gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc   = nullptr;
-    const char       *leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
-    const char       *legI[] = { "Itot", "I1", "I2", "I3" };
+    const char*       leg[]  = { "Rg", "Rg\\sX\\N", "Rg\\sY\\N", "Rg\\sZ\\N" };
+    const char*       legI[] = { "Itot", "I1", "I2", "I3" };
 #define NLEG asize(leg)
-    t_filenm          fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efXVG, nullptr,   "gyrate",   ffWRITE },
-        { efXVG, "-acf", "moi-acf",  ffOPTWR },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },      { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },  { efXVG, nullptr, "gyrate", ffWRITE },
+        { efXVG, "-acf", "moi-acf", ffOPTWR },
     };
 #define NFILE asize(fnm)
-    int               npargs;
-    t_pargs          *ppa;
+    int      npargs;
+    t_pargs* ppa;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, npargs, ppa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         sfree(ppa);
         return 0;
@@ -273,7 +289,7 @@ int gmx_gyrate(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "The number of atoms in the group (%d) is not a multiple of nmol (%d)", gnx, nmol);
     }
-    nam = gnx/nmol;
+    nam = gnx / nmol;
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(x_s, natoms);
@@ -282,18 +298,18 @@ int gmx_gyrate(int argc, char *argv[])
     t0 = t;
     if (bQ)
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of Charge (total and around axes)", "Time (ps)", "Rg (nm)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Radius of Charge (total and around axes)",
+                       "Time (ps)", "Rg (nm)", oenv);
     }
     else if (bMOI)
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Moments of inertia (total and around axes)", "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Moments of inertia (total and around axes)",
+                       "Time (ps)", "I (a.m.u. nm\\S2\\N)", oenv);
     }
     else
     {
-        out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                       "Radius of gyration (total and around axes)", "Time (ps)", "Rg (nm)", oenv);
+        out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Radius of gyration (total and around axes)",
+                       "Time (ps)", "Rg (nm)", oenv);
     }
     if (bMOI)
     {
@@ -327,15 +343,15 @@ int gmx_gyrate(int argc, char *argv[])
         clear_rvec(d1);
         for (mol = 0; mol < nmol; mol++)
         {
-            tm    = sub_xcm(nz == 0 ? x_s : x, nam, index+mol*nam, top.atoms.atom, xcm, bQ);
+            tm = sub_xcm(nz == 0 ? x_s : x, nam, index + mol * nam, top.atoms.atom, xcm, bQ);
             if (nz == 0)
             {
-                gyro += calc_gyro(x_s, nam, index+mol*nam, top.atoms.atom,
-                                  tm, gvec1, d1, bQ, bRot, bMOI, trans);
+                gyro += calc_gyro(x_s, nam, index + mol * nam, top.atoms.atom, tm, gvec1, d1, bQ,
+                                  bRot, bMOI, trans);
             }
             else
             {
-                calc_gyro_z(x, box, nam, index+mol*nam, top.atoms.atom, nz, t, out);
+                calc_gyro_z(x, box, nam, index + mol * nam, top.atoms.atom, nz, t, out);
             }
             rvec_inc(gvec, gvec1);
             rvec_inc(d, d1);
@@ -343,8 +359,8 @@ int gmx_gyrate(int argc, char *argv[])
         if (nmol > 0)
         {
             gyro /= nmol;
-            svmul(1.0/nmol, gvec, gvec);
-            svmul(1.0/nmol, d, d);
+            svmul(1.0 / nmol, gvec, gvec);
+            svmul(1.0 / nmol, d, d);
         }
 
         if (nz == 0)
@@ -356,25 +372,22 @@ int gmx_gyrate(int argc, char *argv[])
                     max_moi += delta_moi;
                     for (m = 0; (m < DIM); m++)
                     {
-                        srenew(moi_trans[m], max_moi*DIM);
+                        srenew(moi_trans[m], max_moi * DIM);
                     }
                 }
                 for (m = 0; (m < DIM); m++)
                 {
-                    copy_rvec(trans[m], moi_trans[m]+DIM*j);
+                    copy_rvec(trans[m], moi_trans[m] + DIM * j);
                 }
-                fprintf(out, "%10g  %10g  %10g  %10g  %10g\n",
-                        t, gyro, d[XX], d[YY], d[ZZ]);
+                fprintf(out, "%10g  %10g  %10g  %10g  %10g\n", t, gyro, d[XX], d[YY], d[ZZ]);
             }
             else
             {
-                fprintf(out, "%10g  %10g  %10g  %10g  %10g\n",
-                        t, gyro, gvec[XX], gvec[YY], gvec[ZZ]);
+                fprintf(out, "%10g  %10g  %10g  %10g  %10g\n", t, gyro, gvec[XX], gvec[YY], gvec[ZZ]);
             }
         }
         j++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
     if (nz == 0)
     {
@@ -387,9 +400,8 @@ int gmx_gyrate(int argc, char *argv[])
     {
         int mode = eacVector;
 
-        do_autocorr(opt2fn("-acf", NFILE, fnm), oenv,
-                    "Moment of inertia vector ACF",
-                    j, 3, moi_trans, (t-t0)/j, mode, FALSE);
+        do_autocorr(opt2fn("-acf", NFILE, fnm), oenv, "Moment of inertia vector ACF", j, 3,
+                    moi_trans, (t - t0) / j, mode, FALSE);
         do_view(oenv, opt2fn("-acf", NFILE, fnm), "-nxy");
     }
 

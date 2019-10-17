@@ -91,11 +91,10 @@ namespace gmx
 {
 void ModularSimulator::run()
 {
-    GMX_LOG(mdlog.info).asParagraph().
-        appendText("Using the modular simulator.");
+    GMX_LOG(mdlog.info).asParagraph().appendText("Using the modular simulator.");
     constructElementsAndSignallers();
     simulatorSetup();
-    for (auto &signaller : signallerCallList_)
+    for (auto& signaller : signallerCallList_)
     {
         signaller->signallerSetup();
     }
@@ -104,7 +103,7 @@ void ModularSimulator::run()
         domDecHelper_->setup();
     }
 
-    for (auto &element : elementsOwnershipList_)
+    for (auto& element : elementsOwnershipList_)
     {
         element->elementSetup();
     }
@@ -127,7 +126,7 @@ void ModularSimulator::run()
         }
     }
 
-    for (auto &element : elementsOwnershipList_)
+    for (auto& element : elementsOwnershipList_)
     {
         element->elementTeardown();
     }
@@ -146,21 +145,22 @@ void ModularSimulator::simulatorSetup()
         // turning it off is for convenience in benchmarking, which is
         // something that should not show up in the general user
         // interface.
-        GMX_LOG(mdlog.info).asParagraph().
-            appendText("The -noconfout functionality is deprecated, and "
-                       "may be removed in a future version.");
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendText(
+                        "The -noconfout functionality is deprecated, and "
+                        "may be removed in a future version.");
     }
 
     if (MASTER(cr))
     {
         char        sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
         std::string timeString;
-        fprintf(stderr, "starting mdrun '%s'\n",
-                *(top_global->name));
+        fprintf(stderr, "starting mdrun '%s'\n", *(top_global->name));
         if (inputrec->nsteps >= 0)
         {
-            timeString = formatString(
-                        "%8.1f", static_cast<double>(inputrec->init_step+inputrec->nsteps)*inputrec->delta_t);
+            timeString = formatString("%8.1f", static_cast<double>(inputrec->init_step + inputrec->nsteps)
+                                                       * inputrec->delta_t);
         }
         else
         {
@@ -169,15 +169,13 @@ void ModularSimulator::simulatorSetup()
         if (inputrec->init_step > 0)
         {
             fprintf(stderr, "%s steps, %s ps (continuing from step %s, %8.1f ps).\n",
-                    gmx_step_str(inputrec->init_step+inputrec->nsteps, sbuf),
-                    timeString.c_str(),
-                    gmx_step_str(inputrec->init_step, sbuf2),
-                    inputrec->init_step*inputrec->delta_t);
+                    gmx_step_str(inputrec->init_step + inputrec->nsteps, sbuf), timeString.c_str(),
+                    gmx_step_str(inputrec->init_step, sbuf2), inputrec->init_step * inputrec->delta_t);
         }
         else
         {
-            fprintf(stderr, "%s steps, %s ps.\n",
-                    gmx_step_str(inputrec->nsteps, sbuf), timeString.c_str());
+            fprintf(stderr, "%s steps, %s ps.\n", gmx_step_str(inputrec->nsteps, sbuf),
+                    timeString.c_str());
         }
         fprintf(fplog, "\n");
     }
@@ -189,12 +187,9 @@ void ModularSimulator::simulatorSetup()
     step_ = inputrec->init_step;
 }
 
-void ModularSimulator::preStep(
-        Step step, Time gmx_unused time,
-        bool isNeighborSearchingStep)
+void ModularSimulator::preStep(Step step, Time gmx_unused time, bool isNeighborSearchingStep)
 {
-    if (stopHandler_->stoppingAfterCurrentStep(isNeighborSearchingStep) &&
-        step != signalHelper_->lastStep_)
+    if (stopHandler_->stoppingAfterCurrentStep(isNeighborSearchingStep) && step != signalHelper_->lastStep_)
     {
         /*
          * Stop handler wants to stop after the current step, which was
@@ -234,13 +229,12 @@ void ModularSimulator::postStep(Step step, Time gmx_unused time)
             }
         }
     }
-    const bool do_verbose = mdrunOptions.verbose &&
-        (step % mdrunOptions.verboseStepPrintInterval == 0 ||
-         step == inputrec->init_step || step == signalHelper_->lastStep_);
+    const bool do_verbose = mdrunOptions.verbose
+                            && (step % mdrunOptions.verboseStepPrintInterval == 0
+                                || step == inputrec->init_step || step == signalHelper_->lastStep_);
     // Print the remaining wall clock time for the run
-    if (MASTER(cr) &&
-        (do_verbose || gmx_got_usr_signal()) &&
-        !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
+    if (MASTER(cr) && (do_verbose || gmx_got_usr_signal())
+        && !(pmeLoadBalanceHelper_ && pmeLoadBalanceHelper_->pmePrinting()))
     {
         print_time(stderr, walltime_accounting, step, inputrec, cr);
     }
@@ -252,10 +246,9 @@ void ModularSimulator::postStep(Step step, Time gmx_unused time)
     }
 
     resetHandler_->resetCounters(
-            step, step - inputrec->init_step, mdlog, fplog, cr, fr->nbv.get(),
-            nrnb, fr->pmedata,
-            pmeLoadBalanceHelper_ ? pmeLoadBalanceHelper_->loadBalancingObject() : nullptr,
-            wcycle, walltime_accounting);
+            step, step - inputrec->init_step, mdlog, fplog, cr, fr->nbv.get(), nrnb, fr->pmedata,
+            pmeLoadBalanceHelper_ ? pmeLoadBalanceHelper_->loadBalancingObject() : nullptr, wcycle,
+            walltime_accounting);
 }
 
 void ModularSimulator::simulatorTeardown()
@@ -276,15 +269,14 @@ void ModularSimulator::simulatorTeardown()
 void ModularSimulator::populateTaskQueue()
 {
     auto registerRunFunction = std::make_unique<RegisterRunFunction>(
-                [this](SimulatorRunFunctionPtr ptr)
-                {taskQueue_.push(std::move(ptr)); });
+            [this](SimulatorRunFunctionPtr ptr) { taskQueue_.push(std::move(ptr)); });
 
     Time startTime = inputrec->init_t;
     Time timeStep  = inputrec->delta_t;
-    Time time      = startTime + step_*timeStep;
+    Time time      = startTime + step_ * timeStep;
 
     // Run an initial call to the signallers
-    for (auto &signaller : signallerCallList_)
+    for (auto& signaller : signallerCallList_)
     {
         signaller->signal(step_, time);
     }
@@ -310,28 +302,25 @@ void ModularSimulator::populateTaskQueue()
         const bool isNSStep = step == signalHelper_->nextNSStep_;
 
         // register pre-step
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this, step, time, isNSStep](){preStep(step, time, isNSStep); }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                [this, step, time, isNSStep]() { preStep(step, time, isNSStep); }));
         // register elements for step
-        for (auto &element : elementCallList_)
+        for (auto& element : elementCallList_)
         {
             element->scheduleTask(step_, time, registerRunFunction);
         }
         // register post-step
         (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this, step, time](){postStep(step, time); }));
+                std::make_unique<SimulatorRunFunction>([this, step, time]() { postStep(step, time); }));
 
         // prepare next step
         step_++;
-        time = startTime + step_*timeStep;
-        for (auto &signaller : signallerCallList_)
+        time = startTime + step_ * timeStep;
+        for (auto& signaller : signallerCallList_)
         {
             signaller->signal(step_, time);
         }
-    }
-    while (step_ != signalHelper_->nextNSStep_ && step_ <= signalHelper_->lastStep_);
+    } while (step_ != signalHelper_->nextNSStep_ && step_ <= signalHelper_->lastStep_);
 }
 
 void ModularSimulator::constructElementsAndSignallers()
@@ -367,41 +356,38 @@ void ModularSimulator::constructElementsAndSignallers()
      * Build data structures
      */
     std::unique_ptr<FreeEnergyPerturbationElement> freeEnergyPerturbationElement    = nullptr;
-    FreeEnergyPerturbationElement                 *freeEnergyPerturbationElementPtr = nullptr;
+    FreeEnergyPerturbationElement*                 freeEnergyPerturbationElementPtr = nullptr;
     if (inputrec->efep != efepNO)
     {
-        freeEnergyPerturbationElement = std::make_unique<FreeEnergyPerturbationElement>(
-                    fplog, inputrec, mdAtoms);
+        freeEnergyPerturbationElement =
+                std::make_unique<FreeEnergyPerturbationElement>(fplog, inputrec, mdAtoms);
         freeEnergyPerturbationElementPtr = freeEnergyPerturbationElement.get();
     }
 
     auto statePropagatorData = std::make_unique<StatePropagatorData>(
-                top_global->natoms, fplog, cr, state_global,
-                inputrec->nstxout, inputrec->nstvout,
-                inputrec->nstfout, inputrec->nstxout_compressed,
-                fr->nbv->useGpu(), freeEnergyPerturbationElementPtr,
-                inputrec, mdAtoms->mdatoms());
+            top_global->natoms, fplog, cr, state_global, inputrec->nstxout, inputrec->nstvout,
+            inputrec->nstfout, inputrec->nstxout_compressed, fr->nbv->useGpu(),
+            freeEnergyPerturbationElementPtr, inputrec, mdAtoms->mdatoms());
     auto statePropagatorDataPtr = compat::make_not_null(statePropagatorData.get());
 
     auto energyElement = std::make_unique<EnergyElement>(
-                statePropagatorDataPtr, freeEnergyPerturbationElementPtr,
-                top_global, inputrec, mdAtoms, enerd, ekind,
-                constr, fplog, fcd, mdModulesNotifier, MASTER(cr), observablesHistory, startingBehavior);
+            statePropagatorDataPtr, freeEnergyPerturbationElementPtr, top_global, inputrec, mdAtoms,
+            enerd, ekind, constr, fplog, fcd, mdModulesNotifier, MASTER(cr), observablesHistory,
+            startingBehavior);
     auto energyElementPtr = compat::make_not_null(energyElement.get());
 
-    topologyHolder_ = std::make_unique<TopologyHolder>(
-                *top_global, cr, inputrec, fr,
-                mdAtoms, constr, vsite);
+    topologyHolder_ =
+            std::make_unique<TopologyHolder>(*top_global, cr, inputrec, fr, mdAtoms, constr, vsite);
 
     /*
      * Build stop handler
      */
     const bool simulationsShareState = false;
-    stopHandler_ = stopHandlerBuilder->getStopHandlerMD(
-                compat::not_null<SimulationSignal*>(&signals_[eglsSTOPCOND]),
-                simulationsShareState, MASTER(cr), inputrec->nstlist, mdrunOptions.reproducible,
-                nstglobalcomm_, mdrunOptions.maximumHoursToRun, inputrec->nstlist == 0, fplog,
-                stophandlerCurrentStep_, stophandlerIsNSStep_, walltime_accounting);
+    stopHandler_                     = stopHandlerBuilder->getStopHandlerMD(
+            compat::not_null<SimulationSignal*>(&signals_[eglsSTOPCOND]), simulationsShareState,
+            MASTER(cr), inputrec->nstlist, mdrunOptions.reproducible, nstglobalcomm_,
+            mdrunOptions.maximumHoursToRun, inputrec->nstlist == 0, fplog, stophandlerCurrentStep_,
+            stophandlerIsNSStep_, walltime_accounting);
 
     /*
      * Create simulator builders
@@ -432,21 +418,14 @@ void ModularSimulator::constructElementsAndSignallers()
      * have a full timestep state.
      */
     // TODO: Make a CheckpointHelperBuilder
-    std::vector<ICheckpointHelperClient*> checkpointClients = {
-        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr
-    };
-    CheckBondedInteractionsCallbackPtr    checkBondedInteractionsCallback = nullptr;
-    auto integrator = buildIntegrator(
-                &neighborSearchSignallerBuilder,
-                &energySignallerBuilder,
-                &loggingSignallerBuilder,
-                &trajectoryElementBuilder,
-                &checkpointClients,
-                &checkBondedInteractionsCallback,
-                statePropagatorDataPtr,
-                energyElementPtr,
-                freeEnergyPerturbationElementPtr,
-                hasReadEkinState);
+    std::vector<ICheckpointHelperClient*> checkpointClients = { statePropagatorDataPtr, energyElementPtr,
+                                                                freeEnergyPerturbationElementPtr };
+    CheckBondedInteractionsCallbackPtr checkBondedInteractionsCallback = nullptr;
+    auto                               integrator =
+            buildIntegrator(&neighborSearchSignallerBuilder, &energySignallerBuilder,
+                            &loggingSignallerBuilder, &trajectoryElementBuilder, &checkpointClients,
+                            &checkBondedInteractionsCallback, statePropagatorDataPtr,
+                            energyElementPtr, freeEnergyPerturbationElementPtr, hasReadEkinState);
 
     /*
      * Build infrastructure elements
@@ -455,30 +434,29 @@ void ModularSimulator::constructElementsAndSignallers()
     if (PmeLoadBalanceHelper::doPmeLoadBalancing(mdrunOptions, inputrec, fr))
     {
         pmeLoadBalanceHelper_ = std::make_unique<PmeLoadBalanceHelper>(
-                    mdrunOptions.verbose, statePropagatorDataPtr, fplog,
-                    cr, mdlog, inputrec, wcycle, fr);
-        neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(pmeLoadBalanceHelper_.get()));
+                mdrunOptions.verbose, statePropagatorDataPtr, fplog, cr, mdlog, inputrec, wcycle, fr);
+        neighborSearchSignallerBuilder.registerSignallerClient(
+                compat::make_not_null(pmeLoadBalanceHelper_.get()));
     }
 
     if (DOMAINDECOMP(cr))
     {
-        GMX_ASSERT(
-                checkBondedInteractionsCallback,
-                "Domain decomposition needs a callback for check the number of bonded interactions.");
+        GMX_ASSERT(checkBondedInteractionsCallback,
+                   "Domain decomposition needs a callback for check the number of bonded "
+                   "interactions.");
         domDecHelper_ = std::make_unique<DomDecHelper>(
-                    mdrunOptions.verbose, mdrunOptions.verboseStepPrintInterval,
-                    statePropagatorDataPtr, topologyHolder_.get(), std::move(checkBondedInteractionsCallback),
-                    nstglobalcomm_, fplog, cr, mdlog, constr, inputrec, mdAtoms,
-                    nrnb, wcycle, fr, vsite, imdSession, pull_work);
+                mdrunOptions.verbose, mdrunOptions.verboseStepPrintInterval, statePropagatorDataPtr,
+                topologyHolder_.get(), std::move(checkBondedInteractionsCallback), nstglobalcomm_, fplog,
+                cr, mdlog, constr, inputrec, mdAtoms, nrnb, wcycle, fr, vsite, imdSession, pull_work);
         neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(domDecHelper_.get()));
     }
 
     const bool simulationsShareResetCounters = false;
-    resetHandler_ = std::make_unique<ResetHandler>(
-                compat::make_not_null<SimulationSignal*>(&signals_[eglsRESETCOUNTERS]),
-                simulationsShareResetCounters, inputrec->nsteps, MASTER(cr),
-                mdrunOptions.timingOptions.resetHalfway, mdrunOptions.maximumHoursToRun,
-                mdlog, wcycle, walltime_accounting);
+    resetHandler_                            = std::make_unique<ResetHandler>(
+            compat::make_not_null<SimulationSignal*>(&signals_[eglsRESETCOUNTERS]),
+            simulationsShareResetCounters, inputrec->nsteps, MASTER(cr),
+            mdrunOptions.timingOptions.resetHalfway, mdrunOptions.maximumHoursToRun, mdlog, wcycle,
+            walltime_accounting);
 
     /*
      * Build signaller list
@@ -488,44 +466,35 @@ void ModularSimulator::constructElementsAndSignallers()
      * maintained.
      */
     auto energySignaller = energySignallerBuilder.build(
-                inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple);
+            inputrec->nstcalcenergy, inputrec->fepvals->nstdhdl, inputrec->nstpcouple);
     trajectoryElementBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(energySignaller.get()));
     auto trajectoryElement = trajectoryElementBuilder.build(
-                fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
-                inputrec, top_global, oenv, wcycle, startingBehavior);
+            fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier, inputrec,
+            top_global, oenv, wcycle, startingBehavior);
     loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
 
     // Add checkpoint helper here since we need a pointer to the trajectory element and
     // need to register it with the lastStepSignallerBuilder
     auto checkpointHandler = std::make_unique<CheckpointHandler>(
-                compat::make_not_null<SimulationSignal*>(&signals_[eglsCHKPT]),
-                simulationsShareState, inputrec->nstlist == 0, MASTER(cr),
-                mdrunOptions.writeConfout, mdrunOptions.checkpointOptions.period);
+            compat::make_not_null<SimulationSignal*>(&signals_[eglsCHKPT]), simulationsShareState,
+            inputrec->nstlist == 0, MASTER(cr), mdrunOptions.writeConfout,
+            mdrunOptions.checkpointOptions.period);
     checkpointHelper_ = std::make_unique<CheckpointHelper>(
-                std::move(checkpointClients),
-                std::move(checkpointHandler),
-                inputrec->init_step, trajectoryElement.get(),
-                top_global->natoms, fplog, cr,
-                observablesHistory, walltime_accounting, state_global,
-                mdrunOptions.writeConfout);
+            std::move(checkpointClients), std::move(checkpointHandler), inputrec->init_step,
+            trajectoryElement.get(), top_global->natoms, fplog, cr, observablesHistory,
+            walltime_accounting, state_global, mdrunOptions.writeConfout);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(checkpointHelper_.get()));
 
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
-    auto loggingSignaller = loggingSignallerBuilder.build(
-                inputrec->nstlog,
-                inputrec->init_step,
-                inputrec->init_t);
+    auto loggingSignaller =
+            loggingSignallerBuilder.build(inputrec->nstlog, inputrec->init_step, inputrec->init_t);
     lastStepSignallerBuilder.registerSignallerClient(compat::make_not_null(loggingSignaller.get()));
-    auto lastStepSignaller = lastStepSignallerBuilder.build(
-                inputrec->nsteps,
-                inputrec->init_step,
-                stopHandler_.get());
+    auto lastStepSignaller =
+            lastStepSignallerBuilder.build(inputrec->nsteps, inputrec->init_step, stopHandler_.get());
     neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(lastStepSignaller.get()));
     auto neighborSearchSignaller = neighborSearchSignallerBuilder.build(
-                inputrec->nstlist,
-                inputrec->init_step,
-                inputrec->init_t);
+            inputrec->nstlist, inputrec->init_step, inputrec->init_t);
 
     addToCallListAndMove(std::move(neighborSearchSignaller), signallerCallList_, signallersOwnershipList_);
     addToCallListAndMove(std::move(lastStepSignaller), signallerCallList_, signallersOwnershipList_);
@@ -545,7 +514,8 @@ void ModularSimulator::constructElementsAndSignallers()
     addToCallList(checkpointHelper_, elementCallList_);
     if (freeEnergyPerturbationElement)
     {
-        addToCallListAndMove(std::move(freeEnergyPerturbationElement), elementCallList_, elementsOwnershipList_);
+        addToCallListAndMove(std::move(freeEnergyPerturbationElement), elementCallList_,
+                             elementsOwnershipList_);
     }
     addToCallListAndMove(std::move(integrator), elementCallList_, elementsOwnershipList_);
     addToCallListAndMove(std::move(trajectoryElement), elementCallList_, elementsOwnershipList_);
@@ -556,26 +526,26 @@ void ModularSimulator::constructElementsAndSignallers()
     elementsOwnershipList_.emplace_back(std::move(energyElement));
 }
 
-std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
-        SignallerBuilder<NeighborSearchSignaller> *neighborSearchSignallerBuilder,
-        SignallerBuilder<EnergySignaller>         *energySignallerBuilder,
-        StatePropagatorData                       *statePropagatorDataPtr,
-        EnergyElement                             *energyElementPtr,
-        FreeEnergyPerturbationElement             *freeEnergyPerturbationElement)
+std::unique_ptr<ISimulatorElement>
+ModularSimulator::buildForces(SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
+                              SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
+                              StatePropagatorData*                       statePropagatorDataPtr,
+                              EnergyElement*                             energyElementPtr,
+                              FreeEnergyPerturbationElement* freeEnergyPerturbationElement)
 {
     const bool isVerbose    = mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(inputrec);
     // Check for polarizable models and flexible constraints
-    if (ShellFCElement::doShellsOrFlexConstraints(
-                &topologyHolder_->globalTopology(), constr ? constr->numFlexibleConstraints() : 0))
+    if (ShellFCElement::doShellsOrFlexConstraints(&topologyHolder_->globalTopology(),
+                                                  constr ? constr->numFlexibleConstraints() : 0))
     {
         auto shellFCElement = std::make_unique<ShellFCElement>(
-                    statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
-                    isVerbose, isDynamicBox, fplog,
-                    cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork,
-                    vsite, imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
+                statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement, isVerbose,
+                isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork, vsite,
+                imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
         topologyHolder_->registerClient(shellFCElement.get());
-        neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
+        neighborSearchSignallerBuilder->registerSignallerClient(
+                compat::make_not_null(shellFCElement.get()));
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
 
         // std::move *should* not be needed with c++-14, but clang-3.6 still requires it
@@ -584,10 +554,9 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
     else
     {
         auto forceElement = std::make_unique<ForceElement>(
-                    statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
-                    isDynamicBox, fplog,
-                    cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle,
-                    runScheduleWork, vsite, imdSession, pull_work, enforcedRotation);
+                statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
+                isDynamicBox, fplog, cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork,
+                vsite, imdSession, pull_work, enforcedRotation);
         topologyHolder_->registerClient(forceElement.get());
         neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
@@ -598,62 +567,57 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
 }
 
 std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
-        SignallerBuilder<NeighborSearchSignaller> *neighborSearchSignallerBuilder,
-        SignallerBuilder<EnergySignaller>         *energySignallerBuilder,
-        SignallerBuilder<LoggingSignaller>        *loggingSignallerBuilder,
-        TrajectoryElementBuilder                  *trajectoryElementBuilder,
-        std::vector<ICheckpointHelperClient*>     *checkpointClients,
-        CheckBondedInteractionsCallbackPtr        *checkBondedInteractionsCallback,
+        SignallerBuilder<NeighborSearchSignaller>* neighborSearchSignallerBuilder,
+        SignallerBuilder<EnergySignaller>*         energySignallerBuilder,
+        SignallerBuilder<LoggingSignaller>*        loggingSignallerBuilder,
+        TrajectoryElementBuilder*                  trajectoryElementBuilder,
+        std::vector<ICheckpointHelperClient*>*     checkpointClients,
+        CheckBondedInteractionsCallbackPtr*        checkBondedInteractionsCallback,
         compat::not_null<StatePropagatorData*>     statePropagatorDataPtr,
         compat::not_null<EnergyElement*>           energyElementPtr,
         FreeEnergyPerturbationElement*             freeEnergyPerturbationElementPtr,
         bool                                       hasReadEkinState)
 {
-    auto forceElement = buildForces(
-                neighborSearchSignallerBuilder,
-                energySignallerBuilder,
-                statePropagatorDataPtr,
-                energyElementPtr,
-                freeEnergyPerturbationElementPtr);
+    auto forceElement =
+            buildForces(neighborSearchSignallerBuilder, energySignallerBuilder,
+                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr);
 
     // list of elements owned by the simulator composite object
-    std::vector< std::unique_ptr<ISimulatorElement> >   elementsOwnershipList;
+    std::vector<std::unique_ptr<ISimulatorElement>> elementsOwnershipList;
     // call list of the simulator composite object
-    std::vector< compat::not_null<ISimulatorElement*> > elementCallList;
+    std::vector<compat::not_null<ISimulatorElement*>> elementCallList;
 
     std::function<void()> needToCheckNumberOfBondedInteractions;
     if (inputrec->eI == eiMD)
     {
         auto computeGlobalsElement =
-            std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog> >(
-                    statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
-                    inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
+                std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog>>(
+                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                        &signals_, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb,
+                        wcycle, fr, &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElement.get());
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
-        trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElement.get()));
+        trajectoryElementBuilder->registerSignallerClient(
+                compat::make_not_null(computeGlobalsElement.get()));
 
-        *checkBondedInteractionsCallback = computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback();
+        *checkBondedInteractionsCallback =
+                computeGlobalsElement->getCheckNumberOfBondedInteractionsCallback();
 
-        auto propagator = std::make_unique< Propagator<IntegrationStep::LeapFrog> >(
-                    inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
+        auto propagator = std::make_unique<Propagator<IntegrationStep::LeapFrog>>(
+                inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
-        addToCallList(statePropagatorDataPtr, elementCallList);  // we have a full microstate at time t here!
+        addToCallList(statePropagatorDataPtr, elementCallList); // we have a full microstate at time t here!
         if (inputrec->etc == etcVRESCALE)
         {
             // TODO: With increased complexity of the propagator, this will need further development,
             //       e.g. using propagators templated for velocity propagation policies and a builder
             propagator->setNumVelocityScalingVariables(inputrec->opts.ngtc);
             auto thermostat = std::make_unique<VRescaleThermostat>(
-                        inputrec->nsttcouple, -1, false, inputrec->ld_seed,
-                        inputrec->opts.ngtc, inputrec->delta_t*inputrec->nsttcouple,
-                        inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
-                        energyElementPtr,
-                        propagator->viewOnVelocityScaling(),
-                        propagator->velocityScalingCallback(),
-                        state_global, cr, inputrec->bContinuation);
+                    inputrec->nsttcouple, -1, false, inputrec->ld_seed, inputrec->opts.ngtc,
+                    inputrec->delta_t * inputrec->nsttcouple, inputrec->opts.ref_t, inputrec->opts.tau_t,
+                    inputrec->opts.nrdf, energyElementPtr, propagator->viewOnVelocityScaling(),
+                    propagator->velocityScalingCallback(), state_global, cr, inputrec->bContinuation);
             checkpointClients->emplace_back(thermostat.get());
             energyElementPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
@@ -665,19 +629,19 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             // Building the PR barostat here since it needs access to the propagator
             // and we want to be able to move the propagator object
             prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
-                        inputrec->nstpcouple, -1, inputrec->delta_t*inputrec->nstpcouple, inputrec->init_step,
-                        propagator->viewOnPRScalingMatrix(), propagator->prScalingCallback(),
-                        statePropagatorDataPtr, energyElementPtr, fplog, inputrec, mdAtoms,
-                        state_global, cr, inputrec->bContinuation);
+                    inputrec->nstpcouple, -1, inputrec->delta_t * inputrec->nstpcouple,
+                    inputrec->init_step, propagator->viewOnPRScalingMatrix(),
+                    propagator->prScalingCallback(), statePropagatorDataPtr, energyElementPtr,
+                    fplog, inputrec, mdAtoms, state_global, cr, inputrec->bContinuation);
             energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
             checkpointClients->emplace_back(prBarostat.get());
         }
         addToCallListAndMove(std::move(propagator), elementCallList, elementsOwnershipList);
         if (constr)
         {
-            auto constraintElement = std::make_unique< ConstraintsElement<ConstraintVariable::Positions> >(
-                        constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                        MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
+            auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
+                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             auto constraintElementPtr = compat::make_not_null(constraintElement.get());
             energySignallerBuilder->registerSignallerClient(constraintElementPtr);
             trajectoryElementBuilder->registerSignallerClient(constraintElementPtr);
@@ -687,7 +651,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         }
 
         addToCallListAndMove(std::move(computeGlobalsElement), elementCallList, elementsOwnershipList);
-        addToCallList(energyElementPtr, elementCallList);  // we have the energies at time t here!
+        addToCallList(energyElementPtr, elementCallList); // we have the energies at time t here!
         if (prBarostat)
         {
             addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);
@@ -696,31 +660,35 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
     else if (inputrec->eI == eiVV)
     {
         auto computeGlobalsElementAtFullTimeStep =
-            std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep> >(
-                    statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
-                    inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
+                std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep>>(
+                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                        &signals_, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb,
+                        wcycle, fr, &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAtFullTimeStep.get());
-        energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
-        trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
+        energySignallerBuilder->registerSignallerClient(
+                compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
+        trajectoryElementBuilder->registerSignallerClient(
+                compat::make_not_null(computeGlobalsElementAtFullTimeStep.get()));
 
         auto computeGlobalsElementAfterCoordinateUpdate =
-            std::make_unique<ComputeGlobalsElement <ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate> >(
-                    statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
-                    inputrec, mdAtoms, nrnb, wcycle, fr,
-                    &topologyHolder_->globalTopology(), constr, hasReadEkinState);
+                std::make_unique<ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate>>(
+                        statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                        &signals_, nstglobalcomm_, fplog, mdlog, cr, inputrec, mdAtoms, nrnb,
+                        wcycle, fr, &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAfterCoordinateUpdate.get());
-        energySignallerBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
-        trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
+        energySignallerBuilder->registerSignallerClient(
+                compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
+        trajectoryElementBuilder->registerSignallerClient(
+                compat::make_not_null(computeGlobalsElementAfterCoordinateUpdate.get()));
 
-        *checkBondedInteractionsCallback = computeGlobalsElementAfterCoordinateUpdate->getCheckNumberOfBondedInteractionsCallback();
+        *checkBondedInteractionsCallback =
+                computeGlobalsElementAfterCoordinateUpdate->getCheckNumberOfBondedInteractionsCallback();
 
-        auto propagatorVelocities = std::make_unique< Propagator <IntegrationStep::VelocitiesOnly> >(
-                    inputrec->delta_t * 0.5, statePropagatorDataPtr, mdAtoms, wcycle);
-        auto propagatorVelocitiesAndPositions = std::make_unique< Propagator <IntegrationStep::VelocityVerletPositionsAndVelocities> >(
-                    inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
+        auto propagatorVelocities = std::make_unique<Propagator<IntegrationStep::VelocitiesOnly>>(
+                inputrec->delta_t * 0.5, statePropagatorDataPtr, mdAtoms, wcycle);
+        auto propagatorVelocitiesAndPositions =
+                std::make_unique<Propagator<IntegrationStep::VelocityVerletPositionsAndVelocities>>(
+                        inputrec->delta_t, statePropagatorDataPtr, mdAtoms, wcycle);
 
         addToCallListAndMove(std::move(forceElement), elementCallList, elementsOwnershipList);
 
@@ -730,58 +698,64 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
             // Building the PR barostat here since it needs access to the propagator
             // and we want to be able to move the propagator object
             prBarostat = std::make_unique<ParrinelloRahmanBarostat>(
-                        inputrec->nstpcouple, -1, inputrec->delta_t*inputrec->nstpcouple, inputrec->init_step,
-                        propagatorVelocities->viewOnPRScalingMatrix(), propagatorVelocities->prScalingCallback(),
-                        statePropagatorDataPtr, energyElementPtr, fplog, inputrec, mdAtoms,
-                        state_global, cr, inputrec->bContinuation);
+                    inputrec->nstpcouple, -1, inputrec->delta_t * inputrec->nstpcouple,
+                    inputrec->init_step, propagatorVelocities->viewOnPRScalingMatrix(),
+                    propagatorVelocities->prScalingCallback(), statePropagatorDataPtr, energyElementPtr,
+                    fplog, inputrec, mdAtoms, state_global, cr, inputrec->bContinuation);
             energyElementPtr->setParrinelloRahamnBarostat(prBarostat.get());
             checkpointClients->emplace_back(prBarostat.get());
         }
         addToCallListAndMove(std::move(propagatorVelocities), elementCallList, elementsOwnershipList);
         if (constr)
         {
-            auto constraintElement = std::make_unique< ConstraintsElement<ConstraintVariable::Velocities> >(
-                        constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                        MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
+            auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Velocities>>(
+                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            loggingSignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
+            trajectoryElementBuilder->registerSignallerClient(
+                    compat::make_not_null(constraintElement.get()));
+            loggingSignallerBuilder->registerSignallerClient(
+                    compat::make_not_null(constraintElement.get()));
 
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
         }
-        addToCallListAndMove(std::move(computeGlobalsElementAtFullTimeStep), elementCallList, elementsOwnershipList);
-        addToCallList(statePropagatorDataPtr, elementCallList);  // we have a full microstate at time t here!
+        addToCallListAndMove(std::move(computeGlobalsElementAtFullTimeStep), elementCallList,
+                             elementsOwnershipList);
+        addToCallList(statePropagatorDataPtr, elementCallList); // we have a full microstate at time t here!
         if (inputrec->etc == etcVRESCALE)
         {
             // TODO: With increased complexity of the propagator, this will need further development,
             //       e.g. using propagators templated for velocity propagation policies and a builder
             propagatorVelocitiesAndPositions->setNumVelocityScalingVariables(inputrec->opts.ngtc);
             auto thermostat = std::make_unique<VRescaleThermostat>(
-                        inputrec->nsttcouple, 0, true, inputrec->ld_seed,
-                        inputrec->opts.ngtc, inputrec->delta_t*inputrec->nsttcouple,
-                        inputrec->opts.ref_t, inputrec->opts.tau_t, inputrec->opts.nrdf,
-                        energyElementPtr,
-                        propagatorVelocitiesAndPositions->viewOnVelocityScaling(),
-                        propagatorVelocitiesAndPositions->velocityScalingCallback(),
-                        state_global, cr, inputrec->bContinuation);
+                    inputrec->nsttcouple, 0, true, inputrec->ld_seed, inputrec->opts.ngtc,
+                    inputrec->delta_t * inputrec->nsttcouple, inputrec->opts.ref_t,
+                    inputrec->opts.tau_t, inputrec->opts.nrdf, energyElementPtr,
+                    propagatorVelocitiesAndPositions->viewOnVelocityScaling(),
+                    propagatorVelocitiesAndPositions->velocityScalingCallback(), state_global, cr,
+                    inputrec->bContinuation);
             checkpointClients->emplace_back(thermostat.get());
             energyElementPtr->setVRescaleThermostat(thermostat.get());
             addToCallListAndMove(std::move(thermostat), elementCallList, elementsOwnershipList);
         }
-        addToCallListAndMove(std::move(propagatorVelocitiesAndPositions), elementCallList, elementsOwnershipList);
+        addToCallListAndMove(std::move(propagatorVelocitiesAndPositions), elementCallList,
+                             elementsOwnershipList);
         if (constr)
         {
-            auto constraintElement = std::make_unique< ConstraintsElement<ConstraintVariable::Positions> >(
-                        constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                        MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
+            auto constraintElement = std::make_unique<ConstraintsElement<ConstraintVariable::Positions>>(
+                    constr, statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
+                    MASTER(cr), fplog, inputrec, mdAtoms->mdatoms());
             energySignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            trajectoryElementBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
-            loggingSignallerBuilder->registerSignallerClient(compat::make_not_null(constraintElement.get()));
+            trajectoryElementBuilder->registerSignallerClient(
+                    compat::make_not_null(constraintElement.get()));
+            loggingSignallerBuilder->registerSignallerClient(
+                    compat::make_not_null(constraintElement.get()));
 
             addToCallListAndMove(std::move(constraintElement), elementCallList, elementsOwnershipList);
         }
-        addToCallListAndMove(std::move(computeGlobalsElementAfterCoordinateUpdate), elementCallList, elementsOwnershipList);
-        addToCallList(energyElementPtr, elementCallList);  // we have the energies at time t here!
+        addToCallListAndMove(std::move(computeGlobalsElementAfterCoordinateUpdate), elementCallList,
+                             elementsOwnershipList);
+        addToCallList(energyElementPtr, elementCallList); // we have the energies at time t here!
         if (prBarostat)
         {
             addToCallListAndMove(std::move(prBarostat), elementCallList, elementsOwnershipList);
@@ -792,165 +766,195 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         gmx_fatal(FARGS, "Integrator not implemented for the modular simulator.");
     }
 
-    auto integrator = std::make_unique<CompositeSimulatorElement>(
-                std::move(elementCallList), std::move(elementsOwnershipList));
+    auto integrator = std::make_unique<CompositeSimulatorElement>(std::move(elementCallList),
+                                                                  std::move(elementsOwnershipList));
     // std::move *should* not be needed with c++-14, but clang-3.6 still requires it
     return std::move(integrator);
 }
 
-bool ModularSimulator::isInputCompatible(
-        bool                             exitOnFailure,
-        const t_inputrec                *inputrec,
-        bool                             doRerun,
-        const gmx_vsite_t               *vsite,
-        const gmx_multisim_t            *ms,
-        const ReplicaExchangeParameters &replExParams,
-        const t_fcdata                  *fcd,
-        int                              nfile,
-        const t_filenm                  *fnm,
-        ObservablesHistory              *observablesHistory,
-        const gmx_membed_t              *membed)
+bool ModularSimulator::isInputCompatible(bool                             exitOnFailure,
+                                         const t_inputrec*                inputrec,
+                                         bool                             doRerun,
+                                         const gmx_vsite_t*               vsite,
+                                         const gmx_multisim_t*            ms,
+                                         const ReplicaExchangeParameters& replExParams,
+                                         const t_fcdata*                  fcd,
+                                         int                              nfile,
+                                         const t_filenm*                  fnm,
+                                         ObservablesHistory*              observablesHistory,
+                                         const gmx_membed_t*              membed)
 {
-    auto conditionalAssert =
-        [exitOnFailure](bool condition, const char* message)
+    auto conditionalAssert = [exitOnFailure](bool condition, const char* message) {
+        if (exitOnFailure)
         {
-            if (exitOnFailure)
-            {
-                GMX_RELEASE_ASSERT(condition, message);
-            }
-            return condition;
-        };
+            GMX_RELEASE_ASSERT(condition, message);
+        }
+        return condition;
+    };
 
     bool isInputCompatible = true;
 
     // GMX_USE_MODULAR_SIMULATOR allows to use modular simulator also for non-standard uses,
     // such as the leap-frog integrator
-    const auto modularSimulatorExplicitlyTurnedOn =
-        (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOn = (getenv("GMX_USE_MODULAR_SIMULATOR") != nullptr);
     // GMX_USE_MODULAR_SIMULATOR allows to use disable modular simulator for all uses,
     // including the velocity-verlet integrator used by default
-    const auto modularSimulatorExplicitlyTurnedOff =
-        (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
+    const auto modularSimulatorExplicitlyTurnedOff = (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOn && modularSimulatorExplicitlyTurnedOff),
             "Cannot have both GMX_USE_MODULAR_SIMULATOR=ON and GMX_DISABLE_MODULAR_SIMULATOR=ON. "
-            "Unset one of the two environment variables to explicitly chose which simulator to use, "
+            "Unset one of the two environment variables to explicitly chose which simulator to "
+            "use, "
             "or unset both to recover default behavior.");
 
     GMX_RELEASE_ASSERT(
-            !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
-            "Cannot use a Parrinello-Rahman barostat with md-vv and GMX_DISABLE_MODULAR_SIMULATOR=ON, "
+            !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV
+              && inputrec->epc == epcPARRINELLORAHMAN),
+            "Cannot use a Parrinello-Rahman barostat with md-vv and "
+            "GMX_DISABLE_MODULAR_SIMULATOR=ON, "
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
             "GMX_DISABLE_MODULAR_SIMULATOR or use a different pressure control algorithm.");
 
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->eI == eiMD || inputrec->eI == eiVV,
-                "Only integrators md and md-vv are supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->eI != eiMD || modularSimulatorExplicitlyTurnedOn,
-                "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular simulator with integrator md.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !doRerun,
-                "Rerun is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->etc == etcNO || inputrec->etc == etcVRESCALE,
-                "Only v-rescale thermostat is supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->epc == epcNO || inputrec->epc == epcPARRINELLORAHMAN,
-                "Only Parrinello-Rahman barostat is supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec) || inputrecNvtTrotter(inputrec)),
-                "Legacy Trotter decomposition is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->efep == efepNO || inputrec->efep == efepYES || inputrec->efep == efepSLOWGROWTH,
-                "Expanded ensemble free energy calculation is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !inputrec->bPull,
-                "Pulling is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->opts.ngacc == 1 && inputrec->opts.acc[0][XX] == 0.0 && inputrec->opts.acc[0][YY] == 0.0 &&
-                inputrec->opts.acc[0][ZZ] == 0.0 && inputrec->cos_accel == 0.0,
-                "Acceleration is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->opts.ngfrz == 1 && inputrec->opts.nFreeze[0][XX] == 0 &&
-                inputrec->opts.nFreeze[0][YY] == 0 && inputrec->opts.nFreeze[0][ZZ] == 0,
-                "Freeze groups are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0 && inputrec->deform[XX][ZZ] == 0.0 &&
-                inputrec->deform[YY][XX] == 0.0 && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0 &&
-                inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0 && inputrec->deform[ZZ][ZZ] == 0.0,
-                "Deformation is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                vsite == nullptr,
-                "Virtual sites are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !inputrec->bDoAwh,
-                "AWH is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                ms == nullptr,
-                "Multi-sim are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                replExParams.exchangeInterval == 0,
-                "Replica exchange is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                fcd->disres.nsystems <= 1,
-                "Ensemble restraints are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !doSimulatedAnnealing(inputrec),
-                "Simulated annealing is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !inputrec->bSimTemp,
-                "Simulated tempering is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !inputrec->bExpanded,
-                "Expanded ensemble simulations are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !(opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr),
-                "Essential dynamics is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->eSwapCoords == eswapNO,
-                "Ion / water position swapping is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !inputrec->bIMD,
-                "Interactive MD is not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                membed == nullptr,
-                "Membrane embedding is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       inputrec->eI == eiMD || inputrec->eI == eiVV,
+                       "Only integrators md and md-vv are supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(inputrec->eI != eiMD || modularSimulatorExplicitlyTurnedOn,
+                                             "Set GMX_USE_MODULAR_SIMULATOR=ON to use the modular "
+                                             "simulator with integrator md.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(!doRerun, "Rerun is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       inputrec->etc == etcNO || inputrec->etc == etcVRESCALE,
+                       "Only v-rescale thermostat is supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       inputrec->epc == epcNO || inputrec->epc == epcPARRINELLORAHMAN,
+                       "Only Parrinello-Rahman barostat is supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       !(inputrecNptTrotter(inputrec) || inputrecNphTrotter(inputrec)
+                         || inputrecNvtTrotter(inputrec)),
+                       "Legacy Trotter decomposition is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(inputrec->efep == efepNO || inputrec->efep == efepYES
+                                                     || inputrec->efep == efepSLOWGROWTH,
+                                             "Expanded ensemble free energy calculation is not "
+                                             "supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(!inputrec->bPull,
+                                             "Pulling is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(inputrec->opts.ngacc == 1 && inputrec->opts.acc[0][XX] == 0.0
+                                         && inputrec->opts.acc[0][YY] == 0.0
+                                         && inputrec->opts.acc[0][ZZ] == 0.0 && inputrec->cos_accel == 0.0,
+                                 "Acceleration is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(inputrec->opts.ngfrz == 1 && inputrec->opts.nFreeze[0][XX] == 0
+                                         && inputrec->opts.nFreeze[0][YY] == 0
+                                         && inputrec->opts.nFreeze[0][ZZ] == 0,
+                                 "Freeze groups are not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0
+                               && inputrec->deform[XX][ZZ] == 0.0 && inputrec->deform[YY][XX] == 0.0
+                               && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0
+                               && inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0
+                               && inputrec->deform[ZZ][ZZ] == 0.0,
+                       "Deformation is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(vsite == nullptr,
+                                 "Virtual sites are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(!inputrec->bDoAwh,
+                                             "AWH is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(ms == nullptr,
+                                 "Multi-sim are not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(replExParams.exchangeInterval == 0,
+                                 "Replica exchange is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(fcd->disres.nsystems <= 1,
+                                 "Ensemble restraints are not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(!doSimulatedAnnealing(inputrec),
+                                 "Simulated annealing is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(!inputrec->bSimTemp,
+                                 "Simulated tempering is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(!inputrec->bExpanded,
+                                             "Expanded ensemble simulations are not supported by "
+                                             "the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       !(opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr),
+                       "Essential dynamics is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(inputrec->eSwapCoords == eswapNO,
+                                             "Ion / water position swapping is not supported by "
+                                             "the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(!inputrec->bIMD,
+                                 "Interactive MD is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(membed == nullptr,
+                                 "Membrane embedding is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
-                "Integration on the GPU is not supported by the modular simulator.");
+    isInputCompatible =
+            isInputCompatible
+            && conditionalAssert(
+                       getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
+                       "Integration on the GPU is not supported by the modular simulator.");
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                inputrec->nstlist != 0,
-                "Simulations without neighbor list update are not supported by the modular simulator.");
-    isInputCompatible = isInputCompatible && conditionalAssert(
-                !GMX_FAHCORE,
-                "GMX_FAHCORE not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(inputrec->nstlist != 0,
+                                             "Simulations without neighbor list update are not "
+                                             "supported by the modular simulator.");
+    isInputCompatible = isInputCompatible
+                        && conditionalAssert(!GMX_FAHCORE,
+                                             "GMX_FAHCORE not supported by the modular simulator.");
 
     return isInputCompatible;
 }
 
 void ModularSimulator::checkInputForDisabledFunctionality()
 {
-    isInputCompatible(
-            true,
-            inputrec, doRerun, vsite, ms, replExParams,
-            fcd, nfile, fnm, observablesHistory, membed);
+    isInputCompatible(true, inputrec, doRerun, vsite, ms, replExParams, fcd, nfile, fnm,
+                      observablesHistory, membed);
 }
 
 SignallerCallbackPtr ModularSimulator::SignalHelper::registerLastStepCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time){this->lastStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
 }
 
 SignallerCallbackPtr ModularSimulator::SignalHelper::registerNSCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time)
-            {this->nextNSStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->nextNSStep_ = step; });
 }
-}
+} // namespace gmx

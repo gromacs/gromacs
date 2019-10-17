@@ -52,7 +52,7 @@
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
 
-static void handleCufftError(cufftResult_t status, const char *msg)
+static void handleCufftError(cufftResult_t status, const char* msg)
 {
     if (status != CUFFT_SUCCESS)
     {
@@ -60,10 +60,10 @@ static void handleCufftError(cufftResult_t status, const char *msg)
     }
 }
 
-GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGpu)
+GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
 {
-    const PmeGpuCudaKernelParams *kernelParamsPtr = pmeGpu->kernelParams.get();
-    ivec realGridSize, realGridSizePadded, complexGridSizePadded;
+    const PmeGpuCudaKernelParams* kernelParamsPtr = pmeGpu->kernelParams.get();
+    ivec                          realGridSize, realGridSizePadded, complexGridSizePadded;
     for (int i = 0; i < DIM; i++)
     {
         realGridSize[i]          = kernelParamsPtr->grid.realGridSize[i];
@@ -73,37 +73,34 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu *pmeGpu)
 
     GMX_RELEASE_ASSERT(!pme_gpu_uses_dd(pmeGpu), "FFT decomposition not implemented");
 
-    const int complexGridSizePaddedTotal = complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ];
-    const int realGridSizePaddedTotal    = realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ];
+    const int complexGridSizePaddedTotal =
+            complexGridSizePadded[XX] * complexGridSizePadded[YY] * complexGridSizePadded[ZZ];
+    const int realGridSizePaddedTotal =
+            realGridSizePadded[XX] * realGridSizePadded[YY] * realGridSizePadded[ZZ];
 
-    realGrid_ = (cufftReal *)kernelParamsPtr->grid.d_realGrid;
+    realGrid_ = (cufftReal*)kernelParamsPtr->grid.d_realGrid;
     GMX_RELEASE_ASSERT(realGrid_, "Bad (null) input real-space grid");
-    complexGrid_ = (cufftComplex *)kernelParamsPtr->grid.d_fourierGrid;
+    complexGrid_ = (cufftComplex*)kernelParamsPtr->grid.d_fourierGrid;
     GMX_RELEASE_ASSERT(complexGrid_, "Bad (null) input complex grid");
 
     cufftResult_t result;
     /* Commented code for a simple 3D grid with no padding */
     /*
-       result = cufftPlan3d(&planR2C_, realGridSize[XX], realGridSize[YY], realGridSize[ZZ], CUFFT_R2C);
-       handleCufftError(result, "cufftPlan3d R2C plan failure");
+       result = cufftPlan3d(&planR2C_, realGridSize[XX], realGridSize[YY], realGridSize[ZZ],
+       CUFFT_R2C); handleCufftError(result, "cufftPlan3d R2C plan failure");
 
-       result = cufftPlan3d(&planC2R_, realGridSize[XX], realGridSize[YY], realGridSize[ZZ], CUFFT_C2R);
-       handleCufftError(result, "cufftPlan3d C2R plan failure");
+       result = cufftPlan3d(&planC2R_, realGridSize[XX], realGridSize[YY], realGridSize[ZZ],
+       CUFFT_C2R); handleCufftError(result, "cufftPlan3d C2R plan failure");
      */
 
-    const int                 rank = 3, batch = 1;
-    result = cufftPlanMany(&planR2C_, rank, realGridSize,
-                           realGridSizePadded, 1, realGridSizePaddedTotal,
-                           complexGridSizePadded, 1, complexGridSizePaddedTotal,
-                           CUFFT_R2C,
-                           batch);
+    const int rank = 3, batch = 1;
+    result = cufftPlanMany(&planR2C_, rank, realGridSize, realGridSizePadded, 1, realGridSizePaddedTotal,
+                           complexGridSizePadded, 1, complexGridSizePaddedTotal, CUFFT_R2C, batch);
     handleCufftError(result, "cufftPlanMany R2C plan failure");
 
-    result = cufftPlanMany(&planC2R_, rank, realGridSize,
-                           complexGridSizePadded, 1, complexGridSizePaddedTotal,
-                           realGridSizePadded, 1, realGridSizePaddedTotal,
-                           CUFFT_C2R,
-                           batch);
+    result = cufftPlanMany(&planC2R_, rank, realGridSize, complexGridSizePadded, 1,
+                           complexGridSizePaddedTotal, realGridSizePadded, 1,
+                           realGridSizePaddedTotal, CUFFT_C2R, batch);
     handleCufftError(result, "cufftPlanMany C2R plan failure");
 
     cudaStream_t stream = pmeGpu->archSpecific->pmeStream;
@@ -125,8 +122,7 @@ GpuParallel3dFft::~GpuParallel3dFft()
     handleCufftError(result, "cufftDestroy C2R failure");
 }
 
-void GpuParallel3dFft::perform3dFft(gmx_fft_direction        dir,
-                                    CommandEvent             */*timingEvent*/)
+void GpuParallel3dFft::perform3dFft(gmx_fft_direction dir, CommandEvent* /*timingEvent*/)
 {
     cufftResult_t result;
     if (dir == GMX_FFT_REAL_TO_COMPLEX)

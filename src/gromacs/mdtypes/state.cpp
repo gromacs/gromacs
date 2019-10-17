@@ -61,45 +61,45 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-history_t::history_t() : disre_initf(0),
-                         ndisrepairs(0),
-                         disre_rm3tav(nullptr),
-                         orire_initf(0),
-                         norire_Dtav(0),
-                         orire_Dtav(nullptr)
-{
-};
+history_t::history_t() :
+    disre_initf(0),
+    ndisrepairs(0),
+    disre_rm3tav(nullptr),
+    orire_initf(0),
+    norire_Dtav(0),
+    orire_Dtav(nullptr){};
 
-ekinstate_t::ekinstate_t() : bUpToDate(FALSE),
-                             ekin_n(0),
-                             ekinh(nullptr),
-                             ekinf(nullptr),
-                             ekinh_old(nullptr),
-                             ekin_total(),
+ekinstate_t::ekinstate_t() :
+    bUpToDate(FALSE),
+    ekin_n(0),
+    ekinh(nullptr),
+    ekinf(nullptr),
+    ekinh_old(nullptr),
+    ekin_total(),
 
-                             dekindl(0),
-                             mvcos(0)
+    dekindl(0),
+    mvcos(0)
 {
     clear_mat(ekin_total);
 };
 
-void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength)
+void init_gtc_state(t_state* state, int ngtc, int nnhpres, int nhchainlength)
 {
     state->ngtc          = ngtc;
     state->nnhpres       = nnhpres;
     state->nhchainlength = nhchainlength;
-    state->nosehoover_xi.resize(state->nhchainlength*state->ngtc, 0);
-    state->nosehoover_vxi.resize(state->nhchainlength*state->ngtc, 0);
+    state->nosehoover_xi.resize(state->nhchainlength * state->ngtc, 0);
+    state->nosehoover_vxi.resize(state->nhchainlength * state->ngtc, 0);
     state->therm_integral.resize(state->ngtc, 0);
     state->baros_integral = 0.0;
-    state->nhpres_xi.resize(state->nhchainlength*nnhpres, 0);
-    state->nhpres_vxi.resize(state->nhchainlength*nnhpres, 0);
+    state->nhpres_xi.resize(state->nhchainlength * nnhpres, 0);
+    state->nhpres_vxi.resize(state->nhchainlength * nnhpres, 0);
 }
 
 
 /* Checkpoint code relies on this function having no effect if
    state->natoms is > 0 and passed as natoms. */
-void state_change_natoms(t_state *state, int natoms)
+void state_change_natoms(t_state* state, int natoms)
 {
     state->natoms = natoms;
 
@@ -119,7 +119,7 @@ void state_change_natoms(t_state *state, int natoms)
     }
 }
 
-void init_dfhist_state(t_state *state, int dfhistNumLambda)
+void init_dfhist_state(t_state* state, int dfhistNumLambda)
 {
     if (dfhistNumLambda > 0)
     {
@@ -132,8 +132,7 @@ void init_dfhist_state(t_state *state, int dfhistNumLambda)
     }
 }
 
-void comp_state(const t_state *st1, const t_state *st2,
-                gmx_bool bRMSD, real ftol, real abstol)
+void comp_state(const t_state* st1, const t_state* st2, gmx_bool bRMSD, real ftol, real abstol)
 {
     int i, j, nc;
 
@@ -145,17 +144,17 @@ void comp_state(const t_state *st1, const t_state *st2,
     cmp_rvecs(stdout, "box_rel", DIM, st1->box_rel, st2->box_rel, FALSE, ftol, abstol);
     fprintf(stdout, "comparing boxv\n");
     cmp_rvecs(stdout, "boxv", DIM, st1->boxv, st2->boxv, FALSE, ftol, abstol);
-    if (st1->flags & (1<<estSVIR_PREV))
+    if (st1->flags & (1 << estSVIR_PREV))
     {
         fprintf(stdout, "comparing shake vir_prev\n");
         cmp_rvecs(stdout, "svir_prev", DIM, st1->svir_prev, st2->svir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1<<estFVIR_PREV))
+    if (st1->flags & (1 << estFVIR_PREV))
     {
         fprintf(stdout, "comparing force vir_prev\n");
         cmp_rvecs(stdout, "fvir_prev", DIM, st1->fvir_prev, st2->fvir_prev, FALSE, ftol, abstol);
     }
-    if (st1->flags & (1<<estPRES_PREV))
+    if (st1->flags & (1 << estPRES_PREV))
     {
         fprintf(stdout, "comparing prev_pres\n");
         cmp_rvecs(stdout, "pres_prev", DIM, st1->pres_prev, st2->pres_prev, FALSE, ftol, abstol);
@@ -166,11 +165,11 @@ void comp_state(const t_state *st1, const t_state *st2,
     {
         for (i = 0; i < st1->ngtc; i++)
         {
-            nc = i*st1->nhchainlength;
+            nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
-                cmp_real(stdout, "nosehoover_xi",
-                         i, st1->nosehoover_xi[nc+j], st2->nosehoover_xi[nc+j], ftol, abstol);
+                cmp_real(stdout, "nosehoover_xi", i, st1->nosehoover_xi[nc + j],
+                         st2->nosehoover_xi[nc + j], ftol, abstol);
             }
         }
     }
@@ -179,11 +178,11 @@ void comp_state(const t_state *st1, const t_state *st2,
     {
         for (i = 0; i < st1->nnhpres; i++)
         {
-            nc = i*st1->nhchainlength;
+            nc = i * st1->nhchainlength;
             for (j = 0; j < nc; j++)
             {
-                cmp_real(stdout, "nosehoover_xi",
-                         i, st1->nhpres_xi[nc+j], st2->nhpres_xi[nc+j], ftol, abstol);
+                cmp_real(stdout, "nosehoover_xi", i, st1->nhpres_xi[nc + j], st2->nhpres_xi[nc + j],
+                         ftol, abstol);
             }
         }
     }
@@ -191,29 +190,30 @@ void comp_state(const t_state *st1, const t_state *st2,
     cmp_int(stdout, "natoms", -1, st1->natoms, st2->natoms);
     if (st1->natoms == st2->natoms)
     {
-        if ((st1->flags & (1<<estX)) && (st2->flags & (1<<estX)))
+        if ((st1->flags & (1 << estX)) && (st2->flags & (1 << estX)))
         {
             fprintf(stdout, "comparing x\n");
-            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "x", st1->natoms, st1->x.rvec_array(), st2->x.rvec_array(), bRMSD,
+                      ftol, abstol);
         }
-        if ((st1->flags & (1<<estV)) && (st2->flags & (1<<estV)))
+        if ((st1->flags & (1 << estV)) && (st2->flags & (1 << estV)))
         {
             fprintf(stdout, "comparing v\n");
-            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD, ftol, abstol);
+            cmp_rvecs(stdout, "v", st1->natoms, st1->v.rvec_array(), st2->v.rvec_array(), bRMSD,
+                      ftol, abstol);
         }
     }
 }
 
-rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
-                    gmx::index                     n)
+rvec* makeRvecArray(gmx::ArrayRef<const gmx::RVec> v, gmx::index n)
 {
     GMX_ASSERT(v.ssize() >= n, "We can't copy more elements than the vector size");
 
-    rvec *dest;
+    rvec* dest;
 
     snew(dest, n);
 
-    const rvec *vPtr = as_rvec_array(v.data());
+    const rvec* vPtr = as_rvec_array(v.data());
     for (gmx::index i = 0; i < n; i++)
     {
         copy_rvec(vPtr[i], dest[i]);
@@ -222,31 +222,32 @@ rvec *makeRvecArray(gmx::ArrayRef<const gmx::RVec> v,
     return dest;
 }
 
-t_state::t_state() : natoms(0),
-                     ngtc(0),
-                     nnhpres(0),
-                     nhchainlength(0),
-                     flags(0),
-                     fep_state(0),
-                     lambda(),
+t_state::t_state() :
+    natoms(0),
+    ngtc(0),
+    nnhpres(0),
+    nhchainlength(0),
+    flags(0),
+    fep_state(0),
+    lambda(),
 
-                     baros_integral(0),
-                     veta(0),
-                     vol0(0),
+    baros_integral(0),
+    veta(0),
+    vol0(0),
 
-                     ekinstate(),
-                     hist(),
-                     dfhist(nullptr),
-                     awhHistory(nullptr),
-                     ddp_count(0),
-                     ddp_count_cg_gl(0)
+    ekinstate(),
+    hist(),
+    dfhist(nullptr),
+    awhHistory(nullptr),
+    ddp_count(0),
+    ddp_count_cg_gl(0)
 
 {
     // It would be nicer to initialize these with {} or {{0}} in the
     // above initialization list, but uncrustify doesn't understand
     // that.
     // TODO Fix this if we switch to clang-format some time.
-    lambda = {{ 0 }};
+    lambda = { { 0 } };
     clear_mat(box);
     clear_mat(box_rel);
     clear_mat(boxv);
@@ -255,7 +256,7 @@ t_state::t_state() : natoms(0),
     clear_mat(fvir_prev);
 }
 
-void set_box_rel(const t_inputrec *ir, t_state *state)
+void set_box_rel(const t_inputrec* ir, t_state* state)
 {
     /* Make sure the box obeys the restrictions before we fix the ratios */
     correct_box(nullptr, 0, state->box, nullptr);
@@ -269,7 +270,7 @@ void set_box_rel(const t_inputrec *ir, t_state *state)
     }
 }
 
-void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
+void preserve_box_shape(const t_inputrec* ir, matrix box_rel, matrix box)
 {
     if (inputrecPreserveShape(ir))
     {
@@ -278,12 +279,12 @@ void preserve_box_shape(const t_inputrec *ir, matrix box_rel, matrix box)
     }
 }
 
-void initialize_lambdas(FILE               *fplog,
-                        const t_inputrec   &ir,
+void initialize_lambdas(FILE*               fplog,
+                        const t_inputrec&   ir,
                         bool                isMaster,
-                        int                *fep_state,
+                        int*                fep_state,
                         gmx::ArrayRef<real> lambda,
-                        double             *lam0)
+                        double*             lam0)
 {
     /* TODO: Clean up initialization of fep_state and lambda in
        t_state.  This function works, but could probably use a logic
@@ -294,7 +295,7 @@ void initialize_lambdas(FILE               *fplog,
         return;
     }
 
-    const t_lambda *fep = ir.fepvals;
+    const t_lambda* fep = ir.fepvals;
     if (isMaster)
     {
         *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
@@ -339,7 +340,7 @@ void initialize_lambdas(FILE               *fplog,
     if (fplog != nullptr)
     {
         fprintf(fplog, "Initial vector of lambda components:[ ");
-        for (const auto &l : lambda)
+        for (const auto& l : lambda)
         {
             fprintf(fplog, "%10.4f ", l);
         }

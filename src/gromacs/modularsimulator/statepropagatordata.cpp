@@ -59,19 +59,18 @@
 
 namespace gmx
 {
-StatePropagatorData::StatePropagatorData(
-        int                            numAtoms,
-        FILE                          *fplog,
-        const t_commrec               *cr,
-        t_state                       *globalState,
-        int                            nstxout,
-        int                            nstvout,
-        int                            nstfout,
-        int                            nstxout_compressed,
-        bool                           useGPU,
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-        const t_inputrec              *inputrec,
-        const t_mdatoms               *mdatoms) :
+StatePropagatorData::StatePropagatorData(int                            numAtoms,
+                                         FILE*                          fplog,
+                                         const t_commrec*               cr,
+                                         t_state*                       globalState,
+                                         int                            nstxout,
+                                         int                            nstvout,
+                                         int                            nstfout,
+                                         int                            nstxout_compressed,
+                                         bool                           useGPU,
+                                         FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                                         const t_inputrec*              inputrec,
+                                         const t_mdatoms*               mdatoms) :
     totalNumAtoms_(numAtoms),
     nstxout_(nstxout),
     nstvout_(nstvout),
@@ -97,7 +96,7 @@ StatePropagatorData::StatePropagatorData(
     {
         auto localState = std::make_unique<t_state>();
         dd_init_local_state(cr->dd, globalState, localState.get());
-        stateHasVelocities = static_cast<unsigned int>(localState->flags) & (1u << estV);
+        stateHasVelocities = ((static_cast<unsigned int>(localState->flags) & (1U << estV)) != 0u);
         setLocalState(std::move(localState));
     }
     else
@@ -108,7 +107,7 @@ StatePropagatorData::StatePropagatorData(
         x_           = globalState->x;
         v_           = globalState->v;
         copy_mat(globalState->box, box_);
-        stateHasVelocities = static_cast<unsigned int>(globalState->flags) & (1u << estV);
+        stateHasVelocities = ((static_cast<unsigned int>(globalState->flags) & (1U << estV)) != 0u);
         previousX_.resizeWithPadding(localNAtoms_);
         ddpCount_ = globalState->ddp_count;
         copyPosition();
@@ -126,8 +125,7 @@ StatePropagatorData::StatePropagatorData(
             // Set the velocities of vsites, shells and frozen atoms to zero
             for (int i = 0; i < mdatoms->homenr; i++)
             {
-                if (mdatoms->ptype[i] == eptVSite ||
-                    mdatoms->ptype[i] == eptShell)
+                if (mdatoms->ptype[i] == eptVSite || mdatoms->ptype[i] == eptShell)
                 {
                     clear_rvec(v[i]);
                 }
@@ -217,8 +215,8 @@ int StatePropagatorData::localNumAtoms()
 
 std::unique_ptr<t_state> StatePropagatorData::localState()
 {
-    auto state = std::make_unique<t_state>();
-    state->flags = (1u << estX) | (1u << estV) | (1u << estBOX);
+    auto state   = std::make_unique<t_state>();
+    state->flags = (1U << estX) | (1U << estV) | (1U << estBOX);
     state_change_natoms(state.get(), localNAtoms_);
     state->x = x_;
     state->v = v_;
@@ -241,11 +239,11 @@ void StatePropagatorData::setLocalState(std::unique_ptr<t_state> state)
 
     if (vvResetVelocities_)
     {
-        /* DomDec runs twice early in the simulation, once at setup time, and once before the first step.
-         * Every time DD runs, it sets a new local state here. We are saving a backup during setup time
-         * (ok for non-DD cases), so we need to update our backup to the DD state before the first step
-         * here to avoid resetting to an earlier DD state. This is done before any propagation that needs
-         * to be reset, so it's not very safe but correct for now.
+        /* DomDec runs twice early in the simulation, once at setup time, and once before the first
+         * step. Every time DD runs, it sets a new local state here. We are saving a backup during
+         * setup time (ok for non-DD cases), so we need to update our backup to the DD state before
+         * the first step here to avoid resetting to an earlier DD state. This is done before any
+         * propagation that needs to be reset, so it's not very safe but correct for now.
          * TODO: Get rid of this once input is assumed to be at half steps
          */
         velocityBackup_ = v_;
@@ -266,7 +264,7 @@ void StatePropagatorData::copyPosition()
 {
     int nth = gmx_omp_nthreads_get(emntUpdate);
 
-    #pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth)
+#pragma omp parallel for num_threads(nth) schedule(static) default(none) shared(nth)
     for (int th = 0; th < nth; th++)
     {
         int start_th, end_th;
@@ -290,67 +288,53 @@ void StatePropagatorData::copyPosition(int start, int end)
     }
 }
 
-void StatePropagatorData::scheduleTask(
-        Step step, Time gmx_unused time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+void StatePropagatorData::scheduleTask(Step step, Time gmx_unused time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     if (vvResetVelocities_)
     {
         vvResetVelocities_ = false;
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this](){resetVelocities(); }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { resetVelocities(); }));
     }
     // copy x -> previousX
-    (*registerRunFunction)(
-            std::make_unique<SimulatorRunFunction>(
-                    [this](){copyPosition(); }));
+    (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { copyPosition(); }));
     // if it's a write out step, keep a copy for writeout
     if (step == writeOutStep_)
     {
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this](){saveState(); }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>([this]() { saveState(); }));
     }
 }
 
 void StatePropagatorData::saveState()
 {
-    GMX_ASSERT(
-            !localStateBackup_,
-            "Save state called again before previous state was written.");
+    GMX_ASSERT(!localStateBackup_, "Save state called again before previous state was written.");
     localStateBackup_ = localState();
     if (freeEnergyPerturbationElement_)
     {
         localStateBackup_->fep_state = freeEnergyPerturbationElement_->currentFEPState();
         for (unsigned long i = 0; i < localStateBackup_->lambda.size(); ++i)
         {
-            localStateBackup_->lambda[i] =
-                freeEnergyPerturbationElement_->constLambdaView()[i];
+            localStateBackup_->lambda[i] = freeEnergyPerturbationElement_->constLambdaView()[i];
         }
-        localStateBackup_->flags |= (1u<<estLAMBDA) | (1u<<estFEPSTATE);
+        localStateBackup_->flags |= (1U << estLAMBDA) | (1U << estFEPSTATE);
     }
 }
 
-SignallerCallbackPtr
-StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
+SignallerCallbackPtr StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){this->writeOutStep_ = step; });
+                [this](Step step, Time /*unused*/) { this->writeOutStep_ = step; });
     }
     return nullptr;
 }
 
-ITrajectoryWriterCallbackPtr
-StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
+ITrajectoryWriterCallbackPtr StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
     if (event == TrajectoryEvent::StateWritingStep)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf *outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog)
-                {
+                [this](gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog) {
                     if (writeTrajectory)
                     {
                         write(outf, step, time);
@@ -403,11 +387,11 @@ void StatePropagatorData::write(gmx_mdoutf_t outf, Step currentStep, Time curren
     GMX_ASSERT(localStateBackup_, "Trajectory writing called, but no state saved.");
 
     // TODO: This is only used for CPT - needs to be filled when we turn CPT back on
-    ObservablesHistory *observablesHistory = nullptr;
+    ObservablesHistory* observablesHistory = nullptr;
 
-    mdoutf_write_to_trajectory_files(
-            fplog_, cr_, outf, static_cast<int>(mdof_flags), totalNumAtoms_,
-            currentStep, currentTime, localStateBackup_.get(), globalState_, observablesHistory, f_);
+    mdoutf_write_to_trajectory_files(fplog_, cr_, outf, static_cast<int>(mdof_flags),
+                                     totalNumAtoms_, currentStep, currentTime,
+                                     localStateBackup_.get(), globalState_, observablesHistory, f_);
 
     localStateBackup_.reset();
 }
@@ -428,14 +412,14 @@ void StatePropagatorData::resetVelocities()
     v_ = velocityBackup_;
 }
 
-void StatePropagatorData::writeCheckpoint(t_state *localState, t_state gmx_unused *globalState)
+void StatePropagatorData::writeCheckpoint(t_state* localState, t_state gmx_unused* globalState)
 {
     state_change_natoms(localState, localNAtoms_);
     localState->x = x_;
     localState->v = v_;
     copy_mat(box_, localState->box);
     localState->ddp_count = ddpCount_;
-    localState->flags    |= (1u << estX) | (1u << estV) | (1u << estBOX);
+    localState->flags |= (1U << estX) | (1U << estV) | (1U << estBOX);
 }
 
-}  // namespace gmx
+} // namespace gmx

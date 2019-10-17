@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,37 +71,33 @@ namespace
 
 class Trajectory : public TrajectoryAnalysisModule
 {
-    public:
-        Trajectory();
+public:
+    Trajectory();
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void optionsFinished(TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                          const TopologyInformation        &top) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void optionsFinished(TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
 
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        SelectionList                       sel_;
+private:
+    SelectionList sel_;
 
-        std::string                         fnX_;
-        std::string                         fnV_;
-        std::string                         fnF_;
-        std::array<bool, 4>                 dimMask_;
-        std::array<bool, 4>                 maskSet_;
+    std::string         fnX_;
+    std::string         fnV_;
+    std::string         fnF_;
+    std::array<bool, 4> dimMask_;
+    std::array<bool, 4> maskSet_;
 
-        AnalysisData                        xdata_;
-        AnalysisData                        vdata_;
-        AnalysisData                        fdata_;
+    AnalysisData xdata_;
+    AnalysisData vdata_;
+    AnalysisData fdata_;
 };
 
-Trajectory::Trajectory() :
-    dimMask_ {true, true, true, false}, maskSet_ {}
+Trajectory::Trajectory() : dimMask_{ true, true, true, false }, maskSet_{}
 {
     registerAnalysisDataset(&xdata_, "x");
     registerAnalysisDataset(&vdata_, "v");
@@ -109,10 +105,9 @@ Trajectory::Trajectory() :
 }
 
 
-void
-Trajectory::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *settings)
+void Trajectory::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] plots coordinates, velocities, and/or forces for",
         "provided selections. By default, the X, Y, and Z components for",
         "the requested vectors are plotted, but specifying one or more of",
@@ -124,37 +119,41 @@ Trajectory::initOptions(IOptionsContainer *options, TrajectoryAnalysisSettings *
 
     settings->setHelpText(desc);
 
-    options->addOption(FileNameOption("ox").filetype(eftPlot).outputFile()
-                           .store(&fnX_).defaultBasename("coord")
-                           .description("Coordinates for each position as a function of time"));
-    options->addOption(FileNameOption("ov").filetype(eftPlot).outputFile()
-                           .store(&fnV_).defaultBasename("veloc")
-                           .description("Velocities for each position as a function of time"));
-    options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
-                           .store(&fnF_).defaultBasename("force")
-                           .description("Forces for each position as a function of time"));
+    options->addOption(FileNameOption("ox")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnX_)
+                               .defaultBasename("coord")
+                               .description("Coordinates for each position as a function of time"));
+    options->addOption(FileNameOption("ov")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnV_)
+                               .defaultBasename("veloc")
+                               .description("Velocities for each position as a function of time"));
+    options->addOption(FileNameOption("of")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnF_)
+                               .defaultBasename("force")
+                               .description("Forces for each position as a function of time"));
 
-    options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().dynamicMask().multiValue()
-                           .description("Selections to analyze"));
+    options->addOption(
+            SelectionOption("select").storeVector(&sel_).required().dynamicMask().multiValue().description(
+                    "Selections to analyze"));
 
-    options->addOption(BooleanOption("x").store(&dimMask_[XX])
-                           .storeIsSet(&maskSet_[XX])
-                           .description("Plot X component"));
-    options->addOption(BooleanOption("y").store(&dimMask_[YY])
-                           .storeIsSet(&maskSet_[YY])
-                           .description("Plot Y component"));
-    options->addOption(BooleanOption("z").store(&dimMask_[ZZ])
-                           .storeIsSet(&maskSet_[ZZ])
-                           .description("Plot Z component"));
-    options->addOption(BooleanOption("len").store(&dimMask_[DIM])
-                           .storeIsSet(&maskSet_[DIM])
-                           .description("Plot vector length"));
+    options->addOption(
+            BooleanOption("x").store(&dimMask_[XX]).storeIsSet(&maskSet_[XX]).description("Plot X component"));
+    options->addOption(
+            BooleanOption("y").store(&dimMask_[YY]).storeIsSet(&maskSet_[YY]).description("Plot Y component"));
+    options->addOption(
+            BooleanOption("z").store(&dimMask_[ZZ]).storeIsSet(&maskSet_[ZZ]).description("Plot Z component"));
+    options->addOption(
+            BooleanOption("len").store(&dimMask_[DIM]).storeIsSet(&maskSet_[DIM]).description("Plot vector length"));
 }
 
 
-void
-Trajectory::optionsFinished(TrajectoryAnalysisSettings *settings)
+void Trajectory::optionsFinished(TrajectoryAnalysisSettings* settings)
 {
     int frameFlags = TRX_NEED_X;
     if (!fnV_.empty())
@@ -179,19 +178,16 @@ Trajectory::optionsFinished(TrajectoryAnalysisSettings *settings)
 }
 
 
-void
-Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                         const TopologyInformation         & /*top*/)
+void Trajectory::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& /*top*/)
 {
     if (!fnX_.empty())
     {
         xdata_.setDataSetCount(sel_.size());
         for (size_t g = 0; g < sel_.size(); ++g)
         {
-            xdata_.setColumnCount(g, 3*sel_[g].posCount());
+            xdata_.setColumnCount(g, 3 * sel_[g].posCount());
         }
-        AnalysisDataVectorPlotModulePointer plot(
-                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        AnalysisDataVectorPlotModulePointer plot(new AnalysisDataVectorPlotModule(settings.plotSettings()));
         plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnX_);
         plot->setTitle("Coordinates");
@@ -205,10 +201,9 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         for (size_t g = 0; g < sel_.size(); ++g)
         {
             sel_[g].setEvaluateVelocities(true);
-            vdata_.setColumnCount(g, 3*sel_[g].posCount());
+            vdata_.setColumnCount(g, 3 * sel_[g].posCount());
         }
-        AnalysisDataVectorPlotModulePointer plot(
-                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        AnalysisDataVectorPlotModulePointer plot(new AnalysisDataVectorPlotModule(settings.plotSettings()));
         plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnV_);
         plot->setTitle("Velocities");
@@ -222,10 +217,9 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
         for (size_t g = 0; g < sel_.size(); ++g)
         {
             sel_[g].setEvaluateForces(true);
-            fdata_.setColumnCount(g, 3*sel_[g].posCount());
+            fdata_.setColumnCount(g, 3 * sel_[g].posCount());
         }
-        AnalysisDataVectorPlotModulePointer plot(
-                new AnalysisDataVectorPlotModule(settings.plotSettings()));
+        AnalysisDataVectorPlotModulePointer plot(new AnalysisDataVectorPlotModule(settings.plotSettings()));
         plot->setWriteMask(dimMask_.data());
         plot->setFileName(fnF_);
         plot->setTitle("Forces");
@@ -237,9 +231,8 @@ Trajectory::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 //! Helper function for Trajectory::analyzeFrame
-template<typename T> void
-analyzeFrameImpl(int frnr, const t_trxframe &fr,
-                 AnalysisDataHandle* dh, const SelectionList &sel, T getField)
+template<typename T>
+void analyzeFrameImpl(int frnr, const t_trxframe& fr, AnalysisDataHandle* dh, const SelectionList& sel, T getField)
 {
     if (dh->isValid())
     {
@@ -249,49 +242,40 @@ analyzeFrameImpl(int frnr, const t_trxframe &fr,
             dh->selectDataSet(g);
             for (int i = 0; i < sel[g].posCount(); ++i)
             {
-                const SelectionPosition &pos = sel[g].position(i);
-                dh->setPoints(i*3, 3, getField(pos), pos.selected());
+                const SelectionPosition& pos = sel[g].position(i);
+                dh->setPoints(i * 3, 3, getField(pos), pos.selected());
             }
         }
         dh->finishFrame();
     }
 }
 
-void
-Trajectory::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
-                         TrajectoryAnalysisModuleData *pdata)
+void Trajectory::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* /* pbc */, TrajectoryAnalysisModuleData* pdata)
 {
     AnalysisDataHandle   dh  = pdata->dataHandle(xdata_);
-    const SelectionList &sel = pdata->parallelSelections(sel_);
-    analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.x(); });
+    const SelectionList& sel = pdata->parallelSelections(sel_);
+    analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition& pos) { return pos.x(); });
     if (fr.bV)
     {
-        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.v(); });
+        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition& pos) { return pos.v(); });
     }
     if (fr.bF)
     {
-        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition &pos) { return pos.f(); });
+        analyzeFrameImpl(frnr, fr, &dh, sel, [](const SelectionPosition& pos) { return pos.f(); });
     }
-
 }
 
 
-void
-Trajectory::finishAnalysis(int /*nframes*/)
-{
-}
+void Trajectory::finishAnalysis(int /*nframes*/) {}
 
 
-void
-Trajectory::writeOutput()
-{
-}
+void Trajectory::writeOutput() {}
 
-}       // namespace
+} // namespace
 
-const char TrajectoryInfo::name[]             = "trajectory";
+const char TrajectoryInfo::name[] = "trajectory";
 const char TrajectoryInfo::shortDescription[] =
-    "Print coordinates, velocities, and/or forces for selections";
+        "Print coordinates, velocities, and/or forces for selections";
 
 TrajectoryAnalysisModulePointer TrajectoryInfo::create()
 {

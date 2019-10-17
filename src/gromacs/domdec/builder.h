@@ -62,7 +62,8 @@ class LocalAtomSetManager;
 struct DomdecOptions;
 struct MdrunOptions;
 
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 
 /*! \libinternal
  * \brief Builds a domain decomposition management object
@@ -72,26 +73,26 @@ template <typename T> class ArrayRef;
  * for transfer operations. */
 class DomainDecompositionBuilder
 {
-    public:
-        //! Constructor
-        DomainDecompositionBuilder(const MDLogger      &mdlog,
-                                   t_commrec           *cr,
-                                   const DomdecOptions &options,
-                                   const MdrunOptions  &mdrunOptions,
-                                   bool                 prefer1DAnd1Pulse,
-                                   const gmx_mtop_t    &mtop,
-                                   const t_inputrec    &ir,
-                                   const matrix         box,
-                                   ArrayRef<const RVec> xGlobal);
-        //! Destructor
-        ~DomainDecompositionBuilder();
-        //! Build the resulting DD manager
-        gmx_domdec_t *build(LocalAtomSetManager *atomSets);
+public:
+    //! Constructor
+    DomainDecompositionBuilder(const MDLogger&      mdlog,
+                               t_commrec*           cr,
+                               const DomdecOptions& options,
+                               const MdrunOptions&  mdrunOptions,
+                               bool                 prefer1DAnd1Pulse,
+                               const gmx_mtop_t&    mtop,
+                               const t_inputrec&    ir,
+                               const matrix         box,
+                               ArrayRef<const RVec> xGlobal);
+    //! Destructor
+    ~DomainDecompositionBuilder();
+    //! Build the resulting DD manager
+    gmx_domdec_t* build(LocalAtomSetManager* atomSets);
 
-    private:
-        class Impl;
-        //! Pimpl to hide implementation details
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    //! Pimpl to hide implementation details
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

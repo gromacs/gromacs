@@ -42,46 +42,46 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#ifdef __PGI    /*Portland group compiler*/
-#define int64_t long long
+#ifdef __PGI /*Portland group compiler*/
+#    define int64_t long long
 #endif
 
 #include "config.h"
 
 #if GMX_INTERNAL_XDR
-#include "gromacs/fileio/gmx_internal_xdr.h"
+#    include "gromacs/fileio/gmx_internal_xdr.h"
 #else
-#include <rpc/rpc.h>
-#include <rpc/xdr.h>
+#    include <rpc/rpc.h>
+#    include <rpc/xdr.h>
 #endif
 
 /* Read or write reduced precision *float* coordinates */
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
+int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision);
 
 
 /* Read or write a *real* value (stored as float) */
-int xdr_real(XDR *xdrs, real *r);
+int xdr_real(XDR* xdrs, real* r);
 
 
 /* Read or write reduced precision *real* coordinates */
-int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
+int xdr3drcoord(XDR* xdrs, real* fp, int* size, real* precision);
 
 
 //! Read or write a int32_t value.
-int xdr_int32(XDR *xdrs, int32_t *i);
+int xdr_int32(XDR* xdrs, int32_t* i);
 
 //! Read or write a int64_t value.
-int xdr_int64(XDR *xdrs, int64_t *i);
+int xdr_int64(XDR* xdrs, int64_t* i);
 
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeekForwardOnly);
-
-
-int xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
+int xdr_xtc_seek_time(real time, FILE* fp, XDR* xdrs, int natoms, gmx_bool bSeekForwardOnly);
 
 
-float xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
+int xdr_xtc_seek_frame(int frame, FILE* fp, XDR* xdrs, int natoms);
 
 
-int xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK);
+float xdr_xtc_get_last_frame_time(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK);
+
+
+int xdr_xtc_get_last_frame_number(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK);
 
 #endif

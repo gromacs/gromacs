@@ -67,39 +67,37 @@ struct gmx_multisim_t
      *
      * Valid to call regardless of build configuration, but \c
      * multidirs must be empty unless a real MPI build is used. */
-    gmx_multisim_t(MPI_Comm                         comm,
-                   gmx::ArrayRef<const std::string> multidirs);
+    gmx_multisim_t(MPI_Comm comm, gmx::ArrayRef<const std::string> multidirs);
     //! Destructor
     ~gmx_multisim_t();
 
     //! The number of simulations in the set of multi-simulations
-    int                                 nsim              = 1;
+    int nsim = 1;
     //! The index of the simulation that owns this object within the set
-    int                                 sim               = 0;
+    int sim = 0;
     //! The MPI Group between master ranks of simulations, valid only on master ranks.
-    MPI_Group                           mpi_group_masters = MPI_GROUP_NULL;
+    MPI_Group mpi_group_masters = MPI_GROUP_NULL;
     //! The MPI communicator between master ranks of simulations, valid only on master ranks.
-    MPI_Comm                            mpi_comm_masters  = MPI_COMM_NULL;
+    MPI_Comm mpi_comm_masters = MPI_COMM_NULL;
     //! Communication buffers needed if MPI_IN_PLACE isn't supported
-    mpi_in_place_buf_t *                mpb               = nullptr;
+    mpi_in_place_buf_t* mpb = nullptr;
 };
 
 //! Calculate the sum over the simulations of an array of ints
-void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t *ms);
+void gmx_sumi_sim(int nr, int r[], const gmx_multisim_t* ms);
 
 //! Calculate the sum over the simulations of an array of large ints
-void gmx_sumli_sim(int nr, int64_t r[], const gmx_multisim_t *ms);
+void gmx_sumli_sim(int nr, int64_t r[], const gmx_multisim_t* ms);
 
 //! Calculate the sum over the simulations of an array of floats
-void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t *ms);
+void gmx_sumf_sim(int nr, float r[], const gmx_multisim_t* ms);
 
 //! Calculate the sum over the simulations of an array of doubles
-void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
+void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t* ms);
 
 /*! \brief Return a vector containing the gathered values of \c
  * localValue found on the master rank of each simulation. */
-std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
-                                              int                   localValue);
+std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t* ms, int localValue);
 
 /*! \brief Check if val is the same on all simulations for a mdrun
  * -multidir run
@@ -107,24 +105,20 @@ std::vector<int> gatherIntFromMultiSimulation(const gmx_multisim_t *ms,
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match. If bQuiet is true and the check passes,
  * no output is written. */
-void check_multi_int(FILE *log, const gmx_multisim_t *ms,
-                     int val, const char *name,
-                     gmx_bool bQuiet);
+void check_multi_int(FILE* log, const gmx_multisim_t* ms, int val, const char* name, gmx_bool bQuiet);
 /*! \copydoc check_multi_int() */
-void check_multi_int64(FILE *log, const gmx_multisim_t *ms,
-                       int64_t val, const char *name,
-                       gmx_bool bQuiet);
+void check_multi_int64(FILE* log, const gmx_multisim_t* ms, int64_t val, const char* name, gmx_bool bQuiet);
 
 #if GMX_DOUBLE
 //! Convenience define for sum of reals
-#define gmx_sum_sim   gmx_sumd_sim
+#    define gmx_sum_sim gmx_sumd_sim
 #else
 //! Convenience define for sum of reals
-#define gmx_sum_sim   gmx_sumf_sim
+#    define gmx_sum_sim gmx_sumf_sim
 #endif
 
 //! Are we doing multiple independent simulations?
-static bool inline isMultiSim(const gmx_multisim_t *ms)
+static bool inline isMultiSim(const gmx_multisim_t* ms)
 {
     return ms != nullptr;
 }
@@ -132,19 +126,17 @@ static bool inline isMultiSim(const gmx_multisim_t *ms)
 /*! \brief Return whether this rank is the master rank of a
  * simulation, using \c ms (if it is valid) and otherwise \c
  * communicator */
-bool findIsSimulationMasterRank(const gmx_multisim_t *ms,
-                                MPI_Comm              communicator);
+bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator);
 
 //! Are we the master simulation of a possible multi-simulation?
-bool isMasterSim(const gmx_multisim_t *ms);
+bool isMasterSim(const gmx_multisim_t* ms);
 
 /*! \brief Are we the master rank (of the master simulation, for a multi-sim).
  *
  * This rank prints the remaining run time etc. */
-bool isMasterSimMasterRank(const gmx_multisim_t *ms,
-                           bool                  isMaster);
+bool isMasterSimMasterRank(const gmx_multisim_t* ms, bool isMaster);
 
 //! Make a barrier across all multi-simulation master ranks
-void multiSimBarrier(const gmx_multisim_t *ms);
+void multiSimBarrier(const gmx_multisim_t* ms);
 
 #endif

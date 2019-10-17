@@ -65,59 +65,52 @@ class MDAtoms;
  * implement the checkpointing client interface to save its current
  * state for restart.
  */
-class FreeEnergyPerturbationElement final :
-    public                          ISimulatorElement,
-    public                          ICheckpointHelperClient
+class FreeEnergyPerturbationElement final : public ISimulatorElement, public ICheckpointHelperClient
 {
-    public:
-        //! Constructor
-        FreeEnergyPerturbationElement(
-            FILE             *fplog,
-            const t_inputrec *inputrec,
-            MDAtoms          *mdAtoms);
+public:
+    //! Constructor
+    FreeEnergyPerturbationElement(FILE* fplog, const t_inputrec* inputrec, MDAtoms* mdAtoms);
 
-        //! Get a view of the current lambda vector
-        ArrayRef<real> lambdaView();
-        //! Get a const view of the current lambda vector
-        ArrayRef<const real> constLambdaView();
-        //! Get the current FEP state
-        int currentFEPState();
+    //! Get a view of the current lambda vector
+    ArrayRef<real> lambdaView();
+    //! Get a const view of the current lambda vector
+    ArrayRef<const real> constLambdaView();
+    //! Get the current FEP state
+    int currentFEPState();
 
-        //! Update lambda and mdatoms
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    //! Update lambda and mdatoms
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! No setup needed
-        void elementSetup() override {};
+    //! No setup needed
+    void elementSetup() override{};
 
-        //! No teardown needed
-        void elementTeardown() override {};
+    //! No teardown needed
+    void elementTeardown() override{};
 
-    private:
-        //! ICheckpointHelperClient implementation
-        void writeCheckpoint(t_state *localState, t_state *globalState) override;
-        //! Update the lambda values
-        void updateLambdas(Step step);
+private:
+    //! ICheckpointHelperClient implementation
+    void writeCheckpoint(t_state* localState, t_state* globalState) override;
+    //! Update the lambda values
+    void updateLambdas(Step step);
 
-        //! The lambda vector
-        std::array<real, efptNR>   lambda_;
-        //! The starting lambda vector
-        std::array<double, efptNR> lambda0_;
-        //! The current free energy state
-        int                        currentFEPState_;
+    //! The lambda vector
+    std::array<real, efptNR> lambda_;
+    //! The starting lambda vector
+    std::array<double, efptNR> lambda0_;
+    //! The current free energy state
+    int currentFEPState_;
 
-        //! Whether lambda values are non-static
-        const bool lambdasChange_;
+    //! Whether lambda values are non-static
+    const bool lambdasChange_;
 
-        //! Handles logging.
-        FILE             *fplog_;
-        //! Contains user input mdp options.
-        const t_inputrec *inputrec_;
-        //! Atom parameters for this domain.
-        MDAtoms          *mdAtoms_;
+    //! Handles logging.
+    FILE* fplog_;
+    //! Contains user input mdp options.
+    const t_inputrec* inputrec_;
+    //! Atom parameters for this domain.
+    MDAtoms* mdAtoms_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_FREEENERGYPERTURBATIONELEMENT_H

@@ -55,33 +55,25 @@ namespace gmx
  * Those names need to be in sync with the CenteringType enum class
  * and reflect the same fields there.
  */
-static EnumerationArray<CenteringType, const char *>
-c_centeringTypeShortNames
-    = { {
-            "Triclinic",
-            "Rectangular",
-            "Zero-Based"
-        } };
+static EnumerationArray<CenteringType, const char*> c_centeringTypeShortNames = {
+    { "Triclinic", "Rectangular", "Zero-Based" }
+};
 
 /*! \brief Names for different centering types.
  *
  * Those names need to be in sync with the UnitCellType enum class
  * and reflect the same fields there.
  */
-static EnumerationArray<UnitCellType, const char *>
-c_unitCellTypeShortNames
-    = { {
-            "Triclinic",
-            "Rectangular",
-            "Compact"
-        } };
+static EnumerationArray<UnitCellType, const char*> c_unitCellTypeShortNames = {
+    { "Triclinic", "Rectangular", "Compact" }
+};
 
-const char *centerTypeNames(CenteringType type)
+const char* centerTypeNames(CenteringType type)
 {
     return c_centeringTypeShortNames[type];
 }
 
-const char *unitCellTypeNames(UnitCellType type)
+const char* unitCellTypeNames(UnitCellType type)
 {
     return c_unitCellTypeShortNames[type];
 }

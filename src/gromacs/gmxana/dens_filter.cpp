@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,10 +46,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/smalloc.h"
 
-gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
+gmx_bool convolution(int dataSize, real* x, int kernelSize, const real* kernel)
 {
     int   i, j, k;
-    real *out;
+    real* out;
     snew(out, dataSize);
     /* check validity of params */
     if (!x || !kernel)
@@ -62,7 +62,7 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
     }
 
     /* start convolution from out[kernelSize-1] to out[dataSize-1] (last) */
-    for (i = kernelSize-1; i < dataSize; ++i)
+    for (i = kernelSize - 1; i < dataSize; ++i)
     {
         for (j = i, k = 0; k < kernelSize; --j, ++k)
         {
@@ -89,11 +89,10 @@ gmx_bool convolution(int dataSize, real *x, int kernelSize, const real* kernel)
 
 /* Assuming kernel is shorter than x */
 
-gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
-                              const real *kernel)
+gmx_bool periodic_convolution(int datasize, real* x, int kernelsize, const real* kernel)
 {
     int   i, j, idx;
-    real *filtered;
+    real* filtered;
 
     if (!x || !kernel)
     {
@@ -111,8 +110,8 @@ gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
         for (j = 0; (j < kernelsize); j++)
         {
             // add datasize in case i-j is <0
-            idx          = i-j + datasize;
-            filtered[i] += kernel[j]*x[idx % datasize];
+            idx = i - j + datasize;
+            filtered[i] += kernel[j] * x[idx % datasize];
         }
     }
     for (i = 0; i < datasize; i++)
@@ -125,18 +124,18 @@ gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
 }
 
 
-/* returns discrete gaussian kernel of size n in *out, where n=2k+1=3,5,7,9,11 and k=1,2,3 is the order
- * NO checks are performed
+/* returns discrete gaussian kernel of size n in *out, where n=2k+1=3,5,7,9,11 and k=1,2,3 is the
+ * order NO checks are performed
  */
-void gausskernel(real *out, int n, real var)
+void gausskernel(real* out, int n, real var)
 {
-    int  i, j = 0, k;
+    int  i, j     = 0, k;
     real arg, tot = 0;
-    k = n/2;
+    k = n / 2;
 
     for (i = -k; i <= k; i++)
     {
-        arg  = (i*i)/(2*var);
+        arg             = (i * i) / (2 * var);
         tot += out[j++] = std::exp(-arg);
     }
     for (i = 0; i < j; i++)

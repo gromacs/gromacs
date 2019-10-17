@@ -68,47 +68,43 @@ namespace gmx
  * owned by CompositeSimulatorElement is responsible to call setup and teardown
  * methods on these elements.
  */
-class CompositeSimulatorElement final :
-    public ISimulatorElement
+class CompositeSimulatorElement final : public ISimulatorElement
 {
-    public:
-        //! Constructor
-        explicit CompositeSimulatorElement(
-            std::vector< compat::not_null<ISimulatorElement*> > elementCallList,
-            std::vector< std::unique_ptr<ISimulatorElement> >   elements);
+public:
+    //! Constructor
+    explicit CompositeSimulatorElement(std::vector<compat::not_null<ISimulatorElement*>> elementCallList,
+                                       std::vector<std::unique_ptr<ISimulatorElement>> elements);
 
-        /*! \brief Register run function for step / time
-         *
-         * Lets every member of the composite simulator register run functions
-         * for the given step.
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * Lets every member of the composite simulator register run functions
+     * for the given step.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        /*! \brief Element setup
-         *
-         * Calls the setup functions of the single elements.
-         */
-        void elementSetup() override;
+    /*! \brief Element setup
+     *
+     * Calls the setup functions of the single elements.
+     */
+    void elementSetup() override;
 
-        /*! \brief Element teardown
-         *
-         * Calls the teardown functions of the single elements.
-         */
-        void elementTeardown() override;
+    /*! \brief Element teardown
+     *
+     * Calls the teardown functions of the single elements.
+     */
+    void elementTeardown() override;
 
-    private:
-        //! The call list of elements forming the composite element
-        std::vector< compat::not_null<ISimulatorElement*> > elementCallList_;
-        //! List of elements owned by composite element
-        std::vector< std::unique_ptr<ISimulatorElement> >   elementOwnershipList_;
+private:
+    //! The call list of elements forming the composite element
+    std::vector<compat::not_null<ISimulatorElement*>> elementCallList_;
+    //! List of elements owned by composite element
+    std::vector<std::unique_ptr<ISimulatorElement>> elementOwnershipList_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H

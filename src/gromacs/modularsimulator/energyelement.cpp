@@ -72,21 +72,20 @@ namespace gmx
 {
 class Awh;
 
-EnergyElement::EnergyElement(
-        StatePropagatorData           *statePropagatorData,
-        FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
-        const gmx_mtop_t              *globalTopology,
-        const t_inputrec              *inputrec,
-        const MDAtoms                 *mdAtoms,
-        gmx_enerdata_t                *enerd,
-        gmx_ekindata_t                *ekind,
-        const Constraints             *constr,
-        FILE                          *fplog,
-        t_fcdata                      *fcd,
-        const MdModulesNotifier       &mdModulesNotifier,
-        bool                           isMasterRank,
-        ObservablesHistory            *observablesHistory,
-        StartingBehavior               startingBehavior) :
+EnergyElement::EnergyElement(StatePropagatorData*           statePropagatorData,
+                             FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                             const gmx_mtop_t*              globalTopology,
+                             const t_inputrec*              inputrec,
+                             const MDAtoms*                 mdAtoms,
+                             gmx_enerdata_t*                enerd,
+                             gmx_ekindata_t*                ekind,
+                             const Constraints*             constr,
+                             FILE*                          fplog,
+                             t_fcdata*                      fcd,
+                             const MdModulesNotifier&       mdModulesNotifier,
+                             bool                           isMasterRank,
+                             ObservablesHistory*            observablesHistory,
+                             StartingBehavior               startingBehavior) :
     isMasterRank_(isMasterRank),
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
@@ -97,7 +96,6 @@ EnergyElement::EnergyElement(
     pressureStep_(-1),
     needToSumEkinhOld_(false),
     startingBehavior_(startingBehavior),
-    dummyLegacyState_(),
     statePropagatorData_(statePropagatorData),
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vRescaleThermostat_(nullptr),
@@ -122,12 +120,11 @@ EnergyElement::EnergyElement(
 
     if (freeEnergyPerturbationElement_)
     {
-        dummyLegacyState_.flags = (1u << estFEPSTATE);
+        dummyLegacyState_.flags = (1U << estFEPSTATE);
     }
 }
 
-void EnergyElement::scheduleTask(
-        Step step, Time time, const RegisterRunFunctionPtr &registerRunFunction)
+void EnergyElement::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     if (!isMasterRank_)
     {
@@ -138,17 +135,15 @@ void EnergyElement::scheduleTask(
     auto isFreeEnergyCalculationStep = freeEnergyCalculationStep_ == step;
     if (isEnergyCalculationStep || writeEnergy)
     {
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
-                            doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
-                        }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                [this, time, isEnergyCalculationStep, isFreeEnergyCalculationStep]() {
+                    doStep(time, isEnergyCalculationStep, isFreeEnergyCalculationStep);
+                }));
     }
     else
     {
-        (*registerRunFunction)(
-                std::make_unique<SimulatorRunFunction>(
-                        [this]() { energyOutput_->recordNonEnergyStep(); }));
+        (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
+                [this]() { energyOutput_->recordNonEnergyStep(); }));
     }
 }
 
@@ -160,32 +155,27 @@ void EnergyElement::elementTeardown()
     }
 }
 
-void EnergyElement::trajectoryWriterSetup(gmx_mdoutf *outf)
+void EnergyElement::trajectoryWriterSetup(gmx_mdoutf* outf)
 {
-    pull_t *pull_work = nullptr;
-    energyOutput_ = std::make_unique<EnergyOutput>(
-                mdoutf_get_fp_ene(outf), top_global_,
-                inputrec_, pull_work, mdoutf_get_fp_dhdl(outf), false,
-                mdModulesNotifier_);
+    pull_t* pull_work = nullptr;
+    energyOutput_ = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf), top_global_, inputrec_,
+                                                   pull_work, mdoutf_get_fp_dhdl(outf), false,
+                                                   mdModulesNotifier_);
 
     if (!isMasterRank_)
     {
         return;
     }
 
-    initializeEnergyHistory(
-            startingBehavior_, observablesHistory_, energyOutput_.get());
+    initializeEnergyHistory(startingBehavior_, observablesHistory_, energyOutput_.get());
 
     // TODO: This probably doesn't really belong here...
     //       but we have all we need in this element,
     //       so we'll leave it here for now!
-    double io = compute_io(inputrec_, top_global_->natoms, *groups_,
-                           energyOutput_->numEnergyTerms(), 1);
+    double io = compute_io(inputrec_, top_global_->natoms, *groups_, energyOutput_->numEnergyTerms(), 1);
     if ((io > 2000) && isMasterRank_)
     {
-        fprintf(stderr,
-                "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
-                io);
+        fprintf(stderr, "\nWARNING: This run will generate roughly %.0f Mb of data\n\n", io);
     }
     if (!inputrec_->bContinuation)
     {
@@ -206,8 +196,8 @@ ITrajectoryWriterCallbackPtr EnergyElement::registerTrajectoryWriterCallback(Tra
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf *mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog)
-                {write(mdoutf, step, time, writeTrajectory, writeLog); });
+                [this](gmx_mdoutf* mdoutf, Step step, Time time, bool writeTrajectory,
+                       bool writeLog) { write(mdoutf, step, time, writeTrajectory, writeLog); });
     }
     return nullptr;
 }
@@ -217,7 +207,7 @@ SignallerCallbackPtr EnergyElement::registerTrajectorySignallerCallback(gmx::Tra
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){energyWritingStep_ = step; });
+                [this](Step step, Time /*unused*/) { energyWritingStep_ = step; });
     }
     return nullptr;
 }
@@ -227,20 +217,17 @@ SignallerCallbackPtr EnergyElement::registerEnergyCallback(EnergySignallerEvent 
     if (event == EnergySignallerEvent::EnergyCalculationStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time) {energyCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { energyCalculationStep_ = step; });
     }
     if (event == EnergySignallerEvent::FreeEnergyCalculationStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
-                [this](Step step, Time){freeEnergyCalculationStep_ = step; });
+                [this](Step step, Time /*unused*/) { freeEnergyCalculationStep_ = step; });
     }
     return nullptr;
 }
 
-void EnergyElement::doStep(
-        Time time,
-        bool isEnergyCalculationStep,
-        bool isFreeEnergyCalculationStep)
+void EnergyElement::doStep(Time time, bool isEnergyCalculationStep, bool isFreeEnergyCalculationStep)
 {
     enerd_->term[F_ETOT] = enerd_->term[F_EPOT] + enerd_->term[F_EKIN];
     if (vRescaleThermostat_)
@@ -259,33 +246,30 @@ void EnergyElement::doStep(
     }
     if (integratorHasConservedEnergyQuantity(inputrec_))
     {
-        enerd_->term[F_ECONSERVED] = enerd_->term[F_ETOT] +
-            NPT_energy(inputrec_, &dummyLegacyState_, nullptr);
+        enerd_->term[F_ECONSERVED] =
+                enerd_->term[F_ETOT] + NPT_energy(inputrec_, &dummyLegacyState_, nullptr);
     }
-    energyOutput_->addDataAtEnergyStep(
-            isFreeEnergyCalculationStep, isEnergyCalculationStep,
-            time, mdAtoms_->mdatoms()->tmass, enerd_, &dummyLegacyState_,
-            inputrec_->fepvals, inputrec_->expandedvals,
-            statePropagatorData_->constPreviousBox(),
-            shakeVirial_, forceVirial_, totalVirial_, pressure_,
-            ekind_, muTot_, constr_);
+    energyOutput_->addDataAtEnergyStep(isFreeEnergyCalculationStep, isEnergyCalculationStep, time,
+                                       mdAtoms_->mdatoms()->tmass, enerd_, &dummyLegacyState_,
+                                       inputrec_->fepvals, inputrec_->expandedvals,
+                                       statePropagatorData_->constPreviousBox(), shakeVirial_,
+                                       forceVirial_, totalVirial_, pressure_, ekind_, muTot_, constr_);
 }
 
-void EnergyElement::write(gmx_mdoutf *outf, Step step, Time time, bool writeTrajectory, bool writeLog)
+void EnergyElement::write(gmx_mdoutf* outf, Step step, Time time, bool writeTrajectory, bool writeLog)
 {
     if (writeLog)
     {
         energyOutput_->printHeader(fplog_, step, time);
     }
 
-    bool do_dr  = do_per_step(step, inputrec_->nstdisreout);
-    bool do_or  = do_per_step(step, inputrec_->nstorireout);
+    bool do_dr = do_per_step(step, inputrec_->nstdisreout);
+    bool do_or = do_per_step(step, inputrec_->nstorireout);
 
     // energyOutput_->printAnnealingTemperatures(writeLog ? fplog_ : nullptr, groups_, &(inputrec_->opts));
-    Awh *awh = nullptr;
-    energyOutput_->printStepToEnergyFile(
-            mdoutf_get_fp_ene(outf), writeTrajectory, do_dr, do_or,
-            writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
+    Awh* awh = nullptr;
+    energyOutput_->printStepToEnergyFile(mdoutf_get_fp_ene(outf), writeTrajectory, do_dr, do_or,
+                                         writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
 }
 
 void EnergyElement::addToForceVirial(const tensor virial, Step step)
@@ -376,7 +360,7 @@ bool* EnergyElement::needToSumEkinhOld()
     return &needToSumEkinhOld_;
 }
 
-void EnergyElement::writeCheckpoint(t_state gmx_unused *localState, t_state *globalState)
+void EnergyElement::writeCheckpoint(t_state gmx_unused* localState, t_state* globalState)
 {
     if (isMasterRank_)
     {
@@ -393,10 +377,9 @@ void EnergyElement::writeCheckpoint(t_state gmx_unused *localState, t_state *glo
     }
 }
 
-void EnergyElement::initializeEnergyHistory(
-        StartingBehavior    startingBehavior,
-        ObservablesHistory *observablesHistory,
-        EnergyOutput       *energyOutput)
+void EnergyElement::initializeEnergyHistory(StartingBehavior    startingBehavior,
+                                            ObservablesHistory* observablesHistory,
+                                            EnergyOutput*       energyOutput)
 {
     if (startingBehavior != StartingBehavior::NewSimulation)
     {
@@ -438,21 +421,21 @@ void EnergyElement::initializeEnergyHistory(
     energyOutput->fillEnergyHistory(observablesHistory->energyHistory.get());
 }
 
-void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat *vRescaleThermostat)
+void EnergyElement::setVRescaleThermostat(const gmx::VRescaleThermostat* vRescaleThermostat)
 {
     vRescaleThermostat_ = vRescaleThermostat;
     if (vRescaleThermostat_)
     {
-        dummyLegacyState_.flags |= (1u << estTHERM_INT);
+        dummyLegacyState_.flags |= (1U << estTHERM_INT);
     }
 }
 
-void EnergyElement::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat *parrinelloRahmanBarostat)
+void EnergyElement::setParrinelloRahamnBarostat(const gmx::ParrinelloRahmanBarostat* parrinelloRahmanBarostat)
 {
     parrinelloRahmanBarostat_ = parrinelloRahmanBarostat;
     if (parrinelloRahmanBarostat_)
     {
-        dummyLegacyState_.flags |= (1u << estBOX) | (1u << estBOXV);
+        dummyLegacyState_.flags |= (1U << estBOX) | (1U << estBOXV);
     }
 }
 

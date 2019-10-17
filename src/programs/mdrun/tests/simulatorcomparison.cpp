@@ -63,22 +63,22 @@ namespace
 {
 
 //! Run grompp and mdrun for both sets of mdp field values
-template <bool doEnvironmentVariable, bool doRerun>
-void executeSimulatorComparisonTestImpl(
-        TestFileManager            *fileManager,
-        SimulationRunner           *runner,
-        const std::string          &simulationName,
-        int                         maxWarningsTolerated,
-        const MdpFieldValues       &mdpFieldValues,
-        const EnergyTermsToCompare &energyTermsToCompare,
-        const TrajectoryComparison &trajectoryComparison,
-        const std::string          &environmentVariable)
+template<bool doEnvironmentVariable, bool doRerun>
+void executeSimulatorComparisonTestImpl(TestFileManager*            fileManager,
+                                        SimulationRunner*           runner,
+                                        const std::string&          simulationName,
+                                        int                         maxWarningsTolerated,
+                                        const MdpFieldValues&       mdpFieldValues,
+                                        const EnergyTermsToCompare& energyTermsToCompare,
+                                        const TrajectoryComparison& trajectoryComparison,
+                                        const std::string&          environmentVariable)
 {
     // TODO At some point we should also test PME-only ranks.
     int numRanksAvailable = getNumberOfTestMpiRanks();
     if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
     {
-        fprintf(stdout, "Test system '%s' cannot run with %d ranks.\n"
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
                 "The supported numbers are: %s\n",
                 simulationName.c_str(), numRanksAvailable,
                 reportNumbersOfPpRanksSupported(simulationName).c_str());
@@ -104,7 +104,7 @@ void executeSimulatorComparisonTestImpl(
         EXPECT_EQ(0, runner->callGrompp(caller));
     }
 
-    char *environmentVariableBackup = nullptr;
+    char* environmentVariableBackup = nullptr;
     if (doEnvironmentVariable)
     {
         // save state of environment variable
@@ -167,38 +167,33 @@ void executeSimulatorComparisonTestImpl(
     //
     // TODO Here is an unnecessary copy of keys (ie. the energy term
     // names), for convenience. In the future, use a range.
-    auto namesOfEnergiesToMatch = energyComparison.getEnergyNames();
-    FramePairManager<EnergyFrameReader>
-         energyManager(
+    auto                                namesOfEnergiesToMatch = energyComparison.getEnergyNames();
+    FramePairManager<EnergyFrameReader> energyManager(
             openEnergyFileToReadTerms(simulator1EdrFileName, namesOfEnergiesToMatch),
             openEnergyFileToReadTerms(simulator2EdrFileName, namesOfEnergiesToMatch));
     // Compare the energy frames.
     energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
 
     // Build the manager that will present matching pairs of frames to compare
-    FramePairManager<TrajectoryFrameReader>
-    trajectoryManager(std::make_unique<TrajectoryFrameReader>(simulator1TrajectoryFileName),
-                      std::make_unique<TrajectoryFrameReader>(simulator2TrajectoryFileName));
+    FramePairManager<TrajectoryFrameReader> trajectoryManager(
+            std::make_unique<TrajectoryFrameReader>(simulator1TrajectoryFileName),
+            std::make_unique<TrajectoryFrameReader>(simulator2TrajectoryFileName));
     // Compare the trajectory frames.
     trajectoryManager.compareAllFramePairs<TrajectoryFrame>(trajectoryComparison);
 }
-}       // namespace
+} // namespace
 
-template<typename ... Args>
-void executeSimulatorComparisonTest(
-        const std::string      &environmentVariable,
-        Args && ...             args)
+template<typename... Args>
+void executeSimulatorComparisonTest(const std::string& environmentVariable, Args&&... args)
 {
-    executeSimulatorComparisonTestImpl<true, false>(
-            std::forward<Args>(args) ..., environmentVariable);
+    executeSimulatorComparisonTestImpl<true, false>(std::forward<Args>(args)..., environmentVariable);
 }
 
-template<typename ... Args>
-void executeRerunTest(Args && ... args)
+template<typename... Args>
+void executeRerunTest(Args&&... args)
 {
-    executeSimulatorComparisonTestImpl<false, true>(
-            std::forward<Args>(args) ..., "");
+    executeSimulatorComparisonTestImpl<false, true>(std::forward<Args>(args)..., "");
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

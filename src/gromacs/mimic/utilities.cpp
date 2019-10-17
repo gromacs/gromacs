@@ -39,12 +39,13 @@
 
 #include "gromacs/topology/topology.h"
 
-std::vector<int> genQmmmIndices(const gmx_mtop_t &mtop)
+std::vector<int> genQmmmIndices(const gmx_mtop_t& mtop)
 {
-    std::vector<int>       output;
-    int                    global_at = 0;
-    const unsigned char   *grpnr     = mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data();
-    for (const gmx_molblock_t &molb : mtop.molblock)
+    std::vector<int>     output;
+    int                  global_at = 0;
+    const unsigned char* grpnr =
+            mtop.groups.groupNumbers[SimulationAtomGroupType::QuantumMechanics].data();
+    for (const gmx_molblock_t& molb : mtop.molblock)
     {
         for (int mol = 0; mol < molb.nmol; ++mol)
         {

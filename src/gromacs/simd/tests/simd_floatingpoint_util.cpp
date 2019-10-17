@@ -63,77 +63,76 @@ namespace
  */
 class SimdFloatingpointUtilTest : public SimdTest
 {
-    public:
-        SimdFloatingpointUtilTest()
+public:
+    SimdFloatingpointUtilTest()
+    {
+        // Resize vectors to get the amount of memory we need
+        integerMemory_.resize(GMX_SIMD_REAL_WIDTH);
+
+        // The total memory we allocate corresponds to two work arrays
+        // and 4 values each of GMX_SIMD_REAL_WIDTH.
+        realMemory_.resize(2 * s_workMemSize_ + 4 * GMX_SIMD_REAL_WIDTH);
+
+        offset_ = integerMemory_.data();
+        val0_   = realMemory_.data();
+        val1_   = val0_ + GMX_SIMD_REAL_WIDTH;
+        val2_   = val1_ + GMX_SIMD_REAL_WIDTH;
+        val3_   = val2_ + GMX_SIMD_REAL_WIDTH;
+        mem0_   = val3_ + GMX_SIMD_REAL_WIDTH;
+        mem1_   = mem0_ + s_workMemSize_;
+
+        // Set default values for offset and variables val0_ through val3_
+        // We cannot fill mem_ here since those values depend on the test.
+        for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
         {
-            // Resize vectors to get the amount of memory we need
-            integerMemory_.resize(GMX_SIMD_REAL_WIDTH);
-
-            // The total memory we allocate corresponds to two work arrays
-            // and 4 values each of GMX_SIMD_REAL_WIDTH.
-            realMemory_.resize(2*s_workMemSize_+4*GMX_SIMD_REAL_WIDTH);
-
-            offset_ = integerMemory_.data();
-            val0_   = realMemory_.data();
-            val1_   = val0_ + GMX_SIMD_REAL_WIDTH;
-            val2_   = val1_ + GMX_SIMD_REAL_WIDTH;
-            val3_   = val2_ + GMX_SIMD_REAL_WIDTH;
-            mem0_   = val3_ + GMX_SIMD_REAL_WIDTH;
-            mem1_   = mem0_ + s_workMemSize_;
-
-            // Set default values for offset and variables val0_ through val3_
-            // We cannot fill mem_ here since those values depend on the test.
-            for (int i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
-            {
-                // Use every third point to avoid a continguous access pattern
-                offset_[i] = 3 * i;
-                // Multiply numbers by 1+100*GMX_REAL_EPS ensures some low bits are
-                // set too, so the tests make sure we read all bits correctly.
-                val0_[i]   = (i      ) * (1.0 + 100*GMX_REAL_EPS);
-                val1_[i]   = (i + 0.1) * (1.0 + 100*GMX_REAL_EPS);
-                val2_[i]   = (i + 0.2) * (1.0 + 100*GMX_REAL_EPS);
-                val3_[i]   = (i + 0.3) * (1.0 + 100*GMX_REAL_EPS);
-            }
+            // Use every third point to avoid a continguous access pattern
+            offset_[i] = 3 * i;
+            // Multiply numbers by 1+100*GMX_REAL_EPS ensures some low bits are
+            // set too, so the tests make sure we read all bits correctly.
+            val0_[i] = (i) * (1.0 + 100 * GMX_REAL_EPS);
+            val1_[i] = (i + 0.1) * (1.0 + 100 * GMX_REAL_EPS);
+            val2_[i] = (i + 0.2) * (1.0 + 100 * GMX_REAL_EPS);
+            val3_[i] = (i + 0.3) * (1.0 + 100 * GMX_REAL_EPS);
         }
+    }
 
-    protected:
-        //! \brief Size of memory work buffers
-        //
-        // To have a somewhat odd access pattern, we use every
-        // third entry, so the largest value of offset_[i] is 3*GMX_SIMD_REAL_WIDTH.
-        // Then we also allow alignments up to 16, which means the largest index in mem0_[]
-        // that we might access is 16*3*GMX_SIMD_REAL_WIDTH+3.
-        static const std::size_t                    s_workMemSize_ = 16*3*GMX_SIMD_REAL_WIDTH+4;
+protected:
+    //! \brief Size of memory work buffers
+    //
+    // To have a somewhat odd access pattern, we use every
+    // third entry, so the largest value of offset_[i] is 3*GMX_SIMD_REAL_WIDTH.
+    // Then we also allow alignments up to 16, which means the largest index in mem0_[]
+    // that we might access is 16*3*GMX_SIMD_REAL_WIDTH+3.
+    static const std::size_t s_workMemSize_ = 16 * 3 * GMX_SIMD_REAL_WIDTH + 4;
 
-        std::vector<int, AlignedAllocator<int> >    integerMemory_; //!< Aligned integer memory
-        std::vector<real, AlignedAllocator<real> >  realMemory_;    //!< Aligned real memory
+    std::vector<int, AlignedAllocator<int>>   integerMemory_; //!< Aligned integer memory
+    std::vector<real, AlignedAllocator<real>> realMemory_;    //!< Aligned real memory
 
-        int *   offset_;                                            //!< Pointer to offset indices, aligned memory
-        real *  val0_;                                              //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real *  val1_;                                              //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real *  val2_;                                              //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
-        real *  val3_;                                              //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    int*  offset_; //!< Pointer to offset indices, aligned memory
+    real* val0_;   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real* val1_;   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real* val2_;   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
+    real* val3_;   //!< Pointer to GMX_SIMD_REAL_WIDTH values, aligned
 
-        real *  mem0_;                                              //!< Pointer to aligned memory, s_workMemSize real values
-        real *  mem1_;                                              //!< Pointer to aligned memory, s_workMemSize real values
+    real* mem0_; //!< Pointer to aligned memory, s_workMemSize real values
+    real* mem1_; //!< Pointer to aligned memory, s_workMemSize real values
 };
-
 
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose4)
 {
-    SimdReal        v0, v1, v2, v3;
-    SimdReal        ref0, ref1, ref2, ref3;
-    const int       nalign                 = 3;
-    int             alignmentList[nalign]  = { 4, 8, 12 };
-    int             i, j, align;
+    SimdReal  v0, v1, v2, v3;
+    SimdReal  ref0, ref1, ref2, ref3;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 4, 8, 12 };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
             mem0_[align * offset_[j] + 2] = val2_[j];
             mem0_[align * offset_[j] + 3] = val3_[j];
@@ -170,11 +169,11 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose4)
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2)
 {
-    SimdReal        v0, v1;
-    SimdReal        ref0, ref1;
-    const int       nalign                 = 3;
-    int             alignmentList[nalign]  = { 2, 4, c_simdBestPairAlignment };
-    int             i, j, align;
+    SimdReal  v0, v1;
+    SimdReal  ref0, ref1;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 2, 4, c_simdBestPairAlignment };
+    int       i, j, align;
 
     EXPECT_TRUE(c_simdBestPairAlignment <= GMX_SIMD_REAL_WIDTH);
 
@@ -183,7 +182,7 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2)
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
@@ -214,18 +213,18 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2)
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadUTranspose3)
 {
-    SimdReal        v0, v1, v2;
-    SimdReal        ref0, ref1, ref2;
-    const int       nalign                 = 2;
-    int             alignmentList[nalign]  = { 3, 4 };
-    int             i, j, align;
+    SimdReal  v0, v1, v2;
+    SimdReal  ref0, ref1, ref2;
+    const int nalign                = 2;
+    int       alignmentList[nalign] = { 3, 4 };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
             mem0_[align * offset_[j] + 2] = val2_[j];
         }
@@ -255,12 +254,12 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadUTranspose3)
 
 TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
 {
-    SimdReal                          v0, v1, v2;
-    real                              refmem[s_workMemSize_];
-    const int                         nalign                 = 2;
-    int                               alignmentList[nalign]  = { 3, 4 };
-    int                               i, align;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0, v1, v2;
+    real                   refmem[s_workMemSize_];
+    const int              nalign                = 2;
+    int                    alignmentList[nalign] = { 3, 4 };
+    int                    i, align;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     for (i = 0; i < nalign; i++)
     {
@@ -270,13 +269,13 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
             // Multiply by 1+100*eps to make sure low bits are also used
-            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
             // set values in _reference_ memory (we will then test with mem0_, and compare)
-            refmem[align * offset_[j]    ] = val0_[j];
+            refmem[align * offset_[j]]     = val0_[j];
             refmem[align * offset_[j] + 1] = val1_[j];
             refmem[align * offset_[j] + 2] = val2_[j];
         }
@@ -307,12 +306,12 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterStoreU3)
 
 TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
 {
-    SimdReal                          v0, v1, v2;
-    real                              refmem[s_workMemSize_];
-    const int                         nalign                 = 2;
-    int                               alignmentList[nalign]  = { 3, 4 };
-    int                               i, align;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0, v1, v2;
+    real                   refmem[s_workMemSize_];
+    const int              nalign                = 2;
+    int                    alignmentList[nalign] = { 3, 4 };
+    int                    i, align;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     for (i = 0; i < nalign; i++)
     {
@@ -322,13 +321,13 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
             // Multiply by 1+100*eps to make sure low bits are also used
-            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
             // Add values to _reference_ memory (we will then test with mem0_, and compare)
-            refmem[align * offset_[j]    ] += val0_[j];
+            refmem[align * offset_[j]] += val0_[j];
             refmem[align * offset_[j] + 1] += val1_[j];
             refmem[align * offset_[j] + 2] += val2_[j];
         }
@@ -359,9 +358,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3)
 
 TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
 {
-    SimdReal                          v0, v1, v2;
-    real                              refmem[s_workMemSize_];
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0, v1, v2;
+    real                   refmem[s_workMemSize_];
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // Alter offset_ to make all entries point to the same (first) value, so all entries will overlap
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -373,13 +372,13 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
     for (std::size_t j = 0; j < s_workMemSize_; j++)
     {
         // Multiply by 1+100*eps to make sure low bits are also used
-        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
+        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
     }
 
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
     {
         // Add values to _reference_ memory (we will then test with mem0_, and compare)
-        refmem[3 * offset_[j]    ] += val0_[j];
+        refmem[3 * offset_[j]] += val0_[j];
         refmem[3 * offset_[j] + 1] += val1_[j];
         refmem[3 * offset_[j] + 2] += val2_[j];
     }
@@ -398,12 +397,12 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterIncrU3Overlapping)
 
 TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
 {
-    SimdReal                          v0, v1, v2;
-    real                              refmem[s_workMemSize_];
-    const int                         nalign                 = 2;
-    int                               alignmentList[nalign]  = { 3, 4 };
-    int                               i, align;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0, v1, v2;
+    real                   refmem[s_workMemSize_];
+    const int              nalign                = 2;
+    int                    alignmentList[nalign] = { 3, 4 };
+    int                    i, align;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     for (i = 0; i < nalign; i++)
     {
@@ -413,13 +412,13 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
         for (std::size_t j = 0; j < s_workMemSize_; j++)
         {
             // Multiply by 1+100*eps to make sure low bits are also used
-            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
+            mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
         }
 
         for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
             // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
-            refmem[align * offset_[j]    ] -= val0_[j];
+            refmem[align * offset_[j]] -= val0_[j];
             refmem[align * offset_[j] + 1] -= val1_[j];
             refmem[align * offset_[j] + 2] -= val2_[j];
         }
@@ -450,9 +449,9 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3)
 
 TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
 {
-    SimdReal                          v0, v1, v2;
-    real                              refmem[s_workMemSize_];
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0, v1, v2;
+    real                   refmem[s_workMemSize_];
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // Alter offset_ to make all entries point to the same (first) value, so all entries will overlap
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
@@ -464,16 +463,16 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
     for (std::size_t j = 0; j < s_workMemSize_; j++)
     {
         // Multiply by 1+100*eps to make sure low bits are also used
-        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100*GMX_REAL_EPS);
+        mem0_[j] = refmem[j] = (1000.0 + j) * (1.0 + 100 * GMX_REAL_EPS);
     }
 
-#ifdef __INTEL_COMPILER  //Bug in (at least) 19u1 and 18u5 (03424712)
-    #pragma novector
-#endif
+#    ifdef __INTEL_COMPILER // Bug in (at least) 19u1 and 18u5 (03424712)
+#        pragma novector
+#    endif
     for (std::size_t j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
     {
         // Subtract values from _reference_ memory (we will then test with mem0_, and compare)
-        refmem[3 * offset_[j]    ] -= val0_[j];
+        refmem[3 * offset_[j]] -= val0_[j];
         refmem[3 * offset_[j] + 1] -= val1_[j];
         refmem[3 * offset_[j] + 2] -= val2_[j];
     }
@@ -492,8 +491,8 @@ TEST_F(SimdFloatingpointUtilTest, transposeScatterDecrU3Overlapping)
 
 TEST_F(SimdFloatingpointUtilTest, expandScalarsToTriplets)
 {
-    SimdReal        vs, v0, v1, v2;
-    int             i;
+    SimdReal vs, v0, v1, v2;
+    int      i;
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
     {
@@ -519,19 +518,19 @@ TEST_F(SimdFloatingpointUtilTest, expandScalarsToTriplets)
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose4)
 {
-    SimdReal         v0, v1, v2, v3;
-    SimdReal         ref0, ref1, ref2, ref3;
-    SimdInt32        simdoffset;
-    const int        nalign                 = 3;
-    int              alignmentList[nalign]  = { 4, 8, 12 };
-    int              i, j, align;
+    SimdReal  v0, v1, v2, v3;
+    SimdReal  ref0, ref1, ref2, ref3;
+    SimdInt32 simdoffset;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 4, 8, 12 };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
             mem0_[align * offset_[j] + 2] = val2_[j];
             mem0_[align * offset_[j] + 3] = val3_[j];
@@ -570,19 +569,19 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose4)
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose2)
 {
-    SimdReal         v0, v1;
-    SimdReal         ref0, ref1;
-    SimdInt32        simdoffset;
-    const int        nalign                 = 3;
-    int              alignmentList[nalign]  = { 4, 8, 12 };
-    int              i, j, align;
+    SimdReal  v0, v1;
+    SimdReal  ref0, ref1;
+    SimdInt32 simdoffset;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 4, 8, 12 };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
@@ -612,22 +611,22 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadBySimdIntTranspose2)
     }
 }
 
-#if GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
+#    if GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
 TEST_F(SimdFloatingpointUtilTest, gatherLoadUBySimdIntTranspose2)
 {
-    SimdReal         v0, v1;
-    SimdReal         ref0, ref1;
-    SimdInt32        simdoffset;
-    const int        nalign                 = 3;
-    int              alignmentList[nalign]  = { 1, 3, 5 };
-    int              i, j, align;
+    SimdReal  v0, v1;
+    SimdReal  ref0, ref1;
+    SimdInt32 simdoffset;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 1, 3, 5 };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
         align = alignmentList[i];
         for (j = 0; j < GMX_SIMD_REAL_WIDTH; j++)
         {
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
         }
 
@@ -656,14 +655,14 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadUBySimdIntTranspose2)
         GMX_EXPECT_SIMD_REAL_EQ(ref1, v1);
     }
 }
-#endif      // GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
+#    endif // GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL
 
 TEST_F(SimdFloatingpointUtilTest, reduceIncr4Sum)
 {
-    int                               i;
-    SimdReal                          v0, v1, v2, v3;
-    real                              sum0, sum1, sum2, sum3, tstsum;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    int                    i;
+    SimdReal               v0, v1, v2, v3;
+    real                   sum0, sum1, sum2, sum3, tstsum;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     v0 = load<SimdReal>(val0_);
     v1 = load<SimdReal>(val1_);
@@ -695,14 +694,14 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4Sum)
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }
 
-#if GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+#    if GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 
 TEST_F(SimdFloatingpointUtilTest, loadDualHsimd)
 {
     SimdReal v0, v1;
 
     // Point p to the upper half of val0_
-    real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
     v0 = load<SimdReal>(val0_);
     v1 = loadDualHsimd(val0_, p);
@@ -712,10 +711,10 @@ TEST_F(SimdFloatingpointUtilTest, loadDualHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, loadDuplicateHsimd)
 {
-    SimdReal        v0, v1;
-    int             i;
+    SimdReal v0, v1;
+    int      i;
     // Point p to the upper half of val0_
-    real          * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
     // Copy data so upper half is identical to lower
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
     {
@@ -731,12 +730,12 @@ TEST_F(SimdFloatingpointUtilTest, loadDuplicateHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, loadU1DualHsimd)
 {
-    SimdReal        v0, v1;
-    int             i;
-    real            data[2] = { 1, 2 };
+    SimdReal v0, v1;
+    int      i;
+    real     data[2] = { 1, 2 };
 
     // Point p to the upper half of val0_
-    real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
     // Set all low elements to data[0], an high to data[1]
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
     {
@@ -753,11 +752,11 @@ TEST_F(SimdFloatingpointUtilTest, loadU1DualHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, storeDualHsimd)
 {
-    SimdReal        v0;
-    int             i;
+    SimdReal v0;
+    int      i;
 
     // Point p to the upper half of val0_
-    real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
     v0 = load<SimdReal>(val2_);
     storeDualHsimd(val0_, p, v0);
@@ -770,8 +769,8 @@ TEST_F(SimdFloatingpointUtilTest, storeDualHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
 {
-    real            reference[GMX_SIMD_REAL_WIDTH];
-    SimdReal        v0;
+    real     reference[GMX_SIMD_REAL_WIDTH];
+    SimdReal v0;
 
     // Create reference values
     for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH; i++)
@@ -780,7 +779,7 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
     }
 
     // Point p to the upper half of val0_
-    real * p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val0_ + GMX_SIMD_REAL_WIDTH / 2;
 
     v0 = load<SimdReal>(val2_);
     incrDualHsimd(val0_, p, v0);
@@ -793,19 +792,19 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
 {
-    real            reference[GMX_SIMD_REAL_WIDTH/2];
-    SimdReal        v0;
+    real     reference[GMX_SIMD_REAL_WIDTH / 2];
+    SimdReal v0;
 
     // Create reference values
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
     {
-        reference[i] = val0_[i] + val2_[i] + val2_[GMX_SIMD_REAL_WIDTH/2+i];
+        reference[i] = val0_[i] + val2_[i] + val2_[GMX_SIMD_REAL_WIDTH / 2 + i];
     }
 
     v0 = load<SimdReal>(val2_);
     incrDualHsimd(val0_, val0_, v0);
 
-    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH/2; i++)
+    for (std::size_t i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
     {
         EXPECT_EQ(reference[i], val0_[i]);
     }
@@ -813,16 +812,16 @@ TEST_F(SimdFloatingpointUtilTest, incrDualHsimdOverlapping)
 
 TEST_F(SimdFloatingpointUtilTest, decrHsimd)
 {
-    SimdReal                          v0;
-    real                              ref[GMX_SIMD_REAL_WIDTH / 2];
-    int                               i;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    SimdReal               v0;
+    real                   ref[GMX_SIMD_REAL_WIDTH / 2];
+    int                    i;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // Point p to the upper half of val1_
-    real * p = val1_ + GMX_SIMD_REAL_WIDTH / 2;
+    real* p = val1_ + GMX_SIMD_REAL_WIDTH / 2;
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 2; i++)
     {
-        ref[i] = val0_[i] - ( val1_[i] + p[i] );
+        ref[i] = val0_[i] - (val1_[i] + p[i]);
     }
 
     v0 = load<SimdReal>(val1_);
@@ -837,12 +836,12 @@ TEST_F(SimdFloatingpointUtilTest, decrHsimd)
 
 TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2Hsimd)
 {
-    SimdReal        v0, v1;
-    SimdReal        ref0, ref1;
+    SimdReal v0, v1;
+    SimdReal ref0, ref1;
 
-    const int       nalign                 = 3;
-    int             alignmentList[nalign]  = { 2, 4, c_simdBestPairAlignment };
-    int             i, j, align;
+    const int nalign                = 3;
+    int       alignmentList[nalign] = { 2, 4, c_simdBestPairAlignment };
+    int       i, j, align;
 
     for (i = 0; i < nalign; i++)
     {
@@ -850,12 +849,11 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2Hsimd)
         for (j = 0; j < GMX_SIMD_REAL_WIDTH / 2; j++)
         {
             // Use mem0_ as base for lower half
-            mem0_[align * offset_[j]    ] = val0_[j];
+            mem0_[align * offset_[j]]     = val0_[j];
             mem0_[align * offset_[j] + 1] = val1_[j];
             // Use mem1_ as base for upper half
-            mem1_[align * offset_[j]    ] = val0_[GMX_SIMD_REAL_WIDTH / 2 + j];
+            mem1_[align * offset_[j]]     = val0_[GMX_SIMD_REAL_WIDTH / 2 + j];
             mem1_[align * offset_[j] + 1] = val1_[GMX_SIMD_REAL_WIDTH / 2 + j];
-
         }
 
         ref0 = load<SimdReal>(val0_);
@@ -886,10 +884,10 @@ TEST_F(SimdFloatingpointUtilTest, gatherLoadTranspose2Hsimd)
 
 TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
 {
-    int                               i;
-    SimdReal                          v0, v1;
-    real                              sum0, sum1, sum2, sum3, tstsum;
-    FloatingPointTolerance            tolerance(defaultRealTolerance());
+    int                    i;
+    SimdReal               v0, v1;
+    real                   sum0, sum1, sum2, sum3, tstsum;
+    FloatingPointTolerance tolerance(defaultRealTolerance());
 
     // Use the half-SIMD storage in memory val0_ and val1_.
     v0 = load<SimdReal>(val0_);
@@ -920,24 +918,24 @@ TEST_F(SimdFloatingpointUtilTest, reduceIncr4SumHsimd)
     EXPECT_REAL_EQ_TOL(sum0 + sum1 + sum2 + sum3, tstsum, tolerance);
 }
 
-#endif      // GMX_SIMD_HAVE_HSIMD_UTIL_REAL
+#    endif // GMX_SIMD_HAVE_HSIMD_UTIL_REAL
 
-//Test Currently doesn't work for GMX_SIMD_REAL_WIDTH<4. Should be fixed by having GMX_EXPECT_SIMD_REAL_EQ which works for both Simd and Simd4
-#if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL && GMX_SIMD_REAL_WIDTH >= 4
+// Test Currently doesn't work for GMX_SIMD_REAL_WIDTH<4. Should be fixed by having GMX_EXPECT_SIMD_REAL_EQ which works for both Simd and Simd4
+#    if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL && GMX_SIMD_REAL_WIDTH >= 4
 
 TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
 {
-    Simd4NReal      v0, v1;
-    int             i;
-    real            data[GMX_SIMD_REAL_WIDTH/4];
-    std::iota(data, data+GMX_SIMD_REAL_WIDTH/4, 1);
+    Simd4NReal v0, v1;
+    int        i;
+    real       data[GMX_SIMD_REAL_WIDTH / 4];
+    std::iota(data, data + GMX_SIMD_REAL_WIDTH / 4, 1);
 
-#if defined __ICC && __ICC == 1800 || defined __ICL && __ICL == 1800
-#pragma novector /* Work-around for incorrect vectorization for AVX_512(_KNL) */
-#endif
+#        if defined __ICC && __ICC == 1800 || defined __ICL && __ICL == 1800
+#            pragma novector /* Work-around for incorrect vectorization for AVX_512(_KNL) */
+#        endif
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
     {
-        val0_[i*4] = val0_[i*4+1] = val0_[i*4+2] = val0_[i*4+3] = data[i];
+        val0_[i * 4] = val0_[i * 4 + 1] = val0_[i * 4 + 2] = val0_[i * 4 + 3] = data[i];
     }
 
     v0 = load<Simd4NReal>(val0_);
@@ -948,16 +946,16 @@ TEST_F(SimdFloatingpointUtilTest, loadUNDuplicate4)
 
 TEST_F(SimdFloatingpointUtilTest, load4DuplicateN)
 {
-    Simd4NReal        v0, v1;
-    int               i;
-    real              data[4] = { 1, 2, 3, 4};
+    Simd4NReal v0, v1;
+    int        i;
+    real       data[4] = { 1, 2, 3, 4 };
 
     for (i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
     {
-        val0_[i*4]   = data[0];
-        val0_[i*4+1] = data[1];
-        val0_[i*4+2] = data[2];
-        val0_[i*4+3] = data[3];
+        val0_[i * 4]     = data[0];
+        val0_[i * 4 + 1] = data[1];
+        val0_[i * 4 + 2] = data[2];
+        val0_[i * 4 + 3] = data[3];
     }
 
     v0 = load<Simd4NReal>(val0_);
@@ -968,17 +966,17 @@ TEST_F(SimdFloatingpointUtilTest, load4DuplicateN)
 
 TEST_F(SimdFloatingpointUtilTest, loadU4NOffset)
 {
-    constexpr int   offset  = 6; //non power of 2
-    constexpr int   dataLen = 4+offset*(GMX_SIMD_REAL_WIDTH/4-1);
-    real            data[dataLen];
-    std::iota(data, data+dataLen, 1);
+    constexpr int offset  = 6; // non power of 2
+    constexpr int dataLen = 4 + offset * (GMX_SIMD_REAL_WIDTH / 4 - 1);
+    real          data[dataLen];
+    std::iota(data, data + dataLen, 1);
 
     for (int i = 0; i < GMX_SIMD_REAL_WIDTH / 4; i++)
     {
-        val0_[i*4]   = data[0+offset*i];
-        val0_[i*4+1] = data[1+offset*i];
-        val0_[i*4+2] = data[2+offset*i];
-        val0_[i*4+3] = data[3+offset*i];
+        val0_[i * 4]     = data[0 + offset * i];
+        val0_[i * 4 + 1] = data[1 + offset * i];
+        val0_[i * 4 + 2] = data[2 + offset * i];
+        val0_[i * 4 + 3] = data[3 + offset * i];
     }
 
     const Simd4NReal v0 = load<Simd4NReal>(val0_);
@@ -987,13 +985,13 @@ TEST_F(SimdFloatingpointUtilTest, loadU4NOffset)
     GMX_EXPECT_SIMD_REAL_EQ(v0, v1);
 }
 
-#endif      // GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
+#    endif // GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
 
-#endif      // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

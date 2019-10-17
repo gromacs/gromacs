@@ -68,7 +68,6 @@ struct gmx_ffparams_t
     gmx_cmap_t              cmap_grid;   /**< The dihedral correction maps                 */
 };
 
-void pr_ffparams(FILE *fp, int indent, const char *title,
-                 const gmx_ffparams_t *ffparams, gmx_bool bShowNumbers);
+void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* ffparams, gmx_bool bShowNumbers);
 
 #endif

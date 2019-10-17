@@ -52,27 +52,21 @@
 
 class PreprocessingBondAtomTypeTest : public ::testing::Test
 {
-    public:
-        PreprocessingBondAtomTypeTest()
-        {
-            open_symtab(&symtab_);
-        }
+public:
+    PreprocessingBondAtomTypeTest() { open_symtab(&symtab_); }
 
-        int addType(const char *name);
+    int addType(const char* name);
 
-        ~PreprocessingBondAtomTypeTest() override
-        {
-            done_symtab(&symtab_);
-        }
-    protected:
-        PreprocessingBondAtomType bat_;
-        t_symtab                  symtab_;
+    ~PreprocessingBondAtomTypeTest() override { done_symtab(&symtab_); }
+
+protected:
+    PreprocessingBondAtomType bat_;
+    t_symtab                  symtab_;
 };
 
-int PreprocessingBondAtomTypeTest::addType(const char *name)
+int PreprocessingBondAtomTypeTest::addType(const char* name)
 {
-    return bat_.addBondAtomType(&symtab_,
-                                name);
+    return bat_.addBondAtomType(&symtab_, name);
 }
 
 TEST_F(PreprocessingBondAtomTypeTest, EmptyOnCreate)

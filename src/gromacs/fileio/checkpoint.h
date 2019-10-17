@@ -64,9 +64,9 @@ class KeyValueTreeObject;
 struct MdModulesCheckpointReadingDataOnMaster
 {
     //! The data of the MdModules that is stored in the checkpoint file
-    const KeyValueTreeObject &checkpointedData_;
+    const KeyValueTreeObject& checkpointedData_;
     //! The version of the read ceckpoint file
-    int                       checkpointFileVersion_;
+    int checkpointFileVersion_;
 };
 
 /*! \libinternal
@@ -75,9 +75,9 @@ struct MdModulesCheckpointReadingDataOnMaster
 struct MdModulesCheckpointReadingBroadcast
 {
     //! The communication record
-    const t_commrec &cr_;
+    const t_commrec& cr_;
     //! The version of the read file version
-    int              checkpointFileVersion_;
+    int checkpointFileVersion_;
 };
 
 /*! \libinternal \brief Writing the MdModules data to a checkpoint file.
@@ -87,7 +87,7 @@ struct MdModulesWriteCheckpointData
     //! Builder for the Key-Value-Tree to store the MdModule checkpoint data
     KeyValueTreeObjectBuilder builder_;
     //! The version of the read file version
-    int                       checkpointFileVersion_;
+    int checkpointFileVersion_;
 };
 
 } // namespace gmx
@@ -118,75 +118,82 @@ struct MdModulesWriteCheckpointData
 struct CheckpointHeaderContents
 {
     //! Version of checkpoint file read from disk.
-    int         file_version;
+    int file_version;
     //! Version string.
-    char        version[CPTSTRLEN];
+    char version[CPTSTRLEN];
     //! Deprecated string for time.
-    char        btime_UNUSED[CPTSTRLEN];
+    char btime_UNUSED[CPTSTRLEN];
     //! Deprecated string for user.
-    char        buser_UNUSED[CPTSTRLEN];
+    char buser_UNUSED[CPTSTRLEN];
     //! Deprecated string for host.
-    char        bhost_UNUSED[CPTSTRLEN];
+    char bhost_UNUSED[CPTSTRLEN];
     //! Value for precision.
-    int         double_prec;
+    int double_prec;
     //! Program string.
-    char        fprog[CPTSTRLEN];
+    char fprog[CPTSTRLEN];
     //! Time string.
-    char        ftime[CPTSTRLEN];
+    char ftime[CPTSTRLEN];
     //! Which integrator is in use.
-    int         eIntegrator;
+    int eIntegrator;
     //! Which part of the simulation this is.
-    int         simulation_part;
+    int simulation_part;
     //! Which step the checkpoint is at.
-    int64_t     step;
+    int64_t step;
     //! Current simulation time.
-    double      t;
+    double t;
     //! Number of nodes used for simulation,
-    int         nnodes;
+    int nnodes;
     //! Domain decomposition settings?
-    ivec        dd_nc;
+    ivec dd_nc;
     //! Number of separate PME ranks.
-    int         npme;
+    int npme;
     //! Number of atoms.
-    int         natoms;
+    int natoms;
     //! Number of temperature coupling groups.
-    int         ngtc;
+    int ngtc;
     //! Number of Nose-Hoover pressure coupling chains.
-    int         nnhpres;
+    int nnhpres;
     //! Length of Nose-Hoover chains.
-    int         nhchainlength;
+    int nhchainlength;
     //! Current FEP lambda state.
-    int         nlambda;
+    int nlambda;
     //! Current state flags.
-    int         flags_state;
+    int flags_state;
     //! Flags for kinetic energy.
-    int         flags_eks;
+    int flags_eks;
     //! Flags for energy history.
-    int         flags_enh;
+    int flags_enh;
     //! Flags for pull history.
-    int         flagsPullHistory;
+    int flagsPullHistory;
     //! Flags for mystery history.
-    int         flags_dfh;
+    int flags_dfh;
     //! Flags for AWH history.
-    int         flags_awhh;
+    int flags_awhh;
     //! Essential dynamics states.
-    int         nED;
+    int nED;
     //! Enum for coordinate swapping.
-    int         eSwapCoords;
+    int eSwapCoords;
 };
 
 /* Write a checkpoint to <fn>.cpt
  * Appends the _step<step>.cpt with bNumberAndKeep,
  * otherwise moves the previous <fn>.cpt to <fn>_prev.cpt
  */
-void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
-                      FILE *fplog, const t_commrec *cr,
-                      ivec domdecCells, int nppnodes,
-                      int eIntegrator, int simulation_part,
-                      gmx_bool bExpanded, int elamstats,
-                      int64_t step, double t,
-                      t_state *state, ObservablesHistory *observablesHistory,
-                      const gmx::MdModulesNotifier &notifier);
+void write_checkpoint(const char*                   fn,
+                      gmx_bool                      bNumberAndKeep,
+                      FILE*                         fplog,
+                      const t_commrec*              cr,
+                      ivec                          domdecCells,
+                      int                           nppnodes,
+                      int                           eIntegrator,
+                      int                           simulation_part,
+                      gmx_bool                      bExpanded,
+                      int                           elamstats,
+                      int64_t                       step,
+                      double                        t,
+                      t_state*                      state,
+                      ObservablesHistory*           observablesHistory,
+                      const gmx::MdModulesNotifier& notifier);
 
 /* Loads a checkpoint from fn for run continuation.
  * Generates a fatal error on system size mismatch.
@@ -195,18 +202,21 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
  * but not the state itself.
  * With reproducibilityRequested warns about version, build, #ranks differences.
  */
-void load_checkpoint(const char *fn, t_fileio *logfio,
-                     const t_commrec *cr, const ivec dd_nc,
-                     t_inputrec *ir, t_state *state,
-                     ObservablesHistory *observablesHistory,
-                     gmx_bool reproducibilityRequested,
-                     const gmx::MdModulesNotifier &mdModulesNotifier);
+void load_checkpoint(const char*                   fn,
+                     t_fileio*                     logfio,
+                     const t_commrec*              cr,
+                     const ivec                    dd_nc,
+                     t_inputrec*                   ir,
+                     t_state*                      state,
+                     ObservablesHistory*           observablesHistory,
+                     gmx_bool                      reproducibilityRequested,
+                     const gmx::MdModulesNotifier& mdModulesNotifier);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
-void read_checkpoint_trxframe(struct t_fileio *fp, t_trxframe *fr);
+void read_checkpoint_trxframe(struct t_fileio* fp, t_trxframe* fr);
 
 /* Print the complete contents of checkpoint file fn to out */
-void list_checkpoint(const char *fn, FILE *out);
+void list_checkpoint(const char* fn, FILE* out);
 
 /*!\brief Read simulation step and part from a checkpoint file
  *
@@ -218,9 +228,7 @@ void list_checkpoint(const char *fn, FILE *out);
  *
  * The output variables will both contain 0 if filename is NULL, the file
  * does not exist, or is not readable. */
-void read_checkpoint_part_and_step(const char  *filename,
-                                   int         *simulation_part,
-                                   int64_t     *step);
+void read_checkpoint_part_and_step(const char* filename, int* simulation_part, int64_t* step);
 
 /*!\brief Return header information from an open checkpoint file.
  *
@@ -229,7 +237,6 @@ void read_checkpoint_part_and_step(const char  *filename,
  * \param[in]  fp               Handle to open checkpoint file
  * \param[out] outputfiles      Container of output file names from the previous run. */
 CheckpointHeaderContents
-read_checkpoint_simulation_part_and_filenames(t_fileio                         *fp,
-                                              std::vector<gmx_file_position_t> *outputfiles);
+read_checkpoint_simulation_part_and_filenames(t_fileio* fp, std::vector<gmx_file_position_t>* outputfiles);
 
 #endif

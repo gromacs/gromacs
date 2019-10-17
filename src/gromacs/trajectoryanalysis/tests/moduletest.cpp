@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,52 +67,47 @@ namespace test
 
 class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 {
-    public:
-        struct DatasetInfo
-        {
-            DatasetInfo()
-                : bCheck(true), tolerance(defaultRealTolerance())
-            {
-            }
+public:
+    struct DatasetInfo
+    {
+        DatasetInfo() : bCheck(true), tolerance(defaultRealTolerance()) {}
 
-            bool                   bCheck;
-            FloatingPointTolerance tolerance;
-        };
+        bool                   bCheck;
+        FloatingPointTolerance tolerance;
+    };
 
-        typedef std::map<std::string, DatasetInfo> DatasetList;
+    typedef std::map<std::string, DatasetInfo> DatasetList;
 
-        explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture *parent);
+    explicit Impl(AbstractTrajectoryAnalysisModuleTestFixture* parent);
 
-        TrajectoryAnalysisModule &module();
-        void ensureModuleCreated();
-        bool hasCheckedDatasets() const;
+    TrajectoryAnalysisModule& module();
+    void                      ensureModuleCreated();
+    bool                      hasCheckedDatasets() const;
 
-        AbstractTrajectoryAnalysisModuleTestFixture    &parent_;
-        TrajectoryAnalysisModulePointer                 module_;
-        DatasetList                                     datasets_;
-        bool                                            bDatasetsIncluded_;
+    AbstractTrajectoryAnalysisModuleTestFixture& parent_;
+    TrajectoryAnalysisModulePointer              module_;
+    DatasetList                                  datasets_;
+    bool                                         bDatasetsIncluded_;
 };
 
-AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
-        AbstractTrajectoryAnalysisModuleTestFixture *parent)
-    : parent_(*parent), bDatasetsIncluded_(false)
+AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(AbstractTrajectoryAnalysisModuleTestFixture* parent) :
+    parent_(*parent),
+    bDatasetsIncluded_(false)
 {
 }
 
-TrajectoryAnalysisModule &
-AbstractTrajectoryAnalysisModuleTestFixture::Impl::module()
+TrajectoryAnalysisModule& AbstractTrajectoryAnalysisModuleTestFixture::Impl::module()
 {
     ensureModuleCreated();
     return *module_;
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::Impl::ensureModuleCreated()
+void AbstractTrajectoryAnalysisModuleTestFixture::Impl::ensureModuleCreated()
 {
     if (module_.get() == nullptr)
     {
         module_ = parent_.createModule();
-        const std::vector<std::string>          &datasetNames(module_->datasetNames());
+        const std::vector<std::string>& datasetNames(module_->datasetNames());
         datasets_.clear();
         std::vector<std::string>::const_iterator i;
         for (i = datasetNames.begin(); i != datasetNames.end(); ++i)
@@ -122,8 +117,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::ensureModuleCreated()
     }
 }
 
-bool
-AbstractTrajectoryAnalysisModuleTestFixture::Impl::hasCheckedDatasets() const
+bool AbstractTrajectoryAnalysisModuleTestFixture::Impl::hasCheckedDatasets() const
 {
     DatasetList::const_iterator dataset;
     for (dataset = datasets_.begin(); dataset != datasets_.end(); ++dataset)
@@ -140,29 +134,24 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::hasCheckedDatasets() const
  * AbstractTrajectoryAnalysisModuleTestFixture
  */
 
-AbstractTrajectoryAnalysisModuleTestFixture::AbstractTrajectoryAnalysisModuleTestFixture()
-    : impl_(new Impl(this))
+AbstractTrajectoryAnalysisModuleTestFixture::AbstractTrajectoryAnalysisModuleTestFixture() :
+    impl_(new Impl(this))
 {
 }
 
-AbstractTrajectoryAnalysisModuleTestFixture::~AbstractTrajectoryAnalysisModuleTestFixture()
-{
-}
+AbstractTrajectoryAnalysisModuleTestFixture::~AbstractTrajectoryAnalysisModuleTestFixture() {}
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::setTopology(const char *filename)
+void AbstractTrajectoryAnalysisModuleTestFixture::setTopology(const char* filename)
 {
     setInputFile("-s", filename);
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::setTrajectory(const char *filename)
+void AbstractTrajectoryAnalysisModuleTestFixture::setTrajectory(const char* filename)
 {
     setInputFile("-f", filename);
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::includeDataset(const char *name)
+void AbstractTrajectoryAnalysisModuleTestFixture::includeDataset(const char* name)
 {
     impl_->ensureModuleCreated();
     if (!impl_->bDatasetsIncluded_)
@@ -179,8 +168,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::includeDataset(const char *name)
     dataset->second.bCheck = true;
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::excludeDataset(const char *name)
+void AbstractTrajectoryAnalysisModuleTestFixture::excludeDataset(const char* name)
 {
     impl_->ensureModuleCreated();
     Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
@@ -189,9 +177,8 @@ AbstractTrajectoryAnalysisModuleTestFixture::excludeDataset(const char *name)
     dataset->second.bCheck = false;
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(
-        const char *name, const FloatingPointTolerance &tolerance)
+void AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(const char* name,
+                                                                      const FloatingPointTolerance& tolerance)
 {
     impl_->ensureModuleCreated();
     Impl::DatasetList::iterator dataset = impl_->datasets_.find(name);
@@ -200,11 +187,10 @@ AbstractTrajectoryAnalysisModuleTestFixture::setDatasetTolerance(
     dataset->second.tolerance = tolerance;
 }
 
-void
-AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
+void AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine& args)
 {
-    TrajectoryAnalysisModule &module  = impl_->module();
-    CommandLine              &cmdline = commandLine();
+    TrajectoryAnalysisModule& module  = impl_->module();
+    CommandLine&              cmdline = commandLine();
     cmdline.merge(args);
 
     TestReferenceChecker rootChecker(this->rootChecker());
@@ -212,19 +198,16 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
 
     if (impl_->hasCheckedDatasets())
     {
-        TestReferenceChecker               dataChecker(
-                rootChecker.checkCompound("OutputData", "Data"));
-        Impl::DatasetList::const_iterator  dataset;
-        for (dataset = impl_->datasets_.begin();
-             dataset != impl_->datasets_.end();
-             ++dataset)
+        TestReferenceChecker dataChecker(rootChecker.checkCompound("OutputData", "Data"));
+        Impl::DatasetList::const_iterator dataset;
+        for (dataset = impl_->datasets_.begin(); dataset != impl_->datasets_.end(); ++dataset)
         {
             if (dataset->second.bCheck)
             {
-                const char *const     name = dataset->first.c_str();
-                AbstractAnalysisData &data = module.datasetFromName(name);
-                AnalysisDataTestFixture::addReferenceCheckerModule(
-                        dataChecker, name, &data, dataset->second.tolerance);
+                const char* const     name = dataset->first.c_str();
+                AbstractAnalysisData& data = module.datasetFromName(name);
+                AnalysisDataTestFixture::addReferenceCheckerModule(dataChecker, name, &data,
+                                                                   dataset->second.tolerance);
             }
         }
     }

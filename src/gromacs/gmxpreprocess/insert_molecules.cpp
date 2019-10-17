@@ -79,31 +79,35 @@
 using gmx::RVec;
 
 /* enum for random rotations of inserted solutes */
-enum RotationType {
-    en_rotXYZ, en_rotZ, en_rotNone
+enum RotationType
+{
+    en_rotXYZ,
+    en_rotZ,
+    en_rotNone
 };
-const char *const cRotationEnum[] = {"xyz", "z", "none"};
+const char* const cRotationEnum[] = { "xyz", "z", "none" };
 
 static void center_molecule(gmx::ArrayRef<RVec> x)
 {
-    rvec center = {0};
-    for (auto &xi : x)
+    rvec center = { 0 };
+    for (auto& xi : x)
     {
         rvec_inc(center, xi);
     }
-    svmul(1.0/x.size(), center, center);
-    for (auto &xi : x)
+    svmul(1.0 / x.size(), center, center);
+    for (auto& xi : x)
     {
         rvec_dec(xi, center);
     }
 }
 
-static void generate_trial_conf(gmx::ArrayRef<RVec> xin,
-                                const rvec offset, RotationType enum_rot,
-                                gmx::DefaultRandomEngine * rng,
-                                std::vector<RVec> *xout)
+static void generate_trial_conf(gmx::ArrayRef<RVec>       xin,
+                                const rvec                offset,
+                                RotationType              enum_rot,
+                                gmx::DefaultRandomEngine* rng,
+                                std::vector<RVec>*        xout)
 {
-    gmx::UniformRealDistribution<real> dist(0, 2.0*M_PI);
+    gmx::UniformRealDistribution<real> dist(0, 2.0 * M_PI);
     xout->assign(xin.begin(), xin.end());
 
     real alfa = 0.0, beta = 0.0, gamma = 0.0;
@@ -115,12 +119,10 @@ static void generate_trial_conf(gmx::ArrayRef<RVec> xin,
             gamma = dist(*rng);
             break;
         case en_rotZ:
-            alfa  = beta = 0.;
-            gamma = dist(*rng);
+            alfa = beta = 0.;
+            gamma       = dist(*rng);
             break;
-        case en_rotNone:
-            alfa = beta = gamma = 0.;
-            break;
+        case en_rotNone: alfa = beta = gamma = 0.; break;
     }
     if (enum_rot == en_rotXYZ || enum_rot == en_rotZ)
     {
@@ -132,13 +134,13 @@ static void generate_trial_conf(gmx::ArrayRef<RVec> xin,
     }
 }
 
-static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
-                               const std::vector<real>         &exclusionDistances,
-                               const std::vector<RVec>         &x,
-                               const std::vector<real>         &exclusionDistances_insrt,
-                               const t_atoms                   &atoms,
-                               const std::set<int>             &removableAtoms,
-                               gmx::AtomsRemover               *remover)
+static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch* search,
+                               const std::vector<real>&         exclusionDistances,
+                               const std::vector<RVec>&         x,
+                               const std::vector<real>&         exclusionDistances_insrt,
+                               const t_atoms&                   atoms,
+                               const std::set<int>&             removableAtoms,
+                               gmx::AtomsRemover*               remover)
 {
     gmx::AnalysisNeighborhoodPositions  pos(x);
     gmx::AnalysisNeighborhoodPairSearch pairSearch = search->startPairSearch(pos);
@@ -161,31 +163,36 @@ static bool isInsertionAllowed(gmx::AnalysisNeighborhoodSearch *search,
     return true;
 }
 
-static void insert_mols(int nmol_insrt, int ntry, int seed,
-                        real defaultDistance, real scaleFactor,
-                        t_atoms *atoms, t_symtab *symtab, std::vector<RVec> *x,
-                        const std::set<int> &removableAtoms,
-                        const t_atoms &atoms_insrt, gmx::ArrayRef<RVec> x_insrt,
-                        int ePBC, matrix box,
-                        const std::string &posfn, const rvec deltaR,
-                        RotationType enum_rot)
+static void insert_mols(int                  nmol_insrt,
+                        int                  ntry,
+                        int                  seed,
+                        real                 defaultDistance,
+                        real                 scaleFactor,
+                        t_atoms*             atoms,
+                        t_symtab*            symtab,
+                        std::vector<RVec>*   x,
+                        const std::set<int>& removableAtoms,
+                        const t_atoms&       atoms_insrt,
+                        gmx::ArrayRef<RVec>  x_insrt,
+                        int                  ePBC,
+                        matrix               box,
+                        const std::string&   posfn,
+                        const rvec           deltaR,
+                        RotationType         enum_rot)
 {
     fprintf(stderr, "Initialising inter-atomic distances...\n");
-    AtomProperties          aps;
-    std::vector<real>       exclusionDistances(
-            makeExclusionDistances(atoms, &aps, defaultDistance, scaleFactor));
+    AtomProperties aps;
+    std::vector<real> exclusionDistances(makeExclusionDistances(atoms, &aps, defaultDistance, scaleFactor));
     const std::vector<real> exclusionDistances_insrt(
             makeExclusionDistances(&atoms_insrt, &aps, defaultDistance, scaleFactor));
 
-    const real       maxInsertRadius
-        = *std::max_element(exclusionDistances_insrt.begin(),
-                            exclusionDistances_insrt.end());
-    real             maxRadius = maxInsertRadius;
+    const real maxInsertRadius =
+            *std::max_element(exclusionDistances_insrt.begin(), exclusionDistances_insrt.end());
+    real maxRadius = maxInsertRadius;
     if (!exclusionDistances.empty())
     {
-        const real maxExistingRadius
-            = *std::max_element(exclusionDistances.begin(),
-                                exclusionDistances.end());
+        const real maxExistingRadius =
+                *std::max_element(exclusionDistances.begin(), exclusionDistances.end());
         maxRadius = std::max(maxInsertRadius, maxExistingRadius);
     }
 
@@ -202,23 +209,21 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     gmx::DefaultRandomEngine rng(seed);
 
-    t_pbc                    pbc;
+    t_pbc pbc;
     set_pbc(&pbc, ePBC, box);
 
     /* With -ip, take nmol_insrt from file posfn */
-    double     **rpos              = nullptr;
-    const bool   insertAtPositions = !posfn.empty();
+    double**   rpos              = nullptr;
+    const bool insertAtPositions = !posfn.empty();
     if (insertAtPositions)
     {
         int ncol;
         nmol_insrt = read_xvg(posfn.c_str(), &rpos, &ncol);
         if (ncol != 3)
         {
-            gmx_fatal(FARGS, "Expected 3 columns (x/y/z coordinates) in file %s\n",
-                      posfn.c_str());
+            gmx_fatal(FARGS, "Expected 3 columns (x/y/z coordinates) in file %s\n", posfn.c_str());
         }
-        fprintf(stderr, "Read %d positions from file %s\n\n",
-                nmol_insrt, posfn.c_str());
+        fprintf(stderr, "Read %d positions from file %s\n\n", nmol_insrt, posfn.c_str());
     }
 
     gmx::AtomsBuilder builder(atoms, symtab);
@@ -231,15 +236,15 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         exclusionDistances.reserve(finalAtomCount);
     }
 
-    std::vector<RVec>                    x_n(x_insrt.size());
+    std::vector<RVec> x_n(x_insrt.size());
 
-    int                                  mol        = 0;
-    int                                  trial      = 0;
-    int                                  firstTrial = 0;
-    int                                  failed     = 0;
-    gmx::UniformRealDistribution<real>   dist;
+    int                                mol        = 0;
+    int                                trial      = 0;
+    int                                firstTrial = 0;
+    int                                failed     = 0;
+    gmx::UniformRealDistribution<real> dist;
 
-    while (mol < nmol_insrt && trial < ntry*nmol_insrt)
+    while (mol < nmol_insrt && trial < ntry * nmol_insrt)
     {
         rvec offset_x;
         if (!insertAtPositions)
@@ -254,17 +259,17 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
             // Skip a position if ntry trials were not successful.
             if (trial >= firstTrial + ntry)
             {
-                fprintf(stderr, " skipped position (%.3f, %.3f, %.3f)\n",
-                        rpos[XX][mol], rpos[YY][mol], rpos[ZZ][mol]);
+                fprintf(stderr, " skipped position (%.3f, %.3f, %.3f)\n", rpos[XX][mol],
+                        rpos[YY][mol], rpos[ZZ][mol]);
                 ++mol;
                 ++failed;
                 firstTrial = trial;
                 continue;
             }
             // Insert at positions taken from option -ip file.
-            offset_x[XX] = rpos[XX][mol] + deltaR[XX]*(2 * dist(rng)-1);
-            offset_x[YY] = rpos[YY][mol] + deltaR[YY]*(2 * dist(rng)-1);
-            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ]*(2 * dist(rng)-1);
+            offset_x[XX] = rpos[XX][mol] + deltaR[XX] * (2 * dist(rng) - 1);
+            offset_x[YY] = rpos[YY][mol] + deltaR[YY] * (2 * dist(rng) - 1);
+            offset_x[ZZ] = rpos[ZZ][mol] + deltaR[ZZ] * (2 * dist(rng) - 1);
         }
         fprintf(stderr, "\rTry %d", ++trial);
         fflush(stderr);
@@ -272,12 +277,11 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
         generate_trial_conf(x_insrt, offset_x, enum_rot, &rng, &x_n);
         gmx::AnalysisNeighborhoodPositions pos(*x);
         gmx::AnalysisNeighborhoodSearch    search = nb.initSearch(&pbc, pos);
-        if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt,
-                               *atoms, removableAtoms, &remover))
+        if (isInsertionAllowed(&search, exclusionDistances, x_n, exclusionDistances_insrt, *atoms,
+                               removableAtoms, &remover))
         {
             x->insert(x->end(), x_n.begin(), x_n.end());
-            exclusionDistances.insert(exclusionDistances.end(),
-                                      exclusionDistances_insrt.begin(),
+            exclusionDistances.insert(exclusionDistances.end(), exclusionDistances_insrt.begin(),
                                       exclusionDistances_insrt.end());
             builder.mergeAtoms(atoms_insrt);
             ++mol;
@@ -288,8 +292,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
 
     fprintf(stderr, "\n");
     /* print number of molecules added */
-    fprintf(stderr, "Added %d molecules (out of %d requested)\n",
-            mol - failed, nmol_insrt);
+    fprintf(stderr, "Added %d molecules (out of %d requested)\n", mol - failed, nmol_insrt);
 
     const int originalAtomCount    = atoms->nr;
     const int originalResidueCount = atoms->nres;
@@ -298,8 +301,7 @@ static void insert_mols(int nmol_insrt, int ntry, int seed,
     remover.removeMarkedAtoms(atoms);
     if (atoms->nr < originalAtomCount)
     {
-        fprintf(stderr, "Replaced %d residues (%d atoms)\n",
-                originalResidueCount - atoms->nres,
+        fprintf(stderr, "Replaced %d residues (%d atoms)\n", originalResidueCount - atoms->nres,
                 originalAtomCount - atoms->nr);
     }
 
@@ -321,57 +323,58 @@ namespace
 
 class InsertMolecules : public ICommandLineOptionsModule, public ITopologyProvider
 {
-    public:
-        InsertMolecules()
-            : bBox_(false), nmolIns_(0), nmolTry_(10), seed_(0),
-              defaultDistance_(0.105), scaleFactor_(0.57), enumRot_(en_rotXYZ)
-        {
-            clear_rvec(newBox_);
-            clear_rvec(deltaR_);
-            clear_mat(box_);
-        }
+public:
+    InsertMolecules() :
+        bBox_(false),
+        nmolIns_(0),
+        nmolTry_(10),
+        seed_(0),
+        defaultDistance_(0.105),
+        scaleFactor_(0.57),
+        enumRot_(en_rotXYZ)
+    {
+        clear_rvec(newBox_);
+        clear_rvec(deltaR_);
+        clear_mat(box_);
+    }
 
-        // From ITopologyProvider
-        gmx_mtop_t *getTopology(bool /*required*/) override { return &top_; }
-        int getAtomCount() override { return 0; }
+    // From ITopologyProvider
+    gmx_mtop_t* getTopology(bool /*required*/) override { return &top_; }
+    int         getAtomCount() override { return 0; }
 
-        // From ICommandLineOptionsModule
-        void init(CommandLineModuleSettings * /*settings*/) override
-        {
-        }
-        void initOptions(IOptionsContainer                 *options,
-                         ICommandLineOptionsModuleSettings *settings) override;
-        void optionsFinished() override;
-        int run() override;
+    // From ICommandLineOptionsModule
+    void init(CommandLineModuleSettings* /*settings*/) override {}
+    void initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings) override;
+    void optionsFinished() override;
+    int  run() override;
 
-    private:
-        SelectionCollection selections_;
+private:
+    SelectionCollection selections_;
 
-        std::string         inputConfFile_;
-        std::string         insertConfFile_;
-        std::string         positionFile_;
-        std::string         outputConfFile_;
-        rvec                newBox_;
-        bool                bBox_;
-        int                 nmolIns_;
-        int                 nmolTry_;
-        int                 seed_;
-        real                defaultDistance_;
-        real                scaleFactor_;
-        rvec                deltaR_;
-        RotationType        enumRot_;
-        Selection           replaceSel_;
+    std::string  inputConfFile_;
+    std::string  insertConfFile_;
+    std::string  positionFile_;
+    std::string  outputConfFile_;
+    rvec         newBox_;
+    bool         bBox_;
+    int          nmolIns_;
+    int          nmolTry_;
+    int          seed_;
+    real         defaultDistance_;
+    real         scaleFactor_;
+    rvec         deltaR_;
+    RotationType enumRot_;
+    Selection    replaceSel_;
 
-        gmx_mtop_t          top_;
-        std::vector<RVec>   x_;
-        matrix              box_;
-        int                 ePBC_;
+    gmx_mtop_t        top_;
+    std::vector<RVec> x_;
+    matrix            box_;
+    int               ePBC_;
 };
 
-void InsertMolecules::initOptions(IOptionsContainer                 *options,
-                                  ICommandLineOptionsModuleSettings *settings)
+void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
 {
-    const char *const desc[] = {
+    const char* const desc[] = {
         "[THISMODULE] inserts [TT]-nmol[tt] copies of the system specified in",
         "the [TT]-ci[tt] input file. The insertions take place either into",
         "vacant space in the solute conformation given with [TT]-f[tt], or",
@@ -424,82 +427,84 @@ void InsertMolecules::initOptions(IOptionsContainer                 *options,
 
     // TODO: Replace use of legacyType.
     options->addOption(FileNameOption("f")
-                           .legacyType(efSTX).inputFile()
-                           .store(&inputConfFile_)
-                           .defaultBasename("protein")
-                           .description("Existing configuration to insert into"));
+                               .legacyType(efSTX)
+                               .inputFile()
+                               .store(&inputConfFile_)
+                               .defaultBasename("protein")
+                               .description("Existing configuration to insert into"));
     options->addOption(FileNameOption("ci")
-                           .legacyType(efSTX).inputFile().required()
-                           .store(&insertConfFile_)
-                           .defaultBasename("insert")
-                           .description("Configuration to insert"));
+                               .legacyType(efSTX)
+                               .inputFile()
+                               .required()
+                               .store(&insertConfFile_)
+                               .defaultBasename("insert")
+                               .description("Configuration to insert"));
     options->addOption(FileNameOption("ip")
-                           .filetype(eftGenericData).inputFile()
-                           .store(&positionFile_)
-                           .defaultBasename("positions")
-                           .description("Predefined insertion trial positions"));
+                               .filetype(eftGenericData)
+                               .inputFile()
+                               .store(&positionFile_)
+                               .defaultBasename("positions")
+                               .description("Predefined insertion trial positions"));
     options->addOption(FileNameOption("o")
-                           .legacyType(efSTO).outputFile().required()
-                           .store(&outputConfFile_)
-                           .defaultBasename("out")
-                           .description("Output configuration after insertion"));
+                               .legacyType(efSTO)
+                               .outputFile()
+                               .required()
+                               .store(&outputConfFile_)
+                               .defaultBasename("out")
+                               .description("Output configuration after insertion"));
 
-    options->addOption(SelectionOption("replace").onlyAtoms()
-                           .store(&replaceSel_)
-                           .description("Atoms that can be removed if overlapping"));
+    options->addOption(
+            SelectionOption("replace").onlyAtoms().store(&replaceSel_).description("Atoms that can be removed if overlapping"));
     selectionOptionBehavior->initOptions(options);
 
-    options->addOption(RealOption("box").vector()
-                           .store(newBox_).storeIsSet(&bBox_)
-                           .description("Box size (in nm)"));
-    options->addOption(IntegerOption("nmol")
-                           .store(&nmolIns_)
-                           .description("Number of extra molecules to insert"));
-    options->addOption(IntegerOption("try")
-                           .store(&nmolTry_)
-                           .description("Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
-    options->addOption(IntegerOption("seed")
-                           .store(&seed_)
-                           .description("Random generator seed (0 means generate)"));
-    options->addOption(RealOption("radius")
-                           .store(&defaultDistance_)
-                           .description("Default van der Waals distance"));
-    options->addOption(RealOption("scale")
-                           .store(&scaleFactor_)
-                           .description("Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water."));
-    options->addOption(RealOption("dr").vector()
-                           .store(deltaR_)
-                           .description("Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
-    options->addOption(EnumOption<RotationType>("rot").enumValue(cRotationEnum)
-                           .store(&enumRot_)
-                           .description("Rotate inserted molecules randomly"));
+    options->addOption(RealOption("box").vector().store(newBox_).storeIsSet(&bBox_).description(
+            "Box size (in nm)"));
+    options->addOption(IntegerOption("nmol").store(&nmolIns_).description(
+            "Number of extra molecules to insert"));
+    options->addOption(IntegerOption("try").store(&nmolTry_).description(
+            "Try inserting [TT]-nmol[tt] times [TT]-try[tt] times"));
+    options->addOption(IntegerOption("seed").store(&seed_).description(
+            "Random generator seed (0 means generate)"));
+    options->addOption(
+            RealOption("radius").store(&defaultDistance_).description("Default van der Waals distance"));
+    options->addOption(
+            RealOption("scale").store(&scaleFactor_).description("Scale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat. The default value of 0.57 yields density close to 1000 g/l for proteins in water."));
+    options->addOption(RealOption("dr").vector().store(deltaR_).description(
+            "Allowed displacement in x/y/z from positions in [TT]-ip[tt] file"));
+    options->addOption(EnumOption<RotationType>("rot")
+                               .enumValue(cRotationEnum)
+                               .store(&enumRot_)
+                               .description("Rotate inserted molecules randomly"));
 }
 
 void InsertMolecules::optionsFinished()
 {
     if (nmolIns_ <= 0 && positionFile_.empty())
     {
-        GMX_THROW(InconsistentInputError("Either -nmol must be larger than 0, "
-                                         "or positions must be given with -ip."));
+        GMX_THROW(
+                InconsistentInputError("Either -nmol must be larger than 0, "
+                                       "or positions must be given with -ip."));
     }
     if (inputConfFile_.empty() && !bBox_)
     {
-        GMX_THROW(InconsistentInputError("When no solute (-f) is specified, "
-                                         "a box size (-box) must be specified."));
+        GMX_THROW(
+                InconsistentInputError("When no solute (-f) is specified, "
+                                       "a box size (-box) must be specified."));
     }
     if (replaceSel_.isValid() && inputConfFile_.empty())
     {
-        GMX_THROW(InconsistentInputError("Replacement (-replace) only makes sense "
-                                         "together with an existing configuration (-f)."));
+        GMX_THROW(
+                InconsistentInputError("Replacement (-replace) only makes sense "
+                                       "together with an existing configuration (-f)."));
     }
 
     if (!inputConfFile_.empty())
     {
         bool  bTprFileWasRead;
-        rvec *temporaryX = nullptr;
+        rvec* temporaryX = nullptr;
         fprintf(stderr, "Reading solute configuration\n");
-        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_,
-                            &ePBC_, &temporaryX, nullptr, box_);
+        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_, &ePBC_, &temporaryX,
+                            nullptr, box_);
         x_.assign(temporaryX, temporaryX + top_.natoms);
         sfree(temporaryX);
         if (top_.natoms == 0)
@@ -514,17 +519,16 @@ int InsertMolecules::run()
     std::set<int> removableAtoms;
     if (replaceSel_.isValid())
     {
-        t_pbc       pbc;
+        t_pbc pbc;
         set_pbc(&pbc, ePBC_, box_);
-        t_trxframe *fr;
+        t_trxframe* fr;
         snew(fr, 1);
         fr->natoms = x_.size();
         fr->bX     = TRUE;
         fr->x      = as_rvec_array(x_.data());
         selections_.evaluate(fr, &pbc);
         sfree(fr);
-        removableAtoms.insert(replaceSel_.atomIndices().begin(),
-                              replaceSel_.atomIndices().end());
+        removableAtoms.insert(replaceSel_.atomIndices().begin(), replaceSel_.atomIndices().end());
         // TODO: It could be nice to check that removableAtoms contains full
         // residues, since we anyways remove whole residues instead of
         // individual atoms.
@@ -541,27 +545,27 @@ int InsertMolecules::run()
     }
     if (det(box_) == 0)
     {
-        gmx_fatal(FARGS, "Undefined solute box.\nCreate one with gmx editconf "
+        gmx_fatal(FARGS,
+                  "Undefined solute box.\nCreate one with gmx editconf "
                   "or give explicit -box command line option");
     }
 
-    gmx_mtop_t         topInserted;
-    t_atoms            atomsInserted;
-    std::vector<RVec>  xInserted;
+    gmx_mtop_t        topInserted;
+    t_atoms           atomsInserted;
+    std::vector<RVec> xInserted;
     {
-        bool        bTprFileWasRead;
-        int         ePBC_dummy;
-        matrix      box_dummy;
-        rvec       *temporaryX;
-        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted,
-                            &ePBC_dummy, &temporaryX, nullptr, box_dummy);
+        bool   bTprFileWasRead;
+        int    ePBC_dummy;
+        matrix box_dummy;
+        rvec*  temporaryX;
+        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &ePBC_dummy,
+                            &temporaryX, nullptr, box_dummy);
         xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
         sfree(temporaryX);
         atomsInserted = gmx_mtop_global_atoms(&topInserted);
         if (atomsInserted.nr == 0)
         {
-            gmx_fatal(FARGS, "No molecule in %s, please check your input",
-                      insertConfFile_.c_str());
+            gmx_fatal(FARGS, "No molecule in %s, please check your input", insertConfFile_.c_str());
         }
         if (top_.name == nullptr)
         {
@@ -577,19 +581,17 @@ int InsertMolecules::run()
 
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
-    insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_,
-                &atoms, &top_.symtab, &x_, removableAtoms, atomsInserted, xInserted,
-                ePBCForOutput, box_, positionFile_, deltaR_, enumRot_);
+    insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_, &atoms, &top_.symtab,
+                &x_, removableAtoms, atomsInserted, xInserted, ePBCForOutput, box_, positionFile_,
+                deltaR_, enumRot_);
 
     /* write new configuration to file confout */
-    fprintf(stderr, "Writing generated configuration to %s\n",
-            outputConfFile_.c_str());
-    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms,
-                   as_rvec_array(x_.data()), nullptr, ePBCForOutput, box_);
+    fprintf(stderr, "Writing generated configuration to %s\n", outputConfFile_.c_str());
+    write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms, as_rvec_array(x_.data()), nullptr,
+                   ePBCForOutput, box_);
 
     /* print size of generated configuration */
-    fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n",
-            atoms.nr, atoms.nres);
+    fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n", atoms.nr, atoms.nres);
 
     done_atom(&atoms);
     done_atom(&atomsInserted);
@@ -597,7 +599,7 @@ int InsertMolecules::run()
     return 0;
 }
 
-}   // namespace
+} // namespace
 
 
 const char* InsertMoleculesInfo::name()
@@ -608,8 +610,7 @@ const char* InsertMoleculesInfo::name()
 
 const char* InsertMoleculesInfo::shortDescription()
 {
-    static const char* shortDescription =
-        "Insert molecules into existing vacancies";
+    static const char* shortDescription = "Insert molecules into existing vacancies";
     return shortDescription;
 }
 

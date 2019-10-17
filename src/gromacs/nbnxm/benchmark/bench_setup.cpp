@@ -80,10 +80,11 @@ namespace Nbnxm
  *
  * Returns an error string when the kernel is not available.
  */
-static gmx::compat::optional<std::string> checkKernelSetup(const KernelBenchOptions &options)
+static gmx::compat::optional<std::string> checkKernelSetup(const KernelBenchOptions& options)
 {
-    GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count &&
-                       options.nbnxmSimd != BenchMarkKernels::SimdAuto, "Need a valid kernel SIMD type");
+    GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count
+                               && options.nbnxmSimd != BenchMarkKernels::SimdAuto,
+                       "Need a valid kernel SIMD type");
 
     // Check SIMD support
     if ((options.nbnxmSimd != BenchMarkKernels::SimdNo && !GMX_SIMD)
@@ -93,7 +94,7 @@ static gmx::compat::optional<std::string> checkKernelSetup(const KernelBenchOpti
 #ifndef GMX_NBNXN_SIMD_2XNN
         || options.nbnxmSimd == BenchMarkKernels::Simd2XMM
 #endif
-        )
+    )
     {
         return "the requested SIMD kernel was not set up at configuration time";
     }
@@ -102,7 +103,7 @@ static gmx::compat::optional<std::string> checkKernelSetup(const KernelBenchOpti
 }
 
 //! Helper to translate between the different enumeration values.
-static KernelType translateBenchmarkEnum(const BenchMarkKernels &kernel)
+static KernelType translateBenchmarkEnum(const BenchMarkKernels& kernel)
 {
     int kernelInt = static_cast<int>(kernel);
     return static_cast<KernelType>(kernelInt);
@@ -110,15 +111,15 @@ static KernelType translateBenchmarkEnum(const BenchMarkKernels &kernel)
 
 /*! \brief Returns the kernel setup
  */
-static KernelSetup getKernelSetup(const KernelBenchOptions &options)
+static KernelSetup getKernelSetup(const KernelBenchOptions& options)
 {
     auto messageWhenInvalid = checkKernelSetup(options);
     GMX_RELEASE_ASSERT(!messageWhenInvalid, "Need valid options");
 
     KernelSetup kernelSetup;
 
-    //The int enum options.nbnxnSimd is set up to match KernelType + 1
-    kernelSetup.kernelType         = translateBenchmarkEnum(options.nbnxmSimd);
+    // The int enum options.nbnxnSimd is set up to match KernelType + 1
+    kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
     // The plain-C kernel does not support analytical ewald correction
     if (kernelSetup.kernelType == KernelType::Cpu4x4_PlainC)
     {
@@ -126,21 +127,22 @@ static KernelSetup getKernelSetup(const KernelBenchOptions &options)
     }
     else
     {
-        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr ? EwaldExclusionType::Table : EwaldExclusionType::Analytical;
+        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr ? EwaldExclusionType::Table
+                                                                       : EwaldExclusionType::Analytical;
     }
 
     return kernelSetup;
 }
 
 //! Return an interaction constants struct with members used in the benchmark set appropriately
-static interaction_const_t setupInteractionConst(const KernelBenchOptions &options)
+static interaction_const_t setupInteractionConst(const KernelBenchOptions& options)
 
 {
     interaction_const_t ic;
 
-    ic.vdwtype          = evdwCUT;
-    ic.vdw_modifier     = eintmodPOTSHIFT;
-    ic.rvdw             = options.pairlistCutoff;
+    ic.vdwtype      = evdwCUT;
+    ic.vdw_modifier = eintmodPOTSHIFT;
+    ic.rvdw         = options.pairlistCutoff;
 
     ic.eeltype          = (options.coulombType == BenchMarkCoulomb::Pme ? eelPME : eelRF);
     ic.coulomb_modifier = eintmodPOTSHIFT;
@@ -148,8 +150,8 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions &optio
 
     // Reaction-field with epsilon_rf=inf
     // TODO: Replace by calc_rffac() after refactoring that
-    ic.k_rf             = 0.5*std::pow(ic.rcoulomb, -3);
-    ic.c_rf             = 1/ic.rcoulomb + ic.k_rf*ic.rcoulomb*ic.rcoulomb;
+    ic.k_rf = 0.5 * std::pow(ic.rcoulomb, -3);
+    ic.c_rf = 1 / ic.rcoulomb + ic.k_rf * ic.rcoulomb * ic.rcoulomb;
 
     if (EEL_PME_EWALD(ic.eeltype))
     {
@@ -164,57 +166,46 @@ static interaction_const_t setupInteractionConst(const KernelBenchOptions &optio
 }
 
 //! Sets up and returns a Nbnxm object for the given benchmark options and system
-static std::unique_ptr<nonbonded_verlet_t>
-setupNbnxmForBenchInstance(const KernelBenchOptions   &options,
-                           const gmx::BenchmarkSystem &system)
+static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const KernelBenchOptions& options,
+                                                                      const gmx::BenchmarkSystem& system)
 {
-    const auto         pinPolicy       = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
-    const int          numThreads      = options.numThreads;
+    const auto pinPolicy  = (options.useGpu ? gmx::PinningPolicy::PinnedIfSupported
+                                           : gmx::PinningPolicy::CannotBePinned);
+    const int  numThreads = options.numThreads;
     // Note: the options and Nbnxm combination rule enums values should match
-    const int          combinationRule = static_cast<int>(options.ljCombinationRule);
+    const int combinationRule = static_cast<int>(options.ljCombinationRule);
 
-    auto               messageWhenInvalid = checkKernelSetup(options);
+    auto messageWhenInvalid = checkKernelSetup(options);
     if (messageWhenInvalid)
     {
-        gmx_fatal(FARGS, "Requested kernel is unavailable because %s.",
-                  messageWhenInvalid->c_str());
+        gmx_fatal(FARGS, "Requested kernel is unavailable because %s.", messageWhenInvalid->c_str());
     }
     Nbnxm::KernelSetup kernelSetup = getKernelSetup(options);
 
-    PairlistParams     pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
+    PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
-    GridSet            gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    GridSet gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false,
+                    numThreads, pinPolicy);
 
-    auto               pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto               pairSearch   = std::make_unique<PairSearch>(epbcXYZ, false, nullptr, nullptr,
-                                                                   pairlistParams.pairlistType,
-                                                                   false, numThreads, pinPolicy);
+    auto pairSearch = std::make_unique<PairSearch>(
+            epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
-    auto atomData     = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 
     // Put everything together
-    auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
-                                                    std::move(pairSearch),
-                                                    std::move(atomData),
-                                                    kernelSetup,
-                                                    nullptr,
-                                                    nullptr);
+    auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
+                                                    std::move(atomData), kernelSetup, nullptr, nullptr);
 
-    nbnxn_atomdata_init(gmx::MDLogger(),
-                        nbv->nbat.get(), kernelSetup.kernelType,
-                        combinationRule, system.numAtomTypes, system.nonbondedParameters.data(),
-                        1, numThreads);
+    nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
+                        system.numAtomTypes, system.nonbondedParameters.data(), 1, numThreads);
 
     t_nrnb nrnb;
 
     GMX_RELEASE_ASSERT(!TRICLINIC(system.box), "Only rectangular unit-cells are supported here");
-    const rvec               lowerCorner = { 0, 0, 0 };
-    const rvec               upperCorner = {
-        system.box[XX][XX],
-        system.box[YY][YY],
-        system.box[ZZ][ZZ]
-    };
+    const rvec lowerCorner = { 0, 0, 0 };
+    const rvec upperCorner = { system.box[XX][XX], system.box[YY][YY], system.box[ZZ][ZZ] };
 
     gmx::ArrayRef<const int> atomInfo;
     if (options.useHalfLJOptimization)
@@ -226,30 +217,26 @@ setupNbnxmForBenchInstance(const KernelBenchOptions   &options,
         atomInfo = system.atomInfoAllVdw;
     }
 
-    const real atomDensity = system.coordinates.size()/det(system.box);
+    const real atomDensity = system.coordinates.size() / det(system.box);
 
-    nbnxn_put_on_grid(nbv.get(),
-                      system.box, 0, lowerCorner, upperCorner,
-                      nullptr, { 0, int(system.coordinates.size()) }, atomDensity,
-                      atomInfo, system.coordinates,
-                      0, nullptr);
+    nbnxn_put_on_grid(nbv.get(), system.box, 0, lowerCorner, upperCorner, nullptr,
+                      { 0, int(system.coordinates.size()) }, atomDensity, atomInfo,
+                      system.coordinates, 0, nullptr);
 
-    nbv->constructPairlist(gmx::InteractionLocality::Local,
-                           &system.excls, 0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, &system.excls, 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int *>(system.atomTypes.data());
-    mdatoms.chargeA = const_cast<real *>(system.charges.data());
+    mdatoms.typeA   = const_cast<int*>(system.atomTypes.data());
+    mdatoms.chargeA = const_cast<real*>(system.charges.data());
     nbv->setAtomProperties(mdatoms, atomInfo);
 
     return nbv;
 }
 
 //! Add the options instance to the list for all requested kernel SIMD types
-static void
-expandSimdOptionAndPushBack(const KernelBenchOptions        &options,
-                            std::vector<KernelBenchOptions> *optionsList)
+static void expandSimdOptionAndPushBack(const KernelBenchOptions&        options,
+                                        std::vector<KernelBenchOptions>* optionsList)
 {
     if (options.nbnxmSimd == BenchMarkKernels::SimdAuto)
     {
@@ -257,12 +244,12 @@ expandSimdOptionAndPushBack(const KernelBenchOptions        &options,
 #ifdef GMX_NBNXN_SIMD_4XN
         optionsList->push_back(options);
         optionsList->back().nbnxmSimd = BenchMarkKernels::Simd4XM;
-        addedInstance = true;
+        addedInstance                 = true;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
         optionsList->push_back(options);
         optionsList->back().nbnxmSimd = BenchMarkKernels::Simd2XMM;
-        addedInstance = true;
+        addedInstance                 = true;
 #endif
         if (!addedInstance)
         {
@@ -280,25 +267,26 @@ expandSimdOptionAndPushBack(const KernelBenchOptions        &options,
 //
 // When \p doWarmup is true runs the warmup iterations instead
 // of the normal ones and does not print any results
-static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
-                                const KernelBenchOptions   &options,
+static void setupAndRunInstance(const gmx::BenchmarkSystem& system,
+                                const KernelBenchOptions&   options,
                                 const bool                  doWarmup)
 {
     // Generate an, accurate, estimate of the number of non-zero pair interactions
-    const real                          atomDensity          = system.coordinates.size()/det(system.box);
-    const real                          numPairsWithinCutoff = atomDensity*4.0/3.0*M_PI*std::pow(options.pairlistCutoff, 3);
-    const real                          numUsefulPairs       = system.coordinates.size()*0.5*(numPairsWithinCutoff + 1);
+    const real atomDensity = system.coordinates.size() / det(system.box);
+    const real numPairsWithinCutoff =
+            atomDensity * 4.0 / 3.0 * M_PI * std::pow(options.pairlistCutoff, 3);
+    const real numUsefulPairs = system.coordinates.size() * 0.5 * (numPairsWithinCutoff + 1);
 
     std::unique_ptr<nonbonded_verlet_t> nbv = setupNbnxmForBenchInstance(options, system);
 
     // We set the interaction cut-off to the pairlist cut-off
-    interaction_const_t   ic = setupInteractionConst(options);
+    interaction_const_t ic = setupInteractionConst(options);
 
-    t_nrnb                nrnb = { 0 };
+    t_nrnb nrnb = { 0 };
 
-    gmx_enerdata_t        enerd(1, 0);
+    gmx_enerdata_t enerd(1, 0);
 
-    gmx::StepWorkload     stepWork;
+    gmx::StepWorkload stepWork;
     stepWork.computeForces = true;
     if (options.computeVirialAndEnergy)
     {
@@ -306,39 +294,36 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
         stepWork.computeEnergy = true;
     }
 
-    const gmx::EnumerationArray<BenchMarkKernels, std::string>  kernelNames = { "auto", "no", "4xM", "2xMM" };
+    const gmx::EnumerationArray<BenchMarkKernels, std::string> kernelNames = { "auto", "no", "4xM",
+                                                                               "2xMM" };
 
-    const gmx::EnumerationArray<BenchMarkCombRule, std::string> combruleNames = { "geom.", "LB", "none" };
+    const gmx::EnumerationArray<BenchMarkCombRule, std::string> combruleNames = { "geom.", "LB",
+                                                                                  "none" };
 
     if (!doWarmup)
     {
         fprintf(stdout, "%-7s %-4s %-5s %-4s ",
                 options.coulombType == BenchMarkCoulomb::Pme ? "Ewald" : "RF",
                 options.useHalfLJOptimization ? "half" : "all",
-                combruleNames[options.ljCombinationRule].c_str(),
-                kernelNames[options.nbnxmSimd].c_str());
+                combruleNames[options.ljCombinationRule].c_str(), kernelNames[options.nbnxmSimd].c_str());
     }
 
     // Run pre-iteration to avoid cache misses
     for (int iter = 0; iter < options.numPreIterations; iter++)
     {
-        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                     ic, stepWork, enbvClearFYes, system.forceRec,
-                                     &enerd,
-                                     &nrnb);
+        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFYes,
+                                     system.forceRec, &enerd, &nrnb);
     }
 
-    const int          numIterations = (doWarmup ? options.numWarmupIterations : options.numIterations);
-    const PairlistSet &pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    const gmx::index   numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    gmx_cycles_t       cycles        = gmx_cycles_read();
+    const int numIterations = (doWarmup ? options.numWarmupIterations : options.numIterations);
+    const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
+    const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
+    gmx_cycles_t cycles = gmx_cycles_read();
     for (int iter = 0; iter < numIterations; iter++)
     {
         // Run the kernel without force clearing
-        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                     ic, stepWork, enbvClearFNo, system.forceRec,
-                                     &enerd,
-                                     &nrnb);
+        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo,
+                                     system.forceRec, &enerd, &nrnb);
     }
     cycles = gmx_cycles_read() - cycles;
     if (!doWarmup)
@@ -346,25 +331,20 @@ static void setupAndRunInstance(const gmx::BenchmarkSystem &system,
         const double dCycles = static_cast<double>(cycles);
         if (options.cyclesPerPair)
         {
-            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n",
-                    cycles*1e-6,
-                    dCycles/options.numIterations*1e-6,
-                    dCycles/(options.numIterations*numPairs),
-                    dCycles/(options.numIterations*numUsefulPairs));
+            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", cycles * 1e-6,
+                    dCycles / options.numIterations * 1e-6, dCycles / (options.numIterations * numPairs),
+                    dCycles / (options.numIterations * numUsefulPairs));
         }
         else
         {
-            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n",
-                    dCycles*1e-6,
-                    dCycles/options.numIterations*1e-6,
-                    options.numIterations*numPairs/dCycles,
-                    options.numIterations*numUsefulPairs/dCycles);
+            fprintf(stdout, "%10.3f %10.4f %8.4f %8.4f\n", dCycles * 1e-6,
+                    dCycles / options.numIterations * 1e-6, options.numIterations * numPairs / dCycles,
+                    options.numIterations * numUsefulPairs / dCycles);
         }
     }
 }
 
-void bench(const int                 sizeFactor,
-           const KernelBenchOptions &options)
+void bench(const int sizeFactor, const KernelBenchOptions& options)
 {
     // We don't want to call gmx_omp_nthreads_init(), so we init what we need
     gmx_omp_nthreads_set(emntPairsearch, options.numThreads);
@@ -372,12 +352,12 @@ void bench(const int                 sizeFactor,
 
     const gmx::BenchmarkSystem system(sizeFactor);
 
-    real                       minBoxSize = norm(system.box[XX]);
+    real minBoxSize = norm(system.box[XX]);
     for (int dim = YY; dim < DIM; dim++)
     {
         minBoxSize = std::min(minBoxSize, norm(system.box[dim]));
     }
-    if (options.pairlistCutoff > 0.5*minBoxSize)
+    if (options.pairlistCutoff > 0.5 * minBoxSize)
     {
         gmx_fatal(FARGS, "The cut-off should be shorter than half the box size");
     }
@@ -385,7 +365,7 @@ void bench(const int                 sizeFactor,
     std::vector<KernelBenchOptions> optionsList;
     if (options.doAll)
     {
-        KernelBenchOptions opt = options;
+        KernelBenchOptions                        opt = options;
         gmx::EnumerationWrapper<BenchMarkCoulomb> coulombIter;
         for (auto coulombType : coulombIter)
         {
@@ -424,12 +404,13 @@ void bench(const int                 sizeFactor,
     fprintf(stdout, "Cut-off radius:       %g nm\n", options.pairlistCutoff);
     fprintf(stdout, "Number of threads:    %d\n", options.numThreads);
     fprintf(stdout, "Number of iterations: %d\n", options.numIterations);
-    fprintf(stdout, "Compute energies:     %s\n",
-            options.computeVirialAndEnergy ? "yes" : "no");
+    fprintf(stdout, "Compute energies:     %s\n", options.computeVirialAndEnergy ? "yes" : "no");
     if (options.coulombType != BenchMarkCoulomb::ReactionField)
     {
         fprintf(stdout, "Ewald excl. corr.:    %s\n",
-                options.nbnxmSimd == BenchMarkKernels::SimdNo || options.useTabulatedEwaldCorr ? "table" : "analytical");
+                options.nbnxmSimd == BenchMarkKernels::SimdNo || options.useTabulatedEwaldCorr
+                        ? "table"
+                        : "analytical");
     }
     printf("\n");
 
@@ -442,7 +423,7 @@ void bench(const int                 sizeFactor,
             options.cyclesPerPair ? "cycles/pair" : "pairs/cycle");
     fprintf(stdout, "                                                total    useful\n");
 
-    for (const auto &optionsInstance : optionsList)
+    for (const auto& optionsInstance : optionsList)
     {
         setupAndRunInstance(system, optionsInstance, false);
     }

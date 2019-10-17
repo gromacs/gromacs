@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ class ICommandLineOptionsModule;
  * \see setProgramContext()
  * \ingroup module_commandline
  */
-CommandLineProgramContext &initForCommandLine(int *argc, char ***argv);
+CommandLineProgramContext& initForCommandLine(int* argc, char*** argv);
 /*! \brief
  * Deinitializes the \Gromacs library after initForCommandLine().
  *
@@ -106,7 +106,7 @@ void finalizeForCommandLine();
  *
  * Does not throw.
  */
-int processExceptionAtExitForCommandLine(const std::exception &ex);
+int processExceptionAtExitForCommandLine(const std::exception& ex);
 /*! \brief
  * Implements a main() method that runs a single module.
  *
@@ -137,8 +137,7 @@ int processExceptionAtExitForCommandLine(const std::exception &ex);
  *
  * Does not throw.  All exceptions are caught and handled internally.
  */
-int runCommandLineModule(int argc, char *argv[],
-                         ICommandLineModule *module);
+int runCommandLineModule(int argc, char* argv[], ICommandLineModule* module);
 /*! \brief
  * Implements a main() method that runs a single module.
  *
@@ -174,8 +173,10 @@ int runCommandLineModule(int argc, char *argv[],
  *
  * Does not throw.  All exceptions are caught and handled internally.
  */
-int runCommandLineModule(int argc, char *argv[],
-                         const char *name, const char *description,
+int runCommandLineModule(int                                                         argc,
+                         char*                                                       argv[],
+                         const char*                                                 name,
+                         const char*                                                 description,
                          std::function<std::unique_ptr<ICommandLineOptionsModule>()> factory);
 
 } // namespace gmx
@@ -212,6 +213,6 @@ int runCommandLineModule(int argc, char *argv[],
  *
  * Does not throw.  All exceptions are caught and handled internally.
  */
-int gmx_run_cmain(int argc, char *argv[], int (*mainFunction)(int, char *[]));
+int gmx_run_cmain(int argc, char* argv[], int (*mainFunction)(int, char*[]));
 
 #endif

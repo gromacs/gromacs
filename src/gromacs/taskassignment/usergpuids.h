@@ -74,8 +74,7 @@ namespace gmx
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',') or if
  *                              identifiers are duplicated in the specifier list.
  */
-std::vector<int>
-parseUserGpuIdString(const std::string &gpuIdString);
+std::vector<int> parseUserGpuIdString(const std::string& gpuIdString);
 
 /*! \brief Implement GPU ID selection by returning the available GPU
  * IDs on this physical node that are compatible.
@@ -100,8 +99,7 @@ parseUserGpuIdString(const std::string &gpuIdString);
  *           InvalidInputError  If gpuIdsAvailableString specifies GPU IDs that are
  *                              not compatible.
  */
-std::vector<int> makeGpuIdsToUse(const gmx_gpu_info_t &gpuInfo,
-                                 const std::string    &gpuIdsAvailableString);
+std::vector<int> makeGpuIdsToUse(const gmx_gpu_info_t& gpuInfo, const std::string& gpuIdsAvailableString);
 
 /*! \brief Parse a GPU ID specifier string into a container describing device ID to task mapping.
  *
@@ -117,9 +115,7 @@ std::vector<int> makeGpuIdsToUse(const gmx_gpu_info_t &gpuInfo,
  * \throws   std::bad_alloc     If out of memory.
  *           InvalidInputError  If an invalid character is found (ie not a digit or ',').
  */
-std::vector<int>
-parseUserTaskAssignmentString(const std::string &gpuIdString);
-
+std::vector<int> parseUserTaskAssignmentString(const std::string& gpuIdString);
 
 
 /*! \brief Make a vector containing \c numGpuTasks IDs of the IDs found in \c compatibleGpus.
@@ -129,9 +125,7 @@ parseUserTaskAssignmentString(const std::string &gpuIdString);
  * \returns A sorted vector of IDs of compatible vectors, whose
  * length matches that of the number of GPU tasks required.
  */
-std::vector<int>
-makeGpuIds(ArrayRef<const int> compatibleGpus,
-           size_t              numGpuTasks);
+std::vector<int> makeGpuIds(ArrayRef<const int> compatibleGpus, size_t numGpuTasks);
 
 /*! \brief Convert a container of GPU deviced IDs to a string that
  * can be used by gmx tune_pme as input to mdrun -gputasks.
@@ -148,8 +142,7 @@ makeGpuIds(ArrayRef<const int> compatibleGpus,
  *
  * \throws   std::bad_alloc     If out of memory.
  */
-std::string
-makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
+std::string makeGpuIdString(const std::vector<int>& gpuIds, int totalNumberOfTasks);
 
 /*! \brief Check that all user-selected GPUs are compatible.
  *
@@ -177,10 +170,10 @@ makeGpuIdString(const std::vector<int> &gpuIds, int totalNumberOfTasks);
  * \throws  std::bad_alloc          If out of memory
  *          InconsistentInputError  If the assigned GPUs are not valid
  */
-void checkUserGpuIds(const gmx_gpu_info_t   &gpu_info,
-                     const std::vector<int> &compatibleGpus,
-                     const std::vector<int> &gpuIds);
+void checkUserGpuIds(const gmx_gpu_info_t&   gpu_info,
+                     const std::vector<int>& compatibleGpus,
+                     const std::vector<int>& gpuIds);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

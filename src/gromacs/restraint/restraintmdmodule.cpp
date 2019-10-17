@@ -48,12 +48,12 @@ namespace gmx
 {
 
 RestraintForceProvider::RestraintForceProvider(std::shared_ptr<IRestraintPotential> restraint,
-                                               const std::vector<int>              &sites) :
-    restraint_ {std::move(restraint)}
+                                               const std::vector<int>&              sites) :
+    restraint_{ std::move(restraint) }
 {
     GMX_ASSERT(restraint_, "Valid RestraintForceProviders wrap non-null restraints.");
     GMX_ASSERT(sites_.empty(), "");
-    for (auto && site : sites)
+    for (auto&& site : sites)
     {
         sites_.emplace_back(site);
     }
@@ -63,29 +63,24 @@ RestraintForceProvider::RestraintForceProvider(std::shared_ptr<IRestraintPotenti
     }
 }
 
-void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProviderInput,
-                                             ForceProviderOutput     * forceProviderOutput)
+void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProviderInput,
+                                             ForceProviderOutput*      forceProviderOutput)
 {
     GMX_ASSERT(restraint_, "Restraint must be initialized.");
 
-    const auto &mdatoms = forceProviderInput.mdatoms_;
+    const auto& mdatoms = forceProviderInput.mdatoms_;
     GMX_ASSERT(mdatoms.homenr >= 0, "number of home atoms must be non-negative.");
 
-    const auto &box = forceProviderInput.box_;
+    const auto& box = forceProviderInput.box_;
     GMX_ASSERT(check_box(-1, box) == nullptr, "Invalid box.");
-    t_pbc       pbc {};
-    set_pbc(&pbc,
-            -1,
-            box);
+    t_pbc pbc{};
+    set_pbc(&pbc, -1, box);
 
-    const auto &x  = forceProviderInput.x_;
-    const auto &cr = forceProviderInput.cr_;
-    const auto &t  = forceProviderInput.t_;
+    const auto& x  = forceProviderInput.x_;
+    const auto& cr = forceProviderInput.cr_;
+    const auto& t  = forceProviderInput.t_;
     // Cooperatively get Cartesian coordinates for center of mass of each site
-    RVec        r1 = sites_[0].centerOfMass(cr,
-                                            static_cast<size_t>(mdatoms.homenr),
-                                            x,
-                                            t);
+    RVec r1 = sites_[0].centerOfMass(cr, static_cast<size_t>(mdatoms.homenr), x, t);
     // r2 is to be constructed as
     // r2 = (site[N] - site[N-1]) + (site_{N-1} - site_{N-2}) + ... + (site_2 - site_1) + site_1
     // where the minimum image convention is applied to each path but not to the overall sum.
@@ -94,26 +89,17 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
     // Cartesian coordinate system. Called code should not use r1 and r2 to attempt to identify
     // sites in the simulation. If we need that functionality, we should do it separately by
     // allowing called code to look up atoms by tag or global index.
-    RVec r2 = {r1[0], r1[1], r1[2]};
-    rvec dr = {0, 0, 0};
+    RVec r2 = { r1[0], r1[1], r1[2] };
+    rvec dr = { 0, 0, 0 };
     // Build r2 by following a path of difference vectors that are each presumed to be less than
     // a half-box apart, in case we are battling periodic boundary conditions along the lines of
     // a big molecule in a small box.
     for (size_t i = 0; i < sites_.size() - 1; ++i)
     {
-        RVec a = sites_[i].centerOfMass(cr,
-                                        static_cast<size_t>(mdatoms.homenr),
-                                        x,
-                                        t);
-        RVec b = sites_[i + 1].centerOfMass(cr,
-                                            static_cast<size_t>(mdatoms.homenr),
-                                            x,
-                                            t);
+        RVec a = sites_[i].centerOfMass(cr, static_cast<size_t>(mdatoms.homenr), x, t);
+        RVec b = sites_[i + 1].centerOfMass(cr, static_cast<size_t>(mdatoms.homenr), x, t);
         // dr = minimum_image_vector(b - a)
-        pbc_dx(&pbc,
-               b,
-               a,
-               dr);
+        pbc_dx(&pbc, b, a, dr);
         r2[0] += dr[0];
         r2[1] += dr[1];
         r2[2] += dr[2];
@@ -125,9 +111,7 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
     // time step to avoid extraneous barriers. The code would be prettier with "futures"...
     if ((cr.dd == nullptr) || MASTER(&cr))
     {
-        restraint_->update(RVec(r1),
-                           r2,
-                           t);
+        restraint_->update(RVec(r1), r2, t);
     }
     // All ranks wait for the update to finish.
     // tMPI ranks are depending on structures that may have just been updated.
@@ -139,16 +123,14 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
     }
 
     // Apply restraint on all thread ranks only after any updates have been made.
-    auto result = restraint_->evaluate(RVec(r1),
-                                       r2,
-                                       t);
+    auto result = restraint_->evaluate(RVec(r1), r2, t);
 
     // This can easily be generalized for pair restraints that apply to selections instead of
     // individual indices, or to restraints that aren't pair restraints.
     const int  site1  = static_cast<int>(sites_.front().index());
     const int* aLocal = &site1;
     // Set forces using index `site1` if no domain decomposition, otherwise set with local index if available.
-    auto      &force = forceProviderOutput->forceWithVirial_.force_;
+    auto& force = forceProviderOutput->forceWithVirial_.force_;
     if ((cr.dd == nullptr) || (aLocal = cr.dd->ga2la->findHome(site1)))
     {
         force[static_cast<size_t>(*aLocal)] += result.force;
@@ -170,9 +152,8 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput &forceProv
 RestraintMDModuleImpl::~RestraintMDModuleImpl() = default;
 
 RestraintMDModuleImpl::RestraintMDModuleImpl(std::shared_ptr<IRestraintPotential> restraint,
-                                             const std::vector<int>              &sites) :
-    forceProvider_(std::make_unique<RestraintForceProvider>(restraint,
-                                                            sites))
+                                             const std::vector<int>&              sites) :
+    forceProvider_(std::make_unique<RestraintForceProvider>(restraint, sites))
 {
     GMX_ASSERT(forceProvider_, "Class invariant implies non-null ForceProvider.");
 }
@@ -215,19 +196,17 @@ void RestraintMDModule::initForceProviders(ForceProviders* forceProviders)
     impl_->initForceProviders(forceProviders);
 }
 
-std::unique_ptr<RestraintMDModule>
-RestraintMDModule::create(std::shared_ptr<IRestraintPotential>  restraint,
-                          const std::vector<int>               &sites)
+std::unique_ptr<RestraintMDModule> RestraintMDModule::create(std::shared_ptr<IRestraintPotential> restraint,
+                                                             const std::vector<int>& sites)
 {
-    auto implementation = std::make_unique<RestraintMDModuleImpl>(std::move(restraint),
-                                                                  sites);
-    auto newModule = std::make_unique<RestraintMDModule>(std::move(implementation));
+    auto implementation = std::make_unique<RestraintMDModuleImpl>(std::move(restraint), sites);
+    auto newModule      = std::make_unique<RestraintMDModule>(std::move(implementation));
     return newModule;
 }
 
 // private constructor to implement static create() method.
 RestraintMDModule::RestraintMDModule(std::unique_ptr<RestraintMDModuleImpl> restraint) :
-    impl_ {std::move(restraint)}
+    impl_{ std::move(restraint) }
 {
 }
 

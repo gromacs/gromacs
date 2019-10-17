@@ -76,11 +76,11 @@ enum class MachineStamp : int32_t
  * \param[in,out] serializer the serializer
  * \param[in,out] valueContainer the array to be serialized
  */
-template <typename ContainerType>
+template<typename ContainerType>
 std::enable_if_t<std::is_same<typename ContainerType::value_type, int32_t>::value, void>
-serialize(ISerializer *serializer, ContainerType *valueContainer)
+serialize(ISerializer* serializer, ContainerType* valueContainer)
 {
-    for (auto &value : *valueContainer)
+    for (auto& value : *valueContainer)
     {
         serializer->doInt32(&value);
     }
@@ -94,23 +94,23 @@ serialize(ISerializer *serializer, ContainerType *valueContainer)
  * \param[in,out] serializer the serializer
  * \param[in,out] valueContainer the array to be serialized
  */
-template <typename ContainerType>
+template<typename ContainerType>
 std::enable_if_t<std::is_same<typename ContainerType::value_type, float>::value, void>
-serialize(ISerializer *serializer, ContainerType *valueContainer)
+serialize(ISerializer* serializer, ContainerType* valueContainer)
 {
-    for (auto &value : *valueContainer)
+    for (auto& value : *valueContainer)
     {
         serializer->doFloat(&value);
     }
 }
 
 //! Serialize and convert from FORTRAN 1-based to C 0-based indices when reading and vice versa when writing
-void serializeIndex(ISerializer *serializer, int32_t *index)
+void serializeIndex(ISerializer* serializer, int32_t* index)
 {
     int32_t fortranIndex;
     if (!serializer->reading())
     {
-        fortranIndex = *index+1;
+        fortranIndex = *index + 1;
     }
     serializer->doInt32(&fortranIndex);
     if (serializer->reading())
@@ -122,9 +122,9 @@ void serializeIndex(ISerializer *serializer, int32_t *index)
 /*! \brief
  * Serializes an integer array and add unity when writing, substracting unity when reading.
  */
-void serializeIndices(ISerializer * serializer, std::array<int32_t, 3> * valueArray)
+void serializeIndices(ISerializer* serializer, std::array<int32_t, 3>* valueArray)
 {
-    for (auto &value : *valueArray)
+    for (auto& value : *valueArray)
     {
         serializeIndex(serializer, &value);
     }
@@ -133,10 +133,9 @@ void serializeIndices(ISerializer * serializer, std::array<int32_t, 3> * valueAr
 /*! \brief Serialize input as int32_t via static casting.
  * \tparam IntegralType type to be serialized as int32_t
  */
-template <class IntegralType>
-std::enable_if_t<(std::is_integral<IntegralType>::value ||
-                  std::is_enum<IntegralType>::value), void >
-serializeAsInt32(ISerializer *serializer, IntegralType *value)
+template<class IntegralType>
+std::enable_if_t<(std::is_integral<IntegralType>::value || std::is_enum<IntegralType>::value), void>
+serializeAsInt32(ISerializer* serializer, IntegralType* value)
 {
     int32_t serializedValue;
     if (!serializer->reading())
@@ -166,7 +165,7 @@ float nmToMrcUnits(float nmValue)
 }
 
 //! Serialize and convert between MRC and GROMACS distance units
-void serializeDistance(ISerializer *serializer, float *distance)
+void serializeDistance(ISerializer* serializer, float* distance)
 {
     float convertedDistance;
     if (!serializer->reading())
@@ -181,7 +180,7 @@ void serializeDistance(ISerializer *serializer, float *distance)
 }
 
 //! Serialize the skew data, words 25-37 in an mrc file.
-void serializeCrystallographicSkewData(ISerializer * serializer, MrcDensitySkewData * skewData)
+void serializeCrystallographicSkewData(ISerializer* serializer, MrcDensitySkewData* skewData)
 {
     /* 25 | LSKFLG | signed int | emdb: 0 or 1
      * flag for skew matrix
@@ -192,11 +191,11 @@ void serializeCrystallographicSkewData(ISerializer * serializer, MrcDensitySkewD
      * 35-37 | SKWTRN | floating pt | emdb: not set
      * skew translation-T1, T2, T3
      */
-    for (auto &matrixEntry : skewData->matrix_)
+    for (auto& matrixEntry : skewData->matrix_)
     {
         serializeDistance(serializer, &matrixEntry);
     }
-    for (auto &translationEntry : skewData->translation_)
+    for (auto& translationEntry : skewData->translation_)
     {
         serializeDistance(serializer, &translationEntry);
     }
@@ -208,7 +207,7 @@ void serializeCrystallographicSkewData(ISerializer * serializer, MrcDensitySkewD
  * ftp://ftp.wwpdb.org/pub/emdb/doc/Map-format/current/EMDB_map_format.pdf
  * \note format has small differences to http://www.ccpem.ac.uk/mrc_format/mrc2014.php
  */
-void doMrcDensityMapHeader(ISerializer * serializer, MrcDensityMapHeader * mrcFile)
+void doMrcDensityMapHeader(ISerializer* serializer, MrcDensityMapHeader* mrcFile)
 {
     // 1-3 | NC, NR, NS | signed int >0 | emdb: NC=NR=NS
     // # of columns (fastest changing),rows, sections (slowest changing)
@@ -223,8 +222,8 @@ void doMrcDensityMapHeader(ISerializer * serializer, MrcDensityMapHeader * mrcFi
     // 8-10 | NX, NY, NZ | signed int >0 |  emdb: same as NC, NR, NS | intervals per unit cell repeat along X,Y Z
     serialize(serializer, &(mrcFile->extent_));
 
-    // 11-13 | X_LENGTH, Y_LENGTH, Z_LENGTH | floating pt >0 | emdb Map lengths along X,Y,Z in Ångström
-    // Length in Ångström for a single voxel is unit_cell_length/n_voxel
+    // 11-13 | X_LENGTH, Y_LENGTH, Z_LENGTH | floating pt >0 | emdb Map lengths along X,Y,Z in
+    // Ångström Length in Ångström for a single voxel is unit_cell_length/n_voxel
     serialize(serializer, &(mrcFile->cellLength_));
 
     // 14-16 | ALPHA,BETA,GAMMA | floating pt >0, <180 | emdb: 90, 90, 90
@@ -263,14 +262,14 @@ void doMrcDensityMapHeader(ISerializer * serializer, MrcDensityMapHeader * mrcFi
     // 38-52 | EXTRA | 32 bit binary
     // 15 floats of user-defined metadata
     // EMDB might use fields 50,51 and 52 for setting the coordinate system origin
-    for (auto &userFloat : mrcFile->userDefinedFloat_)
+    for (auto& userFloat : mrcFile->userDefinedFloat_)
     {
         serializer->doFloat(&userFloat);
     }
 
     // 53 | MAP | ASCII char | emdb: "MAP "
     // MRC/CCP4 MAP format identifier
-    for (auto &formatIdentifierCharacter : mrcFile->formatIdentifier_)
+    for (auto& formatIdentifierCharacter : mrcFile->formatIdentifier_)
     {
         serializer->doUChar(&formatIdentifierCharacter);
     }
@@ -287,31 +286,30 @@ void doMrcDensityMapHeader(ISerializer * serializer, MrcDensityMapHeader * mrcFi
 
     // 57-256 | LABEL_N | ASCII char | emdb : “::::EMDataBank.org::::EMD-1234::::”.
     // 10 user-defined labels each 80 characters
-    for (auto && label : mrcFile->labels_.labels_)
+    for (auto&& label : mrcFile->labels_.labels_)
     {
-        for (auto && labelCharacter : label)
+        for (auto&& labelCharacter : label)
         {
             serializer->doUChar(&labelCharacter);
         }
     }
 
     // 257-257+NSYMBT | user defined extended header information | emdb : none
-    for (auto &extendedHeaderCharacter : mrcFile->extendedHeader_)
+    for (auto& extendedHeaderCharacter : mrcFile->extendedHeader_)
     {
         serializer->doUChar(&extendedHeaderCharacter);
     }
 }
 
-}   // namespace
+} // namespace
 
-void serializeMrcDensityMapHeader(ISerializer              * serializer,
-                                  const MrcDensityMapHeader &mrcFile)
+void serializeMrcDensityMapHeader(ISerializer* serializer, const MrcDensityMapHeader& mrcFile)
 {
     MrcDensityMapHeader mrcHeaderCopy = mrcFile;
     doMrcDensityMapHeader(serializer, &mrcHeaderCopy);
 }
 
-MrcDensityMapHeader deserializeMrcDensityMapHeader(ISerializer * serializer)
+MrcDensityMapHeader deserializeMrcDensityMapHeader(ISerializer* serializer)
 {
     MrcDensityMapHeader mrcHeader;
     doMrcDensityMapHeader(serializer, &mrcHeader);

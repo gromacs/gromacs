@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,96 +59,77 @@ struct gmx_ana_indexgrps_t;
 struct gmx_ana_selcollection_t;
 
 #ifndef YY_TYPEDEF_YY_SCANNER_T
-#define YY_TYPEDEF_YY_SCANNER_T
-typedef void *yyscan_t;
+#    define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
 #endif
 
 /** Initializes the selection scanner. */
-void
-_gmx_sel_init_lexer(yyscan_t *scannerp, struct gmx_ana_selcollection_t *sc,
-                    gmx::TextWriter *statusWriter, int maxnr, bool bGroups,
-                    struct gmx_ana_indexgrps_t *grps);
+void _gmx_sel_init_lexer(yyscan_t*                       scannerp,
+                         struct gmx_ana_selcollection_t* sc,
+                         gmx::TextWriter*                statusWriter,
+                         int                             maxnr,
+                         bool                            bGroups,
+                         struct gmx_ana_indexgrps_t*     grps);
 /** Frees memory allocated for the selection scanner. */
-void
-_gmx_sel_free_lexer(yyscan_t scanner);
+void _gmx_sel_free_lexer(yyscan_t scanner);
 /** Stores an exception that is caught during parsing. */
-void
-_gmx_sel_lexer_set_exception(yyscan_t                  scanner,
-                             const std::exception_ptr &ex);
+void _gmx_sel_lexer_set_exception(yyscan_t scanner, const std::exception_ptr& ex);
 /** Rethrows and clears the stored exception if one is present. */
 // TODO: The semantics is a bit confusing, need to be thought more,
 // but easier to do as part of larger refactoring of the parsing.
-void
-_gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner);
+void _gmx_sel_lexer_rethrow_exception_if_occurred(yyscan_t scanner);
 
 /** Returns writer for status output (if not NULL, the scanner is interactive). */
-gmx::TextWriter *
-_gmx_sel_lexer_get_status_writer(yyscan_t scanner);
+gmx::TextWriter* _gmx_sel_lexer_get_status_writer(yyscan_t scanner);
 /** Returns the selection collection for the scanner. */
-struct gmx_ana_selcollection_t *
-_gmx_sel_lexer_selcollection(yyscan_t scanner);
+struct gmx_ana_selcollection_t* _gmx_sel_lexer_selcollection(yyscan_t scanner);
 /** Returns true if the external index groups for the scanner are set. */
-bool
-_gmx_sel_lexer_has_groups_set(yyscan_t scanner);
+bool _gmx_sel_lexer_has_groups_set(yyscan_t scanner);
 /** Returns the external index groups for the scanner. */
-struct gmx_ana_indexgrps_t *
-_gmx_sel_lexer_indexgrps(yyscan_t scanner);
+struct gmx_ana_indexgrps_t* _gmx_sel_lexer_indexgrps(yyscan_t scanner);
 /** Returns the number of selections after which the parser should stop. */
-int
-_gmx_sel_lexer_exp_selcount(yyscan_t scanner);
+int _gmx_sel_lexer_exp_selcount(yyscan_t scanner);
 
 /** Returns a pretty string of the current selection.  */
-const char *
-_gmx_sel_lexer_pselstr(yyscan_t scanner);
+const char* _gmx_sel_lexer_pselstr(yyscan_t scanner);
 /*! \brief
  * Sets the current parser context location.
  *
  * This location is set while Bison reductions are being processed, and
  * identifies the location of the current rule/reduction.
  */
-void
-_gmx_sel_lexer_set_current_location(yyscan_t                      scanner,
-                                    const gmx::SelectionLocation &location);
+void _gmx_sel_lexer_set_current_location(yyscan_t scanner, const gmx::SelectionLocation& location);
 /*! \brief
  * Returns the current parser context location.
  *
  * This returns the location last set with
  * _gmx_sel_lexer_set_current_location().
  */
-const gmx::SelectionLocation &
-_gmx_sel_lexer_get_current_location(yyscan_t scanner);
+const gmx::SelectionLocation& _gmx_sel_lexer_get_current_location(yyscan_t scanner);
 /*! \brief
  * Returns the selection text for the current parser context.
  *
  * This returns the selection text that corresponds to the position set last
  * with _gmx_sel_lexer_set_current_location().
  */
-std::string
-_gmx_sel_lexer_get_current_text(yyscan_t scanner);
+std::string _gmx_sel_lexer_get_current_text(yyscan_t scanner);
 /*! \brief
  * Returns the selection text at the given location.
  */
-std::string
-_gmx_sel_lexer_get_text(yyscan_t                      scanner,
-                        const gmx::SelectionLocation &location);
+std::string _gmx_sel_lexer_get_text(yyscan_t scanner, const gmx::SelectionLocation& location);
 /** Clears the current selection string.  */
-void
-_gmx_sel_lexer_clear_pselstr(yyscan_t scanner);
+void _gmx_sel_lexer_clear_pselstr(yyscan_t scanner);
 /** Clears the method stack in the scanner in error situations. */
-void
-_gmx_sel_lexer_clear_method_stack(yyscan_t scanner);
+void _gmx_sel_lexer_clear_method_stack(yyscan_t scanner);
 /** Notifies the scanner that a complete method expression has been parsed. */
-void
-_gmx_sel_finish_method(yyscan_t scanner);
+void _gmx_sel_finish_method(yyscan_t scanner);
 /** Initializes the scanner to scan a file. */
-void
-_gmx_sel_set_lex_input_file(yyscan_t scanner, FILE *fp);
+void _gmx_sel_set_lex_input_file(yyscan_t scanner, FILE* fp);
 /** Initializes the scanner to scan a string. */
-void
-_gmx_sel_set_lex_input_str(yyscan_t scanner, const char *str);
+void _gmx_sel_set_lex_input_str(yyscan_t scanner, const char* str);
 
 /** The scanning function generated by Flex. */
-#define YY_DECL int _gmx_sel_yylex(YYSTYPE *yylval, YYLTYPE *yylloc, yyscan_t yyscanner)
+#define YY_DECL int _gmx_sel_yylex(YYSTYPE* yylval, YYLTYPE* yylloc, yyscan_t yyscanner)
 YY_DECL;
 
 #endif

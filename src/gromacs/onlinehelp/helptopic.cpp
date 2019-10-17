@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,13 +65,12 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
     return false;
 }
 
-const IHelpTopic *
-AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
+const IHelpTopic* AbstractSimpleHelpTopic::findSubTopic(const char* /* name */) const
 {
     return nullptr;
 }
 
-void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
+void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext& context) const
 {
     context.writeTextBlock(helpText());
 }
@@ -87,46 +86,40 @@ void AbstractSimpleHelpTopic::writeHelp(const HelpWriterContext &context) const
  */
 class AbstractCompositeHelpTopic::Impl
 {
-    public:
-        //! Container for subtopics.
-        typedef std::vector<HelpTopicPointer> SubTopicList;
-        //! Container for mapping subtopic names to help topic objects.
-        typedef std::map<std::string, const IHelpTopic *> SubTopicMap;
+public:
+    //! Container for subtopics.
+    typedef std::vector<HelpTopicPointer> SubTopicList;
+    //! Container for mapping subtopic names to help topic objects.
+    typedef std::map<std::string, const IHelpTopic*> SubTopicMap;
 
-        /*! \brief
-         * Subtopics in the order they were added.
-         *
-         * Owns the contained subtopics.
-         */
-        SubTopicList            subTopics_;
-        /*! \brief
-         * Maps subtopic names to help topic objects.
-         *
-         * Points to objects in the \a subTopics_ map.
-         */
-        SubTopicMap             subTopicMap_;
+    /*! \brief
+     * Subtopics in the order they were added.
+     *
+     * Owns the contained subtopics.
+     */
+    SubTopicList subTopics_;
+    /*! \brief
+     * Maps subtopic names to help topic objects.
+     *
+     * Points to objects in the \a subTopics_ map.
+     */
+    SubTopicMap subTopicMap_;
 };
 
 /********************************************************************
  * AbstractCompositeHelpTopic
  */
 
-AbstractCompositeHelpTopic::AbstractCompositeHelpTopic()
-    : impl_(new Impl)
-{
-}
+AbstractCompositeHelpTopic::AbstractCompositeHelpTopic() : impl_(new Impl) {}
 
-AbstractCompositeHelpTopic::~AbstractCompositeHelpTopic()
-{
-}
+AbstractCompositeHelpTopic::~AbstractCompositeHelpTopic() {}
 
 bool AbstractCompositeHelpTopic::hasSubTopics() const
 {
     return !impl_->subTopics_.empty();
 }
 
-const IHelpTopic *
-AbstractCompositeHelpTopic::findSubTopic(const char *name) const
+const IHelpTopic* AbstractCompositeHelpTopic::findSubTopic(const char* name) const
 {
     Impl::SubTopicMap::const_iterator topic = impl_->subTopicMap_.find(name);
     if (topic == impl_->subTopicMap_.end())
@@ -136,22 +129,21 @@ AbstractCompositeHelpTopic::findSubTopic(const char *name) const
     return topic->second;
 }
 
-void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext &context) const
+void AbstractCompositeHelpTopic::writeHelp(const HelpWriterContext& context) const
 {
     context.writeTextBlock(helpText());
     writeSubTopicList(context, "\nAvailable subtopics:");
 }
 
-bool
-AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
-                                              const std::string       &title) const
+bool AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext& context,
+                                                   const std::string&       title) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         Impl::SubTopicList::const_iterator topic;
         for (topic = impl_->subTopics_.begin(); topic != impl_->subTopics_.end(); ++topic)
         {
-            const char *const title = (*topic)->title();
+            const char* const title = (*topic)->title();
             if (!isNullOrEmpty(title))
             {
                 context.paragraphBreak();
@@ -162,11 +154,11 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
         }
         return true;
     }
-    int maxNameLength = 0;
+    int                               maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char *const title = topic->second->title();
+        const char* const title = topic->second->title();
         if (!isNullOrEmpty(title))
         {
             int nameLength = static_cast<int>(topic->first.length());
@@ -180,7 +172,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     {
         return false;
     }
-    TextWriter        &file = context.outputFile();
+    TextWriter&        file = context.outputFile();
     TextTableFormatter formatter;
     formatter.addColumn(nullptr, maxNameLength + 1, false);
     formatter.addColumn(nullptr, 72 - maxNameLength, true);
@@ -188,8 +180,8 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
     file.writeLine(title);
     for (topic = impl_->subTopicMap_.begin(); topic != impl_->subTopicMap_.end(); ++topic)
     {
-        const char *const name  = topic->first.c_str();
-        const char *const title = topic->second->title();
+        const char* const name  = topic->first.c_str();
+        const char* const title = topic->second->title();
         if (!isNullOrEmpty(title))
         {
             formatter.clear();
@@ -205,7 +197,7 @@ void AbstractCompositeHelpTopic::addSubTopic(HelpTopicPointer topic)
 {
     GMX_ASSERT(impl_->subTopicMap_.find(topic->name()) == impl_->subTopicMap_.end(),
                "Attempted to register a duplicate help topic name");
-    const IHelpTopic *topicPtr = topic.get();
+    const IHelpTopic* topicPtr = topic.get();
     impl_->subTopics_.reserve(impl_->subTopics_.size() + 1);
     impl_->subTopicMap_.insert(std::make_pair(std::string(topicPtr->name()), topicPtr));
     impl_->subTopics_.push_back(std::move(topic));

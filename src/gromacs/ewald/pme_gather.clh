@@ -55,13 +55,12 @@
 #include "pme_gpu_utils.clh"
 
 #ifndef COMPILE_GATHER_HELPERS_ONCE
-#define COMPILE_GATHER_HELPERS_ONCE
+#    define COMPILE_GATHER_HELPERS_ONCE
 
 /*! \brief
  * Unrolls the dynamic index accesses to the constant grid sizes to avoid local memory operations.
  */
-inline float read_grid_size(const float *realGridSizeFP,
-                            const int    dimIndex)
+inline float read_grid_size(const float* realGridSizeFP, const int dimIndex)
 {
     switch (dimIndex)
     {
@@ -90,47 +89,46 @@ inline float read_grid_size(const float *realGridSizeFP,
  * \param[in,out]   sm_forceReduction  Reduction working buffer
  * \param[in]       sm_forceTemp       Convenience pointers into \p sm_forceReduction
  */
-inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
-                               const int                     atomIndexLocal,
-                               const int                     splineIndex,
-                               const int                     lineIndex,
-                               const float                  *realGridSizeFP,
-                               float                         fx,
-                               float                         fy,
-                               float                         fz,
-                               __local float * __restrict__  sm_forceReduction,
-                               __local float ** __restrict__ sm_forceTemp
-                               )
+inline void reduce_atom_forces(__local float* __restrict__ sm_forces,
+                               const int    atomIndexLocal,
+                               const int    splineIndex,
+                               const int    lineIndex,
+                               const float* realGridSizeFP,
+                               float        fx,
+                               float        fy,
+                               float        fz,
+                               __local float* __restrict__ sm_forceReduction,
+                               __local float** __restrict__ sm_forceTemp)
 
 {
     // TODO: implement AMD intrinsics reduction, like with shuffles in CUDA version. #2514
 
     /* Number of data components and threads for a single atom */
-#define atomDataSize threadsPerAtom
+#    define atomDataSize threadsPerAtom
     // We use blockSize local memory elements to read fx, or fy, or fz, and then reduce them to fit into smemPerDim elements
     // All those guys are defines and not consts, because they go into the local memory array size.
-#define blockSize (atomsPerBlock * atomDataSize)
-#define smemPerDim warp_size
-#define smemReserved  (DIM * smemPerDim)
+#    define blockSize (atomsPerBlock * atomDataSize)
+#    define smemPerDim warp_size
+#    define smemReserved (DIM * smemPerDim)
 
     const int numWarps  = blockSize / smemPerDim;
     const int minStride = max(1, atomDataSize / numWarps);
 
-#pragma unroll DIM
+#    pragma unroll DIM
     for (int dimIndex = 0; dimIndex < DIM; dimIndex++)
     {
         int elementIndex = smemReserved + lineIndex;
         // Store input force contributions
         sm_forceReduction[elementIndex] = (dimIndex == XX) ? fx : (dimIndex == YY) ? fy : fz;
-#if (warp_size < 48)
+#    if (warp_size < 48)
         // sync here when exec width is smaller than the size of the sm_forceReduction
         // buffer flushed to local mem above (size 3*16) as different warps will consume
         // the data below.
         barrier(CLK_LOCAL_MEM_FENCE);
-#endif
+#    endif
 
         // Reduce to fit into smemPerDim (warp size)
-#pragma unroll
+#    pragma unroll
         for (int redStride = atomDataSize >> 1; redStride > minStride; redStride >>= 1)
         {
             if (splineIndex < redStride)
@@ -141,24 +139,25 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
         barrier(CLK_LOCAL_MEM_FENCE);
         // Last iteration - packing everything to be nearby, storing convenience pointer
         sm_forceTemp[dimIndex] = sm_forceReduction + dimIndex * smemPerDim;
-        int redStride = minStride;
+        int redStride          = minStride;
         if (splineIndex < redStride)
         {
             const int packedIndex = atomIndexLocal * redStride + splineIndex;
-            sm_forceTemp[dimIndex][packedIndex] = sm_forceReduction[elementIndex] + sm_forceReduction[elementIndex + redStride];
+            sm_forceTemp[dimIndex][packedIndex] =
+                    sm_forceReduction[elementIndex] + sm_forceReduction[elementIndex + redStride];
         }
 
         // barrier only needed for the last iteration on hardware with >=64-wide execution (e.g. AMD)
-#if (warp_size < 64)
+#    if (warp_size < 64)
         barrier(CLK_LOCAL_MEM_FENCE);
-#endif
+#    endif
     }
 
-#if (warp_size >= 64)
+#    if (warp_size >= 64)
     barrier(CLK_LOCAL_MEM_FENCE);
-#endif
+#    endif
 
-    assert ((blockSize / warp_size) >= DIM);
+    assert((blockSize / warp_size) >= DIM);
 
     const int warpIndex = lineIndex / warp_size;
     const int dimIndex  = warpIndex;
@@ -167,7 +166,7 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
     if (dimIndex < DIM)
     {
         const int sourceIndex = lineIndex % warp_size;
-#pragma unroll
+#    pragma unroll
         for (int redStride = minStride >> 1; redStride > 1; redStride >>= 1)
         {
             if (!(splineIndex & redStride))
@@ -180,12 +179,13 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
         const int   atomIndex = sourceIndex / minStride;
         if (sourceIndex == minStride * atomIndex)
         {
-            sm_forces[atomIndex * DIM + dimIndex] = (sm_forceTemp[dimIndex][sourceIndex] + sm_forceTemp[dimIndex][sourceIndex + 1]) * n;
+            sm_forces[atomIndex * DIM + dimIndex] =
+                    (sm_forceTemp[dimIndex][sourceIndex] + sm_forceTemp[dimIndex][sourceIndex + 1]) * n;
         }
     }
 }
 
-#endif //COMPILE_GATHER_HELPERS_ONCE
+#endif // COMPILE_GATHER_HELPERS_ONCE
 
 /*! \brief
  * An OpenCL kernel which gathers the atom forces from the grid.
@@ -201,46 +201,49 @@ inline void reduce_atom_forces(__local float * __restrict__  sm_forces,
  * \param[in,out] gm_forces            Atom forces (rvec)
  */
 __attribute__((reqd_work_group_size(order, order, atomsPerBlock)))
-__kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKernelParams   kernelParams,
-                                                        __global const float * __restrict__  gm_coefficients,
-                                                        __global const float * __restrict__  gm_grid,
-                                                        __global const float * __restrict__  gm_theta,
-                                                        __global const float * __restrict__  gm_dtheta,
-                                                        __global const int * __restrict__    gm_gridlineIndices,
-                                                        __global float * __restrict__        gm_forces
-                                                        )
+__kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKernelParams kernelParams,
+                                                        __global const float* __restrict__ gm_coefficients,
+                                                        __global const float* __restrict__ gm_grid,
+                                                        __global const float* __restrict__ gm_theta,
+                                                        __global const float* __restrict__ gm_dtheta,
+                                                        __global const int* __restrict__ gm_gridlineIndices,
+                                                        __global float* __restrict__ gm_forces)
 {
     /* These are the atom indices - for the shared and global memory */
-    const int         atomIndexLocal    = get_local_id(ZZ);
-    const int         atomIndexOffset   = get_group_id(XX) * atomsPerBlock;
-    const int         atomIndexGlobal   = atomIndexOffset + atomIndexLocal;
+    const int atomIndexLocal  = get_local_id(ZZ);
+    const int atomIndexOffset = get_group_id(XX) * atomsPerBlock;
+    const int atomIndexGlobal = atomIndexOffset + atomIndexLocal;
 
-    /* Some sizes which are defines and not consts because they go into the array size */
-    #define blockSize (atomsPerBlock * atomDataSize)
+/* Some sizes which are defines and not consts because they go into the array size */
+#define blockSize (atomsPerBlock * atomDataSize)
     assert(blockSize == (get_local_size(0) * get_local_size(1) * get_local_size(2)));
-    #define smemPerDim warp_size
-    #define smemReserved  (DIM * smemPerDim)
-    #define totalSharedMemory (smemReserved + blockSize)
-    #define gridlineIndicesSize (atomsPerBlock * DIM)
-    #define splineParamsSize (atomsPerBlock * DIM * order)
+#define smemPerDim warp_size
+#define smemReserved (DIM * smemPerDim)
+#define totalSharedMemory (smemReserved + blockSize)
+#define gridlineIndicesSize (atomsPerBlock * DIM)
+#define splineParamsSize (atomsPerBlock * DIM * order)
 
-    __local int    sm_gridlineIndices[gridlineIndicesSize];
+    __local int sm_gridlineIndices[gridlineIndicesSize];
     __local float2 sm_splineParams[splineParamsSize]; /* Theta/dtheta pairs  as .x/.y */
 
     /* Spline Y/Z coordinates */
     const int ithy = get_local_id(YY);
     const int ithz = get_local_id(XX);
 
-    const int threadLocalId = (get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0) + get_local_id(0);
+    const int threadLocalId = (get_local_id(2) * get_local_size(1) + get_local_id(1)) * get_local_size(0)
+                              + get_local_id(0);
 
     /* These are the spline contribution indices in shared memory */
-    const int splineIndex = (get_local_id(1) * get_local_size(0) + get_local_id(0)); /* Relative to the current particle , 0..15 for order 4 */
-    const int lineIndex   = threadLocalId;                                           /* And to all the block's particles */
+    const int splineIndex = (get_local_id(1) * get_local_size(0)
+                             + get_local_id(0)); /* Relative to the current particle , 0..15 for order 4 */
+    const int lineIndex   = threadLocalId; /* And to all the block's particles */
 
     /* Staging the atom gridline indices, DIM * atomsPerBlock threads */
-    const int localGridlineIndicesIndex  = threadLocalId;
-    const int globalGridlineIndicesIndex = get_group_id(XX) * gridlineIndicesSize + localGridlineIndicesIndex;
-    const int globalCheckIndices         = pme_gpu_check_atom_data_index(globalGridlineIndicesIndex, kernelParams.atoms.nAtoms * DIM);
+    const int localGridlineIndicesIndex = threadLocalId;
+    const int globalGridlineIndicesIndex =
+            get_group_id(XX) * gridlineIndicesSize + localGridlineIndicesIndex;
+    const int globalCheckIndices =
+            pme_gpu_check_atom_data_index(globalGridlineIndicesIndex, kernelParams.atoms.nAtoms * DIM);
     if ((localGridlineIndicesIndex < gridlineIndicesSize) & globalCheckIndices)
     {
         sm_gridlineIndices[localGridlineIndicesIndex] = gm_gridlineIndices[globalGridlineIndicesIndex];
@@ -249,7 +252,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     /* Staging the spline parameters, DIM * order * atomsPerBlock threads */
     const int localSplineParamsIndex  = threadLocalId;
     const int globalSplineParamsIndex = get_group_id(XX) * splineParamsSize + localSplineParamsIndex;
-    const int globalCheckSplineParams = pme_gpu_check_atom_data_index(globalSplineParamsIndex, kernelParams.atoms.nAtoms * DIM * order);
+    const int globalCheckSplineParams = pme_gpu_check_atom_data_index(
+            globalSplineParamsIndex, kernelParams.atoms.nAtoms * DIM * order);
     if ((localSplineParamsIndex < splineParamsSize) && globalCheckSplineParams)
     {
         sm_splineParams[localSplineParamsIndex].x = gm_theta[globalSplineParamsIndex];
@@ -259,23 +263,23 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     }
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    float           fx = 0.0f;
-    float           fy = 0.0f;
-    float           fz = 0.0f;
+    float fx = 0.0f;
+    float fy = 0.0f;
+    float fz = 0.0f;
 
-    const int       globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
-    const int       chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
+    const int globalCheck = pme_gpu_check_atom_data_index(atomIndexGlobal, kernelParams.atoms.nAtoms);
+    const int chargeCheck = pme_gpu_check_atom_charge(gm_coefficients[atomIndexGlobal]);
 
     if (chargeCheck & globalCheck)
     {
-        const int    nx        = kernelParams.grid.realGridSize[XX];
-        const int    ny        = kernelParams.grid.realGridSize[YY];
-        const int    nz        = kernelParams.grid.realGridSize[ZZ];
-        const int    pny       = kernelParams.grid.realGridSizePadded[YY];
-        const int    pnz       = kernelParams.grid.realGridSizePadded[ZZ];
+        const int nx  = kernelParams.grid.realGridSize[XX];
+        const int ny  = kernelParams.grid.realGridSize[YY];
+        const int nz  = kernelParams.grid.realGridSize[ZZ];
+        const int pny = kernelParams.grid.realGridSizePadded[YY];
+        const int pnz = kernelParams.grid.realGridSizePadded[ZZ];
 
-        const int    atomWarpIndex = atomIndexLocal % atomsPerWarp;
-        const int    warpIndex     = atomIndexLocal / atomsPerWarp;
+        const int atomWarpIndex = atomIndexLocal % atomsPerWarp;
+        const int warpIndex     = atomIndexLocal / atomsPerWarp;
 
         const int    splineIndexBase = getSplineParamIndexBase(warpIndex, atomWarpIndex);
         const int    splineIndexY    = getSplineParamIndex(splineIndexBase, YY, ithy);
@@ -283,18 +287,18 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         const int    splineIndexZ    = getSplineParamIndex(splineIndexBase, ZZ, ithz);
         const float2 tdz             = sm_splineParams[splineIndexZ];
 
-        const int    ixBase         = sm_gridlineIndices[atomIndexLocal * DIM + XX];
-        int          iy             = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
+        const int ixBase = sm_gridlineIndices[atomIndexLocal * DIM + XX];
+        int       iy     = sm_gridlineIndices[atomIndexLocal * DIM + YY] + ithy;
         if (wrapY & (iy >= ny))
         {
             iy -= ny;
         }
-        int iz  = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
+        int iz = sm_gridlineIndices[atomIndexLocal * DIM + ZZ] + ithz;
         if (iz >= nz)
         {
             iz -= nz;
         }
-        const int constOffset    = iy * pnz + iz;
+        const int constOffset = iy * pnz + iz;
 
 #pragma unroll order
         for (int ithx = 0; (ithx < order); ithx++)
@@ -304,14 +308,14 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
             {
                 ix -= nx;
             }
-            const int     gridIndexGlobal  = ix * pny * pnz + constOffset;
+            const int gridIndexGlobal = ix * pny * pnz + constOffset;
             assert(gridIndexGlobal >= 0);
-            const float   gridValue    = gm_grid[gridIndexGlobal];
+            const float gridValue = gm_grid[gridIndexGlobal];
             assert(isfinite(gridValue));
-            const int     splineIndexX = getSplineParamIndex(splineIndexBase, XX, ithx);
-            const float2  tdx          = sm_splineParams[splineIndexX];
-            const float   fxy1         = tdz.x * gridValue;
-            const float   fz1          = tdz.y * gridValue;
+            const int    splineIndexX = getSplineParamIndex(splineIndexBase, XX, ithx);
+            const float2 tdx          = sm_splineParams[splineIndexX];
+            const float  fxy1         = tdz.x * gridValue;
+            const float  fz1          = tdz.y * gridValue;
             fx += tdx.y * tdy.x * fxy1;
             fy += tdx.x * tdy.y * fxy1;
             fz += tdx.x * tdy.x * fz1;
@@ -319,40 +323,38 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
     }
 
     // Reduction of partial force contributions
-    __local float  sm_forces[atomsPerBlock * DIM];
+    __local float sm_forces[atomsPerBlock * DIM];
 
     __local float  sm_forceReduction[totalSharedMemory];
-    __local float *sm_forceTemp[DIM];
+    __local float* sm_forceTemp[DIM];
 
-    reduce_atom_forces(sm_forces,
-                       atomIndexLocal, splineIndex, lineIndex,
-                       kernelParams.grid.realGridSizeFP,
-                       fx, fy, fz,
-                       sm_forceReduction,
-                       sm_forceTemp);
+    reduce_atom_forces(sm_forces, atomIndexLocal, splineIndex, lineIndex,
+                       kernelParams.grid.realGridSizeFP, fx, fy, fz, sm_forceReduction, sm_forceTemp);
     barrier(CLK_LOCAL_MEM_FENCE);
 
     /* Calculating the final forces with no component branching, atomsPerBlock threads */
     const int forceIndexLocal  = threadLocalId;
     const int forceIndexGlobal = atomIndexOffset + forceIndexLocal;
-    const int calcIndexCheck   = pme_gpu_check_atom_data_index(forceIndexGlobal, kernelParams.atoms.nAtoms);
+    const int calcIndexCheck = pme_gpu_check_atom_data_index(forceIndexGlobal, kernelParams.atoms.nAtoms);
     if ((forceIndexLocal < atomsPerBlock) & calcIndexCheck)
     {
-        const float3  atomForces     = vload3(forceIndexLocal, sm_forces);
-        const float   negCoefficient = -gm_coefficients[forceIndexGlobal];
-        float3        result;
-        result.x      = negCoefficient * kernelParams.current.recipBox[XX][XX] * atomForces.x;
-        result.y      = negCoefficient * (kernelParams.current.recipBox[XX][YY] * atomForces.x +
-                                          kernelParams.current.recipBox[YY][YY] * atomForces.y);
-        result.z      = negCoefficient * (kernelParams.current.recipBox[XX][ZZ] * atomForces.x +
-                                          kernelParams.current.recipBox[YY][ZZ] * atomForces.y +
-                                          kernelParams.current.recipBox[ZZ][ZZ] * atomForces.z);
+        const float3 atomForces     = vload3(forceIndexLocal, sm_forces);
+        const float  negCoefficient = -gm_coefficients[forceIndexGlobal];
+        float3       result;
+        result.x = negCoefficient * kernelParams.current.recipBox[XX][XX] * atomForces.x;
+        result.y = negCoefficient
+                   * (kernelParams.current.recipBox[XX][YY] * atomForces.x
+                      + kernelParams.current.recipBox[YY][YY] * atomForces.y);
+        result.z = negCoefficient
+                   * (kernelParams.current.recipBox[XX][ZZ] * atomForces.x
+                      + kernelParams.current.recipBox[YY][ZZ] * atomForces.y
+                      + kernelParams.current.recipBox[ZZ][ZZ] * atomForces.z);
         vstore3(result, forceIndexLocal, sm_forces);
     }
 
 #if !defined(_AMD_SOURCE_) && !defined(_NVIDIA_SOURCE_)
-    /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was __syncwarp() in CUDA.
-     * #2519
+    /* This is only here for execution of e.g. 32-sized warps on 16-wide hardware; this was
+     * __syncwarp() in CUDA. #2519
      */
     barrier(CLK_LOCAL_MEM_FENCE);
 #endif
@@ -370,7 +372,8 @@ __kernel void CUSTOMIZED_KERNEL_NAME(pme_gather_kernel)(const struct PmeOpenCLKe
         {
             const int outputIndexLocal  = i * iterThreads + threadLocalId;
             const int outputIndexGlobal = get_group_id(XX) * blockForcesSize + outputIndexLocal;
-            const int globalOutputCheck = pme_gpu_check_atom_data_index(outputIndexGlobal, kernelParams.atoms.nAtoms * DIM);
+            const int globalOutputCheck =
+                    pme_gpu_check_atom_data_index(outputIndexGlobal, kernelParams.atoms.nAtoms * DIM);
             if (globalOutputCheck)
             {
                 const float outputForceComponent = sm_forces[outputIndexLocal];

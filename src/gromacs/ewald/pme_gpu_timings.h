@@ -46,9 +46,9 @@
 #include "config.h"
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/gputraits.cuh"
+#    include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/gputraits_ocl.h"
+#    include "gromacs/gpu_utils/gputraits_ocl.h"
 #endif
 
 struct PmeGpu;
@@ -59,7 +59,7 @@ struct PmeGpu;
  * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_start_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
+void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
 
 /*! \libinternal \brief
  * Returns raw timing event from the corresponding GpuRegionTimer (if timings are enabled).
@@ -68,7 +68,7 @@ void pme_gpu_start_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
  * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-CommandEvent *pme_gpu_fetch_timing_event(const PmeGpu *pmeGpu, size_t PMEStageId);
+CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, size_t PMEStageId);
 
 /*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single computation (if timings are enabled).
@@ -76,6 +76,6 @@ CommandEvent *pme_gpu_fetch_timing_event(const PmeGpu *pmeGpu, size_t PMEStageId
  * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
-void pme_gpu_stop_timing(const PmeGpu *pmeGpu, size_t PMEStageId);
+void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
 
 #endif

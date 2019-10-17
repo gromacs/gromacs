@@ -70,69 +70,64 @@ namespace
 
 class DensityFittingOptionsTest : public ::testing::Test
 {
-    public:
-        DensityFittingOptionsTest()
-        {
-            init_blocka(&defaultGroups_);
-        }
-        ~DensityFittingOptionsTest() override
-        {
-            done_blocka(&defaultGroups_);
-        }
+public:
+    DensityFittingOptionsTest() { init_blocka(&defaultGroups_); }
+    ~DensityFittingOptionsTest() override { done_blocka(&defaultGroups_); }
 
-        void setFromMdpValues(const KeyValueTreeObject &densityFittingMdpValues)
-        {
-            // set up options
-            Options densityFittingModuleOptions;
-            densityFittingOptions_.initMdpOptions(&densityFittingModuleOptions);
+    void setFromMdpValues(const KeyValueTreeObject& densityFittingMdpValues)
+    {
+        // set up options
+        Options densityFittingModuleOptions;
+        densityFittingOptions_.initMdpOptions(&densityFittingModuleOptions);
 
-            // Add rules to transform mdp inputs to densityFittingModule data
-            KeyValueTreeTransformer transform;
-            transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
+        // Add rules to transform mdp inputs to densityFittingModule data
+        KeyValueTreeTransformer transform;
+        transform.rules()->addRule().keyMatchType("/", StringCompareType::CaseAndDashInsensitive);
 
-            densityFittingOptions_.initMdpTransform(transform.rules());
+        densityFittingOptions_.initMdpTransform(transform.rules());
 
-            // Execute the transform on the mdpValues
-            auto transformedMdpValues = transform.transform(densityFittingMdpValues, nullptr);
-            assignOptionsFromKeyValueTree(&densityFittingModuleOptions, transformedMdpValues.object(), nullptr);
-        }
+        // Execute the transform on the mdpValues
+        auto transformedMdpValues = transform.transform(densityFittingMdpValues, nullptr);
+        assignOptionsFromKeyValueTree(&densityFittingModuleOptions, transformedMdpValues.object(), nullptr);
+    }
 
-        KeyValueTreeObject densityFittingSetActiveAsMdpValues()
-        {
-            // Prepare MDP inputs
-            KeyValueTreeBuilder mdpValueBuilder;
-            mdpValueBuilder.rootObject().addValue("density-guided-simulation-active",
-                                                  std::string("yes"));
-            return mdpValueBuilder.build();
-        }
+    KeyValueTreeObject densityFittingSetActiveAsMdpValues()
+    {
+        // Prepare MDP inputs
+        KeyValueTreeBuilder mdpValueBuilder;
+        mdpValueBuilder.rootObject().addValue("density-guided-simulation-active",
+                                              std::string("yes"));
+        return mdpValueBuilder.build();
+    }
 
-        IndexGroupsAndNames genericIndexGroupsAndNames()
-        {
-            done_blocka(&defaultGroups_);
-            stupid_fill_blocka(&defaultGroups_, 3);
-            std::vector<std::string> groupNames = { "A", "protein", "C" };
-            const char *const        namesAsConstChar[3]
-                = { groupNames[0].c_str(), groupNames[1].c_str(), groupNames[2].c_str() };
-            return {defaultGroups_, namesAsConstChar};
-        }
+    IndexGroupsAndNames genericIndexGroupsAndNames()
+    {
+        done_blocka(&defaultGroups_);
+        stupid_fill_blocka(&defaultGroups_, 3);
+        std::vector<std::string> groupNames   = { "A", "protein", "C" };
+        const char* const namesAsConstChar[3] = { groupNames[0].c_str(), groupNames[1].c_str(),
+                                                  groupNames[2].c_str() };
+        return { defaultGroups_, namesAsConstChar };
+    }
 
-        IndexGroupsAndNames differingIndexGroupsAndNames()
-        {
-            done_blocka(&defaultGroups_);
-            stupid_fill_blocka(&defaultGroups_, 3);
-            std::vector<std::string> groupNames = { "protein", "C", "A"};
-            const char *const        namesAsConstChar[3]
-                = { groupNames[0].c_str(), groupNames[1].c_str(), groupNames[2].c_str() };
-            return { defaultGroups_, namesAsConstChar };
-        }
+    IndexGroupsAndNames differingIndexGroupsAndNames()
+    {
+        done_blocka(&defaultGroups_);
+        stupid_fill_blocka(&defaultGroups_, 3);
+        std::vector<std::string> groupNames   = { "protein", "C", "A" };
+        const char* const namesAsConstChar[3] = { groupNames[0].c_str(), groupNames[1].c_str(),
+                                                  groupNames[2].c_str() };
+        return { defaultGroups_, namesAsConstChar };
+    }
 
-        void mangleInternalParameters()
-        {
-            densityFittingOptions_.setFitGroupIndices(differingIndexGroupsAndNames());
-        }
-    protected:
-        t_blocka              defaultGroups_;
-        DensityFittingOptions densityFittingOptions_;
+    void mangleInternalParameters()
+    {
+        densityFittingOptions_.setFitGroupIndices(differingIndexGroupsAndNames());
+    }
+
+protected:
+    t_blocka              defaultGroups_;
+    DensityFittingOptions densityFittingOptions_;
 };
 
 TEST_F(DensityFittingOptionsTest, DefaultParameters)
@@ -189,20 +184,21 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         writeKeyValueTreeAsMdp(&writer, builder.build());
     }
     stream.close();
-    std::string expectedString
-        = {
+    std::string expectedString = {
         "\n"
         "; Density guided simulation\n"
         "density-guided-simulation-active = true\n"
         "density-guided-simulation-group = protein\n"
-        "; Similarity measure between densities: inner-product, relative-entropy, or cross-correlation\n"
+        "; Similarity measure between densities: inner-product, relative-entropy, or "
+        "cross-correlation\n"
         "density-guided-simulation-similarity-measure = inner-product\n"
         "; Atom amplitude for spreading onto grid: unity, mass, or charge\n"
         "density-guided-simulation-atom-spreading-weight = unity\n"
         "density-guided-simulation-force-constant = 1e+09\n"
         "density-guided-simulation-gaussian-transform-spreading-width = 0.2\n"
         "density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width = 4\n"
-        "; Reference density file location as absolute path or relative to the gmx mdrun calling location\n"
+        "; Reference density file location as absolute path or relative to the gmx mdrun calling "
+        "location\n"
         "density-guided-simulation-reference-density-filename = reference.mrc\n"
         "density-guided-simulation-nst = 1\n"
         "; Normalize the sum of density voxel values to one\n"
@@ -211,7 +207,7 @@ TEST_F(DensityFittingOptionsTest, OutputDefaultValuesWhenActive)
         "density-guided-simulation-adaptive-force-scaling = false\n"
         "; Time constant for adaptive force scaling in ps\n"
         "density-guided-simulation-adaptive-force-scaling-time-constant = 4\n"
-        };
+    };
 
     EXPECT_EQ(expectedString, stream.toString());
 }
@@ -234,10 +230,10 @@ TEST_F(DensityFittingOptionsTest, InternalsToKvt)
     DensityFittingOptions densityFittingOptions;
     KeyValueTreeBuilder   builder;
     densityFittingOptions.writeInternalParametersToKvt(builder.rootObject());
-    const auto            kvtTree = builder.build();
+    const auto kvtTree = builder.build();
     EXPECT_TRUE(kvtTree.keyExists("density-guided-simulation-group"));
     EXPECT_TRUE(kvtTree["density-guided-simulation-group"].isArray());
-    auto storedIndex =  kvtTree["density-guided-simulation-group"].asArray().values();
+    auto storedIndex = kvtTree["density-guided-simulation-group"].asArray().values();
 
     EXPECT_EQ(0, storedIndex.size());
 }
@@ -247,7 +243,8 @@ TEST_F(DensityFittingOptionsTest, KvtToInternal)
     setFromMdpValues(densityFittingSetActiveAsMdpValues());
 
     KeyValueTreeBuilder builder;
-    auto                addedArray = builder.rootObject().addUniformArray<std::int64_t>("density-guided-simulation-group");
+    auto                addedArray =
+            builder.rootObject().addUniformArray<std::int64_t>("density-guided-simulation-group");
     addedArray.addValue(1);
     addedArray.addValue(15);
     const auto tree = builder.build();
@@ -269,9 +266,9 @@ TEST_F(DensityFittingOptionsTest, RoundTripForInternalsIsIdempotent)
 
     DensityFittingParameters parametersBefore = densityFittingOptions_.buildParameters();
 
-    KeyValueTreeBuilder      builder;
+    KeyValueTreeBuilder builder;
     densityFittingOptions_.writeInternalParametersToKvt(builder.rootObject());
-    const auto               inputTree = builder.build();
+    const auto inputTree = builder.build();
 
     mangleInternalParameters();
 

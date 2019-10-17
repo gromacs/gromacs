@@ -74,27 +74,28 @@ class TprContents;
 
 class TprReadHandle
 {
-    public:
-        explicit TprReadHandle(std::shared_ptr<TprContents> tprFile);
-        explicit TprReadHandle(TprContents &&tprFile);
-        TprReadHandle(const TprReadHandle &)                = default;
-        TprReadHandle &operator=(const TprReadHandle &)     = default;
-        TprReadHandle(TprReadHandle &&) noexcept            = default;
-        TprReadHandle &operator=(TprReadHandle &&) noexcept = default;
-        ~TprReadHandle();
+public:
+    explicit TprReadHandle(std::shared_ptr<TprContents> tprFile);
+    explicit TprReadHandle(TprContents&& tprFile);
+    TprReadHandle(const TprReadHandle&) = default;
+    TprReadHandle& operator=(const TprReadHandle&) = default;
+    TprReadHandle(TprReadHandle&&) noexcept        = default;
+    TprReadHandle& operator=(TprReadHandle&&) noexcept = default;
+    ~TprReadHandle();
 
-        /*!
-         * \brief Allow API functions to access data resources.
-         *
-         * Used internally. The entire TPR contents are never extracted to the
-         * client, but API implementation details need to be
-         * able to access some or all entire contents in later operations.
-         *
-         * \return Reference-counted handle to data container.
-         */
-        std::shared_ptr<TprContents> get() const;
-    private:
-        std::shared_ptr<TprContents> tprContents_;
+    /*!
+     * \brief Allow API functions to access data resources.
+     *
+     * Used internally. The entire TPR contents are never extracted to the
+     * client, but API implementation details need to be
+     * able to access some or all entire contents in later operations.
+     *
+     * \return Reference-counted handle to data container.
+     */
+    std::shared_ptr<TprContents> get() const;
+
+private:
+    std::shared_ptr<TprContents> tprContents_;
 };
 
 /*!
@@ -104,24 +105,24 @@ class TprReadHandle
  *
  * \todo This is a very temporary shim! Find a better way to construct simulation input.
  */
-TprReadHandle getSourceFileHandle(const GmxMdParams &params);
+TprReadHandle getSourceFileHandle(const GmxMdParams& params);
 
 class StructureSource
 {
-    public:
-        std::shared_ptr<TprContents> tprFile_;
+public:
+    std::shared_ptr<TprContents> tprFile_;
 };
 
 class TopologySource
 {
-    public:
-        std::shared_ptr<TprContents> tprFile_;
+public:
+    std::shared_ptr<TprContents> tprFile_;
 };
 
 class SimulationState
 {
-    public:
-        std::shared_ptr<TprContents> tprFile_;
+public:
+    std::shared_ptr<TprContents> tprFile_;
 };
 
 /*!
@@ -131,7 +132,7 @@ class SimulationState
  * \param outFile output TPR file name
  * \return true if successful. else false.
  */
-bool copy_tprfile(const gmxapicompat::TprReadHandle &input, const std::string &outFile);
+bool copy_tprfile(const gmxapicompat::TprReadHandle& input, const std::string& outFile);
 
 /*!
  * \brief Copy and possibly update TPR file by name.
@@ -141,8 +142,8 @@ bool copy_tprfile(const gmxapicompat::TprReadHandle &input, const std::string &o
  * \param endTime Replace `nsteps` in infile with `endTime/dt`
  * \return true if successful, else false
  */
-bool rewrite_tprfile(const std::string &inFile, const std::string &outFile, double endTime);
+bool rewrite_tprfile(const std::string& inFile, const std::string& outFile, double endTime);
 
-}      // end namespace gmxapicompat
+} // end namespace gmxapicompat
 
-#endif //GMXAPICOMPAT_TPR_H
+#endif // GMXAPICOMPAT_TPR_H

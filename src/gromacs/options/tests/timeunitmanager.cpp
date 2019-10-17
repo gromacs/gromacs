@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,14 +70,14 @@ TEST(TimeUnitManagerTest, BasicOperations)
 
 TEST(TimeUnitBehaviorTest, ScalesAssignedOptionValue)
 {
-    gmx::TimeUnitBehavior  behavior;
+    gmx::TimeUnitBehavior behavior;
 
-    gmx::Options           options;
-    double                 value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
-    gmx::OptionsAssigner   assigner(&options);
+    gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
     ASSERT_NO_THROW_GMX(assigner.startOption("p"));
     ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
@@ -108,12 +108,12 @@ TEST(TimeUnitBehaviorTest, DoesNotScaleDefaultValues)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 1.5, value2 = 0.0;
+    gmx::Options options;
+    double       value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
-    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue()
-                                              .defaultValueIfSet(2.5)));
+    ASSERT_NO_THROW_GMX(
+            options.addOption(DoubleOption("q").store(&value2).timeValue().defaultValueIfSet(2.5)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW_GMX(assigner.start());
@@ -133,8 +133,8 @@ TEST(TimeUnitBehaviorTest, ScalesUserInputWithMultipleSources)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
@@ -159,8 +159,8 @@ TEST(TimeUnitBehaviorTest, TimeUnitOptionWorks)
 {
     gmx::TimeUnitBehavior behavior;
 
-    gmx::Options          options;
-    double                value = 0.0;
+    gmx::Options options;
+    double       value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW_GMX(behavior.addTimeUnitOption(&options, "tu"));

@@ -57,32 +57,30 @@
 #define CALC_ENERGIES
 
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "kernel_common.h"
+#    include "kernel_common.h"
 #endif /* GMX_NBNXN_SIMD_2XNN */
 
 #ifdef CALC_ENERGIES
-void
-nbnxm_kernel_ElecEw_VdwLJCombGeom_VF_2xmm(const NbnxnPairlistCpu    gmx_unused *nbl,
-                                          const nbnxn_atomdata_t    gmx_unused *nbat,
-                                          const interaction_const_t gmx_unused *ic,
-                                          const rvec                gmx_unused *shift_vec,
-                                          nbnxn_atomdata_output_t   gmx_unused *out)
-#else /* CALC_ENERGIES */
-void
-nbnxm_kernel_ElecEw_VdwLJCombGeom_VF_2xmm(const NbnxnPairlistCpu    gmx_unused *nbl,
-                                          const nbnxn_atomdata_t    gmx_unused *nbat,
-                                          const interaction_const_t gmx_unused *ic,
-                                          const rvec                gmx_unused *shift_vec,
-                                          nbnxn_atomdata_output_t   gmx_unused *out)
+void nbnxm_kernel_ElecEw_VdwLJCombGeom_VF_2xmm(const NbnxnPairlistCpu gmx_unused* nbl,
+                                               const nbnxn_atomdata_t gmx_unused* nbat,
+                                               const interaction_const_t gmx_unused* ic,
+                                               const rvec gmx_unused*  shift_vec,
+                                               nbnxn_atomdata_output_t gmx_unused* out)
+#else  /* CALC_ENERGIES */
+void nbnxm_kernel_ElecEw_VdwLJCombGeom_VF_2xmm(const NbnxnPairlistCpu gmx_unused* nbl,
+                                               const nbnxn_atomdata_t gmx_unused* nbat,
+                                               const interaction_const_t gmx_unused* ic,
+                                               const rvec gmx_unused*  shift_vec,
+                                               nbnxn_atomdata_output_t gmx_unused* out)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_2XNN
-#include "kernel_outer.h"
-#else /* GMX_NBNXN_SIMD_2XNN */
+#    include "kernel_outer.h"
+#else  /* GMX_NBNXN_SIMD_2XNN */
 {
-/* No need to call gmx_incons() here, because the only function
- * that calls this one is also compiled conditionally. When
- * GMX_NBNXN_SIMD_2XNN is not defined, it will call no kernel functions and
- * instead call gmx_incons().
- */
+    /* No need to call gmx_incons() here, because the only function
+     * that calls this one is also compiled conditionally. When
+     * GMX_NBNXN_SIMD_2XNN is not defined, it will call no kernel functions and
+     * instead call gmx_incons().
+     */
 }
 #endif /* GMX_NBNXN_SIMD_2XNN */

@@ -52,31 +52,32 @@ namespace gmx
 
 class ScaleCoordinates
 {
-    public:
-        //! Set up coordinate scaling with the scaling factor in each dimension
-        explicit ScaleCoordinates(const RVec &scale);
-        ~ScaleCoordinates();
+public:
+    //! Set up coordinate scaling with the scaling factor in each dimension
+    explicit ScaleCoordinates(const RVec& scale);
+    ~ScaleCoordinates();
 
-        //! Copy constructor
-        ScaleCoordinates(const ScaleCoordinates &other);
-        //! Copy assignment
-        ScaleCoordinates &operator=(const ScaleCoordinates &other);
-        //! Move constructor
-        ScaleCoordinates(ScaleCoordinates &&other) noexcept;
-        //! Move assignment
-        ScaleCoordinates &operator=(ScaleCoordinates &&other) noexcept;
+    //! Copy constructor
+    ScaleCoordinates(const ScaleCoordinates& other);
+    //! Copy assignment
+    ScaleCoordinates& operator=(const ScaleCoordinates& other);
+    //! Move constructor
+    ScaleCoordinates(ScaleCoordinates&& other) noexcept;
+    //! Move assignment
+    ScaleCoordinates& operator=(ScaleCoordinates&& other) noexcept;
 
-        /*! \brief Perform a coordinate transformation on input coordinates.
-         * \param[in] coordinates to be transformed
-         */
-        void operator()(ArrayRef<RVec> coordinates) const;
-        /*! \brief Apply the inverse scale to coordinates, ignoring dimensions for which scale is zero.
-         * \param[in] coordinates to be transformed
-         */
-        void inverseIgnoringZeroScale(ArrayRef<RVec> coordinates) const;
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+    /*! \brief Perform a coordinate transformation on input coordinates.
+     * \param[in] coordinates to be transformed
+     */
+    void operator()(ArrayRef<RVec> coordinates) const;
+    /*! \brief Apply the inverse scale to coordinates, ignoring dimensions for which scale is zero.
+     * \param[in] coordinates to be transformed
+     */
+    void inverseIgnoringZeroScale(ArrayRef<RVec> coordinates) const;
+
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \libinternal \brief Transform coordinates in three dimensions by first
@@ -84,38 +85,37 @@ class ScaleCoordinates
  */
 class TranslateAndScale
 {
-    public:
+public:
+    /*! \brief Construct a three-dimensional coordinate transformation.
+     * Coordinates are first translated, then scaled.
+     * \param[in] translation to be performed on the coordinates
+     * \param[in] scale to be applied to the coordinates
+     */
+    TranslateAndScale(const RVec& scale, const RVec& translation);
 
-        /*! \brief Construct a three-dimensional coordinate transformation.
-         * Coordinates are first translated, then scaled.
-         * \param[in] translation to be performed on the coordinates
-         * \param[in] scale to be applied to the coordinates
-         */
-        TranslateAndScale(const RVec &scale, const RVec &translation);
+    ~TranslateAndScale();
 
-        ~TranslateAndScale();
+    //! Copy constructor
+    TranslateAndScale(const TranslateAndScale& other);
+    //! Copy assignment
+    TranslateAndScale& operator=(const TranslateAndScale& other);
+    //! Move constructor
+    TranslateAndScale(TranslateAndScale&& other) noexcept;
+    //! Move assignment
+    TranslateAndScale& operator=(TranslateAndScale&& other) noexcept;
 
-        //! Copy constructor
-        TranslateAndScale(const TranslateAndScale &other);
-        //! Copy assignment
-        TranslateAndScale &operator=(const TranslateAndScale &other);
-        //! Move constructor
-        TranslateAndScale(TranslateAndScale &&other) noexcept;
-        //! Move assignment
-        TranslateAndScale &operator=(TranslateAndScale &&other) noexcept;
+    /*! \brief Perform a coordinate transformation on input coordinates.
+     * \param[in] coordinates to be transformed
+     */
+    void operator()(ArrayRef<RVec> coordinates) const;
 
-        /*! \brief Perform a coordinate transformation on input coordinates.
-         * \param[in] coordinates to be transformed
-         */
-        void operator()(ArrayRef<RVec> coordinates) const;
+    /*! \brief Returns the scaling operation, discarding the translation.
+     */
+    ScaleCoordinates scaleOperationOnly() const;
 
-        /*! \brief Returns the scaling operation, discarding the translation.
-         */
-        ScaleCoordinates scaleOperationOnly() const;
-
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
-}      // namespace gmx
+} // namespace gmx
 #endif // CoordinateTransformation

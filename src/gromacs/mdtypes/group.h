@@ -44,82 +44,87 @@
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/smalloc.h"
 
-struct t_grp_tcstat{
+struct t_grp_tcstat
+{
     //! Temperature at half step
-    real    Th             = 0;
+    real Th = 0;
     //! Temperature at full step
-    real    T              = 0;
+    real T = 0;
     //! Kinetic energy at half step
-    tensor  ekinh          = {{0}};
+    tensor ekinh = { { 0 } };
     //! Kinetic energy at old half step
-    tensor  ekinh_old      = {{0}};
+    tensor ekinh_old = { { 0 } };
     //! Kinetic energy at full step
-    tensor  ekinf          = {{0}};
+    tensor ekinf = { { 0 } };
     //! Berendsen coupling lambda
-    real    lambda         = 0;
+    real lambda = 0;
     //! Scaling factor for NHC- full step
-    double  ekinscalef_nhc = 0;
+    double ekinscalef_nhc = 0;
     //! Scaling factor for NHC- half step
-    double  ekinscaleh_nhc = 0;
+    double ekinscaleh_nhc = 0;
     //! Scaling factor for NHC- velocity
-    double  vscale_nhc     = 0;
+    double vscale_nhc = 0;
 };
 
-struct t_grp_acc {
+struct t_grp_acc
+{
     //! Number of atoms in this group
-    int     nat = 0;
+    int nat = 0;
     //! Mean velocities of home particles
-    rvec    u = { 0 };
+    rvec u = { 0 };
     //! Previous mean velocities of home particles
-    rvec    uold = { 0 };
+    rvec uold = { 0 };
     //! Mass for topology A
-    double  mA = 0;
+    double mA = 0;
     //! Mass for topology B
-    double  mB = 0;
+    double mB = 0;
 };
 
-struct t_cos_acc{
+struct t_cos_acc
+{
     //! The acceleration for the cosine profile
-    real    cos_accel = 0;
+    real cos_accel = 0;
     //! The cos momenta of home particles
-    real    mvcos = 0;
+    real mvcos = 0;
     //! The velocity of the cosine profile
-    real    vcos = 0;
+    real vcos = 0;
 };
 
-struct gmx_ekindata_t {
+struct gmx_ekindata_t
+{
     //! Whether non-equilibrium MD is active (ie. constant or cosine acceleration)
-    gmx_bool                  bNEMD;
+    gmx_bool bNEMD;
     //! The number of T-coupling groups
-    int                       ngtc = 0;
+    int ngtc = 0;
     //! For size of ekin_work
-    int                       nthreads = 0;
+    int nthreads = 0;
     //! T-coupling data
     std::vector<t_grp_tcstat> tcstat;
     //! Allocated locations for *_work members
-    tensor                  **ekin_work_alloc = nullptr;
+    tensor** ekin_work_alloc = nullptr;
     //! Work arrays for tcstat per thread
-    tensor                  **ekin_work = nullptr;
+    tensor** ekin_work = nullptr;
     //! Work location for dekindl per thread
-    real                    **dekindl_work = nullptr;
+    real** dekindl_work = nullptr;
     //! The number of acceleration groups
-    int                       ngacc = 0;
+    int ngacc = 0;
     //! Acceleration data
-    std::vector<t_grp_acc>    grpstat;
+    std::vector<t_grp_acc> grpstat;
     //! overall kinetic energy
-    tensor                    ekin = {{ 0 }};
+    tensor ekin = { { 0 } };
     //! overall 1/2 step kinetic energy
-    tensor                    ekinh = {{ 0 }};
+    tensor ekinh = { { 0 } };
     //! dEkin/dlambda at half step
-    real                      dekindl = 0;
+    real dekindl = 0;
     //! dEkin/dlambda at old half step
-    real                      dekindl_old = 0;
+    real dekindl_old = 0;
     //! Cosine acceleration data
-    t_cos_acc                 cosacc;
+    t_cos_acc cosacc;
 
     ~gmx_ekindata_t();
 };
 
-#define GID(igid, jgid, gnr) (((igid) < (jgid)) ? ((igid)*(gnr)+(jgid)) : ((jgid)*(gnr)+(igid)))
+#define GID(igid, jgid, gnr) \
+    (((igid) < (jgid)) ? ((igid) * (gnr) + (jgid)) : ((jgid) * (gnr) + (igid)))
 
 #endif

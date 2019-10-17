@@ -68,27 +68,26 @@ namespace test
 
 #if GMX_GPU == GMX_GPU_CUDA
 
-void integrateLeapFrogGpu(LeapFrogTestData *testData,
-                          int               numSteps)
+void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
 {
-    int     numAtoms = testData->numAtoms_;
+    int numAtoms = testData->numAtoms_;
 
-    float3 *h_x  = reinterpret_cast<float3*>(testData->x_.data());
-    float3 *h_xp = reinterpret_cast<float3*>(testData->xPrime_.data());
-    float3 *h_v  = reinterpret_cast<float3*>(testData->v_.data());
-    float3 *h_f  = reinterpret_cast<float3*>(testData->f_.data());
+    float3* h_x  = reinterpret_cast<float3*>(testData->x_.data());
+    float3* h_xp = reinterpret_cast<float3*>(testData->xPrime_.data());
+    float3* h_v  = reinterpret_cast<float3*>(testData->v_.data());
+    float3* h_f  = reinterpret_cast<float3*>(testData->f_.data());
 
     float3 *d_x, *d_xp, *d_v, *d_f;
 
-    allocateDeviceBuffer(&d_x,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_x, numAtoms, nullptr);
     allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v,  numAtoms, nullptr);
-    allocateDeviceBuffer(&d_f,  numAtoms, nullptr);
+    allocateDeviceBuffer(&d_v, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_f, numAtoms, nullptr);
 
-    copyToDeviceBuffer(&d_x,  h_x,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_x, h_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&d_xp, h_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_v,  h_v,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyToDeviceBuffer(&d_f,  h_f,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
 
     auto integrator = std::make_unique<LeapFrogCuda>(nullptr);
 
@@ -98,14 +97,16 @@ void integrateLeapFrogGpu(LeapFrogTestData *testData,
     for (int step = 0; step < numSteps; step++)
     {
         // This follows the logic of the CPU-based implementation
-        bool doPressureCouple = testData->doPressureCouple_ && do_per_step(step + testData->inputRecord_.nstpcouple - 1, testData->inputRecord_.nstpcouple);
-        integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_,
-                              doTempCouple, testData->kineticEnergyData_.tcstat,
-                              doPressureCouple, testData->dtPressureCouple_, testData->velocityScalingMatrix_);
+        bool doPressureCouple = testData->doPressureCouple_
+                                && do_per_step(step + testData->inputRecord_.nstpcouple - 1,
+                                               testData->inputRecord_.nstpcouple);
+        integrator->integrate(d_x, d_xp, d_v, d_f, testData->timestep_, doTempCouple,
+                              testData->kineticEnergyData_.tcstat, doPressureCouple,
+                              testData->dtPressureCouple_, testData->velocityScalingMatrix_);
     }
 
     copyFromDeviceBuffer(h_xp, &d_x, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
-    copyFromDeviceBuffer(h_v,  &d_v,  0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
+    copyFromDeviceBuffer(h_v, &d_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
 
     freeDeviceBuffer(&d_x);
     freeDeviceBuffer(&d_xp);
@@ -115,5 +116,5 @@ void integrateLeapFrogGpu(LeapFrogTestData *testData,
 
 #endif // GMX_GPU == GMX_GPU_CUDA
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx

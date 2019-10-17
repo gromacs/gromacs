@@ -68,12 +68,12 @@ namespace gmxapi
  */
 class Signal::SignalImpl
 {
-    public:
-        //! Required functor behavior.
-        virtual void call()   = 0;
+public:
+    //! Required functor behavior.
+    virtual void call() = 0;
 
-        //! May be subclassed.
-        virtual ~SignalImpl() = default;
+    //! May be subclassed.
+    virtual ~SignalImpl() = default;
 };
 
 /*!
@@ -82,16 +82,14 @@ class Signal::SignalImpl
  * Manages signals for a single gmx::Mdrunner. Currently only supports a stop signal that
  * is required to be issued by all registered possible issuers before the signal is sent to
  * the associated runner. This is not what we want in the long run.
- * \todo This class should handle signal inputs to operations that take signals as input (like Mdrunner)
- * and
- * \todo should allow multiple subscribers.
- * For additional signal processing, such as boolean operations,
- * additional operations should be inserted in a chain.
+ * \todo This class should handle signal inputs to operations that take signals as input (like
+ * Mdrunner) and \todo should allow multiple subscribers. For additional signal processing, such as
+ * boolean operations, additional operations should be inserted in a chain.
  *
  * SignalManager objects are created during Session launch and are owned exclusively by session
  * implementation objects. If Session::isOpen() is true, the SignalManager should still be valid,
- * but the intended use case is that SignalManager handles should be retrieved immediately before use
- * by implementation code within the library with SessionImpl::getSignalManager().
+ * but the intended use case is that SignalManager handles should be retrieved immediately before
+ * use by implementation code within the library with SessionImpl::getSignalManager().
  *
  * A SignalManager should be created for each signal consumer (each gmx::Mdrunner) in a Session.
  * This occurs in the SessionImpl::create() function.
@@ -100,71 +98,69 @@ class Signal::SignalImpl
  */
 class SignalManager
 {
-    public:
-        /*!
-         * \brief Set up a manager to mediate access to an upcoming MD stop handler.
-         *
-         * \param mdStopHandlerBuilder access to a builder that can be used during construction.
-         */
-        explicit SignalManager(gmx::StopHandlerBuilder* mdStopHandlerBuilder);
+public:
+    /*!
+     * \brief Set up a manager to mediate access to an upcoming MD stop handler.
+     *
+     * \param mdStopHandlerBuilder access to a builder that can be used during construction.
+     */
+    explicit SignalManager(gmx::StopHandlerBuilder* mdStopHandlerBuilder);
 
-        //! \cond
-        ~SignalManager();
-        //! \endcond
+    //! \cond
+    ~SignalManager();
+    //! \endcond
 
-        /*!
-         * \brief Add a name to the list of operations that will be using this signal.
-         */
-        void addSignaller(std::string name);
+    /*!
+     * \brief Add a name to the list of operations that will be using this signal.
+     */
+    void addSignaller(const std::string& name);
 
-        /*!
-         * \brief Allow a registered signaller to retrieve a functor.
-         *
-         * \param name Registered signal issuer.
-         * \param signal type of signal the client would like to issue.
-         * \return Generic Signal object.
-         *
-         * \throws gmxapi::ProtocolError if named signaller was not previously registered.
-         */
-        Signal getSignal(std::string name,
-                         md::signals signal);
+    /*!
+     * \brief Allow a registered signaller to retrieve a functor.
+     *
+     * \param name Registered signal issuer.
+     * \param signal type of signal the client would like to issue.
+     * \return Generic Signal object.
+     *
+     * \throws gmxapi::ProtocolError if named signaller was not previously registered.
+     */
+    Signal getSignal(const std::string& name, md::signals signal);
 
-        /*!
-         * \brief Signal operation that issues only when all sources have issued.
-         *
-         * Implemented as a member class that can access SignalManager's private members.
-         * \todo Decouple logical operations from SignalManager class definition.
-         */
-        class LogicalAND;
+    /*!
+     * \brief Signal operation that issues only when all sources have issued.
+     *
+     * Implemented as a member class that can access SignalManager's private members.
+     * \todo Decouple logical operations from SignalManager class definition.
+     */
+    class LogicalAND;
 
-    private:
-        //! Non-owning handle to the associated runner.
-        gmx::Mdrunner* runner_;
+private:
+    //! Non-owning handle to the associated runner.
+    gmx::Mdrunner* runner_;
 
 
-        /*!
-         * \brief State of the stop condition to be returned by the registered MD signaller.
-         *
-         * Ownership is shared by the function objects in the StopConditionHandler
-         * (owned by the simulator), which read the value, and the
-         * SessionImpl SignalManager, which mediates write access.
-         *
-         * The signal state is either gmx::StopSignal::noSignal or gmx::StopSignal::stopAtNextNSStep,
-         * so atomicity is not important, and we share the state across
-         * threads in a tMPI simulation.
-         */
-        std::shared_ptr<gmx::StopSignal> state_;
+    /*!
+     * \brief State of the stop condition to be returned by the registered MD signaller.
+     *
+     * Ownership is shared by the function objects in the StopConditionHandler
+     * (owned by the simulator), which read the value, and the
+     * SessionImpl SignalManager, which mediates write access.
+     *
+     * The signal state is either gmx::StopSignal::noSignal or gmx::StopSignal::stopAtNextNSStep,
+     * so atomicity is not important, and we share the state across
+     * threads in a tMPI simulation.
+     */
+    std::shared_ptr<gmx::StopSignal> state_;
 
-        /*!
-         * \brief Track whether the signal has been issued by each registrant.
-         *
-         * \todo This is an implementation detail of LogicalAND that should not be here.
-         */
-        std::map<std::string, std::atomic_bool> called_;
+    /*!
+     * \brief Track whether the signal has been issued by each registrant.
+     *
+     * \todo This is an implementation detail of LogicalAND that should not be here.
+     */
+    std::map<std::string, std::atomic_bool> called_;
 };
 
 
+} // end namespace gmxapi
 
-}      //end namespace gmxapi
-
-#endif //GMXAPI_MDSIGNALS_IMPL_H
+#endif // GMXAPI_MDSIGNALS_IMPL_H

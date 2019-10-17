@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -86,7 +86,9 @@ namespace gmx
  */
 enum class StopSignal
 {
-    noSignal = 0, stopAtNextNSStep = 1, stopImmediately = -1
+    noSignal         = 0,
+    stopAtNextNSStep = 1,
+    stopImmediately  = -1
 };
 
 /*! \brief Convert signed char (as used by SimulationSignal) to StopSignal enum
@@ -106,7 +108,7 @@ static inline StopSignal convertToStopSignal(signed char sig)
     {
         return StopSignal::stopAtNextNSStep;
     }
-    else  // sig == 0
+    else // sig == 0
     {
         return StopSignal::noSignal;
     }
@@ -123,66 +125,65 @@ static inline StopSignal convertToStopSignal(signed char sig)
  */
 class StopHandler final
 {
-    public:
-        /*! \brief StopHandler constructor (will be called by StopHandlerBuilder)
-         *
-         * @param signal Non-null pointer to a signal used for reading and writing of signals
-         * @param simulationShareState Whether this signal needs to be shared across multiple simulations
-         * @param stopConditions Vector of callback functions setting the signal
-         * @param neverUpdateNeighborList Whether simulation keeps same neighbor list forever
-         *
-         * Note: As the StopHandler does not work without this signal, it keeps a non-const reference
-         * to it as a member variable.
-         */
-        StopHandler(
-            compat::not_null<SimulationSignal*>        signal,
-            bool                                       simulationShareState,
-            std::vector< std::function<StopSignal()> > stopConditions,
-            bool                                       neverUpdateNeighborList);
+public:
+    /*! \brief StopHandler constructor (will be called by StopHandlerBuilder)
+     *
+     * @param signal Non-null pointer to a signal used for reading and writing of signals
+     * @param simulationShareState Whether this signal needs to be shared across multiple simulations
+     * @param stopConditions Vector of callback functions setting the signal
+     * @param neverUpdateNeighborList Whether simulation keeps same neighbor list forever
+     *
+     * Note: As the StopHandler does not work without this signal, it keeps a non-const reference
+     * to it as a member variable.
+     */
+    StopHandler(compat::not_null<SimulationSignal*>      signal,
+                bool                                     simulationShareState,
+                std::vector<std::function<StopSignal()>> stopConditions,
+                bool                                     neverUpdateNeighborList);
 
-        /*! \brief Decides whether a stop signal shall be sent
-         *
-         * Loops over the stopCondition vector passed at build time (consisting of conditions
-         * registered with StopHandlerBuilder, and conditions built by StopHandlerBuilder by
-         * default), and sets any signal obtained.
-         * Returns as soon as a StopSignal::stopImmediately signal was obtained, or after
-         * checking all registered stop conditions.
-         */
-        void setSignal() const
+    /*! \brief Decides whether a stop signal shall be sent
+     *
+     * Loops over the stopCondition vector passed at build time (consisting of conditions
+     * registered with StopHandlerBuilder, and conditions built by StopHandlerBuilder by
+     * default), and sets any signal obtained.
+     * Returns as soon as a StopSignal::stopImmediately signal was obtained, or after
+     * checking all registered stop conditions.
+     */
+    void setSignal() const
+    {
+        for (auto& condition : stopConditions_)
         {
-            for (auto &condition : stopConditions_)
+            const StopSignal sig = condition();
+            if (sig != StopSignal::noSignal)
             {
-                const StopSignal sig = condition();
-                if (sig != StopSignal::noSignal)
+                signal_.sig = static_cast<signed char>(sig);
+                if (sig == StopSignal::stopImmediately)
                 {
-                    signal_.sig = static_cast<signed char>(sig);
-                    if (sig == StopSignal::stopImmediately)
-                    {
-                        // We don't want this to be overwritten by a less urgent stop
-                        break;
-                    }
+                    // We don't want this to be overwritten by a less urgent stop
+                    break;
                 }
             }
         }
+    }
 
-        /*! \brief Decides whether the simulation shall be stopped after the current step
-         *
-         * The simulation is stopped after the current step if
-         *   * the signal for immediate stop was received, or
-         *   * the signal for stop at the next neighbor-searching step was received, and
-         *     the current step is a neighbor-searching step.
-         */
-        bool stoppingAfterCurrentStep(bool bNS) const
-        {
-            return convertToStopSignal(signal_.set) == StopSignal::stopImmediately ||
-                   (convertToStopSignal(signal_.set) == StopSignal::stopAtNextNSStep &&
-                    (bNS || neverUpdateNeighborlist_));
-        }
+    /*! \brief Decides whether the simulation shall be stopped after the current step
+     *
+     * The simulation is stopped after the current step if
+     *   * the signal for immediate stop was received, or
+     *   * the signal for stop at the next neighbor-searching step was received, and
+     *     the current step is a neighbor-searching step.
+     */
+    bool stoppingAfterCurrentStep(bool bNS) const
+    {
+        return convertToStopSignal(signal_.set) == StopSignal::stopImmediately
+               || (convertToStopSignal(signal_.set) == StopSignal::stopAtNextNSStep
+                   && (bNS || neverUpdateNeighborlist_));
+    }
 
-    private:
-        SimulationSignal &signal_;
-        const             std::vector< std::function<StopSignal()> > stopConditions_;
-        const bool        neverUpdateNeighborlist_;
+private:
+    SimulationSignal&                              signal_;
+    const std::vector<std::function<StopSignal()>> stopConditions_;
+    const bool                                     neverUpdateNeighborlist_;
 };
 
 /*! \libinternal
@@ -192,28 +193,24 @@ class StopHandler final
  */
 class StopConditionSignal final
 {
-    public:
-        /*! \brief StopConditionSignal constructor
-         */
-        StopConditionSignal(
-            int  nstList,
-            bool makeBinaryReproducibleSimulation,
-            int  nstSignalComm);
+public:
+    /*! \brief StopConditionSignal constructor
+     */
+    StopConditionSignal(int nstList, bool makeBinaryReproducibleSimulation, int nstSignalComm);
 
-        /*! \brief Decides whether a stopping signal needs to be set
-         *
-         * Stop signal is set based on the value of gmx_get_stop_condition(): Set signal for
-         * stop at the next neighbor-searching step at first SIGINT / SIGTERM, set signal
-         * for stop at the next step at second SIGINT / SIGTERM.
-         */
-        StopSignal getSignal(FILE *fplog);
+    /*! \brief Decides whether a stopping signal needs to be set
+     *
+     * Stop signal is set based on the value of gmx_get_stop_condition(): Set signal for
+     * stop at the next neighbor-searching step at first SIGINT / SIGTERM, set signal
+     * for stop at the next step at second SIGINT / SIGTERM.
+     */
+    StopSignal getSignal(FILE* fplog);
 
-    private:
-        int        handledStopCondition_;
-        const bool makeBinaryReproducibleSimulation_;
-        const int  nstSignalComm_;
-        const int  nstList_;
-
+private:
+    int        handledStopCondition_;
+    const bool makeBinaryReproducibleSimulation_;
+    const int  nstSignalComm_;
+    const int  nstList_;
 };
 
 /*! \libinternal
@@ -223,32 +220,25 @@ class StopConditionSignal final
  */
 class StopConditionTime final
 {
-    public:
-        /*! \brief StopConditionTime constructor
-         */
-        StopConditionTime(
-            int  nstList,
-            real maximumHoursToRun,
-            int  nstSignalComm);
+public:
+    /*! \brief StopConditionTime constructor
+     */
+    StopConditionTime(int nstList, real maximumHoursToRun, int nstSignalComm);
 
-        /*! \brief Decides whether a stopping signal needs to be set
-         *
-         * Stop signal is set if run time is greater than 99% of maximal run time. Signal will
-         * trigger stopping of the simulation at the next neighbor-searching step.
-         */
-        StopSignal getSignal(
-            bool                     bNS,
-            int64_t                  step,
-            FILE                    *fplog,
-            gmx_walltime_accounting *walltime_accounting);
+    /*! \brief Decides whether a stopping signal needs to be set
+     *
+     * Stop signal is set if run time is greater than 99% of maximal run time. Signal will
+     * trigger stopping of the simulation at the next neighbor-searching step.
+     */
+    StopSignal getSignal(bool bNS, int64_t step, FILE* fplog, gmx_walltime_accounting* walltime_accounting);
 
-    private:
-        bool       signalSent_;
+private:
+    bool signalSent_;
 
-        const real maximumHoursToRun_;
-        const int  nstList_;
-        const int  nstSignalComm_;
-        const bool neverUpdateNeighborlist_;
+    const real maximumHoursToRun_;
+    const int  nstList_;
+    const int  nstSignalComm_;
+    const bool neverUpdateNeighborlist_;
 };
 
 /*! \libinternal
@@ -269,56 +259,55 @@ class StopConditionTime final
  */
 class StopHandlerBuilder final
 {
-    public:
-        /*! \brief Register stop condition
-         *
-         * This allows code in the scope of the StopHandlerBuilder (runner level) to inject
-         * stop conditions in simulations. Stop conditions are defined as argument-less functions
-         * which return a StopSignal. The return value of this function is then propagated to all
-         * ranks, and allows to stop the simulation at the next global communication step (returned
-         * signal StopSignal::stopImmediately), or at the next NS step (returned signal
-         * StopSignal::stopAtNextNSStep, allows for exact continuation).
-         *
-         * Arguments needed by the stop condition function need to be bound / captured. If these
-         * arguments are captured by reference or using a pointer, it is the registrant's
-         * responsibility to ensure that these arguments do not go out of scope during the lifetime
-         * of the StopHandlerBuilder.
-         */
-        void registerStopCondition(std::function<StopSignal()> stopCondition);
+public:
+    /*! \brief Register stop condition
+     *
+     * This allows code in the scope of the StopHandlerBuilder (runner level) to inject
+     * stop conditions in simulations. Stop conditions are defined as argument-less functions
+     * which return a StopSignal. The return value of this function is then propagated to all
+     * ranks, and allows to stop the simulation at the next global communication step (returned
+     * signal StopSignal::stopImmediately), or at the next NS step (returned signal
+     * StopSignal::stopAtNextNSStep, allows for exact continuation).
+     *
+     * Arguments needed by the stop condition function need to be bound / captured. If these
+     * arguments are captured by reference or using a pointer, it is the registrant's
+     * responsibility to ensure that these arguments do not go out of scope during the lifetime
+     * of the StopHandlerBuilder.
+     */
+    void registerStopCondition(std::function<StopSignal()> stopCondition);
 
-        /*! \brief Create StopHandler
-         *
-         * Gets called in the scope of the integrator (aka do_md()) to get a pointer to the
-         * StopHandler for the current simulations. Adds the standard MD stop conditions
-         * (e.g. gmx::StopConditionTime, gmx::StopConditionSignal) to the currently registered
-         * stop conditions. Initializes a new StopHandler with this extended vector of
-         * stop conditions. It is the caller's responsibility to make sure arguments passed by
-         * pointer or reference remain valid for the lifetime of the returned StopHandler.
-         */
-        std::unique_ptr<StopHandler> getStopHandlerMD (
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationShareState,
-            bool                                isMaster,
-            int                                 nstList,
-            bool                                makeBinaryReproducibleSimulation,
-            int                                 nstSignalComm,
-            real                                maximumHoursToRun,
-            bool                                neverUpdateNeighborList,
-            FILE                               *fplog,
-            const int64_t                      &step,
-            const gmx_bool                     &bNS,
-            gmx_walltime_accounting            *walltime_accounting);
+    /*! \brief Create StopHandler
+     *
+     * Gets called in the scope of the integrator (aka do_md()) to get a pointer to the
+     * StopHandler for the current simulations. Adds the standard MD stop conditions
+     * (e.g. gmx::StopConditionTime, gmx::StopConditionSignal) to the currently registered
+     * stop conditions. Initializes a new StopHandler with this extended vector of
+     * stop conditions. It is the caller's responsibility to make sure arguments passed by
+     * pointer or reference remain valid for the lifetime of the returned StopHandler.
+     */
+    std::unique_ptr<StopHandler> getStopHandlerMD(compat::not_null<SimulationSignal*> signal,
+                                                  bool            simulationShareState,
+                                                  bool            isMaster,
+                                                  int             nstList,
+                                                  bool            makeBinaryReproducibleSimulation,
+                                                  int             nstSignalComm,
+                                                  real            maximumHoursToRun,
+                                                  bool            neverUpdateNeighborList,
+                                                  FILE*           fplog,
+                                                  const int64_t&  step,
+                                                  const gmx_bool& bNS,
+                                                  gmx_walltime_accounting* walltime_accounting);
 
-    private:
-        /*! \brief Initial stopConditions
-         *
-         * StopConditions registered via registerStopCondition(). getStopHandlerMD will
-         * copy this vector and add additional conditions before passing the new vector
-         * to the built StopHandler object.
-         */
-        std::vector< std::function<StopSignal()> > stopConditions_;
+private:
+    /*! \brief Initial stopConditions
+     *
+     * StopConditions registered via registerStopCondition(). getStopHandlerMD will
+     * copy this vector and add additional conditions before passing the new vector
+     * to the built StopHandler object.
+     */
+    std::vector<std::function<StopSignal()>> stopConditions_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
-#endif //GMX_MDLIB_STOPHANDLER_H
+#endif // GMX_MDLIB_STOPHANDLER_H

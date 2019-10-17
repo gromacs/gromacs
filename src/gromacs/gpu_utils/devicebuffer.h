@@ -51,11 +51,11 @@
 #include "gromacs/utility/smalloc.h" // TODO: this is only for over_alloc_large
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#    include "gromacs/gpu_utils/devicebuffer.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/devicebuffer_ocl.h"
+#    include "gromacs/gpu_utils/devicebuffer_ocl.h"
 #else
-#error "devicebuffer.h included on non-GPU build!"
+#    error "devicebuffer.h included on non-GPU build!"
 #endif
 
 /*! \brief
@@ -75,11 +75,11 @@
  *  \param[in,out] currentMaxNumValues  The pointer to the buffer's capacity.
  *  \param[in]     deviceContext        The buffer's device context.
  */
-template <typename ValueType>
-void reallocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
+template<typename ValueType>
+void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
-                            int                     *currentNumValues,
-                            int                     *currentMaxNumValues,
+                            int*                     currentNumValues,
+                            int*                     currentMaxNumValues,
                             DeviceContext            deviceContext)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");

@@ -106,35 +106,29 @@ TEST_P(NoOptionalOutput, Works)
     prepareTest(GetParam());
 }
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
+INSTANTIATE_TEST_CASE_P(ModuleSupported, SetAtomsSupportedFiles, ::testing::ValuesIn(setAtomsSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported, SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported, AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
+
+INSTANTIATE_TEST_CASE_P(ModuleSupported, SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
 
 INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetAtomsUnSupportedFiles, ::testing::ValuesIn(setAtomsUnSupported));
+                        SetVelocityUnSupportedFiles,
+                        ::testing::ValuesIn(setVelocityUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        AnyOutputSupportedFiles, ::testing::ValuesIn(anySupported));
+INSTANTIATE_TEST_CASE_P(ModuleSupported, SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetVelocitySupportedFiles, ::testing::ValuesIn(setVelocitySupported));
+INSTANTIATE_TEST_CASE_P(ModuleUnSupported, SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetVelocityUnSupportedFiles, ::testing::ValuesIn(setVelocityUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetForceSupportedFiles, ::testing::ValuesIn(setForceSupported));
+INSTANTIATE_TEST_CASE_P(ModuleSupported, SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
 
 INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetForceUnSupportedFiles, ::testing::ValuesIn(setForceUnSupported));
+                        SetPrecisionUnSupportedFiles,
+                        ::testing::ValuesIn(setPrecisionUnSupported));
 
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        SetPrecisionSupportedFiles, ::testing::ValuesIn(setPrecisionSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleUnSupported,
-                        SetPrecisionUnSupportedFiles, ::testing::ValuesIn(setPrecisionUnSupported));
-
-INSTANTIATE_TEST_CASE_P(ModuleSupported,
-                        NoOptionalOutput, ::testing::ValuesIn(anySupported));
+INSTANTIATE_TEST_CASE_P(ModuleSupported, NoOptionalOutput, ::testing::ValuesIn(anySupported));
 } // namespace test
 
 } // namespace gmx

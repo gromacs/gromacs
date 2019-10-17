@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@
    }
    \endcode
  */
-extern FILE    *debug;
+extern FILE* debug;
 /** Whether extra debugging is enabled. */
 extern gmx_bool gmx_debug_at;
 
@@ -74,17 +74,16 @@ extern gmx_bool gmx_debug_at;
  * For command line programs, gmx::CommandLineModuleManager takes care
  * of this if the user requests debugging.
  */
-void gmx_init_debug(int dbglevel, const char *dbgfile);
+void gmx_init_debug(int dbglevel, const char* dbgfile);
 
 /** Returns TRUE when the program was started in debug mode */
 gmx_bool bDebugMode();
 
 /** Sets the log file for printing error messages. */
-void
-gmx_fatal_set_log_file(FILE *fp);
+void gmx_fatal_set_log_file(FILE* fp);
 
 /** Function pointer type for fatal error handler callback. */
-typedef void (*gmx_error_handler_t)(const char *title, const std::string &msg, const char *file, int line);
+typedef void (*gmx_error_handler_t)(const char* title, const std::string& msg, const char* file, int line);
 
 /*! \brief
  * Sets an error handler for gmx_fatal() and other fatal error routines.
@@ -147,10 +146,13 @@ enum ExitType
  * This is used to implement gmx_fatal_collective() (which cannot be declared
  * here, since it would bring with it mdrun-specific dependencies).
  */
-[[noreturn]] void
-gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
-                 gmx_bool bMaster, gmx_bool bFinalize,
-                 const char *fmt, va_list ap);
+[[noreturn]] void gmx_fatal_mpi_va(int         fatal_errno,
+                                   const char* file,
+                                   int         line,
+                                   gmx_bool    bMaster,
+                                   gmx_bool    bFinalize,
+                                   const char* fmt,
+                                   va_list     ap);
 
 /*! \brief
  * Fatal error reporting routine for \Gromacs.
@@ -173,13 +175,13 @@ gmx_fatal_mpi_va(int fatal_errno, const char *file, int line,
    gmx_fatal(FARGS, fmt, ...);
    \endcode
  */
-[[noreturn]] void
-gmx_fatal(int fatal_errno, const char *file, int line, gmx_fmtstr const char *fmt, ...) gmx_format(printf, 4, 5);
+[[noreturn]] void gmx_fatal(int fatal_errno, const char* file, int line, gmx_fmtstr const char* fmt, ...)
+        gmx_format(printf, 4, 5);
 /** Helper macro to pass first three parameters to gmx_fatal(). */
 #define FARGS 0, __FILE__, __LINE__
 
 /** Implementation for gmx_error(). */
-[[noreturn]] void _gmx_error(const char *key, const std::string &msg, const char *file, int line);
+[[noreturn]] void _gmx_error(const char* key, const std::string& msg, const char* file, int line);
 /*! \brief
  * Alternative fatal error routine with canned messages.
  *
@@ -195,14 +197,14 @@ gmx_fatal(int fatal_errno, const char *file, int line, gmx_fmtstr const char *fm
  * recognized strings.
  */
 /*! \{ */
-#define gmx_call(msg)   gmx_error("call", msg)
-#define gmx_comm(msg)   gmx_error("comm", msg)
-#define gmx_file(msg)   gmx_error("file", msg)
-#define gmx_impl(msg)   gmx_error("impl", msg)
+#define gmx_call(msg) gmx_error("call", msg)
+#define gmx_comm(msg) gmx_error("comm", msg)
+#define gmx_file(msg) gmx_error("file", msg)
+#define gmx_impl(msg) gmx_error("impl", msg)
 #define gmx_incons(msg) gmx_error("incons", msg)
-#define gmx_input(msg)  gmx_error("input", msg)
-#define gmx_mem(msg)    gmx_error("mem", msg)
-#define gmx_open(fn)    gmx_error("open", fn)
+#define gmx_input(msg) gmx_error("input", msg)
+#define gmx_mem(msg) gmx_error("mem", msg)
+#define gmx_open(fn) gmx_error("open", fn)
 /*! \} */
 
 /*! \brief
@@ -210,9 +212,7 @@ gmx_fatal(int fatal_errno, const char *file, int line, gmx_fmtstr const char *fm
  *
  * \p warn_str can be NULL.
  */
-void _range_check(int n, int n_min, int n_max, const char *warn_str,
-                  const char *var,
-                  const char *file, int line);
+void _range_check(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line);
 
 /*! \brief
  * Checks that a variable is within a range.
@@ -220,14 +220,15 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * If \p n is not in range [n_min, n_max), a fatal error is raised.
  * \p n_min is inclusive, but \p n_max is not.
  */
-#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
+#define range_check_mesg(n, n_min, n_max, str) \
+    _range_check(n, n_min, n_max, str, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Checks that a variable is within a range.
  *
  * This works as range_check_mesg(), but with a default error message.
  */
-#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
+#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL, #n, __FILE__, __LINE__)
 
 /*! \brief
  * Prints a warning message to stderr.
@@ -236,6 +237,6 @@ void _range_check(int n, int n_min, int n_max, const char *warn_str,
  * The message string should NOT start with "WARNING"
  * and should NOT end with a newline.
  */
-void gmx_warning(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 1, 2);
+void gmx_warning(gmx_fmtstr const char* fmt, ...) gmx_format(printf, 1, 2);
 
 #endif

@@ -40,25 +40,25 @@
 /* Flags to tell the force calculation routines what (not) to do */
 
 /* The state has changed, always set unless TPI is used. */
-#define GMX_FORCE_STATECHANGED (1u<<0u)
+#define GMX_FORCE_STATECHANGED (1u << 0u)
 /* The box might have changed */
-#define GMX_FORCE_DYNAMICBOX   (1u<<1u)
+#define GMX_FORCE_DYNAMICBOX (1u << 1u)
 /* Do neighbor searching */
-#define GMX_FORCE_NS           (1u<<2u)
+#define GMX_FORCE_NS (1u << 2u)
 /* Calculate listed energies/forces (e.g. bonds, restraints, 1-4, FEP non-bonded) */
-#define GMX_FORCE_LISTED       (1u<<4u)
+#define GMX_FORCE_LISTED (1u << 4u)
 /* Calculate non-bonded energies/forces */
-#define GMX_FORCE_NONBONDED    (1u<<6u)
+#define GMX_FORCE_NONBONDED (1u << 6u)
 /* Calculate forces (not only energies) */
-#define GMX_FORCE_FORCES       (1u<<7u)
+#define GMX_FORCE_FORCES (1u << 7u)
 /* Calculate the virial */
-#define GMX_FORCE_VIRIAL       (1u<<8u)
+#define GMX_FORCE_VIRIAL (1u << 8u)
 /* Calculate energies */
-#define GMX_FORCE_ENERGY       (1u<<9u)
+#define GMX_FORCE_ENERGY (1u << 9u)
 /* Calculate dHdl */
-#define GMX_FORCE_DHDL         (1u<<10u)
+#define GMX_FORCE_DHDL (1u << 10u)
 
 /* Normally one want all energy terms and forces */
-#define GMX_FORCE_ALLFORCES    (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
+#define GMX_FORCE_ALLFORCES (GMX_FORCE_LISTED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 
 #endif

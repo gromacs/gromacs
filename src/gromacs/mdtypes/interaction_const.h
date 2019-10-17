@@ -72,7 +72,7 @@ struct switch_consts_t
 
 /* Convenience type for vector with aligned memory */
 template<typename T>
-using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
 /* Force/energy interpolation tables for Ewald long-range corrections
  *
@@ -81,7 +81,7 @@ using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
 struct EwaldCorrectionTables
 {
     // 1/table_spacing, units 1/nm
-    real                scale = 0;
+    real scale = 0;
     // Force table
     AlignedVector<real> tableF;
     // Energy table
@@ -103,7 +103,7 @@ struct EwaldCorrectionTables
  */
 struct interaction_const_t
 {
-    int             cutoff_scheme = ecutsVERLET;
+    int cutoff_scheme = ecutsVERLET;
 
     /* VdW */
     int                    vdwtype          = evdwCUT;
@@ -118,8 +118,8 @@ struct interaction_const_t
     real                   buckinghamBMax   = 0;
 
     /* type of electrostatics */
-    int  eeltype          = eelCUT;
-    int  coulomb_modifier = eintmodNONE;
+    int eeltype          = eelCUT;
+    int coulomb_modifier = eintmodNONE;
 
     /* Coulomb */
     real rcoulomb        = 1;

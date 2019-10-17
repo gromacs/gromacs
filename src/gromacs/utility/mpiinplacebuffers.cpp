@@ -45,7 +45,7 @@
 
 #include "gromacs/utility/smalloc.h"
 
-void done_mpi_in_place_buf(mpi_in_place_buf_t *buf)
+void done_mpi_in_place_buf(mpi_in_place_buf_t* buf)
 {
     if (nullptr != buf)
     {

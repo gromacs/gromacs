@@ -58,8 +58,7 @@
 
 #include "pull_internal.h"
 
-static std::string append_before_extension(const std::string &pathname,
-                                           const std::string &to_append)
+static std::string append_before_extension(const std::string& pathname, const std::string& to_append)
 {
     /* Appends to_append before last '.' in pathname */
     size_t extPos = pathname.find_last_of('.');
@@ -69,21 +68,20 @@ static std::string append_before_extension(const std::string &pathname,
     }
     else
     {
-        return pathname.substr(0, extPos) + to_append +
-               pathname.substr(extPos, std::string::npos);
+        return pathname.substr(0, extPos) + to_append + pathname.substr(extPos, std::string::npos);
     }
 }
 
-static void addToPullxHistory(pull_t *pull)
+static void addToPullxHistory(pull_t* pull)
 {
     GMX_RELEASE_ASSERT(pull->coordForceHistory, "Pull history does not exist.");
     pull->coordForceHistory->numValuesInXSum++;
     for (size_t c = 0; c < pull->coord.size(); c++)
     {
-        const pull_coord_work_t &pcrd        = pull->coord[c];
-        PullCoordinateHistory   &pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
+        const pull_coord_work_t& pcrd        = pull->coord[c];
+        PullCoordinateHistory&   pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
 
-        pcrdHistory.value    += pcrd.spatialData.value;
+        pcrdHistory.value += pcrd.spatialData.value;
         pcrdHistory.valueRef += pcrd.value_ref;
 
         for (int m = 0; m < DIM; m++)
@@ -102,7 +100,7 @@ static void addToPullxHistory(pull_t *pull)
     }
     for (size_t g = 0; g < pull->group.size(); g++)
     {
-        PullGroupHistory &pgrpHistory = pull->coordForceHistory->pullGroupSums[g];
+        PullGroupHistory& pgrpHistory = pull->coordForceHistory->pullGroupSums[g];
         for (int m = 0; m < DIM; m++)
         {
             pgrpHistory.x[m] += pull->group[g].x[m];
@@ -110,31 +108,30 @@ static void addToPullxHistory(pull_t *pull)
     }
 }
 
-static void addToPullfHistory(pull_t *pull)
+static void addToPullfHistory(pull_t* pull)
 {
     GMX_RELEASE_ASSERT(pull->coordForceHistory, "Pull history does not exist.");
     pull->coordForceHistory->numValuesInFSum++;
     for (size_t c = 0; c < pull->coord.size(); c++)
     {
-        const pull_coord_work_t &pcrd        = pull->coord[c];;
-        PullCoordinateHistory   &pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
+        const pull_coord_work_t& pcrd = pull->coord[c];
+
+        PullCoordinateHistory& pcrdHistory = pull->coordForceHistory->pullCoordinateSums[c];
 
         pcrdHistory.scalarForce += pcrd.scalarForce;
     }
 }
 
-static void pullResetHistory(PullHistory *history,
-                             bool         resetXHistory,
-                             bool         resetFHistory)
+static void pullResetHistory(PullHistory* history, bool resetXHistory, bool resetFHistory)
 {
     if (resetXHistory)
     {
         history->numValuesInXSum = 0;
 
-        for (PullCoordinateHistory &pcrdHistory : history->pullCoordinateSums)
+        for (PullCoordinateHistory& pcrdHistory : history->pullCoordinateSums)
         {
-            pcrdHistory.value        = 0;
-            pcrdHistory.valueRef     = 0;
+            pcrdHistory.value    = 0;
+            pcrdHistory.valueRef = 0;
 
             clear_dvec(pcrdHistory.dr01);
             clear_dvec(pcrdHistory.dr23);
@@ -142,7 +139,7 @@ static void pullResetHistory(PullHistory *history,
             clear_dvec(pcrdHistory.dynaX);
         }
 
-        for (PullGroupHistory &pgrpHistory : history->pullGroupSums)
+        for (PullGroupHistory& pgrpHistory : history->pullGroupSums)
         {
             clear_dvec(pgrpHistory.x);
         }
@@ -150,15 +147,14 @@ static void pullResetHistory(PullHistory *history,
     if (resetFHistory)
     {
         history->numValuesInFSum = 0;
-        for (PullCoordinateHistory &pcrdHistory : history->pullCoordinateSums)
+        for (PullCoordinateHistory& pcrdHistory : history->pullCoordinateSums)
         {
             pcrdHistory.scalarForce = 0;
         }
     }
 }
 
-static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec dr,
-                                           const int numValuesInSum)
+static void pull_print_coord_dr_components(FILE* out, const ivec dim, const dvec dr, const int numValuesInSum)
 {
     for (int m = 0; m < DIM; m++)
     {
@@ -169,21 +165,21 @@ static void pull_print_coord_dr_components(FILE *out, const ivec dim, const dvec
     }
 }
 
-template <typename T>
-static void pull_print_coord_dr(FILE                *out,
-                                const pull_params_t &pullParams,
-                                const t_pull_coord  &coordParams,
-                                const T             &pcrdData,
+template<typename T>
+static void pull_print_coord_dr(FILE*                out,
+                                const pull_params_t& pullParams,
+                                const t_pull_coord&  coordParams,
+                                const T&             pcrdData,
                                 double               referenceValue,
                                 const int            numValuesInSum)
 {
     const double unit_factor = pull_conversion_factor_internal2userinput(&coordParams);
 
-    fprintf(out, "\t%g", pcrdData.value*unit_factor/numValuesInSum);
+    fprintf(out, "\t%g", pcrdData.value * unit_factor / numValuesInSum);
 
     if (pullParams.bPrintRefValue && coordParams.eType != epullEXTERNAL)
     {
-        fprintf(out, "\t%g", referenceValue*unit_factor/numValuesInSum);
+        fprintf(out, "\t%g", referenceValue * unit_factor / numValuesInSum);
     }
 
     if (pullParams.bPrintComp)
@@ -200,29 +196,27 @@ static void pull_print_coord_dr(FILE                *out,
     }
 }
 
-static void pull_print_x(FILE *out, pull_t *pull, double t)
+static void pull_print_x(FILE* out, pull_t* pull, double t)
 {
     fprintf(out, "%.4f", t);
 
     for (size_t c = 0; c < pull->coord.size(); c++)
     {
-        const pull_coord_work_t     &pcrd           = pull->coord[c];
+        const pull_coord_work_t&     pcrd           = pull->coord[c];
         int                          numValuesInSum = 1;
-        const PullCoordinateHistory *pcrdHistory    = nullptr;
+        const PullCoordinateHistory* pcrdHistory    = nullptr;
 
         if (pull->bXOutAverage)
         {
             pcrdHistory = &pull->coordForceHistory->pullCoordinateSums[c];
 
             numValuesInSum = pull->coordForceHistory->numValuesInXSum;
-            pull_print_coord_dr(out, pull->params, pcrd.params,
-                                *pcrdHistory, pcrdHistory->valueRef,
+            pull_print_coord_dr(out, pull->params, pcrd.params, *pcrdHistory, pcrdHistory->valueRef,
                                 numValuesInSum);
         }
         else
         {
-            pull_print_coord_dr(out, pull->params, pcrd.params,
-                                pcrd.spatialData, pcrd.value_ref,
+            pull_print_coord_dr(out, pull->params, pcrd.params, pcrd.spatialData, pcrd.value_ref,
                                 numValuesInSum);
         }
 
@@ -254,7 +248,9 @@ static void pull_print_x(FILE *out, pull_t *pull, double t)
                     {
                         if (pull->bXOutAverage)
                         {
-                            fprintf(out, "\t%g", pull->coordForceHistory->pullGroupSums[pcrd.params.group[0]].x[m] / numValuesInSum);
+                            fprintf(out, "\t%g",
+                                    pull->coordForceHistory->pullGroupSums[pcrd.params.group[0]].x[m]
+                                            / numValuesInSum);
                         }
                         else
                         {
@@ -271,7 +267,9 @@ static void pull_print_x(FILE *out, pull_t *pull, double t)
                     {
                         if (pull->bXOutAverage)
                         {
-                            fprintf(out, "\t%g", pull->coordForceHistory->pullGroupSums[pcrd.params.group[g]].x[m] / numValuesInSum);
+                            fprintf(out, "\t%g",
+                                    pull->coordForceHistory->pullGroupSums[pcrd.params.group[g]].x[m]
+                                            / numValuesInSum);
                         }
                         else
                         {
@@ -290,7 +288,7 @@ static void pull_print_x(FILE *out, pull_t *pull, double t)
     }
 }
 
-static void pull_print_f(FILE *out, const pull_t *pull, double t)
+static void pull_print_f(FILE* out, const pull_t* pull, double t)
 {
     fprintf(out, "%.4f", t);
 
@@ -298,12 +296,14 @@ static void pull_print_f(FILE *out, const pull_t *pull, double t)
     {
         for (size_t c = 0; c < pull->coord.size(); c++)
         {
-            fprintf(out, "\t%g", pull->coordForceHistory->pullCoordinateSums[c].scalarForce / pull->coordForceHistory->numValuesInFSum);
+            fprintf(out, "\t%g",
+                    pull->coordForceHistory->pullCoordinateSums[c].scalarForce
+                            / pull->coordForceHistory->numValuesInFSum);
         }
     }
     else
     {
-        for (const pull_coord_work_t &coord : pull->coord)
+        for (const pull_coord_work_t& coord : pull->coord)
         {
             fprintf(out, "\t%g", coord.scalarForce);
         }
@@ -316,9 +316,10 @@ static void pull_print_f(FILE *out, const pull_t *pull, double t)
     }
 }
 
-void pull_print_output(struct pull_t *pull, int64_t step, double time)
+void pull_print_output(struct pull_t* pull, int64_t step, double time)
 {
-    GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0, "pull_print_output called before all external pull potentials have been applied");
+    GMX_ASSERT(pull->numExternalPotentialsStillToBeAppliedThisStep == 0,
+               "pull_print_output called before all external pull potentials have been applied");
 
     if (pull->params.nstxout != 0)
     {
@@ -326,7 +327,8 @@ void pull_print_output(struct pull_t *pull, int64_t step, double time)
          * higher than) what should be in each average output. This can happen when
          * appending to a file from a checkpoint, which would otherwise include the
          * last value twice.*/
-        if (pull->bXOutAverage && !pull->coord.empty() && pull->coordForceHistory->numValuesInXSum < pull->params.nstxout)
+        if (pull->bXOutAverage && !pull->coord.empty()
+            && pull->coordForceHistory->numValuesInXSum < pull->params.nstxout)
         {
             addToPullxHistory(pull);
         }
@@ -342,7 +344,8 @@ void pull_print_output(struct pull_t *pull, int64_t step, double time)
          * higher than) what should be in each average output. This can happen when
          * appending to a file from a checkpoint, which would otherwise include the
          * last value twice.*/
-        if (pull->bFOutAverage && !pull->coord.empty() && pull->coordForceHistory->numValuesInFSum < pull->params.nstfout)
+        if (pull->bFOutAverage && !pull->coord.empty()
+            && pull->coordForceHistory->numValuesInFSum < pull->params.nstfout)
         {
             addToPullfHistory(pull);
         }
@@ -353,13 +356,16 @@ void pull_print_output(struct pull_t *pull, int64_t step, double time)
     }
 }
 
-static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int coord_index, char **setname, int *nsets_ptr)
+static void set_legend_for_coord_components(const pull_coord_work_t* pcrd,
+                                            int                      coord_index,
+                                            char**                   setname,
+                                            int*                     nsets_ptr)
 {
     /*  Loop over the distance vectors and print their components. Each vector is made up of two consecutive groups. */
     for (int g = 0; g < pcrd->params.ngroup; g += 2)
     {
         /* Loop over the components */
-        for (int m  = 0; m < DIM; m++)
+        for (int m = 0; m < DIM; m++)
         {
             if (pcrd->params.dim[m])
             {
@@ -367,8 +373,8 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
 
                 if (g == 0 && pcrd->params.ngroup <= 2)
                 {
-                    /*  For the simplest case we print a simplified legend without group indices, just the cooordinate index
-                        and which dimensional component it is. */
+                    /*  For the simplest case we print a simplified legend without group indices,
+                       just the cooordinate index and which dimensional component it is. */
                     sprintf(legend, "%d d%c", coord_index + 1, 'X' + m);
                 }
                 else
@@ -384,12 +390,13 @@ static void set_legend_for_coord_components(const pull_coord_work_t *pcrd, int c
     }
 }
 
-static FILE *open_pull_out(const char *fn, struct pull_t *pull,
-                           const gmx_output_env_t *oenv,
-                           gmx_bool bCoord,
-                           const bool restartWithAppending)
+static FILE* open_pull_out(const char*             fn,
+                           struct pull_t*          pull,
+                           const gmx_output_env_t* oenv,
+                           gmx_bool                bCoord,
+                           const bool              restartWithAppending)
 {
-    FILE  *fp;
+    FILE*  fp;
     int    nsets, m;
     char **setname, buf[50];
 
@@ -405,13 +412,11 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
             sprintf(buf, "Position (nm%s)", pull->bAngle ? ", deg" : "");
             if (pull->bXOutAverage)
             {
-                xvgr_header(fp, "Pull Average COM",  "Time (ps)", buf,
-                            exvggtXNY, oenv);
+                xvgr_header(fp, "Pull Average COM", "Time (ps)", buf, exvggtXNY, oenv);
             }
             else
             {
-                xvgr_header(fp, "Pull COM",  "Time (ps)", buf,
-                            exvggtXNY, oenv);
+                xvgr_header(fp, "Pull COM", "Time (ps)", buf, exvggtXNY, oenv);
             }
         }
         else
@@ -419,13 +424,11 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
             sprintf(buf, "Force (kJ/mol/nm%s)", pull->bAngle ? ", kJ/mol/rad" : "");
             if (pull->bFOutAverage)
             {
-                xvgr_header(fp, "Pull Average force", "Time (ps)", buf,
-                            exvggtXNY, oenv);
+                xvgr_header(fp, "Pull Average force", "Time (ps)", buf, exvggtXNY, oenv);
             }
             else
             {
-                xvgr_header(fp, "Pull force", "Time (ps)", buf,
-                            exvggtXNY, oenv);
+                xvgr_header(fp, "Pull force", "Time (ps)", buf, exvggtXNY, oenv);
             }
         }
 
@@ -434,7 +437,8 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
          * the group COMs for all the groups (+ ngroups_max*DIM)
          * and the components of the distance vectors can be printed (+ (ngroups_max/2)*DIM).
          */
-        snew(setname, pull->coord.size()*(1 + 1 + c_pullCoordNgroupMax*DIM + c_pullCoordNgroupMax/2*DIM));
+        snew(setname, pull->coord.size()
+                              * (1 + 1 + c_pullCoordNgroupMax * DIM + c_pullCoordNgroupMax / 2 * DIM));
 
         nsets = 0;
         for (size_t c = 0; c < pull->coord.size(); c++)
@@ -446,13 +450,12 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                  */
 
                 /* The pull coord distance */
-                sprintf(buf, "%zu", c+1);
+                sprintf(buf, "%zu", c + 1);
                 setname[nsets] = gmx_strdup(buf);
                 nsets++;
-                if (pull->params.bPrintRefValue &&
-                    pull->coord[c].params.eType != epullEXTERNAL)
+                if (pull->params.bPrintRefValue && pull->coord[c].params.eType != epullEXTERNAL)
                 {
-                    sprintf(buf, "%zu ref", c+1);
+                    sprintf(buf, "%zu ref", c + 1);
                     setname[nsets] = gmx_strdup(buf);
                     nsets++;
                 }
@@ -470,7 +473,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
                         {
                             if (pull->coord[c].params.dim[m])
                             {
-                                sprintf(buf, "%zu g %d %c", c+1, g + 1, 'X'+m);
+                                sprintf(buf, "%zu g %d %c", c + 1, g + 1, 'X' + m);
                                 setname[nsets] = gmx_strdup(buf);
                                 nsets++;
                             }
@@ -481,7 +484,7 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
             else
             {
                 /* For the pull force we always only use one scalar */
-                sprintf(buf, "%zu", c+1);
+                sprintf(buf, "%zu", c + 1);
                 setname[nsets] = gmx_strdup(buf);
                 nsets++;
             }
@@ -500,10 +503,10 @@ static FILE *open_pull_out(const char *fn, struct pull_t *pull,
     return fp;
 }
 
-void init_pull_output_files(pull_t                     *pull,
+void init_pull_output_files(pull_t*                     pull,
                             int                         nfile,
                             const t_filenm              fnm[],
-                            const gmx_output_env_t     *oenv,
+                            const gmx_output_env_t*     oenv,
                             const gmx::StartingBehavior startingBehavior)
 {
     /* Check for px and pf filename collision, if we are writing
@@ -512,52 +515,44 @@ void init_pull_output_files(pull_t                     *pull,
     std::string px_appended, pf_appended;
     try
     {
-        px_filename  = std::string(opt2fn("-px", nfile, fnm));
-        pf_filename  = std::string(opt2fn("-pf", nfile, fnm));
+        px_filename = std::string(opt2fn("-px", nfile, fnm));
+        pf_filename = std::string(opt2fn("-pf", nfile, fnm));
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
     bool restartWithAppending = startingBehavior == gmx::StartingBehavior::RestartWithAppending;
-    if ((pull->params.nstxout != 0) &&
-        (pull->params.nstfout != 0) &&
-        (px_filename == pf_filename))
+    if ((pull->params.nstxout != 0) && (pull->params.nstfout != 0) && (px_filename == pf_filename))
     {
         if (!opt2bSet("-px", nfile, fnm) && !opt2bSet("-pf", nfile, fnm))
         {
             /* We are writing both pull files but neither set directly. */
             try
             {
-                px_appended   = append_before_extension(px_filename, "_pullx");
-                pf_appended   = append_before_extension(pf_filename, "_pullf");
+                px_appended = append_before_extension(px_filename, "_pullx");
+                pf_appended = append_before_extension(pf_filename, "_pullf");
             }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv,
-                                        TRUE, restartWithAppending);
-            pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv,
-                                        FALSE, restartWithAppending);
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+            pull->out_x = open_pull_out(px_appended.c_str(), pull, oenv, TRUE, restartWithAppending);
+            pull->out_f = open_pull_out(pf_appended.c_str(), pull, oenv, FALSE, restartWithAppending);
             return;
         }
         else
         {
             /* If at least one of -px and -pf is set but the filenames are identical: */
-            gmx_fatal(FARGS, "Identical pull_x and pull_f output filenames %s",
-                      px_filename.c_str());
+            gmx_fatal(FARGS, "Identical pull_x and pull_f output filenames %s", px_filename.c_str());
         }
     }
     if (pull->params.nstxout != 0)
     {
-        pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv,
-                                    TRUE, restartWithAppending);
+        pull->out_x = open_pull_out(opt2fn("-px", nfile, fnm), pull, oenv, TRUE, restartWithAppending);
     }
     if (pull->params.nstfout != 0)
     {
-        pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv,
-                                    FALSE, restartWithAppending);
+        pull->out_f = open_pull_out(opt2fn("-pf", nfile, fnm), pull, oenv, FALSE, restartWithAppending);
     }
 }
 
-void initPullHistory(pull_t             *pull,
-                     ObservablesHistory *observablesHistory)
+void initPullHistory(pull_t* pull, ObservablesHistory* observablesHistory)
 {
     GMX_RELEASE_ASSERT(pull, "Need a valid pull object");
 
@@ -569,15 +564,15 @@ void initPullHistory(pull_t             *pull,
     /* If pull->coordForceHistory is already set we are starting from a checkpoint. Do not reset it. */
     if (observablesHistory->pullHistory == nullptr)
     {
-        observablesHistory->pullHistory           = std::make_unique<PullHistory>();
-        pull->coordForceHistory                   = observablesHistory->pullHistory.get();
-        pull->coordForceHistory->numValuesInXSum  = 0;
-        pull->coordForceHistory->numValuesInFSum  = 0;
+        observablesHistory->pullHistory          = std::make_unique<PullHistory>();
+        pull->coordForceHistory                  = observablesHistory->pullHistory.get();
+        pull->coordForceHistory->numValuesInXSum = 0;
+        pull->coordForceHistory->numValuesInFSum = 0;
         pull->coordForceHistory->pullCoordinateSums.resize(pull->coord.size());
         pull->coordForceHistory->pullGroupSums.resize(pull->group.size());
     }
     else
     {
-        pull->coordForceHistory                   = observablesHistory->pullHistory.get();
+        pull->coordForceHistory = observablesHistory->pullHistory.get();
     }
 }

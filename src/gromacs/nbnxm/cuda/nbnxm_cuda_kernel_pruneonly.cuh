@@ -81,10 +81,10 @@
  *     are not split (much), but the rolling chunks are small;
  *   - with large inputs NTHREAD_Z=1 is 2-3% faster (on CC>=5.0)
  */
-#define NTHREAD_Z           (GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY)
-#define THREADS_PER_BLOCK   (c_clSize*c_clSize*NTHREAD_Z)
+#define NTHREAD_Z (GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY)
+#define THREADS_PER_BLOCK (c_clSize * c_clSize * NTHREAD_Z)
 // we want 100% occupancy, so max threads/block
-#define MIN_BLOCKS_PER_MP   (GMX_CUDA_MAX_THREADS_PER_MP/THREADS_PER_BLOCK)
+#define MIN_BLOCKS_PER_MP (GMX_CUDA_MAX_THREADS_PER_MP / THREADS_PER_BLOCK)
 /**@}*/
 
 /*! \brief Nonbonded list pruning kernel.
@@ -101,74 +101,72 @@
  *
  *   Each thread calculates an i-j atom distance..
  */
-template <bool haveFreshList>
-__launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP)
-__global__ void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
-                                        const cu_nbparam_t  nbparam,
-                                        const cu_plist_t    plist,
-                                        int                 numParts,
-                                        int                 part)
+template<bool haveFreshList>
+__launch_bounds__(THREADS_PER_BLOCK, MIN_BLOCKS_PER_MP) __global__
+        void nbnxn_kernel_prune_cuda(const cu_atomdata_t atdat,
+                                     const cu_nbparam_t  nbparam,
+                                     const cu_plist_t    plist,
+                                     int                 numParts,
+                                     int                 part)
 #ifdef FUNCTION_DECLARATION_ONLY
-;     /* Only do function declaration, omit the function body. */
+                ; /* Only do function declaration, omit the function body. */
 
 // Add extern declarations so each translation unit understands that
 // there will be a definition provided.
-extern template
-__global__ void
-nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const cu_nbparam_t,
-                              const cu_plist_t, int, int);
-extern template
-__global__ void
-nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
-                               const cu_plist_t, int, int);
+extern template __global__ void
+nbnxn_kernel_prune_cuda<true>(const cu_atomdata_t, const cu_nbparam_t, const cu_plist_t, int, int);
+extern template __global__ void
+nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu_plist_t, int, int);
 #else
 {
 
     /* convenience variables */
-    const nbnxn_sci_t  *pl_sci      = plist.sci;
-    nbnxn_cj4_t        *pl_cj4      = plist.cj4;
-    const float4       *xq          = atdat.xq;
-    const float3       *shift_vec   = atdat.shift_vec;
+    const nbnxn_sci_t* pl_sci    = plist.sci;
+    nbnxn_cj4_t*       pl_cj4    = plist.cj4;
+    const float4*      xq        = atdat.xq;
+    const float3*      shift_vec = atdat.shift_vec;
 
-    float               rlistOuter_sq = nbparam.rlistOuter_sq;
-    float               rlistInner_sq = nbparam.rlistInner_sq;
+    float rlistOuter_sq = nbparam.rlistOuter_sq;
+    float rlistInner_sq = nbparam.rlistInner_sq;
 
     /* thread/block/warp id-s */
-    unsigned int tidxi  = threadIdx.x;
-    unsigned int tidxj  = threadIdx.y;
-#if NTHREAD_Z == 1
-    unsigned int tidxz  = 0;
-#else
-    unsigned int tidxz  = threadIdx.z;
-#endif
-    unsigned int bidx   = blockIdx.x;
-    unsigned int widx   = (threadIdx.y * c_clSize) / warp_size; /* warp index */
+    unsigned int tidxi = threadIdx.x;
+    unsigned int tidxj = threadIdx.y;
+#    if NTHREAD_Z == 1
+    unsigned int tidxz = 0;
+#    else
+    unsigned int tidxz = threadIdx.z;
+#    endif
+    unsigned int bidx  = blockIdx.x;
+    unsigned int widx  = (threadIdx.y * c_clSize) / warp_size; /* warp index */
 
     /*********************************************************************
      * Set up shared memory pointers.
      * sm_nextSlotPtr should always be updated to point to the "next slot",
      * that is past the last point where data has been stored.
      */
-    extern __shared__  char sm_dynamicShmem[];
-    char                   *sm_nextSlotPtr = sm_dynamicShmem;
-    static_assert(sizeof(char) == 1, "The shared memory offset calculation assumes that char is 1 byte");
+    extern __shared__ char sm_dynamicShmem[];
+    char*                  sm_nextSlotPtr = sm_dynamicShmem;
+    static_assert(sizeof(char) == 1,
+                  "The shared memory offset calculation assumes that char is 1 byte");
 
     /* shmem buffer for i x+q pre-loading */
-    float4 *xib     = (float4 *)sm_nextSlotPtr;
+    float4* xib = (float4*)sm_nextSlotPtr;
     sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xib));
 
     /* shmem buffer for cj, for each warp separately */
-    int *cjs        = (int *)(sm_nextSlotPtr);
+    int* cjs = (int*)(sm_nextSlotPtr);
     /* the cjs buffer's use expects a base pointer offset for pairs of warps in the j-concurrent execution */
-    cjs            += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
+    cjs += tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize;
     sm_nextSlotPtr += (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(*cjs));
     /*********************************************************************/
 
 
-    nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
-    int         sci         = nb_sci.sci;                   /* super-cluster */
-    int         cij4_start  = nb_sci.cj4_ind_start;         /* first ...*/
-    int         cij4_end    = nb_sci.cj4_ind_end;           /* and last index of j clusters */
+    nbnxn_sci_t nb_sci =
+            pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
+    int sci        = nb_sci.sci;           /* super-cluster */
+    int cij4_start = nb_sci.cj4_ind_start; /* first ...*/
+    int cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
     if (tidxz == 0)
     {
@@ -178,8 +176,8 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
 
         /* We don't need q, but using float4 in shmem avoids bank conflicts.
            (but it also wastes L2 bandwidth). */
-        float4 tmp = xq[ai];
-        float4 xi  = tmp + shift_vec[nb_sci.shift];
+        float4 tmp                    = xq[ai];
+        float4 xi                     = tmp + shift_vec[nb_sci.shift];
         xib[tidxj * c_clSize + tidxi] = xi;
     }
     __syncthreads();
@@ -203,7 +201,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
         else
         {
             /* Read the mask from the "warp-pruned" by rlistOuter mask array */
-            imaskFull = plist.imask[j4*c_nbnxnGpuClusterpairSplit + widx];
+            imaskFull = plist.imask[j4 * c_nbnxnGpuClusterpairSplit + widx];
             /* Read the old rolling pruned mask, use as a base for new */
             imaskNew = pl_cj4[j4].imei[widx].imask;
             /* We only need to check pairs with different mask */
@@ -215,25 +213,25 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
             /* Pre-load cj into shared memory on both warps separately */
             if ((tidxj == 0 || tidxj == 4) && tidxi < c_nbnxnGpuJgroupSize)
             {
-                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize/c_splitClSize] = pl_cj4[j4].cj[tidxi];
+                cjs[tidxi + tidxj * c_nbnxnGpuJgroupSize / c_splitClSize] = pl_cj4[j4].cj[tidxi];
             }
             __syncwarp(c_fullWarpMask);
 
-#pragma unroll 4
+#    pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
                 if (imaskCheck & (superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
                     unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
 
-                    int          cj      = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize/c_splitClSize];
-                    int          aj      = cj * c_clSize + tidxj;
+                    int cj = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize / c_splitClSize];
+                    int aj = cj * c_clSize + tidxj;
 
                     /* load j atom data */
-                    float4 tmp  = xq[aj];
-                    float3 xj   = make_float3(tmp.x, tmp.y, tmp.z);
+                    float4 tmp = xq[aj];
+                    float3 xj  = make_float3(tmp.x, tmp.y, tmp.z);
 
-#pragma unroll 8
+#    pragma unroll 8
                     for (int i = 0; i < c_numClPerSupercl; i++)
                     {
                         if (imaskCheck & mask_ji)
@@ -270,7 +268,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t,
             if (haveFreshList)
             {
                 /* copy the list pruned to rlistOuter to a separate buffer */
-                plist.imask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                plist.imask[j4 * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
             }
             /* update the imask with only the pairs up to rlistInner */
             plist.cj4[j4].imei[widx].imask = imaskNew;

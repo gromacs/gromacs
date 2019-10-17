@@ -53,20 +53,18 @@
 namespace gmx
 {
 
-void
-SetStartTime::processFrame(const int /* framenumber */, t_trxframe *input)
+void SetStartTime::processFrame(const int /* framenumber */, t_trxframe* input)
 {
     if (!haveProcessedFirstFrame_)
     {
         setInitialTime(input->time);
     }
 
-    input->time        = input->time + differenceToInitialTime_;
-    input->bTime       = true;
+    input->time  = input->time + differenceToInitialTime_;
+    input->bTime = true;
 }
 
-void
-SetStartTime::setInitialTime(real initialTimeFromFrame)
+void SetStartTime::setInitialTime(real initialTimeFromFrame)
 {
     differenceToInitialTime_ = startTime_ - initialTimeFromFrame;
     haveProcessedFirstFrame_ = true;

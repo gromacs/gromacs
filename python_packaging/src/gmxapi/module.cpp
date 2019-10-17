@@ -75,7 +75,8 @@ code and developer documentation for more details.
  */
 
 // Instantiate the Python module
-PYBIND11_MODULE(_gmxapi, m){
+PYBIND11_MODULE(_gmxapi, m)
+{
     using namespace gmxpy::detail;
     m.doc() = docstring;
 
@@ -87,11 +88,10 @@ PYBIND11_MODULE(_gmxapi, m){
     export_exceptions(m);
 
     // Export core bindings
-    m.def("has_feature",
-          &gmxapi::Version::hasFeature,
+    m.def("has_feature", &gmxapi::Version::hasFeature,
           "Check the gmxapi library for a named feature.");
 
-    py::class_< ::gmxapi::Status > gmx_status(m, "Status", "Holds status for API operations.");
+    py::class_<::gmxapi::Status> gmx_status(m, "Status", "Holds status for API operations.");
 
     // Get bindings exported by the various components.
     export_context(m);

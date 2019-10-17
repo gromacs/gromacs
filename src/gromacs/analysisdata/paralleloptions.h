@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,24 +60,24 @@ namespace gmx
  */
 class AnalysisDataParallelOptions
 {
-    public:
-        //! Constructs options for serial execution.
-        AnalysisDataParallelOptions();
-        /*! \brief
-         * Constructs options for parallel execution with given number of
-         * concurrent frames.
-         *
-         * \param[in] parallelizationFactor
-         *      Number of frames that may be constructed concurrently.
-         *      Must be >= 1.
-         */
-        explicit AnalysisDataParallelOptions(int parallelizationFactor);
+public:
+    //! Constructs options for serial execution.
+    AnalysisDataParallelOptions();
+    /*! \brief
+     * Constructs options for parallel execution with given number of
+     * concurrent frames.
+     *
+     * \param[in] parallelizationFactor
+     *      Number of frames that may be constructed concurrently.
+     *      Must be >= 1.
+     */
+    explicit AnalysisDataParallelOptions(int parallelizationFactor);
 
-        //! Returns the number of frames that may be constructed concurrently.
-        int parallelizationFactor() const { return parallelizationFactor_; }
+    //! Returns the number of frames that may be constructed concurrently.
+    int parallelizationFactor() const { return parallelizationFactor_; }
 
-    private:
-        int                     parallelizationFactor_;
+private:
+    int parallelizationFactor_;
 };
 
 } // namespace gmx

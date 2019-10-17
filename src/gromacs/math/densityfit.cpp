@@ -55,16 +55,16 @@ namespace gmx
 
 class DensitySimilarityMeasureImpl
 {
-    public:
-        virtual ~DensitySimilarityMeasureImpl();
-        //! convenience typedef
-        using density = DensitySimilarityMeasure::density;
-        //! \copydoc DensitySimilarityMeasure::gradient(DensitySimilarityMeasure::density comparedDensity)
-        virtual density gradient(density comparedDensity) = 0;
-        //! \copydoc DensitySimilarityMeasure::similarity(density comparedDensity)
-        virtual real similarity(density comparedDensity) = 0;
-        //! clone to allow copy operations
-        virtual std::unique_ptr<DensitySimilarityMeasureImpl> clone() = 0;
+public:
+    virtual ~DensitySimilarityMeasureImpl();
+    //! convenience typedef
+    using density = DensitySimilarityMeasure::density;
+    //! \copydoc DensitySimilarityMeasure::gradient(DensitySimilarityMeasure::density comparedDensity)
+    virtual density gradient(density comparedDensity) = 0;
+    //! \copydoc DensitySimilarityMeasure::similarity(density comparedDensity)
+    virtual real similarity(density comparedDensity) = 0;
+    //! clone to allow copy operations
+    virtual std::unique_ptr<DensitySimilarityMeasureImpl> clone() = 0;
 };
 DensitySimilarityMeasureImpl::~DensitySimilarityMeasureImpl() = default;
 
@@ -80,33 +80,32 @@ namespace
  */
 class DensitySimilarityInnerProduct final : public DensitySimilarityMeasureImpl
 {
-    public:
-        //! Construct similarity measure by setting the reference density
-        DensitySimilarityInnerProduct(density referenceDensity);
-        //! The gradient for the inner product similarity measure is the reference density divided by the number of voxels
-        density gradient(density comparedDensity) override;
-        //! Clone this
-        std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
-        //! The similarity between reference density and compared density
-        real similarity(density comparedDensity) override;
-    private:
-        //! A view on the reference density
-        const density referenceDensity_;
-        //! Stores the gradient of the similarity measure in memory
-        MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
+public:
+    //! Construct similarity measure by setting the reference density
+    DensitySimilarityInnerProduct(density referenceDensity);
+    //! The gradient for the inner product similarity measure is the reference density divided by the number of voxels
+    density gradient(density comparedDensity) override;
+    //! Clone this
+    std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
+    //! The similarity between reference density and compared density
+    real similarity(density comparedDensity) override;
+
+private:
+    //! A view on the reference density
+    const density referenceDensity_;
+    //! Stores the gradient of the similarity measure in memory
+    MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
 };
 
 DensitySimilarityInnerProduct::DensitySimilarityInnerProduct(density referenceDensity) :
-    referenceDensity_ {referenceDensity },
-gradient_ {
-    referenceDensity.extents()
-}
+    referenceDensity_{ referenceDensity },
+    gradient_{ referenceDensity.extents() }
 {
     const auto numVoxels = gradient_.asConstView().mapping().required_span_size();
     /* the gradient for the inner product measure of fit is constant and does not
      * depend on the compared density, so it is pre-computed here */
     std::transform(begin(referenceDensity_), end(referenceDensity), begin(gradient_),
-                   [numVoxels](float x){return x/numVoxels; });
+                   [numVoxels](float x) { return x / numVoxels; });
 }
 
 real DensitySimilarityInnerProduct::similarity(density comparedDensity)
@@ -144,7 +143,7 @@ real relativeEntropyAtVoxel(real reference, real comparison)
 {
     if ((reference > 0) && (comparison > 0))
     {
-        return reference * (std::log(comparison/reference));
+        return reference * (std::log(comparison / reference));
     }
     return 0.;
 }
@@ -154,7 +153,7 @@ real relativeEntropyGradientAtVoxel(real reference, real comparison)
 {
     if ((reference > 0) && (comparison > 0))
     {
-        return reference/comparison;
+        return reference / comparison;
     }
     return 0.;
 }
@@ -166,25 +165,26 @@ real relativeEntropyGradientAtVoxel(real reference, real comparison)
  */
 class DensitySimilarityRelativeEntropy final : public DensitySimilarityMeasureImpl
 {
-    public:
-        //! Construct similarity measure by setting the reference density
-        DensitySimilarityRelativeEntropy(density referenceDensity);
-        //! The gradient for the relative entropy similarity measure
-        density gradient(density comparedDensity) override;
-        //! Clone this
-        std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
-        //! The similarity between reference density and compared density
-        real similarity(density comparedDensity) override;
-    private:
-        //! A view on the reference density
-        const density referenceDensity_;
-        //! Stores the gradient of the similarity measure in memory
-        MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
+public:
+    //! Construct similarity measure by setting the reference density
+    DensitySimilarityRelativeEntropy(density referenceDensity);
+    //! The gradient for the relative entropy similarity measure
+    density gradient(density comparedDensity) override;
+    //! Clone this
+    std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
+    //! The similarity between reference density and compared density
+    real similarity(density comparedDensity) override;
+
+private:
+    //! A view on the reference density
+    const density referenceDensity_;
+    //! Stores the gradient of the similarity measure in memory
+    MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
 };
 
 DensitySimilarityRelativeEntropy::DensitySimilarityRelativeEntropy(density referenceDensity) :
-    referenceDensity_ {referenceDensity },
-gradient_(referenceDensity.extents())
+    referenceDensity_{ referenceDensity },
+    gradient_(referenceDensity.extents())
 {
 }
 
@@ -220,15 +220,15 @@ std::unique_ptr<DensitySimilarityMeasureImpl> DensitySimilarityRelativeEntropy::
 struct CrossCorrelationEvaluationHelperValues
 {
     //! The mean of the reference density
-    real  meanReference        = 0;
+    real meanReference = 0;
     //! The mean of the compared density
-    real  meanComparison       = 0;
+    real meanComparison = 0;
     //! The sum of the squared reference density voxel values
-    real  referenceSquaredSum  = 0;
+    real referenceSquaredSum = 0;
     //! The sum of the squared compared density voxel values
-    real  comparisonSquaredSum = 0;
+    real comparisonSquaredSum = 0;
     //! The covariance of the refernce and the compared density
-    real  covariance           = 0;
+    real covariance = 0;
 };
 
 /*! \brief Calculate helper values for the cross-correlation.
@@ -238,24 +238,23 @@ struct CrossCorrelationEvaluationHelperValues
  * "Numerically Stable, Single-Pass, Parallel Statistics Algorithms"
  * and implemented in boost's correlation coefficient
  */
-CrossCorrelationEvaluationHelperValues
-evaluateHelperValues(DensitySimilarityMeasure::density reference,
-                     DensitySimilarityMeasure::density compared)
+CrossCorrelationEvaluationHelperValues evaluateHelperValues(DensitySimilarityMeasure::density reference,
+                                                            DensitySimilarityMeasure::density compared)
 {
     CrossCorrelationEvaluationHelperValues helperValues;
 
     index i = 0;
 
-    auto  referenceIterator = begin(reference);
+    auto referenceIterator = begin(reference);
     for (const real comp : compared)
     {
         const real refHelper        = *referenceIterator - helperValues.meanReference;
         const real comparisonHelper = comp - helperValues.meanComparison;
-        helperValues.referenceSquaredSum  += (i * square(refHelper)) / (i + 1);
+        helperValues.referenceSquaredSum += (i * square(refHelper)) / (i + 1);
         helperValues.comparisonSquaredSum += (i * square(comparisonHelper)) / (i + 1);
-        helperValues.covariance           += i * refHelper * comparisonHelper / (i + 1);
-        helperValues.meanReference        += refHelper / (i + 1);
-        helperValues.meanComparison       += comparisonHelper / (i + 1);
+        helperValues.covariance += i * refHelper * comparisonHelper / (i + 1);
+        helperValues.meanReference += refHelper / (i + 1);
+        helperValues.meanComparison += comparisonHelper / (i + 1);
 
         ++referenceIterator;
         ++i;
@@ -267,33 +266,35 @@ evaluateHelperValues(DensitySimilarityMeasure::density reference,
 //! Calculate a single cross correlation gradient entry at a voxel.
 class CrossCorrelationGradientAtVoxel
 {
-    public:
+public:
+    //! Set up the gradident calculation with pre-computed values
+    CrossCorrelationGradientAtVoxel(const CrossCorrelationEvaluationHelperValues& preComputed) :
+        prefactor_(evaluatePrefactor(preComputed.comparisonSquaredSum, preComputed.referenceSquaredSum)),
+        comparisonPrefactor_(preComputed.covariance / preComputed.comparisonSquaredSum),
+        meanReference_(preComputed.meanReference),
+        meanComparison_(preComputed.meanComparison)
+    {
+    }
+    //! Evaluate the cross correlation gradient at a voxel
+    real operator()(real reference, real comparison)
+    {
+        return prefactor_
+               * (reference - meanReference_ - comparisonPrefactor_ * (comparison - meanComparison_));
+    }
 
-        //! Set up the gradident calculation with pre-computed values
-        CrossCorrelationGradientAtVoxel(const CrossCorrelationEvaluationHelperValues &preComputed)
-            : prefactor_(evaluatePrefactor(preComputed.comparisonSquaredSum, preComputed.referenceSquaredSum)),
-              comparisonPrefactor_(preComputed.covariance / preComputed.comparisonSquaredSum),
-              meanReference_(preComputed.meanReference), meanComparison_(preComputed.meanComparison)
-        {
-        }
-        //! Evaluate the cross correlation gradient at a voxel
-        real operator()(real reference, real comparison)
-        {
-            return prefactor_ * (reference - meanReference_ - comparisonPrefactor_ * (comparison-meanComparison_));
-        }
-    private:
-        real evaluatePrefactor(real comparisonSquaredSum, real referenceSquaredSum)
-        {
-            GMX_ASSERT(comparisonSquaredSum > 0,
-                       "Squared sum of comparison values needs to be larger than zero.");
-            GMX_ASSERT(referenceSquaredSum > 0,
-                       "Squared sum of reference values needs to be larger than zero.");
-            return 1.0 / (sqrt(comparisonSquaredSum) * sqrt(referenceSquaredSum));
-        }
-        const real prefactor_;
-        const real comparisonPrefactor_;
-        const real meanReference_;
-        const real meanComparison_;
+private:
+    real evaluatePrefactor(real comparisonSquaredSum, real referenceSquaredSum)
+    {
+        GMX_ASSERT(comparisonSquaredSum > 0,
+                   "Squared sum of comparison values needs to be larger than zero.");
+        GMX_ASSERT(referenceSquaredSum > 0,
+                   "Squared sum of reference values needs to be larger than zero.");
+        return 1.0 / (sqrt(comparisonSquaredSum) * sqrt(referenceSquaredSum));
+    }
+    const real prefactor_;
+    const real comparisonPrefactor_;
+    const real meanReference_;
+    const real meanComparison_;
 };
 
 /*! \internal
@@ -303,25 +304,26 @@ class CrossCorrelationGradientAtVoxel
  */
 class DensitySimilarityCrossCorrelation final : public DensitySimilarityMeasureImpl
 {
-    public:
-        //! Construct similarity measure by setting the reference density
-        DensitySimilarityCrossCorrelation(density referenceDensity);
-        //! The gradient for the cross correlation similarity measure
-        density gradient(density comparedDensity) override;
-        //! Clone this
-        std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
-        //! The similarity between reference density and compared density
-        real similarity(density comparedDensity) override;
+public:
+    //! Construct similarity measure by setting the reference density
+    DensitySimilarityCrossCorrelation(density referenceDensity);
+    //! The gradient for the cross correlation similarity measure
+    density gradient(density comparedDensity) override;
+    //! Clone this
+    std::unique_ptr<DensitySimilarityMeasureImpl> clone() override;
+    //! The similarity between reference density and compared density
+    real similarity(density comparedDensity) override;
 
-    private:
-        //! A view on the reference density
-        const density referenceDensity_;
-        //! Stores the gradient of the similarity measure in memory
-        MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
+private:
+    //! A view on the reference density
+    const density referenceDensity_;
+    //! Stores the gradient of the similarity measure in memory
+    MultiDimArray<std::vector<float>, dynamicExtents3D> gradient_;
 };
 
-DensitySimilarityCrossCorrelation::DensitySimilarityCrossCorrelation(density referenceDensity)
-    : referenceDensity_ { referenceDensity }, gradient_(referenceDensity.extents())
+DensitySimilarityCrossCorrelation::DensitySimilarityCrossCorrelation(density referenceDensity) :
+    referenceDensity_{ referenceDensity },
+    gradient_(referenceDensity.extents())
 {
 }
 
@@ -332,7 +334,8 @@ real DensitySimilarityCrossCorrelation::similarity(density comparedDensity)
         GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
     }
 
-    CrossCorrelationEvaluationHelperValues helperValues = evaluateHelperValues(referenceDensity_, comparedDensity);
+    CrossCorrelationEvaluationHelperValues helperValues =
+            evaluateHelperValues(referenceDensity_, comparedDensity);
 
     if ((helperValues.referenceSquaredSum == 0) || (helperValues.comparisonSquaredSum == 0))
     {
@@ -355,12 +358,11 @@ DensitySimilarityMeasure::density DensitySimilarityCrossCorrelation::gradient(de
         GMX_THROW(RangeError("Reference density and compared density need to have same extents."));
     }
 
-    CrossCorrelationEvaluationHelperValues helperValues = evaluateHelperValues(referenceDensity_, comparedDensity);
+    CrossCorrelationEvaluationHelperValues helperValues =
+            evaluateHelperValues(referenceDensity_, comparedDensity);
 
-    std::transform(begin(referenceDensity_), end(referenceDensity_),
-                   begin(comparedDensity),
-                   begin(gradient_),
-                   CrossCorrelationGradientAtVoxel(helperValues));
+    std::transform(begin(referenceDensity_), end(referenceDensity_), begin(comparedDensity),
+                   begin(gradient_), CrossCorrelationGradientAtVoxel(helperValues));
 
     return gradient_.asConstView();
 }
@@ -371,10 +373,11 @@ std::unique_ptr<DensitySimilarityMeasureImpl> DensitySimilarityCrossCorrelation:
 }
 
 
-}   // namespace
+} // namespace
 
 
-DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasureMethod method, density referenceDensity)
+DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasureMethod method,
+                                                   density                        referenceDensity)
 {
     // chose the implementation depending on the method of density comparison
     // throw an error if the method is not known
@@ -389,8 +392,7 @@ DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasureMetho
         case DensitySimilarityMeasureMethod::crossCorrelation:
             impl_ = std::make_unique<DensitySimilarityCrossCorrelation>(referenceDensity);
             break;
-        default:
-            GMX_THROW(NotImplementedError("Similarity measure not implemented."));
+        default: GMX_THROW(NotImplementedError("Similarity measure not implemented."));
     }
 }
 
@@ -404,21 +406,21 @@ real DensitySimilarityMeasure::similarity(density comparedDensity)
     return impl_->similarity(comparedDensity);
 }
 
-DensitySimilarityMeasure::~DensitySimilarityMeasure()  = default;
+DensitySimilarityMeasure::~DensitySimilarityMeasure() = default;
 
-DensitySimilarityMeasure::DensitySimilarityMeasure(const DensitySimilarityMeasure &other)
-    : impl_(other.impl_->clone())
+DensitySimilarityMeasure::DensitySimilarityMeasure(const DensitySimilarityMeasure& other) :
+    impl_(other.impl_->clone())
 {
 }
 
-DensitySimilarityMeasure &DensitySimilarityMeasure::operator=(const DensitySimilarityMeasure &other)
+DensitySimilarityMeasure& DensitySimilarityMeasure::operator=(const DensitySimilarityMeasure& other)
 {
     impl_ = other.impl_->clone();
     return *this;
 }
 
-DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasure &&) noexcept = default;
+DensitySimilarityMeasure::DensitySimilarityMeasure(DensitySimilarityMeasure&&) noexcept = default;
 
-DensitySimilarityMeasure &DensitySimilarityMeasure::operator=(DensitySimilarityMeasure &&) noexcept = default;
+DensitySimilarityMeasure& DensitySimilarityMeasure::operator=(DensitySimilarityMeasure&&) noexcept = default;
 
 } // namespace gmx

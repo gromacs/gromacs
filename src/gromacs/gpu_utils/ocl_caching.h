@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,8 +69,7 @@ namespace ocl
  *
  * \returns The name of the cache file.
  */
-std::string makeBinaryCacheFilename(const std::string &kernelFilename,
-                                    cl_device_id       deviceId);
+std::string makeBinaryCacheFilename(const std::string& kernelFilename, cl_device_id deviceId);
 
 /*! \brief Check if there's a valid cache available, and return it if so
  *
@@ -83,10 +82,7 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
  * \throws InternalError  if an OpenCL error was encountered
  *         FileIOError    if the file could not be opened
  */
-cl_program
-makeProgramFromCache(const std::string &filename,
-                     cl_context         context,
-                     cl_device_id       deviceId);
+cl_program makeProgramFromCache(const std::string& filename, cl_context context, cl_device_id deviceId);
 
 /*! \brief Implement caching of OpenCL binaries
  *
@@ -96,8 +92,7 @@ makeProgramFromCache(const std::string &filename,
  * \throws InternalError  if an OpenCL error was encountered
  *         FileIOError    if the file could not be opened
  */
-void
-writeBinaryToCache(cl_program program, const std::string &filename);
+void writeBinaryToCache(cl_program program, const std::string& filename);
 
 } // namespace ocl
 } // namespace gmx

@@ -81,28 +81,25 @@
  * \param[in]  r2       Coordinates of the second point.
  * \param[out] dr       Resulting distance.
  */
-template <bool returnShift>
-static __forceinline__ __device__
-int pbcDxAiuc(const PbcAiuc &pbcAiuc,
-              const float4  &r1,
-              const float4  &r2,
-              fvec           dr)
+template<bool returnShift>
+static __forceinline__ __device__ int
+                       pbcDxAiuc(const PbcAiuc& pbcAiuc, const float4& r1, const float4& r2, fvec dr)
 {
     dr[XX] = r1.x - r2.x;
     dr[YY] = r1.y - r2.y;
     dr[ZZ] = r1.z - r2.z;
 
-    float shz  = rintf(dr[ZZ]*pbcAiuc.invBoxDiagZ);
-    dr[XX]    -= shz*pbcAiuc.boxZX;
-    dr[YY]    -= shz*pbcAiuc.boxZY;
-    dr[ZZ]    -= shz*pbcAiuc.boxZZ;
+    float shz = rintf(dr[ZZ] * pbcAiuc.invBoxDiagZ);
+    dr[XX] -= shz * pbcAiuc.boxZX;
+    dr[YY] -= shz * pbcAiuc.boxZY;
+    dr[ZZ] -= shz * pbcAiuc.boxZZ;
 
-    float shy  = rintf(dr[YY]*pbcAiuc.invBoxDiagY);
-    dr[XX]    -= shy*pbcAiuc.boxYX;
-    dr[YY]    -= shy*pbcAiuc.boxYY;
+    float shy = rintf(dr[YY] * pbcAiuc.invBoxDiagY);
+    dr[XX] -= shy * pbcAiuc.boxYX;
+    dr[YY] -= shy * pbcAiuc.boxYY;
 
-    float shx  = rintf(dr[XX]*pbcAiuc.invBoxDiagX);
-    dr[XX]    -= shx*pbcAiuc.boxXX;
+    float shx = rintf(dr[XX] * pbcAiuc.invBoxDiagX);
+    dr[XX] -= shx * pbcAiuc.boxXX;
 
     if (returnShift)
     {
@@ -139,26 +136,25 @@ int pbcDxAiuc(const PbcAiuc &pbcAiuc,
  * \param[in]  r2       Coordinates of the second point.
  * \returns    dr       Resulting distance.
  */
-static __forceinline__ __host__ __device__
-float3 pbcDxAiuc(const PbcAiuc &pbcAiuc,
-                 const float3  &r1,
-                 const float3  &r2)
+static __forceinline__ __host__ __device__ float3 pbcDxAiuc(const PbcAiuc& pbcAiuc,
+                                                            const float3&  r1,
+                                                            const float3&  r2)
 {
     float3 dr = r1 - r2;
 
-    float  shz  = rintf(dr.z*pbcAiuc.invBoxDiagZ);
-    dr.x    -= shz*pbcAiuc.boxZX;
-    dr.y    -= shz*pbcAiuc.boxZY;
-    dr.z    -= shz*pbcAiuc.boxZZ;
+    float shz = rintf(dr.z * pbcAiuc.invBoxDiagZ);
+    dr.x -= shz * pbcAiuc.boxZX;
+    dr.y -= shz * pbcAiuc.boxZY;
+    dr.z -= shz * pbcAiuc.boxZZ;
 
-    float shy  = rintf(dr.y*pbcAiuc.invBoxDiagY);
-    dr.x    -= shy*pbcAiuc.boxYX;
-    dr.y    -= shy*pbcAiuc.boxYY;
+    float shy = rintf(dr.y * pbcAiuc.invBoxDiagY);
+    dr.x -= shy * pbcAiuc.boxYX;
+    dr.y -= shy * pbcAiuc.boxYY;
 
-    float shx  = rintf(dr.x*pbcAiuc.invBoxDiagX);
-    dr.x    -= shx*pbcAiuc.boxXX;
+    float shx = rintf(dr.x * pbcAiuc.invBoxDiagX);
+    dr.x -= shx * pbcAiuc.boxXX;
 
     return dr;
 }
 
-#endif //GMX_PBCUTIL_PBC_AIUC_CUDA_CUH
+#endif // GMX_PBCUTIL_PBC_AIUC_CUDA_CUH

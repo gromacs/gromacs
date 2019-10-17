@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,13 +60,12 @@ static inline CheckpointSignal convertToCheckpointSignal(signed char sig)
     return sig >= 1 ? CheckpointSignal::doCheckpoint : CheckpointSignal::noSignal;
 }
 
-CheckpointHandler::CheckpointHandler(
-        compat::not_null<SimulationSignal*> signal,
-        bool                                simulationsShareState,
-        bool                                neverUpdateNeighborList,
-        bool                                isMaster,
-        bool                                writeFinalCheckpoint,
-        real                                checkpointingPeriod) :
+CheckpointHandler::CheckpointHandler(compat::not_null<SimulationSignal*> signal,
+                                     bool                                simulationsShareState,
+                                     bool                                neverUpdateNeighborList,
+                                     bool                                isMaster,
+                                     bool                                writeFinalCheckpoint,
+                                     real                                checkpointingPeriod) :
     signal_(*signal),
     checkpointThisStep_(false),
     numberOfNextCheckpoint_(1),
@@ -82,25 +81,24 @@ CheckpointHandler::CheckpointHandler(
     }
 }
 
-void CheckpointHandler::setSignalImpl(
-        gmx_walltime_accounting_t walltime_accounting) const
+void CheckpointHandler::setSignalImpl(gmx_walltime_accounting_t walltime_accounting) const
 {
     const double secondsSinceStart = walltime_accounting_get_time_since_start(walltime_accounting);
-    if (convertToCheckpointSignal(signal_.set) == CheckpointSignal::noSignal &&
-        convertToCheckpointSignal(signal_.sig) == CheckpointSignal::noSignal &&
-        (checkpointingPeriod_ == 0 || secondsSinceStart >= numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
+    if (convertToCheckpointSignal(signal_.set) == CheckpointSignal::noSignal
+        && convertToCheckpointSignal(signal_.sig) == CheckpointSignal::noSignal
+        && (checkpointingPeriod_ == 0
+            || secondsSinceStart >= numberOfNextCheckpoint_ * checkpointingPeriod_ * 60.0))
     {
         signal_.sig = static_cast<signed char>(CheckpointSignal::doCheckpoint);
     }
 }
 
-void CheckpointHandler::decideIfCheckpointingThisStepImpl(
-        bool bNS, bool bFirstStep, bool bLastStep)
+void CheckpointHandler::decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep)
 {
-    checkpointThisStep_ = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint &&
-                             (bNS || neverUpdateNeighborlist_)) ||
-                            (bLastStep && writeFinalCheckpoint_)) &&
-                           !bFirstStep);
+    checkpointThisStep_ = (((convertToCheckpointSignal(signal_.set) == CheckpointSignal::doCheckpoint
+                             && (bNS || neverUpdateNeighborlist_))
+                            || (bLastStep && writeFinalCheckpoint_))
+                           && !bFirstStep);
     if (checkpointThisStep_)
     {
         signal_.set = static_cast<signed char>(CheckpointSignal::noSignal);

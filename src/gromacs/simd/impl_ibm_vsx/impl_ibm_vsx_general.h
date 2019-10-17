@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -39,16 +39,15 @@
 namespace gmx
 {
 
-static inline void
-simdPrefetch(const void * m)
+static inline void simdPrefetch(const void* m)
 {
 #if defined(__ibmxl__) || defined(__xlC__)
-    __dcbt((void *)m);
+    __dcbt((void*)m);
 #elif defined __GNUC__
     __builtin_prefetch(m);
 #endif
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPLEMENTATION_IBM_VSX_GENERAL_H

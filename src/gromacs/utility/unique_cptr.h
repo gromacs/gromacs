@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,29 +55,30 @@ namespace gmx
 /*! \brief Wrapper of standard library free(), to be used as
  * unique_cptr deleter for memory allocated by malloc, e.g. by an
  * external library such as TNG. */
-template <class T>
-inline void free_wrapper(T *p)
+template<class T>
+inline void free_wrapper(T* p)
 {
     free(p);
 }
 
 //! sfree wrapper to be used as unique_cptr deleter
-template <class T>
-inline void sfree_wrapper(T *p)
+template<class T>
+inline void sfree_wrapper(T* p)
 {
     sfree(p);
 }
 
 //! \internal \brief wrap function into functor to be used as deleter
-template<class T, void D(T *)>
-struct functor_wrapper {
+template<class T, void D(T*)>
+struct functor_wrapper
+{
     //! call wrapped function
     void operator()(T* t) { D(t); }
 };
 
 //! unique_ptr which takes function pointer (has to return void) as template argument
-template<typename T, void D(T *) = sfree_wrapper>
-using unique_cptr                = std::unique_ptr<T, functor_wrapper<T, D> >;
+template<typename T, void D(T*) = sfree_wrapper>
+using unique_cptr = std::unique_ptr<T, functor_wrapper<T, D>>;
 
 //! Simple guard which calls sfree. See unique_cptr for details.
 typedef unique_cptr<void> sfree_guard;
@@ -85,8 +86,11 @@ typedef unique_cptr<void> sfree_guard;
 
 //! Create unique_ptr with any deleter function or lambda
 template<typename T, typename D>
-std::unique_ptr<T, D> create_unique_with_deleter(T *t, D d) { return std::unique_ptr<T, D>(t, d); }
+std::unique_ptr<T, D> create_unique_with_deleter(T* t, D d)
+{
+    return std::unique_ptr<T, D>(t, d);
+}
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif

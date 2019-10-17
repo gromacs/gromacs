@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,18 +55,17 @@ namespace testing
 
 class ReadTest : public ::testing::Test
 {
-    public:
-        ReadTest() : inputField_ {{(t_inpfile(0, 0, false, false, false, "test", ""))}},
-        wi_()
+public:
+    ReadTest() : inputField_{ { (t_inpfile(0, 0, false, false, false, "test", "")) } }, wi_()
 
-        {
-            wi_ = init_warning(FALSE, 0);
-            wiGuard_.reset(wi_);
-        }
+    {
+        wi_ = init_warning(FALSE, 0);
+        wiGuard_.reset(wi_);
+    }
 
-        std::vector<t_inpfile>                         inputField_;
-        warninp_t                                      wi_;
-        gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
+    std::vector<t_inpfile>                         inputField_;
+    warninp_t                                      wi_;
+    gmx::unique_cptr<struct warninp, free_warning> wiGuard_;
 };
 
 TEST_F(ReadTest, get_eint_ReadsInteger)
@@ -132,5 +131,5 @@ TEST_F(ReadTest, get_ereal_WarnsAboutString)
     ASSERT_TRUE(warning_errors_exist(wi_));
 }
 
-}  // namespace testing
-}  // namespace gmx
+} // namespace testing
+} // namespace gmx

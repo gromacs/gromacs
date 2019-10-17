@@ -55,52 +55,53 @@ namespace
 {
 
 //! Wraps fclose to discard the return value to use it as a deleter with gmx::unique_cptr.
-void fcloseWrapper(FILE *fp)
+void fcloseWrapper(FILE* fp)
 {
     fclose(fp);
 }
 
 class PrEbinTest : public ::testing::Test
 {
-    public:
-        TestFileManager fileManager_;
+public:
+    TestFileManager fileManager_;
 
-        // TODO This will be more elegant (and run faster) when we
-        // refactor the output routines to write to a stream
-        // interface, which can already be handled in-memory when
-        // running tests.
-        std::string logFilename_;
-        FILE       *log_;
-        unique_cptr<FILE, fcloseWrapper> logFileGuard_;
+    // TODO This will be more elegant (and run faster) when we
+    // refactor the output routines to write to a stream
+    // interface, which can already be handled in-memory when
+    // running tests.
+    std::string                      logFilename_;
+    FILE*                            log_;
+    unique_cptr<FILE, fcloseWrapper> logFileGuard_;
 
-        TestReferenceData                refData_;
-        TestReferenceChecker             checker_;
+    TestReferenceData    refData_;
+    TestReferenceChecker checker_;
 
-        PrEbinTest() :
-            logFilename_(fileManager_.getTemporaryFilePath(".log")),
-            log_(std::fopen(logFilename_.c_str(), "w")), logFileGuard_(log_),
-            checker_(refData_.rootChecker())
-        {
-        }
+    PrEbinTest() :
+        logFilename_(fileManager_.getTemporaryFilePath(".log")),
+        log_(std::fopen(logFilename_.c_str(), "w")),
+        logFileGuard_(log_),
+        checker_(refData_.rootChecker())
+    {
+    }
 };
 
 TEST_F(PrEbinTest, HandlesAverages)
 {
     ASSERT_NE(log_, nullptr);
 
-    t_ebin *ebin = mk_ebin();
+    t_ebin*                        ebin = mk_ebin();
     unique_cptr<t_ebin, done_ebin> ebinGuard(ebin);
 
     // Set up the energy entries
-    const char *firstName[]      = {"first"};
-    const char *secondName[]     = {"second"};
-    int         first            = get_ebin_space(ebin, 1, firstName, nullptr);
-    int         second           = get_ebin_space(ebin, 1, secondName, nullptr);
+    const char* firstName[]  = { "first" };
+    const char* secondName[] = { "second" };
+    int         first        = get_ebin_space(ebin, 1, firstName, nullptr);
+    int         second       = get_ebin_space(ebin, 1, secondName, nullptr);
 
     // Put some data into the energy entries
-    const real  timevalues[2][2] = { { 1.0, 20.0}, {2.0, 40.0} };
-    gmx_bool    bSum             = true;
-    for (const auto &values : timevalues)
+    const real timevalues[2][2] = { { 1.0, 20.0 }, { 2.0, 40.0 } };
+    gmx_bool   bSum             = true;
+    for (const auto& values : timevalues)
     {
         add_ebin(ebin, first, 1, &values[0], bSum);
         add_ebin(ebin, second, 1, &values[1], bSum);
@@ -121,12 +122,12 @@ TEST_F(PrEbinTest, HandlesEmptyAverages)
 {
     ASSERT_NE(log_, nullptr);
 
-    t_ebin *ebin = mk_ebin();
+    t_ebin*                        ebin = mk_ebin();
     unique_cptr<t_ebin, done_ebin> ebinGuard(ebin);
 
     // Set up the energy entries
-    const char *firstName[]      = {"first"};
-    const char *secondName[]     = {"second"};
+    const char* firstName[]  = { "first" };
+    const char* secondName[] = { "second" };
     get_ebin_space(ebin, 1, firstName, nullptr);
     get_ebin_space(ebin, 1, secondName, nullptr);
 
@@ -140,6 +141,6 @@ TEST_F(PrEbinTest, HandlesEmptyAverages)
     checker_.checkString(TextReader::readFileToString(logFilename_), "log");
 }
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

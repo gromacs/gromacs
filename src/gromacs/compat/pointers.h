@@ -43,8 +43,8 @@
  * \ingroup module_compat
  * \inlibraryapi
  */
- #ifndef GMX_COMPAT_POINTERS_H
- #define GMX_COMPAT_POINTERS_H
+#ifndef GMX_COMPAT_POINTERS_H
+#define GMX_COMPAT_POINTERS_H
 
 #include <type_traits>
 #include <utility>
@@ -59,14 +59,14 @@ namespace compat
 //! Contract-assurance macros that work like a simple version of the GSL ones
 //! \{
 #if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
-#define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
-#define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
+#    define Expects(cond) GMX_ASSERT((cond), "Precondition violation")
+#    define Ensures(cond) GMX_ASSERT((cond), "Postcondition violation")
 #else
 // icc 18.0.0 in a RelWithAssert build has an ICE, even if we directly
 // embed the contents of GMX_ASSERT, so it seems the lambda in
 // GMX_ASSERT is too complex for it in this use case.
-#define Expects(cond)
-#define Ensures(cond)
+#    define Expects(cond)
+#    define Ensures(cond)
 #endif
 //! \}
 
@@ -85,126 +85,122 @@ namespace compat
  * \todo Eliminate this when we require a version of C++ that supports
  * std::not_null.
  */
-template <class T>
+template<class T>
 class not_null
 {
-    public:
-        static_assert(std::is_assignable<T &, std::nullptr_t>::value, "T cannot be assigned nullptr.");
+public:
+    static_assert(std::is_assignable<T&, std::nullptr_t>::value, "T cannot be assigned nullptr.");
 
-        //! Move constructor. Asserts in debug mode if \c is nullptr.
-        template <typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type >
-        constexpr explicit not_null(U &&u) : ptr_(std::forward<U>(u))
-        {
-            Expects(ptr_ != nullptr);
-        }
+    //! Move constructor. Asserts in debug mode if \c is nullptr.
+    template<typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type>
+    constexpr explicit not_null(U&& u) : ptr_(std::forward<U>(u))
+    {
+        Expects(ptr_ != nullptr);
+    }
 
-        //! Simple constructor. Asserts in debug mode if \c u is nullptr.
-        template <typename = typename std::enable_if<!std::is_same<std::nullptr_t, T>::value>::type >
-        constexpr explicit not_null(T u) : ptr_(u)
-        {
-            Expects(ptr_ != nullptr);
-        }
+    //! Simple constructor. Asserts in debug mode if \c u is nullptr.
+    template<typename = typename std::enable_if<!std::is_same<std::nullptr_t, T>::value>::type>
+    constexpr explicit not_null(T u) : ptr_(u)
+    {
+        Expects(ptr_ != nullptr);
+    }
 
-        //! Copy constructor.
-        template <typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type >
-        constexpr not_null(const not_null<U> &other) : not_null(other.get())
-        {
-        }
+    //! Copy constructor.
+    template<typename U, typename = typename std::enable_if<std::is_convertible<U, T>::value>::type>
+    constexpr not_null(const not_null<U>& other) : not_null(other.get())
+    {
+    }
 
-        //! Default constructors and assignment.
-        //! \{
-        not_null(not_null &&other) noexcept        = default;
-        not_null(const not_null &other)            = default;
-        not_null &operator=(const not_null &other) = default;
-        //! \}
+    //! Default constructors and assignment.
+    //! \{
+    not_null(not_null&& other) noexcept = default;
+    not_null(const not_null& other)     = default;
+    not_null& operator=(const not_null& other) = default;
+    //! \}
 
-        //! Getters
-        //! \{
-        constexpr T get() const
-        {
-            Ensures(ptr_ != nullptr);
-            return ptr_;
-        }
+    //! Getters
+    //! \{
+    constexpr T get() const
+    {
+        Ensures(ptr_ != nullptr);
+        return ptr_;
+    }
 
-        constexpr operator T() const { return get(); }
-        constexpr T operator->() const { return get(); }
-        //! \}
+    constexpr   operator T() const { return get(); }
+    constexpr T operator->() const { return get(); }
+    //! \}
 
-        //! Deleted to prevent compilation when someone attempts to assign a null pointer constant.
-        //! \{
-        not_null(std::nullptr_t)            = delete;
-        not_null &operator=(std::nullptr_t) = delete;
-        //! \}
+    //! Deleted to prevent compilation when someone attempts to assign a null pointer constant.
+    //! \{
+    not_null(std::nullptr_t) = delete;
+    not_null& operator=(std::nullptr_t) = delete;
+    //! \}
 
-        //! Deleted unwanted operators because pointers only point to single objects.
-        //! \{
-        not_null &operator++()                = delete;
-        not_null &operator--()                = delete;
-        not_null operator++(int)              = delete;
-        not_null operator--(int)              = delete;
-        not_null &operator+=(std::ptrdiff_t)  = delete;
-        not_null &operator-=(std::ptrdiff_t)  = delete;
-        void operator[](std::ptrdiff_t) const = delete;
-        //! \}
+    //! Deleted unwanted operators because pointers only point to single objects.
+    //! \{
+    not_null& operator++()                     = delete;
+    not_null& operator--()                     = delete;
+    not_null  operator++(int)                  = delete;
+    not_null  operator--(int)                  = delete;
+    not_null& operator+=(std::ptrdiff_t)       = delete;
+    not_null& operator-=(std::ptrdiff_t)       = delete;
+    void      operator[](std::ptrdiff_t) const = delete;
+    //! \}
 
-    private:
-        T ptr_;
+private:
+    T ptr_;
 };
 
 //! Convenience function for making not_null pointers from plain pointers.
-template <class T>
-not_null<T>
-make_not_null(T &&t)
+template<class T>
+not_null<T> make_not_null(T&& t)
 {
-    return not_null < typename std::remove_cv < typename std::remove_reference<T>::type>::type >{
-               std::forward<T>(t)
+    return not_null<typename std::remove_cv<typename std::remove_reference<T>::type>::type>{
+        std::forward<T>(t)
     };
 }
 
 //! Convenience function for making not_null pointers from smart pointers.
-template <class T>
-not_null<typename T::pointer>
-make_not_null(T &t)
+template<class T>
+not_null<typename T::pointer> make_not_null(T& t)
 {
-    return not_null < typename std::remove_reference<T>::type::pointer >{
-               t.get()
-    };
+    return not_null<typename std::remove_reference<T>::type::pointer>{ t.get() };
 }
 
 //! Operators to compare not_null pointers.
 //! \{
-template <class T, class U>
-auto operator==(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() == rhs.get())
+template<class T, class U>
+auto operator==(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() == rhs.get())
 {
     return lhs.get() == rhs.get();
 }
 
-template <class T, class U>
-auto operator!=(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() != rhs.get())
+template<class T, class U>
+auto operator!=(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() != rhs.get())
 {
     return lhs.get() != rhs.get();
 }
 
-template <class T, class U>
-auto operator<(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() < rhs.get())
+template<class T, class U>
+auto operator<(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() < rhs.get())
 {
     return lhs.get() < rhs.get();
 }
 
-template <class T, class U>
-auto operator<=(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() <= rhs.get())
+template<class T, class U>
+auto operator<=(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() <= rhs.get())
 {
     return lhs.get() <= rhs.get();
 }
 
-template <class T, class U>
-auto operator>(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() > rhs.get())
+template<class T, class U>
+auto operator>(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() > rhs.get())
 {
     return lhs.get() > rhs.get();
 }
 
-template <class T, class U>
-auto operator>=(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.get() >= rhs.get())
+template<class T, class U>
+auto operator>=(const not_null<T>& lhs, const not_null<U>& rhs) -> decltype(lhs.get() >= rhs.get())
 {
     return lhs.get() >= rhs.get();
 }
@@ -212,14 +208,14 @@ auto operator>=(const not_null<T> &lhs, const not_null<U> &rhs)->decltype(lhs.ge
 
 //! Deleted unwanted arithmetic operators.
 //! \{
-template <class T, class U>
-std::ptrdiff_t operator-(const not_null<T> &, const not_null<U> &) = delete;
-template <class T>
-not_null<T> operator-(const not_null<T> &, std::ptrdiff_t) = delete;
-template <class T>
-not_null<T> operator+(const not_null<T> &, std::ptrdiff_t) = delete;
-template <class T>
-not_null<T> operator+(std::ptrdiff_t, const not_null<T> &) = delete;
+template<class T, class U>
+std::ptrdiff_t operator-(const not_null<T>&, const not_null<U>&) = delete;
+template<class T>
+not_null<T> operator-(const not_null<T>&, std::ptrdiff_t) = delete;
+template<class T>
+not_null<T> operator+(const not_null<T>&, std::ptrdiff_t) = delete;
+template<class T>
+not_null<T> operator+(std::ptrdiff_t, const not_null<T>&) = delete;
 //! \}
 
 } // namespace compat

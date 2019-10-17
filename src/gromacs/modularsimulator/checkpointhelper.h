@@ -90,97 +90,92 @@ class TrajectoryElement;
  * \todo Develop this into a module solely providing a file handler to
  *       modules for checkpoint reading and writing.
  */
-class CheckpointHelper final :
-    public             ILastStepSignallerClient,
-    public             ISimulatorElement
+class CheckpointHelper final : public ILastStepSignallerClient, public ISimulatorElement
 {
-    public:
-        //! Constructor
-        CheckpointHelper(
-            std::vector<ICheckpointHelperClient*> clients,
-            std::unique_ptr<CheckpointHandler>    checkpointHandler,
-            int                                   initStep,
-            TrajectoryElement                    *trajectoryElement,
-            int                                   globalNumAtoms,
-            FILE                                 *fplog,
-            t_commrec                            *cr,
-            ObservablesHistory                   *observablesHistory,
-            gmx_walltime_accounting              *walltime_accounting,
-            t_state                              *state_global,
-            bool                                  writeFinalCheckpoint);
+public:
+    //! Constructor
+    CheckpointHelper(std::vector<ICheckpointHelperClient*> clients,
+                     std::unique_ptr<CheckpointHandler>    checkpointHandler,
+                     int                                   initStep,
+                     TrajectoryElement*                    trajectoryElement,
+                     int                                   globalNumAtoms,
+                     FILE*                                 fplog,
+                     t_commrec*                            cr,
+                     ObservablesHistory*                   observablesHistory,
+                     gmx_walltime_accounting*              walltime_accounting,
+                     t_state*                              state_global,
+                     bool                                  writeFinalCheckpoint);
 
-        /*! \brief Run checkpointing
-         *
-         * Sets signal and / or performs checkpointing at neighbor searching steps
-         *
-         * @param step  The step number
-         * @param time  The time
-         */
-        void run(Step step, Time time);
+    /*! \brief Run checkpointing
+     *
+     * Sets signal and / or performs checkpointing at neighbor searching steps
+     *
+     * @param step  The step number
+     * @param time  The time
+     */
+    void run(Step step, Time time);
 
-        /*! \brief Register run function for step / time
-         *
-         * Performs checkpointing at the last step. This is part of the element call
-         * list, as the checkpoint helper need to be able to react to the last step
-         * being signalled.
-         *
-         * @param step                 The step number
-         * @param time                 The time
-         * @param registerRunFunction  Function allowing to register a run function
-         */
-        void scheduleTask(
-            Step step, Time time,
-            const RegisterRunFunctionPtr &registerRunFunction) override;
+    /*! \brief Register run function for step / time
+     *
+     * Performs checkpointing at the last step. This is part of the element call
+     * list, as the checkpoint helper need to be able to react to the last step
+     * being signalled.
+     *
+     * @param step                 The step number
+     * @param time                 The time
+     * @param registerRunFunction  Function allowing to register a run function
+     */
+    void scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction) override;
 
-        //! No element setup needed
-        void elementSetup() override {}
-        //! No element teardown needed
-        void elementTeardown() override {}
+    //! No element setup needed
+    void elementSetup() override {}
+    //! No element teardown needed
+    void elementTeardown() override {}
 
-    private:
-        //! List of checkpoint clients
-        std::vector<ICheckpointHelperClient*> clients_;
+private:
+    //! List of checkpoint clients
+    std::vector<ICheckpointHelperClient*> clients_;
 
-        //! The checkpoint handler
-        std::unique_ptr<CheckpointHandler> checkpointHandler_;
+    //! The checkpoint handler
+    std::unique_ptr<CheckpointHandler> checkpointHandler_;
 
-        //! The first step of the simulation
-        const Step initStep_;
-        //! The last step of the simulation
-        Step       lastStep_;
-        //! The total number of atoms
-        const int  globalNumAtoms_;
-        //! Whether a checkpoint is written on the last step
-        const bool writeFinalCheckpoint_;
+    //! The first step of the simulation
+    const Step initStep_;
+    //! The last step of the simulation
+    Step lastStep_;
+    //! The total number of atoms
+    const int globalNumAtoms_;
+    //! Whether a checkpoint is written on the last step
+    const bool writeFinalCheckpoint_;
 
-        //! ILastStepSignallerClient implementation
-        SignallerCallbackPtr registerLastStepCallback() override;
+    //! ILastStepSignallerClient implementation
+    SignallerCallbackPtr registerLastStepCallback() override;
 
-        //! The actual checkpoint writing function
-        void writeCheckpoint(Step step, Time time);
+    //! The actual checkpoint writing function
+    void writeCheckpoint(Step step, Time time);
 
-        //! Pointer to the trajectory element - to use file pointer
-        TrajectoryElement *trajectoryElement_;
+    //! Pointer to the trajectory element - to use file pointer
+    TrajectoryElement* trajectoryElement_;
 
-        //! A local t_state object to gather data in
-        //! {
-        std::unique_ptr<t_state> localState_;
-        t_state                 *localStateInstance_;
-        //! }
+    //! A local t_state object to gather data in
+    //! {
+    std::unique_ptr<t_state> localState_;
+    t_state*                 localStateInstance_;
+    //! }
 
-        // Access to ISimulator data
-        //! Handles logging.
-        FILE                    *fplog_;
-        //! Handles communication.
-        t_commrec               *cr_;
-        //! History of simulation observables.
-        ObservablesHistory      *observablesHistory_;
-        //! Manages wall time accounting.
-        gmx_walltime_accounting *walltime_accounting_;
-        //! Full simulation state (only non-nullptr on master rank).
-        t_state                 *state_global_;
+    // Access to ISimulator data
+    //! Handles logging.
+    FILE* fplog_;
+    //! Handles communication.
+    t_commrec* cr_;
+    //! History of simulation observables.
+    ObservablesHistory* observablesHistory_;
+    //! Manages wall time accounting.
+    gmx_walltime_accounting* walltime_accounting_;
+    //! Full simulation state (only non-nullptr on master rank).
+    t_state* state_global_;
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_CHECKPOINTHELPER_H

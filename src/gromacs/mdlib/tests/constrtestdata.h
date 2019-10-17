@@ -78,132 +78,142 @@ namespace test
  */
 class ConstraintsTestData
 {
-    public:
-        //! Human-friendly name for a system
-        std::string           title_;
-        //! Number of atoms
-        int                   numAtoms_;
-        //! Topology
-        gmx_mtop_t            mtop_;
-        //! Masses
-        std::vector<real>     masses_;
-        //! Inverse masses
-        std::vector<real>     invmass_;
-        //! Communication record
-        t_commrec             cr_;
-        //! Input record (info that usually in .mdp file)
-        t_inputrec            ir_;
-        //! Local topology
-        t_idef                idef_;
-        //! MD atoms
-        t_mdatoms             md_;
-        //! Multisim data
-        gmx_multisim_t        ms_;
-        //! Computational time array (normally used to benchmark performance)
-        t_nrnb                nrnb_;
+public:
+    //! Human-friendly name for a system
+    std::string title_;
+    //! Number of atoms
+    int numAtoms_;
+    //! Topology
+    gmx_mtop_t mtop_;
+    //! Masses
+    std::vector<real> masses_;
+    //! Inverse masses
+    std::vector<real> invmass_;
+    //! Communication record
+    t_commrec cr_;
+    //! Input record (info that usually in .mdp file)
+    t_inputrec ir_;
+    //! Local topology
+    t_idef idef_;
+    //! MD atoms
+    t_mdatoms md_;
+    //! Multisim data
+    gmx_multisim_t ms_;
+    //! Computational time array (normally used to benchmark performance)
+    t_nrnb nrnb_;
 
-        //! Inverse timestep
-        real                  invdt_;
-        //! Number of flexible constraints
-        int                   nflexcon_   = 0;
-        //! Whether the virial should be computed
-        bool                  computeVirial_;
-        //! Scaled virial
-        tensor                virialScaled_;
-        //! Scaled virial (reference values)
-        tensor                virialScaledRef_;
-        //! If the free energy is computed
-        bool                  compute_dHdLambda_;
-        //! For free energy computation
-        real                  dHdLambda_;
-        //! For free energy computation (reference value)
-        real                  dHdLambdaRef_;
+    //! Inverse timestep
+    real invdt_;
+    //! Number of flexible constraints
+    int nflexcon_ = 0;
+    //! Whether the virial should be computed
+    bool computeVirial_;
+    //! Scaled virial
+    tensor virialScaled_;
+    //! Scaled virial (reference values)
+    tensor virialScaledRef_;
+    //! If the free energy is computed
+    bool compute_dHdLambda_;
+    //! For free energy computation
+    real dHdLambda_;
+    //! For free energy computation (reference value)
+    real dHdLambdaRef_;
 
-        //! Coordinates before the timestep
-        PaddedVector<RVec>    x_;
-        //! Coordinates after timestep, output for the constraints
-        PaddedVector<RVec>    xPrime_;
-        //! Backup for coordinates (for reset)
-        PaddedVector<RVec>    xPrime0_;
-        //! Intermediate set of coordinates (normally used for projection correction)
-        PaddedVector<RVec>    xPrime2_;
-        //! Velocities
-        PaddedVector<RVec>    v_;
-        //! Backup for velocities (for reset)
-        PaddedVector<RVec>    v0_;
+    //! Coordinates before the timestep
+    PaddedVector<RVec> x_;
+    //! Coordinates after timestep, output for the constraints
+    PaddedVector<RVec> xPrime_;
+    //! Backup for coordinates (for reset)
+    PaddedVector<RVec> xPrime0_;
+    //! Intermediate set of coordinates (normally used for projection correction)
+    PaddedVector<RVec> xPrime2_;
+    //! Velocities
+    PaddedVector<RVec> v_;
+    //! Backup for velocities (for reset)
+    PaddedVector<RVec> v0_;
 
-        //! Constraints data (type1-i1-j1-type2-i2-j2-...)
-        std::vector<int>      constraints_;
-        //! Target lengths for all constraint types
-        std::vector<real>     constraintsR0_;
+    //! Constraints data (type1-i1-j1-type2-i2-j2-...)
+    std::vector<int> constraints_;
+    //! Target lengths for all constraint types
+    std::vector<real> constraintsR0_;
 
-        /*! \brief
-         * Constructor for the object with all parameters and variables needed by constraints algorithms.
-         *
-         * This constructor assembles stubs for all the data structures, required to initialize
-         * and apply LINCS and SHAKE constraints. The coordinates and velocities before constraining
-         * are saved to allow for reset. The constraints data are stored for testing after constraints
-         * were applied.
-         *
-         * \param[in]  title                Human-friendly name of the system.
-         * \param[in]  numAtoms             Number of atoms in the system.
-         * \param[in]  masses               Atom masses. Size of this vector should be equal to numAtoms.
-         * \param[in]  constraints          List of constraints, organized in triples of integers.
-         *                                  First integer is the index of type for a constraint, second
-         *                                  and third are the indices of constrained atoms. The types
-         *                                  of constraints should be sequential but not necessarily
-         *                                  start from zero (which is the way they normally are in
-         *                                  GROMACS).
-         * \param[in]  constraintsR0        Target values for bond lengths for bonds of each type. The
-         *                                  size of this vector should be equal to the total number of
-         *                                  unique types in constraints vector.
-         * \param[in]  computeVirial        Whether the virial should be computed.
-         * \param[in]  virialScaledRef      Reference values for scaled virial tensor.
-         * \param[in]  compute_dHdLambda    Whether free energy should be computed.
-         * \param[in]  dHdLambdaRef         Reference value for dHdLambda.
-         * \param[in]  initialTime          Initial time.
-         * \param[in]  timestep             Timestep.
-         * \param[in]  x                    Coordinates before integration step.
-         * \param[in]  xPrime               Coordinates after integration step, but before constraining.
-         * \param[in]  v                    Velocities before constraining.
-         * \param[in]  shakeTolerance       Target tolerance for SHAKE.
-         * \param[in]  shakeUseSOR          Use successive over-relaxation method for SHAKE iterations.
-         *                                  The general formula is:
-         *                                     x_n+1 = (1-omega)*x_n + omega*f(x_n),
-         *                                  where omega = 1 if SOR is off and may be < 1 if SOR is on.
-         * \param[in]  lincsNumIterations   Number of iterations used to compute the inverse matrix.
-         * \param[in]  lincsExpansionOrder  The order for algorithm that adjusts the direction of the
-         *                                  bond after constraints are applied.
-         * \param[in]  lincsWarnAngle       The threshold value for the change in bond angle. When
-         *                                  exceeded the program will issue a warning.
-         *
-         */
-        ConstraintsTestData(const std::string &title,
-                            int numAtoms, std::vector<real> masses,
-                            std::vector<int> constraints, std::vector<real> constraintsR0,
-                            bool computeVirial, tensor virialScaledRef,
-                            bool compute_dHdLambda, float dHdLambdaRef,
-                            real initialTime, real timestep,
-                            const std::vector<RVec> &x, const std::vector<RVec> &xPrime, const std::vector<RVec> &v,
-                            real shakeTolerance, gmx_bool shakeUseSOR,
-                            int lincsNumIterations, int lincsExpansionOrder, real lincsWarnAngle);
+    /*! \brief
+     * Constructor for the object with all parameters and variables needed by constraints algorithms.
+     *
+     * This constructor assembles stubs for all the data structures, required to initialize
+     * and apply LINCS and SHAKE constraints. The coordinates and velocities before constraining
+     * are saved to allow for reset. The constraints data are stored for testing after constraints
+     * were applied.
+     *
+     * \param[in]  title                Human-friendly name of the system.
+     * \param[in]  numAtoms             Number of atoms in the system.
+     * \param[in]  masses               Atom masses. Size of this vector should be equal to numAtoms.
+     * \param[in]  constraints          List of constraints, organized in triples of integers.
+     *                                  First integer is the index of type for a constraint, second
+     *                                  and third are the indices of constrained atoms. The types
+     *                                  of constraints should be sequential but not necessarily
+     *                                  start from zero (which is the way they normally are in
+     *                                  GROMACS).
+     * \param[in]  constraintsR0        Target values for bond lengths for bonds of each type. The
+     *                                  size of this vector should be equal to the total number of
+     *                                  unique types in constraints vector.
+     * \param[in]  computeVirial        Whether the virial should be computed.
+     * \param[in]  virialScaledRef      Reference values for scaled virial tensor.
+     * \param[in]  compute_dHdLambda    Whether free energy should be computed.
+     * \param[in]  dHdLambdaRef         Reference value for dHdLambda.
+     * \param[in]  initialTime          Initial time.
+     * \param[in]  timestep             Timestep.
+     * \param[in]  x                    Coordinates before integration step.
+     * \param[in]  xPrime               Coordinates after integration step, but before constraining.
+     * \param[in]  v                    Velocities before constraining.
+     * \param[in]  shakeTolerance       Target tolerance for SHAKE.
+     * \param[in]  shakeUseSOR          Use successive over-relaxation method for SHAKE iterations.
+     *                                  The general formula is:
+     *                                     x_n+1 = (1-omega)*x_n + omega*f(x_n),
+     *                                  where omega = 1 if SOR is off and may be < 1 if SOR is on.
+     * \param[in]  lincsNumIterations   Number of iterations used to compute the inverse matrix.
+     * \param[in]  lincsExpansionOrder  The order for algorithm that adjusts the direction of the
+     *                                  bond after constraints are applied.
+     * \param[in]  lincsWarnAngle       The threshold value for the change in bond angle. When
+     *                                  exceeded the program will issue a warning.
+     *
+     */
+    ConstraintsTestData(const std::string&       title,
+                        int                      numAtoms,
+                        std::vector<real>        masses,
+                        std::vector<int>         constraints,
+                        std::vector<real>        constraintsR0,
+                        bool                     computeVirial,
+                        tensor                   virialScaledRef,
+                        bool                     compute_dHdLambda,
+                        float                    dHdLambdaRef,
+                        real                     initialTime,
+                        real                     timestep,
+                        const std::vector<RVec>& x,
+                        const std::vector<RVec>& xPrime,
+                        const std::vector<RVec>& v,
+                        real                     shakeTolerance,
+                        gmx_bool                 shakeUseSOR,
+                        int                      lincsNumIterations,
+                        int                      lincsExpansionOrder,
+                        real                     lincsWarnAngle);
 
-        /*! \brief
-         * Reset the data structure so it can be reused.
-         *
-         * Set the coordinates and velocities back to their values before
-         * constraining. The scaled virial tensor and dHdLambda are zeroed.
-         *
-         */
-        void reset();
+    /*! \brief
+     * Reset the data structure so it can be reused.
+     *
+     * Set the coordinates and velocities back to their values before
+     * constraining. The scaled virial tensor and dHdLambda are zeroed.
+     *
+     */
+    void reset();
 
-        /*! \brief
-         * Cleaning up the memory.
-         */
-        ~ConstraintsTestData();
+    /*! \brief
+     * Cleaning up the memory.
+     */
+    ~ConstraintsTestData();
 };
 
-}      // namespace test
-}      // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_MDLIB_TESTS_CONSTRTESTDATA_H

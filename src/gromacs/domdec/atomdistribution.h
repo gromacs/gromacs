@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,22 +58,20 @@ struct AtomDistribution
      */
     struct DomainAtomGroups
     {
-        gmx::ArrayRef<const int> atomGroups;  /**< List of our atom groups */
-        int                      numAtoms;    /**< Our number of local atoms */
+        gmx::ArrayRef<const int> atomGroups; /**< List of our atom groups */
+        int                      numAtoms;   /**< Our number of local atoms */
     };
 
     /*! \brief Constructor */
-    AtomDistribution(const ivec numCells,
-                     int        numAtomGroups,
-                     int        numAtoms);
+    AtomDistribution(const ivec numCells, int numAtomGroups, int numAtoms);
 
     std::vector<DomainAtomGroups> domainGroups; /**< Group and atom division over ranks/domains */
-    std::vector<int>              atomGroups;   /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
+    std::vector<int>              atomGroups; /**< The atom group division of the whole system, pointed into by counts[].atomGroups */
 
     /* Temporary buffers, stored permanently here to avoid reallocation */
     std::array<std::vector<real>, DIM> cellSizesBuffer; /**< Cell boundaries, sizes: num_cells_in_dim + 1 */
-    std::vector<int>                   intBuffer;       /**< Buffer for communicating cg and atom counts */
-    std::vector<gmx::RVec>             rvecBuffer;      /**< Buffer for state scattering and gathering */
+    std::vector<int>       intBuffer;  /**< Buffer for communicating cg and atom counts */
+    std::vector<gmx::RVec> rvecBuffer; /**< Buffer for state scattering and gathering */
 };
 
 /*! \brief Returns state scatter/gather buffer element counts and displacements
@@ -81,8 +79,6 @@ struct AtomDistribution
  * NOTE: Should only be called with a pointer to a valid ma struct
  *       (only available on the master rank).
  */
-void get_commbuffer_counts(AtomDistribution  *ma,
-                           int              **counts,
-                           int              **disps);
+void get_commbuffer_counts(AtomDistribution* ma, int** counts, int** disps);
 
 #endif

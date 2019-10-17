@@ -90,8 +90,9 @@ enum class DensitySimilarityMeasureMethod
 };
 
 //! Name the methods that may be used to evaluate similarity between densities
-const EnumerationArray<DensitySimilarityMeasureMethod, const char *const>
-c_densitySimilarityMeasureMethodNames = {{ "inner-product", "relative-entropy", "cross-correlation"}};
+const EnumerationArray<DensitySimilarityMeasureMethod, const char* const> c_densitySimilarityMeasureMethodNames = {
+    { "inner-product", "relative-entropy", "cross-correlation" }
+};
 
 /* Forward declaration of implementation class outside class to allow
  * choose implementation class during construction of the DensitySimilarityMeasure*/
@@ -102,37 +103,38 @@ class DensitySimilarityMeasureImpl;
  */
 class DensitySimilarityMeasure
 {
-    public:
-        //! a three-dimensional const view into density data
-        using density = basic_mdspan<const float, dynamicExtents3D>;
-        /*! \brief Chose comparison method and set reference density.
-         * \param[in] method defines how densities are compared to one another
-         * \param[in] referenceDensity
-         * \throws NotImplementedError if method is not known
-         */
-        DensitySimilarityMeasure(DensitySimilarityMeasureMethod method, density referenceDensity);
-        ~DensitySimilarityMeasure();
-        //! Copy constructor
-        DensitySimilarityMeasure(const DensitySimilarityMeasure &other);
-        //! Copy assignment
-        DensitySimilarityMeasure &operator=(const DensitySimilarityMeasure &other);
-        //! Move constructor
-        DensitySimilarityMeasure(DensitySimilarityMeasure &&other) noexcept;
-        //! Move assignment
-        DensitySimilarityMeasure &operator=(DensitySimilarityMeasure &&other) noexcept;
+public:
+    //! a three-dimensional const view into density data
+    using density = basic_mdspan<const float, dynamicExtents3D>;
+    /*! \brief Chose comparison method and set reference density.
+     * \param[in] method defines how densities are compared to one another
+     * \param[in] referenceDensity
+     * \throws NotImplementedError if method is not known
+     */
+    DensitySimilarityMeasure(DensitySimilarityMeasureMethod method, density referenceDensity);
+    ~DensitySimilarityMeasure();
+    //! Copy constructor
+    DensitySimilarityMeasure(const DensitySimilarityMeasure& other);
+    //! Copy assignment
+    DensitySimilarityMeasure& operator=(const DensitySimilarityMeasure& other);
+    //! Move constructor
+    DensitySimilarityMeasure(DensitySimilarityMeasure&& other) noexcept;
+    //! Move assignment
+    DensitySimilarityMeasure& operator=(DensitySimilarityMeasure&& other) noexcept;
 
-        /*! \brief Derivative of the density similarity measure at all voxels.
-         * \param[in] comparedDensity the variable density
-         * \returns density similarity measure derivative
-         */
-        density gradient(density comparedDensity);
-        /*! \brief Similarity between reference and compared density.
-         * \param[in] comparedDensity the variable density
-         * \returns density similarity
-         */
-        real similarity(density comparedDensity);
-    private:
-        std::unique_ptr<DensitySimilarityMeasureImpl> impl_;
+    /*! \brief Derivative of the density similarity measure at all voxels.
+     * \param[in] comparedDensity the variable density
+     * \returns density similarity measure derivative
+     */
+    density gradient(density comparedDensity);
+    /*! \brief Similarity between reference and compared density.
+     * \param[in] comparedDensity the variable density
+     * \returns density similarity
+     */
+    real similarity(density comparedDensity);
+
+private:
+    std::unique_ptr<DensitySimilarityMeasureImpl> impl_;
 };
 
 } // namespace gmx

@@ -63,9 +63,9 @@
 namespace gmx
 {
 
-CoordState::CoordState(const AwhBiasParams          &awhBiasParams,
-                       const std::vector<DimParams> &dimParams,
-                       const Grid                   &grid)
+CoordState::CoordState(const AwhBiasParams&          awhBiasParams,
+                       const std::vector<DimParams>& dimParams,
+                       const Grid&                   grid)
 {
     for (size_t d = 0; d < dimParams.size(); d++)
     {
@@ -94,10 +94,7 @@ namespace
  * \param[in] indexSeed1  Random seed needed by the random number generator.
  * \returns a sample index in [0, distr.size() - 1]
  */
-int getSampleFromDistribution(ArrayRef<const double> distr,
-                              int64_t                seed,
-                              int64_t                indexSeed0,
-                              int64_t                indexSeed1)
+int getSampleFromDistribution(ArrayRef<const double> distr, int64_t seed, int64_t indexSeed0, int64_t indexSeed1)
 {
     gmx::ThreeFry2x64<0>               rng(seed, gmx::RandomDomain::AwhBiasing);
     gmx::UniformRealDistribution<real> uniformRealDistr;
@@ -114,42 +111,41 @@ int getSampleFromDistribution(ArrayRef<const double> distr,
         cumulativeDistribution[i] = cumulativeDistribution[i - 1] + distr[i];
     }
 
-    GMX_RELEASE_ASSERT(gmx_within_tol(cumulativeDistribution.back(), 1.0, 0.01), "Attempt to get sample from non-normalized/zero distribution");
+    GMX_RELEASE_ASSERT(gmx_within_tol(cumulativeDistribution.back(), 1.0, 0.01),
+                       "Attempt to get sample from non-normalized/zero distribution");
 
     /* Use binary search to convert the real value to an integer in [0, ndistr - 1] distributed according to distr. */
     rng.restart(indexSeed0, indexSeed1);
 
-    double value  = uniformRealDistr(rng);
-    int    sample = std::upper_bound(cumulativeDistribution.begin(), cumulativeDistribution.end() - 1, value) - cumulativeDistribution.begin();
+    double value = uniformRealDistr(rng);
+    int sample = std::upper_bound(cumulativeDistribution.begin(), cumulativeDistribution.end() - 1, value)
+                 - cumulativeDistribution.begin();
 
     return sample;
 }
 
-}   // namespace
+} // namespace
 
-void
-CoordState::sampleUmbrellaGridpoint(const Grid                  &grid,
-                                    int                          gridpointIndex,
-                                    gmx::ArrayRef<const double>  probWeightNeighbor,
-                                    int64_t                      step,
-                                    int64_t                      seed,
-                                    int                          indexSeed)
+void CoordState::sampleUmbrellaGridpoint(const Grid&                 grid,
+                                         int                         gridpointIndex,
+                                         gmx::ArrayRef<const double> probWeightNeighbor,
+                                         int64_t                     step,
+                                         int64_t                     seed,
+                                         int                         indexSeed)
 {
     /* Sample new umbrella reference value from the probability distribution
      * which is defined for the neighboring points of the current coordinate.
      */
-    const std::vector<int> &neighbor = grid.point(gridpointIndex).neighbor;
+    const std::vector<int>& neighbor = grid.point(gridpointIndex).neighbor;
 
     /* In order to use the same seed for all AWH biases and get independent
        samples we use the index of the bias. */
-    int localIndex     = getSampleFromDistribution(probWeightNeighbor,
-                                                   seed, step, indexSeed);
+    int localIndex = getSampleFromDistribution(probWeightNeighbor, seed, step, indexSeed);
 
     umbrellaGridpoint_ = neighbor[localIndex];
 }
 
-void CoordState::setCoordValue(const Grid     &grid,
-                               const awh_dvec  coordValue)
+void CoordState::setCoordValue(const Grid& grid, const awh_dvec coordValue)
 {
     /* We need to check for valid (probable) coordinate values, to give
      * a clear error message instead of a low-level assertion failure.
@@ -163,22 +159,22 @@ void CoordState::setCoordValue(const Grid     &grid,
 
     for (int dim = 0; dim < grid.numDimensions(); dim++)
     {
-        const GridAxis &axis = grid.axis(dim);
+        const GridAxis& axis = grid.axis(dim);
         /* We do not check periodic coordinates, since that is more complicated
          * and those cases are less likely to cause problems.
          */
         if (!axis.isPeriodic())
         {
-            const double margin = axis.spacing()*c_marginInSigma/Grid::c_numPointsPerSigma;
-            if (coordValue[dim] < axis.origin() - margin ||
-                coordValue[dim] > axis.origin() + axis.length() + margin)
+            const double margin = axis.spacing() * c_marginInSigma / Grid::c_numPointsPerSigma;
+            if (coordValue[dim] < axis.origin() - margin
+                || coordValue[dim] > axis.origin() + axis.length() + margin)
             {
-                std::string mesg = gmx::formatString("Coordinate %d of an AWH bias has a value %f which is more than %d sigma out of the AWH range of [%f, %f]. You seem to have an unstable reaction coordinate setup or an unequilibrated system.",
-                                                     dim + 1,
-                                                     coordValue[dim],
-                                                     c_marginInSigma,
-                                                     axis.origin(),
-                                                     axis.origin() + axis.length());
+                std::string mesg = gmx::formatString(
+                        "Coordinate %d of an AWH bias has a value %f which is more than %d sigma "
+                        "out of the AWH range of [%f, %f]. You seem to have an unstable reaction "
+                        "coordinate setup or an unequilibrated system.",
+                        dim + 1, coordValue[dim], c_marginInSigma, axis.origin(),
+                        axis.origin() + axis.length());
                 GMX_THROW(SimulationInstabilityError(mesg));
             }
         }
@@ -193,8 +189,7 @@ void CoordState::setCoordValue(const Grid     &grid,
     gridpointIndex_ = grid.nearestIndex(coordValue_);
 }
 
-void
-CoordState::restoreFromHistory(const AwhBiasStateHistory &stateHistory)
+void CoordState::restoreFromHistory(const AwhBiasStateHistory& stateHistory)
 {
     umbrellaGridpoint_ = stateHistory.umbrellaGridpoint;
 }

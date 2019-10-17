@@ -47,20 +47,17 @@ namespace
 {
 
 //! Helper method for reading logging targets from an array.
-ILogTarget *getTarget(ILogTarget        *targets[MDLogger::LogLevelCount],
-                      MDLogger::LogLevel level)
+ILogTarget* getTarget(ILogTarget* targets[MDLogger::LogLevelCount], MDLogger::LogLevel level)
 {
     return targets[static_cast<int>(level)];
 }
 
-}   // namespace
+} // namespace
 
-ILogTarget::~ILogTarget()
-{
-}
+ILogTarget::~ILogTarget() {}
 
 
-LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, ...)
+LogEntryWriter& LogEntryWriter::appendTextFormatted(gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
 
@@ -70,17 +67,21 @@ LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, 
     return *this;
 }
 
-MDLogger::MDLogger()
-    : warning(nullptr), error(nullptr), debug(nullptr), verboseDebug(nullptr), info(nullptr)
+MDLogger::MDLogger() :
+    warning(nullptr),
+    error(nullptr),
+    debug(nullptr),
+    verboseDebug(nullptr),
+    info(nullptr)
 {
 }
 
-MDLogger::MDLogger(ILogTarget *targets[LogLevelCount])
-    : warning(getTarget(targets, LogLevel::Warning)),
-      error(getTarget(targets, LogLevel::Error)),
-      debug(getTarget(targets, LogLevel::Debug)),
-      verboseDebug(getTarget(targets, LogLevel::VerboseDebug)),
-      info(getTarget(targets, LogLevel::Info))
+MDLogger::MDLogger(ILogTarget* targets[LogLevelCount]) :
+    warning(getTarget(targets, LogLevel::Warning)),
+    error(getTarget(targets, LogLevel::Error)),
+    debug(getTarget(targets, LogLevel::Debug)),
+    verboseDebug(getTarget(targets, LogLevel::VerboseDebug)),
+    info(getTarget(targets, LogLevel::Info))
 {
 }
 

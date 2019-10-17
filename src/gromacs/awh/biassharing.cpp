@@ -57,7 +57,7 @@
 namespace gmx
 {
 
-bool haveBiasSharingWithinSimulation(const AwhParams &awhParams)
+bool haveBiasSharingWithinSimulation(const AwhParams& awhParams)
 {
     bool haveSharing = false;
 
@@ -79,9 +79,9 @@ bool haveBiasSharingWithinSimulation(const AwhParams &awhParams)
     return haveSharing;
 }
 
-void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &awhParams,
-                                                     const std::vector<size_t> &pointSize,
-                                                     const gmx_multisim_t      *multiSimComm)
+void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           awhParams,
+                                                     const std::vector<size_t>& pointSize,
+                                                     const gmx_multisim_t*      multiSimComm)
 {
     const int numSim = multiSimComm->nsim;
 
@@ -98,7 +98,9 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &
             numShare++;
             if (group != numShare)
             {
-                GMX_THROW(InvalidInputError("AWH biases that are shared should use consequetive share-group values starting at 1"));
+                GMX_THROW(
+                        InvalidInputError("AWH biases that are shared should use consequetive "
+                                          "share-group values starting at 1"));
             }
         }
     }
@@ -109,23 +111,26 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &
     {
         if (numShareAll[sim] != numShareAll[0])
         {
-            GMX_THROW(InvalidInputError("Different simulations attempt to share different number of biases"));
+            GMX_THROW(InvalidInputError(
+                    "Different simulations attempt to share different number of biases"));
         }
     }
 
-    std::vector<int> intervals(numSim*2);
-    intervals[numSim*0 + multiSimComm->sim] = awhParams.nstSampleCoord;
-    intervals[numSim*1 + multiSimComm->sim] = awhParams.numSamplesUpdateFreeEnergy;
+    std::vector<int> intervals(numSim * 2);
+    intervals[numSim * 0 + multiSimComm->sim] = awhParams.nstSampleCoord;
+    intervals[numSim * 1 + multiSimComm->sim] = awhParams.numSamplesUpdateFreeEnergy;
     gmx_sumi_sim(intervals.size(), intervals.data(), multiSimComm);
     for (int sim = 1; sim < numSim; sim++)
     {
         if (intervals[sim] != intervals[0])
         {
-            GMX_THROW(InvalidInputError("All simulations should have the same AWH sample interval"));
+            GMX_THROW(
+                    InvalidInputError("All simulations should have the same AWH sample interval"));
         }
         if (intervals[numSim + sim] != intervals[numSim])
         {
-            GMX_THROW(InvalidInputError("All simulations should have the same AWH free-energy update interval"));
+            GMX_THROW(InvalidInputError(
+                    "All simulations should have the same AWH free-energy update interval"));
         }
     }
 
@@ -143,7 +148,10 @@ void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &
             {
                 if (pointSizes[sim] != pointSizes[0])
                 {
-                    GMX_THROW(InvalidInputError(gmx::formatString("Shared AWH bias %d has different grid sizes in different simulations\n", b + 1)));
+                    GMX_THROW(InvalidInputError(
+                            gmx::formatString("Shared AWH bias %d has different grid sizes in "
+                                              "different simulations\n",
+                                              b + 1)));
                 }
             }
         }

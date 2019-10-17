@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@
 #include "gromacs/mdtypes/state.h"
 #include "gromacs/utility/smalloc.h"
 
-void init_df_history(df_history_t *dfhist, int nlambda)
+void init_df_history(df_history_t* dfhist, int nlambda)
 {
     int i;
 
@@ -80,7 +80,7 @@ void init_df_history(df_history_t *dfhist, int nlambda)
     }
 }
 
-void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
+void copy_df_history(df_history_t* df_dest, df_history_t* df_source)
 {
     int i, j;
 
@@ -104,17 +104,17 @@ void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     {
         for (j = 0; j < df_dest->nlambda; j++)
         {
-            df_dest->accum_p[i][j]        = df_source->accum_p[i][j];
-            df_dest->accum_m[i][j]        = df_source->accum_m[i][j];
-            df_dest->accum_p2[i][j]       = df_source->accum_p2[i][j];
-            df_dest->accum_m2[i][j]       = df_source->accum_m2[i][j];
-            df_dest->Tij[i][j]            = df_source->Tij[i][j];
-            df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
+            df_dest->accum_p[i][j]       = df_source->accum_p[i][j];
+            df_dest->accum_m[i][j]       = df_source->accum_m[i][j];
+            df_dest->accum_p2[i][j]      = df_source->accum_p2[i][j];
+            df_dest->accum_m2[i][j]      = df_source->accum_m2[i][j];
+            df_dest->Tij[i][j]           = df_source->Tij[i][j];
+            df_dest->Tij_empirical[i][j] = df_source->Tij_empirical[i][j];
         }
     }
 }
 
-void done_df_history(df_history_t *dfhist)
+void done_df_history(df_history_t* dfhist)
 {
     int i;
 

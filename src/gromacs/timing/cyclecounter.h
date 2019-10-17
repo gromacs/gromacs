@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,111 +52,93 @@
 #include "config.h"
 
 #ifdef _MSC_VER
-#include <intrin.h>
+#    include <intrin.h>
 #endif
 
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
+     && (defined(__i386__) || defined(__x86_64__)))
 /* x86 or x86-64 with GCC inline assembly */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
-#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+#elif ((defined __aarch64__) \
+       && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 /* 64-bit ARM cycle counters with GCC inline assembly */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(__ARM_ARCH_7A__) && defined(__GNUC__)
 /* Armv7A can provide 64-bit cycles by returning two registers */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(_MSC_VER)
-#include <windows.h>
-typedef __int64
-    gmx_cycles_t;
+#    include <windows.h>
+typedef __int64                gmx_cycles_t;
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
-#include <machine/sys/inline.h>
-typedef unsigned long
-    gmx_cycles_t;
+#    include <machine/sys/inline.h>
+typedef unsigned long        gmx_cycles_t;
 
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
 /* Intel compiler on ia64 */
-#include <ia64intrin.h>
-typedef unsigned long
-    gmx_cycles_t;
+#    include <ia64intrin.h>
+typedef unsigned long      gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__ia64__)
 /* ia64 with GCC inline assembly */
-typedef unsigned long
-    gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__GNUC__))
 /* HP PA-RISC, inline asm with gcc */
-typedef unsigned long
-    gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__hpux))
 /* HP PA-RISC, instruction when using HP compiler */
-#include <machine/inline.h>
-typedef unsigned long
-    gmx_cycles_t;
+#    include <machine/inline.h>
+typedef unsigned long          gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__s390__)
 /* S390, taken from FFTW who got it from James Treacy */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__alpha__)
 /* gcc inline assembly on alpha CPUs */
-typedef unsigned long
-    gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__sparc_v9__)
 /* gcc inline assembly on sparc v9 */
-typedef unsigned long
-    gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
 #elif defined(__DECC) && defined(__alpha)
 /* Digital GEM C compiler on alpha */
-#include <c_asm.h>
-typedef unsigned long
-    gmx_cycles_t;
+#    include <c_asm.h>
+typedef unsigned long          gmx_cycles_t;
 
 #elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
 /* Irix compilers on SGI hardware. Get nanoseconds from struct timespec */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long   gmx_cycles_t;
 
-#elif (defined(__SVR4) && defined (__SUNPRO_CC))
+#elif (defined(__SVR4) && defined(__SUNPRO_CC))
 /* Solaris high-resolution timers */
-typedef hrtime_t
-    gmx_cycles_t;
+typedef hrtime_t             gmx_cycles_t;
 
-#elif defined(__xlC__) && defined (_AIX)
+#elif defined(__xlC__) && defined(_AIX)
 /* AIX compilers */
-#include <sys/systemcfg.h>
-#include <sys/time.h>
-typedef unsigned long long
-    gmx_cycles_t;
+#    include <sys/systemcfg.h>
+#    include <sys/time.h>
+typedef unsigned long long gmx_cycles_t;
 
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ((defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM)) \
+       && (defined(__powerpc__) || defined(__ppc__)))
 /* PowerPC using gcc inline assembly (also works on xlc>=7.0 with -qasm=gcc) */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long gmx_cycles_t;
 
 #elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
 /* Metrowerks on macintosh */
-typedef unsigned long long
-    gmx_cycles_t;
+typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(__sun) && defined(__sparcv9)
 
-typedef unsigned long
-    gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
 #else
 /*! \brief Integer-like datatype for cycle counter values
@@ -170,8 +152,7 @@ typedef unsigned long
  *  you run the calibration routine you can also multiply it with a factor to
  *  translate the cycle data to seconds.
  */
-typedef long
-    gmx_cycles_t;
+typedef long gmx_cycles_t;
 
 #endif
 
@@ -197,28 +178,29 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     return 0;
 }
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
-    (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
+       && (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read()
 {
     /* x86 with GCC inline assembly - pentium TSC register */
-    unsigned       low, high;
+    unsigned low, high;
 
-#if HAVE_RDTSCP
-    __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
-#else
-    __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
-#endif
+#    if HAVE_RDTSCP
+    __asm__ __volatile__("rdtscp" : "=a"(low), "=d"(high)::"ecx");
+#    else
+    __asm__ __volatile__("rdtsc" : "=a"(low), "=d"(high));
+#    endif
     const gmx_cycles_t c_low  = low;
     const gmx_cycles_t c_high = high;
-    return c_low | c_high <<32;
+    return c_low | c_high << 32;
 }
-#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+#elif ((defined __aarch64__) \
+       && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* 64-bit ARM cycle counters with GCC inline assembly */
-    gmx_cycles_t   cycle;
-    __asm__ __volatile__("mrs %0, cntvct_el0" : "=r" (cycle) );
+    gmx_cycles_t cycle;
+    __asm__ __volatile__("mrs %0, cntvct_el0" : "=r"(cycle));
 
     return cycle;
 }
@@ -226,31 +208,31 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     unsigned int cycles_lo, cycles_hi;
-    asm volatile("mrrc p15, 1, %0, %1, c14" : "=r" (cycles_lo), "=r" (cycles_hi));
+    asm volatile("mrrc p15, 1, %0, %1, c14" : "=r"(cycles_lo), "=r"(cycles_hi));
     return ((gmx_cycles_t)cycles_lo) | (((gmx_cycles_t)cycles_hi) << 32);
 }
 #elif defined(_MSC_VER)
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
-#ifdef _M_ARM
+#    ifdef _M_ARM
     /* Windows on 64-bit ARM */
     return __rdpmccntr64();
-#else
+#    else
     /* x86 */
-#    if HAVE_RDTSCP
+#        if HAVE_RDTSCP
     unsigned int ui;
     return __rdtscp(&ui);
-#    else
+#        else
     return __rdtsc();
+#        endif
 #    endif
-#endif
 }
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 static inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* HP compiler on ia64 */
     gmx_cycles_t ret;
-    ret = _Asm_mov_from_ar (_AREG_ITC);
+    ret = _Asm_mov_from_ar(_AREG_ITC);
     return ret;
 }
 #elif (defined(__INTEL_COMPILER) && defined(__ia64__))
@@ -264,19 +246,19 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* ia64 with GCC inline assembly */
     gmx_cycles_t ret;
-    __asm__ __volatile__ ("mov %0=ar.itc" : "=r" (ret));
+    __asm__ __volatile__("mov %0=ar.itc" : "=r"(ret));
     return ret;
 }
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__GNUC__))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* HP PA-RISC, inline asm with gcc */
     gmx_cycles_t ret;
-    __asm__ __volatile__("mfctl 16, %0" : "=r" (ret));
+    __asm__ __volatile__("mfctl 16, %0" : "=r"(ret));
     /* no input, nothing else clobbered */
     return ret;
 }
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__hpux))
 static inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* HP PA-RISC, instruction when using HP compiler */
@@ -289,7 +271,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* S390, taken from FFTW who got it from James Treacy */
     gmx_cycles_t cycle;
-    __asm__("stck 0(%0)" : : "a" (&(cycle)) : "memory", "cc");
+    __asm__("stck 0(%0)" : : "a"(&(cycle)) : "memory", "cc");
     return cycle;
 }
 #elif defined(__GNUC__) && defined(__alpha__)
@@ -297,7 +279,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* gcc inline assembly on alpha CPUs */
     unsigned long cycle;
-    __asm__ __volatile__ ("rpcc %0" : "=r" (cycle));
+    __asm__ __volatile__("rpcc %0" : "=r"(cycle));
     return (cycle & 0xFFFFFFFF);
 }
 #elif defined(__GNUC__) && defined(__sparc_v9__)
@@ -305,7 +287,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* gcc inline assembly on sparc v9 */
     unsigned long ret;
-    __asm__("rd %%tick, %0" : "=r" (ret));
+    __asm__("rd %%tick, %0" : "=r"(ret));
     return ret;
 }
 #elif defined(__DECC) && defined(__alpha)
@@ -313,7 +295,7 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* Digital GEM C compiler on alpha */
     unsigned long cycle;
-    cycle = asm ("rpcc %v0");
+    cycle = asm("rpcc %v0");
     return (cycle & 0xFFFFFFFF);
 }
 #elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
@@ -323,16 +305,15 @@ static __inline gmx_cycles_t gmx_cycles_read(void)
     struct timespec t;
     clock_gettime(CLOCK_SGI_CYCLE, &t);
     /* Return the number of nanoseconds, so we can subtract/add */
-    return ((unsigned long long)t.tv_sec)*1000000000+
-           (unsigned long long)t.tv_nsec;
+    return ((unsigned long long)t.tv_sec) * 1000000000 + (unsigned long long)t.tv_nsec;
 }
-#elif (defined(__SVR4) && defined (__SUNPRO_CC))
+#elif (defined(__SVR4) && defined(__SUNPRO_CC))
 static inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* Solaris high-resolution timers */
     return gethrtime();
 }
-#elif defined(__xlC__) && defined (_AIX)
+#elif defined(__xlC__) && defined(_AIX)
 static inline gmx_cycles_t gmx_cycles_read(void)
 {
     /* AIX compilers. Inline the calculation instead of using library functions */
@@ -343,15 +324,15 @@ static inline gmx_cycles_t gmx_cycles_read(void)
      */
     if (t1.flag == RTC_POWER_PC)
     {
-        return ((gmx_cycles_t)t1.tb_high)<<32 | (gmx_cycles_t)t1.tb_low;
+        return ((gmx_cycles_t)t1.tb_high) << 32 | (gmx_cycles_t)t1.tb_low;
     }
     else
     {
-        return ((gmx_cycles_t)t1.tb_high)*1000000000+(gmx_cycles_t)t1.tb_low;
+        return ((gmx_cycles_t)t1.tb_high) * 1000000000 + (gmx_cycles_t)t1.tb_low;
     }
 }
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ((defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM)) \
+       && (defined(__powerpc__) || defined(__ppc__)))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     /* PowerPC using gcc inline assembly (and xlC>=7.0 with -qasm=gcc, and clang) */
@@ -361,11 +342,10 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
         // clang 3.7 incorrectly warns that mftb* are
         // deprecated. That's not correct - see
         // https://llvm.org/bugs/show_bug.cgi?id=23680.
-        __asm__ __volatile__ ("mftbu %0" : "=r" (high1) : );
-        __asm__ __volatile__ ("mftb %0" : "=r" (low) : );
-        __asm__ __volatile__ ("mftbu %0" : "=r" (high2) : );
-    }
-    while (high1 != high2);
+        __asm__ __volatile__("mftbu %0" : "=r"(high1) :);
+        __asm__ __volatile__("mftb %0" : "=r"(low) :);
+        __asm__ __volatile__("mftbu %0" : "=r"(high2) :);
+    } while (high1 != high2);
 
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
 }
@@ -376,11 +356,10 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
     unsigned int long low, high1, high2;
     do
     {
-        __asm__ __volatile__ ("mftbu %0" : "=r" (high1) : );
-        __asm__ __volatile__ ("mftb %0" : "=r" (low) : );
-        __asm__ __volatile__ ("mftbu %0" : "=r" (high2) : );
-    }
-    while (high1 != high2);
+        __asm__ __volatile__("mftbu %0" : "=r"(high1) :);
+        __asm__ __volatile__("mftb %0" : "=r"(low) :);
+        __asm__ __volatile__("mftbu %0" : "=r"(high2) :);
+    } while (high1 != high2);
 
     return (((gmx_cycles_t)high2) << 32) | (gmx_cycles_t)low;
 }
@@ -389,12 +368,12 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 {
     gmx_cycles_t ret;
-    __asm__ __volatile__("rd %%tick, %0" : "=r" (ret));
+    __asm__ __volatile__("rd %%tick, %0" : "=r"(ret));
     return ret;
 }
 
 #elif defined(_CRAYC)
-#include <intrinsics.h>
+#    include <intrinsics.h>
 
 static __inline gmx_cycles_t gmx_cycles_read(void)
 {
@@ -433,14 +412,16 @@ static __inline__ bool gmx_cycles_have_counter(void)
 {
     return 0;
 }
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__) || defined(_CRAYC)) && \
-    (defined(__i386__) || defined(__x86_64__)))
+#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) \
+        || defined(__PGIC__) || defined(_CRAYC))                                 \
+       && (defined(__i386__) || defined(__x86_64__)))
 static __inline__ bool gmx_cycles_have_counter()
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */
     return true;
 }
-#elif ((defined __aarch64__) && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
+#elif ((defined __aarch64__) \
+       && (defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)))
 static __inline bool gmx_cycles_have_counter(void)
 {
     /* 64-bit ARM cycle counters with GCC inline assembly */
@@ -484,13 +465,13 @@ static __inline__ bool gmx_cycles_have_counter(void)
     /* AMD64 with GCC inline assembly - TSC register */
     return 1;
 }
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__GNUC__))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__GNUC__))
 static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* HP PA-RISC, inline asm with gcc */
     return 1;
 }
-#elif ((defined(__hppa__) || defined(__hppa)) && defined (__hpux))
+#elif ((defined(__hppa__) || defined(__hppa)) && defined(__hpux))
 static inline bool gmx_cycles_have_counter(void)
 {
     /* HP PA-RISC, instruction when using HP compiler */
@@ -526,20 +507,20 @@ static __inline bool gmx_cycles_have_counter(void)
     /* Irix compilers on SGI hardware */
     return 1;
 }
-#elif (defined(__SVR4) && defined (__SUNPRO_CC))
+#elif (defined(__SVR4) && defined(__SUNPRO_CC))
 static inline bool gmx_cycles_have_counter(void)
 {
     /* Solaris high-resolution timers */
     return 1;
 }
-#elif defined(__xlC__) && defined (_AIX)
+#elif defined(__xlC__) && defined(_AIX)
 static inline bool gmx_cycles_have_counter(void)
 {
     /* AIX compilers */
     return 1;
 }
-#elif ( ( defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM) ) && \
-    ( defined(__powerpc__) || defined(__ppc__) ) )
+#elif ((defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM)) \
+       && (defined(__powerpc__) || defined(__ppc__)))
 static __inline__ bool gmx_cycles_have_counter(void)
 {
     /* PowerPC using gcc inline assembly (and xlc>=7.0 with -qasm=gcc) */
@@ -579,7 +560,6 @@ static bool gmx_cycles_have_counter(void)
  *          calculate on this system (for whatever reason) the return value
  *          will be -1, so check that it is positive before using it.
  */
-double
-gmx_cycles_calibrate(double sampletime);
+double gmx_cycles_calibrate(double sampletime);
 
 #endif

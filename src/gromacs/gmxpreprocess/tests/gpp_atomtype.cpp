@@ -57,34 +57,21 @@ namespace
 
 class PreprocessingAtomTypesTest : public ::testing::Test
 {
-    public:
-        PreprocessingAtomTypesTest() :
-            nb_({}, {})
-        {
-            open_symtab(&symtab_);
-        }
+public:
+    PreprocessingAtomTypesTest() : nb_({}, {}) { open_symtab(&symtab_); }
 
-        int addType(const char *name,
-                    int         bondAtomType,
-                    int         atomNumber)
-        {
-            return atypes_.addType(&symtab_,
-                                   atom_,
-                                   name,
-                                   nb_,
-                                   bondAtomType,
-                                   atomNumber);
-        }
+    int addType(const char* name, int bondAtomType, int atomNumber)
+    {
+        return atypes_.addType(&symtab_, atom_, name, nb_, bondAtomType, atomNumber);
+    }
 
-        ~PreprocessingAtomTypesTest() override
-        {
-            done_symtab(&symtab_);
-        }
-    protected:
-        PreprocessingAtomTypes   atypes_;
-        t_symtab                 symtab_;
-        t_atom                   atom_;
-        InteractionOfType        nb_;
+    ~PreprocessingAtomTypesTest() override { done_symtab(&symtab_); }
+
+protected:
+    PreprocessingAtomTypes atypes_;
+    t_symtab               symtab_;
+    t_atom                 atom_;
+    InteractionOfType      nb_;
 };
 
 TEST_F(PreprocessingAtomTypesTest, EmptyOnCreate)

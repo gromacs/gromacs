@@ -43,14 +43,14 @@ struct pme_spline_work
 {
 #ifdef PME_SIMD4_SPREAD_GATHER
     /* Masks for 4-wide SIMD aligned spreading and gathering */
-    gmx::Simd4Bool        mask_S0[6], mask_S1[6];
+    gmx::Simd4Bool mask_S0[6], mask_S1[6];
 #else
-    int                   dummy; /* C89 requires that struct has at least one member */
+    int dummy; /* C89 requires that struct has at least one member */
 #endif
 };
 
-pme_spline_work *make_pme_spline_work(int order);
+pme_spline_work* make_pme_spline_work(int order);
 
-void destroy_pme_spline_work(pme_spline_work *work);
+void destroy_pme_spline_work(pme_spline_work* work);
 
 #endif

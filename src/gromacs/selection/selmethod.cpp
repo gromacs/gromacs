@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2009-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,26 +58,26 @@
 /*! \internal \brief
  * Helper structure for defining selection methods.
  */
-typedef struct {
+typedef struct
+{
     /*! \brief
      * Name to register the method under.
      *
      * If NULL, use the actual name of the method.
      * This field is used for defining synonyms.
      */
-    const char            *name;
+    const char* name;
     /** Method data structure to register. */
-    gmx_ana_selmethod_t   *method;
+    gmx_ana_selmethod_t* method;
 } t_register_method;
 
 /*! \brief
  * Convenience function for reporting errors found in selection methods.
  */
-static void
-report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...) gmx_format(printf, 3, 4);
+static void report_error(FILE* fp, const char* name, gmx_fmtstr const char* fmt, ...)
+        gmx_format(printf, 3, 4);
 
-static void
-report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...)
+static void report_error(FILE* fp, const char* name, gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -92,12 +93,9 @@ report_error(FILE *fp, const char *name, gmx_fmtstr const char *fmt, ...)
 /*! \brief
  * Convenience function for reporting errors found in selection method parameters.
  */
-static void
-report_param_error(FILE *fp, const char *mname, const char *pname,
-                   gmx_fmtstr const char *fmt, ...) gmx_format(printf, 4, 5);
-static void
-report_param_error(FILE *fp, const char *mname, const char *pname,
-                   gmx_fmtstr const char *fmt, ...)
+static void report_param_error(FILE* fp, const char* mname, const char* pname, gmx_fmtstr const char* fmt, ...)
+        gmx_format(printf, 4, 5);
+static void report_param_error(FILE* fp, const char* mname, const char* pname, gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -131,12 +129,14 @@ report_param_error(FILE *fp, const char *mname, const char *pname,
  * If you remove a check, make sure that the parameter parser can handle the
  * resulting parameters.
  */
-static bool
-check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[],
-             const gmx::SelectionParserSymbolTable &symtab)
+static bool check_params(FILE*                                  fp,
+                         const char*                            name,
+                         int                                    nparams,
+                         gmx_ana_selparam_t                     param[],
+                         const gmx::SelectionParserSymbolTable& symtab)
 {
-    bool              bOk = true;
-    int               i, j;
+    bool bOk = true;
+    int  i, j;
 
     if (nparams > 0 && !param)
     {
@@ -181,45 +181,54 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         {
             if (param[i].val.type != INT_VALUE && param[i].val.type != REAL_VALUE)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES cannot be set for a non-numeric parameter");
+                report_param_error(fp, name, param[i].name,
+                                   "error: SPAR_RANGES cannot be set for a non-numeric parameter");
                 bOk = false;
             }
             if (param[i].flags & SPAR_DYNAMIC)
             {
-                report_param_error(fp, name, param[i].name, "warning: SPAR_DYNAMIC does not have effect with SPAR_RANGES");
+                report_param_error(fp, name, param[i].name,
+                                   "warning: SPAR_DYNAMIC does not have effect with SPAR_RANGES");
                 param[i].flags &= ~SPAR_DYNAMIC;
             }
             if (!(param[i].flags & SPAR_VARNUM) && param[i].val.nr != 1)
             {
-                report_param_error(fp, name, param[i].name, "error: range should take either one or an arbitrary number of values");
+                report_param_error(
+                        fp, name, param[i].name,
+                        "error: range should take either one or an arbitrary number of values");
                 bOk = false;
             }
             if (param[i].flags & SPAR_ATOMVAL)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_RANGES and SPAR_ATOMVAL both set");
+                report_param_error(fp, name, param[i].name,
+                                   "error: SPAR_RANGES and SPAR_ATOMVAL both set");
                 bOk = false;
             }
         }
         if ((param[i].flags & SPAR_VARNUM) && (param[i].flags & SPAR_ATOMVAL))
         {
-            report_param_error(fp, name, param[i].name, "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
+            report_param_error(fp, name, param[i].name,
+                               "error: SPAR_VARNUM and SPAR_ATOMVAL both set");
             bOk = false;
         }
         if (param[i].flags & SPAR_ENUMVAL)
         {
             if (param[i].val.type != STR_VALUE)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL can only be set for string parameters");
+                report_param_error(fp, name, param[i].name,
+                                   "error: SPAR_ENUMVAL can only be set for string parameters");
                 bOk = false;
             }
             if (param[i].val.nr != 1)
             {
-                report_param_error(fp, name, param[i].name, "error: SPAR_ENUMVAL parameters should take exactly one value");
+                report_param_error(fp, name, param[i].name,
+                                   "error: SPAR_ENUMVAL parameters should take exactly one value");
                 bOk = false;
             }
             if (param[i].flags & (SPAR_DYNAMIC | SPAR_VARNUM | SPAR_ATOMVAL))
             {
-                report_param_error(fp, name, param[i].name, "error: only SPAR_OPTIONAL supported with SPAR_ENUMVAL");
+                report_param_error(fp, name, param[i].name,
+                                   "error: only SPAR_OPTIONAL supported with SPAR_ENUMVAL");
                 bOk = false;
             }
         }
@@ -228,7 +237,8 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         {
             if (param[i].val.nr != 0)
             {
-                report_param_error(fp, name, param[i].name, "error: number of values should be zero for boolean parameters");
+                report_param_error(fp, name, param[i].name,
+                                   "error: number of values should be zero for boolean parameters");
                 bOk = false;
             }
             /* The boolean parameters should always be optional, so set the
@@ -237,7 +247,8 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             /* Any other flags should not be specified */
             if (param[i].flags & ~SPAR_OPTIONAL)
             {
-                report_param_error(fp, name, param[i].name, "error: boolean parameter should not have any flags set");
+                report_param_error(fp, name, param[i].name,
+                                   "error: boolean parameter should not have any flags set");
                 bOk = false;
             }
         }
@@ -246,7 +257,9 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         {
             if (param[i].val.nr != -1)
             {
-                report_param_error(fp, name, param[i].name, "warning: val.nr is not -1 although SPAR_VARNUM/SPAR_ATOMVAL is set");
+                report_param_error(
+                        fp, name, param[i].name,
+                        "warning: val.nr is not -1 although SPAR_VARNUM/SPAR_ATOMVAL is set");
             }
             param[i].val.nr = -1;
         }
@@ -282,7 +295,8 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         {
             if (param[i].name[j] != '_' && !isalnum(param[i].name[j]))
             {
-                report_param_error(fp, name, param[i].name, "error: name contains non-alphanumeric characters");
+                report_param_error(fp, name, param[i].name,
+                                   "error: name contains non-alphanumeric characters");
                 bOk = false;
                 break;
             }
@@ -294,21 +308,22 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
         /* Check that the name does not conflict with a method */
         if (symtab.findSymbol(param[i].name) != nullptr)
         {
-            report_param_error(fp, name, param[i].name, "error: name conflicts with another method or a keyword");
+            report_param_error(fp, name, param[i].name,
+                               "error: name conflicts with another method or a keyword");
             bOk = false;
         }
     } /* End of parameter loop */
       /* Check parameters of existing methods */
-    gmx::SelectionParserSymbolIterator symbol
-        = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
+    gmx::SelectionParserSymbolIterator symbol =
+            symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())
     {
-        gmx_ana_selmethod_t *method = symbol->methodValue();
-        gmx_ana_selparam_t  *param  =
-            gmx_ana_selmethod_find_param(name, method);
+        gmx_ana_selmethod_t* method = symbol->methodValue();
+        gmx_ana_selparam_t*  param  = gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
-            report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");
+            report_param_error(fp, method->name, param->name,
+                               "error: name conflicts with another method or a keyword");
             bOk = false;
         }
         ++symbol;
@@ -329,17 +344,17 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
  * This function checks that all the required callbacks are defined, i.e.,
  * not NULL, to find programming errors.
  */
-static bool
-check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
+static bool check_callbacks(FILE* fp, gmx_ana_selmethod_t* method)
 {
-    bool         bOk = true;
-    bool         bNeedInit;
-    int          i;
+    bool bOk = true;
+    bool bNeedInit;
+    int  i;
 
     /* Make some checks on init_data and free */
     if (method->nparams > 0 && !method->init_data)
     {
-        report_error(fp, method->name, "error: init_data should be provided because the method has parameters");
+        report_error(fp, method->name,
+                     "error: init_data should be provided because the method has parameters");
         bOk = false;
     }
     if (method->free && !method->init_data)
@@ -349,13 +364,15 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
     /* Check presence of outinit for position-valued methods */
     if (method->type == POS_VALUE && !method->outinit)
     {
-        report_error(fp, method->name, "error: outinit should be provided because the method has POS_VALUE");
+        report_error(fp, method->name,
+                     "error: outinit should be provided because the method has POS_VALUE");
         bOk = false;
     }
     /* Check presence of outinit for variable output count methods */
     if ((method->flags & SMETH_VARNUMVAL) && !method->outinit)
     {
-        report_error(fp, method->name, "error: outinit should be provided because the method has SMETH_VARNUMVAL");
+        report_error(fp, method->name,
+                     "error: outinit should be provided because the method has SMETH_VARNUMVAL");
         bOk = false;
     }
     /* Warn of dynamic callbacks in static methods */
@@ -406,11 +423,9 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
-check_method(FILE *fp, gmx_ana_selmethod_t *method,
-             const gmx::SelectionParserSymbolTable &symtab)
+static bool check_method(FILE* fp, gmx_ana_selmethod_t* method, const gmx::SelectionParserSymbolTable& symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type == NO_VALUE)
@@ -432,14 +447,14 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
         /* Check that conflicting flags are not present. */
         if (method->flags & SMETH_VARNUMVAL)
         {
-            report_error(fp, method->name, "error: SMETH_VARNUMVAL cannot be set for group-valued methods");
+            report_error(fp, method->name,
+                         "error: SMETH_VARNUMVAL cannot be set for group-valued methods");
             bOk = false;
         }
     }
     else
     {
-        if ((method->flags & SMETH_SINGLEVAL)
-            && (method->flags & SMETH_VARNUMVAL))
+        if ((method->flags & SMETH_SINGLEVAL) && (method->flags & SMETH_VARNUMVAL))
         {
             report_error(fp, method->name, "error: SMETH_SINGLEVAL and SMETH_VARNUMVAL both set");
             bOk = false;
@@ -447,7 +462,8 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
     }
     if ((method->flags & SMETH_CHARVAL) && method->type != STR_VALUE)
     {
-        report_error(fp, method->name, "error: SMETH_CHARVAL can only be specified for STR_VALUE methods");
+        report_error(fp, method->name,
+                     "error: SMETH_CHARVAL can only be specified for STR_VALUE methods");
         bOk = false;
     }
     /* Check the parameters */
@@ -477,11 +493,9 @@ check_method(FILE *fp, gmx_ana_selmethod_t *method,
  * If you remove a check, please make sure that the selection parser,
  * compiler, and evaluation functions can deal with the method.
  */
-static bool
-check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
-               const gmx::SelectionParserSymbolTable &symtab)
+static bool check_modifier(FILE* fp, gmx_ana_selmethod_t* method, const gmx::SelectionParserSymbolTable& symtab)
 {
-    bool         bOk = true;
+    bool bOk = true;
 
     /* Check the type */
     if (method->type != NO_VALUE && method->type != POS_VALUE)
@@ -492,12 +506,13 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
     /* Check flags */
     if (method->flags & (SMETH_SINGLEVAL | SMETH_VARNUMVAL))
     {
-        report_error(fp, method->name, "error: modifier should not have SMETH_SINGLEVAL or SMETH_VARNUMVAL set");
+        report_error(fp, method->name,
+                     "error: modifier should not have SMETH_SINGLEVAL or SMETH_VARNUMVAL set");
         bOk = false;
     }
     /* Check the parameters */
     /* The first parameter is skipped */
-    if (!check_params(fp, method->name, method->nparams-1, method->param+1, symtab))
+    if (!check_params(fp, method->name, method->nparams - 1, method->param + 1, symtab))
     {
         bOk = false;
     }
@@ -537,9 +552,9 @@ check_modifier(FILE *fp, gmx_ana_selmethod_t *method,
  * Some problems only generate warnings.
  * All problems are described to \p stderr.
  */
-int
-gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
-                           const char *name, gmx_ana_selmethod_t *method)
+int gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable* symtab,
+                               const char*                      name,
+                               gmx_ana_selmethod_t*             method)
 {
     bool bOk;
 
@@ -559,7 +574,7 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
         {
             symtab->addMethod(name, method);
         }
-        catch (const gmx::APIError &ex)
+        catch (const gmx::APIError& ex)
         {
             report_error(stderr, name, "%s", ex.what());
             bOk = false;
@@ -578,63 +593,43 @@ gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
  * \returns       0 on success, -1 if any of the default methods could not be
  *   registered.
  */
-int
-gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
+int gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable* symtab)
 {
     /* Array of selection methods defined in the library. */
     const t_register_method smtable_def[] = {
-        {nullptr,         &sm_cog},
-        {nullptr,         &sm_com},
+        { nullptr, &sm_cog },         { nullptr, &sm_com },
 
-        {nullptr,         &sm_all},
-        {nullptr,         &sm_none},
-        {nullptr,         &sm_atomnr},
-        {nullptr,         &sm_resnr},
-        {"resid",      &sm_resnr},
-        {nullptr,         &sm_resindex},
-        {"residue",    &sm_resindex},
-        {nullptr,         &sm_molindex},
-        {"mol",        &sm_molindex},
-        {"molecule",   &sm_molindex},
-        {nullptr,         &sm_atomname},
-        {"name",       &sm_atomname},
-        {nullptr,         &sm_pdbatomname},
-        {"pdbname",    &sm_pdbatomname},
-        {nullptr,         &sm_atomtype},
-        {"type",       &sm_atomtype},
-        {nullptr,         &sm_resname},
-        {nullptr,         &sm_insertcode},
-        {nullptr,         &sm_chain},
-        {nullptr,         &sm_mass},
-        {nullptr,         &sm_charge},
-        {nullptr,         &sm_altloc},
-        {nullptr,         &sm_occupancy},
-        {nullptr,         &sm_betafactor},
-        {"beta",       &sm_betafactor},
-        {nullptr,         &sm_x},
-        {nullptr,         &sm_y},
-        {nullptr,         &sm_z},
+        { nullptr, &sm_all },         { nullptr, &sm_none },
+        { nullptr, &sm_atomnr },      { nullptr, &sm_resnr },
+        { "resid", &sm_resnr },       { nullptr, &sm_resindex },
+        { "residue", &sm_resindex },  { nullptr, &sm_molindex },
+        { "mol", &sm_molindex },      { "molecule", &sm_molindex },
+        { nullptr, &sm_atomname },    { "name", &sm_atomname },
+        { nullptr, &sm_pdbatomname }, { "pdbname", &sm_pdbatomname },
+        { nullptr, &sm_atomtype },    { "type", &sm_atomtype },
+        { nullptr, &sm_resname },     { nullptr, &sm_insertcode },
+        { nullptr, &sm_chain },       { nullptr, &sm_mass },
+        { nullptr, &sm_charge },      { nullptr, &sm_altloc },
+        { nullptr, &sm_occupancy },   { nullptr, &sm_betafactor },
+        { "beta", &sm_betafactor },   { nullptr, &sm_x },
+        { nullptr, &sm_y },           { nullptr, &sm_z },
 
-        {nullptr,         &sm_distance},
-        {"dist",       &sm_distance},
-        {nullptr,         &sm_mindistance},
-        {"mindist",    &sm_mindistance},
-        {nullptr,         &sm_within},
-        {nullptr,         &sm_insolidangle},
-        {nullptr,         &sm_same},
+        { nullptr, &sm_distance },    { "dist", &sm_distance },
+        { nullptr, &sm_mindistance }, { "mindist", &sm_mindistance },
+        { nullptr, &sm_within },      { nullptr, &sm_insolidangle },
+        { nullptr, &sm_same },
 
-        {nullptr,         &sm_merge},
-        {nullptr,         &sm_plus},
-        {nullptr,         &sm_permute},
+        { nullptr, &sm_merge },       { nullptr, &sm_plus },
+        { nullptr, &sm_permute },
     };
 
-    int                     rc;
-    bool                    bOk;
+    int  rc;
+    bool bOk;
 
     bOk = true;
     for (int i = 0; i < asize(smtable_def); ++i)
     {
-        gmx_ana_selmethod_t *method = smtable_def[i].method;
+        gmx_ana_selmethod_t* method = smtable_def[i].method;
 
         if (smtable_def[i].name == nullptr)
         {
@@ -661,8 +656,7 @@ gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
  *
  * This is a simple wrapper for gmx_ana_selparam_find().
  */
-gmx_ana_selparam_t *
-gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method)
+gmx_ana_selparam_t* gmx_ana_selmethod_find_param(const char* name, gmx_ana_selmethod_t* method)
 {
     return gmx_ana_selparam_find(name, method->nparams, method->param);
 }

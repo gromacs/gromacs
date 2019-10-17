@@ -64,28 +64,18 @@ namespace gmx
 namespace test
 {
 
-const EnergyTermsToCompare EnergyComparison::s_defaultEnergyTermsToCompare =
-{
-    {
-        interaction_function[F_EPOT].longname,
-        relativeToleranceAsUlp(10.0, 50)
-    },
-    {
-        interaction_function[F_EKIN].longname,
-        relativeToleranceAsUlp(10.0, 50)
-    },
+const EnergyTermsToCompare EnergyComparison::s_defaultEnergyTermsToCompare = {
+    { interaction_function[F_EPOT].longname, relativeToleranceAsUlp(10.0, 50) },
+    { interaction_function[F_EKIN].longname, relativeToleranceAsUlp(10.0, 50) },
     // The pressure is very strongly affected by summation errors,
     // so we need a large tolerance.
     // The value of 15000 is calibrated for running a small water box for 16 steps.
     // For a single frame for a water box a value of 150 could work.
-    {
-        interaction_function[F_PRES].longname,
-        relativeToleranceAsUlp(10.0, 15000)
-    },
+    { interaction_function[F_PRES].longname, relativeToleranceAsUlp(10.0, 15000) },
 };
 
-EnergyComparison::EnergyComparison(const EnergyTermsToCompare &energyTermsToCompare)
-    : energyTermsToCompare_(energyTermsToCompare)
+EnergyComparison::EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare) :
+    energyTermsToCompare_(energyTermsToCompare)
 {
 }
 
@@ -93,27 +83,28 @@ std::vector<std::string> EnergyComparison::getEnergyNames() const
 {
     std::vector<std::string> keys;
     keys.reserve(energyTermsToCompare_.size());
-    for (const auto &it : energyTermsToCompare_)
+    for (const auto& it : energyTermsToCompare_)
     {
         keys.push_back(it.first);
     }
     return keys;
 }
 
-void EnergyComparison::operator()(const EnergyFrame &reference,
-                                  const EnergyFrame &test) const
+void EnergyComparison::operator()(const EnergyFrame& reference, const EnergyFrame& test) const
 {
-    SCOPED_TRACE("Comparing energy reference frame " + reference.frameName() + " and test frame " + test.frameName());
+    SCOPED_TRACE("Comparing energy reference frame " + reference.frameName() + " and test frame "
+                 + test.frameName());
     for (auto referenceIt = reference.begin(); referenceIt != reference.end(); ++referenceIt)
     {
-        auto &energyName = referenceIt->first;
-        SCOPED_TRACE("Comparing " +  energyName + " between frames");
-        auto  testIt = test.find(energyName);
+        auto& energyName = referenceIt->first;
+        SCOPED_TRACE("Comparing " + energyName + " between frames");
+        auto testIt = test.find(energyName);
         if (testIt != test.end())
         {
-            auto &energyValueInReference = referenceIt->second;
-            auto &energyValueInTest      = testIt->second;
-            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest, energyTermsToCompare_.at(energyName));
+            auto& energyValueInReference = referenceIt->second;
+            auto& energyValueInTest      = testIt->second;
+            EXPECT_REAL_EQ_TOL(energyValueInReference, energyValueInTest,
+                               energyTermsToCompare_.at(energyName));
         }
         else
         {
@@ -122,25 +113,23 @@ void EnergyComparison::operator()(const EnergyFrame &reference,
     }
 }
 
-void
-checkEnergiesAgainstReferenceData(const std::string          &energyFilename,
-                                  const EnergyTermsToCompare &energyTermsToCompare,
-                                  TestReferenceChecker       *checker)
+void checkEnergiesAgainstReferenceData(const std::string&          energyFilename,
+                                       const EnergyTermsToCompare& energyTermsToCompare,
+                                       TestReferenceChecker*       checker)
 {
     const bool thisRankChecks = (gmx_node_rank() == 0);
 
     if (thisRankChecks)
     {
         EnergyComparison energyComparison(energyTermsToCompare);
-        auto             energyReader = openEnergyFileToReadTerms(energyFilename,
-                                                                  energyComparison.getEnergyNames());
+        auto energyReader = openEnergyFileToReadTerms(energyFilename, energyComparison.getEnergyNames());
 
         std::unordered_map<std::string, TestReferenceChecker> checkers;
-        for (const auto &energyTermToCompare : energyTermsToCompare)
+        for (const auto& energyTermToCompare : energyTermsToCompare)
         {
-            const auto &energyName = energyTermToCompare.first;
-            checkers[energyName] = checker->checkCompound("Energy", energyName.c_str());
-            const auto &energyTolerance = energyTermToCompare.second;
+            const auto& energyName      = energyTermToCompare.first;
+            checkers[energyName]        = checker->checkCompound("Energy", energyName.c_str());
+            const auto& energyTolerance = energyTermToCompare.second;
             checkers[energyName].setDefaultTolerance(energyTolerance);
         }
 
@@ -152,15 +141,15 @@ checkEnergiesAgainstReferenceData(const std::string          &energyFilename,
         int frameNumber = 0;
         while (energyReader->readNextFrame())
         {
-            const EnergyFrame &frame     = energyReader->frame();
+            const EnergyFrame& frame     = energyReader->frame();
             const std::string  frameName = frame.frameName() + " in frame " + toString(frameNumber);
 
-            for (const auto &energyTermToCompare : energyTermsToCompare)
+            for (const auto& energyTermToCompare : energyTermsToCompare)
             {
-                const std::string &energyName  = energyTermToCompare.first;
+                const std::string& energyName  = energyTermToCompare.first;
                 const real         energyValue = frame.at(energyName);
 
-                SCOPED_TRACE("Comparing " +  energyName + " in " + frameName);
+                SCOPED_TRACE("Comparing " + energyName + " in " + frameName);
                 checkers[energyName].checkReal(energyValue, frameName.c_str());
             }
             ++frameNumber;
@@ -172,5 +161,5 @@ checkEnergiesAgainstReferenceData(const std::string          &energyFilename,
     }
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

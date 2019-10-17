@@ -52,18 +52,17 @@
 
 namespace gmx
 {
-CheckpointHelper::CheckpointHelper(
-        std::vector<ICheckpointHelperClient*> clients,
-        std::unique_ptr<CheckpointHandler>    checkpointHandler,
-        int                                   initStep,
-        TrajectoryElement                    *trajectoryElement,
-        int                                   globalNumAtoms,
-        FILE                                 *fplog,
-        t_commrec                            *cr,
-        ObservablesHistory                   *observablesHistory,
-        gmx_walltime_accounting              *walltime_accounting,
-        t_state                              *state_global,
-        bool                                  writeFinalCheckpoint) :
+CheckpointHelper::CheckpointHelper(std::vector<ICheckpointHelperClient*> clients,
+                                   std::unique_ptr<CheckpointHandler>    checkpointHandler,
+                                   int                                   initStep,
+                                   TrajectoryElement*                    trajectoryElement,
+                                   int                                   globalNumAtoms,
+                                   FILE*                                 fplog,
+                                   t_commrec*                            cr,
+                                   ObservablesHistory*                   observablesHistory,
+                                   gmx_walltime_accounting*              walltime_accounting,
+                                   t_state*                              state_global,
+                                   bool                                  writeFinalCheckpoint) :
     clients_(std::move(clients)),
     checkpointHandler_(std::move(checkpointHandler)),
     initStep_(initStep),
@@ -79,10 +78,9 @@ CheckpointHelper::CheckpointHelper(
     state_global_(state_global)
 {
     // Get rid of nullptr in clients list
-    clients_.erase(
-            std::remove_if(clients_.begin(), clients_.end(),
-                           [](ICheckpointHelperClient* ptr){return !ptr; }),
-            clients_.end());
+    clients_.erase(std::remove_if(clients_.begin(), clients_.end(),
+                                  [](ICheckpointHelperClient* ptr) { return ptr == nullptr; }),
+                   clients_.end());
     if (DOMAINDECOMP(cr))
     {
         localState_ = std::make_unique<t_state>();
@@ -94,7 +92,6 @@ CheckpointHelper::CheckpointHelper(
         state_change_natoms(state_global, state_global->natoms);
         localStateInstance_ = state_global;
     }
-
 }
 
 void CheckpointHelper::run(Step step, Time time)
@@ -110,9 +107,7 @@ void CheckpointHelper::run(Step step, Time time)
     checkpointHandler_->setSignal(walltime_accounting_);
 }
 
-void CheckpointHelper::scheduleTask(
-        Step step, Time time,
-        const RegisterRunFunctionPtr &registerRunFunction)
+void CheckpointHelper::scheduleTask(Step step, Time time, const RegisterRunFunctionPtr& registerRunFunction)
 {
     // Only last step checkpointing is done here
     if (step != lastStep_ || !writeFinalCheckpoint_)
@@ -120,29 +115,26 @@ void CheckpointHelper::scheduleTask(
         return;
     }
     (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                                   [this, step, time]()
-                                   {writeCheckpoint(step, time); }));
+            [this, step, time]() { writeCheckpoint(step, time); }));
 }
 
 void CheckpointHelper::writeCheckpoint(Step step, Time time)
 {
     localStateInstance_->flags = 0;
-    for (const auto &client : clients_)
+    for (const auto& client : clients_)
     {
         client->writeCheckpoint(localStateInstance_, state_global_);
     }
 
-    mdoutf_write_to_trajectory_files(
-            fplog_, cr_, trajectoryElement_->outf_,
-            MDOF_CPT, globalNumAtoms_, step, time,
-            localStateInstance_, state_global_,
-            observablesHistory_, ArrayRef<RVec>());
+    mdoutf_write_to_trajectory_files(fplog_, cr_, trajectoryElement_->outf_, MDOF_CPT,
+                                     globalNumAtoms_, step, time, localStateInstance_,
+                                     state_global_, observablesHistory_, ArrayRef<RVec>());
 }
 
 SignallerCallbackPtr CheckpointHelper::registerLastStepCallback()
 {
     return std::make_unique<SignallerCallback>(
-            [this](Step step, Time gmx_unused time){this->lastStep_ = step; });
+            [this](Step step, Time gmx_unused time) { this->lastStep_ = step; });
 }
 
 } // namespace gmx

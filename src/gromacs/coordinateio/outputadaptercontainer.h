@@ -79,43 +79,41 @@ namespace gmx
  */
 class OutputAdapterContainer
 {
-    public:
-        //! Only allow constructing the container with defined output abilities.
-        explicit OutputAdapterContainer(unsigned long abilities)
-            : abilities_(abilities)
-        {}
-        //! Allow abilities to be also defined using the enum class.
-        explicit OutputAdapterContainer(CoordinateFileFlags abilities)
-            : abilities_(convertFlag(abilities))
-        {}
+public:
+    //! Only allow constructing the container with defined output abilities.
+    explicit OutputAdapterContainer(unsigned long abilities) : abilities_(abilities) {}
+    //! Allow abilities to be also defined using the enum class.
+    explicit OutputAdapterContainer(CoordinateFileFlags abilities) :
+        abilities_(convertFlag(abilities))
+    {
+    }
 
-        /*! \brief
-         * Add an adapter of a type not previously added.
-         *
-         * Only one adapter of each type can be registered, and the order of adapters
-         * is predefined in the underlying storage object.
-         * Calls internal checks to make sure that the new adapter does not violate
-         * any of the preconditions set to make an CoordinateFile object containing
-         * the registered modules.
-         *
-         * \param[in] adapter unique_ptr to adapter, with container taking ownership here.
-         * \param[in] type What kind of adapter is being added.
-         * \throws InternalError When registering an adapter of a type already registered .
-         * \throws InconsistentInputError When incompatible modules are added.
-         */
-        void addAdapter(OutputAdapterPointer adapter,
-                        CoordinateFileFlags  type);
+    /*! \brief
+     * Add an adapter of a type not previously added.
+     *
+     * Only one adapter of each type can be registered, and the order of adapters
+     * is predefined in the underlying storage object.
+     * Calls internal checks to make sure that the new adapter does not violate
+     * any of the preconditions set to make an CoordinateFile object containing
+     * the registered modules.
+     *
+     * \param[in] adapter unique_ptr to adapter, with container taking ownership here.
+     * \param[in] type What kind of adapter is being added.
+     * \throws InternalError When registering an adapter of a type already registered .
+     * \throws InconsistentInputError When incompatible modules are added.
+     */
+    void addAdapter(OutputAdapterPointer adapter, CoordinateFileFlags type);
 
-        //! Get vector of all registered adapters.
-        ArrayRef<const OutputAdapterPointer> getAdapters() { return outputAdapters_; }
-        //! Get info if we have any registered adapters.
-        bool isEmpty() const;
+    //! Get vector of all registered adapters.
+    ArrayRef<const OutputAdapterPointer> getAdapters() { return outputAdapters_; }
+    //! Get info if we have any registered adapters.
+    bool isEmpty() const;
 
-    private:
-        //! Array of registered modules.
-        EnumerationArray<CoordinateFileFlags, OutputAdapterPointer> outputAdapters_;
-        //! Construction time bitmask declaring what the OutputManager can do.
-        unsigned long                     abilities_ = convertFlag(CoordinateFileFlags::Base);
+private:
+    //! Array of registered modules.
+    EnumerationArray<CoordinateFileFlags, OutputAdapterPointer> outputAdapters_;
+    //! Construction time bitmask declaring what the OutputManager can do.
+    unsigned long abilities_ = convertFlag(CoordinateFileFlags::Base);
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,19 +66,21 @@ namespace gmx
 namespace test
 {
 
-MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
-                               rank_(gmx_node_rank()),
-                               mdrunCaller_(new CommandLine)
+MultiSimTest::MultiSimTest() :
+    size_(gmx_node_num()),
+    rank_(gmx_node_rank()),
+    mdrunCaller_(new CommandLine)
 
 {
-    const char *directoryNameFormat = "sim_%d";
+    const char* directoryNameFormat = "sim_%d";
 
     // Modify the file manager to have a temporary directory unique to
     // each simulation. No need to have a mutex on this, nobody else
     // can access the fileManager_ yet because we only just
     // constructed it.
     std::string originalTempDirectory = fileManager_.getOutputTempDirectory();
-    std::string newTempDirectory      = Path::join(originalTempDirectory, formatString(directoryNameFormat, rank_));
+    std::string newTempDirectory =
+            Path::join(originalTempDirectory, formatString(directoryNameFormat, rank_));
     Directory::create(newTempDirectory);
     fileManager_.setOutputTempDirectory(newTempDirectory);
 
@@ -90,39 +92,34 @@ MultiSimTest::MultiSimTest() : size_(gmx_node_num()),
     }
 }
 
-void MultiSimTest::organizeMdpFile(SimulationRunner *runner,
-                                   const char       *controlVariable,
-                                   int               numSteps)
+void MultiSimTest::organizeMdpFile(SimulationRunner* runner, const char* controlVariable, int numSteps)
 {
     const real  baseTemperature = 298;
     const real  basePressure    = 1;
-    std::string mdpFileContents =
-        formatString("nsteps = %d\n"
-                     "nstlog = 1\n"
-                     "nstcalcenergy = 1\n"
-                     "tcoupl = v-rescale\n"
-                     "tc-grps = System\n"
-                     "tau-t = 1\n"
-                     "ref-t = %f\n"
-                     // pressure coupling (if active)
-                     "tau-p = 1\n"
-                     "ref-p = %f\n"
-                     "compressibility = 4.5e-5\n"
-                     // velocity generation
-                     "gen-vel = yes\n"
-                     "gen-temp = %f\n"
-                     // control variable specification
-                     "%s\n",
-                     numSteps,
-                     baseTemperature + 0.0001*rank_,
-                     basePressure * std::pow(1.01, rank_),
-                     /* Set things up so that the initial KE decreases with
-                        increasing replica number, so that the (identical)
-                        starting PE decreases on the first step more for the
-                        replicas with higher number, which will tend to force
-                        replica exchange to occur. */
-                     std::max(baseTemperature - 10 * rank_, real(0)),
-                     controlVariable);
+    std::string mdpFileContents = formatString(
+            "nsteps = %d\n"
+            "nstlog = 1\n"
+            "nstcalcenergy = 1\n"
+            "tcoupl = v-rescale\n"
+            "tc-grps = System\n"
+            "tau-t = 1\n"
+            "ref-t = %f\n"
+            // pressure coupling (if active)
+            "tau-p = 1\n"
+            "ref-p = %f\n"
+            "compressibility = 4.5e-5\n"
+            // velocity generation
+            "gen-vel = yes\n"
+            "gen-temp = %f\n"
+            // control variable specification
+            "%s\n",
+            numSteps, baseTemperature + 0.0001 * rank_, basePressure * std::pow(1.01, rank_),
+            /* Set things up so that the initial KE decreases with
+               increasing replica number, so that the (identical)
+               starting PE decreases on the first step more for the
+               replicas with higher number, which will tend to force
+               replica exchange to occur. */
+            std::max(baseTemperature - 10 * rank_, real(0)), controlVariable);
     runner->useStringAsMdpFile(mdpFileContents);
 }
 
@@ -137,7 +134,7 @@ void MultiSimTest::runExitsNormallyTest()
     SimulationRunner runner(&fileManager_);
     runner.useTopGroAndNdxFromDatabase("spc2");
 
-    const char *pcoupl = GetParam();
+    const char* pcoupl = GetParam();
     organizeMdpFile(&runner, pcoupl);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
@@ -159,7 +156,7 @@ void MultiSimTest::runMaxhTest()
 
     TerminationHelper helper(&fileManager_, mdrunCaller_.get(), &runner);
     // Make sure -maxh has a chance to propagate
-    int               numSteps = 100;
+    int numSteps = 100;
     organizeMdpFile(&runner, "pcoupl = no", numSteps);
     /* Call grompp on every rank - the standard callGrompp() only runs
        grompp on rank 0. */
@@ -169,5 +166,5 @@ void MultiSimTest::runMaxhTest()
     helper.runSecondMdrun();
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

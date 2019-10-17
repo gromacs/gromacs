@@ -61,25 +61,25 @@ struct t_topology;
 struct TpxFileHeader
 {
     //! Non zero if input_rec is present.
-    bool  bIr = false;
+    bool bIr = false;
     //! Non zero if a box is present.
-    bool  bBox = false;
+    bool bBox = false;
     //! Non zero if a topology is present.
-    bool  bTop = false;
+    bool bTop = false;
     //! Non zero if coordinates are present.
-    bool  bX = false;
+    bool bX = false;
     //! Non zero if velocities are present.
-    bool  bV = false;
+    bool bV = false;
     //! Non zero if forces are present (no longer supported, but retained so old .tpr can be read)
-    bool  bF = false;
+    bool bF = false;
     //! The total number of atoms.
-    int   natoms = 0;
+    int natoms = 0;
     //! The number of temperature coupling groups.
-    int   ngtc = 0;
+    int ngtc = 0;
     //! Current value of lambda.
-    real  lambda = 0;
+    real lambda = 0;
     //! Current value of the alchemical state - not yet printed out.
-    int   fep_state = 0;
+    int fep_state = 0;
     /*a better decision will eventually (5.0 or later) need to be made
        on how to treat the alchemical state of the system, which can now
        vary through a simulation, and cannot be completely described
@@ -88,11 +88,11 @@ struct TpxFileHeader
     //! Size of the TPR body in chars (equal to number of bytes) during I/O.
     int64_t sizeOfTprBody = 0;
     //! File version.
-    int     fileVersion = 0;
+    int fileVersion = 0;
     //! File generation.
-    int     fileGeneration = 0;
+    int fileGeneration = 0;
     //! If the tpr file was written in double precision.
-    bool    isDouble = false;
+    bool isDouble = false;
 };
 
 /*! \brief
@@ -105,11 +105,11 @@ struct TpxFileHeader
 struct PartialDeserializedTprFile
 {
     //! The file header.
-    TpxFileHeader     header;
+    TpxFileHeader header;
     //! The file body.
     std::vector<char> body;
     //! Flag for PBC needed by legacy implementation.
-    int               ePBC = -1;
+    int ePBC = -1;
 };
 
 /*
@@ -133,10 +133,9 @@ struct PartialDeserializedTprFile
  * \param[in] canReadTopologyOnly If reading the inputrec can be skipped or not.
  * \returns An initialized and populated TPX File header object.
  */
-TpxFileHeader readTpxHeader(const char *fileName, bool canReadTopologyOnly);
+TpxFileHeader readTpxHeader(const char* fileName, bool canReadTopologyOnly);
 
-void write_tpx_state(const char *fn,
-                     const t_inputrec *ir, const t_state *state, const gmx_mtop_t *mtop);
+void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state, const gmx_mtop_t* mtop);
 /* Write a file, and close it again.
  */
 
@@ -154,17 +153,17 @@ void write_tpx_state(const char *fn,
  *
  * \returns PBC flag.
  */
-int completeTprDeserialization(PartialDeserializedTprFile *partialDeserializedTpr,
-                               t_inputrec                 *ir,
-                               t_state                    *state,
-                               rvec                       *x,
-                               rvec                       *v,
-                               gmx_mtop_t                 *mtop);
+int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                               t_inputrec*                 ir,
+                               t_state*                    state,
+                               rvec*                       x,
+                               rvec*                       v,
+                               gmx_mtop_t*                 mtop);
 
 //! Overload for final TPR deserialization when not using state vectors.
-int completeTprDeserialization(PartialDeserializedTprFile *partialDeserializedTpr,
-                               t_inputrec                 *ir,
-                               gmx_mtop_t                 *mtop);
+int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                               t_inputrec*                 ir,
+                               gmx_mtop_t*                 mtop);
 
 /*! \brief
  * Read a file to set up a simulation and close it after reading.
@@ -181,10 +180,7 @@ int completeTprDeserialization(PartialDeserializedTprFile *partialDeserializedTp
  * \param[out] mtop Global simulation topolgy.
  * \returns Struct with header and body in char vector.
  */
-PartialDeserializedTprFile read_tpx_state(const char *fn,
-                                          t_inputrec *ir,
-                                          t_state    *state,
-                                          gmx_mtop_t *mtop);
+PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_state* state, gmx_mtop_t* mtop);
 
 /*! \brief
  * Read a file and close it again.
@@ -208,18 +204,14 @@ PartialDeserializedTprFile read_tpx_state(const char *fn,
  * \param[out] mtop Topology to be populated, or nullptr.
  * \returns ir->ePBC if it was read from the file.
  */
-int read_tpx(const char *fn,
-             t_inputrec *ir, matrix box, int *natoms,
-             rvec *x, rvec *v, gmx_mtop_t *mtop);
+int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop);
 
-int read_tpx_top(const char *fn,
-                 t_inputrec *ir, matrix box, int *natoms,
-                 rvec *x, rvec *v, t_topology *top);
+int read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top);
 /* As read_tpx, but for the old t_topology struct */
 
-gmx_bool fn2bTPX(const char *file);
+gmx_bool fn2bTPX(const char* file);
 /* return if *file is one of the TPX file types */
 
-void pr_tpxheader(FILE *fp, int indent, const char *title, const TpxFileHeader *sh);
+void pr_tpxheader(FILE* fp, int indent, const char* title, const TpxFileHeader* sh);
 
 #endif

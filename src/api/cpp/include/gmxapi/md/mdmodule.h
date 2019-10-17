@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,37 +69,37 @@ namespace gmxapi
  */
 class MDModule
 {
-    public:
-        virtual ~MDModule();
+public:
+    virtual ~MDModule();
 
-        /*!
-         * \brief Get a user-friendly identifier for an instance.
-         *
-         * \return see documentation for specific MDModule implementations.
-         */
-        virtual const char* name() const;
+    /*!
+     * \brief Get a user-friendly identifier for an instance.
+     *
+     * \return see documentation for specific MDModule implementations.
+     */
+    virtual const char* name() const;
 
-        /*!
-         * \brief Allows module to provide a restraint implementation.
-         *
-         * To implement a restraint, override this function.
-         * \return shared ownership of a restraint implementation or nullptr if not implemented.
-         *
-         * With future maturation, this interface will presumably be revised to something
-         * more abstract, though I'm not sure what form that would take. We will probably
-         * still need to have a general set of possible module types defined with the API,
-         * in which case it does make sense to have clearly typed dispatching, and
-         * `bool hasRestraint = module->getRestraint() != nullptr;` might be the simplest thing.
-         *
-         * Implementing a restraint is explained in the GROMACS developer documentation,
-         * which is currently built separately from the GMXAPI documentation.
-         * Also, refer to the sample plugin in a repository hosted in the same
-         * place this git repository is found.
-         */
-        virtual std::shared_ptr<::gmx::IRestraintPotential> getRestraint();
+    /*!
+     * \brief Allows module to provide a restraint implementation.
+     *
+     * To implement a restraint, override this function.
+     * \return shared ownership of a restraint implementation or nullptr if not implemented.
+     *
+     * With future maturation, this interface will presumably be revised to something
+     * more abstract, though I'm not sure what form that would take. We will probably
+     * still need to have a general set of possible module types defined with the API,
+     * in which case it does make sense to have clearly typed dispatching, and
+     * `bool hasRestraint = module->getRestraint() != nullptr;` might be the simplest thing.
+     *
+     * Implementing a restraint is explained in the GROMACS developer documentation,
+     * which is currently built separately from the GMXAPI documentation.
+     * Also, refer to the sample plugin in a repository hosted in the same
+     * place this git repository is found.
+     */
+    virtual std::shared_ptr<::gmx::IRestraintPotential> getRestraint();
 };
 
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_MDMODULE_H
+#endif // GMXAPI_MDMODULE_H

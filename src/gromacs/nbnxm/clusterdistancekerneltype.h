@@ -61,9 +61,8 @@ enum class ClusterDistanceKernelType : int
 };
 
 //! Return the cluster distance kernel type given the pairlist type and atomdata
-static inline ClusterDistanceKernelType
-getClusterDistanceKernelType(const PairlistType      pairlistType,
-                             const nbnxn_atomdata_t &atomdata)
+static inline ClusterDistanceKernelType getClusterDistanceKernelType(const PairlistType pairlistType,
+                                                                     const nbnxn_atomdata_t& atomdata)
 {
     if (pairlistType == PairlistType::HierarchicalNxN)
     {
@@ -88,7 +87,8 @@ getClusterDistanceKernelType(const PairlistType      pairlistType,
 #elif GMX_SIMD && GMX_SIMD_REAL_WIDTH == 8
         return ClusterDistanceKernelType::CpuSimd_2xMM;
 #else
-        GMX_RELEASE_ASSERT(false, "Expect 4-wide or 8-wide SIMD with 4x4 list and nbat SIMD layout");
+        GMX_RELEASE_ASSERT(false,
+                           "Expect 4-wide or 8-wide SIMD with 4x4 list and nbat SIMD layout");
 #endif
     }
     else
@@ -99,7 +99,8 @@ getClusterDistanceKernelType(const PairlistType      pairlistType,
 #elif GMX_SIMD && GMX_SIMD_REAL_WIDTH == 16
         return ClusterDistanceKernelType::CpuSimd_2xMM;
 #else
-        GMX_RELEASE_ASSERT(false, "Expect 8-wide or 16-wide SIMD with 4x4 list and nbat SIMD layout");
+        GMX_RELEASE_ASSERT(false,
+                           "Expect 8-wide or 16-wide SIMD with 4x4 list and nbat SIMD layout");
 #endif
     }
 

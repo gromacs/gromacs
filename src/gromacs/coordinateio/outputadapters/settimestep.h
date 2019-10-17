@@ -61,51 +61,50 @@ namespace gmx
  */
 class SetTimeStep : public IOutputAdapter
 {
-    public:
-        /*! \brief
-         * Construct SetTime object with choice for how to change time.
-         *
-         * Can be used to initialize SetTime from outside of trajectoryanalysis
-         * with the user specified option to change frame time information or not.
-         *
-         * \param[in] timeStep User defined value for the time step.
-         */
-        explicit SetTimeStep(real timeStep) :
-            timeStep_(timeStep),
-            previousFrameTime_(0.0),
-            haveProcessedFirstFrame_(false)
-        {
-        }
-        /*! \brief
-         *  Move constructor for SetTimeStep.
-         */
-        SetTimeStep(SetTimeStep &&old) noexcept = default;
+public:
+    /*! \brief
+     * Construct SetTime object with choice for how to change time.
+     *
+     * Can be used to initialize SetTime from outside of trajectoryanalysis
+     * with the user specified option to change frame time information or not.
+     *
+     * \param[in] timeStep User defined value for the time step.
+     */
+    explicit SetTimeStep(real timeStep) :
+        timeStep_(timeStep),
+        previousFrameTime_(0.0),
+        haveProcessedFirstFrame_(false)
+    {
+    }
+    /*! \brief
+     *  Move constructor for SetTimeStep.
+     */
+    SetTimeStep(SetTimeStep&& old) noexcept = default;
 
-        ~SetTimeStep() override {}
+    ~SetTimeStep() override {}
 
-        void processFrame(int framenumber, t_trxframe *input) override;
+    void processFrame(int framenumber, t_trxframe* input) override;
 
-        void checkAbilityDependencies(unsigned long /* abilities */) const override {}
+    void checkAbilityDependencies(unsigned long /* abilities */) const override {}
 
-    private:
+private:
+    /*! \brief
+     * Calculates the time of the current coordinate frame based on user input.
+     *
+     * If the current frame is the first one, no changes to the time are made.
+     * For subsequent frames, the new frame time is based on the user input
+     * and the time of the previous frame.
+     *
+     * \param[in] currentInputFrameTime Input from processed coordinate frame.
+     */
+    real calculateNewFrameTime(real currentInputFrameTime);
 
-        /*! \brief
-         * Calculates the time of the current coordinate frame based on user input.
-         *
-         * If the current frame is the first one, no changes to the time are made.
-         * For subsequent frames, the new frame time is based on the user input
-         * and the time of the previous frame.
-         *
-         * \param[in] currentInputFrameTime Input from processed coordinate frame.
-         */
-        real calculateNewFrameTime(real currentInputFrameTime);
-
-        //! Time difference between frames.
-        real                timeStep_;
-        //! Time of the previous frame.
-        real                previousFrameTime_;
-        //! Has the first frame been processed?
-        bool                haveProcessedFirstFrame_;
+    //! Time difference between frames.
+    real timeStep_;
+    //! Time of the previous frame.
+    real previousFrameTime_;
+    //! Has the first frame been processed?
+    bool haveProcessedFirstFrame_;
 };
 
 //! Smart pointer to manage the object.

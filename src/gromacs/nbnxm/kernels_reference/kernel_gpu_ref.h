@@ -50,16 +50,15 @@ class StepWorkload;
 }
 
 /* Reference (slow) kernel for nb n vs n GPU type pair lists */
-void
-nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu     *nbl,
-                     const nbnxn_atomdata_t     *nbat,
-                     const interaction_const_t  *iconst,
-                     rvec                       *shift_vec,
-                     const gmx::StepWorkload    &stepWork,
-                     int                         clearF,
-                     gmx::ArrayRef<real>         f,
-                     real  *                     fshift,
-                     real  *                     Vc,
-                     real  *                     Vvdw);
+void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
+                          const nbnxn_atomdata_t*    nbat,
+                          const interaction_const_t* iconst,
+                          rvec*                      shift_vec,
+                          const gmx::StepWorkload&   stepWork,
+                          int                        clearF,
+                          gmx::ArrayRef<real>        f,
+                          real*                      fshift,
+                          real*                      Vc,
+                          real*                      Vvdw);
 
 #endif

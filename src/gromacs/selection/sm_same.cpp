@@ -66,26 +66,24 @@
 typedef struct
 {
     /** Value for each atom to match. */
-    union
-    {
-        int                 *i;
-        char               **s;
-        void                *ptr;
-    }                        val;
+    union {
+        int*   i;
+        char** s;
+        void*  ptr;
+    } val;
     /*! \brief
      * Number of values in the \p as array.
      *
      * For string values, this is actually the number of values in the
      * \p as_s_sorted array.
      */
-    int                      nas;
+    int nas;
     /** Values to match against. */
-    union
-    {
-        int                 *i;
-        char               **s;
-        void                *ptr;
-    }                        as;
+    union {
+        int*   i;
+        char** s;
+        void*  ptr;
+    } as;
     /*! \brief
      * Separate array for sorted \p as.s array.
      *
@@ -94,9 +92,9 @@ typedef struct
      * may be reused for several evaluations), so we keep our own copy for
      * modifications.
      */
-    char                   **as_s_sorted;
+    char** as_s_sorted;
     /** Whether simple matching can be used. */
-    bool                     bSorted;
+    bool bSorted;
 } t_methoddata_same;
 
 /*! \brief
@@ -107,8 +105,7 @@ typedef struct
  *      ::smparams_same_int or ::smparams_same_str).
  * \returns Pointer to the allocated data (\ref t_methoddata_same).
  */
-static void *
-init_data_same(int npar, gmx_ana_selparam_t *param);
+static void* init_data_same(int npar, gmx_ana_selparam_t* param);
 /*! \brief
  * Initializes the \p same selection method.
  *
@@ -119,11 +116,9 @@ init_data_same(int npar, gmx_ana_selparam_t *param);
  * \param   data  Pointer to \ref t_methoddata_same to initialize.
  * \returns 0 on success, -1 on failure.
  */
-static void
-init_same(const gmx_mtop_t *top, int npar, gmx_ana_selparam_t *param, void *data);
+static void init_same(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /** Frees the data allocated for the \p same selection method. */
-static void
-free_data_same(void *data);
+static void free_data_same(void* data);
 /*! \brief
  * Initializes the evaluation of the \p same selection method for a frame.
  *
@@ -133,12 +128,12 @@ free_data_same(void *data);
  * Sorts the \c data->as.i array and removes identical values for faster and
  * simpler lookup.
  */
-static void
-init_frame_same_int(const gmx::SelMethodEvalContext &context, void *data);
+static void init_frame_same_int(const gmx::SelMethodEvalContext& context, void* data);
 /** Evaluates the \p same selection method. */
-static void
-evaluate_same_int(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_same_int(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 /*! \brief
  * Initializes the evaluation of the \p same selection method for a frame.
  *
@@ -148,27 +143,27 @@ evaluate_same_int(const gmx::SelMethodEvalContext &context,
  * Sorts the \c data->as.s array and removes identical values for faster and
  * simpler lookup.
  */
-static void
-init_frame_same_str(const gmx::SelMethodEvalContext &context, void *data);
+static void init_frame_same_str(const gmx::SelMethodEvalContext& context, void* data);
 /** Evaluates the \p same selection method. */
-static void
-evaluate_same_str(const gmx::SelMethodEvalContext &context,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+static void evaluate_same_str(const gmx::SelMethodEvalContext& context,
+                              gmx_ana_index_t*                 g,
+                              gmx_ana_selvalue_t*              out,
+                              void*                            data);
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_int[] = {
-    {nullptr, {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {INT_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { nullptr, { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "as", { INT_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_str[] = {
-    {nullptr, {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL},
-    {"as", {STR_VALUE, -1, {nullptr}}, nullptr, SPAR_DYNAMIC | SPAR_VARNUM},
+    { nullptr, { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_ATOMVAL },
+    { "as", { STR_VALUE, -1, { nullptr } }, nullptr, SPAR_DYNAMIC | SPAR_VARNUM },
 };
 
 /** Help text for the \p same selection method. */
-static const char *const help_same[] = {
+static const char* const help_same[] = {
     "::",
     "",
     "  same KEYWORD as ATOM_EXPR",
@@ -181,8 +176,11 @@ static const char *const help_same[] = {
 
 /*! \internal \brief Selection method data for the \p same method. */
 gmx_ana_selmethod_t sm_same = {
-    "same", GROUP_VALUE, 0,
-    asize(smparams_same_int), smparams_same_int,
+    "same",
+    GROUP_VALUE,
+    0,
+    asize(smparams_same_int),
+    smparams_same_int,
     &init_data_same,
     nullptr,
     &init_same,
@@ -191,8 +189,7 @@ gmx_ana_selmethod_t sm_same = {
     &init_frame_same_int,
     &evaluate_same_int,
     nullptr,
-    {"same KEYWORD as ATOM_EXPR",
-     "Extending selections", asize(help_same), help_same},
+    { "same KEYWORD as ATOM_EXPR", "Extending selections", asize(help_same), help_same },
 };
 
 /*! \brief
@@ -203,8 +200,11 @@ gmx_ana_selmethod_t sm_same = {
  * with this method in cases where it is required.
  */
 static gmx_ana_selmethod_t sm_same_str = {
-    "same", GROUP_VALUE, SMETH_SINGLEVAL,
-    asize(smparams_same_str), smparams_same_str,
+    "same",
+    GROUP_VALUE,
+    SMETH_SINGLEVAL,
+    asize(smparams_same_str),
+    smparams_same_str,
     &init_data_same,
     nullptr,
     &init_same,
@@ -213,13 +213,12 @@ static gmx_ana_selmethod_t sm_same_str = {
     &init_frame_same_str,
     &evaluate_same_str,
     nullptr,
-    {nullptr, nullptr, 0, nullptr},
+    { nullptr, nullptr, 0, nullptr },
 };
 
-static void *
-init_data_same(int /* npar */, gmx_ana_selparam_t *param)
+static void* init_data_same(int /* npar */, gmx_ana_selparam_t* param)
 {
-    t_methoddata_same *data;
+    t_methoddata_same* data;
 
     snew(data, 1);
     data->as_s_sorted = nullptr;
@@ -235,10 +234,9 @@ init_data_same(int /* npar */, gmx_ana_selparam_t *param)
  * If \p *method is not a \c same method, this function returns
  * immediately.
  */
-void
-_gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **method,
-                              const gmx::SelectionParserParameterListPointer &params,
-                              void                                           *scanner)
+void _gmx_selelem_custom_init_same(gmx_ana_selmethod_t**                           method,
+                                   const gmx::SelectionParserParameterListPointer& params,
+                                   void*                                           scanner)
 {
 
     /* Do nothing if this is not a same method. */
@@ -247,13 +245,13 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
         return;
     }
 
-    const gmx::SelectionParserValueList &kwvalues = params->front().values();
+    const gmx::SelectionParserValueList& kwvalues = params->front().values();
     if (kwvalues.size() != 1 || !kwvalues.front().hasExpressionValue()
         || kwvalues.front().expr->type != SEL_EXPRESSION)
     {
         GMX_THROW(gmx::InvalidInputError("'same' should be followed by a single keyword"));
     }
-    gmx_ana_selmethod_t *kwmethod = kwvalues.front().expr->u.expr.method;
+    gmx_ana_selmethod_t* kwmethod = kwvalues.front().expr->u.expr.method;
     if (kwmethod->type == STR_VALUE)
     {
         *method = &sm_same_str;
@@ -263,28 +261,28 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
     gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
     if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
-        const gmx::SelectionParserValueList &asvalues = asparam->values();
+        const gmx::SelectionParserValueList& asvalues = asparam->values();
         if (asvalues.size() != 1 || !asvalues.front().hasExpressionValue())
         {
             // TODO: Think about providing more informative context.
-            GMX_THROW(gmx::InvalidInputError("'same ... as' should be followed by a single expression"));
+            GMX_THROW(gmx::InvalidInputError(
+                    "'same ... as' should be followed by a single expression"));
         }
-        const gmx::SelectionTreeElementPointer &child = asvalues.front().expr;
+        const gmx::SelectionTreeElementPointer& child = asvalues.front().expr;
         /* Create a second keyword evaluation element for the keyword given as
          * the first parameter, evaluating the keyword in the group given by the
          * second parameter. */
-        gmx::SelectionTreeElementPointer kwelem
-            = _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
+        gmx::SelectionTreeElementPointer kwelem =
+                _gmx_sel_init_keyword_evaluator(kwmethod, child, scanner);
         /* Replace the second parameter with one with a value from \p kwelem. */
         std::string pname = asparam->name();
-        *asparam = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
+        *asparam          = gmx::SelectionParserParameter::createFromExpression(pname, kwelem);
     }
 }
 
-static void
-init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
+static void init_same(const gmx_mtop_t* /* top */, int /* npar */, gmx_ana_selparam_t* param, void* data)
 {
-    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
 
     d->val.ptr = param[0].val.u.ptr;
     d->as.ptr  = param[1].val.u.ptr;
@@ -294,19 +292,18 @@ init_same(const gmx_mtop_t * /* top */, int /* npar */, gmx_ana_selparam_t *para
     }
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
-        GMX_THROW(gmx::InvalidInputError(
-                          "The 'same' selection keyword combined with a "
-                          "non-keyword does not make sense"));
+        GMX_THROW(
+                gmx::InvalidInputError("The 'same' selection keyword combined with a "
+                                       "non-keyword does not make sense"));
     }
 }
 
 /*!
  * \param data Data to free (should point to a \ref t_methoddata_same).
  */
-static void
-free_data_same(void *data)
+static void free_data_same(void* data)
 {
-    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
 
     sfree(d->as_s_sorted);
     sfree(d);
@@ -315,8 +312,7 @@ free_data_same(void *data)
 /*! \brief
  * Helper function for comparison of two integers.
  */
-static int
-cmp_int(const void *a, const void *b)
+static int cmp_int(const void* a, const void* b)
 {
     if (*reinterpret_cast<const int*>(a) < *reinterpret_cast<const int*>(b))
     {
@@ -329,10 +325,9 @@ cmp_int(const void *a, const void *b)
     return 0;
 }
 
-static void
-init_frame_same_int(const gmx::SelMethodEvalContext & /*context*/, void *data)
+static void init_frame_same_int(const gmx::SelMethodEvalContext& /*context*/, void* data)
 {
-    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
     int                i, j;
 
     /* Collapse adjacent values, and check whether the array is sorted. */
@@ -381,15 +376,16 @@ init_frame_same_int(const gmx::SelMethodEvalContext & /*context*/, void *data)
  * binary search of \c data->as is performed for each block of values in
  * \c data->val.
  */
-static void
-evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_same_int(const gmx::SelMethodEvalContext& /*context*/,
+                              gmx_ana_index_t*    g,
+                              gmx_ana_selvalue_t* out,
+                              void*               data)
 {
-    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
-    int                    i, j;
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
+    int                i, j;
 
     out->u.g->isize = 0;
-    i               = j = 0;
+    i = j = 0;
     while (j < g->isize)
     {
         if (d->bSorted)
@@ -451,22 +447,20 @@ evaluate_same_int(const gmx::SelMethodEvalContext & /*context*/,
 /*! \brief
  * Helper function for comparison of two strings.
  */
-static int
-cmp_str(const void *a, const void *b)
+static int cmp_str(const void* a, const void* b)
 {
-    return strcmp(*static_cast<char *const*>(a), *static_cast<char *const*>(b));
+    return strcmp(*static_cast<char* const*>(a), *static_cast<char* const*>(b));
 }
 
-static void
-init_frame_same_str(const gmx::SelMethodEvalContext & /*context*/, void *data)
+static void init_frame_same_str(const gmx::SelMethodEvalContext& /*context*/, void* data)
 {
-    t_methoddata_same *d = static_cast<t_methoddata_same *>(data);
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
     int                i, j;
 
     /* Collapse adjacent values.
      * For strings, it's unlikely that the values would be sorted originally,
      * so set bSorted always to false. */
-    d->bSorted        = false;
+    d->bSorted = false;
     if (d->nas == 0)
     {
         return;
@@ -504,26 +498,26 @@ init_frame_same_str(const gmx::SelMethodEvalContext & /*context*/, void *data)
  * A binary search of \c data->as is performed for each block of values in
  * \c data->val.
  */
-static void
-evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
-                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+static void evaluate_same_str(const gmx::SelMethodEvalContext& /*context*/,
+                              gmx_ana_index_t*    g,
+                              gmx_ana_selvalue_t* out,
+                              void*               data)
 {
-    t_methoddata_same     *d = static_cast<t_methoddata_same *>(data);
-    int                    j;
+    t_methoddata_same* d = static_cast<t_methoddata_same*>(data);
+    int                j;
 
     out->u.g->isize = 0;
     j               = 0;
     while (j < g->isize)
     {
         /* Do a binary search of the strings. */
-        void *ptr;
-        ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas,
-                      sizeof(d->as_s_sorted[0]), &cmp_str);
+        void* ptr;
+        ptr = bsearch(&d->val.s[j], d->as_s_sorted, d->nas, sizeof(d->as_s_sorted[0]), &cmp_str);
         /* Check whether the value was found in the as list. */
         if (ptr == nullptr)
         {
             /* If not, skip all atoms with the same value. */
-            const char *tmpval = d->val.s[j];
+            const char* tmpval = d->val.s[j];
             ++j;
             while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
             {
@@ -532,7 +526,7 @@ evaluate_same_str(const gmx::SelMethodEvalContext & /*context*/,
         }
         else
         {
-            const char *tmpval = d->val.s[j];
+            const char* tmpval = d->val.s[j];
             /* Copy all the atoms with this value to the output. */
             while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
             {

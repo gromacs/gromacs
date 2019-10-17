@@ -58,35 +58,33 @@
 struct AtomTypeData
 {
     //! Explicit constructor.
-    AtomTypeData(const t_atom            &a,
-                 char                   **name,
-                 const InteractionOfType &nb,
-                 const int                bondAtomType,
-                 const int                atomNumber) :
-        atom_(a), name_(name), nb_(nb),
+    AtomTypeData(const t_atom& a, char** name, const InteractionOfType& nb, const int bondAtomType, const int atomNumber) :
+        atom_(a),
+        name_(name),
+        nb_(nb),
         bondAtomType_(bondAtomType),
         atomNumber_(atomNumber)
     {
     }
     //! Actual atom data.
-    t_atom             atom_;
+    t_atom atom_;
     //! Atom name.
-    char             **name_;
+    char** name_;
     //! Nonbonded data.
-    InteractionOfType  nb_;
+    InteractionOfType nb_;
     //! Bonded atomtype for the type.
-    int                bondAtomType_;
+    int bondAtomType_;
     //! Atom number for the atom type.
-    int                atomNumber_;
+    int atomNumber_;
 };
 
 class PreprocessingAtomTypes::Impl
 {
-    public:
-        //! The number for currently loaded entries.
-        size_t size() const { return types.size(); }
-        //! The actual atom type data.
-        std::vector<AtomTypeData> types;
+public:
+    //! The number for currently loaded entries.
+    size_t size() const { return types.size(); }
+    //! The actual atom type data.
+    std::vector<AtomTypeData> types;
 };
 
 bool PreprocessingAtomTypes::isSet(int nt) const
@@ -94,12 +92,11 @@ bool PreprocessingAtomTypes::isSet(int nt) const
     return ((nt >= 0) && (nt < gmx::ssize(*this)));
 }
 
-int PreprocessingAtomTypes::atomTypeFromName(const std::string &str) const
+int PreprocessingAtomTypes::atomTypeFromName(const std::string& str) const
 {
     /* Atom types are always case sensitive */
     auto found = std::find_if(impl_->types.begin(), impl_->types.end(),
-                              [&str](const auto &type)
-                              { return str == *type.name_; });
+                              [&str](const auto& type) { return str == *type.name_; });
     if (found == impl_->types.end())
     {
         return NOTSET;
@@ -115,7 +112,7 @@ size_t PreprocessingAtomTypes::size() const
     return impl_->size();
 }
 
-const char *PreprocessingAtomTypes::atomNameFromAtomType(int nt) const
+const char* PreprocessingAtomTypes::atomNameFromAtomType(int nt) const
 {
     return isSet(nt) ? *(impl_->types[nt].name_) : nullptr;
 }
@@ -159,38 +156,32 @@ real PreprocessingAtomTypes::atomNonBondedParamFromAtomType(int nt, int param) c
     return forceParam[param];
 }
 
-PreprocessingAtomTypes::PreprocessingAtomTypes()
-    : impl_(new Impl)
-{}
+PreprocessingAtomTypes::PreprocessingAtomTypes() : impl_(new Impl) {}
 
-PreprocessingAtomTypes::PreprocessingAtomTypes(PreprocessingAtomTypes &&old) noexcept
-    : impl_(std::move(old.impl_))
-{}
+PreprocessingAtomTypes::PreprocessingAtomTypes(PreprocessingAtomTypes&& old) noexcept :
+    impl_(std::move(old.impl_))
+{
+}
 
-PreprocessingAtomTypes &PreprocessingAtomTypes::operator=(PreprocessingAtomTypes &&old) noexcept
+PreprocessingAtomTypes& PreprocessingAtomTypes::operator=(PreprocessingAtomTypes&& old) noexcept
 {
     impl_ = std::move(old.impl_);
     return *this;
 }
 
-PreprocessingAtomTypes::~PreprocessingAtomTypes()
-{}
+PreprocessingAtomTypes::~PreprocessingAtomTypes() {}
 
-int PreprocessingAtomTypes::addType(t_symtab                *tab,
-                                    const t_atom            &a,
-                                    const std::string       &name,
-                                    const InteractionOfType &nb,
+int PreprocessingAtomTypes::addType(t_symtab*                tab,
+                                    const t_atom&            a,
+                                    const std::string&       name,
+                                    const InteractionOfType& nb,
                                     int                      bondAtomType,
                                     int                      atomNumber)
 {
     int position = atomTypeFromName(name);
     if (position == NOTSET)
     {
-        impl_->types.emplace_back(a,
-                                  put_symtab(tab, name.c_str()),
-                                  nb,
-                                  bondAtomType,
-                                  atomNumber);
+        impl_->types.emplace_back(a, put_symtab(tab, name.c_str()), nb, bondAtomType, atomNumber);
         return atomTypeFromName(name);
     }
     else
@@ -200,10 +191,10 @@ int PreprocessingAtomTypes::addType(t_symtab                *tab,
 }
 
 int PreprocessingAtomTypes::setType(int                      nt,
-                                    t_symtab                *tab,
-                                    const t_atom            &a,
-                                    const std::string       &name,
-                                    const InteractionOfType &nb,
+                                    t_symtab*                tab,
+                                    const t_atom&            a,
+                                    const std::string&       name,
+                                    const InteractionOfType& nb,
                                     int                      bondAtomType,
                                     int                      atomNumber)
 {
@@ -221,23 +212,22 @@ int PreprocessingAtomTypes::setType(int                      nt,
     return nt;
 }
 
-void PreprocessingAtomTypes::printTypes(FILE * out)
+void PreprocessingAtomTypes::printTypes(FILE* out)
 {
-    fprintf (out, "[ %s ]\n", dir2str(Directive::d_atomtypes));
-    fprintf (out, "; %6s  %8s  %8s  %8s  %12s  %12s\n",
-             "type", "mass", "charge", "particle", "c6", "c12");
-    for (auto &entry : impl_->types)
+    fprintf(out, "[ %s ]\n", dir2str(Directive::d_atomtypes));
+    fprintf(out, "; %6s  %8s  %8s  %8s  %12s  %12s\n", "type", "mass", "charge", "particle", "c6",
+            "c12");
+    for (auto& entry : impl_->types)
     {
-        fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
-                *(entry.name_), entry.atom_.m, entry.atom_.q, "A",
-                entry.nb_.c0(), entry.nb_.c1());
+        fprintf(out, "%8s  %8.3f  %8.3f  %8s  %12e  %12e\n", *(entry.name_), entry.atom_.m,
+                entry.atom_.q, "A", entry.nb_.c0(), entry.nb_.c1());
     }
 
-    fprintf (out, "\n");
+    fprintf(out, "\n");
 }
 
-static int search_atomtypes(const PreprocessingAtomTypes          *ga,
-                            int                                   *n,
+static int search_atomtypes(const PreprocessingAtomTypes*          ga,
+                            int*                                   n,
                             gmx::ArrayRef<int>                     typelist,
                             int                                    thistype,
                             gmx::ArrayRef<const InteractionOfType> interactionTypes,
@@ -262,17 +252,17 @@ static int search_atomtypes(const PreprocessingAtomTypes          *ga,
         for (int j = 0; j < ntype && bFound; j++)
         {
             /* Check nonbonded parameters */
-            gmx::ArrayRef<const real> forceParam1 = interactionTypes[ntype*typelist[i]+j].forceParam();
-            gmx::ArrayRef<const real> forceParam2 = interactionTypes[ntype*thistype+j].forceParam();
+            gmx::ArrayRef<const real> forceParam1 =
+                    interactionTypes[ntype * typelist[i] + j].forceParam();
+            gmx::ArrayRef<const real> forceParam2 = interactionTypes[ntype * thistype + j].forceParam();
             for (int k = 0; (k < nrfp) && bFound; k++)
             {
                 bFound = forceParam1[k] == forceParam2[k];
             }
 
             /* Check atomnumber */
-            int tli    = typelist[i];
-            bFound = bFound &&
-                (ga->atomNumberFromAtomType(tli) == ga->atomNumberFromAtomType(thistype));
+            int tli = typelist[i];
+            bFound = bFound && (ga->atomNumberFromAtomType(tli) == ga->atomNumberFromAtomType(thistype));
         }
         if (bFound)
         {
@@ -294,12 +284,12 @@ static int search_atomtypes(const PreprocessingAtomTypes          *ga,
     return i;
 }
 
-void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType>        plist,
-                                           gmx_mtop_t                              *mtop,
-                                           int                                     *wall_atomtype,
-                                           bool                                     bVerbose)
+void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType> plist,
+                                           gmx_mtop_t*                       mtop,
+                                           int*                              wall_atomtype,
+                                           bool                              bVerbose)
 {
-    int         nat, ftype, ntype;
+    int nat, ftype, ntype;
 
     ntype = size();
     std::vector<int> typelist(ntype);
@@ -332,17 +322,15 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType>    
      * can determine if two types should be merged.
      */
     nat = 0;
-    for (const gmx_moltype_t &moltype : mtop->moltype)
+    for (const gmx_moltype_t& moltype : mtop->moltype)
     {
-        const t_atoms *atoms = &moltype.atoms;
+        const t_atoms* atoms = &moltype.atoms;
         for (int i = 0; (i < atoms->nr); i++)
         {
-            atoms->atom[i].type =
-                search_atomtypes(this, &nat, typelist, atoms->atom[i].type,
-                                 plist[ftype].interactionTypes, ftype);
-            atoms->atom[i].typeB =
-                search_atomtypes(this, &nat, typelist, atoms->atom[i].typeB,
-                                 plist[ftype].interactionTypes, ftype);
+            atoms->atom[i].type  = search_atomtypes(this, &nat, typelist, atoms->atom[i].type,
+                                                   plist[ftype].interactionTypes, ftype);
+            atoms->atom[i].typeB = search_atomtypes(this, &nat, typelist, atoms->atom[i].typeB,
+                                                    plist[ftype].interactionTypes, ftype);
         }
     }
 
@@ -367,8 +355,9 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType>    
         for (int j = 0; (j < nat); j++)
         {
             int                      mj              = typelist[j];
-            const InteractionOfType &interactionType = plist[ftype].interactionTypes[ntype*mi+mj];
-            nbsnew.emplace_back(interactionType.atoms(), interactionType.forceParam(), interactionType.interactionTypeName());
+            const InteractionOfType& interactionType = plist[ftype].interactionTypes[ntype * mi + mj];
+            nbsnew.emplace_back(interactionType.atoms(), interactionType.forceParam(),
+                                interactionType.interactionTypeName());
         }
         new_types.push_back(impl_->types[mi]);
     }
@@ -379,10 +368,10 @@ void PreprocessingAtomTypes::renumberTypes(gmx::ArrayRef<InteractionsOfType>    
     plist[ftype].interactionTypes = nbsnew;
 }
 
-void PreprocessingAtomTypes::copyTot_atomtypes(t_atomtypes *atomtypes) const
+void PreprocessingAtomTypes::copyTot_atomtypes(t_atomtypes* atomtypes) const
 {
     /* Copy the atomtype data to the topology atomtype list */
-    int ntype         = size();
+    int ntype     = size();
     atomtypes->nr = ntype;
     snew(atomtypes->atomnumber, ntype);
 

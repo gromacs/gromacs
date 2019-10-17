@@ -58,9 +58,14 @@
 /* This function computes factors needed for restricted angle potential.
  * For explanations on formula used see file "restcbt.h" */
 
-void compute_factors_restangles(int type, const t_iparams forceparams[],
-                                rvec delta_ante,  rvec delta_post,
-                                double *prefactor, double *ratio_ante, double *ratio_post, real *v)
+void compute_factors_restangles(int             type,
+                                const t_iparams forceparams[],
+                                rvec            delta_ante,
+                                rvec            delta_post,
+                                double*         prefactor,
+                                double*         ratio_ante,
+                                double*         ratio_post,
+                                real*           v)
 {
     // These variables are double to make the code
     // reproducible.
@@ -73,7 +78,7 @@ void compute_factors_restangles(int type, const t_iparams forceparams[],
     double term_theta_theta_equil;
 
     k_bending          = forceparams[type].harmonic.krA;
-    theta_equil        =  forceparams[type].harmonic.rA*DEG2RAD;
+    theta_equil        = forceparams[type].harmonic.rA * DEG2RAD;
     theta_equil        = M_PI - theta_equil;
     cosine_theta_equil = cos(theta_equil);
 
@@ -90,22 +95,33 @@ void compute_factors_restangles(int type, const t_iparams forceparams[],
 
     delta_cosine           = cosine_theta - cosine_theta_equil;
     term_theta_theta_equil = 1 - cosine_theta * cosine_theta_equil;
-    *prefactor             = -(k_bending) * delta_cosine * norm * term_theta_theta_equil / (sine_theta_sq * sine_theta_sq);
+    *prefactor = -(k_bending)*delta_cosine * norm * term_theta_theta_equil / (sine_theta_sq * sine_theta_sq);
 
     *v = k_bending * 0.5 * delta_cosine * delta_cosine / sine_theta_sq;
-
 }
 
 
 /* Compute factors for restricted dihedral potential
  * For explanations on formula used see file "restcbt.h" */
-void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
-                               rvec delta_ante, rvec delta_crnt, rvec delta_post,
-                               real *factor_phi_ai_ante, real *factor_phi_ai_crnt, real *factor_phi_ai_post,
-                               real *factor_phi_aj_ante, real *factor_phi_aj_crnt, real *factor_phi_aj_post,
-                               real *factor_phi_ak_ante, real *factor_phi_ak_crnt, real *factor_phi_ak_post,
-                               real *factor_phi_al_ante, real *factor_phi_al_crnt, real *factor_phi_al_post,
-                               real *prefactor_phi, real *v)
+void compute_factors_restrdihs(int             type,
+                               const t_iparams forceparams[],
+                               rvec            delta_ante,
+                               rvec            delta_crnt,
+                               rvec            delta_post,
+                               real*           factor_phi_ai_ante,
+                               real*           factor_phi_ai_crnt,
+                               real*           factor_phi_ai_post,
+                               real*           factor_phi_aj_ante,
+                               real*           factor_phi_aj_crnt,
+                               real*           factor_phi_aj_post,
+                               real*           factor_phi_ak_ante,
+                               real*           factor_phi_ak_crnt,
+                               real*           factor_phi_ak_post,
+                               real*           factor_phi_al_ante,
+                               real*           factor_phi_al_crnt,
+                               real*           factor_phi_al_post,
+                               real*           prefactor_phi,
+                               real*           v)
 {
 
     real phi0, cosine_phi0;
@@ -171,7 +187,7 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
     ratio_phi_post = c_prod / d_post;
 
     /*      Computation of the prefactor - common term for all forces */
-    *prefactor_phi = -(k_torsion) * delta_cosine * norm_phi * term_phi_phi0 / (sine_phi_sq * sine_phi_sq);
+    *prefactor_phi = -(k_torsion)*delta_cosine * norm_phi * term_phi_phi0 / (sine_phi_sq * sine_phi_sq);
 
     /* Computation of force factors.  Factors factor_phi_*  are coming from the
      * derivatives of the torsion angle (phi) with respect to the beads ai, aj, al, ak,
@@ -183,10 +199,12 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
     *factor_phi_ai_crnt = -c_cros_post - ratio_phi_ante * c_cros_ante;
     *factor_phi_ai_post = c_self_crnt;
     *factor_phi_aj_ante = -c_cros_post - ratio_phi_ante * (c_self_crnt + c_cros_ante);
-    *factor_phi_aj_crnt = c_cros_post + c_cros_acrs * 2.0 + ratio_phi_ante * (c_self_ante + c_cros_ante) + ratio_phi_post * c_self_post;
+    *factor_phi_aj_crnt = c_cros_post + c_cros_acrs * 2.0
+                          + ratio_phi_ante * (c_self_ante + c_cros_ante) + ratio_phi_post * c_self_post;
     *factor_phi_aj_post = -(c_cros_ante + c_self_crnt) - ratio_phi_post * c_cros_post;
     *factor_phi_ak_ante = c_cros_post + c_self_crnt + ratio_phi_ante * c_cros_ante;
-    *factor_phi_ak_crnt = -(c_cros_ante + c_cros_acrs * 2.0)- ratio_phi_ante * c_self_ante - ratio_phi_post * (c_self_post + c_cros_post);
+    *factor_phi_ak_crnt = -(c_cros_ante + c_cros_acrs * 2.0) - ratio_phi_ante * c_self_ante
+                          - ratio_phi_post * (c_self_post + c_cros_post);
     *factor_phi_ak_post = c_cros_ante + ratio_phi_post * (c_self_crnt + c_cros_post);
     *factor_phi_al_ante = -c_self_crnt;
     *factor_phi_al_crnt = c_cros_ante + ratio_phi_post * c_cros_post;
@@ -197,22 +215,31 @@ void compute_factors_restrdihs(int type,  const t_iparams forceparams[],
 }
 
 
-
 /* Compute factors for CBT potential
  * For explanations on formula used see file "restcbt.h" */
 
-void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
-                             rvec delta_ante, rvec delta_crnt, rvec delta_post,
-                             rvec f_phi_ai, rvec f_phi_aj, rvec f_phi_ak, rvec f_phi_al,
-                             rvec f_theta_ante_ai, rvec f_theta_ante_aj, rvec f_theta_ante_ak,
-                             rvec f_theta_post_aj, rvec f_theta_post_ak, rvec f_theta_post_al,
-                             real * v)
+void compute_factors_cbtdihs(int             type,
+                             const t_iparams forceparams[],
+                             rvec            delta_ante,
+                             rvec            delta_crnt,
+                             rvec            delta_post,
+                             rvec            f_phi_ai,
+                             rvec            f_phi_aj,
+                             rvec            f_phi_ak,
+                             rvec            f_phi_al,
+                             rvec            f_theta_ante_ai,
+                             rvec            f_theta_ante_aj,
+                             rvec            f_theta_ante_ak,
+                             rvec            f_theta_post_aj,
+                             rvec            f_theta_post_ak,
+                             rvec            f_theta_post_al,
+                             real*           v)
 {
     int  j, d;
     real torsion_coef[NR_CBTDIHS];
     real c_self_ante, c_self_crnt, c_self_post;
     real c_cros_ante, c_cros_acrs, c_cros_post;
-    real c_prod, d_ante,  d_post;
+    real c_prod, d_ante, d_post;
     real norm_phi, norm_theta_ante, norm_theta_post;
     real cosine_phi, cosine_theta_ante, cosine_theta_post;
     real sine_theta_ante_sq, sine_theta_post_sq;
@@ -245,7 +272,7 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
 
     for (j = 0; (j < NR_CBTDIHS); j++)
     {
-        torsion_coef[j]  = forceparams[type].cbtdihs.cbtcA[j];
+        torsion_coef[j] = forceparams[type].cbtdihs.cbtcA[j];
     }
 
     /* Computation of the cosine of the dihedral angle. The scalar ("dot") product  method
@@ -307,8 +334,10 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     /*      Computing 2nd power */
     r1 = cosine_phi;
 
-    prefactor_phi = -torsion_coef[0] * norm_phi * (torsion_coef[2] + torsion_coef[3] * 2.0 * cosine_phi + torsion_coef[4] * 3.0 * (r1 * r1) + 4*torsion_coef[5]*r1*r1*r1) *
-        sine_theta_ante_sq * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
+    prefactor_phi = -torsion_coef[0] * norm_phi
+                    * (torsion_coef[2] + torsion_coef[3] * 2.0 * cosine_phi
+                       + torsion_coef[4] * 3.0 * (r1 * r1) + 4 * torsion_coef[5] * r1 * r1 * r1)
+                    * sine_theta_ante_sq * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
 
     /* Computation of factors (important for gaining speed). Factors factor_phi_*  are coming from the
      * derivatives of the torsion angle (phi) with respect to the beads ai, aj, al, ak,
@@ -320,10 +349,12 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     factor_phi_ai_crnt = -c_cros_post - ratio_phi_ante * c_cros_ante;
     factor_phi_ai_post = c_self_crnt;
     factor_phi_aj_ante = -c_cros_post - ratio_phi_ante * (c_self_crnt + c_cros_ante);
-    factor_phi_aj_crnt = c_cros_post + c_cros_acrs * 2.0 + ratio_phi_ante * (c_self_ante + c_cros_ante) +  ratio_phi_post * c_self_post;
+    factor_phi_aj_crnt = c_cros_post + c_cros_acrs * 2.0
+                         + ratio_phi_ante * (c_self_ante + c_cros_ante) + ratio_phi_post * c_self_post;
     factor_phi_aj_post = -(c_cros_ante + c_self_crnt) - ratio_phi_post * c_cros_post;
     factor_phi_ak_ante = c_cros_post + c_self_crnt + ratio_phi_ante * c_cros_ante;
-    factor_phi_ak_crnt = -(c_cros_ante + c_cros_acrs * 2.0) - ratio_phi_ante * c_self_ante - ratio_phi_post * (c_self_post + c_cros_post);
+    factor_phi_ak_crnt = -(c_cros_ante + c_cros_acrs * 2.0) - ratio_phi_ante * c_self_ante
+                         - ratio_phi_post * (c_self_post + c_cros_post);
     factor_phi_ak_post = c_cros_ante + ratio_phi_post * (c_self_crnt + c_cros_post);
     factor_phi_al_ante = -c_self_crnt;
     factor_phi_al_crnt = c_cros_ante + ratio_phi_post * c_cros_post;
@@ -332,10 +363,18 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     /* Computation of forces due to the derivatives of dihedral angle phi*/
     for (d = 0; d < DIM; d++)
     {
-        f_phi_ai[d] = prefactor_phi * (factor_phi_ai_ante * delta_ante[d] + factor_phi_ai_crnt * delta_crnt[d] + factor_phi_ai_post * delta_post[d]);
-        f_phi_aj[d] = prefactor_phi * (factor_phi_aj_ante * delta_ante[d] + factor_phi_aj_crnt * delta_crnt[d] + factor_phi_aj_post * delta_post[d]);
-        f_phi_ak[d] = prefactor_phi * (factor_phi_ak_ante * delta_ante[d] + factor_phi_ak_crnt * delta_crnt[d] + factor_phi_ak_post * delta_post[d]);
-        f_phi_al[d] = prefactor_phi * (factor_phi_al_ante * delta_ante[d] + factor_phi_al_crnt * delta_crnt[d] + factor_phi_al_post * delta_post[d]);
+        f_phi_ai[d] = prefactor_phi
+                      * (factor_phi_ai_ante * delta_ante[d] + factor_phi_ai_crnt * delta_crnt[d]
+                         + factor_phi_ai_post * delta_post[d]);
+        f_phi_aj[d] = prefactor_phi
+                      * (factor_phi_aj_ante * delta_ante[d] + factor_phi_aj_crnt * delta_crnt[d]
+                         + factor_phi_aj_post * delta_post[d]);
+        f_phi_ak[d] = prefactor_phi
+                      * (factor_phi_ak_ante * delta_ante[d] + factor_phi_ak_crnt * delta_crnt[d]
+                         + factor_phi_ak_post * delta_post[d]);
+        f_phi_al[d] = prefactor_phi
+                      * (factor_phi_al_ante * delta_ante[d] + factor_phi_al_crnt * delta_crnt[d]
+                         + factor_phi_al_post * delta_post[d]);
     }
 
     /* PART 3 - COMPUTES THE FORCE COMPONENTS DUE TO THE DERIVATIVES OF BENDING ANGLE THETHA_ANTHE */
@@ -349,16 +388,23 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     /*      Computing 3rd power */
     r2 = cosine_phi;
 
-    prefactor_theta_ante = -torsion_coef[0] * norm_theta_ante * ( torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) +
-                                                                  torsion_coef[4] * (r2 * (r2 * r2))+ torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * (-3.0) * cosine_theta_ante * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
+    prefactor_theta_ante =
+            -torsion_coef[0] * norm_theta_ante
+            * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1)
+               + torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2))))
+            * (-3.0) * cosine_theta_ante * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
 
 
     /*      Computation of forces due to the derivatives of bending angle theta_ante */
     for (d = 0; d < DIM; d++)
     {
-        f_theta_ante_ai[d] = prefactor_theta_ante * (ratio_theta_ante_ante * delta_ante[d] - delta_crnt[d]);
-        f_theta_ante_aj[d] = prefactor_theta_ante * ((ratio_theta_ante_crnt + 1.0) * delta_crnt[d] - (ratio_theta_ante_ante + 1.0) * delta_ante[d]);
-        f_theta_ante_ak[d] = prefactor_theta_ante * (delta_ante[d] - ratio_theta_ante_crnt * delta_crnt[d]);
+        f_theta_ante_ai[d] =
+                prefactor_theta_ante * (ratio_theta_ante_ante * delta_ante[d] - delta_crnt[d]);
+        f_theta_ante_aj[d] = prefactor_theta_ante
+                             * ((ratio_theta_ante_crnt + 1.0) * delta_crnt[d]
+                                - (ratio_theta_ante_ante + 1.0) * delta_ante[d]);
+        f_theta_ante_ak[d] =
+                prefactor_theta_ante * (delta_ante[d] - ratio_theta_ante_crnt * delta_crnt[d]);
     }
 
     /* PART 4 - COMPUTES THE FORCE COMPONENTS DUE TO THE DERIVATIVES OF THE BENDING ANGLE THETA_POST */
@@ -373,24 +419,30 @@ void compute_factors_cbtdihs(int type,  const t_iparams forceparams[],
     /*      Computing 3rd power */
     r2 = cosine_phi;
 
-    prefactor_theta_post = -torsion_coef[0] * norm_theta_post * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) +
-                                                                 torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * sine_theta_ante_sq * sine_theta_ante * (-3.0) * cosine_theta_post * sine_theta_post;
+    prefactor_theta_post =
+            -torsion_coef[0] * norm_theta_post
+            * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1)
+               + torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2))))
+            * sine_theta_ante_sq * sine_theta_ante * (-3.0) * cosine_theta_post * sine_theta_post;
 
 
     /*      Computation of forces due to the derivatives of bending angle Theta_Post */
     for (d = 0; d < DIM; d++)
     {
-        f_theta_post_aj[d] = prefactor_theta_post * (ratio_theta_post_crnt * delta_crnt[d] - delta_post[d]);
-        f_theta_post_ak[d] = prefactor_theta_post * ((ratio_theta_post_post + 1.0) * delta_post[d] - (ratio_theta_post_crnt + 1.0) * delta_crnt[d]);
-        f_theta_post_al[d] = prefactor_theta_post * (delta_crnt[d] - ratio_theta_post_post * delta_post[d]);
+        f_theta_post_aj[d] =
+                prefactor_theta_post * (ratio_theta_post_crnt * delta_crnt[d] - delta_post[d]);
+        f_theta_post_ak[d] = prefactor_theta_post
+                             * ((ratio_theta_post_post + 1.0) * delta_post[d]
+                                - (ratio_theta_post_crnt + 1.0) * delta_crnt[d]);
+        f_theta_post_al[d] =
+                prefactor_theta_post * (delta_crnt[d] - ratio_theta_post_post * delta_post[d]);
     }
     r1 = cosine_phi;
     r2 = cosine_phi;
 
     /* Contribution to energy - for formula see file "restcbt.h" */
-    *v = torsion_coef[0] * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) +
-                            torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * sine_theta_ante_sq *
-        sine_theta_ante * sine_theta_post_sq * sine_theta_post;
-
-
+    *v = torsion_coef[0]
+         * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1)
+            + torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2))))
+         * sine_theta_ante_sq * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
 }

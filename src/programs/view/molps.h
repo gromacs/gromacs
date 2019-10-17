@@ -42,7 +42,7 @@
 
 struct t_psdata;
 
-extern void ps_draw_mol(t_psdata *ps, t_manager *man);
+extern void ps_draw_mol(t_psdata* ps, t_manager* man);
 /* Draw molecules to a postscript file */
 
-#endif  /* _molps_h */
+#endif /* _molps_h */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,60 +62,52 @@ namespace test
  * The implementation is templated so that we can support all of real,
  * float and double in the same build without duplication.
  */
-template <typename FloatType>
-class FloatTypeMatcher : public testing::MatcherInterface < std::tuple < FloatType, FloatType>>
+template<typename FloatType>
+class FloatTypeMatcher : public testing::MatcherInterface<std::tuple<FloatType, FloatType>>
 {
-    public:
-        //! Constructor
-        FloatTypeMatcher(const FloatingPointTolerance &tolerance)
-            : tolerance_(tolerance) {}
-        //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
-        bool MatchAndExplain(std::tuple<FloatType, FloatType> arg,
-                             testing::MatchResultListener* listener) const override
+public:
+    //! Constructor
+    FloatTypeMatcher(const FloatingPointTolerance& tolerance) : tolerance_(tolerance) {}
+    //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
+    bool MatchAndExplain(std::tuple<FloatType, FloatType> arg, testing::MatchResultListener* listener) const override
+    {
+        const FloatType&        value1 = std::get<0>(arg);
+        const FloatType&        value2 = std::get<1>(arg);
+        FloatingPointDifference diff(value1, value2);
+        if (tolerance_.isWithin(diff))
         {
-            const FloatType        &value1 = std::get<0>(arg);
-            const FloatType        &value2 = std::get<1>(arg);
-            FloatingPointDifference diff(value1, value2);
-            if (tolerance_.isWithin(diff))
-            {
-                return true;
-            }
-            *listener->stream()
-            << "  Actual value: " << value2 << std::endl
-            << "Expected value: " << value1 << std::endl
-            << "    Difference: " << diff.toString() << std::endl
-            << "     Tolerance: " << tolerance_.toString(diff);
-            return false;
+            return true;
         }
-        //! Describe to a human what matching means.
-        void DescribeTo(::std::ostream* os) const override
-        {
-            *os << "matches within tolerance";
-        }
-        //! Describe to a human what failing to match means.
-        void DescribeNegationTo(::std::ostream* os) const override
-        {
-            *os << "does not match within tolerance";
-        }
-    private:
-        //! Tolerance used in matching
-        FloatingPointTolerance tolerance_;
+        *listener->stream() << "  Actual value: " << value2 << std::endl
+                            << "Expected value: " << value1 << std::endl
+                            << "    Difference: " << diff.toString() << std::endl
+                            << "     Tolerance: " << tolerance_.toString(diff);
+        return false;
+    }
+    //! Describe to a human what matching means.
+    void DescribeTo(::std::ostream* os) const override { *os << "matches within tolerance"; }
+    //! Describe to a human what failing to match means.
+    void DescribeNegationTo(::std::ostream* os) const override
+    {
+        *os << "does not match within tolerance";
+    }
+
+private:
+    //! Tolerance used in matching
+    FloatingPointTolerance tolerance_;
 };
 
-testing::Matcher < std::tuple < float, float>>
-FloatEq(const FloatingPointTolerance &tolerance)
+testing::Matcher<std::tuple<float, float>> FloatEq(const FloatingPointTolerance& tolerance)
 {
     return testing::MakeMatcher(new FloatTypeMatcher<float>(tolerance));
 }
 
-testing::Matcher < std::tuple < double, double>>
-DoubleEq(const FloatingPointTolerance &tolerance)
+testing::Matcher<std::tuple<double, double>> DoubleEq(const FloatingPointTolerance& tolerance)
 {
     return testing::MakeMatcher(new FloatTypeMatcher<double>(tolerance));
 }
 
-testing::Matcher < std::tuple < real, real>>
-RealEq(const FloatingPointTolerance &tolerance)
+testing::Matcher<std::tuple<real, real>> RealEq(const FloatingPointTolerance& tolerance)
 {
     return testing::MakeMatcher(new FloatTypeMatcher<real>(tolerance));
 }
@@ -124,53 +116,52 @@ RealEq(const FloatingPointTolerance &tolerance)
  *
  * See RvecEq().
  */
-template <typename FloatType>
+template<typename FloatType>
 class RVecMatcher :
-    public testing::MatcherInterface < std::tuple < BasicVector<FloatType>, BasicVector<FloatType>>>
+    public testing::MatcherInterface<std::tuple<BasicVector<FloatType>, BasicVector<FloatType>>>
 {
-    public:
-        //! Convenience type
-        using VectorType = BasicVector<FloatType>;
-        //! Constructor
-        RVecMatcher(const FloatingPointTolerance &tolerance)
-            : tolerance_(tolerance) {}
-        //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
-        bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
-                             testing::MatchResultListener* listener) const override
+public:
+    //! Convenience type
+    using VectorType = BasicVector<FloatType>;
+    //! Constructor
+    RVecMatcher(const FloatingPointTolerance& tolerance) : tolerance_(tolerance) {}
+    //! Compare the two elements of \c arg, return whether they are equal, and comment on \c listener when they are not.
+    bool MatchAndExplain(std::tuple<VectorType, VectorType> arg,
+                         testing::MatchResultListener*      listener) const override
+    {
+        const VectorType&           lhs = std::get<0>(arg);
+        const VectorType&           rhs = std::get<1>(arg);
+        FloatTypeMatcher<FloatType> floatTypeMatcher(tolerance_);
+        bool                        matches = true;
+        for (int d = 0; d < DIM; ++d)
         {
-            const VectorType           &lhs = std::get<0>(arg);
-            const VectorType           &rhs = std::get<1>(arg);
-            FloatTypeMatcher<FloatType> floatTypeMatcher(tolerance_);
-            bool matches = true;
-            for (int d = 0; d < DIM; ++d)
-            {
-                auto floatTuple = std::make_tuple<FloatType, FloatType>(lhs[d], rhs[d]);
-                matches = matches && floatTypeMatcher.MatchAndExplain(floatTuple, listener);
-            }
-            return matches;
+            auto floatTuple = std::make_tuple<FloatType, FloatType>(lhs[d], rhs[d]);
+            matches         = matches && floatTypeMatcher.MatchAndExplain(floatTuple, listener);
         }
-        //! Describe to a human what matching means.
-        void DescribeTo(::std::ostream* os) const override
-        {
-            *os << "matches all elements within tolerance";
-        }
-        //! Describe to a human what failing to match means.
-        void DescribeNegationTo(::std::ostream* os) const override
-        {
-            *os << "does not match all elements within tolerance";
-        }
-    private:
-        //! Tolerance used in matching
-        FloatingPointTolerance tolerance_;
+        return matches;
+    }
+    //! Describe to a human what matching means.
+    void DescribeTo(::std::ostream* os) const override
+    {
+        *os << "matches all elements within tolerance";
+    }
+    //! Describe to a human what failing to match means.
+    void DescribeNegationTo(::std::ostream* os) const override
+    {
+        *os << "does not match all elements within tolerance";
+    }
+
+private:
+    //! Tolerance used in matching
+    FloatingPointTolerance tolerance_;
 };
 
 // Currently there's no need for explicit float or double flavours of
 // RVec comparison, but those would be simple to add later.
-testing::Matcher < std::tuple < RVec, RVec>>
-RVecEq(const FloatingPointTolerance &tolerance)
+testing::Matcher<std::tuple<RVec, RVec>> RVecEq(const FloatingPointTolerance& tolerance)
 {
     return testing::MakeMatcher(new RVecMatcher<real>(tolerance));
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

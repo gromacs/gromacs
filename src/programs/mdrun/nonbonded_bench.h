@@ -50,13 +50,13 @@ namespace gmx
 //! Declares gmx nonbonded-bench.
 class NonbondedBenchmarkInfo
 {
-    public:
-        //! Name of the module.
-        static const char name[];
-        //! Short module description.
-        static const char shortDescription[];
-        //! Build the actual gmx module to use.
-        static ICommandLineOptionsModulePointer create();
+public:
+    //! Name of the module.
+    static const char name[];
+    //! Short module description.
+    static const char shortDescription[];
+    //! Build the actual gmx module to use.
+    static ICommandLineOptionsModulePointer create();
 };
 
 } // namespace gmx

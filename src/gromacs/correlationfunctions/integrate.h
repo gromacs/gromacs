@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
  * (written when i % nskip == 0)
  * \return The integral
  */
-real print_and_integrate(FILE *fp, int n, real dt, const real c[], const real *fit, int nskip);
+real print_and_integrate(FILE* fp, int n, real dt, const real c[], const real* fit, int nskip);
 
 /*! \brief
  * Integrate data in y using the trapezium rule, and, if given, use dy as weighting
@@ -74,7 +74,6 @@ real print_and_integrate(FILE *fp, int n, real dt, const real c[], const real *f
  * \param[out] stddev The standard deviation in the integral
  * \return the integral
  */
-real evaluate_integral(int n, const real x[], const real y[], const real dy[], real aver_start,
-                       real *stddev);
+real evaluate_integral(int n, const real x[], const real y[], const real dy[], real aver_start, real* stddev);
 
 #endif

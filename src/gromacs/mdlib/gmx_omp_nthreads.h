@@ -52,8 +52,16 @@ typedef enum module_nth
 {
     /* Default is meant to be used in OMP regions outside the named
      * algorithmic modules listed below. */
-    emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
-    emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
+    emntDefault,
+    emntDomdec,
+    emntPairsearch,
+    emntNonbonded,
+    emntBonded,
+    emntPME,
+    emntUpdate,
+    emntVSITE,
+    emntLINCS,
+    emntSETTLE,
     emntNR
 } module_nth_t;
 
@@ -63,12 +71,13 @@ typedef enum module_nth
  * It is compatible with tMPI, thread-safety is ensured (for the features
  * available with tMPI).
  * This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
-                           int nthreads_hw_avail,
-                           int numRanksOnThisNode,
-                           int omp_nthreads_req,
-                           int omp_nthreads_pme_req,
-                           gmx_bool bCurrNodePMEOnly);
+void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
+                           t_commrec*           cr,
+                           int                  nthreads_hw_avail,
+                           int                  numRanksOnThisNode,
+                           int                  omp_nthreads_req,
+                           int                  omp_nthreads_pme_req,
+                           gmx_bool             bCurrNodePMEOnly);
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod. */
@@ -116,7 +125,6 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the
  * command line. */
-void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
-                               int                 *nthreads_omp);
+void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp);
 
 #endif

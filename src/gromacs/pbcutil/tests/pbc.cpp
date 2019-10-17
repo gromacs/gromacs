@@ -61,9 +61,7 @@ TEST(PbcTest, CalcShiftsWorks)
     // Choose box vector entries whose magnitudes will lead to unique
     // shift vector values when the largest box shift in any dimension
     // is two.
-    const matrix box = {{ 0.01,     1, -100 },
-                        {  300, -0.03,    3 },
-                        {   -6,  -600, 0.06 }};
+    const matrix box = { { 0.01, 1, -100 }, { 300, -0.03, 3 }, { -6, -600, 0.06 } };
     rvec         shiftVectors[SHIFTS];
 
     calc_shifts(box, shiftVectors);

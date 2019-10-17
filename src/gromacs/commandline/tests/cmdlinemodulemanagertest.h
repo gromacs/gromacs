@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,31 +69,28 @@ class TestFileOutputRedirector;
  */
 class MockModule : public gmx::ICommandLineModule
 {
-    public:
-        //! Creates a mock module with the given name and description.
-        MockModule(const char *name, const char *description);
-        ~MockModule() override;
+public:
+    //! Creates a mock module with the given name and description.
+    MockModule(const char* name, const char* description);
+    ~MockModule() override;
 
-        const char *name() const override { return name_; }
-        const char *shortDescription() const override { return descr_; }
+    const char* name() const override { return name_; }
+    const char* shortDescription() const override { return descr_; }
 
-        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
-        MOCK_METHOD2(run, int(int argc, char *argv[]));
-        MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
+    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings* settings));
+    MOCK_METHOD2(run, int(int argc, char* argv[]));
+    MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext& context));
 
-        //! Sets the expected display name for writeHelp() calls.
-        void setExpectedDisplayName(const char *expected)
-        {
-            expectedDisplayName_ = expected;
-        }
+    //! Sets the expected display name for writeHelp() calls.
+    void setExpectedDisplayName(const char* expected) { expectedDisplayName_ = expected; }
 
-    private:
-        //! Checks the context passed to writeHelp().
-        void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
+private:
+    //! Checks the context passed to writeHelp().
+    void checkHelpContext(const gmx::CommandLineHelpContext& context) const;
 
-        const char             *name_;
-        const char             *descr_;
-        std::string             expectedDisplayName_;
+    const char* name_;
+    const char* descr_;
+    std::string expectedDisplayName_;
 };
 
 /*! \internal \brief
@@ -103,14 +100,15 @@ class MockModule : public gmx::ICommandLineModule
  */
 class MockOptionsModule : public gmx::ICommandLineOptionsModule
 {
-    public:
-        MockOptionsModule();
-        ~MockOptionsModule() override;
+public:
+    MockOptionsModule();
+    ~MockOptionsModule() override;
 
-        MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings *settings));
-        MOCK_METHOD2(initOptions, void(gmx::IOptionsContainer *options, gmx::ICommandLineOptionsModuleSettings *settings));
-        MOCK_METHOD0(optionsFinished, void());
-        MOCK_METHOD0(run, int());
+    MOCK_METHOD1(init, void(gmx::CommandLineModuleSettings* settings));
+    MOCK_METHOD2(initOptions,
+                 void(gmx::IOptionsContainer* options, gmx::ICommandLineOptionsModuleSettings* settings));
+    MOCK_METHOD0(optionsFinished, void());
+    MOCK_METHOD0(run, int());
 };
 
 /*! \internal \brief
@@ -120,40 +118,40 @@ class MockOptionsModule : public gmx::ICommandLineOptionsModule
  */
 class CommandLineModuleManagerTestBase : public gmx::test::StringTestBase
 {
-    public:
-        CommandLineModuleManagerTestBase();
-        ~CommandLineModuleManagerTestBase() override;
+public:
+    CommandLineModuleManagerTestBase();
+    ~CommandLineModuleManagerTestBase() override;
 
-        //! Creates the manager to run the given command line.
-        void initManager(const CommandLine &args, const char *realBinaryName);
-        //! Adds a mock module to the manager.
-        MockModule               &addModule(const char *name, const char *description);
-        //! Adds a mock module using gmx::Options to the manager.
-        MockOptionsModule        &addOptionsModule(const char *name, const char *description);
-        //! Adds a mock help topic to the manager.
-        MockHelpTopic            &addHelpTopic(const char *name, const char *title);
+    //! Creates the manager to run the given command line.
+    void initManager(const CommandLine& args, const char* realBinaryName);
+    //! Adds a mock module to the manager.
+    MockModule& addModule(const char* name, const char* description);
+    //! Adds a mock module using gmx::Options to the manager.
+    MockOptionsModule& addOptionsModule(const char* name, const char* description);
+    //! Adds a mock help topic to the manager.
+    MockHelpTopic& addHelpTopic(const char* name, const char* title);
 
-        /*! \brief
-         * Returns the manager for this test.
-         *
-         * initManager() must have been called.
-         */
-        CommandLineModuleManager &manager();
+    /*! \brief
+     * Returns the manager for this test.
+     *
+     * initManager() must have been called.
+     */
+    CommandLineModuleManager& manager();
 
-        /*! \brief
-         * Checks all output from the manager using reference data.
-         *
-         * Both output to `stdout` and to files is checked.
-         *
-         * The manager is put into quiet mode by default, so the manager will
-         * only print out information if, e.g., help is explicitly requested.
-         */
-        void checkRedirectedOutput();
+    /*! \brief
+     * Checks all output from the manager using reference data.
+     *
+     * Both output to `stdout` and to files is checked.
+     *
+     * The manager is put into quiet mode by default, so the manager will
+     * only print out information if, e.g., help is explicitly requested.
+     */
+    void checkRedirectedOutput();
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

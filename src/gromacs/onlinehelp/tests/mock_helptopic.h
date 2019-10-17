@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,40 +55,40 @@ namespace test
 
 class MockHelpTopic : public AbstractCompositeHelpTopic
 {
-    public:
-        static MockHelpTopic &addSubTopic(
-            gmx::AbstractCompositeHelpTopic *parent,
-            const char *name, const char *title, const char *text);
+public:
+    static MockHelpTopic& addSubTopic(gmx::AbstractCompositeHelpTopic* parent,
+                                      const char*                      name,
+                                      const char*                      title,
+                                      const char*                      text);
 
-        MockHelpTopic(const char *name, const char *title, const char *text);
-        ~MockHelpTopic() override;
+    MockHelpTopic(const char* name, const char* title, const char* text);
+    ~MockHelpTopic() override;
 
-        const char *name() const override;
-        const char *title() const override;
+    const char* name() const override;
+    const char* title() const override;
 
-        MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext &context));
+    MOCK_CONST_METHOD1(writeHelp, void(const HelpWriterContext& context));
 
-        MockHelpTopic &addSubTopic(const char *name, const char *title,
-                                   const char *text);
-        using AbstractCompositeHelpTopic::addSubTopic;
+    MockHelpTopic& addSubTopic(const char* name, const char* title, const char* text);
+    using AbstractCompositeHelpTopic::addSubTopic;
 
-        /*! \brief
-         * Calls base class writeHelp() method.
-         *
-         * This provides the possibility for the mock to do the actual help
-         * writing.
-         */
-        void writeHelpBase(const HelpWriterContext &context)
-        {
-            AbstractCompositeHelpTopic::writeHelp(context);
-        }
+    /*! \brief
+     * Calls base class writeHelp() method.
+     *
+     * This provides the possibility for the mock to do the actual help
+     * writing.
+     */
+    void writeHelpBase(const HelpWriterContext& context)
+    {
+        AbstractCompositeHelpTopic::writeHelp(context);
+    }
 
-    private:
-        std::string helpText() const override;
+private:
+    std::string helpText() const override;
 
-        const char             *name_;
-        const char             *title_;
-        const char             *text_;
+    const char* name_;
+    const char* title_;
+    const char* text_;
 };
 
 } // namespace test

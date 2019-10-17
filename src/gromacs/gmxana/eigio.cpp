@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,18 +44,24 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
-                       rvec **xref, gmx_bool *bDMR,
-                       rvec **xav, gmx_bool *bDMA,
-                       int *nvec, int **eignr,
-                       rvec ***eigvec, real **eigval)
+void read_eigenvectors(const char* file,
+                       int*        natoms,
+                       gmx_bool*   bFit,
+                       rvec**      xref,
+                       gmx_bool*   bDMR,
+                       rvec**      xav,
+                       gmx_bool*   bDMA,
+                       int*        nvec,
+                       int**       eignr,
+                       rvec***     eigvec,
+                       real**      eigval)
 {
-    gmx_trr_header_t   head;
-    int                i, snew_size;
-    struct t_fileio   *status;
-    rvec              *x;
-    matrix             box;
-    gmx_bool           bOK;
+    gmx_trr_header_t head;
+    int              i, snew_size;
+    struct t_fileio* status;
+    rvec*            x;
+    matrix           box;
+    gmx_bool         bOK;
 
     *bDMR = FALSE;
 
@@ -77,7 +83,8 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         *bFit = (head.lambda > -0.5);
         if (*bFit)
         {
-            fprintf(stderr, "Read %smass weighted reference structure with %d atoms from %s\n", *bDMR ? "" : "non ", *natoms, file);
+            fprintf(stderr, "Read %smass weighted reference structure with %d atoms from %s\n",
+                    *bDMR ? "" : "non ", *natoms, file);
         }
         else
         {
@@ -96,15 +103,15 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
     *bDMA = (head.lambda > 0.5);
     if ((head.t <= -0.01) || (head.t >= 0.01))
     {
-        fprintf(stderr, "WARNING: %s does not start with t=0, which should be the "
+        fprintf(stderr,
+                "WARNING: %s does not start with t=0, which should be the "
                 "average structure. This might not be a eigenvector file. "
                 "Some things might go wrong.\n",
                 file);
     }
     else
     {
-        fprintf(stderr,
-                "Read %smass weighted average/minimum structure with %d atoms from %s\n",
+        fprintf(stderr, "Read %smass weighted average/minimum structure with %d atoms from %s\n",
                 *bDMA ? "" : "non ", *natoms, file);
     }
 
@@ -127,7 +134,7 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
         }
         i                = head.step;
         (*eigval)[*nvec] = head.t;
-        (*eignr)[*nvec]  = i-1;
+        (*eignr)[*nvec]  = i - 1;
         snew((*eigvec)[*nvec], *natoms);
         for (i = 0; i < *natoms; i++)
         {
@@ -141,24 +148,30 @@ void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
 }
 
 
-void write_eigenvectors(const char *trrname, int natoms, const real mat[],
-                        gmx_bool bReverse, int begin, int end,
-                        int WriteXref, const rvec *xref, gmx_bool bDMR,
-                        const rvec xav[], gmx_bool bDMA, const real eigval[])
+void write_eigenvectors(const char* trrname,
+                        int         natoms,
+                        const real  mat[],
+                        gmx_bool    bReverse,
+                        int         begin,
+                        int         end,
+                        int         WriteXref,
+                        const rvec* xref,
+                        gmx_bool    bDMR,
+                        const rvec  xav[],
+                        gmx_bool    bDMA,
+                        const real  eigval[])
 {
-    struct t_fileio *trrout;
+    struct t_fileio* trrout;
     int              ndim, i, j, d, vec;
     matrix           zerobox;
-    rvec            *x;
+    rvec*            x;
 
-    ndim = natoms*DIM;
+    ndim = natoms * DIM;
     clear_mat(zerobox);
     snew(x, natoms);
 
-    fprintf (stderr,
-             "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
-             (WriteXref == eWXR_YES) ? "reference, " : "",
-             begin, end, trrname);
+    fprintf(stderr, "\nWriting %saverage structure & eigenvectors %d--%d to %s\n",
+            (WriteXref == eWXR_YES) ? "reference, " : "", begin, end, trrname);
 
     trrout = gmx_trr_open(trrname, "w");
     if (WriteXref == eWXR_YES)
@@ -175,7 +188,7 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
     /* misuse lambda: 0/1 mass weighted analysis no/yes */
     gmx_trr_write_frame(trrout, 0, 0, bDMA ? 1.0 : 0.0, zerobox, natoms, xav, nullptr, nullptr);
 
-    for (i = 0; i <= (end-begin); i++)
+    for (i = 0; i <= (end - begin); i++)
     {
 
         if (!bReverse)
@@ -184,19 +197,19 @@ void write_eigenvectors(const char *trrname, int natoms, const real mat[],
         }
         else
         {
-            vec = ndim-i-1;
+            vec = ndim - i - 1;
         }
 
         for (j = 0; j < natoms; j++)
         {
             for (d = 0; d < DIM; d++)
             {
-                x[j][d] = mat[vec*ndim+DIM*j+d];
+                x[j][d] = mat[vec * ndim + DIM * j + d];
             }
         }
 
         /* Store the eigenvalue in the time field */
-        gmx_trr_write_frame(trrout, begin+i, eigval[vec], 0, zerobox, natoms, x, nullptr, nullptr);
+        gmx_trr_write_frame(trrout, begin + i, eigval[vec], 0, zerobox, natoms, x, nullptr, nullptr);
     }
     gmx_trr_close(trrout);
 

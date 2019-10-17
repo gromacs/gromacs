@@ -71,210 +71,204 @@ namespace test
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetAtomsSupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.atoms = ChangeAtomsType::AlwaysFromStructure;
+        requirements.atoms = ChangeAtomsType::AlwaysFromStructure;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetAtomsUnSupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.atoms = ChangeAtomsType::AlwaysFromStructure;
+        requirements.atoms = ChangeAtomsType::AlwaysFromStructure;
 
-            EXPECT_THROW(runTest(filename, requirements), InconsistentInputError);
-        }
+        EXPECT_THROW(runTest(filename, requirements), InconsistentInputError);
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
-class AnyOutputSupportedFiles : public ModuleTest,
-                                public ModuleSelection
+class AnyOutputSupportedFiles : public ModuleTest, public ModuleSelection
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            //! Storage for requirements.
-            OutputRequirements requirements;
-            //! Local atoms
-            Selection          sel;
-            //! Local box
-            matrix             box;
+public:
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        //! Storage for requirements.
+        OutputRequirements requirements;
+        //! Local atoms
+        Selection sel;
+        //! Local box
+        matrix box;
 
-            clear_mat(box);
+        clear_mat(box);
 
-            addOptionForSelection(&dummySelection_, true);
-            setSelectionOptionValues(getOption(), &dummySelection_, true);
+        addOptionForSelection(&dummySelection_, true);
+        setSelectionOptionValues(getOption(), &dummySelection_, true);
 
-            copy_mat(requirements.newBox, box);
-            requirements.box       = ChangeFrameInfoType::Always;
-            requirements.frameTime = ChangeFrameTimeType::Both;
+        copy_mat(requirements.newBox, box);
+        requirements.box       = ChangeFrameInfoType::Always;
+        requirements.frameTime = ChangeFrameTimeType::Both;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test support for disabling all output options. */
 class NoOptionalOutput : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.atoms     = ChangeAtomsType::Never;
-            requirements.velocity  = ChangeSettingType::Never;
-            requirements.force     = ChangeSettingType::Never;
-            requirements.precision = ChangeFrameInfoType::Always;
-            requirements.prec      = 3;
+        requirements.atoms     = ChangeAtomsType::Never;
+        requirements.velocity  = ChangeSettingType::Never;
+        requirements.force     = ChangeSettingType::Never;
+        requirements.precision = ChangeFrameInfoType::Always;
+        requirements.prec      = 3;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test that invalid selection is rejected */
-class OutputSelectorDeathTest : public ModuleTest,
-                                public ModuleSelection
+class OutputSelectorDeathTest : public ModuleTest, public ModuleSelection
 {
-    public:
-        void prepareTest()
-        {
-            //! Storage for frameadapters.
-            OutputAdapterContainer adapters(CoordinateFileFlags::Base);
-            //! Local atoms
-            Selection              sel;
+public:
+    void prepareTest()
+    {
+        //! Storage for frameadapters.
+        OutputAdapterContainer adapters(CoordinateFileFlags::Base);
+        //! Local atoms
+        Selection sel;
 
-            addOptionForSelection(&sel, false);
-            setSelectionOptionValues(getOption(), &sel, false);
+        addOptionForSelection(&sel, false);
+        setSelectionOptionValues(getOption(), &sel, false);
 
-            ASSERT_DEATH_IF_SUPPORTED(
-                    adapters.addAdapter(std::make_unique<OutputSelector>(sel),
-                                        CoordinateFileFlags::RequireCoordinateSelection),
-                    "Need a valid selection out of simple atom indices");
-        }
+        ASSERT_DEATH_IF_SUPPORTED(adapters.addAdapter(std::make_unique<OutputSelector>(sel),
+                                                      CoordinateFileFlags::RequireCoordinateSelection),
+                                  "Need a valid selection out of simple atom indices");
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetVelocitySupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.velocity = ChangeSettingType::Always;
+        requirements.velocity = ChangeSettingType::Always;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetVelocityUnSupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.velocity = ChangeSettingType::Always;
+        requirements.velocity = ChangeSettingType::Always;
 
-            EXPECT_THROW(runTest(filename, requirements),
-                         InconsistentInputError);
-        }
+        EXPECT_THROW(runTest(filename, requirements), InconsistentInputError);
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetForceSupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.force = ChangeSettingType::Always;
+        requirements.force = ChangeSettingType::Always;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetForceUnSupportedFiles : public ModuleTest
 {
-    public:
-        void prepareTest(const char *filename)
-        {
-            //! Storage for requirements.
-            OutputRequirements requirements;
+public:
+    void prepareTest(const char* filename)
+    {
+        //! Storage for requirements.
+        OutputRequirements requirements;
 
-            requirements.force = ChangeSettingType::Always;
+        requirements.force = ChangeSettingType::Always;
 
-            EXPECT_THROW(runTest(filename, requirements),
-                         InconsistentInputError);
-        }
+        EXPECT_THROW(runTest(filename, requirements), InconsistentInputError);
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetPrecisionSupportedFiles : public ModuleTest
 {
-    public:
-        /*! \brief Set up the test case before running.
-         *
-         * \param[in] filename Name of the outputfile used to specify file type.
-         */
-        void prepareTest(const char *filename)
-        {
-            addTopology();
-            OutputRequirements requirements;
+public:
+    /*! \brief Set up the test case before running.
+     *
+     * \param[in] filename Name of the outputfile used to specify file type.
+     */
+    void prepareTest(const char* filename)
+    {
+        addTopology();
+        OutputRequirements requirements;
 
-            requirements.precision = ChangeFrameInfoType::Always;
-            requirements.prec      = 5;
+        requirements.precision = ChangeFrameInfoType::Always;
+        requirements.prec      = 5;
 
-            EXPECT_NO_THROW(runTest(filename, requirements));
-        }
+        EXPECT_NO_THROW(runTest(filename, requirements));
+    }
 };
 
 /*!\libinternal \brief  Helper to test supported file names. */
 class SetPrecisionUnSupportedFiles : public ModuleTest
 {
-    public:
-        /*! \brief Set up the test case before running.
-         *
-         * \param[in] filename Name of the outputfile used to specify file type.
-         */
-        void prepareTest(const char *filename)
-        {
-            OutputRequirements requirements;
+public:
+    /*! \brief Set up the test case before running.
+     *
+     * \param[in] filename Name of the outputfile used to specify file type.
+     */
+    void prepareTest(const char* filename)
+    {
+        OutputRequirements requirements;
 
-            requirements.precision = ChangeFrameInfoType::Always;
-            requirements.prec      = 5;
+        requirements.precision = ChangeFrameInfoType::Always;
+        requirements.prec      = 5;
 
-            EXPECT_THROW(runTest(filename, requirements),
-                         InconsistentInputError);
-        }
+        EXPECT_THROW(runTest(filename, requirements), InconsistentInputError);
+    }
 };
 
 //! Names here work for setAtoms module
-const char *const setAtomsSupported[] = {
+const char* const setAtomsSupported[] = {
 #if GMX_USE_TNG
     "spc2-traj.tng",
 #endif
@@ -283,11 +277,7 @@ const char *const setAtomsSupported[] = {
 };
 
 //! Names here don't work for setAtoms module
-const char *const setAtomsUnSupported[] = {
-    "spc2-traj.trr",
-    "spc2-traj.xtc",
-    "spc2-traj.g96"
-};
+const char* const setAtomsUnSupported[] = { "spc2-traj.trr", "spc2-traj.xtc", "spc2-traj.g96" };
 
 /*! \brief
  *  Names here work for stuff that has no specific requirements.
@@ -295,17 +285,14 @@ const char *const setAtomsUnSupported[] = {
  *  PDB and GRO format are not tested here because they also require atoms information
  *  that is incompatible with the other output formats.
  */
-const char *const anySupported[] = {
-    "spc2-traj.trr",
+const char* const anySupported[] = { "spc2-traj.trr",
 #if GMX_USE_TNG
-    "spc2-traj.tng",
+                                     "spc2-traj.tng",
 #endif
-    "spc2-traj.xtc",
-    "spc2-traj.g96"
-};
+                                     "spc2-traj.xtc", "spc2-traj.g96" };
 
 //! Names here work for setVelocity module
-const char *const setVelocitySupported[] = {
+const char* const setVelocitySupported[] = {
 #if GMX_USE_TNG
     "spc2-traj.tng",
 #endif
@@ -314,14 +301,10 @@ const char *const setVelocitySupported[] = {
 };
 
 //! Names here don't work for setVelocity module
-const char *const setVelocityUnSupported[] = {
-    "spc2-traj.xtc",
-    "spc2-traj.pdb",
-    "spc2-traj.g96"
-};
+const char* const setVelocityUnSupported[] = { "spc2-traj.xtc", "spc2-traj.pdb", "spc2-traj.g96" };
 
 //! Names here work for setForce module
-const char *const setForceSupported[] = {
+const char* const setForceSupported[] = {
 #if GMX_USE_TNG
     "spc2-traj.tng",
 #endif
@@ -329,15 +312,11 @@ const char *const setForceSupported[] = {
 };
 
 //! Names here don't work for setForce module
-const char *const setForceUnSupported[] = {
-    "spc2-traj.xtc",
-    "spc2-traj.pdb",
-    "spc2-traj.gro",
-    "spc2-traj.g96"
-};
+const char* const setForceUnSupported[] = { "spc2-traj.xtc", "spc2-traj.pdb", "spc2-traj.gro",
+                                            "spc2-traj.g96" };
 
 //! Names here work for setPrecision module
-const char *const setPrecisionSupported[] = {
+const char* const setPrecisionSupported[] = {
 #if GMX_USE_TNG
     "spc2-traj.tng",
 #endif
@@ -345,12 +324,8 @@ const char *const setPrecisionSupported[] = {
 };
 
 //! Names here don't work for setPrecision module
-const char *const setPrecisionUnSupported[] = {
-    "spc2-traj.trr",
-    "spc2-traj.pdb",
-    "spc2-traj.gro",
-    "spc2-traj.g96"
-};
+const char* const setPrecisionUnSupported[] = { "spc2-traj.trr", "spc2-traj.pdb", "spc2-traj.gro",
+                                                "spc2-traj.g96" };
 
 
 } // namespace test

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,10 @@
 #include <vector>
 
 #if HAVE_DIRENT_H
-#include <dirent.h>
+#    include <dirent.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#include <io.h>
+#    include <io.h>
 #endif
 
 #include "gromacs/utility/exceptions.h"
@@ -80,155 +80,143 @@ namespace gmx
 // TODO: Consider if Windows provides more error details through other APIs.
 class DirectoryEnumerator::Impl
 {
-    public:
-        static Impl *init(const char *dirname, bool bThrow)
+public:
+    static Impl* init(const char* dirname, bool bThrow)
+    {
+        std::string tmpname(dirname);
+        // Remove possible trailing directory separator.
+        // TODO: Use a method in gmx::Path instead.
+        if (tmpname.back() == '/' || tmpname.back() == '\\')
         {
-            std::string tmpname(dirname);
-            // Remove possible trailing directory separator.
-            // TODO: Use a method in gmx::Path instead.
-            if (tmpname.back() == '/' || tmpname.back() == '\\')
-            {
-                tmpname.pop_back();
-            }
-
-            // Add wildcard.
-            tmpname.append("/*");
-
-            errno = 0;
-            _finddata_t finddata;
-            intptr_t    handle = _findfirst(tmpname.c_str(), &finddata);
-            if (handle < 0L)
-            {
-                if (errno != ENOENT && bThrow)
-                {
-                    const int         code    = errno;
-                    const std::string message =
-                        formatString("Failed to list files in directory '%s'",
-                                     dirname);
-                    GMX_THROW_WITH_ERRNO(FileIOError(message), "_findfirst", code);
-                }
-                return NULL;
-            }
-            return new Impl(handle, finddata);
-        }
-        Impl(intptr_t handle, _finddata_t finddata)
-            : windows_handle(handle), finddata(finddata), bFirst_(true)
-        {
-        }
-        ~Impl()
-        {
-            _findclose(windows_handle);
+            tmpname.pop_back();
         }
 
-        bool nextFile(std::string *filename)
-        {
-            if (bFirst_)
-            {
-                *filename = finddata.name;
-                bFirst_   = false;
-                return true;
-            }
-            else
-            {
-                errno = 0;
-                if (_findnext(windows_handle, &finddata) != 0)
-                {
-                    if (errno == 0 || errno == ENOENT)
-                    {
-                        filename->clear();
-                        return false;
-                    }
-                    else
-                    {
-                        GMX_THROW_WITH_ERRNO(
-                                FileIOError("Failed to list files in a directory"),
-                                "_findnext", errno);
-                    }
-                }
-                *filename = finddata.name;
-                return true;
-            }
-        }
+        // Add wildcard.
+        tmpname.append("/*");
 
-    private:
-        intptr_t     windows_handle;
-        _finddata_t  finddata;
-        bool         bFirst_;
-};
-#elif HAVE_DIRENT_H
-class DirectoryEnumerator::Impl
-{
-    public:
-        static Impl *init(const char *dirname, bool bThrow)
+        errno = 0;
+        _finddata_t finddata;
+        intptr_t    handle = _findfirst(tmpname.c_str(), &finddata);
+        if (handle < 0L)
         {
-            errno       = 0;
-            DIR *handle = opendir(dirname);
-            if (handle == nullptr)
+            if (errno != ENOENT && bThrow)
             {
-                if (bThrow)
-                {
-                    const int         code    = errno;
-                    const std::string message =
-                        formatString("Failed to list files in directory '%s'",
-                                     dirname);
-                    GMX_THROW_WITH_ERRNO(FileIOError(message), "opendir", code);
-                }
-                return nullptr;
+                const int         code = errno;
+                const std::string message =
+                        formatString("Failed to list files in directory '%s'", dirname);
+                GMX_THROW_WITH_ERRNO(FileIOError(message), "_findfirst", code);
             }
-            return new Impl(handle);
+            return NULL;
         }
-        explicit Impl(DIR *handle) : dirent_handle(handle) {}
-        ~Impl()
-        {
-            closedir(dirent_handle);
-        }
+        return new Impl(handle, finddata);
+    }
+    Impl(intptr_t handle, _finddata_t finddata) :
+        windows_handle(handle),
+        finddata(finddata),
+        bFirst_(true)
+    {
+    }
+    ~Impl() { _findclose(windows_handle); }
 
-        bool nextFile(std::string *filename)
+    bool nextFile(std::string* filename)
+    {
+        if (bFirst_)
+        {
+            *filename = finddata.name;
+            bFirst_   = false;
+            return true;
+        }
+        else
         {
             errno = 0;
-            dirent *p = readdir(dirent_handle);
-            if (p == nullptr)
+            if (_findnext(windows_handle, &finddata) != 0)
             {
-                if (errno == 0)
+                if (errno == 0 || errno == ENOENT)
                 {
-                    // All the files have been found.
                     filename->clear();
                     return false;
                 }
                 else
                 {
-                    GMX_THROW_WITH_ERRNO(
-                            FileIOError("Failed to list files in a directory"),
-                            "readdir", errno);
+                    GMX_THROW_WITH_ERRNO(FileIOError("Failed to list files in a directory"),
+                                         "_findnext", errno);
                 }
             }
-            *filename = p->d_name;
+            *filename = finddata.name;
             return true;
         }
+    }
 
-    private:
-        DIR    *dirent_handle;
+private:
+    intptr_t    windows_handle;
+    _finddata_t finddata;
+    bool        bFirst_;
+};
+#elif HAVE_DIRENT_H
+class DirectoryEnumerator::Impl
+{
+public:
+    static Impl* init(const char* dirname, bool bThrow)
+    {
+        errno       = 0;
+        DIR* handle = opendir(dirname);
+        if (handle == nullptr)
+        {
+            if (bThrow)
+            {
+                const int         code = errno;
+                const std::string message =
+                        formatString("Failed to list files in directory '%s'", dirname);
+                GMX_THROW_WITH_ERRNO(FileIOError(message), "opendir", code);
+            }
+            return nullptr;
+        }
+        return new Impl(handle);
+    }
+    explicit Impl(DIR* handle) : dirent_handle(handle) {}
+    ~Impl() { closedir(dirent_handle); }
+
+    bool nextFile(std::string* filename)
+    {
+        errno     = 0;
+        dirent* p = readdir(dirent_handle);
+        if (p == nullptr)
+        {
+            if (errno == 0)
+            {
+                // All the files have been found.
+                filename->clear();
+                return false;
+            }
+            else
+            {
+                GMX_THROW_WITH_ERRNO(FileIOError("Failed to list files in a directory"), "readdir", errno);
+            }
+        }
+        *filename = p->d_name;
+        return true;
+    }
+
+private:
+    DIR* dirent_handle;
 };
 #else
 class DirectoryEnumerator::Impl
 {
-    public:
-        static Impl *init(const char * /*dirname*/, bool /*bThrow*/)
-        {
-            std::string message(
-                    "Source compiled without POSIX dirent or Windows support "
-                    "- cannot scan directories. In the very unlikely event "
-                    "this is not a compile-time mistake you could consider "
-                    "implementing support for your platform in "
-                    "directoryenumerator.cpp, but contact the developers "
-                    "to make sure it's really necessary!");
-            GMX_THROW(NotImplementedError(message));
-        }
+public:
+    static Impl* init(const char* /*dirname*/, bool /*bThrow*/)
+    {
+        std::string message(
+                "Source compiled without POSIX dirent or Windows support "
+                "- cannot scan directories. In the very unlikely event "
+                "this is not a compile-time mistake you could consider "
+                "implementing support for your platform in "
+                "directoryenumerator.cpp, but contact the developers "
+                "to make sure it's really necessary!");
+        GMX_THROW(NotImplementedError(message));
+    }
 
-        bool nextFile(std::string * /*filename*/)
-        {
-            return false;
-        }
+    bool nextFile(std::string* /*filename*/) { return false; }
 };
 #endif
 
@@ -237,9 +225,9 @@ class DirectoryEnumerator::Impl
  */
 
 // static
-std::vector<std::string>
-DirectoryEnumerator::enumerateFilesWithExtension(
-        const char *dirname, const char *extension, bool bThrow)
+std::vector<std::string> DirectoryEnumerator::enumerateFilesWithExtension(const char* dirname,
+                                                                          const char* extension,
+                                                                          bool        bThrow)
 {
     std::vector<std::string> result;
     DirectoryEnumerator      dir(dirname, bThrow);
@@ -248,8 +236,7 @@ DirectoryEnumerator::enumerateFilesWithExtension(
     {
         if (debug)
         {
-            std::fprintf(debug, "dir '%s' file '%s'\n",
-                         dirname, nextName.c_str());
+            std::fprintf(debug, "dir '%s' file '%s'\n", dirname, nextName.c_str());
         }
         // TODO: What about case sensitivity?
         if (endsWith(nextName, extension))
@@ -263,27 +250,22 @@ DirectoryEnumerator::enumerateFilesWithExtension(
 }
 
 
-DirectoryEnumerator::DirectoryEnumerator(const char *dirname, bool bThrow)
-    : impl_(nullptr)
+DirectoryEnumerator::DirectoryEnumerator(const char* dirname, bool bThrow) : impl_(nullptr)
 {
     GMX_RELEASE_ASSERT(dirname != nullptr && dirname[0] != '\0',
                        "Attempted to open empty/null directory path");
     impl_.reset(Impl::init(dirname, bThrow));
 }
 
-DirectoryEnumerator::DirectoryEnumerator(const std::string &dirname, bool bThrow)
-    : impl_(nullptr)
+DirectoryEnumerator::DirectoryEnumerator(const std::string& dirname, bool bThrow) : impl_(nullptr)
 {
-    GMX_RELEASE_ASSERT(!dirname.empty(),
-                       "Attempted to open empty/null directory path");
+    GMX_RELEASE_ASSERT(!dirname.empty(), "Attempted to open empty/null directory path");
     impl_.reset(Impl::init(dirname.c_str(), bThrow));
 }
 
-DirectoryEnumerator::~DirectoryEnumerator()
-{
-}
+DirectoryEnumerator::~DirectoryEnumerator() {}
 
-bool DirectoryEnumerator::nextFile(std::string *filename)
+bool DirectoryEnumerator::nextFile(std::string* filename)
 {
     if (impl_ == nullptr)
     {

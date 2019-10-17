@@ -51,12 +51,11 @@ struct MrcDensityMapHeader;
  * \param[in] serializer the serializer
  * \param[in] mrcHeader file header to be serialized
  */
-void serializeMrcDensityMapHeader(ISerializer               *serializer,
-                                  const MrcDensityMapHeader &mrcHeader);
+void serializeMrcDensityMapHeader(ISerializer* serializer, const MrcDensityMapHeader& mrcHeader);
 /*! \brief Deserializes an MrcDensityMapHeader from a given serializer.
  * \param[in] serializer the serializer
  * \returns mrc density map header
  */
-MrcDensityMapHeader deserializeMrcDensityMapHeader(ISerializer *serializer);
-}      // namespace gmx
+MrcDensityMapHeader deserializeMrcDensityMapHeader(ISerializer* serializer);
+} // namespace gmx
 #endif /* end of include guard: GMX_FILEIO_MRCSERIALIZER_H */

@@ -58,18 +58,19 @@ struct NbnxnPairlistGpuWork;
 
 /* Convenience type for vector with aligned memory */
 template<typename T>
-using AlignedVector = std::vector < T, gmx::AlignedAllocator < T>>;
+using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
 /* Convenience type for vector that avoids initialization at resize() */
 template<typename T>
-using FastVector = std::vector < T, gmx::DefaultInitializationAllocator < T>>;
+using FastVector = std::vector<T, gmx::DefaultInitializationAllocator<T>>;
 
 /* A buffer data structure of 64 bytes
  * to be placed at the beginning and end of structs
  * to avoid cache invalidation of the real contents
  * of the struct by writes to neighboring memory.
  */
-typedef struct {
+typedef struct
+{
     int dummy[16];
 } gmx_cache_protect_t;
 
@@ -82,8 +83,8 @@ typedef struct {
  */
 struct nbnxn_cj_t
 {
-    int          cj;    /* The j-cluster                    */
-    unsigned int excl;  /* The exclusion (interaction) bits */
+    int          cj;   /* The j-cluster                    */
+    unsigned int excl; /* The exclusion (interaction) bits */
 };
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -94,19 +95,19 @@ struct nbnxn_cj_t
  * shift & NBNXN_CI_HALF_LJ(subc)    => we can skip LJ for the second half of i
  * !(shift & NBNXN_CI_DO_COUL(subc)) => we can skip Coulomb for all pairs
  */
-#define NBNXN_CI_SHIFT          127
-#define NBNXN_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
-#define NBNXN_CI_HALF_LJ(subc)  (1<<(8+3*(subc)))
-#define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
+#define NBNXN_CI_SHIFT 127
+#define NBNXN_CI_DO_LJ(subc) (1 << (7 + 3 * (subc)))
+#define NBNXN_CI_HALF_LJ(subc) (1 << (8 + 3 * (subc)))
+#define NBNXN_CI_DO_COUL(subc) (1 << (9 + 3 * (subc)))
 
 /* Cluster-pair Interaction masks
  * Bit i*j-cluster-size + j tells if atom i and j interact.
  */
 // TODO: Rename according to convention when moving into Nbnxn namespace
 /* All interaction mask is the same for all kernels */
-constexpr unsigned int NBNXN_INTERACTION_MASK_ALL       = 0xffffffffU;
+constexpr unsigned int NBNXN_INTERACTION_MASK_ALL = 0xffffffffU;
 /* 4x4 kernel diagonal mask */
-constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG      = 0x08ceU;
+constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG = 0x08ceU;
 /* 4x2 kernel diagonal masks */
 constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_0 = 0x0002U;
 constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J2_1 = 0x002fU;
@@ -117,38 +118,37 @@ constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 /* Simple pair-list i-unit */
 struct nbnxn_ci_t
 {
-    int ci;             /* i-cluster             */
-    int shift;          /* Shift vector index plus possible flags, see above */
-    int cj_ind_start;   /* Start index into cj   */
-    int cj_ind_end;     /* End index into cj     */
+    int ci;           /* i-cluster             */
+    int shift;        /* Shift vector index plus possible flags, see above */
+    int cj_ind_start; /* Start index into cj   */
+    int cj_ind_end;   /* End index into cj     */
 };
 
 /* Grouped pair-list i-unit */
-typedef struct {
+typedef struct
+{
     /* Returns the number of j-cluster groups in this entry */
-    int numJClusterGroups() const
-    {
-        return cj4_ind_end - cj4_ind_start;
-    }
+    int numJClusterGroups() const { return cj4_ind_end - cj4_ind_start; }
 
-    int sci;            /* i-super-cluster       */
-    int shift;          /* Shift vector index plus possible flags */
-    int cj4_ind_start;  /* Start index into cj4  */
-    int cj4_ind_end;    /* End index into cj4    */
+    int sci;           /* i-super-cluster       */
+    int shift;         /* Shift vector index plus possible flags */
+    int cj4_ind_start; /* Start index into cj4  */
+    int cj4_ind_end;   /* End index into cj4    */
 } nbnxn_sci_t;
 
 /* Interaction data for a j-group for one warp */
 struct nbnxn_im_ei_t
 {
     // The i-cluster interactions mask for 1 warp
-    unsigned int imask    = 0U;
+    unsigned int imask = 0U;
     // Index into the exclusion array for 1 warp, default index 0 which means no exclusions
-    int          excl_ind = 0;
+    int excl_ind = 0;
 };
 
-typedef struct {
+typedef struct
+{
     int           cj[c_nbnxnGpuJgroupSize];         /* The 4 j-clusters */
-    nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit]; /* The i-cluster mask data       for 2 warps   */
+    nbnxn_im_ei_t imei[c_nbnxnGpuClusterpairSplit]; /* The i-cluster mask data       for 2 warps */
 } nbnxn_cj4_t;
 
 /* Struct for storing the atom-pair interaction bits for a cluster pair in a GPU pairlist */
@@ -157,7 +157,7 @@ struct nbnxn_excl_t
     /* Constructor, sets no exclusions, so all atom pairs interacting */
     nbnxn_excl_t()
     {
-        for (unsigned int &pairEntry : pair)
+        for (unsigned int& pairEntry : pair)
         {
             pairEntry = NBNXN_INTERACTION_MASK_ALL;
         }
@@ -172,24 +172,24 @@ struct NbnxnPairlistCpu
 {
     NbnxnPairlistCpu();
 
-    gmx_cache_protect_t     cp0;
+    gmx_cache_protect_t cp0;
 
-    int                     na_ci;       /* The number of atoms per i-cluster        */
-    int                     na_cj;       /* The number of atoms per j-cluster        */
-    real                    rlist;       /* The radius for constructing the list     */
-    FastVector<nbnxn_ci_t>  ci;          /* The i-cluster list                       */
-    FastVector<nbnxn_ci_t>  ciOuter;     /* The outer, unpruned i-cluster list       */
+    int                    na_ci;   /* The number of atoms per i-cluster        */
+    int                    na_cj;   /* The number of atoms per j-cluster        */
+    real                   rlist;   /* The radius for constructing the list     */
+    FastVector<nbnxn_ci_t> ci;      /* The i-cluster list                       */
+    FastVector<nbnxn_ci_t> ciOuter; /* The outer, unpruned i-cluster list       */
 
-    FastVector<nbnxn_cj_t>  cj;          /* The j-cluster list, size ncj             */
-    FastVector<nbnxn_cj_t>  cjOuter;     /* The outer, unpruned j-cluster list       */
-    int                     ncjInUse;    /* The number of j-clusters that are used by ci entries in this list, will be <= cj.size() */
+    FastVector<nbnxn_cj_t> cj;      /* The j-cluster list, size ncj             */
+    FastVector<nbnxn_cj_t> cjOuter; /* The outer, unpruned j-cluster list       */
+    int                    ncjInUse; /* The number of j-clusters that are used by ci entries in this list, will be <= cj.size() */
 
-    int                     nci_tot;     /* The total number of i clusters           */
+    int nci_tot; /* The total number of i clusters           */
 
     /* Working data storage for list construction */
     std::unique_ptr<NbnxnPairlistCpuWork> work;
 
-    gmx_cache_protect_t                   cp1;
+    gmx_cache_protect_t cp1;
 };
 
 /* Cluster pairlist type, with extra hierarchies, for on the GPU
@@ -206,28 +206,28 @@ struct NbnxnPairlistGpu
      */
     NbnxnPairlistGpu(gmx::PinningPolicy pinningPolicy);
 
-    gmx_cache_protect_t            cp0;
+    gmx_cache_protect_t cp0;
 
-    int                            na_ci; /* The number of atoms per i-cluster        */
-    int                            na_cj; /* The number of atoms per j-cluster        */
-    int                            na_sc; /* The number of atoms per super cluster    */
-    real                           rlist; /* The radius for constructing the list     */
+    int  na_ci; /* The number of atoms per i-cluster        */
+    int  na_cj; /* The number of atoms per j-cluster        */
+    int  na_sc; /* The number of atoms per super cluster    */
+    real rlist; /* The radius for constructing the list     */
     // The i-super-cluster list, indexes into cj4;
-    gmx::HostVector<nbnxn_sci_t>   sci;
+    gmx::HostVector<nbnxn_sci_t> sci;
     // The list of 4*j-cluster groups
-    gmx::HostVector<nbnxn_cj4_t>   cj4;
+    gmx::HostVector<nbnxn_cj4_t> cj4;
     // Atom interaction bits (non-exclusions)
-    gmx::HostVector<nbnxn_excl_t>  excl;
+    gmx::HostVector<nbnxn_excl_t> excl;
     // The total number of i-clusters
-    int                            nci_tot;
+    int nci_tot;
 
     /* Working data storage for list construction */
     std::unique_ptr<NbnxnPairlistGpuWork> work;
 
-    gmx_cache_protect_t                   cp1;
+    gmx_cache_protect_t cp1;
 };
 
 //! Initializes a free-energy pair-list
-void nbnxn_init_pairlist_fep(t_nblist *nl);
+void nbnxn_init_pairlist_fep(t_nblist* nl);
 
 #endif

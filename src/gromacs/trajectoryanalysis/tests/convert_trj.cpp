@@ -55,22 +55,19 @@ namespace
 {
 
 using gmx::test::CommandLine;
-using gmx::test::NoContentsMatch;
 using gmx::test::ExactTextMatch;
+using gmx::test::NoContentsMatch;
 
 /********************************************************************
  * Tests for gmx::analysismodules::ConvertTrj.
  */
 
 //! Test fixture for the convert-trj analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::ConvertTrjInfo>
-    ConvertTrjModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::ConvertTrjInfo> ConvertTrjModuleTest;
 
 TEST_F(ConvertTrjModuleTest, WritesNormalOutput)
 {
-    const char *const cmdline[]      = {
-        "convert-trj"
-    };
+    const char* const cmdline[] = { "convert-trj" };
     setTopology("freevolume.tpr");
     setInputFile("-f", "freevolume.xtc");
     setOutputFile("-o", "test.trr", NoContentsMatch());
@@ -79,10 +76,7 @@ TEST_F(ConvertTrjModuleTest, WritesNormalOutput)
 
 TEST_F(ConvertTrjModuleTest, WritesAtomSubset)
 {
-    const char *const cmdline[]      = {
-        "convert-trj",
-        "-select", "not resname = CO2"
-    };
+    const char* const cmdline[] = { "convert-trj", "-select", "not resname = CO2" };
     setTopology("freevolume.tpr");
     setInputFile("-f", "freevolume.xtc");
     setOutputFile("-o", "test.trr", NoContentsMatch());
@@ -91,9 +85,7 @@ TEST_F(ConvertTrjModuleTest, WritesAtomSubset)
 
 TEST_F(ConvertTrjModuleTest, WorksWithAtomAdding)
 {
-    const char *const cmdline[] = {
-        "convert-trj", "-atoms", "always-from-structure"
-    };
+    const char* const cmdline[] = { "convert-trj", "-atoms", "always-from-structure" };
     // TODO check output structures once this is supported.
     setTopology("clustsize.tpr");
     setInputFile("-f", "clustsize.pdb");
@@ -103,10 +95,8 @@ TEST_F(ConvertTrjModuleTest, WorksWithAtomAdding)
 
 TEST_F(ConvertTrjModuleTest, WorksWithAtomsAndSelection)
 {
-    const char *const cmdline[] = {
-        "convert-trj", "-atoms", "always-from-structure",
-        "-select", "not resname = CO2"
-    };
+    const char* const cmdline[] = { "convert-trj", "-atoms", "always-from-structure", "-select",
+                                    "not resname = CO2" };
     // TODO check output structures once this is supported.
     setTopology("clustsize.tpr");
     setInputFile("-f", "clustsize.pdb");

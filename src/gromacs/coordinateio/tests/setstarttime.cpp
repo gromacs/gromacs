@@ -62,32 +62,29 @@ namespace test
  */
 class SetStartTimeTest : public gmx::test::CommandLineTestBase
 {
-    public:
-        SetStartTimeTest()
+public:
+    SetStartTimeTest() { clear_trxframe(frame(), true); }
+    /*! \brief
+     * Get access to the method for changing frame time information.
+     *
+     * \param[in] startTime User supplied start time to test.
+     */
+    SetStartTime* setStartTime(real startTime)
+    {
+        if (!setStartTime_)
         {
-            clear_trxframe(frame(), true);
+            setStartTime_ = std::make_unique<SetStartTime>(startTime);
         }
-        /*! \brief
-         * Get access to the method for changing frame time information.
-         *
-         * \param[in] startTime User supplied start time to test.
-         */
-        SetStartTime *setStartTime(real startTime)
-        {
-            if (!setStartTime_)
-            {
-                setStartTime_ = std::make_unique<SetStartTime>(startTime);
-            }
-            return setStartTime_.get();
-        }
-        //! Get access to trajectoryframe to mess with.
-        t_trxframe *frame() { return &frame_; }
+        return setStartTime_.get();
+    }
+    //! Get access to trajectoryframe to mess with.
+    t_trxframe* frame() { return &frame_; }
 
-    private:
-        //! Object to use for tests
-        SetStartTimePointer     setStartTime_;
-        //! Storage of trajectoryframe.
-        t_trxframe              frame_;
+private:
+    //! Object to use for tests
+    SetStartTimePointer setStartTime_;
+    //! Storage of trajectoryframe.
+    t_trxframe frame_;
 };
 
 TEST_F(SetStartTimeTest, WorksWithNonZeroStart)
@@ -95,7 +92,7 @@ TEST_F(SetStartTimeTest, WorksWithNonZeroStart)
     frame()->bTime = false;
     frame()->time  = 5;
     // Set step to nonsense value to check that it is ignored.
-    SetStartTime *method = setStartTime(42);
+    SetStartTime* method = setStartTime(42);
     EXPECT_NO_THROW(method->processFrame(0, frame()));
     EXPECT_TRUE(frame()->bTime);
     EXPECT_EQ(frame()->time, 42);
@@ -111,8 +108,8 @@ TEST_F(SetStartTimeTest, WorksWithNonZeroStart)
 
 TEST_F(SetStartTimeTest, WorksWithZeroStart)
 {
-    frame()->time = 42;
-    SetStartTime *method = setStartTime(0);
+    frame()->time        = 42;
+    SetStartTime* method = setStartTime(0);
     EXPECT_NO_THROW(method->processFrame(0, frame()));
     EXPECT_EQ(frame()->time, 0);
     // No matter what the next time in the frame is, ignore it.

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/txtdump.h"
 
-void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers)
+void pr_ivec(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -60,7 +60,7 @@ void pr_ivec(FILE *fp, int indent, const char *title, const int vec[], int n, gm
     }
 }
 
-void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int n, gmx_bool bShowNumbers)
+void pr_ivec_block(FILE* fp, int indent, const char* title, const int vec[], int n, gmx_bool bShowNumbers)
 {
     int i, j;
 
@@ -70,8 +70,8 @@ void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int
         i      = 0;
         while (i < n)
         {
-            j = i+1;
-            while (j < n && vec[j] == vec[j-1]+1)
+            j = i + 1;
+            while (j < n && vec[j] == vec[j - 1] + 1)
             {
                 j++;
             }
@@ -81,26 +81,22 @@ void pr_ivec_block(FILE *fp, int indent, const char *title, const int vec[], int
                 while (i < j)
                 {
                     pr_indent(fp, indent);
-                    fprintf(fp, "%s[%d]=%d\n",
-                            title, bShowNumbers ? i : -1, vec[i]);
+                    fprintf(fp, "%s[%d]=%d\n", title, bShowNumbers ? i : -1, vec[i]);
                     i++;
                 }
             }
             else
             {
                 pr_indent(fp, indent);
-                fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n",
-                        title,
-                        bShowNumbers ? i : -1,
-                        bShowNumbers ? j-1 : -1,
-                        vec[i], vec[j-1]);
+                fprintf(fp, "%s[%d,...,%d] = {%d,...,%d}\n", title, bShowNumbers ? i : -1,
+                        bShowNumbers ? j - 1 : -1, vec[i], vec[j - 1]);
                 i = j;
             }
         }
     }
 }
 
-void pr_bvec(FILE *fp, int indent, const char *title, const gmx_bool vec[], int n, gmx_bool bShowNumbers)
+void pr_bvec(FILE* fp, int indent, const char* title, const gmx_bool vec[], int n, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -110,13 +106,12 @@ void pr_bvec(FILE *fp, int indent, const char *title, const gmx_bool vec[], int 
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]=%s\n", title, bShowNumbers ? i : -1,
-                    gmx::boolToString(vec[i]));
+            fprintf(fp, "%s[%d]=%s\n", title, bShowNumbers ? i : -1, gmx::boolToString(vec[i]));
         }
     }
 }
 
-void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, gmx_bool bShowNumbers)
+void pr_ivecs(FILE* fp, int indent, const char* title, const ivec vec[], int n, gmx_bool bShowNumbers)
 {
     int i, j;
 
@@ -140,8 +135,8 @@ void pr_ivecs(FILE *fp, int indent, const char *title, const ivec vec[], int n, 
     }
 }
 
-template <typename T>
-static void printRealVector(FILE *fp, int indent, const char *title, const T vec[], int n, gmx_bool bShowNumbers)
+template<typename T>
+static void printRealVector(FILE* fp, int indent, const char* title, const T vec[], int n, gmx_bool bShowNumbers)
 {
     if (available(fp, vec, indent, title))
     {
@@ -154,23 +149,23 @@ static void printRealVector(FILE *fp, int indent, const char *title, const T vec
     }
 }
 
-void pr_rvec(FILE *fp, int indent, const char *title, const real vec[], int n, gmx_bool bShowNumbers)
+void pr_rvec(FILE* fp, int indent, const char* title, const real vec[], int n, gmx_bool bShowNumbers)
 {
     printRealVector<real>(fp, indent, title, vec, n, bShowNumbers);
 }
 
-void pr_fvec(FILE *fp, int indent, const char *title, const float vec[], int n, gmx_bool bShowNumbers)
+void pr_fvec(FILE* fp, int indent, const char* title, const float vec[], int n, gmx_bool bShowNumbers)
 {
     printRealVector<float>(fp, indent, title, vec, n, bShowNumbers);
 }
 
-void pr_dvec(FILE *fp, int indent, const char *title, const double vec[], int n, gmx_bool bShowNumbers)
+void pr_dvec(FILE* fp, int indent, const char* title, const double vec[], int n, gmx_bool bShowNumbers)
 {
     printRealVector<double>(fp, indent, title, vec, n, bShowNumbers);
 }
 
 
-void pr_rvecs_len(FILE *fp, int indent, const char *title, const rvec vec[], int n)
+void pr_rvecs_len(FILE* fp, int indent, const char* title, const rvec vec[], int n)
 {
     int i, j;
 
@@ -194,11 +189,11 @@ void pr_rvecs_len(FILE *fp, int indent, const char *title, const rvec vec[], int
     }
 }
 
-void pr_rvecs(FILE *fp, int indent, const char *title, const rvec vec[], int n)
+void pr_rvecs(FILE* fp, int indent, const char* title, const rvec vec[], int n)
 {
-    const char *fshort = "%12.5e";
-    const char *flong  = "%15.8e";
-    const char *format;
+    const char* fshort = "%12.5e";
+    const char* flong  = "%15.8e";
+    const char* format;
     int         i, j;
 
     if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
@@ -231,11 +226,11 @@ void pr_rvecs(FILE *fp, int indent, const char *title, const rvec vec[], int n)
 }
 
 
-void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, const rvec vec[], int n, int dim)
+void pr_rvecs_of_dim(FILE* fp, int indent, const char* title, const rvec vec[], int n, int dim)
 {
-    const char *fshort = "%12.5e";
-    const char *flong  = "%15.8e";
-    const char *format;
+    const char* fshort = "%12.5e";
+    const char* flong  = "%15.8e";
+    const char* format;
     int         i, j;
 
     if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)

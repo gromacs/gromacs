@@ -64,9 +64,9 @@ using ::testing::Pointwise;
  *
  * \todo This could be streamlined when we have a proper 3D matrix
  * class and view. */
-static void compareBox(const TrajectoryFrame              &reference,
-                       const TrajectoryFrame              &test,
-                       const TrajectoryFrameMatchSettings &matchSettings,
+static void compareBox(const TrajectoryFrame&              reference,
+                       const TrajectoryFrame&              test,
+                       const TrajectoryFrameMatchSettings& matchSettings,
                        const FloatingPointTolerance        tolerance)
 {
     if (!matchSettings.mustCompareBox)
@@ -77,13 +77,13 @@ static void compareBox(const TrajectoryFrame              &reference,
     if (!reference.hasBox())
     {
         ADD_FAILURE() << "Comparing the box was required, "
-        "but the reference frame did not have one";
+                         "but the reference frame did not have one";
         canCompareBox = false;
     }
     if (!test.hasBox())
     {
         ADD_FAILURE() << "Comparing the box was required, "
-        "but the test frame did not have one";
+                         "but the test frame did not have one";
         canCompareBox = false;
     }
     if (!canCompareBox)
@@ -104,8 +104,7 @@ static void compareBox(const TrajectoryFrame              &reference,
 /*! \brief Help put all atom coordinates in \c frame into its box.
  *
  * This can perhaps go away when frame->x is a container. */
-static std::vector<RVec>
-putAtomsInBox(const TrajectoryFrame &frame)
+static std::vector<RVec> putAtomsInBox(const TrajectoryFrame& frame)
 {
     std::vector<RVec> x(frame.x().begin(), frame.x().end());
     matrix            box;
@@ -141,10 +140,9 @@ static bool shouldDoComparison(const ComparisonConditions comparisonConditions,
     bool doComparison = true;
     if (testIsEmpty)
     {
-        if (comparisonConditions == ComparisonConditions::MustCompare ||
-            comparisonConditions == ComparisonConditions::CompareIfBothFound ||
-            (!referenceIsEmpty &&
-             comparisonConditions == ComparisonConditions::CompareIfReferenceFound))
+        if (comparisonConditions == ComparisonConditions::MustCompare
+            || comparisonConditions == ComparisonConditions::CompareIfBothFound
+            || (!referenceIsEmpty && comparisonConditions == ComparisonConditions::CompareIfReferenceFound))
         {
             ADD_FAILURE() << "Test frame lacked quantity for required comparison";
         }
@@ -152,10 +150,9 @@ static bool shouldDoComparison(const ComparisonConditions comparisonConditions,
     }
     if (referenceIsEmpty)
     {
-        if (comparisonConditions == ComparisonConditions::MustCompare ||
-            comparisonConditions == ComparisonConditions::CompareIfBothFound ||
-            (!testIsEmpty &&
-             comparisonConditions == ComparisonConditions::CompareIfTestFound))
+        if (comparisonConditions == ComparisonConditions::MustCompare
+            || comparisonConditions == ComparisonConditions::CompareIfBothFound
+            || (!testIsEmpty && comparisonConditions == ComparisonConditions::CompareIfTestFound))
         {
             ADD_FAILURE() << "Reference frame lacked quantity for required comparison";
         }
@@ -166,15 +163,13 @@ static bool shouldDoComparison(const ComparisonConditions comparisonConditions,
 
 /*! \brief Compares the position coordinates from \c reference and \c test
  * according to the \c matchSettings and \c tolerance. */
-static void compareCoordinates(const TrajectoryFrame              &reference,
-                               const TrajectoryFrame              &test,
-                               const TrajectoryFrameMatchSettings &matchSettings,
+static void compareCoordinates(const TrajectoryFrame&              reference,
+                               const TrajectoryFrame&              test,
+                               const TrajectoryFrameMatchSettings& matchSettings,
                                const FloatingPointTolerance        tolerance)
 {
     SCOPED_TRACE("Comparing coordinates");
-    if (!shouldDoComparison(matchSettings.coordinatesComparison,
-                            reference.x().empty(),
-                            test.x().empty()))
+    if (!shouldDoComparison(matchSettings.coordinatesComparison, reference.x().empty(), test.x().empty()))
     {
         return;
     }
@@ -183,13 +178,13 @@ static void compareCoordinates(const TrajectoryFrame              &reference,
     if (!reference.hasBox())
     {
         ADD_FAILURE() << "Comparing positions required PBC handling, "
-        "but the reference frame did not have a box";
+                         "but the reference frame did not have a box";
         canHandlePbc = false;
     }
     if (!test.hasBox())
     {
         ADD_FAILURE() << "Comparing positions required PBC handling, "
-        "but the test frame did not have a box";
+                         "but the test frame did not have a box";
         canHandlePbc = false;
     }
 
@@ -211,15 +206,13 @@ static void compareCoordinates(const TrajectoryFrame              &reference,
 
 /*! \brief Compares the velocities from \c reference and \c test
  * according to the \c matchSettings and \c tolerance. */
-static void compareVelocities(const TrajectoryFrame              &reference,
-                              const TrajectoryFrame              &test,
-                              const TrajectoryFrameMatchSettings &matchSettings,
+static void compareVelocities(const TrajectoryFrame&              reference,
+                              const TrajectoryFrame&              test,
+                              const TrajectoryFrameMatchSettings& matchSettings,
                               const FloatingPointTolerance        tolerance)
 {
     SCOPED_TRACE("Comparing velocities");
-    if (!shouldDoComparison(matchSettings.velocitiesComparison,
-                            reference.v().empty(),
-                            test.v().empty()))
+    if (!shouldDoComparison(matchSettings.velocitiesComparison, reference.v().empty(), test.v().empty()))
     {
         return;
     }
@@ -228,15 +221,13 @@ static void compareVelocities(const TrajectoryFrame              &reference,
 
 /*! \brief Compares the forces from \c reference and \c test
  * according to the \c matchSettings and \c tolerance. */
-static void compareForces(const TrajectoryFrame              &reference,
-                          const TrajectoryFrame              &test,
-                          const TrajectoryFrameMatchSettings &matchSettings,
+static void compareForces(const TrajectoryFrame&              reference,
+                          const TrajectoryFrame&              test,
+                          const TrajectoryFrameMatchSettings& matchSettings,
                           const FloatingPointTolerance        tolerance)
 {
     SCOPED_TRACE("Comparing forces");
-    if (!shouldDoComparison(matchSettings.forcesComparison,
-                            reference.f().empty(),
-                            test.f().empty()))
+    if (!shouldDoComparison(matchSettings.forcesComparison, reference.f().empty(), test.f().empty()))
     {
         return;
     }
@@ -244,25 +235,25 @@ static void compareForces(const TrajectoryFrame              &reference,
 }
 
 
-const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances {
-    defaultRealTolerance(),                                                       // box
-    relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                                // positions
-    defaultRealTolerance(),                                                       // velocities
-    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 5.0e-5)         // forces
+const TrajectoryTolerances TrajectoryComparison::s_defaultTrajectoryTolerances{
+    defaultRealTolerance(),                                               // box
+    relativeToleranceAsFloatingPoint(1.0, 1.0e-3),                        // positions
+    defaultRealTolerance(),                                               // velocities
+    relativeToleranceAsFloatingPoint(100.0, GMX_DOUBLE ? 1.0e-7 : 5.0e-5) // forces
 };
 
 
-TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings &matchSettings,
-                                           const TrajectoryTolerances         &tolerances)
-    : matchSettings_(matchSettings),
-      tolerances_(tolerances)
+TrajectoryComparison::TrajectoryComparison(const TrajectoryFrameMatchSettings& matchSettings,
+                                           const TrajectoryTolerances&         tolerances) :
+    matchSettings_(matchSettings),
+    tolerances_(tolerances)
 {
 }
 
-void TrajectoryComparison::operator()(const TrajectoryFrame &reference,
-                                      const TrajectoryFrame &test) const
+void TrajectoryComparison::operator()(const TrajectoryFrame& reference, const TrajectoryFrame& test) const
 {
-    SCOPED_TRACE("Comparing trajectory reference frame " + reference.frameName() + " and test frame " + test.frameName());
+    SCOPED_TRACE("Comparing trajectory reference frame " + reference.frameName()
+                 + " and test frame " + test.frameName());
     EXPECT_EQ(reference.step(), test.step());
     EXPECT_EQ(reference.time(), test.time());
     compareBox(reference, test, matchSettings_, tolerances_.box);
@@ -271,5 +262,5 @@ void TrajectoryComparison::operator()(const TrajectoryFrame &reference,
     compareForces(reference, test, matchSettings_, tolerances_.forces);
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

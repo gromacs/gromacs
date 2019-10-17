@@ -52,10 +52,7 @@ struct DisulfideBond
     std::string firstAtom, secondAtom;
 };
 
-std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
-                                              rvec     x[],
-                                              bool     bInteractive,
-                                              bool     bVerbose);
+std::vector<DisulfideBond> makeDisulfideBonds(t_atoms* pdba, rvec x[], bool bInteractive, bool bVerbose);
 
 std::vector<SpecialBond> generateSpecialBonds();
 

@@ -80,9 +80,7 @@ TEST(TopologyInformation, CantWorkWithoutReadingAFile)
     EXPECT_EQ(-1, topInfo.ePBC());
     EXPECT_THROW(topInfo.x().size(), gmx::APIError);
     EXPECT_THROW(topInfo.v().size(), gmx::APIError);
-    matrix box {{
-                    -2
-                }};
+    matrix box{ { -2 } };
     topInfo.getBox(box);
     EXPECT_EQ(0, box[XX][XX]);
     EXPECT_EQ(0, box[XX][YY]);
@@ -97,7 +95,7 @@ TEST(TopologyInformation, CantWorkWithoutReadingAFile)
 }
 
 //! Common test code to reduce duplication
-void runCommonTests(const TopologyInformation &topInfo, const int numAtoms)
+void runCommonTests(const TopologyInformation& topInfo, const int numAtoms)
 {
     EXPECT_TRUE(topInfo.hasTopology());
     ASSERT_TRUE(topInfo.mtop());
@@ -116,18 +114,16 @@ void runCommonTests(const TopologyInformation &topInfo, const int numAtoms)
     EXPECT_NE(atoms2.get(), atoms);
     EXPECT_EQ(numAtoms, topInfo.x().size());
     EXPECT_EQ(numAtoms, topInfo.v().size());
-    matrix box {{
-                    -2
-                }};
+    matrix box{ { -2 } };
     topInfo.getBox(box);
     EXPECT_FLOAT_EQ(5.9062, box[XX][XX]);
-    EXPECT_FLOAT_EQ(0,      box[XX][YY]);
-    EXPECT_FLOAT_EQ(0,      box[XX][ZZ]);
-    EXPECT_FLOAT_EQ(0,      box[YY][XX]);
+    EXPECT_FLOAT_EQ(0, box[XX][YY]);
+    EXPECT_FLOAT_EQ(0, box[XX][ZZ]);
+    EXPECT_FLOAT_EQ(0, box[YY][XX]);
     EXPECT_FLOAT_EQ(6.8451, box[YY][YY]);
-    EXPECT_FLOAT_EQ(0,      box[YY][ZZ]);
-    EXPECT_FLOAT_EQ(0,      box[ZZ][XX]);
-    EXPECT_FLOAT_EQ(0,      box[ZZ][YY]);
+    EXPECT_FLOAT_EQ(0, box[YY][ZZ]);
+    EXPECT_FLOAT_EQ(0, box[ZZ][XX]);
+    EXPECT_FLOAT_EQ(0, box[ZZ][YY]);
     EXPECT_FLOAT_EQ(3.0517, box[ZZ][ZZ]);
     EXPECT_STREQ("First 10 residues from 1AKI", topInfo.name());
 }

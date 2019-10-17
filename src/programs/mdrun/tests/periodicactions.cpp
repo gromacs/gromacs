@@ -95,37 +95,31 @@ using OutputParameterGeneratorFunction = std::vector<PeriodicOutputParameters> (
  */
 class PeriodicActionsTest :
     public MdrunTestFixture,
-    public ::testing::WithParamInterface < std::tuple < PropagationParameters,
-           OutputParameterGeneratorFunction>>
+    public ::testing::WithParamInterface<std::tuple<PropagationParameters, OutputParameterGeneratorFunction>>
 {
-    public:
-        //PeriodicActionsTest();
-        //! Run mdrun with given output parameters
-        void doMdrun(const PeriodicOutputParameters &output);
-        //! Generate reference data from mdrun writing everything every step.
-        void prepareReferenceData();
-        //! Names for the output files from the reference mdrun call
-        ReferenceFileNames           referenceFileNames_ = {
-            fileManager_.getTemporaryFilePath("reference.edr")
-        };
-        //! Functor for energy comparison
-        EnergyComparison             energyComparison_ { EnergyComparison::s_defaultEnergyTermsToCompare };
-        //! Names of energies compared by energyComparison_
-        std::vector<std::string>     namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
+public:
+    // PeriodicActionsTest();
+    //! Run mdrun with given output parameters
+    void doMdrun(const PeriodicOutputParameters& output);
+    //! Generate reference data from mdrun writing everything every step.
+    void prepareReferenceData();
+    //! Names for the output files from the reference mdrun call
+    ReferenceFileNames referenceFileNames_ = { fileManager_.getTemporaryFilePath("reference.edr") };
+    //! Functor for energy comparison
+    EnergyComparison energyComparison_{ EnergyComparison::s_defaultEnergyTermsToCompare };
+    //! Names of energies compared by energyComparison_
+    std::vector<std::string> namesOfEnergiesToMatch_ = energyComparison_.getEnergyNames();
 };
 
-void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters &output)
+void PeriodicActionsTest::doMdrun(const PeriodicOutputParameters& output)
 {
-    auto propagation    = std::get<0>(GetParam());
-    SCOPED_TRACE(formatString("Doing %s simulation with %s integrator, %s tcoupling and %s pcoupling\n",
-                              propagation["simulationName"].c_str(),
-                              propagation["integrator"].c_str(),
-                              propagation["tcoupl"].c_str(),
-                              propagation["pcoupl"].c_str()));
-    auto mdpFieldValues = prepareMdpFieldValues(propagation["simulationName"],
-                                                propagation["integrator"],
-                                                propagation["tcoupl"],
-                                                propagation["pcoupl"]);
+    auto propagation = std::get<0>(GetParam());
+    SCOPED_TRACE(
+            formatString("Doing %s simulation with %s integrator, %s tcoupling and %s pcoupling\n",
+                         propagation["simulationName"].c_str(), propagation["integrator"].c_str(),
+                         propagation["tcoupl"].c_str(), propagation["pcoupl"].c_str()));
+    auto mdpFieldValues = prepareMdpFieldValues(propagation["simulationName"], propagation["integrator"],
+                                                propagation["tcoupl"], propagation["pcoupl"]);
     mdpFieldValues.insert(propagation.begin(), propagation.end());
     mdpFieldValues.insert(output.begin(), output.end());
 
@@ -155,10 +149,12 @@ void PeriodicActionsTest::prepareReferenceData()
     std::swap(runner_.edrFileName_, referenceFileNames_.edrFileName_);
 
     // Run the reference simulation with everything output every step
-    PeriodicOutputParameters outputEveryStep = { { "nstenergy",          "1" },
-                                                 { "nstlog",             "1" },
-                                                 { "nstdhdl",            "1" },
-                                                 { "description",        "output everything every step"}, };
+    PeriodicOutputParameters outputEveryStep = {
+        { "nstenergy", "1" },
+        { "nstlog", "1" },
+        { "nstdhdl", "1" },
+        { "description", "output everything every step" },
+    };
     doMdrun(outputEveryStep);
 
     // Restore the standard filenames we'll use for the runs whose behavior we are testing.
@@ -170,10 +166,8 @@ void PeriodicActionsTest::prepareReferenceData()
  *
  * \returns  True when a successful comparison was made
  */
-template <typename Reader, typename Comparator>
-bool compareFrames(Reader            referenceFrameReader,
-                   Reader            testFrameReader,
-                   const Comparator &comparator)
+template<typename Reader, typename Comparator>
+bool compareFrames(Reader referenceFrameReader, Reader testFrameReader, const Comparator& comparator)
 {
     if (!testFrameReader->readNextFrame())
     {
@@ -183,7 +177,7 @@ bool compareFrames(Reader            referenceFrameReader,
     auto        testFrame = testFrameReader->frame();
     std::string frameName = testFrame.frameName();
     SCOPED_TRACE("Found frame from test file named " + frameName);
-    bool        foundMatch = false;
+    bool foundMatch = false;
     while (!foundMatch)
     {
         if (referenceFrameReader->readNextFrame())
@@ -210,13 +204,12 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
 {
     auto propagation = std::get<0>(GetParam());
     SCOPED_TRACE(formatString("Comparing two simulations of '%s' with integrator '%s'",
-                              propagation["simulationName"].c_str(),
-                              propagation["integrator"].c_str()));
+                              propagation["simulationName"].c_str(), propagation["integrator"].c_str()));
 
     prepareReferenceData();
 
     auto outputParametersGenerator = std::get<1>(GetParam());
-    for (const PeriodicOutputParameters &output : outputParametersGenerator())
+    for (const PeriodicOutputParameters& output : outputParametersGenerator())
     {
         SCOPED_TRACE("Comparing to observe " + output.at("description"));
 
@@ -224,19 +217,22 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
         doMdrun(output);
 
         // Prepare readers for the reference and test output files
-        auto       referenceEnergyFrameReader     = openEnergyFileToReadTerms(referenceFileNames_.edrFileName_, namesOfEnergiesToMatch_);
-        auto       testEnergyFrameReader          = openEnergyFileToReadTerms(runner_.edrFileName_, namesOfEnergiesToMatch_);
+        auto referenceEnergyFrameReader =
+                openEnergyFileToReadTerms(referenceFileNames_.edrFileName_, namesOfEnergiesToMatch_);
+        auto testEnergyFrameReader =
+                openEnergyFileToReadTerms(runner_.edrFileName_, namesOfEnergiesToMatch_);
 
-        const bool shouldCompareEnergies     = fromString<int>(output.at("nstenergy")) > 0;
-        bool       shouldContinueComparing   = shouldCompareEnergies;
+        const bool shouldCompareEnergies   = fromString<int>(output.at("nstenergy")) > 0;
+        bool       shouldContinueComparing = shouldCompareEnergies;
         while (shouldContinueComparing)
         {
             if (shouldCompareEnergies)
             {
-                SCOPED_TRACE("Comparing energy frames from reference '" + referenceFileNames_.edrFileName_ +
-                             "' and test '" + runner_.edrFileName_ + "'");
-                shouldContinueComparing = shouldContinueComparing &&
-                    compareFrames(referenceEnergyFrameReader.get(), testEnergyFrameReader.get(), energyComparison_);
+                SCOPED_TRACE("Comparing energy frames from reference '" + referenceFileNames_.edrFileName_
+                             + "' and test '" + runner_.edrFileName_ + "'");
+                shouldContinueComparing = shouldContinueComparing
+                                          && compareFrames(referenceEnergyFrameReader.get(),
+                                                           testEnergyFrameReader.get(), energyComparison_);
             }
         }
     }
@@ -244,15 +240,11 @@ TEST_P(PeriodicActionsTest, PeriodicActionsAgreeWithReference)
 
 /*! \brief Some common choices of periodic output mdp parameters to
  * simplify defining values for the combinations under test */
-PeriodicOutputParameters g_basicPeriodicOutputParameters =
-{ { "nstenergy",          "0" },
-  { "nstlog",             "0" },
-  { "nstxout",            "0" },
-  { "nstvout",            "0" },
-  { "nstfout",            "0" },
-  { "nstxout-compressed", "0" },
-  { "nstdhdl",            "0" },
-  { "description",        "unknown" } };
+PeriodicOutputParameters g_basicPeriodicOutputParameters = {
+    { "nstenergy", "0" }, { "nstlog", "0" },           { "nstxout", "0" },
+    { "nstvout", "0" },   { "nstfout", "0" },          { "nstxout-compressed", "0" },
+    { "nstdhdl", "0" },   { "description", "unknown" }
+};
 
 /*! \brief Return vector of mdp parameter sets to test
  *
@@ -294,33 +286,15 @@ std::vector<PeriodicOutputParameters> outputParameters()
 std::vector<PropagationParameters> simplePropagationParameters()
 {
     return {
-               { {
-                     "simulationName",             "argon12"
-                 },
-                 {
-                     "integrator",                 "md"
-                 },
-                 {
-                     "comm-mode",                  "linear"
-                 },
-                 {
-                     "nstcomm",                    "1"
-                 },
-                 {
-                     "tcoupl",                     "no"
-                 },
-                 {
-                     "nsttcouple",                 "0"
-                 },
-                 {
-                     "pcoupl",                     "no"
-                 },
-                 {
-                     "nstpcouple",                 "0"
-                 },
-                 {
-                     "maxGromppWarningsTolerated", "0"
-                 } },
+        { { "simulationName", "argon12" },
+          { "integrator", "md" },
+          { "comm-mode", "linear" },
+          { "nstcomm", "1" },
+          { "tcoupl", "no" },
+          { "nsttcouple", "0" },
+          { "pcoupl", "no" },
+          { "nstpcouple", "0" },
+          { "maxGromppWarningsTolerated", "0" } },
     };
 }
 
@@ -340,18 +314,18 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
     std::string nstcomm    = "5";
 
     std::vector<PropagationParameters> parameterSets;
-    for (std::string simulationName : {"argon12"})
+    for (std::string simulationName : { "argon12" })
     {
-        for (std::string integrator : {"md", "sd", "md-vv"})
+        for (std::string integrator : { "md", "sd", "md-vv" })
         {
-            for (std::string tcoupl : {"no", "v-rescale", "Nose-Hoover"})
+            for (std::string tcoupl : { "no", "v-rescale", "Nose-Hoover" })
             {
                 // SD doesn't support temperature-coupling algorithms,
                 if (integrator == "sd" && tcoupl != "no")
                 {
                     continue;
                 }
-                for (std::string pcoupl : {"no", "Berendsen", "Parrinello-Rahman"})
+                for (std::string pcoupl : { "no", "Berendsen", "Parrinello-Rahman" })
                 {
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")
@@ -361,8 +335,8 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
                         {
                             pcoupl = "MTTK";
                         }
-                        if ((tcoupl == "Nose-Hoover" && pcoupl == "Berendsen") ||
-                            (tcoupl != "Nose-Hoover" && pcoupl == "MTTK"))
+                        if ((tcoupl == "Nose-Hoover" && pcoupl == "Berendsen")
+                            || (tcoupl != "Nose-Hoover" && pcoupl == "MTTK"))
                         {
                             continue;
                         }
@@ -378,16 +352,16 @@ std::vector<PropagationParameters> propagationParametersWithCoupling()
                     {
                         ++maxGromppWarningsTolerated;
                     }
-                    parameterSets.emplace_back
-                        (PropagationParameters {{"simulationName",             simulationName},
-                                                {"integrator",                 integrator},
-                                                {"comm-mode",                  comm_mode},
-                                                {"nstcomm",                    nstcomm},
-                                                {"tcoupl",                     tcoupl},
-                                                {"nsttcouple",                 nsttcouple},
-                                                {"pcoupl",                     pcoupl},
-                                                {"nstpcouple",                 nstpcouple},
-                                                {"maxGromppWarningsTolerated", toString(maxGromppWarningsTolerated)}});
+                    parameterSets.emplace_back(PropagationParameters{
+                            { "simulationName", simulationName },
+                            { "integrator", integrator },
+                            { "comm-mode", comm_mode },
+                            { "nstcomm", nstcomm },
+                            { "tcoupl", tcoupl },
+                            { "nsttcouple", nsttcouple },
+                            { "pcoupl", pcoupl },
+                            { "nstpcouple", nstpcouple },
+                            { "maxGromppWarningsTolerated", toString(maxGromppWarningsTolerated) } });
                 }
             }
         }
@@ -407,18 +381,18 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
     std::string nstcomm    = "5";
 
     std::vector<PropagationParameters> parameterSets;
-    for (std::string simulationName : {"tip3p5"})
+    for (std::string simulationName : { "tip3p5" })
     {
-        for (std::string integrator : {"md", "sd", "md-vv"})
+        for (std::string integrator : { "md", "sd", "md-vv" })
         {
-            for (std::string tcoupl : {"no", "v-rescale" })
+            for (std::string tcoupl : { "no", "v-rescale" })
             {
                 // SD doesn't support temperature-coupling algorithms,
                 if (integrator == "sd" && tcoupl != "no")
                 {
                     continue;
                 }
-                for (std::string pcoupl : {"no", "Parrinello-Rahman"})
+                for (std::string pcoupl : { "no", "Parrinello-Rahman" })
                 {
                     // VV supports few algorithm combinations
                     if (integrator == "md-vv")
@@ -428,8 +402,8 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
                         {
                             pcoupl = "MTTK";
                         }
-                        if ((tcoupl == "Nose-Hoover" && pcoupl == "Berendsen") ||
-                            (tcoupl != "Nose-Hoover" && pcoupl == "MTTK"))
+                        if ((tcoupl == "Nose-Hoover" && pcoupl == "Berendsen")
+                            || (tcoupl != "Nose-Hoover" && pcoupl == "MTTK"))
                         {
                             continue;
                         }
@@ -441,16 +415,16 @@ std::vector<PropagationParameters> propagationParametersWithConstraints()
                     }
 
                     int maxGromppWarningsTolerated = 0;
-                    parameterSets.emplace_back
-                        (PropagationParameters {{"simulationName",             simulationName},
-                                                {"integrator",                 integrator},
-                                                {"comm-mode",                  comm_mode},
-                                                {"nstcomm",                    nstcomm},
-                                                {"tcoupl",                     tcoupl},
-                                                {"nsttcouple",                 nsttcouple},
-                                                {"pcoupl",                     pcoupl},
-                                                {"nstpcouple",                 nstpcouple},
-                                                {"maxGromppWarningsTolerated", toString(maxGromppWarningsTolerated)}});
+                    parameterSets.emplace_back(PropagationParameters{
+                            { "simulationName", simulationName },
+                            { "integrator", integrator },
+                            { "comm-mode", comm_mode },
+                            { "nstcomm", nstcomm },
+                            { "tcoupl", tcoupl },
+                            { "nsttcouple", nsttcouple },
+                            { "pcoupl", pcoupl },
+                            { "nstpcouple", nstpcouple },
+                            { "maxGromppWarningsTolerated", toString(maxGromppWarningsTolerated) } });
                 }
             }
         }
@@ -466,25 +440,25 @@ using ::testing::ValuesIn;
 // out. Once that compilation is cached for the whole process, these
 // tests can run in such configurations.
 #if GMX_GPU != GMX_GPU_OPENCL
-INSTANTIATE_TEST_CASE_P(BasicPropagators, PeriodicActionsTest,
-                        Combine(ValuesIn(simplePropagationParameters()),
-                                Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(PropagatorsWithCoupling, PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithCoupling()),
-                                Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(PropagatorsWithConstraints, PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithConstraints()),
-                                Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(BasicPropagators,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(PropagatorsWithCoupling,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(PropagatorsWithConstraints,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(propagationParametersWithConstraints()), Values(outputParameters)));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_BasicPropagators, PeriodicActionsTest,
-                        Combine(ValuesIn(simplePropagationParameters()),
-                                Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithCoupling, PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithCoupling()),
-                                Values(outputParameters)));
-INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithConstraints, PeriodicActionsTest,
-                        Combine(ValuesIn(propagationParametersWithConstraints()),
-                                Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(DISABLED_BasicPropagators,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(simplePropagationParameters()), Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithCoupling,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(propagationParametersWithCoupling()), Values(outputParameters)));
+INSTANTIATE_TEST_CASE_P(DISABLED_PropagatorsWithConstraints,
+                        PeriodicActionsTest,
+                        Combine(ValuesIn(propagationParametersWithConstraints()), Values(outputParameters)));
 #endif
 
 } // namespace

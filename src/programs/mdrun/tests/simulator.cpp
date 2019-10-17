@@ -68,12 +68,11 @@ namespace
  * are correct, and that different code paths expected to yield identical results
  * are equivalent.
  */
-using SimulatorComparisonTestParams = std::tuple<
-            std::tuple < std::string, std::string, std::string, std::string>,
-            std::string>;
+using SimulatorComparisonTestParams =
+        std::tuple<std::tuple<std::string, std::string, std::string, std::string>, std::string>;
 class SimulatorComparisonTest :
     public MdrunTestFixture,
-    public ::testing::WithParamInterface < SimulatorComparisonTestParams >
+    public ::testing::WithParamInterface<SimulatorComparisonTestParams>
 {
 };
 
@@ -94,60 +93,42 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
         return;
     }
 
-    SCOPED_TRACE(formatString("Comparing two simulations of '%s' "
-                              "with integrator '%s' and '%s' temperature coupling, "
-                              "switching environment variable '%s'",
-                              simulationName.c_str(), integrator.c_str(),
-                              tcoupling.c_str(), envVariable.c_str()));
+    SCOPED_TRACE(formatString(
+            "Comparing two simulations of '%s' "
+            "with integrator '%s' and '%s' temperature coupling, "
+            "switching environment variable '%s'",
+            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), envVariable.c_str()));
 
-    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(),
-                                                integrator.c_str(),
-                                                tcoupling.c_str(),
-                                                pcoupling.c_str());
+    auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
+                                                tcoupling.c_str(), pcoupling.c_str());
 
-    EnergyTermsToCompare energyTermsToCompare
-    {{
-         {
-             interaction_function[F_EPOT].longname,
-             relativeToleranceAsPrecisionDependentUlp(10.0, 100, 40)
-         },
-         {
-             interaction_function[F_EKIN].longname,
-             relativeToleranceAsPrecisionDependentUlp(60.0, 100, 40)
-         },
-         {
-             interaction_function[F_PRES].longname,
-             relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001)
-         },
-     }};
+    EnergyTermsToCompare energyTermsToCompare{ {
+            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 100, 40) },
+            { interaction_function[F_EKIN].longname, relativeToleranceAsPrecisionDependentUlp(60.0, 100, 40) },
+            { interaction_function[F_PRES].longname,
+              relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.01, 0.001) },
+    } };
 
     if (simulationName == "argon12")
     {
         // Without constraints, we can be more strict
-        energyTermsToCompare =
-        {{
-             {
-                 interaction_function[F_EPOT].longname,
-                 relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
-             },
-             {
-                 interaction_function[F_EKIN].longname,
-                 relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40)
-             },
-             {
-                 interaction_function[F_PRES].longname,
-                 relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.001, 0.0001)
-             },
-         }};
+        energyTermsToCompare = { {
+                { interaction_function[F_EPOT].longname,
+                  relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40) },
+                { interaction_function[F_EKIN].longname,
+                  relativeToleranceAsPrecisionDependentUlp(10.0, 24, 40) },
+                { interaction_function[F_PRES].longname,
+                  relativeToleranceAsPrecisionDependentFloatingPoint(10.0, 0.001, 0.0001) },
+        } };
     }
 
     // Specify how trajectory frame matching must work.
-    TrajectoryFrameMatchSettings trajectoryMatchSettings {
-        true, true, true,
-        ComparisonConditions::MustCompare,
-        ComparisonConditions::MustCompare,
-        ComparisonConditions::MustCompare
-    };
+    TrajectoryFrameMatchSettings trajectoryMatchSettings{ true,
+                                                          true,
+                                                          true,
+                                                          ComparisonConditions::MustCompare,
+                                                          ComparisonConditions::MustCompare,
+                                                          ComparisonConditions::MustCompare };
     TrajectoryTolerances trajectoryTolerances = TrajectoryComparison::s_defaultTrajectoryTolerances;
     if (simulationName != "argon12")
     {
@@ -156,18 +137,12 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 
     // Build the functor that will compare reference and test
     // trajectory frames in the chosen way.
-    TrajectoryComparison trajectoryComparison {
-        trajectoryMatchSettings, trajectoryTolerances
-    };
+    TrajectoryComparison trajectoryComparison{ trajectoryMatchSettings, trajectoryTolerances };
 
     int numWarningsToTolerate = 0;
-    executeSimulatorComparisonTest(
-            envVariable,
-            &fileManager_, &runner_,
-            simulationName, numWarningsToTolerate,
-            mdpFieldValues,
-            energyTermsToCompare,
-            trajectoryComparison);
+    executeSimulatorComparisonTest(envVariable, &fileManager_, &runner_, simulationName,
+                                   numWarningsToTolerate, mdpFieldValues, energyTermsToCompare,
+                                   trajectoryComparison);
 }
 
 // TODO: The time for OpenCL kernel compilation means these tests time
@@ -176,35 +151,37 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
 // These tests are very sensitive, so we only run them in double precision.
 // As we change call ordering, they might actually become too strict to be useful.
 #if GMX_GPU != GMX_GPU_OPENCL && GMX_DOUBLE
-INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
-                            ::testing::Combine(
-                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md-vv"),
-                                                           ::testing::Values("no", "v-rescale"),
-                                                           ::testing::Values("no")),
-                                    ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
-INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultLegacy, SimulatorComparisonTest,
-                            ::testing::Combine(
-                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md"),
-                                                           ::testing::Values("no", "v-rescale"),
-                                                           ::testing::Values("no", "Parrinello-Rahman")),
-                                    ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(SimulatorsAreEquivalentDefaultModular,
+                        SimulatorComparisonTest,
+                        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                                              ::testing::Values("md-vv"),
+                                                              ::testing::Values("no", "v-rescale"),
+                                                              ::testing::Values("no")),
+                                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(
+        SimulatorsAreEquivalentDefaultLegacy,
+        SimulatorComparisonTest,
+        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                              ::testing::Values("md"),
+                                              ::testing::Values("no", "v-rescale"),
+                                              ::testing::Values("no", "Parrinello-Rahman")),
+                           ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #else
-INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultModular, SimulatorComparisonTest,
-                            ::testing::Combine(
-                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md-vv"),
-                                                           ::testing::Values("no", "v-rescale"),
-                                                           ::testing::Values("no")),
-                                    ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
-INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultLegacy, SimulatorComparisonTest,
-                            ::testing::Combine(
-                                    ::testing::Combine(::testing::Values("argon12", "tip3p5"),
-                                                           ::testing::Values("md"),
-                                                           ::testing::Values("no", "v-rescale"),
-                                                           ::testing::Values("no", "Parrinello-Rahman")),
-                                    ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(DISABLED_SimulatorsAreEquivalentDefaultModular,
+                        SimulatorComparisonTest,
+                        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                                              ::testing::Values("md-vv"),
+                                                              ::testing::Values("no", "v-rescale"),
+                                                              ::testing::Values("no")),
+                                           ::testing::Values("GMX_DISABLE_MODULAR_SIMULATOR")));
+INSTANTIATE_TEST_CASE_P(
+        DISABLED_SimulatorsAreEquivalentDefaultLegacy,
+        SimulatorComparisonTest,
+        ::testing::Combine(::testing::Combine(::testing::Values("argon12", "tip3p5"),
+                                              ::testing::Values("md"),
+                                              ::testing::Values("no", "v-rescale"),
+                                              ::testing::Values("no", "Parrinello-Rahman")),
+                           ::testing::Values("GMX_USE_MODULAR_SIMULATOR")));
 #endif
 
 } // namespace

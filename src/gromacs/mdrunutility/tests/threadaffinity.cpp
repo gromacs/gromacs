@@ -47,9 +47,8 @@ namespace
 
 class ThreadAffinityTest : public ::testing::Test
 {
-    public:
-
-        gmx::test::ThreadAffinityTestHelper helper_;
+public:
+    gmx::test::ThreadAffinityTestHelper helper_;
 };
 
 TEST_F(ThreadAffinityTest, DoesNothingWhenDisabled)
@@ -165,7 +164,7 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithAuto)
 {
     helper_.setLogicalProcessorCount(2);
     helper_.expectPinningMessage(false, 1);
-    helper_.expectAffinitySet({0, 1});
+    helper_.expectAffinitySet({ 0, 1 });
     helper_.setAffinity(2);
 }
 
@@ -175,7 +174,7 @@ TEST_F(ThreadAffinityTest, PinsMultipleThreadsWithStrideWhenForced)
     helper_.setOffsetAndStride(0, 2);
     helper_.setLogicalProcessorCount(4);
     helper_.expectPinningMessage(true, 2);
-    helper_.expectAffinitySet({0, 2});
+    helper_.expectAffinitySet({ 0, 2 });
     helper_.setAffinity(2);
 }
 
@@ -184,7 +183,7 @@ TEST_F(ThreadAffinityTest, PinsWithAutoAndFewerAutoSetThreads)
     helper_.setLogicalProcessorCount(4);
     helper_.setTotNumThreadsIsAuto(true);
     helper_.expectPinningMessage(false, 2);
-    helper_.expectAffinitySet({0, 2});
+    helper_.expectAffinitySet({ 0, 2 });
     helper_.setAffinity(2);
 }
 

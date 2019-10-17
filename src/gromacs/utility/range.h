@@ -58,77 +58,74 @@ namespace gmx
  *
  * This will print: 2 3 4
  */
-template <typename T>
+template<typename T>
 class Range
 {
     static_assert(std::is_integral<T>::value, "Range can only be used with integral types");
 
     // Note: This class has as invariant: begin_ <= end_
 
-    public:
-        //! An iterator that loops over a range of integers
-        struct iterator
+public:
+    //! An iterator that loops over a range of integers
+    struct iterator
+    {
+        //! Constructor
+        iterator(T value) : value_(value) {}
+        //! Value
+        operator T() const { return value_; }
+        //! Reference
+        operator T&() { return value_; }
+        //! Pointer
+        int operator*() const { return value_; }
+        //! Inequality comparison
+        bool operator!=(const iterator other) { return value_ != other.value_; }
+        //! Increment operator
+        iterator& operator++()
         {
-            //! Constructor
-            iterator(T value) : value_(value) {}
-            //! Value
-            operator T () const { return value_; }
-            //! Reference
-            operator T &()      { return value_; }
-            //! Pointer
-            int operator* () const { return value_; }
-            //! Inequality comparison
-            bool operator!= (const iterator other) { return value_ != other.value_; }
-            //! Increment operator
-            iterator &operator++() { ++value_; return *this; }
-            //! Increment operator
-            iterator operator++(T gmx_unused dummy) { iterator tmp(*this); ++value_; return tmp; }
-            //! The actual value
-            T value_;
-        };
-
-        //! Constructor, has to be called with \p begin <= \p end (is checked)
-        Range(const T begin,
-              const T end) :
-            begin_(begin),
-            end_(end)
-        {
-            GMX_RELEASE_ASSERT(begin_ <= end_, "A range should have begin<=end");
+            ++value_;
+            return *this;
         }
-
-        //! Default constructor, produces an empty range
-        Range() = default;
-
-        //! Begin iterator/value
-        iterator begin() const { return begin_; }
-        //! End iterator/value
-        iterator end() const { return end_; }
-
-        //! Returns the length of the range
-        T size() const
+        //! Increment operator
+        iterator operator++(T gmx_unused dummy)
         {
-            return end_ - begin_;
+            iterator tmp(*this);
+            ++value_;
+            return tmp;
         }
+        //! The actual value
+        T value_;
+    };
 
-        //! Returns whether the range is empty
-        bool empty() const
-        {
-            return size() == 0;
-        }
+    //! Constructor, has to be called with \p begin <= \p end (is checked)
+    Range(const T begin, const T end) : begin_(begin), end_(end)
+    {
+        GMX_RELEASE_ASSERT(begin_ <= end_, "A range should have begin<=end");
+    }
 
-        //! Returns whether \p value is in range
-        bool isInRange(const T value) const
-        {
-            return (begin_ <= value && value < end_);
-        }
+    //! Default constructor, produces an empty range
+    Range() = default;
 
-    private:
-        //! The start of the range
-        T begin_ = 0;
-        //! The end of the range
-        T end_ = 0;
+    //! Begin iterator/value
+    iterator begin() const { return begin_; }
+    //! End iterator/value
+    iterator end() const { return end_; }
+
+    //! Returns the length of the range
+    T size() const { return end_ - begin_; }
+
+    //! Returns whether the range is empty
+    bool empty() const { return size() == 0; }
+
+    //! Returns whether \p value is in range
+    bool isInRange(const T value) const { return (begin_ <= value && value < end_); }
+
+private:
+    //! The start of the range
+    T begin_ = 0;
+    //! The end of the range
+    T end_ = 0;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

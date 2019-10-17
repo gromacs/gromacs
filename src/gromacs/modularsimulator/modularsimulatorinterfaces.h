@@ -65,7 +65,8 @@ class t_state;
 
 namespace gmx
 {
-template <class Signaller> class SignallerBuilder;
+template<class Signaller>
+class SignallerBuilder;
 class NeighborSearchSignaller;
 class LastStepSignaller;
 class LoggingSignaller;
@@ -104,19 +105,19 @@ typedef std::unique_ptr<RegisterRunFunction> RegisterRunFunctionPtr;
  */
 class ISimulatorElement
 {
-    public:
-        /*! \brief Query whether element wants to run at step / time
-         *
-         * Element can register one or more functions to be run at that step through
-         * the registration pointer.
-         */
-        virtual void scheduleTask(Step, Time, const RegisterRunFunctionPtr&) = 0;
-        //! Method guaranteed to be called after construction, before simulator run
-        virtual void elementSetup() = 0;
-        //! Method guaranteed to be called after simulator run, before deconstruction
-        virtual void elementTeardown() = 0;
-        //! Standard virtual destructor
-        virtual ~ISimulatorElement() = default;
+public:
+    /*! \brief Query whether element wants to run at step / time
+     *
+     * Element can register one or more functions to be run at that step through
+     * the registration pointer.
+     */
+    virtual void scheduleTask(Step, Time, const RegisterRunFunctionPtr&) = 0;
+    //! Method guaranteed to be called after construction, before simulator run
+    virtual void elementSetup() = 0;
+    //! Method guaranteed to be called after simulator run, before deconstruction
+    virtual void elementTeardown() = 0;
+    //! Standard virtual destructor
+    virtual ~ISimulatorElement() = default;
 };
 
 /*! \libinternal
@@ -137,13 +138,13 @@ class ISimulatorElement
  */
 class ISignaller
 {
-    public:
-        //! Function run before every step of scheduling
-        virtual void signal(Step, Time) = 0;
-        //! Method guaranteed to be called after construction, before simulator run
-        virtual void signallerSetup() = 0;
-        //! Standard virtual destructor
-        virtual ~ISignaller() = default;
+public:
+    //! Function run before every step of scheduling
+    virtual void signal(Step, Time) = 0;
+    //! Method guaranteed to be called after construction, before simulator run
+    virtual void signallerSetup() = 0;
+    //! Standard virtual destructor
+    virtual ~ISignaller() = default;
 };
 
 //! The function type that can be registered to signallers for callback
@@ -159,18 +160,18 @@ typedef std::unique_ptr<SignallerCallback> SignallerCallbackPtr;
  */
 class INeighborSearchSignallerClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow builder of NeighborSearchSignaller to ask for callback registration
-        friend class SignallerBuilder<NeighborSearchSignaller>;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~INeighborSearchSignallerClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow builder of NeighborSearchSignaller to ask for callback registration
+    friend class SignallerBuilder<NeighborSearchSignaller>;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~INeighborSearchSignallerClient() = default;
 
-    protected:
-        //! Return callback to NeighborSearchSignaller
-        virtual SignallerCallbackPtr registerNSCallback() = 0;
+protected:
+    //! Return callback to NeighborSearchSignaller
+    virtual SignallerCallbackPtr registerNSCallback() = 0;
 };
 
 /*! \libinternal
@@ -181,18 +182,18 @@ class INeighborSearchSignallerClient
  */
 class ILastStepSignallerClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow builder of LastStepSignaller to ask for callback registration
-        friend class SignallerBuilder<LastStepSignaller>;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ILastStepSignallerClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow builder of LastStepSignaller to ask for callback registration
+    friend class SignallerBuilder<LastStepSignaller>;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ILastStepSignallerClient() = default;
 
-    protected:
-        //! Return callback to LastStepSignaller
-        virtual SignallerCallbackPtr registerLastStepCallback() = 0;
+protected:
+    //! Return callback to LastStepSignaller
+    virtual SignallerCallbackPtr registerLastStepCallback() = 0;
 };
 
 /*! \libinternal
@@ -203,18 +204,18 @@ class ILastStepSignallerClient
  */
 class ILoggingSignallerClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow builder of LoggingSignaller to ask for callback registration
-        friend class SignallerBuilder<LoggingSignaller>;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ILoggingSignallerClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow builder of LoggingSignaller to ask for callback registration
+    friend class SignallerBuilder<LoggingSignaller>;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ILoggingSignallerClient() = default;
 
-    protected:
-        //! Return callback to LoggingSignaller
-        virtual SignallerCallbackPtr registerLoggingCallback() = 0;
+protected:
+    //! Return callback to LoggingSignaller
+    virtual SignallerCallbackPtr registerLoggingCallback() = 0;
 };
 
 //! The energy events signalled by the EnergySignaller
@@ -233,18 +234,18 @@ enum class EnergySignallerEvent
  */
 class IEnergySignallerClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow builder of EnergySignaller to ask for callback registration
-        friend class SignallerBuilder<EnergySignaller>;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~IEnergySignallerClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow builder of EnergySignaller to ask for callback registration
+    friend class SignallerBuilder<EnergySignaller>;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~IEnergySignallerClient() = default;
 
-    protected:
-        //! Return callback to EnergySignaller
-        virtual SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent) = 0;
+protected:
+    //! Return callback to EnergySignaller
+    virtual SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent) = 0;
 };
 
 //! The trajectory writing events
@@ -262,19 +263,18 @@ enum class TrajectoryEvent
  */
 class ITrajectorySignallerClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow builder of TrajectoryElement to ask for callback registration
-        friend class TrajectoryElementBuilder;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ITrajectorySignallerClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow builder of TrajectoryElement to ask for callback registration
+    friend class TrajectoryElementBuilder;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ITrajectorySignallerClient() = default;
 
-    protected:
-        //! Return callback to TrajectoryElement
-        virtual SignallerCallbackPtr
-            registerTrajectorySignallerCallback(TrajectoryEvent) = 0;
+protected:
+    //! Return callback to TrajectoryElement
+    virtual SignallerCallbackPtr registerTrajectorySignallerCallback(TrajectoryEvent) = 0;
 };
 
 /* Trajectory writing clients are handed a pointer to the output file handler,
@@ -301,24 +301,23 @@ typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;
  */
 class ITrajectoryWriterClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow TrajectoryElement to ask for callback registration
-        friend class TrajectoryElement;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ITrajectoryWriterClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow TrajectoryElement to ask for callback registration
+    friend class TrajectoryElement;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ITrajectoryWriterClient() = default;
 
-    protected:
-        //! Setup method with valid output pointer.
-        virtual void trajectoryWriterSetup(gmx_mdoutf *outf) = 0;
-        //! Teardown method with valid output pointer.
-        virtual void trajectoryWriterTeardown(gmx_mdoutf *outf) = 0;
+protected:
+    //! Setup method with valid output pointer.
+    virtual void trajectoryWriterSetup(gmx_mdoutf* outf) = 0;
+    //! Teardown method with valid output pointer.
+    virtual void trajectoryWriterTeardown(gmx_mdoutf* outf) = 0;
 
-        //! Return callback to TrajectoryElement
-        virtual ITrajectoryWriterCallbackPtr
-            registerTrajectoryWriterCallback(TrajectoryEvent) = 0;
+    //! Return callback to TrajectoryElement
+    virtual ITrajectoryWriterCallbackPtr registerTrajectoryWriterCallback(TrajectoryEvent) = 0;
 };
 
 /*! \libinternal
@@ -327,18 +326,18 @@ class ITrajectoryWriterClient
  */
 class ITopologyHolderClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow TopologyHolder to set new topology
-        friend class TopologyHolder;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ITopologyHolderClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow TopologyHolder to set new topology
+    friend class TopologyHolder;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ITopologyHolderClient() = default;
 
-    protected:
-        //! Pass pointer to new local topology
-        virtual void setTopology(const gmx_localtop_t*) = 0;
+protected:
+    //! Pass pointer to new local topology
+    virtual void setTopology(const gmx_localtop_t*) = 0;
 };
 
 /*! \libinternal
@@ -354,20 +353,20 @@ class ITopologyHolderClient
  */
 class ICheckpointHelperClient
 {
-    public:
-        //! @cond
-        // (doxygen doesn't like these...)
-        //! Allow CheckpointHelper to interact
-        friend class CheckpointHelper;
-        //! @endcond
-        //! Standard virtual destructor
-        virtual ~ICheckpointHelperClient() = default;
+public:
+    //! @cond
+    // (doxygen doesn't like these...)
+    //! Allow CheckpointHelper to interact
+    friend class CheckpointHelper;
+    //! @endcond
+    //! Standard virtual destructor
+    virtual ~ICheckpointHelperClient() = default;
 
-    protected:
-        //! Write checkpoint
-        virtual void writeCheckpoint(t_state* localState, t_state* globalState) = 0;
+protected:
+    //! Write checkpoint
+    virtual void writeCheckpoint(t_state* localState, t_state* globalState) = 0;
 };
 //! /}
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_MODULARSIMULATORINTERFACES_H

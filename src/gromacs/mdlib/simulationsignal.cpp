@@ -66,24 +66,26 @@
 namespace gmx
 {
 
-SimulationSignaller::SimulationSignaller(SimulationSignals    *signals,
-                                         const t_commrec      *cr,
-                                         const gmx_multisim_t *ms,
+SimulationSignaller::SimulationSignaller(SimulationSignals*    signals,
+                                         const t_commrec*      cr,
+                                         const gmx_multisim_t* ms,
                                          bool                  doInterSim,
-                                         bool                  doIntraSim)
-    : signals_(signals), cr_(cr), ms_(ms),
-      doInterSim_(doInterSim),
-      doIntraSim_(doInterSim || doIntraSim),
-      mpiBuffer_ {}
-{}
+                                         bool                  doIntraSim) :
+    signals_(signals),
+    cr_(cr),
+    ms_(ms),
+    doInterSim_(doInterSim),
+    doIntraSim_(doInterSim || doIntraSim),
+    mpiBuffer_{}
+{
+}
 
-gmx::ArrayRef<real>
-SimulationSignaller::getCommunicationBuffer()
+gmx::ArrayRef<real> SimulationSignaller::getCommunicationBuffer()
 {
     if (doIntraSim_)
     {
         std::transform(std::begin(*signals_), std::end(*signals_), std::begin(mpiBuffer_),
-                       [](const SimulationSignals::value_type &s) { return s.sig; });
+                       [](const SimulationSignals::value_type& s) { return s.sig; });
 
         return mpiBuffer_;
     }
@@ -93,8 +95,7 @@ SimulationSignaller::getCommunicationBuffer()
     }
 }
 
-void
-SimulationSignaller::signalInterSim()
+void SimulationSignaller::signalInterSim()
 {
     if (!doInterSim_)
     {
@@ -111,7 +112,7 @@ SimulationSignaller::signalInterSim()
         gmx_sum_sim(eglsNR, mpiBuffer_.data(), ms_);
     }
     // Communicate the signals from the master to the others.
-    gmx_bcast(eglsNR*sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
+    gmx_bcast(eglsNR * sizeof(mpiBuffer_[0]), mpiBuffer_.data(), cr_);
 }
 
 void SimulationSignaller::setSignals()
@@ -121,7 +122,7 @@ void SimulationSignaller::setSignals()
         return;
     }
 
-    SimulationSignals &s = *signals_;
+    SimulationSignals& s = *signals_;
     for (size_t i = 0; i < s.size(); i++)
     {
         if (doInterSim_ || s[i].isLocal)
@@ -149,4 +150,4 @@ void SimulationSignaller::finalizeSignals()
     setSignals();
 }
 
-}  // namespace gmx
+} // namespace gmx

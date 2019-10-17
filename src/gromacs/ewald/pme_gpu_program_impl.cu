@@ -46,93 +46,63 @@
 #include "pme_gpu_program_impl.h"
 
 #include "pme_gpu_constants.h"
-#include "pme_gpu_internal.h"                    // for GridOrdering enum
+#include "pme_gpu_internal.h" // for GridOrdering enum
 #include "pme_gpu_types_host.h"
 
 // PME interpolation order
-constexpr int  c_pmeOrder = 4;
+constexpr int c_pmeOrder = 4;
 // These hardcoded spread/gather parameters refer to not-implemented PME GPU 2D decomposition in X/Y
 constexpr bool c_wrapX = true;
 constexpr bool c_wrapY = true;
 
 //! PME CUDA kernels forward declarations. Kernels are documented in their respective files.
-template <
-    const int order,
-    const bool computeSplines,
-    const bool spreadCharges,
-    const bool wrapX,
-    const bool wrapY,
-    const bool writeGlobal,
-    const bool orderThreads
-    >
+template<const int order, const bool computeSplines, const bool spreadCharges, const bool wrapX, const bool wrapY, const bool writeGlobal, const bool orderThreads>
 void pme_spline_and_spread_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, true>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, false>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, true>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, false>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, true>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, false>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, true>(
+        const PmeGpuCudaKernelParams);
+extern template void pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, false>(
+        const PmeGpuCudaKernelParams);
 
-template<
-    GridOrdering gridOrdering,
-    bool computeEnergyAndVirial
-    >
+template<GridOrdering gridOrdering, bool computeEnergyAndVirial>
 void pme_solve_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
-extern template
-void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
+extern template void pme_solve_kernel<GridOrdering::XYZ, false>(const PmeGpuCudaKernelParams);
+extern template void pme_solve_kernel<GridOrdering::XYZ, true>(const PmeGpuCudaKernelParams);
+extern template void pme_solve_kernel<GridOrdering::YZX, false>(const PmeGpuCudaKernelParams);
+extern template void pme_solve_kernel<GridOrdering::YZX, true>(const PmeGpuCudaKernelParams);
 
-template <
-    const int order,
-    const bool overwriteForces,
-    const bool wrapX,
-    const bool wrapY,
-    const bool readGlobal,
-    const bool orderThreads
-    >
+template<const int order, const bool overwriteForces, const bool wrapX, const bool wrapY, const bool readGlobal, const bool orderThreads>
 void pme_gather_kernel(const PmeGpuCudaKernelParams kernelParams);
 
 // Add extern declarations to inform that there will be a definition
 // provided in another translation unit.
-extern template
-void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
-extern template
-void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
+extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t*)
 {
     // kernel parameters
     warpSize              = warp_size;
@@ -140,33 +110,40 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t *)
     solveMaxWorkGroupSize = c_solveMaxThreadsPerBlock;
     gatherWorkGroupSize   = c_gatherMaxThreadsPerBlock;
 
-/*!
- * Not all combinations of the splineAndSpread, spline and Spread kernels are required
- * If only the spline (without the spread) then it does not make sense not to write the data to global memory
- * Similarly the spread kernel (without the spline) implies that we should read the spline data from global memory
- */
-    splineAndSpreadKernel                             = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, false>;
-    splineAndSpreadKernelThPerAtom4                   = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, true>;
-    splineAndSpreadKernelWriteSplines                 = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, false>;
-    splineAndSpreadKernelWriteSplinesThPerAtom4       = pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, true>;
-    splineKernel                                      = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, false>;
-    splineKernelThPerAtom4                            = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, true>;
-    spreadKernel                                      = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, false>;
-    spreadKernelThPerAtom4                            = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, true>;
-    gatherKernel                                      = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>;
-    gatherKernelThPerAtom4                            = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>;
-    gatherKernelReadSplines                           = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>;
-    gatherKernelReadSplinesThPerAtom4                 = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>;
-    gatherReduceWithInputKernel                       = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>;
-    gatherReduceWithInputKernelThPerAtom4             = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>;
-    gatherReduceWithInputKernelReadSplines            = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>;
-    gatherReduceWithInputKernelReadSplinesThPerAtom4  = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>;
-    solveXYZKernel                                    = pme_solve_kernel<GridOrdering::XYZ, false>;
-    solveXYZEnergyKernel                              = pme_solve_kernel<GridOrdering::XYZ, true>;
-    solveYZXKernel                                    = pme_solve_kernel<GridOrdering::YZX, false>;
-    solveYZXEnergyKernel                              = pme_solve_kernel<GridOrdering::YZX, true>;
+    /*!
+     * Not all combinations of the splineAndSpread, spline and Spread kernels are required
+     * If only the spline (without the spread) then it does not make sense not to write the data to global memory
+     * Similarly the spread kernel (without the spline) implies that we should read the spline data from global memory
+     */
+    splineAndSpreadKernel =
+            pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, false>;
+    splineAndSpreadKernelThPerAtom4 =
+            pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, false, true>;
+    splineAndSpreadKernelWriteSplines =
+            pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, false>;
+    splineAndSpreadKernelWriteSplinesThPerAtom4 =
+            pme_spline_and_spread_kernel<c_pmeOrder, true, true, c_wrapX, c_wrapY, true, true>;
+    splineKernel = pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, false>;
+    splineKernelThPerAtom4 =
+            pme_spline_and_spread_kernel<c_pmeOrder, true, false, c_wrapX, c_wrapY, true, true>;
+    spreadKernel = pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, false>;
+    spreadKernelThPerAtom4 =
+            pme_spline_and_spread_kernel<c_pmeOrder, false, true, c_wrapX, c_wrapY, true, true>;
+    gatherKernel            = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, false>;
+    gatherKernelThPerAtom4  = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false, true>;
+    gatherKernelReadSplines = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, false>;
+    gatherKernelReadSplinesThPerAtom4 = pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, true, true>;
+    gatherReduceWithInputKernel = pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>;
+    gatherReduceWithInputKernelThPerAtom4 =
+            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, true>;
+    gatherReduceWithInputKernelReadSplines =
+            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>;
+    gatherReduceWithInputKernelReadSplinesThPerAtom4 =
+            pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, true>;
+    solveXYZKernel       = pme_solve_kernel<GridOrdering::XYZ, false>;
+    solveXYZEnergyKernel = pme_solve_kernel<GridOrdering::XYZ, true>;
+    solveYZXKernel       = pme_solve_kernel<GridOrdering::YZX, false>;
+    solveYZXEnergyKernel = pme_solve_kernel<GridOrdering::YZX, true>;
 }
 
-PmeGpuProgramImpl::~PmeGpuProgramImpl()
-{
-}
+PmeGpuProgramImpl::~PmeGpuProgramImpl() {}

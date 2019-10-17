@@ -46,10 +46,10 @@ namespace gmx
 
 class ReportMethodsInfo
 {
-    public:
-        static const char name[];
-        static const char shortDescription[];
-        static ICommandLineOptionsModulePointer create();
+public:
+    static const char                       name[];
+    static const char                       shortDescription[];
+    static ICommandLineOptionsModulePointer create();
 };
 
 // Helper functions of the class
@@ -62,7 +62,7 @@ class ReportMethodsInfo
  * \param[in] section String with section text for header.
  * \param[in] writeFormattedText If we need to format the text for LaTeX output or not
  */
-void writeHeader(TextWriter *writer, const std::string &text, const std::string &section, bool writeFormattedText);
+void writeHeader(TextWriter* writer, const std::string& text, const std::string& section, bool writeFormattedText);
 
 /*! \brief
  * Write information about the molecules in the system.
@@ -75,7 +75,7 @@ void writeHeader(TextWriter *writer, const std::string &text, const std::string 
  * \param[in] writeFormattedText Decide if we want formatted text output or not.
  *
  */
-void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writeFormattedText);
+void writeSystemInformation(TextWriter* writer, const gmx_mtop_t& top, bool writeFormattedText);
 
 /*! \brief
  * Write information about system parameters.
@@ -87,7 +87,7 @@ void writeSystemInformation(TextWriter *writer, const gmx_mtop_t &top, bool writ
  * \param[in] ir Reference to inputrec of the run input.
  * \param[in] writeFormattedText Decide if we want formatted text output or not.
  */
-void writeParameterInformation(TextWriter *writer, const t_inputrec &ir, bool writeFormattedText);
+void writeParameterInformation(TextWriter* writer, const t_inputrec& ir, bool writeFormattedText);
 
 /*! \brief
  * Wrapper for writing out information.
@@ -102,8 +102,11 @@ void writeParameterInformation(TextWriter *writer, const t_inputrec &ir, bool wr
  * \param[in] writeFormattedText Decide if we want formatted text output or not.
  * \param[in] notStdout Bool to see if we can close the file after writing or not in case of stdout.
  */
-void writeInformation(TextOutputFile *outputStream, const t_inputrec &ir,
-                      const gmx_mtop_t &top, bool writeFormattedText, bool notStdout);
+void writeInformation(TextOutputFile*   outputStream,
+                      const t_inputrec& ir,
+                      const gmx_mtop_t& top,
+                      bool              writeFormattedText,
+                      bool              notStdout);
 
 } // namespace gmx
 

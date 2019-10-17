@@ -57,8 +57,8 @@
 
 #include <fcntl.h>
 #if GMX_NATIVE_WINDOWS
-#include <io.h>
-#include <sys/locking.h>
+#    include <io.h>
+#    include <sys/locking.h>
 #endif
 
 #include <algorithm>
@@ -89,7 +89,7 @@ namespace
 /*! \brief Search for \p fnm_cp in fnm and return true iff found
  *
  * \todo This could be implemented sanely with a for loop. */
-gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
+gmx_bool exist_output_file(const char* fnm_cp, int nfile, const t_filenm fnm[])
 {
     int i;
 
@@ -97,8 +97,7 @@ gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
      * is one of the output file names of mdrun.
      */
     i = 0;
-    while (i < nfile &&
-           !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].filenames[0].c_str()) == 0))
+    while (i < nfile && !(is_output(&fnm[i]) && strcmp(fnm_cp, fnm[i].filenames[0].c_str()) == 0))
     {
         i++;
     }
@@ -112,24 +111,24 @@ gmx_bool exist_output_file(const char *fnm_cp, int nfile, const t_filenm fnm[])
  * file was found (so it is not the first part of a new run), but we are still missing
  * some or all checkpoint files. In this case we issue a fatal error since there are
  * so many special cases we cannot keep track of, and better safe than sorry. */
-[[noreturn]] void
-throwBecauseOfMissingOutputFiles(const char *checkpointFilename,
-                                 ArrayRef<const gmx_file_position_t> outputfiles,
-                                 int nfile, const t_filenm fnm[],
-                                 size_t numFilesMissing)
+[[noreturn]] void throwBecauseOfMissingOutputFiles(const char* checkpointFilename,
+                                                   ArrayRef<const gmx_file_position_t> outputfiles,
+                                                   int                                 nfile,
+                                                   const t_filenm                      fnm[],
+                                                   size_t numFilesMissing)
 {
     StringOutputStream stream;
     TextWriter         writer(&stream);
-    writer.writeStringFormatted
-        ("Some output files listed in the checkpoint file %s are not present or not named "
-        "as the output files by the current program:)",
-        checkpointFilename);
+    writer.writeStringFormatted(
+            "Some output files listed in the checkpoint file %s are not present or not named "
+            "as the output files by the current program:)",
+            checkpointFilename);
     auto settings  = writer.wrapperSettings();
     auto oldIndent = settings.indent(), newIndent = 2;
 
     writer.writeLine("Expected output files that are present:");
     settings.setIndent(newIndent);
-    for (const auto &outputfile : outputfiles)
+    for (const auto& outputfile : outputfiles)
     {
         if (exist_output_file(outputfile.filename, nfile, fnm))
         {
@@ -141,10 +140,9 @@ throwBecauseOfMissingOutputFiles(const char *checkpointFilename,
 
     writer.writeLine("Expected output files that are not present or named differently:");
     settings.setIndent(newIndent);
-    for (const auto &outputfile : outputfiles)
+    for (const auto& outputfile : outputfiles)
     {
-        if (!exist_output_file(outputfile.filename,
-                               nfile, fnm))
+        if (!exist_output_file(outputfile.filename, nfile, fnm))
         {
             writer.writeLine(outputfile.filename);
         }
@@ -162,7 +160,7 @@ In the last case, you will not be able to use appending in future for this simul
 }
 
 //! Return a string describing the precision of a build of GROMACS.
-const char *precisionToString(bool isDoublePrecision)
+const char* precisionToString(bool isDoublePrecision)
 {
     return isDoublePrecision ? "double" : "mixed";
 }
@@ -171,37 +169,36 @@ const char *precisionToString(bool isDoublePrecision)
  * functionality based on that data. */
 class StartingBehaviorHandler
 {
-    public:
-        /*! \brief Throw unless all simulations in a multi-sim restart the same way.
-         *
-         * The restart could differ if checkpoint or other output files are
-         * not found in a consistent way across the set of multi-simulations,
-         * or are from different simulation parts.
-         *
-         * \param[in]  ms      Multi-sim handler.
-         *
-         * May only be called from the master rank of each simulation.
-         *
-         * \throws InconsistentInputError if either simulations restart
-         * differently, or from checkpoints from different simulation parts.
-         */
-        void ensureMultiSimBehaviorsMatch(const gmx_multisim_t *ms);
-        /*! \brief Return an optional value that describes the index
-         * of the next simulation part when not appending.
-         *
-         * \param[in] appendingBehavior  Whether this simulation is appending
-         *                                (relevant only when restarting)
-         *
-         * Does not throw */
-        compat::optional<int> makeIndexOfNextPart(AppendingBehavior appendingBehavior) const;
+public:
+    /*! \brief Throw unless all simulations in a multi-sim restart the same way.
+     *
+     * The restart could differ if checkpoint or other output files are
+     * not found in a consistent way across the set of multi-simulations,
+     * or are from different simulation parts.
+     *
+     * \param[in]  ms      Multi-sim handler.
+     *
+     * May only be called from the master rank of each simulation.
+     *
+     * \throws InconsistentInputError if either simulations restart
+     * differently, or from checkpoints from different simulation parts.
+     */
+    void ensureMultiSimBehaviorsMatch(const gmx_multisim_t* ms);
+    /*! \brief Return an optional value that describes the index
+     * of the next simulation part when not appending.
+     *
+     * \param[in] appendingBehavior  Whether this simulation is appending
+     *                                (relevant only when restarting)
+     *
+     * Does not throw */
+    compat::optional<int> makeIndexOfNextPart(AppendingBehavior appendingBehavior) const;
 
-        //! Describes how mdrun will (re)start
-        StartingBehavior                           startingBehavior = StartingBehavior::NewSimulation;
-        //! When restarting from a checkpoint, contains the contents of its header
-        compat::optional<CheckpointHeaderContents> headerContents;
-        //! When restarting from a checkpoint, contains the names of expected output files
-        compat::optional < std::vector < gmx_file_position_t>> outputFiles;
-
+    //! Describes how mdrun will (re)start
+    StartingBehavior startingBehavior = StartingBehavior::NewSimulation;
+    //! When restarting from a checkpoint, contains the contents of its header
+    compat::optional<CheckpointHeaderContents> headerContents;
+    //! When restarting from a checkpoint, contains the names of expected output files
+    compat::optional<std::vector<gmx_file_position_t>> outputFiles;
 };
 
 /*! \brief Choose the starting behaviour for this simulation
@@ -214,10 +211,9 @@ class StartingBehaviorHandler
  * found (and other files found, when appending), and so can differ
  * between multi-simulations. It is the caller's responsibility to
  * detect this and react accordingly. */
-StartingBehaviorHandler
-chooseStartingBehavior(const AppendingBehavior appendingBehavior,
-                       const int               nfile,
-                       t_filenm                fnm[])
+StartingBehaviorHandler chooseStartingBehavior(const AppendingBehavior appendingBehavior,
+                                               const int               nfile,
+                                               t_filenm                fnm[])
 {
     StartingBehaviorHandler handler;
     if (!opt2bSet("-cpi", nfile, fnm))
@@ -228,7 +224,7 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
     }
 
     // A -cpi option was provided, do a restart if there is an input checkpoint file available
-    const char *checkpointFilename = opt2fn("-cpi", nfile, fnm);
+    const char* checkpointFilename = opt2fn("-cpi", nfile, fnm);
     if (!gmx_fexist(checkpointFilename))
     {
         // This is interpreted as the user intending a new
@@ -236,46 +232,47 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
         // for all simulation parts. Thus, appending cannot occur.
         if (appendingBehavior == AppendingBehavior::Appending)
         {
-            GMX_THROW(InconsistentInputError
-                          ("Could not do a restart with appending because the checkpoint file "
-                          "was not found. Either supply the name of the right checkpoint file "
-                          "or do not use -append"));
+            GMX_THROW(InconsistentInputError(
+                    "Could not do a restart with appending because the checkpoint file "
+                    "was not found. Either supply the name of the right checkpoint file "
+                    "or do not use -append"));
         }
         // No need to tell the user that mdrun -cpi without a file means a new simulation
         handler.startingBehavior = StartingBehavior::NewSimulation;
         return handler;
     }
 
-    t_fileio *fp = gmx_fio_open(checkpointFilename, "r");
+    t_fileio* fp = gmx_fio_open(checkpointFilename, "r");
     if (fp == nullptr)
     {
-        GMX_THROW(FileIOError
-                      (formatString("Checkpoint file '%s' was found but could not be opened for "
-                                    "reading. Check the file permissions.", checkpointFilename)));
+        GMX_THROW(FileIOError(
+                formatString("Checkpoint file '%s' was found but could not be opened for "
+                             "reading. Check the file permissions.",
+                             checkpointFilename)));
     }
 
-    std::vector < gmx_file_position_t> outputFiles;
-    CheckpointHeaderContents           headerContents =
-        read_checkpoint_simulation_part_and_filenames(fp, &outputFiles);
+    std::vector<gmx_file_position_t> outputFiles;
+    CheckpointHeaderContents         headerContents =
+            read_checkpoint_simulation_part_and_filenames(fp, &outputFiles);
 
     GMX_RELEASE_ASSERT(!outputFiles.empty(),
                        "The checkpoint file or its reading is broken, as no output "
                        "file information is stored in it");
-    const char *logFilename = outputFiles[0].filename;
+    const char* logFilename = outputFiles[0].filename;
     GMX_RELEASE_ASSERT(Path::extensionMatches(logFilename, ftp2ext(efLOG)),
                        formatString("The checkpoint file or its reading is broken, the first "
                                     "output file '%s' must be a log file with extension '%s'",
-                                    logFilename, ftp2ext(efLOG)).c_str());
+                                    logFilename, ftp2ext(efLOG))
+                               .c_str());
 
     if (appendingBehavior != AppendingBehavior::NoAppending)
     {
         // See whether appending can be done.
 
-        size_t numFilesMissing = std::count_if(std::begin(outputFiles), std::end(outputFiles),
-                                               [nfile, fnm](const auto &outputFile)
-                                               {
-                                                   return !exist_output_file(outputFile.filename, nfile, fnm);
-                                               });
+        size_t numFilesMissing = std::count_if(
+                std::begin(outputFiles), std::end(outputFiles), [nfile, fnm](const auto& outputFile) {
+                    return !exist_output_file(outputFile.filename, nfile, fnm);
+                });
         if (numFilesMissing != 0)
         {
             // Appending is not possible, because not all previous
@@ -287,7 +284,7 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
             throwBecauseOfMissingOutputFiles(checkpointFilename, outputFiles, nfile, fnm, numFilesMissing);
         }
 
-        for (const auto &outputFile : outputFiles)
+        for (const auto& outputFile : outputFiles)
         {
             if (outputFile.offset < 0)
             {
@@ -298,20 +295,20 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
                 // understanding that their infrastructure is not very
                 // suitable for running a simulation producing lots of
                 // output.
-                auto message =
-                    formatString("The original mdrun wrote a file called '%s' which "
-                                 "is larger than 2 GB, but that mdrun or the filesystem "
-                                 "it ran on (e.g FAT32) did not support such large files. "
-                                 "This simulation cannot be restarted with appending. It will "
-                                 "be easier for you to use mdrun on a 64-bit filesystem, but "
-                                 "if you choose not to, then you must run mdrun with "
-                                 "-noappend once your output gets large enough.",
-                                 outputFile.filename);
+                auto message = formatString(
+                        "The original mdrun wrote a file called '%s' which "
+                        "is larger than 2 GB, but that mdrun or the filesystem "
+                        "it ran on (e.g FAT32) did not support such large files. "
+                        "This simulation cannot be restarted with appending. It will "
+                        "be easier for you to use mdrun on a 64-bit filesystem, but "
+                        "if you choose not to, then you must run mdrun with "
+                        "-noappend once your output gets large enough.",
+                        outputFile.filename);
                 GMX_THROW(InconsistentInputError(message));
             }
         }
 
-        const char *logFilename = outputFiles[0].filename;
+        const char* logFilename = outputFiles[0].filename;
         // If the precision does not match, we cannot continue with
         // appending, and will switch to not appending unless
         // instructed otherwise.
@@ -319,12 +316,11 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
         {
             if (appendingBehavior == AppendingBehavior::Appending)
             {
-                GMX_THROW(InconsistentInputError
-                              (formatString("Cannot restart with appending because the previous simulation part used "
-                                            "%s precision which does not match the %s precision used by this build "
-                                            "of GROMACS. Either use matching precision or use mdrun -noappend.",
-                                            precisionToString(headerContents.double_prec),
-                                            precisionToString(GMX_DOUBLE))));
+                GMX_THROW(InconsistentInputError(formatString(
+                        "Cannot restart with appending because the previous simulation part used "
+                        "%s precision which does not match the %s precision used by this build "
+                        "of GROMACS. Either use matching precision or use mdrun -noappend.",
+                        precisionToString(headerContents.double_prec), precisionToString(GMX_DOUBLE))));
             }
         }
         // If the previous log filename had a part number, then we
@@ -334,10 +330,10 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
         {
             if (appendingBehavior == AppendingBehavior::Appending)
             {
-                GMX_THROW(InconsistentInputError
-                              ("Cannot restart with appending because the previous simulation "
-                              "part did not use appending. Either do not use mdrun -append, or "
-                              "provide the correct checkpoint file."));
+                GMX_THROW(InconsistentInputError(
+                        "Cannot restart with appending because the previous simulation "
+                        "part did not use appending. Either do not use mdrun -append, or "
+                        "provide the correct checkpoint file."));
             }
         }
         else
@@ -352,35 +348,33 @@ chooseStartingBehavior(const AppendingBehavior appendingBehavior,
         // when they ask for it.
     }
 
-    GMX_RELEASE_ASSERT(appendingBehavior != AppendingBehavior::Appending, "Logic error in appending");
+    GMX_RELEASE_ASSERT(appendingBehavior != AppendingBehavior::Appending,
+                       "Logic error in appending");
     handler = { StartingBehavior::RestartWithoutAppending, headerContents, outputFiles };
     return handler;
 }
 
 //! Check whether chksum_file output file has a checksum that matches \c outputfile from the checkpoint.
-void checkOutputFile(t_fileio                  *fileToCheck,
-                     const gmx_file_position_t &outputfile)
+void checkOutputFile(t_fileio* fileToCheck, const gmx_file_position_t& outputfile)
 {
     /* compute md5 chksum */
     std::array<unsigned char, 16> digest;
     if (outputfile.checksumSize != -1)
     {
-        if (gmx_fio_get_file_md5(fileToCheck, outputfile.offset,
-                                 &digest) != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
+        if (gmx_fio_get_file_md5(fileToCheck, outputfile.offset, &digest)
+            != outputfile.checksumSize) /*at the end of the call the file position is at the end of the file*/
         {
-            auto message =
-                formatString("Can't read %d bytes of '%s' to compute checksum. The file "
-                             "has been replaced or its contents have been modified. Cannot "
-                             "do appending because of this condition.",
-                             outputfile.checksumSize,
-                             outputfile.filename);
+            auto message = formatString(
+                    "Can't read %d bytes of '%s' to compute checksum. The file "
+                    "has been replaced or its contents have been modified. Cannot "
+                    "do appending because of this condition.",
+                    outputfile.checksumSize, outputfile.filename);
             GMX_THROW(InconsistentInputError(message));
         }
     }
 
     /* compare md5 chksum */
-    if (outputfile.checksumSize != -1 &&
-        digest != outputfile.checksum)
+    if (outputfile.checksumSize != -1 && digest != outputfile.checksum)
     {
         if (debug)
         {
@@ -391,10 +385,11 @@ void checkOutputFile(t_fileio                  *fileToCheck,
             }
             fprintf(debug, "\n");
         }
-        auto message =
-            formatString("Checksum wrong for '%s'. The file has been replaced "
-                         "or its contents have been modified. Cannot do appending "
-                         "because of this condition.", outputfile.filename);
+        auto message = formatString(
+                "Checksum wrong for '%s'. The file has been replaced "
+                "or its contents have been modified. Cannot do appending "
+                "because of this condition.",
+                outputfile.filename);
         GMX_THROW(InconsistentInputError(message));
     }
 }
@@ -403,8 +398,7 @@ void checkOutputFile(t_fileio                  *fileToCheck,
  *
  * This wil prevent e.g. other mdrun instances from changing it while
  * we attempt to restart with appending. */
-void lockLogFile(t_fileio   *logfio,
-                 const char *logFilename)
+void lockLogFile(t_fileio* logfio, const char* logFilename)
 {
     /* Note that there are systems where the lock operation
      * will succeed, but a second process can also lock the file.
@@ -429,22 +423,22 @@ void lockLogFile(t_fileio   *logfio,
     {
         if (errno == ENOSYS)
         {
-            std::string message = "File locking is not supported on this system. "
-                "Use mdrun -noappend to restart.";
+            std::string message =
+                    "File locking is not supported on this system. "
+                    "Use mdrun -noappend to restart.";
             GMX_THROW(FileIOError(message));
         }
         else if (errno == EACCES || errno == EAGAIN)
         {
-            auto message =
-                formatString("Failed to lock: %s. Already running "
-                             "simulation?", logFilename);
+            auto message = formatString(
+                    "Failed to lock: %s. Already running "
+                    "simulation?",
+                    logFilename);
             GMX_THROW(FileIOError(message));
         }
         else
         {
-            auto message =
-                formatString("Failed to lock: %s. %s.",
-                             logFilename, std::strerror(errno));
+            auto message = formatString("Failed to lock: %s. %s.", logFilename, std::strerror(errno));
             GMX_THROW(FileIOError(message));
         }
     }
@@ -459,9 +453,7 @@ void lockLogFile(t_fileio   *logfio,
  * (maybe important) files. The log file is locked so that we can
  * avoid cases where another mdrun instance might still be writing to
  * the file. */
-void
-prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles,
-                    t_fileio                                 *logfio)
+void prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles, t_fileio* logfio)
 {
     if (GMX_FAHCORE)
     {
@@ -474,22 +466,20 @@ prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles,
     // because we have already opened the log file. This ensures that
     // we retain a lock on the open file that is never lifted after
     // the checksum is calculated.
-    const gmx_file_position_t &logOutputFile = outputFiles[0];
+    const gmx_file_position_t& logOutputFile = outputFiles[0];
     lockLogFile(logfio, logOutputFile.filename);
     checkOutputFile(logfio, logOutputFile);
 
     if (gmx_fio_seek(logfio, logOutputFile.offset) != 0)
     {
-        auto message =
-            formatString("Seek error! Failed to truncate log file: %s.",
-                         std::strerror(errno));
+        auto message = formatString("Seek error! Failed to truncate log file: %s.", std::strerror(errno));
         GMX_THROW(FileIOError(message));
     }
 
     // Now handle the remaining outputFiles
-    for (const auto &outputFile : outputFiles.subArray(1, outputFiles.size()-1))
+    for (const auto& outputFile : outputFiles.subArray(1, outputFiles.size() - 1))
     {
-        t_fileio *fileToCheck = gmx_fio_open(outputFile.filename, "r+");
+        t_fileio* fileToCheck = gmx_fio_open(outputFile.filename, "r+");
         checkOutputFile(fileToCheck, outputFile);
         gmx_fio_close(fileToCheck);
 
@@ -501,15 +491,16 @@ prepareForAppending(const ArrayRef<const gmx_file_position_t> outputFiles,
 
         if (gmx_truncate(outputFile.filename, outputFile.offset) != 0)
         {
-            auto message =
-                formatString("Truncation of file %s failed. Cannot do appending "
-                             "because of this failure.", outputFile.filename);
+            auto message = formatString(
+                    "Truncation of file %s failed. Cannot do appending "
+                    "because of this failure.",
+                    outputFile.filename);
             GMX_THROW(FileIOError(message));
         }
     }
 }
 
-void StartingBehaviorHandler::ensureMultiSimBehaviorsMatch(const gmx_multisim_t *ms)
+void StartingBehaviorHandler::ensureMultiSimBehaviorsMatch(const gmx_multisim_t* ms)
 {
     if (!isMultiSim(ms))
     {
@@ -517,13 +508,15 @@ void StartingBehaviorHandler::ensureMultiSimBehaviorsMatch(const gmx_multisim_t 
         return;
     }
 
-    auto startingBehaviors          = gatherIntFromMultiSimulation(ms, static_cast<int>(startingBehavior));
-    bool identicalStartingBehaviors = (std::adjacent_find(std::begin(startingBehaviors),
-                                                          std::end(startingBehaviors),
-                                                          std::not_equal_to<>()) == std::end(startingBehaviors));
+    auto startingBehaviors = gatherIntFromMultiSimulation(ms, static_cast<int>(startingBehavior));
+    bool identicalStartingBehaviors =
+            (std::adjacent_find(std::begin(startingBehaviors), std::end(startingBehaviors),
+                                std::not_equal_to<>())
+             == std::end(startingBehaviors));
 
-    const EnumerationArray<StartingBehavior, std::string> behaviorStrings =
-    { { "restart with appending", "restart without appending", "new simulation" } };
+    const EnumerationArray<StartingBehavior, std::string> behaviorStrings = {
+        { "restart with appending", "restart without appending", "new simulation" }
+    };
     if (!identicalStartingBehaviors)
     {
         std::string message = formatString(R"(
@@ -538,11 +531,13 @@ checkpoint file was written).
 
 To help you identify which directories need attention, the %d
 simulations wanted the following respective behaviors:
-)", ms->nsim);
+)",
+                                           ms->nsim);
         for (index simIndex = 0; simIndex != ssize(startingBehaviors); ++simIndex)
         {
             auto behavior = static_cast<StartingBehavior>(startingBehaviors[simIndex]);
-            message += formatString("  Simulation %6zd: %s\n", simIndex, behaviorStrings[behavior].c_str());
+            message += formatString("  Simulation %6zd: %s\n", simIndex,
+                                    behaviorStrings[behavior].c_str());
         }
         GMX_THROW(InconsistentInputError(message));
     }
@@ -556,10 +551,10 @@ simulations wanted the following respective behaviors:
     // Multi-simulation restarts require that each checkpoint
     // describes the same simulation part. If those don't match, then
     // the simulation cannot proceed.
-    auto simulationParts          = gatherIntFromMultiSimulation(ms, headerContents->simulation_part);
+    auto simulationParts = gatherIntFromMultiSimulation(ms, headerContents->simulation_part);
     bool identicalSimulationParts = (std::adjacent_find(std::begin(simulationParts),
-                                                        std::end(simulationParts),
-                                                        std::not_equal_to<>()) == std::end(simulationParts));
+                                                        std::end(simulationParts), std::not_equal_to<>())
+                                     == std::end(simulationParts));
 
     if (!identicalSimulationParts)
     {
@@ -576,7 +571,8 @@ written).
 To help you identify which directories need attention, the %d
 simulation checkpoint files were from the following respective
 simulation parts:
-)", ms->nsim);
+)",
+                                           ms->nsim);
         for (index partIndex = 0; partIndex != ssize(simulationParts); ++partIndex)
         {
             message += formatString("  Simulation %6zd: %d\n", partIndex, simulationParts[partIndex]);
@@ -585,8 +581,7 @@ simulation parts:
     }
 }
 
-compat::optional<int>
-StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBehavior) const
+compat::optional<int> StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBehavior) const
 {
     compat::optional<int> indexOfNextPart;
 
@@ -594,8 +589,8 @@ StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBe
     {
         indexOfNextPart = headerContents->simulation_part + 1;
     }
-    else if (startingBehavior == StartingBehavior::NewSimulation &&
-             appendingBehavior == AppendingBehavior::NoAppending)
+    else if (startingBehavior == StartingBehavior::NewSimulation
+             && appendingBehavior == AppendingBehavior::NoAppending)
     {
         indexOfNextPart = 1;
     }
@@ -603,15 +598,14 @@ StartingBehaviorHandler::makeIndexOfNextPart(const AppendingBehavior appendingBe
     return indexOfNextPart;
 }
 
-}   // namespace
+} // namespace
 
-std::tuple<StartingBehavior, LogFilePtr>
-handleRestart(const bool              isSimulationMaster,
-              MPI_Comm                communicator,
-              const gmx_multisim_t   *ms,
-              const AppendingBehavior appendingBehavior,
-              const int               nfile,
-              t_filenm                fnm[])
+std::tuple<StartingBehavior, LogFilePtr> handleRestart(const bool              isSimulationMaster,
+                                                       MPI_Comm                communicator,
+                                                       const gmx_multisim_t*   ms,
+                                                       const AppendingBehavior appendingBehavior,
+                                                       const int               nfile,
+                                                       t_filenm                fnm[])
 {
     StartingBehaviorHandler handler;
     LogFilePtr              logFileGuard = nullptr;
@@ -633,8 +627,7 @@ handleRestart(const bool              isSimulationMaster,
             handler.ensureMultiSimBehaviorsMatch(ms);
 
             // When not appending, prepare a suffix for the part number
-            compat::optional<int> indexOfNextPart
-                = handler.makeIndexOfNextPart(appendingBehavior);
+            compat::optional<int> indexOfNextPart = handler.makeIndexOfNextPart(appendingBehavior);
 
             // If a part suffix is used, change the file names accordingly.
             if (indexOfNextPart)
@@ -653,7 +646,7 @@ handleRestart(const bool              isSimulationMaster,
                 prepareForAppending(*handler.outputFiles, logFileGuard.get());
             }
         }
-        catch (const std::exception & /*ex*/)
+        catch (const std::exception& /*ex*/)
         {
             exceptionPtr   = std::current_exception();
             numErrorsFound = 1;

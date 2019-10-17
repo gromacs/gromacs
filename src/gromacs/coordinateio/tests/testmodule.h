@@ -55,23 +55,23 @@ namespace test
 
 class DummyOutputModule : public IOutputAdapter
 {
-    public:
-        explicit DummyOutputModule(CoordinateFileFlags requirementsFlag) :
-            moduleRequirements_(requirementsFlag)
-        {}
+public:
+    explicit DummyOutputModule(CoordinateFileFlags requirementsFlag) :
+        moduleRequirements_(requirementsFlag)
+    {
+    }
 
-        DummyOutputModule(DummyOutputModule &&old) noexcept = default;
+    DummyOutputModule(DummyOutputModule&& old) noexcept = default;
 
-        ~DummyOutputModule() override {}
+    ~DummyOutputModule() override {}
 
-        void processFrame(int /*framenumber*/, t_trxframe * /*input*/) override
-        {}
+    void processFrame(int /*framenumber*/, t_trxframe* /*input*/) override {}
 
-        void checkAbilityDependencies(unsigned long abilities) const override;
+    void checkAbilityDependencies(unsigned long abilities) const override;
 
-    private:
-        //! Local requirements
-        CoordinateFileFlags moduleRequirements_;
+private:
+    //! Local requirements
+    CoordinateFileFlags moduleRequirements_;
 };
 
 } // namespace test

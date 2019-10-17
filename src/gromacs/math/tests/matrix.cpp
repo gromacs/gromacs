@@ -64,20 +64,18 @@ namespace
 
 class MatrixTest : public ::testing::Test
 {
-    public:
-        MatrixTest()
-        {
-            std::fill(begin(matrix_), end(matrix_), testNumber_ - 1);
-        }
-    protected:
-        Matrix3x3 matrix_;
-        real      testNumber_ = 42;
+public:
+    MatrixTest() { std::fill(begin(matrix_), end(matrix_), testNumber_ - 1); }
+
+protected:
+    Matrix3x3 matrix_;
+    real      testNumber_ = 42;
 };
 
 TEST_F(MatrixTest, canSetFromArray)
 {
-    std::array<real, 3*3>      arr = {{1, 2, 3, 4, 5, 6, 7, 8, 9}};
-    Matrix3x3                  newMatrix(arr);
+    std::array<real, 3 * 3> arr = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
+    Matrix3x3               newMatrix(arr);
     EXPECT_EQ(newMatrix(0, 0), 1);
     EXPECT_EQ(newMatrix(0, 1), 2);
     EXPECT_EQ(newMatrix(0, 2), 3);
@@ -91,7 +89,7 @@ TEST_F(MatrixTest, canSetFromArray)
 
 TEST_F(MatrixTest, canSetStaticallyFromList)
 {
-    Matrix3x3 newMatrix = {{1, 2, 3, 4, 5, 6, 7, 8, 9}};
+    Matrix3x3 newMatrix = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
     EXPECT_EQ(newMatrix(0, 0), 1);
     EXPECT_EQ(newMatrix(0, 1), 2);
     EXPECT_EQ(newMatrix(0, 2), 3);
@@ -105,7 +103,7 @@ TEST_F(MatrixTest, canSetStaticallyFromList)
 
 TEST_F(MatrixTest, canConstructAndFill)
 {
-    for (const auto &x : matrix_)
+    for (const auto& x : matrix_)
     {
         EXPECT_EQ(testNumber_ - 1, x);
     }
@@ -114,15 +112,15 @@ TEST_F(MatrixTest, canConstructAndFill)
 TEST_F(MatrixTest, canSetValues)
 {
     matrix_(1, 1) = testNumber_;
-    EXPECT_EQ(testNumber_, matrix_(1, 1) );
+    EXPECT_EQ(testNumber_, matrix_(1, 1));
 }
 
 TEST_F(MatrixTest, canCopyAssign)
 {
     Matrix3x3 other;
     other = matrix_;
-    using ::testing::Pointwise;
     using ::testing::Eq;
+    using ::testing::Pointwise;
     EXPECT_THAT(other.toArrayRef(), Pointwise(Eq(), matrix_.toArrayRef()));
 }
 
@@ -146,35 +144,31 @@ TEST_F(MatrixTest, staticMultiDimArrayExtent)
 
 TEST_F(MatrixTest, determinantWorks)
 {
-    const Matrix3x3 mat = {{1.0, 2.0, 3.0,
-                            0.0, 1.0, 4.0,
-                            5.0, 6.0, 0.0}};
+    const Matrix3x3 mat = { { 1.0, 2.0, 3.0, 0.0, 1.0, 4.0, 5.0, 6.0, 0.0 } };
     EXPECT_EQ(determinant(mat), 1);
 }
 
 TEST_F(MatrixTest, noninvertableDeterminantIsZero)
 {
-    const Matrix3x3 mat = {{1, 0, 0, 0, 1, 0, 0, 0, 0}};
+    const Matrix3x3 mat = { { 1, 0, 0, 0, 1, 0, 0, 0, 0 } };
     EXPECT_EQ(determinant(mat), 0);
 }
 
 TEST_F(MatrixTest, determinantOfDiagonalMatrix)
 {
-    const Matrix3x3 mat = {{2, 0, 0, 0, 3, 0, 0, 0, 4}};
+    const Matrix3x3 mat = { { 2, 0, 0, 0, 3, 0, 0, 0, 4 } };
     EXPECT_EQ(determinant(mat), 24);
 }
 
 TEST_F(MatrixTest, traceWorks)
 {
-    const Matrix3x3 mat = {{1.5, 9, 9, 9, 2.0, 9, 9, 9, 0.25}};
+    const Matrix3x3 mat = { { 1.5, 9, 9, 9, 2.0, 9, 9, 9, 0.25 } };
     EXPECT_EQ(trace(mat), 3.75);
 }
 
 TEST_F(MatrixTest, transposeWorks)
 {
-    const Matrix3x3 asymmetricMat = {{1, 2, 3,
-                                      4, 5, 6,
-                                      7, 8, 9}};
+    const Matrix3x3 asymmetricMat = { { 1, 2, 3, 4, 5, 6, 7, 8, 9 } };
 
     const Matrix3x3 transposedAsymmetricMat = transpose(asymmetricMat);
     EXPECT_EQ(asymmetricMat(0, 0), transposedAsymmetricMat(0, 0));
@@ -186,14 +180,11 @@ TEST_F(MatrixTest, transposeWorks)
     EXPECT_EQ(asymmetricMat(2, 0), transposedAsymmetricMat(0, 2));
     EXPECT_EQ(asymmetricMat(2, 1), transposedAsymmetricMat(1, 2));
     EXPECT_EQ(asymmetricMat(2, 2), transposedAsymmetricMat(2, 2));
-
 }
 
 TEST_F(MatrixTest, transposeOfSymmetricMatrix)
 {
-    const Matrix3x3 symmetricMat = {{ 1, 2, 3,
-                                      2, 5, 6,
-                                      3, 6, 9}};
+    const Matrix3x3 symmetricMat           = { { 1, 2, 3, 2, 5, 6, 3, 6, 9 } };
     const Matrix3x3 transposedSymmetricMat = transpose(symmetricMat);
     for (int i = 0; i < 3; i++)
     {
@@ -206,7 +197,7 @@ TEST_F(MatrixTest, transposeOfSymmetricMatrix)
 
 TEST_F(MatrixTest, canCreateFromLegacyMatrix)
 {
-    matrix          legacyMatrix = { { 1, 2, 3}, { 4, 5, 6}, {7, 8, 9}};
+    matrix          legacyMatrix = { { 1, 2, 3 }, { 4, 5, 6 }, { 7, 8, 9 } };
     const Matrix3x3 fromLegacy   = createMatrix3x3FromLegacyMatrix(legacyMatrix);
     for (int i = 0; i < 3; i++)
     {
@@ -219,7 +210,7 @@ TEST_F(MatrixTest, canCreateFromLegacyMatrix)
 
 TEST_F(MatrixTest, canFillLegacyMatrix)
 {
-    matrix          legacyMatrix = {{ -2 }};
+    matrix legacyMatrix = { { -2 } };
     fillLegacyMatrix(matrix_, legacyMatrix);
     for (int i = 0; i < 3; i++)
     {

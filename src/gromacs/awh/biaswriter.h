@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,131 +83,121 @@ enum class AwhOutputEntryType
 //! Enum with the types of metadata to write.
 enum class AwhOutputMetaData
 {
-    NumBlock,           //!< The number of blocks.
-    TargetError,        //!< The target error.
+    NumBlock,    //!< The number of blocks.
+    TargetError, //!< The target error.
     ScaledSampleWeight, //!< The logarithm of the sample weight relative to a sample weight of 1 at the initial time.
-    Count               //!< The number of enum values, not including Count.
+    Count //!< The number of enum values, not including Count.
 };
 
 //! Enum with different ways of normalizing the output.
 enum class Normalization
 {
-    None,         //!< No normalization.
-    Coordinate,   //!< Scale using the internal/user input coordinate scaling factor.
-    FreeEnergy,   //!< Normalize free energy values by subtracting the minimum value.
-    Distribution  //!< Normalize the distribution to 1.
+    None,        //!< No normalization.
+    Coordinate,  //!< Scale using the internal/user input coordinate scaling factor.
+    FreeEnergy,  //!< Normalize free energy values by subtracting the minimum value.
+    Distribution //!< Normalize the distribution to 1.
 };
 
 /*! \internal \brief AWH output data block that can be written to an energy file block.
  */
 class AwhEnergyBlock
 {
-    public:
-        /*! \brief Constructor
-         *
-         * \param[in] numPoints           Number of points in block.
-         * \param[in] normalizationType   Type of normalization.
-         * \param[in] normalizationValue  Value to normalization with.
-         */
-        AwhEnergyBlock(int            numPoints,
-                       Normalization  normalizationType,
-                       float          normalizationValue);
+public:
+    /*! \brief Constructor
+     *
+     * \param[in] numPoints           Number of points in block.
+     * \param[in] normalizationType   Type of normalization.
+     * \param[in] normalizationValue  Value to normalization with.
+     */
+    AwhEnergyBlock(int numPoints, Normalization normalizationType, float normalizationValue);
 
-        /*! \brief Returns an ArrarRef to the data in the block.
-         */
-        gmx::ArrayRef<float> data()
-        {
-            return data_;
-        }
+    /*! \brief Returns an ArrarRef to the data in the block.
+     */
+    gmx::ArrayRef<float> data() { return data_; }
 
-        const Normalization normalizationType;  /**< How to normalize the output data */
-        const float         normalizationValue; /**< The normalization value */
-    private:
-        std::vector<float>  data_;              /**< The data, always float which is enough since this is statistical data */
+    const Normalization normalizationType;  /**< How to normalize the output data */
+    const float         normalizationValue; /**< The normalization value */
+private:
+    std::vector<float> data_; /**< The data, always float which is enough since this is statistical data */
 };
 
 /*! \internal \brief Class organizing the output data storing and writing of an AWH bias.
  */
 class BiasWriter
 {
-    public:
-        /*! \brief Constructor.
-         *
-         * \param[in] bias  The AWH bias.
-         */
-        BiasWriter(const Bias &bias);
+public:
+    /*! \brief Constructor.
+     *
+     * \param[in] bias  The AWH bias.
+     */
+    BiasWriter(const Bias& bias);
 
-        /*! \brief Returns the number of data blocks.
-         *
-         * \returns the number of data blocks.
-         */
-        int numBlocks() const
-        {
-            return block_.size();
-        }
+    /*! \brief Returns the number of data blocks.
+     *
+     * \returns the number of data blocks.
+     */
+    int numBlocks() const { return block_.size(); }
 
-        /*! \brief Collect AWH bias data in blocks and write to energy subblocks.
-         *
-         * \param[in]     bias      The AWH Bias.
-         * \param[in,out] subblock  Energy subblocks to write to.
-         * \returns the number of blocks written.
-         */
-        int writeToEnergySubblocks(const Bias &bias, t_enxsubblock *subblock);
+    /*! \brief Collect AWH bias data in blocks and write to energy subblocks.
+     *
+     * \param[in]     bias      The AWH Bias.
+     * \param[in,out] subblock  Energy subblocks to write to.
+     * \returns the number of blocks written.
+     */
+    int writeToEnergySubblocks(const Bias& bias, t_enxsubblock* subblock);
 
-    private:
-        /*! \brief Query if the writer has a block for the given variable.
-         *
-         * \param[in] outputType  Output entry type.
-         */
-        bool hasVarBlock(AwhOutputEntryType outputType) const
-        {
-            return outputTypeToBlock_.find(outputType)->second >= 0;
-        }
+private:
+    /*! \brief Query if the writer has a block for the given variable.
+     *
+     * \param[in] outputType  Output entry type.
+     */
+    bool hasVarBlock(AwhOutputEntryType outputType) const
+    {
+        return outputTypeToBlock_.find(outputType)->second >= 0;
+    }
 
-        /*! \brief* Find the first block containing the given variable.
-         *
-         * \param[in] outputType  Output entry type.
-         * \returns the first block index for the variable, or -1 there is no block.
-         */
-        int getVarStartBlock(AwhOutputEntryType outputType) const
-        {
-            return outputTypeToBlock_.find(outputType)->second;
-        }
+    /*! \brief* Find the first block containing the given variable.
+     *
+     * \param[in] outputType  Output entry type.
+     * \returns the first block index for the variable, or -1 there is no block.
+     */
+    int getVarStartBlock(AwhOutputEntryType outputType) const
+    {
+        return outputTypeToBlock_.find(outputType)->second;
+    }
 
-        /*! \brief Transfer AWH point data to writer data blocks.
-         *
-         * \param[in] metaDataIndex  Meta data block index.
-         * \param[in] metaDataType   The type of meta data to write.
-         * \param[in] bias           The AWH Bias.
-         */
-        void transferMetaDataToWriter(gmx::index             metaDataIndex,
-                                      AwhOutputMetaData      metaDataType,
-                                      const Bias            &bias);
+    /*! \brief Transfer AWH point data to writer data blocks.
+     *
+     * \param[in] metaDataIndex  Meta data block index.
+     * \param[in] metaDataType   The type of meta data to write.
+     * \param[in] bias           The AWH Bias.
+     */
+    void transferMetaDataToWriter(gmx::index metaDataIndex, AwhOutputMetaData metaDataType, const Bias& bias);
 
-        /*! \brief Transfer AWH point data to writer data blocks.
-         *
-         * \param[in] outputType  Output entry type.
-         * \param[in] pointIndex  The point index.
-         * \param[in] bias        The AWH Bias.
-         * \param[in] pmf         PMF values.
-         */
-        void transferPointDataToWriter(AwhOutputEntryType          outputType,
-                                       int                         pointIndex,
-                                       const Bias                 &bias,
-                                       gmx::ArrayRef<const float>  pmf);
+    /*! \brief Transfer AWH point data to writer data blocks.
+     *
+     * \param[in] outputType  Output entry type.
+     * \param[in] pointIndex  The point index.
+     * \param[in] bias        The AWH Bias.
+     * \param[in] pmf         PMF values.
+     */
+    void transferPointDataToWriter(AwhOutputEntryType         outputType,
+                                   int                        pointIndex,
+                                   const Bias&                bias,
+                                   gmx::ArrayRef<const float> pmf);
 
-        /*! \brief
-         * Prepare the bias output data.
-         *
-         * \param[in] bias  The AWH Bias.
-         */
-        void prepareBiasOutput(const Bias &bias);
+    /*! \brief
+     * Prepare the bias output data.
+     *
+     * \param[in] bias  The AWH Bias.
+     */
+    void prepareBiasOutput(const Bias& bias);
 
-    private:
-        std::vector<AwhEnergyBlock>       block_;             /**< The data blocks */
-        std::map<AwhOutputEntryType, int> outputTypeToBlock_; /**< Start block index for each variable, -1 when variable should not be written */
+private:
+    std::vector<AwhEnergyBlock>       block_; /**< The data blocks */
+    std::map<AwhOutputEntryType, int> outputTypeToBlock_; /**< Start block index for each variable, -1 when variable should not be written */
 };
 
-}       // namespace gmx
+} // namespace gmx
 
-#endif  /* GMX_AWH_BIASWRITER_H */
+#endif /* GMX_AWH_BIASWRITER_H */

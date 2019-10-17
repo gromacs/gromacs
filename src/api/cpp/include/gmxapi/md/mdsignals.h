@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,10 +68,10 @@ enum class signals
     STOP
 };
 
-}   // end namespace md
+} // end namespace md
 
 
-class SessionResources;  // reference gmxapi/session/resources.h
+class SessionResources; // reference gmxapi/session/resources.h
 
 /*!
  * \brief Proxy for signalling function objects.
@@ -84,40 +84,40 @@ class SessionResources;  // reference gmxapi/session/resources.h
  */
 class Signal
 {
-    public:
-        //! \internal
-        class SignalImpl;
+public:
+    //! \internal
+    class SignalImpl;
 
-        /*!
-         * \brief Construct by taking ownership of an implementation object.
-         *
-         * \param signal
-         */
-        explicit Signal(std::unique_ptr<SignalImpl> signal);
+    /*!
+     * \brief Construct by taking ownership of an implementation object.
+     *
+     * \param signal
+     */
+    explicit Signal(std::unique_ptr<SignalImpl> signal);
 
-        /*!
-         * \brief Object is trivially moveable.
-         *
-         * \{
-         */
-        Signal(Signal &&) noexcept;
-        Signal &operator=(Signal &&) noexcept;
-        //! \}
+    /*!
+     * \brief Object is trivially moveable.
+     *
+     * \{
+     */
+    Signal(Signal&& /*unused*/) noexcept;
+    Signal& operator=(Signal&& /*unused*/) noexcept;
+    //! \}
 
-        //! \cond
-        ~Signal();
-        //! \endcond
+    //! \cond
+    ~Signal();
+    //! \endcond
 
-        /*!
-         * \brief Signal interface is a function object that issues a signal when called.
-         *
-         * \todo replace with more concise named type based on std::function.
-         */
-        void operator()();
+    /*!
+     * \brief Signal interface is a function object that issues a signal when called.
+     *
+     * \todo replace with more concise named type based on std::function.
+     */
+    void operator()();
 
-    private:
-        //! Wrapped signaller.
-        std::unique_ptr<SignalImpl> impl_;
+private:
+    //! Wrapped signaller.
+    std::unique_ptr<SignalImpl> impl_;
 };
 
 /*!
@@ -135,9 +135,8 @@ class Signal
  *
  * \ingroup gmxapi_md
  */
-Signal getMdrunnerSignal(SessionResources *resources,
-                         md::signals       signal);
+Signal getMdrunnerSignal(SessionResources* resources, md::signals signal);
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_MDSIGNALS_H
+#endif // GMXAPI_MDSIGNALS_H

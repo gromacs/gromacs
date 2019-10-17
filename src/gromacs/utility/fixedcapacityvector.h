@@ -78,143 +78,143 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_utility
  */
-template <typename T, size_t capacity>
+template<typename T, size_t capacity>
 class FixedCapacityVector
 {
-    public:
-        //! Type of values stored in the vector
-        using value_type = T;
-        //! Type for representing size of the vector
-        using size_type = size_t;
-        //! Type for representing difference between two indices
-        using difference_type = ptrdiff_t;
-        //! Const reference to an element
-        using const_reference = const T&;
-        //! Const pointer to an element
-        using const_pointer = const T*;
-        //! Const iterator type to an element
-        using const_iterator = const T*;
-        //! Reference to an element
-        using reference = T&;
-        //! Pointer to an element
-        using pointer = T*;
-        //! Iterator type to an element
-        using iterator = T*;
-        //! Standard reverse iterator
-        using reverse_iterator = std::reverse_iterator<iterator>;
-        //! Standard reverse iterator
-        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+public:
+    //! Type of values stored in the vector
+    using value_type = T;
+    //! Type for representing size of the vector
+    using size_type = size_t;
+    //! Type for representing difference between two indices
+    using difference_type = ptrdiff_t;
+    //! Const reference to an element
+    using const_reference = const T&;
+    //! Const pointer to an element
+    using const_pointer = const T*;
+    //! Const iterator type to an element
+    using const_iterator = const T*;
+    //! Reference to an element
+    using reference = T&;
+    //! Pointer to an element
+    using pointer = T*;
+    //! Iterator type to an element
+    using iterator = T*;
+    //! Standard reverse iterator
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    //! Standard reverse iterator
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-        //! Returns a const iterator to the beginning
-        const_iterator begin() const noexcept { return data(); }
-        //! Returns an iterator to the beginning
-        iterator begin() noexcept { return data(); }
-        //! Returns a const iterator to the end
-        const_iterator end() const noexcept { return end_; }
-        //! Returns an iterator to the end
-        iterator end() noexcept { return end_; }
-        //! Returns a const iterator to the reverse beginning
-        const_reverse_iterator rbegin() const noexcept { return reverse_iterator(end_); }
-        //! Returns an iterator to the reverse beginning
-        reverse_iterator rbegin() noexcept { return reverse_iterator(end_); }
-        //! Returns a const iterator to the reverse end
-        const_reverse_iterator rend() const noexcept { return reverse_iterator(begin()); }
-        //! Returns an iterator to the reverse end
-        reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+    //! Returns a const iterator to the beginning
+    const_iterator begin() const noexcept { return data(); }
+    //! Returns an iterator to the beginning
+    iterator begin() noexcept { return data(); }
+    //! Returns a const iterator to the end
+    const_iterator end() const noexcept { return end_; }
+    //! Returns an iterator to the end
+    iterator end() noexcept { return end_; }
+    //! Returns a const iterator to the reverse beginning
+    const_reverse_iterator rbegin() const noexcept { return reverse_iterator(end_); }
+    //! Returns an iterator to the reverse beginning
+    reverse_iterator rbegin() noexcept { return reverse_iterator(end_); }
+    //! Returns a const iterator to the reverse end
+    const_reverse_iterator rend() const noexcept { return reverse_iterator(begin()); }
+    //! Returns an iterator to the reverse end
+    reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
 
-        /*! \brief Returns the size
-         *
-         * \note Use ssize for any expression involving arithmetic operations
-             (including loop indices).
-         */
-        size_type size() const noexcept { return end_ - data(); }
-        //! Returns the signed size
-        index ssize() const noexcept { return end_ - data(); }
-        //! Returns whether the vector is empty
-        bool empty() const noexcept { return data() == end_; }
+    /*! \brief Returns the size
+     *
+     * \note Use ssize for any expression involving arithmetic operations
+         (including loop indices).
+     */
+    size_type size() const noexcept { return end_ - data(); }
+    //! Returns the signed size
+    index ssize() const noexcept { return end_ - data(); }
+    //! Returns whether the vector is empty
+    bool empty() const noexcept { return data() == end_; }
 
-        //! Const access an element
-        const_reference operator[](size_type n) const noexcept
+    //! Const access an element
+    const_reference operator[](size_type n) const noexcept
+    {
+        GMX_ASSERT(n < size(), "Index should be in range");
+        return data_[n];
+    }
+    //! Access an element
+    reference operator[](size_type n) noexcept
+    {
+        GMX_ASSERT(n < size(), "Index should be in range");
+        return data_[n];
+    }
+    //! Const access an element, throws an out_of_range exception when out of range
+    const_reference at(size_type n) const
+    {
+        if (n >= size())
         {
-            GMX_ASSERT(n < size(), "Index should be in range");
-            return data_[n];
+            throw std::out_of_range("Vector index out of range");
         }
-        //! Access an element
-        reference operator[](size_type n) noexcept
+        return data_[n];
+    }
+    //! Access an element, throws an out_of_range exception when out of range
+    reference at(size_type n)
+    {
+        if (n >= size())
         {
-            GMX_ASSERT(n < size(), "Index should be in range");
-            return data_[n];
+            throw std::out_of_range("Vector index out of range");
         }
-        //! Const access an element, throws an out_of_range exception when out of range
-        const_reference at(size_type n) const
+        return data_[n];
+    }
+    //! Returns the first element
+    reference front() const noexcept { return data_.front(); }
+    //! Returns the last element
+    reference back() const noexcept { return *(end_ - 1); }
+
+    //! Returns a raw pointer to the contents of the array
+    const T* data() const noexcept { return data_.data(); }
+
+    //! Returns a raw pointer to the contents of the array
+    T* data() noexcept { return data_.data(); }
+
+    //! Adds element at the end
+    void push_back(const T& value) noexcept
+    {
+        GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
+        *end_ = value;
+        end_++;
+    }
+
+    //! Deletes last element
+    void pop_back() noexcept
+    {
+        GMX_ASSERT(!empty(), "Can only delete last element when present");
+        end_--;
+    }
+
+    //! Constructs an element at the end
+    template<class... Args>
+    reference emplace_back(Args&&... args)
+    {
+        GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
+        if (std::is_move_assignable<T>::value)
         {
-            if (n >= size())
-            {
-                throw std::out_of_range("Vector index out of range");
-            }
-            return data_[n];
+            *end_ = std::move(T(args...));
         }
-        //! Access an element, throws an out_of_range exception when out of range
-        reference at(size_type n)
+        else
         {
-            if (n >= size())
-            {
-                throw std::out_of_range("Vector index out of range");
-            }
-            return data_[n];
+            *end_ = T(args...);
         }
-        //! Returns the first element
-        reference front() const noexcept { return data_.front(); }
-        //! Returns the last element
-        reference back() const noexcept { return *(end_ - 1); }
+        end_++;
 
-        //! Returns a raw pointer to the contents of the array
-        const T* data() const noexcept { return data_.data(); }
+        return back();
+    }
 
-        //! Returns a raw pointer to the contents of the array
-        T* data() noexcept { return data_.data(); }
+    //! Clears content
+    void clear() noexcept { end_ = data(); }
 
-        //! Adds element at the end
-        void push_back(const T &value) noexcept
-        {
-            GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
-            *end_ = value;
-            end_++;
-        }
-
-        //! Deletes last element
-        void pop_back() noexcept
-        {
-            GMX_ASSERT(!empty(), "Can only delete last element when present");
-            end_--;
-        }
-
-        //! Constructs an element at the end
-        template <class ... Args>
-        reference emplace_back (Args && ... args)
-        {
-            GMX_ASSERT(size() < capacity, "Cannot add more elements than the capacity");
-            if (std::is_move_assignable<T>::value)
-            {
-                *end_ = std::move(T(args ...));
-            }
-            else
-            {
-                *end_ = T(args ...);
-            }
-            end_++;
-
-            return back();
-        }
-
-        //! Clears content
-        void clear() noexcept { end_ = data(); }
-
-    private:
-        //! The elements, stored in a fixed size array
-        std::array<T, capacity> data_;
-        //! The size of the vector
-        pointer                 end_ = data();
+private:
+    //! The elements, stored in a fixed size array
+    std::array<T, capacity> data_;
+    //! The size of the vector
+    pointer end_ = data();
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,15 +66,11 @@ using gmx::test::NoTextMatch;
  */
 
 //! Test fixture for the select analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::TrajectoryInfo>
-    TrajectoryModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::TrajectoryInfo> TrajectoryModuleTest;
 
 TEST_F(TrajectoryModuleTest, BasicTest)
 {
-    const char *const cmdline[] = {
-        "trajectory",
-        "-select", "resnr 1", "resnr 3"
-    };
+    const char* const cmdline[] = { "trajectory", "-select", "resnr 1", "resnr 3" };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
     setOutputFile("-ox", "coord.xvg", NoTextMatch());
@@ -84,11 +80,7 @@ TEST_F(TrajectoryModuleTest, BasicTest)
 
 TEST_F(TrajectoryModuleTest, PlotsXOnly)
 {
-    const char *const cmdline[] = {
-        "trajectory",
-        "-select", "resnr 1", "resnr 3",
-        "-x"
-    };
+    const char* const cmdline[] = { "trajectory", "-select", "resnr 1", "resnr 3", "-x" };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
     setOutputFile("-ox", "coord.xvg", NoTextMatch());
@@ -98,9 +90,11 @@ TEST_F(TrajectoryModuleTest, PlotsXOnly)
 
 TEST_F(TrajectoryModuleTest, HandlesNoVelocities)
 {
-    const char *const cmdline[] = {
+    const char* const cmdline[] = {
         "trajectory",
-        "-select", "resnr 1", "resnr 3",
+        "-select",
+        "resnr 1",
+        "resnr 3",
     };
     setTopology("simple.gro");
     setTrajectory("simple.gro");
@@ -111,9 +105,11 @@ TEST_F(TrajectoryModuleTest, HandlesNoVelocities)
 
 TEST_F(TrajectoryModuleTest, HandlesNoForces)
 {
-    const char *const cmdline[] = {
+    const char* const cmdline[] = {
         "trajectory",
-        "-select", "resnr 1", "resnr 3",
+        "-select",
+        "resnr 1",
+        "resnr 3",
     };
     setTopology("simple.gro");
     setTrajectory("simple.gro");

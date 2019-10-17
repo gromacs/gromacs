@@ -66,16 +66,16 @@ namespace test
 {
 
 //! Build a simple .mdp file
-static void organizeMdpFile(SimulationRunner *runner,
-                            int               nsteps = 2)
+static void organizeMdpFile(SimulationRunner* runner, int nsteps = 2)
 {
     // Make sure -maxh has a chance to propagate
-    runner->useStringAsMdpFile(formatString("nsteps = %d\n"
-                                            "tcoupl = v-rescale\n"
-                                            "tc-grps = System\n"
-                                            "tau-t = 1\n"
-                                            "ref-t = 298\n",
-                                            nsteps));
+    runner->useStringAsMdpFile(
+            formatString("nsteps = %d\n"
+                         "tcoupl = v-rescale\n"
+                         "tc-grps = System\n"
+                         "tau-t = 1\n"
+                         "ref-t = 298\n",
+                         nsteps));
 }
 
 //! Convenience typedef
@@ -95,8 +95,8 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
         firstPart.append("mdrun");
         firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        ASSERT_TRUE(File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found and should be";
+        ASSERT_TRUE(File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found and should be";
     }
     SCOPED_TRACE("Running the second simulation part with default appending behavior");
     {
@@ -108,7 +108,10 @@ TEST_F(MdrunTerminationTest, CheckpointRestartAppendsByDefault)
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
-        EXPECT_NE(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file")) << "appending was not detected";
+        EXPECT_NE(
+                std::string::npos,
+                logFileContents.find("Restarting from checkpoint, appending to previous log file"))
+                << "appending was not detected";
     }
 }
 
@@ -133,8 +136,8 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
         firstPart.addOption("-maxh", 1e-7);
         firstPart.addOption("-nstlist", 1);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part");
@@ -147,7 +150,8 @@ TEST_F(MdrunTerminationTest, WritesCheckpointAfterMaxhTerminationAndThenRestarts
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
-        EXPECT_NE(std::string::npos, logFileContents.find("Writing checkpoint, step 102")) << "completion of restarted simulation was not detected";
+        EXPECT_NE(std::string::npos, logFileContents.find("Writing checkpoint, step 102"))
+                << "completion of restarted simulation was not detected";
     }
 }
 
@@ -165,8 +169,8 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         firstPart.append("mdrun");
         firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part with -noappend");
@@ -181,11 +185,11 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0002.log");
-        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0002.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
     }
 
     SCOPED_TRACE("Running the third simulation part with -append, which will fail");
@@ -211,11 +215,11 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         ASSERT_EQ(0, runner_.callMdrun(thirdPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0003.log");
-        EXPECT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        EXPECT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0003.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
     }
     SCOPED_TRACE("Running the fourth simulation part with default appending");
     runner_.changeTprNsteps(8);
@@ -231,11 +235,11 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         ASSERT_EQ(0, runner_.callMdrun(fourthPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0004.log");
-        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0004.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
     }
     SCOPED_TRACE("Running the fifth simulation part with no extra steps");
     {
@@ -250,11 +254,11 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWithNoAppendWorksAndCannotLaterApp
         ASSERT_EQ(0, runner_.callMdrun(fifthPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0005.log");
-        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0005.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
     }
 }
 
@@ -272,8 +276,8 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
         firstPart.append("mdrun");
         firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part after deleting the checkpoint file");
@@ -293,7 +297,10 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithMissingCheckpointFile
 
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
         auto logFileContents = TextReader::readFileToString(runner_.logFileName_);
-        EXPECT_EQ(std::string::npos, logFileContents.find("Restarting from checkpoint, appending to previous log file")) << "appending was not detected";
+        EXPECT_EQ(
+                std::string::npos,
+                logFileContents.find("Restarting from checkpoint, appending to previous log file"))
+                << "appending was not detected";
     }
 }
 
@@ -311,11 +318,12 @@ TEST_F(MdrunTerminationTest, CheckpointRestartWorksEvenWithAppendAndMissingCheck
         firstPart.append("mdrun");
         firstPart.addOption("-cpo", runner_.cptFileName_);
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found";
     }
 
-    SCOPED_TRACE("Running the second simulation part with -append after deleting the checkpoint file");
+    SCOPED_TRACE(
+            "Running the second simulation part with -append after deleting the checkpoint file");
     {
         runner_.changeTprNsteps(4);
 
@@ -349,13 +357,13 @@ TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
         firstPart.append("-noappend");
         ASSERT_EQ(0, runner_.callMdrun(firstPart));
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0001.log");
-        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0001.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
-        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError)) <<
-        runner_.cptFileName_ << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
+        EXPECT_EQ(true, File::exists(runner_.cptFileName_, File::returnFalseOnError))
+                << runner_.cptFileName_ << " was not found";
     }
 
     SCOPED_TRACE("Running the second simulation part with -noappend");
@@ -370,13 +378,13 @@ TEST_F(MdrunTerminationTest, RunWithNoAppendCreatesPartFiles)
         ASSERT_EQ(0, runner_.callMdrun(secondPart));
 
         auto expectedLogFileName = fileManager_.getTemporaryFilePath(".part0002.log");
-        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError)) <<
-        expectedLogFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedLogFileName, File::returnFalseOnError))
+                << expectedLogFileName << " was not found";
         auto expectedEdrFileName = fileManager_.getTemporaryFilePath(".part0002.edr");
-        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError)) <<
-        expectedEdrFileName << " was not found";
+        ASSERT_EQ(true, File::exists(expectedEdrFileName, File::returnFalseOnError))
+                << expectedEdrFileName << " was not found";
     }
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

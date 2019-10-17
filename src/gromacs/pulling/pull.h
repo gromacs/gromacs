@@ -74,35 +74,35 @@ namespace gmx
 {
 class ForceWithVirial;
 class LocalAtomSetManager;
-}
+} // namespace gmx
 
 /*! \brief Returns if the pull coordinate is an angle
  *
  * \param[in] pcrd The pull coordinate to query the type for.
  * \returns a boolean telling if the coordinate is of angle type.
  */
-bool pull_coordinate_is_angletype(const t_pull_coord *pcrd);
+bool pull_coordinate_is_angletype(const t_pull_coord* pcrd);
 
 /*! \brief Returns the units of the pull coordinate.
  *
  * \param[in] pcrd The pull coordinate to query the units for.
  * \returns a string with the units of the coordinate.
  */
-const char *pull_coordinate_units(const t_pull_coord *pcrd);
+const char* pull_coordinate_units(const t_pull_coord* pcrd);
 
 /*! \brief Returns the conversion factor from the pull coord init/rate unit to internal value unit.
  *
  * \param[in] pcrd The pull coordinate to get the conversion factor for.
  * \returns the conversion factor.
  */
-double pull_conversion_factor_userinput2internal(const t_pull_coord *pcrd);
+double pull_conversion_factor_userinput2internal(const t_pull_coord* pcrd);
 
 /*! \brief Returns the conversion factor from the pull coord internal value unit to the init/rate unit.
  *
  * \param[in] pcrd The pull coordinate to get the conversion factor for.
  * \returns the conversion factor.
  */
-double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
+double pull_conversion_factor_internal2userinput(const t_pull_coord* pcrd);
 
 /*! \brief Get the value for pull coord coord_ind.
  *
@@ -111,9 +111,7 @@ double pull_conversion_factor_internal2userinput(const t_pull_coord *pcrd);
  * \param[in]     pbc       Information structure about periodicity.
  * \returns the value of the pull coordinate.
  */
-double get_pull_coord_value(struct pull_t      *pull,
-                            int                 coord_ind,
-                            const struct t_pbc *pbc);
+double get_pull_coord_value(struct pull_t* pull, int coord_ind, const struct t_pbc* pbc);
 
 /*! \brief Registers the provider of an external potential for a coordinate.
  *
@@ -138,9 +136,7 @@ double get_pull_coord_value(struct pull_t      *pull,
  * \param[in]     coord_index  The pull coordinate index to register the external potential for.
  * \param[in]     provider     Provider string, should match the potential-provider pull coordinate mdp option.
  */
-void register_external_pull_potential(struct pull_t *pull,
-                                      int            coord_index,
-                                      const char    *provider);
+void register_external_pull_potential(struct pull_t* pull, int coord_index, const char* provider);
 
 
 /*! \brief Apply forces of an external potential to a pull coordinate.
@@ -159,18 +155,18 @@ void register_external_pull_potential(struct pull_t *pull,
  * \param[in]     mdatoms          Atom properties, only masses are used.
  * \param[in,out] forceWithVirial  Force and virial buffers.
  */
-void apply_external_pull_coord_force(struct pull_t        *pull,
+void apply_external_pull_coord_force(struct pull_t*        pull,
                                      int                   coord_index,
                                      double                coord_force,
-                                     const t_mdatoms      *mdatoms,
-                                     gmx::ForceWithVirial *forceWithVirial);
+                                     const t_mdatoms*      mdatoms,
+                                     gmx::ForceWithVirial* forceWithVirial);
 
 
 /*! \brief Set the all the pull forces to zero.
  *
  * \param pull              The pull group.
  */
-void clear_pull_forces(struct pull_t *pull);
+void clear_pull_forces(struct pull_t* pull);
 
 
 /*! \brief Determine the COM pull forces and add them to f, return the potential
@@ -187,9 +183,15 @@ void clear_pull_forces(struct pull_t *pull);
  *
  * \returns The pull potential energy.
  */
-real pull_potential(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
-                    const t_commrec *cr, double t, real lambda,
-                    const rvec *x, gmx::ForceWithVirial *force, real *dvdlambda);
+real pull_potential(struct pull_t*        pull,
+                    const t_mdatoms*      md,
+                    struct t_pbc*         pbc,
+                    const t_commrec*      cr,
+                    double                t,
+                    real                  lambda,
+                    const rvec*           x,
+                    gmx::ForceWithVirial* force,
+                    real*                 dvdlambda);
 
 
 /*! \brief Constrain the coordinates xp in the directions in x
@@ -206,9 +208,16 @@ real pull_potential(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
  * \param[in,out] v      Velocities, which may get a pull correction.
  * \param[in,out] vir    The virial, which, if != NULL, gets a pull correction.
  */
-void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc,
-                     const t_commrec *cr, double dt, double t,
-                     rvec *x, rvec *xp, rvec *v, tensor vir);
+void pull_constraint(struct pull_t*   pull,
+                     const t_mdatoms* md,
+                     struct t_pbc*    pbc,
+                     const t_commrec* cr,
+                     double           dt,
+                     double           t,
+                     rvec*            x,
+                     rvec*            xp,
+                     rvec*            v,
+                     tensor           vir);
 
 
 /*! \brief Make a selection of the home atoms for all pull groups.
@@ -217,7 +226,7 @@ void pull_constraint(struct pull_t *pull, const t_mdatoms *md, struct t_pbc *pbc
  * \param cr             Structure for communication info.
  * \param pull           The pull group.
  */
-void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
+void dd_make_local_pull_groups(const t_commrec* cr, struct pull_t* pull);
 
 
 /*! \brief Allocate, initialize and return a pull work struct.
@@ -230,20 +239,20 @@ void dd_make_local_pull_groups(const t_commrec *cr, struct pull_t *pull);
  * \param atomSets    The manager that handles the pull atom sets
  * \param lambda      FEP lambda.
  */
-struct pull_t *init_pull(FILE                      *fplog,
-                         const pull_params_t       *pull_params,
-                         const t_inputrec          *ir,
-                         const gmx_mtop_t          *mtop,
-                         const t_commrec           *cr,
-                         gmx::LocalAtomSetManager  *atomSets,
-                         real                       lambda);
+struct pull_t* init_pull(FILE*                     fplog,
+                         const pull_params_t*      pull_params,
+                         const t_inputrec*         ir,
+                         const gmx_mtop_t*         mtop,
+                         const t_commrec*          cr,
+                         gmx::LocalAtomSetManager* atomSets,
+                         real                      lambda);
 
 
 /*! \brief Close the pull output files and delete pull.
  *
  * \param pull       The pull data structure.
  */
-void finish_pull(struct pull_t *pull);
+void finish_pull(struct pull_t* pull);
 
 
 /*! \brief Calculates centers of mass all pull groups.
@@ -257,13 +266,13 @@ void finish_pull(struct pull_t *pull);
  * \param[in,out] xp   Updated x, can be NULL.
  *
  */
-void pull_calc_coms(const t_commrec *cr,
-                    pull_t          *pull,
-                    const t_mdatoms *md,
-                    t_pbc           *pbc,
+void pull_calc_coms(const t_commrec* cr,
+                    pull_t*          pull,
+                    const t_mdatoms* md,
+                    t_pbc*           pbc,
                     double           t,
                     const rvec       x[],
-                    rvec            *xp);
+                    rvec*            xp);
 
 /*! \brief Margin for checking pull group PBC distances compared to half the box size */
 static constexpr real c_pullGroupPbcMargin = 0.9;
@@ -288,10 +297,7 @@ static constexpr real c_pullGroupSmallGroupThreshold = 0.5;
  * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
  * \returns -1 when all groups obey PBC or the first group index that fails PBC
  */
-int pullCheckPbcWithinGroups(const pull_t &pull,
-                             const rvec   *x,
-                             const t_pbc  &pbc,
-                             real          pbcMargin);
+int pullCheckPbcWithinGroups(const pull_t& pull, const rvec* x, const t_pbc& pbc, real pbcMargin);
 
 /*! \brief Checks whether a specific group that uses a reference atom is within PBC restrictions
  *
@@ -313,9 +319,9 @@ int pullCheckPbcWithinGroups(const pull_t &pull,
  * \param[in] pbcMargin  The minimum margin (as a fraction) to half the box size
  * \returns true if the group obeys PBC otherwise false
  */
-bool pullCheckPbcWithinGroup(const pull_t                  &pull,
+bool pullCheckPbcWithinGroup(const pull_t&                  pull,
                              gmx::ArrayRef<const gmx::RVec> x,
-                             const t_pbc                   &pbc,
+                             const t_pbc&                   pbc,
                              int                            groupNr,
                              real                           pbcMargin);
 
@@ -323,14 +329,14 @@ bool pullCheckPbcWithinGroup(const pull_t                  &pull,
  *
  * \param[in] pull     The pull data structure.
  */
-gmx_bool pull_have_potential(const struct pull_t *pull);
+gmx_bool pull_have_potential(const struct pull_t* pull);
 
 
 /*! \brief Returns if we have pull coordinates with constraint pulling.
  *
  * \param[in] pull     The pull data structure.
  */
-gmx_bool pull_have_constraint(const struct pull_t *pull);
+gmx_bool pull_have_constraint(const struct pull_t* pull);
 
 /*! \brief Returns the maxing distance for pulling
  *
@@ -343,15 +349,14 @@ gmx_bool pull_have_constraint(const struct pull_t *pull);
  * \param[in] pbc  Information on periodic boundary conditions
  * \returns The maximume distance
  */
-real max_pull_distance2(const pull_coord_work_t *pcrd,
-                        const t_pbc             *pbc);
+real max_pull_distance2(const pull_coord_work_t* pcrd, const t_pbc* pbc);
 
 /*! \brief Sets the previous step COM in pull to the current COM and updates the pull_com_prev_step in the state
  *
  * \param[in]   pull  The COM pull force calculation data structure
  * \param[in]   state The local (to this rank) state.
  */
-void updatePrevStepPullCom(struct pull_t *pull, t_state *state);
+void updatePrevStepPullCom(struct pull_t* pull, t_state* state);
 
 /*! \brief Allocates, initializes and communicates the previous step pull COM (if that option is set to true).
  *
@@ -365,9 +370,13 @@ void updatePrevStepPullCom(struct pull_t *pull, t_state *state);
  * \param[in] cr                     Struct for communication info.
  * \param[in] startingFromCheckpoint Is the simulation starting from a checkpoint?
  */
-void preparePrevStepPullCom(const t_inputrec *ir, pull_t *pull_work, const t_mdatoms *md,
-                            t_state *state, const t_state *state_global, const t_commrec *cr,
-                            bool startingFromCheckpoint);
+void preparePrevStepPullCom(const t_inputrec* ir,
+                            pull_t*           pull_work,
+                            const t_mdatoms*  md,
+                            t_state*          state,
+                            const t_state*    state_global,
+                            const t_commrec*  cr,
+                            bool              startingFromCheckpoint);
 
 /*! \brief Initializes the COM of the previous step (set to initial COM)
  *
@@ -377,10 +386,6 @@ void preparePrevStepPullCom(const t_inputrec *ir, pull_t *pull_work, const t_mda
  * \param[in] pbc      Information struct about periodicity.
  * \param[in] x        The local positions.
  */
-void initPullComFromPrevStep(const t_commrec *cr,
-                             pull_t          *pull,
-                             const t_mdatoms *md,
-                             t_pbc           *pbc,
-                             const rvec       x[]);
+void initPullComFromPrevStep(const t_commrec* cr, pull_t* pull, const t_mdatoms* md, t_pbc* pbc, const rvec x[]);
 
 #endif
