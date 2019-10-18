@@ -1246,10 +1246,7 @@ void check_ir(const char *mdparin, const gmx::MdModulesNotifier &mdModulesNotifi
 
     if (ir->bQMMM)
     {
-        if (ir->cutoff_scheme != ecutsGROUP)
-        {
-            warning_error(wi, "QMMM is currently only supported with cutoff-scheme=group");
-        }
+        warning_error(wi, "QMMM is currently not supported");
         if (!EI_DYNAMICS(ir->eI))
         {
             char buf[STRLEN];
@@ -1698,17 +1695,6 @@ void get_ir(const char *mdparin, const char *mdparout,
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
-
-    if (-1 == search_einp(inp, "cutoff-scheme"))
-    {
-        sprintf(warn_buf,
-                "%s did not specify a value for the .mdp option "
-                "\"cutoff-scheme\". As of GROMACS 2020, the Verlet scheme "
-                "is the only cutoff scheme supported. This may affect your "
-                "simulation if you are using an old mdp file that assumes use "
-                "of the (removed) group cutoff scheme.", mdparin);
-        warning_note(wi, warn_buf);
-    }
 
     /* ignore the following deprecated commands */
     replace_inp_entry(inp, "title", nullptr);
@@ -3583,7 +3569,7 @@ void do_index(const char* mdparin, const char *ndx,
     bExcl = do_egp_flag(ir, groups, "energygrp-excl", is->egpexcl, EGP_EXCL);
     if (bExcl && ir->cutoff_scheme == ecutsVERLET)
     {
-        warning_error(wi, "Energy group exclusions are not (yet) implemented for the Verlet scheme");
+        warning_error(wi, "Energy group exclusions are currently not supported");
     }
     if (bExcl && EEL_FULL(ir->coulombtype))
     {
