@@ -457,7 +457,7 @@ int gmx_genion(int argc, char *argv[])
     t_atoms            atoms;
     t_pbc              pbc;
     int               *repl, ePBC;
-    int                i, nw, nsa, nsalt, iqtot;
+    int                nw, nsa, nsalt, iqtot;
     gmx_output_env_t  *oenv  = nullptr;
     t_filenm           fnm[] = {
         { efTPR, nullptr,  nullptr,      ffREAD  },
@@ -494,7 +494,7 @@ int gmx_genion(int argc, char *argv[])
 
     /* Compute total charge */
     double qtot = 0;
-    for (i = 0; (i < atoms.nr); i++)
+    for (int i = 0; (i < atoms.nr); i++)
     {
         qtot += atoms.atom[i].q;
     }
@@ -563,13 +563,13 @@ int gmx_genion(int argc, char *argv[])
             sfree(index);
         }
 
-        for (i = 1; i < gmx::ssize(solventGroup); i++)
+        for (gmx::index i = 1; i < gmx::ssize(solventGroup); i++)
         {
             if (solventGroup[i] != solventGroup[i - 1] + 1)
             {
                 gmx_fatal(FARGS, "The solvent group %s is not continuous: "
                           "index[%d]=%d, index[%d]=%d",
-                          grpname, i, solventGroup[i-1]+1, i+1, solventGroup[i]+1);
+                          grpname, int(i), solventGroup[i-1]+1, int(i+1), solventGroup[i]+1);
             }
         }
         nsa = 1;
