@@ -1545,15 +1545,6 @@ int Mdrunner::mdrunner()
                             fr->cginfo_mb);
         }
 
-        if (updateTarget == TaskTarget::Gpu)
-        {
-            if (SIMMASTER(cr))
-            {
-                gmx_fatal(FARGS, "It is currently not possible to redirect the calculation "
-                          "of update and constraints to the GPU!");
-            }
-        }
-
         // Before we start the actual simulator, try if we can run the update task on the GPU.
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(devFlags.forceGpuUpdateDefaultOn,
                                                          DOMAINDECOMP(cr),
