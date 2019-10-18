@@ -491,19 +491,21 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
-                                    bool              useGpuForPme,
-                                    bool              useGpuForNonbonded,
-                                    bool              useGpuForBufferOps,
-                                    TaskTarget        updateTarget,
-                                    bool              gpusWereDetected,
-                                    const t_inputrec &inputrec,
-                                    const MDAtoms    &mdatoms,
-                                    bool              useEssentialDynamics,
-                                    bool              doOrientationRestraints,
-                                    bool              doDistanceRestraints,
-                                    bool              useReplicaExchange)
+bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefaultOn,
+                                    bool                 isDomainDecomposition,
+                                    bool                 useGpuForPme,
+                                    bool                 useGpuForNonbonded,
+                                    bool                 useGpuForBufferOps,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec    &inputrec,
+                                    const MDAtoms       &mdatoms,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 doDistanceRestraints,
+                                    bool                 useReplicaExchange)
 {
+
     if (updateTarget == TaskTarget::Cpu)
     {
         return false;
@@ -580,7 +582,8 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
         }
         return false;
     }
-    return (updateTarget == TaskTarget::Gpu);
+
+    return ((forceGpuUpdateDefaultOn && updateTarget == TaskTarget::Auto) || (updateTarget == TaskTarget::Gpu));
 }
 
 }  // namespace gmx

@@ -167,21 +167,20 @@ namespace gmx
 {
 
 /*! \brief Structure that holds boolean flags corresponding to the development
- *        features present enabled through environemnt variables.
+ *        features present enabled through environment variables.
  *
  */
 struct DevelopmentFeatureFlags
 {
-    ///! True if the Buffer ops development feature is enabled
+    //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps     = false;
-    ///! True if the update-constraints development feature is enabled
-    // TODO This needs to be reomved when the code gets cleaned up of GMX_UPDATE_CONSTRAIN_GPU
-    bool useGpuUpdateConstrain  = false;
-    ///! True if the GPU halo exchange development feature is enabled
-    bool enableGpuHaloExchange  = false;
-    ///! True if the PME PP direct commuinication GPU development feature is enabled
-    bool enableGpuPmePPComm     = false;
+    bool enableGpuBufferOps      = false;
+    //! If true, forces 'mdrun -update auto' default to 'gpu'
+    bool forceGpuUpdateDefaultOn = false;
+    //! True if the GPU halo exchange development feature is enabled
+    bool enableGpuHaloExchange   = false;
+    //! True if the PME PP direct communication GPU development feature is enabled
+    bool enableGpuPmePPComm      = false;
 };
 
 /*! \brief Manage any development feature flag variables encountered
@@ -210,10 +209,10 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
     // getenv results are ignored when clearly they are used.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
-    devFlags.enableGpuBufferOps    = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr) && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
-    devFlags.useGpuUpdateConstrain = (getenv("GMX_UPDATE_CONSTRAIN_GPU") != nullptr);
-    devFlags.enableGpuHaloExchange = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
-    devFlags.enableGpuPmePPComm    = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+    devFlags.enableGpuBufferOps      = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr) && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
+    devFlags.forceGpuUpdateDefaultOn = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
+    devFlags.enableGpuHaloExchange   = (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
+    devFlags.enableGpuPmePPComm      = (getenv("GMX_GPU_PME_PP_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
 #pragma GCC diagnostic pop
 
     if (devFlags.enableGpuBufferOps)
@@ -230,10 +229,10 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger &md
         }
     }
 
-    if (devFlags.useGpuUpdateConstrain)
+    if (devFlags.forceGpuUpdateDefaultOn)
     {
         GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                "NOTE: This run uses the 'GPU update/constraints' feature, enabled by the GMX_UPDATE_CONSTRAIN_GPU environment variable.");
+                "NOTE: This run will default to '-update gpu' as requested by the GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
     if (devFlags.enableGpuPmePPComm)
@@ -1537,7 +1536,8 @@ int Mdrunner::mdrunner()
         }
 
         // Before we start the actual simulator, try if we can run the update task on the GPU.
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(DOMAINDECOMP(cr),
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(devFlags.forceGpuUpdateDefaultOn,
+                                                         DOMAINDECOMP(cr),
                                                          useGpuForPme,
                                                          useGpuForNonbonded,
                                                          devFlags.enableGpuBufferOps,

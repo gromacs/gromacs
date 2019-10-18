@@ -895,7 +895,7 @@ bool ModularSimulator::isInputCompatible(
                 "Membrane embedding is not supported by the modular simulator.");
     // TODO: Change this to the boolean passed when we merge the user interface change for the GPU update.
     isInputCompatible = isInputCompatible && conditionalAssert(
-                getenv("GMX_UPDATE_CONSTRAIN_GPU") == nullptr,
+                getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") == nullptr,
                 "Integration on the GPU is not supported by the modular simulator.");
     // Modular simulator is centered around NS updates
     // TODO: think how to handle nstlist == 0

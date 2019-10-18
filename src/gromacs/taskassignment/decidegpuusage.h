@@ -231,6 +231,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
+ * \param[in]  forceGpuUpdateDefaultOn   If the update should be offloaded by default.
  * \param[in]  isDomainDecomposition     Whether there more than one domain.
  * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
@@ -248,18 +249,19 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
-                                    bool              useGpuForPme,
-                                    bool              useGpuForNonbonded,
-                                    bool              useGpuForBufferOps,
-                                    TaskTarget        updateTarget,
-                                    bool              gpusWereDetected,
-                                    const t_inputrec &inputrec,
-                                    const MDAtoms    &mdatoms,
-                                    bool              useEssentialDynamics,
-                                    bool              doOrientationRestraints,
-                                    bool              doDistanceRestraints,
-                                    bool              useReplicaExchange);
+bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefaultOn,
+                                    bool                 isDomainDecomposition,
+                                    bool                 useGpuForPme,
+                                    bool                 useGpuForNonbonded,
+                                    bool                 useGpuForBufferOps,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec    &inputrec,
+                                    const MDAtoms       &mdatoms,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 doDistanceRestraints,
+                                    bool                 useReplicaExchange);
 
 
 }  // namespace gmx
