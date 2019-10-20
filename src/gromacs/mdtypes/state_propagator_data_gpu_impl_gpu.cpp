@@ -349,8 +349,6 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVe
     GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying positions with given atom locality.");
 
     copyFromDevice(h_x, d_x_, d_xSize_, atomLocality, commandStream);
-    // TODO: Remove When event-based synchronization is introduced
-    gpuStreamSynchronize(commandStream);
     // Note: unlike copyCoordinatesToGpu this is not used in OpenCL, and the conditional is not needed.
     xReadyOnHost_[atomLocality].markEvent(commandStream);
 }
@@ -374,8 +372,6 @@ void StatePropagatorDataGpu::Impl::copyVelocitiesToGpu(const gmx::ArrayRef<const
     GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying velocities with given atom locality.");
 
     copyToDevice(d_v_, h_v, d_vSize_, atomLocality, commandStream);
-    // TODO: Remove When event-based synchronization is introduced
-    gpuStreamSynchronize(commandStream);
     vReadyOnDevice_[atomLocality].markEvent(commandStream);
 }
 
@@ -393,8 +389,6 @@ void StatePropagatorDataGpu::Impl::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec
     GMX_ASSERT(commandStream != nullptr, "No stream is valid for copying velocities with given atom locality.");
 
     copyFromDevice(h_v, d_v_, d_vSize_, atomLocality, commandStream);
-    // TODO: Remove When event-based synchronization is introduced
-    gpuStreamSynchronize(commandStream);
     vReadyOnHost_[atomLocality].markEvent(commandStream);
 }
 
