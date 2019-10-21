@@ -148,11 +148,12 @@ void printCopyright(gmx::TextWriter *writer)
         "Jon Vincent",
         "Teemu Virolainen",
         "Christian Wennberg",
-        "Maarten Wolf"
+        "Maarten Wolf",
+        "Artem Zhmurov"
     };
     static const char * const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2018, The GROMACS development team at",
+        "Copyright (c) 2001-2019, The GROMACS development team at",
         "Uppsala University, Stockholm University and",
         "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
