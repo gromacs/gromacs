@@ -11,22 +11,10 @@
 # balance with pre-submit matrix, which makes heavier use of
 # bs_nix1310 agent.
 
-# Test an older version of CUDA
-# Test MPI with CUDA
-# Test MPMD PME with library MPI
-# Test GPU update-constraints features in the above combination
-gcc-5 gpuhw=nvidia cuda-9.0 mpi npme=1 nranks=2 openmp gpuupdate
-
 # Test newest gcc supported by newest CUDA at time of release
 # Test thread-MPI with CUDA
 # Test GPU update-constraints features in the above combination
 gcc-8 gpuhw=nvidia nranks=1 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpuupdate
-
-# Test non-default use of mdrun -gpu_id
-# Test GPU-sharing among 4 PP ranks
-# Test no hwloc build, tests internal CPU topology detection (mainly for x86)
-# Test GPU update-constraints features in the above combination
-gcc-7 gpuhw=nvidia nranks=4 gpu_id=1 cuda-10.0 no-hwloc release-with-assert gpuupdate
 
 # Test CUDA build on a agent with no CUDA devices
 # Test without TNG support
