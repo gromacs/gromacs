@@ -137,7 +137,7 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
 
     // Distribute the charge groups over the nodes from the master node
     dd_partition_system(
-            fplog_, mdlog_, inputrec_->init_step, cr_, isMasterState,
+            fplog_, mdlog_, step, cr_, isMasterState,
             nstglobalcomm_, globalState, topologyHolder_->globalTopology(),
             inputrec_, imdSession_, pull_work_,
             localState.get(), forcePointer, mdAtoms_,
