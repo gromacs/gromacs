@@ -521,7 +521,7 @@ static void remove_excl(t_excls *excls, int remove)
     excls->nr--;
 }
 
-void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
+static void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
 {
     int      i, j, j1, k, k1, l, l1, e;
     t_excls *excl;
@@ -579,33 +579,6 @@ void clean_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
                             }
                         }
                     }
-                }
-            }
-        }
-    }
-}
-
-void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[])
-{
-    int      i, j, n, N;
-    t_excls *excl;
-
-    for (N = 1; (N < std::min(nrexcl, nnb->nrex)); N++)
-    {
-        /* extract all i-j-k-l neighbours from nnb struct */
-        for (i = 0; (i < nnb->nr); i++)
-        {
-            /* For all particles */
-            excl      = &excls[i];
-            n         = excl->nr;
-            excl->nr += nnb->nrexcl[i][N];
-            srenew(excl->e, excl->nr);
-            for (j = 0; (j < nnb->nrexcl[i][N]); j++)
-            {
-                /* For all first neighbours */
-                if (nnb->a[i][N][j] != i)
-                {
-                    excl->e[n++] = nnb->a[i][N][j];
                 }
             }
         }
