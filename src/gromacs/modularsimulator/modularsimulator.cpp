@@ -98,10 +98,6 @@ void ModularSimulator::run()
     {
         signaller->signallerSetup();
     }
-    if (pmeLoadBalanceHelper_)
-    {
-        pmeLoadBalanceHelper_->setup();
-    }
     if (domDecHelper_)
     {
         domDecHelper_->setup();
@@ -110,6 +106,11 @@ void ModularSimulator::run()
     for (auto &element : elementsOwnershipList_)
     {
         element->elementSetup();
+    }
+    if (pmeLoadBalanceHelper_)
+    {
+        // State must have been initialized so pmeLoadBalanceHelper_ gets a valid box
+        pmeLoadBalanceHelper_->setup();
     }
 
     while (step_ <= signalHelper_->lastStep_)

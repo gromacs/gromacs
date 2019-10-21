@@ -88,7 +88,10 @@ PmeLoadBalanceHelper::PmeLoadBalanceHelper(
 
 void PmeLoadBalanceHelper::setup()
 {
-    pme_loadbal_init(&pme_loadbal_, cr_, mdlog_, *inputrec_, statePropagatorData_->constBox(),
+    auto box = statePropagatorData_->constBox();
+    GMX_RELEASE_ASSERT(box[0][0] != 0 && box[1][1] != 0 && box[2][2] != 0,
+                       "PmeLoadBalanceHelper cannot be initialized with zero box.");
+    pme_loadbal_init(&pme_loadbal_, cr_, mdlog_, *inputrec_, box,
                      *fr_->ic, *fr_->nbv, fr_->pmedata, fr_->nbv->useGpu(),
                      &bPMETunePrinting_);
 }
