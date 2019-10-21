@@ -440,17 +440,20 @@ sort_and_purge_nnb(t_nextnb *nnb)
 }
 
 
-void generate_excl (int nrexcl,
-                    int nratoms,
-                    gmx::ArrayRef<InteractionsOfType> plist, t_nextnb *nnb, t_blocka *excl)
+void generate_excl (int                               nrexcl,
+                    int                               nratoms,
+                    gmx::ArrayRef<InteractionsOfType> plist,
+                    t_blocka                         *excl)
 {
+    t_nextnb nnb;
     if (nrexcl < 0)
     {
         gmx_fatal(FARGS, "Can't have %d exclusions...", nrexcl);
     }
-    init_nnb(nnb, nratoms, nrexcl);
-    gen_nnb(nnb, plist);
+    init_nnb(&nnb, nratoms, nrexcl);
+    gen_nnb(&nnb, plist);
     excl->nr = nratoms;
-    sort_and_purge_nnb(nnb);
-    nnb2excl (nnb, excl);
+    sort_and_purge_nnb(&nnb);
+    nnb2excl (&nnb, excl);
+    done_nnb(&nnb);
 }

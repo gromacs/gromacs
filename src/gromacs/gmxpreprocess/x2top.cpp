@@ -46,7 +46,6 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gpp_atomtype.h"
-#include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/nm2type.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -392,7 +391,6 @@ int gmx_x2top(int argc, char *argv[])
     FILE                                        *fp;
     std::array<InteractionsOfType, F_NRE>        plist;
     t_excls                                     *excls;
-    t_nextnb                                     nnb;
     t_nm2type                                   *nm2t;
     t_mols                                       mymol;
     int                                          nnm;
@@ -526,11 +524,7 @@ int gmx_x2top(int argc, char *argv[])
     /* Make Angles and Dihedrals */
     snew(excls, atoms->nr);
     printf("Generating angles and dihedrals from bonds...\n");
-    init_nnb(&nnb, atoms->nr, 4);
-    gen_nnb(&nnb, plist);
-    print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE);
-    done_nnb(&nnb);
+    gen_pad(atoms, gmx::arrayRefFromArray(&rtp_header_settings, 1), plist, excls, {}, TRUE);
 
     if (!bPairs)
     {

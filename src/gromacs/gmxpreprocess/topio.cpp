@@ -812,16 +812,12 @@ static char **read_topol(const char *infile, const char *outfile,
                             sum_q(&mi0->atoms, nrcopies, &qt, &qBt);
                             if (!mi0->bProcessed)
                             {
-                                t_nextnb nnb;
                                 generate_excl(mi0->nrexcl,
                                               mi0->atoms.nr,
                                               mi0->interactions,
-                                              &nnb,
                                               &(mi0->excls));
                                 gmx::mergeExclusions(&(mi0->excls), exclusionBlocks[whichmol]);
                                 make_shake(mi0->interactions, &mi0->atoms, opts->nshake);
-
-                                done_nnb(&nnb);
 
                                 if (bCouple)
                                 {

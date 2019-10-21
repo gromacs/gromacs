@@ -52,7 +52,6 @@
 #include "gromacs/gmxpreprocess/fflibutil.h"
 #include "gromacs/gmxpreprocess/gen_ad.h"
 #include "gromacs/gmxpreprocess/gen_vsite.h"
-#include "gromacs/gmxpreprocess/gpp_nextnb.h"
 #include "gromacs/gmxpreprocess/grompp_impl.h"
 #include "gromacs/gmxpreprocess/h_db.h"
 #include "gromacs/gmxpreprocess/notset.h"
@@ -1464,7 +1463,6 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
 {
     std::array<InteractionsOfType, F_NRE>        plist;
     t_excls                                     *excls;
-    t_nextnb                                     nnb;
     int                                         *cgnr;
     int                                         *vsite_type;
     int                                          i, nmissat;
@@ -1521,11 +1519,7 @@ void pdb2top(FILE *top_file, const char *posre_fn, const char *molname,
     /* Make Angles and Dihedrals */
     fprintf(stderr, "Generating angles, dihedrals and pairs...\n");
     snew(excls, atoms->nr);
-    init_nnb(&nnb, atoms->nr, 4);
-    gen_nnb(&nnb, plist);
-    print_nnb(&nnb, "NNB");
-    gen_pad(&nnb, atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing);
-    done_nnb(&nnb);
+    gen_pad(atoms, usedPpResidues, plist, excls, globalPatches, bAllowMissing);
 
     /* Make CMAP */
     if (bCmap)
