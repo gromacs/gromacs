@@ -239,7 +239,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  updateTarget              User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  * \param[in]  inputrec                  The user input.
- * \param[in]  mdatoms                   Information about simulation atoms.
+ * \param[in]  haveVSites                If there are virtual sites in the system.
  * \param[in]  useEssentialDynamics      If essential dynamics is active.
  * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
  * \param[in]  doDistanceRestraints      If distance restraints are enabled.
@@ -249,19 +249,19 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefaultOn,
-                                    bool                 isDomainDecomposition,
-                                    bool                 useGpuForPme,
-                                    bool                 useGpuForNonbonded,
-                                    bool                 useGpuForBufferOps,
-                                    TaskTarget           updateTarget,
-                                    bool                 gpusWereDetected,
-                                    const t_inputrec    &inputrec,
-                                    const MDAtoms       &mdatoms,
-                                    bool                 useEssentialDynamics,
-                                    bool                 doOrientationRestraints,
-                                    bool                 doDistanceRestraints,
-                                    bool                 useReplicaExchange);
+bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultOn,
+                                    bool              isDomainDecomposition,
+                                    bool              useGpuForPme,
+                                    bool              useGpuForNonbonded,
+                                    bool              useGpuForBufferOps,
+                                    TaskTarget        updateTarget,
+                                    bool              gpusWereDetected,
+                                    const t_inputrec &inputrec,
+                                    bool              haveVSites,
+                                    bool              useEssentialDynamics,
+                                    bool              doOrientationRestraints,
+                                    bool              doDistanceRestraints,
+                                    bool              useReplicaExchange);
 
 
 }  // namespace gmx

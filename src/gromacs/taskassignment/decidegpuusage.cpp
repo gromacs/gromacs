@@ -57,7 +57,6 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -491,19 +490,19 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefaultOn,
-                                    bool                 isDomainDecomposition,
-                                    bool                 useGpuForPme,
-                                    bool                 useGpuForNonbonded,
-                                    bool                 useGpuForBufferOps,
-                                    TaskTarget           updateTarget,
-                                    bool                 gpusWereDetected,
-                                    const t_inputrec    &inputrec,
-                                    const MDAtoms       &mdatoms,
-                                    bool                 useEssentialDynamics,
-                                    bool                 doOrientationRestraints,
-                                    bool                 doDistanceRestraints,
-                                    bool                 useReplicaExchange)
+bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
+                                    const bool        isDomainDecomposition,
+                                    const bool        useGpuForPme,
+                                    const bool        useGpuForNonbonded,
+                                    const bool        useGpuForBufferOps,
+                                    const TaskTarget  updateTarget,
+                                    const bool        gpusWereDetected,
+                                    const t_inputrec &inputrec,
+                                    const bool        haveVSites,
+                                    const bool        useEssentialDynamics,
+                                    const bool        doOrientationRestraints,
+                                    const bool        doDistanceRestraints,
+                                    const bool        useReplicaExchange)
 {
 
     if (updateTarget == TaskTarget::Cpu)
@@ -544,7 +543,7 @@ bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefaultOn
     {
         errorMessage += "Only Parrinello-Rahman pressure control is supported.\n";
     }
-    if (mdatoms.mdatoms()->haveVsites)
+    if (haveVSites)
     {
         errorMessage += "Virtual sites are not supported.\n";
     }

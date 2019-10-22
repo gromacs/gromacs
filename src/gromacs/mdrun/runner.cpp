@@ -1562,10 +1562,10 @@ int Mdrunner::mdrunner()
                                                          updateTarget,
                                                          gpusWereDetected,
                                                          *inputrec,
-                                                         *mdAtoms,
+                                                         mdAtoms->mdatoms()->haveVsites,
                                                          doEssentialDynamics,
-                                                         fcd->orires.nr != 0,
-                                                         fcd->disres.nsystems != 0,
+                                                         gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                                                         gmx_mtop_ftype_count(mtop, F_DISRES) > 0,
                                                          replExParams.exchangeInterval > 0);
 
         const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
