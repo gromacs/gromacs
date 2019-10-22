@@ -62,8 +62,4 @@ search_res_atom(const char *type, int resind,
                 const t_atoms *atoms,
                 const char *bondtype, bool bAllowMissing);
 
-
-void set_at(t_atom *at, real m, real q, int type, int resind);
-
-
 #endif

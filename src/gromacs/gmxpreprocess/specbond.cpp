@@ -61,7 +61,7 @@ struct SpecialBond
     real        length;
 };
 
-bool yesno()
+static bool yesno()
 {
     char c;
 

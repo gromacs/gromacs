@@ -68,32 +68,10 @@ void add_param(InteractionsOfType        *ps,
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_imp_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   const char *s)
-{
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1};
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
-}
-
-void add_dih_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   real c2, const char *s)
-{
-    std::vector<int>  atoms     = {ai, aj, ak, al};
-    std::vector<real> forceParm = {c0, c1, c2};
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
-}
-
 void add_cmap_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am, const char *s)
 {
     std::vector<int> atoms = {ai, aj, ak, al, am};
     ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}, s ? s : ""));
-}
-
-void add_vsite2_atoms(InteractionsOfType *ps, int ai, int aj, int ak)
-{
-    std::vector<int> atoms = {ai, aj, ak};
-    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 }
 
 void add_vsite2_param(InteractionsOfType *ps, int ai, int aj, int ak, real c0)

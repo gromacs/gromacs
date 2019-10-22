@@ -55,16 +55,9 @@ struct InteractionsOfType;
 
 /* UTILITIES */
 
-int name2index(char *str, char ***typenames, int ntypes);
-
 void add_param_to_list(InteractionsOfType *list, const InteractionOfType &b);
 
-
-
 /* PRINTING */
-
-void print_blocka(FILE *out, const char *szName, const char *szIndex,
-                  const char *szA, t_blocka *block);
 
 void print_atoms(FILE *out, PreprocessingAtomTypes *atype, t_atoms *at, int *cgnr,
                  bool bRTPresname);

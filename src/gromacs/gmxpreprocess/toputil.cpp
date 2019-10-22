@@ -221,29 +221,6 @@ static void print_bt(FILE *out, Directive d, PreprocessingAtomTypes *at,
     fflush (out);
 }
 
-void print_blocka(FILE *out, const char *szName,
-                  const char *szIndex, const char *szA,
-                  t_blocka *block)
-{
-    int i, j;
-
-    fprintf (out, "; %s\n", szName);
-    fprintf (out, "; %4s    %s\n", szIndex, szA);
-    for (i = 0; (i < block->nr); i++)
-    {
-        for (i = 0; (i < block->nr); i++)
-        {
-            fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < (block->index[i+1])); j++)
-            {
-                fprintf (out, "%5d", block->a[j]+1);
-            }
-            fprintf (out, "\n");
-        }
-        fprintf (out, "\n");
-    }
-}
-
 void print_excl(FILE *out, int natoms, t_excls excls[])
 {
     int         i;

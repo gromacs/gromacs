@@ -50,16 +50,8 @@ void add_param(InteractionsOfType        *ps,
                gmx::ArrayRef<const real>  c,
                const char                *s);
 
-void add_imp_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
-                   real c0, real c1, const char *s);
-
-void add_dih_param(InteractionsOfType *ps, int ai, int aj, int ak, int al,
-                   real c0, real c1, real c2, const char *s);
-
 void add_cmap_param(InteractionsOfType *ps, int ai, int aj, int ak, int al, int am,
                     const char *s);
-
-void add_vsite2_atoms(InteractionsOfType *ps, int ai, int aj, int ak);
 
 void add_vsite3_atoms(InteractionsOfType *ps, int ai, int aj, int ak, int al,
                       bool bSwapParity);

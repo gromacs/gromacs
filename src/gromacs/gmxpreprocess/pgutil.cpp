@@ -168,12 +168,3 @@ search_res_atom(const char *type, int resind,
 
     return -1;
 }
-
-
-void set_at(t_atom *at, real m, real q, int type, int resind)
-{
-    at->m      = m;
-    at->q      = q;
-    at->type   = type;
-    at->resind = resind;
-}

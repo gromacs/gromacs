@@ -59,6 +59,4 @@ std::vector<DisulfideBond> makeDisulfideBonds(t_atoms *pdba,
 
 std::vector<SpecialBond> generateSpecialBonds();
 
-bool yesno();
-
 #endif
