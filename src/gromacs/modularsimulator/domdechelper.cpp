@@ -43,10 +43,12 @@
 
 #include "domdechelper.h"
 
+#include "gromacs/domdec/collect.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
 
 #include "statepropagatordata.h"
 #include "topologyholder.h"
@@ -133,7 +135,21 @@ void DomDecHelper::run(Step step, Time gmx_unused time)
     const bool verbose       =
         isVerbose_ &&
         (step % verbosePrintInterval_ == 0 || step == inputrec_->init_step);
-    const bool isMasterState = false;
+    bool     isMasterState = false;
+
+    // Correct the new box if it is too skewed
+    if (inputrecDynamicBox(inputrec_))
+    {
+        t_graph *graph         = nullptr;
+        if (correct_box(fplog_, step, localState->box, graph))
+        {
+            isMasterState = true;
+        }
+    }
+    if (isMasterState)
+    {
+        dd_collect_state(cr_->dd, localState.get(), globalState);
+    }
 
     // Distribute the charge groups over the nodes from the master node
     dd_partition_system(
