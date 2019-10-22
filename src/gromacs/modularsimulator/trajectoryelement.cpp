@@ -123,13 +123,13 @@ void TrajectoryElement::elementSetup()
     for (auto &client : writerClients_)
     {
         auto callback = client->registerTrajectoryWriterCallback(
-                    TrajectoryEvent::stateWritingStep);
+                    TrajectoryEvent::StateWritingStep);
         if (callback)
         {
             runStateCallbacks_.emplace_back(std::move(callback));
         }
         callback = client->registerTrajectoryWriterCallback(
-                    TrajectoryEvent::energyWritingStep);
+                    TrajectoryEvent::EnergyWritingStep);
         if (callback)
         {
             runEnergyCallbacks_.emplace_back(std::move(callback));

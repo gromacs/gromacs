@@ -352,13 +352,13 @@ template <ComputeGlobalsAlgorithm algorithm>
 SignallerCallbackPtr ComputeGlobalsElement<algorithm>::
     registerEnergyCallback(EnergySignallerEvent event)
 {
-    if (event == EnergySignallerEvent::energyCalculationStep)
+    if (event == EnergySignallerEvent::EnergyCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time)
                 {energyReductionStep_ = step; });
     }
-    if (event == EnergySignallerEvent::virialCalculationStep)
+    if (event == EnergySignallerEvent::VirialCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){virialReductionStep_ = step; });
@@ -371,7 +371,7 @@ template <ComputeGlobalsAlgorithm algorithm>
 SignallerCallbackPtr ComputeGlobalsElement<algorithm>::
     registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::energyWritingStep)
+    if (event == TrajectoryEvent::EnergyWritingStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time)

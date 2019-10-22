@@ -184,7 +184,7 @@ template <ConstraintVariable variable>
 SignallerCallbackPtr ConstraintsElement<variable>::
     registerEnergyCallback(EnergySignallerEvent event)
 {
-    if (event == EnergySignallerEvent::virialCalculationStep)
+    if (event == EnergySignallerEvent::VirialCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){nextVirialCalculationStep_ = step; });
@@ -196,7 +196,7 @@ template <ConstraintVariable variable>
 SignallerCallbackPtr ConstraintsElement<variable>::
     registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::energyWritingStep)
+    if (event == TrajectoryEvent::EnergyWritingStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time)

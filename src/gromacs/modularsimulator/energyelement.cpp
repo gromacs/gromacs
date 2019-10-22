@@ -204,7 +204,7 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf *outf)
 
 ITrajectoryWriterCallbackPtr EnergyElement::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::energyWritingStep && isMasterRank_)
+    if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
                 [this](gmx_mdoutf *mdoutf, Step step, Time time)
@@ -215,7 +215,7 @@ ITrajectoryWriterCallbackPtr EnergyElement::registerTrajectoryWriterCallback(Tra
 
 SignallerCallbackPtr EnergyElement::registerTrajectorySignallerCallback(gmx::TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::energyWritingStep && isMasterRank_)
+    if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){energyWritingStep_ = step; });
@@ -225,12 +225,12 @@ SignallerCallbackPtr EnergyElement::registerTrajectorySignallerCallback(gmx::Tra
 
 SignallerCallbackPtr EnergyElement::registerEnergyCallback(EnergySignallerEvent event)
 {
-    if (event == EnergySignallerEvent::energyCalculationStep && isMasterRank_)
+    if (event == EnergySignallerEvent::EnergyCalculationStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time) {energyCalculationStep_ = step; });
     }
-    if (event == EnergySignallerEvent::freeEnergyCalculationStep && isMasterRank_)
+    if (event == EnergySignallerEvent::FreeEnergyCalculationStep && isMasterRank_)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){freeEnergyCalculationStep_ = step; });

@@ -179,18 +179,18 @@ SignallerCallbackPtr ForceElement::registerNSCallback()
 SignallerCallbackPtr ForceElement::
     registerEnergyCallback(EnergySignallerEvent event)
 {
-    if (event == EnergySignallerEvent::energyCalculationStep)
+    if (event == EnergySignallerEvent::EnergyCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time)
                 {nextEnergyCalculationStep_ = step; });
     }
-    if (event == EnergySignallerEvent::virialCalculationStep)
+    if (event == EnergySignallerEvent::VirialCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){nextVirialCalculationStep_ = step; });
     }
-    if (event == EnergySignallerEvent::freeEnergyCalculationStep)
+    if (event == EnergySignallerEvent::FreeEnergyCalculationStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){nextFreeEnergyCalculationStep_ = step; });

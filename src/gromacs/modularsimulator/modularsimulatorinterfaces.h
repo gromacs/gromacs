@@ -220,9 +220,9 @@ class ILoggingSignallerClient
 //! The energy events signalled by the EnergySignaller
 enum class EnergySignallerEvent
 {
-    energyCalculationStep,
-    virialCalculationStep,
-    freeEnergyCalculationStep
+    EnergyCalculationStep,
+    VirialCalculationStep,
+    FreeEnergyCalculationStep
 };
 
 /*! \libinternal
@@ -250,8 +250,8 @@ class IEnergySignallerClient
 //! The trajectory writing events
 enum class TrajectoryEvent
 {
-    stateWritingStep,
-    energyWritingStep
+    StateWritingStep,
+    EnergyWritingStep
 };
 
 /*! \libinternal

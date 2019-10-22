@@ -255,11 +255,11 @@ std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args && ... a
     for (auto &client : signallerClients_)
     {
         // don't register nullptr
-        if (auto energyCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::energyWritingStep))
+        if (auto energyCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::EnergyWritingStep))
         {
             signalEnergyCallbacks.emplace_back(std::move(energyCallback));
         }
-        if (auto stateCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::stateWritingStep))
+        if (auto stateCallback = client->registerTrajectorySignallerCallback(TrajectoryEvent::StateWritingStep))
         {
             signalStateCallbacks.emplace_back(std::move(stateCallback));
         }

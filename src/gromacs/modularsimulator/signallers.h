@@ -378,9 +378,9 @@ template <>
 template <typename ... Args>
 std::unique_ptr<EnergySignaller> SignallerBuilder<EnergySignaller>::build(Args && ... args)
 {
-    auto calculateEnergyCallbacks     = buildCallbackVector(EnergySignallerEvent::energyCalculationStep);
-    auto calculateVirialCallbacks     = buildCallbackVector(EnergySignallerEvent::virialCalculationStep);
-    auto calculateFreeEnergyCallbacks = buildCallbackVector(EnergySignallerEvent::freeEnergyCalculationStep);
+    auto calculateEnergyCallbacks     = buildCallbackVector(EnergySignallerEvent::EnergyCalculationStep);
+    auto calculateVirialCallbacks     = buildCallbackVector(EnergySignallerEvent::VirialCalculationStep);
+    auto calculateFreeEnergyCallbacks = buildCallbackVector(EnergySignallerEvent::FreeEnergyCalculationStep);
     // NOLINTNEXTLINE(modernize-make-unique): make_unique does not work with private constructor
     return std::unique_ptr<EnergySignaller>(
             new EnergySignaller(

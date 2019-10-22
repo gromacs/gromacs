@@ -210,7 +210,7 @@ void EnergySignaller::signallerSetup()
 
 SignallerCallbackPtr EnergySignaller::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::energyWritingStep)
+    if (event == TrajectoryEvent::EnergyWritingStep)
     {
         trajectoryRegistrationDone_ = true;
         return std::make_unique<SignallerCallback>(

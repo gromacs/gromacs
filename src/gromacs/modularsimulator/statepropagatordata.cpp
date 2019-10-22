@@ -335,7 +335,7 @@ void StatePropagatorData::saveState()
 SignallerCallbackPtr
 StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::stateWritingStep)
+    if (event == TrajectoryEvent::StateWritingStep)
     {
         return std::make_unique<SignallerCallback>(
                 [this](Step step, Time){this->writeOutStep_ = step; });
@@ -346,7 +346,7 @@ StatePropagatorData::registerTrajectorySignallerCallback(TrajectoryEvent event)
 ITrajectoryWriterCallbackPtr
 StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
 {
-    if (event == TrajectoryEvent::stateWritingStep)
+    if (event == TrajectoryEvent::StateWritingStep)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
                 [this](gmx_mdoutf *outf, Step step, Time time)
