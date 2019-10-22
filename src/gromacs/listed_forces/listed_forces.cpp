@@ -462,8 +462,8 @@ calcBondedForces(const t_idef            *idef,
     }
 }
 
-bool havePositionRestraints(const t_idef   &idef,
-                            const t_fcdata &fcd)
+bool haveRestraints(const t_idef   &idef,
+                    const t_fcdata &fcd)
 {
     return
         ((idef.il[F_POSRES].nr > 0) ||
@@ -481,7 +481,7 @@ bool haveCpuListedForces(const t_forcerec &fr,
                          const t_idef     &idef,
                          const t_fcdata   &fcd)
 {
-    return haveCpuBondeds(fr) || havePositionRestraints(idef, fcd);
+    return haveCpuBondeds(fr) || haveRestraints(idef, fcd);
 }
 
 void calc_listed(const t_commrec             *cr,
@@ -512,7 +512,7 @@ void calc_listed(const t_commrec             *cr,
         pbc_null = nullptr;
     }
 
-    if (havePositionRestraints(*idef, *fcd))
+    if (haveRestraints(*idef, *fcd))
     {
         /* TODO Use of restraints triggers further function calls
            inside the loop over calc_one_bond(), but those are too

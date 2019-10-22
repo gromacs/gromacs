@@ -789,7 +789,7 @@ setupDomainLifetimeWorkload(const t_inputrec       &inputrec,
     domainWork.haveSpecialForces      = haveSpecialForces(inputrec, *fr.forceProviders, pull_work, stepWork.computeForces, ed);
     domainWork.haveCpuBondedWork      = haveCpuBondeds(fr);
     domainWork.haveGpuBondedWork      = ((fr.gpuBonded != nullptr) && fr.gpuBonded->haveInteractions());
-    domainWork.haveRestraintsWork     = havePositionRestraints(idef, fcd);
+    domainWork.haveRestraintsWork     = haveRestraints(idef, fcd);
     domainWork.haveCpuListedForceWork = haveCpuListedForces(fr, idef, fcd);
     // Note that haveFreeEnergyWork is constant over the whole run
     domainWork.haveFreeEnergyWork     = (fr.efep != efepNO && mdatoms.nPerturbed != 0);

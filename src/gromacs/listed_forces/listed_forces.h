@@ -156,9 +156,9 @@ do_force_listed(struct gmx_wallcycle           *wcycle,
                 int                            *global_atom_index,
                 const gmx::StepWorkload        &stepWork);
 
-/*! \brief Returns true if there are position restraints. */
-bool havePositionRestraints(const t_idef   &idef,
-                            const t_fcdata &fcd);
+/*! \brief Returns true if there are position, distance or orientation restraints. */
+bool haveRestraints(const t_idef   &idef,
+                    const t_fcdata &fcd);
 
 /*! \brief Returns true if there are CPU (i.e. not GPU-offloaded) bonded interactions to compute. */
 bool haveCpuBondeds(const t_forcerec &fr);
