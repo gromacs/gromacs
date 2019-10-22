@@ -112,7 +112,7 @@ class EnergyElement final :
             FILE                          *fplog,
             t_fcdata                      *fcd,
             const MdModulesNotifier       &mdModulesNotifier,
-            bool                           isMaster,
+            bool                           isMasterRank,
             ObservablesHistory            *observablesHistory,
             StartingBehavior               startingBehavior);
 
@@ -283,7 +283,7 @@ class EnergyElement final :
         std::unique_ptr<EnergyOutput> energyOutput_;
 
         //! Whether this is the master rank
-        const bool isMaster_;
+        const bool isMasterRank_;
         //! The next communicated energy writing step
         Step       energyWritingStep_;
         //! The next communicated energy calculation step
