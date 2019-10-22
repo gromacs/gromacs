@@ -777,14 +777,15 @@ setupForceOutputs(t_forcerec                          *fr,
 /*! \brief Set up flags that have the lifetime of the domain indicating what type of work is there to compute.
  */
 static DomainLifetimeWorkload
-setupDomainLifetimeWorkload(const t_inputrec       &inputrec,
-                            const t_forcerec       &fr,
-                            const pull_t           *pull_work,
-                            const gmx_edsam        *ed,
-                            const t_idef           &idef,
-                            const t_fcdata         &fcd,
-                            const t_mdatoms        &mdatoms,
-                            const StepWorkload     &stepWork)
+setupDomainLifetimeWorkload(const t_inputrec         &inputrec,
+                            const t_forcerec         &fr,
+                            const pull_t             *pull_work,
+                            const gmx_edsam          *ed,
+                            const t_idef             &idef,
+                            const t_fcdata           &fcd,
+                            const t_mdatoms          &mdatoms,
+                            const SimulationWorkload &simulationWork,
+                            const StepWorkload       &stepWork)
 {
     DomainLifetimeWorkload domainWork;
     // Note that haveSpecialForces is constant over the whole run
@@ -795,6 +796,10 @@ setupDomainLifetimeWorkload(const t_inputrec       &inputrec,
     domainWork.haveCpuListedForceWork = haveCpuListedForces(fr, idef, fcd);
     // Note that haveFreeEnergyWork is constant over the whole run
     domainWork.haveFreeEnergyWork     = (fr.efep != efepNO && mdatoms.nPerturbed != 0);
+    // We assume we have local force work if there are CPU
+    // force tasks including PME or nonbondeds.
+    domainWork.haveCpuLocalForceWork  = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || domainWork.haveFreeEnergyWork ||
+        simulationWork.useCpuNonbonded || simulationWork.useCpuPme;
     return domainWork;
 }
 
@@ -1140,6 +1145,7 @@ void do_force(FILE                                     *fplog,
                                         top->idef,
                                         *fcd,
                                         *mdatoms,
+                                        simulationWork,
                                         stepWork);
 
         wallcycle_start_nocount(wcycle, ewcNS);
@@ -1573,12 +1579,6 @@ void do_force(FILE                                     *fplog,
         }
     }
 
-    // TODO move this into StepWorkload
-    const bool useCpuPmeFReduction      = thisRankHasDuty(cr, DUTY_PME) && !stepWork.useGpuPmeFReduction;
-    // TODO: move this into DomainLifetimeWorkload, including the second part of the condition
-    const bool haveCpuLocalForces     = (domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || useCpuPmeFReduction ||
-                                         (fr->efep != efepNO));
-
     if (havePPDomainDecomposition(cr))
     {
         /* We are done with the CPU compute.
@@ -1593,11 +1593,11 @@ void do_force(FILE                                     *fplog,
 
             if (useGpuForcesHaloExchange)
             {
-                if (haveCpuLocalForces)
+                if (domainWork.haveCpuLocalForceWork)
                 {
                     stateGpu->copyForcesToGpu(forceOut.forceWithShiftForces().force(), AtomLocality::Local);
                 }
-                gpuHaloExchange->communicateHaloForces(haveCpuLocalForces);
+                gpuHaloExchange->communicateHaloForces(domainWork.haveCpuLocalForceWork);
             }
             else
             {
@@ -1715,7 +1715,7 @@ void do_force(FILE                                     *fplog,
             // local atoms. This depends on whether there are CPU-based force tasks
             // or when DD is active the halo exchange has resulted in contributions
             // from the non-local part.
-            const bool haveLocalForceContribInCpuBuffer = (haveCpuLocalForces || havePPDomainDecomposition(cr));
+            const bool haveLocalForceContribInCpuBuffer = (domainWork.haveCpuLocalForceWork || havePPDomainDecomposition(cr));
 
             // TODO: move these steps as early as possible:
             // - CPU f H2D should be as soon as all CPU-side forces are done

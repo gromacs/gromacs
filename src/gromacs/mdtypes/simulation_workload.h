@@ -116,6 +116,8 @@ class DomainLifetimeWorkload
         bool haveCpuListedForceWork = false;
         //! Whether the current nstlist step-range has special forces on the CPU.
         bool haveSpecialForces = false;
+        //! Whether there are currently any local forces to be computed on the CPU
+        bool haveCpuLocalForceWork = false;
 
         // TODO
         //! Whether the current nstlist step-range Free energy work on the CPU.
