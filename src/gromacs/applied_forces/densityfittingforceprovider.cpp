@@ -188,7 +188,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
         return;
     }
 
-    state_.stepsSinceLastCalculation_ = 0;
+    state_.stepsSinceLastCalculation_ = 1;
 
     // do nothing if there are no density fitting atoms on this node
     if (localAtomSet_.numAtomsLocal() == 0)
