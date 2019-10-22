@@ -63,6 +63,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
         StatePropagatorData           *statePropagatorData,
         EnergyElement                 *energyElement,
         FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+        SimulationSignals             *signals,
         int                            nstglobalcomm,
         FILE                          *fplog,
         const MDLogger                &mdlog,
@@ -91,7 +92,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(
     localTopology_(nullptr),
     freeEnergyPerturbationElement_(freeEnergyPerturbationElement),
     vcm_(global_top->groups, *inputrec),
-    signals_(),
+    signals_(signals),
     fplog_(fplog),
     mdlog_(mdlog),
     cr_(cr),
@@ -225,7 +226,7 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(
 
         // Make signaller to signal stop / reset / checkpointing signals
         auto signaller = std::make_shared<SimulationSignaller>(
-                    &signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
+                    signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
         (*registerRunFunction)(
                 std::make_unique<SimulatorRunFunction>(
@@ -280,7 +281,7 @@ void ComputeGlobalsElement<algorithm>::scheduleTask(
         const bool doInterSimSignal = false;
 
         auto       signaller = std::make_shared<SimulationSignaller>(
-                    &signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
+                    signals_, cr_, nullptr, doInterSimSignal, doIntraSimSignal);
 
         (*registerRunFunction)(
                 std::make_unique<SimulatorRunFunction>(

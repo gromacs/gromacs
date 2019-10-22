@@ -109,6 +109,7 @@ class ComputeGlobalsElement final :
             StatePropagatorData           *statePropagatorData,
             EnergyElement                 *energyElement,
             FreeEnergyPerturbationElement *freeEnergyPerturbationElement,
+            SimulationSignals             *signals,
             int                            nstglobalcomm,
             FILE                          *fplog,
             const MDLogger                &mdlog,
@@ -221,9 +222,9 @@ class ComputeGlobalsElement final :
         FreeEnergyPerturbationElement *freeEnergyPerturbationElement_;
 
         //! Center of mass motion removal
-        t_vcm             vcm_;
+        t_vcm              vcm_;
         //! Signals
-        SimulationSignals signals_;
+        SimulationSignals *signals_;
 
         // Access to ISimulator data
         //! Handles logging.

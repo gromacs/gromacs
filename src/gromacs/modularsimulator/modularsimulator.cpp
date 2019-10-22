@@ -626,7 +626,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         auto computeGlobalsElement =
             std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::LeapFrog> >(
                     statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    nstglobalcomm_, fplog, mdlog, cr,
+                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
                     &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElement.get());
@@ -697,7 +697,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         auto computeGlobalsElementAtFullTimeStep =
             std::make_unique< ComputeGlobalsElement<ComputeGlobalsAlgorithm::VelocityVerletAtFullTimeStep> >(
                     statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    nstglobalcomm_, fplog, mdlog, cr,
+                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
                     &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAtFullTimeStep.get());
@@ -707,7 +707,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildIntegrator(
         auto computeGlobalsElementAfterCoordinateUpdate =
             std::make_unique<ComputeGlobalsElement <ComputeGlobalsAlgorithm::VelocityVerletAfterCoordinateUpdate> >(
                     statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElementPtr,
-                    nstglobalcomm_, fplog, mdlog, cr,
+                    &signals_, nstglobalcomm_, fplog, mdlog, cr,
                     inputrec, mdAtoms, nrnb, wcycle, fr,
                     &topologyHolder_->globalTopology(), constr, hasReadEkinState);
         topologyHolder_->registerClient(computeGlobalsElementAfterCoordinateUpdate.get());
