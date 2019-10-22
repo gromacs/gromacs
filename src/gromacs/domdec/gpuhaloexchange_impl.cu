@@ -289,6 +289,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
 
         launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
+    fReadyOnDevice_.markEvent(nonLocalStream_);
 }
 
 
@@ -378,6 +379,11 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void* sendPtr,
 #endif
 }
 
+GpuEventSynchronizer* GpuHaloExchange::Impl::getForcesReadyOnDeviceEvent()
+{
+    return &fReadyOnDevice_;
+}
+
 /*! \brief Create Domdec GPU object */
 GpuHaloExchange::Impl::Impl(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* localStream, void* nonLocalStream) :
     dd_(dd),
@@ -443,4 +449,8 @@ void GpuHaloExchange::communicateHaloForces(bool accumulateForces)
     impl_->communicateHaloForces(accumulateForces);
 }
 
+GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
+{
+    return impl_->getForcesReadyOnDeviceEvent();
+}
 } // namespace gmx

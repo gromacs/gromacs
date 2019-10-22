@@ -245,9 +245,4 @@ void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocal
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
 }
 
-void nonbonded_verlet_t::stream_local_wait_for_nonlocal()
-{
-    Nbnxm::nbnxn_stream_local_wait_for_nonlocal(gpu_nbv);
-}
-
 /*! \endcond */

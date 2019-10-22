@@ -945,14 +945,4 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     }
 }
 
-void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_cuda_t* nb)
-{
-    cudaStream_t localStream    = nb->stream[InteractionLocality::Local];
-    cudaStream_t nonLocalStream = nb->stream[InteractionLocality::NonLocal];
-
-    GpuEventSynchronizer event;
-    event.markEvent(nonLocalStream);
-    event.enqueueWaitEvent(localStream);
-}
-
 } // namespace Nbnxm

@@ -353,9 +353,6 @@ public:
     /*! \brief return GPU pointer to f in rvec format */
     void* get_gpu_frvec();
 
-    /*! \brief Ensure local stream waits for non-local stream */
-    void stream_local_wait_for_nonlocal();
-
     //! Return the kernel setup
     const Nbnxm::KernelSetup& kernelSetup() const { return kernelSetup_; }
 

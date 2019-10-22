@@ -1670,7 +1670,7 @@ void do_force(FILE*                               fplog,
                                            fr->pmePpCommGpu->getForcesReadySynchronizer())) // buffer received from other GPU
                         : nullptr; // PME reduction not active on GPU
 
-        gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
+        gmx::FixedCapacityVector<GpuEventSynchronizer*, 3> dependencyList;
 
         if (stepWork.useGpuPmeFReduction)
         {
@@ -1703,14 +1703,7 @@ void do_force(FILE*                               fplog,
             }
             if (useGpuForcesHaloExchange)
             {
-                // Add a stream synchronization to satisfy a dependency
-                // for the local buffer ops on the result of GPU halo
-                // exchange, which operates in the non-local stream and
-                // writes to to local parf og the force buffer.
-                //
-                // TODO improve this through use of an event - see Redmine #3093
-                //      push the event into the dependencyList
-                nbv->stream_local_wait_for_nonlocal();
+                dependencyList.push_back(gpuHaloExchange->getForcesReadyOnDeviceEvent());
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(AtomLocality::Local, stateGpu->getForces(), pmeForcePtr,
                                               dependencyList, stepWork.useGpuPmeFReduction,

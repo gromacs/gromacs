@@ -96,6 +96,11 @@ public:
      */
     void communicateHaloForces(bool accumulateForces);
 
+    /*! \brief Get the event synchronizer for the forces ready on device.
+     *  \returns  The event to synchronize the stream that consumes forces on device.
+     */
+    GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
+
 private:
     /*! \brief Data transfer wrapper for GPU halo exchange
      * \param [inout] d_ptr      pointer to coordinates or force buffer in GPU memory
@@ -177,6 +182,8 @@ private:
     float3* d_x_ = nullptr;
     //! full forces buffer in GPU memory
     float3* d_f_ = nullptr;
+    //! An event recorded once the exchanged forces are ready on the GPU
+    GpuEventSynchronizer fReadyOnDevice_;
 };
 
 } // namespace gmx
