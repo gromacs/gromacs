@@ -192,6 +192,8 @@ class LastStepSignaller final :
 
         //! The last step of the simulation
         const Step   stopStep_;
+        //! Whether we signalled last step due to stop condition
+        bool         signalledStopCondition_;
         //! A pointer to the stop handler communicating signal and time-related stops
         StopHandler *stopHandler_;
 

@@ -86,6 +86,7 @@ LastStepSignaller::LastStepSignaller(
         StopHandler* stopHandler) :
     callbacks_(std::move(callbacks)),
     stopStep_(initStep + nsteps),
+    signalledStopCondition_(false),
     stopHandler_(stopHandler),
     nextNSStep_(-1),
     nsStepRegistrationDone_(false)
@@ -93,8 +94,13 @@ LastStepSignaller::LastStepSignaller(
 
 void LastStepSignaller::signal(Step step, Time time)
 {
+    if (signalledStopCondition_)
+    {
+        return;
+    }
     bool isNSStep = (step == nextNSStep_);
-    if (step == stopStep_ || stopHandler_->stoppingAfterCurrentStep(isNSStep))
+    signalledStopCondition_ = stopHandler_->stoppingAfterCurrentStep(isNSStep);
+    if (step == stopStep_ || signalledStopCondition_)
     {
         runAllCallbacks(callbacks_, step, time);
     }
