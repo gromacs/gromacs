@@ -287,7 +287,8 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
         }
         else
         {
-            state_.adaptiveForceConstantScale_ *= 1._real + expAverageSimilarity_->inverseTimeConstant();
+            state_.adaptiveForceConstantScale_ *=
+                    1._real + 2 * expAverageSimilarity_->inverseTimeConstant();
         }
     }
 }

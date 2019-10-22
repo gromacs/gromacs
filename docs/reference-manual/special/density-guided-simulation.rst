@@ -197,8 +197,8 @@ measures with a time constant :math:`tau` that is given in ps. If the exponentia
 moving average similarity increases, the force constant is scaled down by
 dividing by :math:`1+\delta t_{\mathrm{density}}/tau`, where
 :math:`\delta t_{\mathrm{density}}` is the time between density guided simulation steps.
-Reversely, if similarity between reference and simulated density is decreasing,
-the force constant is increased by multiplying by :math:`1+\delta t_{\mathrm{density}}/tau`.
+Conversely, if similarity between reference and simulated density is decreasing,
+the force constant is increased by multiplying by :math:`1+2\delta t_{\mathrm{density}}/tau`.
 Note that adaptive force scaling does not conserve energy and will ultimately lead to very high
 forces when similarity cannot be increased further.
 
