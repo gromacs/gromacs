@@ -237,7 +237,7 @@ void gmx::LegacySimulator::do_md()
     SimulationGroups                  *groups = &top_global->groups;
 
     std::unique_ptr<EssentialDynamics> ed = nullptr;
-    if (opt2bSet("-ei", nfile, fnm) || observablesHistory->edsamHistory != nullptr)
+    if (opt2bSet("-ei", nfile, fnm))
     {
         /* Initialize essential dynamics sampling */
         ed = init_edsam(mdlog,
@@ -247,6 +247,13 @@ void gmx::LegacySimulator::do_md()
                         state_global, observablesHistory,
                         oenv,
                         startingBehavior);
+    }
+    else if (observablesHistory->edsamHistory)
+    {
+        gmx_fatal(FARGS,
+                  "The checkpoint is from a run with essential dynamics sampling, "
+                  "but the current run did not specify the -ei option. "
+                  "Either specify the -ei option to mdrun, or do not use this checkpoint file.");
     }
 
     initialize_lambdas(fplog, *ir, MASTER(cr), &state_global->fep_state, state_global->lambda, lam0);

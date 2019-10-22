@@ -685,8 +685,10 @@ int Mdrunner::mdrunner()
        cr doesn't reflect the final parallel state right now */
     gmx_mtop_t                      mtop;
 
-    bool doMembed = opt2bSet("-membed", filenames.size(), filenames.data());
-    bool doRerun  = mdrunOptions.rerun;
+    /* TODO: inputrec should tell us whether we use an algorithm, not a file option */
+    const bool doEssentialDynamics = opt2bSet("-ei", filenames.size(), filenames.data());
+    const bool doMembed            = opt2bSet("-membed", filenames.size(), filenames.data());
+    const bool doRerun             = mdrunOptions.rerun;
 
     // Handle task-assignment related user options.
     EmulateGpuNonbonded emulateGpuNonbonded = (getenv("GMX_EMULATE_GPU") != nullptr ?
@@ -1504,14 +1506,10 @@ int Mdrunner::mdrunner()
                                    startingBehavior);
         }
 
-        /* Let makeConstraints know whether we have essential dynamics constraints.
-         * TODO: inputrec should tell us whether we use an algorithm, not a file option or the checkpoint
-         */
-        bool doEssentialDynamics = (opt2fn_null("-ei", filenames.size(), filenames.data()) != nullptr
-                                    || observablesHistory.edsamHistory);
-        auto constr              = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics,
-                                                   fplog, *mdAtoms->mdatoms(),
-                                                   cr, ms, &nrnb, wcycle, fr->bMolPBC);
+        /* Let makeConstraints know whether we have essential dynamics constraints. */
+        auto constr = makeConstraints(mtop, *inputrec, pull_work, doEssentialDynamics,
+                                      fplog, *mdAtoms->mdatoms(),
+                                      cr, ms, &nrnb, wcycle, fr->bMolPBC);
 
         /* Energy terms and groups */
         gmx_enerdata_t enerd(mtop.groups.groups[SimulationAtomGroupType::EnergyOutput].size(), inputrec->fepvals->n_lambda);
