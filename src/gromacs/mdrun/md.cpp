@@ -331,7 +331,7 @@ void gmx::LegacySimulator::do_md()
 //       2. The proper GPU syncronization is introduced, so that the H2D and D2H data copies can be performed in the separate
 //          stream owned by the StatePropagatorDataGpu
     const auto &simulationWork     = runScheduleWork->simulationWork;
-    const bool  useGpuForPme       = simulationWork.usePmeGpu;
+    const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
     // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
     const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;

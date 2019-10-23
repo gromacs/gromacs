@@ -1593,8 +1593,7 @@ int Mdrunner::mdrunner()
         MdrunScheduleWorkload runScheduleWork;
         // Also populates the simulation constant workload description.
         runScheduleWork.simulationWork = createSimulationWorkload(useGpuForNonbonded,
-                                                                  useGpuForPme,
-                                                                  (pmeRunMode == PmeRunMode::GPU),
+                                                                  pmeRunMode,
                                                                   useGpuForBonded,
                                                                   useGpuForUpdate,
                                                                   devFlags.enableGpuBufferOps,

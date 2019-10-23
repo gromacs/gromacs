@@ -832,8 +832,8 @@ setupStepWorkload(const int                 legacyFlags,
     // on virial steps the CPU reduction path is taken
     // TODO: remove flags.computeEnergy, ref #3128
     flags.useGpuFBufferOps    = simulationWork.useGpuBufferOps && !(flags.computeVirial || flags.computeEnergy);
-    flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.usePmeGpu &&
-                                                           (rankHasPmeDuty || simulationWork.useGpuPmePPCommunication));
+    flags.useGpuPmeFReduction = flags.useGpuFBufferOps && (simulationWork.useGpuPme &&
+                                                           (rankHasPmeDuty || simulationWork.useGpuPmePpCommunication));
 
     return flags;
 }
@@ -943,7 +943,7 @@ void do_force(FILE                                     *fplog,
     const StepWorkload &stepWork = runScheduleWork->stepWork;
 
 
-    const bool useGpuPmeOnThisRank = simulationWork.usePmeGpu && thisRankHasDuty(cr, DUTY_PME);
+    const bool useGpuPmeOnThisRank = simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME);
     const int  pmeFlags            = makePmeFlags(stepWork);
 
     // Switches on whether to use GPU for position and force buffer operations
@@ -1037,12 +1037,12 @@ void do_force(FILE                                     *fplog,
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
          */
-        bool reinitGpuPmePpComms    = simulationWork.useGpuPmePPCommunication && (stepWork.doNeighborSearch);
-        bool sendCoordinatesFromGpu = simulationWork.useGpuPmePPCommunication && !(stepWork.doNeighborSearch);
+        bool reinitGpuPmePpComms    = simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
+        bool sendCoordinatesFromGpu = simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()),
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (stepWork.computeVirial || stepWork.computeEnergy),
-                                 step, simulationWork.useGpuPmePPCommunication, reinitGpuPmePpComms,
+                                 step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
                                  sendCoordinatesFromGpu, wcycle);
     }
 #endif /* GMX_MPI */
@@ -1673,12 +1673,12 @@ void do_force(FILE                                     *fplog,
 
     // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
     // TODO refoactor this and unify with below default-path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && simulationWork.useGpuPmePPCommunication)
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && simulationWork.useGpuPmePpCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
-        pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd, simulationWork.useGpuPmePPCommunication, stepWork.useGpuPmeFReduction, wcycle);
+        pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd, simulationWork.useGpuPmePpCommunication, stepWork.useGpuPmeFReduction, wcycle);
     }
 
 
@@ -1791,13 +1791,13 @@ void do_force(FILE                                     *fplog,
     }
 
     // TODO refoactor this and unify with above PME-PP GPU communication path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePPCommunication)
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fr, cr, &forceOut.forceWithVirial(), enerd,
-                               simulationWork.useGpuPmePPCommunication, false, wcycle);
+                               simulationWork.useGpuPmePpCommunication, false, wcycle);
     }
 
     if (stepWork.computeForces)

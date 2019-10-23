@@ -46,6 +46,8 @@
 
 #include "gromacs/mdtypes/simulation_workload.h"
 
+enum class PmeRunMode;
+
 namespace gmx
 {
 
@@ -55,8 +57,7 @@ namespace gmx
  *
  * \param[in] useGpuForNonbonded If we have short-range nonbonded interactions
  *                               calculations on GPU(s).
- * \param[in] useGpuForPme       If long range PME interactions are calculated on GPU(s).
- * \param[in] useGpuForPmeFft    If FFT solving for PME is done on the GPU.
+ * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
  * \param[in] useGpuForBonded    If bonded interactions are calculated on GPU(s).
  * \param[in] useGpuForUpdateConstraints If coordinate update and constraint solving is performed on
  *                                       GPU(s).
@@ -65,14 +66,13 @@ namespace gmx
  * \param[in] useGpuPmePpComm    If GPu direct communication is used in PME-PP communication.
  * \returns Simulation lifetime constant workload description.
  */
-SimulationWorkload createSimulationWorkload(bool useGpuForNonbonded,
-                                            bool useGpuForPme,
-                                            bool useGpuForPmeFft,
-                                            bool useGpuForBonded,
-                                            bool useGpuForUpdateConstraints,
-                                            bool useGpuForBufferOps,
-                                            bool useGpuHaloExchange,
-                                            bool useGpuPmePpComm);
+SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
+                                            PmeRunMode pmeRunMode,
+                                            bool       useGpuForBonded,
+                                            bool       useGpuForUpdateConstraints,
+                                            bool       useGpuForBufferOps,
+                                            bool       useGpuHaloExchange,
+                                            bool       useGpuPmePpComm);
 
 
 }  // namespace gmx

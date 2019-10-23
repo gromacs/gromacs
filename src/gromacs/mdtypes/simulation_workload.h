@@ -134,12 +134,16 @@ class DomainLifetimeWorkload
 class SimulationWorkload
 {
     public:
+        //! If we have calculation of short range nonbondeds on CPU
+        bool useCpuNonbonded           = false;
         //! If we have calculation of short range nonbondeds on GPU
         bool useGpuNonbonded           = false;
         //! If we have calculation of long range PME in GPU
-        bool usePmeGpu                 = false;
+        bool useCpuPme                 = false;
+        //! If we have calculation of long range PME in GPU
+        bool useGpuPme                 = false;
         //! If PME FFT solving is done on GPU.
-        bool usePmeFftGpu              = false;
+        bool useGpuPmeFft              = false;
         //! If bonded interactions are calculated on GPU.
         bool useGpuBonded              = false;
         //! If update and constraint solving is performed on GPU.
@@ -149,7 +153,7 @@ class SimulationWorkload
         //! If domain decomposition halo exchange is performed on GPU.
         bool useGpuHaloExchange        = false;
         //! If direct PP-PME communication between GPU is used.
-        bool useGpuPmePPCommunication  = false;
+        bool useGpuPmePpCommunication  = false;
         //! If direct GPU-GPU communication is enabled.
         bool useGpuDirectCommunication = false;
 };
