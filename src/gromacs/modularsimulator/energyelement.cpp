@@ -91,7 +91,6 @@ EnergyElement::EnergyElement(
     energyWritingStep_(-1),
     energyCalculationStep_(-1),
     freeEnergyCalculationStep_(-1),
-    logWritingStep_(-1),
     forceVirialStep_(-1),
     shakeVirialStep_(-1),
     totalVirialStep_(-1),
@@ -207,8 +206,8 @@ ITrajectoryWriterCallbackPtr EnergyElement::registerTrajectoryWriterCallback(Tra
     if (event == TrajectoryEvent::EnergyWritingStep && isMasterRank_)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf *mdoutf, Step step, Time time)
-                {write(mdoutf, step, time); });
+                [this](gmx_mdoutf *mdoutf, Step step, Time time, bool writeTrajectory, bool writeLog)
+                {write(mdoutf, step, time, writeTrajectory, writeLog); });
     }
     return nullptr;
 }
@@ -236,12 +235,6 @@ SignallerCallbackPtr EnergyElement::registerEnergyCallback(EnergySignallerEvent 
                 [this](Step step, Time){freeEnergyCalculationStep_ = step; });
     }
     return nullptr;
-}
-
-SignallerCallbackPtr EnergyElement::registerLoggingCallback()
-{
-    return std::make_unique<SignallerCallback>(
-            [this](Step step, Time){logWritingStep_ = step; });
 }
 
 void EnergyElement::doStep(
@@ -278,14 +271,8 @@ void EnergyElement::doStep(
             ekind_, muTot_, constr_);
 }
 
-void EnergyElement::write(gmx_mdoutf *outf, Step step, Time time)
+void EnergyElement::write(gmx_mdoutf *outf, Step step, Time time, bool writeTrajectory, bool writeLog)
 {
-    // This gets called by the trajectory writer, which means that
-    // we only write to log when writing energy.
-    // TODO: Think if we need to change that, i.e. writing to log without
-    //       writing to file.
-
-    auto writeLog = logWritingStep_ == step;
     if (writeLog)
     {
         energyOutput_->printHeader(fplog_, step, time);
@@ -297,7 +284,7 @@ void EnergyElement::write(gmx_mdoutf *outf, Step step, Time time)
     // energyOutput_->printAnnealingTemperatures(writeLog ? fplog_ : nullptr, groups_, &(inputrec_->opts));
     Awh *awh = nullptr;
     energyOutput_->printStepToEnergyFile(
-            mdoutf_get_fp_ene(outf), true, do_dr, do_or,
+            mdoutf_get_fp_ene(outf), writeTrajectory, do_dr, do_or,
             writeLog ? fplog_ : nullptr, step, time, fcd_, awh);
 }
 

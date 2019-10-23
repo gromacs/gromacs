@@ -283,7 +283,7 @@ class ITrajectorySignallerClient
  * Trajectory writing clients are given a pointer to the output file handler,
  * allowing them to write their own trajectory contribution
  */
-typedef std::function<void(gmx_mdoutf*, Step, Time)> ITrajectoryWriterCallback;
+typedef std::function<void(gmx_mdoutf*, Step, Time, bool, bool)> ITrajectoryWriterCallback;
 //! Pointer to the function type for trajectory writing clients
 typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;
 

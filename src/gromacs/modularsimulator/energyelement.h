@@ -95,7 +95,6 @@ class EnergyElement final :
     public          ITrajectoryWriterClient,
     public          ITrajectorySignallerClient,
     public          IEnergySignallerClient,
-    public          ILoggingSignallerClient,
     public          ICheckpointHelperClient
 {
     public:
@@ -251,8 +250,6 @@ class EnergyElement final :
         registerTrajectoryWriterCallback(TrajectoryEvent event) override;
         //! IEnergySignallerClient implementation
         SignallerCallbackPtr registerEnergyCallback(EnergySignallerEvent event) override;
-        //! ILoggingSignallerClient implementation
-        SignallerCallbackPtr registerLoggingCallback() override;
 
         /*! \brief Save data at energy steps
          *
@@ -271,7 +268,8 @@ class EnergyElement final :
          */
         void write(
             gmx_mdoutf *outf,
-            Step step, Time time);
+            Step step, Time time,
+            bool writeTrajectory, bool writeLog);
 
         //! ICheckpointHelperClient implementation
         void writeCheckpoint(t_state *localState, t_state *globalState) override;
@@ -290,8 +288,6 @@ class EnergyElement final :
         Step       energyCalculationStep_;
         //! The next communicated free energy calculation step
         Step       freeEnergyCalculationStep_;
-        //! The next communicated log writing step
-        Step       logWritingStep_;
 
         //! The force virial tensor
         tensor forceVirial_;

@@ -349,8 +349,13 @@ StatePropagatorData::registerTrajectoryWriterCallback(TrajectoryEvent event)
     if (event == TrajectoryEvent::StateWritingStep)
     {
         return std::make_unique<ITrajectoryWriterCallback>(
-                [this](gmx_mdoutf *outf, Step step, Time time)
-                {write(outf, step, time); });
+                [this](gmx_mdoutf *outf, Step step, Time time, bool writeTrajectory, bool gmx_unused writeLog)
+                {
+                    if (writeTrajectory)
+                    {
+                        write(outf, step, time);
+                    }
+                });
     }
     return nullptr;
 }

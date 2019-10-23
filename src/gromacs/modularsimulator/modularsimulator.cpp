@@ -420,7 +420,6 @@ void ModularSimulator::constructElementsAndSignallers()
     trajectoryElementBuilder.registerWriterClient(energyElementPtr);
     trajectoryElementBuilder.registerSignallerClient(energyElementPtr);
     energySignallerBuilder.registerSignallerClient(energyElementPtr);
-    loggingSignallerBuilder.registerSignallerClient(energyElementPtr);
 
     // Register the simulator itself to the neighbor search / last step signaller
     neighborSearchSignallerBuilder.registerSignallerClient(compat::make_not_null(signalHelper_.get()));
@@ -494,6 +493,7 @@ void ModularSimulator::constructElementsAndSignallers()
     auto trajectoryElement = trajectoryElementBuilder.build(
                 fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                 inputrec, top_global, oenv, wcycle, startingBehavior);
+    loggingSignallerBuilder.registerSignallerClient(compat::make_not_null(trajectoryElement.get()));
 
     // Add checkpoint helper here since we need a pointer to the trajectory element and
     // need to register it with the lastStepSignallerBuilder

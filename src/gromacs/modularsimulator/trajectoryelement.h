@@ -82,7 +82,8 @@ enum class StartingBehavior;
 class TrajectoryElement final :
     public              ISimulatorElement,
     public              ISignaller,
-    public              ILastStepSignallerClient
+    public              ILastStepSignallerClient,
+    public              ILoggingSignallerClient
 {
     public:
         friend class TrajectoryElementBuilder;
@@ -165,9 +166,14 @@ class TrajectoryElement final :
         Step writeEnergyStep_;
         //! The next state writing step
         Step writeStateStep_;
+        //! The next communicated log writing step
+        Step logWritingStep_;
 
         //! The output object
         gmx_mdoutf *outf_;
+
+        //! ILoggingSignallerClient implementation
+        SignallerCallbackPtr registerLoggingCallback() override;
 
         /*
          * Signaller
@@ -212,7 +218,7 @@ class TrajectoryElement final :
         //! }
 
         //! The writing function - calls the clients to get their contributions
-        void write(Step step, Time time, bool writeState, bool writeEnergy);
+        void write(Step step, Time time, bool writeState, bool writeEnergy, bool writeLog);
 };
 
 /*! \libinternal

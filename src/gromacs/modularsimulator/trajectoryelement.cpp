@@ -141,13 +141,16 @@ void TrajectoryElement::elementSetup()
 void TrajectoryElement::scheduleTask(
         Step step, Time time, const RegisterRunFunctionPtr &registerRunFunction)
 {
-    auto writeEnergyThisStep = writeEnergyStep_ == step;
-    auto writeStateThisStep  = writeStateStep_ == step;
-    if (writeEnergyThisStep || writeStateThisStep)
+    const bool writeEnergyThisStep = writeEnergyStep_ == step;
+    const bool writeStateThisStep  = writeStateStep_ == step;
+    const bool writeLogThisStep    = logWritingStep_ == step;
+    if (writeEnergyThisStep || writeStateThisStep || writeLogThisStep)
     {
         (*registerRunFunction)(std::make_unique<SimulatorRunFunction>(
-                                       [this, step, time, writeStateThisStep, writeEnergyThisStep]()
-                                       {write(step, time, writeStateThisStep, writeEnergyThisStep); }));
+                                       [this, step, time, writeStateThisStep,
+                                        writeEnergyThisStep, writeLogThisStep]()
+                                       {write(step, time, writeStateThisStep,
+                                              writeEnergyThisStep, writeLogThisStep); }));
     }
 }
 
@@ -162,20 +165,20 @@ void TrajectoryElement::elementTeardown()
 }
 
 void TrajectoryElement::write(
-        Step step, Time time, bool writeState, bool writeEnergy)
+        Step step, Time time, bool writeState, bool writeEnergy, bool writeLog)
 {
-    if (writeState)
+    if (writeState || writeLog)
     {
         for (auto &callback : runStateCallbacks_)
         {
-            (*callback)(outf_, step, time);
+            (*callback)(outf_, step, time, writeState, writeLog);
         }
     }
-    if (writeEnergy)
+    if (writeEnergy || writeLog)
     {
         for (auto &callback : runEnergyCallbacks_)
         {
-            (*callback)(outf_, step, time);
+            (*callback)(outf_, step, time, writeEnergy, writeLog);
         }
     }
 }
@@ -185,6 +188,12 @@ SignallerCallbackPtr TrajectoryElement::registerLastStepCallback()
     lastStepRegistrationDone_ = true;
     return std::make_unique<SignallerCallback>(
             [this](Step step, Time gmx_unused time){this->lastStep_ = step; });
+}
+
+SignallerCallbackPtr TrajectoryElement::registerLoggingCallback()
+{
+    return std::make_unique<SignallerCallback>(
+            [this](Step step, Time){logWritingStep_ = step; });
 }
 
 void TrajectoryElementBuilder::registerSignallerClient(
