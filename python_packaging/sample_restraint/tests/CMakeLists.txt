@@ -64,34 +64,63 @@ if (GMXAPI_EXTENSION_MASTER_PROJECT)
         message(WARNING "Could not download test data: ${_download_log}")
     endif()
     unset(_status)
+    add_custom_target(spc2_water_box
+                      COMMAND cmake -E echo
+                      SOURCES ${CMAKE_CURRENT_BINARY_DIR}/topol.tpr
+                      )
+else()
+    # We are in the GROMACS build tree.
+    # We just need a simple TPR input file. The 6 atom spc water box will suffice.
+    if (NOT TARGET gmx)
+        message(FATAL_ERROR "Trying to use gmx wrapper binary, but gmx target not defined.")
+    endif()
+    set(_mdp ${CMAKE_CURRENT_BINARY_DIR}/grompp.mdp)
+    file(WRITE ${_mdp} "integrator = md\n")
+    file(APPEND ${_mdp} "nsteps = 6")
+    set(_gro ${CMAKE_SOURCE_DIR}/src/testutils/simulationdatabase/spc2.gro)
+    set(_top ${CMAKE_SOURCE_DIR}/src/testutils/simulationdatabase/spc2.top)
+    add_custom_target(spc2_water_box
+                      BYPRODUCTS topol.tpr
+                      COMMAND gmx -quiet grompp -f ${_mdp} -c ${_gro} -p ${_top}
+                      DEPENDS gmx ${_mdp}
+                      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                      COMMENT "Generating input file for sample_restraint tests.")
+    unset(_mdp)
+    unset(_gro)
+    unset(_top)
+endif ()
 
-    # Note: Expects topol.tpr to be in CURRENT_BINARY_DUR
-    configure_file(testingconfiguration.in.h testingconfiguration.h)
+# Note: Expects topol.tpr to be in CURRENT_BINARY_DUR
+configure_file(testingconfiguration.in.h testingconfiguration.h)
 
-    # Test that the library can access its dependencies and build.
-    add_executable(library-test test_binding.cpp)
-    target_include_directories(library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    target_link_libraries(library-test Gromacs::gmxapi GTest::Main)
-    gtest_add_tests(TARGET library-test
-                    TEST_LIST BasicPlugin)
+# Test that the library can access its dependencies and build.
+add_executable(library-test test_binding.cpp)
+add_dependencies(library-test spc2_water_box)
+target_include_directories(library-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+target_link_libraries(library-test Gromacs::gmxapi GTest::Main)
+gtest_add_tests(TARGET library-test
+                TEST_LIST BasicPlugin)
 
-    # Test the C++ force evaluation for the restrained-ensemble biasing potential.
-    add_executable(histogram-test test_histogram.cpp)
-    target_include_directories(histogram-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    set_target_properties(histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
-    target_link_libraries(histogram-test ensemblepotential Gromacs::gmxapi
-                          GTest::Main)
-    gtest_add_tests(TARGET histogram-test
-                    TEST_LIST EnsembleHistogramPotentialPlugin)
+# Test the C++ force evaluation for the restrained-ensemble biasing potential.
+add_executable(histogram-test test_histogram.cpp)
+add_dependencies(histogram-test spc2_water_box)
+target_include_directories(histogram-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_target_properties(histogram-test PROPERTIES SKIP_BUILD_RPATH FALSE)
+target_link_libraries(histogram-test ensemblepotential Gromacs::gmxapi
+                      GTest::Main)
+gtest_add_tests(TARGET histogram-test
+                TEST_LIST EnsembleHistogramPotentialPlugin)
 
-    # Test the flat-bottom bounding potential built in to the ensemble restraint.
-    add_executable(bounding-test test_bounding_restraint.cpp)
-    target_include_directories(bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-    set_target_properties(bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
-    target_link_libraries(bounding-test ensemblepotential Gromacs::gmxapi
-                          GTest::Main)
-    gtest_add_tests(TARGET bounding-test
-                    TEST_LIST EnsembleBoundingPotentialPlugin)
+# Test the flat-bottom bounding potential built in to the ensemble restraint.
+add_executable(bounding-test test_bounding_restraint.cpp)
+add_dependencies(bounding-test spc2_water_box)
+target_include_directories(bounding-test PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+set_target_properties(bounding-test PROPERTIES SKIP_BUILD_RPATH FALSE)
+target_link_libraries(bounding-test ensemblepotential Gromacs::gmxapi
+                      GTest::Main)
+gtest_add_tests(TARGET bounding-test
+                TEST_LIST EnsembleBoundingPotentialPlugin)
 
+if (NOT GMXAPI_EXTENSION_MASTER_PROJECT)
     include(CMakeGROMACS.txt)
 endif ()
