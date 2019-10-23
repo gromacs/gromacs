@@ -55,6 +55,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/range.h"
 
 #include "grid.h"
 #include "gridsetdata.h"
@@ -122,8 +123,7 @@ class GridSet
                        const rvec                      lowerCorner,
                        const rvec                      upperCorner,
                        const gmx::UpdateGroupsCog     *updateGroupsCog,
-                       int                             atomStart,
-                       int                             atomEnd,
+                       gmx::Range<int>                 atomRange,
                        real                            atomDensity,
                        gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,

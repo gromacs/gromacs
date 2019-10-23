@@ -1006,19 +1006,18 @@ void Grid::fillCell(GridSetData                    *gridSetData,
     }
 }
 
-void Grid::sortColumnsCpuGeometry(GridSetData *gridSetData,
-                                  int dd_zone,
-                                  int atomStart, int atomEnd,
-                                  const int *atinfo,
+void Grid::sortColumnsCpuGeometry(GridSetData                   *gridSetData,
+                                  int                            dd_zone,
+                                  const int                     *atinfo,
                                   gmx::ArrayRef<const gmx::RVec> x,
-                                  nbnxn_atomdata_t *nbat,
-                                  int cxy_start, int cxy_end,
-                                  gmx::ArrayRef<int> sort_work)
+                                  nbnxn_atomdata_t              *nbat,
+                                  const gmx::Range<int>          columnRange,
+                                  gmx::ArrayRef<int>             sort_work)
 {
     if (debug)
     {
-        fprintf(debug, "cell_offset %d sorting columns %d - %d, atoms %d - %d\n",
-                cellOffset_, cxy_start, cxy_end, atomStart, atomEnd);
+        fprintf(debug, "cell_offset %d sorting columns %d - %d\n",
+                cellOffset_, *columnRange.begin(), *columnRange.end());
     }
 
     const bool relevantAtomsAreWithinGridBounds = (dimensions_.maxAtomGroupRadius == 0);
@@ -1026,7 +1025,7 @@ void Grid::sortColumnsCpuGeometry(GridSetData *gridSetData,
     const int  numAtomsPerCell = geometry_.numAtomsPerCell;
 
     /* Sort the atoms within each x,y column in 3 dimensions */
-    for (int cxy = cxy_start; cxy < cxy_end; cxy++)
+    for (int cxy : columnRange)
     {
         const int numAtoms   = numAtomsInColumn(cxy);
         const int numCellsZ  = cxy_ind_[cxy + 1] - cxy_ind_[cxy];
@@ -1075,22 +1074,21 @@ void Grid::sortColumnsCpuGeometry(GridSetData *gridSetData,
 }
 
 /* Spatially sort the atoms within one grid column */
-void Grid::sortColumnsGpuGeometry(GridSetData *gridSetData,
-                                  int dd_zone,
-                                  int atomStart, int atomEnd,
-                                  const int *atinfo,
+void Grid::sortColumnsGpuGeometry(GridSetData                   *gridSetData,
+                                  int                            dd_zone,
+                                  const int                     *atinfo,
                                   gmx::ArrayRef<const gmx::RVec> x,
-                                  nbnxn_atomdata_t *nbat,
-                                  int cxy_start, int cxy_end,
-                                  gmx::ArrayRef<int> sort_work)
+                                  nbnxn_atomdata_t              *nbat,
+                                  const gmx::Range<int>          columnRange,
+                                  gmx::ArrayRef<int>             sort_work)
 {
     BoundingBox  bb_work_array[2];
     BoundingBox *bb_work_aligned = reinterpret_cast<BoundingBox *>((reinterpret_cast<std::size_t>(bb_work_array + 1)) & (~(static_cast<std::size_t>(15))));
 
     if (debug)
     {
-        fprintf(debug, "cell_offset %d sorting columns %d - %d, atoms %d - %d\n",
-                cellOffset_, cxy_start, cxy_end, atomStart, atomEnd);
+        fprintf(debug, "cell_offset %d sorting columns %d - %d\n",
+                cellOffset_, *columnRange.begin(), *columnRange.end());
     }
 
     const bool relevantAtomsAreWithinGridBounds = (dimensions_.maxAtomGroupRadius == 0);
@@ -1107,7 +1105,7 @@ void Grid::sortColumnsGpuGeometry(GridSetData *gridSetData,
     /* Sort the atoms within each x,y column in 3 dimensions.
      * Loop over all columns on the x/y grid.
      */
-    for (int cxy = cxy_start; cxy < cxy_end; cxy++)
+    for (int cxy : columnRange)
     {
         const int gridX            = cxy/dimensions_.numCells[YY];
         const int gridY            = cxy - gridX*dimensions_.numCells[YY];
@@ -1207,8 +1205,7 @@ static void setCellAndAtomCount(gmx::ArrayRef<int>  cell,
 
 void Grid::calcColumnIndices(const Grid::Dimensions         &gridDims,
                              const gmx::UpdateGroupsCog     *updateGroupsCog,
-                             const int                       atomStart,
-                             const int                       atomEnd,
+                             const gmx::Range<int>           atomRange,
                              gmx::ArrayRef<const gmx::RVec>  x,
                              const int                       dd_zone,
                              const int                      *move,
@@ -1225,8 +1222,8 @@ void Grid::calcColumnIndices(const Grid::Dimensions         &gridDims,
         cxy_na[i] = 0;
     }
 
-    int taskAtomStart = atomStart + static_cast<int>((thread + 0)*(atomEnd - atomStart))/nthread;
-    int taskAtomEnd   = atomStart + static_cast<int>((thread + 1)*(atomEnd - atomStart))/nthread;
+    int taskAtomStart = *atomRange.begin() + static_cast<int>((thread + 0)*atomRange.size())/nthread;
+    int taskAtomEnd   = *atomRange.begin() + static_cast<int>((thread + 1)*atomRange.size())/nthread;
 
     if (dd_zone == 0)
     {
@@ -1327,8 +1324,7 @@ void Grid::setCellIndices(int                             ddZone,
                           int                             cellOffset,
                           GridSetData                    *gridSetData,
                           gmx::ArrayRef<GridWork>         gridWork,
-                          int                             atomStart,
-                          int                             atomEnd,
+                          const gmx::Range<int>           atomRange,
                           const int                      *atinfo,
                           gmx::ArrayRef<const gmx::RVec>  x,
                           const int                       numAtomsMoved,
@@ -1336,8 +1332,8 @@ void Grid::setCellIndices(int                             ddZone,
 {
     cellOffset_   = cellOffset;
 
-    srcAtomBegin_ = atomStart;
-    srcAtomEnd_   = atomEnd;
+    srcAtomBegin_ = *atomRange.begin();
+    srcAtomEnd_   = *atomRange.end();
 
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
 
@@ -1416,7 +1412,7 @@ void Grid::setCellIndices(int                             ddZone,
      */
     gmx::ArrayRef<int> cells       = gridSetData->cells;
     gmx::ArrayRef<int> atomIndices = gridSetData->atomIndices;
-    for (int i = atomStart; i < atomEnd; i++)
+    for (int i : atomRange)
     {
         /* At this point nbs->cell contains the local grid x,y indices */
         const int cxy = cells[i];
@@ -1440,20 +1436,20 @@ void Grid::setCellIndices(int                             ddZone,
     {
         try
         {
-            int columnStart = ((thread + 0)*numColumns())/nthread;
-            int columnEnd   = ((thread + 1)*numColumns())/nthread;
+            gmx::Range<int> columnRange(((thread + 0)*numColumns())/nthread,
+                                        ((thread + 1)*numColumns())/nthread);
             if (geometry_.isSimple)
             {
                 sortColumnsCpuGeometry(gridSetData, ddZone,
-                                       atomStart, atomEnd, atinfo, x, nbat,
-                                       columnStart, columnEnd,
+                                       atinfo, x, nbat,
+                                       columnRange,
                                        gridWork[thread].sortBuffer);
             }
             else
             {
                 sortColumnsGpuGeometry(gridSetData, ddZone,
-                                       atomStart, atomEnd, atinfo, x, nbat,
-                                       columnStart, columnEnd,
+                                       atinfo, x, nbat,
+                                       columnRange,
                                        gridWork[thread].sortBuffer);
             }
         }
@@ -1484,7 +1480,7 @@ void Grid::setCellIndices(int                             ddZone,
         {
             fprintf(debug, "ns non-zero sub-cells: %d average atoms %.2f\n",
                     numClustersTotal_,
-                    (atomEnd - atomStart)/static_cast<double>(numClustersTotal_));
+                    atomRange.size()/static_cast<double>(numClustersTotal_));
 
             print_bbsizes_supersub(debug, *this);
         }

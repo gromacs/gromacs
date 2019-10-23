@@ -180,8 +180,7 @@ class PairSearch
                        const rvec                      lowerCorner,
                        const rvec                      upperCorner,
                        const gmx::UpdateGroupsCog     *updateGroupsCog,
-                       int                             atomStart,
-                       int                             atomEnd,
+                       gmx::Range<int>                 atomRange,
                        real                            atomDensity,
                        gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,
@@ -192,7 +191,7 @@ class PairSearch
             cycleCounting_.start(enbsCCgrid);
 
             gridSet_.putOnGrid(box, ddZone, lowerCorner, upperCorner,
-                               updateGroupsCog, atomStart, atomEnd, atomDensity,
+                               updateGroupsCog, atomRange, atomDensity,
                                atomInfo, x, numAtomsMoved, move, nbat);
 
             cycleCounting_.stop(enbsCCgrid);

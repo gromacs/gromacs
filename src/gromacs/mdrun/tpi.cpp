@@ -587,7 +587,7 @@ LegacySimulator::do_tpi()
         rvec boxDiagonal = { box[XX][XX], box[YY][YY], box[ZZ][ZZ] };
         nbnxn_put_on_grid(fr->nbv.get(), box,
                           0, vzero, boxDiagonal,
-                          nullptr, 0, a_tp0, -1,
+                          nullptr, { 0, a_tp0 }, -1,
                           fr->cginfo, x,
                           0, nullptr);
 
@@ -662,7 +662,7 @@ LegacySimulator::do_tpi()
                 /* Put the inserted molecule on it's own search grid */
                 nbnxn_put_on_grid(fr->nbv.get(), box,
                                   1, x_init, x_init,
-                                  nullptr, a_tp0, a_tp1, -1,
+                                  nullptr, { a_tp0, a_tp1 }, -1,
                                   fr->cginfo, x,
                                   0, nullptr);
 

@@ -60,6 +60,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/range.h"
 
 struct gmx_domdec_zones_t;
 struct nbnxn_atomdata_t;
@@ -415,8 +416,7 @@ class Grid
                             int                             cellOffset,
                             GridSetData                    *gridSetData,
                             gmx::ArrayRef<GridWork>         gridWork,
-                            int                             atomStart,
-                            int                             atomEnd,
+                            gmx::Range<int>                 atomRange,
                             const int                      *atinfo,
                             gmx::ArrayRef<const gmx::RVec>  x,
                             int                             numAtomsMoved,
@@ -425,8 +425,7 @@ class Grid
         //! Determine in which grid columns atoms should go, store cells and atom counts in \p cell and \p cxy_na
         static void calcColumnIndices(const Grid::Dimensions         &gridDims,
                                       const gmx::UpdateGroupsCog     *updateGroupsCog,
-                                      int                             atomStart,
-                                      int                             atomEnd,
+                                      gmx::Range<int>                 atomRange,
                                       gmx::ArrayRef<const gmx::RVec>  x,
                                       int                             dd_zone,
                                       const int                      *move,
@@ -448,25 +447,23 @@ class Grid
                       gmx::ArrayRef<const gmx::RVec>  x,
                       BoundingBox gmx_unused         *bb_work_aligned);
 
-        //! Spatially sort the atoms within one grid column
-        void sortColumnsCpuGeometry(GridSetData *gridSetData,
-                                    int dd_zone,
-                                    int atomStart, int atomEnd,
-                                    const int *atinfo,
+        //! Spatially sort the atoms within the given column range, for CPU geometry
+        void sortColumnsCpuGeometry(GridSetData                   *gridSetData,
+                                    int                            dd_zone,
+                                    const int                     *atinfo,
                                     gmx::ArrayRef<const gmx::RVec> x,
-                                    nbnxn_atomdata_t *nbat,
-                                    int cxy_start, int cxy_end,
-                                    gmx::ArrayRef<int> sort_work);
+                                    nbnxn_atomdata_t              *nbat,
+                                    gmx::Range<int>                columnRange,
+                                    gmx::ArrayRef<int>             sort_work);
 
-        //! Spatially sort the atoms within one grid column
-        void sortColumnsGpuGeometry(GridSetData *gridSetData,
-                                    int dd_zone,
-                                    int atomStart, int atomEnd,
-                                    const int *atinfo,
+        //! Spatially sort the atoms within the given column range, for GPU geometry
+        void sortColumnsGpuGeometry(GridSetData                   *gridSetData,
+                                    int                            dd_zone,
+                                    const int                     *atinfo,
                                     gmx::ArrayRef<const gmx::RVec> x,
-                                    nbnxn_atomdata_t *nbat,
-                                    int cxy_start, int cxy_end,
-                                    gmx::ArrayRef<int> sort_work);
+                                    nbnxn_atomdata_t              *nbat,
+                                    gmx::Range<int>                columnRange,
+                                    gmx::ArrayRef<int>             sort_work);
 
         /* Data members */
         //! The geometry of the grid clusters and cells

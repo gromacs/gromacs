@@ -116,6 +116,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
 
 #include "locality.h"
@@ -448,7 +449,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
 
 /*! \brief Put the atoms on the pair search grid.
  *
- * Only atoms atomStart to atomEnd in x are put on the grid.
+ * Only atoms with indices wihtin \p atomRange in x are put on the grid.
  * When \p updateGroupsCog != nullptr, atoms are put on the grid
  * based on the center of geometry of the group they belong to.
  * Atoms or COGs of groups should be within the bounding box provided,
@@ -466,8 +467,7 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
  * \param[in]     lowerCorner  Atom groups to be gridded should have coordinates >= this corner
  * \param[in]     upperCorner  Atom groups to be gridded should have coordinates <= this corner
  * \param[in]     updateGroupsCog  Centers of geometry for update groups, pass nullptr when not using update groups
- * \param[in]     atomStart    Start of atom range to grid
- * \param[in]     atomEnd      End of atom range to grid
+ * \param[in]     atomRange    Range of atoms to grid
  * \param[in]     atomDensity  An estimate of the atom density, used for peformance optimization and only with \p gridIndex = 0
  * \param[in]     atomInfo     Atom information flags
  * \param[in]     x            Coordinates for atoms to grid
@@ -480,8 +480,7 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        const rvec                      lowerCorner,
                        const rvec                      upperCorner,
                        const gmx::UpdateGroupsCog     *updateGroupsCog,
-                       int                             atomStart,
-                       int                             atomEnd,
+                       gmx::Range<int>                 atomRange,
                        real                            atomDensity,
                        gmx::ArrayRef<const int>        atomInfo,
                        gmx::ArrayRef<const gmx::RVec>  x,

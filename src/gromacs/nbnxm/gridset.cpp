@@ -138,8 +138,7 @@ void GridSet::putOnGrid(const matrix                    box,
                         const rvec                      lowerCorner,
                         const rvec                      upperCorner,
                         const gmx::UpdateGroupsCog     *updateGroupsCog,
-                        const int                       atomStart,
-                        const int                       atomEnd,
+                        const gmx::Range<int>           atomRange,
                         real                            atomDensity,
                         gmx::ArrayRef<const int>        atomInfo,
                         gmx::ArrayRef<const gmx::RVec>  x,
@@ -160,18 +159,18 @@ void GridSet::putOnGrid(const matrix                    box,
         cellOffset = previousGrid.atomIndexEnd()/previousGrid.geometry().numAtomsPerCell;
     }
 
-    const int n = atomEnd - atomStart;
+    const int n = atomRange.size();
 
     real      maxAtomGroupRadius;
     if (gridIndex == 0)
     {
         copy_mat(box, box_);
 
-        numRealAtomsLocal_ = atomEnd - numAtomsMoved;
+        numRealAtomsLocal_ = *atomRange.end() - numAtomsMoved;
         /* We assume that nbnxn_put_on_grid is called first
          * for the local atoms (gridIndex=0).
          */
-        numRealAtomsTotal_ = atomEnd - numAtomsMoved;
+        numRealAtomsTotal_ = *atomRange.end() - numAtomsMoved;
 
         maxAtomGroupRadius = (updateGroupsCog ? updateGroupsCog->maxUpdateGroupRadius() : 0);
 
@@ -187,7 +186,7 @@ void GridSet::putOnGrid(const matrix                    box,
         atomDensity        = dimsGrid0.atomDensity;
         maxAtomGroupRadius = dimsGrid0.maxAtomGroupRadius;
 
-        numRealAtomsTotal_ = std::max(numRealAtomsTotal_, atomEnd);
+        numRealAtomsTotal_ = std::max(numRealAtomsTotal_, *atomRange.end());
     }
 
     /* We always use the home zone (grid[0]) for setting the cell size,
@@ -209,7 +208,7 @@ void GridSet::putOnGrid(const matrix                    box,
     }
 
     /* Make space for the new cell indices */
-    gridSetData_.cells.resize(atomEnd);
+    gridSetData_.cells.resize(*atomRange.end());
 
     const int nthread = gmx_omp_nthreads_get(emntPairsearch);
     GMX_ASSERT(nthread > 0, "We expect the OpenMP thread count to be set");
@@ -221,7 +220,7 @@ void GridSet::putOnGrid(const matrix                    box,
         {
             Grid::calcColumnIndices(grid.dimensions(),
                                     updateGroupsCog,
-                                    atomStart, atomEnd, x,
+                                    atomRange, x,
                                     ddZone, move, thread, nthread,
                                     gridSetData_.cells,
                                     gridWork_[thread].numAtomsPerColumn);
@@ -231,7 +230,7 @@ void GridSet::putOnGrid(const matrix                    box,
 
     /* Copy the already computed cell indices to the grid and sort, when needed */
     grid.setCellIndices(ddZone, cellOffset, &gridSetData_, gridWork_,
-                        atomStart, atomEnd, atomInfo.data(), x, numAtomsMoved, nbat);
+                        atomRange, atomInfo.data(), x, numAtomsMoved, nbat);
 
     if (gridIndex == 0)
     {

@@ -230,7 +230,7 @@ setupNbnxmForBenchInstance(const KernelBenchOptions   &options,
 
     nbnxn_put_on_grid(nbv.get(),
                       system.box, 0, lowerCorner, upperCorner,
-                      nullptr, 0, system.coordinates.size(), atomDensity,
+                      nullptr, { 0, int(system.coordinates.size()) }, atomDensity,
                       atomInfo, system.coordinates,
                       0, nullptr);
 

@@ -1080,7 +1080,7 @@ void do_force(FILE                                     *fplog,
             wallcycle_sub_start(wcycle, ewcsNBS_GRID_LOCAL);
             nbnxn_put_on_grid(nbv, box,
                               0, vzero, box_diag,
-                              nullptr, 0, mdatoms->homenr, -1,
+                              nullptr, { 0, mdatoms->homenr }, -1,
                               fr->cginfo, x.unpaddedArrayRef(),
                               0, nullptr);
             wallcycle_sub_stop(wcycle, ewcsNBS_GRID_LOCAL);
