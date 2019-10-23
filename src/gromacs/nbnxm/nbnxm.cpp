@@ -56,7 +56,7 @@
 
 void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        const matrix                    box,
-                       int                             ddZone,
+                       int                             gridIndex,
                        const rvec                      lowerCorner,
                        const rvec                      upperCorner,
                        const gmx::UpdateGroupsCog     *updateGroupsCog,
@@ -68,7 +68,7 @@ void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        int                             numAtomsMoved,
                        const int                      *move)
 {
-    nb_verlet->pairSearch_->putOnGrid(box, ddZone, lowerCorner, upperCorner,
+    nb_verlet->pairSearch_->putOnGrid(box, gridIndex, lowerCorner, upperCorner,
                                       updateGroupsCog, atomStart, atomEnd, atomDensity,
                                       atomInfo, x, numAtomsMoved, move,
                                       nb_verlet->nbat.get());

@@ -449,16 +449,34 @@ init_nb_verlet(const gmx::MDLogger     &mdlog,
 /*! \brief Put the atoms on the pair search grid.
  *
  * Only atoms atomStart to atomEnd in x are put on the grid.
- * The atom_density is used to determine the grid size.
- * When atomDensity<=0, the density is determined from atomEnd-atomStart and the corners.
- * With domain decomposition part of the n particles might have migrated,
- * but have not been removed yet. This count is given by nmoved.
- * When move[i] < 0 particle i has migrated and will not be put on the grid.
- * Without domain decomposition move will be NULL.
+ * When \p updateGroupsCog != nullptr, atoms are put on the grid
+ * based on the center of geometry of the group they belong to.
+ * Atoms or COGs of groups should be within the bounding box provided,
+ * this is checked in debug builds when not using update groups.
+ * The atom density is used to determine the grid size when \p gridIndex = 0.
+ * When \p atomDensity <= 0, the density is determined from atomEnd-atomStart
+ * and the bounding box corners.
+ * With domain decomposition, part of the atoms might have migrated,
+ * but have not been removed yet. This count is given by \p numAtomsMoved.
+ * When \p move[i] < 0 particle i has migrated and will not be put on the grid.
+ *
+ * \param[in,out] nb_verlet    The non-bonded object
+ * \param[in]     box          Box used for periodic distance calculations
+ * \param[in]     gridIndex    The index of the grid to spread to, always 0 except with test particle insertion
+ * \param[in]     lowerCorner  Atom groups to be gridded should have coordinates >= this corner
+ * \param[in]     upperCorner  Atom groups to be gridded should have coordinates <= this corner
+ * \param[in]     updateGroupsCog  Centers of geometry for update groups, pass nullptr when not using update groups
+ * \param[in]     atomStart    Start of atom range to grid
+ * \param[in]     atomEnd      End of atom range to grid
+ * \param[in]     atomDensity  An estimate of the atom density, used for peformance optimization and only with \p gridIndex = 0
+ * \param[in]     atomInfo     Atom information flags
+ * \param[in]     x            Coordinates for atoms to grid
+ * \param[in]     numAtomsMoved  The number of atoms that will move to another domain, pass 0 without DD
+ * \param[in]     move         Move flags for atoms, pass nullptr without DD
  */
 void nbnxn_put_on_grid(nonbonded_verlet_t             *nb_verlet,
                        const matrix                    box,
-                       int                             ddZone,
+                       int                             gridIndex,
                        const rvec                      lowerCorner,
                        const rvec                      upperCorner,
                        const gmx::UpdateGroupsCog     *updateGroupsCog,

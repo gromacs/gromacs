@@ -133,7 +133,6 @@ void GridSet::setLocalAtomOrder()
     }
 }
 
-// TODO: Move to gridset.cpp
 void GridSet::putOnGrid(const matrix                    box,
                         const int                       gridIndex,
                         const rvec                      lowerCorner,
