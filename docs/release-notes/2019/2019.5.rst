@@ -33,6 +33,16 @@ with gcc as the host side compiler.
 
 :issue:`3120`
 
+Fix out of range memory access with free-energy calculations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy calculations not using lambda states, an output
+buffer would be accessed one element beyond it's allocated size.
+We don't expect this to have caused incorrect results, but
+a memory checker would complain.
+
+:issue:`3173`
+ 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
