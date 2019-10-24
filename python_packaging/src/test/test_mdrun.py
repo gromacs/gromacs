@@ -50,12 +50,13 @@ import gmxapi as gmx
 from gmxapi.testsupport import withmpi_only
 
 # Configure the `logging` module before proceeding any further.
-gmx.logger.setLevel(logging.DEBUG)
+gmx.logger.setLevel(logging.WARNING)
 
 try:
     from mpi4py import MPI
     rank_number = MPI.COMM_WORLD.Get_rank()
 except ImportError:
+    rank_number = 0
     rank_tag = ''
     MPI = None
 else:
@@ -118,12 +119,16 @@ def test_run_trivial_ensemble(spc_water_box, caplog):
 
 
 @pytest.mark.usefixtures('cleandir')
-def test_run_from_read_tpr_op(spc_water_box):
-    simulation_input = gmx.read_tpr(spc_water_box)
-    md = gmx.mdrun(input=simulation_input)
+def test_run_from_read_tpr_op(spc_water_box, caplog):
+    with caplog.at_level(logging.DEBUG):
+        caplog.handler.setFormatter(formatter)
+        with caplog.at_level(logging.DEBUG, 'gmxapi'):
+            simulation_input = gmx.read_tpr(spc_water_box)
+            md = gmx.mdrun(input=simulation_input)
 
-    md.run()
-    assert os.path.exists(md.output.trajectory.result())
+            md.run()
+            if rank_number == 0:
+                assert os.path.exists(md.output.trajectory.result())
 
 
 @pytest.mark.usefixtures('cleandir')
