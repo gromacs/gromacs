@@ -76,7 +76,8 @@ ForceElement::ForceElement(
         MdrunScheduleWorkload         *runScheduleWork,
         gmx_vsite_t                   *vsite,
         ImdSession                    *imdSession,
-        pull_t                        *pull_work) :
+        pull_t                        *pull_work,
+        gmx_enfrot                    *enforcedRotation) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -99,7 +100,8 @@ ForceElement::ForceElement(
     imdSession_(imdSession),
     pull_work_(pull_work),
     fcd_(fcd),
-    runScheduleWork_(runScheduleWork)
+    runScheduleWork_(runScheduleWork),
+    enforcedRotation_(enforcedRotation)
 {
     lambda_.fill(0);
 }
@@ -135,7 +137,6 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     Awh            *awh              = nullptr;
     gmx_edsam      *ed               = nullptr;
     gmx_multisim_t *ms               = nullptr;
-    gmx_enfrot     *enforcedRotation = nullptr;
     t_graph        *graph            = nullptr;
 
     /* The coordinates (x) are shifted (to get whole molecules)
@@ -153,7 +154,7 @@ void ForceElement::run(Step step, Time time, unsigned int flags)
     ArrayRef<real> lambda = freeEnergyPerturbationElement_ ?
         freeEnergyPerturbationElement_->lambdaView() : lambda_;
 
-    do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation, imdSession_,
+    do_force(fplog_, cr_, ms, inputrec_, awh, enforcedRotation_, imdSession_,
              pull_work_,
              step, nrnb_, wcycle_, localTopology_,
              box, x, hist,

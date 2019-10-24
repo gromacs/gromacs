@@ -51,6 +51,7 @@
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
 
+struct gmx_enfrot;
 struct gmx_shellfc_t;
 struct gmx_wallcycle;
 struct pull_t;
@@ -102,7 +103,8 @@ class ShellFCElement final :
             ImdSession                    *imdSession,
             pull_t                        *pull_work,
             Constraints                   *constr,
-            const gmx_mtop_t              *globalTopology);
+            const gmx_mtop_t              *globalTopology,
+            gmx_enfrot                    *enforcedRotation);
 
         /*! \brief Register shell / flex constraint calculation for step / time
          *
@@ -198,6 +200,8 @@ class ShellFCElement final :
         MdrunScheduleWorkload *runScheduleWork_;
         //! Handles constraints.
         Constraints           *constr_;
+        //! Handles enforced rotation.
+        gmx_enfrot            *enforcedRotation_;
 };
 
 //! \}

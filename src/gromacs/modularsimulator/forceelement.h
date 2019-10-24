@@ -51,6 +51,7 @@
 #include "modularsimulatorinterfaces.h"
 #include "topologyholder.h"
 
+struct gmx_enfrot;
 struct gmx_wallcycle;
 struct pull_t;
 struct t_fcdata;
@@ -98,7 +99,8 @@ class ForceElement final :
             MdrunScheduleWorkload         *runScheduleWork,
             gmx_vsite_t                   *vsite,
             ImdSession                    *imdSession,
-            pull_t                        *pull_work);
+            pull_t                        *pull_work,
+            gmx_enfrot                    *enforcedRotation);
 
         /*! \brief Register force calculation for step / time
          *
@@ -182,6 +184,8 @@ class ForceElement final :
         t_fcdata              *fcd_;
         //! Schedule of work for each MD step for this task.
         MdrunScheduleWorkload *runScheduleWork_;
+        //! Handles enforced rotation.
+        gmx_enfrot            *enforcedRotation_;
 };
 
 //! \}

@@ -572,7 +572,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
                     statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
                     isVerbose, isDynamicBox, fplog,
                     cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle, runScheduleWork,
-                    vsite, imdSession, pull_work, constr, &topologyHolder_->globalTopology());
+                    vsite, imdSession, pull_work, constr, &topologyHolder_->globalTopology(), enforcedRotation);
         topologyHolder_->registerClient(shellFCElement.get());
         neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(shellFCElement.get()));
@@ -586,7 +586,7 @@ std::unique_ptr<ISimulatorElement> ModularSimulator::buildForces(
                     statePropagatorDataPtr, energyElementPtr, freeEnergyPerturbationElement,
                     isDynamicBox, fplog,
                     cr, inputrec, mdAtoms, nrnb, fr, fcd, wcycle,
-                    runScheduleWork, vsite, imdSession, pull_work);
+                    runScheduleWork, vsite, imdSession, pull_work, enforcedRotation);
         topologyHolder_->registerClient(forceElement.get());
         neighborSearchSignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));
         energySignallerBuilder->registerSignallerClient(compat::make_not_null(forceElement.get()));

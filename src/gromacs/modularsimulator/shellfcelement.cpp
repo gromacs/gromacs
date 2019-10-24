@@ -95,7 +95,8 @@ ShellFCElement::ShellFCElement(
         ImdSession                    *imdSession,
         pull_t                        *pull_work,
         Constraints                   *constr,
-        const gmx_mtop_t              *globalTopology) :
+        const gmx_mtop_t              *globalTopology,
+        gmx_enfrot                    *enforcedRotation) :
     nextNSStep_(-1),
     nextEnergyCalculationStep_(-1),
     nextVirialCalculationStep_(-1),
@@ -120,7 +121,8 @@ ShellFCElement::ShellFCElement(
     pull_work_(pull_work),
     fcd_(fcd),
     runScheduleWork_(runScheduleWork),
-    constr_(constr)
+    constr_(constr),
+    enforcedRotation_(enforcedRotation)
 {
     lambda_.fill(0);
 
@@ -168,7 +170,6 @@ void ShellFCElement::run(Step step, Time time, unsigned int flags)
 {
     // Disabled functionality
     gmx_multisim_t *ms               = nullptr;
-    gmx_enfrot     *enforcedRotation = nullptr;
     t_graph        *graph            = nullptr;
 
     auto            x      = statePropagatorData_->positionsView();
@@ -182,7 +183,7 @@ void ShellFCElement::run(Step step, Time time, unsigned int flags)
     ArrayRef<real>  lambda = freeEnergyPerturbationElement_ ?
         freeEnergyPerturbationElement_->lambdaView() : lambda_;
     relax_shell_flexcon(fplog_, cr_, ms, isVerbose_,
-                        enforcedRotation, step,
+                        enforcedRotation_, step,
                         inputrec_, imdSession_, pull_work_, step == nextNSStep_,
                         static_cast<int>(flags), localTopology_,
                         constr_, energyElement_->enerdata(), fcd_,
