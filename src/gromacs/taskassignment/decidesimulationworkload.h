@@ -59,8 +59,8 @@ namespace gmx
  *                               calculations on GPU(s).
  * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
  * \param[in] useGpuForBonded    If bonded interactions are calculated on GPU(s).
- * \param[in] useGpuForUpdateConstraints If coordinate update and constraint solving is performed on
- *                                       GPU(s).
+ * \param[in] useGpuForUpdate    If coordinate update and constraint solving is performed on
+ *                               GPU(s).
  * \param[in] useGpuForBufferOps If buffer ops / reduction are calculated on GPU(s).
  * \param[in] useGpuHaloExchange If GPU direct communication is used in halo exchange.
  * \param[in] useGpuPmePpComm    If GPu direct communication is used in PME-PP communication.
@@ -69,7 +69,7 @@ namespace gmx
 SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
                                             PmeRunMode pmeRunMode,
                                             bool       useGpuForBonded,
-                                            bool       useGpuForUpdateConstraints,
+                                            bool       useGpuForUpdate,
                                             bool       useGpuForBufferOps,
                                             bool       useGpuHaloExchange,
                                             bool       useGpuPmePpComm);

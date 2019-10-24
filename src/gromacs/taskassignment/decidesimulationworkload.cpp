@@ -53,7 +53,7 @@ namespace gmx
 SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
                                             PmeRunMode pmeRunMode,
                                             bool       useGpuForBonded,
-                                            bool       useGpuForUpdateConstraints,
+                                            bool       useGpuForUpdate,
                                             bool       useGpuForBufferOps,
                                             bool       useGpuHaloExchange,
                                             bool       useGpuPmePpComm)
@@ -65,8 +65,8 @@ SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
     simulationWorkload.useGpuPme                 = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuPmeFft              = (pmeRunMode == PmeRunMode::Mixed);
     simulationWorkload.useGpuBonded              = useGpuForBonded;
-    simulationWorkload.useGpuUpdate              = useGpuForUpdateConstraints;
-    simulationWorkload.useGpuBufferOps           = useGpuForBufferOps;
+    simulationWorkload.useGpuUpdate              = useGpuForUpdate;
+    simulationWorkload.useGpuBufferOps           = useGpuForBufferOps || useGpuForUpdate;
     simulationWorkload.useGpuHaloExchange        = useGpuHaloExchange;
     simulationWorkload.useGpuPmePpCommunication  = useGpuPmePpComm;
     simulationWorkload.useGpuDirectCommunication = useGpuHaloExchange || useGpuPmePpComm;
