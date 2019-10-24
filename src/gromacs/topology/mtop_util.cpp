@@ -502,6 +502,38 @@ int gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype)
     return gmx_mtop_ftype_count(&mtop, ftype);
 }
 
+int gmx_mtop_interaction_count(const gmx_mtop_t   &mtop,
+                               const int unsigned  if_flags)
+{
+    int                  n = 0;
+
+    gmx_mtop_ilistloop_t iloop = gmx_mtop_ilistloop_init(mtop);
+    int                  nmol;
+    while (const InteractionLists *il = gmx_mtop_ilistloop_next(iloop, &nmol))
+    {
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if ((interaction_function[ftype].flags & if_flags) == if_flags)
+            {
+                n += nmol*(*il)[ftype].size()/(1 + NRAL(ftype));
+            }
+        }
+    }
+
+    if (mtop.bIntermolecularInteractions)
+    {
+        for (int ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if ((interaction_function[ftype].flags & if_flags) == if_flags)
+            {
+                n += (*mtop.intermolecular_ilist)[ftype].size()/(1 + NRAL(ftype));
+            }
+        }
+    }
+
+    return n;
+}
+
 static void atomcat(t_atoms *dest, const t_atoms *src, int copies,
                     int maxres_renum, int *maxresnr)
 {

@@ -252,6 +252,10 @@ gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 int
 gmx_mtop_ftype_count(const gmx_mtop_t &mtop, int ftype);
 
+/* Returns the total number of interactions in the system with all interaction flags that are set in \p if_flags set */
+int gmx_mtop_interaction_count(const gmx_mtop_t &mtop,
+                               int unsigned      if_flags);
+
 /* Returns a single t_atoms struct for the whole system */
 t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
