@@ -49,6 +49,7 @@
 #include "gromacs/ewald/pme_load_balancing.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdlib/checkpointhandler.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/energyoutput.h"
@@ -858,6 +859,22 @@ bool ModularSimulator::isInputCompatible(
     isInputCompatible = isInputCompatible && conditionalAssert(
                 inputrec->efep == efepNO || inputrec->efep == efepYES || inputrec->efep == efepSLOWGROWTH,
                 "Expanded ensemble free energy calculation is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                !inputrec->bPull,
+                "Pulling is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->opts.ngacc == 1 && inputrec->opts.acc[0][XX] == 0.0 && inputrec->opts.acc[0][YY] == 0.0 &&
+                inputrec->opts.acc[0][ZZ] == 0.0 && inputrec->cos_accel == 0.0,
+                "Acceleration is not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->opts.ngfrz == 1 && inputrec->opts.nFreeze[0][XX] == 0 &&
+                inputrec->opts.nFreeze[0][YY] == 0 && inputrec->opts.nFreeze[0][ZZ] == 0,
+                "Freeze groups are not supported by the modular simulator.");
+    isInputCompatible = isInputCompatible && conditionalAssert(
+                inputrec->deform[XX][XX] == 0.0 && inputrec->deform[XX][YY] == 0.0 && inputrec->deform[XX][ZZ] == 0.0 &&
+                inputrec->deform[YY][XX] == 0.0 && inputrec->deform[YY][YY] == 0.0 && inputrec->deform[YY][ZZ] == 0.0 &&
+                inputrec->deform[ZZ][XX] == 0.0 && inputrec->deform[ZZ][YY] == 0.0 && inputrec->deform[ZZ][ZZ] == 0.0,
+                "Deformation is not supported by the modular simulator.");
     isInputCompatible = isInputCompatible && conditionalAssert(
                 vsite == nullptr,
                 "Virtual sites are not supported by the modular simulator.");
