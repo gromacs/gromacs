@@ -829,7 +829,9 @@ int Mdrunner::mdrunner()
     //
     // TODO Should we do the communication in debug mode to support
     // having an assertion?
-    //
+    const bool useDomainDecomposition = (PAR(cr) && !(EI_TPI(inputrec->eI) ||
+                                                      inputrec->eI == eiNM));
+
     // Note that these variables describe only their own node.
     //
     // Note that when bonded interactions run on a GPU they always run
@@ -1088,8 +1090,7 @@ int Mdrunner::mdrunner()
     // the builder object to indicate that further construction of DD
     // is needed.
     std::unique_ptr<DomainDecompositionBuilder> ddBuilder;
-    if (PAR(cr) && !(EI_TPI(inputrec->eI) ||
-                     inputrec->eI == eiNM))
+    if (useDomainDecomposition)
     {
         ddBuilder = std::make_unique<DomainDecompositionBuilder>
                 (mdlog, cr, domdecOptions, mdrunOptions,
