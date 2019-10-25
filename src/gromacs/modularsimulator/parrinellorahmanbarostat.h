@@ -59,6 +59,15 @@ class StatePropagatorData;
 //! \addtogroup module_modularsimulator
 //! \{
 
+/*! \libinternal
+ * \brief Element implementing the Parrinello-Rahman barostat
+ *
+ * This element
+ *   * integrates the Parrinello-Rahman box velocity equations,
+ *   * takes a callback to the propagator to update the velocity
+ *     scaling factor, and
+ *   * scales the box and the positions of the system.
+ */
 class ParrinelloRahmanBarostat final :
     public                     ISimulatorElement,
     public                     ICheckpointHelperClient

@@ -55,6 +55,12 @@ namespace gmx
 //! \addtogroup module_modularsimulator
 //! \{
 
+/*! \libinternal
+ * \brief Element implementing the v-rescale thermostat
+ *
+ * This element takes a callback to the propagator and updates the velocity
+ * scaling factor according to the v-rescale thermostat.
+ */
 class VRescaleThermostat final :
     public               ISimulatorElement,
     public               ICheckpointHelperClient

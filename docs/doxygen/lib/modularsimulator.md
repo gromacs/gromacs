@@ -12,11 +12,14 @@ data, most of which is owned by the runner object.
 GROMACS will automatically use the modular simulator for the velocity
 verlet integrator (`integrator = md-vv`), if the functionality chosen
 in the other input parameters is implemented in the new framework.
-Currently, this includes NVE simulations only.
+Currently, this includes NVE simulations, NVT simulations (
+`tcoupl = v-rescale` only), NPH simulation (`pcoupl = parrinello-rahman` 
+only), and NPT simulations (`tcoupl = v-rescale` and 
+`pcoupl = parrinello-rahman` only), with or without free energy perturbation.
 
 To disable the modular simulator for cases defaulting to the new framework,
 the environment variable `GMX_DISABLE_MODULAR_SIMULATOR=ON` can be set. To
-use the new framework also for `integrator=md` (where the functionality is
+use the new framework also for `integrator = md` (where the functionality is
 implemented), the environment variable `GMX_USE_MODULAR_SIMULATOR=ON` can 
 be set to override legacy default.
 
@@ -282,8 +285,8 @@ ModularSimulator note ModularSimulator [ label = "schedulingStep == N + nstlist\
 
 ## Acceptance tests and further plans
 
-Acceptance tests before this can be made default code path (as
-defined with Mark Jan 2019)
+In January 2019, we defined acceptance tests which need to be 
+fulfilled to make the modular simulator the default code path:
 * End-to-end tests pass on both `do_md` and the new loop in
   Jenkins pre- and post-submit matrices
 * Physical validation cases pass on the new loop
@@ -292,11 +295,10 @@ defined with Mark Jan 2019)
   https://github.com/ptmerz/gmxbenchmark has been developed to
   this purpose.
 
-After the NVE MD bare minimum, we will want to add support for
-* Thermo- / barostats
-* FEP
+After the MD bare minimum, we will want to add support for
 * Pulling
-* Checkpointing
+* Full support of GPU (current implementation does not support
+GPU update)
 
 Using the new modular simulator framework, we will then explore
 adding new functionality to GROMACS, including
@@ -304,9 +306,9 @@ adding new functionality to GROMACS, including
 * hybrid MC/MD schemes
 * multiple-time-stepping integration
 
-We sill also explore optimization opportunities, including
+We will also explore optimization opportunities, including
 * re-use of the same queue if conditions created by user input are 
-  sufficiently favorable (e.g. by design or when observed)
+  sufficiently favorable (by design or when observed)
 * simultaneous execution of independent tasks
 
 We will probably not prioritize support for (and might consider
@@ -320,9 +322,7 @@ deprecating from do_md for GROMACS 2020)
 * FEP lambda vectors
 * Fancy mdp options for FEP output
 * MTTK
-* Shell particles
 * Essential dynamics
-* Enforced rotation
 * Constant acceleration groups
 * Ensemble-averaged restraints
 * Time-averaged restraints
@@ -426,10 +426,11 @@ the ISimulatorElement interface and using the new data management.
 
 #### `Propagator`
 The propagator element can, through templating, cover the different
-propagation types used in NVE MD. The combination of templating, static
-functions, and having only the inner-most operations in the static
-functions allows to have performance comparable to fused update elements
-while keeping easily re-orderable single instructions.
+propagation types used in the currently implemented MD schemes. The
+combination of templating, static functions, and having only the
+inner-most operations in the static functions allows to have performance
+comparable to fused update elements while keeping easily re-orderable
+single instructions.
 
 Currently, the (templated) implementation covers four cases:
  * *PositionsOnly:* Moves the position vector by the given time step
@@ -439,10 +440,32 @@ Currently, the (templated) implementation covers four cases:
     and PositionsOnly, where VelocitiesOnly is only propagated by half the 
     time step of PositionsOnly.
 
+The propagators also allow to implement temperature and pressure coupling
+schemes by offering (templated) scaling of the velocities.
+
 #### `CompositeSimulatorElement`
 The composite simulator element takes a list of elements and implements
 the ISimulatorElement interface, making a group of elements effectively
 behave as one. This simplifies building algorithms.
+
+#### `VRescaleThermostat`
+The `VRescaleThermostat` implements the v-rescale thermostat. It takes a
+callback to the propagator and updates the velocity scaling factor
+according to the v-rescale thermostat formalism.
+
+#### `ParrinelloRahmanBarostat`
+The `ParrinelloRahmanBarostat` implements the Parrinello-Rahman barostat.
+It integrates the Parrinello-Rahman box velocity equations, takes a
+callback to the propagator to update the velocity scaling factor, and
+scales the box and the positions of the system.
+
+#### `FreeEnergyPerturbationElement`
+The `FreeEnergyPerturbationElement` holds the lambda vector and the
+current FEP state, offering access to its values via getter
+functions. The FreeEnergyPerturbationElement does update the lambda
+values during the simulation run if lambda is non-static. It
+implements the checkpointing client interface to save its current
+state for restart.
 
 ## Data structures
 
