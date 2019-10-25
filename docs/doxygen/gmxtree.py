@@ -263,7 +263,7 @@ class File(object):
 
     def should_includes_be_sorted(self):
         """Return whether the include directives in the file should be sorted."""
-        return self._filter in ('includesort', 'uncrustify')
+        return self._filter in ('includesort', 'complete_formatting')
 
     def is_documented(self):
         return self._rawdoc and self._rawdoc.is_documented()

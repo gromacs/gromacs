@@ -36,7 +36,7 @@
 # This script runs uncrustify, copyright header checks, or include sorter on
 # all applicable files in the source tree.
 #
-# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
+# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/code-formatting.rst
 # for more details (docs/dev-manual/gmxtree.rst for include sorter).
 
 function usage() {
@@ -134,13 +134,13 @@ fi
 
 case "$filter" in
     includesort)
-        filter_re="(uncrustify|includesort)"
+        filter_re="(includesort)"
         ;;
     uncrustify)
-        filter_re="(uncrustify|uncrustify_only)"
+        filter_re="(uncrustify)"
         ;;
     copyright)
-        filter_re="(uncrustify|copyright|includesort)"
+        filter_re="(copyright)"
         ;;
     *)
         echo "Unknown filter mode: $filter"

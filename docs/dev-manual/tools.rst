@@ -11,7 +11,7 @@ Several tools have their own individual pages and are listed below.
    jenkins
    releng/index
    gmxtree
-   uncrustify
+   code-formatting
    testutils
    physical_validation
 
@@ -91,27 +91,37 @@ uncrustify
   indentation and other formatting of the source code to follow
   :doc:`formatting`.  All code must remain invariant under uncrustify
   with the config at ``admin/uncrustify.cfg``.  A patched version of uncrustify is
-  used.  See :doc:`uncrustify` for details.
+  used.  See :ref:`gmx-uncrustify` for details.
 
 ``admin/copyright.py``
   This Python script adds and formats copyright headers in source files.
-  ``uncrustify.sh`` (see below) uses the script to check/update copyright years on
+  ``copyright.sh`` (see below) uses the script to check/update copyright years on
   changed files automatically.
 
 ``admin/uncrustify.sh``
-  This ``bash`` script runs uncrustify and ``copyright.py`` for all
+  This ``bash`` script runs uncrustify for all
   files that have local changes and checks that they conform to the prescribed
   style.  Optionally, the script can also apply changes to make the files
   conform.
   This script is automatically run by Jenkins to ensure that all commits adhere
   to :doc:`formatting`.  If the uncrustify job does not succeed, it
   means that this script has something to complain.
-  See :doc:`uncrustify` for details.
+  See :doc:`formatting` for details.
+
+``admin/copyright.sh``
+  This ``bash`` script runs the ``copyright.py`` python script to enforce
+  correct copyright information in all files that have local changes
+  and checks that they conform to the prescribed
+  style.  Optionally, the script can also apply changes to make the files
+  conform.
+  This script is automatically run by Jenkins to ensure that all commits adhere
+  to :doc:`formatting`.  If the copyright job does not succeed, it
+  means that this script has something to complain.
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
   ``uncrustify.sh`` automatically before every commit to check for formatting
-  issues.  See :doc:`uncrustify` for details.
+  issues.  See :doc:`code-formatting` for details.
 
 ``docs/doxygen/includesorter.py``
   This Python script sorts and reformats #include directives according to
@@ -132,7 +142,7 @@ include directive checker
   This ``bash`` script runs uncrustify/``copyright.py``/include sorter
   on all relevant files in the source tree (or in a particular directory).
   The script can also produce the list of files where these scripts are applied,
-  for use with other scripts.  See :doc:`uncrustify` for details.
+  for use with other scripts.  See :doc:`code-formatting` for details.
 
 git attributes
   git attributes (specified in ``.gitattributes`` files) are used to annotate

@@ -101,7 +101,8 @@ If the script completely fails (should be rare), the build fails.
 A file with issues found by the script is archived as an artifact in the build,
 and a summary is reported back to Gerrit (or the actual issues if there are
 only a few).
-See :doc:`uncrustify` for more details on uncrustify and on scripts to run it.
+See :doc:`code-formatting` for more details on code-formatting tools
+and on scripts to run them.
 
 On-demand builds
 ----------------

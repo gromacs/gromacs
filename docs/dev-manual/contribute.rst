@@ -111,7 +111,7 @@ please make sure that you have checked all the points on this list:
   :doc:`coding style <style>` and :ref:`code formatting <code-formatting>`
   guidelines. This will make the code review go more smoothly on both sides. There are a number of
   tools already included with |Gromacs| to facilitate this, please have
-  a look at :ref:`the respective part of the documentation <gmx-uncrustify>`.
+  a look at :ref:`the respective part of the documentation <gmx-codeformatting>`.
 
 * *Code documentation*: To ensure proper code documentation, please follow the
   instructions provided for the use of :doc:`doxygen <doxygen>`. In addition to this,

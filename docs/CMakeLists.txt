@@ -352,7 +352,7 @@ if (SPHINX_FOUND)
         dev-manual/style.rst
         dev-manual/testutils.rst
         dev-manual/tools.rst
-        dev-manual/uncrustify.rst
+        dev-manual/code-formatting.rst
         fragments/doxygen-links.rst
         how-to/index.rst
         how-to/beginners.rst

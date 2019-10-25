@@ -36,7 +36,7 @@ Additionally:
 
 Most of the above guidelines are enforced using uncrustify, an automatic source
 code formatting tool.  The copyright guidelines are enforced by a separate
-Python script.  See :doc:`uncrustify` for details.  Note that due to the
+Python script.  See :doc:`code-formatting` for details.  Note that due to the
 nature of uncrustify (it only does all-or-nothing formatting), it enforces
 several additional formatting rules in addition to those above.
 
