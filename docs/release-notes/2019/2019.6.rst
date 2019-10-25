@@ -62,3 +62,9 @@ Compilation was failing with ``mcpcom: core dumped`` for the file :file:`pulluti
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Avoid cryptic GPU detection errors when devices are unavailable or out of memory
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3178`
+:issue:`3399`
+
