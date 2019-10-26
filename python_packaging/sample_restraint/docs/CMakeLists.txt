@@ -8,5 +8,5 @@ if (DOXYGEN_FOUND)
                       COMMENT "Generating developer documentation"
                       VERBATIM )
 else (DOXYGEN_FOUND)
-    message("Doxygen need to be installed to generate the C++ documentation")
+    message("Doxygen needs to be installed to generate the C++ documentation")
 endif (DOXYGEN_FOUND)
