@@ -1,7 +1,7 @@
 GROMACS 2019.4 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes
+This version was released on October 2nd, 2019. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2019.3 version, to fix known issues. It also incorporates all
 fixes made in version 2018.7 and earlier, which you can find described
@@ -54,6 +54,15 @@ other non-local atoms within the pair-list cut-off distance.
 
 :issue:`3063`
 
+Fix incorrect reporting of final kinetic energy and temperature
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With the leap-frog integrator, the kinetic energy and temperature reported
+for the last step were incorrect when the last step was not divisible by
+nstcalcenergy, nsttcouple or nstpcouple.
+
+:issue:`2950`
+
 Fix segmentation fault in grompp and mdrun with cosine COM pulling
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
@@ -71,6 +80,15 @@ bonds supplied as constraints in the topology would be removed,
 but not replaced by angle constraints.
 
 :issue:`3067`
+
+Fix gmx wham with angle and dihedral geometries
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+gmx wham would apply an incorrect radian to degree unit conversion,
+leading to no overlap or not-a-number output.
+
+:issue:`2609`
+:issue:`3094`
 
 Fix bug in gmx xpm2ps
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -99,6 +117,24 @@ Made gmx disre work with non-consecutively labeled restraints
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 :issue:`2953`
+
+Fixed writing of gro files with index groups
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An output ``.gro`` file from from e.g. ``gmx editconf -f -n`` would
+take the atom names for the output file in order from the atoms in the
+input file, rather than in order from the atoms indicated by the
+indices in the index file.
+
+:issue:`3107`
+
+Made gmx make_ndx keep chain IDs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Old style structure file reading caused the chain IDs to be overwritten with
+default values.
+
+:issue:`3070`
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

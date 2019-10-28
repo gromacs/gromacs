@@ -794,6 +794,11 @@ void gmx::LegacySimulator::do_md()
         /* Determine whether or not to do Neighbour Searching */
         bNS = (bFirstStep || bNStList || bExchanged || bNeedRepartition);
 
+        /* Note that the stopHandler will cause termination at nstglobalcomm
+         * steps. Since this concides with nstcalcenergy, nsttcouple and/or
+         * nstpcouple steps, we have computed the half-step kinetic energy
+         * of the previous step and can always output energies at the last step.
+         */
         bLastStep = bLastStep || stopHandler->stoppingAfterCurrentStep(bNS);
 
         /* do_log triggers energy and virial calculation. Because this leads
@@ -1410,9 +1415,16 @@ void gmx::LegacySimulator::do_md()
         {
             // Organize to do inter-simulation signalling on steps if
             // and when algorithms require it.
-            bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
+            const bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
 
-            if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
+            // With leap-frog we also need to compute the half-step
+            // kinetic energy at the step before we need to write
+            // the full-step kinetic energy
+            const bool needEkinAtNextStep =
+                (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) ||
+                                    step_rel + 1 == ir->nsteps));
+
+            if (bGStat || needEkinAtNextStep || doInterSimSignal)
             {
                 // Since we're already communicating at this step, we
                 // can propagate intra-simulation signals. Note that

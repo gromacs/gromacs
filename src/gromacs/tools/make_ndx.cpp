@@ -48,6 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/index.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
@@ -1558,7 +1559,7 @@ int gmx_make_ndx(int argc, char *argv[])
     const char       *ndxoutfile;
     gmx_bool          bNatoms;
     int               j;
-    t_atoms          *atoms;
+    t_atoms           atoms;
     rvec             *x, *v;
     int               ePBC;
     matrix            box;
@@ -1587,23 +1588,23 @@ int gmx_make_ndx(int argc, char *argv[])
         gmx_fatal(FARGS, "No input files (structure or index)");
     }
 
+    gmx_mtop_t mtop;
     if (stxfile)
     {
-        t_topology *top;
-        snew(top, 1);
+        bool haveFullTopology = false;
         fprintf(stderr, "\nReading structure file\n");
-        read_tps_conf(stxfile, top, &ePBC, &x, &v, box, FALSE);
-        atoms = &top->atoms;
-        if (atoms->pdbinfo == nullptr)
+        readConfAndTopology(stxfile, &haveFullTopology, &mtop,
+                            &ePBC, &x, &v, box);
+        atoms = gmx_mtop_global_atoms(&mtop);
+        if (atoms.pdbinfo == nullptr)
         {
-            snew(atoms->pdbinfo, atoms->nr);
+            snew(atoms.pdbinfo, atoms.nr);
         }
-        natoms  = atoms->nr;
+        natoms  = atoms.nr;
         bNatoms = TRUE;
     }
     else
     {
-        atoms = nullptr;
         x     = nullptr;
     }
 
@@ -1632,7 +1633,7 @@ int gmx_make_ndx(int argc, char *argv[])
     else
     {
         snew(gnames, 1);
-        analyse(atoms, block, &gnames, FALSE, TRUE);
+        analyse(&atoms, block, &gnames, FALSE, TRUE);
     }
 
     if (!bNatoms)
@@ -1641,7 +1642,7 @@ int gmx_make_ndx(int argc, char *argv[])
         printf("Counted atom numbers up to %d in index file\n", natoms);
     }
 
-    edit_index(natoms, atoms, x, block, &gnames, bVerbose);
+    edit_index(natoms, &atoms, x, block, &gnames, bVerbose);
 
     write_index(ndxoutfile, block, gnames, bDuplicate, natoms);
 
