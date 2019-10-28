@@ -348,7 +348,7 @@ void gmx::LegacySimulator::do_md()
                            "Either PME or short-ranged non-bonded interaction tasks must run on the GPU to use GPU update.\n");
         GMX_RELEASE_ASSERT(ir->eI == eiMD, "Only the md integrator is supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ir->etc != etcNOSEHOOVER, "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN, "Only Parrinello-Rahman pressure control is supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO, "Pressure coupling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites, "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull && !ir->pull, "Pulling is not supported with the GPU update.\n");

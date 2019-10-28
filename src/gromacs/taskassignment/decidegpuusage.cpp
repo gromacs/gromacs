@@ -538,9 +538,10 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     {
         errorMessage += "Nose-Hoover temperature coupling is not supported.\n";
     }
-    if (inputrec.epc != epcNO && inputrec.epc != epcPARRINELLORAHMAN)
+    if (inputrec.epc != epcNO)
     {
-        errorMessage += "Only Parrinello-Rahman pressure control is supported.\n";
+        // Coordinate D2H and H2d are missing as well as PBC reinitialization
+        errorMessage += "Pressure coupling is not supported.\n";
     }
     if (haveVSites)
     {
