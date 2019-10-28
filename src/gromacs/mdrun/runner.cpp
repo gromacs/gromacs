@@ -1521,8 +1521,8 @@ int Mdrunner::mdrunner()
 
     /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
     free_gpu_resources(fr, physicalNodeComm);
-    free_gpu(nonbondedDeviceInfo);
-    free_gpu(pmeDeviceInfo);
+    //free_gpu(nonbondedDeviceInfo);
+    //free_gpu(pmeDeviceInfo);
     done_forcerec(fr, mtop.molblock.size());
     sfree(fcd);
 
