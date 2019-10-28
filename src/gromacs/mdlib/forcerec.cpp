@@ -1494,10 +1494,8 @@ void init_forcerec(FILE                             *fp,
 
     if (pmeOnlyRankUsesGpu && c_enableGpuPmePpComms)
     {
-        void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
         fr->pmePpCommGpu = std::make_unique<gmx::PmePpCommGpu>(cr->mpi_comm_mysim,
-                                                               cr->dd->pme_nodeid,
-                                                               coordinatesOnDeviceEvent);
+                                                               cr->dd->pme_nodeid);
     }
 }
 

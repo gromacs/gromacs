@@ -62,7 +62,7 @@ class PmePpCommGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank, void gmx_unused *coordinatesOnDeviceEvent)
+PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
@@ -81,7 +81,7 @@ void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused *recvPtr, int g
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused *sendPtr, int gmx_unused sendSize, bool gmx_unused sendPmeCoordinatesFromGpu)
+void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused *sendPtr, int gmx_unused sendSize, bool gmx_unused sendPmeCoordinatesFromGpu, GpuEventSynchronizer gmx_unused *coordinatesOnDeviceEvent)
 {
     GMX_ASSERT(false, "A CPU stub for PME-PP GPU communication was called instead of the correct implementation.");
 }

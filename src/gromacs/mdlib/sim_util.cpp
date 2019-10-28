@@ -1046,6 +1046,9 @@ void do_force(FILE                                     *fplog,
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
     }
 
+    const auto localXReadyOnDevice = (stateGpu != nullptr) ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local,
+                                                                                                        simulationWork, stepWork) : nullptr;
+
 #if GMX_MPI
     if (!thisRankHasDuty(cr, DUTY_PME))
     {
@@ -1060,12 +1063,10 @@ void do_force(FILE                                     *fplog,
                                  lambda[efptCOUL], lambda[efptVDW],
                                  (stepWork.computeVirial || stepWork.computeEnergy),
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
-                                 sendCoordinatesFromGpu, wcycle);
+                                 sendCoordinatesFromGpu, localXReadyOnDevice, wcycle);
     }
 #endif /* GMX_MPI */
 
-    const auto localXReadyOnDevice = (stateGpu != nullptr) ? stateGpu->getCoordinatesReadyOnDeviceEvent(AtomLocality::Local,
-                                                                                                        simulationWork, stepWork) : nullptr;
     if (useGpuPmeOnThisRank)
     {
         launchPmeGpuSpread(fr->pmedata, box, stepWork, pmeFlags,
@@ -1282,7 +1283,7 @@ void do_force(FILE                                     *fplog,
             {
                 // The following must be called after local setCoordinates (which records an event
                 // when the coordinate data has been copied to the device).
-                gpuHaloExchange->communicateHaloCoordinates(box);
+                gpuHaloExchange->communicateHaloCoordinates(box, localXReadyOnDevice);
 
                 if (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork)
                 {

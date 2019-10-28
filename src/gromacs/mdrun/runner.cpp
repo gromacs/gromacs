@@ -1356,11 +1356,10 @@ int Mdrunner::mdrunner()
             GMX_RELEASE_ASSERT(devFlags.enableGpuBufferOps, "Must use GMX_USE_GPU_BUFFER_OPS=1 to use GMX_GPU_DD_COMMS=1");
             void *streamLocal              = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local);
             void *streamNonLocal           = Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal);
-            void *coordinatesOnDeviceEvent = fr->nbv->get_x_on_device_event();
             GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
                     "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the GMX_GPU_DD_COMMS environment variable.");
             cr->dd->gpuHaloExchange = std::make_unique<GpuHaloExchange>(cr->dd, cr->mpi_comm_mysim, streamLocal,
-                                                                        streamNonLocal, coordinatesOnDeviceEvent);
+                                                                        streamNonLocal);
         }
 
         /* Initialize the mdAtoms structure.

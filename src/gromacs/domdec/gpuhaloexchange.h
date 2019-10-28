@@ -49,6 +49,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 struct gmx_domdec_t;
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -68,7 +69,7 @@ class GpuHaloExchange
          * the non-local non-bonded kernels). It also must be called
          * after the local coordinates buffer operations (where the
          * coordinates are copied to the device and hence the \c
-         * coordinatesOnDeviceEvent is recorded). Force Halo exchange
+         * coordinatesReadyOnDeviceEvent is recorded). Force Halo exchange
          * will be performed in \c streamNonLocal (also potentally
          * with buffer clearing in \c streamLocal)and the \c
          * communicateHaloForces method must be called after the
@@ -81,13 +82,11 @@ class GpuHaloExchange
          * \param [in]    mpi_comm_mysim           communicator used for simulation
          * \param [in]    streamLocal              local NB CUDA stream.
          * \param [in]    streamNonLocal           non-local NB CUDA stream.
-         * \param [in]    coordinatesOnDeviceEvent event recorded when coordinates have been copied to device
          */
         GpuHaloExchange(gmx_domdec_t *dd,
                         MPI_Comm      mpi_comm_mysim,
                         void         *streamLocal,
-                        void         *streamNonLocal,
-                        void         *coordinatesOnDeviceEvent);
+                        void         *streamNonLocal);
         ~GpuHaloExchange();
 
         /*! \brief
@@ -106,8 +105,9 @@ class GpuHaloExchange
          * event when the coordinate data has been copied to the
          * device).
          * \param [in] box  Coordinate box (from which shifts will be constructed)
+         * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
          */
-        void communicateHaloCoordinates(const matrix box);
+        void communicateHaloCoordinates(const matrix box, GpuEventSynchronizer *coordinatesReadyOnDeviceEvent);
 
         /*! \brief GPU halo exchange of force buffer.
          * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set

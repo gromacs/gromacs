@@ -63,8 +63,7 @@ class GpuHaloExchange::Impl
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t * /* dd */,
                                  MPI_Comm       /* mpi_comm_mysim */,
                                  void         * /*streamLocal */,
-                                 void         * /*streamNonLocal */,
-                                 void         * /*coordinatesOnDeviceEvent*/)
+                                 void         * /*streamNonLocal */)
     : impl_(nullptr)
 {
     GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
@@ -80,7 +79,8 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<float> /* d_coordinatesBuffer */,
 }
 
 /*!\brief apply X halo exchange stub. */
-void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */)
+void GpuHaloExchange::communicateHaloCoordinates(const matrix /* box */,
+                                                 GpuEventSynchronizer * /*coordinatesOnDeviceEvent*/)
 {
     GMX_ASSERT(false, "A CPU stub for GPU Halo Exchange exchange was called insted of the correct implementation.");
 }

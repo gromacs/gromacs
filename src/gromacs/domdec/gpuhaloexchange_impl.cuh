@@ -71,13 +71,11 @@ class GpuHaloExchange::Impl
          * \param [in]    mpi_comm_mysim           communicator used for simulation
          * \param [in]    localStream              local NB CUDA stream
          * \param [in]    nonLocalStream           non-local NB CUDA stream
-         * \param [in]    coordinatesOnDeviceEvent event recorded when coordinates have been copied to device
          */
         Impl(gmx_domdec_t *dd,
              MPI_Comm mpi_comm_mysim,
              void *localStream,
-             void *nonLocalStream,
-             void *coordinatesOnDeviceEvent);
+             void *nonLocalStream);
         ~Impl();
 
         /*! \brief
@@ -92,8 +90,10 @@ class GpuHaloExchange::Impl
         /*! \brief
          * GPU halo exchange of coordinates buffer
          * \param [in] box  Coordinate box (from which shifts will be constructed)
+         * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
          */
-        void communicateHaloCoordinates(const matrix box);
+        void communicateHaloCoordinates(const matrix          box,
+                                        GpuEventSynchronizer *coordinatesReadyOnDeviceEvent);
 
         /*! \brief  GPU halo exchange of force buffer
          * \param[in] accumulateForces  True if forces should accumulate, otherwise they are set
@@ -180,8 +180,6 @@ class GpuHaloExchange::Impl
         cudaStream_t                localStream_              = nullptr;
         //! CUDA stream for non-local non-bonded calculations
         cudaStream_t                nonLocalStream_           = nullptr;
-        //! Event triggered when coordinates have been copied to device
-        GpuEventSynchronizer       *coordinatesOnDeviceEvent_ = nullptr;
         //! full coordinates buffer in GPU memory
         float3                     *d_x_                      = nullptr;
         //! full forces buffer in GPU memory

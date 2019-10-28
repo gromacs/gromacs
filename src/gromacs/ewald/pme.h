@@ -232,7 +232,8 @@ void gmx_pme_send_coordinates(t_forcerec *fr, const t_commrec *cr, const matrix 
                               gmx_bool bEnerVir,
                               int64_t step, bool useGpuPmePpComms,
                               bool reinitGpuPmePpComms,
-                              bool sendCoordinatesFromGpu, gmx_wallcycle *wcycle);
+                              bool sendCoordinatesFromGpu,
+                              GpuEventSynchronizer *coordinatesReadyOnDeviceEvent, gmx_wallcycle *wcycle);
 
 /*! \brief Tell our PME-only node to finish */
 void gmx_pme_send_finish(const t_commrec *cr);

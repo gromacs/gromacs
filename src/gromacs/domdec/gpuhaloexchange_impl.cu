@@ -194,13 +194,12 @@ void GpuHaloExchange::Impl::reinitHalo(float3      *d_coordinatesBuffer,
     return;
 }
 
-// The following method be called after local setCoordinates (which records the coordinatesOnDeviceEvent_
-// event when the coordinate data has been copied to the device).
-void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix box)
+void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box,
+                                                       GpuEventSynchronizer *coordinatesReadyOnDeviceEvent)
 {
 
     //ensure stream waits until coordinate data is available on device
-    coordinatesOnDeviceEvent_->enqueueWaitEvent(nonLocalStream_);
+    coordinatesReadyOnDeviceEvent->enqueueWaitEvent(nonLocalStream_);
 
     // launch kernel to pack send buffer
     KernelLaunchConfig config;
@@ -385,8 +384,7 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void *sendPtr,
 GpuHaloExchange::Impl::Impl(gmx_domdec_t *dd,
                             MPI_Comm      mpi_comm_mysim,
                             void        * localStream,
-                            void        * nonLocalStream,
-                            void        * coordinatesOnDeviceEvent)
+                            void        * nonLocalStream)
     : dd_(dd),
       sendRankX_(dd->neighbor[0][1]),
       recvRankX_(dd->neighbor[0][0]),
@@ -396,8 +394,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t *dd,
       haloDataTransferLaunched_(new GpuEventSynchronizer()),
       mpi_comm_mysim_(mpi_comm_mysim),
       localStream_(*static_cast<cudaStream_t*> (localStream)),
-      nonLocalStream_(*static_cast<cudaStream_t*> (nonLocalStream)),
-      coordinatesOnDeviceEvent_(static_cast<GpuEventSynchronizer*> (coordinatesOnDeviceEvent))
+      nonLocalStream_(*static_cast<cudaStream_t*> (nonLocalStream))
 {
 
     GMX_RELEASE_ASSERT(GMX_THREAD_MPI, "GPU Halo exchange is currently only supported with thread-MPI enabled");
@@ -430,9 +427,8 @@ GpuHaloExchange::Impl::~Impl()
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t *dd,
                                  MPI_Comm      mpi_comm_mysim,
                                  void         *localStream,
-                                 void         *nonLocalStream,
-                                 void         *coordinatesOnDeviceEvent)
-    : impl_(new Impl(dd, mpi_comm_mysim, localStream, nonLocalStream, coordinatesOnDeviceEvent))
+                                 void         *nonLocalStream)
+    : impl_(new Impl(dd, mpi_comm_mysim, localStream, nonLocalStream))
 {
 }
 
@@ -444,9 +440,9 @@ void GpuHaloExchange::reinitHalo(DeviceBuffer<float>  d_coordinatesBuffer,
     impl_->reinitHalo(reinterpret_cast<float3*>(d_coordinatesBuffer), reinterpret_cast<float3*>(d_forcesBuffer));
 }
 
-void GpuHaloExchange::communicateHaloCoordinates(const matrix box)
+void GpuHaloExchange::communicateHaloCoordinates(const matrix box, GpuEventSynchronizer *coordinatesReadyOnDeviceEvent)
 {
-    impl_->communicateHaloCoordinates(box);
+    impl_->communicateHaloCoordinates(box, coordinatesReadyOnDeviceEvent);
 }
 
 void GpuHaloExchange::communicateHaloForces(bool accumulateForces)

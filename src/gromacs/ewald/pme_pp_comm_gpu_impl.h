@@ -59,9 +59,8 @@ class PmePpCommGpu::Impl
         /*! \brief Creates PME-PP GPU communication object.
          * \param[in] comm            Communicator used for simulation
          * \param[in] pmeRank         Rank of PME task
-         * \param[in] coordinatesOnDeviceEvent Event recorded when coordinates are available on device
          */
-        Impl(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent);
+        Impl(MPI_Comm comm, int pmeRank);
         ~Impl();
 
         /*! \brief Perform steps required when buffer size changes
@@ -98,8 +97,9 @@ class PmePpCommGpu::Impl
          * \param[in] sendPtr Buffer with coordinate data
          * \param[in] sendSize Number of elements to send
          * \param[in] sendPmeCoordinatesFromGpu Whether send is from GPU, otherwise CPU
+         * \param[in] coordinatesReadyOnDeviceEvent Event recorded when coordinates are available on device
          */
-        void sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu);
+        void sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
         /*! \brief
          * Return pointer to buffer used for staging PME force on GPU
@@ -132,8 +132,6 @@ class PmePpCommGpu::Impl
         GpuEventSynchronizer    forcesReadySynchronizer_;
         //! Event recorded when coordinates have been transferred to PME task
         GpuEventSynchronizer    pmeCoordinatesSynchronizer_;
-        //! Event recorded when coordinates have been copied to GPU on this PP task.
-        GpuEventSynchronizer   *coordinatesOnDeviceEvent_;
 };
 
 } // namespace gmx

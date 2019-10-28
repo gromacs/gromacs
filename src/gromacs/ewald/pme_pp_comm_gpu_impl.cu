@@ -55,10 +55,9 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent)
+PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank)
     : comm_(comm),
-      pmeRank_(pmeRank),
-      coordinatesOnDeviceEvent_(static_cast<GpuEventSynchronizer*> (coordinatesOnDeviceEvent))
+      pmeRank_(pmeRank)
 {
     GMX_RELEASE_ASSERT(GMX_THREAD_MPI, "PME-PP GPU Communication is currently only supported with thread-MPI enabled");
     cudaStreamCreate(&pmePpCommStream_);
@@ -115,11 +114,11 @@ void PmePpCommGpu::Impl::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSi
     }
 }
 
-void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool gmx_unused sendPmeCoordinatesFromGpu)
+void PmePpCommGpu::Impl::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool gmx_unused sendPmeCoordinatesFromGpu, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
 
     //ensure stream waits until coordinate data is available on device
-    coordinatesOnDeviceEvent_->enqueueWaitEvent(pmePpCommStream_);
+    coordinatesReadyOnDeviceEvent->enqueueWaitEvent(pmePpCommStream_);
 
     cudaError_t stat        = cudaMemcpyAsync(remotePmeXBuffer_, sendPtr,
                                               sendSize*DIM*sizeof(float), cudaMemcpyDefault,
@@ -144,8 +143,8 @@ void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     return static_cast<void*> (&forcesReadySynchronizer_);
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank, void* coordinatesOnDeviceEvent)
-    : impl_(new Impl(comm,  pmeRank, coordinatesOnDeviceEvent))
+PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank)
+    : impl_(new Impl(comm,  pmeRank))
 {
 }
 
@@ -161,9 +160,9 @@ void PmePpCommGpu::receiveForceFromPmeCudaDirect(void *recvPtr, int recvSize, bo
     impl_->receiveForceFromPmeCudaDirect(recvPtr, recvSize, receivePmeForceToGpu);
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu)
+void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void *sendPtr, int sendSize, bool sendPmeCoordinatesFromGpu, GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
-    impl_->sendCoordinatesToPmeCudaDirect(sendPtr, sendSize, sendPmeCoordinatesFromGpu);
+    impl_->sendCoordinatesToPmeCudaDirect(sendPtr, sendSize, sendPmeCoordinatesFromGpu, coordinatesReadyOnDeviceEvent);
 }
 
 void* PmePpCommGpu::getGpuForceStagingPtr()
