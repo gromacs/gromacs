@@ -29,6 +29,15 @@ only uses AVX/AVX2 which could run at higher CPU clocks without AVX512 clock spe
 Now AVX512 is only used for the internal FFTW if GROMACS is also configured with
 the same SIMD flavor.
 
+Update and constraints can run on a (single) GPU
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+For standard constant-NVT runs (see the user guide for more details),
+update and constraints can be offloaded to a GPU with CUDA. Thus all compute
+intensive parts of a simulation can be offloaded, which provides
+better performance when using a fast GPU combined with a slow CPU.
+Note that this does not work with domain decomposition yet.
+
 Bonded kernels on GPU have been fused
 """""""""""""""""""""""""""""""""""""
 

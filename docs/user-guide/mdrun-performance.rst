@@ -258,7 +258,7 @@ to improve simulation performance. New non-bonded algorithms
 have been developed with the aim of efficient acceleration both on CPUs and GPUs.
 
 The most compute-intensive parts of simulations, non-bonded force calculation, as well
-as possibly the PME and bonded force calculation can be
+as possibly the PME, bonded force calculation and update and constraints can be
 offloaded to GPUs and carried out simultaneously with remaining CPU work.
 Native GPU acceleration is supported for the most commonly used algorithms in
 |Gromacs|.
@@ -371,36 +371,36 @@ to address the NUMA and communication related issues by employing efficient
 intra-node parallelism, typically multithreading.
 
 Combining OpenMP with MPI creates an additional overhead
-especially when running separate multi-threaded PME nodes. Depending on the architecture,
+especially when running separate multi-threaded PME ranks. Depending on the architecture,
 input system size, as well as other factors, MPI+OpenMP runs can be as fast and faster
 already at small number of processes (e.g. multi-processor Intel Westmere or Sandy Bridge),
 but can also be considerably slower (e.g. multi-processor AMD Interlagos machines). However,
 there is a more pronounced benefit of multi-level parallelization in highly parallel runs.
 
-Separate PME nodes
+Separate PME ranks
 ^^^^^^^^^^^^^^^^^^
 
-On CPU nodes, particle-particle (PP) and PME calculations are done in the same process one after
+On CPU ranks, particle-particle (PP) and PME calculations are done in the same process one after
 another. As PME requires all-to-all global communication, this is most of the time the limiting
-factor to scaling on a large number of cores. By designating a subset of nodes for PME
+factor to scaling on a large number of cores. By designating a subset of ranks for PME
 calculations only, performance of parallel runs can be greatly improved.
 
-OpenMP mutithreading in PME nodes is also possible.
+OpenMP mutithreading in PME ranks is also possible.
 Using multi-threading in PME can can improve performance at high
 parallelization. The reason for this is that with N>1 threads the number of processes
 communicating, and therefore the number of messages, is reduced by a factor of N.
 But note that modern communication networks can process several messages simultaneously,
 such that it could be advantageous to have more processes communicating.
 
-Separate PME nodes are not used at low parallelization, the switch at higher parallelization
-happens automatically (at > 16 processes). The number of PME nodes is estimated by mdrun.
+Separate PME ranks are not used at low parallelization, the switch at higher parallelization
+happens automatically (at > 16 processes). The number of PME ranks is estimated by mdrun.
 If the PME load is higher than the PP load, mdrun will automatically balance the load, but
 this leads to additional (non-bonded) calculations. This avoids the idling of a large fraction
-of the nodes; usually 3/4 of the nodes are PP nodes. But to ensure the best absolute performance
+of the ranks; usually 3/4 of the ranks are PP ranks. But to ensure the best absolute performance
 of highly parallel runs, it is advisable to tweak this number which is automated by
 the :ref:`tune_pme <gmx tune_pme>` tool.
 
-The number of PME nodes can be set manually on the :ref:`mdrun <gmx mdrun>` command line using the ``-npme``
+The number of PME ranks can be set manually on the :ref:`mdrun <gmx mdrun>` command line using the ``-npme``
 option, the number of PME threads can be specified on the command line with ``-ntomp_pme`` or
 alternatively using the ``GMX_PME_NUM_THREADS`` environment variable. The latter is especially
 useful when running on compute nodes with different number of cores as it enables
@@ -507,7 +507,7 @@ behavior.
     Used to set where to execute the long-range non-bonded interactions.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which uses a compatible GPU if available.
-    Setting "gpu" requires that a compatible GPU is available and will be used.
+    Setting "gpu" requires that a compatible GPU is available.
     Multiple PME ranks are not supported with PME on GPU, so if a GPU is used
     for the PME calculation -npme must be set to 1.
 
@@ -523,6 +523,16 @@ behavior.
     assigned.
     Setting "gpu" requires that a compatible GPU is available and will
     be used.
+
+``-update``
+    Used to set where to execute update and constraints, when present.
+    Can be set to "auto", "cpu", "gpu."
+    Defaults to "auto," which currently always uses the CPU.
+    Setting "gpu" requires that a compatible CUDA GPU is available.
+    Update and constraints on a GPU is currently not supported
+    with pressure coupling, free-energy, domain decomposition, virtual sites,
+    replica exchange, the pull code, distance and orientation restraints
+    and computational electrophysiology.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
