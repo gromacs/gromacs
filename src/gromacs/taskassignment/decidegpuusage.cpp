@@ -571,6 +571,10 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     {
         errorMessage += "Replica exchange simulations are not supported.\n";
     }
+    if (inputrec.eSwapCoords != eswapNO)
+    {
+        errorMessage += "Swapping the coordinates is not supported.\n";
+    }
     if (!errorMessage.empty())
     {
         if (updateTarget == TaskTarget::Gpu)
