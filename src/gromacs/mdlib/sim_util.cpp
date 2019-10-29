@@ -801,7 +801,8 @@ setupDomainLifetimeWorkload(const t_inputrec         &inputrec,
     domainWork.haveCpuLocalForceWork  = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || domainWork.haveFreeEnergyWork ||
         simulationWork.useCpuNonbonded || simulationWork.useCpuPme ||
         (EEL_PME_EWALD(inputrec.coulombtype) && (inputrec.ewald_geometry == eewg3DC ||
-                                                 inputrec.epsilon_surface != 0));
+                                                 inputrec.epsilon_surface != 0)) ||
+        inputrec.nwall > 0;
     return domainWork;
 }
 
