@@ -365,9 +365,6 @@ struct nonbonded_verlet_t
          */
         void atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* localReductionDone);
 
-        /*! \brief return pointer to GPU event recorded when coordinates have been copied to device */
-        void* get_x_on_device_event();
-
         /*! \brief Wait for non-local copy of coordinate buffer from device to host */
         void wait_nonlocal_x_copy_D2H_done();
 

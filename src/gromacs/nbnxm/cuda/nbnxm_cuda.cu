@@ -887,11 +887,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                          atomL
     }
 }
 
-void* nbnxn_get_x_on_device_event(const gmx_nbnxn_cuda_t   *nb)
-{
-    return static_cast<void*> (nb->xAvailableOnDevice);
-}
-
 void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t   *nb)
 {
     nb->xNonLocalCopyD2HDone->waitForEvent();

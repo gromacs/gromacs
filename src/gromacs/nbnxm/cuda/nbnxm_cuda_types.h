@@ -267,13 +267,6 @@ struct gmx_nbnxn_cuda_t
     //  local/nonlocal, if there is bonded GPU work, both flags will be true.
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
 
-
-    GpuEventSynchronizer *xAvailableOnDevice;   /**< event triggered when
-                                                   coordinate buffer has been
-                                                   copied to device by PP task and
-                                                   any dependent task (e.g. transfer of coordinates
-                                                   to the PME rank's GPU) can proceed. */
-
     /*! \brief Pointer to event synchronizer triggered when the local GPU buffer ops / reduction is complete
      *
      * \note That the synchronizer is managed outside of this module in StatePropagatorDataGpu.

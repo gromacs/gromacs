@@ -327,12 +327,6 @@ void nbnxn_gpu_add_nbat_f_to_f(gmx::AtomLocality                      gmx_unused
 CUDA_FUNC_QUALIFIER
 void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t     gmx_unused *nb) CUDA_FUNC_TERM;
 
-/*! \brief return pointer to event recorded when coordinates have been copied to device
- * \param[in] nb                   The nonbonded data GPU structure
- */
-CUDA_FUNC_QUALIFIER
-void* nbnxn_get_x_on_device_event(const gmx_nbnxn_gpu_t gmx_unused    *nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
-
 /*! \brief Wait for non-local copy of coordinate buffer from device to host
  * \param[in] nb                   The nonbonded data GPU structure
  */

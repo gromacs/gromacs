@@ -482,7 +482,6 @@ gpu_init(const gmx_device_info_t   *deviceInfo,
     stat = cudaEventCreateWithFlags(&nb->misc_ops_and_local_H2D_done, cudaEventDisableTiming);
     CU_RET_ERR(stat, "cudaEventCreate on misc_ops_and_local_H2D_done failed");
 
-    nb->xAvailableOnDevice   = new GpuEventSynchronizer();
     nb->xNonLocalCopyD2HDone = new GpuEventSynchronizer();
 
     /* WARNING: CUDA timings are incorrect with multiple streams.

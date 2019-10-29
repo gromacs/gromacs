@@ -261,11 +261,6 @@ void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocal
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
 }
 
-void* nonbonded_verlet_t::get_x_on_device_event()
-{
-    return Nbnxm::nbnxn_get_x_on_device_event(gpu_nbv);
-}
-
 void nonbonded_verlet_t::wait_nonlocal_x_copy_D2H_done()
 {
     Nbnxm::nbnxn_wait_nonlocal_x_copy_D2H_done(gpu_nbv);
