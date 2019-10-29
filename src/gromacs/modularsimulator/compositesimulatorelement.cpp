@@ -32,10 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* \internal
+/*! \internal \file
  * \brief Defines the composite element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
+ * \ingroup module_modularsimulator
  */
 
 #include "gmxpre.h"

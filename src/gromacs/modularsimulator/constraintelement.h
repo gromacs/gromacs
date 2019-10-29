@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the constraint element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -53,10 +53,8 @@ class EnergyElement;
 class FreeEnergyPerturbationElement;
 class StatePropagatorData;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Constraints element
  *
  * The ConstraintsElement is implemented for the position-and-velocity and the
@@ -151,7 +149,6 @@ class ConstraintsElement final :
         const t_mdatoms  *mdAtoms_;
 };
 
-//! \}
 }      // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_CONSTRAINTELEMENT_H

@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the force element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -67,10 +67,8 @@ class MDAtoms;
 class MdrunScheduleWorkload;
 class StatePropagatorData;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Force element
  *
  * The force element manages the call to do_force(...)
@@ -188,7 +186,6 @@ class ForceElement final :
         gmx_enfrot            *enforcedRotation_;
 };
 
-//! \}
 }      // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_FORCEELEMENT_H

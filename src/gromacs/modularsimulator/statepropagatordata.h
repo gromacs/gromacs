@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the state for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -59,10 +59,8 @@ namespace gmx
 enum class ConstraintVariable;
 class FreeEnergyPerturbationElement;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief StatePropagatorData and associated data
  *
  * The `StatePropagatorData` contains a little more than the pure
@@ -274,7 +272,6 @@ class StatePropagatorData final :
         void trajectoryWriterTeardown(gmx_mdoutf gmx_unused *outf) override {}
 };
 
-//! /}
 }      // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_STATEPROPAGATORDATA_H

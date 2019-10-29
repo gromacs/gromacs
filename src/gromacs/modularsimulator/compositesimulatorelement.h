@@ -32,10 +32,11 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/* \internal
+/*! \libinternal \file
  * \brief Declares the composite element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
+ * \ingroup module_modularsimulator
  */
 #ifndef GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H
 #define GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H
@@ -49,10 +50,8 @@
 namespace gmx
 {
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Composite simulator element
  *
  * The composite simulator element takes a call list of elements and implements
@@ -110,7 +109,6 @@ class CompositeSimulatorElement final :
         std::vector< std::unique_ptr<ISimulatorElement> >   elementOwnershipList_;
 };
 
-//! \}
 }      // namespace gmx
 
 #endif // GROMACS_MDTYPES_COMPOSITESIMULATORELEMENT_H

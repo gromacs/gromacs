@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the trajectory element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -62,10 +62,8 @@ struct MdModulesNotifier;
 struct MdrunOptions;
 enum class StartingBehavior;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Trajectory element signals and handles trajectory writing
  *
  * The trajectory element is both a signaller and a simulator element.
@@ -222,6 +220,7 @@ class TrajectoryElement final :
 };
 
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Build the `TrajectoryElement`
  *
  * This builder allows clients to register with the trajectory element, either
@@ -249,8 +248,6 @@ class TrajectoryElementBuilder final
         //! List of writer clients
         std::vector<ITrajectoryWriterClient*>    writerClients_;
 };
-
-//! /}
 
 template<typename ... Args>
 std::unique_ptr<TrajectoryElement> TrajectoryElementBuilder::build(Args && ... args)

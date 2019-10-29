@@ -277,12 +277,14 @@ class ITrajectorySignallerClient
             registerTrajectorySignallerCallback(TrajectoryEvent) = 0;
 };
 
-/*! \typedef ITrajectoryWriterCallback
- * \brief Function type for trajectory writing clients
+/* Trajectory writing clients are handed a pointer to the output file handler,
+ * allowing them to write their own trajectory contribution.
  *
- * Trajectory writing clients are given a pointer to the output file handler,
- * allowing them to write their own trajectory contribution
+ * As trajectory writing and log writing cannot currently be separated for the
+ * energy, clients also get informed whether this is a trajectory-writing step
+ * and / or a log-writing step.
  */
+//! Function type for trajectory writing clients
 typedef std::function<void(gmx_mdoutf*, Step, Time, bool, bool)> ITrajectoryWriterCallback;
 //! Pointer to the function type for trajectory writing clients
 typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;

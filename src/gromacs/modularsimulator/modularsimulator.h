@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -65,10 +65,8 @@ class NeighborSearchSignaller;
 class PmeLoadBalanceHelper;
 class TrajectoryElementBuilder;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief The modular simulator
  *
  * Based on the input given, this simulator builds independent elements and
@@ -297,8 +295,6 @@ class ModularSimulator final :
         //! The current step
         Step stophandlerCurrentStep_ = -1;
 };
-
-//! \}
 
 //! Constructor implementation (here to avoid template-related linker problems)
 template<typename ... Args>

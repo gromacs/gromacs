@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the signallers for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -53,10 +53,8 @@ namespace gmx
 class StopHandler;
 class TrajectoryElement;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Builder for signallers
  *
  * This builder allows clients to register, and then builds the signaller
@@ -97,6 +95,7 @@ class SignallerBuilder final
 };
 
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element signalling a neighbor search step
  *
  * This element informs its clients via callbacks
@@ -147,6 +146,7 @@ class NeighborSearchSignaller final :
 };
 
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element signalling the last step
  *
  * This element informs its clients via callbacks
@@ -206,6 +206,7 @@ class LastStepSignaller final :
 };
 
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element signalling a logging step
  *
  * This element informs its clients via callbacks
@@ -266,6 +267,7 @@ class LoggingSignaller final :
 };
 
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element signalling energy related special steps
  *
  * This element informs its clients via callbacks
@@ -343,8 +345,6 @@ class EnergySignaller final :
         //! Whether we registered to the logging signaller
         bool loggingRegistrationDone_;
 };
-
-//! /}
 
 //! Allows clients to register to the signaller
 template <class Signaller>

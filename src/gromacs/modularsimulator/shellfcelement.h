@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the shell / flex constraints element for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -68,10 +68,8 @@ class MDAtoms;
 class MdrunScheduleWorkload;
 class StatePropagatorData;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Shell & flex constraints element
  *
  * The ShellFCElement manages the call to relax_shell_flexcon(...)
@@ -204,7 +202,6 @@ class ShellFCElement final :
         gmx_enfrot            *enforcedRotation_;
 };
 
-//! \}
 }      // namespace gmx
 
 #endif // GMX_MODULARSIMULATOR_SHELLFCELEMENT_H

@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal
+/*! \libinternal \file
  * \brief Declares the Parrinello-Rahman barostat for the modular simulator
  *
  * \author Pascal Merz <pascal.merz@me.com>
@@ -56,10 +56,8 @@ class EnergyElement;
 class MDAtoms;
 class StatePropagatorData;
 
-//! \addtogroup module_modularsimulator
-//! \{
-
 /*! \libinternal
+ * \ingroup module_modularsimulator
  * \brief Element implementing the Parrinello-Rahman barostat
  *
  * This element
@@ -154,8 +152,6 @@ class ParrinelloRahmanBarostat final :
         //! Atom parameters for this domain.
         const MDAtoms    *mdAtoms_;
 };
-
-//! \}
 
 }      // namespace gmx
 
