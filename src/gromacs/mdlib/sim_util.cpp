@@ -799,7 +799,9 @@ setupDomainLifetimeWorkload(const t_inputrec         &inputrec,
     // We assume we have local force work if there are CPU
     // force tasks including PME or nonbondeds.
     domainWork.haveCpuLocalForceWork  = domainWork.haveSpecialForces || domainWork.haveCpuListedForceWork || domainWork.haveFreeEnergyWork ||
-        simulationWork.useCpuNonbonded || simulationWork.useCpuPme;
+        simulationWork.useCpuNonbonded || simulationWork.useCpuPme ||
+        (EEL_PME_EWALD(inputrec.coulombtype) && (inputrec.ewald_geometry == eewg3DC ||
+                                                 inputrec.epsilon_surface != 0));
     return domainWork;
 }
 
