@@ -52,10 +52,18 @@
 namespace gmx
 {
 
+//! Specify endian swapping behvaior
+enum class EndianSwapBehavior : int
+{
+    DoSwap,    //!< Swap the bytes
+    DoNotSwap, //!< Do not swap the bytes
+    Count      //!< Number of possible behaviors
+};
+
 class InMemorySerializer : public ISerializer
 {
 public:
-    InMemorySerializer();
+    explicit InMemorySerializer(EndianSwapBehavior endianSwapBehavior = EndianSwapBehavior::DoNotSwap);
     ~InMemorySerializer() override;
 
     std::vector<char> finishAndGetBuffer();
@@ -85,7 +93,9 @@ private:
 class InMemoryDeserializer : public ISerializer
 {
 public:
-    explicit InMemoryDeserializer(ArrayRef<const char> buffer, bool sourceIsDouble);
+    InMemoryDeserializer(ArrayRef<const char> buffer,
+                         bool                 sourceIsDouble,
+                         EndianSwapBehavior   endianSwapBehavior = EndianSwapBehavior::DoNotSwap);
     ~InMemoryDeserializer() override;
 
     //! Get if the source data was written in double precsion

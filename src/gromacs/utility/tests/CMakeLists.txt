@@ -40,6 +40,7 @@ gmx_add_unit_test(UtilityUnitTests utility-test
                   defaultinitializationallocator.cpp
                   enumerationhelpers.cpp
                   fixedcapacityvector.cpp
+                  inmemoryserializer.cpp
                   keyvaluetreeserializer.cpp
                   keyvaluetreetransform.cpp
                   logger.cpp
