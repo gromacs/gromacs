@@ -55,6 +55,11 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
+/* Number of entries in subblock_d preceding the lambda components */
+constexpr int c_subblockDNumPreEntries = 5;
+/* Number of entries in subblock_i preceding the lambda components */
+constexpr int c_subblockINumPreEntries = 2;
+
 /* reset the delta_h list to prepare it for new values */
 static void mde_delta_h_reset(t_mde_delta_h *dh)
 {
@@ -430,8 +435,8 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
         dhc->lambda_index             = -1;
     }
     /* allocate metadata subblocks */
-    snew(dhc->subblock_d, 5 + dhc->n_lambda_vec);
-    snew(dhc->subblock_i, 1 + dhc->n_lambda_vec);
+    snew(dhc->subblock_d, c_subblockDNumPreEntries + dhc->n_lambda_vec);
+    snew(dhc->subblock_i, c_subblockINumPreEntries + dhc->n_lambda_vec);
 
     /* now decide which data to write out */
     dhc->nlambda     = 0;
@@ -665,11 +670,11 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
     {
         for (i = 0; i < dhc->n_lambda_vec; i++)
         {
-            dhc->subblock_d[5+i] = dhc->native_lambda_vec[i];
+            dhc->subblock_d[c_subblockDNumPreEntries + i] = dhc->native_lambda_vec[i];
         }
     }
     blk->id          = enxDHCOLL;
-    blk->sub[0].nr   = 5 + dhc->n_lambda_vec;
+    blk->sub[0].nr   = c_subblockDNumPreEntries + dhc->n_lambda_vec;
     blk->sub[0].type = xdr_datatype_double;
     blk->sub[0].dval = dhc->subblock_d;
 
@@ -680,9 +685,9 @@ void mde_delta_h_coll_handle_block(t_mde_delta_h_coll *dhc,
         dhc->subblock_i[1] = dhc->n_lambda_vec;
         for (i = 0; i < dhc->n_lambda_vec; i++)
         {
-            dhc->subblock_i[i+2] = dhc->native_lambda_components[i];
+            dhc->subblock_i[c_subblockINumPreEntries + i] = dhc->native_lambda_components[i];
         }
-        blk->sub[1].nr   = 2 + dhc->n_lambda_vec;
+        blk->sub[1].nr   = c_subblockINumPreEntries + dhc->n_lambda_vec;
         blk->sub[1].type = xdr_datatype_int;
         blk->sub[1].ival = dhc->subblock_i;
     }

@@ -1,0 +1,54 @@
+GROMACS 2019.5 release notes
+----------------------------
+
+This version was released on TODO, 2019. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2019.4 version, to fix known issues. It also incorporates all
+fixes made in version 2018.7 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix use of uninitialized data on PME only ranks
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When building GPU enabled versions of |Gromacs| with clang as either host only or host
+and device side compiler, PME datastructures could be left uninitialized, leading
+to the use of random values for LJ PME energies, virial and pressure.
+
+The effect of this bug was that the potential and total energy could
+be wrong, but not the Coulomb mesh energy. This didn't affect sampling.
+The pressure could also be wrong, which would affect sampling when pressure
+coupling is used, but likely the simulation would explode after a few steps.
+
+This doesn't seem to have affected versions of |Gromacs| built
+with gcc as the host side compiler.
+
+:issue:`3120`
+
+Fix out of range memory access with free-energy calculations
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With free-energy calculations not using lambda states, an output
+buffer would be accessed one element beyond it's allocated size.
+We don't expect this to have caused incorrect results, but
+a memory checker would complain.
+
+:issue:`3173`
+ 
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Miscellaneous
+^^^^^^^^^^^^^
+
