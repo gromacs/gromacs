@@ -531,8 +531,8 @@ behavior.
     Setting "gpu" requires that a compatible CUDA GPU is available.
     Update and constraints on a GPU is currently not supported
     with pressure coupling, free-energy, domain decomposition, virtual sites,
-    replica exchange, the pull code, distance and orientation restraints
-    and computational electrophysiology.
+    Ewald surface correction, replica exchange, the pull code,
+    orientation restraints and computational electrophysiology.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that

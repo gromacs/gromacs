@@ -900,7 +900,6 @@ int Mdrunner::mdrunner()
                                                          gmx_mtop_interaction_count(mtop, IF_VSITE) > 0,
                                                          doEssentialDynamics,
                                                          gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                                                         gmx_mtop_ftype_count(mtop, F_DISRES) > 0,
                                                          replExParams.exchangeInterval > 0);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

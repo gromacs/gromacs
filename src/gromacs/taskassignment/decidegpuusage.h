@@ -241,7 +241,6 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  haveVSites                If there are virtual sites in the system.
  * \param[in]  useEssentialDynamics      If essential dynamics is active.
  * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
- * \param[in]  doDistanceRestraints      If distance restraints are enabled.
  * \param[in]  useReplicaExchange        If this is a REMD simulation.
  *
  * \returns    Whether complete simulation can be run on GPU.
@@ -258,7 +257,6 @@ bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultOn,
                                     bool              haveVSites,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
-                                    bool              doDistanceRestraints,
                                     bool              useReplicaExchange);
 
 

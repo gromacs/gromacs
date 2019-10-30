@@ -500,7 +500,6 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
                                     const bool        haveVSites,
                                     const bool        useEssentialDynamics,
                                     const bool        doOrientationRestraints,
-                                    const bool        doDistanceRestraints,
                                     const bool        useReplicaExchange)
 {
 
@@ -543,6 +542,11 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
         // Coordinate D2H and H2d are missing as well as PBC reinitialization
         errorMessage += "Pressure coupling is not supported.\n";
     }
+    if (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0)
+    {
+        // The graph is needed, but not supported
+        errorMessage += "Ewald surface correction is not supported.\n";
+    }
     if (haveVSites)
     {
         errorMessage += "Virtual sites are not supported.\n";
@@ -553,18 +557,17 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     }
     if (inputrec.bPull || inputrec.pull)
     {
+        // Pull potentials are actually supported, but constraint pulling is not
         errorMessage += "Pulling is not supported.\n";
     }
     if (doOrientationRestraints)
     {
+        // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
-    }
-    if (doDistanceRestraints)
-    {
-        errorMessage += "Distance restraints are not supported.\n";
     }
     if (inputrec.efep != efepNO)
     {
+        // Actually all free-energy options except for mass and constraint perturbation are supported
         errorMessage += "Free energy perturbations are not supported.\n";
     }
     if (useReplicaExchange)

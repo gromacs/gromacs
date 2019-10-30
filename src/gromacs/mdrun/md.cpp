@@ -353,8 +353,8 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ed == nullptr, "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull && !ir->pull, "Pulling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(fcd->orires.nr == 0, "Orientation restraints are not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(fcd->disres.npair  == 0, "Distance restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ir->efep == efepNO, "Free energy perturbations are not supported with the GPU update.");
+        GMX_RELEASE_ASSERT(graph == nullptr, "The graph is not supported with GPU update.");
 
         if (constr != nullptr && constr->numConstraintsTotal() > 0)
         {
