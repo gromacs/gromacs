@@ -1107,17 +1107,19 @@ void gmx::LegacySimulator::do_md()
             }
         }
 
-        // Copy coordinate from the GPU for the output if the update is offloaded and
+        // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded and
         // coordinates have not already been copied for i) search or ii) CPU force tasks.
         if (useGpuForUpdate && !bNS && !runScheduleWork->domainWork.haveCpuLocalForceWork
-            && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)))
+            && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
+                || checkpointHandler->isCheckpointingStep()))
         {
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
-        // Copy velocities if needed for the output.
+        // Copy velocities if needed for the output/checkpointing.
         // NOTE: Copy on the search steps is done at the beginning of the step.
-        if (useGpuForUpdate && !bNS && do_per_step(step, ir->nstvout))
+        if (useGpuForUpdate && !bNS
+            && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()))
         {
             stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
             stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
