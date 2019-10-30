@@ -25,7 +25,5 @@ lib*.pc
 build
 _build
 CMakeLists.txt.user
-# When Dockerfiles get source from python_packaging, use an additional, more explicit COPY or ADD
-python_packaging
 /VersionInfo*.cmake
 Testing

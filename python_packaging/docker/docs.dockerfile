@@ -1,6 +1,6 @@
-# Docker build context should be one directory up from the "docker" directory. I.e.
+# Docker build context should be the GROMACS repository root. I.e.
 #
-#     docker build -t gmxapi/docs -f docs.dockerfile ..
+#     docker build -t gmxapi/docs -f docs.dockerfile ../..
 #
 # Note that this image depends on the image gmxapi/ci-mpich, which is built from
 # ci.dockerfile. Build errors will occur if the current repository is too
@@ -10,7 +10,7 @@
 # at https://cloud.docker.com/u/gmxapi/repository/docker/gmxapi/ci-mpich
 # I.e.
 #
-#     docker build -t gmxapi/docs -f docs.dockerfile --build-arg REF=sometag ..
+#     docker build -t gmxapi/docs -f docs.dockerfile --build-arg REF=sometag ../..
 #
 # Launch and bind the host port 8080 to the web server in the container.
 #
@@ -37,7 +37,8 @@ USER testing
 RUN . $VENV/bin/activate && \
     pip install -r /home/testing/gmxapi/requirements-docs.txt --no-cache-dir
 
-COPY documentation/gmxapi /home/testing/gmxapi/documentation
+COPY docs/gmxapi /home/testing/gmxapi/documentation
+COPY python_packaging/documentation/conf.py /home/testing/gmxapi/documentation
 RUN cd /home/testing/gmxapi && \
     . $VENV/bin/activate && \
     sphinx-build -b html documentation html
