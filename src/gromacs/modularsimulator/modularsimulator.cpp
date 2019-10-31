@@ -833,6 +833,12 @@ bool ModularSimulator::isInputCompatible(
         (getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     GMX_RELEASE_ASSERT(
+            !(modularSimulatorExplicitlyTurnedOn && modularSimulatorExplicitlyTurnedOff),
+            "Cannot have both GMX_USE_MODULAR_SIMULATOR=ON and GMX_DISABLE_MODULAR_SIMULATOR=ON. "
+            "Unset one of the two environment variables to explicitly chose which simulator to use, "
+            "or unset both to recover default behavior.");
+
+    GMX_RELEASE_ASSERT(
             !(modularSimulatorExplicitlyTurnedOff && inputrec->eI == eiVV && inputrec->epc == epcPARRINELLORAHMAN),
             "Cannot use a Parrinello-Rahman barostat with md-vv and GMX_DISABLE_MODULAR_SIMULATOR=ON, "
             "as the Parrinello-Rahman barostat is not implemented in the legacy simulator. Unset "
