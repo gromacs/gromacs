@@ -1549,3 +1549,9 @@ real maxReferenceTemperature(const t_inputrec &ir)
 
     return maxTemperature;
 }
+
+bool haveEwaldSurfaceContribution(const t_inputrec &ir)
+{
+    return EEL_PME_EWALD(ir.coulombtype) && (ir.ewald_geometry == eewg3DC ||
+                                             ir.epsilon_surface != 0);
+}

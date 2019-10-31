@@ -693,4 +693,8 @@ int ndof_com(const t_inputrec *ir);
  */
 real maxReferenceTemperature(const t_inputrec &ir);
 
+/*! \brief Returns whether there is an Ewald surface contribution
+ */
+bool haveEwaldSurfaceContribution(const t_inputrec &ir);
+
 #endif /* GMX_MDTYPES_INPUTREC_H */

@@ -1583,7 +1583,8 @@ int Mdrunner::mdrunner()
                                                                   useGpuForUpdate,
                                                                   devFlags.enableGpuBufferOps,
                                                                   devFlags.enableGpuHaloExchange,
-                                                                  devFlags.enableGpuPmePPComm);
+                                                                  devFlags.enableGpuPmePPComm,
+                                                                  haveEwaldSurfaceContribution(*inputrec));
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
         if (gpusWereDetected && ((useGpuForPme && thisRankHasDuty(cr, DUTY_PME)) || runScheduleWork.simulationWork.useGpuBufferOps))

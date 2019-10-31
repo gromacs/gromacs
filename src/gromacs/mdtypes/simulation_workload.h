@@ -158,6 +158,8 @@ class SimulationWorkload
         bool useGpuPmePpCommunication  = false;
         //! If direct GPU-GPU communication is enabled.
         bool useGpuDirectCommunication = false;
+        //! If there is an Ewald surface (dipole) term to compute
+        bool haveEwaldSurfaceContribution = false;
 };
 
 class MdrunScheduleWorkload

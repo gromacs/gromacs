@@ -195,16 +195,14 @@ do_force_lowlevel(t_forcerec                               *fr,
         thisRankHasDuty(cr, DUTY_PME) &&
         (pme_run_mode(fr->pmedata) == PmeRunMode::CPU);
 
-    const bool haveEwaldSurfaceTerms =
-        EEL_PME_EWALD(fr->ic->eeltype) &&
-        (ir->ewald_geometry != eewg3D || ir->epsilon_surface != 0);
+    const bool haveEwaldSurfaceTerm = haveEwaldSurfaceContribution(*ir);
 
     /* Do long-range electrostatics and/or LJ-PME
      * and compute PME surface terms when necessary.
      */
     if (computePmeOnCpu ||
         fr->ic->eeltype == eelEWALD ||
-        haveEwaldSurfaceTerms)
+        haveEwaldSurfaceTerm)
     {
         int  status            = 0;
         real Vlr_q             = 0, Vlr_lj = 0;
@@ -217,8 +215,8 @@ do_force_lowlevel(t_forcerec                               *fr,
 
         if (EEL_PME_EWALD(fr->ic->eeltype) || EVDW_PME(fr->ic->vdwtype))
         {
-            /* Calculate Ewald surface terms, when necessary */
-            if (haveEwaldSurfaceTerms)
+            /* Calculate the Ewald surface force and energy contributions, when necessary */
+            if (haveEwaldSurfaceTerm)
             {
                 wallcycle_sub_start(wcycle, ewcsEWALD_CORRECTION);
 

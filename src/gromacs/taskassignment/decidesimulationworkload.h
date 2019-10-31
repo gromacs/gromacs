@@ -44,6 +44,7 @@
 
 #include <vector>
 
+#include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 
 enum class PmeRunMode;
@@ -55,25 +56,26 @@ namespace gmx
  * Build datastructure that contains decisions whether to run different workload
  * task on GPUs.
  *
- * \param[in] useGpuForNonbonded If we have short-range nonbonded interactions
+ * \param[in] useGpuForNonbonded Whether we have short-range nonbonded interactions
  *                               calculations on GPU(s).
  * \param[in] pmeRunMode         Run mode indicating what resource is PME execured on.
- * \param[in] useGpuForBonded    If bonded interactions are calculated on GPU(s).
- * \param[in] useGpuForUpdate    If coordinate update and constraint solving is performed on
+ * \param[in] useGpuForBonded    Whether bonded interactions are calculated on GPU(s).
+ * \param[in] useGpuForUpdate    Whether coordinate update and constraint solving is performed on
  *                               GPU(s).
- * \param[in] useGpuForBufferOps If buffer ops / reduction are calculated on GPU(s).
- * \param[in] useGpuHaloExchange If GPU direct communication is used in halo exchange.
- * \param[in] useGpuPmePpComm    If GPu direct communication is used in PME-PP communication.
+ * \param[in] useGpuForBufferOps Whether buffer ops / reduction are calculated on GPU(s).
+ * \param[in] useGpuHaloExchange Whether GPU direct communication is used in halo exchange.
+ * \param[in] useGpuPmePpComm    Whether GPU direct communication is used in PME-PP communication.
+ * \param[in] haveEwaldSurfaceContribution Whether there is an Ewald surface contribution
  * \returns Simulation lifetime constant workload description.
  */
-SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
-                                            PmeRunMode pmeRunMode,
-                                            bool       useGpuForBonded,
-                                            bool       useGpuForUpdate,
-                                            bool       useGpuForBufferOps,
-                                            bool       useGpuHaloExchange,
-                                            bool       useGpuPmePpComm);
-
+SimulationWorkload createSimulationWorkload(bool              useGpuForNonbonded,
+                                            PmeRunMode        pmeRunMode,
+                                            bool              useGpuForBonded,
+                                            bool              useGpuForUpdate,
+                                            bool              useGpuForBufferOps,
+                                            bool              useGpuHaloExchange,
+                                            bool              useGpuPmePpComm,
+                                            bool              haveEwaldSurfaceContribution);
 
 }  // namespace gmx
 
