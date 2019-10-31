@@ -200,6 +200,25 @@ TEST(DensitySimilarityTest, CrossCorrelationIsOne)
     EXPECT_REAL_EQ(expectedSimilarity, measure.similarity(comparedDensity.asConstView()));
 }
 
+TEST(DensitySimilarityTest, CrossCorrelationIsMinusOneWhenAntiCorrelated)
+{
+    MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(100, 100, 100);
+    std::iota(begin(referenceDensity), end(referenceDensity), 10000);
+    for (auto &referenceDensityValue : referenceDensity)
+    {
+        referenceDensityValue *= -1;
+    }
+
+    DensitySimilarityMeasure measure(DensitySimilarityMeasureMethod::crossCorrelation,
+                                     referenceDensity.asConstView());
+
+    MultiDimArray<std::vector<float>, dynamicExtents3D> comparedDensity(100, 100, 100);
+    std::iota(begin(comparedDensity), end(comparedDensity), -10000);
+
+    const real expectedSimilarity = -1;
+    EXPECT_REAL_EQ(expectedSimilarity, measure.similarity(comparedDensity.asConstView()));
+}
+
 TEST(DensitySimilarityTest, CrossCorrelationGradientIsZeroWhenCorrelated)
 {
     MultiDimArray<std::vector<float>, dynamicExtents3D> referenceDensity(30, 30, 30);

@@ -338,8 +338,14 @@ real DensitySimilarityCrossCorrelation::similarity(density comparedDensity)
     {
         return 0;
     }
-    real covarianceSqrt = sqrt(helperValues.covariance);
-    return (covarianceSqrt / sqrt(helperValues.referenceSquaredSum)) * (covarianceSqrt / sqrt(helperValues.comparisonSquaredSum));
+
+    // To avoid numerical instability due to large squared density value sums
+    // division is re-written to avoid multiplying two large numbers
+    // as product of two seperate divisions of smaller numbers
+    const real covarianceSqrt = sqrt(fabs(helperValues.covariance));
+    const int  sign           = helperValues.covariance > 0 ? 1 : -1;
+    return sign * (covarianceSqrt / sqrt(helperValues.referenceSquaredSum))
+           * (covarianceSqrt / sqrt(helperValues.comparisonSquaredSum));
 }
 
 DensitySimilarityMeasure::density DensitySimilarityCrossCorrelation::gradient(density comparedDensity)
