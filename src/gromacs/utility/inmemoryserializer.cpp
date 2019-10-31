@@ -92,7 +92,7 @@ class InMemorySerializer::Impl
         }
         void doString(const std::string &value)
         {
-            doValue<size_t>(value.size());
+            doValue<uint64_t>(value.size());
             buffer_.insert(buffer_.end(), value.begin(), value.end());
         }
 
@@ -204,8 +204,8 @@ class InMemoryDeserializer::Impl
         }
         void doString(std::string *value)
         {
-            size_t size;
-            doValue<size_t>(&size);
+            uint64_t size;
+            doValue<uint64_t>(&size);
             *value = std::string(&buffer_[pos_], size);
             pos_  += size;
         }
