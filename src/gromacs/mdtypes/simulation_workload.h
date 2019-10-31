@@ -47,10 +47,14 @@ namespace gmx
 {
 
 /*! \libinternal
- * \brief Data structure that describes work that can change per-step.
+ * \brief Describes work done on this domain that may change per-step.
  *
- * Note that the contents of an object of this type has a lifetime
- * of a single step and it is expected to be set at the beginning each step.
+ * This work description is based on the SimulationWorkload in the context of the
+ * current particle interactions assigned to this domain as well as other
+ * factors that may change during the lifetime of a domain.
+ *
+ * Note that the contents of an object of this type is valid for
+ * a single step and it is expected to be set at the beginning each step.
  *
  * The initial set of flags map the legacy force flags to boolean flags;
  * these have the role of directing per-step compute tasks undertaken by a PP rank.
@@ -90,17 +94,17 @@ class StepWorkload
 };
 
 /*! \libinternal
- * \brief Manage computational work that has the lifetime of decomposition.
+ * \brief Describes work done on this domain on every step of its lifetime,
+ * but which might change after the next domain paritioning.
  *
- * An object of this type is updated every decomposition step
- * (i.e. domain decomposition / neighbour search)
- * reflecting what work is required during the lifetime of a domain.
+ * This work description is based on the SimulationWorkload in the context of the
+ * current particle interactions assigned to this domain. The latter might change
+ * after the next domain partitioning.
+ *
+ * An object of this type is updated every domain decomposition / neighbour search step
+ * and reflects what work is required during the lifetime of a domain;
  * e.g. whether there are bonded interactions in this PP task.
  *
- * This will remove the desire for inline getters from modules that
- * describe whether they have work to do, because that can be set up
- * once per simulation or neighborlist lifetime and not changed
- * thereafter.
  */
 class DomainLifetimeWorkload
 {
@@ -119,7 +123,6 @@ class DomainLifetimeWorkload
         //! Whether there are currently any local forces to be computed on the CPU
         bool haveCpuLocalForceWork = false;
 
-        // TODO
         //! Whether the current nstlist step-range Free energy work on the CPU.
         bool haveFreeEnergyWork = false;
 };
