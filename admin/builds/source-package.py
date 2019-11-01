@@ -54,7 +54,7 @@ def do_build(context):
     context.build_target(target='man')
     context.build_target(target='completion')
     context.build_target(target='install-guide')
-    context.build_target(target='checksum-files')
+    context.build_target(target='reference_checksum')
 
     context.build_target(target='package_source')
 

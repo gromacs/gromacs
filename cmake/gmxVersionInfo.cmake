@@ -459,20 +459,20 @@ set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
 # Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
 # mean that the target is run in all builds
 if (PYTHONINTERP_FOUND)
-    gmx_add_custom_output_target(checksum-files RUN_ALWAYS
+    gmx_add_custom_output_target(reference_checksum RUN_ALWAYS
         OUTPUT ${CHECKSUM_FILE}
         COMMAND ${PYTHON_EXECUTABLE}
             ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
             -s ${SET_OF_DIRECTORIES_TO_CHECKSUM}
             -o ${CHECKSUM_FILE}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        COMMENT "Generating checksum of source files")
+        COMMENT "Generating reference checksum of source files")
 else()
-    add_custom_target(checksum-files
+    add_custom_target(reference_checksum
         COMMAND ${CMAKE_COMMAND} -E echo
         "Can not checksum files without python being available"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        COMMENT "Generating checksum of source files")
+        COMMENT "Generating reference checksum of source files")
 endif()
 
 # The main user-visible interface to the machinery.
