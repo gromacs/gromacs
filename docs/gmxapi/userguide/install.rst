@@ -422,7 +422,7 @@ determined by the local environment or by additional arguments to ``setup.py``.
     <https://docs.python.org/3/distutils/sourcedist.html#creating-a-source-distribution>`_
 
 Package maintainers may update the the online respository by uploading a freshly
-built ``sdist`` with ``python -n twine upload dist/*``
+built ``sdist`` with ``python -m twine upload dist/*``
 
 .. _gmxapi_package_documentation:
 
