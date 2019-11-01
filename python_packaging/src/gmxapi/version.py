@@ -62,7 +62,7 @@ patch = 0
 release = False
 
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
-_named_features_0_0 = ['fr1', 'fr3']
+_named_features_0_0 = ['fr1', 'fr3', 'fr7']
 # Features named since the finalization of the 0.1 specification with GROMACS 2020.
 _named_features_0_1 = []
 # Named features describe functionality or behavior introduced since the last
@@ -74,10 +74,33 @@ _named_features_0_1 = []
 # that have become part of the specification, at least for a few minor release or
 # a few years, to avoid introducing errors to client code.
 #
+# Bugs and bug fixes may be indicated with names consisting of tracked issue URLs.
+#
 # Features consisting of 'fr' and a numeric suffix are the functional requirements
 # described in roadmap.rst, as described at https://redmine.gromacs.org/issues/2893
 #
-# Bugs and bug fixes may be indicated with names consisting of tracked issue URLs.
+# fr1: wrap importable Python code.
+# fr2: output proxy establishes execution dependency (superseded by fr3)
+# fr3: output proxy can be used as input
+# fr4: dimensionality and typing of named data causes generation of correct work topologies
+# fr5: explicit many-to-one or many-to-many data flow
+# fr7: Python bindings for launching simulations
+# fr8: gmx.mdrun understands ensemble work
+# fr9: MD plugins
+# fr10: fused operations for use in looping constructs
+# fr11: Python access to TPR file contents
+# fr12: Simulation checkpoint handling
+# fr13: ``run`` module function simplifies user experience
+# fr14: Easy access to GROMACS run time parameters
+# fr15: Simulation input modification
+# fr16: Create simulation input from simulation output
+# fr17: Prepare simulation input from multiple sources
+# fr18: GROMACS CLI tools receive improved Python-level support over generic commandline_operations
+# fr19: GROMACS CLI tools receive improved C++-level support over generic commandline_operations
+# fr20: Python bindings use C++ API for expressing user interface
+# fr21 User insulated from filesystem paths
+# fr22 MPI-based ensemble management from Python
+# fr23 Ensemble simulations can themselves use MPI
 
 
 def api_is_at_least(major_version, minor_version=0, patch_version=0):

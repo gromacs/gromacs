@@ -39,10 +39,11 @@ import pytest
 import gmxapi as gmx
 from gmxapi.version import has_feature
 
+# Ref https://redmine.gromacs.org/issues/3192
 @pytest.mark.skipif(not has_feature('fr8'),
                    reason="Feature level not met.")
-def test_fr8():
+def test_fr8(spc_water_box):
     """FR8: gmx.mdrun understands ensemble work."""
-    md = gmx.mdrun([tprfilename, tprfilename])
+    md = gmx.mdrun([spc_water_box, spc_water_box])
     md.run()
     # Maybe assert that two trajectory files with unique filesystem locations are produced?
