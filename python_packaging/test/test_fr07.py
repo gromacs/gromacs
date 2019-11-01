@@ -41,12 +41,13 @@ from gmxapi.version import has_feature
 
 @pytest.mark.skipif(not has_feature('fr7'),
                    reason="Feature level not met.")
-def test_fr7():
+@pytest.mark.usefixtures('cleandir')
+def test_fr7(spc_water_box):
     """FR7: Python bindings for launching simulations.
 
     gmx.mdrun uses bindings to C++ API to launch simulations.
     """
-    md = gmx.mdrun(tprfilename)
+    md = gmx.mdrun(spc_water_box)
     md.run()
     # Note: can't verify that this is accomplished with C++ integration without
     # exploring implementation details.

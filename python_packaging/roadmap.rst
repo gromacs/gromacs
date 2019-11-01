@@ -91,7 +91,7 @@ Sequence
 Features development sequence based on functional priorities and dependencies.
 
 * fr1: wrap importable Python code.
-* fr2: output proxy establishes execution dependency
+* fr2: output proxy establishes execution dependency (superseded by fr3)
 * fr3: output proxy can be used as input
 * fr4: dimensionality and typing of named data causes generation of correct work topologies
 * fr5: explicit many-to-one or many-to-many data flow
