@@ -80,7 +80,14 @@ void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec gmx_unu
                "correct implementation.");
 }
 
-void PmeCoordinateReceiverGpu::receiveCoordinatesFromPpCudaDirect(int gmx_unused ppRank)
+void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaDirect(int gmx_unused ppRank)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for PME-PP GPU communication was called instead of the correct "
+               "implementation.");
+}
+
+void PmeCoordinateReceiverGpu::enqueueWaitReceiveCoordinatesFromPpCudaDirect()
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

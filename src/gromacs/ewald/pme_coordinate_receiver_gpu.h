@@ -70,10 +70,15 @@ public:
 
 
     /*! \brief
-     * receive coordinate data from PP rank
+     * launch receive of coordinate data from PP rank
      * \param[in] ppRank  PP rank to send data
      */
-    void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+
+    /*! \brief
+     * enqueue wait for coordinate data from PP ranks
+     */
+    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
 
 private:
     class Impl;
