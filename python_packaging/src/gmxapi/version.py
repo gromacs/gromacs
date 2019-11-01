@@ -62,7 +62,7 @@ patch = 0
 release = False
 
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
-_named_features_0_0 = ['fr1', 'fr3', 'fr7']
+_named_features_0_0 = ['fr1', 'fr3', 'fr7', 'fr15']
 # Features named since the finalization of the 0.1 specification with GROMACS 2020.
 _named_features_0_1 = []
 # Named features describe functionality or behavior introduced since the last

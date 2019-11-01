@@ -71,7 +71,8 @@ logger.info('Importing {}'.format(__name__))
 #  attributes of the data proxies.
 _output_descriptors = (
     _op.OutputDataDescriptor('_work_dir', str),
-    _op.OutputDataDescriptor('trajectory', str)
+    _op.OutputDataDescriptor('trajectory', str),
+    _op.OutputDataDescriptor('parameters', dict)
 )
 _publishing_descriptors = {desc._name: gmxapi.operation.Publisher(desc._name, desc._dtype) for desc in
                            _output_descriptors}
@@ -176,6 +177,7 @@ class LegacyImplementationSubscription(object):
         workdir_list = ['{node}_{member}'.format(node=resource_manager.operation_id,
                                                  member=member)
                         for member in range(ensemble_width)]
+        parameters_dict_list = [{}] * ensemble_width
 
         # This is a reasonable place to start using MPI ensemble implementation details.
         # We will want better abstraction in the future, but it is best if related filesystem
@@ -240,15 +242,18 @@ class LegacyImplementationSubscription(object):
                         fileio.write_tpr_file(output=tprfile, input=sim_input)
                     logger.info('Created {} on rank {}'.format(tprfile, context_rank))
 
-                    # Gather the actual working directories from the ensemble members.
+                    # Gather the actual outputs from the ensemble members.
                     if hasattr(ensemble_comm, 'allgather'):
                         # We should not assume that abspath expands the same on different MPI ranks.
                         workdir_list = ensemble_comm.allgather(self.workdir)
                         tpr_filenames = ensemble_comm.allgather(tprfile)
+                        parameters = fileio.read_tpr(tprfile).parameters.extract()
+                        parameters_dict_list = ensemble_comm.allgather(parameters)
                     else:
                         workdir_list = [os.path.abspath(workdir) for workdir in workdir_list]
                         # TODO: If we use better input file names, they need to be updated in multiple places.
                         tpr_filenames = [os.path.join(workdir, 'topol.tpr') for workdir in workdir_list]
+                        parameters_dict_list = [fileio.read_tpr(tprfile).parameters.extract() for tprfile in tpr_filenames]
 
                     logger.debug('Context rank {} acknowledges working directories {}'.format(context_rank,
                                                                                              workdir_list))
@@ -274,6 +279,7 @@ class LegacyImplementationSubscription(object):
             # end scoped_communicator: context_comm
 
         self.workdir = workdir_list
+        self.parameters = parameters_dict_list
 
 
 class SubscriptionSessionResources(object):
@@ -294,6 +300,7 @@ class SubscriptionSessionResources(object):
         # if member_id is None:
         #     member_id = 0
         self.workdir = input.workdir[member_id]
+        self.parameters = input.parameters[member_id]
 
 
 class SubscriptionPublishingRunner(object):
@@ -309,6 +316,7 @@ class SubscriptionPublishingRunner(object):
         """Operation implementation in the gmxapi.operation module context."""
         publisher = self.resources.output
         publisher._work_dir = self.resources.workdir
+        publisher.parameters = self.resources.parameters
         # TODO: Make the return value a trajectory handle rather than a file path.
         # TODO: Decide how to handle append vs. noappend output.
         # TODO: More rigorous handling of the trajectory file(s)
