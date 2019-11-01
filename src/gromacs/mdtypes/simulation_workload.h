@@ -131,10 +131,13 @@ class DomainLifetimeWorkload
  * \brief Manage what computation is required during the simulation.
  *
  * Holds information on the type of workload constant for the entire
- * simulation.
+ * simulation, and independent of the particle interactions handled
+ * on any specific domain.
  *
  * An object of this type is constructed at the beginning of the
  * simulation and is expected to not change.
+ * Additionally, the initialization is uniform across ranks of a
+ * simulation, even with MPMD decomposition and separate PME ranks.
  */
 class SimulationWorkload
 {
