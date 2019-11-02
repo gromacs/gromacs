@@ -235,7 +235,7 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
         launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 
-    communicateHaloData(d_x_, HaloQuantity::HaloCoordinates);
+    communicateHaloData(d_x_, HaloQuantity::HaloCoordinates, coordinatesReadyOnDeviceEvent);
 
     return;
 }
@@ -246,7 +246,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
 {
 
     // Communicate halo data (in non-local stream)
-    communicateHaloData(d_f_, HaloQuantity::HaloForces);
+    communicateHaloData(d_f_, HaloQuantity::HaloForces, nullptr);
 
     float3* d_f = d_f_;
 
@@ -292,7 +292,9 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
 }
 
 
-void GpuHaloExchange::Impl::communicateHaloData(float3* d_ptr, HaloQuantity haloQuantity)
+void GpuHaloExchange::Impl::communicateHaloData(float3*               d_ptr,
+                                                HaloQuantity          haloQuantity,
+                                                GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
 
     void* sendPtr;
@@ -310,10 +312,14 @@ void GpuHaloExchange::Impl::communicateHaloData(float3* d_ptr, HaloQuantity halo
         recvRank  = recvRankX_;
 
 #if GMX_MPI
-        // Wait for signal from receiving task that it is ready, and similarly send signal to task that will push data to this task
-        char thisTaskIsReady, remoteTaskIsReady;
-        MPI_Sendrecv(&thisTaskIsReady, sizeof(char), MPI_BYTE, recvRank, 0, &remoteTaskIsReady,
-                     sizeof(char), MPI_BYTE, sendRank, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
+        // Wait for event from receiving task that remote coordinates are ready, and enqueue that event to stream used
+        // for subsequent data push. This avoids a race condition with the remote data being written in the previous timestep.
+        // Similarly send event to task that will push data to this task.
+        GpuEventSynchronizer* remoteCoordinatesReadyOnDeviceEvent;
+        MPI_Sendrecv(&coordinatesReadyOnDeviceEvent, sizeof(GpuEventSynchronizer*), MPI_BYTE,
+                     recvRank, 0, &remoteCoordinatesReadyOnDeviceEvent, sizeof(GpuEventSynchronizer*),
+                     MPI_BYTE, sendRank, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
+        remoteCoordinatesReadyOnDeviceEvent->enqueueWaitEvent(nonLocalStream_);
 #endif
     }
     else

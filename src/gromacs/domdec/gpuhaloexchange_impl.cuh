@@ -100,8 +100,11 @@ private:
     /*! \brief Data transfer wrapper for GPU halo exchange
      * \param [inout] d_ptr      pointer to coordinates or force buffer in GPU memory
      * \param [in] haloQuantity  switch on whether X or F halo exchange is being performed
+     * \param [in] coordinatesReadyOnDeviceEvent event recorded when coordinates have been copied to device
      */
-    void communicateHaloData(float3* d_ptr, HaloQuantity haloQuantity);
+    void communicateHaloData(float3*               d_ptr,
+                             HaloQuantity          haloQuantity,
+                             GpuEventSynchronizer* coordinatesReadyOnDeviceEvent);
 
     /*! \brief Data transfer for GPU halo exchange using CUDA memcopies
      * \param [inout] sendPtr    address to send data from
