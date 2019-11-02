@@ -3223,7 +3223,7 @@ int gmx_wham(int argc, char *argv[])
         "  the pullx [TT]mdrun[tt] output files. The [REF].tpr[ref] and pullx files must",
         "  be in corresponding order, i.e. the first [REF].tpr[ref] created the",
         "  first pullx, etc.",
-        "* Same as the previous input mode, except that the the user",
+        "* Same as the previous input mode, except that the user",
         "  provides the pull force output file names ([TT]pullf.xvg[tt]) with option [TT]-if[tt].",
         "  From the pull force the position in the umbrella potential is",
         "  computed. This does not work with tabulated umbrella potentials.",

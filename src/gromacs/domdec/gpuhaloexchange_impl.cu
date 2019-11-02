@@ -218,7 +218,7 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
     const int         size     = xSendSize_;
     // The coordinateShift changes between steps when we have
     // performed a DD partition, or have updated the box e.g. when
-    // performing pressure coupling. So, for simplicity, the the box
+    // performing pressure coupling. So, for simplicity, the box
     // is used every step to pass the shift vector as an argument of
     // the packing kernel.
     //

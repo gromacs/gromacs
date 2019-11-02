@@ -169,7 +169,7 @@ TEST_P(BiasStateTest, InitializesFromFile)
 }
 
 // Test that Bias initialization open and reads the correct initialization
-// files and the the correct PMF and target distribution is set.
+// files and the correct PMF and target distribution is set.
 INSTANTIATE_TEST_CASE_P(WithParameters, BiasStateTest,
                             ::testing::Values("pmf_target_format0.xvg",
                                               "pmf_target_format1.xvg"));

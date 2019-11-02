@@ -213,7 +213,7 @@ can be constructed from “particles” that are simpler virtual sites.
                                                   { | \mathbf{r}_{ij} | }
              :label: eqnvsite2fdatom
 
--  In this case the virtual site is on the line through the the other two
+-  In this case the virtual site is on the line through the other two
    particles at a distance of :math:`|a|` from :math:`i`. The force on
    particles :math:`i` and :math:`j` due to the force on the virtual site
    can be computed as:

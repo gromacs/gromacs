@@ -1925,7 +1925,7 @@ static void translate_positions(
 }
 
 
-/*! \brief Write back the the modified local positions from the collective array to the official positions. */
+/*! \brief Write back the modified local positions from the collective array to the official positions. */
 static void apply_modified_positions(
         swap_group *g,
         rvec        x[])

@@ -82,7 +82,7 @@ double HistogramSize::newHistogramSizeInitialStage(const BiasParams &params,
                                                    FILE             *fplog)
 {
     /* The histogram size is kept constant until the sampling region has been covered
-       and the the current sample weight is large enough and the histogram is ready. */
+       and the current sample weight is large enough and the histogram is ready. */
     if (!detectedCovering ||
         (logScaledSampleWeight_ < maxLogScaledSampleWeight_) ||
         equilibrateHistogram_)

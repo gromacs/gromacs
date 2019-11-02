@@ -362,7 +362,7 @@ void BiasWriter::prepareBiasOutput(const Bias &bias)
     gmx::ArrayRef<float> pmf = block_[getVarStartBlock(AwhOutputEntryType::Pmf)].data();
     bias.state().getPmf(pmf);
 
-    /* Pack the the data point by point.
+    /* Pack the data point by point.
      * Unfortunately we can not loop over a class enum, so we cast to int.
      * \todo Use strings instead of enum when we port the output to TNG.
      */

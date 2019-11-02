@@ -98,7 +98,7 @@ class PointState;
  * collected at a constant bias potential, between updates.
  *
  * The bias keeps a grid with coordinate points that organizes spatial
- * information about the coordinate. The grid has the the same geometry
+ * information about the coordinate. The grid has the same geometry
  * as the coordinate, i.e. they have the same dimensionality and periodicity
  * (if any). The number of points in the grid sets the resolution of
  * the collected data and its extent defines the sampling region of interest.

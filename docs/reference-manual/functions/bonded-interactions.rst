@@ -597,7 +597,7 @@ torsion angle at only one minimum value. In this case, the factor
 cannot have maxima both at :math:`-\phi_0` and :math:`+\phi_0` maxima,
 but only one of them. For this reason, all the dihedral angles of the
 starting configuration should have their values in the desired angles
-interval and the the equilibrium :math:`\phi_0` value should not be too
+interval and the equilibrium :math:`\phi_0` value should not be too
 close to the interval limits (as for the restricted bending potential,
 described in :ref:`ReB`, at least :math:`10^{\circ}` difference is
 recommended).

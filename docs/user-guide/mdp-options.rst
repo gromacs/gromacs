@@ -64,7 +64,7 @@ Run control
       of motion.  For constant NVE simulations started from
       corresponding points in the same trajectory, the trajectories
       are analytically, but not binary, identical to the
-      :mdp-value:`integrator=md` leap-frog integrator. The the kinetic
+      :mdp-value:`integrator=md` leap-frog integrator. The kinetic
       energy, which is determined from the whole step velocities and
       is therefore slightly too high. The advantage of this integrator
       is more accurate, reversible Nose-Hoover and Parrinello-Rahman

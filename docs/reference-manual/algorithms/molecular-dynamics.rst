@@ -760,7 +760,7 @@ energies using the half-step-averaged kinetic energies (
 of small step size than will the full-step kinetic energy (using
 :mdp-value:`integrator=md-vv`). For NVE simulations, this difference is usually not
 significant, since the positions and velocities of the particles are
-still identical; it makes a difference in the way the the temperature of
+still identical; it makes a difference in the way the temperature of
 the simulations are **interpreted**, but **not** in the trajectories that
 are produced. Although the kinetic energy is more accurate with the
 half-step-averaged method, meaning that it changes less as the timestep
@@ -1523,7 +1523,7 @@ Using the Trotter decomposition, we get
            :label: eqnMTTKthermandbarTrotterdecomp
 
 The action of :math:`\exp\left(iL_1 {\Delta t}\right)` comes from the
-solution of the the differential equation
+solution of the differential equation
 :math:`\dot{{{\mathbf{r}}}}_i = {{\mathbf{v}}}_i + {v_{\epsilon}}{{\mathbf{r}}}_i`
 with
 :math:`{{\mathbf{v}}}_i = {{\mathbf{p}}}_i/m_i`

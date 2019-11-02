@@ -479,7 +479,7 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(
 {
     // Determine the size of cubes where there are on average 10 positions.
     // The loop takes care of cases where some of the box edges are shorter
-    // than the the desired cube size; in such cases, a single grid cell is
+    // than the desired cube size; in such cases, a single grid cell is
     // used in these dimensions, and the cube size is determined only from the
     // larger box vectors.  Such boxes should be rare, but the bounding box
     // approach can result in very flat boxes with certain types of selections

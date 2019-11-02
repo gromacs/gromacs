@@ -3019,7 +3019,7 @@ class SubgraphNodeBuilder(NodeBuilder):
 
         In the SubgraphContext, these handles cannot represent uniquely identifiable
         results. They are placeholders for relative positions in graphs that are
-        not defined until the the subgraph is being executed.
+        not defined until the subgraph is being executed.
 
         Such references should be tracked and invalidated when exiting the
         subgraph context. Within the subgraph context, they are used to establish

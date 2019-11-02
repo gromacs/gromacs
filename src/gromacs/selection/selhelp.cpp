@@ -425,7 +425,7 @@ const char *const PositionsHelpText::text[] = {
     "   even if only part of it is selected.",
     "   [TT]part_[tt] prefix calculates the centers for the selected atoms, but",
     "   uses always the same atoms for the same residue/molecule. The used atoms",
-    "   are determined from the the largest group allowed by the selection.",
+    "   are determined from the largest group allowed by the selection.",
     "   [TT]dyn_[tt] calculates the centers strictly only for the selected atoms.",
     "   If no prefix is specified, whole selections default to [TT]part_[tt] and",
     "   other places default to [TT]whole_[tt].",

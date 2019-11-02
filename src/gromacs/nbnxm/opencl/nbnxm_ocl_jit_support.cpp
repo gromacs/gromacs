@@ -108,7 +108,7 @@ static const char * kernel_VdW_family_definitions[] =
  * -DLJ_EWALD_COMB_GEOM       (The evdwOclFSWITCH flavour)
  * -DVDWNAME=_VdwLJEwCombGeom (The second part of the generated kernel name )
  *
- * prune/energy are still generated as originally. It is only the the flavour-level that has changed, so that
+ * prune/energy are still generated as originally. It is only the flavour-level that has changed, so that
  * only the required flavour for the simulation is compiled.
  *
  * If eeltype is single-range Ewald, then we need to add the

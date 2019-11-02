@@ -210,7 +210,7 @@ Soft-core interactions
    :math:`C_6^A=C_{12}^A=C_6^B=C_{12}^B=1`.
 
 In a free-energy calculation where particles grow out of nothing, or
-particles disappear, using the the simple linear interpolation of the
+particles disappear, using the simple linear interpolation of the
 Lennard-Jones and Coulomb potentials as described in
 :eq:`Equations %s <eqdVljdlambda>` and :eq:`%s <eqdVcoulombdlambda>` may lead to poor
 convergence. When the particles have nearly disappeared, or are close to

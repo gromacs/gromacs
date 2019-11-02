@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -442,7 +442,7 @@ class SelectionTreeElement
             gmx_ana_index_t                 cgrp;
             //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
             struct {
-                //! Pointer the the method used in this expression.
+                //! Pointer the method used in this expression.
                 struct gmx_ana_selmethod_t *method;
                 //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
                 void                       *mdata;

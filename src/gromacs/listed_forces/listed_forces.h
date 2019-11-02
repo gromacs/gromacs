@@ -38,7 +38,7 @@
  * \brief Handles computing energies and forces for listed
  * interactions.
  *
- * Located here is the the code for
+ * Located here is the code for
  * - computing energies and forces for interactions between a small
      number of particles, e.g bonds, position restraints and listed
      non-bonded interactions (e.g. 1-4).
