@@ -155,7 +155,7 @@ void Bayes::changeParam(size_t j, real rand)
     //real delta = (2*rand-1)*step()*fabs(param_[j]);
     real delta = (2*rand-1)*step()*(upperBound_[j]-lowerBound_[j]);
     param_[j] += delta;
-    if (bounds())
+    if (boxConstraint())
     {
         if (param_[j] < lowerBound_[j])
         {

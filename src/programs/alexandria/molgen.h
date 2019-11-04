@@ -200,6 +200,7 @@ class MolGen
         gmx_bool                        bFinal_;
         gmx_bool                        bGenVsite_;
         gmx_bool                        qsymm_;
+        gmx_bool                        constrain_; 
         Poldata                         pd_;
         t_commrec                      *cr_;
         gmx::MDLogger                   mdlog_;
@@ -283,6 +284,8 @@ class MolGen
         double qtol() const { return qtol_;}
         
         gmx_bool bQsym() const { return qsymm_;}
+        
+        gmx_bool bConstrain() const { return constrain_;}
         
         //! \brief The atom to fix
         const char *fixchi() const { return fixchi_; }

@@ -275,6 +275,7 @@ MolGen::MolGen()
     bGenVsite_ = false;
     bOptHfac_  = false;
     qsymm_     = false;
+    constrain_ = false;
     bQM_       = false;
     J0_min_    = 5;
     Chi0_min_  = 1;
@@ -328,6 +329,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Max number of tries for optimizing the charges." },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
+        { "-constrain",  FALSE, etBOOL, {&constrain_},
+          "Perform Box-Constraint optimization" },
         { "-genvsites", FALSE, etBOOL, {&bGenVsite_},
           "Generate virtual sites. Check and double check." },
         { "-nexcl",  FALSE, etINT, {&nexcl_},

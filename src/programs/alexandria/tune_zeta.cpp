@@ -128,7 +128,7 @@ class OptZeta : public MolGen, Bayes
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            Bayes::setBounds(weight(ermsBOUNDS) > 0);
+            Bayes::setBoxConstraint(bConstrain());
         }
 
         double l2_regularizer (double x,

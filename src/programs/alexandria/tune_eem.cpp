@@ -145,7 +145,7 @@ class OptACM : public MolGen, Bayes
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            setBounds(weight(ermsBOUNDS) > 0);
+            setBoxConstraint(bConstrain());
         }
 
         double l2_regularizer (double x,

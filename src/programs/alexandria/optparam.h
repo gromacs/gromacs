@@ -64,7 +64,7 @@ class OptParam
         const gmx_output_env_t *oenv_;
         const char             *xvgconv_;
         const char             *xvgepot_;
-        gmx_bool                bBound_;
+        gmx_bool                bBoxConstraint_;
         real                    seed_;
         real                    step_;
         real                    temperature_;
@@ -78,7 +78,7 @@ class OptParam
                 oenv_(nullptr), 
                 xvgconv_(nullptr), 
                 xvgepot_(nullptr), 
-                bBound_(false), 
+                bBoxConstraint_(false), 
                 seed_(-1), 
                 step_(0.02), 
                 temperature_(5), 
@@ -130,10 +130,10 @@ class OptParam
         void adapt_step(real factor) {step_ *= factor ;}
 
         //! \brief Use box constraints or not
-        void setBounds(bool bBound) { bBound_ = bBound; }
+        void setBoxConstraint(bool bBox) { bBoxConstraint_ = bBox; }
 
         //! \brief Return whether or not bounds are used for parameters
-        bool bounds() const { return bBound_; }
+        bool boxConstraint() const { return bBoxConstraint_; }
 
         //! \brief Return xvg file for convergence information
         const char *xvgConv() const { return xvgconv_; }

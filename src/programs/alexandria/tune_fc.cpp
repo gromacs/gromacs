@@ -224,7 +224,7 @@ class Optimization : public MolGen, Bayes
         void optionsFinished()
         {
             MolGen::optionsFinished();
-            setBounds(weight(ermsBOUNDS) > 0);
+            setBoxConstraint(bConstrain());
         }
 
         int iOpt(int itype) { return iOpt_[itype]; }
