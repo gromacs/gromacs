@@ -491,6 +491,8 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
 bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
                                     const bool        useGpuForPme,
                                     const bool        useGpuForNonbonded,
+                                    const bool        gpuPmePpCommIsEnabled,
+                                    const bool        gpuHaloExchangeIsEnabled,
                                     const TaskTarget  updateTarget,
                                     const bool        gpusWereDetected,
                                     const t_inputrec& inputrec,
@@ -507,9 +509,11 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
 
     std::string errorMessage;
 
-    if (isDomainDecomposition)
+    if (isDomainDecomposition && (!gpuPmePpCommIsEnabled || !gpuHaloExchangeIsEnabled))
     {
-        errorMessage += "Domain decomposition is not supported.\n";
+        errorMessage +=
+                "Domain decomposition is not supported without GPU halo exchange and GPU PME-PP "
+                "communication.\n";
     }
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
