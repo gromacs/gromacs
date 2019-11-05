@@ -61,3 +61,16 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix .gro file formatting with large boxes
+"""""""""""""""""""""""""""""""""""""""""
+
+The |Gromacs| manual says the box components in the .gro file
+format are separated by spaces. But no space was printed when
+a box component, except for the first, was 1000 nm or larger
+or an off-diagonal component was -100 nm or smaller.
+Now at least one space is always printed. Content that was written
+in a way that already had at least one space between components
+is unchanged. Existing parsers that conform to the documentation
+and expect whitespace separation will continue to work in all cases.
+
+:issue:`3176`
