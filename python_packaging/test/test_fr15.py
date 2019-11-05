@@ -34,27 +34,64 @@
 
 """Test gmxapi functionality described in roadmap.rst."""
 
+import logging
+
 import pytest
 
 import gmxapi as gmx
 from gmxapi.version import has_feature
 
+# Configure the `logging` module before proceeding any further.
+gmx.logger.setLevel(logging.WARNING)
+
+try:
+    from mpi4py import MPI
+    rank_number = MPI.COMM_WORLD.Get_rank()
+except ImportError:
+    rank_number = 0
+    rank_tag = ''
+    MPI = None
+else:
+    rank_tag = 'rank{}:'.format(rank_number)
+
+# Use this formatter to improve the caplog log records.
+formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
+
+@pytest.mark.usefixtures('cleandir')
 @pytest.mark.skipif(not has_feature('fr15'),
                    reason="Feature level not met.")
-def test_fr15():
+def test_fr15(spc_water_box, caplog):
     """FR15: Simulation input modification.
 
     * *gmx.modify_input produces new (tpr) simulation input in data flow operation*
       (requires interaction with library development)
-    * gmx.make_input dispatches appropriate preprocessing for file or in-memory simulation input.
     """
-    initial_input = gmx.read_tpr([tpr_filename for _ in range(10)])
-    tau_t = list([i/10. for i in range(10)])
-    param_sweep = gmx.modify_input(input=initial_input,
-                                   parameters={
-                                       'tau_t': tau_t
-                                   }
-                                   )
-    md = gmx.mdrun(param_sweep)
-    for tau_expected, tau_actual in zip(tau_t, md.output.params['tau_t'].extract()):
-        assert tau_expected == tau_actual
+    try:
+        from mpi4py import MPI
+        current_rank = MPI.COMM_WORLD.Get_rank()
+        ensemble_size = MPI.COMM_WORLD.Get_size()
+    except ImportError:
+        current_rank = 0
+        ensemble_size = 1
+
+    with caplog.at_level(logging.DEBUG):
+        caplog.handler.setFormatter(formatter)
+        with caplog.at_level(logging.WARNING, 'gmxapi'), \
+                 caplog.at_level(logging.DEBUG, 'gmxapi.mdrun'), \
+                 caplog.at_level(logging.DEBUG, 'gmxapi.modify_input'), \
+                 caplog.at_level(logging.DEBUG, 'gmxapi.read_tpr'), \
+                 caplog.at_level(logging.DEBUG, 'gmxapi.simulation'):
+
+            initial_input = gmx.read_tpr([spc_water_box for _ in range(ensemble_size)])
+            parameters = list([{'ld-seed': i} for i in range(ensemble_size)])
+            param_sweep = gmx.modify_input(input=initial_input,
+                                           parameters=parameters
+                                           )
+            md = gmx.mdrun(param_sweep)
+            # TODO: (#3179) Handle ensembles of size 1 more elegantly.
+            if md.output.ensemble_width > 1:
+                result_list = md.output.parameters['ld-seed'].result()
+            else:
+                result_list = [md.output.parameters['ld-seed'].result()]
+            for expected, actual in zip(parameters, result_list):
+                assert expected['ld-seed'] == actual
