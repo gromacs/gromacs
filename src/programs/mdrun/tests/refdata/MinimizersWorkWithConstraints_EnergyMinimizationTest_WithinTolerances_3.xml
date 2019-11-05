@@ -4,9 +4,9 @@
   <Simulation Name="glycine_vacuo">
     <Minimizer Name="cg">
       <Energy Name="Potential">
-        <Real Name="Time 0.000000 Step 0 in frame 0">2188.6237281397243</Real>
-        <Real Name="Time 0.000000 Step 0 in frame 1">1842.8583301483945</Real>
-        <Real Name="Time 4.000000 Step 4 in frame 2">151.7430178757935</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 0">2188.6237283779924</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 1">1842.8583303894229</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 2">151.74301814092519</Real>
       </Energy>
     </Minimizer>
   </Simulation>

@@ -4,8 +4,8 @@
   <FunctionType Name="PDIHS">
     <FEP Name="Yes">
       <Lambda Name="0">
-        <Real Name="Epot ">9.5569958251443552</Real>
-        <Real Name="dVdlambda ">6.0697642591084131</Real>
+        <Real Name="Epot ">9.5569958251443534</Real>
+        <Real Name="dVdlambda ">6.0697642591084113</Real>
         <Vector Name="Central shift forces">
           <Real Name="X">2.8421709430404007e-14</Real>
           <Real Name="Y">6.0396132539608516e-14</Real>
