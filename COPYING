@@ -1090,7 +1090,7 @@ DEALINGS IN THE SOFTWARE.
 8. Google Test and Google Mock
 ===============================
 
-   Files: src/external/gmock-1.7.0/*
+   Files: src/external/googletest/*
 
 Copyright 2008, Google Inc.
 All rights reserved.
