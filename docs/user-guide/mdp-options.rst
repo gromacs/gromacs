@@ -2444,10 +2444,11 @@ Free energy calculations
 .. mdp:: sc-r-power
 
    (6)
-   the power of the radial term in the soft-core equation. Possible
-   values are 6 and 48. 6 is more standard, and is the default. When
-   48 is used, then sc-alpha should generally be much lower (between
-   0.001 and 0.003).
+   power 6 for the radial term in the soft-core equation.
+
+   (48)
+   (deprecated) power 48 for the radial term in the soft-core equation. 
+   Note that sc-alpha should generally be much lower (between 0.001 and 0.003).
 
 .. mdp:: sc-coul
 

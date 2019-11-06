@@ -17,6 +17,9 @@ Support for 32bit architectures
 There are no current or planned large scale resources using 32bit architectures,
 and we have no ability to properly test and evaluate them.
 
+Free-energy soft-core power 48
+""""""""""""""""""""""""""""""
+Free-energy soft-core power 48 is almost never used and is therefore deprecated.
 
 Functionality deprecated in |Gromacs| 2019
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
