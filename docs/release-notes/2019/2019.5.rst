@@ -42,7 +42,16 @@ We don't expect this to have caused incorrect results, but
 a memory checker would complain.
 
 :issue:`3173`
- 
+
+Work around broken Apple Clang compiler in Mac OS Catalina
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+In Mac OS Catalina, the default XCode compilers checks and
+enforces stack alignment. This would have been a good idea
+if Apple itself did not ship a C library that violates the
+stack alignment with AVX instructions are enabled.
+
+:issue:`3199`
+       
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
