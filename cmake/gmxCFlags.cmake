@@ -334,6 +334,25 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3 /wd161 /wd177 /wd411 /wd593 /wd981 /wd1418 /wd14
         endif()
     endif()
 
+    # Apple bastardized version of Clang
+    if(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
+        if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 11.0)
+            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # that checks stack alignment by default, but their own C library
+            # does not align the stack properly. Embarrassing, Apple...
+            GMX_TEST_CFLAG(CFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CFLAGS)
+        endif()
+    endif()
+
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang")
+        if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 11.0)
+            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # that checks stack alignment by default, but their own C library
+            # does not align the stack properly. Embarrassing, Apple...
+            GMX_TEST_CXXFLAG(CXXFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CXXFLAGS)
+        endif()
+    endif()
+
     # Fujitsu compilers on PrimeHPC/Sparc64
     if(${CMAKE_C_COMPILER_ID} MATCHES Fujitsu OR
        (${CMAKE_C_COMPILER_ID} MATCHES unknown AND ${CMAKE_C_COMPILER} MATCHES ^fcc))
