@@ -2457,10 +2457,6 @@ Free energy calculations
    (6)
    power 6 for the radial term in the soft-core equation.
 
-   (48)
-   (deprecated) power 48 for the radial term in the soft-core equation. 
-   Note that sc-alpha should generally be much lower (between 0.001 and 0.003).
-
 .. mdp:: sc-coul
 
    (no)

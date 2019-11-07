@@ -54,85 +54,17 @@
 #include "gromacs/utility/fatalerror.h"
 
 
-//! Enum for templating the soft-core treatment in the kernel
-enum class SoftCoreTreatment
-{
-    None,    //!< No soft-core
-    RPower6, //!< Soft-core with r-power = 6
-    RPower48 //!< Soft-core with r-power = 48
-};
-
-//! Most treatments are fine with float in mixed-precision mode.
-template<SoftCoreTreatment softCoreTreatment>
-struct SoftCoreReal
-{
-    //! Real type for soft-core calculations
-    using Real = real;
-};
-
-//! This treatment requires double precision for some computations.
-template<>
-struct SoftCoreReal<SoftCoreTreatment::RPower48>
-{
-    //! Real type for soft-core calculations
-    using Real = double;
-};
-
 //! Computes r^(1/p) and 1/r^(1/p) for the standard p=6
-template<SoftCoreTreatment softCoreTreatment>
 static inline void pthRoot(const real r, real* pthRoot, real* invPthRoot)
 {
     *invPthRoot = gmx::invsqrt(std::cbrt(r));
     *pthRoot    = 1 / (*invPthRoot);
 }
 
-// We need a double version to make the specialization below work
-#if !GMX_DOUBLE
-//! Computes r^(1/p) and 1/r^(1/p) for the standard p=6
-template<SoftCoreTreatment softCoreTreatment>
-static inline void pthRoot(const double r, real* pthRoot, double* invPthRoot)
+static inline real calculateRinv6(const real rinvV)
 {
-    *invPthRoot = gmx::invsqrt(std::cbrt(r));
-    *pthRoot    = 1 / (*invPthRoot);
-}
-#endif
-
-//! Computes r^(1/p) and 1/r^(1/p) for p=48
-template<>
-inline void pthRoot<SoftCoreTreatment::RPower48>(const double r, real* pthRoot, double* invPthRoot)
-{
-    *pthRoot    = std::pow(r, 1.0 / 48.0);
-    *invPthRoot = 1 / (*pthRoot);
-}
-
-template<SoftCoreTreatment softCoreTreatment>
-static inline real calculateSigmaPow(const real sigma6)
-{
-    if (softCoreTreatment == SoftCoreTreatment::RPower6)
-    {
-        return sigma6;
-    }
-    else
-    {
-        real sigmaPow = sigma6 * sigma6;     /* sigma^12 */
-        sigmaPow      = sigmaPow * sigmaPow; /* sigma^24 */
-        sigmaPow      = sigmaPow * sigmaPow; /* sigma^48 */
-        return (sigmaPow);
-    }
-}
-
-template<SoftCoreTreatment softCoreTreatment, class SCReal>
-static inline real calculateRinv6(const SCReal rinvV)
-{
-    if (softCoreTreatment == SoftCoreTreatment::RPower6)
-    {
-        return rinvV;
-    }
-    else
-    {
-        real rinv6 = rinvV * rinvV;
-        return (rinv6 * rinv6 * rinv6);
-    }
+    real rinv6 = rinvV * rinvV;
+    return (rinv6 * rinv6 * rinv6);
 }
 
 static inline real calculateVdw6(const real c6, const real rinv6)
@@ -146,15 +78,12 @@ static inline real calculateVdw12(const real c12, const real rinv6)
 }
 
 /* reaction-field electrostatics */
-template<class SCReal>
-static inline SCReal
-reactionFieldScalarForce(const real qq, const real rinv, const SCReal r, const real krf, const real two)
+static inline real
+reactionFieldScalarForce(const real qq, const real rinv, const real r, const real krf, const real two)
 {
     return (qq * (rinv - two * krf * r * r));
 }
-template<class SCReal>
-static inline real
-reactionFieldPotential(const real qq, const real rinv, const SCReal r, const real krf, const real potentialShift)
+static inline real reactionFieldPotential(const real qq, const real rinv, const real r, const real krf, const real potentialShift)
 {
     return (qq * (rinv + krf * r * r - potentialShift));
 }
@@ -193,25 +122,23 @@ static inline real ewaldLennardJonesGridSubtract(const real c6grid, const real p
 }
 
 /* LJ Potential switch */
-template<class SCReal>
-static inline SCReal potSwitchScalarForceMod(const SCReal fScalarInp,
-                                             const real   potential,
-                                             const real   sw,
-                                             const SCReal r,
-                                             const real   rVdw,
-                                             const real   dsw,
-                                             const real   zero)
+static inline real potSwitchScalarForceMod(const real fScalarInp,
+                                           const real potential,
+                                           const real sw,
+                                           const real r,
+                                           const real rVdw,
+                                           const real dsw,
+                                           const real zero)
 {
     if (r < rVdw)
     {
-        SCReal fScalar = fScalarInp * sw - r * potential * dsw;
+        real fScalar = fScalarInp * sw - r * potential * dsw;
         return (fScalar);
     }
     return (zero);
 }
-template<class SCReal>
 static inline real
-potSwitchPotentialMod(const real potentialInp, const real sw, const SCReal r, const real rVdw, const real zero)
+potSwitchPotentialMod(const real potentialInp, const real sw, const real r, const real rVdw, const real zero)
 {
     if (r < rVdw)
     {
@@ -223,7 +150,7 @@ potSwitchPotentialMod(const real potentialInp, const real sw, const SCReal r, co
 
 
 //! Templated free-energy non-bonded kernel
-template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
+template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald, bool vdwModifierIsPotSwitch>
 static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                   rvec* gmx_restrict         xx,
                                   gmx::ForceWithShiftForces* forceWithShiftForces,
@@ -232,10 +159,6 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                                   nb_kernel_data_t* gmx_restrict kernel_data,
                                   t_nrnb* gmx_restrict nrnb)
 {
-    using SCReal = typename SoftCoreReal<softCoreTreatment>::Real;
-
-    constexpr bool useSoftCore = (softCoreTreatment != SoftCoreTreatment::None);
-
 #define STATE_A 0
 #define STATE_B 1
 #define NSTATES 2
@@ -357,8 +280,8 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     GMX_RELEASE_ASSERT(!(vdwInteractionTypeIsEwald && vdwModifierIsPotSwitch),
                        "Can not apply soft-core to switched Ewald potentials");
 
-    SCReal dvdl_coul = 0; /* Needs double for sc_power==48 */
-    SCReal dvdl_vdw  = 0; /* Needs double for sc_power==48 */
+    real dvdl_coul = 0;
+    real dvdl_vdw  = 0;
 
     /* Lambda factor for state A, 1-lambda*/
     real LFC[NSTATES], LFV[NSTATES];
@@ -375,7 +298,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     DLF[STATE_B] = 1;
 
     real           lfac_coul[NSTATES], dlfac_coul[NSTATES], lfac_vdw[NSTATES], dlfac_vdw[NSTATES];
-    constexpr real sc_r_power = (softCoreTreatment == SoftCoreTreatment::RPower48 ? 48.0_real : 6.0_real);
+    constexpr real sc_r_power = 6.0_real;
     for (int i = 0; i < NSTATES; i++)
     {
         lfac_coul[i]  = (lam_power == 2 ? (1 - LFC[i]) * (1 - LFC[i]) : (1 - LFC[i]));
@@ -421,12 +344,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
             const int  j3  = 3 * jnr;
             real       c6[NSTATES], c12[NSTATES], qq[NSTATES], Vcoul[NSTATES], Vvdw[NSTATES];
             real       r, rinv, rp, rpm2;
-            real       alpha_vdw_eff, alpha_coul_eff, sigma_pow[NSTATES];
+            real       alpha_vdw_eff, alpha_coul_eff, sigma6[NSTATES];
             const real dx  = ix - x[j3];
             const real dy  = iy - x[j3 + 1];
             const real dz  = iz - x[j3 + 2];
             const real rsq = dx * dx + dy * dy + dz * dz;
-            SCReal     FscalC[NSTATES], FscalV[NSTATES]; /* Needs double for sc_power==48 */
+            real       FscalC[NSTATES], FscalV[NSTATES];
 
             if (rsq >= rcutoff_max2)
             {
@@ -460,7 +383,12 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                 r    = 0;
             }
 
-            if (softCoreTreatment == SoftCoreTreatment::None)
+            if (useSoftCore)
+            {
+                rpm2 = rsq * rsq;  /* r4 */
+                rp   = rpm2 * rsq; /* r6 */
+            }
+            else
             {
                 /* The soft-core power p will not affect the results
                  * with not using soft-core, so we use power of 0 which gives
@@ -468,19 +396,6 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                  */
                 rpm2 = rinv * rinv;
                 rp   = 1;
-            }
-            if (softCoreTreatment == SoftCoreTreatment::RPower6)
-            {
-                rpm2 = rsq * rsq;  /* r4 */
-                rp   = rpm2 * rsq; /* r6 */
-            }
-            if (softCoreTreatment == SoftCoreTreatment::RPower48)
-            {
-                rp   = rsq * rsq * rsq; /* r6 */
-                rp   = rp * rp;         /* r12 */
-                rp   = rp * rp;         /* r24 */
-                rp   = rp * rp;         /* r48 */
-                rpm2 = rp / rsq;        /* r46 */
             }
 
             real Fscal = 0;
@@ -501,7 +416,6 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                     c12[i] = nbfp[tj[i] + 1];
                     if (useSoftCore)
                     {
-                        real sigma6[NSTATES];
                         if ((c6[i] > 0) && (c12[i] > 0))
                         {
                             /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
@@ -515,7 +429,6 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                         {
                             sigma6[i] = sigma6_def;
                         }
-                        sigma_pow[i] = calculateSigmaPow<softCoreTreatment>(sigma6[i]);
                     }
                 }
 
@@ -541,21 +454,20 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                     Vcoul[i]  = 0;
                     Vvdw[i]   = 0;
 
-                    real   rinvC, rinvV;
-                    SCReal rC, rV, rpinvC, rpinvV; /* Needs double for sc_power==48 */
+                    real rinvC, rinvV, rC, rV, rpinvC, rpinvV;
 
                     /* Only spend time on A or B state if it is non-zero */
                     if ((qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0))
                     {
-                        /* this section has to be inside the loop because of the dependence on sigma_pow */
+                        /* this section has to be inside the loop because of the dependence on sigma6 */
                         if (useSoftCore)
                         {
-                            rpinvC = one / (alpha_coul_eff * lfac_coul[i] * sigma_pow[i] + rp);
-                            pthRoot<softCoreTreatment>(rpinvC, &rinvC, &rC);
+                            rpinvC = one / (alpha_coul_eff * lfac_coul[i] * sigma6[i] + rp);
+                            pthRoot(rpinvC, &rinvC, &rC);
                             if (scLambdasOrAlphasDiffer)
                             {
-                                rpinvV = one / (alpha_vdw_eff * lfac_vdw[i] * sigma_pow[i] + rp);
-                                pthRoot<softCoreTreatment>(rpinvV, &rinvV, &rV);
+                                rpinvV = one / (alpha_vdw_eff * lfac_vdw[i] * sigma6[i] + rp);
+                                pthRoot(rpinvV, &rinvV, &rV);
                             }
                             else
                             {
@@ -607,13 +519,13 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
                         if ((c6[i] != 0 || c12[i] != 0) && computeVdwInteraction)
                         {
                             real rinv6;
-                            if (softCoreTreatment == SoftCoreTreatment::RPower6)
+                            if (useSoftCore)
                             {
-                                rinv6 = calculateRinv6<softCoreTreatment>(rpinvV);
+                                rinv6 = rpinvV;
                             }
                             else
                             {
-                                rinv6 = calculateRinv6<softCoreTreatment>(rinvV);
+                                rinv6 = calculateRinv6(rinvV);
                             }
                             real Vvdw6  = calculateVdw6(c6[i], rinv6);
                             real Vvdw12 = calculateVdw12(c12[i], rinv6);
@@ -664,11 +576,10 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
 
                     if (useSoftCore)
                     {
-                        dvdl_coul +=
-                                Vcoul[i] * DLF[i]
-                                + LFC[i] * alpha_coul_eff * dlfac_coul[i] * FscalC[i] * sigma_pow[i];
+                        dvdl_coul += Vcoul[i] * DLF[i]
+                                     + LFC[i] * alpha_coul_eff * dlfac_coul[i] * FscalC[i] * sigma6[i];
                         dvdl_vdw += Vvdw[i] * DLF[i]
-                                    + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * FscalV[i] * sigma_pow[i];
+                                    + LFV[i] * alpha_vdw_eff * dlfac_vdw[i] * FscalV[i] * sigma6[i];
                     }
                     else
                     {
@@ -866,55 +777,55 @@ typedef void (*KernelFunction)(const t_nblist* gmx_restrict nlist,
                                nb_kernel_data_t* gmx_restrict kernel_data,
                                t_nrnb* gmx_restrict nrnb);
 
-template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
+template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald, bool elecInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnVdwModifier(const bool vdwModifierIsPotSwitch)
 {
     if (vdwModifierIsPotSwitch)
     {
-        return (nb_free_energy_kernel<softCoreTreatment, scLambdasOrAlphasDiffer,
+        return (nb_free_energy_kernel<useSoftCore, scLambdasOrAlphasDiffer,
                                       vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, true>);
     }
     else
     {
-        return (nb_free_energy_kernel<softCoreTreatment, scLambdasOrAlphasDiffer,
+        return (nb_free_energy_kernel<useSoftCore, scLambdasOrAlphasDiffer,
                                       vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, false>);
     }
 }
 
-template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
+template<bool useSoftCore, bool scLambdasOrAlphasDiffer, bool vdwInteractionTypeIsEwald>
 static KernelFunction dispatchKernelOnElecInteractionType(const bool elecInteractionTypeIsEwald,
                                                           const bool vdwModifierIsPotSwitch)
 {
     if (elecInteractionTypeIsEwald)
     {
-        return (dispatchKernelOnVdwModifier<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, true>(
+        return (dispatchKernelOnVdwModifier<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, true>(
                 vdwModifierIsPotSwitch));
     }
     else
     {
-        return (dispatchKernelOnVdwModifier<softCoreTreatment, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, false>(
+        return (dispatchKernelOnVdwModifier<useSoftCore, scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, false>(
                 vdwModifierIsPotSwitch));
     }
 }
 
-template<SoftCoreTreatment softCoreTreatment, bool scLambdasOrAlphasDiffer>
+template<bool useSoftCore, bool scLambdasOrAlphasDiffer>
 static KernelFunction dispatchKernelOnVdwInteractionType(const bool vdwInteractionTypeIsEwald,
                                                          const bool elecInteractionTypeIsEwald,
                                                          const bool vdwModifierIsPotSwitch)
 {
     if (vdwInteractionTypeIsEwald)
     {
-        return (dispatchKernelOnElecInteractionType<softCoreTreatment, scLambdasOrAlphasDiffer, true>(
+        return (dispatchKernelOnElecInteractionType<useSoftCore, scLambdasOrAlphasDiffer, true>(
                 elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
     }
     else
     {
-        return (dispatchKernelOnElecInteractionType<softCoreTreatment, scLambdasOrAlphasDiffer, false>(
+        return (dispatchKernelOnElecInteractionType<useSoftCore, scLambdasOrAlphasDiffer, false>(
                 elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
     }
 }
 
-template<SoftCoreTreatment softCoreTreatment>
+template<bool useSoftCore>
 static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scLambdasOrAlphasDiffer,
                                                                   const bool vdwInteractionTypeIsEwald,
                                                                   const bool elecInteractionTypeIsEwald,
@@ -922,12 +833,12 @@ static KernelFunction dispatchKernelOnScLambdasOrAlphasDifference(const bool scL
 {
     if (scLambdasOrAlphasDiffer)
     {
-        return (dispatchKernelOnVdwInteractionType<softCoreTreatment, true>(
+        return (dispatchKernelOnVdwInteractionType<useSoftCore, true>(
                 vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
     }
     else
     {
-        return (dispatchKernelOnVdwInteractionType<softCoreTreatment, false>(
+        return (dispatchKernelOnVdwInteractionType<useSoftCore, false>(
                 vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald, vdwModifierIsPotSwitch));
     }
 }
@@ -940,19 +851,13 @@ static KernelFunction dispatchKernel(const bool        scLambdasOrAlphasDiffer,
 {
     if (fr->sc_alphacoul == 0 && fr->sc_alphavdw == 0)
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::None>(
-                scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
-                vdwModifierIsPotSwitch));
-    }
-    else if (fr->sc_r_power == 6.0_real)
-    {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::RPower6>(
+        return (dispatchKernelOnScLambdasOrAlphasDifference<false>(
                 scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
                 vdwModifierIsPotSwitch));
     }
     else
     {
-        return (dispatchKernelOnScLambdasOrAlphasDifference<SoftCoreTreatment::RPower48>(
+        return (dispatchKernelOnScLambdasOrAlphasDifference<true>(
                 scLambdasOrAlphasDiffer, vdwInteractionTypeIsEwald, elecInteractionTypeIsEwald,
                 vdwModifierIsPotSwitch));
     }
@@ -979,7 +884,7 @@ void gmx_nb_free_energy_kernel(const t_nblist*            nlist,
     {
         scLambdasOrAlphasDiffer = false;
     }
-    else if (fr->sc_r_power == 6.0_real || fr->sc_r_power == 48.0_real)
+    else if (fr->sc_r_power == 6.0_real)
     {
         if (kernel_data->lambda[efptCOUL] == kernel_data->lambda[efptVDW] && fr->sc_alphacoul == fr->sc_alphavdw)
         {

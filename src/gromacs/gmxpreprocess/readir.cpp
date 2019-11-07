@@ -667,9 +667,11 @@ void check_ir(const char*                   mdparin,
         sprintf(err_buf, "The soft-core power is %d and can only be 1 or 2", fep->sc_power);
         CHECK(fep->sc_alpha != 0 && fep->sc_power != 1 && fep->sc_power != 2);
 
-        sprintf(err_buf, "The soft-core sc-r-power is %d and can only be 6 or 48",
+        sprintf(err_buf,
+                "The soft-core sc-r-power is %d and can only be 6. (sc-r-power 48 is no longer "
+                "supported.)",
                 static_cast<int>(fep->sc_r_power));
-        CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
+        CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0);
 
         sprintf(err_buf,
                 "Can't use positive delta-lambda (%g) if initial state/lambda does not start at "
@@ -1565,17 +1567,6 @@ static void do_fep_params(t_inputrec* ir, char fep_lambda[][STRLEN], char weight
         }
     }
 
-
-    /* make it easier if sc_r_power = 48 by increasing it to the 4th power, to be in the right scale. */
-    if (fep->sc_r_power == 48)
-    {
-        if (fep->sc_alpha > 0.1)
-        {
-            gmx_fatal(FARGS,
-                      "sc_alpha (%f) for sc_r_power = 48 should usually be between 0.001 and 0.004",
-                      fep->sc_alpha);
-        }
-    }
 
     /* now read in the weights */
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights), wi);
