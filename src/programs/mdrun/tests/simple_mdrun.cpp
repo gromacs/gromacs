@@ -127,8 +127,8 @@ TEST_P(SimpleMdrunTest, WithinTolerances)
     mdpFieldValues["nstfout"]       = "4";
     mdpFieldValues["constraints"]   = "none";
     mdpFieldValues["nstcalcenergy"] = "4";
-    mdpFieldValues.insert(MdpField("coulombtype", "Cut-off"));
-    mdpFieldValues.insert(MdpField("vdwtype", "Cut-off"));
+    mdpFieldValues["coulombtype"]   = "Cut-off";
+    mdpFieldValues["vdwtype"]       = "Cut-off";
 
     // Prepare the .tpr file
     {

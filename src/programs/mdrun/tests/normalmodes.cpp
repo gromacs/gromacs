@@ -76,9 +76,6 @@ namespace test
 namespace
 {
 
-//! Helper type
-using MdpField = MdpFieldValues::value_type;
-
 /*! \brief Test fixture base for normal mode analysis
  *
  * This test ensures mdrun can run a normal mode analysis, reaching
@@ -116,8 +113,8 @@ TEST_P(NormalModesTest, WithinTolerances)
     mdpFieldValues["rlist"]       = "5.6";
     mdpFieldValues["rvdw"]        = "5.6";
     mdpFieldValues["constraints"] = "none";
-    mdpFieldValues.insert(MdpField("coulombtype", "Cut-off"));
-    mdpFieldValues.insert(MdpField("vdwtype", "Cut-off"));
+    mdpFieldValues["coulombtype"] = "Cut-off";
+    mdpFieldValues["vdwtype"]     = "Cut-off";
 
     // prepare the .tpr file
     {

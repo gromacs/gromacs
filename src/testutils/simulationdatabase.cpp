@@ -157,7 +157,10 @@ const MdpFileValues mdpFileValueDatabase_g{
  * bit of a jungle until we transition to using IMdpOptions more.
  *
  * \throws  std::bad_alloc     if out of memory
- *          std::out_of_range  if \c simulationName is not in the database */
+ *          std::out_of_range  if \c simulationName is not in the database
+ *
+ * Note: Any mdp options that are not added here cannot be used
+ */
 MdpFieldValues prepareDefaultMdpFieldValues(const std::string& simulationName)
 {
     using MdpField = MdpFieldValues::value_type;
@@ -179,7 +182,9 @@ MdpFieldValues prepareDefaultMdpFieldValues(const std::string& simulationName)
     mdpFieldValues.insert(MdpField("compressibility", "5e-5"));
     mdpFieldValues.insert(MdpField("constraints", "none"));
     mdpFieldValues.insert(MdpField("other", ""));
+    mdpFieldValues.insert(MdpField("coulombtype", "Cut-off"));
     mdpFieldValues.insert(MdpField("rcoulomb", "0.7"));
+    mdpFieldValues.insert(MdpField("vdwtype", "Cut-off"));
     mdpFieldValues.insert(MdpField("rvdw", "0.7"));
     mdpFieldValues.insert(MdpField("nstcalcenergy", "100"));
 
@@ -243,9 +248,13 @@ std::string prepareMdpFileContents(const MdpFieldValues& mdpFieldValues)
      * currently have a good way to compare forces at steps where
      * energies were not computed with those from rerun on the same
      * coordinates.
+     *
+     * Note: Any mdp options that are not printed here cannot be used
      */
     return formatString(
-            R"(rcoulomb                = %s
+            R"(coulombtype             = %s
+                           rcoulomb                = %s
+                           vdwtype                 = %s
                            rvdw                    = %s
                            rlist                   = -1
                            bd-fric                 = 1000
@@ -279,7 +288,8 @@ std::string prepareMdpFileContents(const MdpFieldValues& mdpFieldValues)
                            comm-mode               = %s
                            nstcomm                 = %s
                            %s)",
-            mdpFieldValues.at("rcoulomb").c_str(), mdpFieldValues.at("rvdw").c_str(),
+            mdpFieldValues.at("coulombtype").c_str(), mdpFieldValues.at("rcoulomb").c_str(),
+            mdpFieldValues.at("vdwtype").c_str(), mdpFieldValues.at("rvdw").c_str(),
             mdpFieldValues.at("nsteps").c_str(), mdpFieldValues.at("nstenergy").c_str(),
             mdpFieldValues.at("nstxout").c_str(), mdpFieldValues.at("nstvout").c_str(),
             mdpFieldValues.at("nstfout").c_str(), mdpFieldValues.at("nstxout-compressed").c_str(),
