@@ -94,8 +94,8 @@ Run control
       significant part of the simulation time. The temperature for one
       or more groups of atoms (:mdp:`tc-grps`) is set with
       :mdp:`ref-t`, the inverse friction constant for each group is
-      set with :mdp:`tau-t`.  The parameter :mdp:`tcoupl` is
-      ignored. The random generator is initialized with
+      set with :mdp:`tau-t`.  The parameters :mdp:`tcoupl` and :mdp:`nsttcouple`
+      are ignored. The random generator is initialized with
       :mdp:`ld-seed`. When used as a thermostat, an appropriate value
       for :mdp:`tau-t` is 2 ps, since this results in a friction that
       is lower than the internal friction of water, while it is high
