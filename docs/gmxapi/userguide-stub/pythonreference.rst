@@ -21,11 +21,14 @@ Package documentation is extracted from the ``gmxapi`` Python module and is also
 directly, using either ``pydoc`` from the command line or :py:func:`help` from within Python, such
 as during an interactive session.
 
-.. seealso:: :ref:`gmxapi_package_documentation`
-
 Refer to the Python source code itself for additional clarification.
 
-.. _python-procedural:
+.. seealso::
 
-This copy of the documentation was built without the gmxapi package,
-and therefore lacks the full module reference.
+    This copy of the documentation was built without
+    :doc:`installing the gmxapi package <../userguide/install>`,
+    and therefore lacks the full module reference.
+    Refer to :ref:`gmxapi_package_documentation` for instructions on building
+    complete documentation, or `view online <http://gmxapi.org/>`__.
+
+.. todo:: :issue:`2985` Replace reference URL with http://manual.gromacs.org/current/gmxapi/

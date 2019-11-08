@@ -13,7 +13,7 @@ of ``gmx`` to refer to the ``gmxapi`` Python package.
 
 For full documentation of the Python-level interface and API, use the ``pydoc``
 command line tool or the :py:func:`help` interactive Python function, or refer to
-the :ref:`procedural interface <python-procedural>` documentation.
+the :doc:`pythonreference`.
 
 Python does not wrap any command-line tool, so once installation is complete,
 there shouldn't be any additional configuration necessary, and any errors that
