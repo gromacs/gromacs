@@ -29,6 +29,4 @@ Refer to the Python source code itself for additional clarification.
     :doc:`installing the gmxapi package <../userguide/install>`,
     and therefore lacks the full module reference.
     Refer to :ref:`gmxapi_package_documentation` for instructions on building
-    complete documentation, or `view online <http://gmxapi.org/>`__.
-
-.. todo:: :issue:`2985` Replace reference URL with http://manual.gromacs.org/current/gmxapi/
+    complete documentation, or `view online <http://manual.gromacs.org/current/gmxapi/>`__.

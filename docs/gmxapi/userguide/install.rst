@@ -466,10 +466,8 @@ be accessed in the usual ways, using ``pydoc`` from the command line or
 ``help()`` in an interactive Python session.
 
 The complete documentation (which you are currently reading)
-can be browsed `online <http://gmxapi.org/>`__
+can be browsed `online <http://manual.gromacs.org/current/gmxapi/>`__
 or built from a copy of the GROMACS source repository.
-
-.. todo:: :issue:`2985` Replace reference URL with http://manual.gromacs.org/current/gmxapi/
 
 Documentation is built from a combination of Python module documentation and
 static content, and requires a local copy of the GROMACS source repository.
