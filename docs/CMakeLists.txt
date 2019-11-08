@@ -512,17 +512,10 @@ if (SPHINX_FOUND)
 
     gmx_add_sphinx_source_files(
             FILES
-            gmxapi/changelog.rst
             gmxapi/index.rst
             gmxapi/userguide/install.rst
             gmxapi/userguide/usage.rst
             gmxapi/userguide/userguide.rst
-            gmxapi/reference/contributing.rst
-            gmxapi/reference/datamodel.rst
-            gmxapi/reference/executionmodel.rst
-            gmxapi/reference/extending.rst
-            gmxapi/reference/projectstructure.rst
-            gmxapi/reference/reference.rst
     )
 
     if (GMX_PYTHON_PACKAGE)
