@@ -98,19 +98,18 @@ void PyContext::addMDModule(pybind11::object force_object)
                 // \todo double-check whether there is something we should do to invalidate a PyCapsule.
             }
         };
-    };
-    auto       capsule = py::capsule(holder, gmxapi::MDHolder_Name, deleter);
-    py::object bind    = force_object.attr("bind");
-    // py::capsule does not have bindings and does not implicitly convert to py::object
-    py::object obj = capsule;
-    bind(obj);
-}
-else
-{
-    // Note: Exception behavior is likely to change.
-    // Ref: https://github.com/kassonlab/gmxapi/issues/125
-    throw py::value_error("Argument must provide a `bind` method.");
-}
+        auto       capsule = py::capsule(holder, gmxapi::MDHolder_Name, deleter);
+        py::object bind    = force_object.attr("bind");
+        // py::capsule does not have bindings and does not implicitly convert to py::object
+        py::object obj = capsule;
+        bind(obj);
+    }
+    else
+    {
+        // Note: Exception behavior is likely to change.
+        // Ref: https://github.com/kassonlab/gmxapi/issues/125
+        throw py::value_error("Argument must provide a `bind` method.");
+    }
 } // namespace gmxpy
 
 } // end namespace gmxpy
