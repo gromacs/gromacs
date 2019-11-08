@@ -97,9 +97,11 @@ then
     fi
     if [ -z "$CLANG_FORMAT" ]
     then
-        echo "Please set the path to clang-format using CLANG_FORMAT or"
-        echo "git config hooks.clang_formatpath."
-        echo "See docs/dev-manual/clang-format.rst for how to get one."
+        echo "Please set the path to clang-format using the git hook"
+        echo "git config hooks.clang_formatpath /path/to/clang-format"
+        echo "or by setting an environment variable, e.g."
+        echo "CLANG_FORMAT=/path/to/clang-format"
+        echo "See docs/dev-manual/code-formatting.rst for how to get clang-format."
         exit 2
     fi
     if ! which "$CLANG_FORMAT" 1>/dev/null
