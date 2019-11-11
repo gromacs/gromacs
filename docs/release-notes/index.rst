@@ -71,6 +71,8 @@ Major release
    2019/major/portability
    2019/major/miscellaneous
 
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2018 series
 ---------------------
@@ -134,8 +136,6 @@ Major release
    2016/major/removed-features
    2016/major/miscellaneous
 
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 .. toctree::
    :maxdepth: 1
