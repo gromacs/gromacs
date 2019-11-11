@@ -149,6 +149,7 @@ class Bayes : public OptParam
 {
     using func_t = std::function<double (double v[])>;
     using parm_t = std::vector<double>;
+    using mc_t   = std::vector<int>;
 
     private:
         func_t  func_;
@@ -159,6 +160,8 @@ class Bayes : public OptParam
         parm_t  lowerBound_;
         parm_t  upperBound_;
         parm_t  bestParam_;
+        mc_t    attemptedMoves_;
+        mc_t    acceptedMoves_;
         double *minEval_;
 
     public:
@@ -231,6 +234,16 @@ class Bayes : public OptParam
          * Returns the vector of standard deviation calculated for each parameter.
          */
         const parm_t &getPsigma() const { return psigma_; };
+
+        /*! \brief
+         * Return the vector of number of attempted moves for each parameter
+         */
+        const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
+        
+        /*! \brief
+         * Return the vector of number of accepted moves for each parameter
+         */
+        const mc_t &getAcceptedMoves() const {return acceptedMoves_;};
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation

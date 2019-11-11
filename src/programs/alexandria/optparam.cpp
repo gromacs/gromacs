@@ -216,6 +216,8 @@ void Bayes::MCMC()
     sum_of_sq.resize(nParam, 0);
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
+    attemptedMoves_.resize(nParam, 0);
+    acceptedMoves_.resize(nParam, 0);
 
     prevEval  = func_(param_.data());
     *minEval_ = prevEval;
@@ -227,6 +229,7 @@ void Bayes::MCMC()
     {
         double beta = computeBeta(iter/nParam);
         int       j = static_cast<int>(std::round((1+uniform(gen))*nParam)) % nParam; // Pick random parameter to change
+        attemptedMoves_[j] = attemptedMoves_[j] + 1;
         prevParam_ = param_;
         storeParam = param_[j];
         changeParam(j, uniform(gen));
@@ -252,6 +255,7 @@ void Bayes::MCMC()
                 }
             }
             prevEval = currEval;
+            acceptedMoves_[j] = acceptedMoves_[j] + 1;
         }
         else
         {

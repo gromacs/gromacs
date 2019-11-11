@@ -741,18 +741,21 @@ bool OptACM::optRun(FILE                   *fp,
         }
         if (bMinimum)
         {
-            auto best   = Bayes::getBestParam();
-            auto pmean  = Bayes::getPmean();
-            auto psigma = Bayes::getPsigma();
-            auto emin   = Bayes::objFunction(best.data());
+            auto best           = Bayes::getBestParam();
+            auto pmean          = Bayes::getPmean();
+            auto psigma         = Bayes::getPsigma();
+            auto attemptedMoves = Bayes::getAttemptedMoves();
+            auto acceptedMoves  = Bayes::getAcceptedMoves();
+            auto emin           = Bayes::objFunction(best.data());
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(emin));
                 fprintf(fplog, "Statistics of parameters after optimization\n");
                 for (size_t k = 0; k < Bayes::nParam(); k++)
                 {
-                    fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g\n",
-                            k, best[k], pmean[k], psigma[k]);
+                    double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
+                    fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
+                            k, best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
                 }
             }
         }
