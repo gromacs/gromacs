@@ -502,11 +502,13 @@ void OptACM::polData2TuneACM(real factor)
             {
                 auto J00  = ei->getJ0();
                 Bayes::addParam(J00, factor);
+                Bayes::addParamName(gmx::formatString("%s-Eta", ai->name().c_str()));
                 
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     auto Chi0 = ei->getChi0();
                     Bayes::addParam(Chi0, factor);
+                    Bayes::addParamName(gmx::formatString("%s-Chi", ai->name().c_str()));
                 }
             }
             if (bFitZeta_)
@@ -516,6 +518,7 @@ void OptACM::polData2TuneACM(real factor)
                 if (0 != zeta)
                 {
                     Bayes::addParam(zeta, factor);
+                    Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
                 }
                 else
                 {
@@ -532,6 +535,7 @@ void OptACM::polData2TuneACM(real factor)
                     if (0 != alpha)
                     {
                         Bayes::addParam(alpha, factor);
+                        Bayes::addParamName(gmx::formatString("%s-alpha", ai->name().c_str()));
                     }
                     else
                     {
@@ -544,6 +548,7 @@ void OptACM::polData2TuneACM(real factor)
     if (optHfac())
     {
         Bayes::addParam(hfac(), factor);
+        Bayes::addParamName(gmx::formatString("hfac"));
     }
     
 }
@@ -746,6 +751,7 @@ bool OptACM::optRun(FILE                   *fp,
             auto psigma         = Bayes::getPsigma();
             auto attemptedMoves = Bayes::getAttemptedMoves();
             auto acceptedMoves  = Bayes::getAcceptedMoves();
+            auto paramNames     = Bayes::getParamNames();
             auto emin           = Bayes::objFunction(best.data());
             if (fplog)
             {
@@ -754,8 +760,8 @@ bool OptACM::optRun(FILE                   *fp,
                 for (size_t k = 0; k < Bayes::nParam(); k++)
                 {
                     double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                    fprintf(fplog, "Parameter %3zu  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
-                            k, best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+                    fprintf(fplog, "%-10s  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
+                            paramNames[k].c_str(), best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
                 }
             }
         }

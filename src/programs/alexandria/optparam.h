@@ -147,22 +147,24 @@ class OptParam
 
 class Bayes : public OptParam
 {
-    using func_t = std::function<double (double v[])>;
-    using parm_t = std::vector<double>;
-    using mc_t   = std::vector<int>;
+    using func_t       = std::function<double (double v[])>;
+    using parm_t       = std::vector<double>;
+    using mc_t         = std::vector<int>;
+    using param_name_t = std::vector<std::string>;
 
     private:
-        func_t  func_;
-        parm_t  param_;
-        parm_t  prevParam_;
-        parm_t  psigma_;
-        parm_t  pmean_;
-        parm_t  lowerBound_;
-        parm_t  upperBound_;
-        parm_t  bestParam_;
-        mc_t    attemptedMoves_;
-        mc_t    acceptedMoves_;
-        double *minEval_;
+        func_t        func_;
+        parm_t        param_;
+        parm_t        prevParam_;
+        parm_t        psigma_;
+        parm_t        pmean_;
+        parm_t        lowerBound_;
+        parm_t        upperBound_;
+        parm_t        bestParam_;
+        mc_t          attemptedMoves_;
+        mc_t          acceptedMoves_;
+        param_name_t  paramNames_;
+        double        *minEval_;
 
     public:
 
@@ -234,6 +236,16 @@ class Bayes : public OptParam
          * Returns the vector of standard deviation calculated for each parameter.
          */
         const parm_t &getPsigma() const { return psigma_; };
+
+        /*! \brief
+         * Add the name for parameter
+         */
+        void addParamName(std::string name);
+
+        /*! \brief
+         * Return the vector of parameter names. 
+         */
+        const param_name_t &getParamNames() const {return paramNames_;};
 
         /*! \brief
          * Return the vector of number of attempted moves for each parameter

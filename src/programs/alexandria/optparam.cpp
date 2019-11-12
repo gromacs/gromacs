@@ -149,6 +149,12 @@ void Bayes::addParam(real val,
     upperBound_.push_back(upper);
 }
 
+
+void Bayes::addParamName(std::string name)
+{
+    paramNames_.push_back(name);
+}
+
 void Bayes::changeParam(size_t j, real rand)
 {
     GMX_RELEASE_ASSERT(j < param_.size(), "Parameter out of range");
@@ -206,7 +212,16 @@ void Bayes::MCMC()
     if (nullptr != xvgConv())
     {
         fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
-    }
+        if (!paramNames_.empty())
+        {
+            std::vector<const char*> paramNames;
+            for (const auto &paramName : paramNames_)
+            {   
+                paramNames.push_back(paramName.c_str());
+            }
+            xvgr_legend(fpc, paramNames.size(), paramNames.data(), oenv());   
+        }
+    }   
     if (nullptr != xvgEpot())
     {
         fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
