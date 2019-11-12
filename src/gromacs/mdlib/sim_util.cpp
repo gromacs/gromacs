@@ -1032,10 +1032,11 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // Copy coordinate from the GPU if update is on the GPU and there are forces to be computed on the CPU. At search steps the
-    // current coordinates are already on the host, hence copy is not needed.
+    // Copy coordinate from the GPU if update is on the GPU and there are forces to be computed on
+    // the CPU, or for the computation of virial. At search steps the current coordinates are
+    // already on the host, hence copy is not needed.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
-        && runScheduleWork->domainWork.haveCpuLocalForceWork)
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);

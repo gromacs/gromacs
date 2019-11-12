@@ -134,7 +134,8 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
-                                      gmx::Update*      upd);
+                                      gmx::Update*      upd,
+                                      bool              scaleCoordinates);
 
 void update_coords(int64_t           step,
                    const t_inputrec* inputrec, /* input record and box stuff	*/
@@ -328,7 +329,8 @@ void berendsen_pscale(const t_inputrec*    ir,
                       int                  nr_atoms,
                       rvec                 x[],
                       const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb);
+                      t_nrnb*              nrnb,
+                      bool                 scaleCoordinates);
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir);
 

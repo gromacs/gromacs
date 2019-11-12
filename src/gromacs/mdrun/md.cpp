@@ -344,8 +344,9 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(
                 ir->etc != etcNOSEHOOVER,
                 "Nose-Hoover temperature coupling is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(ir->epc == epcNO,
-                           "Pressure coupling is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->epc == epcNO || ir->epc == epcPARRINELLORAHMAN || ir->epc == epcBERENDSEN,
+                           "Only Parrinello-Rahman and Berendsen pressure coupling are supported "
+                           "with the GPU update.\n");
         GMX_RELEASE_ASSERT(!mdatoms->haveVsites,
                            "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
@@ -370,6 +371,10 @@ void gmx::LegacySimulator::do_md()
         }
         integrator = std::make_unique<UpdateConstrainCuda>(
                 *ir, *top_global, stateGpu->getUpdateStream(), stateGpu->xUpdatedOnDevice());
+
+        t_pbc pbc;
+        set_pbc(&pbc, epbcXYZ, state->box);
+        integrator->setPbc(&pbc);
     }
 
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
@@ -820,6 +825,13 @@ void gmx::LegacySimulator::do_md()
                 if (correct_box(fplog, step, state->box, graph))
                 {
                     bMasterState = TRUE;
+                    // If update is offloaded, it should be informed about the box size change
+                    if (useGpuForUpdate)
+                    {
+                        t_pbc pbc;
+                        set_pbc(&pbc, epbcXYZ, state->box);
+                        integrator->setPbc(&pbc);
+                    }
                 }
             }
             if (DOMAINDECOMP(cr) && bMasterState)
@@ -1238,15 +1250,17 @@ void gmx::LegacySimulator::do_md()
         const bool needHalfStepKineticEnergy =
                 (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
 
+        // Parrinello-Rahman requires the pressure to be availible before the update to compute
+        // the velocity scaling matrix. Hence, it runs one step after the nstpcouple step.
+        const bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN
+                                         && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
+
         if (useGpuForUpdate)
         {
             if (bNS)
             {
                 integrator->set(stateGpu->getCoordinates(), stateGpu->getVelocities(),
                                 stateGpu->getForces(), top.idef, *mdatoms, ekind->ngtc);
-                t_pbc pbc;
-                set_pbc(&pbc, epbcXYZ, state->box);
-                integrator->setPbc(&pbc);
 
                 // Copy data to the GPU after buffers might have being reinitialized
                 stateGpu->copyVelocitiesToGpu(state->v, AtomLocality::Local);
@@ -1259,10 +1273,8 @@ void gmx::LegacySimulator::do_md()
                 stateGpu->copyForcesToGpu(ArrayRef<RVec>(f), AtomLocality::Local);
             }
 
-            bool doTempCouple =
+            const bool doTempCouple =
                     (ir->etc != etcNO && do_per_step(step + ir->nsttcouple - 1, ir->nsttcouple));
-            bool doParrinelloRahman = (ir->epc == epcPARRINELLORAHMAN
-                                       && do_per_step(step + ir->nstpcouple - 1, ir->nstpcouple));
 
             // This applies Leap-Frog, LINCS and SETTLE in succession
             integrator->integrate(stateGpu->getForcesReadyOnDeviceEvent(
@@ -1436,7 +1448,17 @@ void gmx::LegacySimulator::do_md()
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms, pres, force_vir, shake_vir,
-                                         pressureCouplingMu, state, nrnb, &upd);
+                                         pressureCouplingMu, state, nrnb, &upd, !useGpuForUpdate);
+
+        const bool doBerendsenPressureCoupling =
+                (inputrec->epc == epcBERENDSEN && do_per_step(step, inputrec->nstpcouple));
+        if (useGpuForUpdate && (doBerendsenPressureCoupling || doParrinelloRahman))
+        {
+            integrator->scaleCoordinates(pressureCouplingMu);
+            t_pbc pbc;
+            set_pbc(&pbc, epbcXYZ, state->box);
+            integrator->setPbc(&pbc);
+        }
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */

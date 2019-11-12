@@ -1667,7 +1667,8 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
-                                      Update*           upd)
+                                      Update*           upd,
+                                      const bool        scaleCoordinates)
 {
     int start  = 0;
     int homenr = md->homenr;
@@ -1687,7 +1688,7 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                 berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box, forceVirial,
                                  constraintVirial, pressureCouplingMu, &state->baros_integral);
                 berendsen_pscale(inputrec, pressureCouplingMu, state->box, state->box_rel, start,
-                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb);
+                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb, scaleCoordinates);
             }
             break;
         case (epcPARRINELLORAHMAN):
@@ -1708,10 +1709,13 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                 preserve_box_shape(inputrec, state->box_rel, state->box);
 
                 /* Scale the coordinates */
-                auto x = state->x.rvec_array();
-                for (int n = start; n < start + homenr; n++)
+                if (scaleCoordinates)
                 {
-                    tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                    auto x = state->x.rvec_array();
+                    for (int n = start; n < start + homenr; n++)
+                    {
+                        tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                    }
                 }
             }
             break;

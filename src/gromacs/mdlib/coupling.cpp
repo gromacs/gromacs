@@ -708,7 +708,8 @@ void berendsen_pscale(const t_inputrec*    ir,
                       int                  nr_atoms,
                       rvec                 x[],
                       const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb)
+                      t_nrnb*              nrnb,
+                      const bool           scaleCoordinates)
 {
     ivec* nFreeze = ir->opts.nFreeze;
     int   d;
@@ -719,32 +720,35 @@ void berendsen_pscale(const t_inputrec*    ir,
 #endif
 
     /* Scale the positions */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int n = start; n < start + nr_atoms; n++)
+    if (scaleCoordinates)
     {
-        // Trivial OpenMP region that does not throw
-        int g;
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+        for (int n = start; n < start + nr_atoms; n++)
+        {
+            // Trivial OpenMP region that does not throw
+            int g;
 
-        if (cFREEZE == nullptr)
-        {
-            g = 0;
-        }
-        else
-        {
-            g = cFREEZE[n];
-        }
+            if (cFREEZE == nullptr)
+            {
+                g = 0;
+            }
+            else
+            {
+                g = cFREEZE[n];
+            }
 
-        if (!nFreeze[g][XX])
-        {
-            x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
-        }
-        if (!nFreeze[g][YY])
-        {
-            x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
-        }
-        if (!nFreeze[g][ZZ])
-        {
-            x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
+            if (!nFreeze[g][XX])
+            {
+                x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
+            }
+            if (!nFreeze[g][YY])
+            {
+                x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
+            }
+            if (!nFreeze[g][ZZ])
+            {
+                x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
+            }
         }
     }
     /* compute final boxlengths */
