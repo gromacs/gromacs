@@ -1664,7 +1664,7 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       const matrix      pressure,
                                       const matrix      forceVirial,
                                       const matrix      constraintVirial,
-                                      const matrix      parrinellorahmanMu,
+                                      matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
                                       Update*           upd)
@@ -1683,12 +1683,11 @@ void update_pcouple_after_coordinates(FILE*             fplog,
         case (epcBERENDSEN):
             if (do_per_step(step, inputrec->nstpcouple))
             {
-                real   dtpc = inputrec->nstpcouple * dt;
-                matrix mu;
+                real dtpc = inputrec->nstpcouple * dt;
                 berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box, forceVirial,
-                                 constraintVirial, mu, &state->baros_integral);
-                berendsen_pscale(inputrec, mu, state->box, state->box_rel, start, homenr,
-                                 state->x.rvec_array(), md->cFREEZE, nrnb);
+                                 constraintVirial, pressureCouplingMu, &state->baros_integral);
+                berendsen_pscale(inputrec, pressureCouplingMu, state->box, state->box_rel, start,
+                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb);
             }
             break;
         case (epcPARRINELLORAHMAN):
@@ -1712,7 +1711,7 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                 auto x = state->x.rvec_array();
                 for (int n = start; n < start + homenr; n++)
                 {
-                    tmvmul_ur0(parrinellorahmanMu, x[n], x[n]);
+                    tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
                 }
             }
             break;

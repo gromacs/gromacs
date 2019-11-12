@@ -172,7 +172,7 @@ void gmx::LegacySimulator::do_md()
            pres = { { 0 } };
     int                         i, m;
     rvec                        mu_tot;
-    matrix                      parrinellorahmanMu, M;
+    matrix                      pressureCouplingMu, M;
     gmx_repl_ex_t               repl_ex = nullptr;
     gmx_localtop_t              top;
     PaddedHostVector<gmx::RVec> f{};
@@ -1209,7 +1209,7 @@ void gmx::LegacySimulator::do_md()
         else
         {
             update_tcouple(step, ir, state, ekind, &MassQ, mdatoms);
-            update_pcouple_before_coordinates(fplog, step, ir, state, parrinellorahmanMu, M, bInitStep);
+            update_pcouple_before_coordinates(fplog, step, ir, state, pressureCouplingMu, M, bInitStep);
         }
 
         if (EI_VV(ir->eI))
@@ -1441,7 +1441,7 @@ void gmx::LegacySimulator::do_md()
         }
 
         update_pcouple_after_coordinates(fplog, step, ir, mdatoms, pres, force_vir, shake_vir,
-                                         parrinellorahmanMu, state, nrnb, &upd);
+                                         pressureCouplingMu, state, nrnb, &upd);
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
