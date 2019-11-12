@@ -82,6 +82,12 @@ void UpdateConstrainCuda::integrate(gmx_unused GpuEventSynchronizer* fReadyOnDev
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
+void UpdateConstrainCuda::scaleCoordinates(gmx_unused const matrix scalingMatrix)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+}
+
 void UpdateConstrainCuda::set(gmx_unused DeviceBuffer<float> d_x,
                               gmx_unused DeviceBuffer<float> d_v,
                               gmx_unused const DeviceBuffer<float> d_f,

@@ -116,6 +116,15 @@ public:
                    float                             dtPressureCouple,
                    const matrix                      velocityScalingMatrix);
 
+    /*! \brief Scale coordinates on the GPU for the pressure coupling.
+     *
+     * After pressure coupling step, the box size may change. Hence, the coordinates should be
+     * scaled so that all the particles fit in the new box.
+     *
+     * \param[in] scalingMatrix Coordinates scaling matrix.
+     */
+    void scaleCoordinates(const matrix scalingMatrix);
+
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
      * \param[in,out]  d_x                 Device buffer with coordinates.
