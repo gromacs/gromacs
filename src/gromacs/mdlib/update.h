@@ -131,7 +131,7 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       const matrix      pressure,
                                       const matrix      forceVirial,
                                       const matrix      constraintVirial,
-                                      const matrix      parrinellorahmanMu,
+                                      matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
                                       gmx::Update*      upd);
