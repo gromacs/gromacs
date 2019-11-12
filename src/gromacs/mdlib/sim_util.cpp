@@ -843,7 +843,7 @@ static StepWorkload setupStepWorkload(const int                 legacyFlags,
 
 /* \brief Launch end-of-step GPU tasks: buffer clearing and rolling pruning.
  *
- * TODO: eliminate the \p useGpuNonbonded and \p useGpuNonbonded when these are
+ * TODO: eliminate \p useGpuPmeOnThisRank when this is
  * incorporated in DomainLifetimeWorkload.
  */
 static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
@@ -851,12 +851,11 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
                                     gmx_pme_t*                        pmedata,
                                     gmx_enerdata_t*                   enerd,
                                     const gmx::MdrunScheduleWorkload& runScheduleWork,
-                                    bool                              useGpuNonbonded,
-                                    bool                              useGpuPme,
+                                    bool                              useGpuPmeOnThisRank,
                                     int64_t                           step,
                                     gmx_wallcycle_t                   wcycle)
 {
-    if (useGpuNonbonded)
+    if (runScheduleWork.simulationWork.useGpuNonbonded)
     {
         /* Launch pruning before buffer clearing because the API overhead of the
          * clear kernel launches can leave the GPU idle while it could be running
@@ -875,7 +874,7 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (useGpuPme)
+    if (useGpuPmeOnThisRank)
     {
         pme_gpu_reinit_computation(pmedata, wcycle);
     }
@@ -1734,7 +1733,7 @@ void do_force(FILE*                               fplog,
     }
 
     launchGpuEndOfStepTasks(nbv, fr->gpuBonded, fr->pmedata, enerd, *runScheduleWork,
-                            simulationWork.useGpuNonbonded, useGpuPmeOnThisRank, step, wcycle);
+                            useGpuPmeOnThisRank, step, wcycle);
 
     if (DOMAINDECOMP(cr))
     {
