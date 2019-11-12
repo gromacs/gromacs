@@ -103,15 +103,29 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-double-promotion")
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
+option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
 if (GMX_CLANG_TIDY)
+   if("${GMX_OPENMP}")
+       message(FATAL_ERROR "clang-tidy cannot be combined with openmp.")
+   endif()
+   if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithAssert")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "ASAN")
+   else()
+       message(FATAL_ERROR "Can only use clang-tidy with build type containing asserts: Debug, RelWithAssert, RelWithDebInfo, ASAN.")
+   endif()
+   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+   mark_as_advanced(CMAKE_EXPORT_COMPILE_COMMANDS)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
        DOC "Path to clang-tidy executable")
    if(NOT CLANG_TIDY_EXE)
        message(FATAL_ERROR "clang-tidy not found.")
    endif()
+   mark_as_advanced(CLANG_TIDY)
+   mark_as_advanced(CLANG_TIDY_EXE)
 endif()
-#####
 
 add_subdirectory(external)
 
