@@ -98,7 +98,7 @@ then
     if [ -z "$CLANG_FORMAT" ]
     then
         echo "Please set the path to clang-format using the git hook"
-        echo "git config hooks.clang_formatpath /path/to/clang-format"
+        echo "git config hooks.clangformatpath /path/to/clang-format"
         echo "or by setting an environment variable, e.g."
         echo "CLANG_FORMAT=/path/to/clang-format"
         echo "See docs/dev-manual/code-formatting.rst for how to get clang-format."
