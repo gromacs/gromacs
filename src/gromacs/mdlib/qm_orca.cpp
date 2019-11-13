@@ -51,7 +51,6 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/qmmm.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -110,19 +109,16 @@ void init_orca(t_QMrec* qm)
 }
 
 
-static void write_orca_input(const t_forcerec* fr, t_QMrec* qm, t_MMrec* mm)
+static void write_orca_input(const t_QMMMrec* QMMMrec, t_QMrec* qm, t_MMrec* mm)
 {
-    int        i;
-    t_QMMMrec* QMMMrec;
-    FILE *     out, *pcFile, *addInputFile;
-    char *     buf, *orcaInput, *addInputFilename, *pcFilename;
-
-    QMMMrec = fr->qr;
+    int   i;
+    FILE *pcFile, *addInputFile;
+    char *buf, *orcaInput, *addInputFilename, *pcFilename;
 
     /* write the first part of the input-file */
     snew(orcaInput, 200);
     sprintf(orcaInput, "%s.inp", qm->orca_basename);
-    out = fopen(orcaInput, "w");
+    FILE* out = fopen(orcaInput, "w");
 
     snew(addInputFilename, 200);
     sprintf(addInputFilename, "%s.ORCAINFO", qm->orca_basename);
@@ -193,15 +189,13 @@ static void write_orca_input(const t_forcerec* fr, t_QMrec* qm, t_MMrec* mm)
     fclose(out);
 } /* write_orca_input */
 
-static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_forcerec* fr, t_QMrec* qm, t_MMrec* mm)
+static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_QMMMrec* QMMMrec, t_QMrec* qm, t_MMrec* mm)
 {
-    int        i, j;
-    char       buf[300], orca_pcgradFilename[300], orca_engradFilename[300];
-    real       QMener;
-    FILE *     pcgrad, *engrad;
-    int        k;
-    t_QMMMrec* QMMMrec;
-    QMMMrec = fr->qr;
+    int   i, j;
+    char  buf[300], orca_pcgradFilename[300], orca_engradFilename[300];
+    real  QMener;
+    FILE *pcgrad, *engrad;
+    int   k;
 
     /* the energy and gradients for the QM part are stored in the engrad file
      * and the gradients for the point charges are stored in the pc file.
@@ -328,7 +322,7 @@ static void do_orca(char* orca_dir, char* basename)
     }
 }
 
-real call_orca(const t_forcerec* fr, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fshift[])
+real call_orca(const t_QMMMrec* qmmm, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fshift[])
 {
     /* normal orca jobs */
     static int step = 0;
@@ -342,9 +336,9 @@ real call_orca(const t_forcerec* fr, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fs
     snew(QMgrad, qm->nrQMatoms);
     snew(MMgrad, mm->nrMMatoms);
 
-    write_orca_input(fr, qm, mm);
+    write_orca_input(qmmm, qm, mm);
     do_orca(qm->orca_dir, qm->orca_basename);
-    QMener = read_orca_output(QMgrad, MMgrad, fr, qm, mm);
+    QMener = read_orca_output(QMgrad, MMgrad, qmmm, qm, mm);
     /* put the QMMM forces in the force array and to the fshift
      */
     for (i = 0; i < qm->nrQMatoms; i++)
