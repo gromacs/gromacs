@@ -1533,7 +1533,7 @@ int Mdrunner::mdrunner()
             /* This call is not included in init_domain_decomposition mainly
              * because fr->cginfo_mb is set later.
              */
-            dd_init_bondeds(fplog, cr->dd, &mtop, vsite.get(), inputrec,
+            dd_init_bondeds(fplog, cr->dd, mtop, vsite.get(), inputrec,
                             domdecOptions.checkBondedInteractions, fr->cginfo_mb);
         }
 
@@ -1627,18 +1627,45 @@ int Mdrunner::mdrunner()
     }
 
     // FIXME: this is only here to manually unpin mdAtoms->chargeA_ and state->x,
-    // before we destroy the GPU context(s) in free_gpu_resources().
+    // before we destroy the GPU context(s) in free_gpu().
     // Pinned buffers are associated with contexts in CUDA.
     // As soon as we destroy GPU contexts after mdrunner() exits, these lines should go.
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     mdModules_.reset(nullptr); // destruct force providers here as they might also use the GPU
+    /* Free pinned buffers in *fr */
+    delete fr;
+    fr = nullptr;
 
-    /* Free GPU memory and set a physical node tMPI barrier (which should eventually go away) */
-    free_gpu_resources(fr, physicalNodeComm, hwinfo->gpu_info);
+    if (hwinfo->gpu_info.n_dev > 0)
+    {
+        /* stop the GPU profiler (only CUDA) */
+        stopGpuProfiler();
+    }
+
+    /* With tMPI we need to wait for all ranks to finish deallocation before
+     * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
+     * GPU and context.
+     *
+     * This is not a concern in OpenCL where we use one context per rank which
+     * is freed in nbnxn_gpu_free().
+     *
+     * Note: it is safe to not call the barrier on the ranks which do not use GPU,
+     * but it is easier and more futureproof to call it on the whole node.
+     *
+     * Note that this function needs to be called even if GPUs are not used
+     * in this run because the PME ranks have no knowledge of whether GPUs
+     * are used or not, but all ranks need to enter the barrier below.
+     * \todo Remove this physical node barrier after making sure
+     * that it's not needed anymore (with a shared GPU run).
+     */
+    if (GMX_THREAD_MPI)
+    {
+        physicalNodeComm.barrier();
+    }
+
     free_gpu(nonbondedDeviceInfo);
     free_gpu(pmeDeviceInfo);
-    done_forcerec(fr, mtop.molblock.size());
     sfree(fcd);
 
     if (doMembed)

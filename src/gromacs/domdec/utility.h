@@ -44,6 +44,7 @@
 
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/utility/arrayref.h"
 
 #include "domdec_internal.h"
 
@@ -77,14 +78,16 @@ void make_tric_corr_matrix(int npbcdim, const matrix box, matrix tcm);
 void check_screw_box(const matrix box);
 
 /*! \brief Return the charge group information flags for charge group cg */
-static inline int ddcginfo(const cginfo_mb_t* cginfo_mb, int cg)
+static inline int ddcginfo(gmx::ArrayRef<const cginfo_mb_t> cginfo_mb, int cg)
 {
-    while (cg >= cginfo_mb->cg_end)
+    size_t index = 0;
+    while (cg >= cginfo_mb[index].cg_end)
     {
-        cginfo_mb++;
+        index++;
     }
+    const cginfo_mb_t& cgimb = cginfo_mb[index];
 
-    return cginfo_mb->cginfo[(cg - cginfo_mb->cg_start) % cginfo_mb->cg_mod];
+    return cgimb.cginfo[(cg - cgimb.cg_start) % cgimb.cg_mod];
 };
 
 /*! \brief Returns the number of MD steps for which load has been recorded */

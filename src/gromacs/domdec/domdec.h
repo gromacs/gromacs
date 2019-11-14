@@ -155,13 +155,13 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 bool is1DAnd1PulseDD(const gmx_domdec_t& dd);
 
 /*! \brief Initialize data structures for bonded interactions */
-void dd_init_bondeds(FILE*              fplog,
-                     gmx_domdec_t*      dd,
-                     const gmx_mtop_t*  mtop,
-                     const gmx_vsite_t* vsite,
-                     const t_inputrec*  ir,
-                     gmx_bool           bBCheck,
-                     cginfo_mb_t*       cginfo_mb);
+void dd_init_bondeds(FILE*                      fplog,
+                     gmx_domdec_t*              dd,
+                     const gmx_mtop_t&          mtop,
+                     const gmx_vsite_t*         vsite,
+                     const t_inputrec*          ir,
+                     gmx_bool                   bBCheck,
+                     gmx::ArrayRef<cginfo_mb_t> cginfo_mb);
 
 /*! \brief Returns whether molecules are always whole, i.e. not broken by PBC */
 bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd);
@@ -295,7 +295,7 @@ void dd_init_local_state(struct gmx_domdec_t* dd, const t_state* state_global, t
  *
  * Also stores whether atoms are linked in \p cginfo_mb.
  */
-t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb);
+t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb);
 
 /*! \brief Calculate the maximum distance involved in 2-body and multi-body bonded interactions */
 void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,

@@ -110,10 +110,10 @@ enum
 
 struct cginfo_mb_t
 {
-    int  cg_start;
-    int  cg_end;
-    int  cg_mod;
-    int* cginfo;
+    int              cg_start = 0;
+    int              cg_end   = 0;
+    int              cg_mod   = 0;
+    std::vector<int> cginfo;
 };
 
 
@@ -192,7 +192,7 @@ struct t_forcerec
     real sc_sigma6_min = 0;
 
     /* Information about atom properties for the molecule blocks in the system */
-    struct cginfo_mb_t* cginfo_mb = nullptr;
+    std::vector<cginfo_mb_t> cginfo_mb;
     /* Information about atom properties for local and non-local atoms */
     std::vector<int> cginfo;
 
@@ -234,10 +234,10 @@ struct t_forcerec
     std::vector<gmx::RVec> shiftForces;
 
     /* Non bonded Parameter lists */
-    int      ntype        = 0; /* Number of atom types */
-    gmx_bool bBHAM        = FALSE;
-    real*    nbfp         = nullptr;
-    real*    ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
+    int               ntype = 0; /* Number of atom types */
+    gmx_bool          bBHAM = FALSE;
+    std::vector<real> nbfp;
+    real*             ljpme_c6grid = nullptr; /* C6-values used on grid in LJPME */
 
     /* Energy group pair flags */
     int* egp_flags = nullptr;

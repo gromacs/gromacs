@@ -462,8 +462,8 @@ static void dd_set_cginfo(gmx::ArrayRef<const int> index_gl, int cg0, int cg1, t
 {
     if (fr != nullptr)
     {
-        const cginfo_mb_t* cginfo_mb = fr->cginfo_mb;
-        gmx::ArrayRef<int> cginfo    = fr->cginfo;
+        gmx::ArrayRef<cginfo_mb_t> cginfo_mb = fr->cginfo_mb;
+        gmx::ArrayRef<int>         cginfo    = fr->cginfo;
 
         for (int cg = cg0; cg < cg1; cg++)
         {
@@ -1327,7 +1327,7 @@ static void merge_cg_buffers(int                            ncell,
                              const int*                     recv_i,
                              gmx::ArrayRef<gmx::RVec>       x,
                              gmx::ArrayRef<const gmx::RVec> recv_vr,
-                             cginfo_mb_t*                   cginfo_mb,
+                             gmx::ArrayRef<cginfo_mb_t>     cginfo_mb,
                              gmx::ArrayRef<int>             cginfo)
 {
     gmx_domdec_ind_t *ind, *ind_p;
@@ -1820,7 +1820,6 @@ static void setup_dd_communication(gmx_domdec_t*                dd,
     gmx_domdec_comm_t*     comm;
     gmx_domdec_zones_t*    zones;
     gmx_domdec_comm_dim_t* cd;
-    cginfo_mb_t*           cginfo_mb;
     gmx_bool               bBondComm, bDist2B, bDistMB, bDistBonded;
     dd_corners_t           corners;
     rvec *                 normal, *v_d, *v_0 = nullptr, *v_1 = nullptr;
@@ -1894,8 +1893,8 @@ static void setup_dd_communication(gmx_domdec_t*                dd,
         v_1 = ddbox->v[dim1];
     }
 
-    zone_cg_range = zones->cg_range;
-    cginfo_mb     = fr->cginfo_mb;
+    zone_cg_range                        = zones->cg_range;
+    gmx::ArrayRef<cginfo_mb_t> cginfo_mb = fr->cginfo_mb;
 
     zone_cg_range[0]   = 0;
     zone_cg_range[1]   = dd->ncg_home;

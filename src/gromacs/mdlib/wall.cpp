@@ -176,7 +176,7 @@ real do_walls(const t_inputrec&     ir,
     const int   nwall     = ir.nwall;
     const int   ngid      = ir.opts.ngener;
     const int   ntype     = fr.ntype;
-    const real* nbfp      = fr.nbfp;
+    const real* nbfp      = fr.nbfp.data();
     const int*  egp_flags = fr.egp_flags;
 
     for (int w = 0; w < nwall; w++)

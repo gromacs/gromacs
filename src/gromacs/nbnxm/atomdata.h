@@ -288,14 +288,14 @@ enum
  * to the atom data structure.
  * enbnxninitcombrule sets what combination rule data gets stored in nbat.
  */
-void nbnxn_atomdata_init(const gmx::MDLogger& mdlog,
-                         nbnxn_atomdata_t*    nbat,
-                         Nbnxm::KernelType    kernelType,
-                         int                  enbnxninitcombrule,
-                         int                  ntype,
-                         const real*          nbfp,
-                         int                  n_energygroups,
-                         int                  nout);
+void nbnxn_atomdata_init(const gmx::MDLogger&      mdlog,
+                         nbnxn_atomdata_t*         nbat,
+                         Nbnxm::KernelType         kernelType,
+                         int                       enbnxninitcombrule,
+                         int                       ntype,
+                         gmx::ArrayRef<const real> nbfp,
+                         int                       n_energygroups,
+                         int                       nout);
 
 void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
                         const Nbnxm::GridSet& gridSet,

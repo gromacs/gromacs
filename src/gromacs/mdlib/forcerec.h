@@ -59,9 +59,6 @@ class MDLogger;
 class PhysicalNodeCommunicator;
 } // namespace gmx
 
-//! Destroy a forcerec.
-void done_forcerec(t_forcerec* fr, int numMolBlocks);
-
 /*! \brief Print the contents of the forcerec to a file
  *
  * \param[in] fplog The log file to print to
@@ -134,9 +131,5 @@ void init_forcerec(FILE*                            fplog,
  * \param[in]  top The topology
  */
 void forcerec_set_excl_load(t_forcerec* fr, const gmx_localtop_t* top);
-
-void free_gpu_resources(t_forcerec*                          fr,
-                        const gmx::PhysicalNodeCommunicator& physicalNodeCommunicator,
-                        const gmx_gpu_info_t&                gpu_info);
 
 #endif

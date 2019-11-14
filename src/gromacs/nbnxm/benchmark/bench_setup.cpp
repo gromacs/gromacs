@@ -199,7 +199,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
                                                     std::move(atomData), kernelSetup, nullptr, nullptr);
 
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
-                        system.numAtomTypes, system.nonbondedParameters.data(), 1, numThreads);
+                        system.numAtomTypes, system.nonbondedParameters, 1, numThreads);
 
     t_nrnb nrnb;
 

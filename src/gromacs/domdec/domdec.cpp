@@ -2507,17 +2507,17 @@ static void set_dd_limits(const gmx::MDLogger& mdlog,
     }
 }
 
-void dd_init_bondeds(FILE*              fplog,
-                     gmx_domdec_t*      dd,
-                     const gmx_mtop_t*  mtop,
-                     const gmx_vsite_t* vsite,
-                     const t_inputrec*  ir,
-                     gmx_bool           bBCheck,
-                     cginfo_mb_t*       cginfo_mb)
+void dd_init_bondeds(FILE*                      fplog,
+                     gmx_domdec_t*              dd,
+                     const gmx_mtop_t&          mtop,
+                     const gmx_vsite_t*         vsite,
+                     const t_inputrec*          ir,
+                     gmx_bool                   bBCheck,
+                     gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
 {
     gmx_domdec_comm_t* comm;
 
-    dd_make_reverse_top(fplog, dd, mtop, vsite, ir, bBCheck);
+    dd_make_reverse_top(fplog, dd, &mtop, vsite, ir, bBCheck);
 
     comm = dd->comm;
 

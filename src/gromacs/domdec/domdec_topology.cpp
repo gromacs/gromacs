@@ -1857,7 +1857,7 @@ static void check_link(t_blocka* link, int cg_gl, int cg_gl_j)
     }
 }
 
-t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
+t_blocka* makeBondedLinks(const gmx_mtop_t& mtop, gmx::ArrayRef<cginfo_mb_t> cginfo_mb)
 {
     t_blocka*    link;
     cginfo_mb_t* cgi_mb;
@@ -1868,35 +1868,35 @@ t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
      */
 
     reverse_ilist_t ril_intermol;
-    if (mtop->bIntermolecularInteractions)
+    if (mtop.bIntermolecularInteractions)
     {
         t_atoms atoms;
 
-        atoms.nr   = mtop->natoms;
+        atoms.nr   = mtop.natoms;
         atoms.atom = nullptr;
 
-        GMX_RELEASE_ASSERT(mtop->intermolecular_ilist,
+        GMX_RELEASE_ASSERT(mtop.intermolecular_ilist,
                            "We should have an ilist when intermolecular interactions are on");
 
-        make_reverse_ilist(*mtop->intermolecular_ilist, &atoms, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
+        make_reverse_ilist(*mtop.intermolecular_ilist, &atoms, FALSE, FALSE, FALSE, TRUE, &ril_intermol);
     }
 
     snew(link, 1);
-    snew(link->index, mtop->natoms + 1);
+    snew(link->index, mtop.natoms + 1);
     link->nalloc_a = 0;
     link->a        = nullptr;
 
     link->index[0] = 0;
     int cg_offset  = 0;
     int ncgi       = 0;
-    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+    for (size_t mb = 0; mb < mtop.molblock.size(); mb++)
     {
-        const gmx_molblock_t& molb = mtop->molblock[mb];
+        const gmx_molblock_t& molb = mtop.molblock[mb];
         if (molb.nmol == 0)
         {
             continue;
         }
-        const gmx_moltype_t& molt = mtop->moltype[molb.type];
+        const gmx_moltype_t& molt = mtop.moltype[molb.type];
         /* Make a reverse ilist in which the interactions are linked
          * to all atoms, not only the first atom as in gmx_reverse_top.
          * The constraints are discarded here.
@@ -1907,7 +1907,7 @@ t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
         cgi_mb = &cginfo_mb[mb];
 
         int mol;
-        for (mol = 0; mol < (mtop->bIntermolecularInteractions ? molb.nmol : 1); mol++)
+        for (mol = 0; mol < (mtop.bIntermolecularInteractions ? molb.nmol : 1); mol++)
         {
             for (int a = 0; a < molt.atoms.nr; a++)
             {
@@ -1931,7 +1931,7 @@ t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
                     i += nral_rt(ftype);
                 }
 
-                if (mtop->bIntermolecularInteractions)
+                if (mtop.bIntermolecularInteractions)
                 {
                     int i = ril_intermol.index[a];
                     while (i < ril_intermol.index[a + 1])
@@ -1997,7 +1997,7 @@ t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
 
     if (debug)
     {
-        fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop->natoms, ncgi);
+        fprintf(debug, "Of the %d atoms %d are linked via bonded interactions\n", mtop.natoms, ncgi);
     }
 
     return link;

@@ -265,7 +265,7 @@ static void nb_free_energy_kernel(const t_nblist* gmx_restrict nlist,
     const int*  typeA         = mdatoms->typeA;
     const int*  typeB         = mdatoms->typeB;
     const int   ntype         = fr->ntype;
-    const real* nbfp          = fr->nbfp;
+    const real* nbfp          = fr->nbfp.data();
     const real* nbfp_grid     = fr->ljpme_c6grid;
     real*       Vv            = kernel_data->energygrp_vdw;
     const real  lambda_coul   = kernel_data->lambda[efptCOUL];

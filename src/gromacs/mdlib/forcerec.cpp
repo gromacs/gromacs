@@ -102,18 +102,19 @@
 static const bool c_enableGpuPmePpComms =
         (getenv("GMX_GPU_PME_PP_COMMS") != nullptr) && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA);
 
-static real* mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
+static std::vector<real> mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
 {
-    real* nbfp;
-    int   i, j, k, atnr;
+    std::vector<real> nbfp;
+    int               atnr;
 
     atnr = idef->atnr;
     if (bBHAM)
     {
-        snew(nbfp, 3 * atnr * atnr);
-        for (i = k = 0; (i < atnr); i++)
+        nbfp.resize(3 * atnr * atnr);
+        int k = 0;
+        for (int i = 0; (i < atnr); i++)
         {
-            for (j = 0; (j < atnr); j++, k++)
+            for (int j = 0; (j < atnr); j++, k++)
             {
                 BHAMA(nbfp, atnr, i, j) = idef->iparams[k].bham.a;
                 BHAMB(nbfp, atnr, i, j) = idef->iparams[k].bham.b;
@@ -124,10 +125,11 @@ static real* mk_nbfp(const gmx_ffparams_t* idef, gmx_bool bBHAM)
     }
     else
     {
-        snew(nbfp, 2 * atnr * atnr);
-        for (i = k = 0; (i < atnr); i++)
+        nbfp.resize(2 * atnr * atnr);
+        int k = 0;
+        for (int i = 0; (i < atnr); i++)
         {
-            for (j = 0; (j < atnr); j++, k++)
+            for (int j = 0; (j < atnr); j++, k++)
             {
                 /* nbfp now includes the 6.0/12.0 derivative prefactors */
                 C6(nbfp, atnr, i, j)  = idef->iparams[k].lj.c6 * 6.0;
@@ -186,14 +188,10 @@ enum
     acSETTLE
 };
 
-static cginfo_mb_t* init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr, gmx_bool* bFEP_NonBonded)
+static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr, gmx_bool* bFEP_NonBonded)
 {
-    cginfo_mb_t* cginfo_mb;
-    gmx_bool*    type_VDW;
-    int*         cginfo;
-    int*         a_con;
-
-    snew(cginfo_mb, mtop->molblock.size());
+    gmx_bool* type_VDW;
+    int*      a_con;
 
     snew(type_VDW, fr->ntype);
     for (int ai = 0; ai < fr->ntype; ai++)
@@ -208,7 +206,8 @@ static cginfo_mb_t* init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr,
 
     *bFEP_NonBonded = FALSE;
 
-    int a_offset = 0;
+    std::vector<cginfo_mb_t> cginfoPerMolblock;
+    int                      a_offset = 0;
     for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
     {
         const gmx_molblock_t& molb = mtop->molblock[mb];
@@ -241,11 +240,12 @@ static cginfo_mb_t* init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr,
             }
         }
 
-        cginfo_mb[mb].cg_start = a_offset;
-        cginfo_mb[mb].cg_end   = a_offset + molb.nmol * molt.atoms.nr;
-        cginfo_mb[mb].cg_mod   = (bId ? 1 : molb.nmol) * molt.atoms.nr;
-        snew(cginfo_mb[mb].cginfo, cginfo_mb[mb].cg_mod);
-        cginfo = cginfo_mb[mb].cginfo;
+        cginfo_mb_t cginfo_mb;
+        cginfo_mb.cg_start = a_offset;
+        cginfo_mb.cg_end   = a_offset + molb.nmol * molt.atoms.nr;
+        cginfo_mb.cg_mod   = (bId ? 1 : molb.nmol) * molt.atoms.nr;
+        cginfo_mb.cginfo.resize(cginfo_mb.cg_mod);
+        gmx::ArrayRef<int> cginfo = cginfo_mb.cginfo;
 
         /* Set constraints flags for constrained atoms */
         snew(a_con, molt.atoms.nr);
@@ -322,14 +322,16 @@ static cginfo_mb_t* init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr,
 
         sfree(a_con);
 
+        cginfoPerMolblock.push_back(cginfo_mb);
+
         a_offset += molb.nmol * molt.atoms.nr;
     }
     sfree(type_VDW);
 
-    return cginfo_mb;
+    return cginfoPerMolblock;
 }
 
-static std::vector<int> cginfo_expand(const int nmb, const cginfo_mb_t* cgi_mb)
+static std::vector<int> cginfo_expand(const int nmb, gmx::ArrayRef<const cginfo_mb_t> cgi_mb)
 {
     const int ncg = cgi_mb[nmb - 1].cg_end;
 
@@ -346,19 +348,6 @@ static std::vector<int> cginfo_expand(const int nmb, const cginfo_mb_t* cgi_mb)
     }
 
     return cginfo;
-}
-
-static void done_cginfo_mb(cginfo_mb_t* cginfo_mb, int numMolBlocks)
-{
-    if (cginfo_mb == nullptr)
-    {
-        return;
-    }
-    for (int mb = 0; mb < numMolBlocks; ++mb)
-    {
-        sfree(cginfo_mb[mb].cginfo);
-    }
-    sfree(cginfo_mb);
 }
 
 /* Sets the sum of charges (squared) and C6 in the system in fr.
@@ -1271,7 +1260,7 @@ void init_forcerec(FILE*                            fp,
 
     fr->shiftForces.resize(SHIFTS);
 
-    if (fr->nbfp == nullptr)
+    if (fr->nbfp.empty())
     {
         fr->ntype = mtop->ffparams.atnr;
         fr->nbfp  = mk_nbfp(&mtop->ffparams, fr->bBHAM);
@@ -1452,8 +1441,7 @@ void init_forcerec(FILE*                            fp,
     if (ir->eDispCorr != edispcNO)
     {
         fr->dispersionCorrection = std::make_unique<DispersionCorrection>(
-                *mtop, *ir, fr->bBHAM, fr->ntype,
-                gmx::arrayRefFromArray(fr->nbfp, fr->ntype * fr->ntype * 2), *fr->ic, tabfn);
+                *mtop, *ir, fr->bBHAM, fr->ntype, fr->nbfp, *fr->ic, tabfn);
         fr->dispersionCorrection->print(mdlog);
     }
 
@@ -1474,67 +1462,10 @@ void init_forcerec(FILE*                            fp,
 
 t_forcerec::t_forcerec() = default;
 
-t_forcerec::~t_forcerec() = default;
-
-/* Frees GPU memory and sets a tMPI node barrier.
- *
- * Note that this function needs to be called even if GPUs are not used
- * in this run because the PME ranks have no knowledge of whether GPUs
- * are used or not, but all ranks need to enter the barrier below.
- * \todo Remove physical node barrier from this function after making sure
- * that it's not needed anymore (with a shared GPU run).
- */
-void free_gpu_resources(t_forcerec*                          fr,
-                        const gmx::PhysicalNodeCommunicator& physicalNodeCommunicator,
-                        const gmx_gpu_info_t&                gpu_info)
+t_forcerec::~t_forcerec()
 {
-    bool isPPrankUsingGPU = (fr != nullptr) && (fr->nbv != nullptr) && fr->nbv->useGpu();
-
-    /* stop the GPU profiler (only CUDA) */
-    if (gpu_info.n_dev > 0)
-    {
-        stopGpuProfiler();
-    }
-
-    if (isPPrankUsingGPU)
-    {
-        /* Free data in GPU memory and pinned memory before destroying the GPU context */
-        fr->nbv.reset();
-
-        delete fr->gpuBonded;
-        fr->gpuBonded = nullptr;
-    }
-
-    /* With tMPI we need to wait for all ranks to finish deallocation before
-     * destroying the CUDA context in free_gpu() as some tMPI ranks may be sharing
-     * GPU and context.
-     *
-     * This is not a concern in OpenCL where we use one context per rank which
-     * is freed in nbnxn_gpu_free().
-     *
-     * Note: it is safe to not call the barrier on the ranks which do not use GPU,
-     * but it is easier and more futureproof to call it on the whole node.
-     */
-    if (GMX_THREAD_MPI)
-    {
-        physicalNodeCommunicator.barrier();
-    }
-}
-
-void done_forcerec(t_forcerec* fr, int numMolBlocks)
-{
-    if (fr == nullptr)
-    {
-        // PME-only ranks don't have a forcerec
-        return;
-    }
-    done_cginfo_mb(fr->cginfo_mb, numMolBlocks);
-    sfree(fr->nbfp);
-    delete fr->ic;
-    sfree(fr->shift_vec);
-    sfree(fr->ewc_t);
-    tear_down_bonded_threading(fr->bondedThreading);
-    GMX_RELEASE_ASSERT(fr->gpuBonded == nullptr, "Should have been deleted earlier, when used");
-    fr->bondedThreading = nullptr;
-    delete fr;
+    /* Note: This code will disappear when types are converted to C++ */
+    sfree(shift_vec);
+    sfree(ewc_t);
+    tear_down_bonded_threading(bondedThreading);
 }

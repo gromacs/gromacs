@@ -736,7 +736,7 @@ void dd_redistribute_cg(FILE*                        fplog,
     /* We reuse the intBuffer without reacquiring since we are in the same scope */
     DDBufferAccess<int>& flagBuffer = moveBuffer;
 
-    const cginfo_mb_t* cginfo_mb = fr->cginfo_mb;
+    gmx::ArrayRef<const cginfo_mb_t> cginfo_mb = fr->cginfo_mb;
 
     /* Temporarily store atoms passed to our rank at the end of the range */
     int home_pos_cg = dd->ncg_home;

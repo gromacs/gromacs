@@ -442,7 +442,7 @@ static void nbnxn_atomdata_params_init(const gmx::MDLogger&      mdlog,
                                        const Nbnxm::KernelType   kernelType,
                                        int                       enbnxninitcombrule,
                                        int                       ntype,
-                                       const real*               nbfp,
+                                       ArrayRef<const real>      nbfp,
                                        int                       n_energygroups)
 {
     real     c6, c12, tol;
@@ -625,7 +625,7 @@ void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
                          const Nbnxm::KernelType kernelType,
                          int                     enbnxninitcombrule,
                          int                     ntype,
-                         const real*             nbfp,
+                         ArrayRef<const real>    nbfp,
                          int                     n_energygroups,
                          int                     nout)
 {

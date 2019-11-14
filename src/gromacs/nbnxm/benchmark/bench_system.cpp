@@ -200,7 +200,7 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     }
 
     forceRec.ntype = numAtomTypes;
-    forceRec.nbfp  = nonbondedParameters.data();
+    forceRec.nbfp  = nonbondedParameters;
     snew(forceRec.shift_vec, SHIFTS);
     calc_shifts(box, forceRec.shift_vec);
 }
