@@ -238,7 +238,12 @@ void StatePropagatorDataGpu::Impl::copyToDevice(DeviceBuffer<float>             
 
     GMX_UNUSED_VALUE(dataSize);
 
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+
     GMX_ASSERT(dataSize >= 0, "Trying to copy to device buffer before it was allocated.");
+
+    GMX_ASSERT(commandStream != nullptr,
+               "No stream is valid for copying with given atom locality.");
 
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
@@ -267,7 +272,12 @@ void StatePropagatorDataGpu::Impl::copyFromDevice(gmx::ArrayRef<gmx::RVec> h_dat
 
     GMX_UNUSED_VALUE(dataSize);
 
+    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
+
     GMX_ASSERT(dataSize >= 0, "Trying to copy from device buffer before it was allocated.");
+
+    GMX_ASSERT(commandStream != nullptr,
+               "No stream is valid for copying with given atom locality.");
 
     int atomsStartAt, numAtomsToCopy;
     std::tie(atomsStartAt, numAtomsToCopy) = getAtomRangesFromAtomLocality(atomLocality);
@@ -295,12 +305,7 @@ DeviceBuffer<float> StatePropagatorDataGpu::Impl::getCoordinates()
 void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<const gmx::RVec> h_x,
                                                         AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = xCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying positions with given atom locality.");
-
-    copyToDevice(d_x_, h_x, d_xSize_, atomLocality, commandStream);
+    copyToDevice(d_x_, h_x, d_xSize_, atomLocality, xCopyStreams_[atomLocality]);
 
     // markEvent is skipped in OpenCL as:
     //   - it's not needed, copy is done in the same stream as the only consumer task (PME)
@@ -308,7 +313,7 @@ void StatePropagatorDataGpu::Impl::copyCoordinatesToGpu(const gmx::ArrayRef<cons
     // TODO: remove this by adding an event-mark free flavor of this function
     if (GMX_GPU == GMX_GPU_CUDA)
     {
-        xReadyOnDevice_[atomLocality].markEvent(commandStream);
+        xReadyOnDevice_[atomLocality].markEvent(xCopyStreams_[atomLocality]);
     }
 }
 
@@ -352,14 +357,9 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::xUpdatedOnDevice()
 
 void StatePropagatorDataGpu::Impl::copyCoordinatesFromGpu(gmx::ArrayRef<gmx::RVec> h_x, AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = xCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying positions with given atom locality.");
-
-    copyFromDevice(h_x, d_x_, d_xSize_, atomLocality, commandStream);
+    copyFromDevice(h_x, d_x_, d_xSize_, atomLocality, xCopyStreams_[atomLocality]);
     // Note: unlike copyCoordinatesToGpu this is not used in OpenCL, and the conditional is not needed.
-    xReadyOnHost_[atomLocality].markEvent(commandStream);
+    xReadyOnHost_[atomLocality].markEvent(xCopyStreams_[atomLocality]);
 }
 
 void StatePropagatorDataGpu::Impl::waitCoordinatesReadyOnHost(AtomLocality atomLocality)
@@ -376,13 +376,8 @@ DeviceBuffer<float> StatePropagatorDataGpu::Impl::getVelocities()
 void StatePropagatorDataGpu::Impl::copyVelocitiesToGpu(const gmx::ArrayRef<const gmx::RVec> h_v,
                                                        AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = vCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying velocities with given atom locality.");
-
-    copyToDevice(d_v_, h_v, d_vSize_, atomLocality, commandStream);
-    vReadyOnDevice_[atomLocality].markEvent(commandStream);
+    copyToDevice(d_v_, h_v, d_vSize_, atomLocality, vCopyStreams_[atomLocality]);
+    vReadyOnDevice_[atomLocality].markEvent(vCopyStreams_[atomLocality]);
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getVelocitiesReadyOnDeviceEvent(AtomLocality atomLocality)
@@ -393,13 +388,8 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getVelocitiesReadyOnDeviceEv
 
 void StatePropagatorDataGpu::Impl::copyVelocitiesFromGpu(gmx::ArrayRef<gmx::RVec> h_v, AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = vCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying velocities with given atom locality.");
-
-    copyFromDevice(h_v, d_v_, d_vSize_, atomLocality, commandStream);
-    vReadyOnHost_[atomLocality].markEvent(commandStream);
+    copyFromDevice(h_v, d_v_, d_vSize_, atomLocality, vCopyStreams_[atomLocality]);
+    vReadyOnHost_[atomLocality].markEvent(vCopyStreams_[atomLocality]);
 }
 
 void StatePropagatorDataGpu::Impl::waitVelocitiesReadyOnHost(AtomLocality atomLocality)
@@ -416,13 +406,8 @@ DeviceBuffer<float> StatePropagatorDataGpu::Impl::getForces()
 void StatePropagatorDataGpu::Impl::copyForcesToGpu(const gmx::ArrayRef<const gmx::RVec> h_f,
                                                    AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = fCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying forces with given atom locality.");
-
-    copyToDevice(d_f_, h_f, d_fSize_, atomLocality, commandStream);
-    fReadyOnDevice_[atomLocality].markEvent(commandStream);
+    copyToDevice(d_f_, h_f, d_fSize_, atomLocality, fCopyStreams_[atomLocality]);
+    fReadyOnDevice_[atomLocality].markEvent(fCopyStreams_[atomLocality]);
 }
 
 GpuEventSynchronizer* StatePropagatorDataGpu::Impl::getForcesReadyOnDeviceEvent(AtomLocality atomLocality,
@@ -445,13 +430,8 @@ GpuEventSynchronizer* StatePropagatorDataGpu::Impl::fReducedOnDevice()
 
 void StatePropagatorDataGpu::Impl::copyForcesFromGpu(gmx::ArrayRef<gmx::RVec> h_f, AtomLocality atomLocality)
 {
-    GMX_ASSERT(atomLocality < AtomLocality::Count, "Wrong atom locality.");
-    CommandStream commandStream = fCopyStreams_[atomLocality];
-    GMX_ASSERT(commandStream != nullptr,
-               "No stream is valid for copying forces with given atom locality.");
-
-    copyFromDevice(h_f, d_f_, d_fSize_, atomLocality, commandStream);
-    fReadyOnHost_[atomLocality].markEvent(commandStream);
+    copyFromDevice(h_f, d_f_, d_fSize_, atomLocality, fCopyStreams_[atomLocality]);
+    fReadyOnHost_[atomLocality].markEvent(fCopyStreams_[atomLocality]);
 }
 
 void StatePropagatorDataGpu::Impl::waitForcesReadyOnHost(AtomLocality atomLocality)
