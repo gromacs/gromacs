@@ -1133,10 +1133,7 @@ void do_force(FILE*                               fplog,
             }
             wallcycle_stop(wcycle, ewcLAUNCH_GPU);
         }
-    }
 
-    if (stepWork.doNeighborSearch)
-    {
         // Need to run after the GPU-offload bonded interaction lists
         // are set up to be able to determine whether there is bonded work.
         runScheduleWork->domainWork = setupDomainLifetimeWorkload(
