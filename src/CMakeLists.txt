@@ -105,9 +105,6 @@ string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}
 
 option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
 if (GMX_CLANG_TIDY)
-   if("${GMX_OPENMP}")
-       message(FATAL_ERROR "clang-tidy cannot be combined with openmp.")
-   endif()
    if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
    elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithAssert")
    elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
