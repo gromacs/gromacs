@@ -586,7 +586,7 @@ std::vector<iListInput> c_InputAngles = {
     { iListInput().setLinearAngle(50.0, 0.4) },
     { iListInput().setLinearAngle(50.0, 0.4, 40.0, 0.6) },
     { iListInput(2e-6, 1e-8).setCrossBondBonds(0.8, 0.7, 45.0) },
-    { iListInput(2e-6, 1e-8).setCrossBondAngles(0.8, 0.7, 0.3, 45.0) },
+    { iListInput(3e-6, 1e-8).setCrossBondAngles(0.8, 0.7, 0.3, 45.0) },
     { iListInput(2e-2, 1e-8).setUreyBradley(950.0, 46.0, 0.3, 5.0) },
     { iListInput(2e-2, 1e-8).setUreyBradley(100.0, 45.0, 0.3, 5.0, 90.0, 47.0, 0.32, 7.0) },
     { iListInput(2e-3, 1e-8).setQuarticAngles(87.0, cQuarticAngles) }
@@ -603,7 +603,7 @@ const real rbc[NR_RBDIHS] = { -7.35, 13.6, 8.4, -16.7, 1.3, 12.4 };
 
 //! Function types for testing dihedrals. Add new terms at the end.
 std::vector<iListInput> c_InputDihs = {
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(5e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
     { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -105.0, 15.0, 2) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.0, 50.0) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.15, 50.0, 95.0, 30.0) },
@@ -614,9 +614,9 @@ std::vector<iListInput> c_InputDihs = {
 //! Function types for testing polarization. Add new terms at the end.
 std::vector<iListInput> c_InputPols = {
     { iListInput(2e-5, 1e-8).setPolarization(0.12) },
-    { iListInput(1.7e-3, 1e-8).setAnharmPolarization(0.0013, 0.02, 1235.6) },
+    { iListInput(2e-3, 1e-8).setAnharmPolarization(0.0013, 0.02, 1235.6) },
     { iListInput(1.4e-3, 1e-8).setTholePolarization(0.26, 0.07, 0.09, 1.6) },
-    { iListInput().setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
+    { iListInput(2e-3, 1e-8).setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
 };
 
 //! Function types for testing polarization. Add new terms at the end.
