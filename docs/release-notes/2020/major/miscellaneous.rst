@@ -36,3 +36,10 @@ is missing), this is indicated through a different version string.
 
 :issue:`2128`
 
+Updated physical constants to CODATA 2018
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Reproducibility of computed quantities is easiest to achieve if software
+stays up to date with the standards. The values for standard units have thus
+been updated to conform with the data available
+`here <http://www.codata.org/committees-and-groups/fundamental-physical-constants>`_.
