@@ -3044,11 +3044,15 @@ void dd_partition_system(FILE*                        fplog,
 
     wallcycle_sub_start(wcycle, ewcsDD_SETUPCOMM);
 
+    /* Set the induces for the home atoms */
+    set_zones_ncg_home(dd);
+    make_dd_indices(dd, ncgindex_set);
+
     /* Setup up the communication and communicate the coordinates */
     setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local, f);
 
-    /* Set the indices */
-    make_dd_indices(dd, ncgindex_set);
+    /* Set the indices for the halo atoms */
+    make_dd_indices(dd, dd->ncg_home);
 
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
