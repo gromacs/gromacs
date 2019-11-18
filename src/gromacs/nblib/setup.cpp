@@ -249,7 +249,7 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 //                        const int*                     move)
     nbnxn_put_on_grid(nbv.get(),
                       system.box, 0, lowerCorner, upperCorner,
-                      nullptr, gmx::Range<int> {}, atomDensity,
+                      nullptr, {0, int(system.coordinates.size())}, atomDensity,
                       atomInfo, system.coordinates,
                       0, nullptr);
 
