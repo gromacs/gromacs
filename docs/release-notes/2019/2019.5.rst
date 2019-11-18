@@ -51,7 +51,16 @@ if Apple itself did not ship a C library that violates the
 stack alignment with AVX instructions are enabled.
 
 :issue:`3199`
-       
+
+Fix error with intermolecular interactions and domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With intermolecular interactions at distances longer than the cutoff
+and domain decomposition, mdrun could exit with an error message
+about missing interactions.
+
+:issue:`3204`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

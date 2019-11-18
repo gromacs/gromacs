@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2362,8 +2362,8 @@ t_blocka *make_charge_group_links(const gmx_mtop_t *mtop, gmx_domdec_t *dd,
 
                     if (mtop->bIntermolecularInteractions)
                     {
-                        int i = ril_intermol.index[a];
-                        while (i < ril_intermol.index[a+1])
+                        int i = ril_intermol.index[cg_gl];
+                        while (i < ril_intermol.index[cg_gl + 1])
                         {
                             int ftype = ril_intermol.il[i++];
                             int nral  = NRAL(ftype);
