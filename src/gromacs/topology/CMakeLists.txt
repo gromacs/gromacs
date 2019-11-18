@@ -39,6 +39,10 @@ if (BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+install(FILES
+        block.h
+        DESTINATION include/gromacs/topology)
+
 if(GMX_INSTALL_LEGACY_API)
   install(FILES
           atoms.h

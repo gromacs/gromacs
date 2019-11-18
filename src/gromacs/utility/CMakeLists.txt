@@ -43,6 +43,9 @@ install(FILES
         basedefinitions.h
         current_function.h
         gmxassert.h
+        range.h
+        real.h
+        smalloc.h
         real.h
         DESTINATION include/gromacs/utility)
 
