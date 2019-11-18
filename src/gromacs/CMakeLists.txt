@@ -73,6 +73,7 @@ add_subdirectory(utility)
 # Add normal contents
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
+add_subdirectory(nblib)
 add_subdirectory(applied_forces)
 add_subdirectory(listed_forces)
 add_subdirectory(nbnxm)
