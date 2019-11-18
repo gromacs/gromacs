@@ -206,9 +206,18 @@ setupNbnxmInstance(const NBKernelOptions   &options,
                                                     nullptr,
                                                     nullptr);
 
+// void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
+//                          nbnxn_atomdata_t*       nbat,
+//                          const Nbnxm::KernelType kernelType,
+//                          int                     enbnxninitcombrule,
+//                          int                     ntype,
+//                          ArrayRef<const real>    nbfp,
+//                          int                     n_energygroups,
+//                          int                     nout)
+
     nbnxn_atomdata_init(gmx::MDLogger(),
                         nbv->nbat.get(), kernelSetup.kernelType,
-                        combinationRule, system.numAtomTypes, system.nonbondedParameters.data(),
+                        combinationRule, system.numAtomTypes, system.nonbondedParameters,
                         1, numThreads);
 
     t_nrnb nrnb;
@@ -226,13 +235,25 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 
     const real atomDensity = system.coordinates.size()/det(system.box);
 
+// void nbnxn_put_on_grid(nonbonded_verlet_t*            nb_verlet,
+//                        const matrix                   box,
+//                        int                            gridIndex,
+//                        const rvec                     lowerCorner,
+//                        const rvec                     upperCorner,
+//                        const gmx::UpdateGroupsCog*    updateGroupsCog,
+//                        gmx::Range<int>                atomRange,
+//                        real                           atomDensity,
+//                        gmx::ArrayRef<const int>       atomInfo,
+//                        gmx::ArrayRef<const gmx::RVec> x,
+//                        int                            numAtomsMoved,
+//                        const int*                     move)
     nbnxn_put_on_grid(nbv.get(),
                       system.box, 0, lowerCorner, upperCorner,
-                      nullptr, 0, system.coordinates.size(), atomDensity,
+                      nullptr, gmx::Range<int> {}, atomDensity,
                       atomInfo, system.coordinates,
                       0, nullptr);
 
-    nbv->constructPairlist(Nbnxm::InteractionLocality::Local,
+    nbv->constructPairlist(gmx::InteractionLocality::Local,
                            &system.excls, 0, &nrnb);
 
     t_mdatoms mdatoms;
@@ -381,13 +402,13 @@ static void setupAndRunInstance(NBKernelSystem          &system,
     }
 
     std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance(options, system);
-    const PairlistSet                  &pairlistSet   = nbv->pairlistSets().pairlistSet(Nbnxm::InteractionLocality::Local);
+    const PairlistSet                  &pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     gmx_cycles_t                        cycles        = gmx_cycles_read();
 
     t_forcerec forceRec;
     forceRec.ntype = system.numAtomTypes;
-    forceRec.nbfp  = system.nonbondedParameters.data();
+    forceRec.nbfp  = system.nonbondedParameters;
     snew(forceRec.shift_vec, SHIFTS);
     calc_shifts(system.box, forceRec.shift_vec);
 
@@ -395,7 +416,7 @@ static void setupAndRunInstance(NBKernelSystem          &system,
     for (int iter = 0; iter < options.numIterations; iter++)
     {
         // Run the kernel without force clearing
-        nbv->dispatchNonbondedKernel(Nbnxm::InteractionLocality::Local,
+        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
                                      ic, stepWork, enbvClearFNo, forceRec,
                                      &enerd,
                                      &nrnb);
