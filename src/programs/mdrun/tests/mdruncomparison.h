@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,69 +53,83 @@ namespace test
 
 /*! \internal
  * \brief Manages returning a pair of frames from two
- * equivalent simulations that are meaningful to compare. */
-template <class FrameReader, class Frame>
+ * equivalent simulations that are meaningful to compare.
+ *
+ * \todo This is largely duplicated by ContinuationFrameManager. These
+ * could be refactored into components that compare iterators to
+ * frames.
+ *
+ * \tparam FrameReader  Has readNextFrame() and frame() methods
+ *                      useful for returning successive Frame objects */
+template<class FrameReader>
 class FramePairManager
 {
-    public:
-        //! Convenience typedef
-        typedef std::unique_ptr<FrameReader> FrameReaderPtr;
-        //! Constructor
-        FramePairManager(FrameReaderPtr first,
-                         FrameReaderPtr second) :
-            first_(std::move(first)),
-            second_(std::move(second))
-        {}
-    private:
-        /*! \brief Probe for a pair of valid frames, and return true if both are found.
-         *
-         * Give a test failure if exactly one frame is found, because
-         * that file is longer than the other one, and this is not
-         * expected behaviour. */
-        bool shouldContinueComparing()
+public:
+    //! Convenience typedef
+    typedef std::unique_ptr<FrameReader> FrameReaderPtr;
+    //! Constructor
+    FramePairManager(FrameReaderPtr first, FrameReaderPtr second) :
+        first_(std::move(first)),
+        second_(std::move(second))
+    {
+    }
+
+private:
+    /*! \brief Probe for a pair of valid frames, and return true if both are found.
+     *
+     * Give a test failure if exactly one frame is found, because
+     * that file is longer than the other one, and this is not
+     * expected behaviour. */
+    bool shouldContinueComparing()
+    {
+        if (first_->readNextFrame())
         {
-            if (first_->readNextFrame())
+            if (second_->readNextFrame())
             {
-                if (second_->readNextFrame())
-                {
-                    // Two valid next frames exist, so we should continue comparing.
-                    return true;
-                }
-                else
-                {
-                    ADD_FAILURE() << "first file had at least one more frame than second file";
-                }
+                // Two valid next frames exist, so we should continue comparing.
+                return true;
             }
             else
             {
-                if (second_->readNextFrame())
-                {
-                    ADD_FAILURE() << "second file had at least one more frame than first file";
-                }
-                else
-                {
-                    // Both files ran out of frames at the same time, which is the expected behaviour.
-                }
+                ADD_FAILURE() << "first file had at least one more frame than second file";
             }
-            // At least one file is out of frames, so should not continue comparing.
-            return false;
         }
-    public:
-        //! Compare all possible pairs of frames using \c compareTwoFrames.
-        void compareAllFramePairs(std::function<void(const Frame &, const Frame &)> compareTwoFrames)
+        else
         {
-            while (shouldContinueComparing())
+            if (second_->readNextFrame())
             {
-                auto firstFrame  = first_->frame();
-                auto secondFrame = second_->frame();
-                SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '" + secondFrame.frameName() + "'");
-                compareTwoFrames(firstFrame, secondFrame);
+                ADD_FAILURE() << "second file had at least one more frame than first file";
             }
-
+            else
+            {
+                // Both files ran out of frames at the same time, which is the expected behaviour.
+            }
         }
-    private:
-        FrameReaderPtr first_;
-        FrameReaderPtr second_;
+        // At least one file is out of frames, so should not continue comparing.
+        return false;
+    }
+
+public:
+    /*! \brief Compare all possible pairs of frames using \c compareTwoFrames.
+     *
+     * \tparam Frame  The type of frame used in the comparison (returned
+     *                by FrameReader and used by compareTwoFrames). */
+    template<class Frame>
+    void compareAllFramePairs(std::function<void(const Frame&, const Frame&)> compareTwoFrames)
+    {
+        while (shouldContinueComparing())
+        {
+            Frame firstFrame  = first_->frame();
+            Frame secondFrame = second_->frame();
+            SCOPED_TRACE("Comparing frames from two runs '" + firstFrame.frameName() + "' and '"
+                         + secondFrame.frameName() + "'");
+            compareTwoFrames(firstFrame, secondFrame);
+        }
+    }
+
+private:
+    FrameReaderPtr first_;
+    FrameReaderPtr second_;
 };
 
 } // namespace test

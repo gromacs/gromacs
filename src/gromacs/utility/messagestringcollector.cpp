@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2014,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,36 +52,30 @@ namespace gmx
 
 class MessageStringCollector::Impl
 {
-    public:
-        Impl() : prevContext_(0) {}
+public:
+    Impl() : prevContext_(0) {}
 
-        std::vector<std::string> contexts_;
-        std::string              text_;
-        size_t                   prevContext_;
+    std::vector<std::string> contexts_;
+    std::string              text_;
+    size_t                   prevContext_;
 };
 
-MessageStringCollector::MessageStringCollector()
-    : impl_(new Impl)
-{
-}
+MessageStringCollector::MessageStringCollector() : impl_(new Impl) {}
 
-MessageStringCollector::~MessageStringCollector()
-{
-}
+MessageStringCollector::~MessageStringCollector() {}
 
-void MessageStringCollector::startContext(const char *name)
+void MessageStringCollector::startContext(const char* name)
 {
     impl_->contexts_.emplace_back(name);
 }
 
-void MessageStringCollector::append(const std::string &message)
+void MessageStringCollector::append(const std::string& message)
 {
     int indent = static_cast<int>(impl_->prevContext_ * 2);
     if (!impl_->contexts_.empty())
     {
         std::vector<std::string>::const_iterator ci;
-        for (ci = impl_->contexts_.begin() + impl_->prevContext_;
-             ci != impl_->contexts_.end(); ++ci)
+        for (ci = impl_->contexts_.begin() + impl_->prevContext_; ci != impl_->contexts_.end(); ++ci)
         {
             impl_->text_.append(indent, ' ');
             impl_->text_.append(*ci);
@@ -109,8 +103,7 @@ void MessageStringCollector::append(const std::string &message)
 
 void MessageStringCollector::finishContext()
 {
-    GMX_RELEASE_ASSERT(!impl_->contexts_.empty(),
-                       "finishContext() called without context");
+    GMX_RELEASE_ASSERT(!impl_->contexts_.empty(), "finishContext() called without context");
     impl_->contexts_.pop_back();
     if (impl_->prevContext_ > impl_->contexts_.size())
     {

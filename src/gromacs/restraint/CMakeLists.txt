@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,8 +37,8 @@ gmx_add_libgromacs_sources(
     manager.cpp
     restraintmdmodule.cpp
     )
-
-gmx_install_headers(restraintpotential.h)
+# TODO this is a hacky way to expose things for the API and needs to be changed to something proper
+install(FILES restraintpotential.h DESTINATION include/gromacs/restraint)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,8 @@ static int gmx_dnint(double x)
     return gmx::roundToInt(x);
 }
 
-typedef struct gmx_stats {
+typedef struct gmx_stats
+{
     double  aa, a, b, sigma_aa, sigma_a, sigma_b, aver, sigma_aver, error;
     double  rmsd, Rdata, Rfit, Rfitaa, chi2, chi2aa;
     double *x, *y, *dx, *dy;
@@ -61,16 +62,16 @@ typedef struct gmx_stats {
 
 gmx_stats_t gmx_stats_init()
 {
-    gmx_stats *stats;
+    gmx_stats* stats;
 
     snew(stats, 1);
 
     return static_cast<gmx_stats_t>(stats);
 }
 
-int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
+int gmx_stats_get_npoints(gmx_stats_t gstats, int* N)
 {
-    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
+    gmx_stats* stats = static_cast<gmx_stats*>(gstats);
 
     *N = stats->np;
 
@@ -79,7 +80,7 @@ int gmx_stats_get_npoints(gmx_stats_t gstats, int *N)
 
 void gmx_stats_free(gmx_stats_t gstats)
 {
-    gmx_stats *stats = static_cast<gmx_stats *>(gstats);
+    gmx_stats* stats = static_cast<gmx_stats*>(gstats);
 
     sfree(stats->x);
     sfree(stats->y);
@@ -88,12 +89,11 @@ void gmx_stats_free(gmx_stats_t gstats)
     sfree(stats);
 }
 
-int gmx_stats_add_point(gmx_stats_t gstats, double x, double y,
-                        double dx, double dy)
+int gmx_stats_add_point(gmx_stats_t gstats, double x, double y, double dx, double dy)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
 
-    if (stats->np+1 >= stats->nalloc)
+    if (stats->np + 1 >= stats->nalloc)
     {
         if (stats->nalloc == 0)
         {
@@ -125,10 +125,9 @@ int gmx_stats_add_point(gmx_stats_t gstats, double x, double y,
     return estatsOK;
 }
 
-int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
-                        real *dx, real *dy, real level)
+int gmx_stats_get_point(gmx_stats_t gstats, real* x, real* y, real* dx, real* dy, real level)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok, outlier;
     real       rmsd, r;
 
@@ -140,16 +139,16 @@ int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
     while ((outlier == 0) && (stats->np_c < stats->np))
     {
         r       = std::abs(stats->x[stats->np_c] - stats->y[stats->np_c]);
-        outlier = static_cast<int>(r > rmsd*level);
+        outlier = static_cast<int>(r > rmsd * level);
         if (outlier)
         {
             if (nullptr != x)
             {
-                *x  = stats->x[stats->np_c];
+                *x = stats->x[stats->np_c];
             }
             if (nullptr != y)
             {
-                *y  = stats->y[stats->np_c];
+                *y = stats->y[stats->np_c];
             }
             if (nullptr != dx)
             {
@@ -173,15 +172,14 @@ int gmx_stats_get_point(gmx_stats_t gstats, real *x, real *y,
     return estatsNO_POINTS;
 }
 
-int gmx_stats_add_points(gmx_stats_t gstats, int n, real *x, real *y,
-                         real *dx, real *dy)
+int gmx_stats_add_points(gmx_stats_t gstats, int n, real* x, real* y, real* dx, real* dy)
 {
     for (int i = 0; (i < n); i++)
     {
         int ok;
-        if ((ok = gmx_stats_add_point(gstats, x[i], y[i],
-                                      (nullptr != dx) ? dx[i] : 0,
-                                      (nullptr != dy) ? dy[i] : 0)) != estatsOK)
+        if ((ok = gmx_stats_add_point(gstats, x[i], y[i], (nullptr != dx) ? dx[i] : 0,
+                                      (nullptr != dy) ? dy[i] : 0))
+            != estatsOK)
         {
             return ok;
         }
@@ -189,13 +187,13 @@ int gmx_stats_add_points(gmx_stats_t gstats, int n, real *x, real *y,
     return estatsOK;
 }
 
-static int gmx_stats_compute(gmx_stats *stats, int weight)
+static int gmx_stats_compute(gmx_stats* stats, int weight)
 {
     double yy, yx, xx, sx, sy, dy, chi2, chi2aa, d2;
     double ssxx, ssyy, ssxy;
     double w, wtot, yx_nw, sy_nw, sx_nw, yy_nw, xx_nw, dx2, dy2;
 
-    int    N = stats->np;
+    int N = stats->np;
 
     if (stats->computed == 0)
     {
@@ -204,73 +202,73 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
             return estatsNO_POINTS;
         }
 
-        xx   = xx_nw = 0;
-        yy   = yy_nw = 0;
-        yx   = yx_nw = 0;
-        sx   = sx_nw = 0;
-        sy   = sy_nw = 0;
-        wtot = 0;
-        d2   = 0;
+        xx = xx_nw = 0;
+        yy = yy_nw = 0;
+        yx = yx_nw = 0;
+        sx = sx_nw = 0;
+        sy = sy_nw = 0;
+        wtot       = 0;
+        d2         = 0;
         for (int i = 0; (i < N); i++)
         {
-            d2 += gmx::square(stats->x[i]-stats->y[i]);
+            d2 += gmx::square(stats->x[i] - stats->y[i]);
             if (((stats->dy[i]) != 0.0) && (weight == elsqWEIGHT_Y))
             {
-                w = 1/gmx::square(stats->dy[i]);
+                w = 1 / gmx::square(stats->dy[i]);
             }
             else
             {
                 w = 1;
             }
 
-            wtot  += w;
+            wtot += w;
 
-            xx    += w*gmx::square(stats->x[i]);
+            xx += w * gmx::square(stats->x[i]);
             xx_nw += gmx::square(stats->x[i]);
 
-            yy    += w*gmx::square(stats->y[i]);
+            yy += w * gmx::square(stats->y[i]);
             yy_nw += gmx::square(stats->y[i]);
 
-            yx    += w*stats->y[i]*stats->x[i];
-            yx_nw += stats->y[i]*stats->x[i];
+            yx += w * stats->y[i] * stats->x[i];
+            yx_nw += stats->y[i] * stats->x[i];
 
-            sx    += w*stats->x[i];
+            sx += w * stats->x[i];
             sx_nw += stats->x[i];
 
-            sy    += w*stats->y[i];
+            sy += w * stats->y[i];
             sy_nw += stats->y[i];
         }
 
         /* Compute average, sigma and error */
-        stats->aver       = sy_nw/N;
-        stats->sigma_aver = std::sqrt(yy_nw/N - gmx::square(sy_nw/N));
-        stats->error      = stats->sigma_aver/std::sqrt(static_cast<double>(N));
+        stats->aver       = sy_nw / N;
+        stats->sigma_aver = std::sqrt(yy_nw / N - gmx::square(sy_nw / N));
+        stats->error      = stats->sigma_aver / std::sqrt(static_cast<double>(N));
 
         /* Compute RMSD between x and y */
-        stats->rmsd = std::sqrt(d2/N);
+        stats->rmsd = std::sqrt(d2 / N);
 
         /* Correlation coefficient for data */
-        yx_nw       /= N;
-        xx_nw       /= N;
-        yy_nw       /= N;
-        sx_nw       /= N;
-        sy_nw       /= N;
-        ssxx         = N*(xx_nw - gmx::square(sx_nw));
-        ssyy         = N*(yy_nw - gmx::square(sy_nw));
-        ssxy         = N*(yx_nw - (sx_nw*sy_nw));
-        stats->Rdata = std::sqrt(gmx::square(ssxy)/(ssxx*ssyy));
+        yx_nw /= N;
+        xx_nw /= N;
+        yy_nw /= N;
+        sx_nw /= N;
+        sy_nw /= N;
+        ssxx         = N * (xx_nw - gmx::square(sx_nw));
+        ssyy         = N * (yy_nw - gmx::square(sy_nw));
+        ssxy         = N * (yx_nw - (sx_nw * sy_nw));
+        stats->Rdata = std::sqrt(gmx::square(ssxy) / (ssxx * ssyy));
 
         /* Compute straight line through datapoints, either with intercept
            zero (result in aa) or with intercept variable (results in a
            and b) */
-        yx = yx/wtot;
-        xx = xx/wtot;
-        sx = sx/wtot;
-        sy = sy/wtot;
+        yx = yx / wtot;
+        xx = xx / wtot;
+        sx = sx / wtot;
+        sy = sy / wtot;
 
-        stats->aa = (yx/xx);
-        stats->a  = (yx-sx*sy)/(xx-sx*sx);
-        stats->b  = (sy)-(stats->a)*(sx);
+        stats->aa = (yx / xx);
+        stats->a  = (yx - sx * sy) / (xx - sx * sx);
+        stats->b  = (sy) - (stats->a) * (sx);
 
         /* Compute chi2, deviation from a line y = ax+b. Also compute
            chi2aa which returns the deviation from a line y = ax. */
@@ -286,21 +284,21 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
             {
                 dy = 1;
             }
-            chi2aa += gmx::square((stats->y[i]-(stats->aa*stats->x[i]))/dy);
-            chi2   += gmx::square((stats->y[i]-(stats->a*stats->x[i]+stats->b))/dy);
+            chi2aa += gmx::square((stats->y[i] - (stats->aa * stats->x[i])) / dy);
+            chi2 += gmx::square((stats->y[i] - (stats->a * stats->x[i] + stats->b)) / dy);
         }
         if (N > 2)
         {
-            stats->chi2   = std::sqrt(chi2/(N-2));
-            stats->chi2aa = std::sqrt(chi2aa/(N-2));
+            stats->chi2   = std::sqrt(chi2 / (N - 2));
+            stats->chi2aa = std::sqrt(chi2aa / (N - 2));
 
             /* Look up equations! */
-            dx2            = (xx-sx*sx);
-            dy2            = (yy-sy*sy);
-            stats->sigma_a = std::sqrt(stats->chi2/((N-2)*dx2));
-            stats->sigma_b = stats->sigma_a*std::sqrt(xx);
-            stats->Rfit    = std::abs(ssxy)/std::sqrt(ssxx*ssyy);
-            stats->Rfitaa  = stats->aa*std::sqrt(dx2/dy2);
+            dx2            = (xx - sx * sx);
+            dy2            = (yy - sy * sy);
+            stats->sigma_a = std::sqrt(stats->chi2 / ((N - 2) * dx2));
+            stats->sigma_b = stats->sigma_a * std::sqrt(xx);
+            stats->Rfit    = std::abs(ssxy) / std::sqrt(ssxx * ssyy);
+            stats->Rfitaa  = stats->aa * std::sqrt(dx2 / dy2);
         }
         else
         {
@@ -318,11 +316,9 @@ static int gmx_stats_compute(gmx_stats *stats, int weight)
     return estatsOK;
 }
 
-int gmx_stats_get_ab(gmx_stats_t gstats, int weight,
-                     real *a, real *b, real *da, real *db,
-                     real *chi2, real *Rfit)
+int gmx_stats_get_ab(gmx_stats_t gstats, int weight, real* a, real* b, real* da, real* db, real* chi2, real* Rfit)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, weight)) != estatsOK)
@@ -331,19 +327,19 @@ int gmx_stats_get_ab(gmx_stats_t gstats, int weight,
     }
     if (nullptr != a)
     {
-        *a    = stats->a;
+        *a = stats->a;
     }
     if (nullptr != b)
     {
-        *b    = stats->b;
+        *b = stats->b;
     }
     if (nullptr != da)
     {
-        *da   = stats->sigma_a;
+        *da = stats->sigma_a;
     }
     if (nullptr != db)
     {
-        *db   = stats->sigma_b;
+        *db = stats->sigma_b;
     }
     if (nullptr != chi2)
     {
@@ -357,10 +353,9 @@ int gmx_stats_get_ab(gmx_stats_t gstats, int weight,
     return estatsOK;
 }
 
-int gmx_stats_get_a(gmx_stats_t gstats, int weight, real *a, real *da,
-                    real *chi2, real *Rfit)
+int gmx_stats_get_a(gmx_stats_t gstats, int weight, real* a, real* da, real* chi2, real* Rfit)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, weight)) != estatsOK)
@@ -369,11 +364,11 @@ int gmx_stats_get_a(gmx_stats_t gstats, int weight, real *a, real *da,
     }
     if (nullptr != a)
     {
-        *a    = stats->aa;
+        *a = stats->aa;
     }
     if (nullptr != da)
     {
-        *da   = stats->sigma_aa;
+        *da = stats->sigma_aa;
     }
     if (nullptr != chi2)
     {
@@ -387,9 +382,9 @@ int gmx_stats_get_a(gmx_stats_t gstats, int weight, real *a, real *da,
     return estatsOK;
 }
 
-int gmx_stats_get_average(gmx_stats_t gstats, real *aver)
+int gmx_stats_get_average(gmx_stats_t gstats, real* aver)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -402,9 +397,9 @@ int gmx_stats_get_average(gmx_stats_t gstats, real *aver)
     return estatsOK;
 }
 
-int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error)
+int gmx_stats_get_ase(gmx_stats_t gstats, real* aver, real* sigma, real* error)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -414,7 +409,7 @@ int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error)
 
     if (nullptr != aver)
     {
-        *aver  = stats->aver;
+        *aver = stats->aver;
     }
     if (nullptr != sigma)
     {
@@ -428,9 +423,9 @@ int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error)
     return estatsOK;
 }
 
-int gmx_stats_get_sigma(gmx_stats_t gstats, real *sigma)
+int gmx_stats_get_sigma(gmx_stats_t gstats, real* sigma)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -443,9 +438,9 @@ int gmx_stats_get_sigma(gmx_stats_t gstats, real *sigma)
     return estatsOK;
 }
 
-int gmx_stats_get_error(gmx_stats_t gstats, real *error)
+int gmx_stats_get_error(gmx_stats_t gstats, real* error)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -458,9 +453,9 @@ int gmx_stats_get_error(gmx_stats_t gstats, real *error)
     return estatsOK;
 }
 
-int gmx_stats_get_corr_coeff(gmx_stats_t gstats, real *R)
+int gmx_stats_get_corr_coeff(gmx_stats_t gstats, real* R)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -473,9 +468,9 @@ int gmx_stats_get_corr_coeff(gmx_stats_t gstats, real *R)
     return estatsOK;
 }
 
-int gmx_stats_get_rmsd(gmx_stats_t gstats, real *rmsd)
+int gmx_stats_get_rmsd(gmx_stats_t gstats, real* rmsd)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        ok;
 
     if ((ok = gmx_stats_compute(stats, elsqWEIGHT_NONE)) != estatsOK)
@@ -488,14 +483,13 @@ int gmx_stats_get_rmsd(gmx_stats_t gstats, real *rmsd)
     return estatsOK;
 }
 
-int gmx_stats_dump_xy(gmx_stats_t gstats, FILE *fp)
+int gmx_stats_dump_xy(gmx_stats_t gstats, FILE* fp)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
 
     for (int i = 0; (i < stats->np); i++)
     {
-        fprintf(fp, "%12g  %12g  %12g  %12g\n", stats->x[i], stats->y[i],
-                stats->dx[i], stats->dy[i]);
+        fprintf(fp, "%12g  %12g  %12g  %12g\n", stats->x[i], stats->y[i], stats->dx[i], stats->dy[i]);
     }
 
     return estatsOK;
@@ -503,8 +497,8 @@ int gmx_stats_dump_xy(gmx_stats_t gstats, FILE *fp)
 
 int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
 {
-    gmx_stats *stats = gstats;
-    int        iter  = 1, done = 0, ok;
+    gmx_stats* stats = gstats;
+    int        iter = 1, done = 0, ok;
     real       rmsd, r;
 
     while ((stats->np >= 10) && !done)
@@ -514,19 +508,19 @@ int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
             return ok;
         }
         done = 1;
-        for (int i = 0; (i < stats->np); )
+        for (int i = 0; (i < stats->np);)
         {
-            r = std::abs(stats->x[i]-stats->y[i]);
-            if (r > level*rmsd)
+            r = std::abs(stats->x[i] - stats->y[i]);
+            if (r > level * rmsd)
             {
-                fprintf(stderr, "Removing outlier, iter = %d, rmsd = %g, x = %g, y = %g\n",
-                        iter, rmsd, stats->x[i], stats->y[i]);
-                if (i < stats->np-1)
+                fprintf(stderr, "Removing outlier, iter = %d, rmsd = %g, x = %g, y = %g\n", iter,
+                        rmsd, stats->x[i], stats->y[i]);
+                if (i < stats->np - 1)
                 {
-                    stats->x[i]  = stats->x[stats->np-1];
-                    stats->y[i]  = stats->y[stats->np-1];
-                    stats->dx[i] = stats->dx[stats->np-1];
-                    stats->dy[i] = stats->dy[stats->np-1];
+                    stats->x[i]  = stats->x[stats->np - 1];
+                    stats->y[i]  = stats->y[stats->np - 1];
+                    stats->dx[i] = stats->dx[stats->np - 1];
+                    stats->dy[i] = stats->dy[stats->np - 1];
                 }
                 stats->np--;
                 done = 0;
@@ -542,15 +536,13 @@ int gmx_stats_remove_outliers(gmx_stats_t gstats, double level)
     return estatsOK;
 }
 
-int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
-                             int ehisto, int normalized, real **x, real **y)
+int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int* nb, int ehisto, int normalized, real** x, real** y)
 {
-    gmx_stats *stats = gstats;
+    gmx_stats* stats = gstats;
     int        index = 0, nbins = *nb, *nindex;
     double     minx, maxx, maxy, miny, delta, dd, minh;
 
-    if (((binwidth <= 0) && (nbins <= 0)) ||
-        ((binwidth > 0) && (nbins > 0)))
+    if (((binwidth <= 0) && (nbins <= 0)) || ((binwidth > 0) && (nbins > 0)))
     {
         return estatsINVALID_INPUT;
     }
@@ -569,12 +561,12 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     }
     if (ehisto == ehistoX)
     {
-        delta = maxx-minx;
+        delta = maxx - minx;
         minh  = minx;
     }
     else if (ehisto == ehistoY)
     {
-        delta = maxy-miny;
+        delta = maxy - miny;
         minh  = miny;
     }
     else
@@ -584,17 +576,17 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
 
     if (binwidth == 0)
     {
-        binwidth = (delta)/nbins;
+        binwidth = (delta) / nbins;
     }
     else
     {
-        nbins = gmx_dnint((delta)/binwidth + 0.5);
+        nbins = gmx_dnint((delta) / binwidth + 0.5);
     }
     snew(*x, nbins);
     snew(nindex, nbins);
     for (int i = 0; (i < nbins); i++)
     {
-        (*x)[i] = minh + binwidth*(i+0.5);
+        (*x)[i] = minh + binwidth * (i + 0.5);
     }
     if (normalized == 0)
     {
@@ -602,7 +594,7 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     }
     else
     {
-        dd = 1.0/(binwidth*stats->np);
+        dd = 1.0 / (binwidth * stats->np);
     }
 
     snew(*y, nbins);
@@ -610,19 +602,19 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     {
         if (ehisto == ehistoY)
         {
-            index = static_cast<int>((stats->y[i]-miny)/binwidth);
+            index = static_cast<int>((stats->y[i] - miny) / binwidth);
         }
         else if (ehisto == ehistoX)
         {
-            index = static_cast<int>((stats->x[i]-minx)/binwidth);
+            index = static_cast<int>((stats->x[i] - minx) / binwidth);
         }
         if (index < 0)
         {
             index = 0;
         }
-        if (index > nbins-1)
+        if (index > nbins - 1)
         {
-            index = nbins-1;
+            index = nbins - 1;
         }
         (*y)[index] += dd;
         nindex[index]++;
@@ -644,17 +636,11 @@ int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nb,
     return estatsOK;
 }
 
-static const char *stats_error[estatsNR] =
-{
-    "All well in STATS land",
-    "No points",
-    "Not enough memory",
-    "Invalid histogram input",
-    "Unknown error",
-    "Not implemented yet"
-};
+static const char* stats_error[estatsNR] = { "All well in STATS land", "No points",
+                                             "Not enough memory",      "Invalid histogram input",
+                                             "Unknown error",          "Not implemented yet" };
 
-const char *gmx_stats_message(int estats)
+const char* gmx_stats_message(int estats)
 {
     if ((estats >= 0) && (estats < estatsNR))
     {
@@ -668,7 +654,7 @@ const char *gmx_stats_message(int estats)
 
 /* Old convenience functions, should be merged with the core
    statistics above. */
-int lsq_y_ax(int n, real x[], real y[], real *a)
+int lsq_y_ax(int n, real x[], real y[], real* a)
 {
     gmx_stats_t lsq = gmx_stats_init();
     int         ok;
@@ -681,8 +667,7 @@ int lsq_y_ax(int n, real x[], real y[], real *a)
     return ok;
 }
 
-static int low_lsq_y_ax_b(int n, const real *xr, const double *xd, real yr[],
-                          real *a, real *b, real *r, real *chi2)
+static int low_lsq_y_ax_b(int n, const real* xr, const double* xd, real yr[], real* a, real* b, real* r, real* chi2)
 {
     gmx_stats_t lsq = gmx_stats_init();
     int         ok;
@@ -716,20 +701,17 @@ static int low_lsq_y_ax_b(int n, const real *xr, const double *xd, real yr[],
     return ok;
 }
 
-int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r, real *chi2)
+int lsq_y_ax_b(int n, real x[], real y[], real* a, real* b, real* r, real* chi2)
 {
     return low_lsq_y_ax_b(n, x, nullptr, y, a, b, r, chi2);
 }
 
-int lsq_y_ax_b_xdouble(int n, double x[], real y[], real *a, real *b,
-                       real *r, real *chi2)
+int lsq_y_ax_b_xdouble(int n, double x[], real y[], real* a, real* b, real* r, real* chi2)
 {
     return low_lsq_y_ax_b(n, nullptr, x, y, a, b, r, chi2);
 }
 
-int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-                     real *a, real *b, real *da, real *db,
-                     real *r, real *chi2)
+int lsq_y_ax_b_error(int n, real x[], real y[], real dy[], real* a, real* b, real* da, real* db, real* r, real* chi2)
 {
     gmx_stats_t lsq = gmx_stats_init();
     int         ok;

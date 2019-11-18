@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,8 +62,7 @@ extern struct gmx_ana_selmethod_t sm_keyword_str;
 extern struct gmx_ana_selmethod_t sm_keyword_pos;
 
 /** Prints information about a comparison expression. */
-void
-_gmx_selelem_print_compare_info(FILE *fp, void *data);
+void _gmx_selelem_print_compare_info(FILE* fp, void* data);
 
 /*! \brief
  * Returns whether the selection element is a default position keyword.
@@ -74,25 +73,20 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data);
  *
  * This method only works before the selection has been compiled.
  */
-bool
-_gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement &sel);
+bool _gmx_selelem_is_default_kwpos(const gmx::SelectionTreeElement& sel);
 /** Sets the position type for position keyword evaluation. */
-void
-_gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement *sel, const char *type);
+void _gmx_selelem_set_kwpos_type(gmx::SelectionTreeElement* sel, const char* type);
 /** Sets the flags for position keyword evaluation. */
-void
-_gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags);
+void _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement* sel, int flags);
 
 /** Sets the string match type for string keyword evaluation. */
-void
-_gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
-                                  gmx::SelectionStringMatchType           matchType);
+void _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer& sel,
+                                       gmx::SelectionStringMatchType           matchType);
 
 /** Does custom processing for parameters of the \c same selection method. */
-void
-_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **method,
-                              const gmx::SelectionParserParameterListPointer &params,
-                              void                                           *scanner);
+void _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t**                    method,
+                                   const gmx::SelectionParserParameterListPointer& params,
+                                   void*                                           scanner);
 
 /*! \brief
  * Initializes a selection element for evaluating a keyword in a given group.
@@ -108,9 +102,8 @@ _gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **me
  * \p child should be a selection tree that evaluates to \ref GROUP_VALUE or
  * \ref POS_VALUE.
  */
-gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t              *method,
-                                const gmx::SelectionTreeElementPointer  &child,
-                                void                                    *scanner);
+gmx::SelectionTreeElementPointer _gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t* method,
+                                                                 const gmx::SelectionTreeElementPointer& child,
+                                                                 void* scanner);
 
 #endif

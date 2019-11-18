@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
  * \param[in] qm QM forcerec.
  * \param[in] mm MM part of forcerec.
  */
-void init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
+void init_gamess(const t_commrec* cr, t_QMrec* qm, t_MMrec* mm);
 
 /*! \brief
  * Run calculation with Gamess.
@@ -54,8 +54,7 @@ void init_gamess(const t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
  * \param[in] f  Force vector.
  * \param[in] fshift Force shift vector.
  */
-real call_gamess(const t_QMrec *qm, const t_MMrec *mm,
-                 rvec f[], rvec fshift[]);
+real call_gamess(const t_QMrec* qm, const t_MMrec* mm, rvec f[], rvec fshift[]);
 
 
 #endif

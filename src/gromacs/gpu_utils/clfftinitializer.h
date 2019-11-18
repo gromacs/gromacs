@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,27 +59,16 @@ namespace gmx
 {
 
 /*! \libinternal
- * \brief Handle clFFT library init and tear down in RAII style. */
-class ClfftInitializer
-{
-    public:
-        ClfftInitializer();
-        ~ClfftInitializer();
-
-        GMX_DISALLOW_COPY_AND_ASSIGN(ClfftInitializer);
-};
-
-/*! \brief This routine should be called during setup for running
- * an FFT task on an OpenCL device.
+ * \brief Handle clFFT library init and tear down in RAII style also
+ * with mutual exclusion.
  *
- * It should be called once per process with such a task.
- *
- * It implements lazy initialization, so that we can have a lifetime
- * that begins when we know that PME on an OpenCL device will run an
- * FFT task on the device, and should continue until we know that the
- * last such task has completed. Any time required for this
- * initialization or tear down should not be accrued to per-MD-step
- * counters.
+ * Only one thread per process needs to attempt to set up and tear
+ * down the clFFT library, but this wrapper object ensures that it is
+ * safe to do so more than once, or from any thread. It is the
+ * responsibility of the caller to ensure that no use of the clFFT
+ * library is made before making an object of this type, or after the
+ * first such object is destroyed. If no more objects remain to be
+ * destroyed, then it is safe to create another and resume clFFT work.
  *
  * \todo Consider making a composite object that also handles
  * on-demand compilation, managing lifetime of PME FFT kernel programs
@@ -90,10 +79,24 @@ class ClfftInitializer
  * counter idiom so that both static initialization and
  * deinitialization can work in a fast, leak-free, and thread-safe way
  * without imposing constraints on the calling code.
- * See Redmine #2535.
- */
-std::unique_ptr<ClfftInitializer> initializeClfftLibrary();
+ * See Redmine #2535. */
+class ClfftInitializer
+{
+public:
+    /*! \brief Constructor
+     *
+     * This initializers the clFFT library if there is a
+     * possibility of an FFT task on the device, and preserves it
+     * until destruction. Any time required for this
+     * initialization or tear down should not be accrued to
+     * per-MD-step counters. */
+    ClfftInitializer();
+    //! Destructor
+    ~ClfftInitializer();
 
-}  // namespace gmx
+    GMX_DISALLOW_COPY_AND_ASSIGN(ClfftInitializer);
+};
+
+} // namespace gmx
 
 #endif

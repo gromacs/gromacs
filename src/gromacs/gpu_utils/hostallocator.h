@@ -72,9 +72,9 @@ namespace gmx
  * required for correct, efficient operation in all cases. */
 enum class PinningPolicy : int
 {
-    CannotBePinned,     // Memory is not known to be suitable for pinning.
-    PinnedIfSupported,  // Memory is suitable for efficient pinning, e.g. because it is
-                        // allocated to be page aligned, and will be pinned when supported.
+    CannotBePinned,    // Memory is not known to be suitable for pinning.
+    PinnedIfSupported, // Memory is suitable for efficient pinning, e.g. because it is
+                       // allocated to be page aligned, and will be pinned when supported.
 };
 
 //! Forward declaration of host allocation policy class.
@@ -90,16 +90,16 @@ class HostAllocationPolicy;
  * memory will always be allocated according to the behavior of
  * HostAllocationPolicy.
  */
-template <class T>
+template<class T>
 using HostAllocator = Allocator<T, HostAllocationPolicy>;
 
 //! Convenience alias for std::vector that uses HostAllocator.
-template <class T>
-using HostVector = std::vector<T, HostAllocator<T> >;
+template<class T>
+using HostVector = std::vector<T, HostAllocator<T>>;
 
 //! Convenience alias for PaddedVector that uses HostAllocator.
-template <class T>
-using PaddedHostVector = PaddedVector<T, HostAllocator<T> >;
+template<class T>
+using PaddedHostVector = PaddedVector<T, HostAllocator<T>>;
 
 /*! \libinternal
  * \brief Policy class for configuring gmx::Allocator, to manage
@@ -137,63 +137,60 @@ using PaddedHostVector = PaddedVector<T, HostAllocator<T> >;
  */
 class HostAllocationPolicy
 {
-    public:
-        //! Constructor
-        HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned);
-        /*! \brief Return the alignment size currently used by the active pinning policy. */
-        std::size_t alignment() const noexcept;
-        /*! \brief Allocate and perhaps pin page-aligned memory suitable for
-         * e.g. GPU transfers.
-         *
-         * Before attempting to allocate, unpin() is called. After a
-         * successful allocation, pin() is called. (Whether these do
-         * things depends on the PinningPolicy that is in effect.)
-         *
-         *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
-         *               0 bytes, which will return a non-null pointer that is properly
-         *               aligned and padded (but that you should not use).
-         *
-         *  \return Valid pointer if the allocation+optional pinning worked, otherwise nullptr.
-         *
-         *  \note Memory allocated with this routine must be released
-         *        with gmx::HostAllocationPolicy::free(), and
-         *        absolutely not the system free().
-         *
-         * Does not throw.
-         */
-        void *malloc(std::size_t bytes) const noexcept;
-        /*! \brief Free the memory, after unpinning (if appropriate).
-         *
-         *  \param buffer  Memory pointer previously returned from gmx::HostAllocationPolicy::malloc()
-         *
-         *  \note This routine should only be called with pointers
-         *        obtained from gmx:HostAllocationPolicy::malloc(),
-         *        and absolutely not any pointers obtained the system
-         *        malloc().
-         *
-         * Does not throw.
-         */
-        void free(void *buffer) const noexcept;
-        /*! \brief Return the active pinning policy.
-         *
-         * Does not throw.
-         */
-        PinningPolicy pinningPolicy() const { return pinningPolicy_; }
-        //! Don't propagate for copy
-        using propagate_on_container_copy_assignment = std::false_type;
-        //! Propagate for move
-        using propagate_on_container_move_assignment = std::true_type;
-        //! Propagate for move
-        using propagate_on_container_swap = std::true_type;
-        //! Use default allocator for copy (same as construct+copy)
-        HostAllocationPolicy select_on_container_copy_construction() const
-        {
-            return {};
-        }
+public:
+    //! Constructor
+    HostAllocationPolicy(PinningPolicy policy = PinningPolicy::CannotBePinned);
+    /*! \brief Return the alignment size currently used by the active pinning policy. */
+    std::size_t alignment() const noexcept;
+    /*! \brief Allocate and perhaps pin page-aligned memory suitable for
+     * e.g. GPU transfers.
+     *
+     * Before attempting to allocate, unpin() is called. After a
+     * successful allocation, pin() is called. (Whether these do
+     * things depends on the PinningPolicy that is in effect.)
+     *
+     *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
+     *               0 bytes, which will return a non-null pointer that is properly
+     *               aligned and padded (but that you should not use).
+     *
+     *  \return Valid pointer if the allocation+optional pinning worked, otherwise nullptr.
+     *
+     *  \note Memory allocated with this routine must be released
+     *        with gmx::HostAllocationPolicy::free(), and
+     *        absolutely not the system free().
+     *
+     * Does not throw.
+     */
+    void* malloc(std::size_t bytes) const noexcept;
+    /*! \brief Free the memory, after unpinning (if appropriate).
+     *
+     *  \param buffer  Memory pointer previously returned from gmx::HostAllocationPolicy::malloc()
+     *
+     *  \note This routine should only be called with pointers
+     *        obtained from gmx:HostAllocationPolicy::malloc(),
+     *        and absolutely not any pointers obtained the system
+     *        malloc().
+     *
+     * Does not throw.
+     */
+    void free(void* buffer) const noexcept;
+    /*! \brief Return the active pinning policy.
+     *
+     * Does not throw.
+     */
+    PinningPolicy pinningPolicy() const { return pinningPolicy_; }
+    //! Don't propagate for copy
+    using propagate_on_container_copy_assignment = std::false_type;
+    //! Propagate for move
+    using propagate_on_container_move_assignment = std::true_type;
+    //! Propagate for move
+    using propagate_on_container_swap = std::true_type;
+    //! Use default allocator for copy (same as construct+copy)
+    HostAllocationPolicy select_on_container_copy_construction() const { return {}; }
 
-    private:
-        //! Pinning policy
-        PinningPolicy pinningPolicy_;
+private:
+    //! Pinning policy
+    PinningPolicy pinningPolicy_;
 };
 
 /*! \brief Return true if two allocators are identical
@@ -201,8 +198,7 @@ class HostAllocationPolicy
  * True if pinning policy is the same.
  */
 template<class T1, class T2>
-bool operator==(const Allocator<T1, HostAllocationPolicy> &a,
-                const Allocator<T2, HostAllocationPolicy> &b)
+bool operator==(const Allocator<T1, HostAllocationPolicy>& a, const Allocator<T2, HostAllocationPolicy>& b)
 {
     return a.pinningPolicy() == b.pinningPolicy();
 }
@@ -215,16 +211,15 @@ bool operator==(const Allocator<T1, HostAllocationPolicy> &a,
  * restrictions. That cost is OK, because GROMACS will do this
  * operation very rarely (e.g. when auto-tuning and deciding to switch
  * whether a task will run on a GPU, or not). */
-template <typename PinnableVector>
-void changePinningPolicy(PinnableVector *v,
-                         PinningPolicy   pinningPolicy)
+template<typename PinnableVector>
+void changePinningPolicy(PinnableVector* v, PinningPolicy pinningPolicy)
 {
     // Force reallocation by element-wise move (because policy is
     // different container is forced to realloc). Does nothing if
     // policy is the same.
-    *v = PinnableVector(std::move(*v), {pinningPolicy});
+    *v = PinnableVector(std::move(*v), { pinningPolicy });
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif

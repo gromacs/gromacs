@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,13 +55,13 @@ class ISerializer;
  *
  * \ingroup module_utility
  */
-void serializeKeyValueTree(const KeyValueTreeObject &root, ISerializer *serializer);
+void serializeKeyValueTree(const KeyValueTreeObject& root, ISerializer* serializer);
 /*! \brief
  * Deserializes a KeyValueTreeObject from a given serializer.
  *
  * \ingroup module_utility
  */
-KeyValueTreeObject deserializeKeyValueTree(ISerializer *serializer);
+KeyValueTreeObject deserializeKeyValueTree(ISerializer* serializer);
 //! \endcond
 
 } // namespace gmx

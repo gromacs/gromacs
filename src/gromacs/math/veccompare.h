@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,11 +43,10 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol);
+void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol);
 
-void cmp_ivec(FILE *fp, const char *s, int index, const ivec i1, const ivec i2);
+void cmp_ivec(FILE* fp, const char* s, int index, const ivec i1, const ivec i2);
 
-void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
-               gmx_bool bRMSD, real ftol, real abstol);
+void cmp_rvecs(FILE* fp, const char* title, int n, const rvec x1[], const rvec x2[], gmx_bool bRMSD, real ftol, real abstol);
 
 #endif

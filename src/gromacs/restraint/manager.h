@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,67 +76,66 @@ namespace gmx
  */
 class RestraintManager final
 {
-    public:
-        //! Create new restraint manager resources with empty set of restraints.
-        RestraintManager();
+public:
+    //! Create new restraint manager resources with empty set of restraints.
+    RestraintManager();
 
-        ~RestraintManager();
+    ~RestraintManager();
 
-        /*!
-         * \brief Client code can access the shared resource by copying or moving a handle.
-         * \{
-         */
-        RestraintManager(const RestraintManager &/* unused */) = default;
-        RestraintManager               &operator=(const RestraintManager & /* unused */)     = default;
-        RestraintManager(RestraintManager &&) noexcept                                       = default;
-        RestraintManager               &operator=(RestraintManager && /* unused */) noexcept = default;
-        /*! \} */
+    /*!
+     * \brief Client code can access the shared resource by copying or moving a handle.
+     * \{
+     */
+    RestraintManager(const RestraintManager& /* unused */) = default;
+    RestraintManager& operator=(const RestraintManager& /* unused */) = default;
+    RestraintManager(RestraintManager&&) noexcept                     = default;
+    RestraintManager& operator=(RestraintManager&& /* unused */) noexcept = default;
+    /*! \} */
 
-        /*!
-         * \brief Clear registered restraints and reset the manager.
-         */
-        void clear() noexcept;
+    /*!
+     * \brief Clear registered restraints and reset the manager.
+     */
+    void clear() noexcept;
 
-        /*!
-         * \brief Get the number of currently managed restraints.
-         *
-         * \return number of restraints.
-         *
-         * \internal
-         * Only considers the IRestraintPotential objects
-         */
-        unsigned long countRestraints() noexcept;
+    /*!
+     * \brief Get the number of currently managed restraints.
+     *
+     * \return number of restraints.
+     *
+     * \internal
+     * Only considers the IRestraintPotential objects
+     */
+    unsigned long countRestraints() noexcept;
 
-        /*! \brief Obtain the ability to create a restraint MDModule
-         *
-         * Though the name is reminiscent of the evolving idea of a work specification, the
-         * Spec here is just a list of restraint modules.
-         *
-         * \param restraint shared ownership of a restraint potential interface.
-         * \param name key by which to reference the restraint.
-         */
-        void addToSpec(std::shared_ptr<gmx::IRestraintPotential> restraint,
-                       std::string                               name);
+    /*! \brief Obtain the ability to create a restraint MDModule
+     *
+     * Though the name is reminiscent of the evolving idea of a work specification, the
+     * Spec here is just a list of restraint modules.
+     *
+     * \param restraint shared ownership of a restraint potential interface.
+     * \param name key by which to reference the restraint.
+     */
+    void addToSpec(std::shared_ptr<gmx::IRestraintPotential> restraint, const std::string& name);
 
-        /*!
-         * \brief Get a copy of the current set of restraints to be applied.
-         *
-         * This function is to be used when launching a simulation to get the
-         * restraint handles to bind, so it is not performance sensitive. A new
-         * vector is returned with each call because it is unspecified whether
-         * the set of handles point to the same objects on all threads or between
-         * calls to getRestraints.
-         *
-         * \return a copy of the list of restraint potentials.
-         */
-        std::vector< std::shared_ptr<IRestraintPotential> > getRestraints() const;
+    /*!
+     * \brief Get a copy of the current set of restraints to be applied.
+     *
+     * This function is to be used when launching a simulation to get the
+     * restraint handles to bind, so it is not performance sensitive. A new
+     * vector is returned with each call because it is unspecified whether
+     * the set of handles point to the same objects on all threads or between
+     * calls to getRestraints.
+     *
+     * \return a copy of the list of restraint potentials.
+     */
+    std::vector<std::shared_ptr<IRestraintPotential>> getRestraints() const;
 
-    private:
-        class Impl;
-        //! Ownership of the shared reference to the global manager.
-        std::shared_ptr<Impl> instance_;
+private:
+    class Impl;
+    //! Ownership of the shared reference to the global manager.
+    std::shared_ptr<Impl> instance_;
 };
 
-}      // end namespace gmx
+} // end namespace gmx
 
-#endif //GROMACS_RESTRAINT_MANAGER_H
+#endif // GROMACS_RESTRAINT_MANAGER_H

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,121 +45,102 @@
 
 enum
 {
-    eftASC, eftXDR, eftTNG, eftGEN, eftNR
+    eftASC,
+    eftXDR,
+    eftTNG,
+    eftGEN,
+    eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
  * these arrays.
  */
-static const int trxs[] =
-{
-    efXTC, efTRR, efCPT,
-    efGRO, efG96, efPDB, efTNG
-};
+static const int trxs[] = { efXTC, efTRR, efCPT, efGRO, efG96, efPDB, efTNG };
 #define NTRXS asize(trxs)
 
-static const int trcompressed[] =
-{
-    efXTC,
-    efTNG
-};
+static const int trcompressed[] = { efXTC, efTNG };
 #define NTRCOMPRESSED asize(trcompressed)
 
-static const int tros[] =
-{
-    efXTC, efTRR,
-    efGRO, efG96, efPDB, efTNG
-};
+static const int tros[] = { efXTC, efTRR, efGRO, efG96, efPDB, efTNG };
 #define NTROS asize(tros)
 
-static const int trns[] =
-{
-    efTRR, efCPT,
-    efTNG
-};
+static const int trns[] = { efTRR, efCPT, efTNG };
 #define NTRNS asize(trns)
 
-static const int stos[] =
-{ efGRO, efG96, efPDB, efBRK, efENT, efESP };
+static const int stos[] = { efGRO, efG96, efPDB, efBRK, efENT, efESP };
 #define NSTOS asize(stos)
 
-static const int stxs[] =
-{
-    efGRO, efG96, efPDB, efBRK, efENT, efESP,
-    efTPR
-};
+static const int stxs[] = { efGRO, efG96, efPDB, efBRK, efENT, efESP, efTPR };
 #define NSTXS asize(stxs)
 
-static const int tpss[] =
-{
-    efTPR,
-    efGRO, efG96, efPDB, efBRK, efENT
-};
+static const int tpss[] = { efTPR, efGRO, efG96, efPDB, efBRK, efENT };
 #define NTPSS asize(tpss)
 
 typedef struct // NOLINT(clang-analyzer-optin.performance.Padding)
 {
     int         ftype;
-    const char *ext;
-    const char *defnm;
-    const char *defopt;
-    const char *descr;
+    const char* ext;
+    const char* defnm;
+    const char* defopt;
+    const char* descr;
     int         ntps;
-    const int  *tps;
+    const int*  tps;
 } t_deffile;
 
 /* this array should correspond to the enum in filetypes.h */
-static const t_deffile deffile[efNR] =
-{
+static const t_deffile deffile[efNR] = {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
     { eftGEN, ".???", "traj", "-f", "Trajectory", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f", "Trajectory", NTROS, tros },
-    { eftGEN, ".???", "traj", nullptr,
-      "Full precision trajectory", NTRNS, trns },
+    { eftGEN, ".???", "traj", nullptr, "Full precision trajectory", NTRNS, trns },
     { eftXDR, ".trr", "traj", nullptr, "Trajectory in portable xdr format" },
     { eftGEN, ".???", "traj_comp", nullptr,
-      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed},
-    { eftXDR, ".xtc", "traj", nullptr,
-      "Compressed trajectory (portable xdr format): xtc" },
-    { eftTNG, ".tng", "traj", nullptr,
-      "Trajectory file (tng format)" },
-    { eftXDR, ".edr", "ener",   nullptr, "Energy file"},
+      "Compressed trajectory (tng format or portable xdr format)", NTRCOMPRESSED, trcompressed },
+    { eftXDR, ".xtc", "traj", nullptr, "Compressed trajectory (portable xdr format): xtc" },
+    { eftTNG, ".tng", "traj", nullptr, "Trajectory file (tng format)" },
+    { eftXDR, ".edr", "ener", nullptr, "Energy file" },
     { eftGEN, ".???", "conf", "-c", "Structure file", NSTXS, stxs },
     { eftGEN, ".???", "out", "-o", "Structure file", NSTOS, stos },
     { eftASC, ".gro", "conf", "-c", "Coordinate file in Gromos-87 format" },
     { eftASC, ".g96", "conf", "-c", "Coordinate file in Gromos-96 format" },
-    { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"},
-    { eftASC, ".brk", "eiwit",  "-f", "Brookhaven data bank file"},
+    { eftASC, ".pdb", "eiwit", "-f", "Protein data bank file" },
+    { eftASC, ".brk", "eiwit", "-f", "Brookhaven data bank file" },
     { eftASC, ".ent", "eiwit", "-f", "Entry in the protein date bank" },
     { eftASC, ".esp", "conf", "-f", "Coordinate file in Espresso format" },
-    { eftASC, ".pqr", "state",  "-o", "Coordinate file for MEAD"},
-    { eftXDR, ".cpt", "state",  "-cp", "Checkpoint file"},
-    { eftASC, ".log", "run",    "-l", "Log file"},
-    { eftASC, ".xvg", "graph",  "-o", "xvgr/xmgr file"},
-    { eftASC, ".out", "hello",  "-o", "Generic output file"},
-    { eftASC, ".ndx", "index",  "-n", "Index file", },
-    { eftASC, ".top", "topol",  "-p", "Topology file"},
-    { eftASC, ".itp", "topinc", nullptr, "Include file for topology"},
+    { eftASC, ".pqr", "state", "-o", "Coordinate file for MEAD" },
+    { eftXDR, ".cpt", "state", "-cp", "Checkpoint file" },
+    { eftASC, ".log", "run", "-l", "Log file" },
+    { eftASC, ".xvg", "graph", "-o", "xvgr/xmgr file" },
+    { eftASC, ".out", "hello", "-o", "Generic output file" },
+    {
+            eftASC,
+            ".ndx",
+            "index",
+            "-n",
+            "Index file",
+    },
+    { eftASC, ".top", "topol", "-p", "Topology file" },
+    { eftASC, ".itp", "topinc", nullptr, "Include file for topology" },
     { eftGEN, ".???", "topol", "-s", "Structure+mass(db)", NTPSS, tpss },
-    { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"},
-    { eftASC, ".tex", "doc",    "-o", "LaTeX file"},
+    { eftXDR, ".tpr", "topol", "-s", "Portable xdr run input file" },
+    { eftASC, ".tex", "doc", "-o", "LaTeX file" },
     { eftASC, ".rtp", "residue", nullptr, "Residue Type file used by pdb2gmx" },
     { eftASC, ".atp", "atomtp", nullptr, "Atomtype file used by pdb2gmx" },
-    { eftASC, ".hdb", "polar",  nullptr, "Hydrogen data base"},
-    { eftASC, ".dat", "nnnice", nullptr, "Generic data file"},
-    { eftASC, ".dlg", "user",   nullptr, "Dialog Box data for ngmx"},
+    { eftASC, ".hdb", "polar", nullptr, "Hydrogen data base" },
+    { eftASC, ".dat", "nnnice", nullptr, "Generic data file" },
+    { eftASC, ".dlg", "user", nullptr, "Dialog Box data for ngmx" },
     { eftASC, ".map", "ss", nullptr, "File that maps matrix data to colors" },
     { eftASC, ".eps", "plot", nullptr, "Encapsulated PostScript (tm) file" },
-    { eftASC, ".mat", "ss",     nullptr, "Matrix Data file"},
-    { eftASC, ".m2p", "ps",     nullptr, "Input file for mat2ps"},
-    { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix"},
-    { eftASC, ".edi", "sam",    nullptr, "ED sampling input"},
-    { eftASC, ".cub", "pot",  nullptr, "Gaussian cube file" },
+    { eftASC, ".mat", "ss", nullptr, "Matrix Data file" },
+    { eftASC, ".m2p", "ps", nullptr, "Input file for mat2ps" },
+    { eftXDR, ".mtx", "hessian", "-m", "Hessian matrix" },
+    { eftASC, ".edi", "sam", nullptr, "ED sampling input" },
+    { eftASC, ".cub", "pot", nullptr, "Gaussian cube file" },
     { eftASC, ".xpm", "root", nullptr, "X PixMap compatible matrix file" },
     { eftASC, "", "rundir", nullptr, "Run directory" }
 };
 
-const char *ftp2ext(int ftp)
+const char* ftp2ext(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -171,24 +152,18 @@ const char *ftp2ext(int ftp)
     }
 }
 
-const char *ftp2ext_generic(int ftp)
+const char* ftp2ext_generic(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
         switch (ftp)
         {
-            case efTRX:
-                return "trx";
-            case efTRN:
-                return "trn";
-            case efSTO:
-                return "sto";
-            case efSTX:
-                return "stx";
-            case efTPS:
-                return "tps";
-            default:
-                return ftp2ext(ftp);
+            case efTRX: return "trx";
+            case efTRN: return "trn";
+            case efSTO: return "sto";
+            case efSTX: return "stx";
+            case efTPS: return "tps";
+            default: return ftp2ext(ftp);
         }
     }
     else
@@ -197,7 +172,7 @@ const char *ftp2ext_generic(int ftp)
     }
 }
 
-const char *ftp2ext_with_dot(int ftp)
+const char* ftp2ext_with_dot(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -221,7 +196,7 @@ int ftp2generic_count(int ftp)
     }
 }
 
-const int *ftp2generic_list(int ftp)
+const int* ftp2generic_list(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -233,7 +208,7 @@ const int *ftp2generic_list(int ftp)
     }
 }
 
-const char *ftp2desc(int ftp)
+const char* ftp2desc(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -263,7 +238,7 @@ gmx_bool ftp_is_xdr(int ftp)
     return FALSE;
 }
 
-const char *ftp2defnm(int ftp)
+const char* ftp2defnm(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -275,7 +250,7 @@ const char *ftp2defnm(int ftp)
     }
 }
 
-const char *ftp2defopt(int ftp)
+const char* ftp2defopt(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
@@ -287,11 +262,11 @@ const char *ftp2defopt(int ftp)
     }
 }
 
-int fn2ftp(const char *fn)
+int fn2ftp(const char* fn)
 {
     int         i, len;
-    const char *feptr;
-    const char *eptr;
+    const char* feptr;
+    const char* eptr;
 
     if (!fn)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,15 +46,16 @@
 
 #include "config.h"
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h" // TODO: this is only for over_alloc_large
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include "gromacs/gpu_utils/devicebuffer.cuh"
+#    include "gromacs/gpu_utils/devicebuffer.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
-#include "gromacs/gpu_utils/devicebuffer_ocl.h"
+#    include "gromacs/gpu_utils/devicebuffer_ocl.h"
 #else
-#error "devicebuffer.h included on non-GPU build!"
+#    error "devicebuffer.h included on non-GPU build!"
 #endif
 
 /*! \brief
@@ -64,22 +65,22 @@
  *  Allocation is buffered and therefore freeing is only needed
  *  if the previously allocated space is not enough.
  *  \p currentNumValues and \p currentMaxNumValues are updated.
- *  TODO: \p currentNumValues, \p currentMaxNumValues, \p context
+ *  TODO: \p currentNumValues, \p currentMaxNumValues, \p deviceContext
  *  should all be encapsulated in a host-side class together with the buffer.
  *
  *  \tparam        ValueType            Raw value type of the \p buffer.
  *  \param[in,out] buffer               Pointer to the device-side buffer
- *  \param[in]     numValues            Number of values to accomodate.
+ *  \param[in]     numValues            Number of values to accommodate.
  *  \param[in,out] currentNumValues     The pointer to the buffer's number of values.
  *  \param[in,out] currentMaxNumValues  The pointer to the buffer's capacity.
- *  \param[in]     context              The buffer's context.
+ *  \param[in]     deviceContext        The buffer's device context.
  */
-template <typename ValueType>
-void reallocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
+template<typename ValueType>
+void reallocateDeviceBuffer(DeviceBuffer<ValueType>* buffer,
                             size_t                   numValues,
-                            int                     *currentNumValues,
-                            int                     *currentMaxNumValues,
-                            Context                  context)
+                            int*                     currentNumValues,
+                            int*                     currentMaxNumValues,
+                            DeviceContext            deviceContext)
 {
     GMX_ASSERT(buffer, "needs a buffer pointer");
     GMX_ASSERT(currentNumValues, "needs a size pointer");
@@ -94,7 +95,7 @@ void reallocateDeviceBuffer(DeviceBuffer<ValueType> *buffer,
         }
 
         *currentMaxNumValues = over_alloc_large(numValues);
-        allocateDeviceBuffer(buffer, *currentMaxNumValues, context);
+        allocateDeviceBuffer(buffer, *currentMaxNumValues, deviceContext);
     }
     /* size could have changed without actual reallocation */
     *currentNumValues = numValues;

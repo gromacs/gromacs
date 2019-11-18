@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,12 @@ add_library(gmxapi SHARED
             status.cpp
             system.cpp
             version.cpp
-            workflow.cpp)
+            workflow.cpp
+            tpr.cpp
+            )
+gmx_target_compile_options(gmxapi)
+target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
+target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
 # system don't accidentally have the implementation headers (this directory))
@@ -86,7 +91,7 @@ install(DIRECTORY include/gmxapi
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
 
-# Ref. https://cmake.org/Wiki/CMake_RPATH_handling
+# Ref. https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/RPATH-handling
 # use, i.e. don't skip the full RPATH for the build tree
 set_target_properties(gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 
@@ -95,7 +100,8 @@ set_target_properties(gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
 set_target_properties(gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    set_target_properties(gmxapi PROPERTIES INSTALL_NAME_DIR "\@rpath")
+    # Instruct a linking client to use its RPATH to resolve the libgmxapi location.
+    set_target_properties(gmxapi PROPERTIES INSTALL_NAME_DIR "@rpath")
 endif()
 
 set_target_properties(gmxapi PROPERTIES

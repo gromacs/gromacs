@@ -49,7 +49,7 @@
 #include "gromacs/nbnxm/nbnxm_simd.h"
 
 #define GMX_SIMD_J_UNROLL_SIZE 1
-#include "gromacs/nbnxm/kernels_simd_4xm/kernels.h"
+#include "kernels.h"
 
 #define CALC_COUL_EWALD
 #define VDW_CUTOFF_CHECK /* Use twin-range cut-off */
@@ -58,36 +58,30 @@
 #define CALC_ENERGIES
 
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_common.h"
+#    include "kernel_common.h"
 #endif /* GMX_NBNXN_SIMD_4XN */
 
 #ifdef CALC_ENERGIES
-void
-nbnxm_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xm(const NbnxnPairlistCpu    gmx_unused *nbl,
-                                                const nbnxn_atomdata_t    gmx_unused *nbat,
-                                                const interaction_const_t gmx_unused *ic,
-                                                rvec                      gmx_unused *shift_vec,
-                                                real                      gmx_unused *f,
-                                                real                      gmx_unused *fshift,
-                                                real                      gmx_unused *Vvdw,
-                                                real                      gmx_unused *Vc)
-#else /* CALC_ENERGIES */
-void
-nbnxm_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xm(const NbnxnPairlistCpu    gmx_unused *nbl,
-                                                const nbnxn_atomdata_t    gmx_unused *nbat,
-                                                const interaction_const_t gmx_unused *ic,
-                                                rvec                      gmx_unused *shift_vec,
-                                                real                      gmx_unused *f,
-                                                real                      gmx_unused *fshift)
+void nbnxm_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xm(const NbnxnPairlistCpu gmx_unused* nbl,
+                                                     const nbnxn_atomdata_t gmx_unused* nbat,
+                                                     const interaction_const_t gmx_unused* ic,
+                                                     const rvec gmx_unused*  shift_vec,
+                                                     nbnxn_atomdata_output_t gmx_unused* out)
+#else  /* CALC_ENERGIES */
+void nbnxm_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_4xm(const NbnxnPairlistCpu gmx_unused* nbl,
+                                                     const nbnxn_atomdata_t gmx_unused* nbat,
+                                                     const interaction_const_t gmx_unused* ic,
+                                                     const rvec gmx_unused*  shift_vec,
+                                                     nbnxn_atomdata_output_t gmx_unused* out)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_4XN
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h"
-#else /* GMX_NBNXN_SIMD_4XN */
+#    include "kernel_outer.h"
+#else  /* GMX_NBNXN_SIMD_4XN */
 {
-/* No need to call gmx_incons() here, because the only function
- * that calls this one is also compiled conditionally. When
- * GMX_NBNXN_SIMD_4XN is not defined, it will call no kernel functions and
- * instead call gmx_incons().
- */
+    /* No need to call gmx_incons() here, because the only function
+     * that calls this one is also compiled conditionally. When
+     * GMX_NBNXN_SIMD_4XN is not defined, it will call no kernel functions and
+     * instead call gmx_incons().
+     */
 }
 #endif /* GMX_NBNXN_SIMD_4XN */

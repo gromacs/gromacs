@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,9 +63,9 @@
 
 #define FARAWAY 10000
 
-static int *res_ndx(t_atoms *atoms)
+static int* res_ndx(t_atoms* atoms)
 {
-    int *rndx;
+    int* rndx;
     int  i, r0;
 
     if (atoms->nr <= 0)
@@ -76,15 +76,15 @@ static int *res_ndx(t_atoms *atoms)
     r0 = atoms->atom[0].resind;
     for (i = 0; (i < atoms->nr); i++)
     {
-        rndx[i] = atoms->atom[i].resind-r0;
+        rndx[i] = atoms->atom[i].resind - r0;
     }
 
     return rndx;
 }
 
-static int *res_natm(t_atoms *atoms)
+static int* res_natm(t_atoms* atoms)
 {
-    int *natm;
+    int* natm;
     int  i, j, r0;
 
     if (atoms->nr <= 0)
@@ -96,7 +96,7 @@ static int *res_natm(t_atoms *atoms)
     j  = 0;
     for (i = 0; (i < atoms->nres); i++)
     {
-        while ((atoms->atom[j].resind)-r0 == i)
+        while ((atoms->atom[j].resind) - r0 == i)
         {
             natm[i]++;
             j++;
@@ -106,9 +106,16 @@ static int *res_natm(t_atoms *atoms)
     return natm;
 }
 
-static void calc_mat(int nres, int natoms, const int rndx[],
-                     rvec x[], const int *index,
-                     real trunc, real **mdmat, int **nmat, int ePBC, matrix box)
+static void calc_mat(int        nres,
+                     int        natoms,
+                     const int  rndx[],
+                     rvec       x[],
+                     const int* index,
+                     real       trunc,
+                     real**     mdmat,
+                     int**      nmat,
+                     int        ePBC,
+                     matrix     box)
 {
     int   i, j, resi, resj;
     real  trunc2, r, r2;
@@ -127,7 +134,7 @@ static void calc_mat(int nres, int natoms, const int rndx[],
     for (i = 0; (i < natoms); i++)
     {
         resi = rndx[i];
-        for (j = i+1; (j < natoms); j++)
+        for (j = i + 1; (j < natoms); j++)
         {
             resj = rndx[j];
             pbc_dx(&pbc, x[index[i]], x[index[j]], ddx);
@@ -144,7 +151,7 @@ static void calc_mat(int nres, int natoms, const int rndx[],
     for (resi = 0; (resi < nres); resi++)
     {
         mdmat[resi][resi] = 0;
-        for (resj = resi+1; (resj < nres); resj++)
+        for (resj = resi + 1; (resj < nres); resj++)
         {
             r                 = std::sqrt(mdmat[resi][resj]);
             mdmat[resi][resj] = r;
@@ -153,8 +160,7 @@ static void calc_mat(int nres, int natoms, const int rndx[],
     }
 }
 
-static void tot_nmat(int nres, int natoms, int nframes, int **nmat,
-                     int *tot_n, real *mean_n)
+static void tot_nmat(int nres, int natoms, int nframes, int** nmat, int* tot_n, real* mean_n)
 {
     int i, j;
 
@@ -172,9 +178,9 @@ static void tot_nmat(int nres, int natoms, int nframes, int **nmat,
     }
 }
 
-int gmx_mdmat(int argc, char *argv[])
+int gmx_mdmat(int argc, char* argv[])
 {
-    const char     *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] makes distance matrices consisting of the smallest distance",
         "between residue pairs. With [TT]-frames[tt], these distance matrices can be",
         "stored in order to see differences in tertiary structure as a",
@@ -185,50 +191,45 @@ int gmx_mdmat(int argc, char *argv[])
         "residues over the whole trajectory can be made.",
         "The output can be processed with [gmx-xpm2ps] to make a PostScript (tm) plot."
     };
-    static real     truncate = 1.5;
-    static int      nlevels  = 40;
-    t_pargs         pa[]     = {
-        { "-t",   FALSE, etREAL, {&truncate},
-          "trunc distance" },
-        { "-nlevels",   FALSE, etINT,  {&nlevels},
-          "Discretize distance in this number of levels" }
+    static real truncate = 1.5;
+    static int  nlevels  = 40;
+    t_pargs     pa[]     = {
+        { "-t", FALSE, etREAL, { &truncate }, "trunc distance" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Discretize distance in this number of levels" }
     };
-    t_filenm        fnm[] = {
-        { efTRX, "-f",  nullptr, ffREAD },
-        { efTPS, nullptr,  nullptr, ffREAD },
-        { efNDX, nullptr,  nullptr, ffOPTRD },
-        { efXPM, "-mean", "dm", ffWRITE },
-        { efXPM, "-frames", "dmf", ffOPTWR },
-        { efXVG, "-no", "num", ffOPTWR },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },     { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD }, { efXPM, "-mean", "dm", ffWRITE },
+        { efXPM, "-frames", "dmf", ffOPTWR }, { efXVG, "-no", "num", ffOPTWR },
     };
 #define NFILE asize(fnm)
 
-    FILE             *out = nullptr, *fp;
-    t_topology        top;
-    int               ePBC;
-    t_atoms           useatoms;
-    int               isize;
-    int              *index;
-    char             *grpname;
-    int              *rndx, *natm, prevres, newres;
+    FILE *     out = nullptr, *fp;
+    t_topology top;
+    int        ePBC;
+    t_atoms    useatoms;
+    int        isize;
+    int*       index;
+    char*      grpname;
+    int *      rndx, *natm, prevres, newres;
 
     int               i, j, nres, natoms, nframes, trxnat;
-    t_trxstatus      *status;
+    t_trxstatus*      status;
     gmx_bool          bCalcN, bFrames;
     real              t, ratio;
     char              label[234];
     t_rgb             rlo, rhi;
-    rvec             *x;
-    real            **mdmat, *resnr, **totmdmat;
-    int             **nmat, **totnmat;
-    real             *mean_n;
-    int              *tot_n;
-    matrix            box = {{0}};
-    gmx_output_env_t *oenv;
+    rvec*             x;
+    real **           mdmat, *resnr, **totmdmat;
+    int **            nmat, **totnmat;
+    real*             mean_n;
+    int*              tot_n;
+    matrix            box = { { 0 } };
+    gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }
@@ -257,7 +258,7 @@ int gmx_mdmat(int argc, char *argv[])
     newres  = 0;
     for (i = 0; (i < isize); i++)
     {
-        int ii = index[i];
+        int ii               = index[i];
         useatoms.atomname[i] = top.atoms.atomname[ii];
         if (top.atoms.atom[ii].resind != prevres)
         {
@@ -268,13 +269,12 @@ int gmx_mdmat(int argc, char *argv[])
             {
                 fprintf(debug, "New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
                         *(top.atoms.resinfo[top.atoms.atom[ii].resind].name),
-                        *(top.atoms.atomname[ii]),
-                        ii, i, newres);
+                        *(top.atoms.atomname[ii]), ii, i, newres);
             }
         }
         useatoms.atom[i].resind = newres;
     }
-    useatoms.nres = newres+1;
+    useatoms.nres = newres + 1;
     useatoms.nr   = isize;
 
     rndx = res_ndx(&(useatoms));
@@ -293,7 +293,7 @@ int gmx_mdmat(int argc, char *argv[])
         snew(mdmat[i], nres);
         snew(nmat[i], natoms);
         snew(totnmat[i], natoms);
-        resnr[i] = i+1;
+        resnr[i] = i + 1;
     }
     snew(totmdmat, nres);
     for (i = 0; (i < nres); i++)
@@ -305,8 +305,12 @@ int gmx_mdmat(int argc, char *argv[])
 
     nframes = 0;
 
-    rlo.r = 1.0; rlo.g = 1.0; rlo.b = 1.0;
-    rhi.r = 0.0; rhi.g = 0.0; rhi.b = 0.0;
+    rlo.r = 1.0;
+    rlo.g = 1.0;
+    rlo.b = 1.0;
+    rhi.r = 0.0;
+    rhi.g = 0.0;
+    rhi.b = 0.0;
 
     gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
 
@@ -339,11 +343,10 @@ int gmx_mdmat(int argc, char *argv[])
         if (bFrames)
         {
             sprintf(label, "t=%.0f ps", t);
-            write_xpm(out, 0, label, "Distance (nm)", "Residue Index", "Residue Index",
-                      nres, nres, resnr, resnr, mdmat, 0, truncate, rlo, rhi, &nlevels);
+            write_xpm(out, 0, label, "Distance (nm)", "Residue Index", "Residue Index", nres, nres,
+                      resnr, resnr, mdmat, 0, truncate, rlo, rhi, &nlevels);
         }
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trx(status);
     gmx_rmpbc_done(gpbc);
@@ -361,13 +364,13 @@ int gmx_mdmat(int argc, char *argv[])
             totmdmat[i][j] /= nframes;
         }
     }
-    write_xpm(opt2FILE("-mean", NFILE, fnm, "w"), 0, "Mean smallest distance",
-              "Distance (nm)", "Residue Index", "Residue Index",
-              nres, nres, resnr, resnr, totmdmat, 0, truncate, rlo, rhi, &nlevels);
+    write_xpm(opt2FILE("-mean", NFILE, fnm, "w"), 0, "Mean smallest distance", "Distance (nm)",
+              "Residue Index", "Residue Index", nres, nres, resnr, resnr, totmdmat, 0, truncate,
+              rlo, rhi, &nlevels);
 
     if (bCalcN)
     {
-        char **legend;
+        char** legend;
 
         snew(legend, 5);
         for (i = 0; i < 5; i++)
@@ -375,8 +378,8 @@ int gmx_mdmat(int argc, char *argv[])
             snew(legend[i], STRLEN);
         }
         tot_nmat(nres, natoms, nframes, totnmat, tot_n, mean_n);
-        fp = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                      "Increase in number of contacts", "Residue", "Ratio", oenv);
+        fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Increase in number of contacts", "Residue",
+                      "Ratio", oenv);
         sprintf(legend[0], "Total/mean");
         sprintf(legend[1], "Total");
         sprintf(legend[2], "Mean");
@@ -391,10 +394,10 @@ int gmx_mdmat(int argc, char *argv[])
             }
             else
             {
-                ratio = tot_n[i]/mean_n[i];
+                ratio = tot_n[i] / mean_n[i];
             }
-            fprintf(fp, "%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n",
-                    i+1, ratio, tot_n[i], mean_n[i], natm[i], mean_n[i]/natm[i]);
+            fprintf(fp, "%3d  %8.3f  %3d  %8.3f  %3d  %8.3f\n", i + 1, ratio, tot_n[i], mean_n[i],
+                    natm[i], mean_n[i] / natm[i]);
         }
         xvgrclose(fp);
     }

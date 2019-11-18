@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,33 +51,30 @@
 namespace gmx
 {
 
-void StringOutputStream::write(const char *str)
+void StringOutputStream::write(const char* str)
 {
     str_.append(str);
 }
 
-void StringOutputStream::close()
-{
-}
+void StringOutputStream::close() {}
 
-StringInputStream::StringInputStream(const std::string &input)
-    : input_(input), pos_(0)
-{
-}
+StringInputStream::StringInputStream(const std::string& input) : input_(input), pos_(0) {}
 
-StringInputStream::StringInputStream(const std::vector<std::string> &input)
-    : input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
+StringInputStream::StringInputStream(const std::vector<std::string>& input) :
+    input_(joinStrings(input.begin(), input.end(), "\n")),
+    pos_(0)
 {
     input_.append("\n");
 }
 
-StringInputStream::StringInputStream(ArrayRef<const char *const> const &input)
-    : input_(joinStrings(input.begin(), input.end(), "\n")), pos_(0)
+StringInputStream::StringInputStream(ArrayRef<const char* const> const& input) :
+    input_(joinStrings(input.begin(), input.end(), "\n")),
+    pos_(0)
 {
     input_.append("\n");
 }
 
-bool StringInputStream::readLine(std::string *line)
+bool StringInputStream::readLine(std::string* line)
 {
     if (pos_ == input_.size())
     {
@@ -96,7 +93,7 @@ bool StringInputStream::readLine(std::string *line)
             // To include the newline as well!
             newpos += 1;
         }
-        line->assign(input_.substr(pos_, newpos-pos_));
+        line->assign(input_.substr(pos_, newpos - pos_));
         pos_ = newpos;
         return true;
     }

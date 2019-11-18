@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018, by the GROMACS development team, led by
+# Copyright (c) 2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,21 +33,19 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_libgromacs_sources(
-    integrator.cpp
     legacymdrunoptions.cpp
-    logging.cpp
+    legacysimulator.cpp
     md.cpp
+    mdmodules.cpp
+    mimic.cpp
     minimize.cpp
-    multisim.cpp
     replicaexchange.cpp
     rerun.cpp
-    mimic.cpp
     runner.cpp
+    shellfc.cpp
     simulationcontext.cpp
     tpi.cpp
     )
-
-gmx_install_headers()
 
 if (BUILD_TESTING)
 # TODO import this from src/programs/mdrun/tests

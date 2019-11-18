@@ -40,7 +40,7 @@
  * \author Berk Hess <hess@kth.se>
  *
  * \inlibraryapi
- * \ingroup __module_nb_verlet
+ * \ingroup module_nbnxm
  */
 
 #ifndef NBNXM_PAIRLIST_TUNING_H
@@ -54,11 +54,11 @@ namespace gmx
 {
 class CpuInfo;
 class MDLogger;
-}
+} // namespace gmx
 
 struct gmx_mtop_t;
 struct interaction_const_t;
-struct NbnxnListParameters;
+struct PairlistParams;
 struct t_commrec;
 struct t_inputrec;
 
@@ -73,12 +73,14 @@ struct t_inputrec;
  * \param[in]     useOrEmulateGpuForNonbondeds  Tells if we are using a GPU for non-bondeds
  * \param[in]     cpuinfo  Information about the CPU(s)
  */
-void increaseNstlist(FILE *fplog, t_commrec *cr,
-                     t_inputrec *ir, int nstlistOnCmdline,
-                     const gmx_mtop_t *mtop,
-                     const matrix box,
-                     bool useOrEmulateGpuForNonbondeds,
-                     const gmx::CpuInfo &cpuinfo);
+void increaseNstlist(FILE*               fplog,
+                     t_commrec*          cr,
+                     t_inputrec*         ir,
+                     int                 nstlistOnCmdline,
+                     const gmx_mtop_t*   mtop,
+                     const matrix        box,
+                     bool                useOrEmulateGpuForNonbondeds,
+                     const gmx::CpuInfo& cpuinfo);
 
 /*! \brief Set up the dynamic pairlist pruning
  *
@@ -86,16 +88,14 @@ void increaseNstlist(FILE *fplog, t_commrec *cr,
  * \param[in]     ir               The input parameter record
  * \param[in]     mtop             The global topology
  * \param[in]     box              The unit cell
- * \param[in]     nbnxnKernelType  The type of nbnxn kernel used
  * \param[in]     ic               The nonbonded interactions constants
  * \param[in,out] listParams       The list setup parameters
  */
-void setupDynamicPairlistPruning(const gmx::MDLogger       &mdlog,
-                                 const t_inputrec          *ir,
-                                 const gmx_mtop_t          *mtop,
+void setupDynamicPairlistPruning(const gmx::MDLogger&       mdlog,
+                                 const t_inputrec*          ir,
+                                 const gmx_mtop_t*          mtop,
                                  matrix                     box,
-                                 int                        nbnxnKernelType,
-                                 const interaction_const_t *ic,
-                                 NbnxnListParameters       *listParams);
+                                 const interaction_const_t* ic,
+                                 PairlistParams*            listParams);
 
 #endif /* NBNXM_PAIRLIST_TUNING_H */

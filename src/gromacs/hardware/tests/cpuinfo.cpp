@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,29 +58,32 @@ TEST(CpuInfoTest, SupportLevel)
 
     gmx::CpuInfo c(gmx::CpuInfo::detect());
 
-    std::string  commonMsg =
-        "\nGROMACS might still work, but it will likely hurt your performance."
-        "\nPlease mail gmx-developers@gromacs.org so we can try to fix it.";
+    std::string commonMsg =
+            "\nGROMACS might still work, but it will likely hurt your performance."
+            "\nPlease mail gmx-developers@gromacs.org so we can try to fix it.";
 
     // It is not the end of the world if any of these tests fail (Gromacs will
     // work fine without cpuinfo), but we might as well flag it so we add it to
     // our detection code
     EXPECT_GT(c.supportLevel(), gmx::CpuInfo::SupportLevel::None)
-    << "No CPU information at all could be detected. " << commonMsg << std::endl;
+            << "No CPU information at all could be detected. " << commonMsg << std::endl;
 
 #if GMX_TARGET_X86
     EXPECT_GE(c.supportLevel(), gmx::CpuInfo::SupportLevel::Features)
-    << "No CPU features could be detected. " << commonMsg << std::endl;
+            << "No CPU features could be detected. " << commonMsg << std::endl;
 #endif
 
     if (c.supportLevel() >= gmx::CpuInfo::SupportLevel::LogicalProcessorInfo)
     {
         // Make sure assigned numbers are reasonable if we have them
-        for (auto &l : c.logicalProcessors())
+        for (auto& l : c.logicalProcessors())
         {
-            EXPECT_GE(l.socketRankInMachine, 0) << "Impossible socket index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.coreRankInSocket,    0) << "Impossible core index for logical processor. " << commonMsg << std::endl;
-            EXPECT_GE(l.hwThreadRankInCore,  0) << "Impossible hwthread index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.socketRankInMachine, 0)
+                    << "Impossible socket index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.coreRankInSocket, 0)
+                    << "Impossible core index for logical processor. " << commonMsg << std::endl;
+            EXPECT_GE(l.hwThreadRankInCore, 0)
+                    << "Impossible hwthread index for logical processor. " << commonMsg << std::endl;
         }
     }
 }

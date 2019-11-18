@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,8 @@ namespace test
 {
 
 //! Format string for building a configurable .top file
-static const char *g_butaneTopFileFormatString = "\
+static const char* g_butaneTopFileFormatString =
+        "\
 [ defaults ]\n\
 ; nbfunc	comb-rule	gen-pairs	fudgeLJ	fudgeQQ\n\
   1		1		no		1.0	1.0\n\
@@ -92,38 +93,38 @@ Butane                   1\n\
 //! Test fixture for bonded interactions
 class BondedInteractionsTest : public gmx::test::MdrunTestFixture
 {
-    public:
-        //! Execute the trajectory writing test
-        void setupGrompp(const char *interaction)
-        {
-            runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
-            TextWriter::writeFileFromString(runner_.topFileName_, formatString(g_butaneTopFileFormatString, interaction));
-            runner_.groFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.gro");
-            runner_.ndxFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.ndx");
-            /* TODO Now that Verlet is the default, change the implementation
-               of useEmptyMdpFile() to do that. */
-            runner_.useStringAsMdpFile("");
-        }
-        //! Prepare an mdrun caller
-        CommandLine setupMdrun()
-        {
-            CommandLine rerunCaller;
-            rerunCaller.append("mdrun");
-            rerunCaller.addOption("-rerun", runner_.groFileName_);
-            return rerunCaller;
-        }
-        //! Check the output of mdrun
-        void checkMdrun()
-        {
-            // TODO verifying some energies and forces would be good,
-            // once other code in gerrit is reviewed
-        }
+public:
+    //! Execute the trajectory writing test
+    void setupGrompp(const char* interaction)
+    {
+        runner_.topFileName_ = fileManager_.getTemporaryFilePath("butane1.top");
+        TextWriter::writeFileFromString(runner_.topFileName_,
+                                        formatString(g_butaneTopFileFormatString, interaction));
+        runner_.groFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.gro");
+        runner_.ndxFileName_ = gmx::test::TestFileManager::getInputFilePath("butane1.ndx");
+        runner_.useEmptyMdpFile();
+    }
+    //! Prepare an mdrun caller
+    CommandLine setupMdrun()
+    {
+        CommandLine rerunCaller;
+        rerunCaller.append("mdrun");
+        rerunCaller.addOption("-rerun", runner_.groFileName_);
+        return rerunCaller;
+    }
+    //! Check the output of mdrun
+    void checkMdrun()
+    {
+        // TODO verifying some energies and forces would be good,
+        // once other code in gerrit is reviewed
+    }
 };
 
 // This test ensures that a normal non-tabulated bond interaction works
 TEST_F(BondedInteractionsTest, NormalBondWorks)
 {
-    setupGrompp("[ bonds ]\n\
+    setupGrompp(
+            "[ bonds ]\n\
 ;  ai    aj funct           c0           c1\n\
     1     2     1 1.530000e-01 3.347000e+05");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -136,7 +137,8 @@ TEST_F(BondedInteractionsTest, NormalBondWorks)
 // This test ensures that a normal abulated bond interaction works
 TEST_F(BondedInteractionsTest, TabulatedBondWorks)
 {
-    setupGrompp("[ bonds ]\n\
+    setupGrompp(
+            "[ bonds ]\n\
 ;  ai    aj funct  n     k\n\
     1     2     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -151,7 +153,8 @@ TEST_F(BondedInteractionsTest, TabulatedBondWorks)
 // This test ensures that a normal non-tabulated angle interaction works
 TEST_F(BondedInteractionsTest, NormalAngleWorks)
 {
-    setupGrompp("[ angles ]\n\
+    setupGrompp(
+            "[ angles ]\n\
 ;  ai    aj    ak funct           c0           c1\n\
     1     2     3     1 1.110000e+02 4.602000e+02");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -164,7 +167,8 @@ TEST_F(BondedInteractionsTest, NormalAngleWorks)
 // This test ensures that a tabulated angle interaction works
 TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
 {
-    setupGrompp("[ angles ]\n\
+    setupGrompp(
+            "[ angles ]\n\
 ;  ai    aj    ak funct  n     k\n\
     1     2     3     8  0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -179,7 +183,8 @@ TEST_F(BondedInteractionsTest, TabulatedAngleWorks)
 // This test ensures that a normal non-tabulated dihedral interaction works
 TEST_F(BondedInteractionsTest, NormalDihedralWorks)
 {
-    setupGrompp("[ dihedrals ]\n \
+    setupGrompp(
+            "[ dihedrals ]\n \
 ;  ai    aj    ak    al funct     c0     c1     c2      c3     c4      c5\n\
     1     2     3     4     3 9.2789 12.156 -13.12 -3.0597  26.24 -31.495");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -192,7 +197,8 @@ TEST_F(BondedInteractionsTest, NormalDihedralWorks)
 // This test ensures that a tabulated dihedral interaction works
 TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
 {
-    setupGrompp("[ dihedrals ]\n\
+    setupGrompp(
+            "[ dihedrals ]\n\
 ;  ai    aj    ak    al funct   n     k\n\
     1     2     3     4     8   0  1000");
     EXPECT_EQ(0, runner_.callGrompp());
@@ -204,6 +210,6 @@ TEST_F(BondedInteractionsTest, TabulatedDihedralWorks)
     checkMdrun();
 }
 
-}  // namespace test
+} // namespace test
 
-}  // namespace gmx
+} // namespace gmx

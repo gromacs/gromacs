@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,8 +58,7 @@ namespace internal
  *
  * \ingroup module_utility
  */
-void printFatalErrorHeader(FILE *fp, const char *title,
-                           const char *func, const char *file, int line);
+void printFatalErrorHeader(FILE* fp, const char* title, const char* func, const char* file, int line);
 /*! \brief
  * Formats a line of fatal error message text.
  *
@@ -67,7 +66,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
  *
  * \ingroup module_utility
  */
-void printFatalErrorMessageLine(FILE *fp, const char *text, int indent);
+void printFatalErrorMessageLine(FILE* fp, const char* text, int indent);
 /*! \brief
  * Formats a common footer for fatal error messages.
  *
@@ -75,9 +74,9 @@ void printFatalErrorMessageLine(FILE *fp, const char *text, int indent);
  *
  * \ingroup module_utility
  */
-void printFatalErrorFooter(FILE *fp);
+void printFatalErrorFooter(FILE* fp);
 
-}   // namespace internal
+} // namespace internal
 //! \endcond
 
 } // namespace gmx

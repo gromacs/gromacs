@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include <vector>
 
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/iserializer.h"
 
@@ -53,48 +54,63 @@ namespace gmx
 
 class InMemorySerializer : public ISerializer
 {
-    public:
-        InMemorySerializer();
-        ~InMemorySerializer() override;
+public:
+    InMemorySerializer();
+    ~InMemorySerializer() override;
 
-        std::vector<char> finishAndGetBuffer();
+    std::vector<char> finishAndGetBuffer();
 
-        // From ISerializer
-        bool reading() const override { return false; }
-        void doBool(bool *value) override;
-        void doUChar(unsigned char *value) override;
-        void doInt(int *value) override;
-        void doInt64(int64_t *value) override;
-        void doFloat(float *value) override;
-        void doDouble(double *value) override;
-        void doString(std::string *value) override;
+    // From ISerializer
+    bool reading() const override { return false; }
+    void doBool(bool* value) override;
+    void doUChar(unsigned char* value) override;
+    void doChar(char* value) override;
+    void doUShort(unsigned short* value) override;
+    void doInt(int* value) override;
+    void doInt32(int32_t* value) override;
+    void doInt64(int64_t* value) override;
+    void doFloat(float* value) override;
+    void doDouble(double* value) override;
+    void doReal(real* value) override;
+    void doIvec(ivec* value) override;
+    void doRvec(rvec* value) override;
+    void doString(std::string* value) override;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 class InMemoryDeserializer : public ISerializer
 {
-    public:
-        explicit InMemoryDeserializer(const std::vector<char> &buffer);
-        ~InMemoryDeserializer() override;
+public:
+    explicit InMemoryDeserializer(ArrayRef<const char> buffer, bool sourceIsDouble);
+    ~InMemoryDeserializer() override;
 
-        // From ISerializer
-        bool reading() const override { return true; }
-        void doBool(bool *value) override;
-        void doUChar(unsigned char *value) override;
-        void doInt(int *value) override;
-        void doInt64(int64_t *value) override;
-        void doFloat(float *value) override;
-        void doDouble(double *value) override;
-        void doString(std::string *value) override;
+    //! Get if the source data was written in double precsion
+    bool sourceIsDouble() const;
 
-    private:
-        class Impl;
+    // From ISerializer
+    bool reading() const override { return true; }
+    void doBool(bool* value) override;
+    void doUChar(unsigned char* value) override;
+    void doChar(char* value) override;
+    void doUShort(unsigned short* value) override;
+    void doInt(int* value) override;
+    void doInt32(int32_t* value) override;
+    void doInt64(int64_t* value) override;
+    void doFloat(float* value) override;
+    void doDouble(double* value) override;
+    void doReal(real* value) override;
+    void doIvec(ivec* value) override;
+    void doRvec(rvec* value) override;
+    void doString(std::string* value) override;
 
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

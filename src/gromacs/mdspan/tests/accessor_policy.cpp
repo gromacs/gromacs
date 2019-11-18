@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,30 +50,34 @@ namespace gmx
 
 class BasicAccessorPolicy : public ::testing::Test
 {
-    public:
-        std::array<float, 3>  testdata = {{1., 2., 3.}};
-        accessor_basic<float> acc;
+public:
+    std::array<float, 3>  testdata = { { 1., 2., 3. } };
+    accessor_basic<float> acc;
 };
 
-TEST_F(BasicAccessorPolicy, Decay) {
+TEST_F(BasicAccessorPolicy, Decay)
+{
     EXPECT_EQ(acc.decay(testdata.data()), testdata.data());
 }
 
-TEST_F(BasicAccessorPolicy, Access) {
+TEST_F(BasicAccessorPolicy, Access)
+{
     for (size_t i = 0; i < testdata.size(); ++i)
     {
         EXPECT_EQ(acc.access(testdata.data(), i), testdata[i]);
     }
 }
 
-TEST_F(BasicAccessorPolicy, Offset) {
+TEST_F(BasicAccessorPolicy, Offset)
+{
     for (size_t i = 0; i < testdata.size(); ++i)
     {
-        EXPECT_EQ(acc.offset(testdata.data(), i), testdata.data() + i );
+        EXPECT_EQ(acc.offset(testdata.data(), i), testdata.data() + i);
     }
 }
 
-TEST_F(BasicAccessorPolicy, CopyAccessor) {
+TEST_F(BasicAccessorPolicy, CopyAccessor)
+{
     const auto newAcc = acc;
 
     EXPECT_EQ(acc.decay(testdata.data()), newAcc.decay(testdata.data()));

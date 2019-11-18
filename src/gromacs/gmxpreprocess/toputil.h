@@ -40,48 +40,34 @@
 
 #include <cstdio>
 
+#include "gromacs/utility/arrayref.h"
+
+#include "gromacs/utility/arrayref.h"
+
 enum class Directive : int;
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct t_atoms;
 struct t_blocka;
 struct t_excls;
-struct t_molinfo;
-struct t_param;
-struct t_params;
+struct MoleculeInformation;
+class InteractionOfType;
+struct InteractionsOfType;
 
 /* UTILITIES */
 
-int name2index(char *str, char ***typenames, int ntypes);
-
-void pr_alloc (int extra, t_params *pr);
-
-void set_p_string(t_param *p, const char *s);
-
-void cp_param(t_param *dest, t_param *src);
-
-void add_param_to_list(t_params *list, t_param *b);
-
-/* INITIATE */
-
-void init_plist(t_params plist[]);
-void done_plist(t_params *plist);
-
-void init_molinfo(t_molinfo *mol);
-
-/* FREE */
-void done_mi(t_molinfo *mi);
+void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b);
 
 /* PRINTING */
 
-void print_blocka(FILE *out, const char *szName, const char *szIndex,
-                  const char *szA, t_blocka *block);
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname);
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
-                 bool bRTPresname);
+void print_bondeds(FILE*                                   out,
+                   int                                     natoms,
+                   Directive                               d,
+                   int                                     ftype,
+                   int                                     fsubtype,
+                   gmx::ArrayRef<const InteractionsOfType> plist);
 
-void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, t_params plist[]);
-
-void print_excl(FILE *out, int natoms, t_excls excls[]);
+void print_excl(FILE* out, int natoms, t_excls excls[]);
 
 #endif

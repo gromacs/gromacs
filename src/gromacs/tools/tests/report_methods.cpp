@@ -53,6 +53,7 @@
 #include "testutils/refdata.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/textblockmatchers.h"
+#include "testutils/tprfilegenerator.h"
 
 namespace gmx
 {
@@ -60,58 +61,43 @@ namespace gmx
 namespace test
 {
 
-namespace
+class ReportMethodsTest : public ::testing::Test
 {
-
-/*! \brief
- * Generates a tpr for the test.
- *
- * Generates the tpr from a sample pdb file using grompp,and returns the path
- * to the file as std::string for reading it in later.
- *
- * \param[in] fileManager Filemanager to keep track of the input file.
- * \param[in] filename Basename of the input and output files.
- */
-std::string generateTprInput(TestFileManager *fileManager, const std::string &filename)
-{
-// generate temporary tpr file from test system
-    const std::string mdpInputFileName = fileManager->getTemporaryFilePath(filename + ".mdp");
-    TextWriter::writeFileFromString(mdpInputFileName, "");
-    std::string       tprName = fileManager->getTemporaryFilePath(filename + ".tpr");
+protected:
+    // TODO this is changed in newer googletest versions
+    //! Prepare shared resources.
+    static void SetUpTestCase() { s_tprFileHandle = new TprAndFileManager("lysozyme"); }
+    //! Clean up shared resources.
+    static void TearDownTestCase()
     {
-        CommandLine caller;
-        caller.append("grompp");
-        caller.addOption("-f", mdpInputFileName);
-        caller.addOption("-p", TestFileManager::getInputFilePath(filename + ".top"));
-        caller.addOption("-c", TestFileManager::getInputFilePath(filename + ".pdb"));
-        caller.addOption("-o", tprName);
-        EXPECT_EQ(0, gmx_grompp(caller.argc(), caller.argv()));
+        delete s_tprFileHandle;
+        s_tprFileHandle = nullptr;
     }
-    return tprName;
-}
+    //! Storage for opened file handles.
+    static TprAndFileManager* s_tprFileHandle;
+};
+
+TprAndFileManager* ReportMethodsTest::s_tprFileHandle = nullptr;
 
 /*! \brief
- * Generates and reads a tpr for the test.
+ * Reads a tpr for the test.
  *
- * Generates a tpr from a sample pdb file using grompp, and reads it in to
- * have access to the system information for print out.
+ * Reads a tpr to have access to the system information for print out.
  *
- * \param[in] filename Basename of the input and output files.
+ * \param[in] tprHandle Handle to the tpr to red in.
  * \param[in] mtop Pointer to topology datastructure to populate.
  * \param[in] ir Pointer to inputrec to populate.
  */
-void generateAndReadTprInput(const std::string &filename, gmx_mtop_t *mtop, t_inputrec *ir)
+static void readTprInput(const TprAndFileManager* tprHandle, gmx_mtop_t* mtop, t_inputrec* ir)
 {
-    TestFileManager   fileManager;
-    std::string       tprName = generateTprInput(&fileManager, filename);
-// read tpr into variables needed for output
+    // read tpr into variables needed for output
     {
-        t_state     state;
-        read_tpx_state(tprName.c_str(), ir, &state, mtop);
+        t_state state;
+        read_tpx_state(tprHandle->tprName().c_str(), ir, &state, mtop);
     }
 }
 
-TEST(ReportMethodsTest, WritesCorrectHeadersFormated)
+TEST_F(ReportMethodsTest, WritesCorrectHeadersFormated)
 {
     gmx::StringOutputStream stream;
     gmx::TextWriter         test(&stream);
@@ -121,7 +107,7 @@ TEST(ReportMethodsTest, WritesCorrectHeadersFormated)
 
     EXPECT_EQ(stream.toString(), referenceString);
 }
-TEST(ReportMethodsTest, WritesCorrectHeadersUnformatted)
+TEST_F(ReportMethodsTest, WritesCorrectHeadersUnformatted)
 {
     gmx::StringOutputStream stream;
     gmx::TextWriter         test(&stream);
@@ -132,11 +118,11 @@ TEST(ReportMethodsTest, WritesCorrectHeadersUnformatted)
     EXPECT_EQ(stream.toString(), referenceString);
 }
 
-TEST(ReportMethodsTest, WritesCorrectInformation)
+TEST_F(ReportMethodsTest, WritesCorrectInformation)
 {
     gmx_mtop_t top;
     t_inputrec ir;
-    EXPECT_NO_THROW(generateAndReadTprInput("lysozyme", &top, &ir));
+    EXPECT_NO_THROW(readTprInput(s_tprFileHandle, &top, &ir));
 
     // Test both formatted and unformatted output in the same test
     {
@@ -145,8 +131,9 @@ TEST(ReportMethodsTest, WritesCorrectInformation)
 
         writeSystemInformation(&test, top, true);
 
-        std::string referenceString = "\\subsection{Simulation system}\n"
-            "A system of 1 molecules (156 atoms) was simulated.\n";
+        std::string referenceString =
+                "\\subsection{Simulation system}\n"
+                "A system of 1 molecules (156 atoms) was simulated.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
@@ -157,8 +144,9 @@ TEST(ReportMethodsTest, WritesCorrectInformation)
 
         writeSystemInformation(&test, top, false);
 
-        std::string referenceString = "subsection: Simulation system\n"
-            "A system of 1 molecules (156 atoms) was simulated.\n";
+        std::string referenceString =
+                "subsection: Simulation system\n"
+                "A system of 1 molecules (156 atoms) was simulated.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
@@ -170,31 +158,25 @@ TEST(ReportMethodsTest, WritesCorrectInformation)
 
         writeParameterInformation(&test, ir, true);
 
-        std::string referenceString = "\\subsection{Simulation settings}\n"
-            "A total of 0 ns were simulated with a time step of 1 fs.\n"
-            "Neighbor searching was performed every 10 steps.\n"
-            "The Cut-off algorithm was used for electrostatic interactions.\n"
-            "with a cut-off of 1 nm.\nA single cut-off of 1.1 nm was used "
-            "for Van der Waals interactions.\n";
+        std::string referenceString =
+                "\\subsection{Simulation settings}\n"
+                "A total of 0 ns were simulated with a time step of 1 fs.\n"
+                "Neighbor searching was performed every 10 steps.\n"
+                "The Cut-off algorithm was used for electrostatic interactions.\n"
+                "with a cut-off of 1 nm.\nA single cut-off of 1.1 nm was used "
+                "for Van der Waals interactions.\n";
 
         EXPECT_EQ(stream.toString(), referenceString);
     }
 }
 
-TEST(ReportMethodsTest, ToolEndToEndTest)
+TEST_F(ReportMethodsTest, ToolEndToEndTest)
 {
-    TestFileManager   fileManager;
-    std::string       tprName   = generateTprInput(&fileManager, "lysozyme");
-    const char *const command[] = {
-        "report-methods", "-s", tprName.c_str()
-    };
+    const char* const command[] = { "report-methods", "-s", s_tprFileHandle->tprName().c_str() };
     CommandLine       cmdline(command);
-    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(
-                      &gmx::ReportMethodsInfo::create, &cmdline));
-
+    EXPECT_EQ(0, gmx::test::CommandLineTestHelper::runModuleFactory(&gmx::ReportMethodsInfo::create,
+                                                                    &cmdline));
 }
-
-} // namespace
 
 } // namespace test
 

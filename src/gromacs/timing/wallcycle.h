@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,48 +44,94 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-typedef struct gmx_wallcycle *gmx_wallcycle_t;
+typedef struct gmx_wallcycle* gmx_wallcycle_t;
 struct t_commrec;
 static constexpr gmx_wallcycle* nullWallcycle = nullptr;
 
-enum {
-    ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
-    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU,
-    ewcMOVEX, ewcFORCE, ewcMOVEF, ewcPMEMESH,
-    ewcPME_REDISTXF, ewcPME_SPREAD, ewcPME_GATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcLJPME, ewcPME_SOLVE,
-    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF,
-    ewcWAIT_GPU_PME_SPREAD, ewcPME_FFT_MIXED_MODE, ewcPME_SOLVE_MIXED_MODE,
-    ewcWAIT_GPU_PME_GATHER, ewcWAIT_GPU_BONDED, ewcPME_GPU_F_REDUCTION,
-    ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-    ewcVSITESPREAD, ewcPULLPOT, ewcAWH,
-    ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd, ewcSWAP, ewcIMD,
-    ewcTEST, ewcNR
+enum
+{
+    ewcRUN,
+    ewcSTEP,
+    ewcPPDURINGPME,
+    ewcDOMDEC,
+    ewcDDCOMMLOAD,
+    ewcDDCOMMBOUND,
+    ewcVSITECONSTR,
+    ewcPP_PMESENDX,
+    ewcNS,
+    ewcLAUNCH_GPU,
+    ewcMOVEX,
+    ewcFORCE,
+    ewcMOVEF,
+    ewcPMEMESH,
+    ewcPME_REDISTXF,
+    ewcPME_SPREAD,
+    ewcPME_GATHER,
+    ewcPME_FFT,
+    ewcPME_FFTCOMM,
+    ewcLJPME,
+    ewcPME_SOLVE,
+    ewcPMEWAITCOMM,
+    ewcPP_PMEWAITRECVF,
+    ewcWAIT_GPU_PME_SPREAD,
+    ewcPME_FFT_MIXED_MODE,
+    ewcPME_SOLVE_MIXED_MODE,
+    ewcWAIT_GPU_PME_GATHER,
+    ewcWAIT_GPU_BONDED,
+    ewcPME_GPU_F_REDUCTION,
+    ewcWAIT_GPU_NB_NL,
+    ewcWAIT_GPU_NB_L,
+    ewcNB_XF_BUF_OPS,
+    ewcVSITESPREAD,
+    ewcPULLPOT,
+    ewcAWH,
+    ewcTRAJ,
+    ewcUPDATE,
+    ewcCONSTR,
+    ewcMoveE,
+    ewcROT,
+    ewcROTadd,
+    ewcSWAP,
+    ewcIMD,
+    ewcTEST,
+    ewcNR
 };
 
-enum {
-    ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
-    ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
-    ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
-    ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+enum
+{
+    ewcsDD_REDIST,
+    ewcsDD_GRID,
+    ewcsDD_SETUPCOMM,
+    ewcsDD_MAKETOP,
+    ewcsDD_MAKECONSTR,
+    ewcsDD_TOPOTHER,
+    ewcsNBS_GRID_LOCAL,
+    ewcsNBS_GRID_NONLOCAL,
+    ewcsNBS_SEARCH_LOCAL,
+    ewcsNBS_SEARCH_NONLOCAL,
     ewcsLISTED,
     ewcsLISTED_FEP,
     ewcsRESTRAINTS,
     ewcsLISTED_BUF_OPS,
     ewcsNONBONDED_PRUNING,
-    ewcsNONBONDED,
+    ewcsNONBONDED_KERNEL,
+    ewcsNONBONDED_CLEAR,
+    ewcsNONBONDED_FEP,
     ewcsLAUNCH_GPU_NONBONDED,
     ewcsLAUNCH_GPU_BONDED,
     ewcsLAUNCH_GPU_PME,
     ewcsEWALD_CORRECTION,
     ewcsNB_X_BUF_OPS,
     ewcsNB_F_BUF_OPS,
+    ewcsCLEAR_FORCE_BUFFER,
+    ewcsTEST,
     ewcsNR
 };
 
 gmx_bool wallcycle_have_counter();
 /* Returns if cycle counting is supported */
 
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, struct t_commrec *cr);
+gmx_wallcycle_t wallcycle_init(FILE* fplog, int resetstep, struct t_commrec* cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
@@ -102,7 +148,10 @@ void wallcycle_start_nocount(gmx_wallcycle_t wc, int ewc);
 double wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc, returns the last cycle count */
 
-void wallcycle_get(gmx_wallcycle_t wc, int ewc, int *n, double *c);
+void wallcycle_increment_event_count(gmx_wallcycle_t wc, int ewc);
+/* Only increment call count for ewc by one */
+
+void wallcycle_get(gmx_wallcycle_t wc, int ewc, int* n, double* c);
 /* Returns the cumulative count and cycle count for ewc */
 
 void wallcycle_reset_all(gmx_wallcycle_t wc);

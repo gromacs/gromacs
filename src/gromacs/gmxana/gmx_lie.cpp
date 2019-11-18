@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,16 +56,17 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-typedef struct {
+typedef struct
+{
     int  nlj, nqq;
-    int *lj;
-    int *qq;
+    int* lj;
+    int* qq;
 } t_liedata;
 
-static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
+static t_liedata* analyze_names(int nre, gmx_enxnm_t* names, const char* ligand)
 {
     int        i;
-    t_liedata *ld;
+    t_liedata* ld;
     char       self[256];
 
     /* Skip until we come to pressure */
@@ -82,20 +83,19 @@ static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
     snew(ld, 1);
     for (; (i < nre); i++)
     {
-        if ((std::strstr(names[i].name, ligand) != nullptr) &&
-            (std::strstr(names[i].name, self) == nullptr))
+        if ((std::strstr(names[i].name, ligand) != nullptr) && (std::strstr(names[i].name, self) == nullptr))
         {
             if (std::strstr(names[i].name, "LJ") != nullptr)
             {
                 ld->nlj++;
                 srenew(ld->lj, ld->nlj);
-                ld->lj[ld->nlj-1] = i;
+                ld->lj[ld->nlj - 1] = i;
             }
             else if (std::strstr(names[i].name, "Coul") != nullptr)
             {
                 ld->nqq++;
                 srenew(ld->qq, ld->nqq);
-                ld->qq[ld->nqq-1] = i;
+                ld->qq[ld->nqq - 1] = i;
             }
         }
     }
@@ -115,8 +115,7 @@ static t_liedata *analyze_names(int nre, gmx_enxnm_t *names, const char *ligand)
     return ld;
 }
 
-static real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
-                     real fac_lj, real fac_qq)
+static real calc_lie(t_liedata* ld, t_energy ee[], real lie_lj, real lie_qq, real fac_lj, real fac_qq)
 {
     int  i;
     real lj_tot, qq_tot;
@@ -133,12 +132,12 @@ static real calc_lie(t_liedata *ld, t_energy ee[], real lie_lj, real lie_qq,
     }
 
     /* And now the great LIE formula: */
-    return fac_lj*(lj_tot-lie_lj)+fac_qq*(qq_tot-lie_qq);
+    return fac_lj * (lj_tot - lie_lj) + fac_qq * (qq_tot - lie_qq);
 }
 
-int gmx_lie(int argc, char *argv[])
+int gmx_lie(int argc, char* argv[])
 {
-    const char        *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes a free energy estimate based on an energy analysis",
         "from nonbonded energies. One needs an energy file with the following components:",
         "Coul-(A-B) LJ-SR (A-B) etc.[PAR]",
@@ -149,39 +148,43 @@ int gmx_lie(int argc, char *argv[])
         "are necessary for supplying suitable values for -Elj and -Eqq."
     };
     static real        lie_lj = 0, lie_qq = 0, fac_lj = 0.181, fac_qq = 0.5;
-    static const char *ligand = "none";
+    static const char* ligand = "none";
     t_pargs            pa[]   = {
-        { "-Elj",  FALSE, etREAL, {&lie_lj},
+        { "-Elj",
+          FALSE,
+          etREAL,
+          { &lie_lj },
           "Lennard-Jones interaction between ligand and solvent" },
-        { "-Eqq",  FALSE, etREAL, {&lie_qq},
-          "Coulomb interaction between ligand and solvent" },
-        { "-Clj",  FALSE, etREAL, {&fac_lj},
+        { "-Eqq", FALSE, etREAL, { &lie_qq }, "Coulomb interaction between ligand and solvent" },
+        { "-Clj",
+          FALSE,
+          etREAL,
+          { &fac_lj },
           "Factor in the LIE equation for Lennard-Jones component of energy" },
-        { "-Cqq",  FALSE, etREAL, {&fac_qq},
+        { "-Cqq",
+          FALSE,
+          etREAL,
+          { &fac_qq },
           "Factor in the LIE equation for Coulomb component of energy" },
-        { "-ligand",  FALSE, etSTR, {&ligand},
-          "Name of the ligand in the energy file" }
+        { "-ligand", FALSE, etSTR, { &ligand }, "Name of the ligand in the energy file" }
     };
 #define NPA asize(pa)
 
-    FILE             *out;
+    FILE*             out;
     int               nre, nframes = 0, ct = 0;
     ener_file_t       fp;
-    t_liedata        *ld;
-    gmx_enxnm_t      *enm = nullptr;
-    t_enxframe       *fr;
+    t_liedata*        ld;
+    gmx_enxnm_t*      enm = nullptr;
+    t_enxframe*       fr;
     real              lie;
     double            lieaver = 0, lieav2 = 0;
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
 
-    t_filenm          fnm[] = {
-        { efEDR, "-f",    "ener",     ffREAD   },
-        { efXVG, "-o",    "lie",      ffWRITE  }
-    };
+    t_filenm fnm[] = { { efEDR, "-f", "ener", ffREAD }, { efXVG, "-o", "lie", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, NPA, pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -192,16 +195,16 @@ int gmx_lie(int argc, char *argv[])
     ld = analyze_names(nre, enm, ligand);
     snew(fr, 1);
 
-    out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "LIE free energy estimate",
-                   "Time (ps)", "DGbind (kJ/mol)", oenv);
+    out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "LIE free energy estimate", "Time (ps)",
+                   "DGbind (kJ/mol)", oenv);
     while (do_enx(fp, fr))
     {
         ct = check_times(fr->t);
         if (ct == 0)
         {
-            lie      = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);
+            lie = calc_lie(ld, fr->ener, lie_lj, lie_qq, fac_lj, fac_qq);
             lieaver += lie;
-            lieav2  += lie*lie;
+            lieav2 += lie * lie;
             nframes++;
             fprintf(out, "%10g  %10g\n", fr->t, lie);
         }
@@ -212,8 +215,8 @@ int gmx_lie(int argc, char *argv[])
 
     if (nframes > 0)
     {
-        printf("DGbind = %.3f (%.3f)\n", lieaver/nframes,
-               std::sqrt(lieav2/nframes-gmx::square(lieaver/nframes)));
+        printf("DGbind = %.3f (%.3f)\n", lieaver / nframes,
+               std::sqrt(lieav2 / nframes - gmx::square(lieaver / nframes)));
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");

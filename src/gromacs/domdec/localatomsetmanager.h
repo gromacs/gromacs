@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <memory>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/classhelpers.h"
 
 class gmx_ga2la_t;
@@ -65,26 +66,43 @@ class LocalAtomSet;
  */
 class LocalAtomSetManager
 {
-    public:
-        LocalAtomSetManager();
-        ~LocalAtomSetManager();
+public:
+    LocalAtomSetManager();
+    ~LocalAtomSetManager();
+#ifndef DOXYGEN
+    /*! \brief Add a new atom set to be managed and give back a handle.
+     *
+     * \todo remove this routine once all indices are represented as
+     *       gmx::index instead of int.
+     *
+     * \note Not created if the internal int type does match index
+     *
+     * \tparam T template parameter to use SFINAE for conditional function
+     *           activation
+     * \tparam U template parameter for conditional function activation
+     *
+     * \param[in] globalAtomIndex Indices of the atoms to be managed
+     * \returns Handle to LocalAtomSet.
+     */
+    template<typename T = void, typename U = std::enable_if_t<!std::is_same<int, index>::value, T>>
+    LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
+#endif
+    /*! \brief Add a new atom set to be managed and give back a handle.
+     *
+     * \param[in] globalAtomIndex Indices of the atoms to be managed
+     * \returns Handle to LocalAtomSet.
+     */
+    LocalAtomSet add(ArrayRef<const index> globalAtomIndex);
 
-        /*! \brief Add a new atom set to be managed and give back a handle.
-         *
-         * \param[in] globalAtomIndex Indices of the atoms to be managed
-         * \returns Handle to LocalAtomSet.
-         */
-        LocalAtomSet add(ArrayRef<const int> globalAtomIndex);
+    /*! \brief Recalculate local and collective indices from ga2la.
+     * Uses global atom to local atom lookup structure to
+     * update atom indices.
+     */
+    void setIndicesInDomainDecomposition(const gmx_ga2la_t& ga2la);
 
-        /*! \brief Recalculate local and collective indices from ga2la.
-         * Uses global atom to local atom lookup structure to
-         * update atom indices.
-         */
-        void setIndicesInDomainDecomposition(const gmx_ga2la_t &ga2la);
-
-    private:
-        class Impl;
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace gmx

@@ -40,11 +40,9 @@
 #include "pme_internal.h"
 
 /* Calulate plain SPME B-spline interpolation */
-void make_bspline_moduli(splinevec bsp_mod,
-                         int nx, int ny, int nz, int order);
+void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
 
 /* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod,
-                             int nx, int ny, int nz, int order);
+void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
 
 #endif

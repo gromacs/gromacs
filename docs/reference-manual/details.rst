@@ -10,7 +10,7 @@ Single Sum Virial in |Gromacs|
 
 The virial :math:`\Xi` can be written in full tensor form as:
 
-.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^N~\mathbf{r}_ij\otimes\mathbf{F}_{ij}
+.. math:: \Xi~=~-\frac{1}{2}~\sum_{i < j}^N~\mathbf{r}_{ij}\otimes\mathbf{F}_{ij}
           :label: eqnvirialfulltensorform
 
 where :math:`\otimes` denotes the *direct product* of two vectors. [1]_

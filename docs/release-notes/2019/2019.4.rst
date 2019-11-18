@@ -1,0 +1,159 @@
+GROMACS 2019.4 release notes
+----------------------------
+
+This version was released on October 2nd, 2019. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2019.3 version, to fix known issues. It also incorporates all
+fixes made in version 2018.7 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix incorrect pressure when atoms in CMAP cross a box boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The virial calculation and thus the pressure would be incorrect
+when the second and third atom involved in a CHARMM CMAP correction
+term would reside in different periodic images. This can happen when
+a protein is positioned over a box boundary. Note that the energy
+and forces were correct, but sampling was affected when pressure
+coupling was applied when a protein crossed a box boundary.
+
+:issue:`2845`
+:issue:`2867`
+
+Fix incorrect LJ cut-off on GPU when rvdw < rcoulomb
+""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When rvdw was chosen by the user to be smaller than rcoulomb in the mdp file,
+the LJ cut-off would initially be set to the Coulomb cut-off for computing
+non-bonded interactions on the GPU. This only affected energy minimization,
+mdrun -rerun and the first 2*nstlist steps of a normal MD run, since the correct
+LJ cut-off is set when PME tuning (on by default) starts after 2*nstlist steps
+(unless PME tuning was disabled with -notunepme).
+
+:issue:`3056`
+
+
+Fix (unlikely) missing bonded forces with CUDA GPUs and domain decomposition
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Forces could be missing for bonded interactions computed on CUDA GPUs with
+domain decomposition when there are non-local bonded interactions, but no
+non-local non-bonded interactions between two domains. Note that this is
+extremely unlikely to happen, since the distance between the bonded atoms
+needs to be larger than the pair-list cut-off distance and there should be no
+other non-local atoms within the pair-list cut-off distance.
+
+:issue:`3063`
+
+Fix incorrect reporting of final kinetic energy and temperature
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With the leap-frog integrator, the kinetic energy and temperature reported
+for the last step were incorrect when the last step was not divisible by
+nstcalcenergy, nsttcouple or nstpcouple.
+
+:issue:`2950`
+
+Fix segmentation fault in grompp and mdrun with cosine COM pulling
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3023`
+
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix grompp not adding angle constraints between constraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using the mdp option constraints=all-angles, angles involving
+bonds supplied as constraints in the topology would be removed,
+but not replaced by angle constraints.
+
+:issue:`3067`
+
+Fix gmx wham with angle and dihedral geometries
+"""""""""""""""""""""""""""""""""""""""""""""""
+
+gmx wham would apply an incorrect radian to degree unit conversion,
+leading to no overlap or not-a-number output.
+
+:issue:`2609`
+:issue:`3094`
+
+Fix bug in gmx xpm2ps
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The tool would fail when not being provided with a library file to read in.
+
+:issue:`3012`
+
+Fix bug in gmx anaeig
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An issue was noted when reading a second set
+set of eigenvectors that could lead to problems when the number
+of eigenvectors was less than the three times the number of atoms.
+
+:issue:`2972`
+
+Fix issue with demux.pl script
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The trajectories could become discontinuous with simulations longer than 100ns
+and exchange strides that are not a multiple of 1 ps. This only affected the
+post-processing of trajectories generated from replica exchange simulations.
+
+Made gmx disre work with non-consecutively labeled restraints
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2953`
+
+Fixed writing of gro files with index groups
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+An output ``.gro`` file from from e.g. ``gmx editconf -f -n`` would
+take the atom names for the output file in order from the atoms in the
+input file, rather than in order from the atoms indicated by the
+indices in the index file.
+
+:issue:`3107`
+
+Made gmx make_ndx keep chain IDs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Old style structure file reading caused the chain IDs to be overwritten with
+default values.
+
+:issue:`3070`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Disable PME OpenCL on Apple
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The Apple OpenCL compilers fail to produce a functional clFFT build.
+The OpenCL PME support is therefore disabled on Apple platforms.
+
+:issue:`2941`
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Added AMD Zen 2 detection
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The AMD Zen 2 architecture is now detected as different from Zen 1
+and uses 256-bit wide AVX2 SIMD instructions (GMX_SIMD=AVX2_256) by default. 
+Also the non-bonded kernel parameters have been tuned for Zen 2.
+This has a significant impact on performance.

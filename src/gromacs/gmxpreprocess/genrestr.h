@@ -35,6 +35,6 @@
 #ifndef GMX_GMXPREPROCESS_GENPR_H
 #define GMX_GMXPREPROCESS_GENPR_H
 
-int gmx_genrestr(int argc, char *argv[]);
+int gmx_genrestr(int argc, char* argv[]);
 
 #endif

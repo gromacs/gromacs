@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,20 +47,17 @@ namespace
 {
 
 //! Helper method for reading logging targets from an array.
-ILogTarget *getTarget(ILogTarget        *targets[MDLogger::LogLevelCount],
-                      MDLogger::LogLevel level)
+ILogTarget* getTarget(ILogTarget* targets[MDLogger::LogLevelCount], MDLogger::LogLevel level)
 {
     return targets[static_cast<int>(level)];
 }
 
-}   // namespace
+} // namespace
 
-ILogTarget::~ILogTarget()
-{
-}
+ILogTarget::~ILogTarget() {}
 
 
-LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, ...)
+LogEntryWriter& LogEntryWriter::appendTextFormatted(gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
 
@@ -70,14 +67,21 @@ LogEntryWriter &LogEntryWriter::appendTextFormatted(gmx_fmtstr const char *fmt, 
     return *this;
 }
 
-MDLogger::MDLogger()
-    : warning(nullptr), info(nullptr)
+MDLogger::MDLogger() :
+    warning(nullptr),
+    error(nullptr),
+    debug(nullptr),
+    verboseDebug(nullptr),
+    info(nullptr)
 {
 }
 
-MDLogger::MDLogger(ILogTarget *targets[LogLevelCount])
-    : warning(getTarget(targets, LogLevel::Warning)),
-      info(getTarget(targets, LogLevel::Info))
+MDLogger::MDLogger(ILogTarget* targets[LogLevelCount]) :
+    warning(getTarget(targets, LogLevel::Warning)),
+    error(getTarget(targets, LogLevel::Error)),
+    debug(getTarget(targets, LogLevel::Debug)),
+    verboseDebug(getTarget(targets, LogLevel::VerboseDebug)),
+    info(getTarget(targets, LogLevel::Info))
 {
 }
 

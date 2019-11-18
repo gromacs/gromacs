@@ -41,48 +41,51 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/txtdump.h"
 
-static void pr_cmap(FILE *fp, int indent, const char *title,
-                    const gmx_cmap_t *cmap_grid, gmx_bool bShowNumbers)
+static void pr_cmap(FILE* fp, int indent, const char* title, const gmx_cmap_t* cmap_grid, gmx_bool bShowNumbers)
 {
-    int  i, j, nelem;
+    int  j, nelem;
     real dx, idx;
 
-    dx    = 360.0 / cmap_grid->grid_spacing;
-    nelem = cmap_grid->grid_spacing*cmap_grid->grid_spacing;
+    if (cmap_grid->grid_spacing != 0)
+    {
+        dx = 360.0 / cmap_grid->grid_spacing;
+    }
+    else
+    {
+        dx = 0;
+    }
+    nelem = cmap_grid->grid_spacing * cmap_grid->grid_spacing;
 
     if (available(fp, cmap_grid, indent, title))
     {
         fprintf(fp, "%s\n", title);
 
-        for (i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
+        for (gmx::index i = 0; i < gmx::ssize(cmap_grid->cmapdata); i++)
         {
             idx = -180.0;
             fprintf(fp, "%8s %8s %8s %8s\n", "V", "dVdx", "dVdy", "d2dV");
 
-            fprintf(fp, "grid[%3d]={\n", bShowNumbers ? i : -1);
+            fprintf(fp, "grid[%3zd]={\n", bShowNumbers ? i : -1);
 
             for (j = 0; j < nelem; j++)
             {
-                if ( (j%cmap_grid->grid_spacing) == 0)
+                if ((j % cmap_grid->grid_spacing) == 0)
                 {
                     fprintf(fp, "%8.1f\n", idx);
                     idx += dx;
                 }
 
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4+1]);
-                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j*4+2]);
-                fprintf(fp, "%8.3f\n", cmap_grid->cmapdata[i].cmap[j*4+3]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 1]);
+                fprintf(fp, "%8.3f ", cmap_grid->cmapdata[i].cmap[j * 4 + 2]);
+                fprintf(fp, "%8.3f\n", cmap_grid->cmapdata[i].cmap[j * 4 + 3]);
             }
             fprintf(fp, "\n");
         }
     }
-
 }
 
-void pr_ffparams(FILE *fp, int indent, const char *title,
-                 const gmx_ffparams_t *ffparams,
-                 gmx_bool bShowNumbers)
+void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* ffparams, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -93,9 +96,8 @@ void pr_ffparams(FILE *fp, int indent, const char *title,
     fprintf(fp, "ntypes=%d\n", ffparams->numTypes());
     for (i = 0; i < ffparams->numTypes(); i++)
     {
-        pr_indent(fp, indent+INDENT);
-        fprintf(fp, "functype[%d]=%s, ",
-                bShowNumbers ? i : -1,
+        pr_indent(fp, indent + INDENT);
+        fprintf(fp, "functype[%d]=%s, ", bShowNumbers ? i : -1,
                 interaction_function[ffparams->functype[i]].name);
         pr_iparams(fp, ffparams->functype[i], &ffparams->iparams[i]);
     }

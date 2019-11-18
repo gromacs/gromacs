@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,10 +33,6 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB GMXANA_SOURCES *.cpp)
-
-gmx_install_headers(
-    gstat.h
-    )
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
 

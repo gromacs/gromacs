@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,12 +64,13 @@ namespace gmx
  * SelectionOptionStorage
  */
 
-SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
-                                               SelectionOptionManager *manager)
-    : MyBase(settings, OptionFlags() | efOption_NoDefaultValue
-             | efOption_DontCheckMinimumCount),
-      info_(this), manager_(*manager), defaultText_(settings.defaultText_),
-      selectionFlags_(settings.selectionFlags_)
+SelectionOptionStorage::SelectionOptionStorage(const SelectionOption&  settings,
+                                               SelectionOptionManager* manager) :
+    MyBase(settings, OptionFlags() | efOption_NoDefaultValue | efOption_DontCheckMinimumCount),
+    info_(this),
+    manager_(*manager),
+    defaultText_(settings.defaultText_),
+    selectionFlags_(settings.selectionFlags_)
 {
     GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionOption");
@@ -78,22 +80,19 @@ SelectionOptionStorage::SelectionOptionStorage(const SelectionOption  &settings,
 }
 
 
-std::string SelectionOptionStorage::formatSingleValue(const Selection &value) const
+std::string SelectionOptionStorage::formatSingleValue(const Selection& value) const
 {
     return value.selectionText();
 }
 
 
-std::vector<Any>
-SelectionOptionStorage::normalizeValues(const std::vector<Any> & /*values*/) const
+std::vector<Any> SelectionOptionStorage::normalizeValues(const std::vector<Any>& /*values*/) const
 {
     GMX_THROW(NotImplementedError("Selection options not supported in this context"));
 }
 
 
-void SelectionOptionStorage::addSelections(
-        const SelectionList &selections,
-        bool                 bFullValue)
+void SelectionOptionStorage::addSelections(const SelectionList& selections, bool bFullValue)
 {
     if (bFullValue && selections.size() < static_cast<size_t>(minValueCount()))
     {
@@ -125,12 +124,12 @@ void SelectionOptionStorage::addSelections(
 }
 
 
-void SelectionOptionStorage::convertValue(const Any &value)
+void SelectionOptionStorage::convertValue(const Any& value)
 {
     manager_.convertOptionValue(this, value.cast<std::string>(), false);
 }
 
-void SelectionOptionStorage::processSetValues(ValueList *values)
+void SelectionOptionStorage::processSetValues(ValueList* values)
 {
     if (values->empty())
     {
@@ -174,7 +173,7 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
     {
         setMaxValueCount(count);
     }
-    catch (const UserInputError &ex)
+    catch (const UserInputError& ex)
     {
         errors.append(ex.what());
     }
@@ -187,7 +186,7 @@ void SelectionOptionStorage::setAllowedValueCount(int count)
 
 void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
 {
-    for (const Selection &value : values())
+    for (const Selection& value : values())
     {
         if (flag == efSelection_OnlyStatic && bSet && value.isDynamic())
         {
@@ -199,7 +198,7 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
         }
     }
     selectionFlags_.set(flag, bSet);
-    for (Selection &value : values())
+    for (Selection& value : values())
     {
         value.data().setFlags(selectionFlags_);
     }
@@ -210,19 +209,16 @@ void SelectionOptionStorage::setSelectionFlag(SelectionFlag flag, bool bSet)
  * SelectionOptionInfo
  */
 
-SelectionOptionInfo::SelectionOptionInfo(SelectionOptionStorage *option)
-    : OptionInfo(option)
+SelectionOptionInfo::SelectionOptionInfo(SelectionOptionStorage* option) : OptionInfo(option) {}
+
+SelectionOptionStorage& SelectionOptionInfo::option()
 {
+    return static_cast<SelectionOptionStorage&>(OptionInfo::option());
 }
 
-SelectionOptionStorage &SelectionOptionInfo::option()
+const SelectionOptionStorage& SelectionOptionInfo::option() const
 {
-    return static_cast<SelectionOptionStorage &>(OptionInfo::option());
-}
-
-const SelectionOptionStorage &SelectionOptionInfo::option() const
-{
-    return static_cast<const SelectionOptionStorage &>(OptionInfo::option());
+    return static_cast<const SelectionOptionStorage&>(OptionInfo::option());
 }
 
 void SelectionOptionInfo::setValueCount(int count)
@@ -260,11 +256,9 @@ void SelectionOptionInfo::setDynamicMask(bool bEnabled)
  * SelectionOption
  */
 
-AbstractOptionStorage *
-SelectionOption::createStorage(const OptionManagerContainer &managers) const
+AbstractOptionStorage* SelectionOption::createStorage(const OptionManagerContainer& managers) const
 {
-    return new SelectionOptionStorage(
-            *this, managers.get<SelectionOptionManager>());
+    return new SelectionOptionStorage(*this, managers.get<SelectionOptionManager>());
 }
 
 
@@ -272,11 +266,12 @@ SelectionOption::createStorage(const OptionManagerContainer &managers) const
  * SelectionFileOptionStorage
  */
 
-SelectionFileOptionStorage::SelectionFileOptionStorage(
-        const SelectionFileOption &settings, SelectionOptionManager *manager)
-    : AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes
-                            | efOption_DontCheckMinimumCount),
-      info_(this), manager_(*manager), bValueParsed_(false)
+SelectionFileOptionStorage::SelectionFileOptionStorage(const SelectionFileOption& settings,
+                                                       SelectionOptionManager*    manager) :
+    AbstractOptionStorage(settings, OptionFlags() | efOption_MultipleTimes | efOption_DontCheckMinimumCount),
+    info_(this),
+    manager_(*manager),
+    bValueParsed_(false)
 {
     GMX_RELEASE_ASSERT(manager != nullptr,
                        "SelectionOptionManager must be added before SelectionFileOption");
@@ -287,7 +282,7 @@ void SelectionFileOptionStorage::clearSet()
     bValueParsed_ = false;
 }
 
-void SelectionFileOptionStorage::convertValue(const Any &value)
+void SelectionFileOptionStorage::convertValue(const Any& value)
 {
     if (bValueParsed_)
     {
@@ -311,8 +306,8 @@ void SelectionFileOptionStorage::processSet()
  * SelectionFileOptionInfo
  */
 
-SelectionFileOptionInfo::SelectionFileOptionInfo(SelectionFileOptionStorage *option)
-    : OptionInfo(option)
+SelectionFileOptionInfo::SelectionFileOptionInfo(SelectionFileOptionStorage* option) :
+    OptionInfo(option)
 {
 }
 
@@ -321,17 +316,14 @@ SelectionFileOptionInfo::SelectionFileOptionInfo(SelectionFileOptionStorage *opt
  * SelectionFileOption
  */
 
-SelectionFileOption::SelectionFileOption(const char *name)
-    : AbstractOption(name)
+SelectionFileOption::SelectionFileOption(const char* name) : AbstractOption(name)
 {
     setDescription("Provide selections from files");
 }
 
-AbstractOptionStorage *
-SelectionFileOption::createStorage(const OptionManagerContainer &managers) const
+AbstractOptionStorage* SelectionFileOption::createStorage(const OptionManagerContainer& managers) const
 {
-    return new SelectionFileOptionStorage(
-            *this, managers.get<SelectionOptionManager>());
+    return new SelectionFileOptionStorage(*this, managers.get<SelectionOptionManager>());
 }
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@ namespace gmxapi
 {
 
 // forward declarations
-class Context;  // defined in gmxapi/context.h
+class Context; // defined in gmxapi/context.h
 class MDModule;
 class Status;   // defined in gmxapi/status.h
 class Workflow; // implementation detail
@@ -65,8 +65,8 @@ class Workflow; // implementation detail
  * \brief Private implementation class for a session.
  *
  * Actual implementation class may depend on the execution context, but this should be irrelevant to
- * a client. The implementation details are not exposed in the high-level API, but may be in the extension
- * API. See developer documentation for details.
+ * a client. The implementation details are not exposed in the high-level API, but may be in the
+ * extension API. See developer documentation for details.
  *
  * \ingroup gmxapi
  */
@@ -76,8 +76,8 @@ class SessionImpl;
  * \brief Workflow execution session.
  *
  * When a workflow is launched in an execution context, the result is a Session object
- * that serves as a handle to interact with the running workflow. The handle allows dynamic changes to
- * the workflow, or control or data crossing the API boundary.
+ * that serves as a handle to interact with the running workflow. The handle allows dynamic changes
+ * to the workflow, or control or data crossing the API boundary.
  *
  * Separating run() from construction allows the client to examine the running execution
  * environment or to retrieve the communicator before beginning long-running computation.
@@ -93,90 +93,90 @@ class SessionImpl;
  */
 class Session
 {
-    public:
-        /// A session must be created by launching a workflow in an execution context.
-        Session() = delete;
+public:
+    /// A session must be created by launching a workflow in an execution context.
+    Session() = delete;
 
-        /*! \brief A session cannot be copied, only moved.
-         *
-         * For shared ownership of a session, use a shared pointer.
-         * \{
-         */
-        Session(const Session &)            = delete;
-        Session &operator=(const Session &) = delete;
-        //! \}
+    /*! \brief A session cannot be copied, only moved.
+     *
+     * For shared ownership of a session, use a shared pointer.
+     * \{
+     */
+    Session(const Session&) = delete;
+    Session& operator=(const Session&) = delete;
+    //! \}
 
-        /*!
-         * \brief Pass ownership of a Session.
-         *
-         * \{
-         */
-        Session(Session &&) noexcept            = default;
-        Session &operator=(Session &&) noexcept = default;
-        //! \}
+    /*!
+     * \brief Pass ownership of a Session.
+     *
+     * \{
+     */
+    Session(Session&&) noexcept = default;
+    Session& operator=(Session&&) noexcept = default;
+    //! \}
 
-        /*!
-         * \brief Construct by taking ownership of an implementation object.
-         *
-         * \param impl Concrete object to take ownership of.
-         */
-        explicit Session(std::unique_ptr<SessionImpl> impl) noexcept;
+    /*!
+     * \brief Construct by taking ownership of an implementation object.
+     *
+     * \param impl Concrete object to take ownership of.
+     */
+    explicit Session(std::unique_ptr<SessionImpl> impl) noexcept;
 
-        /*!
-         * \brief Destroy Session.
-         *
-         * If the session is still active (has not been closed) then it will be closed
-         * with exceptions suppressed. If possible, problems encountered will be
-         * noted in the Status object, which the client may have retained shared
-         * ownership of.
-         */
-        ~Session();
+    /*!
+     * \brief Destroy Session.
+     *
+     * If the session is still active (has not been closed) then it will be closed
+     * with exceptions suppressed. If possible, problems encountered will be
+     * noted in the Status object, which the client may have retained shared
+     * ownership of.
+     */
+    ~Session();
 
-        /*!
-         * \brief Close a running session.
-         *
-         * close() should be called before destroying the Session object so that the
-         * client can catch any exceptions thrown during shut down that may be
-         * unavoidable in the parallel computing environment.
-         *
-         * \return status of close() operation.
-         */
-        Status close();
+    /*!
+     * \brief Close a running session.
+     *
+     * close() should be called before destroying the Session object so that the
+     * client can catch any exceptions thrown during shut down that may be
+     * unavoidable in the parallel computing environment.
+     *
+     * \return status of close() operation.
+     */
+    Status close();
 
-        /*!
-         * \brief Run the current workflow to completion.
-         *
-         * The client should examine the Status object for errors and resulting workflow state.
-         * \return the Session's Status after the run.
-         */
-        Status run() noexcept;
+    /*!
+     * \brief Run the current workflow to completion.
+     *
+     * The client should examine the Status object for errors and resulting workflow state.
+     * \return the Session's Status after the run.
+     */
+    Status run() noexcept;
 
-        /*!
-         * \brief Check if session is running.
-         *
-         * A Session will be "open" from the point of launch until "close" is
-         * called. If this is not true, either an error has occurred or there is
-         * a bug in the implementation.
-         *
-         * \return `true` if the session is running, else `false`
-         */
-        bool isOpen() const noexcept;
+    /*!
+     * \brief Check if session is running.
+     *
+     * A Session will be "open" from the point of launch until "close" is
+     * called. If this is not true, either an error has occurred or there is
+     * a bug in the implementation.
+     *
+     * \return `true` if the session is running, else `false`
+     */
+    bool isOpen() const noexcept;
 
-        /*! \cond internal
-         * \brief Get a non-owning handle to the implementation object.
-         *
-         * Get a raw pointer to the implementation object. The pointer is valid only during the lifetime of the Session,
-         * so retain a shared pointer to this Session object or only hold the pointer for the duration of a code block
-         * guaranteed to exist entirely within the lifetime of a Session object.
-         *
-         * \return opaque pointer used by gmxapi implementation and extension code.
-         */
-        SessionImpl* getRaw() const noexcept;
-        //! \endcond
+    /*! \cond internal
+     * \brief Get a non-owning handle to the implementation object.
+     *
+     * Get a raw pointer to the implementation object. The pointer is valid only during the lifetime of the Session,
+     * so retain a shared pointer to this Session object or only hold the pointer for the duration of a code block
+     * guaranteed to exist entirely within the lifetime of a Session object.
+     *
+     * \return opaque pointer used by gmxapi implementation and extension code.
+     */
+    SessionImpl* getRaw() const noexcept;
+    //! \endcond
 
-    private:
-        //! \brief opaque pointer to implementation
-        std::unique_ptr<SessionImpl> impl_;
+private:
+    //! \brief opaque pointer to implementation
+    std::unique_ptr<SessionImpl> impl_;
 };
 
 /*!
@@ -190,8 +190,7 @@ class Session
  * \todo Update for new scheme in which all restraints are managed by a single Restraint module.
  * \todo Figure out what this object should return to provide more utility and rigorous error checking.
  */
-Status addSessionRestraint(Session                         * session,
-                           std::shared_ptr<gmxapi::MDModule> restraint);
+Status addSessionRestraint(Session* session, std::shared_ptr<gmxapi::MDModule> restraint);
 
 /*!
  * \brief Launch a workflow in the provided execution context.
@@ -207,9 +206,9 @@ Status addSessionRestraint(Session                         * session,
  * for details.
  * \ingroup gmxapi
  */
-std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) noexcept;
+std::shared_ptr<Session> launchSession(Context* context, const Workflow& work) noexcept;
 
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GROMACS_SESSION_H
+#endif // GROMACS_SESSION_H

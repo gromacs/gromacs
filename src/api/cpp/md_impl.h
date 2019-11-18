@@ -57,20 +57,20 @@ class MDWorkSpec;
  */
 class MDHolder::Impl
 {
-    public:
-        /*!
-         * \brief Construct by capturing a messaging object.
-         *
-         * \param spec operations specified for a workflow and the means to instantiate them.
-         */
-        explicit Impl(std::shared_ptr<MDWorkSpec> &&spec);
+public:
+    /*!
+     * \brief Construct by capturing a messaging object.
+     *
+     * \param spec operations specified for a workflow and the means to instantiate them.
+     */
+    explicit Impl(std::shared_ptr<MDWorkSpec>&& spec);
 
-        /*!
-         * \brief Shared ownership of the gmxapi object used for higher level message passing.
-         */
-        std::shared_ptr<MDWorkSpec> spec_ {nullptr};
+    /*!
+     * \brief Shared ownership of the gmxapi object used for higher level message passing.
+     */
+    std::shared_ptr<MDWorkSpec> spec_{ nullptr };
 };
 
-}      // namespace gmxapi
+} // namespace gmxapi
 
 #endif // header guard

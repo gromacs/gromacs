@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@ struct t_enxblock;
 struct t_energy
 {
     //! The current energy.
-    real   e;
+    real e;
     //! The running average of the energy
     double eav;
     //! The sum of energies until now.
@@ -58,18 +58,18 @@ struct t_energy
 /* The frames that are read/written */
 struct t_enxframe
 {
-    double          t;            /* Timestamp of this frame	                     */
-    int64_t         step;         /* MD step	                             */
-    int64_t         nsteps;       /* The number of steps between frames            */
-    double          dt;           /* The MD time step                              */
-    int             nsum;         /* The number of terms for the sums in ener      */
-    int             nre;          /* Number of energies			     */
-    int             e_size;       /* Size (in bytes) of energies		     */
-    int             e_alloc;      /* Allocated size (in elements) of ener          */
-    t_energy       *ener;         /* The energies                                  */
-    int             nblock;       /* Number of following energy blocks             */
-    t_enxblock     *block;        /* The blocks                                    */
-    int             nblock_alloc; /* The number of blocks allocated                */
+    double      t;            /* Timestamp of this frame	                     */
+    int64_t     step;         /* MD step	                             */
+    int64_t     nsteps;       /* The number of steps between frames            */
+    double      dt;           /* The MD time step                              */
+    int         nsum;         /* The number of terms for the sums in ener      */
+    int         nre;          /* Number of energies			     */
+    int         e_size;       /* Size (in bytes) of energies		     */
+    int         e_alloc;      /* Allocated size (in elements) of ener          */
+    t_energy*   ener;         /* The energies                                  */
+    int         nblock;       /* Number of following energy blocks             */
+    t_enxblock* block;        /* The blocks                                    */
+    int         nblock_alloc; /* The number of blocks allocated                */
 };
 
 namespace gmx
@@ -81,37 +81,37 @@ namespace gmx
  * The interface of this class is intended to resemble a subset of std::map. */
 class EnergyFrame
 {
-    public:
-        //! Convenience type
-        using MapType = std::map<std::string, real>;
-        //! Convenience type
-        using MapConstIterator = MapType::const_iterator;
-        //! Constructor
-        EnergyFrame(const t_enxframe &enxframe,
-                    std::map<std::string, int> indicesOfEnergyFields);
-        /*! \brief Return string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string frameName() const;
-        /*! \brief Return the value read for energy \c name.
-         *
-         * \throws APIError  if \c name was not registered with EnergyFileReader. */
-        const real &at(const std::string &name) const;
-        //! Return const interator to first element of values.
-        MapConstIterator begin() const;
-        //! Return const interator to past the end element of values.
-        MapConstIterator end() const;
-        //! Return a const interator to the element with \c key, or end() if not found.
-        MapConstIterator find(const std::string &key) const;
-    private:
-        //! Container for energy values, indexed by name
-        MapType      values_;
-        //! Step number read from the .edr file frame
-        std::int64_t step_;
-        //! Time read from the .edr file frame
-        double       time_;
+public:
+    //! Convenience type
+    using MapType = std::map<std::string, real>;
+    //! Convenience type
+    using MapConstIterator = MapType::const_iterator;
+    //! Constructor
+    EnergyFrame(const t_enxframe& enxframe, const std::map<std::string, int>& indicesOfEnergyFields);
+    /*! \brief Return string that helps users identify this frame, containing time and step number.
+     *
+     * \throws std::bad_alloc  when out of memory */
+    std::string frameName() const;
+    /*! \brief Return the value read for energy \c name.
+     *
+     * \throws APIError  if \c name was not registered with EnergyFileReader. */
+    const real& at(const std::string& name) const;
+    //! Return const interator to first element of values.
+    MapConstIterator begin() const;
+    //! Return const interator to past the end element of values.
+    MapConstIterator end() const;
+    //! Return a const interator to the element with \c key, or end() if not found.
+    MapConstIterator find(const std::string& key) const;
+
+private:
+    //! Container for energy values, indexed by name
+    MapType values_;
+    //! Step number read from the .edr file frame
+    std::int64_t step_;
+    //! Time read from the .edr file frame
+    double time_;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

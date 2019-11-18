@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,39 +56,30 @@ namespace gmx
 
 class SelectionTester : public TrajectoryAnalysisModule
 {
-    public:
-        SelectionTester();
-        ~SelectionTester() override;
+public:
+    SelectionTester();
+    ~SelectionTester() override;
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                          const TopologyInformation        &top) override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
 
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
 
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        void printSelections();
+private:
+    void printSelections();
 
-        SelectionList            selections_;
-        int                      nmaxind_;
+    SelectionList selections_;
+    int           nmaxind_;
 };
 
-SelectionTester::SelectionTester()
-    : nmaxind_(20)
-{
-}
+SelectionTester::SelectionTester() : nmaxind_(20) {}
 
-SelectionTester::~SelectionTester()
-{
-}
+SelectionTester::~SelectionTester() {}
 
-void
-SelectionTester::printSelections()
+void SelectionTester::printSelections()
 {
     fprintf(stderr, "\nSelections:\n");
     for (size_t g = 0; g < selections_.size(); ++g)
@@ -97,38 +89,33 @@ SelectionTester::printSelections()
     fprintf(stderr, "\n");
 }
 
-void
-SelectionTester::initOptions(IOptionsContainer          *options,
-                             TrajectoryAnalysisSettings *settings)
+void SelectionTester::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
-        "This is a test program for selections."
-    };
+    static const char* const desc[] = { "This is a test program for selections." };
 
     settings->setHelpText(desc);
 
-    options->addOption(SelectionOption("select").storeVector(&selections_)
-                           .required().multiValue()
-                           .description("Selections to test"));
-    options->addOption(IntegerOption("pmax").store(&nmaxind_)
-                           .description("Maximum number of indices to print in lists (-1 = print all)"));
+    options->addOption(
+            SelectionOption("select").storeVector(&selections_).required().multiValue().description("Selections to test"));
+    options->addOption(IntegerOption("pmax").store(&nmaxind_).description(
+            "Maximum number of indices to print in lists (-1 = print all)"));
 }
 
-void
-SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
-                              const TopologyInformation        & /*top*/)
+void SelectionTester::initAnalysis(const TrajectoryAnalysisSettings& /*settings*/,
+                                   const TopologyInformation& /*top*/)
 {
     printSelections();
 }
 
-void
-SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
-                              TrajectoryAnalysisModuleData * /*pdata*/)
+void SelectionTester::analyzeFrame(int /*frnr*/,
+                                   const t_trxframe& /*fr*/,
+                                   t_pbc* /*pbc*/,
+                                   TrajectoryAnalysisModuleData* /*pdata*/)
 {
     fprintf(stderr, "\n");
     for (size_t g = 0; g < selections_.size(); ++g)
     {
-        const Selection &sel = selections_[g];
+        const Selection& sel = selections_[g];
         int              n;
 
         fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
@@ -140,7 +127,7 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /
         ArrayRef<const int> atoms = sel.atomIndices();
         for (int i = 0; i < n; ++i)
         {
-            fprintf(stderr, " %d", atoms[i]+1);
+            fprintf(stderr, " %d", atoms[i] + 1);
         }
         if (n < sel.atomCount())
         {
@@ -156,10 +143,9 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /
         }
         for (int i = 0; i < n; ++i)
         {
-            const SelectionPosition &p = sel.position(i);
-            fprintf(stderr, "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n",
-                    p.x()[XX], p.x()[YY], p.x()[ZZ],
-                    p.refId(), p.mappedId(), p.atomCount());
+            const SelectionPosition& p = sel.position(i);
+            fprintf(stderr, "    (%.2f,%.2f,%.2f) r=%d, m=%d, n=%d\n", p.x()[XX], p.x()[YY],
+                    p.x()[ZZ], p.refId(), p.mappedId(), p.atomCount());
         }
         if (n < sel.posCount())
         {
@@ -169,24 +155,19 @@ SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /
     fprintf(stderr, "\n");
 }
 
-void
-SelectionTester::finishAnalysis(int /*nframes*/)
+void SelectionTester::finishAnalysis(int /*nframes*/)
 {
     printSelections();
 }
 
-void
-SelectionTester::writeOutput()
-{
-}
+void SelectionTester::writeOutput() {}
 
-}  // namespace gmx
+} // namespace gmx
 
 /*! \internal \brief
  * The main function for the selection testing tool.
  */
-int
-main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<gmx::SelectionTester>(argc, argv);
 }

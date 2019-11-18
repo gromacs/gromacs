@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,15 +52,7 @@
 #define XDR_INT_SIZE 4
 
 /* same order as the definition of xdr_datatype */
-const char *xdr_datatype_names[] =
-{
-    "int",
-    "float",
-    "double",
-    "large int",
-    "char",
-    "string"
-};
+const char* xdr_datatype_names[] = { "int", "float", "double", "large int", "char", "string" };
 
 
 /*___________________________________________________________________________
@@ -69,20 +61,20 @@ const char *xdr_datatype_names[] =
  | with some routines to assist in this task (those are marked
  | static and cannot be called from user programs)
  */
-#define MAXABS (INT_MAX-2)
+#define MAXABS (INT_MAX - 2)
 
 #ifndef SQR
-#define SQR(x) ((x)*(x))
+#    define SQR(x) ((x) * (x))
 #endif
 static const int magicints[] = {
-    0, 0, 0, 0, 0, 0, 0, 0, 0,
-    8, 10, 12, 16, 20, 25, 32, 40, 50, 64,
-    80, 101, 128, 161, 203, 256, 322, 406, 512, 645,
-    812, 1024, 1290, 1625, 2048, 2580, 3250, 4096, 5060, 6501,
-    8192, 10321, 13003, 16384, 20642, 26007, 32768, 41285, 52015, 65536,
-    82570, 104031, 131072, 165140, 208063, 262144, 330280, 416127, 524287, 660561,
-    832255, 1048576, 1321122, 1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042,
-    8388607, 10568983, 13316085, 16777216
+    0,        0,        0,       0,       0,       0,       0,       0,       0,       8,
+    10,       12,       16,      20,      25,      32,      40,      50,      64,      80,
+    101,      128,      161,     203,     256,     322,     406,     512,     645,     812,
+    1024,     1290,     1625,    2048,    2580,    3250,    4096,    5060,    6501,    8192,
+    10321,    13003,    16384,   20642,   26007,   32768,   41285,   52015,   65536,   82570,
+    104031,   131072,   165140,  208063,  262144,  330280,  416127,  524287,  660561,  832255,
+    1048576,  1321122,  1664510, 2097152, 2642245, 3329021, 4194304, 5284491, 6658042, 8388607,
+    10568983, 13316085, 16777216
 };
 
 #define FIRSTIDX 9
@@ -104,27 +96,27 @@ static const int magicints[] = {
 static void sendbits(int buf[], int num_of_bits, int num)
 {
 
-    unsigned int    cnt, lastbyte;
-    int             lastbits;
-    unsigned char * cbuf;
+    unsigned int   cnt, lastbyte;
+    int            lastbits;
+    unsigned char* cbuf;
 
-    cbuf     = (reinterpret_cast<unsigned char *>(buf)) + 3 * sizeof(*buf);
+    cbuf     = (reinterpret_cast<unsigned char*>(buf)) + 3 * sizeof(*buf);
     cnt      = static_cast<unsigned int>(buf[0]);
     lastbits = buf[1];
     lastbyte = static_cast<unsigned int>(buf[2]);
     while (num_of_bits >= 8)
     {
-        lastbyte     = (lastbyte << 8) | ((num >> (num_of_bits -8)) /* & 0xff*/);
-        cbuf[cnt++]  = lastbyte >> lastbits;
+        lastbyte    = (lastbyte << 8) | ((num >> (num_of_bits - 8)) /* & 0xff*/);
+        cbuf[cnt++] = lastbyte >> lastbits;
         num_of_bits -= 8;
     }
     if (num_of_bits > 0)
     {
-        lastbyte  = (lastbyte << num_of_bits) | num;
+        lastbyte = (lastbyte << num_of_bits) | num;
         lastbits += num_of_bits;
         if (lastbits >= 8)
         {
-            lastbits   -= 8;
+            lastbits -= 8;
             cbuf[cnt++] = lastbyte >> lastbits;
         }
     }
@@ -170,7 +162,7 @@ static int sizeofint(const int size)
  | So I don't need to call 'sizeofints for those calls.
  */
 
-static int sizeofints( const int num_of_ints, const unsigned int sizes[])
+static int sizeofints(const int num_of_ints, const unsigned int sizes[])
 {
     int          i, num;
     int          bytes[32];
@@ -185,12 +177,12 @@ static int sizeofints( const int num_of_ints, const unsigned int sizes[])
         {
             tmp            = bytes[bytecnt] * sizes[i] + tmp;
             bytes[bytecnt] = tmp & 0xff;
-            tmp          >>= 8;
+            tmp >>= 8;
         }
         while (tmp != 0)
         {
             bytes[bytecnt++] = tmp & 0xff;
-            tmp            >>= 8;
+            tmp >>= 8;
         }
         num_of_bytes = bytecnt;
     }
@@ -202,7 +194,6 @@ static int sizeofints( const int num_of_ints, const unsigned int sizes[])
         num *= 2;
     }
     return num_of_bits + num_of_bytes * 8;
-
 }
 
 /*____________________________________________________________________________
@@ -220,8 +211,11 @@ static int sizeofints( const int num_of_ints, const unsigned int sizes[])
  |
  */
 
-static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
-                     unsigned int sizes[], unsigned int nums[])
+static void sendints(int          buf[],
+                     const int    num_of_ints,
+                     const int    num_of_bits,
+                     unsigned int sizes[],
+                     unsigned int nums[])
 {
 
     int          i, num_of_bytes, bytecnt;
@@ -232,16 +226,17 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
     do
     {
         bytes[num_of_bytes++] = tmp & 0xff;
-        tmp                 >>= 8;
-    }
-    while (tmp != 0);
+        tmp >>= 8;
+    } while (tmp != 0);
 
     for (i = 1; i < num_of_ints; i++)
     {
         if (nums[i] >= sizes[i])
         {
-            fprintf(stderr, "major breakdown in sendints num %u doesn't "
-                    "match size %u\n", nums[i], sizes[i]);
+            fprintf(stderr,
+                    "major breakdown in sendints num %u doesn't "
+                    "match size %u\n",
+                    nums[i], sizes[i]);
             exit(1);
         }
         /* use one step multiply */
@@ -250,12 +245,12 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
         {
             tmp            = bytes[bytecnt] * sizes[i] + tmp;
             bytes[bytecnt] = tmp & 0xff;
-            tmp          >>= 8;
+            tmp >>= 8;
         }
         while (tmp != 0)
         {
             bytes[bytecnt++] = tmp & 0xff;
-            tmp            >>= 8;
+            tmp >>= 8;
         }
         num_of_bytes = bytecnt;
     }
@@ -269,11 +264,11 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
     }
     else
     {
-        for (i = 0; i < num_of_bytes-1; i++)
+        for (i = 0; i < num_of_bytes - 1; i++)
         {
             sendbits(buf, 8, bytes[i]);
         }
-        sendbits(buf, num_of_bits- (num_of_bytes -1) * 8, bytes[i]);
+        sendbits(buf, num_of_bits - (num_of_bytes - 1) * 8, bytes[i]);
     }
 }
 
@@ -290,12 +285,12 @@ static void sendints(int buf[], const int num_of_ints, const int num_of_bits,
 static int receivebits(int buf[], int num_of_bits)
 {
 
-    int             cnt, num, lastbits;
-    unsigned int    lastbyte;
-    unsigned char * cbuf;
-    int             mask = (1 << num_of_bits) -1;
+    int            cnt, num, lastbits;
+    unsigned int   lastbyte;
+    unsigned char* cbuf;
+    int            mask = (1 << num_of_bits) - 1;
 
-    cbuf     = reinterpret_cast<unsigned char *>(buf) + 3 * sizeof(*buf);
+    cbuf     = reinterpret_cast<unsigned char*>(buf) + 3 * sizeof(*buf);
     cnt      = buf[0];
     lastbits = static_cast<unsigned int>(buf[1]);
     lastbyte = static_cast<unsigned int>(buf[2]);
@@ -303,8 +298,8 @@ static int receivebits(int buf[], int num_of_bits)
     num = 0;
     while (num_of_bits >= 8)
     {
-        lastbyte     = ( lastbyte << 8 ) | cbuf[cnt++];
-        num         |=  (lastbyte >> lastbits) << (num_of_bits - 8);
+        lastbyte = (lastbyte << 8) | cbuf[cnt++];
+        num |= (lastbyte >> lastbits) << (num_of_bits - 8);
         num_of_bits -= 8;
     }
     if (num_of_bits > 0)
@@ -312,12 +307,12 @@ static int receivebits(int buf[], int num_of_bits)
         if (lastbits < num_of_bits)
         {
             lastbits += 8;
-            lastbyte  = (lastbyte << 8) | cbuf[cnt++];
+            lastbyte = (lastbyte << 8) | cbuf[cnt++];
         }
         lastbits -= num_of_bits;
-        num      |= (lastbyte >> lastbits) & ((1 << num_of_bits) -1);
+        num |= (lastbyte >> lastbits) & ((1 << num_of_bits) - 1);
     }
-    num   &= mask;
+    num &= mask;
     buf[0] = cnt;
     buf[1] = lastbits;
     buf[2] = lastbyte;
@@ -335,27 +330,26 @@ static int receivebits(int buf[], int num_of_bits)
  |
  */
 
-static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
-                        const unsigned int sizes[], int nums[])
+static void receiveints(int buf[], const int num_of_ints, int num_of_bits, const unsigned int sizes[], int nums[])
 {
     int bytes[32];
     int i, j, num_of_bytes, p, num;
 
-    bytes[0]     = bytes[1] = bytes[2] = bytes[3] = 0;
-    num_of_bytes = 0;
+    bytes[0] = bytes[1] = bytes[2] = bytes[3] = 0;
+    num_of_bytes                              = 0;
     while (num_of_bits > 8)
     {
         bytes[num_of_bytes++] = receivebits(buf, 8);
-        num_of_bits          -= 8;
+        num_of_bits -= 8;
     }
     if (num_of_bits > 0)
     {
         bytes[num_of_bytes++] = receivebits(buf, num_of_bits);
     }
-    for (i = num_of_ints-1; i > 0; i--)
+    for (i = num_of_ints - 1; i > 0; i--)
     {
         num = 0;
-        for (j = num_of_bytes-1; j >= 0; j--)
+        for (j = num_of_bytes - 1; j >= 0; j--)
         {
             num      = (num << 8) | bytes[j];
             p        = num / sizes[i];
@@ -394,17 +388,17 @@ static void receiveints(int buf[], const int num_of_ints, int num_of_bits,
  |
  */
 
-int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
+int xdr3dfcoord(XDR* xdrs, float* fp, int* size, float* precision)
 {
-    int     *ip  = nullptr;
-    int     *buf = nullptr;
+    int*     ip  = nullptr;
+    int*     buf = nullptr;
     gmx_bool bRead;
 
     /* preallocate a small buffer and ip on the stack - if we need more
        we can always malloc(). This is faster for small values of size: */
-    unsigned     prealloc_size = 3*16;
-    int          prealloc_ip[3*16], prealloc_buf[3*20];
-    int          we_should_free = 0;
+    unsigned prealloc_size = 3 * 16;
+    int      prealloc_ip[3 * 16], prealloc_buf[3 * 20];
+    int      we_should_free = 0;
 
     int          minint[3], maxint[3], mindiff, *lip, diff;
     int          lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
@@ -412,8 +406,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
     unsigned     sizeint[3], sizesmall[3], bitsizeint[3], size3, *luip;
     int          flag, k;
     int          smallnum, smaller, larger, i, is_small, is_smaller, run, prevrun;
-    float       *lfp, lf;
-    int          tmp, *thiscoord,  prevcoord[3];
+    float *      lfp, lf;
+    int          tmp, *thiscoord, prevcoord[3];
     unsigned int tmpcoord[30];
 
     int          bufsize, lsize;
@@ -424,7 +418,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
     bRead         = (xdrs->x_op == XDR_DECODE);
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
-    prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
+    prevcoord[0] = prevcoord[1] = prevcoord[2] = 0;
 
     // The static analyzer warns about garbage values for thiscoord[] further
     // down. It might be thrown off by all the reinterpret_casts, but we might
@@ -448,8 +442,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
          */
         if (*size <= 9)
         {
-            return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
+            return (xdr_vector(xdrs, reinterpret_cast<char*>(fp), static_cast<unsigned int>(size3),
+                               static_cast<unsigned int>(sizeof(*fp)),
+                               reinterpret_cast<xdrproc_t>(xdr_float)));
         }
 
         if (xdr_float(xdrs, precision) == 0)
@@ -466,8 +461,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             we_should_free = 1;
             bufsize        = static_cast<int>(size3 * 1.2);
-            ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
-            buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
+            ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
+            buf            = reinterpret_cast<int*>(malloc(bufsize * sizeof(*buf)));
             if (ip == nullptr || buf == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
@@ -475,14 +470,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
         }
         /* buf[0-2] are special and do not contain actual data */
-        buf[0]    = buf[1] = buf[2] = 0;
+        buf[0] = buf[1] = buf[2] = 0;
         minint[0] = minint[1] = minint[2] = INT_MAX;
         maxint[0] = maxint[1] = maxint[2] = INT_MIN;
-        prevrun   = -1;
-        lfp       = fp;
-        lip       = ip;
-        mindiff   = INT_MAX;
-        oldlint1  = oldlint2 = oldlint3 = 0;
+        prevrun                           = -1;
+        lfp                               = fp;
+        lip                               = ip;
+        mindiff                           = INT_MAX;
+        oldlint1 = oldlint2 = oldlint3 = 0;
         while (lfp < fp + size3)
         {
             /* find nearest integer */
@@ -558,7 +553,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             *lip++ = lint3;
             lfp++;
-            diff = std::abs(oldlint1-lint1)+std::abs(oldlint2-lint2)+std::abs(oldlint3-lint3);
+            diff = std::abs(oldlint1 - lint1) + std::abs(oldlint2 - lint2) + std::abs(oldlint3 - lint3);
             if (diff < mindiff && lfp > fp + 3)
             {
                 mindiff = diff;
@@ -567,12 +562,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             oldlint2 = lint2;
             oldlint3 = lint3;
         }
-        if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
-             (xdr_int(xdrs, &(minint[1])) == 0) ||
-             (xdr_int(xdrs, &(minint[2])) == 0) ||
-             (xdr_int(xdrs, &(maxint[0])) == 0) ||
-             (xdr_int(xdrs, &(maxint[1])) == 0) ||
-             (xdr_int(xdrs, &(maxint[2])) == 0))
+        if ((xdr_int(xdrs, &(minint[0])) == 0) || (xdr_int(xdrs, &(minint[1])) == 0)
+            || (xdr_int(xdrs, &(minint[2])) == 0) || (xdr_int(xdrs, &(maxint[0])) == 0)
+            || (xdr_int(xdrs, &(maxint[1])) == 0) || (xdr_int(xdrs, &(maxint[2])) == 0))
         {
             if (we_should_free)
             {
@@ -582,21 +574,21 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        if (static_cast<float>(maxint[0]) - static_cast<float>(minint[0]) >= MAXABS ||
-            static_cast<float>(maxint[1]) - static_cast<float>(minint[1]) >= MAXABS ||
-            static_cast<float>(maxint[2]) - static_cast<float>(minint[2]) >= MAXABS)
+        if (static_cast<float>(maxint[0]) - static_cast<float>(minint[0]) >= MAXABS
+            || static_cast<float>(maxint[1]) - static_cast<float>(minint[1]) >= MAXABS
+            || static_cast<float>(maxint[2]) - static_cast<float>(minint[2]) >= MAXABS)
         {
             /* turning value in unsigned by subtracting minint
              * would cause overflow
              */
             errval = 0;
         }
-        sizeint[0] = maxint[0] - minint[0]+1;
-        sizeint[1] = maxint[1] - minint[1]+1;
-        sizeint[2] = maxint[2] - minint[2]+1;
+        sizeint[0] = maxint[0] - minint[0] + 1;
+        sizeint[1] = maxint[1] - minint[1] + 1;
+        sizeint[2] = maxint[2] - minint[2] + 1;
 
         /* check if one of the sizes is to big to be multiplied */
-        if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff)
+        if ((sizeint[0] | sizeint[1] | sizeint[2]) > 0xffffff)
         {
             bitsizeint[0] = sizeofint(sizeint[0]);
             bitsizeint[1] = sizeofint(sizeint[1]);
@@ -607,7 +599,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             bitsize = sizeofints(3, sizeint);
         }
-        luip     = reinterpret_cast<unsigned int *>(ip);
+        luip     = reinterpret_cast<unsigned int*>(ip);
         smallidx = FIRSTIDX;
         while (smallidx < LASTIDX && magicints[smallidx] < mindiff)
         {
@@ -625,19 +617,18 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
         maxidx       = std::min(LASTIDX, smallidx + 8);
         minidx       = maxidx - 8; /* often this equal smallidx */
-        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx - 1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
-        larger       = magicints[maxidx] / 2;
-        i            = 0;
+        larger                                     = magicints[maxidx] / 2;
+        i                                          = 0;
         while (i < *size)
         {
             is_small  = 0;
-            thiscoord = reinterpret_cast<int *>(luip) + i * 3;
-            if (smallidx < maxidx && i >= 1 &&
-                std::abs(thiscoord[0] - prevcoord[0]) < larger &&
-                std::abs(thiscoord[1] - prevcoord[1]) < larger &&
-                std::abs(thiscoord[2] - prevcoord[2]) < larger)
+            thiscoord = reinterpret_cast<int*>(luip) + i * 3;
+            if (smallidx < maxidx && i >= 1 && std::abs(thiscoord[0] - prevcoord[0]) < larger
+                && std::abs(thiscoord[1] - prevcoord[1]) < larger
+                && std::abs(thiscoord[2] - prevcoord[2]) < larger)
             {
                 is_smaller = 1;
             }
@@ -651,22 +642,24 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             if (i + 1 < *size)
             {
-                if (std::abs(thiscoord[0] - thiscoord[3]) < smallnum &&
-                    std::abs(thiscoord[1] - thiscoord[4]) < smallnum &&
-                    std::abs(thiscoord[2] - thiscoord[5]) < smallnum)
+                if (std::abs(thiscoord[0] - thiscoord[3]) < smallnum
+                    && std::abs(thiscoord[1] - thiscoord[4]) < smallnum
+                    && std::abs(thiscoord[2] - thiscoord[5]) < smallnum)
                 {
                     /* interchange first with second atom for better
                      * compression of water molecules
                      */
-                    tmp          = thiscoord[0]; thiscoord[0] = thiscoord[3];
+                    tmp          = thiscoord[0];
+                    thiscoord[0] = thiscoord[3];
                     thiscoord[3] = tmp;
-                    tmp          = thiscoord[1]; thiscoord[1] = thiscoord[4];
+                    tmp          = thiscoord[1];
+                    thiscoord[1] = thiscoord[4];
                     thiscoord[4] = tmp;
-                    tmp          = thiscoord[2]; thiscoord[2] = thiscoord[5];
+                    tmp          = thiscoord[2];
+                    thiscoord[2] = thiscoord[5];
                     thiscoord[5] = tmp;
                     is_small     = 1;
                 }
-
             }
             tmpcoord[0] = thiscoord[0] - minint[0];
             tmpcoord[1] = thiscoord[1] - minint[1];
@@ -692,12 +685,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 is_smaller = 0;
             }
-            while (is_small && run < 8*3)
+            while (is_small && run < 8 * 3)
             {
-                if (is_smaller == -1 && (
-                        SQR(thiscoord[0] - prevcoord[0]) +
-                        SQR(thiscoord[1] - prevcoord[1]) +
-                        SQR(thiscoord[2] - prevcoord[2]) >= smaller * smaller))
+                if (is_smaller == -1
+                    && (SQR(thiscoord[0] - prevcoord[0]) + SQR(thiscoord[1] - prevcoord[1])
+                                + SQR(thiscoord[2] - prevcoord[2])
+                        >= smaller * smaller))
                 {
                     is_smaller = 0;
                 }
@@ -713,10 +706,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 i++;
                 thiscoord = thiscoord + 3;
                 is_small  = 0;
-                if (i < *size &&
-                    abs(thiscoord[0] - prevcoord[0]) < smallnum &&
-                    abs(thiscoord[1] - prevcoord[1]) < smallnum &&
-                    abs(thiscoord[2] - prevcoord[2]) < smallnum)
+                if (i < *size && abs(thiscoord[0] - prevcoord[0]) < smallnum
+                    && abs(thiscoord[1] - prevcoord[1]) < smallnum
+                    && abs(thiscoord[2] - prevcoord[2]) < smallnum)
                 {
                     is_small = 1;
                 }
@@ -725,7 +717,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 prevrun = run;
                 sendbits(buf, 1, 1); /* flag the change in run-length */
-                sendbits(buf, 5, run+is_smaller+1);
+                sendbits(buf, 5, run + is_smaller + 1);
             }
             else
             {
@@ -741,7 +733,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 if (is_smaller < 0)
                 {
                     smallnum = smaller;
-                    smaller  = magicints[smallidx-1] / 2;
+                    smaller  = magicints[smallidx - 1] / 2;
                 }
                 else
                 {
@@ -767,14 +759,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         }
 
 
-        rc = errval * (xdr_opaque(xdrs, reinterpret_cast<char *>(&(buf[3])), static_cast<unsigned int>(buf[0])));
+        rc = errval
+             * (xdr_opaque(xdrs, reinterpret_cast<char*>(&(buf[3])), static_cast<unsigned int>(buf[0])));
         if (we_should_free)
         {
             free(ip);
             free(buf);
         }
         return rc;
-
     }
     else
     {
@@ -787,16 +779,19 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         }
         if (*size != 0 && lsize != *size)
         {
-            fprintf(stderr, "wrong number of coordinates in xdr3dfcoord; "
-                    "%d arg vs %d in file", *size, lsize);
+            fprintf(stderr,
+                    "wrong number of coordinates in xdr3dfcoord; "
+                    "%d arg vs %d in file",
+                    *size, lsize);
         }
         *size = lsize;
         size3 = *size * 3;
         if (*size <= 9)
         {
             *precision = -1;
-            return (xdr_vector(xdrs, reinterpret_cast<char *>(fp), static_cast<unsigned int>(size3),
-                               static_cast<unsigned int>(sizeof(*fp)), reinterpret_cast<xdrproc_t>(xdr_float)));
+            return (xdr_vector(xdrs, reinterpret_cast<char*>(fp), static_cast<unsigned int>(size3),
+                               static_cast<unsigned int>(sizeof(*fp)),
+                               reinterpret_cast<xdrproc_t>(xdr_float)));
         }
         if (xdr_float(xdrs, precision) == 0)
         {
@@ -812,8 +807,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         {
             we_should_free = 1;
             bufsize        = static_cast<int>(size3 * 1.2);
-            ip             = reinterpret_cast<int *>(malloc(size3 * sizeof(*ip)));
-            buf            = reinterpret_cast<int *>(malloc(bufsize * sizeof(*buf)));
+            ip             = reinterpret_cast<int*>(malloc(size3 * sizeof(*ip)));
+            buf            = reinterpret_cast<int*>(malloc(bufsize * sizeof(*buf)));
             if (ip == nullptr || buf == nullptr)
             {
                 fprintf(stderr, "malloc failed\n");
@@ -823,12 +818,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
         buf[0] = buf[1] = buf[2] = 0;
 
-        if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
-             (xdr_int(xdrs, &(minint[1])) == 0) ||
-             (xdr_int(xdrs, &(minint[2])) == 0) ||
-             (xdr_int(xdrs, &(maxint[0])) == 0) ||
-             (xdr_int(xdrs, &(maxint[1])) == 0) ||
-             (xdr_int(xdrs, &(maxint[2])) == 0))
+        if ((xdr_int(xdrs, &(minint[0])) == 0) || (xdr_int(xdrs, &(minint[1])) == 0)
+            || (xdr_int(xdrs, &(minint[2])) == 0) || (xdr_int(xdrs, &(maxint[0])) == 0)
+            || (xdr_int(xdrs, &(maxint[1])) == 0) || (xdr_int(xdrs, &(maxint[2])) == 0))
         {
             if (we_should_free)
             {
@@ -838,12 +830,12 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        sizeint[0] = maxint[0] - minint[0]+1;
-        sizeint[1] = maxint[1] - minint[1]+1;
-        sizeint[2] = maxint[2] - minint[2]+1;
+        sizeint[0] = maxint[0] - minint[0] + 1;
+        sizeint[1] = maxint[1] - minint[1] + 1;
+        sizeint[2] = maxint[2] - minint[2] + 1;
 
         /* check if one of the sizes is to big to be multiplied */
-        if ((sizeint[0] | sizeint[1] | sizeint[2] ) > 0xffffff)
+        if ((sizeint[0] | sizeint[1] | sizeint[2]) > 0xffffff)
         {
             bitsizeint[0] = sizeofint(sizeint[0]);
             bitsizeint[1] = sizeofint(sizeint[1]);
@@ -865,7 +857,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             return 0;
         }
 
-        smaller      = magicints[std::max(FIRSTIDX, smallidx-1)] / 2;
+        smaller      = magicints[std::max(FIRSTIDX, smallidx - 1)] / 2;
         smallnum     = magicints[smallidx] / 2;
         sizesmall[0] = sizesmall[1] = sizesmall[2] = magicints[smallidx];
 
@@ -882,7 +874,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         }
 
 
-        if (xdr_opaque(xdrs, reinterpret_cast<char *>(&(buf[3])), static_cast<unsigned int>(buf[0])) == 0)
+        if (xdr_opaque(xdrs, reinterpret_cast<char*>(&(buf[3])), static_cast<unsigned int>(buf[0])) == 0)
         {
             if (we_should_free)
             {
@@ -891,7 +883,6 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             }
             return 0;
         }
-
 
 
         buf[0] = buf[1] = buf[2] = 0;
@@ -903,7 +894,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
         lip           = ip;
         while (i < lsize)
         {
-            thiscoord = reinterpret_cast<int *>(lip) + i * 3;
+            thiscoord = reinterpret_cast<int*>(lip) + i * 3;
 
             if (bitsize == 0)
             {
@@ -932,7 +923,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
             {
                 run        = receivebits(buf, 5);
                 is_smaller = run % 3;
-                run       -= is_smaller;
+                run -= is_smaller;
                 is_smaller--;
             }
             if (run > 0)
@@ -950,11 +941,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                         /* interchange first with second atom for better
                          * compression of water molecules
                          */
-                        tmp          = thiscoord[0]; thiscoord[0] = prevcoord[0];
+                        tmp          = thiscoord[0];
+                        thiscoord[0] = prevcoord[0];
                         prevcoord[0] = tmp;
-                        tmp          = thiscoord[1]; thiscoord[1] = prevcoord[1];
+                        tmp          = thiscoord[1];
+                        thiscoord[1] = prevcoord[1];
                         prevcoord[1] = tmp;
-                        tmp          = thiscoord[2]; thiscoord[2] = prevcoord[2];
+                        tmp          = thiscoord[2];
+                        thiscoord[2] = prevcoord[2];
                         prevcoord[2] = tmp;
                         *lfp++       = prevcoord[0] * inv_precision;
                         *lfp++       = prevcoord[1] * inv_precision;
@@ -983,7 +977,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
                 smallnum = smaller;
                 if (smallidx > FIRSTIDX)
                 {
-                    smaller = magicints[smallidx - 1] /2;
+                    smaller = magicints[smallidx - 1] / 2;
                 }
                 else
                 {
@@ -1007,7 +1001,6 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 }
 
 
-
 /******************************************************************
 
    XTC files have a relatively simple structure.
@@ -1025,15 +1018,14 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision)
 
 /* Must match definition in xtcio.c */
 #ifndef XTC_MAGIC
-#define XTC_MAGIC 1995
+#    define XTC_MAGIC 1995
 #endif
 
 static const int header_size = 16;
 
 /* Check if we are at the header start.
    At the same time it will also read 1 int */
-static int xtc_at_header_start(FILE *fp, XDR *xdrs,
-                               int natoms, int * timestep, float * time)
+static int xtc_at_header_start(FILE* fp, XDR* xdrs, int natoms, int* timestep, float* time)
 {
     int       i_inp[3];
     float     f_inp[10];
@@ -1050,14 +1042,14 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     {
         if (!xdr_int(xdrs, &(i_inp[i])))
         {
-            gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET);
+            gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET);
             return -1;
         }
     }
     /* quick return */
     if (i_inp[0] != XTC_MAGIC)
     {
-        if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+        if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
         {
             return -1;
         }
@@ -1068,7 +1060,7 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     {
         if (!xdr_float(xdrs, &(f_inp[i])))
         {
-            gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET);
+            gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET);
             return -1;
         }
     }
@@ -1077,11 +1069,10 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
     /* This check makes use of the fact that the box matrix has 3 zeroes on the upper
        right triangle and that the first element must be nonzero unless the entire matrix is zero
      */
-    if (i_inp[1] == natoms &&
-        ((f_inp[1] != 0 && f_inp[6] == 0) ||
-         (f_inp[1] == 0 && f_inp[5] == 0 && f_inp[9] == 0)))
+    if (i_inp[1] == natoms
+        && ((f_inp[1] != 0 && f_inp[6] == 0) || (f_inp[1] == 0 && f_inp[5] == 0 && f_inp[9] == 0)))
     {
-        if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+        if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
         {
             return -1;
         }
@@ -1089,15 +1080,14 @@ static int xtc_at_header_start(FILE *fp, XDR *xdrs,
         *timestep = i_inp[2];
         return 1;
     }
-    if (gmx_fseek(fp, off+XDR_INT_SIZE, SEEK_SET))
+    if (gmx_fseek(fp, off + XDR_INT_SIZE, SEEK_SET))
     {
         return -1;
     }
     return 0;
 }
 
-static int
-xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
+static int xtc_get_next_frame_number(FILE* fp, XDR* xdrs, int natoms)
 {
     gmx_off_t off;
     int       step;
@@ -1133,8 +1123,7 @@ xtc_get_next_frame_number(FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
-                                     gmx_bool * bOK)
+static float xtc_get_next_frame_time(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
     gmx_off_t off;
     float     time;
@@ -1173,8 +1162,7 @@ static float xtc_get_next_frame_time(FILE *fp, XDR *xdrs, int natoms,
 }
 
 
-static float
-xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+static float xtc_get_current_frame_time(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
     gmx_off_t off;
     int       step;
@@ -1211,7 +1199,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         else if (ret == 0)
         {
             /*Go back.*/
-            if (gmx_fseek(fp, -2*XDR_INT_SIZE, SEEK_CUR))
+            if (gmx_fseek(fp, -2 * XDR_INT_SIZE, SEEK_CUR))
             {
                 return -1;
             }
@@ -1220,8 +1208,7 @@ xtc_get_current_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 }
 
 /* Currently not used, just for completeness */
-static int
-xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+static int xtc_get_current_frame_number(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
     gmx_off_t off;
     int       ret;
@@ -1255,12 +1242,11 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
                 return -1;
             }
             return -1;
-
         }
         else if (ret == 0)
         {
             /*Go back.*/
-            if (gmx_fseek(fp, -2*XDR_INT_SIZE, SEEK_CUR))
+            if (gmx_fseek(fp, -2 * XDR_INT_SIZE, SEEK_CUR))
             {
                 return -1;
             }
@@ -1269,8 +1255,7 @@ xtc_get_current_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 }
 
 
-
-static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
+static gmx_off_t xtc_get_next_frame_start(FILE* fp, XDR* xdrs, int natoms)
 {
     gmx_off_t res;
     int       ret;
@@ -1300,16 +1285,14 @@ static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-static
-float
-xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+static float xdr_xtc_estimate_dt(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
     float     res;
     float     tinit;
     gmx_off_t off;
 
     *bOK = false;
-    if ((off   = gmx_ftell(fp)) < 0)
+    if ((off = gmx_ftell(fp)) < 0)
     {
         return -1;
     }
@@ -1337,16 +1320,15 @@ xdr_xtc_estimate_dt(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     return res;
 }
 
-int
-xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
+int xdr_xtc_seek_frame(int frame, FILE* fp, XDR* xdrs, int natoms)
 {
     gmx_off_t low = 0;
     gmx_off_t high, pos;
 
 
     /* round to 4 bytes */
-    int        fr;
-    gmx_off_t  offset;
+    int       fr;
+    gmx_off_t offset;
     if (gmx_fseek(fp, 0, SEEK_END))
     {
         return -1;
@@ -1358,9 +1340,9 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
     }
 
     /* round to 4 bytes  */
-    high  /= XDR_INT_SIZE;
-    high  *= XDR_INT_SIZE;
-    offset = ((high/2)/XDR_INT_SIZE)*XDR_INT_SIZE;
+    high /= XDR_INT_SIZE;
+    high *= XDR_INT_SIZE;
+    offset = ((high / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp, offset, SEEK_SET))
     {
@@ -1374,7 +1356,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
         {
             return -1;
         }
-        if (fr != frame && llabs(low-high) > header_size)
+        if (fr != frame && llabs(low - high) > header_size)
         {
             if (fr < frame)
             {
@@ -1385,7 +1367,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
                 high = offset;
             }
             /* round to 4 bytes */
-            offset = (((high+low)/2)/4)*4;
+            offset = (((high + low) / 2) / 4) * 4;
 
             if (gmx_fseek(fp, offset, SEEK_SET))
             {
@@ -1422,8 +1404,7 @@ xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms)
 }
 
 
-
-int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeekForwardOnly)
+int xdr_xtc_seek_time(real time, FILE* fp, XDR* xdrs, int natoms, gmx_bool bSeekForwardOnly)
 {
     float     t;
     float     dt;
@@ -1434,7 +1415,7 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
 
     if (bSeekForwardOnly)
     {
-        low = gmx_ftell(fp)-header_size;
+        low = gmx_ftell(fp) - header_size;
     }
     if (gmx_fseek(fp, 0, SEEK_END))
     {
@@ -1446,9 +1427,9 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
         return -1;
     }
     /* round to int  */
-    high  /= XDR_INT_SIZE;
-    high  *= XDR_INT_SIZE;
-    offset = (((high-low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
+    high /= XDR_INT_SIZE;
+    high *= XDR_INT_SIZE;
+    offset = (((high - low) / 2) / XDR_INT_SIZE) * XDR_INT_SIZE;
 
     if (gmx_fseek(fp, offset, SEEK_SET))
     {
@@ -1457,8 +1438,8 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
 
 
     /*
-     * No need to call xdr_xtc_estimate_dt here - since xdr_xtc_estimate_dt is called first thing in the loop
-       dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
+     * No need to call xdr_xtc_estimate_dt here - since xdr_xtc_estimate_dt is called first thing in
+     the loop dt = xdr_xtc_estimate_dt(fp, xdrs, natoms, &bOK);
 
        if (!bOK)
        {
@@ -1504,12 +1485,12 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
 
         /* If we are before the target time and the time step is positive or 0, or we have
            after the target time and the time step is negative, or the difference between
-           the current time and the target time is bigger than dt and above all the distance between high
-           and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
-           if we reached the solution */
-        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) ||
-             ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0)) &&
-            (llabs(low - high) > header_size))
+           the current time and the target time is bigger than dt and above all the distance between
+           high and low is bigger than 1 frame, then do another step of binary search. Otherwise
+           stop and check if we reached the solution */
+        if ((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1))
+             || ((t - time) >= dt && dt_sign >= 0) || ((time - t) >= -dt && dt_sign < 0))
+            && (llabs(low - high) > header_size))
         {
             if (dt >= 0 && dt_sign != -1)
             {
@@ -1585,11 +1566,10 @@ int xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms, gmx_bool bSeek
     return 0;
 }
 
-float
-xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+float xdr_xtc_get_last_frame_time(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
-    float      time;
-    gmx_off_t  off;
+    float     time;
+    gmx_off_t off;
     *bOK = true;
     off  = gmx_ftell(fp);
     if (off < 0)
@@ -1598,7 +1578,7 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
         return -1;
     }
 
-    if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END) != 0)
+    if (gmx_fseek(fp, -3 * XDR_INT_SIZE, SEEK_END) != 0)
     {
         *bOK = false;
         return -1;
@@ -1619,11 +1599,10 @@ xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
 }
 
 
-int
-xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
+int xdr_xtc_get_last_frame_number(FILE* fp, XDR* xdrs, int natoms, gmx_bool* bOK)
 {
-    int        frame;
-    gmx_off_t  off;
+    int       frame;
+    gmx_off_t off;
     *bOK = true;
 
     if ((off = gmx_ftell(fp)) < 0)
@@ -1633,7 +1612,7 @@ xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, gmx_bool * bOK)
     }
 
 
-    if (gmx_fseek(fp, -3*XDR_INT_SIZE, SEEK_END))
+    if (gmx_fseek(fp, -3 * XDR_INT_SIZE, SEEK_END))
     {
         *bOK = false;
         return -1;

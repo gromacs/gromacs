@@ -48,7 +48,7 @@
 
 #include <cstdlib>
 
-#include "gromacs/taskassignment/taskassignment.h"
+#include <vector>
 
 enum class PmeRunMode;
 
@@ -56,6 +56,10 @@ namespace gmx
 {
 
 class MDLogger;
+struct GpuTaskMapping;
+template<typename T>
+class ArrayRef;
+using GpuTaskAssignment = std::vector<GpuTaskMapping>;
 
 /*! \brief Log a report on how GPUs are being used on
  * the ranks of the physical node of rank 0 of the simulation.
@@ -67,20 +71,19 @@ class MDLogger;
  * \param[in]  gpuTaskAssignmentOnRanksOfThisNode  The selected GPU IDs.
  * \param[in]  numGpuTasksOnThisNode               The number of GPU tasks on this node.
  * \param[in]  numPpRanks                          Number of PP ranks on this node
- * \param[in]  bPrintHostName                      Print the hostname in the usage information
- * \param[in]  useGpuForBonded                     Whether GPU PP tasks will do bonded work on the GPU
- * \param[in]  pmeRunMode                          Describes the execution of PME tasks
+ * \param[in]  printHostName                       Print the hostname in the usage information
+ * \param[in]  useGpuForBonded                     Whether GPU PP tasks will do bonded work on the
+ * GPU \param[in]  pmeRunMode                          Describes the execution of PME tasks
  *
  * \throws     std::bad_alloc if out of memory */
-void
-reportGpuUsage(const MDLogger                &mdlog,
-               const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
-               size_t                         numGpuTasksOnThisNode,
-               size_t                         numPpRanks,
-               bool                           bPrintHostName,
-               bool                           useGpuForBonded,
-               PmeRunMode                     pmeRunMode);
+void reportGpuUsage(const MDLogger&                   mdlog,
+                    ArrayRef<const GpuTaskAssignment> gpuTaskAssignmentOnRanksOfThisNode,
+                    size_t                            numGpuTasksOnThisNode,
+                    size_t                            numPpRanks,
+                    bool                              printHostName,
+                    bool                              useGpuForBonded,
+                    PmeRunMode                        pmeRunMode);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

@@ -40,10 +40,8 @@
 #include "gmxapi/session.h"
 
 #include <memory>
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/mdlib/sighandler.h"
-#include "gromacs/mdrun/logging.h"
-#include "gromacs/mdrun/multisim.h"
+#include "gromacs/mdrunutility/logging.h"
 #include "gromacs/restraint/restraintpotential.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/basenetwork.h"
@@ -65,64 +63,55 @@ namespace gmxapi
 /*!
  * \brief Provide RAII management of communications resource state.
  *
- * To acquire an MpiContextManager is to have assurance that the GROMACS MPI
+ * To acquire an MpiContextManager is to have assurance that any external MPI
  * environment is ready to use. When the MpiContextManager is released or
  * goes out of scope, the destructor finalizes the resources.
  *
- * \todo Figure out how to manage MPI versus tMPI.
- * \todo gmx::init should take a subcommunicator rather than use MPI_COMM_WORLD
+ * Note that thread-MPI chooses the number of ranks and constructs its
+ * MPI communicator internally, so does not and is unlikely to ever
+ * participate here.
+ *
  * \todo There is no resource for logging or reporting errors during initialization
- * \todo Clarify relationship with gmx::SimulationContext.
+ * \todo Remove this class by managing the MPI context with mpi4py and so
+ *       configuring the SimulationContext externally
  *
  * \ingroup gmxapi
  */
 class MpiContextManager
 {
-    public:
-        MpiContextManager()
-        {
-            gmx::init(nullptr, nullptr);
-#ifdef GMX_MPI
-#if GMX_MPI
-#if GMX_THREAD_MPI
-            // With thread-MPI, gmx_mpi_initialized() is false until after
-            // spawnThreads in the middle of gmx::Mdrunner::mdrunner(), but
-            // without thread-MPI, MPI is initialized by the time gmx::init()
-            // returns. In other words, this is not an effective context manager
-            // for thread-MPI, but it should be effective for MPI.
-            // \todo Distinguish scope / lifetime for comm resources from implementation details.
-            // \todo Normalize scope / lifetime of comm resources.
-#else
-            GMX_ASSERT(gmx_mpi_initialized(), "MPI should be initialized before reaching this point.");
-#endif // GMX_THREAD_MPI
-#endif // GMX_MPI
-#endif // defined(GMX_MPI)
-        };
+public:
+    MpiContextManager()
+    {
+        gmx::init(nullptr, nullptr);
+        GMX_RELEASE_ASSERT(!GMX_LIB_MPI || gmx_mpi_initialized(),
+                           "MPI should be initialized before reaching this point.");
+    };
 
-        ~MpiContextManager()
-        {
-            // This is safe to call. It is a no-op if thread-MPI, and if the
-            // constructor completed then MPI is initialized.
-            gmx::finalize();
-        }
+    ~MpiContextManager()
+    {
+        // This is always safe to call. It is a no-op if
+        // thread-MPI, and if the constructor completed then the
+        // MPI library is initialized with reference counting.
+        gmx::finalize();
+    }
 
-        /*!
-         * \brief Exclusive ownership of a scoped context means copying is impossible.
-         *
-         * \{
-         */
-        MpiContextManager(const MpiContextManager &)            = delete;
-        MpiContextManager &operator=(const MpiContextManager &) = delete;
-        //! \}
+    /*!
+     * \brief Exclusive ownership of a scoped context means copying is impossible.
+     *
+     * \{
+     */
+    MpiContextManager(const MpiContextManager&) = delete;
+    MpiContextManager& operator=(const MpiContextManager&) = delete;
+    //! \}
 
-        /*!
-         * \brief Move semantics are trivial.
-         *
-         * \{
-         */
-        MpiContextManager(MpiContextManager &&) noexcept            = default;
-        MpiContextManager &operator=(MpiContextManager &&) noexcept = default;
-        //! \}
+    /*!
+     * \brief Move semantics are trivial.
+     *
+     * \{
+     */
+    MpiContextManager(MpiContextManager&&) noexcept = default;
+    MpiContextManager& operator=(MpiContextManager&&) noexcept = default;
+    //! \}
 };
 
 SignalManager::SignalManager(gmx::StopHandlerBuilder* stopHandlerBuilder) :
@@ -140,9 +129,7 @@ SignalManager::SignalManager(gmx::StopHandlerBuilder* stopHandlerBuilder) :
      * step and not require any synchronization.
      */
     auto currentState     = state_;
-    auto stopSignalIssuer = [currentState](){
-            return *currentState;
-        };
+    auto stopSignalIssuer = [currentState]() { return *currentState; };
     stopHandlerBuilder->registerStopCondition(stopSignalIssuer);
 }
 
@@ -185,42 +172,33 @@ Status SessionImpl::run() noexcept
     return successful;
 }
 
-std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl>  context,
-                                                 gmx::MdrunnerBuilder        &&runnerBuilder,
-                                                 const gmx::SimulationContext &simulationContext,
-                                                 gmx::LogFilePtr               logFilehandle,
-                                                 gmx_multisim_t              * multiSim)
+std::unique_ptr<SessionImpl> SessionImpl::create(std::shared_ptr<ContextImpl> context,
+                                                 gmx::MdrunnerBuilder&&       runnerBuilder,
+                                                 gmx::SimulationContext&&     simulationContext,
+                                                 gmx::LogFilePtr              logFilehandle)
 {
     // We should be able to get a communicator (or subcommunicator) through the
     // Context.
-    return std::make_unique<SessionImpl>(std::move(context),
-                                         std::move(runnerBuilder),
-                                         simulationContext,
-                                         std::move(logFilehandle),
-                                         multiSim);
+    return std::make_unique<SessionImpl>(std::move(context), std::move(runnerBuilder),
+                                         std::move(simulationContext), std::move(logFilehandle));
 }
 
-SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
-                         gmx::MdrunnerBuilder        &&runnerBuilder,
-                         const gmx::SimulationContext &simulationContext,
-                         gmx::LogFilePtr               fplog,
-                         gmx_multisim_t              * multiSim) :
+SessionImpl::SessionImpl(std::shared_ptr<ContextImpl> context,
+                         gmx::MdrunnerBuilder&&       runnerBuilder,
+                         gmx::SimulationContext&&     simulationContext,
+                         gmx::LogFilePtr              fplog) :
     context_(std::move(context)),
     mpiContextManager_(std::make_unique<MpiContextManager>()),
-    simulationContext_(simulationContext),
-    logFilePtr_(std::move(fplog)),
-    multiSim_(multiSim)
+    simulationContext_(std::move(simulationContext)),
+    logFilePtr_(std::move(fplog))
 {
     GMX_ASSERT(context_, "SessionImpl invariant implies valid ContextImpl handle.");
     GMX_ASSERT(mpiContextManager_, "SessionImpl invariant implies valid MpiContextManager guard.");
-    GMX_ASSERT(simulationContext_.communicationRecord_, "SessionImpl invariant implies valid commrec.");
-    GMX_UNUSED_VALUE(multiSim_);
-    GMX_UNUSED_VALUE(simulationContext_);
 
     // \todo Session objects can have logic specialized for the runtime environment.
 
     auto stopHandlerBuilder = std::make_unique<gmx::StopHandlerBuilder>();
-    signalManager_ = std::make_unique<SignalManager>(stopHandlerBuilder.get());
+    signalManager_          = std::make_unique<SignalManager>(stopHandlerBuilder.get());
     GMX_ASSERT(signalManager_, "SessionImpl invariant includes a valid SignalManager.");
 
     runnerBuilder.addStopHandlerBuilder(std::move(stopHandlerBuilder));
@@ -232,17 +210,13 @@ SessionImpl::SessionImpl(std::shared_ptr<ContextImpl>  context,
     gmx_reset_stop_condition();
 }
 
-std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
-                                       gmx::MdrunnerBuilder        &&runnerBuilder,
-                                       const gmx::SimulationContext &simulationContext,
-                                       gmx::LogFilePtr               logFilehandle,
-                                       gmx_multisim_t              * multiSim)
+std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl> context,
+                                       gmx::MdrunnerBuilder&&       runnerBuilder,
+                                       gmx::SimulationContext&&     simulationContext,
+                                       gmx::LogFilePtr              logFilehandle)
 {
-    auto newSession = SessionImpl::create(std::move(context),
-                                          std::move(runnerBuilder),
-                                          simulationContext,
-                                          std::move(logFilehandle),
-                                          multiSim);
+    auto newSession      = SessionImpl::create(std::move(context), std::move(runnerBuilder),
+                                          std::move(simulationContext), std::move(logFilehandle));
     auto launchedSession = std::make_shared<Session>(std::move(newSession));
     return launchedSession;
 }
@@ -250,13 +224,11 @@ std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
 Status SessionImpl::addRestraint(std::shared_ptr<gmxapi::MDModule> module)
 {
     GMX_ASSERT(runner_, "SessionImpl invariant implies valid Mdrunner handle.");
-    Status status {
-        false
-    };
+    Status status{ false };
 
     if (module != nullptr)
     {
-        const auto &name = module->name();
+        const auto& name = module->name();
         if (restraints_.find(name) == restraints_.end())
         {
             auto restraint = module->getRestraint();
@@ -280,7 +252,7 @@ Status SessionImpl::addRestraint(std::shared_ptr<gmxapi::MDModule> module)
 }
 
 
-SignalManager *SessionImpl::getSignalManager()
+SignalManager* SessionImpl::getSignalManager()
 {
     SignalManager* ptr = nullptr;
     if (isOpen())
@@ -290,9 +262,9 @@ SignalManager *SessionImpl::getSignalManager()
     return ptr;
 }
 
-gmx::Mdrunner *SessionImpl::getRunner()
+gmx::Mdrunner* SessionImpl::getRunner()
 {
-    gmx::Mdrunner * runner = nullptr;
+    gmx::Mdrunner* runner = nullptr;
     if (runner_)
     {
         runner = runner_.get();
@@ -300,14 +272,14 @@ gmx::Mdrunner *SessionImpl::getRunner()
     return runner;
 }
 
-gmxapi::SessionResources *SessionImpl::getResources(const std::string &name) const noexcept
+gmxapi::SessionResources* SessionImpl::getResources(const std::string& name) const noexcept
 {
-    gmxapi::SessionResources * resources = nullptr;
+    gmxapi::SessionResources* resources = nullptr;
     try
     {
         resources = resources_.at(name).get();
     }
-    catch (const std::out_of_range &e)
+    catch (const std::out_of_range& e)
     {
         // named operation does not have any resources registered.
     }
@@ -315,13 +287,13 @@ gmxapi::SessionResources *SessionImpl::getResources(const std::string &name) con
     return resources;
 }
 
-gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept
+gmxapi::SessionResources* SessionImpl::createResources(std::shared_ptr<gmxapi::MDModule> module) noexcept
 {
     // check if resources already exist for this module
     // If not, create resources and return handle.
     // Return nullptr for any failure.
-    gmxapi::SessionResources * resources = nullptr;
-    const auto                &name      = module->name();
+    gmxapi::SessionResources* resources = nullptr;
+    const auto&               name      = module->name();
     if (resources_.find(name) == resources_.end())
     {
         auto resourcesInstance = std::make_unique<SessionResources>(this, name);
@@ -338,8 +310,7 @@ gmxapi::SessionResources *SessionImpl::createResources(std::shared_ptr<gmxapi::M
                 restraint->bindSession(resources);
             }
         }
-    }
-    ;
+    };
     return resources;
 }
 
@@ -383,7 +354,7 @@ Session::~Session()
         {
             impl_->close();
         }
-        catch (const std::exception &)
+        catch (const std::exception&)
         {
             // \todo find some exception-safe things to do with this via the Context interface.
         }
@@ -397,8 +368,7 @@ bool Session::isOpen() const noexcept
     return result;
 }
 
-Status addSessionRestraint(Session                         * session,
-                           std::shared_ptr<gmxapi::MDModule> restraint)
+Status addSessionRestraint(Session* session, std::shared_ptr<gmxapi::MDModule> restraint)
 {
     auto status = gmxapi::Status(false);
 
@@ -408,7 +378,8 @@ Status addSessionRestraint(Session                         * session,
         // so the public API does not need to offer raw pointers.
         auto sessionImpl = session->getRaw();
 
-        GMX_RELEASE_ASSERT(sessionImpl, "Session invariant implies valid implementation object handle.");
+        GMX_RELEASE_ASSERT(sessionImpl,
+                           "Session invariant implies valid implementation object handle.");
         // GMX_ASSERT alone is not strong enough to convince linters not to warn of possible nullptr.
         if (sessionImpl)
         {
@@ -419,13 +390,13 @@ Status addSessionRestraint(Session                         * session,
 }
 
 //! \cond internal
-SessionImpl *Session::getRaw() const noexcept
+SessionImpl* Session::getRaw() const noexcept
 {
     return impl_.get();
 }
 //! \endcond
 
-std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) noexcept
+std::shared_ptr<Session> launchSession(Context* context, const Workflow& work) noexcept
 {
     auto session = context->launch(work);
     return session;
@@ -433,8 +404,7 @@ std::shared_ptr<Session> launchSession(Context* context, const Workflow &work) n
 
 SessionImpl::~SessionImpl() = default;
 
-SessionResources::SessionResources(gmxapi::SessionImpl *session,
-                                   std::string          name) :
+SessionResources::SessionResources(gmxapi::SessionImpl* session, std::string name) :
     sessionImpl_(session),
     name_(std::move(name))
 {
@@ -442,7 +412,7 @@ SessionResources::SessionResources(gmxapi::SessionImpl *session,
 
 SessionResources::~SessionResources() = default;
 
-const std::string SessionResources::name() const
+std::string SessionResources::name() const
 {
     return name_;
 }
@@ -459,7 +429,8 @@ Signal SessionResources::getMdrunnerSignal(md::signals signal)
     auto signalManager = sessionImpl_->getSignalManager();
     if (signalManager == nullptr)
     {
-        throw gmxapi::ProtocolError("Client requested access to a signaller that is not available.");
+        throw gmxapi::ProtocolError(
+                "Client requested access to a signaller that is not available.");
     }
     auto functor = signalManager->getSignal(name_, signal);
 

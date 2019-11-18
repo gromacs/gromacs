@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,19 +61,16 @@ typedef gmx::test::CommandLineModuleManagerTestBase CommandLineModuleManagerTest
 
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {
-    const char *const cmdline[] = {
-        "test", "module", "-flag", "yes"
-    };
+    const char* const cmdline[] = { "test", "module", "-flag", "yes" };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule& mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    EXPECT_CALL(mod1, run(_, _)).With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -81,12 +78,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 {
-    const char *const cmdline[] = {
-        "test", "help", "module"
-    };
+    const char* const cmdline[] = { "test", "help", "module" };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule& mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
@@ -98,12 +93,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
 {
-    const char *const cmdline[] = {
-        "test", "-quiet", "help", "module"
-    };
+    const char* const cmdline[] = { "test", "-quiet", "help", "module" };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule& mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
@@ -115,12 +108,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpAfterQuiet)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 {
-    const char *const cmdline[] = {
-        "test", "module", "-h"
-    };
+    const char* const cmdline[] = { "test", "module", "-h" };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("module", "First module");
+    MockModule& mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
@@ -132,12 +123,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
 {
-    const char *const cmdline[] = {
-        "g_module", "-h"
-    };
+    const char* const cmdline[] = { "g_module", "-h" };
     CommandLine       args(cmdline);
     initManager(args, "g_module");
-    MockModule        mod(nullptr, nullptr);
+    MockModule mod(nullptr, nullptr);
     manager().setSingleModule(&mod);
     using ::testing::_;
     EXPECT_CALL(mod, writeHelp(_));
@@ -149,19 +138,16 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
 
 TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
 {
-    const char *const cmdline[] = {
-        "test", "test", "-flag", "yes"
-    };
+    const char* const cmdline[] = { "test", "test", "-flag", "yes" };
     CommandLine       args(cmdline);
     initManager(args, "test");
-    MockModule       &mod1 = addModule("test", "Test module");
+    MockModule& mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
     using ::testing::ElementsAreArray;
     EXPECT_CALL(mod1, init(_));
-    EXPECT_CALL(mod1, run(_, _))
-        .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
+    EXPECT_CALL(mod1, run(_, _)).With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);

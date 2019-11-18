@@ -66,23 +66,28 @@ class t_state;
  * on the master rank (which is the only rank, since orientation
  * restraints can not run in parallel).
  */
-void init_orires(FILE                 *fplog,
-                 const gmx_mtop_t     *mtop,
-                 const t_inputrec     *ir,
-                 const t_commrec      *cr,
-                 const gmx_multisim_t *ms,
-                 t_state              *globalState,
-                 t_oriresdata         *od);
+void init_orires(FILE*                 fplog,
+                 const gmx_mtop_t*     mtop,
+                 const t_inputrec*     ir,
+                 const t_commrec*      cr,
+                 const gmx_multisim_t* ms,
+                 t_state*              globalState,
+                 t_oriresdata*         od);
 
 /*! \brief
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  *
  * Returns the weighted RMS deviation of the orientation restraints.
  */
-real calc_orires_dev(const gmx_multisim_t *ms,
-                     int nfa, const t_iatom fa[], const t_iparams ip[],
-                     const t_mdatoms *md, const rvec x[],
-                     const t_pbc *pbc, t_fcdata *fcd, history_t *hist);
+real calc_orires_dev(const gmx_multisim_t* ms,
+                     int                   nfa,
+                     const t_iatom         fa[],
+                     const t_iparams       ip[],
+                     const t_mdatoms*      md,
+                     const rvec            x[],
+                     const t_pbc*          pbc,
+                     t_fcdata*             fcd,
+                     history_t*            hist);
 
 /*! \brief
  * Diagonalizes the order tensor(s) of the orienation restraints.
@@ -90,20 +95,27 @@ real calc_orires_dev(const gmx_multisim_t *ms,
  * For each experiment eig containts first 3 eigenvalues and then
  * the 3 eigenvectors. The eigenvalues are ordered on magnitude.
  */
-void diagonalize_orires_tensors(t_oriresdata *od);
+void diagonalize_orires_tensors(t_oriresdata* od);
 
 //! Prints order parameter, eigenvalues and eigenvectors to the log file.
-void print_orires_log(FILE *log, t_oriresdata *od);
+void print_orires_log(FILE* log, t_oriresdata* od);
 
 //! Calculates the orientation restraint forces.
-real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
-            const rvec x[], rvec4 f[], rvec fshift[],
-            const t_pbc *pbc, const t_graph *g,
-            real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index);
+real orires(int              nfa,
+            const t_iatom    forceatoms[],
+            const t_iparams  ip[],
+            const rvec       x[],
+            rvec4            f[],
+            rvec             fshift[],
+            const t_pbc*     pbc,
+            const t_graph*   g,
+            real             lambda,
+            real*            dvdlambda,
+            const t_mdatoms* md,
+            t_fcdata*        fcd,
+            int*             global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_orires_dev.
-void update_orires_history(const t_fcdata *fcd, history_t *hist);
+void update_orires_history(const t_fcdata* fcd, history_t* hist);
 
 #endif

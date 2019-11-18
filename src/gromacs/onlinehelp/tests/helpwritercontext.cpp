@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,138 +62,97 @@ namespace
 
 class HelpWriterContextTest : public gmx::test::StringTestBase
 {
-    public:
-        void testFormatting(const std::string     &text,
-                            gmx::HelpOutputFormat  format,
-                            const char            *id)
+public:
+    void testFormatting(const std::string& text, gmx::HelpOutputFormat format, const char* id)
+    {
+        gmx::HelpWriterContext context(nullptr, format);
+        std::string            result = context.substituteMarkupAndWrapToString(settings_, text);
+        if (id == nullptr)
         {
-            gmx::HelpWriterContext context(nullptr, format);
-            std::string            result
-                = context.substituteMarkupAndWrapToString(settings_, text);
-            if (id == nullptr)
+            switch (format)
             {
-                switch (format)
-                {
-                    case gmx::eHelpOutputFormat_Console:
-                        id = "Console";
-                        break;
-                    case gmx::eHelpOutputFormat_Rst:
-                        id = "reStructuredText";
-                        break;
-                    default:
-                        GMX_RELEASE_ASSERT(false, "Help output format testing not implemented");
-                }
+                case gmx::eHelpOutputFormat_Console: id = "Console"; break;
+                case gmx::eHelpOutputFormat_Rst: id = "reStructuredText"; break;
+                default: GMX_RELEASE_ASSERT(false, "Help output format testing not implemented");
             }
-            checkText(result, id);
         }
-        void testFormatting(const gmx::ArrayRef<const char *const> &text)
-        {
-            std::string testText = gmx::joinStrings(text, "\n");
-            testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
-            testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
-        }
+        checkText(result, id);
+    }
+    void testFormatting(const gmx::ArrayRef<const char* const>& text)
+    {
+        std::string testText = gmx::joinStrings(text, "\n");
+        testFormatting(testText, gmx::eHelpOutputFormat_Console, nullptr);
+        testFormatting(testText, gmx::eHelpOutputFormat_Rst, nullptr);
+    }
 
-        gmx::TextLineWrapperSettings settings_;
+    gmx::TextLineWrapperSettings settings_;
 };
 
 TEST_F(HelpWriterContextTest, FormatsParagraphs)
 {
-    const char *const text[] = {
-        "A quick",
-        "brown fox",
-        "jumps over a lazy dog.[PAR]",
-        "A quick brown fox",
-        "jumps over",
-        "a lazy dog."
-    };
+    const char* const text[] = { "A quick",           "brown fox",  "jumps over a lazy dog.[PAR]",
+                                 "A quick brown fox", "jumps over", "a lazy dog." };
     settings_.setLineLength(13);
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsRstStyleParagraphs)
 {
-    const char *const text[] = {
-        "A quick",
-        "brown fox",
-        "jumps over a lazy dog.",
-        "",
-        "A quick brown fox",
-        "jumps over",
-        "a lazy dog."
-    };
+    const char* const text[] = { "A quick",    "brown fox",         "jumps over a lazy dog.",
+                                 "",           "A quick brown fox", "jumps over",
+                                 "a lazy dog." };
     settings_.setLineLength(13);
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, CleansUpExtraWhitespace)
 {
-    const char *const text[] = {
-        "",
-        "A quick ",
-        "brown fox ",
-        "jumps over a lazy dog.",
-        "[PAR]",
-        "A quick brown fox",
-        "jumps over",
-        "a lazy dog.[PAR]"
-    };
+    const char* const text[] = { "",           "A quick ",
+                                 "brown fox ", "jumps over a lazy dog.",
+                                 "[PAR]",      "A quick brown fox",
+                                 "jumps over", "a lazy dog.[PAR]" };
     settings_.setLineLength(13);
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsLiteralText)
 {
-    const char *const text[] = {
-        "Sample paragraph::",
-        "",
-        "    literal block",
-        "    another line",
-        "",
-        "Normal paragraph",
-        "with wrapping"
-    };
+    const char* const text[] = { "Sample paragraph::", "", "    literal block",
+                                 "    another line",   "", "Normal paragraph",
+                                 "with wrapping" };
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsLiteralTextAtBeginning)
 {
-    const char *const text[] = {
-        "::",
-        "",
-        "    literal block",
-        "    another line",
-        "",
-        "Normal paragraph"
+    const char* const text[] = {
+        "::", "", "    literal block", "    another line", "", "Normal paragraph"
     };
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsLiteralTextWithIndentation)
 {
-    const char *const text[] = {
-        "Sample paragraph::",
-        "",
-        "    literal block",
-        "      another indented line",
-        "",
-        "Normal paragraph",
-        "with wrapping"
-    };
+    const char* const text[] = { "Sample paragraph::",
+                                 "",
+                                 "    literal block",
+                                 "      another indented line",
+                                 "",
+                                 "Normal paragraph",
+                                 "with wrapping" };
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsBulletList)
 {
-    const char *const text[] = {
-        "Sample list:",
-        "",
-        "* first item",
-        "* second item that",
-        "  spans multiple lines",
-        "* third item that has a single long line",
-        "",
-        "Normal paragraph"
-    };
+    const char* const text[] = { "Sample list:",
+                                 "",
+                                 "* first item",
+                                 "* second item that",
+                                 "  spans multiple lines",
+                                 "* third item that has a single long line",
+                                 "",
+                                 "Normal paragraph" };
     // Wrapping to rst with a fixed line length does not currently work
     // correctly, but it is not used, either.
     settings_.setLineLength(15);
@@ -202,19 +161,17 @@ TEST_F(HelpWriterContextTest, FormatsBulletList)
 
 TEST_F(HelpWriterContextTest, FormatsEnumeratedList)
 {
-    const char *const text[] = {
-        "Sample list:",
-        "",
-        "1. first item",
-        "2. second item that",
-        "   spans multiple lines",
-        "3. third item that has a single long line",
-        "",
-        "9.  Item with extra indentation",
-        "10. Double digit item",
-        "",
-        "Normal paragraph"
-    };
+    const char* const text[] = { "Sample list:",
+                                 "",
+                                 "1. first item",
+                                 "2. second item that",
+                                 "   spans multiple lines",
+                                 "3. third item that has a single long line",
+                                 "",
+                                 "9.  Item with extra indentation",
+                                 "10. Double digit item",
+                                 "",
+                                 "Normal paragraph" };
     // Wrapping to rst with a fixed line length does not currently work
     // correctly, but it is not used, either.
     settings_.setLineLength(15);
@@ -223,49 +180,38 @@ TEST_F(HelpWriterContextTest, FormatsEnumeratedList)
 
 TEST_F(HelpWriterContextTest, FormatsSimpleTable)
 {
-    const char *const text[] = {
-        "Simple table:",
-        "",
-        "============  =============",
-        "First column  Second header",
-        "============  =============",
-        "text          text",
-        "============  =============",
-        "",
-        "Normal paragraph",
-        "again."
-    };
+    const char* const text[] = { "Simple table:",
+                                 "",
+                                 "============  =============",
+                                 "First column  Second header",
+                                 "============  =============",
+                                 "text          text",
+                                 "============  =============",
+                                 "",
+                                 "Normal paragraph",
+                                 "again." };
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsGridTable)
 {
-    const char *const text[] = {
-        "Grid table:",
-        "",
-        "+--------------+---------------+",
-        "| First column | Second header |",
-        "+--------------+---------------+",
-        "| text         | text          |",
-        "+--------------+---------------+",
-        "",
-        "Normal paragraph",
-        "again."
-    };
+    const char* const text[] = { "Grid table:",
+                                 "",
+                                 "+--------------+---------------+",
+                                 "| First column | Second header |",
+                                 "+--------------+---------------+",
+                                 "| text         | text          |",
+                                 "+--------------+---------------+",
+                                 "",
+                                 "Normal paragraph",
+                                 "again." };
     testFormatting(text);
 }
 
 TEST_F(HelpWriterContextTest, FormatsTitles)
 {
-    const char *const text[] = {
-        "Title",
-        "=====",
-        "Some text without spacing",
-        "",
-        "Subtitle",
-        "++++++++",
-        "",
-        "More text",
+    const char* const text[] = {
+        "Title", "=====", "Some text without spacing", "", "Subtitle", "++++++++", "", "More text",
     };
     testFormatting(text);
 }

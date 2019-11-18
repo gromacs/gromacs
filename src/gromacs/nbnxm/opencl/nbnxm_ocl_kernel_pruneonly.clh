@@ -57,52 +57,52 @@
 
 __attribute__((reqd_work_group_size(CL_SIZE, CL_SIZE, NTHREAD_Z)))
 #ifdef HAVE_FRESH_LIST
-__kernel void nbnxn_kernel_prune_opencl
+__kernel void
+nbnxn_kernel_prune_opencl
 #else
-__kernel void nbnxn_kernel_prune_rolling_opencl
+__kernel void
+nbnxn_kernel_prune_rolling_opencl
 #endif
-(
-        cl_nbparam_params_t              nbparam_params,
-        const __global float4 *restrict  xq,
-        const __global float *restrict   shift_vec,
-        const __global nbnxn_sci_t      *pl_sci,
-        __global nbnxn_cj4_t            *pl_cj4,
+        (cl_nbparam_params_t nbparam_params,
+         const __global float4* restrict xq,
+         const __global float* restrict shift_vec,
+         const __global nbnxn_sci_t* pl_sci,
+         __global nbnxn_cj4_t* pl_cj4,
 #if !defined HAVE_FRESH_LIST
-        const
+         const
 #endif
-        __global unsigned int *restrict  prePrunedImask,
-        int                              numParts,
-        int                              part,
-        __local  float4                 *xib
-)
+         __global unsigned int* restrict prePrunedImask,
+         int                             numParts,
+         int                             part,
+         __local float4* xib)
 {
     /* convenience variables */
-    const cl_nbparam_params_t *const nbparam = &nbparam_params;
+    const cl_nbparam_params_t* const nbparam = &nbparam_params;
 
-    const float                      rlistOuter_sq = nbparam->rlistOuter_sq;
-    const float                      rlistInner_sq = nbparam->rlistInner_sq;
+    const float rlistOuter_sq = nbparam->rlistOuter_sq;
+    const float rlistInner_sq = nbparam->rlistInner_sq;
 
     /* thread/block/warp id-s */
-    const unsigned int tidxi  = get_local_id(0);
-    const unsigned int tidxj  = get_local_id(1);
-    const unsigned int tidx   = get_local_id(1) * get_local_size(0) + get_local_id(0);
+    const unsigned int tidxi = get_local_id(0);
+    const unsigned int tidxj = get_local_id(1);
+    const unsigned int tidx  = get_local_id(1) * get_local_size(0) + get_local_id(0);
 #if NTHREAD_Z == 1
-    const unsigned int tidxz  = 0;
+    const unsigned int tidxz = 0;
 #else
-    const unsigned int tidxz  = get_local_id(2);
+    const unsigned int tidxz         = get_local_id(2);
 #endif
-    const unsigned int bidx   = get_group_id(0);
-    const unsigned int widx   = tidx / WARP_SIZE;
+    const unsigned int bidx = get_group_id(0);
+    const unsigned int widx = tidx / WARP_SIZE;
 
 #ifdef HAVE_FRESH_LIST
     const bool haveFreshList = true;
 #else
-    const bool haveFreshList = false;
+    const bool         haveFreshList = false;
 #endif
 
     // TODO move these consts to utils and unify their use with the nonbonded kernels
-    const int c_numClPerSupercl    = NCL_PER_SUPERCL;
-    const int c_clSize             = CL_SIZE;
+    const int c_numClPerSupercl = NCL_PER_SUPERCL;
+    const int c_clSize          = CL_SIZE;
 
     // TODO pass this value at compile-time as a macro
     const int c_nbnxnGpuClusterpairSplit = 2;
@@ -110,47 +110,52 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
     /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
     const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
 
-    #define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
+#define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
     /* shmem buffer for i cj pre-loading */
     CjType cjs = 0;
 #if USE_CJ_PREFETCH
-    cjs = (((__local int *)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
-    #undef LOCAL_OFFSET
-    /* Offset calculated using xib because cjs depends on on tidxz! */
-    #define LOCAL_OFFSET (((__local int *)(xib + c_numClPerSupercl * c_clSize)) + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
+    cjs = (((__local int*)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
+#    undef LOCAL_OFFSET
+/* Offset calculated using xib because cjs depends on on tidxz! */
+#    define LOCAL_OFFSET                                      \
+        (((__local int*)(xib + c_numClPerSupercl * c_clSize)) \
+         + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
 #endif
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint *const warp_any     = (__local uint*)(LOCAL_OFFSET);
-    const unsigned int           warpVoteSlot = NTHREAD_Z*tidxz + widx;
+    volatile __local uint* const warp_any     = (__local uint*)(LOCAL_OFFSET);
+    const unsigned int           warpVoteSlot = NTHREAD_Z * tidxz + widx;
     /* Initialise warp vote.*/
     if (tidx == 0 || tidx == 32)
     {
         warp_any[warpVoteSlot] = 0;
     }
 #else
-    __local uint *const warp_any     = 0;
+    __local uint* const warp_any     = 0;
     const unsigned int  warpVoteSlot = 0;
 #endif
-    #undef LOCAL_OFFSET
+#undef LOCAL_OFFSET
 
-    const nbnxn_sci_t nb_sci      = pl_sci[bidx*numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
-    const int         sci         = nb_sci.sci;                   /* super-cluster */
-    const int         cij4_start  = nb_sci.cj4_ind_start;         /* first ...*/
-    const int         cij4_end    = nb_sci.cj4_ind_end;           /* and last index of j clusters */
+    const nbnxn_sci_t nb_sci =
+            pl_sci[bidx * numParts + part]; /* my i super-cluster's index = sciOffset + current bidx * numParts + part */
+    const int sci        = nb_sci.sci;           /* super-cluster */
+    const int cij4_start = nb_sci.cj4_ind_start; /* first ...*/
+    const int cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
     if (tidxz == 0)
     {
         for (int i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
         {
             /* Pre-load i-atom x and q into shared memory */
-            const int ci = sci * c_numClPerSupercl + tidxj+i;
+            const int ci = sci * c_numClPerSupercl + tidxj + i;
             const int ai = ci * c_clSize + tidxi;
 
             /* We don't need q, but using float4 in shmem avoids bank conflicts */
             const float4 tmp = xq[ai];
-            const float4 xi  = tmp + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1], shift_vec[3 * nb_sci.shift + 2], 0.0f);
+            const float4 xi  = tmp
+                              + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1],
+                                         shift_vec[3 * nb_sci.shift + 2], 0.0f);
             xib[(tidxj + i) * c_clSize + tidxi] = xi;
         }
     }
@@ -165,7 +170,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
         if (haveFreshList)
         {
             /* Read the mask from the list transferred from the CPU */
-            imaskFull  = pl_cj4[j4].imei[widx].imask;
+            imaskFull = pl_cj4[j4].imei[widx].imask;
             /* We attempt to prune all pairs present in the original list */
             imaskCheck = imaskFull;
             imaskNew   = 0;
@@ -173,9 +178,9 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
         else
         {
             /* Read the mask from the "warp-pruned" by rlistOuter mask array */
-            imaskFull  = prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx];
+            imaskFull = prePrunedImask[j4 * c_nbnxnGpuClusterpairSplit + widx];
             /* Read the old rolling pruned mask, use as a base for new */
-            imaskNew   = pl_cj4[j4].imei[widx].imask;
+            imaskNew = pl_cj4[j4].imei[widx].imask;
             /* We only need to check pairs with different mask */
             imaskCheck = (imaskNew ^ imaskFull);
         }
@@ -189,14 +194,14 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
             {
                 if (imaskCheck & (superClInteractionMask << (jm * c_numClPerSupercl)))
                 {
-                    unsigned int       mask_ji = (1U << (jm * c_numClPerSupercl));
+                    unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
 
-                    const int          cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
-                    const int          aj = cj * c_clSize + tidxj;
+                    const int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
+                    const int aj = cj * c_clSize + tidxj;
 
                     /* load j atom data */
-                    const float4 tmp  = xq[aj];
-                    const float3 xj   = (float3)(tmp.xyz);
+                    const float4 tmp = xq[aj];
+                    const float3 xj  = (float3)(tmp.xyz);
 
 #pragma unroll 8
                     for (int i = 0; i < c_numClPerSupercl; i++)
@@ -237,7 +242,7 @@ __kernel void nbnxn_kernel_prune_rolling_opencl
 #ifdef HAVE_FRESH_LIST
             {
                 /* copy the list pruned to rlistOuter to a separate buffer */
-                prePrunedImask[j4*c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
+                prePrunedImask[j4 * c_nbnxnGpuClusterpairSplit + widx] = imaskFull;
             }
 #endif
             /* update the imask with only the pairs up to rlistInner */

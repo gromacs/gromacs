@@ -50,10 +50,10 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static const char *pp_pat[] = { "C", "N", "CA", "C", "N" };
-#define NPP (sizeof(pp_pat)/sizeof(pp_pat[0]))
+static const char* pp_pat[] = { "C", "N", "CA", "C", "N" };
+#define NPP (sizeof(pp_pat) / sizeof(pp_pat[0]))
 
-static bool d_comp(const t_dih &a, const t_dih &b)
+static bool d_comp(const t_dih& a, const t_dih& b)
 {
     if (a.ai[1] < b.ai[1])
     {
@@ -70,12 +70,12 @@ static bool d_comp(const t_dih &a, const t_dih &b)
 }
 
 
-static void calc_dihs(t_xrama *xr)
+static void calc_dihs(t_xrama* xr)
 {
-    int          i, t1, t2, t3;
-    rvec         r_ij, r_kj, r_kl, m, n;
-    t_dih       *dd;
-    gmx_rmpbc_t  gpbc = nullptr;
+    int         i, t1, t2, t3;
+    rvec        r_ij, r_kj, r_kl, m, n;
+    t_dih*      dd;
+    gmx_rmpbc_t gpbc = nullptr;
 
     gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
@@ -84,14 +84,12 @@ static void calc_dihs(t_xrama *xr)
     for (i = 0; (i < xr->ndih); i++)
     {
         dd      = &(xr->dih[i]);
-        dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]],
-                            xr->x[dd->ai[2]], xr->x[dd->ai[3]],
-                            nullptr,
-                            r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+        dd->ang = dih_angle(xr->x[dd->ai[0]], xr->x[dd->ai[1]], xr->x[dd->ai[2]], xr->x[dd->ai[3]],
+                            nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
     }
 }
 
-gmx_bool new_data(t_xrama *xr)
+gmx_bool new_data(t_xrama* xr)
 {
     if (!read_next_x(xr->oenv, xr->traj, &xr->t, xr->x, xr->box))
     {
@@ -103,7 +101,7 @@ gmx_bool new_data(t_xrama *xr)
     return TRUE;
 }
 
-static int find_atom(const char *find, char ***names, int start, int nr)
+static int find_atom(const char* find, char*** names, int start, int nr)
 {
     int i;
 
@@ -117,25 +115,25 @@ static int find_atom(const char *find, char ***names, int start, int nr)
     return -1;
 }
 
-static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
+static void add_xr(t_xrama* xr, const int ff[5], const t_atoms* atoms)
 {
     char buf[12];
     int  i;
 
-    srenew(xr->dih, xr->ndih+2);
+    srenew(xr->dih, xr->ndih + 2);
     for (i = 0; (i < 4); i++)
     {
         xr->dih[xr->ndih].ai[i] = ff[i];
     }
     for (i = 0; (i < 4); i++)
     {
-        xr->dih[xr->ndih+1].ai[i] = ff[i+1];
+        xr->dih[xr->ndih + 1].ai[i] = ff[i + 1];
     }
     xr->ndih += 2;
 
-    srenew(xr->pp, xr->npp+1);
-    xr->pp[xr->npp].iphi  = xr->ndih-2;
-    xr->pp[xr->npp].ipsi  = xr->ndih-1;
+    srenew(xr->pp, xr->npp + 1);
+    xr->pp[xr->npp].iphi  = xr->ndih - 2;
+    xr->pp[xr->npp].ipsi  = xr->ndih - 1;
     xr->pp[xr->npp].bShow = FALSE;
     sprintf(buf, "%s-%d", *atoms->resinfo[atoms->atom[ff[1]].resind].name,
             atoms->resinfo[atoms->atom[ff[1]].resind].nr);
@@ -143,13 +141,13 @@ static void add_xr(t_xrama *xr, const int ff[5], const t_atoms *atoms)
     xr->npp++;
 }
 
-static void get_dih(t_xrama *xr, const t_atoms *atoms)
+static void get_dih(t_xrama* xr, const t_atoms* atoms)
 {
     int    found, ff[NPP];
     int    i;
     size_t j;
 
-    for (i = 0; (i < atoms->nr); )
+    for (i = 0; (i < atoms->nr);)
     {
         found = i;
         for (j = 0; (j < NPP); j++)
@@ -158,19 +156,19 @@ static void get_dih(t_xrama *xr, const t_atoms *atoms)
             {
                 break;
             }
-            found = ff[j]+1;
+            found = ff[j] + 1;
         }
         if (j != NPP)
         {
             break;
         }
         add_xr(xr, ff, atoms);
-        i = ff[0]+1;
+        i = ff[0] + 1;
     }
     fprintf(stderr, "Found %d phi-psi combinations\n", xr->npp);
 }
 
-static void min_max(t_xrama *xr)
+static void min_max(t_xrama* xr)
 {
     int ai, i, j;
 
@@ -193,14 +191,14 @@ static void min_max(t_xrama *xr)
     }
 }
 
-static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
+static void get_dih_props(t_xrama* xr, const t_idef* idef, int mult)
 {
     int      i, ft, ftype, nra;
-    t_iatom *ia;
-    t_dih   *dd, key;
+    t_iatom* ia;
+    t_dih *  dd, key;
 
     ia = idef->il[F_PDIHS].iatoms;
-    for (i = 0; (i < idef->il[F_PDIHS].nr); )
+    for (i = 0; (i < idef->il[F_PDIHS].nr);)
     {
         ft    = ia[0];
         ftype = idef->functype[ft];
@@ -213,23 +211,22 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 
         key.ai[1] = ia[2];
         key.ai[2] = ia[3];
-        dd        = std::lower_bound(xr->dih, xr->dih+xr->ndih, key, d_comp);
-        if (dd < xr->dih+xr->ndih && !d_comp(key, *dd))
+        dd        = std::lower_bound(xr->dih, xr->dih + xr->ndih, key, d_comp);
+        if (dd < xr->dih + xr->ndih && !d_comp(key, *dd))
         {
             dd->mult = idef->iparams[ft].pdihs.mult;
             dd->phi0 = idef->iparams[ft].pdihs.phiA;
         }
 
-        i  += nra+1;
-        ia += nra+1;
+        i += nra + 1;
+        ia += nra + 1;
     }
     /* Fill in defaults for values not in the topology */
     for (i = 0; (i < xr->ndih); i++)
     {
         if (xr->dih[i].mult == 0)
         {
-            fprintf(stderr,
-                    "Dihedral around %d,%d not found in topology. Using mult=%d\n",
+            fprintf(stderr, "Dihedral around %d,%d not found in topology. Using mult=%d\n",
                     xr->dih[i].ai[1], xr->dih[i].ai[2], mult);
             xr->dih[i].mult = mult;
             xr->dih[i].phi0 = 180;
@@ -238,11 +235,9 @@ static void get_dih_props(t_xrama *xr, const t_idef *idef, int mult)
 }
 
 
-
-t_topology *init_rama(gmx_output_env_t *oenv, const char *infile,
-                      const char *topfile, t_xrama *xr, int mult)
+t_topology* init_rama(gmx_output_env_t* oenv, const char* infile, const char* topfile, t_xrama* xr, int mult)
 {
-    t_topology *top;
+    t_topology* top;
     real        t;
 
     top = read_top(topfile, &xr->ePBC);

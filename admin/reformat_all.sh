@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,26 +33,27 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This script runs uncrustify, copyright header checks, or include sorter on
+# This script runs uncrustify, clang-format, copyright header checks, or include sorter on
 # all applicable files in the source tree.
 #
-# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
+# See `reformat_all.sh -h` for a brief usage, and docs/dev-manual/code-formatting.rst
 # for more details (docs/dev-manual/gmxtree.rst for include sorter).
 
 function usage() {
     echo "usage: reformat_all.sh [-f|--force]"
-    echo "           [--filter=(uncrustify|copyright|includesort)]"
+    echo "           [--filter=(complete_formatting|clangformat|uncrustify|copyright|includesort)]"
     echo "           [--pattern=<pattern>] [<action>] [-B=<build dir>]"
-    echo "<action>: (list-files|uncrustify*|copyright|includesort) (*=default)"
+    echo "<action>: (list-files|uncrustify|clang-format*|copyright|includesort) (*=default)"
 }
 
 filter=default
 force=
 patterns=()
-action=uncrustify
+action=clang-format
 for arg in "$@" ; do
     if [[ "$arg" == "list-files" || "$arg" == "uncrustify" ||
-          "$arg" == "copyright" || "$arg" == "includesort" ]] ; then
+          "$arg" == "clang-format" || "$arg" == "copyright" ||
+          "$arg" == "includesort" ]] ; then
         action=$arg
     elif [[ "$arg" == --filter=* ]] ; then
         filter=${arg#--filter=}
@@ -98,6 +99,16 @@ case "$action" in
         fi
         command="xargs $UNCRUSTIFY -c admin/uncrustify.cfg --no-backup"
         ;;
+    clang-format)
+        if [ -z "$CLANG_FORMAT" ] ; then
+            CLANG_FORMAT=clang-format-7
+        fi
+        if ! which "$CLANG_FORMAT" 1>/dev/null ; then
+            echo "clang-format not found. Specify one with CLANG_FORMAT"
+            exit 2
+        fi
+        command="xargs $CLANG_FORMAT -i"
+        ;;
     copyright)
         command="xargs admin/copyright.py --check"
         ;;
@@ -114,18 +125,28 @@ case "$action" in
 esac
 
 if [[ "$filter" == "default" ]] ; then
-    filter=$action
+    if [[ "$action" == "clang-format" ]] ; then
+        filter=clangformat
+    else
+        filter=$action
+    fi
 fi
 
 case "$filter" in
     includesort)
-        filter_re="(uncrustify|includesort)"
+        filter_re="(complete_formatting|includesort)"
         ;;
     uncrustify)
-        filter_re="(uncrustify|uncrustify_only)"
+        filter_re="(uncrustify)"
         ;;
     copyright)
-        filter_re="(uncrustify|copyright|includesort)"
+        filter_re="(complete_formatting|copyright)"
+        ;;
+    clangformat)
+        filter_re="(complete_formatting|clangformat)"
+        ;;
+    complete_formatting)
+        filter_re="(complete_formatting|clangformat)"
         ;;
     *)
         echo "Unknown filter mode: $filter"

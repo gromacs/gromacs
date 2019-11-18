@@ -22,11 +22,11 @@
 
 # Test mpi support
 # Test mdrun-only build
-gcc-6 mpi mdrun-only release cmake-3.9.6
+gcc-9 mpi mdrun-only release
 
 # Test static linking with gcc
 # Test newest gcc at time of release
-gcc-8 static release
+gcc-9 static release
 
 # Test double precision
 # Test with newest supported Intel compiler
@@ -35,7 +35,7 @@ icc-19 double release
 # Test static linking with clang
 # Test double precision
 # Test newest supported clang version
-clang-5 static double release cmake-3.10.0
+clang-8 static double release cmake-3.10.0
 
 # Test oldest supported gcc at time of release
 # Test with GPU support

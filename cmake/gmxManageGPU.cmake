@@ -148,11 +148,12 @@ endif()
 # Note that semicolon is used as separator for nvcc.
 #
 # Parameters:
-#   COMPILER_INFO   - [output variable] string with compiler path, ID and
-#                     some compiler-provided information
-#   COMPILER_FLAGS  - [output variable] flags for the compiler
+#   COMPILER_INFO         - [output variable] string with compiler path, ID and
+#                           some compiler-provided information
+#   DEVICE_COMPILER_FLAGS - [output variable] device flags for the compiler
+#   HOST_COMPILER_FLAGS   - [output variable] host flags for the compiler, if propagated
 #
-macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
+macro(get_cuda_compiler_info COMPILER_INFO DEVICE_COMPILER_FLAGS HOST_COMPILER_FLAGS)
     if(NOT GMX_CLANG_CUDA)
         if(CUDA_NVCC_EXECUTABLE)
 
@@ -171,9 +172,11 @@ macro(get_cuda_compiler_info COMPILER_INFO COMPILER_FLAGS)
                 string(TOUPPER ${CMAKE_BUILD_TYPE} _build_type)
                 SET(_compiler_flags "${CUDA_NVCC_FLAGS_${_build_type}}")
                 if(CUDA_PROPAGATE_HOST_FLAGS)
-                    string(REGEX REPLACE "[ ]+" ";" _cxx_flags_nospace "${BUILD_CXXFLAGS}")
+                    set(${HOST_COMPILER_FLAGS} BUILD_CXXFLAGS)
+                else()
+                    set(${HOST_COMPILER_FLAGS} "")
                 endif()
-                SET(${COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}; ${_cxx_flags_nospace}")
+                SET(${DEVICE_COMPILER_FLAGS} "${CUDA_NVCC_FLAGS}${CUDA_NVCC_FLAGS_${_build_type}}")
             else()
                 SET(${COMPILER_INFO} "N/A")
                 SET(${COMPILER_FLAGS} "N/A")
@@ -204,37 +207,6 @@ macro(gmx_gpu_setup)
             include(gmxManageNvccConfig)
         else()
             include(gmxManageClangCudaConfig)
-        endif()
-
-        gmx_check_if_changed(_cuda_version_changed CUDA_VERSION)
-
-        # Generate CUDA RT API version string which will end up in config.h
-        # We do this because nvcc is silly enough to not define its own version
-        # (which should match the CUDA runtime API version AFAICT) and we want to
-        # avoid creating the fragile dependency on cuda_runtime_api.h.
-        #
-        # NOTE: CUDA v7.5 is expected to have nvcc define it own version, so in the
-        # future we should switch to using that version string instead of our own.
-        if (NOT GMX_CUDA_VERSION OR _cuda_version_changed)
-            MATH(EXPR GMX_CUDA_VERSION "${CUDA_VERSION_MAJOR}*1000 + ${CUDA_VERSION_MINOR}*10")
-        endif()
-
-        if (_cuda_version_changed)
-            # check the generated CUDA API version against the one present in cuda_runtime_api.h
-            try_compile(_get_cuda_version_compile_res
-                ${CMAKE_BINARY_DIR}
-                ${CMAKE_SOURCE_DIR}/cmake/TestCUDAVersion.cpp
-                COMPILE_DEFINITIONS "-DGMX_CUDA_VERSION=${GMX_CUDA_VERSION}"
-                CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${CUDA_TOOLKIT_INCLUDE}"
-                OUTPUT_VARIABLE _get_cuda_version_compile_out)
-
-            if (NOT _get_cuda_version_compile_res)
-                if (_get_cuda_version_compile_out MATCHES "CUDA version mismatch")
-                    message(FATAL_ERROR "The CUDA API version generated internally from the compiler version does not match the version reported by cuda.h. This means either that the CUDA detection picked up mismatching nvcc and the CUDA headers (likely not part of the same toolkit installation) or that there is an error in the internal version generation. If you are sure that it is not the former causing the error (check the relevant cache variables), define the GMX_CUDA_VERSION cache variable to work around the error.")
-                else()
-                    message(FATAL_ERROR "Could not detect CUDA runtime API version")
-                endif()
-            endif()
         endif()
 
         # no OpenMP is no good!

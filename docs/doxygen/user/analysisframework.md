@@ -125,3 +125,17 @@ gmx::IOptionsContainer object are also used to provide help to the user (also
 handled by the framework).
 See the documentation for gmx::TrajectoryAnalysisModule and the
 [options module documentation](\ref module_options) for more details.
+
+Coordinate data output
+======================
+
+The \ref module_coordinateio module allows modules to output coordinate data
+used or generated during the analysis. It provides two main components:
+
+ - An OutputManager for handling the file opening, writing, closing and
+   registration of modules to change metainformation.
+ - A set of modules to change the metainformation in coordinate data frames
+   and to cross check the requirements for data output and file formats.
+
+More detailed information, as well as an interaction diagram can be found in the
+[module documentation](\ref module_coordinateio).

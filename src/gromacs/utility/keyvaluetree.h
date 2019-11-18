@@ -103,52 +103,52 @@ class TextWriter;
  */
 class KeyValueTreePath
 {
-    public:
-        //! Creates an empty path (corresponds to the root object).
-        KeyValueTreePath() = default;
-        //! Creates a path from given string representation.
-        KeyValueTreePath(const char *path);
-        //! Creates a path from given string representation.
-        KeyValueTreePath(const std::string &path);
+public:
+    //! Creates an empty path (corresponds to the root object).
+    KeyValueTreePath() = default;
+    //! Creates a path from given string representation.
+    KeyValueTreePath(const char* path);
+    //! Creates a path from given string representation.
+    KeyValueTreePath(const std::string& path);
 
-        //! Adds another element to the path, making it a child of the old path.
-        void append(const std::string &key) { path_.push_back(key); }
-        //! Adds elements from another path to the path.
-        void append(const KeyValueTreePath &other)
-        {
-            auto elements = other.elements();
-            path_.insert(path_.end(), elements.begin(), elements.end());
-        }
-        //! Removes the last element in the path, making it the parent path.
-        void pop_back() { return path_.pop_back(); }
-        //! Removes and returns the last element in the path.
-        std::string pop_last()
-        {
-            std::string result = std::move(path_.back());
-            path_.pop_back();
-            return result;
-        }
+    //! Adds another element to the path, making it a child of the old path.
+    void append(const std::string& key) { path_.push_back(key); }
+    //! Adds elements from another path to the path.
+    void append(const KeyValueTreePath& other)
+    {
+        auto elements = other.elements();
+        path_.insert(path_.end(), elements.begin(), elements.end());
+    }
+    //! Removes the last element in the path, making it the parent path.
+    void pop_back() { return path_.pop_back(); }
+    //! Removes and returns the last element in the path.
+    std::string pop_last()
+    {
+        std::string result = std::move(path_.back());
+        path_.pop_back();
+        return result;
+    }
 
-        //! Whether the path is empty (pointing to the root object).
-        bool empty() const { return path_.empty(); }
-        //! Returns the number of elements (=nesting level) in the path.
-        size_t size() const { return path_.size(); }
-        //! Returns the i'th path element.
-        const std::string &operator[](int i) const { return path_[i]; }
-        //! Returns all the path elements.
-        const std::vector<std::string> &elements() const { return path_; }
+    //! Whether the path is empty (pointing to the root object).
+    bool empty() const { return path_.empty(); }
+    //! Returns the number of elements (=nesting level) in the path.
+    size_t size() const { return path_.size(); }
+    //! Returns the i'th path element.
+    const std::string& operator[](int i) const { return path_[i]; }
+    //! Returns all the path elements.
+    const std::vector<std::string>& elements() const { return path_; }
 
-        //! Formats the path as a string for display.
-        std::string toString() const;
+    //! Formats the path as a string for display.
+    std::string toString() const;
 
-    private:
-        std::vector<std::string> path_;
+private:
+    std::vector<std::string> path_;
 };
 
 //! \cond libapi
 
 //! Combines two paths as with KeyValueTreePath::append().
-inline KeyValueTreePath operator+(const KeyValueTreePath &a, const KeyValueTreePath &b)
+inline KeyValueTreePath operator+(const KeyValueTreePath& a, const KeyValueTreePath& b)
 {
     KeyValueTreePath result(a);
     result.append(b);
@@ -156,7 +156,7 @@ inline KeyValueTreePath operator+(const KeyValueTreePath &a, const KeyValueTreeP
 }
 
 //! Combines an element to a path as with KeyValueTreePath::append().
-inline KeyValueTreePath operator+(const KeyValueTreePath &a, const std::string &b)
+inline KeyValueTreePath operator+(const KeyValueTreePath& a, const std::string& b)
 {
     KeyValueTreePath result(a);
     result.append(b);
@@ -166,132 +166,133 @@ inline KeyValueTreePath operator+(const KeyValueTreePath &a, const std::string &
 
 class KeyValueTreeValue
 {
-    public:
-        //! Returns whether the value is an array (KeyValueTreeArray).
-        bool isArray() const;
-        //! Returns whether the value is an object (KeyValueTreeObject).
-        bool isObject() const;
-        //! Returns whether the value is of a given type.
-        template <typename T>
-        bool isType() const { return value_.isType<T>(); }
-        //! Returns the type of the value.
-        std::type_index type() const { return value_.type(); }
+public:
+    //! Returns whether the value is an array (KeyValueTreeArray).
+    bool isArray() const;
+    //! Returns whether the value is an object (KeyValueTreeObject).
+    bool isObject() const;
+    //! Returns whether the value is of a given type.
+    template<typename T>
+    bool isType() const
+    {
+        return value_.isType<T>();
+    }
+    //! Returns the type of the value.
+    std::type_index type() const { return value_.type(); }
 
-        KeyValueTreeArray &asArray();
-        KeyValueTreeObject       &asObject();
-        const KeyValueTreeArray  &asArray() const;
-        const KeyValueTreeObject &asObject() const;
-        template <typename T>
-        const T                  &cast() const { return value_.cast<T>(); }
+    KeyValueTreeArray&        asArray();
+    KeyValueTreeObject&       asObject();
+    const KeyValueTreeArray&  asArray() const;
+    const KeyValueTreeObject& asObject() const;
+    template<typename T>
+    const T& cast() const
+    {
+        return value_.cast<T>();
+    }
 
-        //! Returns the raw Any value (always possible).
-        const Any            &asAny() const { return value_; }
+    //! Returns the raw Any value (always possible).
+    const Any& asAny() const { return value_; }
 
-    private:
-        explicit KeyValueTreeValue(Any &&value) : value_(std::move(value)) {}
+private:
+    explicit KeyValueTreeValue(Any&& value) : value_(std::move(value)) {}
 
-        Any             value_;
+    Any value_;
 
-        friend class KeyValueTreeBuilder;
-        friend class KeyValueTreeObjectBuilder;
-        friend class KeyValueTreeValueBuilder;
+    friend class KeyValueTreeBuilder;
+    friend class KeyValueTreeObjectBuilder;
+    friend class KeyValueTreeValueBuilder;
 };
 
 class KeyValueTreeArray
 {
-    public:
-        //! Whether all elements of the array are objects.
-        bool isObjectArray() const
-        {
-            return std::all_of(values_.begin(), values_.end(),
-                               std::mem_fn(&KeyValueTreeValue::isObject));
-        }
+public:
+    //! Whether all elements of the array are objects.
+    bool isObjectArray() const
+    {
+        return std::all_of(values_.begin(), values_.end(), std::mem_fn(&KeyValueTreeValue::isObject));
+    }
 
-        //! Returns the values in the array.
-        const std::vector<KeyValueTreeValue> &values() const { return values_; }
+    //! Returns the values in the array.
+    const std::vector<KeyValueTreeValue>& values() const { return values_; }
 
-    private:
-        std::vector<KeyValueTreeValue> values_;
+private:
+    std::vector<KeyValueTreeValue> values_;
 
-        friend class KeyValueTreeArrayBuilderBase;
+    friend class KeyValueTreeArrayBuilderBase;
 };
 
 class KeyValueTreeProperty
 {
-    public:
-        const std::string &key() const { return value_->first; }
-        const KeyValueTreeValue &value() const { return value_->second; }
+public:
+    const std::string&       key() const { return value_->first; }
+    const KeyValueTreeValue& value() const { return value_->second; }
 
-    private:
-        typedef std::map<std::string, KeyValueTreeValue>::const_iterator
-            IteratorType;
+private:
+    typedef std::map<std::string, KeyValueTreeValue>::const_iterator IteratorType;
 
-        explicit KeyValueTreeProperty(IteratorType value) : value_(value) {}
+    explicit KeyValueTreeProperty(IteratorType value) : value_(value) {}
 
-        IteratorType value_;
+    IteratorType value_;
 
-        friend class KeyValueTreeObject;
-        friend class KeyValueTreeObjectBuilder;
+    friend class KeyValueTreeObject;
+    friend class KeyValueTreeObjectBuilder;
 };
 
 class KeyValueTreeObject
 {
-    public:
-        KeyValueTreeObject() = default;
-        //! Creates a deep copy of an object.
-        KeyValueTreeObject(const KeyValueTreeObject &other)
+public:
+    KeyValueTreeObject() = default;
+    //! Creates a deep copy of an object.
+    KeyValueTreeObject(const KeyValueTreeObject& other)
+    {
+        for (const auto& value : other.values_)
         {
-            for (const auto &value : other.values_)
-            {
-                auto iter = valueMap_.insert(std::make_pair(value.key(), value.value())).first;
-                values_.push_back(KeyValueTreeProperty(iter));
-            }
+            auto iter = valueMap_.insert(std::make_pair(value.key(), value.value())).first;
+            values_.push_back(KeyValueTreeProperty(iter));
         }
-        //! Assigns a deep copy of an object.
-        KeyValueTreeObject &operator=(const KeyValueTreeObject &other)
-        {
-            KeyValueTreeObject tmp(other);
-            std::swap(tmp.valueMap_, valueMap_);
-            std::swap(tmp.values_, values_);
-            return *this;
-        }
-        //! Default move constructor.
-        //NOLINTNEXTLINE(performance-noexcept-move-constructor) bug #38733
-        KeyValueTreeObject(KeyValueTreeObject &&)            = default;
-        //! Default move assignment.
-        KeyValueTreeObject &operator=(KeyValueTreeObject &&) = default;
+    }
+    //! Assigns a deep copy of an object.
+    KeyValueTreeObject& operator=(const KeyValueTreeObject& other)
+    {
+        KeyValueTreeObject tmp(other);
+        std::swap(tmp.valueMap_, valueMap_);
+        std::swap(tmp.values_, values_);
+        return *this;
+    }
+    //! Default move constructor.
+    //NOLINTNEXTLINE(performance-noexcept-move-constructor) bug #38733
+    KeyValueTreeObject(KeyValueTreeObject&&) = default;
+    //! Default move assignment.
+    KeyValueTreeObject& operator=(KeyValueTreeObject&&) = default;
 
-        /*! \brief
-         * Returns all properties in the object.
-         *
-         * The properties are in the order they were added to the object.
-         */
-        const std::vector<KeyValueTreeProperty> &properties() const { return values_; }
+    /*! \brief
+     * Returns all properties in the object.
+     *
+     * The properties are in the order they were added to the object.
+     */
+    const std::vector<KeyValueTreeProperty>& properties() const { return values_; }
 
-        //! Whether a property with given key exists.
-        bool keyExists(const std::string &key) const
-        {
-            return valueMap_.find(key) != valueMap_.end();
-        }
-        //! Returns value for a given key.
-        const KeyValueTreeValue &operator[](const std::string &key) const
-        {
-            GMX_ASSERT(keyExists(key), "Accessing non-existent value");
-            return valueMap_.at(key);
-        }
+    //! Whether a property with given key exists.
+    bool keyExists(const std::string& key) const { return valueMap_.find(key) != valueMap_.end(); }
+    //! Returns value for a given key.
+    const KeyValueTreeValue& operator[](const std::string& key) const
+    {
+        GMX_ASSERT(keyExists(key), "Accessing non-existent value");
+        return valueMap_.at(key);
+    }
 
-        /*! \brief
-         * Returns whether the given object shares any keys with `this`.
-         */
-        bool hasDistinctProperties(const KeyValueTreeObject &obj) const;
+    /*! \brief
+     * Returns whether the given object shares any keys with `this`.
+     */
+    bool hasDistinctProperties(const KeyValueTreeObject& obj) const;
 
-    private:
-        //! Keeps the properties by key.
-        std::map<std::string, KeyValueTreeValue> valueMap_;
-        //! Keeps the insertion order of properties.
-        std::vector<KeyValueTreeProperty>        values_;
+private:
+    //! Keeps the properties by key.
+    std::map<std::string, KeyValueTreeValue> valueMap_;
+    //! Keeps the insertion order of properties.
+    std::vector<KeyValueTreeProperty> values_;
 
-        friend class KeyValueTreeObjectBuilder;
+    friend class KeyValueTreeObjectBuilder;
 };
 
 /********************************************************************
@@ -306,19 +307,19 @@ inline bool KeyValueTreeValue::isObject() const
 {
     return value_.isType<KeyValueTreeObject>();
 }
-inline const KeyValueTreeArray &KeyValueTreeValue::asArray() const
+inline const KeyValueTreeArray& KeyValueTreeValue::asArray() const
 {
     return value_.cast<KeyValueTreeArray>();
 }
-inline const KeyValueTreeObject &KeyValueTreeValue::asObject() const
+inline const KeyValueTreeObject& KeyValueTreeValue::asObject() const
 {
     return value_.cast<KeyValueTreeObject>();
 }
-inline KeyValueTreeArray &KeyValueTreeValue::asArray()
+inline KeyValueTreeArray& KeyValueTreeValue::asArray()
 {
     return value_.castRef<KeyValueTreeArray>();
 }
-inline KeyValueTreeObject &KeyValueTreeValue::asObject()
+inline KeyValueTreeObject& KeyValueTreeValue::asObject()
 {
     return value_.castRef<KeyValueTreeObject>();
 }
@@ -333,22 +334,21 @@ inline KeyValueTreeObject &KeyValueTreeValue::asObject()
  *
  * \ingroup module_utility
  */
-void dumpKeyValueTree(TextWriter *writer, const KeyValueTreeObject &tree);
+void dumpKeyValueTree(TextWriter* writer, const KeyValueTreeObject& tree);
 
 /*! \brief
  * Compares two KeyValueTrees and prints any differences.
  *
  * \ingroup module_utility
  */
-void compareKeyValueTrees(TextWriter               *writer,
-                          const KeyValueTreeObject &tree1,
-                          const KeyValueTreeObject &tree2,
+void compareKeyValueTrees(TextWriter*               writer,
+                          const KeyValueTreeObject& tree1,
+                          const KeyValueTreeObject& tree2,
                           real                      ftol,
                           real                      abstol);
 
 //! Helper function to format a simple KeyValueTreeValue.
-static inline std::string
-simpleValueToString(const KeyValueTreeValue &value)
+static inline std::string simpleValueToString(const KeyValueTreeValue& value)
 {
     return simpleValueToString(value.asAny());
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,18 +57,13 @@ namespace
 
 class TextWriterTest : public gmx::test::StringTestBase
 {
-    public:
-        TextWriterTest() : writer_(&stream_)
-        {
-        }
+public:
+    TextWriterTest() : writer_(&stream_) {}
 
-        void checkOutput()
-        {
-            checkText(stream_.toString(), "Output");
-        }
+    void checkOutput() { checkText(stream_.toString(), "Output"); }
 
-        gmx::StringOutputStream  stream_;
-        gmx::TextWriter          writer_;
+    gmx::StringOutputStream stream_;
+    gmx::TextWriter         writer_;
 };
 
 TEST_F(TextWriterTest, WritesLines)

@@ -65,9 +65,7 @@ struct AwhParams;
  * \param[in,out] wi           Struct for bookeeping warnings.
  * \returns AWH parameters.
  */
-AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp,
-                                 const t_inputrec       *inputrec,
-                                 warninp_t               wi);
+AwhParams* readAndCheckAwhParams(std::vector<t_inpfile>* inp, const t_inputrec* inputrec, warninp_t wi);
 
 
 /*! \brief
@@ -78,19 +76,21 @@ AwhParams *readAndCheckAwhParams(std::vector<t_inpfile> *inp,
  * \param[in,out] pull_work             Pull working struct to register AWH bias in.
  * \param[in]     box                   Box vectors.
  * \param[in]     ePBC                  Periodic boundary conditions enum.
+ * \param[in]     compressibility       Compressibility matrix for pressure coupling, pass all 0 without pressure coupling
  * \param[in]     inputrecGroupOptions  Parameters for atom groups.
  * \param[in,out] wi                    Struct for bookeeping warnings.
  *
  * \note This function currently relies on the function set_pull_init to have been called.
  */
-void setStateDependentAwhParams(AwhParams           *awhParams,
-                                const pull_params_t *pull_params,
-                                pull_t              *pull_work,
+void setStateDependentAwhParams(AwhParams*           awhParams,
+                                const pull_params_t* pull_params,
+                                pull_t*              pull_work,
                                 const matrix         box,
                                 int                  ePBC,
-                                const t_grpopts     *inputrecGroupOptions,
+                                const tensor&        compressibility,
+                                const t_grpopts*     inputrecGroupOptions,
                                 warninp_t            wi);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_READPARAMS_H */

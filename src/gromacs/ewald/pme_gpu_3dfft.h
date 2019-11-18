@@ -48,17 +48,17 @@
 #include <vector>
 
 #if GMX_GPU == GMX_GPU_CUDA
-#include <cufft.h>
+#    include <cufft.h>
 
-#include "gromacs/gpu_utils/gputraits.cuh"
+#    include "gromacs/gpu_utils/gputraits.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
-#include <clFFT.h>
+#    include <clFFT.h>
 
-#include "gromacs/gpu_utils/gmxopencl.h"
-#include "gromacs/gpu_utils/gputraits_ocl.h"
+#    include "gromacs/gpu_utils/gmxopencl.h"
+#    include "gromacs/gpu_utils/gputraits_ocl.h"
 #endif
 
-#include "gromacs/fft/fft.h"        // for the enum gmx_fft_direction
+#include "gromacs/fft/fft.h" // for the enum gmx_fft_direction
 
 struct PmeGpu;
 
@@ -68,37 +68,35 @@ struct PmeGpu;
  */
 class GpuParallel3dFft
 {
-    public:
-        /*! \brief
-         * Constructs CUDA/OpenCL FFT plans for performing 3D FFT on a PME grid.
-         *
-         * \param[in] pmeGpu                  The PME GPU structure.
-         */
-        GpuParallel3dFft(const PmeGpu *pmeGpu);
-        /*! \brief Destroys the FFT plans. */
-        ~GpuParallel3dFft();
-        /*! \brief Performs the FFT transform in given direction
-         *
-         * \param[in]  dir           FFT transform direction specifier
-         * \param[out] timingEvent   pointer to the timing event where timing data is recorded
-         */
-        void perform3dFft(gmx_fft_direction  dir,
-                          CommandEvent      *timingEvent);
+public:
+    /*! \brief
+     * Constructs CUDA/OpenCL FFT plans for performing 3D FFT on a PME grid.
+     *
+     * \param[in] pmeGpu                  The PME GPU structure.
+     */
+    GpuParallel3dFft(const PmeGpu* pmeGpu);
+    /*! \brief Destroys the FFT plans. */
+    ~GpuParallel3dFft();
+    /*! \brief Performs the FFT transform in given direction
+     *
+     * \param[in]  dir           FFT transform direction specifier
+     * \param[out] timingEvent   pointer to the timing event where timing data is recorded
+     */
+    void perform3dFft(gmx_fft_direction dir, CommandEvent* timingEvent);
 
-    private:
+private:
 #if GMX_GPU == GMX_GPU_CUDA
-        cufftHandle   planR2C_;
-        cufftHandle   planC2R_;
-        cufftReal    *realGrid_;
-        cufftComplex *complexGrid_;
+    cufftHandle   planR2C_;
+    cufftHandle   planC2R_;
+    cufftReal*    realGrid_;
+    cufftComplex* complexGrid_;
 #elif GMX_GPU == GMX_GPU_OPENCL
-        clfftPlanHandle planR2C_;
-        clfftPlanHandle               planC2R_;
-        std::vector<cl_command_queue> commandStreams_;
-        cl_mem realGrid_;
-        cl_mem complexGrid_;
+    clfftPlanHandle               planR2C_;
+    clfftPlanHandle               planC2R_;
+    std::vector<cl_command_queue> commandStreams_;
+    cl_mem                        realGrid_;
+    cl_mem                        complexGrid_;
 #endif
-
 };
 
 #endif

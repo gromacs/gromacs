@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,77 +70,78 @@ namespace gmxapi
  */
 class SessionResources final
 {
-    public:
-        /*!
-         * \brief Construct a resources object for the named operation.
-         *
-         * \param session implementation object backing these resources.
-         * \param name Unique name of workflow operation.
-         */
-        SessionResources(SessionImpl* session, std::string name);
+public:
+    /*!
+     * \brief Construct a resources object for the named operation.
+     *
+     * \param session implementation object backing these resources.
+     * \param name Unique name of workflow operation.
+     */
+    SessionResources(SessionImpl* session, std::string name);
 
-        /*!
-         * \brief no default constructor.
-         *
-         * \see SessionResources(SessionImpl* session, std::string name)
-         */
-        SessionResources() = delete;
+    /*!
+     * \brief no default constructor.
+     *
+     * \see SessionResources(SessionImpl* session, std::string name)
+     */
+    SessionResources() = delete;
 
-        ///@{
-        /*!
-         * \brief Not moveable or copyable.
-         *
-         * Objects of this type should only exist in their Session container.
-         * If necessary, ownership can be transferred by owning through a unique_ptr handle.
-         */
-        SessionResources(const SessionResources&)             = delete;
-        SessionResources &operator=(const SessionResources &) = delete;
-        SessionResources(SessionResources &&)                 = delete;
-        SessionResources &operator=(SessionResources &&)      = delete;
-        ///@}
+    ///@{
+    /*!
+     * \brief Not moveable or copyable.
+     *
+     * Objects of this type should only exist in their Session container.
+     * If necessary, ownership can be transferred by owning through a unique_ptr handle.
+     */
+    SessionResources(const SessionResources&) = delete;
+    SessionResources& operator=(const SessionResources&) = delete;
+    SessionResources(SessionResources&&)                 = delete;
+    SessionResources& operator=(SessionResources&&) = delete;
+    ///@}
 
-        ~SessionResources();
+    ~SessionResources();
 
-        /*!
-         * \brief Get the name of the gmxapi operation for which these resources exist.
-         *
-         * \return workflow element name
-         */
-        const std::string name() const;
+    /*!
+     * \brief Get the name of the gmxapi operation for which these resources exist.
+     *
+     * \return workflow element name
+     */
+    std::string name() const;
 
-        /*!
-         * \brief Get a Signal instance implementing the requested MD signal.
-         *
-         * The caller is responsible for ensuring that the session is still active.
-         * Unfortunately, there isn't really a way to do that right now. This needs improvemnt
-         * in a near future version.
-         *
-         * Also, this is an external interface that should avoid throwing exceptions for ABI compatibility.
-         *
-         * \param signal currently must be gmxapi::md::signals::STOP
-         * \return callable object.
-         *
-         * Example:
-         *
-         *     auto signal = sessionResources->getMdrunnerSignal(md::signals::STOP);
-         *     signal();
-         *
-         * \throws gmxapi::NotImplementedError if an implementation is not available for the requested signal.
-         * \throws gmxapi::ProtocolError if the Session or Signaller is not available.
-         */
-        Signal getMdrunnerSignal(md::signals signal);
-    private:
-        /*!
-         * \brief pointer to the session owning these resources
-         */
-        SessionImpl* sessionImpl_ = nullptr;
+    /*!
+     * \brief Get a Signal instance implementing the requested MD signal.
+     *
+     * The caller is responsible for ensuring that the session is still active.
+     * Unfortunately, there isn't really a way to do that right now. This needs improvemnt
+     * in a near future version.
+     *
+     * Also, this is an external interface that should avoid throwing exceptions for ABI compatibility.
+     *
+     * \param signal currently must be gmxapi::md::signals::STOP
+     * \return callable object.
+     *
+     * Example:
+     *
+     *     auto signal = sessionResources->getMdrunnerSignal(md::signals::STOP);
+     *     signal();
+     *
+     * \throws gmxapi::NotImplementedError if an implementation is not available for the requested signal.
+     * \throws gmxapi::ProtocolError if the Session or Signaller is not available.
+     */
+    Signal getMdrunnerSignal(md::signals signal);
 
-        /*!
-         * \brief name of the associated gmxapi operation
-         */
-        std::string name_;
+private:
+    /*!
+     * \brief pointer to the session owning these resources
+     */
+    SessionImpl* sessionImpl_ = nullptr;
+
+    /*!
+     * \brief name of the associated gmxapi operation
+     */
+    std::string name_;
 };
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_SESSION_RESOURCES_IMPL_H
+#endif // GMXAPI_SESSION_RESOURCES_IMPL_H

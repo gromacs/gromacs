@@ -42,9 +42,7 @@
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/topology/atoms.h"
 
-std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
-                       real defaultDistance, real scaleFactor)
+std::vector<real> makeExclusionDistances(const t_atoms* a, AtomProperties* aps, real defaultDistance, real scaleFactor)
 {
     std::vector<real> exclusionDistances;
 
@@ -53,9 +51,8 @@ makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
         exclusionDistances.reserve(a->nr);
         for (int i = 0; i < a->nr; ++i)
         {
-            real        value;
-            if (!aps->setAtomProperty(epropVDW,
-                                      std::string(*(a->resinfo[a->atom[i].resind].name)),
+            real value;
+            if (!aps->setAtomProperty(epropVDW, std::string(*(a->resinfo[a->atom[i].resind].name)),
                                       std::string(*(a->atomname[i])), &value))
             {
                 value = defaultDistance;

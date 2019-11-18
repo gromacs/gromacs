@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -38,31 +38,25 @@ if (GMX_GPU AND NOT GMX_USE_OPENCL)
 endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-    alignedallocator.h
-    allocator.h
-    arrayref.h
-    arraysize.h
-    basedefinitions.h
-    baseversion.h
-    classhelpers.h
-    cstringutil.h
-    current_function.h
-    datafilefinder.h
-    errorcodes.h
-    exceptions.h
-    fatalerror.h
-    flags.h
-    fileptr.h
-    futil.h
-    gmxassert.h
-    init.h
-    programcontext.h
-    real.h
-    smalloc.h
-    stringutil.h
-    unique_cptr.h
-    )
+# TODO: (https://redmine.gromacs.org/issues/988) Find a new convention for defining public API.
+install(FILES
+        basedefinitions.h
+        current_function.h
+        gmxassert.h
+        real.h
+        DESTINATION include/gromacs/utility)
+
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          arrayref.h
+          baseversion.h
+          enumerationhelpers.h
+          programcontext.h
+          range.h
+          smalloc.h
+          unique_cptr.h
+          DESTINATION include/gromacs/utility)
+endif()
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

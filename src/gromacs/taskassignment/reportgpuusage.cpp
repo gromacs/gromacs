@@ -47,6 +47,8 @@
 
 #include "gromacs/ewald/pme.h"
 #include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
@@ -64,12 +66,12 @@ namespace
  * GPUs used (per node) can be different from the number of GPU IDs
  * used.
  */
-size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksOfThisNode)
+size_t countUniqueGpuIdsUsed(ArrayRef<const GpuTaskAssignment> gpuTaskAssignmentOnRanksOfThisNode)
 {
     std::set<int> uniqueIds;
-    for (const auto &assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)
+    for (const auto& assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)
     {
-        for (const auto &assignmentOfTask : assignmentsOnRank)
+        for (const auto& assignmentOfTask : assignmentsOnRank)
         {
             uniqueIds.insert(assignmentOfTask.deviceId_);
         }
@@ -77,16 +79,15 @@ size_t countUniqueGpuIdsUsed(const GpuTaskAssignments &gpuTaskAssignmentOnRanksO
     return uniqueIds.size();
 }
 
-}   // namespace
+} // namespace
 
-void
-reportGpuUsage(const MDLogger                &mdlog,
-               const GpuTaskAssignments      &gpuTaskAssignmentOnRanksOfThisNode,
-               size_t                         numGpuTasksOnThisNode,
-               size_t                         numRanks,
-               bool                           bPrintHostName,
-               bool                           useGpuForBonded,
-               PmeRunMode                     pmeRunMode)
+void reportGpuUsage(const MDLogger&                   mdlog,
+                    ArrayRef<const GpuTaskAssignment> gpuTaskAssignmentOnRanksOfThisNode,
+                    size_t                            numGpuTasksOnThisNode,
+                    size_t                            numRanks,
+                    bool                              printHostName,
+                    bool                              useGpuForBonded,
+                    PmeRunMode                        pmeRunMode)
 {
     size_t numGpusInUse = countUniqueGpuIdsUsed(gpuTaskAssignmentOnRanksOfThisNode);
     if (numGpusInUse == 0)
@@ -97,46 +98,45 @@ reportGpuUsage(const MDLogger                &mdlog,
     std::string output;
     {
         std::string gpuIdsString;
-        const char *currentSeparator = "";
-        const char *separator        = ",";
-        for (const auto &assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)
+        const char* currentSeparator = "";
+        const char* separator        = ",";
+        for (const auto& assignmentsOnRank : gpuTaskAssignmentOnRanksOfThisNode)
         {
             if (assignmentsOnRank.empty())
             {
-                gpuIdsString    += currentSeparator;
-                gpuIdsString    += "none";
+                gpuIdsString += currentSeparator;
+                gpuIdsString += "none";
                 currentSeparator = separator;
             }
             else
             {
-                for (const auto &assignmentOnRank : assignmentsOnRank)
+                for (const auto& assignmentOnRank : assignmentsOnRank)
                 {
-                    const char *rankType = (assignmentOnRank.task_ == GpuTask::Nonbonded ? "PP" : "PME");
-                    gpuIdsString    += currentSeparator;
-                    gpuIdsString    += formatString("%s:%d", rankType, assignmentOnRank.deviceId_);
+                    const char* rankType = (assignmentOnRank.task_ == GpuTask::Nonbonded ? "PP" : "PME");
+                    gpuIdsString += currentSeparator;
+                    gpuIdsString += formatString("%s:%d", rankType, assignmentOnRank.deviceId_);
                     currentSeparator = separator;
                 }
             }
         }
-        bool        bPluralGpus  = numGpusInUse > 1;
+        bool bPluralGpus = numGpusInUse > 1;
 
-        if (bPrintHostName)
+        if (printHostName)
         {
             char host[STRLEN];
             gmx_gethostname(host, STRLEN);
             output += gmx::formatString("On host %s ", host);
         }
-        output += gmx::formatString("%zu GPU%s selected for this run.\n"
-                                    "Mapping of GPU IDs to the %zu GPU task%s in the %zu rank%s on this node:\n  %s\n",
-                                    numGpusInUse, bPluralGpus ? "s" : "",
-                                    numGpuTasksOnThisNode,
-                                    (numGpuTasksOnThisNode > 1) ? "s" : "",
-                                    numRanks,
-                                    (numRanks > 1) ? "s" : "",
-                                    gpuIdsString.c_str());
+        output += gmx::formatString(
+                "%zu GPU%s selected for this run.\n"
+                "Mapping of GPU IDs to the %zu GPU task%s in the %zu rank%s on this node:\n  %s\n",
+                numGpusInUse, bPluralGpus ? "s" : "", numGpuTasksOnThisNode,
+                (numGpuTasksOnThisNode > 1) ? "s" : "", numRanks, (numRanks > 1) ? "s" : "",
+                gpuIdsString.c_str());
         // Because there is a GPU in use, there must be a PP task on a GPU.
-        output += gmx::formatString("PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
-                                    useGpuForBonded ? " and most bonded" : "");
+        output += gmx::formatString(
+                "PP tasks will do (non-perturbed) short-ranged%s interactions on the GPU\n",
+                useGpuForBonded ? " and most bonded" : "");
         if (pmeRunMode == PmeRunMode::Mixed)
         {
             output += gmx::formatString("PME tasks will do only spread and gather on the GPU\n");
@@ -151,4 +151,4 @@ reportGpuUsage(const MDLogger                &mdlog,
     GMX_LOG(mdlog.warning).appendText(output);
 }
 
-}  // namespace gmx
+} // namespace gmx

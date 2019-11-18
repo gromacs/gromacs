@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -94,84 +94,84 @@ namespace gmx
  * \inlibraryapi
  * \ingroup module_utility
  */
-template <class T, typename AllocationPolicy>
+template<class T, typename AllocationPolicy>
 class Allocator : public AllocationPolicy
 {
-    public:
-        // The standard library specification for a custom allocator
-        // requires this typedef, with this capitalization/underscoring.
-        typedef T              value_type;      //!< Type of allocated elements
+public:
+    // The standard library specification for a custom allocator
+    // requires this typedef, with this capitalization/underscoring.
+    typedef T value_type; //!< Type of allocated elements
 
-        /*! \brief Constructor
-         *
-         * No constructor can be auto-generated in the presence of any
-         * user-defined constructor, but we want the default constructor.
-         */
-        Allocator() = default;
+    /*! \brief Constructor
+     *
+     * No constructor can be auto-generated in the presence of any
+     * user-defined constructor, but we want the default constructor.
+     */
+    Allocator() = default;
 
-        /*! \brief Constructor to accept an AllocationPolicy.
-         *
-         * This is useful for AllocationPolicies with state.
-         */
-        Allocator(const AllocationPolicy &p) : AllocationPolicy(p) {}
+    /*! \brief Constructor to accept an AllocationPolicy.
+     *
+     * This is useful for AllocationPolicies with state.
+     */
+    Allocator(const AllocationPolicy& p) : AllocationPolicy(p) {}
 
-        /*! \brief Do the actual memory allocation
-         *
-         *  \param n    Number of elements of type T to allocate. n can be
-         *              0 bytes, which will return a non-null properly aligned
-         *              and padded pointer that should not be used.
-         *  \param hint Optional value returned from previous call to allocate.
-         *              For now this is not used.
-         *  \return Pointer to allocated memory
-         *
-         *  \throws std::bad_alloc if the allocation fails.
-         */
-        value_type*
-        allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+    /*! \brief Do the actual memory allocation
+     *
+     *  \param n    Number of elements of type T to allocate. n can be
+     *              0 bytes, which will return a non-null properly aligned
+     *              and padded pointer that should not be used.
+     *  \param hint Optional value returned from previous call to allocate.
+     *              For now this is not used.
+     *  \return Pointer to allocated memory
+     *
+     *  \throws std::bad_alloc if the allocation fails.
+     */
+    value_type* allocate(std::size_t n, typename std::allocator<void>::const_pointer gmx_unused hint = nullptr)
+    {
+        void* p = AllocationPolicy::malloc(n * sizeof(T));
+
+        if (p == nullptr)
         {
-            void *p = AllocationPolicy::malloc(n*sizeof(T));
-
-            if (p == nullptr)
-            {
-                throw std::bad_alloc();
-            }
-            else
-            {
-                return static_cast<value_type*>(p);
-            }
+            throw std::bad_alloc();
         }
-
-        /*! \brief Release memory
-         *
-         * \param p  Pointer to previously allocated memory returned from allocate()
-         * \param n  number of objects previously passed to allocate()
-         */
-        void
-        deallocate(value_type* p, std::size_t gmx_unused n)
+        else
         {
-            AllocationPolicy::free(p);
+            return static_cast<value_type*>(p);
         }
+    }
 
-        /*! \brief Return true if two allocators are identical
-         *
-         * This is a member function of the left-hand-side allocator.
-         * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
-         * FUTURE: Can be removed with C++17 (is_always_equal)
-         */
-        template<class T2, class A = AllocationPolicy,
-                 typename          = typename std::enable_if<std::is_empty<A>::value>::type>
-        bool operator==(const Allocator<T2, AllocationPolicy> & /*unused*/) const { return true; }
+    /*! \brief Release memory
+     *
+     * \param p  Pointer to previously allocated memory returned from allocate()
+     * \param n  number of objects previously passed to allocate()
+     */
+    void deallocate(value_type* p, std::size_t gmx_unused n) { AllocationPolicy::free(p); }
 
-        /*! \brief Return true if two allocators are different
-         *
-         * \param rhs Other allocator.
-         *
-         * This is a member function of the left-hand-side allocator.
-         */
-        template<class T2>
-        bool operator!=(const Allocator<T2, AllocationPolicy> &rhs) const { return !(*this == rhs); }
+    /*! \brief Return true if two allocators are identical
+     *
+     * This is a member function of the left-hand-side allocator.
+     * Always true for stateless polcies. Has to be defined in the policy for stateful policies.
+     * FUTURE: Can be removed with C++17 (is_always_equal)
+     */
+    template<class T2, class A = AllocationPolicy, typename = std::enable_if_t<std::is_empty<A>::value>>
+    bool operator==(const Allocator<T2, AllocationPolicy>& /*unused*/) const
+    {
+        return true;
+    }
+
+    /*! \brief Return true if two allocators are different
+     *
+     * \param rhs Other allocator.
+     *
+     * This is a member function of the left-hand-side allocator.
+     */
+    template<class T2>
+    bool operator!=(const Allocator<T2, AllocationPolicy>& rhs) const
+    {
+        return !(*this == rhs);
+    }
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif

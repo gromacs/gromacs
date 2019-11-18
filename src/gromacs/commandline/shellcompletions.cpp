@@ -72,66 +72,64 @@ namespace
 
 class OptionsListWriter : public OptionsVisitor
 {
-    public:
-        const std::string &optionList() const { return optionList_; }
+public:
+    const std::string& optionList() const { return optionList_; }
 
-        void visitSection(const OptionSectionInfo &section) override
+    void visitSection(const OptionSectionInfo& section) override
+    {
+        OptionsIterator iterator(section);
+        iterator.acceptSections(this);
+        iterator.acceptOptions(this);
+    }
+    void visitOption(const OptionInfo& option) override
+    {
+        if (option.isHidden())
         {
-            OptionsIterator iterator(section);
-            iterator.acceptSections(this);
-            iterator.acceptOptions(this);
+            return;
         }
-        void visitOption(const OptionInfo &option) override
+        if (!optionList_.empty())
         {
-            if (option.isHidden())
-            {
-                return;
-            }
-            if (!optionList_.empty())
-            {
-                optionList_.append("\\n");
-            }
-            optionList_.append("-");
-            const BooleanOptionInfo *booleanOption
-                = option.toType<BooleanOptionInfo>();
-            if (booleanOption != nullptr && booleanOption->defaultValue())
-            {
-                optionList_.append("no");
-            }
-            optionList_.append(option.name());
+            optionList_.append("\\n");
         }
+        optionList_.append("-");
+        const BooleanOptionInfo* booleanOption = option.toType<BooleanOptionInfo>();
+        if (booleanOption != nullptr && booleanOption->defaultValue())
+        {
+            optionList_.append("no");
+        }
+        optionList_.append(option.name());
+    }
 
-    private:
-        std::string optionList_;
+private:
+    std::string optionList_;
 };
 
 class OptionCompletionWriter : public OptionsVisitor
 {
-    public:
-        explicit OptionCompletionWriter(TextWriter *out) : out_(*out) {}
+public:
+    explicit OptionCompletionWriter(TextWriter* out) : out_(*out) {}
 
-        void visitSection(const OptionSectionInfo &section) override
-        {
-            OptionsIterator iterator(section);
-            iterator.acceptSections(this);
-            iterator.acceptOptions(this);
-        }
-        void visitOption(const OptionInfo &option) override;
+    void visitSection(const OptionSectionInfo& section) override
+    {
+        OptionsIterator iterator(section);
+        iterator.acceptSections(this);
+        iterator.acceptOptions(this);
+    }
+    void visitOption(const OptionInfo& option) override;
 
-    private:
-        void writeOptionCompletion(const OptionInfo  &option,
-                                   const std::string &completion);
+private:
+    void writeOptionCompletion(const OptionInfo& option, const std::string& completion);
 
-        TextWriter &out_;
+    TextWriter& out_;
 };
 
-void OptionCompletionWriter::visitOption(const OptionInfo &option)
+void OptionCompletionWriter::visitOption(const OptionInfo& option)
 {
     if (option.isHidden())
     {
         return;
     }
-    const FileNameOptionInfo *fileOption = option.toType<FileNameOptionInfo>();
+    const FileNameOptionInfo* fileOption = option.toType<FileNameOptionInfo>();
     if (fileOption != nullptr)
     {
         if (fileOption->isDirectoryOption())
@@ -139,7 +137,7 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
             writeOptionCompletion(option, "compgen -S ' ' -d $c");
             return;
         }
-        const FileNameOptionInfo::ExtensionList &extensionList = fileOption->extensions();
+        const FileNameOptionInfo::ExtensionList& extensionList = fileOption->extensions();
         if (extensionList.empty())
         {
             return;
@@ -156,7 +154,7 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
         writeOptionCompletion(option, completion);
         return;
     }
-    const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
+    const StringOptionInfo* stringOption = option.toType<StringOptionInfo>();
     if (stringOption != nullptr && stringOption->isEnumerated())
     {
         std::string completion("compgen -S ' ' -W $'");
@@ -167,8 +165,7 @@ void OptionCompletionWriter::visitOption(const OptionInfo &option)
     }
 }
 
-void OptionCompletionWriter::writeOptionCompletion(
-        const OptionInfo &option, const std::string &completion)
+void OptionCompletionWriter::writeOptionCompletion(const OptionInfo& option, const std::string& completion)
 {
     std::string result(formatString("-%s) ", option.name().c_str()));
     if (option.maxValueCount() >= 0)
@@ -181,40 +178,35 @@ void OptionCompletionWriter::writeOptionCompletion(
     out_.writeLine(result);
 }
 
-}   // namespace
+} // namespace
 
 class ShellCompletionWriter::Impl
 {
-    public:
-        Impl(const std::string &binaryName, ShellCompletionFormat /*format*/)
-            : binaryName_(binaryName)
-        {
-        }
+public:
+    Impl(const std::string& binaryName, ShellCompletionFormat /*format*/) : binaryName_(binaryName)
+    {
+    }
 
-        std::string completionFunctionName(const char *moduleName) const
-        {
-            std::string result =
-                formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
-            std::replace(result.begin(), result.end(), '-', '_');
-            return result;
-        }
+    std::string completionFunctionName(const char* moduleName) const
+    {
+        std::string result = formatString("_%s_%s_compl", binaryName_.c_str(), moduleName);
+        std::replace(result.begin(), result.end(), '-', '_');
+        return result;
+    }
 
-        std::string                   binaryName_;
-        // Never releases ownership.
-        std::unique_ptr<TextWriter>   file_;
+    std::string binaryName_;
+    // Never releases ownership.
+    std::unique_ptr<TextWriter> file_;
 };
 
-ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
-                                             ShellCompletionFormat  format)
-    : impl_(new Impl(binaryName, format))
+ShellCompletionWriter::ShellCompletionWriter(const std::string& binaryName, ShellCompletionFormat format) :
+    impl_(new Impl(binaryName, format))
 {
 }
 
-ShellCompletionWriter::~ShellCompletionWriter()
-{
-}
+ShellCompletionWriter::~ShellCompletionWriter() {}
 
-TextWriter &ShellCompletionWriter::outputWriter()
+TextWriter& ShellCompletionWriter::outputWriter()
 {
     return *impl_->file_;
 }
@@ -224,22 +216,25 @@ void ShellCompletionWriter::startCompletions()
     impl_->file_ = std::make_unique<TextWriter>(impl_->binaryName_ + "-completion.bash");
 }
 
-void ShellCompletionWriter::writeModuleCompletions(
-        const char    *moduleName,
-        const Options &options)
+void ShellCompletionWriter::writeModuleCompletions(const char* moduleName, const Options& options)
 {
-    TextWriter &out = *impl_->file_;
+    TextWriter& out = *impl_->file_;
     out.writeLine(formatString("%s() {", impl_->completionFunctionName(moduleName).c_str()));
     out.writeLine("local IFS=$'\\n'");
     out.writeLine("local c=${COMP_WORDS[COMP_CWORD]}");
     out.writeLine("local n");
-    out.writeLine("for ((n=1;n<COMP_CWORD;++n)) ; do [[ \"${COMP_WORDS[COMP_CWORD-n]}\" == -* ]] && break ; done");
+    out.writeLine(
+            "for ((n=1;n<COMP_CWORD;++n)) ; do [[ \"${COMP_WORDS[COMP_CWORD-n]}\" == -* ]] && "
+            "break ; done");
     out.writeLine("local p=${COMP_WORDS[COMP_CWORD-n]}");
     out.writeLine("COMPREPLY=()");
 
     OptionsListWriter listWriter;
     listWriter.visitSection(options.rootSection());
-    out.writeLine(formatString("if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen -S ' '  -W $'%s' -- $c)); return 0; fi", listWriter.optionList().c_str()));
+    out.writeLine(
+            formatString("if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen "
+                         "-S ' '  -W $'%s' -- $c)); return 0; fi",
+                         listWriter.optionList().c_str()));
 
     out.writeLine("case \"$p\" in");
     OptionCompletionWriter optionWriter(&out);
@@ -247,8 +242,7 @@ void ShellCompletionWriter::writeModuleCompletions(
     out.writeLine("esac }");
 }
 
-void ShellCompletionWriter::writeWrapperCompletions(
-        const ModuleNameList &modules, const Options &options)
+void ShellCompletionWriter::writeWrapperCompletions(const ModuleNameList& modules, const Options& options)
 {
     impl_->file_->writeLine("_" + impl_->binaryName_ + "_compl() {");
     impl_->file_->writeLine("local i c m");
@@ -263,9 +257,8 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
     OptionsListWriter lister;
     lister.visitSection(options.rootSection());
-    std::string       completions(lister.optionList());
-    for (ModuleNameList::const_iterator i = modules.begin();
-         i != modules.end(); ++i)
+    std::string completions(lister.optionList());
+    for (ModuleNameList::const_iterator i = modules.begin(); i != modules.end(); ++i)
     {
         completions.append("\\n");
         completions.append(*i);
@@ -277,12 +270,11 @@ void ShellCompletionWriter::writeWrapperCompletions(
     impl_->file_->writeLine("COMP_WORDS=( \"${COMP_WORDS[@]}\" )");
     impl_->file_->writeLine("COMP_CWORD=$((COMP_CWORD-i))");
     impl_->file_->writeLine("case \"$m\" in");
-    for (ModuleNameList::const_iterator i = modules.begin();
-         i != modules.end(); ++i)
+    for (ModuleNameList::const_iterator i = modules.begin(); i != modules.end(); ++i)
     {
-        const char *const name = i->c_str();
-        impl_->file_->writeLine(formatString("%s) %s ;;", name,
-                                             impl_->completionFunctionName(name).c_str()));
+        const char* const name = i->c_str();
+        impl_->file_->writeLine(
+                formatString("%s) %s ;;", name, impl_->completionFunctionName(name).c_str()));
     }
     impl_->file_->writeLine("esac }");
 }

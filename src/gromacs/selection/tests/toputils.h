@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,38 +52,75 @@ struct t_trxframe;
 namespace gmx
 {
 
-template <typename T>
+template<typename T>
 class ArrayRef;
 
 namespace test
 {
 
+/*! \internal
+ * \brief Helps create and manage the lifetime of topology and
+ * related data structures. */
 class TopologyManager
 {
-    public:
-        TopologyManager();
-        ~TopologyManager();
+public:
+    TopologyManager();
+    ~TopologyManager();
 
-        void requestFrame();
-        void requestVelocities();
-        void requestForces();
+    //@{
+    /*! \brief Prepare the memory within a trajectory frame needed
+     * for test */
+    void requestFrame();
+    void requestVelocities();
+    void requestForces();
+    void initFrameIndices(const ArrayRef<const int>& index);
+    //@}
 
-        void loadTopology(const char *filename);
-        void initAtoms(int count);
-        void initAtomTypes(const ArrayRef<const char *const> &types);
-        void initUniformResidues(int residueSize);
-        void initUniformMolecules(int moleculeSize);
+    //! Load a topology from an input file relative to the source tree
+    void loadTopology(const char* filename);
 
-        void initFrameIndices(const ArrayRef<const int> &index);
+    //@{
+    /*! \brief Functions for creating simplistic topologies
+     *
+     * These are easy to work with for some kinds of tests. */
+    void initAtoms(int count);
+    void initAtomTypes(const ArrayRef<const char* const>& types);
+    void initUniformResidues(int residueSize);
+    void initUniformMolecules(int moleculeSize);
+    //@}
 
-        gmx_mtop_t *topology() { return mtop_.get(); }
-        t_atoms &atoms();
-        t_trxframe *frame() { return frame_; }
+    //@{
+    /*! \brief Functions for creating realistic topologies
+     *
+     * Real topologies aren't uniform, so we need to be able to
+     * create custom topologies to test against.
+     *
+     * Ideally, we'd just be able to push new molecule types and
+     * blocks, but the data structures are not mature enough for
+     * that yet. The intended usage pattern is to initialize the
+     * topology and declare the number of molecule types and
+     * blocks, and then call the setter functions to fill in the
+     * data structures. */
+    void initTopology(int numMoleculeTypes, int numMoleculeBlocks);
+    void setMoleculeType(int moleculeTypeIndex, ArrayRef<const int> residueSizes);
+    void setMoleculeBlock(int moleculeBlockIndex, int moleculeTypeIndex, int numMoleculesToAdd);
+    void finalizeTopology();
+    //@}
 
-    private:
-        std::unique_ptr<gmx_mtop_t>  mtop_;
-        t_trxframe                  *frame_;
-        std::vector<char *>          atomtypes_;
+    //@{
+    //! Getters
+    gmx_mtop_t* topology() { return mtop_.get(); }
+    t_atoms&    atoms();
+    t_trxframe* frame() { return frame_; }
+    //@}
+
+private:
+    //! Topology
+    std::unique_ptr<gmx_mtop_t> mtop_;
+    //! Trajectory frame
+    t_trxframe* frame_;
+    //! Atom type names
+    std::vector<char*> atomtypes_;
 };
 
 } // namespace test

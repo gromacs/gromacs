@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,23 +45,17 @@
 namespace gmx
 {
 
-static inline void gmx_simdcall
-expandScalarsToTriplets(SimdFloat    scalar,
-                        SimdFloat *  triplets0,
-                        SimdFloat *  triplets1,
-                        SimdFloat *  triplets2)
+static inline void gmx_simdcall expandScalarsToTriplets(SimdFloat  scalar,
+                                                        SimdFloat* triplets0,
+                                                        SimdFloat* triplets1,
+                                                        SimdFloat* triplets2)
 {
     triplets0->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(1, 0, 0, 0));
     triplets1->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(2, 2, 1, 1));
     triplets2->simdInternal_ = _mm_permute_ps(scalar.simdInternal_, _MM_SHUFFLE(3, 3, 3, 2));
 }
 
-static inline float gmx_simdcall
-reduceIncr4ReturnSum(float *    m,
-                     SimdFloat  v0,
-                     SimdFloat  v1,
-                     SimdFloat  v2,
-                     SimdFloat  v3)
+static inline float gmx_simdcall reduceIncr4ReturnSum(float* m, SimdFloat v0, SimdFloat v1, SimdFloat v2, SimdFloat v3)
 {
     _MM_TRANSPOSE4_PS(v0.simdInternal_, v1.simdInternal_, v2.simdInternal_, v3.simdInternal_);
     v0.simdInternal_ = _mm_add_ps(v0.simdInternal_, v1.simdInternal_);
@@ -74,10 +68,10 @@ reduceIncr4ReturnSum(float *    m,
     _mm_store_ps(m, v2.simdInternal_);
 
     __m128 b = _mm_add_ps(v0.simdInternal_, _mm_permute_ps(v0.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
-    b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
-    return *reinterpret_cast<float *>(&b);
+    b        = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
+    return *reinterpret_cast<float*>(&b);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_UTIL_FLOAT_H

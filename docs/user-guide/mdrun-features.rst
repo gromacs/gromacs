@@ -45,6 +45,23 @@ different hardware, or with a different compiler, etc. will not be
 reproducible. This should normally only be used when investigating
 possible problems.
 
+Halting running simulations
+---------------------------
+
+When :ref:`gmx mdrun` receives a TERM or INT signal (e.g. when ctrl+C is
+pressed), it will stop at the next neighbor search step or at the
+second global communication step, whichever happens later.
+When :ref:`gmx mdrun` receives a second TERM or INT signal and
+reproducibility is not requested, it will stop at the first global
+communication step.
+In both cases all the usual output will be written to file and
+a checkpoint file is written at the last step.
+When :ref:`gmx mdrun` receives an ABRT signal or the third TERM or INT signal,
+it will abort directly without writing a new checkpoint file.
+When running with MPI, a signal to one of the :ref:`gmx mdrun` ranks
+is sufficient, this signal should not be sent to mpirun or
+the :ref:`gmx mdrun` process that is the parent of the others.
+
 Running multi-simulations
 -------------------------
 There are numerous situations where running a related set of

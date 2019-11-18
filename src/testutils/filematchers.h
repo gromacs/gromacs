@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,22 +74,21 @@ class TestReferenceChecker;
  */
 class IFileMatcher
 {
-    public:
-        virtual ~IFileMatcher();
+public:
+    virtual ~IFileMatcher();
 
-        /*! \brief
-         * Matches contents of a file.
-         *
-         * \param  path     Path to the file to match.
-         * \param  checker  Checker to use for matching.
-         *
-         * The method can change the state of the provided checker (e.g., by
-         * changing the default tolerance).
-         * The caller is responsible of providing a checker where such state
-         * changes do not matter.
-         */
-        virtual void checkFile(const std::string    &path,
-                               TestReferenceChecker *checker) = 0;
+    /*! \brief
+     * Matches contents of a file.
+     *
+     * \param  path     Path to the file to match.
+     * \param  checker  Checker to use for matching.
+     *
+     * The method can change the state of the provided checker (e.g., by
+     * changing the default tolerance).
+     * The caller is responsible of providing a checker where such state
+     * changes do not matter.
+     */
+    virtual void checkFile(const std::string& path, TestReferenceChecker* checker) = 0;
 };
 
 //! Smart pointer for managing a IFileMatcher.
@@ -109,12 +108,12 @@ typedef std::unique_ptr<IFileMatcher> FileMatcherPointer;
  */
 class IFileMatcherSettings
 {
-    public:
-        //! Factory method that constructs the matcher after parameters are set.
-        virtual FileMatcherPointer createFileMatcher() const = 0;
+public:
+    //! Factory method that constructs the matcher after parameters are set.
+    virtual FileMatcherPointer createFileMatcher() const = 0;
 
-    protected:
-        virtual ~IFileMatcherSettings();
+protected:
+    virtual ~IFileMatcherSettings();
 };
 
 /*! \libinternal \brief
@@ -125,17 +124,17 @@ class IFileMatcherSettings
  */
 class TextFileMatch : public IFileMatcherSettings
 {
-    public:
-        //! Creates a matcher to match contents with given text matcher.
-        explicit TextFileMatch(const ITextBlockMatcherSettings &streamSettings)
-            : streamSettings_(streamSettings)
-        {
-        }
+public:
+    //! Creates a matcher to match contents with given text matcher.
+    explicit TextFileMatch(const ITextBlockMatcherSettings& streamSettings) :
+        streamSettings_(streamSettings)
+    {
+    }
 
-        FileMatcherPointer createFileMatcher() const override;
+    FileMatcherPointer createFileMatcher() const override;
 
-    private:
-        const ITextBlockMatcherSettings &streamSettings_;
+private:
+    const ITextBlockMatcherSettings& streamSettings_;
 };
 
 /*! \libinternal \brief
@@ -146,8 +145,8 @@ class TextFileMatch : public IFileMatcherSettings
  */
 class NoContentsMatch : public IFileMatcherSettings
 {
-    public:
-        FileMatcherPointer createFileMatcher() const override;
+public:
+    FileMatcherPointer createFileMatcher() const override;
 };
 
 } // namespace test

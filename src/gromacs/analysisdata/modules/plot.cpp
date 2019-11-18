@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,9 +69,7 @@ namespace
 {
 
 //! Enum values for plot formats.
-const char *const g_plotFormats[] = {
-    "none", "xmgrace", "xmgr"
-};
+const char* const g_plotFormats[] = { "none", "xmgrace", "xmgr" };
 
 } // namespace
 
@@ -81,24 +80,23 @@ namespace gmx
  * AnalysisDataPlotSettings
  */
 
-AnalysisDataPlotSettings::AnalysisDataPlotSettings()
-    : selections_(nullptr), timeUnit_(TimeUnit_Default), plotFormat_(1)
+AnalysisDataPlotSettings::AnalysisDataPlotSettings() :
+    selections_(nullptr),
+    timeUnit_(TimeUnit_Default),
+    plotFormat_(1)
 {
 }
 
-void
-AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection *selections)
+void AnalysisDataPlotSettings::setSelectionCollection(const SelectionCollection* selections)
 {
     selections_ = selections;
 }
 
 
-void
-AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
+void AnalysisDataPlotSettings::initOptions(IOptionsContainer* options)
 {
-    options->addOption(EnumIntOption("xvg").enumValue(g_plotFormats)
-                           .store(&plotFormat_)
-                           .description("Plot formatting"));
+    options->addOption(
+            EnumIntOption("xvg").enumValue(g_plotFormats).store(&plotFormat_).description("Plot formatting"));
 }
 
 
@@ -108,33 +106,38 @@ AnalysisDataPlotSettings::initOptions(IOptionsContainer *options)
 
 class AbstractPlotModule::Impl
 {
-    public:
-        explicit Impl(const AnalysisDataPlotSettings &settings);
-        ~Impl();
+public:
+    explicit Impl(const AnalysisDataPlotSettings& settings);
+    ~Impl();
 
-        void closeFile();
+    void closeFile();
 
-        AnalysisDataPlotSettings  settings_;
-        std::string               filename_;
-        FILE                     *fp_;
+    AnalysisDataPlotSettings settings_;
+    std::string              filename_;
+    FILE*                    fp_;
 
-        bool                      bPlain_;
-        bool                      bOmitX_;
-        bool                      bErrorsAsSeparateColumn_;
-        std::string               title_;
-        std::string               subtitle_;
-        std::string               xlabel_;
-        std::string               ylabel_;
-        std::vector<std::string>  legend_;
-        std::string               xformat_;
-        std::string               yformat_;
-        real                      xscale_;
+    bool                     bPlain_;
+    bool                     bOmitX_;
+    bool                     bErrorsAsSeparateColumn_;
+    std::string              title_;
+    std::string              subtitle_;
+    std::string              xlabel_;
+    std::string              ylabel_;
+    std::vector<std::string> legend_;
+    std::string              xformat_;
+    std::string              yformat_;
+    real                     xscale_;
 };
 
-AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
-    : settings_(settings), fp_(nullptr), bPlain_(false), bOmitX_(false),
-      bErrorsAsSeparateColumn_(false),
-      xformat_("%11.3f"), yformat_(" %8.3f"), xscale_(1.0)
+AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings& settings) :
+    settings_(settings),
+    fp_(nullptr),
+    bPlain_(false),
+    bOmitX_(false),
+    bErrorsAsSeparateColumn_(false),
+    xformat_("%11.3f"),
+    yformat_(" %8.3f"),
+    xscale_(1.0)
 {
 }
 
@@ -144,8 +147,7 @@ AbstractPlotModule::Impl::~Impl()
 }
 
 
-void
-AbstractPlotModule::Impl::closeFile()
+void AbstractPlotModule::Impl::closeFile()
 {
     if (fp_ != nullptr)
     {
@@ -166,93 +168,77 @@ AbstractPlotModule::Impl::closeFile()
  * AbstractPlotModule
  */
 /*! \cond libapi */
-AbstractPlotModule::AbstractPlotModule()
-    : impl_(new Impl(AnalysisDataPlotSettings()))
-{
-}
+AbstractPlotModule::AbstractPlotModule() : impl_(new Impl(AnalysisDataPlotSettings())) {}
 
-AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings &settings)
-    : impl_(new Impl(settings))
+AbstractPlotModule::AbstractPlotModule(const AnalysisDataPlotSettings& settings) :
+    impl_(new Impl(settings))
 {
 }
 //! \endcond
 
-AbstractPlotModule::~AbstractPlotModule()
-{
-}
+AbstractPlotModule::~AbstractPlotModule() {}
 
 
-void
-AbstractPlotModule::setSettings(const AnalysisDataPlotSettings &settings)
+void AbstractPlotModule::setSettings(const AnalysisDataPlotSettings& settings)
 {
     impl_->settings_ = settings;
 }
 
 
-void
-AbstractPlotModule::setFileName(const std::string &filename)
+void AbstractPlotModule::setFileName(const std::string& filename)
 {
     impl_->filename_ = filename;
 }
 
 
-void
-AbstractPlotModule::setPlainOutput(bool bPlain)
+void AbstractPlotModule::setPlainOutput(bool bPlain)
 {
     impl_->bPlain_ = bPlain;
 }
 
 
-void
-AbstractPlotModule::setErrorsAsSeparateColumn(bool bSeparate)
+void AbstractPlotModule::setErrorsAsSeparateColumn(bool bSeparate)
 {
     impl_->bErrorsAsSeparateColumn_ = bSeparate;
 }
 
 
-void
-AbstractPlotModule::setOmitX(bool bOmitX)
+void AbstractPlotModule::setOmitX(bool bOmitX)
 {
     impl_->bOmitX_ = bOmitX;
 }
 
 
-void
-AbstractPlotModule::setTitle(const char *title)
+void AbstractPlotModule::setTitle(const char* title)
 {
     impl_->title_ = title;
 }
 
-void
-AbstractPlotModule::setTitle(const std::string &title)
+void AbstractPlotModule::setTitle(const std::string& title)
 {
     impl_->title_ = title;
 }
 
 
-void
-AbstractPlotModule::setSubtitle(const char *subtitle)
+void AbstractPlotModule::setSubtitle(const char* subtitle)
 {
     impl_->subtitle_ = subtitle;
 }
 
 
-void
-AbstractPlotModule::setSubtitle(const std::string &subtitle)
+void AbstractPlotModule::setSubtitle(const std::string& subtitle)
 {
     impl_->subtitle_ = subtitle;
 }
 
 
-void
-AbstractPlotModule::setXLabel(const char *label)
+void AbstractPlotModule::setXLabel(const char* label)
 {
     impl_->xlabel_ = label;
 }
 
 
-void
-AbstractPlotModule::setXAxisIsTime()
+void AbstractPlotModule::setXAxisIsTime()
 {
     TimeUnitManager manager(impl_->settings_.timeUnit());
     impl_->xlabel_ = formatString("Time (%s)", manager.timeUnitAsString());
@@ -260,15 +246,13 @@ AbstractPlotModule::setXAxisIsTime()
 }
 
 
-void
-AbstractPlotModule::setYLabel(const char *label)
+void AbstractPlotModule::setYLabel(const char* label)
 {
     impl_->ylabel_ = label;
 }
 
 
-void
-AbstractPlotModule::setLegend(int nsets, const char * const *setname)
+void AbstractPlotModule::setLegend(int nsets, const char* const* setname)
 {
     impl_->legend_.reserve(impl_->legend_.size() + nsets);
     for (int i = 0; i < nsets; ++i)
@@ -278,54 +262,43 @@ AbstractPlotModule::setLegend(int nsets, const char * const *setname)
 }
 
 
-void
-AbstractPlotModule::appendLegend(const char *setname)
+void AbstractPlotModule::appendLegend(const char* setname)
 {
     impl_->legend_.emplace_back(setname);
 }
 
 
-void
-AbstractPlotModule::appendLegend(const std::string &setname)
+void AbstractPlotModule::appendLegend(const std::string& setname)
 {
     impl_->legend_.push_back(setname);
 }
 
 
-void
-AbstractPlotModule::setXFormat(int width, int precision, char format)
+void AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
-                       "Invalid format specifier");
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
     impl_->xformat_ = formatString("%%%d.%d%c", width, precision, format);
 }
 
 
-void
-AbstractPlotModule::setYFormat(int width, int precision, char format)
+void AbstractPlotModule::setYFormat(int width, int precision, char format)
 {
-    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
-                       && width <= 99 && precision <= 99,
+    GMX_RELEASE_ASSERT(width >= 0 && precision >= 0 && width <= 99 && precision <= 99,
                        "Invalid width or precision");
-    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr,
-                       "Invalid format specifier");
+    GMX_RELEASE_ASSERT(strchr("eEfFgG", format) != nullptr, "Invalid format specifier");
     impl_->yformat_ = formatString(" %%%d.%d%c", width, precision, format);
 }
 
 
-int
-AbstractPlotModule::flags() const
+int AbstractPlotModule::flags() const
 {
-    return efAllowMissing | efAllowMulticolumn | efAllowMultipoint
-           | efAllowMultipleDataSets;
+    return efAllowMissing | efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
-void
-AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
+void AbstractPlotModule::dataStarted(AbstractAnalysisData* /* data */)
 {
     if (!impl_->filename_.empty())
     {
@@ -335,20 +308,17 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
         }
         else
         {
-            time_unit_t  time_unit
-                = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1); // NOLINT(bugprone-misplaced-widening-cast)
-            xvg_format_t xvg_format
-                = (impl_->settings_.plotFormat() > 0
-                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                   : exvgNONE);
-            gmx_output_env_t                                    *oenv;
+            // NOLINTNEXTLINE(bugprone-misplaced-widening-cast)
+            time_unit_t       time_unit = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
+            xvg_format_t      xvg_format = (impl_->settings_.plotFormat() > 0
+                                               ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                                               : exvgNONE);
+            gmx_output_env_t* oenv;
             output_env_init(&oenv, getProgramContext(), time_unit, FALSE, xvg_format, 0);
             const unique_cptr<gmx_output_env_t, output_env_done> oenvGuard(oenv);
-            impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),
-                                  impl_->xlabel_, impl_->ylabel_,
-                                  oenv);
-            const SelectionCollection *selections
-                = impl_->settings_.selectionCollection();
+            impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(), impl_->xlabel_,
+                                  impl_->ylabel_, oenv);
+            const SelectionCollection* selections = impl_->settings_.selectionCollection();
             if (selections != nullptr && output_env_get_xvg_format(oenv) != exvgNONE)
             {
                 selections->printXvgrInfo(impl_->fp_);
@@ -357,10 +327,9 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
             {
                 xvgr_subtitle(impl_->fp_, impl_->subtitle_.c_str(), oenv);
             }
-            if (output_env_get_print_xvgr_codes(oenv)
-                && !impl_->legend_.empty())
+            if (output_env_get_print_xvgr_codes(oenv) && !impl_->legend_.empty())
             {
-                std::vector<const char *> legend;
+                std::vector<const char*> legend;
                 legend.reserve(impl_->legend_.size());
                 for (size_t i = 0; i < impl_->legend_.size(); ++i)
                 {
@@ -373,8 +342,7 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
 }
 
 
-void
-AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader& header)
 {
     if (!isFileOpen())
     {
@@ -387,8 +355,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &header)
 }
 
 
-void
-AbstractPlotModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
+void AbstractPlotModule::frameFinished(const AnalysisDataFrameHeader& /*header*/)
 {
     if (!isFileOpen())
     {
@@ -398,22 +365,19 @@ AbstractPlotModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 }
 
 
-void
-AbstractPlotModule::dataFinished()
+void AbstractPlotModule::dataFinished()
 {
     impl_->closeFile();
 }
 
 /*! \cond libapi */
-bool
-AbstractPlotModule::isFileOpen() const
+bool AbstractPlotModule::isFileOpen() const
 {
     return impl_->fp_ != nullptr;
 }
 
 
-void
-AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
+void AbstractPlotModule::writeValue(const AnalysisDataValue& value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
     const real y = value.isSet() ? value.value() : 0.0;
@@ -430,19 +394,15 @@ AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
  * DataPlotModule
  */
 
-AnalysisDataPlotModule::AnalysisDataPlotModule()
+AnalysisDataPlotModule::AnalysisDataPlotModule() {}
+
+AnalysisDataPlotModule::AnalysisDataPlotModule(const AnalysisDataPlotSettings& settings) :
+    AbstractPlotModule(settings)
 {
 }
 
-AnalysisDataPlotModule::AnalysisDataPlotModule(
-        const AnalysisDataPlotSettings &settings)
-    : AbstractPlotModule(settings)
-{
-}
 
-
-void
-AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     if (!isFileOpen())
     {
@@ -459,50 +419,41 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
  * DataVectorPlotModule
  */
 
-AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
-    : bWrite_ {true, true, true, false}
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule() : bWrite_{ true, true, true, false } {}
+
+
+AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(const AnalysisDataPlotSettings& settings) :
+    AbstractPlotModule(settings),
+    bWrite_{ true, true, true, false }
 {
 }
 
 
-AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
-        const AnalysisDataPlotSettings &settings)
-    : AbstractPlotModule(settings),
-      bWrite_ {true, true, true, false}
-{
-}
-
-
-void
-AnalysisDataVectorPlotModule::setWriteX(bool bWrite)
+void AnalysisDataVectorPlotModule::setWriteX(bool bWrite)
 {
     bWrite_[XX] = bWrite;
 }
 
 
-void
-AnalysisDataVectorPlotModule::setWriteY(bool bWrite)
+void AnalysisDataVectorPlotModule::setWriteY(bool bWrite)
 {
     bWrite_[YY] = bWrite;
 }
 
 
-void
-AnalysisDataVectorPlotModule::setWriteZ(bool bWrite)
+void AnalysisDataVectorPlotModule::setWriteZ(bool bWrite)
 {
     bWrite_[ZZ] = bWrite;
 }
 
 
-void
-AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
+void AnalysisDataVectorPlotModule::setWriteNorm(bool bWrite)
 {
     bWrite_[DIM] = bWrite;
 }
 
 
-void
-AnalysisDataVectorPlotModule::setWriteMask(const bool bWrite[DIM + 1])
+void AnalysisDataVectorPlotModule::setWriteMask(const bool bWrite[DIM + 1])
 {
     for (int i = 0; i < DIM + 1; ++i)
     {
@@ -511,8 +462,7 @@ AnalysisDataVectorPlotModule::setWriteMask(const bool bWrite[DIM + 1])
 }
 
 
-void
-AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     if (points.firstColumn() % DIM != 0 || points.columnCount() % DIM != 0)
     {

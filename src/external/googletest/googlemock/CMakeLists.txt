@@ -83,28 +83,29 @@ endif()
 # a user aggressive about warnings.
 cxx_library(gmock
             "${cxx_strict}"
-            "${gtest_dir}/src/gtest-all.cc"
+#            "${gtest_dir}/src/gtest-all.cc"
             src/gmock-all.cc)
+target_link_libraries(gmock gtest)
 
-cxx_library(gmock_main
-            "${cxx_strict}"
-            "${gtest_dir}/src/gtest-all.cc"
-            src/gmock-all.cc
-            src/gmock_main.cc)
+#cxx_library(gmock_main
+#            "${cxx_strict}"
+##            "${gtest_dir}/src/gtest-all.cc"
+#            src/gmock-all.cc
+#            src/gmock_main.cc)
 
 # If the CMake version supports it, attach header directory information
 # to the targets for when we are part of a parent build (ie being pulled
 # in via add_subdirectory() rather than being a standalone build).
 if (DEFINED CMAKE_VERSION AND NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.11")
-  target_include_directories(gmock      INTERFACE "${gmock_SOURCE_DIR}/include")
-  target_include_directories(gmock_main INTERFACE "${gmock_SOURCE_DIR}/include")
+  target_include_directories(gmock      SYSTEM INTERFACE "${gmock_SOURCE_DIR}/include")
+#  target_include_directories(gmock_main SYSTEM INTERFACE "${gmock_SOURCE_DIR}/include")
 endif()
 
 ########################################################################
 #
 # Install rules
-install(TARGETS gmock gmock_main
-  DESTINATION lib)
+#install(TARGETS gmock gmock_main
+#  DESTINATION lib)
 install(DIRECTORY ${gmock_SOURCE_DIR}/include/gmock
   DESTINATION include)
 

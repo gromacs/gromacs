@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,11 +62,16 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
-#define RANGECHK(i, n) if ((i) >= (n)) gmx_fatal(FARGS, "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)", (i), (n))
+#define RANGECHK(i, n)                                                                           \
+    if ((i) >= (n))                                                                              \
+    gmx_fatal(FARGS,                                                                             \
+              "Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number " \
+              "of atoms in the tpr file (%d)",                                                   \
+              (i), (n))
 
-static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
+static gmx_bool* bKeepIt(int gnx, int natoms, int index[])
 {
-    gmx_bool *b;
+    gmx_bool* b;
     int       i;
 
     snew(b, natoms);
@@ -79,10 +84,10 @@ static gmx_bool *bKeepIt(int gnx, int natoms, int index[])
     return b;
 }
 
-static int *invind(int gnx, int natoms, int index[])
+static int* invind(int gnx, int natoms, int index[])
 {
-    int     *inv;
-    int      i;
+    int* inv;
+    int  i;
 
     snew(inv, natoms);
     for (i = 0; (i < gnx); i++)
@@ -94,18 +99,17 @@ static int *invind(int gnx, int natoms, int index[])
     return inv;
 }
 
-static void reduce_block(const gmx_bool bKeep[], t_block *block,
-                         const char *name)
+static void reduce_block(const gmx_bool bKeep[], t_block* block, const char* name)
 {
-    int     *index;
-    int      i, j, newi, newj;
+    int* index;
+    int  i, j, newi, newj;
 
     snew(index, block->nr);
 
     newi = newj = 0;
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (bKeep[j])
             {
@@ -119,17 +123,16 @@ static void reduce_block(const gmx_bool bKeep[], t_block *block,
         }
     }
 
-    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n",
-            name, block->nr, newi, block->index[block->nr], newj);
+    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n", name,
+            block->nr, newi, block->index[block->nr], newj);
     block->index = index;
     block->nr    = newi;
 }
 
-static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka *block,
-                          const char *name)
+static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka* block, const char* name)
 {
-    int     *index, *a;
-    int      i, j, k, newi, newj;
+    int *index, *a;
+    int  i, j, k, newi, newj;
 
     snew(index, block->nr);
     snew(a, block->nra);
@@ -137,7 +140,7 @@ static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka
     newi = newj = 0;
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             k = block->a[j];
             if (bKeep[k])
@@ -153,8 +156,8 @@ static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka
         }
     }
 
-    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n",
-            name, block->nr, newi, block->nra, newj);
+    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n", name,
+            block->nr, newi, block->nra, newj);
     block->index = index;
     block->a     = a;
     block->nr    = newi;
@@ -163,7 +166,7 @@ static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka
 
 static void reduce_rvec(int gnx, const int index[], rvec vv[])
 {
-    rvec *ptr;
+    rvec* ptr;
     int   i;
 
     snew(ptr, gnx);
@@ -178,17 +181,16 @@ static void reduce_rvec(int gnx, const int index[], rvec vv[])
     sfree(ptr);
 }
 
-static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomname,
-                        int *nres, t_resinfo *resinfo)
+static void reduce_atom(int gnx, const int index[], t_atom atom[], char*** atomname, int* nres, t_resinfo* resinfo)
 {
-    t_atom    *ptr;
-    char    ***aname;
-    t_resinfo *rinfo;
+    t_atom*    ptr;
+    char***    aname;
+    t_resinfo* rinfo;
     int        i, nr;
 
     snew(ptr, gnx);
     snew(aname, gnx);
-    snew(rinfo, atom[index[gnx-1]].resind+1);
+    snew(rinfo, atom[index[gnx - 1]].resind + 1);
     for (i = 0; (i < gnx); i++)
     {
         ptr[i]   = atom[index[i]];
@@ -199,7 +201,7 @@ static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomn
     {
         atom[i]     = ptr[i];
         atomname[i] = aname[i];
-        if ((i == 0) || (atom[i].resind != atom[i-1].resind))
+        if ((i == 0) || (atom[i].resind != atom[i - 1].resind))
         {
             nr++;
             rinfo[nr] = resinfo[atom[i].resind];
@@ -218,10 +220,9 @@ static void reduce_atom(int gnx, const int index[], t_atom atom[], char ***atomn
     sfree(rinfo);
 }
 
-static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
-                         t_ilist *il, int nratoms, const char *name)
+static void reduce_ilist(const int invindex[], const gmx_bool bKeep[], t_ilist* il, int nratoms, const char* name)
 {
-    t_iatom *ia;
+    t_iatom* ia;
     int      i, j, newnr;
     gmx_bool bB;
 
@@ -229,25 +230,24 @@ static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
     {
         snew(ia, il->nr);
         newnr = 0;
-        for (i = 0; (i < il->nr); i += nratoms+1)
+        for (i = 0; (i < il->nr); i += nratoms + 1)
         {
             bB = TRUE;
             for (j = 1; (j <= nratoms); j++)
             {
-                bB = bB && bKeep[il->iatoms[i+j]];
+                bB = bB && bKeep[il->iatoms[i + j]];
             }
             if (bB)
             {
                 ia[newnr++] = il->iatoms[i];
                 for (j = 1; (j <= nratoms); j++)
                 {
-                    ia[newnr++] = invindex[il->iatoms[i+j]];
+                    ia[newnr++] = invindex[il->iatoms[i + j]];
                 }
             }
         }
-        fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n",
-                name, il->nr/(nratoms+1),
-                newnr/(nratoms+1));
+        fprintf(stderr, "Reduced ilist %8s from %6d to %6d entries\n", name, il->nr / (nratoms + 1),
+                newnr / (nratoms + 1));
 
         il->nr = newnr;
         for (i = 0; (i < newnr); i++)
@@ -259,30 +259,26 @@ static void reduce_ilist(const int invindex[], const gmx_bool bKeep[],
     }
 }
 
-static void reduce_topology_x(int gnx, int index[],
-                              gmx_mtop_t *mtop, rvec x[], rvec v[])
+static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], rvec v[])
 {
-    t_topology   top;
-    gmx_bool    *bKeep;
-    int         *invindex;
-    int          i;
+    t_topology top;
+    gmx_bool*  bKeep;
+    int*       invindex;
+    int        i;
 
     top      = gmx_mtop_t_to_t_topology(mtop, false);
     bKeep    = bKeepIt(gnx, top.atoms.nr, index);
     invindex = invind(gnx, top.atoms.nr, index);
 
-    reduce_block(bKeep, &(top.cgs), "cgs");
     reduce_block(bKeep, &(top.mols), "mols");
     reduce_blocka(invindex, bKeep, &(top.excls), "excls");
     reduce_rvec(gnx, index, x);
     reduce_rvec(gnx, index, v);
-    reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname,
-                &(top.atoms.nres), top.atoms.resinfo);
+    reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname, &(top.atoms.nres), top.atoms.resinfo);
 
     for (i = 0; (i < F_NRE); i++)
     {
-        reduce_ilist(invindex, bKeep, &(top.idef.il[i]),
-                     interaction_function[i].nratoms,
+        reduce_ilist(invindex, bKeep, &(top.idef.il[i]), interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
 
@@ -293,7 +289,7 @@ static void reduce_topology_x(int gnx, int index[],
     mtop->moltype[0].atoms = top.atoms;
     for (i = 0; i < F_NRE; i++)
     {
-        InteractionList &ilist =  mtop->moltype[0].ilist[i];
+        InteractionList& ilist = mtop->moltype[0].ilist[i];
         ilist.iatoms.resize(top.idef.il[i].nr);
         for (int j = 0; j < top.idef.il[i].nr; j++)
         {
@@ -301,19 +297,18 @@ static void reduce_topology_x(int gnx, int index[],
         }
     }
     mtop->moltype[0].atoms = top.atoms;
-    mtop->moltype[0].cgs   = top.cgs;
     mtop->moltype[0].excls = top.excls;
 
     mtop->molblock.resize(1);
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
 
-    mtop->natoms           = top.atoms.nr;
+    mtop->natoms = top.atoms.nr;
 }
 
-static void zeroq(const int index[], gmx_mtop_t *mtop)
+static void zeroq(const int index[], gmx_mtop_t* mtop)
 {
-    for (gmx_moltype_t &moltype : mtop->moltype)
+    for (gmx_moltype_t& moltype : mtop->moltype)
     {
         for (int i = 0; i < moltype.atoms.nr; i++)
         {
@@ -323,16 +318,17 @@ static void zeroq(const int index[], gmx_mtop_t *mtop)
     }
 }
 
-int gmx_convert_tpr(int argc, char *argv[])
+int gmx_convert_tpr(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] can edit run input files in three ways.[PAR]",
         "[BB]1.[bb] by modifying the number of steps in a run input file",
         "with options [TT]-extend[tt], [TT]-until[tt] or [TT]-nsteps[tt]",
         "(nsteps=-1 means unlimited number of steps)[PAR]",
         "[BB]2.[bb] by creating a [REF].tpx[ref] file for a subset of your original",
         "tpx file, which is useful when you want to remove the solvent from",
-        "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] [REF].tpx[ref] file.",
+        "your [REF].tpx[ref] file, or when you want to make e.g. a pure C[GRK]alpha[grk] ",
+        "[REF].tpx[ref] file.",
         "Note that you may need to use [TT]-nsteps -1[tt] (or similar) to get",
         "this to work.",
         "[BB]WARNING: this [REF].tpx[ref] file is not fully functional[bb].[PAR]",
@@ -341,7 +337,7 @@ int gmx_convert_tpr(int argc, char *argv[])
         "using the LIE (Linear Interaction Energy) method."
     };
 
-    const char       *top_fn;
+    const char*       top_fn;
     int               i;
     int64_t           nsteps_req, run_step;
     double            run_t, state_t;
@@ -351,35 +347,32 @@ int gmx_convert_tpr(int argc, char *argv[])
     t_atoms           atoms;
     t_state           state;
     int               gnx;
-    char             *grpname;
-    int              *index = nullptr;
+    char*             grpname;
+    int*              index = nullptr;
     char              buf[200], buf2[200];
-    gmx_output_env_t *oenv;
-    t_filenm          fnm[] = {
-        { efTPR, nullptr,  nullptr,    ffREAD  },
-        { efNDX, nullptr,  nullptr,    ffOPTRD },
-        { efTPR, "-o",  "tprout", ffWRITE }
-    };
+    gmx_output_env_t* oenv;
+    t_filenm          fnm[] = { { efTPR, nullptr, nullptr, ffREAD },
+                       { efNDX, nullptr, nullptr, ffOPTRD },
+                       { efTPR, "-o", "tprout", ffWRITE } };
 #define NFILE asize(fnm)
 
     /* Command line options */
     static int      nsteps_req_int = 0;
-    static real     extend_t       = 0.0, until_t = 0.0;
-    static gmx_bool bZeroQ         = FALSE;
-    static t_pargs  pa[]           = {
-        { "-extend",        FALSE, etREAL, {&extend_t},
-          "Extend runtime by this amount (ps)" },
-        { "-until",         FALSE, etREAL, {&until_t},
-          "Extend runtime until this ending time (ps)" },
-        { "-nsteps",        FALSE, etINT,  {&nsteps_req_int},
-          "Change the number of steps" },
-        { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
+    static real     extend_t = 0.0, until_t = 0.0;
+    static gmx_bool bZeroQ = FALSE;
+    static t_pargs  pa[]   = {
+        { "-extend", FALSE, etREAL, { &extend_t }, "Extend runtime by this amount (ps)" },
+        { "-until", FALSE, etREAL, { &until_t }, "Extend runtime until this ending time (ps)" },
+        { "-nsteps", FALSE, etINT, { &nsteps_req_int }, "Change the number of steps" },
+        { "-zeroq",
+          FALSE,
+          etBOOL,
+          { &bZeroQ },
           "Set the charges of a group (from the index) to zero" }
     };
 
     /* Parse the command line */
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -394,10 +387,10 @@ int gmx_convert_tpr(int argc, char *argv[])
     fprintf(stderr, "Reading toplogy and stuff from %s\n", top_fn);
 
     t_inputrec  irInstance;
-    t_inputrec *ir = &irInstance;
+    t_inputrec* ir = &irInstance;
     read_tpx_state(top_fn, ir, &state, &mtop);
     run_step = ir->init_step;
-    run_t    = ir->init_step*ir->delta_t + ir->init_t;
+    run_t    = ir->init_step * ir->delta_t + ir->init_t;
 
     if (bNsteps)
     {
@@ -409,26 +402,24 @@ int gmx_convert_tpr(int argc, char *argv[])
         /* Determine total number of steps remaining */
         if (bExtend)
         {
-            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + gmx::roundToInt64(extend_t/ir->delta_t);
-            printf("Extending remaining runtime of by %g ps (now %s steps)\n",
-                   extend_t, gmx_step_str(ir->nsteps, buf));
+            ir->nsteps = ir->nsteps - (run_step - ir->init_step) + gmx::roundToInt64(extend_t / ir->delta_t);
+            printf("Extending remaining runtime of by %g ps (now %s steps)\n", extend_t,
+                   gmx_step_str(ir->nsteps, buf));
         }
         else if (bUntil)
         {
             printf("nsteps = %s, run_step = %s, current_t = %g, until = %g\n",
-                   gmx_step_str(ir->nsteps, buf),
-                   gmx_step_str(run_step, buf2),
-                   run_t, until_t);
-            ir->nsteps = gmx::roundToInt64((until_t - run_t)/ir->delta_t);
-            printf("Extending remaining runtime until %g ps (now %s steps)\n",
-                   until_t, gmx_step_str(ir->nsteps, buf));
+                   gmx_step_str(ir->nsteps, buf), gmx_step_str(run_step, buf2), run_t, until_t);
+            ir->nsteps = gmx::roundToInt64((until_t - run_t) / ir->delta_t);
+            printf("Extending remaining runtime until %g ps (now %s steps)\n", until_t,
+                   gmx_step_str(ir->nsteps, buf));
         }
         else
         {
             ir->nsteps -= run_step - ir->init_step;
             /* Print message */
-            printf("%s steps (%g ps) remaining from first run.\n",
-                   gmx_step_str(ir->nsteps, buf), ir->nsteps*ir->delta_t);
+            printf("%s steps (%g ps) remaining from first run.\n", gmx_step_str(ir->nsteps, buf),
+                   ir->nsteps * ir->delta_t);
         }
     }
 
@@ -436,12 +427,10 @@ int gmx_convert_tpr(int argc, char *argv[])
     {
         ir->init_step = run_step;
 
-        if (ftp2bSet(efNDX, NFILE, fnm) ||
-            !(bNsteps || bExtend || bUntil))
+        if (ftp2bSet(efNDX, NFILE, fnm) || !(bNsteps || bExtend || bUntil))
         {
             atoms = gmx_mtop_global_atoms(&mtop);
-            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1,
-                      &gnx, &index, &grpname);
+            get_index(&atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
             if (!bZeroQ)
             {
                 bSel = (gnx != state.natoms);
@@ -456,8 +445,10 @@ int gmx_convert_tpr(int argc, char *argv[])
             }
             if (bSel)
             {
-                fprintf(stderr, "Will write subset %s of original tpx containing %d "
-                        "atoms\n", grpname, gnx);
+                fprintf(stderr,
+                        "Will write subset %s of original tpx containing %d "
+                        "atoms\n",
+                        grpname, gnx);
                 reduce_topology_x(gnx, index, &mtop, state.x.rvec_array(), state.v.rvec_array());
                 state.natoms = gnx;
             }
@@ -472,11 +463,12 @@ int gmx_convert_tpr(int argc, char *argv[])
             }
         }
 
-        state_t = ir->init_t + ir->init_step*ir->delta_t;
-        sprintf(buf,   "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10", PRId64, "%10", PRId64);
+        state_t = ir->init_t + ir->init_step * ir->delta_t;
+        sprintf(buf, "Writing statusfile with starting step %s%s and length %s%s steps...\n", "%10",
+                PRId64, "%10", PRId64);
         fprintf(stderr, buf, ir->init_step, ir->nsteps);
         fprintf(stderr, "                                 time %10.3f and length %10.3f ps\n",
-                state_t, ir->nsteps*ir->delta_t);
+                state_t, ir->nsteps * ir->delta_t);
         write_tpx_state(opt2fn("-o", NFILE, fnm), ir, &state, &mtop);
     }
     else

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,94 +99,94 @@ class NodeSpecification;
 /*!
  * \brief Recipe for a computational workflow.
  *
- * Provides a lightweight and portable container defining the nodes and edges in a workflow with enough information for
- * the workflow to be instantiated and run.
+ * Provides a lightweight and portable container defining the nodes and edges in a workflow with
+ * enough information for the workflow to be instantiated and run.
  *
  * \ingroup gmxapi
  */
 class Workflow final
 {
-    public:
-        //! In initial version, Implementation class is just a type alias.
-        using Impl = typename std::map< NodeKey, std::unique_ptr<NodeSpecification> >;
+public:
+    //! In initial version, Implementation class is just a type alias.
+    using Impl = typename std::map<NodeKey, std::unique_ptr<NodeSpecification>>;
 
-        /*! \brief Use create() to get Workflow objects.
-         *
-         * An empty workflow is not meaningful except to a builder, which does not
-         * yet exist. Even a builder, though, will probably create the implementation
-         * object directly and the Workflow object from that.
-         */
-        Workflow() = delete;
+    /*! \brief Use create() to get Workflow objects.
+     *
+     * An empty workflow is not meaningful except to a builder, which does not
+     * yet exist. Even a builder, though, will probably create the implementation
+     * object directly and the Workflow object from that.
+     */
+    Workflow() = delete;
 
-        /*!
-         * \brief Construct by transfering ownership of an implementation object.
-         *
-         * \param impl Implementation object to wrap.
-         *
-         * Usage:
-         *
-         *     gmxapi::Workflow::Impl newGraph;
-         *     // ...
-         *     // configure graph...
-         *     // ...
-         *     // Create workflow container
-         *     gmxapi::Workflow work {std::move(newGraph)};
-         *     gmxapi::launchSession(&context, work);
-         *
-         */
-        explicit Workflow(Impl &&impl);
+    /*!
+     * \brief Construct by transfering ownership of an implementation object.
+     *
+     * \param impl Implementation object to wrap.
+     *
+     * Usage:
+     *
+     *     gmxapi::Workflow::Impl newGraph;
+     *     // ...
+     *     // configure graph...
+     *     // ...
+     *     // Create workflow container
+     *     gmxapi::Workflow work {std::move(newGraph)};
+     *     gmxapi::launchSession(&context, work);
+     *
+     */
+    explicit Workflow(Impl&& impl);
 
-        /*!
-         * \brief Add a node to the workflow graph.
-         *
-         * The work specification must already have its inputs assigned to existing
-         * nodes. This operation should only be permitted if it does not render a
-         * valid workflow invalid.
-         *
-         * \param spec Operational node to add to the Workflow.
-         *
-         * \return Key for the new node in the Workflow container.
-         *
-         * \todo Not yet implemented.
-         */
-        NodeKey addNode(std::unique_ptr<NodeSpecification> spec);
+    /*!
+     * \brief Add a node to the workflow graph.
+     *
+     * The work specification must already have its inputs assigned to existing
+     * nodes. This operation should only be permitted if it does not render a
+     * valid workflow invalid.
+     *
+     * \param spec Operational node to add to the Workflow.
+     *
+     * \return Key for the new node in the Workflow container.
+     *
+     * \todo Not yet implemented.
+     */
+    NodeKey addNode(std::unique_ptr<NodeSpecification> spec);
 
-        /*!
-         * \brief Get the node specification for a provided key.
-         *
-         * \param key Unique identifier for a node in the graph.
-         * \return copy of the node specification.
-         */
-        std::unique_ptr<NodeSpecification> getNode(const gmxapi::NodeKey &key) const noexcept;
+    /*!
+     * \brief Get the node specification for a provided key.
+     *
+     * \param key Unique identifier for a node in the graph.
+     * \return copy of the node specification.
+     */
+    std::unique_ptr<NodeSpecification> getNode(const gmxapi::NodeKey& key) const noexcept;
 
-        /*!
-         * \brief Get an iterator to the node key--value pairs.
-         *
-         * \return iterator across nodes in container.
-         *
-         * The order in which the nodes are returned is unspecified. Only forward iterator is provided.
-         * \{
-         */
-        Impl::const_iterator cbegin() const;
-        Impl::const_iterator cend() const;
-        // Allow range based for loop to work before C++17
-        Impl::const_iterator begin() const;
-        Impl::const_iterator end() const;
-        /*! \} */
+    /*!
+     * \brief Get an iterator to the node key--value pairs.
+     *
+     * \return iterator across nodes in container.
+     *
+     * The order in which the nodes are returned is unspecified. Only forward iterator is provided.
+     * \{
+     */
+    Impl::const_iterator cbegin() const;
+    Impl::const_iterator cend() const;
+    // Allow range based for loop to work before C++17
+    Impl::const_iterator begin() const;
+    Impl::const_iterator end() const;
+    /*! \} */
 
-        /*!
-         * \brief Create a new workflow.
-         *
-         * \param filename TPR filename accessible both to the client and library.
-         * \return Ownership of a new Workflow instance.
-         */
-        static std::unique_ptr<Workflow> create(const std::string &filename);
-    private:
-        /*!
-         * \brief Storage structure.
-         */
-        Impl graph_;
+    /*!
+     * \brief Create a new workflow.
+     *
+     * \param filename TPR filename accessible both to the client and library.
+     * \return Ownership of a new Workflow instance.
+     */
+    static std::unique_ptr<Workflow> create(const std::string& filename);
 
+private:
+    /*!
+     * \brief Storage structure.
+     */
+    Impl graph_;
 };
 
 /*!
@@ -212,47 +212,46 @@ class Workflow final
  */
 class NodeSpecification
 {
-    public:
-        //! Base class is heritable.
-        virtual ~NodeSpecification();
+public:
+    //! Base class is heritable.
+    virtual ~NodeSpecification();
 
-        //! Nodes can use arbitrary param type, but string is default.
-        using paramsType = std::string;
+    //! Nodes can use arbitrary param type, but string is default.
+    using paramsType = std::string;
 
-        /*!
-         * \brief Get an equivalent node for a new graph.
-         *
-         * \return ownership of a new node specification
-         *
-         * Allows a derived class to define its own copy behavior when accessed
-         * through a base class pointer.
-         *
-         * \internal
-         * Future versions may use this function to translate a node spec from one
-         * context to another, in which case the context would likely be passed
-         * as an argument. E.g. clone(&context) or cloneTo(&workspec). It may
-         * be confusing for developers to manage the distinction between replicating
-         * a node in a graph versus using helper methods to copy the node-specific
-         * parameters to a node in a new graph, so it is probably better to
-         * reserve copy/move construction/assignment for internal code and use
-         * well-named well-documented free functions for such higher level operations.
-         * Furthermore, it is not universally intuitive what is meant by copying
-         * a node without specifying what happens to edges and connected nodes.
-         */
-        virtual std::unique_ptr<NodeSpecification> clone() = 0;
+    /*!
+     * \brief Get an equivalent node for a new graph.
+     *
+     * \return ownership of a new node specification
+     *
+     * Allows a derived class to define its own copy behavior when accessed
+     * through a base class pointer.
+     *
+     * \internal
+     * Future versions may use this function to translate a node spec from one
+     * context to another, in which case the context would likely be passed
+     * as an argument. E.g. clone(&context) or cloneTo(&workspec). It may
+     * be confusing for developers to manage the distinction between replicating
+     * a node in a graph versus using helper methods to copy the node-specific
+     * parameters to a node in a new graph, so it is probably better to
+     * reserve copy/move construction/assignment for internal code and use
+     * well-named well-documented free functions for such higher level operations.
+     * Furthermore, it is not universally intuitive what is meant by copying
+     * a node without specifying what happens to edges and connected nodes.
+     */
+    virtual std::unique_ptr<NodeSpecification> clone() = 0;
 
-        /*!
-         * \brief Fetch current params value.
-         *
-         * \return copy of internal params value.
-         */
-        virtual paramsType params() const noexcept = 0;
+    /*!
+     * \brief Fetch current params value.
+     *
+     * \return copy of internal params value.
+     */
+    virtual paramsType params() const noexcept = 0;
 
-        //! Parameters for the operation represented by this node.
-        paramsType params_ {};
-
+    //! Parameters for the operation represented by this node.
+    paramsType params_{};
 };
 
-}      //end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_WORKFLOW_H
+#endif // GMXAPI_WORKFLOW_H

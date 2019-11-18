@@ -63,10 +63,9 @@
 namespace gmx
 {
 
-std::unique_ptr<BoxDeformation>
-prepareBoxDeformation(const matrix     &initialBox,
-                      t_commrec        *cr,
-                      const t_inputrec &inputrec)
+std::unique_ptr<BoxDeformation> prepareBoxDeformation(const matrix&     initialBox,
+                                                      t_commrec*        cr,
+                                                      const t_inputrec& inputrec)
 {
     if (!inputrecDeform(&inputrec))
     {
@@ -74,7 +73,8 @@ prepareBoxDeformation(const matrix     &initialBox,
     }
     if (!EI_DYNAMICS(inputrec.eI))
     {
-        GMX_THROW(NotImplementedError("Box deformation is only supported with dynamical integrators"));
+        GMX_THROW(NotImplementedError(
+                "Box deformation is only supported with dynamical integrators"));
     }
 
     matrix box;
@@ -89,27 +89,21 @@ prepareBoxDeformation(const matrix     &initialBox,
         gmx_bcast(sizeof(box), box, cr);
     }
 
-    return std::make_unique<BoxDeformation>(inputrec.delta_t,
-                                            inputrec.init_step,
-                                            inputrec.deform,
-                                            box);
+    return std::make_unique<BoxDeformation>(inputrec.delta_t, inputrec.init_step, inputrec.deform, box);
 }
 
 BoxDeformation::BoxDeformation(double        timeStep,
                                int64_t       initialStep,
-                               const tensor &deformationTensor,
-                               const matrix &referenceBox)
-    : timeStep_(timeStep),
-      initialStep_(initialStep)
+                               const tensor& deformationTensor,
+                               const matrix& referenceBox) :
+    timeStep_(timeStep),
+    initialStep_(initialStep)
 {
     copy_mat(deformationTensor, deformationTensor_);
     copy_mat(referenceBox, referenceBox_);
 }
 
-void
-BoxDeformation::apply(ArrayRef<RVec> x,
-                      matrix         box,
-                      int64_t        step)
+void BoxDeformation::apply(ArrayRef<RVec> x, matrix box, int64_t step)
 {
     matrix updatedBox, invbox, mu;
 
@@ -121,8 +115,7 @@ BoxDeformation::apply(ArrayRef<RVec> x,
         {
             if (deformationTensor_[i][j] != 0)
             {
-                updatedBox[i][j] =
-                    referenceBox_[i][j] + elapsedTime * deformationTensor_[i][j];
+                updatedBox[i][j] = referenceBox_[i][j] + elapsedTime * deformationTensor_[i][j];
             }
         }
     }
@@ -132,7 +125,7 @@ BoxDeformation::apply(ArrayRef<RVec> x,
      */
     for (int i = 1; i < DIM; i++)
     {
-        for (int j = i-1; j >= 0; j--)
+        for (int j = i - 1; j >= 0; j--)
         {
             while (updatedBox[i][j] - box[i][j] > 0.5 * updatedBox[j][j])
             {
@@ -149,12 +142,12 @@ BoxDeformation::apply(ArrayRef<RVec> x,
     copy_mat(updatedBox, box);
     mmul_ur0(box, invbox, mu);
 
-    for (auto &thisX : x)
+    for (auto& thisX : x)
     {
-        thisX[XX] = mu[XX][XX]*thisX[XX] + mu[YY][XX]*thisX[YY] + mu[ZZ][XX]*thisX[ZZ];
-        thisX[YY] = mu[YY][YY]*thisX[YY] + mu[ZZ][YY]*thisX[ZZ];
-        thisX[ZZ] = mu[ZZ][ZZ]*thisX[ZZ];
+        thisX[XX] = mu[XX][XX] * thisX[XX] + mu[YY][XX] * thisX[YY] + mu[ZZ][XX] * thisX[ZZ];
+        thisX[YY] = mu[YY][YY] * thisX[YY] + mu[ZZ][YY] * thisX[ZZ];
+        thisX[ZZ] = mu[ZZ][ZZ] * thisX[ZZ];
     }
 }
 
-}  // namespace gmx
+} // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,15 +57,15 @@ using gmx::RVec;
 using gmx::test::defaultRealTolerance;
 class StructureSimilarityTest : public ::testing::Test
 {
-    protected:
-        static constexpr int       c_nAtoms = 4;
-        std::array<RVec, c_nAtoms> structureA_ {{{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 0, 0}}};
-        std::array<RVec, c_nAtoms> structureB_ {{{0, 1, 0}, {0, 0, 1}, {1, 0, 0}, {0, 0, 0}}};
-        std::array<real, c_nAtoms> masses_     {{1, 1, 1, 0}};
-        std::array<int, 3>         index_      {{0, 1, 2}};
-        rvec                     * x1_  = gmx::as_rvec_array(structureA_.data());
-        rvec                     * x2_  = gmx::as_rvec_array(structureB_.data());
-        real                     * m_   = masses_.data();
+protected:
+    static constexpr int       c_nAtoms = 4;
+    std::array<RVec, c_nAtoms> structureA_{ { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 } } };
+    std::array<RVec, c_nAtoms> structureB_{ { { 0, 1, 0 }, { 0, 0, 1 }, { 1, 0, 0 }, { 0, 0, 0 } } };
+    std::array<real, c_nAtoms> masses_{ { 1, 1, 1, 0 } };
+    std::array<int, 3>         index_{ { 0, 1, 2 } };
+    rvec*                      x1_ = gmx::as_rvec_array(structureA_.data());
+    rvec*                      x2_ = gmx::as_rvec_array(structureB_.data());
+    real*                      m_  = masses_.data();
 };
 
 TEST_F(StructureSimilarityTest, StructureComparedToSelfHasZeroRMSD)
@@ -90,7 +90,8 @@ TEST_F(StructureSimilarityTest, YieldsCorrectRho)
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRMSDWithIndex)
 {
-    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev_ind(index_.size(), index_.data(), m_, x1_, x2_), defaultRealTolerance());
+    EXPECT_REAL_EQ_TOL(sqrt(2.0), rmsdev_ind(index_.size(), index_.data(), m_, x1_, x2_),
+                       defaultRealTolerance());
 }
 
 TEST_F(StructureSimilarityTest, YieldsCorrectRhoWidthIndex)

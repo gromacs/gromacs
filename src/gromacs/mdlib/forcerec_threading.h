@@ -39,12 +39,13 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/md_enums.h"
 
-struct ewald_corr_thread_t {
-    real              Vcorr_q;
-    real              Vcorr_lj;
-    real              dvdl[efptNR];
-    tensor            vir_q;
-    tensor            vir_lj;
+struct ewald_corr_thread_t
+{
+    real   Vcorr_q;
+    real   Vcorr_lj;
+    real   dvdl[efptNR];
+    tensor vir_q;
+    tensor vir_lj;
 };
 
 #endif

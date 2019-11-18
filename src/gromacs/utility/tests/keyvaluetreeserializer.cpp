@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,81 +47,70 @@
 namespace
 {
 
+//! Dummy function to raise assert for use of unimplemented function.
+void raiseAssert()
+{
+    GMX_RELEASE_ASSERT(false, "Unimplemented function");
+}
+
 class RefDataSerializer : public gmx::ISerializer
 {
-    public:
-        RefDataSerializer(gmx::test::TestReferenceChecker *parentChecker,
-                          const char                      *id)
-            : checker_(parentChecker->checkCompound("SerializedData", id))
-        {
-        }
+public:
+    RefDataSerializer(gmx::test::TestReferenceChecker* parentChecker, const char* id) :
+        checker_(parentChecker->checkCompound("SerializedData", id))
+    {
+    }
 
-        bool reading() const override { return false; }
+    bool reading() const override { return false; }
 
-        void doBool(bool *value) override
-        {
-            checker_.checkBoolean(*value, nullptr);
-        }
-        void doUChar(unsigned char *value) override
-        {
-            checker_.checkUChar(*value, nullptr);
-        }
-        void doInt(int *value) override
-        {
-            checker_.checkInteger(*value, nullptr);
-        }
-        void doInt64(int64_t *value) override
-        {
-            checker_.checkInt64(*value, nullptr);
-        }
-        void doFloat(float *value) override
-        {
-            checker_.checkFloat(*value, nullptr);
-        }
-        void doDouble(double *value) override
-        {
-            checker_.checkDouble(*value, nullptr);
-        }
-        void doString(std::string *value) override
-        {
-            checker_.checkString(*value, nullptr);
-        }
+    void doBool(bool* value) override { checker_.checkBoolean(*value, nullptr); }
+    void doUChar(unsigned char* value) override { checker_.checkUChar(*value, nullptr); }
+    void doChar(char* /* value */) override { raiseAssert(); }
+    void doUShort(unsigned short* /* value */) override { raiseAssert(); }
+    void doInt(int* value) override { checker_.checkInteger(*value, nullptr); }
+    void doInt32(int32_t* value) override { checker_.checkInt32(*value, nullptr); }
+    void doInt64(int64_t* value) override { checker_.checkInt64(*value, nullptr); }
+    void doFloat(float* value) override { checker_.checkFloat(*value, nullptr); }
+    void doDouble(double* value) override { checker_.checkDouble(*value, nullptr); }
+    void doString(std::string* value) override { checker_.checkString(*value, nullptr); }
+    void doReal(real* /* value */) override { raiseAssert(); }
+    void doIvec(ivec* /* value */) override { raiseAssert(); }
+    void doRvec(rvec* /* value */) override { raiseAssert(); }
 
-    private:
-        gmx::test::TestReferenceChecker checker_;
+private:
+    gmx::test::TestReferenceChecker checker_;
 };
 
 class KeyValueTreeSerializerTest : public ::testing::Test
 {
-    public:
-        void runTest()
+public:
+    void runTest()
+    {
+        gmx::KeyValueTreeObject         input(builder_.build());
+        gmx::test::TestReferenceData    data;
+        gmx::test::TestReferenceChecker checker(data.rootChecker());
+        checker.checkKeyValueTreeObject(input, "Input");
         {
-            gmx::KeyValueTreeObject           input(builder_.build());
-            gmx::test::TestReferenceData      data;
-            gmx::test::TestReferenceChecker   checker(data.rootChecker());
-            checker.checkKeyValueTreeObject(input, "Input");
-            {
-                RefDataSerializer             serializer(&checker, "Stream");
-                gmx::serializeKeyValueTree(input, &serializer);
-            }
-            std::vector<char>                 buffer = serializeTree(input);
-            {
-                gmx::InMemoryDeserializer     deserializer(buffer);
-                gmx::KeyValueTreeObject       output
-                    = gmx::deserializeKeyValueTree(&deserializer);
-                checker.checkKeyValueTreeObject(output, "Input");
-            }
+            RefDataSerializer serializer(&checker, "Stream");
+            gmx::serializeKeyValueTree(input, &serializer);
         }
-
-        gmx::KeyValueTreeBuilder builder_;
-
-    private:
-        std::vector<char> serializeTree(const gmx::KeyValueTreeObject &tree)
+        std::vector<char> buffer = serializeTree(input);
         {
-            gmx::InMemorySerializer serializer;
-            gmx::serializeKeyValueTree(tree, &serializer);
-            return serializer.finishAndGetBuffer();
+            gmx::InMemoryDeserializer deserializer(buffer, false);
+            gmx::KeyValueTreeObject   output = gmx::deserializeKeyValueTree(&deserializer);
+            checker.checkKeyValueTreeObject(output, "Input");
         }
+    }
+
+    gmx::KeyValueTreeBuilder builder_;
+
+private:
+    std::vector<char> serializeTree(const gmx::KeyValueTreeObject& tree)
+    {
+        gmx::InMemorySerializer serializer;
+        gmx::serializeKeyValueTree(tree, &serializer);
+        return serializer.finishAndGetBuffer();
+    }
 };
 
 TEST_F(KeyValueTreeSerializerTest, EmptyTree)
@@ -132,6 +121,8 @@ TEST_F(KeyValueTreeSerializerTest, EmptyTree)
 TEST_F(KeyValueTreeSerializerTest, SimpleObject)
 {
     builder_.rootObject().addValue<int>("foo", 1);
+    builder_.rootObject().addValue<int32_t>("foo32", 1);
+    builder_.rootObject().addValue<int64_t>("foo64", 1);
     builder_.rootObject().addValue<std::string>("bar", "a");
     builder_.rootObject().addValue<float>("f", 1.5);
     builder_.rootObject().addValue<double>("d", 2.5);

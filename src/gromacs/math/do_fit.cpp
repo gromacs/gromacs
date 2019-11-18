@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass[],
-                      rvec x[], rvec xp[])
+real calc_similar_ind(gmx_bool bRho, int nind, const int* index, const real mass[], rvec x[], rvec xp[])
 {
     int  i, j, d;
     real m, tm, xs, xd, rs, rd;
@@ -67,26 +66,26 @@ real calc_similar_ind(gmx_bool bRho, int nind, const int *index, const real mass
         {
             i = j;
         }
-        m   = mass[i];
+        m = mass[i];
         tm += m;
         for (d = 0; d < DIM; d++)
         {
-            xd  = x[i][d] - xp[i][d];
+            xd = x[i][d] - xp[i][d];
             rd += m * gmx::square(xd);
             if (bRho)
             {
-                xs  = x[i][d] + xp[i][d];
+                xs = x[i][d] + xp[i][d];
                 rs += m * gmx::square(xs);
             }
         }
     }
     if (bRho)
     {
-        return 2*std::sqrt(rd/rs);
+        return 2 * std::sqrt(rd / rs);
     }
     else
     {
-        return std::sqrt(rd/tm);
+        return std::sqrt(rd / tm);
     }
 }
 
@@ -110,11 +109,11 @@ real rhodev(int natoms, real mass[], rvec x[], rvec xp[])
     return calc_similar_ind(TRUE, natoms, nullptr, mass, x, xp);
 }
 
-void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x, matrix R)
+void calc_fit_R(int ndim, int natoms, const real* w_rls, const rvec* xp, rvec* x, matrix R)
 {
     int      c, r, n, j, i, irot, s;
     double **omega, **om;
-    double   d[2*DIM], xnr, xpc;
+    double   d[2 * DIM], xnr, xpc;
     matrix   vh, vk, u;
     real     mn;
     int      index;
@@ -125,18 +124,18 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
         gmx_fatal(FARGS, "calc_fit_R called with ndim=%d instead of 3 or 2", ndim);
     }
 
-    snew(omega, 2*ndim);
-    snew(om, 2*ndim);
-    for (i = 0; i < 2*ndim; i++)
+    snew(omega, 2 * ndim);
+    snew(om, 2 * ndim);
+    for (i = 0; i < 2 * ndim; i++)
     {
-        snew(omega[i], 2*ndim);
-        snew(om[i], 2*ndim);
+        snew(omega[i], 2 * ndim);
+        snew(om[i], 2 * ndim);
     }
 
-    for (i = 0; i < 2*ndim; i++)
+    for (i = 0; i < 2 * ndim; i++)
     {
         d[i] = 0;
-        for (j = 0; j < 2*ndim; j++)
+        for (j = 0; j < 2 * ndim; j++)
         {
             omega[i][j] = 0;
             om[i][j]    = 0;
@@ -154,8 +153,8 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
                 xpc = xp[n][c];
                 for (r = 0; (r < ndim); r++)
                 {
-                    xnr      = x[n][r];
-                    u[c][r] += mn*xnr*xpc;
+                    xnr = x[n][r];
+                    u[c][r] += mn * xnr * xpc;
                 }
             }
         }
@@ -163,14 +162,14 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
 
     /*construct omega*/
     /*omega is symmetric -> omega==omega' */
-    for (r = 0; r < 2*ndim; r++)
+    for (r = 0; r < 2 * ndim; r++)
     {
         for (c = 0; c <= r; c++)
         {
             if (r >= ndim && c < ndim)
             {
-                omega[r][c] = u[r-ndim][c];
-                omega[c][r] = u[r-ndim][c];
+                omega[r][c] = u[r - ndim][c];
+                omega[c][r] = u[r - ndim][c];
             }
             else
             {
@@ -181,7 +180,7 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
     }
 
     /*determine h and k*/
-    jacobi(omega, 2*ndim, d, om, &irot);
+    jacobi(omega, 2 * ndim, d, om, &irot);
     /*real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
      * int     natoms = number of rows and columns
      * real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
@@ -197,10 +196,10 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
     index = 0; /* For the compiler only */
 
     /* Copy only the first ndim-1 eigenvectors */
-    for (j = 0; j < ndim-1; j++)
+    for (j = 0; j < ndim - 1; j++)
     {
         max_d = -1000;
-        for (i = 0; i < 2*ndim; i++)
+        for (i = 0; i < 2 * ndim; i++)
         {
             if (d[i] > max_d)
             {
@@ -211,8 +210,8 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
         d[index] = -10000;
         for (i = 0; i < ndim; i++)
         {
-            vh[j][i] = M_SQRT2*om[i][index];
-            vk[j][i] = M_SQRT2*om[i+ndim][index];
+            vh[j][i] = M_SQRT2 * om[i][index];
+            vk[j][i] = M_SQRT2 * om[i + ndim][index];
         }
     }
     if (ndim == 3)
@@ -228,9 +227,9 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
     {
         /* Calculate the last eigenvector from the first one */
         vh[1][XX] = -vh[0][YY];
-        vh[1][YY] =  vh[0][XX];
+        vh[1][YY] = vh[0][XX];
         vk[1][XX] = -vk[0][YY];
-        vk[1][YY] =  vk[0][XX];
+        vk[1][YY] = vk[0][XX];
     }
 
     /* determine R */
@@ -241,7 +240,7 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
         {
             for (s = 0; s < ndim; s++)
             {
-                R[r][c] += vk[s][r]*vh[s][c];
+                R[r][c] += vk[s][r] * vh[s][c];
             }
         }
     }
@@ -250,7 +249,7 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
         R[r][r] = 1;
     }
 
-    for (i = 0; i < 2*ndim; i++)
+    for (i = 0; i < 2 * ndim; i++)
     {
         sfree(omega[i]);
         sfree(om[i]);
@@ -259,7 +258,7 @@ void calc_fit_R(int ndim, int natoms, const real *w_rls, const rvec *xp, rvec *x
     sfree(om);
 }
 
-void do_fit_ndim(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x)
+void do_fit_ndim(int ndim, int natoms, real* w_rls, const rvec* xp, rvec* x)
 {
     int    j, m, r, c;
     matrix R;
@@ -280,20 +279,18 @@ void do_fit_ndim(int ndim, int natoms, real *w_rls, const rvec *xp, rvec *x)
             x[j][r] = 0;
             for (c = 0; c < DIM; c++)
             {
-                x[j][r] += R[r][c]*x_old[c];
+                x[j][r] += R[r][c] * x_old[c];
             }
         }
     }
 }
 
-void do_fit(int natoms, real *w_rls, const rvec *xp, rvec *x)
+void do_fit(int natoms, real* w_rls, const rvec* xp, rvec* x)
 {
     do_fit_ndim(3, natoms, w_rls, xp, x);
 }
 
-void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
-                  int nreset, const int *ind_reset,
-                  rvec x[], const real mass[])
+void reset_x_ndim(int ndim, int ncm, const int* ind_cm, int nreset, const int* ind_reset, rvec x[], const real mass[])
 {
     int  i, m, ai;
     rvec xcm;
@@ -313,7 +310,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
             mm = mass[ai];
             for (m = 0; m < ndim; m++)
             {
-                xcm[m] += mm*x[ai][m];
+                xcm[m] += mm * x[ai][m];
             }
             tm += mm;
         }
@@ -325,7 +322,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
             mm = mass[i];
             for (m = 0; m < ndim; m++)
             {
-                xcm[m] += mm*x[i][m];
+                xcm[m] += mm * x[i][m];
             }
             tm += mm;
         }
@@ -351,9 +348,7 @@ void reset_x_ndim(int ndim, int ncm, const int *ind_cm,
     }
 }
 
-void reset_x(int ncm, const int *ind_cm,
-             int nreset, const int *ind_reset,
-             rvec x[], const real mass[])
+void reset_x(int ncm, const int* ind_cm, int nreset, const int* ind_reset, rvec x[], const real mass[])
 {
     reset_x_ndim(3, ncm, ind_cm, nreset, ind_reset, x, mass);
 }

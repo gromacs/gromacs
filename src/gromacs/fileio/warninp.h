@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,11 +42,10 @@
 #include "gromacs/utility/basedefinitions.h"
 
 /* Abstract type for warning bookkeeping */
-typedef struct warninp *warninp_t;
+typedef struct warninp* warninp_t;
 
 
-warninp_t
-init_warning(gmx_bool bAllowWarnings, int maxwarning);
+warninp_t init_warning(gmx_bool bAllowWarnings, int maxwarning);
 /* Initialize the warning data structure.
  * If bAllowWarnings=FALSE, all warnings (calls to warning()) will be
  * transformed into errors, calls to warning_note still produce notes.
@@ -57,21 +56,17 @@ init_warning(gmx_bool bAllowWarnings, int maxwarning);
  * a -maxwarn command line option.
  */
 
-void
-set_warning_line(warninp_t wi, const char *fn, int line);
+void set_warning_line(warninp_t wi, const char* fn, int line);
 /* Set filename and linenumber for the warning */
 
-int
-get_warning_line(warninp_t wi);
+int get_warning_line(warninp_t wi);
 /* Get linenumber for the warning */
 
 
-const char *
-get_warning_file(warninp_t wi);
+const char* get_warning_file(warninp_t wi);
 /* Get filename for the warning */
 
-void
-warning(warninp_t wi, const char *s);
+void warning(warninp_t wi, const char* s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_warn (local) is incremented.
@@ -81,11 +76,9 @@ warning(warninp_t wi, const char *s);
  * otherwise warning_note should be called.
  */
 //! Convenience wrapper.
-void
-warning(warninp_t wi, const std::string &s);
+void warning(warninp_t wi, const std::string& s);
 
-void
-warning_note(warninp_t wi, const char *s);
+void warning_note(warninp_t wi, const char* s);
 /* Issue a note, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_note (local) is incremented.
@@ -94,28 +87,26 @@ warning_note(warninp_t wi, const char *s);
  */
 
 //! Convenience wrapper.
-void
-warning_note(warninp_t wi, const std::string &s);
+void warning_note(warninp_t wi, const std::string& s);
 
-void
-warning_error(warninp_t wi, const char *s);
+void warning_error(warninp_t wi, const char* s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_error (local) is incremented.
  */
 
 //! Convenience wrapper.
-void
-warning_error(warninp_t wi, const std::string &s);
+void warning_error(warninp_t wi, const std::string& s);
 
 /*! \brief Issue an error with warning_error() and prevent further
  * processing by calling check_warning_error().
  *
  * This is intended for use where there is no way to produce a data
  * structure that would prevent execution from segfaulting. */
-[[noreturn]] void warning_error_and_exit(warninp_t wi, const char *s, int f_errno, const char *file, int line);
+[[noreturn]] void warning_error_and_exit(warninp_t wi, const char* s, int f_errno, const char* file, int line);
 //! \copydoc warning_error_and_exit(warninp_t, const char *, int, const char *, int);
-[[noreturn]] void warning_error_and_exit(warninp_t wi, const std::string &s, int f_errno, const char *file, int line);
+[[noreturn]] void
+warning_error_and_exit(warninp_t wi, const std::string& s, int f_errno, const char* file, int line);
 
 gmx_bool warning_errors_exist(warninp_t wi);
 /* Return whether any error-level warnings were issued to wi. */
@@ -123,14 +114,12 @@ gmx_bool warning_errors_exist(warninp_t wi);
 //! Resets the count for all kinds of warnings to zero.
 void warning_reset(warninp_t wi);
 
-void
-check_warning_error(warninp_t wi, int f_errno, const char *file, int line);
+void check_warning_error(warninp_t wi, int f_errno, const char* file, int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
  */
 
-void
-done_warning(warninp_t wi, int f_errno, const char *file, int line);
+void done_warning(warninp_t wi, int f_errno, const char* file, int line);
 /* Should be called when finished processing the input file.
  * Prints the number of notes and warnings
  * and generates a fatal error when errors were found or too many
@@ -138,17 +127,14 @@ done_warning(warninp_t wi, int f_errno, const char *file, int line);
  * Frees the data structure pointed to by wi.
  */
 
-void
-free_warning(warninp_t wi);
+void free_warning(warninp_t wi);
 /* Frees the data structure pointed to by wi. */
 
-void
-_too_few(warninp_t wi, const char *fn, int line);
+void _too_few(warninp_t wi, const char* fn, int line);
 #define too_few(wi) _too_few(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void
-_incorrect_n_param(warninp_t wi, const char *fn, int line);
+void _incorrect_n_param(warninp_t wi, const char* fn, int line);
 #define incorrect_n_param(wi) _incorrect_n_param(wi, __FILE__, __LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
+static void gyro_eigen(double** gyr, double* eig, double** eigv, int* ord)
 {
     int nrot, d;
 
@@ -86,7 +86,7 @@ static void gyro_eigen(double **gyr, double *eig, double **eigv, int *ord)
 }
 
 /* Calculate mean square internal distances (Auhl et al., JCP 119, 12718) */
-static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
+static void calc_int_dist(double* intd, rvec* x, int i0, int i1)
 {
     int       ii;
     const int ml = i1 - i0 + 1; /* Number of beads in molecule. */
@@ -98,16 +98,16 @@ static void calc_int_dist(double *intd, rvec *x, int i0, int i1)
         d = 0.;
         for (ii = i0; ii <= i1 - bd; ii++)
         {
-            d += distance2(x[ii], x[ii+bd]);
+            d += distance2(x[ii], x[ii + bd]);
         }
-        d            /= ml - bd;
+        d /= ml - bd;
         intd[bd - 1] += d;
     }
 }
 
-int gmx_polystat(int argc, char *argv[])
+int gmx_polystat(int argc, char* argv[])
 {
-    const char     *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] plots static properties of polymers as a function of time",
         "and prints the average.[PAR]",
         "By default it determines the average end-to-end distance and radii",
@@ -132,80 +132,67 @@ int gmx_polystat(int argc, char *argv[])
         "the average cos reaches a value of 1/e. This point is determined",
         "by a linear interpolation of [LOG]<cos>[log]."
     };
-    static gmx_bool bMW  = TRUE, bPC = FALSE;
+    static gmx_bool bMW = TRUE, bPC = FALSE;
     t_pargs         pa[] = {
-        { "-mw", FALSE, etBOOL, {&bMW},
-          "Use the mass weighting for radii of gyration" },
-        { "-pc", FALSE, etBOOL, {&bPC},
-          "Plot average eigenvalues" }
+        { "-mw", FALSE, etBOOL, { &bMW }, "Use the mass weighting for radii of gyration" },
+        { "-pc", FALSE, etBOOL, { &bPC }, "Plot average eigenvalues" }
     };
 
-    t_filenm        fnm[] = {
-        { efTPR, nullptr, nullptr,  ffREAD  },
-        { efTRX, "-f", nullptr,  ffREAD  },
-        { efNDX, nullptr, nullptr,  ffOPTRD },
-        { efXVG, "-o", "polystat",  ffWRITE },
-        { efXVG, "-v", "polyvec", ffOPTWR },
-        { efXVG, "-p", "persist",  ffOPTWR },
-        { efXVG, "-i", "intdist", ffOPTWR }
-    };
+    t_filenm fnm[] = { { efTPR, nullptr, nullptr, ffREAD },  { efTRX, "-f", nullptr, ffREAD },
+                       { efNDX, nullptr, nullptr, ffOPTRD }, { efXVG, "-o", "polystat", ffWRITE },
+                       { efXVG, "-v", "polyvec", ffOPTWR },  { efXVG, "-p", "persist", ffOPTWR },
+                       { efXVG, "-i", "intdist", ffOPTWR } };
 #define NFILE asize(fnm)
 
-    t_topology       *top;
-    gmx_output_env_t *oenv;
+    t_topology*       top;
+    gmx_output_env_t* oenv;
     int               ePBC;
     int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
-    char             *grpname;
-    t_trxstatus      *status;
+    char*             grpname;
+    t_trxstatus*      status;
     real              t;
-    rvec             *x, *bond = nullptr;
+    rvec *            x, *bond = nullptr;
     matrix            box;
-    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = {0};
-    dvec              cm, sum_eig = {0, 0, 0};
-    double          **gyr, **gyr_all, eig[DIM], **eigv;
+    int               natoms, i, j, frame, ind0, ind1, a, d, d2, ord[DIM] = { 0 };
+    dvec              cm, sum_eig = { 0, 0, 0 };
+    double **         gyr, **gyr_all, eig[DIM], **eigv;
     double            sum_eed2, sum_eed2_tot, sum_gyro, sum_gyro_tot, sum_pers_tot;
-    int              *ninp    = nullptr;
-    double           *sum_inp = nullptr, pers;
-    double           *intd, ymax, ymin;
+    int*              ninp    = nullptr;
+    double *          sum_inp = nullptr, pers;
+    double *          intd, ymax, ymin;
     double            mmol, m;
     char              title[STRLEN];
-    FILE             *out, *outv, *outp, *outi;
-    const char       *leg[8] = {
-        "end to end", "<R\\sg\\N>",
-        "<R\\sg\\N> eig1", "<R\\sg\\N> eig2", "<R\\sg\\N> eig3",
-        "<R\\sg\\N eig1>", "<R\\sg\\N eig2>", "<R\\sg\\N eig3>"
-    };
-    char            **legp, buf[STRLEN];
+    FILE *            out, *outv, *outp, *outi;
+    const char*       leg[8] = { "end to end",      "<R\\sg\\N>",      "<R\\sg\\N> eig1",
+                           "<R\\sg\\N> eig2", "<R\\sg\\N> eig3", "<R\\sg\\N eig1>",
+                           "<R\\sg\\N eig2>", "<R\\sg\\N eig3>" };
+    char **           legp, buf[STRLEN];
     gmx_rmpbc_t       gpbc = nullptr;
 
-    if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm),
-                        nullptr, box, &natoms, nullptr, nullptr, top);
+    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
-    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm),
-              1, &isize, &index, &grpname);
+    get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
-    snew(molind, top->mols.nr+1);
+    snew(molind, top->mols.nr + 1);
     nmol = 0;
     mol  = -1;
     for (i = 0; i < isize; i++)
     {
-        if (i == 0 || index[i] >= top->mols.index[mol+1])
+        if (i == 0 || index[i] >= top->mols.index[mol + 1])
         {
             molind[nmol++] = i;
             do
             {
                 mol++;
-            }
-            while (index[i] >= top->mols.index[mol+1]);
+            } while (index[i] >= top->mols.index[mol + 1]);
         }
     }
     molind[nmol] = i;
@@ -213,32 +200,30 @@ int gmx_polystat(int argc, char *argv[])
     nat_max      = 0;
     for (mol = 0; mol < nmol; mol++)
     {
-        nat_min = std::min(nat_min, molind[mol+1]-molind[mol]);
-        nat_max = std::max(nat_max, molind[mol+1]-molind[mol]);
+        nat_min = std::min(nat_min, molind[mol + 1] - molind[mol]);
+        nat_max = std::max(nat_max, molind[mol + 1] - molind[mol]);
     }
     fprintf(stderr, "Group %s consists of %d molecules\n", grpname, nmol);
-    fprintf(stderr, "Group size per molecule, min: %d atoms, max %d atoms\n",
-            nat_min, nat_max);
+    fprintf(stderr, "Group size per molecule, min: %d atoms, max %d atoms\n", nat_min, nat_max);
 
     sprintf(title, "Size of %d polymers", nmol);
-    out = xvgropen(opt2fn("-o", NFILE, fnm), title, output_env_get_xvgr_tlabel(oenv), "(nm)",
-                   oenv);
+    out = xvgropen(opt2fn("-o", NFILE, fnm), title, output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
     xvgr_legend(out, bPC ? 8 : 5, leg, oenv);
 
     if (opt2bSet("-v", NFILE, fnm))
     {
         outv = xvgropen(opt2fn("-v", NFILE, fnm), "Principal components",
                         output_env_get_xvgr_tlabel(oenv), "(nm)", oenv);
-        snew(legp, DIM*DIM);
+        snew(legp, DIM * DIM);
         for (d = 0; d < DIM; d++)
         {
             for (d2 = 0; d2 < DIM; d2++)
             {
-                sprintf(buf, "eig%d %c", d+1, 'x'+d2);
-                legp[d*DIM+d2] = gmx_strdup(buf);
+                sprintf(buf, "eig%d %c", d + 1, 'x' + d2);
+                legp[d * DIM + d2] = gmx_strdup(buf);
             }
         }
-        xvgr_legend(outv, DIM*DIM, legp, oenv);
+        xvgr_legend(outv, DIM * DIM, legp, oenv);
     }
     else
     {
@@ -249,9 +234,9 @@ int gmx_polystat(int argc, char *argv[])
     {
         outp = xvgropen(opt2fn("-p", NFILE, fnm), "Persistence length",
                         output_env_get_xvgr_tlabel(oenv), "bonds", oenv);
-        snew(bond, nat_max-1);
-        snew(sum_inp, nat_min/2);
-        snew(ninp, nat_min/2);
+        snew(bond, nat_max - 1);
+        snew(sum_inp, nat_min / 2);
+        snew(ninp, nat_min / 2);
     }
     else
     {
@@ -260,9 +245,9 @@ int gmx_polystat(int argc, char *argv[])
 
     if (opt2bSet("-i", NFILE, fnm))
     {
-        outi = xvgropen(opt2fn("-i", NFILE, fnm), "Internal distances",
-                        "n", "<R\\S2\\N(n)>/n (nm\\S2\\N)", oenv);
-        i = index[molind[1]-1] - index[molind[0]]; /* Length of polymer -1 */
+        outi = xvgropen(opt2fn("-i", NFILE, fnm), "Internal distances", "n",
+                        "<R\\S2\\N(n)>/n (nm\\S2\\N)", oenv);
+        i    = index[molind[1] - 1] - index[molind[0]]; /* Length of polymer -1 */
         snew(intd, i);
     }
     else
@@ -307,7 +292,7 @@ int gmx_polystat(int argc, char *argv[])
 
         if (outp)
         {
-            for (i = 0; i < nat_min/2; i++)
+            for (i = 0; i < nat_min / 2; i++)
             {
                 sum_inp[i] = 0;
                 ninp[i]    = 0;
@@ -317,15 +302,15 @@ int gmx_polystat(int argc, char *argv[])
         for (mol = 0; mol < nmol; mol++)
         {
             ind0 = molind[mol];
-            ind1 = molind[mol+1];
+            ind1 = molind[mol + 1];
 
             /* Determine end to end distance */
-            sum_eed2 += distance2(x[index[ind0]], x[index[ind1-1]]);
+            sum_eed2 += distance2(x[index[ind0]], x[index[ind1 - 1]]);
 
             /* Determine internal distances */
             if (outi)
             {
-                calc_int_dist(intd, x, index[ind0], index[ind1-1]);
+                calc_int_dist(intd, x, index[ind0], index[ind1 - 1]);
             }
 
             /* Determine the radius of gyration */
@@ -350,19 +335,19 @@ int gmx_polystat(int argc, char *argv[])
                 mmol += m;
                 for (d = 0; d < DIM; d++)
                 {
-                    cm[d] += m*x[a][d];
+                    cm[d] += m * x[a][d];
                     for (d2 = 0; d2 < DIM; d2++)
                     {
-                        gyr[d][d2] += m*x[a][d]*x[a][d2];
+                        gyr[d][d2] += m * x[a][d] * x[a][d2];
                     }
                 }
             }
-            dsvmul(1/mmol, cm, cm);
+            dsvmul(1 / mmol, cm, cm);
             for (d = 0; d < DIM; d++)
             {
                 for (d2 = 0; d2 < DIM; d2++)
                 {
-                    gyr[d][d2]      = gyr[d][d2]/mmol - cm[d]*cm[d2];
+                    gyr[d][d2] = gyr[d][d2] / mmol - cm[d] * cm[d2];
                     gyr_all[d][d2] += gyr[d][d2];
                 }
             }
@@ -376,16 +361,16 @@ int gmx_polystat(int argc, char *argv[])
             }
             if (outp)
             {
-                for (i = ind0; i < ind1-1; i++)
+                for (i = ind0; i < ind1 - 1; i++)
                 {
-                    rvec_sub(x[index[i+1]], x[index[i]], bond[i-ind0]);
-                    unitv(bond[i-ind0], bond[i-ind0]);
+                    rvec_sub(x[index[i + 1]], x[index[i]], bond[i - ind0]);
+                    unitv(bond[i - ind0], bond[i - ind0]);
                 }
-                for (i = ind0; i < ind1-1; i++)
+                for (i = ind0; i < ind1 - 1; i++)
                 {
-                    for (j = 0; (i+j < ind1-1 && j < nat_min/2); j += 2)
+                    for (j = 0; (i + j < ind1 - 1 && j < nat_min / 2); j += 2)
                     {
-                        sum_inp[j] += iprod(bond[i-ind0], bond[i-ind0+j]);
+                        sum_inp[j] += iprod(bond[i - ind0], bond[i - ind0 + j]);
                         ninp[j]++;
                     }
                 }
@@ -405,22 +390,21 @@ int gmx_polystat(int argc, char *argv[])
 
         gyro_eigen(gyr_all, eig, eigv, ord);
 
-        fprintf(out, "%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f",
-                t*output_env_get_time_factor(oenv),
-                std::sqrt(sum_eed2), sqrt(sum_gyro),
-                std::sqrt(eig[ord[0]]), std::sqrt(eig[ord[1]]), std::sqrt(eig[ord[2]]));
+        fprintf(out, "%10.3f %8.4f %8.4f %8.4f %8.4f %8.4f", t * output_env_get_time_factor(oenv),
+                std::sqrt(sum_eed2), sqrt(sum_gyro), std::sqrt(eig[ord[0]]), std::sqrt(eig[ord[1]]),
+                std::sqrt(eig[ord[2]]));
         if (bPC)
         {
             for (d = 0; d < DIM; d++)
             {
-                fprintf(out, " %8.4f", std::sqrt(sum_eig[d]/nmol));
+                fprintf(out, " %8.4f", std::sqrt(sum_eig[d] / nmol));
             }
         }
         fprintf(out, "\n");
 
         if (outv)
         {
-            fprintf(outv, "%10.3f", t*output_env_get_time_factor(oenv));
+            fprintf(outv, "%10.3f", t * output_env_get_time_factor(oenv));
             for (d = 0; d < DIM; d++)
             {
                 for (d2 = 0; d2 < DIM; d2++)
@@ -437,7 +421,7 @@ int gmx_polystat(int argc, char *argv[])
         if (outp)
         {
             i = -1;
-            for (j = 0; j < nat_min/2; j += 2)
+            for (j = 0; j < nat_min / 2; j += 2)
             {
                 sum_inp[j] /= ninp[j];
                 if (i == -1 && sum_inp[j] <= std::exp(-1.0))
@@ -453,15 +437,15 @@ int gmx_polystat(int argc, char *argv[])
             {
                 /* Do linear interpolation on a log scale */
                 pers = i - 2.0
-                    + 2.0*(std::log(sum_inp[i-2]) + 1.0)/(std::log(sum_inp[i-2]) - std::log(sum_inp[i]));
+                       + 2.0 * (std::log(sum_inp[i - 2]) + 1.0)
+                                 / (std::log(sum_inp[i - 2]) - std::log(sum_inp[i]));
             }
-            fprintf(outp, "%10.3f %8.4f\n", t*output_env_get_time_factor(oenv), pers);
+            fprintf(outp, "%10.3f %8.4f\n", t * output_env_get_time_factor(oenv), pers);
             sum_pers_tot += pers;
         }
 
         frame++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -480,14 +464,11 @@ int gmx_polystat(int argc, char *argv[])
     sum_eed2_tot /= frame;
     sum_gyro_tot /= frame;
     sum_pers_tot /= frame;
-    fprintf(stdout, "\nAverage end to end distance: %.3f (nm)\n",
-            std::sqrt(sum_eed2_tot));
-    fprintf(stdout, "\nAverage radius of gyration:  %.3f (nm)\n",
-            std::sqrt(sum_gyro_tot));
+    fprintf(stdout, "\nAverage end to end distance: %.3f (nm)\n", std::sqrt(sum_eed2_tot));
+    fprintf(stdout, "\nAverage radius of gyration:  %.3f (nm)\n", std::sqrt(sum_gyro_tot));
     if (opt2bSet("-p", NFILE, fnm))
     {
-        fprintf(stdout, "\nAverage persistence length:  %.2f bonds\n",
-                sum_pers_tot);
+        fprintf(stdout, "\nAverage persistence length:  %.2f bonds\n", sum_pers_tot);
     }
 
     /* Handle printing of internal distances. */
@@ -499,7 +480,7 @@ int gmx_polystat(int argc, char *argv[])
         }
         ymax = -1;
         ymin = 1e300;
-        j    = index[molind[1]-1] - index[molind[0]]; /* Polymer length -1. */
+        j    = index[molind[1] - 1] - index[molind[0]]; /* Polymer length -1. */
         for (i = 0; i < j; i++)
         {
             intd[i] /= (i + 1) * frame * nmol;
@@ -515,7 +496,7 @@ int gmx_polystat(int argc, char *argv[])
         xvgr_world(outi, 1, ymin, j, ymax, oenv);
         for (i = 0; i < j; i++)
         {
-            fprintf(outi, "%d  %8.4f\n", i+1, intd[i]);
+            fprintf(outi, "%d  %8.4f\n", i + 1, intd[i]);
         }
         xvgrclose(outi);
     }

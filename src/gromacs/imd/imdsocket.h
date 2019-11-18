@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,37 +51,12 @@
 #ifndef GMX_IMD_IMDSOCKET_H
 #define GMX_IMD_IMDSOCKET_H
 
-#include "config.h"
-
-/* Check if we can/should use winsock or standard UNIX sockets. */
-#if GMX_NATIVE_WINDOWS
-  #ifdef GMX_HAVE_WINSOCK
-  #include <Winsock.h>
-  #define GMX_IMD
-  #endif
-#else
-#include <netinet/in.h>
-#include <sys/socket.h>
-#define GMX_IMD
-#endif
-
-/*! \internal
- *
- * \brief
- * IMD (interactive molecular dynamics) socket structure
- *
- */
-typedef struct
+namespace gmx
 {
-#ifdef GMX_IMD
-    struct sockaddr_in address;      /**< address of socket                   */
-#endif
-    int                sockfd;       /**< socket file descriptor              */
-} IMDSocket;
+
+struct IMDSocket;
 
 
-
-#if GMX_NATIVE_WINDOWS && defined(GMX_HAVE_WINSOCK)
 /*! \internal
  *
  * \brief Function to initialize winsock
@@ -89,14 +64,15 @@ typedef struct
  * \returns 0 if successful.
  */
 int imdsock_winsockinit();
-#endif
-
 
 /*! \brief Create an IMD master socket.
  *
  * \returns  The IMD socket if successful. Otherwise prints an error message and returns NULL.
  */
-IMDSocket *imdsock_create();
+IMDSocket* imdsock_create();
+
+//! Portability wrapper around sleep function
+void imd_sleep(unsigned int seconds);
 
 
 /*! \brief Bind the IMD socket to address and port.
@@ -110,7 +86,7 @@ IMDSocket *imdsock_create();
  *
  * \returns 0 if successful.
  */
-int imdsock_bind(IMDSocket *sock, int port);
+int imdsock_bind(IMDSocket* sock, int port);
 
 
 /*! \brief Set socket to listening state.
@@ -122,7 +98,7 @@ int imdsock_bind(IMDSocket *sock, int port);
  * \returns 0 if successful.
  *
  */
-int imd_sock_listen(IMDSocket *sock);
+int imd_sock_listen(IMDSocket* sock);
 
 
 /*! \brief Accept incoming connection and redirect to client socket.
@@ -133,7 +109,7 @@ int imd_sock_listen(IMDSocket *sock);
  *
  * \returns IMD socket if successful, NULL otherwise.
  */
-IMDSocket *imdsock_accept(IMDSocket *sock);
+IMDSocket* imdsock_accept(IMDSocket* sock);
 
 
 /*! \brief Get the port number used for IMD connection.
@@ -145,7 +121,13 @@ IMDSocket *imdsock_accept(IMDSocket *sock);
  *
  * \returns 0 if successful, an error code otherwise.
  */
-int imdsock_getport(IMDSocket *sock, int *port);
+int imdsock_getport(IMDSocket* sock, int* port);
+
+//! Portability wrapper around system htonl function.
+int imd_htonl(int src);
+
+//! Portability wrapper around system ntohl function.
+int imd_ntohl(int src);
 
 
 /*! \brief  Write to socket.
@@ -157,7 +139,7 @@ int imdsock_getport(IMDSocket *sock, int *port);
  *
  * \returns The number of bytes written, or -1.
  */
-int imdsock_write(IMDSocket *sock, const char *buffer, int length);
+int imdsock_write(IMDSocket* sock, const char* buffer, int length);
 
 
 /*! \brief  Read from socket.
@@ -168,7 +150,7 @@ int imdsock_write(IMDSocket *sock, const char *buffer, int length);
  *
  * \returns The number of bytes read, or -1 for errors.
  */
-int imdsock_read(IMDSocket *sock, char *buffer, int length);
+int imdsock_read(IMDSocket* sock, char* buffer, int length);
 
 
 /*! \brief Shutdown the socket.
@@ -176,7 +158,7 @@ int imdsock_read(IMDSocket *sock, char *buffer, int length);
  * \param sock      The IMD socket.
  *
  */
-void imdsock_shutdown(IMDSocket *sock);
+void imdsock_shutdown(IMDSocket* sock);
 
 
 /*! \brief Close the socket and free the sock struct memory.
@@ -187,7 +169,7 @@ void imdsock_shutdown(IMDSocket *sock);
  *
  * \returns 1 on success, or 0 if unsuccessful.
  */
-int imdsock_destroy(IMDSocket *sock);
+int imdsock_destroy(IMDSocket* sock);
 
 
 /*! \brief Try to read from the socket.
@@ -200,6 +182,8 @@ int imdsock_destroy(IMDSocket *sock);
  * \param timeoutusec  Time out microseconds
  *
  */
-int imdsock_tryread(IMDSocket *sock, int timeoutsec, int timeoutusec);
+int imdsock_tryread(IMDSocket* sock, int timeoutsec, int timeoutusec);
+
+} // namespace gmx
 
 #endif

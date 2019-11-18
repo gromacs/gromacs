@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,91 +46,65 @@ namespace gmx
 {
 
 template<int index>
-static inline std::int32_t gmx_simdcall
-extract(SimdDInt32 a)
+static inline std::int32_t gmx_simdcall extract(SimdDInt32 a)
 {
     return _mm_extract_epi32(a.simdInternal_, index);
 }
 
-static inline SimdDouble
-maskzRsqrt(SimdDouble x, SimdDBool m)
+static inline SimdDouble maskzRsqrt(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
     x.simdInternal_ = _mm_blendv_pd(_mm_set1_pd(1.0), x.simdInternal_, m.simdInternal_);
 #endif
-    return {
-               _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
-    };
+    return { _mm_and_pd(_mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_) };
 }
 
-static inline SimdDouble
-maskzRcp(SimdDouble x, SimdDBool m)
+static inline SimdDouble maskzRcp(SimdDouble x, SimdDBool m)
 {
 #ifndef NDEBUG
     x.simdInternal_ = _mm_blendv_pd(_mm_set1_pd(1.0), x.simdInternal_, m.simdInternal_);
 #endif
-    return {
-               _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_)
-    };
+    return { _mm_and_pd(_mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(x.simdInternal_))), m.simdInternal_) };
 }
 
-static inline SimdDouble gmx_simdcall
-round(SimdDouble x)
+static inline SimdDouble gmx_simdcall round(SimdDouble x)
 {
-    return {
-               _mm_round_pd(x.simdInternal_, _MM_FROUND_NINT)
-    };
+    return { _mm_round_pd(x.simdInternal_, _MM_FROUND_NINT) };
 }
 
-static inline SimdDouble gmx_simdcall
-trunc(SimdDouble x)
+static inline SimdDouble gmx_simdcall trunc(SimdDouble x)
 {
-    return {
-               _mm_round_pd(x.simdInternal_, _MM_FROUND_TRUNC)
-    };
+    return { _mm_round_pd(x.simdInternal_, _MM_FROUND_TRUNC) };
 }
 
-static inline SimdDBool gmx_simdcall
-testBits(SimdDouble a)
+static inline SimdDBool gmx_simdcall testBits(SimdDouble a)
 {
-    __m128i ia  = _mm_castpd_si128(a.simdInternal_);
-    __m128i res = _mm_andnot_si128( _mm_cmpeq_epi64(ia, _mm_setzero_si128()), _mm_cmpeq_epi64(ia, ia));
+    __m128i ia = _mm_castpd_si128(a.simdInternal_);
+    __m128i res = _mm_andnot_si128(_mm_cmpeq_epi64(ia, _mm_setzero_si128()), _mm_cmpeq_epi64(ia, ia));
 
-    return {
-               _mm_castsi128_pd(res)
-    };
+    return { _mm_castsi128_pd(res) };
 }
 
-static inline SimdDouble gmx_simdcall
-blend(SimdDouble a, SimdDouble b, SimdDBool sel)
+static inline SimdDouble gmx_simdcall blend(SimdDouble a, SimdDouble b, SimdDBool sel)
 {
-    return {
-               _mm_blendv_pd(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
-    };
+    return { _mm_blendv_pd(a.simdInternal_, b.simdInternal_, sel.simdInternal_) };
 }
 
-static inline SimdDInt32 gmx_simdcall
-operator*(SimdDInt32 a, SimdDInt32 b)
+static inline SimdDInt32 gmx_simdcall operator*(SimdDInt32 a, SimdDInt32 b)
 {
-    return {
-               _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
-    };
+    return { _mm_mullo_epi32(a.simdInternal_, b.simdInternal_) };
 }
 
-static inline SimdDInt32 gmx_simdcall
-blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
+static inline SimdDInt32 gmx_simdcall blend(SimdDInt32 a, SimdDInt32 b, SimdDIBool sel)
 {
-    return {
-               _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
-    };
+    return { _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_) };
 }
 
-template <MathOptimization opt = MathOptimization::Safe>
-static inline SimdDouble
-ldexp(SimdDouble value, SimdDInt32 exponent)
+template<MathOptimization opt = MathOptimization::Safe>
+static inline SimdDouble ldexp(SimdDouble value, SimdDInt32 exponent)
 {
-    const __m128i  exponentBias = _mm_set1_epi32(1023);
-    __m128i        iExponent    = _mm_add_epi32(exponent.simdInternal_, exponentBias);
+    const __m128i exponentBias = _mm_set1_epi32(1023);
+    __m128i       iExponent    = _mm_add_epi32(exponent.simdInternal_, exponentBias);
 
     if (opt == MathOptimization::Safe)
     {
@@ -143,11 +117,9 @@ ldexp(SimdDouble value, SimdDInt32 exponent)
     iExponent = _mm_shuffle_epi32(iExponent, _MM_SHUFFLE(3, 1, 2, 0));
     iExponent = _mm_slli_epi64(iExponent, 52);
 
-    return {
-               _mm_mul_pd(value.simdInternal_, _mm_castsi128_pd(iExponent))
-    };
+    return { _mm_mul_pd(value.simdInternal_, _mm_castsi128_pd(iExponent)) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_DOUBLE_H

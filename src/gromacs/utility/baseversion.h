@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
  *
  * \ingroup module_utility
  */
-const char *gmx_version();
+const char* gmx_version();
 /*! \brief
  * Full git hash of the latest commit.
  *
@@ -61,7 +61,7 @@ const char *gmx_version();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_full_hash();
+const char* gmx_version_git_full_hash();
 /*! \brief
  * Full git hash of the latest commit in a central \Gromacs repository.
  *
@@ -71,7 +71,7 @@ const char *gmx_version_git_full_hash();
  *
  * \ingroup module_utility
  */
-const char *gmx_version_git_central_base_hash();
+const char* gmx_version_git_central_base_hash();
 
 /*! \brief
  * Defined if ``libgromacs`` has been compiled in double precision.
@@ -94,11 +94,25 @@ void gmx_is_double_precision();
 void gmx_is_single_precision();
 
 /*! \brief Return a string describing what kind of GPU suport was configured in the build. */
-const char *getGpuImplementationString();
+const char* getGpuImplementationString();
 
 /*! \brief
  * DOI string, or empty when not a release build.
  */
-const char *gmxDOI();
+const char* gmxDOI();
+
+/*! \brief
+ * Hash of the complete source released in the tarball.
+ *
+ * Empty when not a release tarball build.
+ */
+const char* gmxReleaseSourceChecksum();
+
+/*! \brief
+ * Hash of the complete source actually used when building.
+ *
+ * Always computed when building from tarball.
+ */
+const char* gmxCurrentSourceChecksum();
 
 #endif

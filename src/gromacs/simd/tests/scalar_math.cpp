@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ TEST(SimdScalarMathTest, inv)
 {
     real x0 = c0;
 
-    EXPECT_EQ(real(1.0)/x0, inv(x0));
+    EXPECT_EQ(real(1.0) / x0, inv(x0));
 }
 
 TEST(SimdScalarMathTest, maskzInvsqrt)
@@ -204,13 +204,13 @@ TEST(SimdScalarMathTest, pmeForceCorrection)
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
-    real ref = 2.0*std::exp(-z2)/(std::sqrt(M_PI)*z2) - std::erf(z)/(z2*z);
+    real ref = 2.0 * std::exp(-z2) / (std::sqrt(M_PI) * z2) - std::erf(z) / (z2 * z);
 
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 #endif
 
     EXPECT_REAL_EQ_TOL(ref, pmeForceCorrection(z2), tolerance);
@@ -222,13 +222,13 @@ TEST(SimdScalarMathTest, pmePotentialCorrection)
 
     // Calculate reference value for z2!=0
     real z   = std::sqrt(z2);
-    real ref = std::erf(z)/z;
+    real ref = std::erf(z) / z;
 
     // Pme correction only needs to be ~1e-6 accuracy single, 1e-10 double
 #if GMX_DOUBLE
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-10));
 #else
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 #endif
 
     EXPECT_REAL_EQ_TOL(ref, pmePotentialCorrection(z2), tolerance);
@@ -255,42 +255,36 @@ TEST(SimdScalarMathTest, invSingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(1.0f/static_cast<float>(x0),
-              static_cast<float>(invSingleAccuracy(x0)));
+    EXPECT_EQ(1.0F / static_cast<float>(x0), static_cast<float>(invSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, maskzInvsqrtSingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(invsqrt(static_cast<float>(x0)),
-              static_cast<float>(maskzInvsqrtSingleAccuracy(x0, true)));
-    EXPECT_EQ(0.0f,
-              static_cast<float>(maskzInvsqrtSingleAccuracy(x0, false)));
+    EXPECT_EQ(invsqrt(static_cast<float>(x0)), static_cast<float>(maskzInvsqrtSingleAccuracy(x0, true)));
+    EXPECT_EQ(0.0F, static_cast<float>(maskzInvsqrtSingleAccuracy(x0, false)));
 }
 
 TEST(SimdScalarMathTest, logSingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(std::log(static_cast<float>(x0)),
-              static_cast<float>(logSingleAccuracy(x0)));
+    EXPECT_EQ(std::log(static_cast<float>(x0)), static_cast<float>(logSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, exp2SingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(std::exp2(static_cast<float>(x0)),
-              static_cast<float>(exp2SingleAccuracy(x0)));
+    EXPECT_EQ(std::exp2(static_cast<float>(x0)), static_cast<float>(exp2SingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, expSingleAccuracy)
 {
     double x0 = c1;
 
-    EXPECT_EQ(std::exp(static_cast<float>(x0)),
-              static_cast<float>(expSingleAccuracy(x0)));
+    EXPECT_EQ(std::exp(static_cast<float>(x0)), static_cast<float>(expSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, erfSingleAccuracy)
@@ -322,24 +316,21 @@ TEST(SimdScalarMathTest, sinSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::sin(static_cast<float>(x0)),
-              static_cast<float>(sinSingleAccuracy(x0)));
+    EXPECT_EQ(std::sin(static_cast<float>(x0)), static_cast<float>(sinSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, cosSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::cos(static_cast<float>(x0)),
-              static_cast<float>(cosSingleAccuracy(x0)));
+    EXPECT_EQ(std::cos(static_cast<float>(x0)), static_cast<float>(cosSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, tanSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::tan(static_cast<float>(x0)),
-              static_cast<float>(tanSingleAccuracy(x0)));
+    EXPECT_EQ(std::tan(static_cast<float>(x0)), static_cast<float>(tanSingleAccuracy(x0)));
 }
 
 
@@ -347,24 +338,21 @@ TEST(SimdScalarMathTest, asinSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::asin(static_cast<float>(x0)),
-              static_cast<float>(asinSingleAccuracy(x0)));
+    EXPECT_EQ(std::asin(static_cast<float>(x0)), static_cast<float>(asinSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, acosSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::acos(static_cast<float>(x0)),
-              static_cast<float>(acosSingleAccuracy(x0)));
+    EXPECT_EQ(std::acos(static_cast<float>(x0)), static_cast<float>(acosSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, atanSingleAccuracy)
 {
     double x0 = c0;
 
-    EXPECT_EQ(std::atan(static_cast<float>(x0)),
-              static_cast<float>(atanSingleAccuracy(x0)));
+    EXPECT_EQ(std::atan(static_cast<float>(x0)), static_cast<float>(atanSingleAccuracy(x0)));
 }
 
 TEST(SimdScalarMathTest, atan2SingleAccuracy)
@@ -383,10 +371,11 @@ TEST(SimdScalarMathTest, pmeForceCorrectionSingleAccuracy)
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));
-    float ref = 2.0*std::exp(static_cast<float>(-z2))/(std::sqrt(static_cast<float>(M_PI))*z2) - std::erf(z)/(z2*z);
+    float ref = 2.0 * std::exp(static_cast<float>(-z2)) / (std::sqrt(static_cast<float>(M_PI)) * z2)
+                - std::erf(z) / (z2 * z);
 
     // Pme correction only needs to be ~1e-6 accuracy single
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 
     EXPECT_REAL_EQ_TOL(ref, static_cast<float>(pmeForceCorrectionSingleAccuracy(z2)), tolerance);
 }
@@ -397,10 +386,10 @@ TEST(SimdScalarMathTest, pmePotentialCorrectionSingleAccuracy)
 
     // Calculate reference value for z2!=0 in single precision
     float z   = std::sqrt(static_cast<float>(z2));
-    float ref = std::erf(z)/z;
+    float ref = std::erf(z) / z;
 
     // Pme correction only needs to be ~1e-6 accuracy single
-    FloatingPointTolerance            tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
+    FloatingPointTolerance tolerance(relativeToleranceAsFloatingPoint(1.0, 5e-6));
 
     EXPECT_REAL_EQ_TOL(ref, static_cast<float>(pmePotentialCorrectionSingleAccuracy(z2)), tolerance);
 }
@@ -408,6 +397,6 @@ TEST(SimdScalarMathTest, pmePotentialCorrectionSingleAccuracy)
 /*! \} */
 /*! \endcond internal */
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

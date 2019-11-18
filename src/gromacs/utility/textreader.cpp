@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,7 @@ namespace gmx
 {
 
 // static
-std::string TextReader::readFileToString(const char *filename)
+std::string TextReader::readFileToString(const char* filename)
 {
     TextReader  reader(filename);
     std::string result(reader.readAll());
@@ -60,7 +60,7 @@ std::string TextReader::readFileToString(const char *filename)
 }
 
 // static
-std::string TextReader::readFileToString(const std::string &filename)
+std::string TextReader::readFileToString(const std::string& filename)
 {
     return readFileToString(filename.c_str());
 }
@@ -68,55 +68,53 @@ std::string TextReader::readFileToString(const std::string &filename)
 //! Implementation class
 class TextReader::Impl
 {
-    public:
-        //! Constructor.
-        explicit Impl(const TextInputStreamPointer &stream)
-            : stream_(stream), trimLeadingWhiteSpace_(false), trimTrailingWhiteSpace_(false),
-              trimTrailingComment_(false), commentChar_(0)
-        {
-        }
+public:
+    //! Constructor.
+    explicit Impl(const TextInputStreamPointer& stream) :
+        stream_(stream),
+        trimLeadingWhiteSpace_(false),
+        trimTrailingWhiteSpace_(false),
+        trimTrailingComment_(false),
+        commentChar_(0)
+    {
+    }
 
-        //! Stream used by this reader.
-        TextInputStreamPointer stream_;
-        //! Whether leading whitespace should be removed.
-        bool                   trimLeadingWhiteSpace_;
-        //! Whether trailing whitespace should be removed.
-        bool                   trimTrailingWhiteSpace_;
-        //! Whether a trailing comment should be removed.
-        bool                   trimTrailingComment_;
-        /*! \brief Character that denotes the start of a comment on a line.
-         *
-         * Zero until TextReader::setTrimTrailingComment is called to
-         * activate such trimming with a given character. */
-        char                   commentChar_;
+    //! Stream used by this reader.
+    TextInputStreamPointer stream_;
+    //! Whether leading whitespace should be removed.
+    bool trimLeadingWhiteSpace_;
+    //! Whether trailing whitespace should be removed.
+    bool trimTrailingWhiteSpace_;
+    //! Whether a trailing comment should be removed.
+    bool trimTrailingComment_;
+    /*! \brief Character that denotes the start of a comment on a line.
+     *
+     * Zero until TextReader::setTrimTrailingComment is called to
+     * activate such trimming with a given character. */
+    char commentChar_;
 };
 
-TextReader::TextReader(const std::string &filename)
-    : impl_(new Impl(TextInputStreamPointer(new TextInputFile(filename))))
+TextReader::TextReader(const std::string& filename) :
+    impl_(new Impl(TextInputStreamPointer(new TextInputFile(filename))))
 {
 }
 
-TextReader::TextReader(TextInputStream *stream)
-    : impl_(new Impl(TextInputStreamPointer(stream, no_delete<TextInputStream>())))
+TextReader::TextReader(TextInputStream* stream) :
+    impl_(new Impl(TextInputStreamPointer(stream, no_delete<TextInputStream>())))
 {
 }
 
-TextReader::TextReader(const TextInputStreamPointer &stream)
-    : impl_(new Impl(stream))
-{
-}
+TextReader::TextReader(const TextInputStreamPointer& stream) : impl_(new Impl(stream)) {}
 
-TextReader::~TextReader()
-{
-}
+TextReader::~TextReader() {}
 
-bool TextReader::readLine(std::string *linePtr)
+bool TextReader::readLine(std::string* linePtr)
 {
     if (!impl_->stream_->readLine(linePtr))
     {
         return false;
     }
-    auto      &line              = *linePtr;
+    auto&      line              = *linePtr;
     const char whiteSpaceChars[] = " \t\r\n";
     if (impl_->trimLeadingWhiteSpace_)
     {

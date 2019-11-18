@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,111 +44,103 @@
 
 #include <vector>
 
-#include "gromacs/options/ivaluestore.h"
 #include "gromacs/utility/arrayref.h"
+
+#include "ivaluestore.h"
 
 namespace gmx
 {
 
-template <typename T>
+template<typename T>
 class OptionValueStorePlain : public IOptionValueStore<T>
 {
-    public:
-        OptionValueStorePlain(T *store, int *storeCount, int initialCount)
-            : count_(initialCount), store_(store), storeCount_(storeCount)
-        {
-        }
+public:
+    OptionValueStorePlain(T* store, int* storeCount, int initialCount) :
+        count_(initialCount),
+        store_(store),
+        storeCount_(storeCount)
+    {
+    }
 
-        int valueCount() override { return count_; }
-        ArrayRef<T> values() override { return arrayRefFromArray(store_, count_); }
-        void clear() override
+    int         valueCount() override { return count_; }
+    ArrayRef<T> values() override { return arrayRefFromArray(store_, count_); }
+    void        clear() override
+    {
+        count_ = 0;
+        if (storeCount_ != nullptr)
         {
-            count_ = 0;
-            if (storeCount_ != nullptr)
-            {
-                *storeCount_ = count_;
-            }
+            *storeCount_ = count_;
         }
-        void reserve(size_t /*count*/) override
+    }
+    void reserve(size_t /*count*/) override {}
+    void append(const T& value) override
+    {
+        store_[count_] = value;
+        ++count_;
+        if (storeCount_ != nullptr)
         {
+            *storeCount_ = count_;
         }
-        void append(const T &value) override
-        {
-            store_[count_] = value;
-            ++count_;
-            if (storeCount_ != nullptr)
-            {
-                *storeCount_ = count_;
-            }
-        }
+    }
 
-    private:
-        int                          count_;
-        T                           *store_;
-        int                         *storeCount_;
+private:
+    int  count_;
+    T*   store_;
+    int* storeCount_;
 };
 
-template <typename T>
+template<typename T>
 class OptionValueStoreVector : public IOptionValueStore<T>
 {
-    public:
-        explicit OptionValueStoreVector(std::vector<T> *store) : store_(store) {}
+public:
+    explicit OptionValueStoreVector(std::vector<T>* store) : store_(store) {}
 
-        int valueCount() override { return static_cast<int>(store_->size()); }
-        ArrayRef<T> values() override { return *store_; }
-        void clear() override { store_->clear(); }
-        void reserve(size_t count) override
-        {
-            store_->reserve(store_->size() + count);
-        }
-        void append(const T &value) override
-        {
-            store_->push_back(value);
-        }
+    int         valueCount() override { return static_cast<int>(store_->size()); }
+    ArrayRef<T> values() override { return *store_; }
+    void        clear() override { store_->clear(); }
+    void        reserve(size_t count) override { store_->reserve(store_->size() + count); }
+    void        append(const T& value) override { store_->push_back(value); }
 
-    private:
-        std::vector<T> *store_;
+private:
+    std::vector<T>* store_;
 };
 
 // Specialization that works around std::vector<bool> specialities.
-template <>
+template<>
 class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
 {
-    public:
-        explicit OptionValueStoreVector(std::vector<bool> *store) : store_(store)
-        {
-        }
+public:
+    explicit OptionValueStoreVector(std::vector<bool>* store) : store_(store) {}
 
-        int valueCount() override { return static_cast<int>(store_->size()); }
-        ArrayRef<bool> values() override
-        {
-            return arrayRefFromArray(reinterpret_cast<bool *>(boolStore_.data()),
-                                     boolStore_.size());
-        }
-        void clear() override
-        {
-            boolStore_.clear();
-            store_->clear();
-        }
-        void reserve(size_t count) override
-        {
-            boolStore_.reserve(boolStore_.size() + count);
-            store_->reserve(store_->size() + count);
-        }
-        void append(const bool &value) override
-        {
-            boolStore_.push_back({value});
-            store_->push_back(value);
-        }
+    int            valueCount() override { return static_cast<int>(store_->size()); }
+    ArrayRef<bool> values() override
+    {
+        return arrayRefFromArray(reinterpret_cast<bool*>(boolStore_.data()), boolStore_.size());
+    }
+    void clear() override
+    {
+        boolStore_.clear();
+        store_->clear();
+    }
+    void reserve(size_t count) override
+    {
+        boolStore_.reserve(boolStore_.size() + count);
+        store_->reserve(store_->size() + count);
+    }
+    void append(const bool& value) override
+    {
+        boolStore_.push_back({ value });
+        store_->push_back(value);
+    }
 
-    private:
-        struct Bool
-        {
-            bool value;
-        };
+private:
+    struct Bool
+    {
+        bool value;
+    };
 
-        std::vector<Bool>  boolStore_;
-        std::vector<bool> *store_;
+    std::vector<Bool>  boolStore_;
+    std::vector<bool>* store_;
 };
 
 /*! \internal
@@ -160,21 +152,21 @@ class OptionValueStoreVector<bool> : public IOptionValueStore<bool>
  *
  * \ingroup module_options
  */
-template <typename T>
+template<typename T>
 class OptionValueStoreNull : public IOptionValueStore<T>
 {
-    public:
-        OptionValueStoreNull() : store_(&vector_) {}
+public:
+    OptionValueStoreNull() : store_(&vector_) {}
 
-        int valueCount() override { return store_.valueCount(); }
-        ArrayRef<T> values() override { return store_.values(); }
-        void clear() override { store_.clear(); }
-        void reserve(size_t count) override { store_.reserve(count); }
-        void append(const T &value) override { store_.append(value); }
+    int         valueCount() override { return store_.valueCount(); }
+    ArrayRef<T> values() override { return store_.values(); }
+    void        clear() override { store_.clear(); }
+    void        reserve(size_t count) override { store_.reserve(count); }
+    void        append(const T& value) override { store_.append(value); }
 
-    private:
-        std::vector<T>            vector_;
-        OptionValueStoreVector<T> store_;
+private:
+    std::vector<T>            vector_;
+    OptionValueStoreVector<T> store_;
 };
 
 } // namespace gmx

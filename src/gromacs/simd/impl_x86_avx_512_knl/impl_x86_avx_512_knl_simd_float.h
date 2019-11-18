@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,53 +46,37 @@
 namespace gmx
 {
 
-static inline SimdFloat gmx_simdcall
-rsqrt(SimdFloat x)
+static inline SimdFloat gmx_simdcall rsqrt(SimdFloat x)
 {
-    return {
-               _mm512_rsqrt28_ps(x.simdInternal_)
-    };
+    return { _mm512_rsqrt28_ps(x.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-rcp(SimdFloat x)
+static inline SimdFloat gmx_simdcall rcp(SimdFloat x)
 {
-    return {
-               _mm512_rcp28_ps(x.simdInternal_)
-    };
+    return { _mm512_rcp28_ps(x.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-maskzRsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRsqrt(SimdFloat x, SimdFBool m)
 {
-    return {
-               _mm512_maskz_rsqrt28_ps(m.simdInternal_, x.simdInternal_)
-    };
+    return { _mm512_maskz_rsqrt28_ps(m.simdInternal_, x.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-maskzRcp(SimdFloat x, SimdFBool m)
+static inline SimdFloat gmx_simdcall maskzRcp(SimdFloat x, SimdFBool m)
 {
-    return {
-               _mm512_maskz_rcp28_ps(m.simdInternal_, x.simdInternal_)
-    };
+    return { _mm512_maskz_rcp28_ps(m.simdInternal_, x.simdInternal_) };
 }
 
-template <MathOptimization opt = MathOptimization::Safe>
-static inline SimdFloat gmx_simdcall
-exp2(SimdFloat x)
+template<MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall exp2(SimdFloat x)
 {
-    return {
-               _mm512_exp2a23_ps(x.simdInternal_)
-    };
+    return { _mm512_exp2a23_ps(x.simdInternal_) };
 }
 
-template <MathOptimization opt = MathOptimization::Safe>
-static inline SimdFloat gmx_simdcall
-exp(SimdFloat x)
+template<MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall exp(SimdFloat x)
 {
-    const __m512     argscale    = _mm512_set1_ps(1.44269504088896341f);
-    const __m512     invargscale = _mm512_set1_ps(-0.69314718055994528623f);
+    const __m512 argscale    = _mm512_set1_ps(1.44269504088896341F);
+    const __m512 invargscale = _mm512_set1_ps(-0.69314718055994528623F);
 
     if (opt == MathOptimization::Safe)
     {
@@ -114,15 +98,13 @@ exp(SimdFloat x)
     // Note that this only adds two instructions (and maybe some constant loads).
 
     // find the difference
-    x         = _mm512_fmadd_ps(invargscale, xscaled, x.simdInternal_);
+    x = _mm512_fmadd_ps(invargscale, xscaled, x.simdInternal_);
     // x will now be a _very_ small number, so approximate exp(x)=1+x.
     // We should thus apply the correction as r'=r*(1+x)=r+r*x
-    r         = _mm512_fmadd_ps(r, x.simdInternal_, r);
-    return {
-               r
-    };
+    r = _mm512_fmadd_ps(r, x.simdInternal_, r);
+    return { r };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_KNL_SIMD_FLOAT_H

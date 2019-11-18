@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,16 +53,17 @@
 namespace gmx
 {
 
-EnergyFrame::EnergyFrame(const t_enxframe &enxframe,
-                         const std::map<std::string, int> indicesOfEnergyFields)
-    : step_(enxframe.step), time_(enxframe.t)
+EnergyFrame::EnergyFrame(const t_enxframe& enxframe, const std::map<std::string, int>& indicesOfEnergyFields) :
+    step_(enxframe.step),
+    time_(enxframe.t)
 {
-    for (auto &index : indicesOfEnergyFields)
+    for (auto& index : indicesOfEnergyFields)
     {
         if (index.second >= enxframe.nre)
         {
-            GMX_THROW(InternalError(formatString("Index %d for energy %s not present in energy frame with %d energies",
-                                                 index.second, index.first.c_str(), enxframe.nre)));
+            GMX_THROW(InternalError(formatString(
+                    "Index %d for energy %s not present in energy frame with %d energies",
+                    index.second, index.first.c_str(), enxframe.nre)));
         }
         values_[index.first] = enxframe.ener[index.second].e;
     }
@@ -73,12 +74,13 @@ std::string EnergyFrame::frameName() const
     return formatString("Time %f Step %" PRId64, time_, step_);
 }
 
-const real &EnergyFrame::at(const std::string &name) const
+const real& EnergyFrame::at(const std::string& name) const
 {
     auto valueIterator = values_.find(name);
     if (valueIterator == values_.end())
     {
-        GMX_THROW(APIError("Cannot get energy value " + name + " unless previously registered when constructing EnergyFrameReader"));
+        GMX_THROW(APIError("Cannot get energy value " + name
+                           + " unless previously registered when constructing EnergyFrameReader"));
     }
     return valueIterator->second;
 }
@@ -93,9 +95,9 @@ EnergyFrame::MapConstIterator EnergyFrame::end() const
     return values_.end();
 }
 
-EnergyFrame::MapConstIterator EnergyFrame::find(const std::string &key) const
+EnergyFrame::MapConstIterator EnergyFrame::find(const std::string& key) const
 {
     return values_.find(key);
 }
 
-}  // namespace gmx
+} // namespace gmx

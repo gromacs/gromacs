@@ -50,91 +50,79 @@ struct t_commrec;
 struct t_fcdata;
 struct t_filenm;
 struct t_inputrec;
+struct gmx_gpu_info_t;
+struct gmx_wallcycle;
 
 namespace gmx
 {
 class MDLogger;
 class PhysicalNodeCommunicator;
-}
-
-/*! \brief Create a new forcerec structure */
-t_forcerec *mk_forcerec();
-
-//! Destroy a forcerec.
-void done_forcerec(t_forcerec *fr, int numMolBlocks, int numEnergyGroups);
+} // namespace gmx
 
 /*! \brief Print the contents of the forcerec to a file
  *
  * \param[in] fplog The log file to print to
  * \param[in] fr    The forcerec structure
  */
-void pr_forcerec(FILE *fplog, t_forcerec *fr);
+void pr_forcerec(FILE* fplog, t_forcerec* fr);
 
 /*! \brief Set the number of charge groups and atoms.
  *
  * The force calculation needs information on which atoms it
  * should do work.
  * \param[inout] fr                  The forcerec
- * \param[in]    ncg_home            Number of charge groups on this processor
- * \param[in]    ncg_force           Number of charge groups to compute force on
  * \param[in]    natoms_force        Number of atoms to compute force on
  * \param[in]    natoms_force_constr Number of atoms involved in constraints
  * \param[in]    natoms_f_novirsum   Number of atoms for which
  *                                   force is to be compute but no virial
  */
-void
-forcerec_set_ranges(t_forcerec *fr,
-                    int ncg_home, int ncg_force,
-                    int natoms_force,
-                    int natoms_force_constr, int natoms_f_novirsum);
+void forcerec_set_ranges(t_forcerec* fr, int natoms_force, int natoms_force_constr, int natoms_f_novirsum);
 
 /*! \brief Initiate table constants
  *
  * Initializes the tables in the interaction constant data structure.
  * \param[in] fp   File for debugging output
  * \param[in] ic   Structure holding the table constant
- * \param[in] rtab The additional distance to add to tables
  */
-void init_interaction_const_tables(FILE                   *fp,
-                                   interaction_const_t    *ic,
-                                   real                    rtab);
+void init_interaction_const_tables(FILE* fp, interaction_const_t* ic);
 
 /*! \brief Initialize forcerec structure.
  *
- * The Force rec struct must be created with mk_forcerec.
- * \param[in]  fplog       File for printing
- * \param[in]  mdlog       File for printing
- * \param[out] fr          The forcerec
- * \param[in]  fcd         Force constant data
- * \param[in]  ir          Inputrec structure
- * \param[in]  mtop        Molecular topology
- * \param[in]  cr          Communication structures
- * \param[in]  box         Simulation box
- * \param[in]  tabfn       Table potential file for non-bonded interactions
- * \param[in]  tabpfn      Table potential file for pair interactions
- * \param[in]  tabbfnm     Table potential files for bonded interactions
- * \param[in]  hardwareInfo  Information about hardware
- * \param[in]  deviceInfo  Info about GPU device to use for short-ranged work
- * \param[in]  useGpuForBonded  Whether bonded interactions will run on a GPU
- * \param[in]  bNoSolvOpt  Do not use solvent optimization
- * \param[in]  print_force Print forces for atoms with force >= print_force
+ * \param[in]  fplog              File for printing
+ * \param[in]  mdlog              File for printing
+ * \param[out] fr                 The forcerec
+ * \param[in]  fcd                Force constant data
+ * \param[in]  ir                 Inputrec structure
+ * \param[in]  mtop               Molecular topology
+ * \param[in]  cr                 Communication structures
+ * \param[in]  box                Simulation box
+ * \param[in]  tabfn              Table potential file for non-bonded interactions
+ * \param[in]  tabpfn             Table potential file for pair interactions
+ * \param[in]  tabbfnm            Table potential files for bonded interactions
+ * \param[in]  hardwareInfo       Information about hardware
+ * \param[in]  deviceInfo         Info about GPU device to use for short-ranged work
+ * \param[in]  useGpuForBonded    Whether bonded interactions will run on a GPU
+ * \param[in]  pmeOnlyRankUsesGpu Whether there is a PME task on a GPU on a PME-only rank
+ * \param[in]  print_force        Print forces for atoms with force >= print_force
+ * \param[out] wcycle             Pointer to cycle counter object
  */
-void init_forcerec(FILE                             *fplog,
-                   const gmx::MDLogger              &mdlog,
-                   t_forcerec                       *fr,
-                   t_fcdata                         *fcd,
-                   const t_inputrec                 *ir,
-                   const gmx_mtop_t                 *mtop,
-                   const t_commrec                  *cr,
-                   matrix                            box,
-                   const char                       *tabfn,
-                   const char                       *tabpfn,
-                   gmx::ArrayRef<const std::string>  tabbfnm,
-                   const gmx_hw_info_t              &hardwareInfo,
-                   const gmx_device_info_t          *deviceInfo,
-                   bool                              useGpuForBonded,
-                   gmx_bool                          bNoSolvOpt,
-                   real                              print_force);
+void init_forcerec(FILE*                            fplog,
+                   const gmx::MDLogger&             mdlog,
+                   t_forcerec*                      fr,
+                   t_fcdata*                        fcd,
+                   const t_inputrec*                ir,
+                   const gmx_mtop_t*                mtop,
+                   const t_commrec*                 cr,
+                   matrix                           box,
+                   const char*                      tabfn,
+                   const char*                      tabpfn,
+                   gmx::ArrayRef<const std::string> tabbfnm,
+                   const gmx_hw_info_t&             hardwareInfo,
+                   const gmx_device_info_t*         deviceInfo,
+                   bool                             useGpuForBonded,
+                   bool                             pmeOnlyRankUsesGpu,
+                   real                             print_force,
+                   gmx_wallcycle*                   wcycle);
 
 /*! \brief Divide exclusions over threads
  *
@@ -142,29 +130,6 @@ void init_forcerec(FILE                             *fplog,
  * \param[out] fr  The force record
  * \param[in]  top The topology
  */
-void forcerec_set_excl_load(t_forcerec           *fr,
-                            const gmx_localtop_t *top);
-
-/*! \brief Update parameters dependent on box
- *
- * Updates parameters in the forcerec that are time dependent
- * \param[out] fr  The force record
- * \param[in]  box The simulation box
- */
-void update_forcerec(t_forcerec *fr, matrix box);
-
-gmx_bool uses_simple_tables(int                 cutoff_scheme,
-                            nonbonded_verlet_t *nbv,
-                            int                 group);
-/* Returns whether simple tables (i.e. not for use with GPUs) are used
- * with the type of kernel indicated.
- */
-
-/* Compute the average C6 and C12 params for LJ corrections */
-void set_avcsixtwelve(FILE *fplog, t_forcerec *fr,
-                      const gmx_mtop_t *mtop);
-
-void free_gpu_resources(t_forcerec                          *fr,
-                        const gmx::PhysicalNodeCommunicator &physicalNodeCommunicator);
+void forcerec_set_excl_load(t_forcerec* fr, const gmx_localtop_t* top);
 
 #endif

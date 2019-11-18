@@ -32,21 +32,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
+/*! \internal \file
+ *
+ * \brief Declares functions for redistributing atoms over the PME domains
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_ewald
+ */
+
 #ifndef GMX_EWALD_PME_REDISTRIBUTE_H
 #define GMX_EWALD_PME_REDISTRIBUTE_H
 
 #include "pme_internal.h"
 
-void
-pme_realloc_atomcomm_things(pme_atomcomm_t *atc);
+//! Redistributes forces along the dimension gives by \p atc
+void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF);
 
-void
-dd_pmeredist_f(struct gmx_pme_t *pme, pme_atomcomm_t *atc,
-               int n, rvec *f,
-               gmx_bool bAddF);
-
-void
-do_redist_pos_coeffs(struct gmx_pme_t *pme, const t_commrec *cr, int start, int homenr,
-                     gmx_bool bFirst, rvec x[], real *data);
+//! Redistributes coefficients and when \p bFirst=true coordinates over MPI ranks
+void do_redist_pos_coeffs(struct gmx_pme_t*              pme,
+                          const t_commrec*               cr,
+                          gmx_bool                       bFirst,
+                          gmx::ArrayRef<const gmx::RVec> x,
+                          const real*                    data);
 
 #endif

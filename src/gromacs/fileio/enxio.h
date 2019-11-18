@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,7 +41,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_groups_t;
+struct SimulationGroups;
 struct t_energy;
 struct t_enxframe;
 struct t_fileio;
@@ -61,9 +61,10 @@ class t_state;
  *
  **************************************************************/
 
-typedef struct {
-    char *name;
-    char *unit;
+typedef struct
+{
+    char* name;
+    char* unit;
 } gmx_enxnm_t;
 
 /*
@@ -73,42 +74,43 @@ typedef struct {
  *
  * For backward compatibility, the order of these should not be changed.
  */
-enum {
-    enxOR,     /* Time and ensemble averaged data for orientation restraints */
-    enxORI,    /* Instantaneous data for orientation restraints              */
-    enxORT,    /* Order tensor(s) for orientation restraints                 */
-    enxDISRE,  /* Distance restraint blocks                                  */
+enum
+{
+    enxOR,    /* Time and ensemble averaged data for orientation restraints */
+    enxORI,   /* Instantaneous data for orientation restraints              */
+    enxORT,   /* Order tensor(s) for orientation restraints                 */
+    enxDISRE, /* Distance restraint blocks                                  */
 
     enxDHCOLL, /* Data about the free energy blocks in this frame.           */
     enxDHHIST, /* BAR histogram                                              */
     enxDH,     /* BAR raw delta H data                                       */
 
-    enxAWH,    /* AWH data */
+    enxAWH, /* AWH data */
 
-    enxNR      /* Total number of extra blocks in the current code,
-                * note that the enxio code can read files written by
-                * future code which contain more blocks.
-                */
+    enxNR /* Total number of extra blocks in the current code,
+           * note that the enxio code can read files written by
+           * future code which contain more blocks.
+           */
 };
 
 /* names for the above enum */
-extern const char *enx_block_id_name[];
+extern const char* enx_block_id_name[];
 
 
 /* the subblocks that are contained in energy file blocks. Each of these
    has a number of values of a single data type in a .edr file. */
 struct t_enxsubblock
 {
-    int          nr;        /* number of items in subblock */
-    xdr_datatype type;      /* the block type */
+    int          nr;   /* number of items in subblock */
+    xdr_datatype type; /* the block type */
 
     /* the values: pointers for each type */
-    float*             fval;
-    double*            dval;
-    int*               ival;
-    int64_t    *       lval;
-    unsigned char*     cval;
-    char**             sval;
+    float*         fval;
+    double*        dval;
+    int*           ival;
+    int64_t*       lval;
+    unsigned char* cval;
+    char**         sval;
 
     /* the allocated sizes, defined separately.
        (nonzero sizes can be free()d later): */
@@ -126,12 +128,12 @@ struct t_enxblock
 {
     int            id;         /* block id, from the enx enums above */
     int            nsub;       /* number of subblocks */
-    t_enxsubblock *sub;        /* the subblocks */
+    t_enxsubblock* sub;        /* the subblocks */
     int            nsub_alloc; /* number of allocated subblocks */
 };
 
 /* file handle */
-typedef struct ener_file *ener_file_t;
+typedef struct ener_file* ener_file_t;
 
 /*
  * An energy file is read like this:
@@ -152,14 +154,14 @@ typedef struct ener_file *ener_file_t;
 
 
 /* initialize a pre-allocated frame */
-void init_enxframe(t_enxframe *ef);
+void init_enxframe(t_enxframe* ef);
 /* delete a frame's memory (except the ef itself) */
-void free_enxframe(t_enxframe *ef);
+void free_enxframe(t_enxframe* ef);
 
 
-ener_file_t open_enx(const char *fn, const char *mode);
+ener_file_t open_enx(const char* fn, const char* mode);
 
-struct t_fileio *enx_file_pointer(const ener_file* ef);
+struct t_fileio* enx_file_pointer(const ener_file* ef);
 
 /* Free the contents of ef */
 void close_enx(ener_file_t ef);
@@ -167,17 +169,15 @@ void close_enx(ener_file_t ef);
 /* Free the contents of ef, and ef itself */
 void done_ener_file(ener_file_t ef);
 
-void do_enxnms(ener_file_t ef, int *nre, gmx_enxnm_t **enms);
+void do_enxnms(ener_file_t ef, int* nre, gmx_enxnm_t** enms);
 
-void free_enxnms(int n, gmx_enxnm_t *nms);
+void free_enxnms(int n, gmx_enxnm_t* nms);
 /* Frees nms and all strings in it */
 
-gmx_bool do_enx(ener_file_t ef, t_enxframe *fr);
+gmx_bool do_enx(ener_file_t ef, t_enxframe* fr);
 /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-void get_enx_state(const char *fn, real t,
-                   const gmx_groups_t *groups, t_inputrec *ir,
-                   t_state *state);
+void get_enx_state(const char* fn, real t, const SimulationGroups& groups, t_inputrec* ir, t_state* state);
 /*
  * Reads state variables from enx file fn at time t.
  * atoms and ir are required for determining which things must be read.
@@ -188,20 +188,19 @@ void get_enx_state(const char *fn, real t,
 /* block funtions */
 
 /* allocate n blocks to a frame (if neccesary). Don't touch existing blocks */
-void add_blocks_enxframe(t_enxframe *ef, int n);
+void add_blocks_enxframe(t_enxframe* ef, int n);
 
 /* find a block by id number; if prev!=NULL, it searches from
    that block's next block.
    Returns NULL if no block is found with the given id. */
-t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev);
+t_enxblock* find_block_id_enxframe(t_enxframe* ef, int id, t_enxblock* prev);
 
 
 /* allocate n subblocks to a block (if neccesary). Don't touch existing
    subbblocks. */
-void add_subblocks_enxblock(t_enxblock *eb, int n);
+void add_subblocks_enxblock(t_enxblock* eb, int n);
 
-void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
-              const char *lastener);
+void comp_enx(const char* fn1, const char* fn2, real ftol, real abstol, const char* lastener);
 /* Compare two binary energy files */
 
 #endif

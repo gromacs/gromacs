@@ -64,7 +64,7 @@ namespace test
  */
 struct AwhTestParameters
 {
-    double        beta;            //!< 1/(kB*T)
+    double beta; //!< 1/(kB*T)
 
     AwhDimParams  awhDimParams[2]; //!< Dimension parameters pointed to by \p awhBiasParams
     AwhBiasParams awhBiasParams;   //!< Bias parameters pointed to by \[ awhParams
@@ -78,28 +78,28 @@ static AwhTestParameters getAwhTestParameters()
 
     params.beta = 1.0;
 
-    AwhParams     &awhParams      = params.awhParams;
+    AwhParams& awhParams = params.awhParams;
     snew(params.awhParams.awhBiasParams, 1);
-    AwhBiasParams &awhBiasParams  = params.awhParams.awhBiasParams[0];
+    AwhBiasParams& awhBiasParams = params.awhParams.awhBiasParams[0];
     snew(awhBiasParams.dimParams, 2);
 
-    AwhDimParams  &awhDimParams0  = awhBiasParams.dimParams[0];
+    AwhDimParams& awhDimParams0 = awhBiasParams.dimParams[0];
 
-    awhDimParams0.period          = 0;
-    awhDimParams0.diffusion       = 0.1;
-    awhDimParams0.origin          = 0.5;
-    awhDimParams0.end             = 1.5;
-    awhDimParams0.coordValueInit  = awhDimParams0.origin;
-    awhDimParams0.coverDiameter   = 0;
+    awhDimParams0.period         = 0;
+    awhDimParams0.diffusion      = 0.1;
+    awhDimParams0.origin         = 0.5;
+    awhDimParams0.end            = 1.5;
+    awhDimParams0.coordValueInit = awhDimParams0.origin;
+    awhDimParams0.coverDiameter  = 0;
 
-    AwhDimParams &awhDimParams1   = awhBiasParams.dimParams[1];
+    AwhDimParams& awhDimParams1 = awhBiasParams.dimParams[1];
 
-    awhDimParams1.period          = 0;
-    awhDimParams1.diffusion       = 0.1;
-    awhDimParams1.origin          = 0.8;
-    awhDimParams1.end             = 1.3;
-    awhDimParams1.coordValueInit  = awhDimParams1.origin;
-    awhDimParams1.coverDiameter   = 0;
+    awhDimParams1.period         = 0;
+    awhDimParams1.diffusion      = 0.1;
+    awhDimParams1.origin         = 0.8;
+    awhDimParams1.end            = 1.3;
+    awhDimParams1.coordValueInit = awhDimParams1.origin;
+    awhDimParams1.coverDiameter  = 0;
 
     awhBiasParams.ndim                 = 2;
     awhBiasParams.eTarget              = eawhtargetCONSTANT;
@@ -124,30 +124,32 @@ static AwhTestParameters getAwhTestParameters()
 
 /*! \brief Test fixture for testing Bias updates
  */
-class BiasStateTest : public ::testing::TestWithParam<const char *>
+class BiasStateTest : public ::testing::TestWithParam<const char*>
 {
-    public:
-        std::unique_ptr<BiasState> biasState_;  //!< The bias state
+public:
+    std::unique_ptr<BiasState> biasState_; //!< The bias state
 
-        BiasStateTest()
-        {
-            AwhTestParameters       params        = getAwhTestParameters();
-            const AwhParams        &awhParams     = params.awhParams;
-            const AwhBiasParams    &awhBiasParams = awhParams.awhBiasParams[0];
-            std::vector<DimParams>  dimParams;
-            dimParams.emplace_back(1.0, 15.0, params.beta);
-            dimParams.emplace_back(1.0, 15.0, params.beta);
-            Grid                    grid(dimParams, awhBiasParams.dimParams);
-            BiasParams              biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0, BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
-            biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
+    BiasStateTest()
+    {
+        AwhTestParameters      params        = getAwhTestParameters();
+        const AwhParams&       awhParams     = params.awhParams;
+        const AwhBiasParams&   awhBiasParams = awhParams.awhBiasParams[0];
+        std::vector<DimParams> dimParams;
+        dimParams.emplace_back(1.0, 15.0, params.beta);
+        dimParams.emplace_back(1.0, 15.0, params.beta);
+        Grid       grid(dimParams, awhBiasParams.dimParams);
+        BiasParams biasParams(awhParams, awhBiasParams, dimParams, 1.0, 1.0,
+                              BiasParams::DisableUpdateSkips::no, 1, grid.axis(), 0);
+        biasState_ = std::make_unique<BiasState>(awhBiasParams, 1.0, dimParams, grid);
 
-            // Here we initialize the grid point state using the input file
-            std::string             filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
-            biasState_->initGridPointState(awhBiasParams, dimParams, grid, biasParams, filename, params.awhParams.numBias);
+        // Here we initialize the grid point state using the input file
+        std::string filename = gmx::test::TestFileManager::getInputFilePath(GetParam());
+        biasState_->initGridPointState(awhBiasParams, dimParams, grid, biasParams, filename,
+                                       params.awhParams.numBias);
 
-            sfree(params.awhParams.awhBiasParams[0].dimParams);
-            sfree(params.awhParams.awhBiasParams);
-        }
+        sfree(params.awhParams.awhBiasParams[0].dimParams);
+        sfree(params.awhParams.awhBiasParams);
+    }
 };
 
 TEST_P(BiasStateTest, InitializesFromFile)
@@ -158,21 +160,21 @@ TEST_P(BiasStateTest, InitializesFromFile)
      * The PMF values are spaced by 0.5 per points and logPmfsum has opposite sign.
      * The target is (index + 1)/120.
      */
-    double msdPmf    = 0;
+    double msdPmf = 0;
     for (index i = 0; i < points.ssize(); i++)
     {
-        msdPmf += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5*i) / points.size();
-        EXPECT_DOUBLE_EQ(points[i].target(), (i + 1)/120.0);
+        msdPmf += gmx::square(points[i].logPmfSum() - points[0].logPmfSum() + 0.5 * i) / points.size();
+        EXPECT_DOUBLE_EQ(points[i].target(), (i + 1) / 120.0);
     }
 
     EXPECT_NEAR(0.0, msdPmf, 1e-31);
 }
 
 // Test that Bias initialization open and reads the correct initialization
-// files and the the correct PMF and target distribution is set.
-INSTANTIATE_TEST_CASE_P(WithParameters, BiasStateTest,
-                            ::testing::Values("pmf_target_format0.xvg",
-                                              "pmf_target_format1.xvg"));
+// files and the correct PMF and target distribution is set.
+INSTANTIATE_TEST_CASE_P(WithParameters,
+                        BiasStateTest,
+                        ::testing::Values("pmf_target_format0.xvg", "pmf_target_format1.xvg"));
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

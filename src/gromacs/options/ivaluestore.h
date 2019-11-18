@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,8 @@
 namespace gmx
 {
 
-template <typename T> class ArrayRef;
+template<typename T>
+class ArrayRef;
 
 /*! \internal
  * \brief
@@ -58,22 +59,22 @@ template <typename T> class ArrayRef;
  *
  * \ingroup module_options
  */
-template <typename T>
+template<typename T>
 class IOptionValueStore
 {
-    public:
-        virtual ~IOptionValueStore() {}
+public:
+    virtual ~IOptionValueStore() {}
 
-        //! Returns the number of values stored so far.
-        virtual int valueCount() = 0;
-        //! Returns a reference to the actual values.
-        virtual ArrayRef<T> values() = 0;
-        //! Removes all stored values.
-        virtual void clear() = 0;
-        //! Reserves memory for additional `count` entries.
-        virtual void reserve(size_t count) = 0;
-        //! Appends a value to the store.
-        virtual void append(const T &value) = 0;
+    //! Returns the number of values stored so far.
+    virtual int valueCount() = 0;
+    //! Returns a reference to the actual values.
+    virtual ArrayRef<T> values() = 0;
+    //! Removes all stored values.
+    virtual void clear() = 0;
+    //! Reserves memory for additional `count` entries.
+    virtual void reserve(size_t count) = 0;
+    //! Appends a value to the store.
+    virtual void append(const T& value) = 0;
 };
 
 } // namespace gmx

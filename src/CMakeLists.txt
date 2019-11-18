@@ -36,20 +36,29 @@
 # Output compiler and CFLAGS used
 ######################################
 include(GetCompilerInfo.cmake)
-get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
+get_compiler_info(C BUILD_C_COMPILER)
+get_compiler_info(CXX BUILD_CXX_COMPILER)
 if(GMX_USE_CUDA)
     if(NOT GMX_CLANG_CUDA)
         GMX_SET_CUDA_NVCC_FLAGS()
     endif()
 
-    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
+    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_DEVICE_COMPILER_FLAGS CUDA_HOST_COMPILER_FLAGS)
 endif()
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 configure_file(config.h.cmakein config.h)
 configure_file(gmxpre-config.h.cmakein gmxpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
+# Make a file with compiler flags used for libgromacs for each
+# langauge and build configuration.  The one that corresponds to
+# CMAKE_BUILD_TYPE is #included into buildinfo.h and populates the
+# fields e.g. printed to the log file.
+file(GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/compilerflaginfo-$<CONFIG>-$<COMPILE_LANGUAGE>.h
+    INPUT ${CMAKE_CURRENT_SOURCE_DIR}/compilerflaginfo.h.cmakein
+    CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
+    )
 
 ####
 set(IGNORED_CLANG_ALL_WARNINGS
@@ -59,6 +68,19 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-documentation-unknown-command" #Custom commands are used
     "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
     "-Wno-switch-enum" # default statement for enum is OK
+
+    # TODO uncomment the next few ignore lines when we upgrade to test with clang 8 in Jenkins
+
+    # The barriers we use for tMPI and Nbnxm are sufficient, but it's
+    # not known whether they're excessive. We assume they not
+    # excessive.
+    # "-Wno-atomic-implicit-seq-cst"
+
+    # We need to use macros like
+    # GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR. Those will look strange
+    # if they don't have a semicolon after them, and might confuse
+    # tools like IDEs also.
+    # "-Wno-extra-semi-stmt"
 
     #Following ones are undecided/TODO
     "-Wno-disabled-macro-expansion"
@@ -81,22 +103,35 @@ set(IGNORED_CLANG_ALL_WARNINGS
     "-Wno-double-promotion")
 string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
+option(GMX_CLANG_TIDY "Use clang-tidy" OFF)
 if (GMX_CLANG_TIDY)
+   if("${GMX_OPENMP}")
+       message(FATAL_ERROR "clang-tidy cannot be combined with openmp.")
+   endif()
+   if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithAssert")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "RelWithDebInfo")
+   elseif("${CMAKE_BUILD_TYPE}" STREQUAL "ASAN")
+   else()
+       message(FATAL_ERROR "Can only use clang-tidy with build type containing asserts: Debug, RelWithAssert, RelWithDebInfo, ASAN.")
+   endif()
+   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+   mark_as_advanced(CMAKE_EXPORT_COMPILE_COMMANDS)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
    find_program(CLANG_TIDY_EXE NAMES "${CLANG_TIDY}"
        DOC "Path to clang-tidy executable")
    if(NOT CLANG_TIDY_EXE)
        message(FATAL_ERROR "clang-tidy not found.")
    endif()
+   mark_as_advanced(CLANG_TIDY)
+   mark_as_advanced(CLANG_TIDY_EXE)
 endif()
-#####
+
+add_subdirectory(external)
 
 if (BUILD_TESTING)
     if(NOT GMX_DEVELOPER_BUILD)
         set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
-    if (GMX_BUILD_UNITTESTS)
-        add_subdirectory(external/googletest)
     endif()
     include(testutils/TestMacros.cmake)
     add_subdirectory(testutils)
@@ -112,7 +147,7 @@ if(GMX_NATIVE_WINDOWS OR GMX_BUILD_MDRUN_ONLY OR NOT BUILD_SHARED_LIBS)
     # GMXAPI requires position-independent code
     set(_GMXAPI_DEFAULT OFF)
 else()
-    set(_GMXAPI_DEFAULT OFF)
+    set(_GMXAPI_DEFAULT ON)
 endif()
 option(GMXAPI "Experimental external interfaces" ${_GMXAPI_DEFAULT})
 if (GMXAPI)

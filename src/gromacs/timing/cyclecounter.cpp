@@ -42,10 +42,10 @@
 #include <ctime>
 
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+#    include <sys/time.h>
 #endif
 #ifdef _MSC_VER
-#include <windows.h>
+#    include <windows.h>
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
@@ -62,8 +62,7 @@
  *          calculate on this system (for whatever reason) the return value
  *          will be -1, so check that it is positive before using it.
  */
-double
-gmx_cycles_calibrate(double sampletime)
+double gmx_cycles_calibrate(double sampletime)
 {
 #ifdef _MSC_VER
 
@@ -74,7 +73,7 @@ gmx_cycles_calibrate(double sampletime)
 
     QueryPerformanceFrequency(&i);
 
-    return 1.0/static_cast<double>(i.QuadPart);
+    return 1.0 / static_cast<double>(i.QuadPart);
     /* end of MS Windows implementation */
 
 #elif HAVE_GETTIMEOFDAY
@@ -90,7 +89,7 @@ gmx_cycles_calibrate(double sampletime)
         return -1;
     }
 
-#if (defined(__alpha__) || defined(__alpha))
+#    if (defined(__alpha__) || defined(__alpha))
     /* Alpha cannot count to more than 4e9, but I don't expect
      * that the architecture will go over 2GHz before it dies, so
      * up to 2.0 seconds of sampling should be safe.
@@ -99,7 +98,7 @@ gmx_cycles_calibrate(double sampletime)
     {
         sampletime = 2.0;
     }
-#endif
+#    endif
 
     /* Start a timing loop. We want this to be largely independent
      * of machine speed, so we need to start with a very small number
@@ -119,16 +118,15 @@ gmx_cycles_calibrate(double sampletime)
          */
         for (int i = 0; i < 10000; i++)
         {
-            d = d/(1.0+static_cast<double>(i));
+            d = d / (1.0 + static_cast<double>(i));
         }
         /* Read the time again */
         gettimeofday(&t2, nullptr);
         c2       = gmx_cycles_read();
-        timediff = static_cast<double>(t2.tv_sec-t1.tv_sec)+(t2.tv_usec-t1.tv_usec)*1e-6;
-    }
-    while (timediff < sampletime);
+        timediff = static_cast<double>(t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec) * 1e-6;
+    } while (timediff < sampletime);
 
-    cyclediff = c2-c1;
+    cyclediff = c2 - c1;
 
     /* Add a very small result so the delay loop cannot be optimized away */
     if (d < 1e-30)
@@ -137,7 +135,7 @@ gmx_cycles_calibrate(double sampletime)
     }
 
     /* Return seconds per cycle */
-    return timediff/cyclediff;
+    return timediff / cyclediff;
 
 #else
     /* No timing function available */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 
 #include "gromacs/utility/path.h"
 
+#include "testutils/simulationdatabase.h"
 #include "testutils/testfilemanager.h"
 
 namespace
@@ -56,19 +57,15 @@ namespace
 
 class TngTest : public ::testing::Test
 {
-    public:
-        TngTest()
-        {
-        }
-        gmx::test::TestFileManager      fileManager_;
+public:
+    TngTest() {}
+    gmx::test::TestFileManager fileManager_;
 };
 
 TEST_F(TngTest, CanOpenTngFile)
 {
     gmx_tng_trajectory_t tng;
-    gmx_tng_open(gmx::test::TestFileManager::getInputFilePath("spc2-traj.tng").c_str(),
-                 'r',
-                 &tng);
+    gmx_tng_open("spc2-traj.tng", 'r', &tng);
     gmx_tng_close(&tng);
 }
 

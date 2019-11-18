@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -58,9 +58,11 @@ The produced graphs are documented in doxygen.md.
 
 import os.path
 import re
+import functools
 
 from gmxtree import DocType
 
+@functools.total_ordering
 class EdgeType(object):
 
     """Enumeration type for edge types in include dependency graphs."""
@@ -81,9 +83,13 @@ class EdgeType(object):
         """Return string representation for the edge type (for debugging)."""
         return self._names[self._value]
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         """Order edge types in the order of increasing coupling."""
-        return cmp(self._value, other._value)
+        return self._value == other._value
+
+    def __lt__(self, other):
+        """Order edge types in the order of increasing coupling."""
+        return self._value < other._value
 
 # Tests depend on test
 EdgeType.test = EdgeType(0)
@@ -374,8 +380,8 @@ class GraphBuilder(object):
                         .format(fromfile.get_relpath(), tofile.get_relpath()))
         elif fromfile.get_api_type() == DocType.library:
             return EdgeType.library
-        elif fromfile.is_public() or fromfile.is_installed():
-            if tofile.is_public() or tofile.is_installed():
+        elif fromfile.is_public():
+            if tofile.is_public():
                 return EdgeType.public
             else:
                 return EdgeType.undocumented
@@ -402,7 +408,7 @@ class GraphBuilder(object):
         are in the list of nodes.
         """
         edges = []
-        for fileobj in filenodes.iterkeys():
+        for fileobj in filenodes.keys():
             for includedfile in fileobj.get_includes():
                 otherfile = includedfile.get_file()
                 if otherfile and otherfile in filenodes:
@@ -437,9 +443,6 @@ class GraphBuilder(object):
             style.append('filled')
             properties.append(fillcolor)
         rootdir = module.get_root_dir()
-        if rootdir.has_installed_files():
-            properties.append('color=".66 .5 1"')
-            properties.append('penwidth=3')
         nodename = 'module_' + re.subn(r'[-./]', '_', rootdir.get_relpath())[0]
         label = module.get_name()[7:]
         node = Node(nodename, label, style, properties)
@@ -453,7 +456,7 @@ class GraphBuilder(object):
         dependency are in the list of nodes.
         """
         edges = []
-        for moduleobj in modulenodes.iterkeys():
+        for moduleobj in modulenodes.keys():
             for dep in moduleobj.get_dependencies():
                 othermodule = dep.get_other_module()
                 if othermodule and othermodule in modulenodes:
@@ -524,7 +527,6 @@ def main():
     if not options.quiet:
         sys.stderr.write('Scanning source tree...\n')
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.load_installed_file_list()
     if not options.quiet:
         sys.stderr.write('Reading source files...\n')
     tree.scan_files()

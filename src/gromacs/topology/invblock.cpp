@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,12 +43,12 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-int *make_invblock(const t_block *block, int nr)
+int* make_invblock(const t_block* block, int nr)
 {
-    int      i, j;
-    int     *invblock;
+    int  i, j;
+    int* invblock;
 
-    snew(invblock, nr+1);
+    snew(invblock, nr + 1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
@@ -56,7 +56,7 @@ int *make_invblock(const t_block *block, int nr)
     }
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[j] == -1)
             {
@@ -64,7 +64,8 @@ int *make_invblock(const t_block *block, int nr)
             }
             else
             {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                gmx_fatal(FARGS,
+                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
                           " Cannot make an unambiguous inverse block.",
                           j, i, invblock[j]);
             }
@@ -73,12 +74,12 @@ int *make_invblock(const t_block *block, int nr)
     return invblock;
 }
 
-int *make_invblocka(const t_blocka *block, int nr)
+int* make_invblocka(const t_blocka* block, int nr)
 {
-    int      i, j;
-    int     *invblock;
+    int  i, j;
+    int* invblock;
 
-    snew(invblock, nr+1);
+    snew(invblock, nr + 1);
     /* Mark unused numbers */
     for (i = 0; i <= nr; i++)
     {
@@ -86,7 +87,7 @@ int *make_invblocka(const t_blocka *block, int nr)
     }
     for (i = 0; (i < block->nr); i++)
     {
-        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        for (j = block->index[i]; (j < block->index[i + 1]); j++)
         {
             if (invblock[block->a[j]] == -1)
             {
@@ -94,7 +95,8 @@ int *make_invblocka(const t_blocka *block, int nr)
             }
             else
             {
-                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                gmx_fatal(FARGS,
+                          "Double entries in block structure. Item %d is in blocks %d and %d\n"
                           " Cannot make an unambiguous inverse block.",
                           j, i, invblock[block->a[j]]);
             }

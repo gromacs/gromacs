@@ -56,16 +56,16 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 
-static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+static void init_grpstat(const gmx_mtop_t* mtop, int ngacc, t_grp_acc gstat[])
 {
     if (ngacc > 0)
     {
-        const gmx_groups_t    &groups = mtop->groups;
+        const SimulationGroups& groups = mtop->groups;
         for (const AtomProxy atomP : AtomRange(*mtop))
         {
-            const t_atom &local = atomP.atom();
+            const t_atom& local = atomP.atom();
             int           i     = atomP.globalAtomNumber();
-            int           grp   = getGroupType(groups, egcACC, i);
+            int           grp   = getGroupType(groups, SimulationAtomGroupType::Acceleration, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
@@ -78,11 +78,13 @@ static void init_grpstat(const gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
     }
 }
 
-void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts *opts,
-                   gmx_ekindata_t *ekind)
+void init_ekindata(FILE gmx_unused*  log,
+                   const gmx_mtop_t* mtop,
+                   const t_grpopts*  opts,
+                   gmx_ekindata_t*   ekind,
+                   real              cos_accel)
 {
     int i;
-    int nthread, thread;
 
     /* bNEMD tells if we should remove remove the COM velocity
      * from the velocities during velocity scaling in T-coupling.
@@ -104,13 +106,13 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
         ekind->tcstat[i].ekinscalef_nhc = 1.0;
     }
 
-    nthread         = gmx_omp_nthreads_get(emntUpdate);
+    int nthread     = gmx_omp_nthreads_get(emntUpdate);
     ekind->nthreads = nthread;
     snew(ekind->ekin_work_alloc, nthread);
     snew(ekind->ekin_work, nthread);
     snew(ekind->dekindl_work, nthread);
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         try
         {
@@ -120,7 +122,7 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
              * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
              * buffer on both sides to avoid cache pollution.
              */
-            snew(ekind->ekin_work_alloc[thread], ekind->ngtc+2*EKIN_WORK_BUFFER_SIZE);
+            snew(ekind->ekin_work_alloc[thread], ekind->ngtc + 2 * EKIN_WORK_BUFFER_SIZE);
             ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
             /* Nasty hack so we can have the per-thread accumulation
              * variable for dekindl in the same thread-local cache lines
@@ -129,18 +131,20 @@ void init_ekindata(FILE gmx_unused *log, const gmx_mtop_t *mtop, const t_grpopts
             ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
 #undef EKIN_WORK_BUFFER_SIZE
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
 
     ekind->ngacc = opts->ngacc;
     ekind->grpstat.resize(opts->ngacc);
     init_grpstat(mtop, opts->ngacc, ekind->grpstat.data());
+
+    ekind->cosacc.cos_accel = cos_accel;
 }
 
-void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ekind)
+void accumulate_u(const t_commrec* cr, const t_grpopts* opts, gmx_ekindata_t* ekind)
 {
     /* This routine will only be called when it's necessary */
-    t_bin *rb;
+    t_bin* rb;
     int    g;
 
     rb = mk_bin();
@@ -153,13 +157,18 @@ void accumulate_u(const t_commrec *cr, const t_grpopts *opts, gmx_ekindata_t *ek
 
     for (g = 0; (g < opts->ngacc); g++)
     {
-        extract_binr(rb, DIM*g, DIM, ekind->grpstat[g].u);
+        extract_binr(rb, DIM * g, DIM, ekind->grpstat[g].u);
     }
     destroy_bin(rb);
 }
 
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     const t_grpopts *opts, const rvec v[], const t_mdatoms *md, real lambda)
+void update_ekindata(int              start,
+                     int              homenr,
+                     gmx_ekindata_t*  ekind,
+                     const t_grpopts* opts,
+                     const rvec       v[],
+                     const t_mdatoms* md,
+                     real             lambda)
 {
     int  d, g, n;
     real mv;
@@ -178,7 +187,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
         }
 
         g = 0;
-        for (n = start; (n < start+homenr); n++)
+        for (n = start; (n < start + homenr); n++)
         {
             if (md->cACC)
             {
@@ -186,7 +195,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
             }
             for (d = 0; (d < DIM); d++)
             {
-                mv                      = md->massT[n]*v[n][d];
+                mv = md->massT[n] * v[n][d];
                 ekind->grpstat[g].u[d] += mv;
             }
         }
@@ -196,18 +205,17 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
             for (d = 0; (d < DIM); d++)
             {
                 ekind->grpstat[g].u[d] /=
-                    (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
+                        (1 - lambda) * ekind->grpstat[g].mA + lambda * ekind->grpstat[g].mB;
             }
         }
     }
 }
 
-real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
+real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T;
-    t_grp_tcstat *tcstat;
+    t_grp_tcstat* tcstat;
     real          nrdf, nd, *ndf;
 
     ngtc = opts->ngtc;
@@ -246,8 +254,9 @@ real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
                 {
                     for (m = 0; (m < DIM); m++)
                     {
-                        tcstat->ekinf[j][m] =
-                            0.5*(tcstat->ekinh[j][m]*tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
+                        tcstat->ekinf[j][m] = 0.5
+                                              * (tcstat->ekinh[j][m] * tcstat->ekinscaleh_nhc
+                                                 + tcstat->ekinh_old[j][m]);
                     }
                 }
             }
@@ -271,7 +280,7 @@ real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
             tcstat->T  = 0;
             tcstat->Th = 0;
         }
-        T    += nd*tcstat->T;
+        T += nd * tcstat->T;
         nrdf += nd;
     }
     if (nrdf > 0)
@@ -286,7 +295,7 @@ real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
         }
         else
         {
-            *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+            *dekindlambda = 0.5 * (ekind->dekindl + ekind->dekindl_old);
         }
     }
     return T;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,7 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
+#    if GMX_SIMD4_HAVE_REAL
 
 /*! \brief Test fixture for SIMD4 floating-point operations (identical to the SIMD4 \ref Simd4Test) */
 typedef Simd4Test Simd4FloatingpointTest;
@@ -75,21 +75,17 @@ TEST_F(Simd4FloatingpointTest, set)
 
 TEST_F(Simd4FloatingpointTest, add)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 + c3, c1 + c4, c2 + c5 ),
-                             rSimd4_c0c1c2 + rSimd4_c3c4c5);
-
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 + c3, c1 + c4, c2 + c5), rSimd4_c0c1c2 + rSimd4_c3c4c5);
 }
 
 TEST_F(Simd4FloatingpointTest, sub)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 - c3, c1 - c4, c2 - c5 ),
-                             rSimd4_c0c1c2 - rSimd4_c3c4c5);
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 - c3, c1 - c4, c2 - c5), rSimd4_c0c1c2 - rSimd4_c3c4c5);
 }
 
 TEST_F(Simd4FloatingpointTest, mul)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 * c3, c1 * c4, c2 * c5 ),
-                             rSimd4_c0c1c2 * rSimd4_c3c4c5);
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0 * c3, c1 * c4, c2 * c5), rSimd4_c0c1c2 * rSimd4_c3c4c5);
 }
 
 TEST_F(Simd4FloatingpointTest, fma)
@@ -132,17 +128,15 @@ TEST_F(Simd4FloatingpointTest, neg)
     GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_c0c1c2, -(rSimd4_m0m1m2)); // fneg(-x)=x
 }
 
-#if GMX_SIMD_HAVE_LOGICAL
+#        if GMX_SIMD_HAVE_LOGICAL
 TEST_F(Simd4FloatingpointTest, and)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_logicalResultAnd,
-                             (rSimd4_logicalA & rSimd4_logicalB));
+    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_logicalResultAnd, (rSimd4_logicalA & rSimd4_logicalB));
 }
 
 TEST_F(Simd4FloatingpointTest, or)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_logicalResultOr,
-                             (rSimd4_logicalA | rSimd4_logicalB));
+    GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_logicalResultOr, (rSimd4_logicalA | rSimd4_logicalB));
 }
 
 TEST_F(Simd4FloatingpointTest, xor)
@@ -161,23 +155,24 @@ TEST_F(Simd4FloatingpointTest, andNot)
      * to extract the sign bit, and then use andnot to take absolute values.
      */
     Simd4Real signbit = Simd4Real(c1) ^ Simd4Real(-c1);
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c2, c3, c4), andNot(signbit, setSimd4RealFrom3R(-c2, c3, -c4)));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c2, c3, c4),
+                             andNot(signbit, setSimd4RealFrom3R(-c2, c3, -c4)));
 }
 
-#endif
+#        endif
 
 TEST_F(Simd4FloatingpointTest, max)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R( c3,  c1,  c4), max(rSimd4_c0c1c2, rSimd4_c3c0c4));
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R( c3,  c1,  c4), max(rSimd4_c3c0c4, rSimd4_c0c1c2));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c3, c1, c4), max(rSimd4_c0c1c2, rSimd4_c3c0c4));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c3, c1, c4), max(rSimd4_c3c0c4, rSimd4_c0c1c2));
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(-c0, -c0, -c2), max(rSimd4_m0m1m2, rSimd4_m3m0m4));
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(-c0, -c0, -c2), max(rSimd4_m3m0m4, rSimd4_m0m1m2));
 }
 
 TEST_F(Simd4FloatingpointTest, min)
 {
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R( c0,  c0,  c2), min(rSimd4_c0c1c2, rSimd4_c3c0c4));
-    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R( c0,  c0,  c2), min(rSimd4_c3c0c4, rSimd4_c0c1c2));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0, c0, c2), min(rSimd4_c0c1c2, rSimd4_c3c0c4));
+    GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0, c0, c2), min(rSimd4_c3c0c4, rSimd4_c0c1c2));
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(-c3, -c1, -c4), min(rSimd4_m0m1m2, rSimd4_m3m0m4));
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(-c3, -c1, -c4), min(rSimd4_m3m0m4, rSimd4_m0m1m2));
 }
@@ -204,9 +199,9 @@ TEST_F(Simd4FloatingpointTest, trunc)
  */
 TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 {
-    Simd4Real        x                   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
-    Simd4Real        ref                 = setSimd4RealFrom3R(0.5, 1.0/std::sqrt(M_PI), 1.0/std::sqrt(1234567890.0));
-    int              shiftbits           = std::numeric_limits<real>::digits-GMX_SIMD_RSQRT_BITS;
+    Simd4Real x   = setSimd4RealFrom3R(4.0, M_PI, 1234567890.0);
+    Simd4Real ref = setSimd4RealFrom3R(0.5, 1.0 / std::sqrt(M_PI), 1.0 / std::sqrt(1234567890.0));
+    int       shiftbits = std::numeric_limits<real>::digits - GMX_SIMD_RSQRT_BITS;
 
     if (shiftbits < 0)
     {
@@ -221,45 +216,45 @@ TEST_F(Simd4FloatingpointTest, gmxSimd4RsqrtR)
 
 TEST_F(Simd4FloatingpointTest, cmpEqAndSelectByMask)
 {
-    Simd4Bool eq   = rSimd4_c4c6c8 == rSimd4_c6c7c8;
+    Simd4Bool eq = rSimd4_c4c6c8 == rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(0, 0, c2), selectByMask(rSimd4_c0c1c2, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, selectByNotMask)
 {
-    Simd4Bool eq   = rSimd4_c4c6c8 == rSimd4_c6c7c8;
+    Simd4Bool eq = rSimd4_c4c6c8 == rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0, c1, 0), selectByNotMask(rSimd4_c0c1c2, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpNe)
 {
-    Simd4Bool eq   = rSimd4_c4c6c8 != rSimd4_c6c7c8;
+    Simd4Bool eq = rSimd4_c4c6c8 != rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0, c1, 0), selectByMask(rSimd4_c0c1c2, eq));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpLe)
 {
-    Simd4Bool le   = rSimd4_c4c6c8 <= rSimd4_c6c7c8;
+    Simd4Bool le = rSimd4_c4c6c8 <= rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_c0c1c2, selectByMask(rSimd4_c0c1c2, le));
 }
 
 TEST_F(Simd4FloatingpointTest, cmpLt)
 {
-    Simd4Bool lt   = rSimd4_c4c6c8 < rSimd4_c6c7c8;
+    Simd4Bool lt = rSimd4_c4c6c8 < rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c0, c1, 0), selectByMask(rSimd4_c0c1c2, lt));
 }
 
 TEST_F(Simd4FloatingpointTest, andB)
 {
-    Simd4Bool eq   = rSimd4_c4c6c8 == rSimd4_c6c7c8;
-    Simd4Bool le   = rSimd4_c4c6c8 <= rSimd4_c6c7c8;
+    Simd4Bool eq = rSimd4_c4c6c8 == rSimd4_c6c7c8;
+    Simd4Bool le = rSimd4_c4c6c8 <= rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(0, 0, c2), selectByMask(rSimd4_c0c1c2, (eq && le)));
 }
 
 TEST_F(Simd4FloatingpointTest, orB)
 {
-    Simd4Bool eq   = rSimd4_c4c6c8 == rSimd4_c6c7c8;
-    Simd4Bool lt   = rSimd4_c4c6c8  < rSimd4_c6c7c8;
+    Simd4Bool eq = rSimd4_c4c6c8 == rSimd4_c6c7c8;
+    Simd4Bool lt = rSimd4_c4c6c8 < rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(rSimd4_c0c1c2, selectByMask(rSimd4_c0c1c2, (eq || lt)));
 }
 
@@ -280,7 +275,7 @@ TEST_F(Simd4FloatingpointTest, anyTrue)
 
 TEST_F(Simd4FloatingpointTest, blend)
 {
-    Simd4Bool lt   = rSimd4_c4c6c8 < rSimd4_c6c7c8;
+    Simd4Bool lt = rSimd4_c4c6c8 < rSimd4_c6c7c8;
     GMX_EXPECT_SIMD4_REAL_EQ(setSimd4RealFrom3R(c3, c4, c2), blend(rSimd4_c0c1c2, rSimd4_c3c4c5, lt));
 }
 
@@ -296,35 +291,35 @@ TEST_F(Simd4FloatingpointTest, reduce)
         sum += v[i];
     }
 
-    EXPECT_REAL_EQ_TOL(sum, reduce(rSimd4_c3c4c5), defaultRealTolerance() );
+    EXPECT_REAL_EQ_TOL(sum, reduce(rSimd4_c3c4c5), defaultRealTolerance());
 }
 
 
 TEST_F(Simd4FloatingpointTest, dotProduct)
 {
-    real res = c0*c3 + c1*c4 + c2*c5;
+    real res = c0 * c3 + c1 * c4 + c2 * c5;
 
     EXPECT_REAL_EQ_TOL(res, dotProduct(rSimd4_c0c1c2, rSimd4_c3c4c5), defaultRealTolerance());
 }
 
 TEST_F(Simd4FloatingpointTest, transpose)
 {
-    Simd4Real        v0, v1, v2, v3;
-    int              i;
+    Simd4Real v0, v1, v2, v3;
+    int       i;
     // aligned pointers
-    alignas(GMX_SIMD_ALIGNMENT) real p0[4*GMX_SIMD4_WIDTH];
-    real          *  p1 = p0 + GMX_SIMD4_WIDTH;
-    real          *  p2 = p0 + 2*GMX_SIMD4_WIDTH;
-    real          *  p3 = p0 + 3*GMX_SIMD4_WIDTH;
+    alignas(GMX_SIMD_ALIGNMENT) real p0[4 * GMX_SIMD4_WIDTH];
+    real*                            p1 = p0 + GMX_SIMD4_WIDTH;
+    real*                            p2 = p0 + 2 * GMX_SIMD4_WIDTH;
+    real*                            p3 = p0 + 3 * GMX_SIMD4_WIDTH;
 
     // Assign data with tens as row, single-digit as column
     for (i = 0; i < 4; i++)
     {
         // Scale by 1+100*eps to use low bits tii
-        p0[i] = (0*10 + i*1) * (1.0 + 100*GMX_REAL_EPS);
-        p1[i] = (1*10 + i*1) * (1.0 + 100*GMX_REAL_EPS);
-        p2[i] = (2*10 + i*1) * (1.0 + 100*GMX_REAL_EPS);
-        p3[i] = (3*10 + i*1) * (1.0 + 100*GMX_REAL_EPS);
+        p0[i] = (0 * 10 + i * 1) * (1.0 + 100 * GMX_REAL_EPS);
+        p1[i] = (1 * 10 + i * 1) * (1.0 + 100 * GMX_REAL_EPS);
+        p2[i] = (2 * 10 + i * 1) * (1.0 + 100 * GMX_REAL_EPS);
+        p3[i] = (3 * 10 + i * 1) * (1.0 + 100 * GMX_REAL_EPS);
     }
 
     v0 = load4(p0);
@@ -341,20 +336,20 @@ TEST_F(Simd4FloatingpointTest, transpose)
 
     for (i = 0; i < 4; i++)
     {
-        EXPECT_REAL_EQ_TOL( (i*10+0) * (1.0 + 100*GMX_REAL_EPS), p0[i], defaultRealTolerance());
-        EXPECT_REAL_EQ_TOL( (i*10+1) * (1.0 + 100*GMX_REAL_EPS), p1[i], defaultRealTolerance());
-        EXPECT_REAL_EQ_TOL( (i*10+2) * (1.0 + 100*GMX_REAL_EPS), p2[i], defaultRealTolerance());
-        EXPECT_REAL_EQ_TOL( (i*10+3) * (1.0 + 100*GMX_REAL_EPS), p3[i], defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL((i * 10 + 0) * (1.0 + 100 * GMX_REAL_EPS), p0[i], defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL((i * 10 + 1) * (1.0 + 100 * GMX_REAL_EPS), p1[i], defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL((i * 10 + 2) * (1.0 + 100 * GMX_REAL_EPS), p2[i], defaultRealTolerance());
+        EXPECT_REAL_EQ_TOL((i * 10 + 3) * (1.0 + 100 * GMX_REAL_EPS), p3[i], defaultRealTolerance());
     }
 }
 
-#endif      // GMX_SIMD4_HAVE_REAL
+#    endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace test
-}      // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD

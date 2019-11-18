@@ -51,11 +51,10 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Just a number to identify our file type */
-#define GMX_MTXIO_MAGIC_NUMBER  0x34ce8fd2
+#define GMX_MTXIO_MAGIC_NUMBER 0x34ce8fd2
 
-#define GMX_MTXIO_FULL_MATRIX     0
-#define GMX_MTXIO_SPARSE_MATRIX   1
-
+#define GMX_MTXIO_FULL_MATRIX 0
+#define GMX_MTXIO_SPARSE_MATRIX 1
 
 
 /* Matrix file format definition:
@@ -79,15 +78,11 @@
  *         Each entry consists of an integer column index and floating-point data value.
  */
 
-void gmx_mtxio_write(const char *             filename,
-                     int                      nrow,
-                     int                      ncol,
-                     real *                   full_matrix,
-                     gmx_sparsematrix_t *     sparse_matrix)
+void gmx_mtxio_write(const char* filename, int nrow, int ncol, real* full_matrix, gmx_sparsematrix_t* sparse_matrix)
 {
-    t_fileio   *fio;
-    int         i, j, prec;
-    size_t      sz;
+    t_fileio* fio;
+    int       i, j, prec;
+    size_t    sz;
 
     if (full_matrix != nullptr && sparse_matrix != nullptr)
     {
@@ -122,7 +117,7 @@ void gmx_mtxio_write(const char *             filename,
         /* Full matrix storage format */
         i = GMX_MTXIO_FULL_MATRIX;
         gmx_fio_do_int(fio, i);
-        sz   = nrow*ncol;
+        sz = nrow * ncol;
         gmx_fio_ndo_real(fio, full_matrix, sz);
     }
     else
@@ -151,17 +146,12 @@ void gmx_mtxio_write(const char *             filename,
 }
 
 
-void
-gmx_mtxio_read (const char *            filename,
-                int *                   nrow,
-                int *                   ncol,
-                real **                 full_matrix,
-                gmx_sparsematrix_t **   sparse_matrix)
+void gmx_mtxio_read(const char* filename, int* nrow, int* ncol, real** full_matrix, gmx_sparsematrix_t** sparse_matrix)
 {
-    t_fileio   *fio;
-    int         i, j, prec;
-    char        gmxver[256];
-    size_t      sz;
+    t_fileio* fio;
+    int       i, j, prec;
+    char      gmxver[256];
+    size_t    sz;
 
     fio = gmx_fio_open(filename, "r");
 
@@ -223,8 +213,7 @@ gmx_mtxio_read (const char *            filename,
         snew((*sparse_matrix)->ndata, (*sparse_matrix)->nrow);
         snew((*sparse_matrix)->nalloc, (*sparse_matrix)->nrow);
         snew((*sparse_matrix)->data, (*sparse_matrix)->nrow);
-        gmx_fio_ndo_int(fio, (*sparse_matrix)->ndata,
-                        (*sparse_matrix)->nrow);
+        gmx_fio_ndo_int(fio, (*sparse_matrix)->ndata, (*sparse_matrix)->nrow);
 
         for (i = 0; i < (*sparse_matrix)->nrow; i++)
         {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,10 @@ class TestReferenceChecker;
 
 struct XvgMatchSettings
 {
-    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true)
-    {
-    }
+    XvgMatchSettings() : tolerance(defaultRealTolerance()), testData(true) {}
 
-    FloatingPointTolerance  tolerance;
-    bool                    testData;
+    FloatingPointTolerance tolerance;
+    bool                   testData;
 };
 
 /*! \brief
@@ -84,9 +82,7 @@ struct XvgMatchSettings
  *
  * \see XvgMatch
  */
-void checkXvgFile(TextInputStream        *input,
-                  TestReferenceChecker   *checker,
-                  const XvgMatchSettings &settings);
+void checkXvgFile(TextInputStream* input, TestReferenceChecker* checker, const XvgMatchSettings& settings);
 
 /*! \libinternal \brief
  * Match the contents as an xvg file.
@@ -98,29 +94,29 @@ void checkXvgFile(TextInputStream        *input,
  */
 class XvgMatch : public ITextBlockMatcherSettings
 {
-    public:
-        //! Sets the tolerance for matching data point values.
-        XvgMatch &tolerance(const FloatingPointTolerance &tolerance)
-        {
-            settings_.tolerance = tolerance;
-            return *this;
-        }
-        /*! \brief
-         * Sets whether the actual data is checked.
-         *
-         * If set to `false`, only the legends are checked.  Use this if the
-         * data is already tested using different means.
-         */
-        XvgMatch &testData(bool test)
-        {
-            settings_.testData = test;
-            return *this;
-        }
+public:
+    //! Sets the tolerance for matching data point values.
+    XvgMatch& tolerance(const FloatingPointTolerance& tolerance)
+    {
+        settings_.tolerance = tolerance;
+        return *this;
+    }
+    /*! \brief
+     * Sets whether the actual data is checked.
+     *
+     * If set to `false`, only the legends are checked.  Use this if the
+     * data is already tested using different means.
+     */
+    XvgMatch& testData(bool test)
+    {
+        settings_.testData = test;
+        return *this;
+    }
 
-        TextBlockMatcherPointer createMatcher() const override;
+    TextBlockMatcherPointer createMatcher() const override;
 
-    private:
-        XvgMatchSettings  settings_;
+private:
+    XvgMatchSettings settings_;
 };
 
 } // namespace test

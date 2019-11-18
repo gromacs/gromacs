@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Conserved">
+    <Real Name="Time 0.000000 Step 0">47.690552022372145</Real>
+  </Energy>
+  <Energy Name="Reciprocal">
+    <Real Name="Time 0.000000 Step 0">5.7180594470923163</Real>
+  </Energy>
+</ReferenceData>

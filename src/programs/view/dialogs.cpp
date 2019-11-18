@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include <cstring>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h> // for fork()
+#    include <unistd.h> // for fork()
 #endif
 
 #include "gromacs/mdtypes/md_enums.h"
@@ -64,7 +64,7 @@
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 
-void write_gmx(t_x11 *x11, t_gmx *gmx, int mess)
+void write_gmx(t_x11* x11, t_gmx* gmx, int mess)
 {
     XEvent letter;
 
@@ -78,9 +78,9 @@ void write_gmx(t_x11 *x11, t_gmx *gmx, int mess)
     XSendEvent(x11->disp, letter.xclient.window, True, 0, &letter);
 }
 
-static void shell_comm(const char *title, const char *script, int nsleep)
+static void shell_comm(const char* title, const char* script, int nsleep)
 {
-    FILE *tfil;
+    FILE* tfil;
     char  command[STRLEN];
     char  tmp[32];
 
@@ -106,7 +106,7 @@ static void shell_comm(const char *title, const char *script, int nsleep)
 #endif
 }
 
-void show_mb(t_gmx *gmx, int mb)
+void show_mb(t_gmx* gmx, int mb)
 {
     if (mb >= 0 && mb < emNR)
     {
@@ -115,7 +115,7 @@ void show_mb(t_gmx *gmx, int mb)
     }
 }
 
-static void hide_mb(t_gmx *gmx)
+static void hide_mb(t_gmx* gmx)
 {
     if (gmx->which_mb >= 0 && gmx->which_mb < emNR)
     {
@@ -124,38 +124,32 @@ static void hide_mb(t_gmx *gmx)
     }
 }
 
-static void MBCallback(t_x11 * /*x11*/, int dlg_mess, int /*item_id*/,
-                       char * /*set*/, void *data)
+static void MBCallback(t_x11* /*x11*/, int dlg_mess, int /*item_id*/, char* /*set*/, void* data)
 {
-    t_gmx *gmx;
+    t_gmx* gmx;
 
-    gmx = static_cast<t_gmx *>(data);
+    gmx = static_cast<t_gmx*>(data);
     if (dlg_mess == DLG_EXIT)
     {
         hide_mb(gmx);
     }
 }
 
-static t_dlg *about_mb(t_x11 *x11, t_gmx *gmx)
+static t_dlg* about_mb(t_x11* x11, t_gmx* gmx)
 {
-    const char *lines[] = {
-        "         G R O M A C S",
-        " Machine for Simulating Chemistry",
-        "       Copyright (c) 1992-2013",
-        "  Berk Hess, David van der Spoel, Erik Lindahl",
-        "        and many collaborators!"
-    };
+    const char* lines[] = { "         G R O M A C S", " Machine for Simulating Chemistry",
+                            "       Copyright (c) 1992-2013",
+                            "  Berk Hess, David van der Spoel, Erik Lindahl",
+                            "        and many collaborators!" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text,
-                      asize(lines), lines, MB_OK | MB_ICONGMX | MBFLAGS,
-                      MBCallback, gmx);
+    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
+                      MB_OK | MB_ICONGMX | MBFLAGS, MBCallback, gmx);
 }
 
-static void QuitCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
-                   char *set, void *data)
+static void QuitCB(t_x11* x11, int dlg_mess, int /*item_id*/, char* set, void* data)
 {
-    t_gmx  *gmx;
-    gmx = static_cast<t_gmx *>(data);
+    t_gmx* gmx;
+    gmx = static_cast<t_gmx*>(data);
 
     hide_mb(gmx);
     if (dlg_mess == DLG_EXIT)
@@ -167,69 +161,55 @@ static void QuitCB(t_x11 *x11, int dlg_mess, int /*item_id*/,
     }
 }
 
-static t_dlg *quit_mb(t_x11 *x11, t_gmx *gmx)
+static t_dlg* quit_mb(t_x11* x11, t_gmx* gmx)
 {
-    const char *lines[] = {
-        " Do you really want to Quit ?"
-    };
+    const char* lines[] = { " Do you really want to Quit ?" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text,
-                      asize(lines), lines,
-                      MB_YESNO | MB_ICONSTOP | MBFLAGS,
-                      QuitCB, gmx);
+    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
+                      MB_YESNO | MB_ICONSTOP | MBFLAGS, QuitCB, gmx);
 }
 
-static t_dlg *help_mb(t_x11 *x11, t_gmx *gmx)
+static t_dlg* help_mb(t_x11* x11, t_gmx* gmx)
 {
-    const char *lines[] = {
-        " Help will soon be added"
-    };
+    const char* lines[] = { " Help will soon be added" };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text,
-                      asize(lines), lines,
-                      MB_OK | MB_ICONINFORMATION | MBFLAGS,
-                      MBCallback, gmx);
+    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
+                      MB_OK | MB_ICONINFORMATION | MBFLAGS, MBCallback, gmx);
 }
 
-static t_dlg *ni_mb(t_x11 *x11, t_gmx *gmx)
+static t_dlg* ni_mb(t_x11* x11, t_gmx* gmx)
 {
-    const char *lines[] = {
-        " This feature has not been",
-        " implemented yet."
-    };
+    const char* lines[] = { " This feature has not been", " implemented yet." };
 
-    return MessageBox(x11, gmx->wd->self, gmx->wd->text,
-                      asize(lines), lines,
-                      MB_OK | MB_ICONEXCLAMATION | MBFLAGS,
-                      MBCallback, gmx);
+    return MessageBox(x11, gmx->wd->self, gmx->wd->text, asize(lines), lines,
+                      MB_OK | MB_ICONEXCLAMATION | MBFLAGS, MBCallback, gmx);
 }
 
-enum {
-    eExE, eExGrom, eExPdb, eExConf, eExNR
+enum
+{
+    eExE,
+    eExGrom,
+    eExPdb,
+    eExConf,
+    eExNR
 };
 
-static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
-                     char *set, void *data)
+static void ExportCB(t_x11* x11, int dlg_mess, int item_id, char* set, void* data)
 {
-    bool       bOk;
-    t_gmx     *gmx;
-    t_dlg     *dlg;
+    bool   bOk;
+    t_gmx* gmx;
+    t_dlg* dlg;
 
-    gmx = static_cast<t_gmx *>(data);
+    gmx = static_cast<t_gmx*>(data);
     dlg = gmx->dlgs[edExport];
     switch (dlg_mess)
     {
         case DLG_SET:
             switch (item_id)
             {
-                case eExGrom:
-                    gmx->ExpMode = eExpGromos;
-                    break;
-                case eExPdb:
-                    gmx->ExpMode = eExpPDB;
-                    break;
-                default:
-                    break;
+                case eExGrom: gmx->ExpMode = eExpGromos; break;
+                case eExPdb: gmx->ExpMode = eExpPDB; break;
+                default: break;
             }
 #ifdef DEBUG
             std::fprintf(stderr, "exportcb: item_id=%d\n", item_id);
@@ -249,25 +229,37 @@ static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
     }
 }
 
-enum {
-    eg0, egTOPOL, egCONFIN, egPARAM, eg1, eg1PROC, eg32PROC
+enum
+{
+    eg0,
+    egTOPOL,
+    egCONFIN,
+    egPARAM,
+    eg1,
+    eg1PROC,
+    eg32PROC
 };
 
-enum bond_set {
-    ebShowH = 11, ebDPlus, ebRMPBC, ebCue, ebSkip, ebWait
+enum bond_set
+{
+    ebShowH = 11,
+    ebDPlus,
+    ebRMPBC,
+    ebCue,
+    ebSkip,
+    ebWait
 };
 
-static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
-                    char *set, void *data)
+static void BondsCB(t_x11* x11, int dlg_mess, int item_id, char* set, void* data)
 {
     static int ebond = -1;
     static int ebox  = -1;
     bool       bOk, bBond = false;
     int        nskip, nwait;
-    t_gmx     *gmx;
-    char      *endptr;
+    t_gmx*     gmx;
+    char*      endptr;
 
-    gmx = static_cast<t_gmx *>(data);
+    gmx = static_cast<t_gmx*>(data);
     if (ebond == -1)
     {
         ebond = gmx->man->molw->bond_type;
@@ -278,12 +270,12 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
         case DLG_SET:
             if (item_id <= eBNR)
             {
-                ebond = item_id-1;
+                ebond = item_id - 1;
                 bBond = false;
             }
-            else if (item_id <= eBNR+esbNR+1)
+            else if (item_id <= eBNR + esbNR + 1)
             {
-                ebox  = item_id-eBNR-2;
+                ebox  = item_id - eBNR - 2;
                 bBond = true;
             }
             else
@@ -293,24 +285,16 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
 
                 switch (item_id)
                 {
-                    case ebShowH:
-                        toggle_hydrogen(x11, gmx->man->molw);
-                        break;
-                    case ebDPlus:
-                        DO_NOT(gmx->man->bPlus);
+                    case ebShowH: toggle_hydrogen(x11, gmx->man->molw); break;
+                    case ebDPlus: DO_NOT(gmx->man->bPlus);
 #ifdef DEBUG
-                        std::fprintf(stderr, "gmx->man->bPlus=%s\n",
-                                     gmx->man->bPlus ? "true" : "false");
+                        std::fprintf(stderr, "gmx->man->bPlus=%s\n", gmx->man->bPlus ? "true" : "false");
 #endif
                         break;
-                    case ebRMPBC:
-                        toggle_pbc(gmx->man);
-                        break;
-                    case ebCue:
-                        DO_NOT(gmx->man->bSort);
+                    case ebRMPBC: toggle_pbc(gmx->man); break;
+                    case ebCue: DO_NOT(gmx->man->bSort);
 #ifdef DEBUG
-                        std::fprintf(stderr, "gmx->man->bSort=%s\n",
-                                     gmx->man->bSort ? "true" : "false");
+                        std::fprintf(stderr, "gmx->man->bSort=%s\n", gmx->man->bSort ? "true" : "false");
 #endif
                         break;
                     case ebSkip:
@@ -355,42 +339,24 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                 {
                     switch (ebond)
                     {
-                        case eBThin:
-                            write_gmx(x11, gmx, IDTHIN);
-                            break;
-                        case eBFat:
-                            write_gmx(x11, gmx, IDFAT);
-                            break;
-                        case eBVeryFat:
-                            write_gmx(x11, gmx, IDVERYFAT);
-                            break;
-                        case eBSpheres:
-                            write_gmx(x11, gmx, IDBALLS);
-                            break;
+                        case eBThin: write_gmx(x11, gmx, IDTHIN); break;
+                        case eBFat: write_gmx(x11, gmx, IDFAT); break;
+                        case eBVeryFat: write_gmx(x11, gmx, IDVERYFAT); break;
+                        case eBSpheres: write_gmx(x11, gmx, IDBALLS); break;
                         default:
-                            gmx_fatal(FARGS, "Invalid bond type %d at %s, %d",
-                                      ebond, __FILE__, __LINE__);
+                            gmx_fatal(FARGS, "Invalid bond type %d at %s, %d", ebond, __FILE__, __LINE__);
                     }
                 }
                 else
                 {
                     switch (ebox)
                     {
-                        case esbNone:
-                            write_gmx(x11, gmx, IDNOBOX);
-                            break;
-                        case esbRect:
-                            write_gmx(x11, gmx, IDRECTBOX);
-                            break;
-                        case esbTri:
-                            write_gmx(x11, gmx, IDTRIBOX);
-                            break;
-                        case esbTrunc:
-                            write_gmx(x11, gmx, IDTOBOX);
-                            break;
+                        case esbNone: write_gmx(x11, gmx, IDNOBOX); break;
+                        case esbRect: write_gmx(x11, gmx, IDRECTBOX); break;
+                        case esbTri: write_gmx(x11, gmx, IDTRIBOX); break;
+                        case esbTrunc: write_gmx(x11, gmx, IDTOBOX); break;
                         default:
-                            gmx_fatal(FARGS, "Invalid box type %d at %s, %d",
-                                      ebox, __FILE__, __LINE__);
+                            gmx_fatal(FARGS, "Invalid box type %d at %s, %d", ebox, __FILE__, __LINE__);
                     }
                 }
             }
@@ -398,45 +364,48 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
     }
 }
 
-enum {
-    esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
+enum
+{
+    esFUNCT = 1,
+    esBSHOW,
+    esINFIL,
+    esINDEXFIL,
+    esLSQ,
+    esSHOW,
+    esPLOTFIL
 };
 
-typedef t_dlg *t_mmb (t_x11 *x11, t_gmx *gmx);
+typedef t_dlg* t_mmb(t_x11* x11, t_gmx* gmx);
 
-typedef struct {
-    const char  *dlgfile;
-    DlgCallback *cb;
+typedef struct
+{
+    const char*  dlgfile;
+    DlgCallback* cb;
 } t_dlginit;
 
-void init_dlgs(t_x11 *x11, t_gmx *gmx)
+void init_dlgs(t_x11* x11, t_gmx* gmx)
 {
-    static t_dlginit di[] = {
-        { "export.dlg",   ExportCB },
-        { "bonds.dlg",    BondsCB  }
-    };
-    static t_mmb *mi[emNR] = { quit_mb,    help_mb,    about_mb,   ni_mb };
-    unsigned int i;
+    static t_dlginit di[]     = { { "export.dlg", ExportCB }, { "bonds.dlg", BondsCB } };
+    static t_mmb*    mi[emNR] = { quit_mb, help_mb, about_mb, ni_mb };
 
     snew(gmx->dlgs, edNR);
-    for (i = 0; (i < asize(di)); i++)
+    for (int i = 0; (i < asize(di)); i++)
     {
-        gmx->dlgs[i] = ReadDlg(x11, gmx->wd->self, di[i].dlgfile,
-                               di[i].dlgfile,
-                               0, 0, true, false, di[i].cb, gmx);
+        gmx->dlgs[i] = ReadDlg(x11, gmx->wd->self, di[i].dlgfile, di[i].dlgfile, 0, 0, true, false,
+                               di[i].cb, gmx);
     }
 
     gmx->dlgs[edFilter] = select_filter(x11, gmx);
 
     snew(gmx->mboxes, emNR);
-    for (i = 0; (i < emNR); i++)
+    for (int i = 0; (i < emNR); i++)
     {
         gmx->mboxes[i] = mi[i](x11, gmx);
     }
     gmx->which_mb = -1;
 }
 
-void done_dlgs(t_gmx *gmx)
+void done_dlgs(t_gmx* gmx)
 {
     int i;
 
@@ -450,7 +419,7 @@ void done_dlgs(t_gmx *gmx)
     }
 }
 
-void edit_file(const char *fn)
+void edit_file(const char* fn)
 {
     if (fork() == 0)
     {

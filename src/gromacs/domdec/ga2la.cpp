@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,26 +59,24 @@
  * Method 1 is faster for low parallelization, 2 for high parallelization.
  * We switch to method 2 when it uses less than half the memory method 1.
  */
-static bool directListIsFaster(int numAtomsTotal,
-                               int numAtomsLocal)
+static bool directListIsFaster(int numAtomsTotal, int numAtomsLocal)
 {
     constexpr int c_numAtomsSmallRelativeToCache  = 1024;
     constexpr int c_memoryRatioHashedVersusDirect = 9;
 
-    return (numAtomsTotal <= c_numAtomsSmallRelativeToCache ||
-            numAtomsTotal <= numAtomsLocal*c_memoryRatioHashedVersusDirect);
+    return (numAtomsTotal <= c_numAtomsSmallRelativeToCache
+            || numAtomsTotal <= numAtomsLocal * c_memoryRatioHashedVersusDirect);
 }
 
-gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal,
-                         int numAtomsLocal) :
+gmx_ga2la_t::gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal) :
     usingDirect_(directListIsFaster(numAtomsTotal, numAtomsLocal))
 {
     if (usingDirect_)
     {
-        new(&(data_.direct)) std::vector<Entry>(numAtomsTotal, {-1, -1});
+        new (&(data_.direct)) std::vector<Entry>(numAtomsTotal, { -1, -1 });
     }
     else
     {
-        new(&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
+        new (&(data_.hashed)) gmx::HashedMap<Entry>(numAtomsLocal);
     }
 }

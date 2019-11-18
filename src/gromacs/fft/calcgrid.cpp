@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,9 +59,7 @@ const int grid_init[g_initNR] = { 6, 8, 10, 12, 14, 16, 20, 24, 25, 28, 32, 36, 
 #define g_baseNR 14
 const int grid_base[g_baseNR] = { 45, 48, 50, 52, 54, 56, 60, 64, 70, 72, 75, 80, 81, 84 };
 
-real calcFftGrid(FILE *fp,
-                 const matrix box, real gridSpacing, int minGridPointsPerDim,
-                 int *nx, int *ny, int *nz)
+real calcFftGrid(FILE* fp, const matrix box, real gridSpacing, int minGridPointsPerDim, int* nx, int* ny, int* nz)
 {
     int  d, n[DIM];
     int  i;
@@ -75,7 +73,7 @@ real calcFftGrid(FILE *fp,
         gmx_fatal(FARGS, "invalid fourier grid spacing: %g", gridSpacing);
     }
 
-    if (grid_base[g_baseNR-1] % 4 != 0)
+    if (grid_base[g_baseNR - 1] % 4 != 0)
     {
         gmx_incons("the last entry in grid_base is not a multiple of 4");
     }
@@ -97,7 +95,7 @@ real calcFftGrid(FILE *fp,
         box_size[d] = 0;
         for (i = 0; i < DIM; i++)
         {
-            box_size[d] += box[d][i]*box[d][i];
+            box_size[d] += box[d][i] * box[d][i];
         }
         box_size[d] = std::sqrt(box_size[d]);
     }
@@ -110,8 +108,8 @@ real calcFftGrid(FILE *fp,
     {
         if (nullptr != fp)
         {
-            fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n",
-                    *nx > 0 ? "" : " X", *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
+            fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n", *nx > 0 ? "" : " X",
+                    *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
         }
     }
 
@@ -120,14 +118,14 @@ real calcFftGrid(FILE *fp,
     {
         if (n[d] <= 0)
         {
-            nmin = static_cast<int>(box_size[d]/gridSpacing + 0.999);
+            nmin = static_cast<int>(box_size[d] / gridSpacing + 0.999);
             nmin = std::max(nmin, minGridPointsPerDim);
 
             i = g_initNR - 1;
             if (grid_init[i] >= nmin)
             {
                 /* Take the smallest possible grid in the list */
-                while (i > 0 && grid_init[i-1] >= nmin)
+                while (i > 0 && grid_init[i - 1] >= nmin)
                 {
                     i--;
                 }
@@ -138,27 +136,25 @@ real calcFftGrid(FILE *fp,
                 /* Determine how many pre-factors of 2 we need */
                 fac2 = 1;
                 i    = g_baseNR - 1;
-                while (fac2*grid_base[i] < nmin)
+                while (fac2 * grid_base[i] < nmin)
                 {
                     fac2 *= 2;
                 }
                 /* Find the smallest grid that is >= nmin */
                 do
                 {
-                    attempt = fac2*grid_base[i];
+                    attempt = fac2 * grid_base[i];
                     /* We demand a factor of 4, avoid 140, allow 90 */
-                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90) &&
-                        attempt >= nmin)
+                    if (((attempt % 4 == 0 && attempt != 140) || attempt == 90) && attempt >= nmin)
                     {
                         n[d] = attempt;
                     }
                     i--;
-                }
-                while (i > 0);
+                } while (i > 0);
             }
         }
 
-        spacing[d]  = box_size[d]/n[d];
+        spacing[d]  = box_size[d] / n[d];
         max_spacing = std::max(max_spacing, spacing[d]);
     }
     *nx = n[XX];
@@ -166,8 +162,8 @@ real calcFftGrid(FILE *fp,
     *nz = n[ZZ];
     if (nullptr != fp)
     {
-        fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
-                *nx, *ny, *nz, spacing[XX], spacing[YY], spacing[ZZ]);
+        fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n", *nx, *ny, *nz,
+                spacing[XX], spacing[YY], spacing[ZZ]);
     }
 
     return max_spacing;

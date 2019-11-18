@@ -73,7 +73,7 @@ foreach(ELEC_DEF IN LISTS ELEC_DEFS)
                 ${CMAKE_CURRENT_SOURCE_DIR}/nbnxm_ocl_kernels.cl ${CLANG_TIDY_ARGS}
                 -Xclang -finclude-default-header  -D_${VENDOR}_SOURCE_
                 -DGMX_OCL_FASTGEN ${ELEC_DEF} ${VDW_DEF}
-                -DNBNXM_GPU_CLUSTER_SIZE=${CLUSTER_SIZE} -DIATYPE_SHMEM
+                -DNBNXN_GPU_CLUSTER_SIZE=${CLUSTER_SIZE} -DIATYPE_SHMEM
                 -c -I ${CMAKE_SOURCE_DIR}/src -std=cl1.2
                 -Weverything  -Wno-conversion -Wno-missing-variable-declarations -Wno-used-but-marked-unused
                 -Wno-cast-align -Wno-incompatible-pointer-types

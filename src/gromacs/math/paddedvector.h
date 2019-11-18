@@ -72,40 +72,42 @@ namespace detail
  * implementations.
  */
 template<typename T>
-struct PaddingTraits {};
+struct PaddingTraits
+{
+};
 
 template<>
 struct PaddingTraits<int32_t>
 {
-    using SimdBaseType = int32_t;
+    using SimdBaseType                          = int32_t;
     static constexpr int maxSimdWidthOfBaseType = 16;
 };
 
 template<>
 struct PaddingTraits<float>
 {
-    using SimdBaseType = float;
+    using SimdBaseType                          = float;
     static constexpr int maxSimdWidthOfBaseType = GMX_FLOAT_MAX_SIMD_WIDTH;
 };
 
 template<>
 struct PaddingTraits<double>
 {
-    using SimdBaseType = double;
+    using SimdBaseType                          = double;
     static constexpr int maxSimdWidthOfBaseType = GMX_DOUBLE_MAX_SIMD_WIDTH;
 };
 
 template<>
-struct PaddingTraits < BasicVector < float>>
+struct PaddingTraits<BasicVector<float>>
 {
-    using SimdBaseType = float;
+    using SimdBaseType                          = float;
     static constexpr int maxSimdWidthOfBaseType = GMX_FLOAT_MAX_SIMD_WIDTH;
 };
 
 template<>
-struct PaddingTraits < BasicVector < double>>
+struct PaddingTraits<BasicVector<double>>
 {
-    using SimdBaseType = double;
+    using SimdBaseType                          = double;
     static constexpr int maxSimdWidthOfBaseType = GMX_DOUBLE_MAX_SIMD_WIDTH;
 };
 
@@ -116,7 +118,7 @@ struct PaddingTraits < BasicVector < double>>
  * \returns                The number of T elements that must be allocated
  *                         (ie >= numElements).
  */
-template <typename T>
+template<typename T>
 index computePaddedSize(index numElements)
 {
     // We don't need padding if there is no access.
@@ -141,16 +143,15 @@ index computePaddedSize(index numElements)
     // We don't want a dependence on the SIMD module for the actual
     // SIMD width of the base type, so we use maximum for the base
     // type via the traits. A little extra padding won't really hurt.
-    constexpr int maxSimdWidth       = PaddingTraits<T>::maxSimdWidthOfBaseType;
-    index         simdFlatAccessSize = (numElements + (maxSimdWidth-1)) / maxSimdWidth * maxSimdWidth;
+    constexpr int maxSimdWidth = PaddingTraits<T>::maxSimdWidthOfBaseType;
+    index simdFlatAccessSize   = (numElements + (maxSimdWidth - 1)) / maxSimdWidth * maxSimdWidth;
 
     return std::max(simdScatterAccessSize, simdFlatAccessSize);
 }
 
 //! Helper function to insert padding elements for most T.
-template <typename T, typename AllocatorType>
-inline void insertPaddingElements(std::vector<T, AllocatorType> *v,
-                                  index newPaddedSize)
+template<typename T, typename AllocatorType>
+inline void insertPaddingElements(std::vector<T, AllocatorType>* v, index newPaddedSize)
 {
     // Ensure the padding region is initialized to zero. There is no
     // way to insert a number of default-initialized elements. So we
@@ -160,15 +161,14 @@ inline void insertPaddingElements(std::vector<T, AllocatorType> *v,
 }
 
 //! Specialization of helper function to insert padding elements, used for BasicVector<T>.
-template <typename T, typename AllocatorType>
-inline void insertPaddingElements(std::vector<BasicVector<T>, AllocatorType> *v,
-                                  index newPaddedSize)
+template<typename T, typename AllocatorType>
+inline void insertPaddingElements(std::vector<BasicVector<T>, AllocatorType>* v, index newPaddedSize)
 {
     // Ensure the padding region is initialized to zero.
     v->insert(v->end(), newPaddedSize - v->size(), BasicVector<T>(0, 0, 0));
 }
 
-}   // namespace detail
+} // namespace detail
 
 /*! \brief PaddedVector is a container of elements in contiguous
  * storage that allocates extra memory for safe SIMD-style loads for
@@ -208,224 +208,210 @@ inline void insertPaddingElements(std::vector<BasicVector<T>, AllocatorType> *v,
  * physical memory for efficient transfers. The default allocator
  * ensures alignment, but std::allocator also works.
  */
-template <typename T, typename Allocator = Allocator < T, AlignedAllocationPolicy > >
+template<typename T, typename Allocator = Allocator<T, AlignedAllocationPolicy>>
 class PaddedVector
 {
-    public:
-        //! Standard helper types
-        //! \{
-        using value_type      = T;
-        using allocator_type  = Allocator;
-        using size_type       = index;
-        using reference       = value_type &;
-        using const_reference = const value_type &;
-        using storage_type    = std::vector<T, allocator_type>;
-        using pointer         = typename storage_type::pointer;
-        using const_pointer   = typename storage_type::const_pointer;
-        using iterator        = typename storage_type::iterator;
-        using const_iterator  = typename storage_type::const_iterator;
-        using difference_type = typename storage_type::iterator::difference_type;
-        //! \}
+public:
+    //! Standard helper types
+    //! \{
+    using value_type      = T;
+    using allocator_type  = Allocator;
+    using size_type       = index;
+    using reference       = value_type&;
+    using const_reference = const value_type&;
+    using storage_type    = std::vector<T, allocator_type>;
+    using pointer         = typename storage_type::pointer;
+    using const_pointer   = typename storage_type::const_pointer;
+    using iterator        = typename storage_type::iterator;
+    using const_iterator  = typename storage_type::const_iterator;
+    using difference_type = typename storage_type::iterator::difference_type;
+    //! \}
 
-        PaddedVector() :
-            storage_(),
-            unpaddedEnd_(begin())
-        {}
-        /*! \brief Constructor that specifes the initial size. */
-        explicit PaddedVector(size_type             count,
-                              const allocator_type &allocator = Allocator()) :
-            storage_(count, allocator),
-            unpaddedEnd_(begin() + count)
+    PaddedVector() : storage_(), unpaddedEnd_(begin()) {}
+    /*! \brief Constructor that specifes the initial size. */
+    explicit PaddedVector(size_type count, const allocator_type& allocator = Allocator()) :
+        storage_(count, allocator),
+        unpaddedEnd_(begin() + count)
+    {
+        // The count elements have been default inserted, and now
+        // the padding elements are added
+        resizeWithPadding(count);
+    }
+    /*! \brief Constructor that specifes the initial size and an element to copy. */
+    explicit PaddedVector(size_type count, value_type const& v, const allocator_type& allocator = Allocator()) :
+        storage_(count, v, allocator),
+        unpaddedEnd_(begin() + count)
+    {
+        // The count elements have been default inserted, and now
+        // the padding elements are added
+        resizeWithPadding(count);
+    }
+    //! Default constructor with allocator
+    explicit PaddedVector(allocator_type const& allocator) :
+        storage_(allocator),
+        unpaddedEnd_(begin())
+    {
+    }
+    //! Copy constructor
+    PaddedVector(PaddedVector const& o) : storage_(o.storage_), unpaddedEnd_(begin() + o.size()) {}
+    //! Move constructor
+    PaddedVector(PaddedVector&& o) noexcept :
+        storage_(std::move(o.storage_)),
+        unpaddedEnd_(std::move(o.unpaddedEnd_))
+    {
+        unpaddedEnd_ = begin();
+    }
+    //! Move constructor using \c alloc for the new vector.
+    PaddedVector(PaddedVector&& o, const Allocator& alloc) noexcept :
+        storage_(std::move(alloc)),
+        unpaddedEnd_(begin())
+    {
+        auto unpaddedSize = o.size();
+        if (alloc == o.storage_.get_allocator())
         {
-            // The count elements have been default inserted, and now
-            // the padding elements are added
-            resizeWithPadding(count);
+            storage_ = std::move(o.storage_);
         }
-        /*! \brief Constructor that specifes the initial size and an element to copy. */
-        explicit PaddedVector(size_type             count,
-                              value_type const     &v,
-                              const allocator_type &allocator = Allocator()) :
-            storage_(count, v, allocator),
-            unpaddedEnd_(begin() + count)
+        else
         {
-            // The count elements have been default inserted, and now
-            // the padding elements are added
-            resizeWithPadding(count);
+            // If the allocator compares differently, we must
+            // reallocate and copy.
+            resizeWithPadding(unpaddedSize);
+            std::copy(o.begin(), o.end(), storage_.begin());
         }
-        //! Default constructor with allocator
-        explicit PaddedVector(allocator_type const &allocator) :
-            storage_(allocator),
-            unpaddedEnd_(begin())
-        {}
-        //! Copy constructor
-        PaddedVector(PaddedVector const &o) :
-            storage_(o.storage_),
-            unpaddedEnd_(begin() + o.size())
-        {}
-        //! Move constructor
-        PaddedVector(PaddedVector &&o) noexcept :
-            storage_(std::move(o.storage_)),
-            unpaddedEnd_(std::move(o.unpaddedEnd_))
-        {
-            unpaddedEnd_ = begin();
-        }
-        //! Move constructor using \c alloc for the new vector.
-        PaddedVector(PaddedVector &&o, const Allocator &alloc) noexcept :
-            storage_(std::move(alloc)),
-            unpaddedEnd_(begin())
-        {
-            auto unpaddedSize = o.size();
-            if (alloc == o.storage_.get_allocator())
-            {
-                storage_ = std::move(o.storage_);
-            }
-            else
-            {
-                // If the allocator compares differently, we must
-                // reallocate and copy.
-                resizeWithPadding(unpaddedSize);
-                std::copy(o.begin(), o.end(), storage_.begin());
-            }
-            unpaddedEnd_ = begin() + unpaddedSize;
-        }
-        //! Construct from an initializer list
-        PaddedVector(std::initializer_list<value_type> const &il) :
-            storage_(il),
-            unpaddedEnd_(storage_.end())
-        {
-            // We can't choose the padding until we know the size of
-            // the normal vector, so we have to make the storage_ and
-            // then resize it.
-            resizeWithPadding(storage_.size());
-        }
-        //! Reserve storage for the container to contain newExtent elements, plus the required padding.
-        void reserveWithPadding(const size_type newExtent)
-        {
-            auto unpaddedSize = end() - begin();
-            /* v.reserve(13) should allocate enough memory so that
-               v.resize(13) does not reallocate. This means that the
-               new extent should be large enough for the padded
-               storage for a vector whose size is newExtent. */
-            auto newPaddedExtent = detail::computePaddedSize<T>(newExtent);
-            storage_.reserve(newPaddedExtent);
-            unpaddedEnd_ = begin() + unpaddedSize;
-        }
-        //! Resize the container to contain newSize elements, plus the required padding.
-        void resizeWithPadding(const size_type newSize)
-        {
-            // When the contained type is e.g. a scalar, then the
-            // default initialization behaviour is to zero all
-            // elements, which is OK, but we have to make sure that it
-            // happens for the elements in the padded region when the
-            // vector is shrinking.
-            auto newPaddedSize = detail::computePaddedSize<T>(newSize);
-            // Make sure there is room for padding if we need to grow.
-            storage_.reserve(newPaddedSize);
-            // Make the unpadded size correct, with any additional
-            // elements initialized by the default constructor. It is
-            // particularly important to destruct former elements when
-            // newSize is smaller than the old size.
-            storage_.resize(newSize);
-            // Ensure the padding region is zeroed if required.
-            detail::insertPaddingElements(&storage_, newPaddedSize);
-            unpaddedEnd_ = begin() + newSize;
-        }
-        //! Return the size of the view without the padding.
-        size_type size() const { return end() - begin(); }
-        //! Return the container size including the padding.
-        size_type paddedSize() const { return storage_.size(); }
-        //! Return whether the storage is empty.
-        bool empty() const { return storage_.empty(); }
-        //! Swap two PaddedVectors
-        void swap(PaddedVector &x)
-        {
-            std::swap(storage_, x.storage_);
-            std::swap(unpaddedEnd_, x.unpaddedEnd_);
-        }
-        //! Clear the vector, ie. set size to zero and remove padding.
-        void clear()
-        {
-            storage_.clear();
-            unpaddedEnd_ = begin();
-        }
-        //! Iterator getters refer to a view without padding.
-        //! \{
-        pointer       data()       noexcept { return storage_.data(); }
-        const_pointer data() const noexcept { return storage_.data(); }
+        unpaddedEnd_ = begin() + unpaddedSize;
+    }
+    //! Construct from an initializer list
+    PaddedVector(std::initializer_list<value_type> const& il) :
+        storage_(il),
+        unpaddedEnd_(storage_.end())
+    {
+        // We can't choose the padding until we know the size of
+        // the normal vector, so we have to make the storage_ and
+        // then resize it.
+        resizeWithPadding(storage_.size());
+    }
+    //! Reserve storage for the container to contain newExtent elements, plus the required padding.
+    void reserveWithPadding(const size_type newExtent)
+    {
+        auto unpaddedSize = end() - begin();
+        /* v.reserve(13) should allocate enough memory so that
+           v.resize(13) does not reallocate. This means that the
+           new extent should be large enough for the padded
+           storage for a vector whose size is newExtent. */
+        auto newPaddedExtent = detail::computePaddedSize<T>(newExtent);
+        storage_.reserve(newPaddedExtent);
+        unpaddedEnd_ = begin() + unpaddedSize;
+    }
+    //! Resize the container to contain newSize elements, plus the required padding.
+    void resizeWithPadding(const size_type newSize)
+    {
+        // When the contained type is e.g. a scalar, then the
+        // default initialization behaviour is to zero all
+        // elements, which is OK, but we have to make sure that it
+        // happens for the elements in the padded region when the
+        // vector is shrinking.
+        auto newPaddedSize = detail::computePaddedSize<T>(newSize);
+        // Make sure there is room for padding if we need to grow.
+        storage_.reserve(newPaddedSize);
+        // Make the unpadded size correct, with any additional
+        // elements initialized by the default constructor. It is
+        // particularly important to destruct former elements when
+        // newSize is smaller than the old size.
+        storage_.resize(newSize);
+        // Ensure the padding region is zeroed if required.
+        detail::insertPaddingElements(&storage_, newPaddedSize);
+        unpaddedEnd_ = begin() + newSize;
+    }
+    //! Return the size of the view without the padding.
+    size_type size() const { return end() - begin(); }
+    //! Return the container size including the padding.
+    size_type paddedSize() const { return storage_.size(); }
+    //! Return whether the storage is empty.
+    bool empty() const { return storage_.empty(); }
+    //! Swap two PaddedVectors
+    void swap(PaddedVector& x)
+    {
+        std::swap(storage_, x.storage_);
+        std::swap(unpaddedEnd_, x.unpaddedEnd_);
+    }
+    //! Clear the vector, ie. set size to zero and remove padding.
+    void clear()
+    {
+        storage_.clear();
+        unpaddedEnd_ = begin();
+    }
+    //! Iterator getters refer to a view without padding.
+    //! \{
+    pointer       data() noexcept { return storage_.data(); }
+    const_pointer data() const noexcept { return storage_.data(); }
 
-        iterator       begin()        { return storage_.begin(); }
-        iterator       end()          { return iterator(unpaddedEnd_); }
+    iterator begin() { return storage_.begin(); }
+    iterator end() { return iterator(unpaddedEnd_); }
 
-        const_iterator cbegin()        { return const_iterator(begin()); }
-        const_iterator cend()          { return const_iterator(unpaddedEnd_); }
+    const_iterator cbegin() { return const_iterator(begin()); }
+    const_iterator cend() { return const_iterator(unpaddedEnd_); }
 
-        const_iterator begin()        const { return storage_.begin(); }
-        const_iterator end()          const { return const_iterator(unpaddedEnd_); }
+    const_iterator begin() const { return storage_.begin(); }
+    const_iterator end() const { return const_iterator(unpaddedEnd_); }
 
-        const_iterator cbegin()        const { return const_iterator(begin()); }
-        const_iterator cend()          const { return const_iterator(unpaddedEnd_); }
-        //! \}
-        // TODO should these do bounds checking for the unpadded range? In debug mode?
-        //! Indexing operator.
-        reference operator[](int i) { return storage_[i]; }
-        //! Indexing operator as const.
-        const_reference operator[](int i) const { return storage_[i]; }
-        //! Returns an ArrayRef of elements that includes the padding region, e.g. for use in SIMD code.
-        ArrayRefWithPadding<T> arrayRefWithPadding()
+    const_iterator cbegin() const { return const_iterator(begin()); }
+    const_iterator cend() const { return const_iterator(unpaddedEnd_); }
+    //! \}
+    // TODO should these do bounds checking for the unpadded range? In debug mode?
+    //! Indexing operator.
+    reference operator[](int i) { return storage_[i]; }
+    //! Indexing operator as const.
+    const_reference operator[](int i) const { return storage_[i]; }
+    //! Returns an ArrayRef of elements that includes the padding region, e.g. for use in SIMD code.
+    ArrayRefWithPadding<T> arrayRefWithPadding()
+    {
+        return ArrayRefWithPadding<T>(data(), data() + size(), data() + paddedSize());
+    }
+    //! Returns an ArrayRef of const elements that includes the padding region, e.g. for use in SIMD code.
+    ArrayRefWithPadding<const T> constArrayRefWithPadding() const
+    {
+        return ArrayRefWithPadding<const T>(data(), data() + size(), data() + paddedSize());
+    }
+    //! Returns an rvec * pointer for containers of RVec, for use with legacy code.
+    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same<AlsoT, RVec>::value>>
+    rvec* rvec_array()
+    {
+        return as_rvec_array(data());
+    }
+    //! Returns a const rvec * pointer for containers of RVec, for use with legacy code.
+    template<typename AlsoT = T, typename = typename std::enable_if<std::is_same<AlsoT, RVec>::value>>
+    const rvec* rvec_array() const
+    {
+        return as_rvec_array(data());
+    }
+    //! Copy assignment operator
+    PaddedVector& operator=(PaddedVector const& o)
+    {
+        if (&o != this)
         {
-            return ArrayRefWithPadding<T>(data(), data()+size(), data()+paddedSize());
+            storage_     = o.storage_;
+            unpaddedEnd_ = begin() + o.size();
         }
-        //! Returns an ArrayRef of const elements that includes the padding region, e.g. for use in SIMD code.
-        ArrayRefWithPadding<const T> constArrayRefWithPadding() const
+        return *this;
+    }
+    //! Move assignment operator
+    PaddedVector& operator=(PaddedVector&& o) noexcept
+    {
+        if (&o != this)
         {
-            return ArrayRefWithPadding<const T>(data(), data()+size(), data()+paddedSize());
+            auto oSize     = o.size();
+            storage_       = std::move(o.storage_);
+            unpaddedEnd_   = begin() + oSize;
+            o.unpaddedEnd_ = o.begin();
         }
-        //! Returns an rvec * pointer for containers of RVec, for use with legacy code.
-        template <typename AlsoT = T,
-                  typename       = typename std::enable_if<std::is_same<AlsoT, RVec>::value> >
-        rvec *rvec_array()
-        {
-            return as_rvec_array(data());
-        }
-        //! Returns a const rvec * pointer for containers of RVec, for use with legacy code.
-        template <typename AlsoT = T,
-                  typename       = typename std::enable_if<std::is_same<AlsoT, RVec>::value> >
-        const rvec *rvec_array() const
-        {
-            return as_rvec_array(data());
-        }
-        //! Copy assignment operator
-        PaddedVector &operator=(PaddedVector const &o)
-        {
-            if (&o != this)
-            {
-                storage_     = o.storage_;
-                unpaddedEnd_ = begin() + o.size();
-            }
-            return *this;
-        }
-        //! Move assignment operator
-        PaddedVector &operator=(PaddedVector &&o) noexcept
-        {
-            if (&o != this)
-            {
-                auto oSize = o.size();
-                storage_       = std::move(o.storage_);
-                unpaddedEnd_   = begin() + oSize;
-                o.unpaddedEnd_ = o.begin();
-            }
-            return *this;
-        }
-        //! Getter for the allocator
-        allocator_type
-        get_allocator() const
-        {
-            return storage_.get_allocator();
-        }
+        return *this;
+    }
+    //! Getter for the allocator
+    allocator_type get_allocator() const { return storage_.get_allocator(); }
 
-    private:
-        storage_type storage_;
-        iterator     unpaddedEnd_;
+private:
+    storage_type storage_;
+    iterator     unpaddedEnd_;
 };
 
 } // namespace gmx

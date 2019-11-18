@@ -11,7 +11,7 @@ Several tools have their own individual pages and are listed below.
    jenkins
    releng/index
    gmxtree
-   uncrustify
+   code-formatting
    testutils
    physical_validation
 
@@ -71,31 +71,11 @@ unit testing (CTest)
   for each commit.
   Details can be found on a separate page on :doc:`testutils`.
 
-regression tests
-
-clang-tidy
-  `clang-tidy <http://releases.llvm.org/7.0.0/tools/clang/tools/extra/docs/clang-tidy/index.html>`_
-  is used for static code analysis. clang-tidy is easy to install. It is contained in
-  the llvm binary `package <http://releases.llvm.org/download.html#6.0.0>`_. Only
-  version 7.0.* with libstdc++<7 or libc++ is supported. Others might miss tests or give false positives.
-  It is run automatically on Jenkins for each commit. Many checks have fixes which can automatically be
-  applied. To run it, the build has to be configured with
-  ``cmake -DGMX_CLANG_TIDY=ON -DGMX_OPENMP=no -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=on``.
-  Any ``CMAKE_BUILD_TYPE`` which enables asserts (e.g. ASAN) works. Such a configured build will
-  run both the compiler as well as clang-tidy when building. The name of the clang-tidy executable is set with
-``-DCLANG_TIDY=...``, and the full path to it can be set with ``-DCLANG_TIDY_EXE=...``.
-  To apply the automatic fixes to the issue identified clang-tidy should be run sepereately (running clang-tidy
-  with ``-fix`` as part of the build can corrupt header files). To fix a specific file run
-  ``clang-tidy -fix -header-filter '.*' {file}``, to fix all files in parallel
-  ``run-clang-tidy.py -fix -header-filter '.*' '(?<!/selection/parser\.cpp|selection/scanner\.cpp)$'``,
-  and to fix all modified files ``run-clang-tidy.py -fix -header-filter '.*' $(git diff HEAD --name-only)``.
-  The run-clang-tidy.py script is in the
-  ``share/clang/`` subfolder of the llvm distribution. ``clang-tidy`` has to be able to find the
-  ``compile_commands.json`` file. Eithe run from the build folder or add a symlink to the source folder.
-
 clang static analyzer
 
 coverage
+
+regression tests
 
 .. _dev-formatting-tools:
 
@@ -111,27 +91,45 @@ uncrustify
   indentation and other formatting of the source code to follow
   :doc:`formatting`.  All code must remain invariant under uncrustify
   with the config at ``admin/uncrustify.cfg``.  A patched version of uncrustify is
-  used.  See :doc:`uncrustify` for details.
+  used.  See :ref:`gmx-uncrustify` for details.
+
+clang-format
+  We use clang-format to enforce a consistent coding style, with the
+  settings recorded in ``.clang-format`` in the main tree.
+  See :ref:`gmx-clang-format` for details.
 
 ``admin/copyright.py``
   This Python script adds and formats copyright headers in source files.
-  ``uncrustify.sh`` (see below) uses the script to check/update copyright years on
+  ``copyright.sh`` (see below) uses the script to check/update copyright years on
   changed files automatically.
 
 ``admin/uncrustify.sh``
-  This ``bash`` script runs uncrustify and ``copyright.py`` for all
+  This ``bash`` script runs uncrustify for all
   files that have local changes and checks that they conform to the prescribed
+  style.  Optionally, the script can also apply changes to make the files
+  conform. It is included only for historical reasons.
+  See :doc:`formatting` for details.
+
+``admin/copyright.sh``
+  This ``bash`` script runs the ``copyright.py`` python script to enforce
+  correct copyright information in all files that have local changes
+  and checks that they conform to the prescribed
   style.  Optionally, the script can also apply changes to make the files
   conform.
   This script is automatically run by Jenkins to ensure that all commits adhere
-  to :doc:`formatting`.  If the uncrustify job does not succeed, it
+  to :doc:`formatting`.  If the copyright job does not succeed, it
   means that this script has something to complain.
-  See :doc:`uncrustify` for details.
+  See :doc:`code-formatting` for details.
+
+``admin/clang-format.sh``
+  This script enforces coding style using clang-format.
+  This script is automatically run by Jenkins to ensure that all commits adhere
+  to :doc:`formatting`.
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
   ``uncrustify.sh`` automatically before every commit to check for formatting
-  issues.  See :doc:`uncrustify` for details.
+  issues.  See :doc:`code-formatting` for details.
 
 ``docs/doxygen/includesorter.py``
   This Python script sorts and reformats #include directives according to
@@ -149,10 +147,10 @@ include directive checker
   checkers): :doc:`gmxtree`.
 
 ``admin/reformat_all.sh``
-  This ``bash`` script runs uncrustify/``copyright.py``/include sorter
+  This ``bash`` script runs uncrustify/clang-format/``copyright.py``/include sorter
   on all relevant files in the source tree (or in a particular directory).
   The script can also produce the list of files where these scripts are applied,
-  for use with other scripts.  See :doc:`uncrustify` for details.
+  for use with other scripts.  See :doc:`code-formatting` for details.
 
 git attributes
   git attributes (specified in ``.gitattributes`` files) are used to annotate

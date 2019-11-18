@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,25 +56,25 @@
 
 #if GMX_X11
 
-#include "gromacs/fileio/writeps.h"
+#    include "gromacs/fileio/writeps.h"
 
-#include "Xstuff.h"
-#include "dialogs.h"
-#include "gromacs.bm"
-#include "molps.h"
-#include "nmol.h"
-#include "xutil.h"
+#    include "Xstuff.h"
+#    include "dialogs.h"
+#    include "gromacs.bm"
+#    include "molps.h"
+#    include "nmol.h"
+#    include "xutil.h"
 
-static void dump_it(t_manager *man)
+static void dump_it(t_manager* man)
 {
     t_psdata ps;
 
     ps = ps_open("view.ps", 0, 0, man->molw->wd.width, man->molw->wd.height);
-    ps_draw_mol(ps, man);
-    ps_close(ps);
+    ps_draw_mol(&ps, man);
+    ps_close(&ps);
 }
 
-static void done_gmx(t_x11 *x11, t_gmx *gmx)
+static void done_gmx(t_x11* x11, t_gmx* gmx)
 {
     done_logo(x11, gmx->logo);
     done_pd(x11, gmx->pd);
@@ -83,13 +83,12 @@ static void done_gmx(t_x11 *x11, t_gmx *gmx)
     x11->UnRegisterCallback(x11, gmx->wd->self);
 }
 
-static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
-                     bool bSizePD)
+static void move_gmx(t_x11* x11, t_gmx* gmx, int width, int height, bool bSizePD)
 {
     int y0, wl, hl;
-#ifdef DEBUG
+#    ifdef DEBUG
     std::fprintf(stderr, "Move gmx %dx%d\n", width, height);
-#endif
+#    endif
     y0 = XTextHeight(x11->font);
     /* Resize PD-Menu */
     if (bSizePD)
@@ -97,26 +96,24 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
         XResizeWindow(x11->disp, gmx->pd->wd.self, width, y0);
     }
 
-    XMoveWindow(x11->disp, gmx->man->wd.self, 0, y0+1);
-    XResizeWindow(x11->disp, gmx->man->wd.self, width, height-y0-1);
+    XMoveWindow(x11->disp, gmx->man->wd.self, 0, y0 + 1);
+    XResizeWindow(x11->disp, gmx->man->wd.self, width, height - y0 - 1);
 
     wl = gmx->logo->wd.width;
     hl = gmx->logo->wd.height;
-    XMoveWindow(x11->disp, gmx->logo->wd.self, (width-wl)/2, (height-y0-hl)/2);
+    XMoveWindow(x11->disp, gmx->logo->wd.self, (width - wl) / 2, (height - y0 - hl) / 2);
 }
 
-static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
+static bool HandleClient(t_x11* x11, int ID, t_gmx* gmx)
 {
-    t_pulldown *pd;
+    t_pulldown* pd;
 
     pd = gmx->pd;
 
     switch (ID)
     {
         /* File Menu */
-        case IDDUMPWIN:
-            write_gmx(x11, gmx, IDDODUMP);
-            break;
+        case IDDUMPWIN: write_gmx(x11, gmx, IDDODUMP); break;
         case IDDODUMP:
             if (gmx->man->bAnimate)
             {
@@ -130,31 +127,18 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
             break;
         case IDCLOSE:
         case IDIMPORT:
-        case IDEXPORT:
-            ShowDlg(gmx->dlgs[edExport]);
-            break;
+        case IDEXPORT: ShowDlg(gmx->dlgs[edExport]); break;
         case IDDOEXPORT:
-            write_sto_conf(gmx->confout, *gmx->man->top.name,
-                           &(gmx->man->top.atoms),
-                           gmx->man->x, nullptr, gmx->man->molw->ePBC, gmx->man->box);
+            write_sto_conf(gmx->confout, *gmx->man->top.name, &(gmx->man->top.atoms), gmx->man->x,
+                           nullptr, gmx->man->molw->ePBC, gmx->man->box);
             break;
-        case IDQUIT:
-            show_mb(gmx, emQuit);
-            break;
-        case IDTERM:
-            done_gmx(x11, gmx);
-            return true;
+        case IDQUIT: show_mb(gmx, emQuit); break;
+        case IDTERM: done_gmx(x11, gmx); return true;
 
         /* Edit Menu */
-        case IDEDITTOP:
-            edit_file("topol.gmx");
-            break;
-        case IDEDITCOORDS:
-            edit_file("confin.gmx");
-            break;
-        case IDEDITPARAMS:
-            edit_file("mdparin.gmx");
-            break;
+        case IDEDITTOP: edit_file("topol.gmx"); break;
+        case IDEDITCOORDS: edit_file("confin.gmx"); break;
+        case IDEDITPARAMS: edit_file("mdparin.gmx"); break;
 
         /* Display Menu */
         case IDFILTER:
@@ -163,49 +147,23 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
                 ShowDlg(gmx->dlgs[edFilter]);
             }
             break;
-        case IDDOFILTER:
-            do_filter(x11, gmx->man, gmx->filter);
-            break;
-        case IDANIMATE:
-            check_pd_item(pd, IDANIMATE, toggle_animate(x11, gmx->man));
-            break;
-        case IDLABELSOFF:
-            no_labels(x11, gmx->man);
-            break;
+        case IDDOFILTER: do_filter(x11, gmx->man, gmx->filter); break;
+        case IDANIMATE: check_pd_item(pd, IDANIMATE, toggle_animate(x11, gmx->man)); break;
+        case IDLABELSOFF: no_labels(x11, gmx->man); break;
         case IDRESETVIEW:
             reset_view(gmx->man->view);
             ExposeWin(x11->disp, gmx->man->molw->wd.self);
             break;
-        case IDPHOTO:
-            show_mb(gmx, emNotImplemented);
-            break;
-        case IDBONDOPTS:
-            ShowDlg(gmx->dlgs[edBonds]);
-            break;
-        case IDTHIN:
-            set_bond_type(x11, gmx->man->molw, eBThin);
-            break;
-        case IDFAT:
-            set_bond_type(x11, gmx->man->molw, eBFat);
-            break;
-        case IDVERYFAT:
-            set_bond_type(x11, gmx->man->molw, eBVeryFat);
-            break;
-        case IDBALLS:
-            set_bond_type(x11, gmx->man->molw, eBSpheres);
-            break;
-        case IDNOBOX:
-            set_box_type(x11, gmx->man->molw, esbNone);
-            break;
-        case IDRECTBOX:
-            set_box_type(x11, gmx->man->molw, esbRect);
-            break;
-        case IDTRIBOX:
-            set_box_type(x11, gmx->man->molw, esbTri);
-            break;
-        case IDTOBOX:
-            set_box_type(x11, gmx->man->molw, esbTrunc);
-            break;
+        case IDPHOTO: show_mb(gmx, emNotImplemented); break;
+        case IDBONDOPTS: ShowDlg(gmx->dlgs[edBonds]); break;
+        case IDTHIN: set_bond_type(x11, gmx->man->molw, eBThin); break;
+        case IDFAT: set_bond_type(x11, gmx->man->molw, eBFat); break;
+        case IDVERYFAT: set_bond_type(x11, gmx->man->molw, eBVeryFat); break;
+        case IDBALLS: set_bond_type(x11, gmx->man->molw, eBSpheres); break;
+        case IDNOBOX: set_box_type(x11, gmx->man->molw, esbNone); break;
+        case IDRECTBOX: set_box_type(x11, gmx->man->molw, esbRect); break;
+        case IDTRIBOX: set_box_type(x11, gmx->man->molw, esbTri); break;
+        case IDTOBOX: set_box_type(x11, gmx->man->molw, esbTrunc); break;
 
         /* Analysis Menu */
         case IDBOND:
@@ -214,37 +172,28 @@ static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
         case IDRMS:
         case IDRDF:
         case IDENERGIES:
-        case IDCORR:
-            show_mb(gmx, emNotImplemented);
-            break;
+        case IDCORR: show_mb(gmx, emNotImplemented); break;
 
         /* Help Menu */
-        case IDHELP:
-            show_mb(gmx, emHelp);
-            break;
-        case IDABOUT:
-            show_logo(x11, gmx->logo);
-            break;
+        case IDHELP: show_mb(gmx, emHelp); break;
+        case IDABOUT: show_logo(x11, gmx->logo); break;
 
-        default:
-            break;
+        default: break;
     }
     return false;
 }
 
-static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool MainCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
 {
-    t_gmx    *gmx;
-    int       nsel, width, height;
-    bool      result;
+    t_gmx* gmx;
+    int    nsel, width, height;
+    bool   result;
 
     result = false;
-    gmx    = (t_gmx *)data;
+    gmx    = (t_gmx*)data;
     switch (event->type)
     {
-        case ButtonRelease:
-            hide_pd(x11, gmx->pd);
-            break;
+        case ButtonRelease: hide_pd(x11, gmx->pd); break;
         case ConfigureNotify:
             width  = event->xconfigure.width;
             height = event->xconfigure.height;
@@ -258,90 +207,71 @@ static bool MainCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
             nsel   = event->xclient.data.l[0];
             result = HandleClient(x11, nsel, gmx);
             break;
-        default:
-            break;
+        default: break;
     }
     return result;
 }
 
-static t_mentry  FileMenu[] = {
-    { 0,  IDEXPORT,   false,  "Export..." },
-    { 0,  IDDUMPWIN,  false,  "Print"     },
-    { 0,  IDQUIT,     false,  "Quit"      }
-};
+static t_mentry FileMenu[] = { { 0, IDEXPORT, false, "Export..." },
+                               { 0, IDDUMPWIN, false, "Print" },
+                               { 0, IDQUIT, false, "Quit" } };
 
-static t_mentry  DispMenu[] = {
-    { 0,  IDFILTER,   false,  "Filter..." },
-    { 0,  IDANIMATE,  false,  "Animate"   },
-    { 0,  IDLABELSOFF,    false,  "Labels Off"},
-    { 0,  IDRESETVIEW,    false,  "Reset View"},
-    { 0,  IDBONDOPTS,     false,  "Options..."}
-};
+static t_mentry DispMenu[] = { { 0, IDFILTER, false, "Filter..." },
+                               { 0, IDANIMATE, false, "Animate" },
+                               { 0, IDLABELSOFF, false, "Labels Off" },
+                               { 0, IDRESETVIEW, false, "Reset View" },
+                               { 0, IDBONDOPTS, false, "Options..." } };
 
-static t_mentry  HelpMenu[] = {
-    { 0,  IDHELP,     false,  "Help"             },
-    { 0,  IDABOUT,    false,  "About GROMACS..." }
-};
+static t_mentry HelpMenu[] = { { 0, IDHELP, false, "Help" },
+                               { 0, IDABOUT, false, "About GROMACS..." } };
 
-static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
+static t_mentry* gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
 
-#define MSIZE asize(gmx_pd)
+#    define MSIZE asize(gmx_pd)
 
-static int         gmx_pd_size[MSIZE] = {
-    asize(FileMenu), asize(DispMenu), asize(HelpMenu)
-};
+static int gmx_pd_size[MSIZE] = { asize(FileMenu), asize(DispMenu), asize(HelpMenu) };
 
-static const char *MenuTitle[MSIZE] = {
-    "File", "Display", "Help"
-};
+static const char* MenuTitle[MSIZE] = { "File", "Display", "Help" };
 
-static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
-                     gmx_output_env_t *oenv)
+static void init_gmx(t_x11* x11, char* program, int nfile, t_filenm fnm[], gmx_output_env_t* oenv)
 {
-    Pixmap                pm;
-    t_gmx                *gmx;
-    XSizeHints            hints;
-    int                   w0, h0;
-    int                   natom, natom_trx;
-    t_topology            top;
-    int                   ePBC;
-    matrix                box;
-    t_trxframe            fr;
-    t_trxstatus          *status;
+    Pixmap       pm;
+    t_gmx*       gmx;
+    XSizeHints   hints;
+    int          w0, h0;
+    int          natom, natom_trx;
+    t_topology   top;
+    int          ePBC;
+    matrix       box;
+    t_trxframe   fr;
+    t_trxstatus* status;
 
     snew(gmx, 1);
     snew(gmx->wd, 1);
 
-    ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm),
-                        nullptr, box, &natom, nullptr, nullptr, &top);
+    ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm), nullptr, box, &natom, nullptr, nullptr, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
     close_trx(status);
     natom_trx = fr.natoms;
 
     /* Creates a simple window */
-    w0 = DisplayWidth(x11->disp, x11->screen)-132;
-    h0 = DisplayHeight(x11->disp, x11->screen)-140;
+    w0 = DisplayWidth(x11->disp, x11->screen) - 132;
+    h0 = DisplayHeight(x11->disp, x11->screen) - 140;
     InitWin(gmx->wd, 0, 0, w0, h0, 3, gmx::bromacs().c_str());
-    gmx->wd->self = XCreateSimpleWindow(x11->disp, x11->root,
-                                        gmx->wd->x, gmx->wd->y,
-                                        gmx->wd->width, gmx->wd->height,
-                                        gmx->wd->bwidth, WHITE, BLACK);
-    pm = XCreatePixmapFromBitmapData(x11->disp, x11->root,
-                                     (char *)gromacs_bits, gromacs_width,
-                                     gromacs_height,
-                                     WHITE, BLACK, 1);
+    gmx->wd->self = XCreateSimpleWindow(x11->disp, x11->root, gmx->wd->x, gmx->wd->y, gmx->wd->width,
+                                        gmx->wd->height, gmx->wd->bwidth, WHITE, BLACK);
+    pm = XCreatePixmapFromBitmapData(x11->disp, x11->root, (char*)gromacs_bits, gromacs_width,
+                                     gromacs_height, WHITE, BLACK, 1);
     hints.flags      = PMinSize;
-    hints.min_width  = 2*EWIDTH+40;
-    hints.min_height = EHEIGHT+LDHEIGHT+LEGHEIGHT+40;
-    XSetStandardProperties(x11->disp, gmx->wd->self, gmx->wd->text, program,
-                           pm, nullptr, 0, &hints);
+    hints.min_width  = 2 * EWIDTH + 40;
+    hints.min_height = EHEIGHT + LDHEIGHT + LEGHEIGHT + 40;
+    XSetStandardProperties(x11->disp, gmx->wd->self, gmx->wd->text, program, pm, nullptr, 0, &hints);
 
     x11->RegisterCallback(x11, gmx->wd->self, x11->root, MainCallBack, gmx);
     x11->SetInputMask(x11, gmx->wd->self,
-                      ButtonPressMask     | ButtonReleaseMask |
-                      OwnerGrabButtonMask | ExposureMask      |
-                      StructureNotifyMask);
+                      ButtonPressMask | ButtonReleaseMask | OwnerGrabButtonMask | ExposureMask
+                              | StructureNotifyMask);
 
     /* The order of creating windows is important here! */
     /* Manager */
@@ -355,14 +285,12 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     map_man(x11, gmx->man);
 
     /* Pull Down menu */
-    gmx->pd = init_pd(x11, gmx->wd->self, gmx->wd->width,
-                      x11->fg, x11->bg,
-                      MSIZE, gmx_pd_size, gmx_pd, MenuTitle);
+    gmx->pd = init_pd(x11, gmx->wd->self, gmx->wd->width, x11->fg, x11->bg, MSIZE, gmx_pd_size,
+                      gmx_pd, MenuTitle);
 
     /* Dialogs & Filters */
 
-    gmx->filter = init_filter(&(top.atoms), ftp2fn_null(efNDX, nfile, fnm),
-                              natom_trx);
+    gmx->filter = init_filter(&(top.atoms), ftp2fn_null(efNDX, nfile, fnm), natom_trx);
 
     init_dlgs(x11, gmx);
 
@@ -373,9 +301,9 @@ static void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 }
 #endif
 
-int gmx_view(int argc, char *argv[])
+int gmx_view(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] is the GROMACS trajectory viewer. This program reads a",
         "trajectory file, a run input file and an index file and plots a",
         "3D structure of your molecule on your standard X Window",
@@ -391,30 +319,27 @@ int gmx_view(int argc, char *argv[])
         "Some of the more common X command line options can be used: ",
         "[TT]-bg[tt], [TT]-fg[tt] change colors, [TT]-font fontname[tt] changes the font."
     };
-    const char       *bugs[] = {
-        "Balls option does not work",
-        "Some times dumps core without a good reason"
-    };
+    const char* bugs[] = { "Balls option does not work",
+                           "Some times dumps core without a good reason" };
 
-    gmx_output_env_t *oenv;
-    t_filenm          fnm[] = {
-        { efTRX, "-f", nullptr, ffREAD },
-        { efTPR, nullptr, nullptr, ffREAD },
-        { efNDX, nullptr, nullptr, ffOPTRD }
-    };
+    gmx_output_env_t* oenv;
+    t_filenm          fnm[] = { { efTRX, "-f", nullptr, ffREAD },
+                       { efTPR, nullptr, nullptr, ffREAD },
+                       { efNDX, nullptr, nullptr, ffOPTRD } };
 #define NFILE asize(fnm)
 
-    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                          0, nullptr, asize(desc), desc, asize(bugs), bugs, &oenv))
+    if (parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm, 0, nullptr, asize(desc), desc,
+                          asize(bugs), bugs, &oenv))
     {
 #if !GMX_X11
         std::fprintf(stderr, "Compiled without X-Windows - can not run viewer.\n");
 #else
-        t_x11 *x11;
+        t_x11* x11;
 
         if ((x11 = GetX11(&argc, argv)) == nullptr)
         {
-            std::fprintf(stderr, "Can't connect to X Server.\n"
+            std::fprintf(stderr,
+                         "Can't connect to X Server.\n"
                          "Check your DISPLAY environment variable\n");
         }
         else

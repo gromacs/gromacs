@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,17 +52,17 @@
 
 #include <sys/types.h>
 #ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
+#    include <sys/time.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#include <Windows.h>
-#include <process.h>
+#    include <Windows.h>
+#    include <process.h>
 #endif
 #if HAVE_PWD_H
-#include <pwd.h>
+#    include <pwd.h>
 #endif
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
@@ -74,19 +74,19 @@ namespace
 const char c_unknown[] = "unknown";
 } // namespace
 
-int gmx_gethostname(char *buf, size_t len)
+int gmx_gethostname(char* buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
 #if GMX_NATIVE_WINDOWS
-    DWORD  dlen = len;
+    DWORD dlen = len;
     if (GetComputerName(buf, &dlen))
     {
         return 0;
     }
 #elif defined(HAVE_UNISTD_H) && !defined(__native_client__)
-    if (gethostname(buf, len-1) == 0)
+    if (gethostname(buf, len - 1) == 0)
     {
-        buf[len-1] = '\0';
+        buf[len - 1] = '\0';
         return 0;
     }
 #endif
@@ -112,21 +112,21 @@ int gmx_getuid()
 #endif
 }
 
-int gmx_getusername(char *buf, size_t len)
+int gmx_getusername(char* buf, size_t len)
 {
     GMX_RELEASE_ASSERT(len >= 8, "Input buffer is too short");
     // TODO: nice_header() used getpwuid() instead; consider using getpwuid_r()
     // here.  If not, get rid of HAVE_PWD_H completely.
 #if GMX_NATIVE_WINDOWS
-    DWORD  dlen = len;
+    DWORD dlen = len;
     if (GetUserName(buf, &dlen))
     {
         return 0;
     }
-#elif defined(HAVE_UNISTD_H) && !__has_feature(memory_sanitizer) //MSAN Issue 83
+#elif defined(HAVE_UNISTD_H) && !__has_feature(memory_sanitizer) // MSAN Issue 83
     if (!getlogin_r(buf, len))
     {
-        buf[len-1] = '\0';
+        buf[len - 1] = '\0';
         return 0;
     }
 #endif
@@ -134,15 +134,14 @@ int gmx_getusername(char *buf, size_t len)
     return -1;
 }
 
-std::string
-gmx_ctime_r(const time_t *clock)
+std::string gmx_ctime_r(const time_t* clock)
 {
 #ifdef _MSC_VER
     std::array<char, 1024> buf;
     ctime_s(buf.data(), buf.size(), clock);
     return std::string(buf.begin(), buf.end());
 #elif GMX_NATIVE_WINDOWS
-    char *tmpbuf = ctime(clock);
+    char* tmpbuf = ctime(clock);
     return tmpbuf;
 #elif (defined(__sun))
     /*Solaris*/

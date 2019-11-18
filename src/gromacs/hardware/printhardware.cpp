@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,24 +48,24 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/hardware/identifyavx512fmaunits.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/simd/support.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/sysinfo.h"
 
 //! Constant used to help minimize preprocessed code
-static const bool bGPUBinary     = GMX_GPU != GMX_GPU_NONE;
+static const bool bGPUBinary = GMX_GPU != GMX_GPU_NONE;
 
 /*! \internal \brief
  * Returns the GPU information text, one GPU per line.
  */
-static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
+static std::string sprint_gpus(const gmx_gpu_info_t& gpu_info)
 {
     char                     stmp[STRLEN];
     std::vector<std::string> gpuStrings;
@@ -79,23 +79,25 @@ static std::string sprint_gpus(const gmx_gpu_info_t &gpu_info)
 
 /* Give a suitable fatal error or warning if the build configuration
    and runtime CPU do not match. */
-static void
-check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
-                                const gmx::CpuInfo    &cpuInfo)
+static void check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger& mdlog, const gmx::CpuInfo& cpuInfo)
 {
-    bool        binaryUsesRdtscp = HAVE_RDTSCP;
+    bool binaryUsesRdtscp = HAVE_RDTSCP;
 
-    const char *programName = gmx::getProgramContext().displayName();
+    const char* programName = gmx::getProgramContext().displayName();
 
     if (cpuInfo.supportLevel() < gmx::CpuInfo::SupportLevel::Features)
     {
         if (binaryUsesRdtscp)
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "The %s executable was compiled to use the rdtscp CPU instruction. "
-                    "We cannot detect the features of your current CPU, but will proceed anyway. "
-                    "If you get a crash, rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
-                    programName);
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "The %s executable was compiled to use the rdtscp CPU instruction. "
+                            "We cannot detect the features of your current CPU, but will proceed "
+                            "anyway. "
+                            "If you get a crash, rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake "
+                            "option.",
+                            programName);
         }
     }
     else
@@ -104,35 +106,38 @@ check_use_of_rdtscp_on_this_cpu(const gmx::MDLogger   &mdlog,
 
         if (!cpuHasRdtscp && binaryUsesRdtscp)
         {
-            gmx_fatal(FARGS, "The %s executable was compiled to use the rdtscp CPU instruction. "
-                      "However, this is not supported by the current hardware and continuing would lead to a crash. "
+            gmx_fatal(FARGS,
+                      "The %s executable was compiled to use the rdtscp CPU instruction. "
+                      "However, this is not supported by the current hardware and continuing would "
+                      "lead to a crash. "
                       "Please rebuild GROMACS with the GMX_USE_RDTSCP=OFF CMake option.",
                       programName);
         }
 
         if (cpuHasRdtscp && !binaryUsesRdtscp)
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "The current CPU can measure timings more accurately than the code in\n"
-                    "%s was configured to use. This might affect your simulation\n"
-                    "speed as accurate timings are needed for load-balancing.\n"
-                    "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake option.",
-                    programName, programName);
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "The current CPU can measure timings more accurately than the code in\n"
+                            "%s was configured to use. This might affect your simulation\n"
+                            "speed as accurate timings are needed for load-balancing.\n"
+                            "Please consider rebuilding %s with the GMX_USE_RDTSCP=ON CMake "
+                            "option.",
+                            programName, programName);
         }
     }
 }
 
-static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
-                                            bool                 bFullCpuInfo)
+static std::string detected_hardware_string(const gmx_hw_info_t* hwinfo, bool bFullCpuInfo)
 {
-    std::string                  s;
+    std::string s;
 
-    const gmx::CpuInfo          &cpuInfo = *hwinfo->cpuInfo;
-    const gmx::HardwareTopology &hwTop   = *hwinfo->hardwareTopology;
+    const gmx::CpuInfo&          cpuInfo = *hwinfo->cpuInfo;
+    const gmx::HardwareTopology& hwTop   = *hwinfo->hardwareTopology;
 
-    s  = gmx::formatString("\n");
-    s += gmx::formatString("Running on %d node%s with total",
-                           hwinfo->nphysicalnode,
+    s = gmx::formatString("\n");
+    s += gmx::formatString("Running on %d node%s with total", hwinfo->nphysicalnode,
                            hwinfo->nphysicalnode == 1 ? "" : "s");
     if (hwinfo->ncore_tot > 0)
     {
@@ -141,8 +146,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     s += gmx::formatString(" %d logical cores", hwinfo->nhwthread_tot);
     if (hwinfo->gpu_info.bDetectGPUs)
     {
-        s += gmx::formatString(", %d compatible GPU%s",
-                               hwinfo->ngpu_compatible_tot,
+        s += gmx::formatString(", %d compatible GPU%s", hwinfo->ngpu_compatible_tot,
                                hwinfo->ngpu_compatible_tot == 1 ? "" : "s");
     }
     else if (bGPUBinary)
@@ -171,8 +175,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         s += gmx::formatString("\n");
         if (bGPUBinary)
         {
-            s += gmx::formatString("  Compatible GPUs per node: %2d",
-                                   hwinfo->ngpu_compatible_min);
+            s += gmx::formatString("  Compatible GPUs per node: %2d", hwinfo->ngpu_compatible_min);
             if (hwinfo->ngpu_compatible_max > hwinfo->ngpu_compatible_min)
             {
                 s += gmx::formatString(" - %2d", hwinfo->ngpu_compatible_max);
@@ -189,7 +192,8 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
                     /* This message will also appear with identical GPU types
                      * when at least one node has no GPU.
                      */
-                    s += gmx::formatString("  Different nodes have different type(s) and/or order of GPUs\n");
+                    s += gmx::formatString(
+                            "  Different nodes have different type(s) and/or order of GPUs\n");
                 }
             }
         }
@@ -204,8 +208,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // TODO Use a wrapper around MPI_Get_processor_name instead.
-    s += gmx::formatString("Hardware detected on host %s (the node of MPI rank %d):\n",
-                           host, rank);
+    s += gmx::formatString("Hardware detected on host %s (the node of MPI rank %d):\n", host, rank);
 #else
     s += gmx::formatString("Hardware detected:\n");
 #endif
@@ -217,11 +220,11 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 
     if (bFullCpuInfo)
     {
-        s += gmx::formatString("    Family: %d   Model: %d   Stepping: %d\n",
-                               cpuInfo.family(), cpuInfo.model(), cpuInfo.stepping());
+        s += gmx::formatString("    Family: %d   Model: %d   Stepping: %d\n", cpuInfo.family(),
+                               cpuInfo.model(), cpuInfo.stepping());
 
         s += gmx::formatString("    Features:");
-        for (auto &f : cpuInfo.featureSet())
+        for (auto& f : cpuInfo.featureSet())
         {
             s += gmx::formatString(" %s", gmx::CpuInfo::featureString(f).c_str());
         }
@@ -250,18 +253,12 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     s += gmx::formatString("  Hardware topology: ");
     switch (hwTop.supportLevel())
     {
-        case gmx::HardwareTopology::SupportLevel::None:
-            s += gmx::formatString("None\n");
-            break;
+        case gmx::HardwareTopology::SupportLevel::None: s += gmx::formatString("None\n"); break;
         case gmx::HardwareTopology::SupportLevel::LogicalProcessorCount:
             s += gmx::formatString("Only logical processor count\n");
             break;
-        case gmx::HardwareTopology::SupportLevel::Basic:
-            s += gmx::formatString("Basic\n");
-            break;
-        case gmx::HardwareTopology::SupportLevel::Full:
-            s += gmx::formatString("Full\n");
-            break;
+        case gmx::HardwareTopology::SupportLevel::Basic: s += gmx::formatString("Basic\n"); break;
+        case gmx::HardwareTopology::SupportLevel::Full: s += gmx::formatString("Full\n"); break;
         case gmx::HardwareTopology::SupportLevel::FullWithDevices:
             s += gmx::formatString("Full, with devices\n");
             break;
@@ -270,7 +267,7 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     if (!hwTop.isThisSystem())
     {
         s += gmx::formatString("  NOTE: Hardware topology cached or synthetic, not detected.\n");
-        if (char *p = std::getenv("HWLOC_XMLFILE"))
+        if (char* p = std::getenv("HWLOC_XMLFILE"))
         {
             s += gmx::formatString("        HWLOC_XMLFILE=%s\n", p);
         }
@@ -282,13 +279,13 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         {
             s += gmx::formatString("    Sockets, cores, and logical processors:\n");
 
-            for (auto &socket : hwTop.machine().sockets)
+            for (auto& socket : hwTop.machine().sockets)
             {
                 s += gmx::formatString("      Socket %2d:", socket.id);
-                for (auto &c : socket.cores)
+                for (auto& c : socket.cores)
                 {
                     s += gmx::formatString(" [");
-                    for (auto &t : c.hwThreads)
+                    for (auto& t : c.hwThreads)
                     {
                         s += gmx::formatString(" %3d", t.logicalProcessorId);
                     }
@@ -300,10 +297,10 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
         if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::Full)
         {
             s += gmx::formatString("    Numa nodes:\n");
-            for (auto &n : hwTop.machine().numa.nodes)
+            for (auto& n : hwTop.machine().numa.nodes)
             {
                 s += gmx::formatString("      Node %2d (%zu bytes mem):", n.id, n.memory);
-                for (auto &l : n.logicalProcessorId)
+                for (auto& l : n.logicalProcessorId)
                 {
                     s += gmx::formatString(" %3d", l);
                 }
@@ -327,19 +324,21 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
 
 
             s += gmx::formatString("    Caches:\n");
-            for (auto &c : hwTop.machine().caches)
+            for (auto& c : hwTop.machine().caches)
             {
-                s += gmx::formatString("      L%d: %zu bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
-                                       c.level, c.size, c.linesize, c.associativity, c.shared);
+                s += gmx::formatString(
+                        "      L%d: %zu bytes, linesize %d bytes, assoc. %d, shared %d ways\n",
+                        c.level, c.size, c.linesize, c.associativity, c.shared);
             }
         }
         if (hwTop.supportLevel() >= gmx::HardwareTopology::SupportLevel::FullWithDevices)
         {
             s += gmx::formatString("    PCI devices:\n");
-            for (auto &d : hwTop.machine().devices)
+            for (auto& d : hwTop.machine().devices)
             {
-                s += gmx::formatString("      %04x:%02x:%02x.%1x  Id: %04x:%04x  Class: 0x%04x  Numa: %d\n",
-                                       d.domain, d.bus, d.dev, d.func, d.vendorId, d.deviceId, d.classId, d.numaNodeId);
+                s += gmx::formatString(
+                        "      %04x:%02x:%02x.%1x  Id: %04x:%04x  Class: 0x%04x  Numa: %d\n", d.domain,
+                        d.bus, d.dev, d.func, d.vendorId, d.deviceId, d.classId, d.numaNodeId);
             }
         }
     }
@@ -347,19 +346,18 @@ static std::string detected_hardware_string(const gmx_hw_info_t *hwinfo,
     if (bGPUBinary && hwinfo->gpu_info.n_dev > 0)
     {
         s += gmx::formatString("  GPU info:\n");
-        s += gmx::formatString("    Number of GPUs detected: %d\n",
-                               hwinfo->gpu_info.n_dev);
+        s += gmx::formatString("    Number of GPUs detected: %d\n", hwinfo->gpu_info.n_dev);
         s += sprint_gpus(hwinfo->gpu_info) + "\n";
     }
     return s;
 }
 
-void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
-                                 const gmx_multisim_t *ms,
-                                 const gmx::MDLogger &mdlog,
-                                 const gmx_hw_info_t *hwinfo)
+void gmx_print_detected_hardware(FILE*                fplog,
+                                 const bool           warnToStdErr,
+                                 const gmx::MDLogger& mdlog,
+                                 const gmx_hw_info_t* hwinfo)
 {
-    const gmx::CpuInfo &cpuInfo = *hwinfo->cpuInfo;
+    const gmx::CpuInfo& cpuInfo = *hwinfo->cpuInfo;
 
     if (fplog != nullptr)
     {
@@ -379,7 +377,7 @@ void gmx_print_detected_hardware(FILE *fplog, const t_commrec *cr,
      */
     if (cpuInfo.supportLevel() >= gmx::CpuInfo::SupportLevel::Features)
     {
-        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, isMasterSimMasterRank(ms, cr));
+        gmx::simdCheck(static_cast<gmx::SimdType>(hwinfo->simd_suggest_min), fplog, warnToStdErr);
     }
 
     /* For RDTSCP we only check on our local node and skip the MPI reduction */

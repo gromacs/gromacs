@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,46 +64,42 @@ namespace gmx
  *
  * \ingroup module_analysisdata
  */
-class AnalysisDataProxy : public AbstractAnalysisData,
-                          public IAnalysisDataModule
+class AnalysisDataProxy : public AbstractAnalysisData, public IAnalysisDataModule
 {
-    public:
-        /*! \brief
-         * Creates a proxy object that only presents certain columns.
-         *
-         * \param[in] firstColumn  First column to present.
-         * \param[in] columnSpan   Number of columns to present.
-         * \param[in] data         Data object that should be wrapped.
-         *
-         * Does not throw.
-         */
-        AnalysisDataProxy(int firstColumn, int columnSpan,
-                          AbstractAnalysisData *data);
+public:
+    /*! \brief
+     * Creates a proxy object that only presents certain columns.
+     *
+     * \param[in] firstColumn  First column to present.
+     * \param[in] columnSpan   Number of columns to present.
+     * \param[in] data         Data object that should be wrapped.
+     *
+     * Does not throw.
+     */
+    AnalysisDataProxy(int firstColumn, int columnSpan, AbstractAnalysisData* data);
 
-        int frameCount() const override;
+    int frameCount() const override;
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        bool parallelDataStarted(
-            AbstractAnalysisData              *data,
-            const AnalysisDataParallelOptions &options) override;
-        void frameStarted(const AnalysisDataFrameHeader &frame) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void frameFinishedSerial(int frameIndex) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    bool parallelDataStarted(AbstractAnalysisData* data, const AnalysisDataParallelOptions& options) override;
+    void frameStarted(const AnalysisDataFrameHeader& frame) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void frameFinishedSerial(int frameIndex) override;
+    void dataFinished() override;
 
-    private:
-        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-        bool requestStorageInternal(int nframes) override;
+private:
+    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+    bool                 requestStorageInternal(int nframes) override;
 
-        AbstractAnalysisData   &source_;
-        int                     firstColumn_;
-        int                     columnSpan_;
-        bool                    bParallel_;
+    AbstractAnalysisData& source_;
+    int                   firstColumn_;
+    int                   columnSpan_;
+    bool                  bParallel_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 } // namespace gmx

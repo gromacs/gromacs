@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,22 +60,10 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/basedefinitions.h"
-#include "gromacs/utility/real.h"
 
-struct gmx_mtop_t;
-struct gmx_output_env_t;
-struct pull_params_t;
-struct pull_t;
-struct t_commrec;
-struct t_filenm;
-struct t_inputrec;
-struct t_mdatoms;
-struct t_pbc;
-
+// TODO: Get from a header once the public API settles down a bit.
 namespace gmxapi
 {
-class Session;
 class SessionResources;
 }
 
@@ -100,39 +88,32 @@ using Vector = ::gmx::RVec;
  */
 class PotentialPointData
 {
-    public:
+public:
+    /*!
+     * \brief Initialize a new data structure.
+     */
+    PotentialPointData() : PotentialPointData{ Vector(0., 0., 0.), real(0.0) } {}
 
+    /*!
+     * \brief Initialize from an argument list
+     *
+     * \param f Force vector.
+     * \param e Energy value.
+     *
+     * Note that if force was calculated as a scalar, it needs to be multiplied by a unit
+     * vector in the direction to which it should be applied.
+     */
+    PotentialPointData(const Vector& f, const real e) : force(f), energy(e) {}
 
-        /*!
-         * \brief Initialize a new data structure.
-         */
-        PotentialPointData() :
-            PotentialPointData {Vector(0., 0., 0.), real(0.0)}
-        {}
+    /*!
+     * \brief Force vector calculated for first position.
+     */
+    Vector force;
 
-        /*!
-         * \brief Initialize from an argument list
-         *
-         * \param f Force vector.
-         * \param e Energy value.
-         *
-         * Note that if force was calculated as a scalar, it needs to be multiplied by a unit
-         * vector in the direction to which it should be applied.
-         */
-        PotentialPointData(const Vector &f, const real e) :
-            force(f),
-            energy(e)
-        {}
-
-        /*!
-         * \brief Force vector calculated for first position.
-         */
-        Vector force;
-
-        /*!
-         * \brief Potential energy calculated for this interaction.
-         */
-        real energy;
+    /*!
+     * \brief Potential energy calculated for this interaction.
+     */
+    real energy;
 };
 
 /*!
@@ -165,84 +146,80 @@ class PotentialPointData
  * are specified by the user and then, during integration, GROMACS provides
  * the current positions of each pair for the restraint potential to be evaluated.
  * In such a case, the potential can be implemented by overriding evaluate().
- * \todo Template headers can help to build compatible calculation methods with different input requirements.
- * For reference, see https://github.com/kassonlab/sample_restraint
+ * \todo Template headers can help to build compatible calculation methods with different input
+ * requirements. For reference, see https://github.com/kassonlab/sample_restraint
  *
  * \ingroup module_restraint
  */
 class IRestraintPotential
 {
-    public:
-        virtual ~IRestraintPotential() = default;
+public:
+    virtual ~IRestraintPotential() = default;
 
-        /*!
-         * \brief Calculate a force vector according to two input positions at a given time.
-         *
-         * If not overridden by derived class, returns a zero vector.
-         * \param r1 position of first site
-         * \param r2 position of second site
-         * \param t simulation time in picoseconds
-         * \return force vector and potential energy to be applied by calling code.
-         *
-         * \todo The virtual function call should be replaced by a (table of) function objects retrieved before the run.
-         */
-        virtual PotentialPointData evaluate(Vector r1,
-                                            Vector r2,
-                                            double t) = 0;
+    /*!
+     * \brief Calculate a force vector according to two input positions at a given time.
+     *
+     * If not overridden by derived class, returns a zero vector.
+     * \param r1 position of first site
+     * \param r2 position of second site
+     * \param t simulation time in picoseconds
+     * \return force vector and potential energy to be applied by calling code.
+     *
+     * \todo The virtual function call should be replaced by a (table of) function objects retrieved before the run.
+     */
+    virtual PotentialPointData evaluate(Vector r1, Vector r2, double t) = 0;
 
 
-        /*!
-         * \brief Call-back hook for restraint implementations.
-         *
-         * An update function to be called on the simulation master rank/thread periodically
-         * by the Restraint framework.
-         * Receives the same input as the evaluate() method, but is only called on the master
-         * rank of a simulation to allow implementation code to be thread-safe without knowing
-         * anything about the domain decomposition.
-         *
-         * \param v position of the first site
-         * \param v0 position of the second site
-         * \param t simulation time
-         *
-         * \internal
-         * We give the definition here because we don't want plugins to have to link against
-         * libgromacs right now (complicated header maintenance and no API stability guarantees).
-         * But once we've had plugin restraints wrap themselves in a Restraint template,
-         * we can set update = 0
-         *
-         * \todo: Provide gmxapi facility for plugin restraints to wrap themselves
-         * with a default implementation to let this class be pure virtual.
-         */
-        virtual void update(gmx::Vector v,
-                            gmx::Vector v0,
-                            double      t)
-        {
-            (void)v;
-            (void)v0;
-            (void)t;
-        }
+    /*!
+     * \brief Call-back hook for restraint implementations.
+     *
+     * An update function to be called on the simulation master rank/thread periodically
+     * by the Restraint framework.
+     * Receives the same input as the evaluate() method, but is only called on the master
+     * rank of a simulation to allow implementation code to be thread-safe without knowing
+     * anything about the domain decomposition.
+     *
+     * \param v position of the first site
+     * \param v0 position of the second site
+     * \param t simulation time
+     *
+     * \internal
+     * We give the definition here because we don't want plugins to have to link against
+     * libgromacs right now (complicated header maintenance and no API stability guarantees).
+     * But once we've had plugin restraints wrap themselves in a Restraint template,
+     * we can set update = 0
+     *
+     * \todo: Provide gmxapi facility for plugin restraints to wrap themselves
+     * with a default implementation to let this class be pure virtual.
+     */
+    virtual void update(gmx::Vector v, gmx::Vector v0, double t)
+    {
+        (void)v;
+        (void)v0;
+        (void)t;
+    }
 
 
-        /*!
-         * \brief Find out what sites this restraint is configured to act on.
-         * \return
-         */
-        virtual std::vector<int> sites() const = 0;
+    /*!
+     * \brief Find out what sites this restraint is configured to act on.
+     * \return
+     */
+    virtual std::vector<int> sites() const = 0;
 
-        /*!
-         * \brief Allow Session-mediated interaction with other resources or workflow elements.
-         *
-         * \param resources temporary access to the resources provided by the session for additional configuration.
-         *
-         * A module implements this method to receive a handle to resources configured for this particular workflow
-         * element.
-         *
-         * \internal
-         * \todo This should be more general than the RestraintPotential interface.
-         */
-        virtual void bindSession(gmxapi::SessionResources* resources) { (void)resources; }
+    /*!
+     * \brief Allow Session-mediated interaction with other resources or workflow elements.
+     *
+     * \param resources temporary access to the resources provided by the session for additional configuration.
+     *
+     * A module implements this method to receive a handle to resources configured for this particular workflow
+     * element.
+     *
+     * \internal
+     * \todo This should be more general than the RestraintPotential interface.
+     */
+    virtual void bindSession(gmxapi::SessionResources* resources) { (void)resources; }
 };
 
-}      // end namespace gmx
+} // end namespace gmx
 
-#endif //GMX_PULLING_PULLPOTENTIAL_H
+#endif // GMX_PULLING_PULLPOTENTIAL_H

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
  *
  * This flag is set automatically, and should not be set by the user.
  */
-#define SPAR_SET      1
+#define SPAR_SET 1
 /*! \brief
  * If not set, an error is reported if the parameter is not specified by the
  * user.
@@ -76,7 +76,7 @@
  * The flag is cleared before sel_initfunc() if the value provided is actually
  * static.
  */
-#define SPAR_DYNAMIC  4
+#define SPAR_DYNAMIC 4
 /*! \brief
  * If set, the parameter value is parsed into sorted ranges.
  *
@@ -91,7 +91,7 @@
  * ranges. \p gmx_ana_selparam_t::nval should be 1 or \ref SPAR_VARNUM should be
  * specified; other values would lead to unpredictable behavior.
  */
-#define SPAR_RANGES   8
+#define SPAR_RANGES 8
 /*! \brief
  * If set, the parameter can have any number of values.
  *
@@ -108,7 +108,7 @@
  *
  * Cannot be combined with \ref GROUP_VALUE parameters.
  */
-#define SPAR_VARNUM   16
+#define SPAR_VARNUM 16
 /*! \brief
  * If set, the parameter can have a separate value for each atom.
  *
@@ -117,7 +117,7 @@
  *
  * Cannot be combined with \ref POS_VALUE or \ref GROUP_VALUE parameters.
  */
-#define SPAR_ATOMVAL  32
+#define SPAR_ATOMVAL 32
 /*! \brief
  * If set, the parameter takes one of a set of predefined strings.
  *
@@ -134,7 +134,7 @@
  * array for multiple instances of the same method is automatically taken care
  * of.
  */
-#define SPAR_ENUMVAL  128
+#define SPAR_ENUMVAL 128
 /*@}*/
 
 /*! \internal \brief
@@ -143,7 +143,7 @@
 typedef struct gmx_ana_selparam_t
 {
     /** Name of the parameter. */
-    const char         *name;
+    const char* name;
     /*! \brief
      * The parameter value.
      *
@@ -164,7 +164,7 @@ typedef struct gmx_ana_selparam_t
      * makes a copy of the parameter structure for each instance of the
      * method, and the original parameter array is not changed.
      */
-    gmx_ana_selvalue_t  val;
+    gmx_ana_selvalue_t val;
     /*! \brief
      * Pointer to store the number of values.
      *
@@ -176,17 +176,16 @@ typedef struct gmx_ana_selparam_t
      * Should be initialized to NULL in the definition a \c gmx_ana_selmethod_t
      * and initialized in sel_datafunc().
      */
-    int                *nvalptr;
+    int* nvalptr;
     /*! \brief
      * Flags that alter the way the parameter is parsed/handled.
      *
      * See \ref selparam_flags for allowed values.
      */
-    int                 flags;
+    int flags;
 } gmx_ana_selparam_t;
 
 /** Finds a parameter from an array by name. */
-gmx_ana_selparam_t *
-gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param);
+gmx_ana_selparam_t* gmx_ana_selparam_find(const char* name, int nparam, gmx_ana_selparam_t* param);
 
 #endif

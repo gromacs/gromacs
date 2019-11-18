@@ -44,8 +44,6 @@ Files
   particular compiler that had problems with this, and a workaround is
   possible if/when that starts to affect more than a few of the test files).
 
-.. TODO: Consider usage of underscores vs dashes in file names.
-
 Common guidelines for C and C++ code
 ------------------------------------
 
@@ -77,9 +75,9 @@ C code
 C++ code
 --------
 
-* Use CamelCase for all names.  Start types (such as classes, structs, and
-  typedefs) with a capital letter, other names (functions, variables) with a
-  lowercase letter.
+* Use CamelCase for all names.  Start types (such as classes, structs,
+  typedefs and enum values) with a capital letter, other names (functions,
+  variables) with a lowercase letter.
   You may use an all-lowercase name with underscores if your class closely
   resembles an external construct (e.g., a standard library construct) named
   that way.
@@ -104,18 +102,56 @@ C++ code
   variables and an ``e`` prefix for enumerated variables and/or values).
   Instead, make the names long with a good description of what they control,
   typically including a verb for boolean variables, like ``foundAtom``.
-* It is a good idea to include the name of the enum type
+* Prefer class enums over regular ones, so that unexpected conversions to
+  int do not happen.
+* When using a non-class enum, prefer to include the name of the enumeration type
   as a base in the name of enum values, e.g., ``HelpOutputFormat_Console``,
   in particular for settings exposed to other modules.
 * Prefer to use enumerated types and values instead of booleans as control
   parameters to functions. It is reasonably easy to understand what the
-  argument ``HelpOutputFormat_Console`` is controling, while it is almost
+  argument ``HelpOutputFormat_Console`` is controlling, while it is almost
   impossible to decipher ``TRUE`` in the same place without checking the
   documentation for the role of the parameter.
 
 The rationale for the trailing underscore and the global/static prefixes is
 that it is immediately clear whether a variable referenced in a method is local
 to the function or has wider scope, improving the readability of the code.
+
+Code for GPUs
+-------------
+
+Rationale: on GPUs, using the right memory space is often performance critical.
+
+* In CUDA device code ``sm_``, ``gm_``, and ``cm_`` prefixes are used for
+  shared, global and constant memory. The absence of a prefix indicates
+  register space. Same prefixes are used in OpenCL code, where ``sm_``
+  indicates local memory and no prefixes are added to variables in private
+  address space.
+* Data transferred to and from host has to live in both CPU and GPU memory
+  spaces. Therefore it is typical to have a pointer or container (in CUDA), or
+  memory buffer (in OpenCL) in host memory that has a device-based counterpart.
+  To easily distinguish these, the variables names for such objects are
+  prefixed ``h_`` and ``d_`` and have identical names otherwise. Example:
+  ``h_masses``, and ``d_masses``.
+* In all other cases, pointers to host memory are not required to have the
+  prefix ``h_`` (even in parts of the host code, where both host and device
+  pointers are present). The device pointers should always have the prefix
+  ``d_`` or ``gm_``.
+* In case GPU kernel arguments are combined into a structure, it is preferred
+  that all device memory pointers within the structure have the prefix ``d_``
+  (i.e. ``kernelArgs.d_data`` is preferred to ``d_kernelArgs.data``,
+  whereas both ``d_kernelArgs.d_data`` and ``kernelArgs.data`` are not
+  acceptable).
+* Note that the same pointer can have the prefix ``d_`` in the host code,
+  and ``gm_`` in the device code. For example, if ``d_data`` is passed to
+  the kernel as an argument, it should be aliased to ``gm_data`` in the
+  kernel arguments list. In case a device pointer is a field of a passed
+  structure, it can be used directly or aliased to a pointer with ``gm_``
+  prefix (i.e. ``kernelArgs.d_data`` can be used as is or aliased to
+  ``gm_data`` inside the kernel).
+* Avoid using uninformative names for CUDA warp, thread, block indexes and
+  their OpenCL analogs (i.e. ``threadIndex`` is preferred to ``i`` or
+  ``atomIndex``).
 
 Unit tests
 ----------

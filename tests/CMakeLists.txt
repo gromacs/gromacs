@@ -183,6 +183,7 @@ endif()
 # Physical validation tests are opt-in via -DGMX_PHYSICAL_VALIDATION=ON
 #
 if(GMX_PHYSICAL_VALIDATION)
+    include(FindPythonModule)
     # physical validation suite is distributed with the source
     set(PHYSVALTEST_SOURCE_PATH
             "${CMAKE_CURRENT_SOURCE_DIR}/physicalvalidation")
@@ -276,21 +277,11 @@ if(GMX_PHYSICAL_VALIDATION)
         # End copied from regression tests.
         #
 
-        #
-        # TODO: Switch to python >= 3.3. For now, use 2.7 for compatibility with rest of build system.
-        #
-        # ${PYTHON_EXECUTABLE} can only be set for one version per build system.
-        # Currently, the following files set 2.7 explicitly:
-        # * cmake/CheckTarget.cmake
-        # * docs/CMakeList.txt
-        # Parts of the documentation rely on python scripts.
-        # These need to be ported to be able to make the move to python 3.
-        #
-        if (NOT PYTHON_EXECUTABLE)
+        if (NOT PYTHONINTERP_FOUND)
             message(FATAL_ERROR
-                    "Python not found. Physical validation relies on python >= 3.3 (python 2.7 supported, but\
-                    deprecated). Install python, set PYTHON_EXECUTABLE to the python location, or set\
-                    GMX_PHYSCIAL_VALIDATION=OFF to disable the physical validation tests.")
+                    "Python not found. Physical validation requires python. \
+                     Install python, set PYTHON_EXECUTABLE to a valid python location, \
+                     or set GMX_PHYSICAL_VALIDATION=OFF to disable the physical validation tests.")
         endif()
         #
         foreach(module numpy scipy pymbar) # add further modules if necessary
@@ -299,7 +290,7 @@ if(GMX_PHYSICAL_VALIDATION)
             if(NOT PYTHONMODULE_${module_upper})
                 message(WARNING
                         "Python module ${module} not found. Physical validation relies on ${module}. Make sure\
-                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSCIAL_VALIDATION=OFF to disable\
+                        ${module} can be found by PYTHON_EXECUTABLE, or set GMX_PHYSICAL_VALIDATION=OFF to disable\
                         the physical validation tests.")
             endif()
         endforeach()

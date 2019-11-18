@@ -92,55 +92,41 @@ namespace
  */
 class TestProgramContext : public IProgramContext
 {
-    public:
-        /*! \brief
-         * Initializes a test program context.
-         *
-         * \param[in] context  Current \Gromacs program context.
-         */
-        explicit TestProgramContext(const IProgramContext &context)
-            : context_(context), dataPath_(CMAKE_SOURCE_DIR)
-        {
-        }
+public:
+    /*! \brief
+     * Initializes a test program context.
+     *
+     * \param[in] context  Current \Gromacs program context.
+     */
+    explicit TestProgramContext(const IProgramContext& context) :
+        context_(context),
+        dataPath_(CMAKE_SOURCE_DIR)
+    {
+    }
 
-        /*! \brief
-         * Sets the source directory root from which to look for data files.
-         */
-        void overrideSourceRoot(const std::string &sourceRoot)
-        {
-            dataPath_ = sourceRoot;
-        }
+    /*! \brief
+     * Sets the source directory root from which to look for data files.
+     */
+    void overrideSourceRoot(const std::string& sourceRoot) { dataPath_ = sourceRoot; }
 
-        const char *programName() const override
-        {
-            return context_.programName();
-        }
-        const char *displayName() const override
-        {
-            return context_.displayName();
-        }
-        const char *fullBinaryPath() const override
-        {
-            return context_.fullBinaryPath();
-        }
-        InstallationPrefixInfo installationPrefix() const override
-        {
-            return InstallationPrefixInfo(dataPath_.c_str(), true);
-        }
-        const char *commandLine() const override
-        {
-            return context_.commandLine();
-        }
+    const char*            programName() const override { return context_.programName(); }
+    const char*            displayName() const override { return context_.displayName(); }
+    const char*            fullBinaryPath() const override { return context_.fullBinaryPath(); }
+    InstallationPrefixInfo installationPrefix() const override
+    {
+        return InstallationPrefixInfo(dataPath_.c_str(), true);
+    }
+    const char* commandLine() const override { return context_.commandLine(); }
 
-    private:
-        const IProgramContext           &context_;
-        std::string                      dataPath_;
+private:
+    const IProgramContext& context_;
+    std::string            dataPath_;
 };
 
 //! Prints the command-line options for the unit test binary.
-void printHelp(const Options &options)
+void printHelp(const Options& options)
 {
-    const std::string &program = getProgramContext().displayName();
+    const std::string& program = getProgramContext().displayName();
     std::fprintf(stderr,
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
@@ -154,18 +140,22 @@ void printHelp(const Options &options)
 // Never releases ownership.
 std::unique_ptr<TestProgramContext> g_testContext;
 
-}       // namespace
+} // namespace
 
 //! \cond internal
-void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
-                   bool usesHardwareDetection, int *argc, char ***argv)
+void initTestUtils(const char* dataPath,
+                   const char* tempPath,
+                   bool        usesMpi,
+                   bool        usesHardwareDetection,
+                   int*        argc,
+                   char***     argv)
 {
-#if !defined NDEBUG &&                                                  \
-    !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
-    && defined __OPTIMIZE__)
+#if !defined NDEBUG                                                                         \
+        && !((defined __clang__ || (defined(__GNUC__) && !defined(__ICC) && __GNUC__ == 7)) \
+             && defined __OPTIMIZE__)
     gmx_feenableexcept();
 #endif
-    const CommandLineProgramContext &context = initForCommandLine(argc, argv);
+    const CommandLineProgramContext& context = initForCommandLine(argc, argv);
     try
     {
         if (!usesMpi && gmx_node_num() > 1)
@@ -175,7 +165,8 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
             // continue with the master rank here.
             if (gmx_node_rank() == 0)
             {
-                fprintf(stderr, "NOTE: You are running %s on %d MPI ranks, "
+                fprintf(stderr,
+                        "NOTE: You are running %s on %d MPI ranks, "
                         "but it is does not contain MPI-enabled tests. "
                         "The test will now exit.\n",
                         context.programName(), gmx_node_num());
@@ -195,15 +186,13 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != nullptr)
         {
-            TestFileManager::setInputDataDirectory(
-                    Path::join(CMAKE_SOURCE_DIR, dataPath));
+            TestFileManager::setInputDataDirectory(Path::join(CMAKE_SOURCE_DIR, dataPath));
         }
         if (tempPath != nullptr)
         {
             TestFileManager::setGlobalOutputTempDirectory(tempPath);
         }
-        TestFileManager::setTestSimulationDatabaseDirectory(
-                GMX_TESTSIMULATIONDATABASE_DIR);
+        TestFileManager::setTestSimulationDatabaseDirectory(GMX_TESTSIMULATIONDATABASE_DIR);
 
         bool        bHelp = false;
         std::string sourceRoot;
@@ -211,13 +200,13 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit
         // unintuitive behavior.
-        options.addOption(BooleanOption("h").store(&bHelp)
-                              .description("Print GROMACS-specific unit test options"));
+        options.addOption(BooleanOption("h").store(&bHelp).description(
+                "Print GROMACS-specific unit test options"));
         options.addOption(BooleanOption("help").store(&bHelp).hidden());
         options.addOption(BooleanOption("?").store(&bHelp).hidden());
         // TODO: Make this into a FileNameOption (or a DirectoryNameOption).
-        options.addOption(StringOption("src-root").store(&sourceRoot)
-                              .description("Override source tree location (for data files)"));
+        options.addOption(
+                StringOption("src-root").store(&sourceRoot).description("Override source tree location (for data files)"));
         // The potential MPI test event listener must be initialized first,
         // because it should appear in the start of the event listener list,
         // before other event listeners that may generate test failures
@@ -235,7 +224,7 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
             CommandLineParser(&options).parse(argc, *argv);
             options.finish();
         }
-        catch (const UserInputError &)
+        catch (const UserInputError&)
         {
             printHelp(options);
             throw;
@@ -247,11 +236,10 @@ void initTestUtils(const char *dataPath, const char *tempPath, bool usesMpi,
         if (!sourceRoot.empty())
         {
             g_testContext->overrideSourceRoot(sourceRoot);
-            TestFileManager::setInputDataDirectory(
-                    Path::join(sourceRoot, dataPath));
+            TestFileManager::setInputDataDirectory(Path::join(sourceRoot, dataPath));
         }
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
         printFatalErrorMessage(stderr, ex);
         int retcode = processExceptionAtExitForCommandLine(ex);

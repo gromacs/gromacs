@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2009-2016, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -328,8 +329,10 @@ class SelectionParserSymbolTable;
 struct SelMethodEvalContext
 {
     //! Initializes the context with given values.
-    SelMethodEvalContext(const gmx_mtop_t *top, t_trxframe *fr, const t_pbc *pbc)
-        : top(top), fr(fr), pbc(pbc)
+    SelMethodEvalContext(const gmx_mtop_t* top, t_trxframe* fr, const t_pbc* pbc) :
+        top(top),
+        fr(fr),
+        pbc(pbc)
     {
     }
 
@@ -339,20 +342,20 @@ struct SelMethodEvalContext
      * Can be NULL if \ref SMETH_REQTOP or \ref SMETH_REQMASS is not set for
      * the method.
      */
-    const gmx_mtop_t *top;
+    const gmx_mtop_t* top;
     /*! \brief
      * Trajectory frame.
      *
      * For static methods that are evaluated based on topology information
      * alone, this is `NULL`.
      */
-    t_trxframe       *fr;
+    t_trxframe* fr;
     /*! \brief
      * Periodic boundary condition information.
      *
      * Can be `NULL`, in which case PBC should not be used.
      */
-    const t_pbc      *pbc;
+    const t_pbc* pbc;
 };
 
 } // namespace gmx
@@ -362,25 +365,25 @@ struct SelMethodEvalContext
  */
 /*@{*/
 //! If set, the method requires topology information.
-#define SMETH_REQTOP     1
+#define SMETH_REQTOP 1
 //! If set, the method requires atom masses.
-#define SMETH_REQMASS    2
+#define SMETH_REQMASS 2
 //! If set, the method can only be evaluated dynamically.
-#define SMETH_DYNAMIC    4
+#define SMETH_DYNAMIC 4
 /*! \brief
  * If set, the method evaluates to a single value.
  *
  * The default is that the method evaluates to a value for each input atom.
  * Cannot be combined with \ref SMETH_VARNUMVAL.
  */
-#define SMETH_SINGLEVAL  8
+#define SMETH_SINGLEVAL 8
 /*! \brief
  * If set, the method evaluates to an arbitrary number of values.
  *
  * The default is that the method evaluates to a value for each input atom.
  * Cannot be combined with \ref SMETH_SINGLEVAL or with \ref GROUP_VALUE.
  */
-#define SMETH_VARNUMVAL  16
+#define SMETH_VARNUMVAL 16
 /*! \brief
  * If set, the method evaluates to single-character strings.
  *
@@ -390,7 +393,7 @@ struct SelMethodEvalContext
  * character in the strings in the output data structure and should not change
  * the string pointers.
  */
-#define SMETH_CHARVAL    64
+#define SMETH_CHARVAL 64
 /*! \brief
  * If set, the method accepts unsorted atoms in its input parameters.
  *
@@ -406,7 +409,7 @@ struct SelMethodEvalContext
  * The method type should be \ref GROUP_VALUE or \ref NO_VALUE .
  * Cannot be combined with \ref SMETH_SINGLEVAL or \ref SMETH_VARNUMVAL .
  */
-#define SMETH_MODIFIER   256
+#define SMETH_MODIFIER 256
 /*@}*/
 
 /*! \brief
@@ -443,7 +446,7 @@ struct SelMethodEvalContext
  *
  * If the method takes any parameters, this function must be provided.
  */
-typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
+typedef void* (*sel_datafunc)(int npar, gmx_ana_selparam_t* param);
 /*! \brief
  * Sets the position calculation collection for the method.
  *
@@ -456,7 +459,7 @@ typedef void *(*sel_datafunc)(int npar, gmx_ana_selparam_t *param);
  * The pointer \p pcc should then be stored and used for initialization for
  * any position calculation structures.
  */
-typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data);
+typedef void (*sel_posfunc)(gmx::PositionCalculationCollection* pcc, void* data);
 /*! \brief
  * Does initialization based on topology and/or parameter values.
  *
@@ -501,8 +504,7 @@ typedef void  (*sel_posfunc)(gmx::PositionCalculationCollection *pcc, void *data
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_initfunc)(const gmx_mtop_t *top, int npar,
-                              gmx_ana_selparam_t *param, void *data);
+typedef void (*sel_initfunc)(const gmx_mtop_t* top, int npar, gmx_ana_selparam_t* param, void* data);
 /*! \brief
  * Initializes output data structure.
  *
@@ -530,8 +532,7 @@ typedef void  (*sel_initfunc)(const gmx_mtop_t *top, int npar,
  * This function may be called multiple times for the same method if the
  * method takes parameters with \ref SPAR_ATOMVAL set.
  */
-typedef void  (*sel_outinitfunc)(const gmx_mtop_t *top, gmx_ana_selvalue_t *out,
-                                 void *data);
+typedef void (*sel_outinitfunc)(const gmx_mtop_t* top, gmx_ana_selvalue_t* out, void* data);
 /*! \brief
  * Frees the internal data.
  *
@@ -549,7 +550,7 @@ typedef void  (*sel_outinitfunc)(const gmx_mtop_t *top, gmx_ana_selvalue_t *out,
  * Pointers set as the value pointer of \ref SPAR_ENUMVAL parameters should not
  * be freed.
  */
-typedef void  (*sel_freefunc)(void *data);
+typedef void (*sel_freefunc)(void* data);
 
 /*! \brief
  * Initializes the evaluation for a new frame.
@@ -569,8 +570,7 @@ typedef void  (*sel_freefunc)(void *data);
  * For static methods, it is called once, with \p fr and \p pbc set to
  * NULL.
  */
-typedef void  (*sel_framefunc)(const gmx::SelMethodEvalContext &context,
-                               void                            *data);
+typedef void (*sel_framefunc)(const gmx::SelMethodEvalContext& context, void* data);
 /*! \brief
  * Evaluates a selection method.
  *
@@ -597,9 +597,10 @@ typedef void  (*sel_framefunc)(const gmx::SelMethodEvalContext &context,
  * contains such an atom in case the \p fr has been loaded from a trajectory
  * that only contains a subset of the system.
  */
-typedef void  (*sel_updatefunc)(const gmx::SelMethodEvalContext &context,
-                                gmx_ana_index_t *g, gmx_ana_selvalue_t *out,
-                                void *data);
+typedef void (*sel_updatefunc)(const gmx::SelMethodEvalContext& context,
+                               gmx_ana_index_t*                 g,
+                               gmx_ana_selvalue_t*              out,
+                               void*                            data);
 /*! \brief
  * Evaluates a selection method using positions.
  *
@@ -627,9 +628,10 @@ typedef void  (*sel_updatefunc)(const gmx::SelMethodEvalContext &context,
  * contains such an atom in case the \p fr has been loaded from a trajectory
  * that only contains a subset of the system.
  */
-typedef void  (*sel_updatefunc_pos)(const gmx::SelMethodEvalContext &context,
-                                    gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out,
-                                    void *data);
+typedef void (*sel_updatefunc_pos)(const gmx::SelMethodEvalContext& context,
+                                   gmx_ana_pos_t*                   pos,
+                                   gmx_ana_selvalue_t*              out,
+                                   void*                            data);
 
 /*! \internal
  * \brief
@@ -645,27 +647,27 @@ struct gmx_ana_selmethod_help_t
      *
      * If NULL, the name of the method is used.
      */
-    const char         *syntax;
+    const char* syntax;
     /*! \brief
      * Title for the help text in \p help.
      *
      * If NULL, the name of the method is used.
      * Only used if `nlhelp > 0`.
      */
-    const char         *helpTitle;
+    const char* helpTitle;
     /*! \brief
      * Number of strings in \p help.
      *
      * Set to 0 if \p help is NULL.
      */
-    int                 nlhelp;
+    int nlhelp;
     /*! \brief
      * Detailed help for the method.
      *
      * If there is no help available in addition to \p syntax, this can be set
      * to NULL.
      */
-    const char *const  *help;
+    const char* const* help;
 };
 
 /*! \internal
@@ -684,52 +686,50 @@ struct gmx_ana_selmethod_help_t
 struct gmx_ana_selmethod_t
 {
     /** Name of the method. */
-    const char         *name;
+    const char* name;
     /** Type which the method returns. */
-    e_selvalue_t        type;
+    e_selvalue_t type;
     /*! \brief
      * Flags to specify how the method should be handled.
      *
      * See \ref selmethod_flags for allowed values.
      */
-    int                 flags;
+    int flags;
     /** Number of parameters the method takes. */
-    int                 nparams;
+    int nparams;
     /** Pointer to the array of parameter descriptions. */
-    gmx_ana_selparam_t *param;
+    gmx_ana_selparam_t* param;
 
     /** Function for allocating and initializing internal data and parameters. */
-    sel_datafunc        init_data;
+    sel_datafunc init_data;
     /** Function to set the position calculation collection. */
-    sel_posfunc         set_poscoll;
+    sel_posfunc set_poscoll;
     /** Function to do initialization based on topology and/or parameter values. */
-    sel_initfunc        init;
+    sel_initfunc init;
     /** Function to initialize output data structure. */
-    sel_outinitfunc     outinit;
+    sel_outinitfunc outinit;
     /** Function to free the internal data. */
-    sel_freefunc        free;
+    sel_freefunc free;
 
     /** Function to initialize the calculation for a new frame. */
-    sel_framefunc       init_frame;
+    sel_framefunc init_frame;
     /** Function to evaluate the value. */
-    sel_updatefunc      update;
+    sel_updatefunc update;
     /** Function to evaluate the value using positions. */
-    sel_updatefunc_pos  pupdate;
+    sel_updatefunc_pos pupdate;
 
     /** Help data for the method. */
     gmx_ana_selmethod_help_t help;
 };
 
 /** Registers a selection method. */
-int
-gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable *symtab,
-                           const char *name, gmx_ana_selmethod_t *method);
+int gmx_ana_selmethod_register(gmx::SelectionParserSymbolTable* symtab,
+                               const char*                      name,
+                               gmx_ana_selmethod_t*             method);
 /** Registers all selection methods in the library. */
-int
-gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab);
+int gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable* symtab);
 
 /** Finds a parameter from a selection method by name. */
-gmx_ana_selparam_t *
-gmx_ana_selmethod_find_param(const char *name, gmx_ana_selmethod_t *method);
+gmx_ana_selparam_t* gmx_ana_selmethod_find_param(const char* name, gmx_ana_selmethod_t* method);
 
 #endif

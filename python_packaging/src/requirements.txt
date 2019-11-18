@@ -1,0 +1,6 @@
+cmake>=3.9.6
+pip>=10.1
+networkx>=2.0
+numpy>=1
+setuptools>=28.0.0
+scikit-build>=0.7

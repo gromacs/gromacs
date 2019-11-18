@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,10 +41,9 @@
 namespace gmx
 {
 
-static inline void
-simdPrefetch(const void * m)
+static inline void simdPrefetch(const void* m)
 {
-    _mm_prefetch(reinterpret_cast<const char *>(m), _MM_HINT_T0);
+    _mm_prefetch(reinterpret_cast<const char*>(m), _MM_HINT_T0);
 }
 
 /*! \brief Return integer from AVX-512 mask
@@ -53,8 +52,7 @@ simdPrefetch(const void * m)
  *
  *  \return Short integer representation of mask
  */
-static inline short
-avx512Mask2Int(__mmask16 m)
+static inline short avx512Mask2Int(__mmask16 m)
 {
     return static_cast<short>(m);
 }
@@ -65,12 +63,11 @@ avx512Mask2Int(__mmask16 m)
  *
  *  \return Mask suitable for use with AVX-512 instructions.
  */
-static inline __mmask16
-avx512Int2Mask(short i)
+static inline __mmask16 avx512Int2Mask(short i)
 {
     return static_cast<__mmask16>(i);
 }
 
-}
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_512_GENERAL_H

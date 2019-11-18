@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,44 +43,42 @@
 
 #include "gromacs/utility/compare.h"
 
-void cmp_rvec(FILE *fp, const char *s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
+void cmp_rvec(FILE* fp, const char* s, int index, const rvec i1, const rvec i2, real ftol, real abstol)
 {
-    if (!equal_real(i1[XX], i2[XX], ftol, abstol) ||
-        !equal_real(i1[YY], i2[YY], ftol, abstol) ||
-        !equal_real(i1[ZZ], i2[ZZ], ftol, abstol))
+    if (!equal_real(i1[XX], i2[XX], ftol, abstol) || !equal_real(i1[YY], i2[YY], ftol, abstol)
+        || !equal_real(i1[ZZ], i2[ZZ], ftol, abstol))
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%5d] (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n",
-                    s, index, i1[XX], i1[YY], i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
+            fprintf(fp, "%s[%5d] (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n", s, index,
+                    i1[XX], i1[YY], i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
         }
         else
         {
-            fprintf(fp, "%s (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n",
-                    s, i1[XX], i1[YY], i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
+            fprintf(fp, "%s (%12.5e %12.5e %12.5e) - (%12.5e %12.5e %12.5e)\n", s, i1[XX], i1[YY],
+                    i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
         }
     }
 }
 
-void cmp_ivec(FILE *fp, const char *s, int index, const ivec i1, const ivec i2)
+void cmp_ivec(FILE* fp, const char* s, int index, const ivec i1, const ivec i2)
 {
     if ((i1[XX] != i2[XX]) || (i1[YY] != i2[YY]) || (i1[ZZ] != i2[ZZ]))
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%5d] (%8d,%8d,%8d - %8d,%8d,%8d)\n", s, index,
-                    i1[XX], i1[YY], i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
+            fprintf(fp, "%s[%5d] (%8d,%8d,%8d - %8d,%8d,%8d)\n", s, index, i1[XX], i1[YY], i1[ZZ],
+                    i2[XX], i2[YY], i2[ZZ]);
         }
         else
         {
-            fprintf(fp, "%s (%8d,%8d,%8d - %8d,%8d,%8d)\n", s,
-                    i1[XX], i1[YY], i1[ZZ], i2[XX], i2[YY], i2[ZZ]);
+            fprintf(fp, "%s (%8d,%8d,%8d - %8d,%8d,%8d)\n", s, i1[XX], i1[YY], i1[ZZ], i2[XX],
+                    i2[YY], i2[ZZ]);
         }
     }
 }
 
-static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
-                             real ftol, real abstol)
+static void cmp_rvecs_rmstol(FILE* fp, const char* title, int n, const rvec x1[], const rvec x2[], real ftol, real abstol)
 {
     int    i, m;
     double rms;
@@ -94,15 +92,15 @@ static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, const rvec x1[]
     {
         for (m = 0; m < DIM; m++)
         {
-            rms += x1[i][m]*x1[i][m] + x2[i][m]*x2[i][m];
+            rms += x1[i][m] * x1[i][m] + x2[i][m] * x2[i][m];
         }
     }
-    rms = sqrt(rms/(2*n*DIM));
+    rms = sqrt(rms / (2 * n * DIM));
 
     /* Convert the relative tolerance into an absolute tolerance */
-    if (ftol*rms < abstol)
+    if (ftol * rms < abstol)
     {
-        abstol = ftol*rms;
+        abstol = ftol * rms;
     }
 
     /* And now do the actual comparision */
@@ -112,8 +110,7 @@ static void cmp_rvecs_rmstol(FILE *fp, const char *title, int n, const rvec x1[]
     }
 }
 
-void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x2[],
-               gmx_bool bRMSD, real ftol, real abstol)
+void cmp_rvecs(FILE* fp, const char* title, int n, const rvec x1[], const rvec x2[], gmx_bool bRMSD, real ftol, real abstol)
 {
     int    i, m;
     double d, ssd;
@@ -125,11 +122,11 @@ void cmp_rvecs(FILE *fp, const char *title, int n, const rvec x1[], const rvec x
         {
             for (m = 0; m < DIM; m++)
             {
-                d    = x1[i][m] - x2[i][m];
-                ssd += d*d;
+                d = x1[i][m] - x2[i][m];
+                ssd += d * d;
             }
         }
-        fprintf(fp, "%s RMSD %g\n", title, std::sqrt(ssd/n));
+        fprintf(fp, "%s RMSD %g\n", title, std::sqrt(ssd / n));
     }
     else
     {

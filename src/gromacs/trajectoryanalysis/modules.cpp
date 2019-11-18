@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,7 +47,9 @@
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
+#include "modules/convert_trj.h"
 #include "modules/distance.h"
+#include "modules/extract_cluster.h"
 #include "modules/freevolume.h"
 #include "modules/pairdist.h"
 #include "modules/rdf.h"
@@ -73,25 +75,25 @@ namespace
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager,
-                    CommandLineModuleGroup    group)
+template<class ModuleInfo>
+void registerModule(CommandLineModuleManager* manager, CommandLineModuleGroup group)
 {
     TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
+            manager, ModuleInfo::name, ModuleInfo::shortDescription, &ModuleInfo::create);
     group.addModule(ModuleInfo::name);
 }
 
-}   // namespace
+} // namespace
 
 //! \cond libapi
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
+void registerTrajectoryAnalysisModules(CommandLineModuleManager* manager)
 {
     using namespace gmx::analysismodules;
     CommandLineModuleGroup group = manager->addModuleGroup("Trajectory analysis");
     registerModule<AngleInfo>(manager, group);
+    registerModule<ConvertTrjInfo>(manager, group);
     registerModule<DistanceInfo>(manager, group);
+    registerModule<ExtractClusterInfo>(manager, group);
     registerModule<FreeVolumeInfo>(manager, group);
     registerModule<PairDistanceInfo>(manager, group);
     registerModule<RdfInfo>(manager, group);

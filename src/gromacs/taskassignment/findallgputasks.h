@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,13 +42,43 @@
 #ifndef GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
 #define GMX_TASKASSIGNMENT_FINDALLGPUTASKS_H
 
-#include "gromacs/taskassignment/taskassignment.h"
-#include "gromacs/utility/arrayref.h"
+#include <vector>
 
 namespace gmx
 {
 
+enum class GpuTask;
+enum class TaskTarget;
 class PhysicalNodeCommunicator;
+template<typename T>
+class ArrayRef;
+//! Container of compute tasks suitable to run on a GPU e.g. on each rank of a node.
+using GpuTasksOnRanks = std::vector<std::vector<GpuTask>>;
+
+/*! \brief Returns container of all tasks on this rank
+ * that are eligible for GPU execution.
+ *
+ * \param[in]  haveGpusOnThisPhysicalNode Whether there are any GPUs on this physical node.
+ * \param[in]  nonbondedTarget            The user's choice for mdrun -nb for where to assign
+ *                                        short-ranged nonbonded interaction tasks.
+ * \param[in]  pmeTarget                  The user's choice for mdrun -pme for where to assign
+ *                                        long-ranged PME nonbonded interaction tasks.
+ * \param[in]  bondedTarget               The user's choice for mdrun -bonded for where to assign tasks.
+ * \param[in]  updateTarget               The user's choice for mdrun -update for where to assign tasks.
+ * \param[in]  useGpuForNonbonded         Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  useGpuForPme               Whether GPUs will be used for PME interactions.
+ * \param[in]  rankHasPpTask              Whether this rank has a PP task
+ * \param[in]  rankHasPmeTask             Whether this rank has a PME task
+ */
+std::vector<GpuTask> findGpuTasksOnThisRank(bool       haveGpusOnThisPhysicalNode,
+                                            TaskTarget nonbondedTarget,
+                                            TaskTarget pmeTarget,
+                                            TaskTarget bondedTarget,
+                                            TaskTarget updateTarget,
+                                            bool       useGpuForNonbonded,
+                                            bool       useGpuForPme,
+                                            bool       rankHasPpTask,
+                                            bool       rankHasPmeTask);
 
 /*! \brief Returns container of all tasks on all ranks of this node
  * that are eligible for GPU execution.
@@ -56,10 +86,9 @@ class PhysicalNodeCommunicator;
  * Perform all necessary communication for preparing for task
  * assignment. Separating this aspect makes it possible to unit test
  * the logic of task assignment. */
-GpuTasksOnRanks
-findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
-                          const PhysicalNodeCommunicator &physicalNodeComm);
+GpuTasksOnRanks findAllGpuTasksOnThisNode(ArrayRef<const GpuTask>         gpuTasksOnThisRank,
+                                          const PhysicalNodeCommunicator& physicalNodeComm);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

@@ -77,22 +77,21 @@ class TestReferenceChecker;
  */
 class ITextBlockMatcher
 {
-    public:
-        virtual ~ITextBlockMatcher();
+public:
+    virtual ~ITextBlockMatcher();
 
-        /*! \brief
-         * Matches contents of a stream against reference data.
-         *
-         * \param  stream   Stream to match.
-         * \param  checker  Checker to use for matching.
-         *
-         * The method can change the state of the provided checker (e.g., by
-         * changing the default tolerance).
-         * The caller is responsible of providing a checker where such state
-         * changes do not matter.
-         */
-        virtual void checkStream(TextInputStream      *stream,
-                                 TestReferenceChecker *checker) = 0;
+    /*! \brief
+     * Matches contents of a stream against reference data.
+     *
+     * \param  stream   Stream to match.
+     * \param  checker  Checker to use for matching.
+     *
+     * The method can change the state of the provided checker (e.g., by
+     * changing the default tolerance).
+     * The caller is responsible of providing a checker where such state
+     * changes do not matter.
+     */
+    virtual void checkStream(TextInputStream* stream, TestReferenceChecker* checker) = 0;
 };
 
 //! Smart pointer for managing a ITextBlockMatcher.
@@ -112,12 +111,12 @@ typedef std::unique_ptr<ITextBlockMatcher> TextBlockMatcherPointer;
  */
 class ITextBlockMatcherSettings
 {
-    public:
-        //! Factory method that constructs the matcher after parameters are set.
-        virtual TextBlockMatcherPointer createMatcher() const = 0;
+public:
+    //! Factory method that constructs the matcher after parameters are set.
+    virtual TextBlockMatcherPointer createMatcher() const = 0;
 
-    protected:
-        virtual ~ITextBlockMatcherSettings();
+protected:
+    virtual ~ITextBlockMatcherSettings();
 };
 
 /*! \libinternal \brief
@@ -128,8 +127,8 @@ class ITextBlockMatcherSettings
  */
 class ExactTextMatch : public ITextBlockMatcherSettings
 {
-    public:
-        TextBlockMatcherPointer createMatcher() const override;
+public:
+    TextBlockMatcherPointer createMatcher() const override;
 };
 
 /*! \libinternal \brief
@@ -140,8 +139,8 @@ class ExactTextMatch : public ITextBlockMatcherSettings
  */
 class NoTextMatch : public ITextBlockMatcherSettings
 {
-    public:
-        TextBlockMatcherPointer createMatcher() const override;
+public:
+    TextBlockMatcherPointer createMatcher() const override;
 };
 
 /*! \libinternal \brief
@@ -158,17 +157,17 @@ class NoTextMatch : public ITextBlockMatcherSettings
  */
 class FilteringExactTextMatch : public ITextBlockMatcherSettings
 {
-    public:
-        //! Constructor
-        explicit FilteringExactTextMatch(std::vector<std::string> linesToSkip);
-        //! Factory method.
-        TextBlockMatcherPointer createMatcher() const override;
-        //! Add a regular expression for which a matching line should be skipped.
-        void addRegexToSkip(const std::string &lineToSkip);
-    private:
-        //! The regular expressions for lines that should be skipped.
-        std::vector<std::string> linesToSkip_;
+public:
+    //! Constructor
+    explicit FilteringExactTextMatch(std::vector<std::string> linesToSkip);
+    //! Factory method.
+    TextBlockMatcherPointer createMatcher() const override;
+    //! Add a regular expression for which a matching line should be skipped.
+    void addRegexToSkip(const std::string& lineToSkip);
 
+private:
+    //! The regular expressions for lines that should be skipped.
+    std::vector<std::string> linesToSkip_;
 };
 
 } // namespace test

@@ -33,5 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(TopologyTest topology-test
-  mtop.cpp)
+  exclusionblocks.cpp
+  mtop.cpp
+  symtab.cpp)
 

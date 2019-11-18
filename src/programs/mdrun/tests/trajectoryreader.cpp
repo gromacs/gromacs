@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@ namespace test
 {
 
 //! Helper function to obtain resources
-static t_trxframe *make_trxframe()
+static t_trxframe* make_trxframe()
 {
-    t_trxframe *frame;
+    t_trxframe* frame;
 
     snew(frame, 1);
     clear_trxframe(frame, true);
@@ -72,7 +72,7 @@ static t_trxframe *make_trxframe()
 }
 
 //! Helper function to clean up resources
-void done_trxframe(t_trxframe *fr)
+void done_trxframe(t_trxframe* fr)
 {
     // Free the contents, then the pointer itself
     sfree(fr->x);
@@ -82,44 +82,44 @@ void done_trxframe(t_trxframe *fr)
     sfree(fr);
 }
 
-TrajectoryFrameReader::TrajectoryFrameReader(const std::string &filename)
-    : filename_(filename),
-      trajectoryFileGuard_(nullptr),
-      trxframeGuard_(make_trxframe()),
-      haveReadFirstFrame_(false),
-      haveProbedForNextFrame_(false),
-      nextFrameExists_(false)
+TrajectoryFrameReader::TrajectoryFrameReader(const std::string& filename) :
+    filename_(filename),
+    trajectoryFileGuard_(nullptr),
+    trxframeGuard_(make_trxframe()),
+    haveReadFirstFrame_(false),
+    haveProbedForNextFrame_(false),
+    nextFrameExists_(false)
 {
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
     output_env_init_default(&oenv);
     oenvGuard_.reset(oenv);
 }
 
-bool
-TrajectoryFrameReader::readNextFrame()
+bool TrajectoryFrameReader::readNextFrame()
 {
     if (haveProbedForNextFrame_)
     {
         if (nextFrameExists_)
         {
-            GMX_THROW(APIError("This frame has already been probed for, it should be used before probing again."));
+            GMX_THROW(
+                    APIError("This frame has already been probed for, it should be used before "
+                             "probing again."));
         }
         else
         {
-            GMX_THROW(APIError("This frame has already been probed for, it doesn't exist, so there should not be subsequent attempts to probe for it."));
+            GMX_THROW(
+                    APIError("This frame has already been probed for, it doesn't exist, so there "
+                             "should not be subsequent attempts to probe for it."));
         }
     }
     haveProbedForNextFrame_ = true;
     // If there's a next frame, read it into trxframe_, and report the result.
     if (!haveReadFirstFrame_)
     {
-        t_trxstatus *trajectoryFile;
+        t_trxstatus* trajectoryFile;
         int          flags = TRX_READ_X | TRX_READ_V | TRX_READ_F;
-        nextFrameExists_ = read_first_frame(oenvGuard_.get(),
-                                            &trajectoryFile,
-                                            filename_.c_str(),
-                                            trxframeGuard_.get(),
-                                            flags);
+        nextFrameExists_   = read_first_frame(oenvGuard_.get(), &trajectoryFile, filename_.c_str(),
+                                            trxframeGuard_.get(), flags);
         if (!trajectoryFile)
         {
             GMX_THROW(FileIOError("Could not open trajectory file " + filename_ + " for reading"));
@@ -129,15 +129,13 @@ TrajectoryFrameReader::readNextFrame()
     }
     else
     {
-        nextFrameExists_ = read_next_frame(oenvGuard_.get(),
-                                           trajectoryFileGuard_.get(),
-                                           trxframeGuard_.get());
+        nextFrameExists_ =
+                read_next_frame(oenvGuard_.get(), trajectoryFileGuard_.get(), trxframeGuard_.get());
     }
     return nextFrameExists_;
 }
 
-TrajectoryFrame
-TrajectoryFrameReader::frame()
+TrajectoryFrame TrajectoryFrameReader::frame()
 {
     if (!haveProbedForNextFrame_)
     {
@@ -145,7 +143,9 @@ TrajectoryFrameReader::frame()
     }
     if (!nextFrameExists_)
     {
-        GMX_THROW(APIError("There is no next frame, so there should have been no attempt to get it. Perhaps the return value of readNextFrame() was misused."));
+        GMX_THROW(
+                APIError("There is no next frame, so there should have been no attempt to get it. "
+                         "Perhaps the return value of readNextFrame() was misused."));
     }
 
     // Prepare for reading future frames
@@ -156,5 +156,5 @@ TrajectoryFrameReader::frame()
     return TrajectoryFrame(*trxframeGuard_.get());
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

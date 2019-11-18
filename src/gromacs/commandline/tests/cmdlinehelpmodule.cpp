@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,9 +68,7 @@ typedef gmx::test::CommandLineModuleManagerTestBase CommandLineHelpModuleTest;
 
 TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
 {
-    const char *const cmdline[] = {
-        "test"
-    };
+    const char* const cmdline[] = { "test" };
     CommandLine       args(cmdline);
     initManager(args, "test");
     addModule("module", "First module");
@@ -84,13 +82,11 @@ TEST_F(CommandLineHelpModuleTest, PrintsGeneralHelp)
 
 TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
 {
-    const char *const cmdline[] = {
-        "test", "help", "topic"
-    };
+    const char* const cmdline[] = { "test", "help", "topic" };
     CommandLine       args(cmdline);
     initManager(args, "test");
     addModule("module", "First module");
-    MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
+    MockHelpTopic& topic = addHelpTopic("topic", "Test topic");
     topic.addSubTopic("sub1", "Subtopic 1", "");
     topic.addSubTopic("sub2", "Subtopic 2", "");
     using ::testing::_;
@@ -106,28 +102,25 @@ TEST_F(CommandLineHelpModuleTest, PrintsHelpOnTopic)
  *
  * \ingroup module_commandline
  */
-void initOptionsBasic(gmx::IOptionsContainer                 *options,
-                      gmx::ICommandLineOptionsModuleSettings *settings)
+void initOptionsBasic(gmx::IOptionsContainer* options, gmx::ICommandLineOptionsModuleSettings* settings)
 {
-    const char *const desc[] = {
-        "Sample description",
-        "for testing [THISMODULE]."
-    };
+    const char* const desc[] = { "Sample description", "for testing [THISMODULE]." };
     settings->setHelpText(desc);
+    const char* const bug[] = { "Known issue for [THISMODULE].",
+                                "With another bug for [THISMODULE]." };
+    settings->setBugText(bug);
     options->addOption(gmx::IntegerOption("int").description("Integer option"));
 }
 
 TEST_F(CommandLineHelpModuleTest, ExportsHelp)
 {
-    const char *const cmdline[] = {
-        "test", "help", "-export", "rst"
-    };
+    const char* const cmdline[] = { "test", "help", "-export", "rst" };
     // TODO: Find a more elegant solution, or get rid of the links.dat altogether.
     gmx::TextWriter::writeFileFromString("links.dat", "");
-    CommandLine        args(cmdline);
+    CommandLine args(cmdline);
     initManager(args, "test");
-    MockOptionsModule &mod1 = addOptionsModule("module", "First module");
-    MockOptionsModule &mod2 = addOptionsModule("other", "Second module");
+    MockOptionsModule& mod1 = addOptionsModule("module", "First module");
+    MockOptionsModule& mod2 = addOptionsModule("other", "Second module");
     {
         gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 1");
         group.addModule("module");
@@ -136,11 +129,11 @@ TEST_F(CommandLineHelpModuleTest, ExportsHelp)
         gmx::CommandLineModuleGroup group = manager().addModuleGroup("Group 2");
         group.addModule("other");
     }
-    MockHelpTopic &topic1 = addHelpTopic("topic1", "Test topic");
-    MockHelpTopic &sub1   = topic1.addSubTopic("sub1", "Subtopic 1", "Sub text");
-    MockHelpTopic &sub2   = topic1.addSubTopic("sub2", "Subtopic 2", "Sub text");
-    MockHelpTopic &sub3   = topic1.addSubTopic("other", "Out-of-order subtopic", "Sub text");
-    MockHelpTopic &topic2 = addHelpTopic("topic2", "Another topic");
+    MockHelpTopic& topic1 = addHelpTopic("topic1", "Test topic");
+    MockHelpTopic& sub1   = topic1.addSubTopic("sub1", "Subtopic 1", "Sub text");
+    MockHelpTopic& sub2   = topic1.addSubTopic("sub2", "Subtopic 2", "Sub text");
+    MockHelpTopic& sub3   = topic1.addSubTopic("other", "Out-of-order subtopic", "Sub text");
+    MockHelpTopic& topic2 = addHelpTopic("topic2", "Another topic");
     using ::testing::_;
     using ::testing::Invoke;
     EXPECT_CALL(mod1, initOptions(_, _)).WillOnce(Invoke(&initOptionsBasic));

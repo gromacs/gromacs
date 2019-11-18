@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,6 @@ struct gmx_domdec_t;
 struct gmx_enfrot;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct MdrunOptions;
 struct t_commrec;
 struct t_filenm;
 struct t_inputrec;
@@ -69,25 +68,29 @@ class t_state;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class LocalAtomSetManager;
+struct MdrunOptions;
+
 class EnforcedRotation
 {
-    public:
-        EnforcedRotation();
-        ~EnforcedRotation();
+public:
+    EnforcedRotation();
+    ~EnforcedRotation();
 
-        /*! \brief Getter for working data
-         *
-         * This is needed while the module is still under
-         * construction. */
-        gmx_enfrot *getLegacyEnfrot();
-    private:
-        class Impl;
+    /*! \brief Getter for working data
+     *
+     * This is needed while the module is still under
+     * construction. */
+    gmx_enfrot* getLegacyEnfrot();
 
-        PrivateImplPointer<Impl> impl_;
+private:
+    class Impl;
+
+    PrivateImplPointer<Impl> impl_;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 /*! \brief Initializes the enforced rotation groups.
  *
@@ -106,12 +109,20 @@ class EnforcedRotation
  * \param mtop     Molecular topology.
  * \param oenv     Needed to open the rotation output xvgr file.
  * \param mdrunOptions  Options for mdrun.
+ * \param startingBehavior  Describes whether this is a restart appending to output files
  * \return         An enforced rotation module.
  */
-std::unique_ptr<gmx::EnforcedRotation>
-init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
-         const t_commrec *cr, gmx::LocalAtomSetManager * atomSets, const t_state *globalState, gmx_mtop_t *mtop, const gmx_output_env_t *oenv,
-         const MdrunOptions &mdrunOptions);
+std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                     fplog,
+                                                t_inputrec*               ir,
+                                                int                       nfile,
+                                                const t_filenm            fnm[],
+                                                const t_commrec*          cr,
+                                                gmx::LocalAtomSetManager* atomSets,
+                                                const t_state*            globalState,
+                                                gmx_mtop_t*               mtop,
+                                                const gmx_output_env_t*   oenv,
+                                                const gmx::MdrunOptions&  mdrunOptions,
+                                                gmx::StartingBehavior     startingBehavior);
 
 /*! \brief Calculates the enforced rotation potential(s).
  *
@@ -128,13 +139,7 @@ init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
  * \param bNS     After domain decomposition / neighbor searching several
  *                local arrays have to be updated (masses, shifts)
  */
-void do_rotation(const t_commrec  *cr,
-                 gmx_enfrot       *er,
-                 matrix            box,
-                 rvec              x[],
-                 real              t,
-                 int64_t           step,
-                 gmx_bool          bNS);
+void do_rotation(const t_commrec* cr, gmx_enfrot* er, const matrix box, rvec x[], real t, int64_t step, gmx_bool bNS);
 
 
 /*! \brief Add the enforced rotation forces to the official force array.
@@ -154,8 +159,7 @@ void do_rotation(const t_commrec  *cr,
  * \param t       Time, used for output.
  * \returns       The potential energy of the rotation potentials.
  */
-real add_rot_forces(gmx_enfrot *er,
-                    rvec f[], const t_commrec *cr, int64_t step, real t);
+real add_rot_forces(gmx_enfrot* er, rvec f[], const t_commrec* cr, int64_t step, real t);
 
 
 #endif

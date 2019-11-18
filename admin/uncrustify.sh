@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,19 +33,18 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# This script runs uncrustify and copyright header checks on modified files and
+# This script runs uncrustify on modified files and
 # reports/applies the necessary changes.
 #
-# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/uncrustify.rst
+# See `uncrustify.sh -h` for a brief usage, and docs/dev-manual/code-formatting.rst
 # for more details.
 
 # Parse command-line arguments
 function usage() {
     echo "usage: uncrustify.sh [-f|--force] [--rev=REV]"
-    echo "           [--uncrustify=(off|check)] [--copyright=<cmode>]"
+    echo "           [--uncrustify=(off|check)]"
     echo "           [--warnings=<file>] [<action>]"
     echo "<action>: (check*|diff|update)[-(index|workdir*)] (*=default)"
-    echo "<cmode>:  off|add|update*|replace|full"
 }
 
 action="check-workdir"
@@ -53,7 +52,6 @@ declare -a diffargs
 baserev="HEAD"
 force=
 uncrustify_mode=check
-copyright_mode=update
 warning_file=
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
@@ -73,8 +71,6 @@ for arg in "$@" ; do
             usage
             exit 2
         fi
-    elif [[ "$arg" == --copyright=* ]] ; then
-        copyright_mode=${arg#--copyright=}
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
@@ -140,12 +136,10 @@ cut -f2 <$tmpdir/difflist | \
     git check-attr --stdin filter | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep -E '(uncrustify|uncrustify_only|copyright|includesort)$' >$tmpdir/filtered
+    grep -E '(complete_formatting|uncrustify|copyright|includesort)$' >$tmpdir/filtered
 cut -f2 <$tmpdir/filtered >$tmpdir/filelist_all
-grep -E '(uncrustify|uncrustify_only)$' <$tmpdir/filtered | \
+grep -E '(uncrustify)$' <$tmpdir/filtered | \
     cut -f2 >$tmpdir/filelist_uncrustify
-grep -E '(uncrustify|copyright|includesort)$' <$tmpdir/filtered | \
-    cut -f2 >$tmpdir/filelist_copyright
 git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
 # Extract changed files to a temporary directory
@@ -181,41 +175,6 @@ if [[ $uncrustify_mode != "off" ]] ; then
             awk -v msg="$msg" '{sub(/.\//,""); print $0 ": " msg}' >> $tmpdir/messages
     fi
     # TODO: Consider checking whether rerunning uncrustify causes additional changes
-fi
-
-# Update the copyright headers using the requested mode
-if [[ $copyright_mode != "off" ]] ; then
-    cpscript_args="--update-year"
-    case "$copyright_mode" in
-        year)
-            ;;
-        add)
-            cpscript_args+=" --add-missing"
-            ;;
-        update)
-            cpscript_args+=" --add-missing --update-header"
-            ;;
-        replace)
-            cpscript_args+=" --replace-header"
-            ;;
-        full)
-            cpscript_args+=" --add-missing --update-header --replace-header"
-            ;;
-        *)
-            echo "Unknown copyright mode: $copyright_mode"
-            exit 2
-    esac
-    if [[ $action == check-* ]] ; then
-        cpscript_args+=" --check"
-    fi
-    # TODO: Probably better to invoke python explicitly through a customizable
-    # variable.
-    if ! $admin_dir/copyright.py -F $tmpdir/filelist_copyright $cpscript_args >>$tmpdir/messages
-    then
-        echo "Copyright checking failed!"
-        rm -rf $tmpdir
-        exit 2
-    fi
 fi
 
 cd $tmpdir

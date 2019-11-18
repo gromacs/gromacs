@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,9 +61,9 @@ class Options;
  *
  * \ingroup module_options
  */
-void assignOptionsFromKeyValueTree(Options                   *options,
-                                   const KeyValueTreeObject  &tree,
-                                   IKeyValueTreeErrorHandler *errorHandler);
+void assignOptionsFromKeyValueTree(Options*                   options,
+                                   const KeyValueTreeObject&  tree,
+                                   IKeyValueTreeErrorHandler* errorHandler);
 /*! \libinternal \brief
  * Checks that a given KeyValueTreeObject can be assigned to given Options.
  *
@@ -73,8 +73,7 @@ void assignOptionsFromKeyValueTree(Options                   *options,
  *
  * \ingroup module_options
  */
-void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject &tree,
-                                          const Options            &options);
+void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject& tree, const Options& options);
 /*! \libinternal \brief
  * Adjusts a KeyValueTreeObject to the structure of given Options.
  *
@@ -95,9 +94,7 @@ void checkForUnknownOptionsInKeyValueTree(const KeyValueTreeObject &tree,
  *
  * \ingroup module_options
  */
-KeyValueTreeObject
-adjustKeyValueTreeFromOptions(const KeyValueTreeObject &tree,
-                              const Options            &options);
+KeyValueTreeObject adjustKeyValueTreeFromOptions(const KeyValueTreeObject& tree, const Options& options);
 
 //! \endcond
 

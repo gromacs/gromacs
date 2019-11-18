@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,78 +70,66 @@ class Grid;
  */
 class CoordState
 {
-    public:
-        /*! \brief Constructor.
-         *
-         * \param[in] awhBiasParams  The Bias parameters from inputrec.
-         * \param[in] dimParams      The dimension Parameters.
-         * \param[in] grid           The grid.
-         */
-        CoordState(const AwhBiasParams          &awhBiasParams,
-                   const std::vector<DimParams> &dimParams,
-                   const Grid                   &grid);
+public:
+    /*! \brief Constructor.
+     *
+     * \param[in] awhBiasParams  The Bias parameters from inputrec.
+     * \param[in] dimParams      The dimension Parameters.
+     * \param[in] grid           The grid.
+     */
+    CoordState(const AwhBiasParams& awhBiasParams, const std::vector<DimParams>& dimParams, const Grid& grid);
 
-        /*! \brief
-         * Sample a new umbrella reference point given the current coordinate value.
-         *
-         * It is assumed that the probability distribution has been updated.
-         *
-         * \param[in] grid                The grid.
-         * \param[in] gridpointIndex      The grid point, sets the neighborhood.
-         * \param[in] probWeightNeighbor  Probability weights of the neighbors.
-         * \param[in] step                Step number, needed for the random number generator.
-         * \param[in] seed                Random seed.
-         * \param[in] indexSeed           Second random seed, should be the bias Index.
-         * \returns the index of the sampled point.
-         */
-        void sampleUmbrellaGridpoint(const Grid                  &grid,
-                                     int                          gridpointIndex,
-                                     gmx::ArrayRef<const double>  probWeightNeighbor,
-                                     int64_t                      step,
-                                     int64_t                      seed,
-                                     int                          indexSeed);
+    /*! \brief
+     * Sample a new umbrella reference point given the current coordinate value.
+     *
+     * It is assumed that the probability distribution has been updated.
+     *
+     * \param[in] grid                The grid.
+     * \param[in] gridpointIndex      The grid point, sets the neighborhood.
+     * \param[in] probWeightNeighbor  Probability weights of the neighbors.
+     * \param[in] step                Step number, needed for the random number generator.
+     * \param[in] seed                Random seed.
+     * \param[in] indexSeed           Second random seed, should be the bias Index.
+     * \returns the index of the sampled point.
+     */
+    void sampleUmbrellaGridpoint(const Grid&                 grid,
+                                 int                         gridpointIndex,
+                                 gmx::ArrayRef<const double> probWeightNeighbor,
+                                 int64_t                     step,
+                                 int64_t                     seed,
+                                 int                         indexSeed);
 
-        /*! \brief Update the coordinate value with coordValue.
-         *
-         * \param[in] grid        The grid.
-         * \param[in] coordValue  The new coordinate value.
-         */
-        void setCoordValue(const Grid     &grid,
-                           const awh_dvec  coordValue);
+    /*! \brief Update the coordinate value with coordValue.
+     *
+     * \param[in] grid        The grid.
+     * \param[in] coordValue  The new coordinate value.
+     */
+    void setCoordValue(const Grid& grid, const awh_dvec coordValue);
 
-        /*! \brief Restores the coordinate state from history.
-         *
-         * \param[in] stateHistory  The AWH bias state history.
-         */
-        void restoreFromHistory(const AwhBiasStateHistory &stateHistory);
+    /*! \brief Restores the coordinate state from history.
+     *
+     * \param[in] stateHistory  The AWH bias state history.
+     */
+    void restoreFromHistory(const AwhBiasStateHistory& stateHistory);
 
-        /*! \brief Returns the current coordinate value.
-         */
-        const awh_dvec &coordValue() const
-        {
-            return coordValue_;
-        }
+    /*! \brief Returns the current coordinate value.
+     */
+    const awh_dvec& coordValue() const { return coordValue_; }
 
-        /*! \brief Returns the grid point index for the current coordinate value.
-         */
-        int gridpointIndex() const
-        {
-            return gridpointIndex_;
-        }
+    /*! \brief Returns the grid point index for the current coordinate value.
+     */
+    int gridpointIndex() const { return gridpointIndex_; }
 
-        /*! \brief Returns the index for the current reference grid point.
-         */
-        int umbrellaGridpoint() const
-        {
-            return umbrellaGridpoint_;
-        }
+    /*! \brief Returns the index for the current reference grid point.
+     */
+    int umbrellaGridpoint() const { return umbrellaGridpoint_; }
 
-    private:
-        awh_dvec coordValue_;        /**< Current coordinate value in (nm or rad) */
-        int      gridpointIndex_;    /**< The grid point index for the current coordinate value */
-        int      umbrellaGridpoint_; /**< Index for the current reference grid point for the umbrella, only used with umbrella potential type */
+private:
+    awh_dvec coordValue_;        /**< Current coordinate value in (nm or rad) */
+    int      gridpointIndex_;    /**< The grid point index for the current coordinate value */
+    int      umbrellaGridpoint_; /**< Index for the current reference grid point for the umbrella, only used with umbrella potential type */
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_COORDSTATE_H */

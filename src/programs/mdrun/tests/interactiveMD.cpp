@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/utility/stringutil.h"
+
 #include "moduletest.h"
 
 namespace gmx
@@ -49,60 +51,64 @@ namespace gmx
 namespace test
 {
 
-class ImdTestFixture : public MdrunTestFixture
+class ImdTestFixture : public MdrunTestFixture, public ::testing::WithParamInterface<const char*>
 {
-    protected:
-        ImdTestFixture();
-        ~ImdTestFixture() override;
+protected:
+    ImdTestFixture();
+    ~ImdTestFixture() override;
 };
 
 
-ImdTestFixture::ImdTestFixture()
-{
-}
+ImdTestFixture::ImdTestFixture() {}
 
-ImdTestFixture::~ImdTestFixture()
-{
-}
+ImdTestFixture::~ImdTestFixture() {}
 
 
 //! Test fixture for mdrun with IMD settings
 typedef gmx::test::ImdTestFixture ImdTest;
 
-/* If GROMACS was compiled with IMD support, this test checks
+/* This test checks
  * - whether the IMD-group parameter from the .mdp file is understood,
- * - whether mdrun understands the IMD-related command line parameters -imdpull, -imdwait, -imdterm,
- * - whether mdrun finishes without error when IMD is enabled.
+ * - whether mdrun understands the IMD-related command line parameters
+     -imdpull, -imdwait, -imdterm,
+ * - whether or not GROMACS was compiled with IMD support, that mdrun finishes
+     without error when IMD is enabled in the TPR.
+ *
+ * TODO In future, consider checking that mdrun does not start IMD
+ * when it should/can not.
  */
-TEST_F(ImdTest, ImdCanRun)
+TEST_P(ImdTest, ImdCanRun)
 {
-    runner_.useTopGroAndNdxFromDatabase("spc2");
+    runner_.useTopGroAndNdxFromDatabase("glycine_vacuo");
     const std::string mdpContents = R"(
-        dt            = 0.004
+        dt            = 0.002
         nsteps        = 2
-        tcoupl        = Berendsen
+        tcoupl        = v-rescale
         tc-grps       = System
         tau-t         = 0.5
         ref-t         = 300
-        constraints   = all-bonds
         cutoff-scheme = Verlet
-        IMD-group     = SecondWaterMolecule
+        IMD-group     = Heavy_Atoms
+        integrator    = %s
     )";
-    runner_.useStringAsMdpFile(mdpContents);
+    // Interpolate the integrator selection into the .mdp file
+    runner_.useStringAsMdpFile(formatString(mdpContents.c_str(), GetParam()));
 
     EXPECT_EQ(0, runner_.callGrompp());
 
     ::gmx::test::CommandLine imdCaller;
     imdCaller.addOption("-imdport", 0); // automatically assign a free port
     imdCaller.append("-imdpull");
-    imdCaller.append("-noimdwait");     // cannot use -imdwait: then mdrun would not return control ...
+    imdCaller.append("-noimdwait"); // cannot use -imdwait: then mdrun would not return control ...
     imdCaller.append("-noimdterm");
 
     // Do an mdrun with IMD enabled
     ASSERT_EQ(0, runner_.callMdrun(imdCaller));
 }
 
-
+// Check a dynamical integrator and an energy minimizer. No need to
+// cover the whole space.
+INSTANTIATE_TEST_CASE_P(WithIntegrator, ImdTest, ::testing::Values("md", "steep"));
 
 } // namespace test
 } // namespace gmx

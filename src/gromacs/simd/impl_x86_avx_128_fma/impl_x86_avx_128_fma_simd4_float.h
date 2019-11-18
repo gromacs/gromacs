@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,47 +46,34 @@
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_macc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_msub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_nmacc_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_nmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline float gmx_simdcall
-reduce(Simd4Float a)
+static inline float gmx_simdcall reduce(Simd4Float a)
 {
     __m128 b;
     b = _mm_add_ps(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
     b = _mm_add_ss(b, _mm_permute_ps(b, _MM_SHUFFLE(0, 3, 2, 1)));
-    return *reinterpret_cast<float *>(&b);
+    return *reinterpret_cast<float*>(&b);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX_128_FMA_SIMD4_FLOAT_H

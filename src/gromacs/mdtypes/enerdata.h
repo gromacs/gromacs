@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,37 +35,54 @@
 #ifndef GMX_MDTYPES_TYPES_ENERDATA_H
 #define GMX_MDTYPES_TYPES_ENERDATA_H
 
+#include <array>
+#include <vector>
+
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/real.h"
 
-enum {
-    egCOULSR, egLJSR, egBHAMSR,
-    egCOUL14, egLJ14, egNR
+enum
+{
+    egCOULSR,
+    egLJSR,
+    egBHAMSR,
+    egCOUL14,
+    egLJ14,
+    egNR
 };
 
 struct gmx_grppairener_t
 {
-    int   nener;      /* The number of energy group pairs     */
-    real *ener[egNR]; /* Energy terms for each pair of groups */
+    gmx_grppairener_t(int numEnergyGroups) : nener(numEnergyGroups * numEnergyGroups)
+    {
+        for (auto& elem : ener)
+        {
+            elem.resize(nener);
+        }
+    }
+
+    int                                 nener; /* The number of energy group pairs */
+    std::array<std::vector<real>, egNR> ener;  /* Energy terms for each pair of groups */
 };
 
 struct gmx_enerdata_t
 {
-    real                     term[F_NRE];         /* The energies for all different interaction types */
+    gmx_enerdata_t(int numEnergyGroups, int numFepLambdas);
+
+    real term[F_NRE] = { 0 }; /* The energies for all different interaction types */
     struct gmx_grppairener_t grpp;
-    double                   dvdl_lin[efptNR];    /* Contributions to dvdl with linear lam-dependence */
-    double                   dvdl_nonlin[efptNR]; /* Idem, but non-linear dependence                  */
+    double dvdl_lin[efptNR]    = { 0 }; /* Contributions to dvdl with linear lam-dependence */
+    double dvdl_nonlin[efptNR] = { 0 }; /* Idem, but non-linear dependence                  */
     /* The idea is that dvdl terms with linear lambda dependence will be added
      * automatically to enerpart_lambda. Terms with non-linear lambda dependence
      * should explicitly determine the energies at foreign lambda points
      * when n_lambda > 0. */
 
-    int                      n_lambda;
-    int                      fep_state;           /*current fep state -- just for printing */
-    double                  *enerpart_lambda;     /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
-    real                     foreign_term[F_NRE]; /* alternate array for storing foreign lambda energies */
-    struct gmx_grppairener_t foreign_grpp;        /* alternate array for storing foreign lambda energies */
+    int                 fep_state = 0; /*current fep state -- just for printing */
+    std::vector<double> enerpart_lambda; /* Partial Hamiltonian for lambda and flambda[], includes at least all perturbed terms */
+    real foreign_term[F_NRE] = { 0 };      /* alternate array for storing foreign lambda energies */
+    struct gmx_grppairener_t foreign_grpp; /* alternate array for storing foreign lambda energies */
 };
 
 #endif

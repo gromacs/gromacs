@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,11 +63,12 @@ namespace
 {
 
 //! This type holds input integrators. Now it's holding names, but ei* enum values from md_enums.h could be used instead.
-using EnergyIntegratorType = const char *;
+using EnergyIntegratorType = const char*;
 
 //! Test fixture parametrized on integrators
-class InitialConstraintsTest : public gmx::test::MdrunTestFixture,
-                               public ::testing::WithParamInterface<EnergyIntegratorType>
+class InitialConstraintsTest :
+    public gmx::test::MdrunTestFixture,
+    public ::testing::WithParamInterface<EnergyIntegratorType>
 {
 };
 
@@ -78,19 +79,20 @@ TEST_P(InitialConstraintsTest, Works)
     auto              integrator = GetParam();
     const std::string integratorName(integrator);
     SCOPED_TRACE("Integrating with " + integratorName);
-    const std::string theMdpFile = formatString("nstcalcenergy           = 1\n"
-                                                "nstenergy               = 1\n"
-                                                "comm-mode               = linear\n"
-                                                "continuation            = no\n"
-                                                "constraints             = h-bonds\n"
-                                                "lincs_iter              = 2\n"
-                                                "verlet-buffer-tolerance = 1e-4\n"
-                                                "nsttcouple              = 1\n"    // for md-vv-avek
-                                                "nstpcouple              = 1\n"    // for md-vv-avek
-                                                "integrator              = %s\n"
-                                                "nsteps                  = %d\n"
-                                                "dt                      = %f\n",
-                                                integratorName.c_str(), nsteps, timestep);
+    const std::string theMdpFile = formatString(
+            "nstcalcenergy           = 1\n"
+            "nstenergy               = 1\n"
+            "comm-mode               = linear\n"
+            "continuation            = no\n"
+            "constraints             = h-bonds\n"
+            "lincs_iter              = 2\n"
+            "verlet-buffer-tolerance = 1e-4\n"
+            "nsttcouple              = 1\n" // for md-vv-avek
+            "nstpcouple              = 1\n" // for md-vv-avek
+            "integrator              = %s\n"
+            "nsteps                  = %d\n"
+            "dt                      = %f\n",
+            integratorName.c_str(), nsteps, timestep);
 
     runner_.useStringAsMdpFile(theMdpFile);
 
@@ -101,14 +103,15 @@ TEST_P(InitialConstraintsTest, Works)
     runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + ".edr");
     ASSERT_EQ(0, runner_.callMdrun());
 
-    auto energyReader = openEnergyFileToReadFields(runner_.edrFileName_, {"Total Energy", "Kinetic En."});
-    real totalEnergy  = 0.0, prevTotalEnergy = 0.0;
-    auto tolerance    = ulpTolerance(0); // The real value is set below from starting kinetic energy
+    auto energyReader =
+            openEnergyFileToReadTerms(runner_.edrFileName_, { "Total Energy", "Kinetic En." });
+    real totalEnergy = 0.0, prevTotalEnergy = 0.0;
+    auto tolerance = ulpTolerance(0); // The real value is set below from starting kinetic energy
     for (int i = 0; i <= nsteps; i++)
     {
         EnergyFrame frame = energyReader->frame();
-        prevTotalEnergy = totalEnergy;
-        totalEnergy     = frame.at("Total Energy");
+        prevTotalEnergy   = totalEnergy;
+        totalEnergy       = frame.at("Total Energy");
         if (i == 0)
         {
             // We set the tolerance for total energy based on magnitude of kinetic energy.
@@ -124,10 +127,10 @@ TEST_P(InitialConstraintsTest, Works)
 }
 
 //! Integrators with energy conservation to test
-const EnergyIntegratorType c_integratorsToTest [] = {"md", "md-vv", "md-vv-avek"};
+const EnergyIntegratorType c_integratorsToTest[] = { "md", "md-vv", "md-vv-avek" };
 
 INSTANTIATE_TEST_CASE_P(Checking, InitialConstraintsTest, ::testing::ValuesIn(c_integratorsToTest));
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx

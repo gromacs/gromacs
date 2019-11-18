@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,39 +52,43 @@
 #include "xdlg.h"
 #include "xutil.h"
 
-#define ID_BOX     -3
-#define ID_ICON    -2
-#define ID_TEXT    -1
+#define ID_BOX -3
+#define ID_ICON -2
+#define ID_TEXT -1
 
-static bmchar         *icon_bits   = nullptr;
-static int             icon_width  = 0;
-static int             icon_height = 0;
-static unsigned long   icon_fg     = 0;
-static unsigned long   icon_bg     = 0;
+static bmchar*       icon_bits   = nullptr;
+static int           icon_width  = 0;
+static int           icon_height = 0;
+static unsigned long icon_fg     = 0;
+static unsigned long icon_bg     = 0;
 
-static void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long bg)
+static void SetIcon(unsigned char* bits, int w, int h, unsigned long fg, unsigned long bg)
 {
-    icon_bits   = (bmchar *)bits;
+    icon_bits   = (bmchar*)bits;
     icon_width  = w;
     icon_height = h;
     icon_fg     = fg;
     icon_bg     = bg;
 }
 
-t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
-                  int nlines, const char * const * lines, unsigned long Flags,
-                  DlgCallback *cb, void *data)
+t_dlg* MessageBox(t_x11*             x11,
+                  Window             Parent,
+                  const char*        title,
+                  int                nlines,
+                  const char* const* lines,
+                  unsigned long      Flags,
+                  DlgCallback*       cb,
+                  void*              data)
 {
-    t_dlg                *dlg;
-    int                   width, nicon;
-    int                   x, y, x0;
-    unsigned long         nFlag;
-    unsigned long         bg;
+    t_dlg*        dlg;
+    int           width, nicon;
+    int           x, y, x0;
+    unsigned long nFlag;
+    unsigned long bg;
 
     /* Check flags for inconsistencies */
-    if (((Flags & MB_OK) && (Flags & MB_YES))     ||
-        ((Flags & MB_NO) && (Flags & MB_CANCEL))  ||
-        (!(Flags & MB_OK) && !(Flags & MB_YES)))
+    if (((Flags & MB_OK) && (Flags & MB_YES)) || ((Flags & MB_NO) && (Flags & MB_CANCEL))
+        || (!(Flags & MB_OK) && !(Flags & MB_YES)))
     {
         std::fprintf(stderr, "Invalid button selection in MessageBox\n");
         std::exit(1);
@@ -133,62 +137,58 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     }
 
     dlg = CreateDlg(x11, Parent, title, 0, 0, 0, 0, 3, cb, data);
-    x   = 2*OFFS_X;
+    x   = 2 * OFFS_X;
     if (nicon > 0)
     {
-        AddDlgItem(dlg, CreatePixmap
-                       (XCreatePixmapFromBitmapData
-                           (x11->disp, dlg->win.self, icon_bits, icon_width, icon_height,
-                           icon_fg, icon_bg, x11->depth),
-                       ID_ICON, ID_BOX, 2*OFFS_X, 2*OFFS_Y, icon_width, icon_height, 0));
-        x += QueryDlgItemW(dlg, ID_ICON)+2*OFFS_X;
+        AddDlgItem(dlg,
+                   CreatePixmap(XCreatePixmapFromBitmapData(x11->disp, dlg->win.self, icon_bits, icon_width,
+                                                            icon_height, icon_fg, icon_bg, x11->depth),
+                                ID_ICON, ID_BOX, 2 * OFFS_X, 2 * OFFS_Y, icon_width, icon_height, 0));
+        x += QueryDlgItemW(dlg, ID_ICON) + 2 * OFFS_X;
     }
 
-    AddDlgItem(dlg, CreateStaticText(x11, nlines, lines, ID_TEXT, ID_BOX,
-                                     x, 2*OFFS_Y, 0, 0, 0));
+    AddDlgItem(dlg, CreateStaticText(x11, nlines, lines, ID_TEXT, ID_BOX, x, 2 * OFFS_Y, 0, 0, 0));
 
-    y = QueryDlgItemY(dlg, ID_TEXT)+QueryDlgItemH(dlg, ID_TEXT);
+    y = QueryDlgItemY(dlg, ID_TEXT) + QueryDlgItemH(dlg, ID_TEXT);
     if (nicon > 0)
     {
         int yi;
-        yi = QueryDlgItemY(dlg, ID_ICON)+QueryDlgItemH(dlg, ID_ICON);
+        yi = QueryDlgItemY(dlg, ID_ICON) + QueryDlgItemH(dlg, ID_ICON);
         if (yi > y)
         {
-            SetDlgItemPos(dlg, ID_TEXT, x, 2*OFFS_Y+(yi-y)/2);
+            SetDlgItemPos(dlg, ID_TEXT, x, 2 * OFFS_Y + (yi - y) / 2);
         }
         else
         {
-            SetDlgItemPos(dlg, ID_ICON, 2*OFFS_X, 2*OFFS_Y+(y-yi)/2);
+            SetDlgItemPos(dlg, ID_ICON, 2 * OFFS_X, 2 * OFFS_Y + (y - yi) / 2);
         }
         if (yi > y)
         {
             y = yi;
         }
     }
-    x    += QueryDlgItemW(dlg, ID_TEXT)+2*OFFS_X;
-    y    += 2*OFFS_Y;
-    width = (x-8*OFFS_X)/2;
+    x += QueryDlgItemW(dlg, ID_TEXT) + 2 * OFFS_X;
+    y += 2 * OFFS_Y;
+    width = (x - 8 * OFFS_X) / 2;
 
-    if (((Flags & MB_OKCANCEL) == MB_OKCANCEL) ||
-        ((Flags & MB_YESNO) == MB_YESNO))
+    if (((Flags & MB_OKCANCEL) == MB_OKCANCEL) || ((Flags & MB_YESNO) == MB_YESNO))
     {
-        x0 = 2*OFFS_X;
+        x0 = 2 * OFFS_X;
     }
     else
     {
-        x0 = (x-width)/2;
+        x0 = (x - width) / 2;
     }
 
-#define CB(name, butx, id) AddDlgItem(dlg, CreateButton(x11, name, \
-                                                        true, id, ID_BOX, \
-                                                        butx, y, width, 0, 0))
+#define CB(name, butx, id) \
+    AddDlgItem(dlg, CreateButton(x11, name, true, id, ID_BOX, butx, y, width, 0, 0))
     if (Flags & MB_OK)
     {
         CB("OK", x0, MB_OK);
     }
     if (Flags & MB_CANCEL)
     {
-        CB("Cancel", x/2+2*OFFS_X, MB_CANCEL);
+        CB("Cancel", x / 2 + 2 * OFFS_X, MB_CANCEL);
     }
     if (Flags & MB_YES)
     {
@@ -196,11 +196,10 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     }
     if (Flags & MB_NO)
     {
-        CB("No", x/2+2*OFFS_X, MB_NO);
+        CB("No", x / 2 + 2 * OFFS_X, MB_NO);
     }
 
-    SetDlgSize(dlg, x, y+2*OFFS_Y+
-               QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES), true);
+    SetDlgSize(dlg, x, y + 2 * OFFS_Y + QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES), true);
 
     if (Flags & MB_SYSTEMMODAL)
     {

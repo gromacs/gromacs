@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,40 +98,39 @@ namespace gmx
 template<class ElementType>
 class accessor_basic
 {
-    public:
-        //! Type of element to be accessed.
-        using element_type  = ElementType;
-        //! Pointer to element to be accessed.
-        using pointer       = ElementType*;
-        //! How to determine a memory offset, provided by self accessor.
-        using offset_policy = accessor_basic;
-        //! Type of references.
-        using reference     = ElementType&;
+public:
+    //! Type of element to be accessed.
+    using element_type = ElementType;
+    //! Pointer to element to be accessed.
+    using pointer = ElementType*;
+    //! How to determine a memory offset, provided by self accessor.
+    using offset_policy = accessor_basic;
+    //! Type of references.
+    using reference = ElementType&;
 
-        /*! \brief Shift a pointer by an offset.
-         * \param[in] p Pointer to reference memory location.
-         * \param[in] i offset from memory location.
-         * \returns pointer to offset memory location.
-         */
-        constexpr typename offset_policy::pointer
-        offset( pointer p, ptrdiff_t i ) const noexcept
-        { return typename offset_policy::pointer(p+i); }
+    /*! \brief Shift a pointer by an offset.
+     * \param[in] p Pointer to reference memory location.
+     * \param[in] i offset from memory location.
+     * \returns pointer to offset memory location.
+     */
+    constexpr typename offset_policy::pointer offset(pointer p, ptrdiff_t i) const noexcept
+    {
+        return typename offset_policy::pointer(p + i);
+    }
 
-        /*! \brief Access element from an offset to given pointer.
-         * \param[in] p Pointer to reference memory location.
-         * \param[in] i offset from memory location.
-         * \returns reference to element stored at offset from memory location.
-         */
-        constexpr reference access( pointer p, ptrdiff_t i ) const noexcept
-        { return p[i]; }
+    /*! \brief Access element from an offset to given pointer.
+     * \param[in] p Pointer to reference memory location.
+     * \param[in] i offset from memory location.
+     * \returns reference to element stored at offset from memory location.
+     */
+    constexpr reference access(pointer p, ptrdiff_t i) const noexcept { return p[i]; }
 
-        /*! \brief Decay pointer to pointer to ElementType.
-         * NOTE This function does nothing, because it is the trivial implementation of an accessor.
-         * \returns input pointer as pointer to ElementType
-         */
-        constexpr ElementType* decay( pointer p ) const noexcept
-        { return p; }
+    /*! \brief Decay pointer to pointer to ElementType.
+     * NOTE This function does nothing, because it is the trivial implementation of an accessor.
+     * \returns input pointer as pointer to ElementType
+     */
+    constexpr ElementType* decay(pointer p) const noexcept { return p; }
 };
 
-}      // namespace gmx
+} // namespace gmx
 #endif /* end of include guard: MDSPAN_ACCESSOR_POLICY_H */

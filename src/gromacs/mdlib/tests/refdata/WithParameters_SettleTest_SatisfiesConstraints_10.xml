@@ -1,0 +1,347 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalCoordinates">
+    <Int Name="Length">17</Int>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.13957903779718056</Real>
+          <Real Name="YY">-0.050722938026974689</Real>
+          <Real Name="ZZ">-0.27171858075593974</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.10565322823307846</Real>
+          <Real Name="YY">-0.051604884600181554</Real>
+          <Real Name="ZZ">-0.18221673711201103</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.065028460921474518</Real>
+          <Real Name="YY">-0.023792759577617249</Real>
+          <Real Name="ZZ">-0.32537764686955362</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.86282861382597797</Real>
+          <Real Name="YY">-0.38771444193676585</Real>
+          <Real Name="ZZ">0.45921239603021274</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.90970533234610751</Real>
+          <Real Name="YY">-0.31334089073095789</Real>
+          <Real Name="ZZ">0.42135124784607059</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.87688740173390045</Real>
+          <Real Name="YY">-0.37944676569454622</Real>
+          <Real Name="ZZ">0.55353267175136334</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.36868943414304262</Real>
+          <Real Name="YY">-0.078432156955432944</Real>
+          <Real Name="ZZ">0.86280317895350789</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.42200507088726569</Real>
+          <Real Name="YY">-0.15495700006869478</Real>
+          <Real Name="ZZ">0.8412692600103916</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.43166920229904737</Real>
+          <Real Name="YY">-0.0068008848591287249</Real>
+          <Real Name="ZZ">0.87085476642933635</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.084229501651764419</Real>
+          <Real Name="YY">-0.78575544929049801</Real>
+          <Real Name="ZZ">0.8637106688564653</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.13634471753964372</Real>
+          <Real Name="YY">-0.83353991795189142</Real>
+          <Real Name="ZZ">0.79918960851406218</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.14562979761190428</Real>
+          <Real Name="YY">-0.7663416937758929</Real>
+          <Real Name="ZZ">0.93453035646398275</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.62571525830952479</Real>
+          <Real Name="YY">-0.3215536930209113</Real>
+          <Real Name="ZZ">-0.33765078444475161</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.6431161656177824</Real>
+          <Real Name="YY">-0.39561408624927696</Real>
+          <Real Name="ZZ">-0.27955960628740112</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.66153095363081726</Real>
+          <Real Name="YY">-0.34846988585511907</Real>
+          <Real Name="ZZ">-0.42223844862791704</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.31079622133123014</Real>
+          <Real Name="YY">-0.89896506246808683</Real>
+          <Real Name="ZZ">0.22222416380456353</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.406381602301286</Real>
+          <Real Name="YY">-0.89991765659886713</Real>
+          <Real Name="ZZ">0.21723959669886175</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.28385285844585267</Real>
+          <Real Name="YY">-0.98163688660360604</Real>
+          <Real Name="ZZ">0.18220238110398154</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.38418083992955326</Real>
+          <Real Name="YY">0.716744243801957</Real>
+          <Real Name="ZZ">0.73564895716868195</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.41359009379032896</Real>
+          <Real Name="YY">0.669842905723529</Real>
+          <Real Name="ZZ">0.8137365917455176</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.3165395387802124</Real>
+          <Real Name="YY">0.77647172296195621</Real>
+          <Real Name="ZZ">0.76758014900387694</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.44349625143950566</Real>
+          <Real Name="YY">-0.58571497069725509</Real>
+          <Real Name="ZZ">-0.14391268742860858</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.40695120235332854</Real>
+          <Real Name="YY">-0.61721213984479328</Real>
+          <Real Name="ZZ">-0.22658496889573793</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.37242724478831152</Real>
+          <Real Name="YY">-0.59631196514165163</Real>
+          <Real Name="ZZ">-0.080673313599024105</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.74080073771314991</Real>
+          <Real Name="YY">-0.096600841960300027</Real>
+          <Real Name="ZZ">0.25620616434856758</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.82681861019018654</Real>
+          <Real Name="YY">-0.1354533601088044</Real>
+          <Real Name="ZZ">0.27213493856519877</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.70734416464337302</Real>
+          <Real Name="YY">-0.1430098235622029</Real>
+          <Real Name="ZZ">0.17946515480933289</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.19212243793099384</Real>
+          <Real Name="YY">0.30349565917202054</Real>
+          <Real Name="ZZ">-0.38178945963667016</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.11395110123350437</Real>
+          <Real Name="YY">0.35833326758243578</Real>
+          <Real Name="ZZ">-0.37512633553805641</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.18810551242409201</Real>
+          <Real Name="YY">0.24654426281753913</Real>
+          <Real Name="ZZ">-0.30496029093918531</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.21211773564619901</Real>
+          <Real Name="YY">-0.50177900317352353</Real>
+          <Real Name="ZZ">0.09046134562524312</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.24720288970875659</Real>
+          <Real Name="YY">-0.41895479929316171</Real>
+          <Real Name="ZZ">0.057727546334741822</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.28718351932120761</Real>
+          <Real Name="YY">-0.56117021720041826</Real>
+          <Real Name="ZZ">0.090822202478239522</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.4463693617026333</Real>
+          <Real Name="YY">-0.10803430256810276</Real>
+          <Real Name="ZZ">0.31419037346951789</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.49829729579347126</Real>
+          <Real Name="YY">-0.11320587883240146</Real>
+          <Real Name="ZZ">0.39443414494120282</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.51109519862606079</Real>
+          <Real Name="YY">-0.10812207701273409</Real>
+          <Real Name="ZZ">0.24367174663795926</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.45216996550112354</Real>
+          <Real Name="YY">0.096470978453698994</Real>
+          <Real Name="ZZ">0.44464495258260273</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.48889846532667958</Real>
+          <Real Name="YY">0.093776467586379184</Real>
+          <Real Name="ZZ">0.35629295593425331</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.35740377074606289</Real>
+          <Real Name="YY">0.097620384921446632</Real>
+          <Real Name="ZZ">0.43121492665493866</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.24054494463381174</Real>
+          <Real Name="YY">-0.058458437862588614</Real>
+          <Real Name="ZZ">-0.63917736386933588</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.2860579115159097</Real>
+          <Real Name="YY">-0.12271566815189604</Real>
+          <Real Name="ZZ">-0.58475405451446727</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.218420077398567</Real>
+          <Real Name="YY">-0.10613539262320282</Real>
+          <Real Name="ZZ">-0.71917559281583809</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">-0.90416827670731115</Real>
+          <Real Name="YY">-0.18186692517079558</Real>
+          <Real Name="ZZ">0.9139344048133019</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.82082896559192653</Real>
+          <Real Name="YY">-0.2286398106108587</Real>
+          <Real Name="ZZ">0.90853303365184412</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">-0.95775523445673083</Real>
+          <Real Name="YY">-0.22021725032403547</Real>
+          <Real Name="ZZ">0.84450812074305481</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.36450224545728815</Real>
+          <Real Name="YY">0.70858384851068057</Real>
+          <Real Name="ZZ">0.46935113200819817</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.41120340336654315</Real>
+          <Real Name="YY">0.62868865791488648</Real>
+          <Real Name="ZZ">0.49380678104060971</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.27407990420355888</Real>
+          <Real Name="YY">0.69278909420636114</Real>
+          <Real Name="ZZ">0.49649232466180465</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+    <Settler>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Atom>
+          <Real Name="XX">0.78994938273258131</Real>
+          <Real Name="YY">0.25546475567639715</Real>
+          <Real Name="ZZ">-0.094871958259787406</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.85078153045536253</Real>
+          <Real Name="YY">0.19012232555700634</Real>
+          <Real Name="ZZ">-0.060344649799292285</Real>
+        </Atom>
+        <Atom>
+          <Real Name="XX">0.72189430873941796</Real>
+          <Real Name="YY">0.26262845621983039</Real>
+          <Real Name="ZZ">-0.027942841290347964</Real>
+        </Atom>
+      </Sequence>
+    </Settler>
+  </Sequence>
+</ReferenceData>

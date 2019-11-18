@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,31 +43,31 @@
  * Basic API clients only need to compile
  * and link against the gmxapi target, but some gmxapi classes use opaque pointers to
  * library classes that are forward-declared here.
- *
- * We don't want to include ::gmx headers if we don't have to, but we need to declare
- * some things in the ::gmx namespace somewhere. These are forward declarations for
- * opaque pointers in libgromacs for client code building against libgmxapi.
- * Client code that is
- * more entwined with libgromacs can include headers from there.
+ * Client code should not need to include this header directly.
  *
  * For maximal compatibility with other libgmxapi clients (such as third-party
  * Python modules), client code should use the wrappers and protocols in the
- * gmxapi.h header. Note that there is a separate CMake target to build the full
- * developer documentation for gmxapi.
+ * gmxapi.h header.
  *
+ * Note that there is a separate CMake target to build the full
+ * developer documentation for gmxapi.
  * Refer to GMXAPI developer docs for the protocols that map gmxapi interfaces to
  * GROMACS library interfaces.
  * Refer to the GROMACS developer
  * documentation for details on library interfaces forward-declared in this header.
  *
- * \todo It would be nice to include links to the documentation for these classes, too.
+ * \todo Improve documentation cross-linking.
  */
+
+// Forward declaration for src/gromacs/mdtypes/inputrec.h
+struct t_inputrec;
 
 namespace gmx
 {
 
+// Forward declaration for libgromacs header gromacs/restraint/restraintpotential.h
 class IRestraintPotential;
 
-}      // end namespace gmx
+} // end namespace gmx
 
-#endif //GMXAPI_GROMACSFWD_H
+#endif // GMXAPI_GROMACSFWD_H

@@ -63,9 +63,7 @@ TEST_F(GmxApiTest, BuildApiWorkflowImpl)
     EXPECT_NE(node, nullptr);
 
     // Create key
-    std::string key {
-        "MD"
-    };
+    std::string key{ "MD" };
     key.append(runner_.tprFileName_);
 
     // Create graph (workflow implementation object)
@@ -75,9 +73,7 @@ TEST_F(GmxApiTest, BuildApiWorkflowImpl)
     EXPECT_EQ(impl.size(), 1);
 
     // Create workflow container
-    gmxapi::Workflow work {
-        std::move(impl)
-    };
+    gmxapi::Workflow work{ std::move(impl) };
 }
 
 //! Create from create() method(s)

@@ -52,24 +52,24 @@ namespace
 
 class GmxMakeNdx : public gmx::test::CommandLineTestBase
 {
-    public:
-        /*! \brief runs the test for the filename prefix \p sysName from the simulation data base
-            \param[in]   sysName   file name prefix sysName.g96 must be present in the simulation database
-         */
-        void runTest(const std::string &sysName)
-        {
-            auto       &cmdline     = commandLine();
-            auto        groFileName = sysName + ".g96";
-            std::string ndxFileName = sysName + ".ndx";
-            setInputFile("-f", groFileName);
-            setOutputFile("-o", ndxFileName.c_str(), gmx::test::ExactTextMatch());
+public:
+    /*! \brief runs the test for the filename prefix \p sysName from the simulation data base
+        \param[in]   sysName   file name prefix sysName.g96 must be present in the simulation database
+     */
+    void runTest(const std::string& sysName)
+    {
+        auto&       cmdline     = commandLine();
+        auto        groFileName = sysName + ".g96";
+        std::string ndxFileName = sysName + ".ndx";
+        setInputFile("-f", groFileName);
+        setOutputFile("-o", ndxFileName.c_str(), gmx::test::ExactTextMatch());
 
-            gmx::test::StdioTestHelper stdioHelper(&fileManager());
-            stdioHelper.redirectStringToStdin("q\n");
+        gmx::test::StdioTestHelper stdioHelper(&fileManager());
+        stdioHelper.redirectStringToStdin("q\n");
 
-            ASSERT_EQ(0, gmx_make_ndx(cmdline.argc(), cmdline.argv()));
-            checkOutputFiles();
-        }
+        ASSERT_EQ(0, gmx_make_ndx(cmdline.argc(), cmdline.argv()));
+        checkOutputFiles();
+    }
 };
 
 TEST_F(GmxMakeNdx, WritesDefaultProteinIndexGroups)

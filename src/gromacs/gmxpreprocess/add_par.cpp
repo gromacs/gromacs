@@ -52,185 +52,67 @@
 
 #include "hackblock.h"
 
-static void clear_atom_list(int i0, int a[])
+void add_param(InteractionsOfType* ps, int ai, int aj, gmx::ArrayRef<const real> c, const char* s)
 {
-    int i;
-
-    for (i = i0; i < MAXATOMLIST; i++)
-    {
-        a[i] = -1;
-    }
-}
-
-static void clear_force_param(int i0, real c[])
-{
-    int i;
-
-    for (i = i0; i < MAXFORCEPARAM; i++)
-    {
-        c[i] = NOTSET;
-    }
-}
-
-void add_param(t_params *ps, int ai, int aj, const real *c, const char *s)
-{
-    int i;
-
     if ((ai < 0) || (aj < 0))
     {
         gmx_fatal(FARGS, "Trying to add impossible atoms: ai=%d, aj=%d", ai, aj);
     }
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    clear_atom_list(2, ps->param[ps->nr].a);
-    if (c == nullptr)
-    {
-        clear_force_param(0, ps->param[ps->nr].c);
-    }
-    else
-    {
-        for (i = 0; (i < MAXFORCEPARAM); i++)
-        {
-            ps->param[ps->nr].c[i] = c[i];
-        }
-    }
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    std::vector<int>  atoms = { ai, aj };
+    std::vector<real> forceParm(c.begin(), c.end());
+
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm, s ? s : ""));
 }
 
-void add_imp_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   const char *s)
+void add_cmap_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am, const char* s)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    clear_force_param(2, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    std::vector<int> atoms = { ai, aj, ak, al, am };
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}, s ? s : ""));
 }
 
-void add_dih_param(t_params *ps, int ai, int aj, int ak, int al, real c0, real c1,
-                   real c2, const char *s)
+void add_vsite2_param(InteractionsOfType* ps, int ai, int aj, int ak, real c0)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    ps->param[ps->nr].c2() = c2;
-    clear_force_param(3, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    std::vector<int>  atoms     = { ai, aj, ak };
+    std::vector<real> forceParm = { c0 };
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am, const char *s)
+void add_vsite3_param(InteractionsOfType* ps, int ai, int aj, int ak, int al, real c0, real c1)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    ps->param[ps->nr].am() = am;
-    clear_atom_list(5, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), s);
-    ps->nr++;
+    std::vector<int>  atoms     = { ai, aj, ak, al };
+    std::vector<real> forceParm = { c0, c1 };
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, forceParm));
 }
 
-void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak)
+void add_vsite3_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, bool bSwapParity)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
-}
+    std::vector<int> atoms = { ai, aj, ak, al };
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 
-void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0)
-{
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    clear_atom_list  (3, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    clear_force_param(1, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
-}
-
-void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
-                      real c0, real c1)
-{
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    ps->param[ps->nr].c0() = c0;
-    ps->param[ps->nr].c1() = c1;
-    clear_force_param(2, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
-}
-
-void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, bool bSwapParity)
-{
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    clear_atom_list  (4, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
     if (bSwapParity)
     {
-        ps->param[ps->nr].c1() = -1;
+        ps->interactionTypes.back().setForceParameter(1, -1);
     }
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
 }
 
-void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, int am)
+void add_vsite4_atoms(InteractionsOfType* ps, int ai, int aj, int ak, int al, int am)
 {
-    pr_alloc(1, ps);
-    ps->param[ps->nr].ai() = ai;
-    ps->param[ps->nr].aj() = aj;
-    ps->param[ps->nr].ak() = ak;
-    ps->param[ps->nr].al() = al;
-    ps->param[ps->nr].am() = am;
-    clear_atom_list  (5, ps->param[ps->nr].a);
-    clear_force_param(0, ps->param[ps->nr].c);
-    set_p_string(&(ps->param[ps->nr]), "");
-    ps->nr++;
+    std::vector<int> atoms = { ai, aj, ak, al, am };
+    ps->interactionTypes.emplace_back(InteractionOfType(atoms, {}));
 }
 
-int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool bNterm)
+int search_jtype(const PreprocessResidue& localPpResidue, const char* name, bool bNterm)
 {
     int    niter, jmax;
     size_t k, kmax, minstrlen;
-    char  *rtpname, searchname[12];
+    char * rtpname, searchname[12];
 
     strcpy(searchname, name);
 
     /* Do a best match comparison */
     /* for protein N-terminus, allow renaming of H1, H2 and H3 to H */
-    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H') &&
-        ( (searchname[1] == '1') || (searchname[1] == '2') ||
-          (searchname[1] == '3') ) )
+    if (bNterm && (strlen(searchname) == 2) && (searchname[0] == 'H')
+        && ((searchname[1] == '1') || (searchname[1] == '2') || (searchname[1] == '3')))
     {
         niter = 2;
     }
@@ -276,12 +158,13 @@ int search_jtype(const PreprocessResidue &localPpResidue, const char *name, bool
     }
     if (jmax == -1)
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s",
-                  searchname, localPpResidue.resname.c_str());
+        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s", searchname,
+                  localPpResidue.resname.c_str());
     }
     if (kmax != strlen(searchname))
     {
-        gmx_fatal(FARGS, "Atom %s not found in rtp database in residue %s, "
+        gmx_fatal(FARGS,
+                  "Atom %s not found in rtp database in residue %s, "
                   "it looks a bit like %s",
                   searchname, localPpResidue.resname.c_str(), *(localPpResidue.atomname[jmax]));
     }

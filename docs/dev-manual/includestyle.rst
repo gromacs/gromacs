@@ -48,6 +48,17 @@ is up to the author of the code to put the headers in proper order in such
 cases.  Trailing comments on the same line as #include statements are
 preserved and do not affect the checker/sorter.
 
+The includestyle used to differentiate between header files that were declared
+to be part of the module and not used outside the module, and those that were
+either not part of a module, used in other modules, or installed.
+As the possibility of installation has been removed (for now), changes to the
+previous organization might occur where such installed files were implicitly
+marked as being used outside of a module even though they were not used within
+|Gromacs| outside their module.
+
+As part of the effort to build a proper API, a new scheme of separating between
+public, library and module functionality in header files is planned.
+
 The guidelines are enforced by an automatic checker script that can also
 sort/reformat include statements to follow the guidelines.
 See :doc:`gmxtree` for details.

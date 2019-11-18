@@ -58,26 +58,28 @@ namespace gmx
 //! Correlation block averaging data.
 struct CorrelationBlockDataHistory
 {
-    double blockSumWeight;                       /**< Sum weights for current block. */
-    double blockSumSquareWeight;                 /**< Sum weights^2 for current block. */
-    double blockSumWeightX;                      /**< Weighted sum of x for current block. */
-    double blockSumWeightY;                      /**< Weighted sum of y for current block. */
-    double sumOverBlocksSquareBlockWeight;       /**< Sum over all blocks in the simulation of block weight^2 over the whole simulation. */
-    double sumOverBlocksBlockSquareWeight;       /**< Sum over all blocks in the simulation of weight^2 over the whole simulation. */
+    double blockSumWeight;       /**< Sum weights for current block. */
+    double blockSumSquareWeight; /**< Sum weights^2 for current block. */
+    double blockSumWeightX;      /**< Weighted sum of x for current block. */
+    double blockSumWeightY;      /**< Weighted sum of y for current block. */
+    double sumOverBlocksSquareBlockWeight; /**< Sum over all blocks in the simulation of block weight^2 over the whole simulation. */
+    double sumOverBlocksBlockSquareWeight; /**< Sum over all blocks in the simulation of weight^2 over the whole simulation. */
     double sumOverBlocksBlockWeightBlockWeightX; /**< Sum over all blocks in the simulation of block weight times blockSumWeightX over the whole simulation. */
     double sumOverBlocksBlockWeightBlockWeightY; /**< Sum over all blocks in the simulation of block weight times blockSumWeightY over the whole simulation. */
-    double blockLength;                          /**< The length of each block used for block averaging. */
-    int    previousBlockIndex;                   /**< The last block index data was added to (needed only for block length in terms of time). */
-    double correlationIntegral;                  /**< The time integral of the correlation function of x and y, corr(x(0), y(t)). */
+    double blockLength; /**< The length of each block used for block averaging. */
+    int    previousBlockIndex; /**< The last block index data was added to (needed only for block length in terms of time). */
+    double correlationIntegral; /**< The time integral of the correlation function of x and y, corr(x(0), y(t)). */
 };
 
 //! Grid of local correlation matrices.
 struct CorrelationGridHistory
 {
     /* These counts here since we curently need them for initializing the correlation grid when reading a checkpoint */
-    int numCorrelationTensors = 0; /**< Number correlation tensors in the grid (equal to the number of points). */
-    int tensorSize            = 0; /**< The number of stored correlation matrix elements. */
-    int blockDataListSize     = 0; /**< To be able to increase the block length later on, data is saved for several block lengths for each element. */
+    int numCorrelationTensors =
+            0; /**< Number correlation tensors in the grid (equal to the number of points). */
+    int tensorSize = 0; /**< The number of stored correlation matrix elements. */
+    int blockDataListSize =
+            0; /**< To be able to increase the block length later on, data is saved for several block lengths for each element. */
 
     /* We store all tensor sequentially in a buffer */
     std::vector<CorrelationBlockDataHistory> blockDataBuffer; /**< Buffer that contains the correlation data. */
@@ -93,11 +95,11 @@ struct CorrelationGridHistory
  * \param[in] tensorSize                  Number of correlation elements in each tensor.
  * \param[in] blockDataListSize           The number of blocks in the list of each tensor element.
  */
-void initCorrelationGridHistory(CorrelationGridHistory *correlationGridHistory,
+void initCorrelationGridHistory(CorrelationGridHistory* correlationGridHistory,
                                 int                     numCorrelationTensors,
                                 int                     tensorSize,
                                 int                     blockDataListSize);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_MDTYPES_AWH_CORRELATION_HISTORY_H */

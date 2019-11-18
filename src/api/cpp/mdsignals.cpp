@@ -59,13 +59,10 @@ namespace gmxapi
 {
 
 //! \cond
-Signal::Signal(Signal &&) noexcept            = default;
-Signal &Signal::operator=(Signal &&) noexcept = default;
+Signal::Signal(Signal&&) noexcept = default;
+Signal& Signal::operator=(Signal&&) noexcept = default;
 
-Signal::Signal(std::unique_ptr<SignalImpl> impl) :
-    impl_ {std::move(impl)}
-{
-}
+Signal::Signal(std::unique_ptr<SignalImpl> impl) : impl_{ std::move(impl) } {}
 
 Signal::~Signal() = default;
 
@@ -75,7 +72,7 @@ void Signal::operator()()
 }
 //! \endcond
 
-void SignalManager::addSignaller(std::string name)
+void SignalManager::addSignaller(const std::string& name)
 {
     called_[name].store(false);
 }
@@ -104,54 +101,51 @@ void SignalManager::addSignaller(std::string name)
  */
 class SignalManager::LogicalAND : public Signal::SignalImpl
 {
-    public:
-        /*!
-         * \brief Create short-lived signal issuer implementation.
-         *
-         * \param manager
-         * \param name
-         *
-         * Caller is responsible for ensuring that the object pointed to by
-         * manager remains valid for the life time of a LogicalAND instance.
-         */
-        LogicalAND(SignalManager* manager, std::string name) :
-            name_(std::move(name)),
-            manager_(manager)
-        {}
+public:
+    /*!
+     * \brief Create short-lived signal issuer implementation.
+     *
+     * \param manager
+     * \param name
+     *
+     * Caller is responsible for ensuring that the object pointed to by
+     * manager remains valid for the life time of a LogicalAND instance.
+     */
+    LogicalAND(SignalManager* manager, std::string name) : name_(std::move(name)), manager_(manager)
+    {
+    }
 
-        //! \cond
-        ~LogicalAND() override = default;
-        //! \endcond
+    //! \cond
+    ~LogicalAND() override = default;
+    //! \endcond
 
-        /*!
-         * \brief Sets the stop condition when the last issuer issues.
-         *
-         * Once all participating signal issuers have called for a stop signal,
-         * the stop condition state is updated to stopAtNextNSStep.
-         */
-        void call() override
+    /*!
+     * \brief Sets the stop condition when the last issuer issues.
+     *
+     * Once all participating signal issuers have called for a stop signal,
+     * the stop condition state is updated to stopAtNextNSStep.
+     */
+    void call() override
+    {
+        auto& callCounter = manager_->called_.at(name_);
+        callCounter.store(true);
+        using pairType = typename decltype(manager_->called_)::value_type;
+        if (std::all_of(manager_->called_.cbegin(), manager_->called_.cend(),
+                        [](const pairType& p) { return p.second.load(); }))
         {
-            auto &callCounter = manager_->called_.at(name_);
-            callCounter.store(true);
-            using pairType = typename decltype(manager_->called_) ::value_type;
-            if (std::all_of(manager_->called_.cbegin(),
-                            manager_->called_.cend(),
-                            [](const pairType &p){ return p.second.load(); }))
-            {
-                *manager_->state_ = gmx::StopSignal::stopAtNextNSStep;
-            }
+            *manager_->state_ = gmx::StopSignal::stopAtNextNSStep;
         }
+    }
 
-    private:
-        //! Named signal issuer for the current operation.
-        const std::string name_;
+private:
+    //! Named signal issuer for the current operation.
+    const std::string name_;
 
-        //! The manager that generated this function object.
-        SignalManager   * manager_;
+    //! The manager that generated this function object.
+    SignalManager* manager_;
 };
 
-Signal SignalManager::getSignal(std::string name,
-                                md::signals signal)
+Signal SignalManager::getSignal(const std::string& name, md::signals signal)
 {
     if (called_.find(name) == called_.end())
     {
@@ -164,13 +158,12 @@ Signal SignalManager::getSignal(std::string name,
         throw gmxapi::NotImplementedError("This signaller only handles stop signals.");
     }
 
-    auto   signalImpl = std::make_unique<LogicalAND>(this, name);
-    auto   functor    = Signal(std::move(signalImpl));
+    auto signalImpl = std::make_unique<LogicalAND>(this, name);
+    auto functor    = Signal(std::move(signalImpl));
     return functor;
 }
 
-Signal getMdrunnerSignal(SessionResources *resources,
-                         md::signals       signal)
+Signal getMdrunnerSignal(SessionResources* resources, md::signals signal)
 {
     // while there is only one choice...
     if (signal != md::signals::STOP)
@@ -180,7 +173,8 @@ Signal getMdrunnerSignal(SessionResources *resources,
 
     if (resources == nullptr)
     {
-        throw gmxapi::UsageError("Caller must provide a valid SessionResources to getMdrunnerSignal.");
+        throw gmxapi::UsageError(
+                "Caller must provide a valid SessionResources to getMdrunnerSignal.");
     }
 
     auto signaller = resources->getMdrunnerSignal(signal);

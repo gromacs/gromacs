@@ -1,0 +1,1010 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="FinalPositions">
+    <Int Name="Length">100</Int>
+    <Atom>
+      <Real Name="XX">0.00099700000000000006</Real>
+      <Real Name="YY">6.4980019999999996</Real>
+      <Real Name="ZZ">0.0029990000000000004</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009984999999999</Real>
+      <Real Name="YY">5.4980010000000004</Real>
+      <Real Name="ZZ">0.0029995</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009990000000002</Real>
+      <Real Name="YY">4.498000666666667</Real>
+      <Real Name="ZZ">0.002999666666666667</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.00099925</Real>
+      <Real Name="YY">3.4980004999999998</Real>
+      <Real Name="ZZ">0.0029997500000000002</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.0009994000000004</Real>
+      <Real Name="YY">2.4980004</Real>
+      <Real Name="ZZ">0.0029997999999999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009994999999998</Real>
+      <Real Name="YY">1.4980003333333334</Real>
+      <Real Name="ZZ">0.0029998333333333331</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.0009995714285713</Real>
+      <Real Name="YY">0.49800028571428573</Real>
+      <Real Name="ZZ">0.0029998571428571431</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009996250000004</Real>
+      <Real Name="YY">-0.50199974999999997</Real>
+      <Real Name="ZZ">0.0029998749999999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.000999666666667</Real>
+      <Real Name="YY">-1.5019997777777778</Real>
+      <Real Name="ZZ">0.0029998888888888892</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009996999999995</Real>
+      <Real Name="YY">-2.5019998000000001</Real>
+      <Real Name="ZZ">0.0029998999999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">10.000999727272728</Real>
+      <Real Name="YY">-3.5019998181818184</Real>
+      <Real Name="ZZ">0.0029999090909090913</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">11.00099975</Real>
+      <Real Name="YY">-4.5019998333333335</Real>
+      <Real Name="ZZ">0.0029999166666666668</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">12.00099976923077</Real>
+      <Real Name="YY">-5.5019998461538462</Real>
+      <Real Name="ZZ">0.0029999230769230771</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">13.000999785714285</Real>
+      <Real Name="YY">6.4980001428571432</Real>
+      <Real Name="ZZ">0.0029999285714285714</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">14.000999800000001</Real>
+      <Real Name="YY">5.498000133333333</Real>
+      <Real Name="ZZ">0.0029999333333333334</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">15.0009998125</Real>
+      <Real Name="YY">4.4980001249999999</Real>
+      <Real Name="ZZ">0.0029999375</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">16.000999823529412</Real>
+      <Real Name="YY">3.498000117647059</Real>
+      <Real Name="ZZ">0.002999941176470588</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">17.000999833333335</Real>
+      <Real Name="YY">2.4980001111111112</Real>
+      <Real Name="ZZ">0.0029999444444444444</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">18.000999842105262</Real>
+      <Real Name="YY">1.498000105263158</Real>
+      <Real Name="ZZ">0.0029999473684210526</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">19.000999849999999</Real>
+      <Real Name="YY">0.4980001</Real>
+      <Real Name="ZZ">0.0029999500000000004</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">20.000999857142858</Real>
+      <Real Name="YY">-0.50199990476190481</Real>
+      <Real Name="ZZ">0.0029999523809523814</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.00099986363636363641</Real>
+      <Real Name="YY">-1.5019999090909091</Real>
+      <Real Name="ZZ">0.0029999545454545452</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009998695652174</Real>
+      <Real Name="YY">-2.5019999130434782</Real>
+      <Real Name="ZZ">0.0029999565217391309</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009998750000002</Real>
+      <Real Name="YY">-3.5019999166666667</Real>
+      <Real Name="ZZ">0.0029999583333333332</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.0009998800000002</Real>
+      <Real Name="YY">-4.5019999200000003</Real>
+      <Real Name="ZZ">0.0029999600000000003</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.0009998846153847</Real>
+      <Real Name="YY">-5.501999923076923</Real>
+      <Real Name="ZZ">0.0029999615384615386</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009998888888889</Real>
+      <Real Name="YY">6.4980000740740742</Real>
+      <Real Name="ZZ">0.0029999629629629634</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.0009998928571431</Real>
+      <Real Name="YY">5.4980000714285717</Real>
+      <Real Name="ZZ">0.0029999642857142859</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009998965517237</Real>
+      <Real Name="YY">4.4980000689655171</Real>
+      <Real Name="ZZ">0.0029999655172413798</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.0009999000000001</Real>
+      <Real Name="YY">3.4980000666666666</Real>
+      <Real Name="ZZ">0.0029999666666666665</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009999032258072</Real>
+      <Real Name="YY">2.4980000645161291</Real>
+      <Real Name="ZZ">0.0029999677419354841</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">10.00099990625</Real>
+      <Real Name="YY">1.4980000625000001</Real>
+      <Real Name="ZZ">0.00299996875</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">11.000999909090909</Real>
+      <Real Name="YY">0.49800006060606061</Real>
+      <Real Name="ZZ">0.0029999696969696971</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">12.000999911764707</Real>
+      <Real Name="YY">-0.50199994117647062</Real>
+      <Real Name="ZZ">0.002999970588235294</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">13.000999914285714</Real>
+      <Real Name="YY">-1.5019999428571429</Real>
+      <Real Name="ZZ">0.0029999714285714285</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">14.000999916666666</Real>
+      <Real Name="YY">-2.5019999444444445</Real>
+      <Real Name="ZZ">0.002999972222222222</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">15.000999918918918</Real>
+      <Real Name="YY">-3.5019999459459461</Real>
+      <Real Name="ZZ">0.0029999729729729731</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">16.000999921052632</Real>
+      <Real Name="YY">-4.5019999473684207</Real>
+      <Real Name="ZZ">0.0029999736842105263</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">17.000999923076922</Real>
+      <Real Name="YY">-5.5019999487179483</Real>
+      <Real Name="ZZ">0.0029999743589743592</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">18.000999924999999</Real>
+      <Real Name="YY">6.4980000499999999</Real>
+      <Real Name="ZZ">0.0029999750000000002</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">19.00099992682927</Real>
+      <Real Name="YY">5.4980000487804874</Real>
+      <Real Name="ZZ">0.0029999756097560978</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">20.000999928571428</Real>
+      <Real Name="YY">4.4980000476190476</Real>
+      <Real Name="ZZ">0.0029999761904761905</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.00099993023255813963</Real>
+      <Real Name="YY">3.4980000465116281</Real>
+      <Real Name="ZZ">0.0029999767441860462</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009999318181819</Real>
+      <Real Name="YY">2.4980000454545452</Real>
+      <Real Name="ZZ">0.0029999772727272726</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009999333333335</Real>
+      <Real Name="YY">1.4980000444444443</Real>
+      <Real Name="ZZ">0.0029999777777777775</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.0009999347826088</Real>
+      <Real Name="YY">0.49800004347826088</Real>
+      <Real Name="ZZ">0.002999978260869565</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.0009999361702127</Real>
+      <Real Name="YY">-0.50199995744680848</Real>
+      <Real Name="ZZ">0.0029999787234042553</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009999374999996</Real>
+      <Real Name="YY">-1.5019999583333334</Real>
+      <Real Name="ZZ">0.0029999791666666669</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.00099993877551</Real>
+      <Real Name="YY">-2.5019999591836735</Real>
+      <Real Name="ZZ">0.0029999795918367348</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009999399999998</Real>
+      <Real Name="YY">-3.50199996</Real>
+      <Real Name="ZZ">0.0029999799999999997</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.0009999411764703</Real>
+      <Real Name="YY">-4.501999960784314</Real>
+      <Real Name="ZZ">0.0029999803921568627</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009999423076916</Real>
+      <Real Name="YY">-5.5019999615384618</Real>
+      <Real Name="ZZ">0.0029999807692307691</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">10.000999943396227</Real>
+      <Real Name="YY">6.4980000377358493</Real>
+      <Real Name="ZZ">0.0029999811320754722</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">11.000999944444445</Real>
+      <Real Name="YY">5.4980000370370368</Real>
+      <Real Name="ZZ">0.0029999814814814815</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">12.000999945454545</Real>
+      <Real Name="YY">4.4980000363636368</Real>
+      <Real Name="ZZ">0.0029999818181818184</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">13.000999946428571</Real>
+      <Real Name="YY">3.4980000357142855</Real>
+      <Real Name="ZZ">0.0029999821428571428</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">14.00099994736842</Real>
+      <Real Name="YY">2.4980000350877192</Real>
+      <Real Name="ZZ">0.0029999824561403512</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">15.000999948275862</Real>
+      <Real Name="YY">1.4980000344827586</Real>
+      <Real Name="ZZ">0.0029999827586206897</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">16.000999949152543</Real>
+      <Real Name="YY">0.49800003389830511</Real>
+      <Real Name="ZZ">0.0029999830508474577</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">17.000999950000001</Real>
+      <Real Name="YY">-0.50199996666666669</Real>
+      <Real Name="ZZ">0.0029999833333333335</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">18.000999950819672</Real>
+      <Real Name="YY">-1.5019999672131148</Real>
+      <Real Name="ZZ">0.0029999836065573771</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">19.000999951612904</Real>
+      <Real Name="YY">-2.5019999677419356</Real>
+      <Real Name="ZZ">0.0029999838709677418</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">20.000999952380951</Real>
+      <Real Name="YY">-3.5019999682539682</Real>
+      <Real Name="ZZ">0.0029999841269841275</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.00099995312499999997</Real>
+      <Real Name="YY">-4.5019999687499999</Real>
+      <Real Name="ZZ">0.002999984375</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009999538461538</Real>
+      <Real Name="YY">-5.5019999692307691</Real>
+      <Real Name="ZZ">0.0029999846153846155</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009999545454544</Real>
+      <Real Name="YY">6.4980000303030305</Real>
+      <Real Name="ZZ">0.0029999848484848486</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.0009999552238806</Real>
+      <Real Name="YY">5.4980000298507461</Real>
+      <Real Name="ZZ">0.0029999850746268656</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.000999955882353</Real>
+      <Real Name="YY">4.4980000294117648</Real>
+      <Real Name="ZZ">0.0029999852941176475</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009999565217393</Real>
+      <Real Name="YY">3.4980000289855071</Real>
+      <Real Name="ZZ">0.002999985507246377</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.0009999571428567</Real>
+      <Real Name="YY">2.4980000285714286</Real>
+      <Real Name="ZZ">0.0029999857142857145</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009999577464788</Real>
+      <Real Name="YY">1.498000028169014</Real>
+      <Real Name="ZZ">0.0029999859154929576</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.0009999583333329</Real>
+      <Real Name="YY">0.4980000277777778</Real>
+      <Real Name="ZZ">0.0029999861111111113</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009999589041101</Real>
+      <Real Name="YY">-0.50199997260273976</Real>
+      <Real Name="ZZ">0.0029999863013698632</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">10.00099995945946</Real>
+      <Real Name="YY">-1.5019999729729729</Real>
+      <Real Name="ZZ">0.0029999864864864866</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">11.00099996</Real>
+      <Real Name="YY">-2.5019999733333331</Real>
+      <Real Name="ZZ">0.0029999866666666668</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">12.000999960526316</Real>
+      <Real Name="YY">-3.5019999736842107</Real>
+      <Real Name="ZZ">0.0029999868421052632</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">13.000999961038961</Real>
+      <Real Name="YY">-4.5019999740259742</Real>
+      <Real Name="ZZ">0.0029999870129870133</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">14.000999961538461</Real>
+      <Real Name="YY">-5.5019999743589745</Real>
+      <Real Name="ZZ">0.0029999871794871794</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">15.000999962025316</Real>
+      <Real Name="YY">6.4980000253164558</Real>
+      <Real Name="ZZ">0.0029999873417721518</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">16.0009999625</Real>
+      <Real Name="YY">5.4980000249999996</Real>
+      <Real Name="ZZ">0.0029999875000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">17.000999962962965</Real>
+      <Real Name="YY">4.4980000246913576</Real>
+      <Real Name="ZZ">0.0029999876543209875</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">18.000999963414635</Real>
+      <Real Name="YY">3.4980000243902438</Real>
+      <Real Name="ZZ">0.0029999878048780487</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">19.000999963855421</Real>
+      <Real Name="YY">2.4980000240963856</Real>
+      <Real Name="ZZ">0.0029999879518072289</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">20.000999964285715</Real>
+      <Real Name="YY">1.4980000238095239</Real>
+      <Real Name="ZZ">0.0029999880952380955</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.00099996470588235289</Real>
+      <Real Name="YY">0.49800002352941175</Real>
+      <Real Name="ZZ">0.0029999882352941178</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">1.0009999651162791</Real>
+      <Real Name="YY">-0.50199997674418606</Real>
+      <Real Name="ZZ">0.0029999883720930234</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">2.0009999655172415</Real>
+      <Real Name="YY">-1.5019999770114942</Real>
+      <Real Name="ZZ">0.0029999885057471268</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">3.0009999659090911</Real>
+      <Real Name="YY">-2.5019999772727273</Real>
+      <Real Name="ZZ">0.0029999886363636366</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">4.0009999662921345</Real>
+      <Real Name="YY">-3.5019999775280897</Real>
+      <Real Name="ZZ">0.0029999887640449439</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">5.0009999666666669</Real>
+      <Real Name="YY">-4.5019999777777775</Real>
+      <Real Name="ZZ">0.002999988888888889</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">6.0009999670329668</Real>
+      <Real Name="YY">-5.5019999780219777</Real>
+      <Real Name="ZZ">0.0029999890109890107</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">7.0009999673913041</Real>
+      <Real Name="YY">6.4980000217391307</Real>
+      <Real Name="ZZ">0.002999989130434783</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">8.0009999677419348</Real>
+      <Real Name="YY">5.4980000215053764</Real>
+      <Real Name="ZZ">0.0029999892473118283</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">9.0009999680851056</Real>
+      <Real Name="YY">4.4980000212765958</Real>
+      <Real Name="ZZ">0.0029999893617021277</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">10.000999968421052</Real>
+      <Real Name="YY">3.4980000210526314</Real>
+      <Real Name="ZZ">0.0029999894736842106</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">11.00099996875</Real>
+      <Real Name="YY">2.4980000208333335</Real>
+      <Real Name="ZZ">0.0029999895833333337</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">12.000999969072165</Real>
+      <Real Name="YY">1.4980000206185566</Real>
+      <Real Name="ZZ">0.0029999896907216494</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">13.000999969387754</Real>
+      <Real Name="YY">0.49800002040816327</Real>
+      <Real Name="ZZ">0.0029999897959183675</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">14.00099996969697</Real>
+      <Real Name="YY">-0.50199997979797983</Real>
+      <Real Name="ZZ">0.0029999898989898992</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">15.000999970000001</Real>
+      <Real Name="YY">-1.5019999799999999</Real>
+      <Real Name="ZZ">0.0029999900000000001</Real>
+    </Atom>
+  </Sequence>
+  <Sequence Name="FinalVelocities">
+    <Int Name="Length">100</Int>
+    <Atom>
+      <Real Name="XX">0.997</Real>
+      <Real Name="YY">-1.998</Real>
+      <Real Name="ZZ">2.9990000000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99850000000000005</Real>
+      <Real Name="YY">-1.9990000000000001</Real>
+      <Real Name="ZZ">2.9994999999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.999</Real>
+      <Real Name="YY">-1.9993333333333334</Real>
+      <Real Name="ZZ">2.9996666666666667</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99924999999999997</Real>
+      <Real Name="YY">-1.9995000000000001</Real>
+      <Real Name="ZZ">2.9997500000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99939999999999996</Real>
+      <Real Name="YY">-1.9996</Real>
+      <Real Name="ZZ">2.9998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99950000000000006</Real>
+      <Real Name="YY">-1.9996666666666667</Real>
+      <Real Name="ZZ">2.9998333333333331</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99957142857142856</Real>
+      <Real Name="YY">-1.9997142857142858</Real>
+      <Real Name="ZZ">2.999857142857143</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99962499999999999</Real>
+      <Real Name="YY">-1.9997499999999999</Real>
+      <Real Name="ZZ">2.9998749999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9996666666666667</Real>
+      <Real Name="YY">-1.9997777777777779</Real>
+      <Real Name="ZZ">2.999888888888889</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99970000000000003</Real>
+      <Real Name="YY">-1.9998</Real>
+      <Real Name="ZZ">2.9998999999999998</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99972727272727269</Real>
+      <Real Name="YY">-1.9998181818181817</Real>
+      <Real Name="ZZ">2.9999090909090911</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99975000000000003</Real>
+      <Real Name="YY">-1.9998333333333334</Real>
+      <Real Name="ZZ">2.9999166666666666</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99976923076923074</Real>
+      <Real Name="YY">-1.9998461538461538</Real>
+      <Real Name="ZZ">2.9999230769230771</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99978571428571428</Real>
+      <Real Name="YY">-1.9998571428571428</Real>
+      <Real Name="ZZ">2.9999285714285713</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99980000000000002</Real>
+      <Real Name="YY">-1.9998666666666667</Real>
+      <Real Name="ZZ">2.9999333333333333</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99981249999999999</Real>
+      <Real Name="YY">-1.9998750000000001</Real>
+      <Real Name="ZZ">2.9999375000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99982352941176467</Real>
+      <Real Name="YY">-1.9998823529411764</Real>
+      <Real Name="ZZ">2.9999411764705881</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99983333333333335</Real>
+      <Real Name="YY">-1.9998888888888888</Real>
+      <Real Name="ZZ">2.9999444444444445</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99984210526315787</Real>
+      <Real Name="YY">-1.9998947368421052</Real>
+      <Real Name="ZZ">2.9999473684210525</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99985000000000002</Real>
+      <Real Name="YY">-1.9999</Real>
+      <Real Name="ZZ">2.9999500000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99985714285714289</Real>
+      <Real Name="YY">-1.9999047619047619</Real>
+      <Real Name="ZZ">2.9999523809523811</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9998636363636364</Real>
+      <Real Name="YY">-1.9999090909090909</Real>
+      <Real Name="ZZ">2.9999545454545453</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99986956521739134</Real>
+      <Real Name="YY">-1.9999130434782608</Real>
+      <Real Name="ZZ">2.9999565217391306</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99987499999999996</Real>
+      <Real Name="YY">-1.9999166666666666</Real>
+      <Real Name="ZZ">2.9999583333333333</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99987999999999999</Real>
+      <Real Name="YY">-1.9999199999999999</Real>
+      <Real Name="ZZ">2.9999600000000002</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99988461538461537</Real>
+      <Real Name="YY">-1.9999230769230769</Real>
+      <Real Name="ZZ">2.9999615384615383</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99988888888888894</Real>
+      <Real Name="YY">-1.9999259259259259</Real>
+      <Real Name="ZZ">2.9999629629629632</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99989285714285714</Real>
+      <Real Name="YY">-1.9999285714285715</Real>
+      <Real Name="ZZ">2.9999642857142859</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99989655172413794</Real>
+      <Real Name="YY">-1.9999310344827586</Real>
+      <Real Name="ZZ">2.9999655172413795</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99990000000000001</Real>
+      <Real Name="YY">-1.9999333333333333</Real>
+      <Real Name="ZZ">2.9999666666666664</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99990322580645163</Real>
+      <Real Name="YY">-1.9999354838709678</Real>
+      <Real Name="ZZ">2.999967741935484</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99990625</Real>
+      <Real Name="YY">-1.9999374999999999</Real>
+      <Real Name="ZZ">2.9999687499999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99990909090909086</Real>
+      <Real Name="YY">-1.9999393939393939</Real>
+      <Real Name="ZZ">2.9999696969696972</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99991176470588239</Real>
+      <Real Name="YY">-1.9999411764705883</Real>
+      <Real Name="ZZ">2.9999705882352941</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99991428571428576</Real>
+      <Real Name="YY">-1.9999428571428572</Real>
+      <Real Name="ZZ">2.9999714285714285</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99991666666666668</Real>
+      <Real Name="YY">-1.9999444444444445</Real>
+      <Real Name="ZZ">2.999972222222222</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99991891891891893</Real>
+      <Real Name="YY">-1.9999459459459459</Real>
+      <Real Name="ZZ">2.9999729729729729</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99992105263157893</Real>
+      <Real Name="YY">-1.9999473684210527</Real>
+      <Real Name="ZZ">2.9999736842105262</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99992307692307691</Real>
+      <Real Name="YY">-1.9999487179487179</Real>
+      <Real Name="ZZ">2.999974358974359</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99992499999999995</Real>
+      <Real Name="YY">-1.9999499999999999</Real>
+      <Real Name="ZZ">2.9999750000000001</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99992682926829268</Real>
+      <Real Name="YY">-1.9999512195121951</Real>
+      <Real Name="ZZ">2.9999756097560977</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99992857142857139</Real>
+      <Real Name="YY">-1.9999523809523809</Real>
+      <Real Name="ZZ">2.9999761904761906</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993023255813951</Real>
+      <Real Name="YY">-1.9999534883720931</Real>
+      <Real Name="ZZ">2.9999767441860463</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9999318181818182</Real>
+      <Real Name="YY">-1.9999545454545455</Real>
+      <Real Name="ZZ">2.9999772727272727</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993333333333334</Real>
+      <Real Name="YY">-1.9999555555555555</Real>
+      <Real Name="ZZ">2.9999777777777776</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993478260869562</Real>
+      <Real Name="YY">-1.9999565217391304</Real>
+      <Real Name="ZZ">2.9999782608695651</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993617021276593</Real>
+      <Real Name="YY">-1.9999574468085106</Real>
+      <Real Name="ZZ">2.9999787234042552</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993750000000003</Real>
+      <Real Name="YY">-1.9999583333333333</Real>
+      <Real Name="ZZ">2.9999791666666669</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99993877551020405</Real>
+      <Real Name="YY">-1.9999591836734694</Real>
+      <Real Name="ZZ">2.9999795918367349</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994000000000005</Real>
+      <Real Name="YY">-1.99996</Real>
+      <Real Name="ZZ">2.9999799999999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994117647058822</Real>
+      <Real Name="YY">-1.9999607843137255</Real>
+      <Real Name="ZZ">2.9999803921568629</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994230769230774</Real>
+      <Real Name="YY">-1.9999615384615386</Real>
+      <Real Name="ZZ">2.9999807692307692</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994339622641515</Real>
+      <Real Name="YY">-1.9999622641509434</Real>
+      <Real Name="ZZ">2.9999811320754719</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994444444444441</Real>
+      <Real Name="YY">-1.9999629629629629</Real>
+      <Real Name="ZZ">2.9999814814814814</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994545454545458</Real>
+      <Real Name="YY">-1.9999636363636364</Real>
+      <Real Name="ZZ">2.9999818181818183</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994642857142857</Real>
+      <Real Name="YY">-1.9999642857142856</Real>
+      <Real Name="ZZ">2.9999821428571427</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994736842105258</Real>
+      <Real Name="YY">-1.9999649122807017</Real>
+      <Real Name="ZZ">2.999982456140351</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994827586206891</Real>
+      <Real Name="YY">-1.9999655172413793</Real>
+      <Real Name="ZZ">2.9999827586206895</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99994915254237293</Real>
+      <Real Name="YY">-1.9999661016949153</Real>
+      <Real Name="ZZ">2.9999830508474576</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995000000000001</Real>
+      <Real Name="YY">-1.9999666666666667</Real>
+      <Real Name="ZZ">2.9999833333333332</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995081967213117</Real>
+      <Real Name="YY">-1.9999672131147541</Real>
+      <Real Name="ZZ">2.9999836065573771</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995161290322576</Real>
+      <Real Name="YY">-1.9999677419354838</Real>
+      <Real Name="ZZ">2.9999838709677418</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995238095238093</Real>
+      <Real Name="YY">-1.999968253968254</Real>
+      <Real Name="ZZ">2.9999841269841272</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.999953125</Real>
+      <Real Name="YY">-1.9999687500000001</Real>
+      <Real Name="ZZ">2.9999843749999999</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995384615384619</Real>
+      <Real Name="YY">-1.9999692307692307</Real>
+      <Real Name="ZZ">2.9999846153846152</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995454545454543</Real>
+      <Real Name="YY">-1.999969696969697</Real>
+      <Real Name="ZZ">2.9999848484848486</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995522388059699</Real>
+      <Real Name="YY">-1.9999701492537314</Real>
+      <Real Name="ZZ">2.9999850746268657</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995588235294119</Real>
+      <Real Name="YY">-1.9999705882352941</Real>
+      <Real Name="ZZ">2.9999852941176472</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995652173913041</Real>
+      <Real Name="YY">-1.9999710144927536</Real>
+      <Real Name="ZZ">2.999985507246377</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995714285714288</Real>
+      <Real Name="YY">-1.9999714285714285</Real>
+      <Real Name="ZZ">2.9999857142857143</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995774647887326</Real>
+      <Real Name="YY">-1.9999718309859156</Real>
+      <Real Name="ZZ">2.9999859154929576</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995833333333328</Real>
+      <Real Name="YY">-1.9999722222222223</Real>
+      <Real Name="ZZ">2.9999861111111112</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995890410958899</Real>
+      <Real Name="YY">-1.999972602739726</Real>
+      <Real Name="ZZ">2.9999863013698631</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995945945945941</Real>
+      <Real Name="YY">-1.9999729729729729</Real>
+      <Real Name="ZZ">2.9999864864864865</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99995999999999996</Real>
+      <Real Name="YY">-1.9999733333333334</Real>
+      <Real Name="ZZ">2.9999866666666666</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996052631578947</Real>
+      <Real Name="YY">-1.9999736842105262</Real>
+      <Real Name="ZZ">2.9999868421052631</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996103896103894</Real>
+      <Real Name="YY">-1.999974025974026</Real>
+      <Real Name="ZZ">2.9999870129870132</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996153846153846</Real>
+      <Real Name="YY">-1.999974358974359</Real>
+      <Real Name="ZZ">2.9999871794871793</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996202531645573</Real>
+      <Real Name="YY">-1.9999746835443037</Real>
+      <Real Name="ZZ">2.9999873417721519</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996249999999998</Real>
+      <Real Name="YY">-1.9999750000000001</Real>
+      <Real Name="ZZ">2.9999875</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996296296296294</Real>
+      <Real Name="YY">-1.9999753086419754</Real>
+      <Real Name="ZZ">2.9999876543209876</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9999634146341464</Real>
+      <Real Name="YY">-1.9999756097560977</Real>
+      <Real Name="ZZ">2.9999878048780486</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996385542168675</Real>
+      <Real Name="YY">-1.9999759036144578</Real>
+      <Real Name="ZZ">2.999987951807229</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996428571428575</Real>
+      <Real Name="YY">-1.9999761904761906</Real>
+      <Real Name="ZZ">2.9999880952380953</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996470588235298</Real>
+      <Real Name="YY">-1.9999764705882352</Real>
+      <Real Name="ZZ">2.9999882352941176</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996511627906981</Real>
+      <Real Name="YY">-1.9999767441860465</Real>
+      <Real Name="ZZ">2.9999883720930232</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996551724137928</Real>
+      <Real Name="YY">-1.9999770114942528</Real>
+      <Real Name="ZZ">2.9999885057471265</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.9999659090909091</Real>
+      <Real Name="YY">-1.9999772727272727</Real>
+      <Real Name="ZZ">2.9999886363636366</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996629213483146</Real>
+      <Real Name="YY">-1.9999775280898877</Real>
+      <Real Name="ZZ">2.9999887640449439</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996666666666667</Real>
+      <Real Name="YY">-1.9999777777777779</Real>
+      <Real Name="ZZ">2.9999888888888888</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996703296703293</Real>
+      <Real Name="YY">-1.9999780219780219</Real>
+      <Real Name="ZZ">2.9999890109890108</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996739130434786</Real>
+      <Real Name="YY">-1.9999782608695653</Real>
+      <Real Name="ZZ">2.9999891304347828</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996774193548388</Real>
+      <Real Name="YY">-1.9999784946236558</Real>
+      <Real Name="ZZ">2.9999892473118281</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996808510638302</Real>
+      <Real Name="YY">-1.9999787234042554</Real>
+      <Real Name="ZZ">2.9999893617021276</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996842105263162</Real>
+      <Real Name="YY">-1.9999789473684211</Real>
+      <Real Name="ZZ">2.9999894736842103</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996874999999996</Real>
+      <Real Name="YY">-1.9999791666666666</Real>
+      <Real Name="ZZ">2.9999895833333334</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996907216494846</Real>
+      <Real Name="YY">-1.9999793814432989</Real>
+      <Real Name="ZZ">2.9999896907216494</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996938775510202</Real>
+      <Real Name="YY">-1.9999795918367347</Real>
+      <Real Name="ZZ">2.9999897959183675</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99996969696969695</Real>
+      <Real Name="YY">-1.999979797979798</Real>
+      <Real Name="ZZ">2.9999898989898992</Real>
+    </Atom>
+    <Atom>
+      <Real Name="XX">0.99997000000000003</Real>
+      <Real Name="YY">-1.9999800000000001</Real>
+      <Real Name="ZZ">2.9999899999999999</Real>
+    </Atom>
+  </Sequence>
+</ReferenceData>

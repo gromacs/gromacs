@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,22 +65,19 @@
 #include "domdec_internal.h"
 
 /*! \brief Calculates the average and standard deviation in 3D of atoms */
-static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec>  x,
-                               rvec                            av,
-                               rvec                            stddev,
-                               const MPI_Comm                 *mpiCommunicator)
+static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec> x, rvec av, rvec stddev, const MPI_Comm* mpiCommunicator)
 {
-    dvec   s1, s2;
+    dvec s1, s2;
 
     clear_dvec(s1);
     clear_dvec(s2);
 
-    for (const gmx::RVec &coord : x)
+    for (const gmx::RVec& coord : x)
     {
         for (int d = 0; d < DIM; d++)
         {
             s1[d] += coord[d];
-            s2[d] += coord[d]*coord[d];
+            s2[d] += coord[d] * coord[d];
         }
     }
 
@@ -100,8 +97,7 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec>  x,
         }
         sendBuffer[6] = numAtoms;
 
-        MPI_Allreduce(sendBuffer, receiveBuffer, c_bufSize, MPI_DOUBLE,
-                      MPI_SUM, *mpiCommunicator);
+        MPI_Allreduce(sendBuffer, receiveBuffer, c_bufSize, MPI_DOUBLE, MPI_SUM, *mpiCommunicator);
 
         for (int d = 0; d < DIM; d++)
         {
@@ -114,18 +110,18 @@ static void calc_pos_av_stddev(gmx::ArrayRef<const gmx::RVec>  x,
     GMX_UNUSED_VALUE(mpiCommunicator);
 #endif // GMX_MPI
 
-    dsvmul(1.0/numAtoms, s1, s1);
-    dsvmul(1.0/numAtoms, s2, s2);
+    dsvmul(1.0 / numAtoms, s1, s1);
+    dsvmul(1.0 / numAtoms, s2, s2);
 
     for (int d = 0; d < DIM; d++)
     {
         av[d]     = s1[d];
-        stddev[d] = std::sqrt(s2[d] - s1[d]*s1[d]);
+        stddev[d] = std::sqrt(s2[d] - s1[d] * s1[d]);
     }
 }
 
 /*! \brief Determines if dimensions require triclinic treatment and stores this info in ddbox */
-static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box)
+static void set_tric_dir(const ivec* dd_nc, gmx_ddbox_t* ddbox, const matrix box)
 {
     int   npbcdim, d, i, j;
     rvec *v, *normal;
@@ -136,16 +132,19 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
     for (d = 0; d < DIM; d++)
     {
         ddbox->tric_dir[d] = 0;
-        for (j = d+1; j < npbcdim; j++)
+        for (j = d + 1; j < npbcdim; j++)
         {
             if (box[j][d] != 0)
             {
                 ddbox->tric_dir[d] = 1;
                 if (dd_nc != nullptr && (*dd_nc)[j] > 1 && (*dd_nc)[d] == 1)
                 {
-                    gmx_fatal(FARGS, "Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
-                              (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ],
-                              j+1, box[j][XX], box[j][YY], box[j][ZZ]);
+                    gmx_fatal(FARGS,
+                              "Domain decomposition has not been implemented for box vectors that "
+                              "have non-zero components in directions that do not use domain "
+                              "decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
+                              (*dd_nc)[XX], (*dd_nc)[YY], (*dd_nc)[ZZ], j + 1, box[j][XX],
+                              box[j][YY], box[j][ZZ]);
                 }
             }
         }
@@ -166,54 +165,52 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
             if (d == XX || d == YY)
             {
                 /* Normalize such that the "diagonal" is 1 */
-                svmul(1/box[d+1][d+1], box[d+1], v[d+1]);
+                svmul(1 / box[d + 1][d + 1], box[d + 1], v[d + 1]);
                 for (i = 0; i < d; i++)
                 {
-                    v[d+1][i] = 0;
+                    v[d + 1][i] = 0;
                 }
-                inv_skew_fac2 += gmx::square(v[d+1][d]);
+                inv_skew_fac2 += gmx::square(v[d + 1][d]);
                 if (d == XX)
                 {
                     /* Normalize such that the "diagonal" is 1 */
-                    svmul(1/box[d+2][d+2], box[d+2], v[d+2]);
+                    svmul(1 / box[d + 2][d + 2], box[d + 2], v[d + 2]);
                     /* Set v[d+2][d+1] to zero by shifting along v[d+1] */
-                    dep = v[d+2][d+1]/v[d+1][d+1];
+                    dep = v[d + 2][d + 1] / v[d + 1][d + 1];
                     for (i = 0; i < DIM; i++)
                     {
-                        v[d+2][i] -= dep*v[d+1][i];
+                        v[d + 2][i] -= dep * v[d + 1][i];
                     }
-                    inv_skew_fac2 += gmx::square(v[d+2][d]);
+                    inv_skew_fac2 += gmx::square(v[d + 2][d]);
 
-                    cprod(v[d+1], v[d+2], normal[d]);
+                    cprod(v[d + 1], v[d + 2], normal[d]);
                 }
                 else
                 {
                     /* cross product with (1,0,0) */
-                    normal[d][XX] =  0;
-                    normal[d][YY] =  v[d+1][ZZ];
-                    normal[d][ZZ] = -v[d+1][YY];
+                    normal[d][XX] = 0;
+                    normal[d][YY] = v[d + 1][ZZ];
+                    normal[d][ZZ] = -v[d + 1][YY];
                 }
                 if (debug)
                 {
-                    fprintf(debug, "box[%d]  %.3f %.3f %.3f\n",
-                            d, box[d][XX], box[d][YY], box[d][ZZ]);
-                    for (i = d+1; i < DIM; i++)
+                    fprintf(debug, "box[%d]  %.3f %.3f %.3f\n", d, box[d][XX], box[d][YY], box[d][ZZ]);
+                    for (i = d + 1; i < DIM; i++)
                     {
-                        fprintf(debug, "  v[%d]  %.3f %.3f %.3f\n",
-                                i, v[i][XX], v[i][YY], v[i][ZZ]);
+                        fprintf(debug, "  v[%d]  %.3f %.3f %.3f\n", i, v[i][XX], v[i][YY], v[i][ZZ]);
                     }
                 }
             }
-            ddbox->skew_fac[d] = 1.0/std::sqrt(inv_skew_fac2);
+            ddbox->skew_fac[d] = 1.0 / std::sqrt(inv_skew_fac2);
             /* Set the normal vector length to skew_fac */
-            dep = ddbox->skew_fac[d]/norm(normal[d]);
+            dep = ddbox->skew_fac[d] / norm(normal[d]);
             svmul(dep, normal[d], normal[d]);
 
             if (debug)
             {
                 fprintf(debug, "skew_fac[%d] = %f\n", d, ddbox->skew_fac[d]);
-                fprintf(debug, "normal[%d]  %.3f %.3f %.3f\n",
-                        d, normal[d][XX], normal[d][YY], normal[d][ZZ]);
+                fprintf(debug, "normal[%d]  %.3f %.3f %.3f\n", d, normal[d][XX], normal[d][YY],
+                        normal[d][ZZ]);
             }
         }
         else
@@ -232,14 +229,14 @@ static void set_tric_dir(const ivec *dd_nc, gmx_ddbox_t *ddbox, const matrix box
 }
 
 /*! \brief This function calculates bounding box and pbc info and populates ddbox */
-static void low_set_ddbox(int                             numPbcDimensions,
-                          int                             numBoundedDimensions,
-                          const ivec                     *dd_nc,
-                          const matrix                    box,
-                          bool                            calculateUnboundedSize,
-                          gmx::ArrayRef<const gmx::RVec>  x,
-                          const MPI_Comm                 *mpiCommunicator,
-                          gmx_ddbox_t                    *ddbox)
+static void low_set_ddbox(int                            numPbcDimensions,
+                          int                            numBoundedDimensions,
+                          const ivec*                    dd_nc,
+                          const matrix                   box,
+                          bool                           calculateUnboundedSize,
+                          gmx::ArrayRef<const gmx::RVec> x,
+                          const MPI_Comm*                mpiCommunicator,
+                          gmx_ddbox_t*                   ddbox)
 {
     rvec av, stddev;
     real b0, b1;
@@ -264,12 +261,11 @@ static void low_set_ddbox(int                             numPbcDimensions,
          */
         for (d = ddbox->nboundeddim; d < DIM; d++)
         {
-            b0 = av[d] - GRID_STDDEV_FAC*stddev[d];
-            b1 = av[d] + GRID_STDDEV_FAC*stddev[d];
+            b0 = av[d] - GRID_STDDEV_FAC * stddev[d];
+            b1 = av[d] + GRID_STDDEV_FAC * stddev[d];
             if (debug)
             {
-                fprintf(debug, "Setting global DD grid boundaries to %f - %f\n",
-                        b0, b1);
+                fprintf(debug, "Setting global DD grid boundaries to %f - %f\n", b0, b1);
             }
             ddbox->box0[d]     = b0;
             ddbox->box_size[d] = b1 - b0;
@@ -279,24 +275,22 @@ static void low_set_ddbox(int                             numPbcDimensions,
     set_tric_dir(dd_nc, ddbox, box);
 }
 
-void set_ddbox(const gmx_domdec_t             &dd,
-               bool                            masterRankHasTheSystemState,
-               const matrix                    box,
-               bool                            calculateUnboundedSize,
-               gmx::ArrayRef<const gmx::RVec>  x,
-               gmx_ddbox_t                    *ddbox)
+void set_ddbox(const gmx_domdec_t&            dd,
+               bool                           masterRankHasTheSystemState,
+               const matrix                   box,
+               bool                           calculateUnboundedSize,
+               gmx::ArrayRef<const gmx::RVec> x,
+               gmx_ddbox_t*                   ddbox)
 {
     if (!masterRankHasTheSystemState || DDMASTER(dd))
     {
-        bool                           needToReduceCoordinateData =
-            (!masterRankHasTheSystemState && dd.nnodes > 1);
-        gmx::ArrayRef<const gmx::RVec> xRef =
-            constArrayRefFromArray(x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
+        bool needToReduceCoordinateData     = (!masterRankHasTheSystemState && dd.nnodes > 1);
+        gmx::ArrayRef<const gmx::RVec> xRef = constArrayRefFromArray(
+                x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
-        low_set_ddbox(dd.npbcdim, dd.numBoundedDimensions,
-                      &dd.nc, box, calculateUnboundedSize, xRef,
-                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr,
-                      ddbox);
+        low_set_ddbox(dd.unitCellInfo.npbcdim, dd.unitCellInfo.numBoundedDimensions, &dd.nc, box,
+                      calculateUnboundedSize, xRef,
+                      needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr, ddbox);
     }
 
     if (masterRankHasTheSystemState)
@@ -305,23 +299,17 @@ void set_ddbox(const gmx_domdec_t             &dd,
     }
 }
 
-void set_ddbox_cr(const t_commrec                &cr,
-                  const ivec                     *dd_nc,
-                  const t_inputrec               &ir,
-                  const matrix                    box,
-                  gmx::ArrayRef<const gmx::RVec>  x,
-                  gmx_ddbox_t                    *ddbox)
+void set_ddbox_cr(const t_commrec&               cr,
+                  const ivec*                    dd_nc,
+                  const t_inputrec&              ir,
+                  const matrix                   box,
+                  gmx::ArrayRef<const gmx::RVec> x,
+                  gmx_ddbox_t*                   ddbox)
 {
     if (MASTER(&cr))
     {
-        low_set_ddbox(ePBC2npbcdim(ir.ePBC), inputrec2nboundeddim(&ir),
-                      dd_nc, box, true, x, nullptr, ddbox);
+        low_set_ddbox(ePBC2npbcdim(ir.ePBC), inputrec2nboundeddim(&ir), dd_nc, box, true, x, nullptr, ddbox);
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);
-}
-
-bool dynamic_dd_box(const gmx_domdec_t &dd)
-{
-    return (dd.numBoundedDimensions < DIM || dd.haveDynamicBox);
 }

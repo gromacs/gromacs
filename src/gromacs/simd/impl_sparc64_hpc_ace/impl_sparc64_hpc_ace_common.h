@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,29 +41,29 @@
  * a single-precision interface where we only offer single-precision accuracy
  * in math functions - this can save quite a few cycles.
  */
-#define GMX_SIMD                                 1
-#define GMX_SIMD_HAVE_FLOAT                      1
-#define GMX_SIMD_HAVE_DOUBLE                     1
-#define GMX_SIMD_HAVE_LOADU                      0
-#define GMX_SIMD_HAVE_STOREU                     0
-#define GMX_SIMD_HAVE_LOGICAL                    1
-#define GMX_SIMD_HAVE_FMA                        1
-#define GMX_SIMD_HAVE_FINT32_EXTRACT             1
-#define GMX_SIMD_HAVE_FINT32_LOGICAL             1
-#define GMX_SIMD_HAVE_FINT32_ARITHMETICS         0
-#define GMX_SIMD_HAVE_DINT32_EXTRACT             1
-#define GMX_SIMD_HAVE_DINT32_LOGICAL             1
-#define GMX_SIMD_HAVE_DINT32_ARITHMETICS         0
-#define GMX_SIMD4_HAVE_FLOAT                     0
-#define GMX_SIMD4_HAVE_DOUBLE                    0
+#define GMX_SIMD 1
+#define GMX_SIMD_HAVE_FLOAT 1
+#define GMX_SIMD_HAVE_DOUBLE 1
+#define GMX_SIMD_HAVE_LOADU 0
+#define GMX_SIMD_HAVE_STOREU 0
+#define GMX_SIMD_HAVE_LOGICAL 1
+#define GMX_SIMD_HAVE_FMA 1
+#define GMX_SIMD_HAVE_FINT32_EXTRACT 1
+#define GMX_SIMD_HAVE_FINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_FINT32_ARITHMETICS 0
+#define GMX_SIMD_HAVE_DINT32_EXTRACT 1
+#define GMX_SIMD_HAVE_DINT32_LOGICAL 1
+#define GMX_SIMD_HAVE_DINT32_ARITHMETICS 0
+#define GMX_SIMD4_HAVE_FLOAT 0
+#define GMX_SIMD4_HAVE_DOUBLE 0
 
 /* Implementation details */
-#define GMX_SIMD_FLOAT_WIDTH                     2
-#define GMX_SIMD_DOUBLE_WIDTH                    2
-#define GMX_SIMD_FINT32_WIDTH                    2
-#define GMX_SIMD_DINT32_WIDTH                    2
+#define GMX_SIMD_FLOAT_WIDTH 2
+#define GMX_SIMD_DOUBLE_WIDTH 2
+#define GMX_SIMD_FINT32_WIDTH 2
+#define GMX_SIMD_DINT32_WIDTH 2
 /* No SIMD4 support in either single or double */
-#define GMX_SIMD_RSQRT_BITS                     10
-#define GMX_SIMD_RCP_BITS                        9
+#define GMX_SIMD_RSQRT_BITS 10
+#define GMX_SIMD_RCP_BITS 9
 
 #endif /* GMX_SIMD_IMPL_SPARC64_HPC_ACE_COMMON_H */

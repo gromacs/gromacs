@@ -35,6 +35,6 @@
 #ifndef GMX_GMXPREPROCESS_GENION_H
 #define GMX_GMXPREPROCESS_GENION_H
 
-int gmx_genion(int argc, char *argv[]);
+int gmx_genion(int argc, char* argv[]);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,22 +46,25 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/utility/real.h"
 
 /*! \brief Flag to select user tables for make_tables */
-#define GMX_MAKETABLES_FORCEUSER  (1<<0)
+#define GMX_MAKETABLES_FORCEUSER (1 << 0)
 /*! \brief Flag to only make 1,4 pair tables for make_tables */
-#define GMX_MAKETABLES_14ONLY     (1<<1)
+#define GMX_MAKETABLES_14ONLY (1 << 1)
 
 /*! \brief Enumerated type to describe the interaction types in a table */
-enum {
-    etiCOUL,  //!< Coulomb
-    etiLJ6,   //!< Dispersion
-    etiLJ12,  //!< Repulsion
-    etiNR     //!< Total number of interaction types
+enum
+{
+    etiCOUL, //!< Coulomb
+    etiLJ6,  //!< Dispersion
+    etiLJ12, //!< Repulsion
+    etiNR    //!< Total number of interaction types
 };
 
 /*! \brief Function pointer to calculate the grid contribution for coulomb/LJ
@@ -72,37 +75,34 @@ enum {
 typedef double (*real_space_grid_contribution_computer)(double, double);
 
 
-/*! \brief Fill tables with the Ewald long-range force interaction
+/*! \brief Construct tables with the Ewald long-range force interaction
  *
- * Fill tables of ntab points with spacing dr with the ewald long-range
- * (mesh) force.
- * There are three separate tables with format FDV0, F, and V.
+ * Creates and fills tables of numPoints points with the spacing
+ * set to 1/tableScaling with the Ewald long-range (mesh) force.
+ * There are three separate tables with format F, V, FDV0.
  * This function interpolates the Ewald mesh potential contribution
  * with coefficient beta using a quadratic spline.
- * The force can then be interpolated linearly.
+ * The force is then be interpolated linearly.
  *
- * \param table_F    Force table
- * \param table_V    Potential table
- * \param table_FDV0 Combined table optimized for SIMD loads
- * \param ntab       Number of points in tables
- * \param dx         Spacing
- * \param beta       Ewald splitting paramter
- * \param v_lr       Pointer to function calculating real-space grid contribution
+ * \param numPoints     Number of points in the tables
+ * \param tableScaling  1/spacing, units 1/nm
+ * \param beta          Ewald splitting parameter, units 1/nm
+ * \param v_lr          Pointer to function calculating real-space grid contribution
+ * \returns a set of Ewald correction tables
  */
-void table_spline3_fill_ewald_lr(real                                 *table_F,
-                                 real                                 *table_V,
-                                 real                                 *table_FDV0,
-                                 int                                   ntab,
-                                 double                                dx,
-                                 real                                  beta,
-                                 real_space_grid_contribution_computer v_lr);
+EwaldCorrectionTables generateEwaldCorrectionTables(int    numPoints,
+                                                    double tableScaling,
+                                                    real   beta,
+                                                    real_space_grid_contribution_computer v_lr);
 
 /*! \brief Compute scaling for the Ewald quadratic spline tables.
  *
- * \param ic  Pointer to interaction constant structure
- * \return The scaling factor
+ * \param ic                     Pointer to interaction constant structure
+ * \param generateCoulombTables  Take the spacing for Coulomb Ewald corrections into account
+ * \param generateVdwTables      Take the spacing for Van der Waals Ewald corrections into account
+ * \return The scaling factor in units 1/nm
  */
-real ewald_spline3_table_scale(const interaction_const_t *ic);
+real ewald_spline3_table_scale(const interaction_const_t& ic, bool generateCoulombTables, bool generateVdwTables);
 
 /*! \brief Return the real space grid contribution for Ewald
  *
@@ -130,9 +130,7 @@ double v_lj_ewald_lr(double beta, double r);
  *
  * \return Pointer to inner loop table structure
  */
-t_forcetable *make_tables(FILE *fp,
-                          const interaction_const_t *ic,
-                          const char *fn, real rtab, int flags);
+t_forcetable* make_tables(FILE* fp, const interaction_const_t* ic, const char* fn, real rtab, int flags);
 
 /*! \brief Return a table for bonded interactions,
  *
@@ -141,12 +139,14 @@ t_forcetable *make_tables(FILE *fp,
  * \param  angle   Type of angle: bonds 0, angles 1, dihedrals 2
  * \return New bonded table datatype
  */
-bondedtable_t make_bonded_table(FILE *fplog, const char *fn, int angle);
+bondedtable_t make_bonded_table(FILE* fplog, const char* fn, int angle);
 
 /*! \brief Construct and return tabulated dispersion and repulsion interactions
  *
- * This table can be used to compute long-range dispersion corrections */
-t_forcetable *makeDispersionCorrectionTable(FILE *fp, const interaction_const_t *ic,
-                                            real rtab, const char *tabfn);
+ * This table can be used to compute long-range dispersion corrections.
+ * Returns pointer owning nothing when tabfn=nullptr.
+ */
+std::unique_ptr<t_forcetable>
+makeDispersionCorrectionTable(FILE* fp, const interaction_const_t* ic, real rtab, const char* tabfn);
 
-#endif  /* GMX_TABLES_FORCETABLE_H */
+#endif /* GMX_TABLES_FORCETABLE_H */

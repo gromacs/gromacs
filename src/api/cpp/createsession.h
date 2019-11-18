@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,12 +41,10 @@
  * \ingroup gmxapi
  */
 
-#include "gromacs/mdrun/logging.h"
+#include "gromacs/mdrunutility/logging.h"
 
 #include "gmxapi/context.h"
 #include "gmxapi/session.h"
-
-struct gmx_multisim_t;
 
 namespace gmx
 {
@@ -70,13 +68,12 @@ namespace gmxapi
  *
  * \return Ownership of new Session implementation instance.
  */
-std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl>  context,
-                                       gmx::MdrunnerBuilder        &&runnerBuilder,
-                                       const gmx::SimulationContext &simulationContext,
-                                       gmx::LogFilePtr               logFilehandle,
-                                       gmx_multisim_t              * multiSim);
+std::shared_ptr<Session> createSession(std::shared_ptr<ContextImpl> context,
+                                       gmx::MdrunnerBuilder&&       runnerBuilder,
+                                       gmx::SimulationContext&&     simulationContext,
+                                       gmx::LogFilePtr              logFilehandle);
 
 
-}      // end namespace gmxapi
+} // end namespace gmxapi
 
-#endif //GMXAPI_LIBRARY_SESSION_H
+#endif // GMXAPI_LIBRARY_SESSION_H

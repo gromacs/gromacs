@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,17 +68,18 @@ namespace gmx
 namespace ocl
 {
 
-std::string makeBinaryCacheFilename(const std::string &kernelFilename,
-                                    cl_device_id       deviceId)
+std::string makeBinaryCacheFilename(const std::string& kernelFilename, cl_device_id deviceId)
 {
     // Note that the OpenCL API is defined in terms of bytes, and we
     // assume that sizeof(char) is one byte.
     std::array<char, 1024> deviceName;
     size_t                 deviceNameLength;
-    cl_int                 cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(), deviceName.data(), &deviceNameLength);
+    cl_int                 cl_error = clGetDeviceInfo(deviceId, CL_DEVICE_NAME, deviceName.size(),
+                                      deviceName.data(), &deviceNameLength);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s", ocl_get_error_string(cl_error).c_str())));
+        GMX_THROW(InternalError(formatString("Could not get OpenCL device name, error was %s",
+                                             ocl_get_error_string(cl_error).c_str())));
     }
 
     std::string cacheFilename = "OCL-cache";
@@ -92,16 +93,14 @@ std::string makeBinaryCacheFilename(const std::string &kernelFilename,
        (symbols), by permitting only alphanumeric characters from the
        current locale. We assume these work well enough in a
        filename. */
-    std::copy_if(deviceName.begin(), deviceName.begin() + deviceNameLength, std::back_inserter(cacheFilename), isalnum);
+    std::copy_if(deviceName.begin(), deviceName.begin() + deviceNameLength,
+                 std::back_inserter(cacheFilename), isalnum);
     cacheFilename += ".bin";
 
     return cacheFilename;
 }
 
-cl_program
-makeProgramFromCache(const std::string &filename,
-                     cl_context         context,
-                     cl_device_id       deviceId)
+cl_program makeProgramFromCache(const std::string& filename, cl_context context, cl_device_id deviceId)
 {
     // TODO all this file reading stuff should become gmx::BinaryReader
     const auto f = create_unique_with_deleter(fopen(filename.c_str(), "rb"), fclose);
@@ -112,7 +111,7 @@ makeProgramFromCache(const std::string &filename,
 
     // TODO more stdio error handling
     fseek(f.get(), 0, SEEK_END);
-    unsigned char             *binary;
+    unsigned char*             binary;
     unique_cptr<unsigned char> binaryGuard;
     size_t                     fileSize = ftell(f.get());
     snew(binary, fileSize);
@@ -134,40 +133,39 @@ makeProgramFromCache(const std::string &filename,
 
     /* Create program from pre-built binary */
     cl_int     cl_error;
-    cl_program program = clCreateProgramWithBinary(context,
-                                                   1,
-                                                   &deviceId,
-                                                   &fileSize,
-                                                   const_cast<const unsigned char **>(&binary),
-                                                   nullptr,
-                                                   &cl_error);
+    cl_program program = clCreateProgramWithBinary(context, 1, &deviceId, &fileSize,
+                                                   const_cast<const unsigned char**>(&binary),
+                                                   nullptr, &cl_error);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not create OpenCL program, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not create OpenCL program, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     return program;
 }
 
-void
-writeBinaryToCache(cl_program program, const std::string &filename)
+void writeBinaryToCache(cl_program program, const std::string& filename)
 {
     size_t fileSize;
-    cl_int cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(fileSize), &fileSize, nullptr);
+    cl_int cl_error =
+            clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, sizeof(fileSize), &fileSize, nullptr);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not get OpenCL program binary size, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not get OpenCL program binary size, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     // TODO all this file writing stuff should become gmx::BinaryWriter
-    unsigned char                   *binary;
+    unsigned char* binary;
     snew(binary, fileSize);
     const unique_cptr<unsigned char> binaryGuard(binary);
 
     cl_error = clGetProgramInfo(program, CL_PROGRAM_BINARIES, sizeof(binary), &binary, nullptr);
     if (cl_error != CL_SUCCESS)
     {
-        GMX_THROW(InternalError("Could not get OpenCL program binary, error was " + ocl_get_error_string(cl_error)));
+        GMX_THROW(InternalError("Could not get OpenCL program binary, error was "
+                                + ocl_get_error_string(cl_error)));
     }
 
     const auto f = create_unique_with_deleter(fopen(filename.c_str(), "wb"), fclose);

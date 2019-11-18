@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,7 +56,7 @@
  */
 static int zeroPaddingSize(int n)
 {
-    return 2*n;
+    return 2 * n;
 }
 
 /*! \brief
@@ -65,10 +65,10 @@ static int zeroPaddingSize(int n)
  * \param[in] in1 first complex number
  * \param[in] in2 second complex number
  */
-static void complexConjugatMult(t_complex *in1, t_complex *in2)
+static void complexConjugatMult(t_complex* in1, t_complex* in2)
 {
     t_complex res;
-    res.re  = in1->re *  in2->re + in1->im * in2->im;
+    res.re  = in1->re * in2->re + in1->im * in2->im;
     res.im  = in1->re * -in2->im + in1->im * in2->re;
     in1->re = res.re;
     in1->im = res.im;
@@ -85,26 +85,26 @@ static void complexConjugatMult(t_complex *in1, t_complex *in2)
  */
 static void cross_corr_low(int n, const real f[], const real g[], real corr[], gmx_fft_t fft)
 {
-    int             i;
-    const int       size = zeroPaddingSize(n);
-    t_complex *     in1, * in2;
+    int        i;
+    const int  size = zeroPaddingSize(n);
+    t_complex *in1, *in2;
 
     snew(in1, size);
     snew(in2, size);
 
     for (i = 0; i < n; i++)
     {
-        in1[i].re  = f[i];
-        in1[i].im  = 0;
-        in2[i].re  = g[i];
-        in2[i].im  = 0;
+        in1[i].re = f[i];
+        in1[i].im = 0;
+        in2[i].re = g[i];
+        in2[i].im = 0;
     }
     for (; i < size; i++)
     {
-        in1[i].re  = 0;
-        in1[i].im  = 0;
-        in2[i].re  = 0;
-        in2[i].im  = 0;
+        in1[i].re = 0;
+        in1[i].im = 0;
+        in2[i].re = 0;
+        in2[i].im = 0;
     }
     gmx_fft_1d(fft, GMX_FFT_FORWARD, in1, in1);
     gmx_fft_1d(fft, GMX_FFT_FORWARD, in2, in2);
@@ -123,22 +123,21 @@ static void cross_corr_low(int n, const real f[], const real g[], real corr[], g
 
     sfree(in1);
     sfree(in2);
-
 }
 
 void cross_corr(int n, real f[], real g[], real corr[])
 {
     gmx_fft_t fft;
     gmx_fft_init_1d(&fft, zeroPaddingSize(n), GMX_FFT_FLAG_CONSERVATIVE);
-    cross_corr_low( n,  f,  g, corr, fft);
+    cross_corr_low(n, f, g, corr, fft);
     gmx_fft_destroy(fft);
     gmx_fft_cleanup();
 }
 
-void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
+void many_cross_corr(int nFunc, int* nData, real** f, real** g, real** corr)
 {
 #pragma omp parallel
-    //gmx_fft_t is not thread safe, so structure are allocated per thread.
+    // gmx_fft_t is not thread safe, so structure are allocated per thread.
     {
         int i;
 
@@ -149,12 +148,11 @@ void many_cross_corr(int nFunc, int * nData, real ** f, real ** g, real ** corr)
             {
                 gmx_fft_t fft;
                 gmx_fft_init_1d(&fft, zeroPaddingSize(nData[i]), GMX_FFT_FLAG_CONSERVATIVE);
-                cross_corr_low( nData[i],  f[i],  g[i], corr[i], fft);
+                cross_corr_low(nData[i], f[i], g[i], corr[i], fft);
                 gmx_fft_destroy(fft);
             }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         }
     }
     gmx_fft_cleanup();
-
 }

@@ -36,7 +36,13 @@
 #ifndef GMX_NBNXM_NBNXM_GEOMETRY_H
 #define GMX_NBNXM_NBNXM_GEOMETRY_H
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+
+#include "pairlist.h"
+
 
 /* Returns the base-2 log of n.
  * Generates a fatal error when n is not an integer power of 2.
@@ -58,10 +64,56 @@ static inline int get_2log(int n)
     return log2;
 }
 
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type);
+namespace Nbnxm
+{
 
-/* Returns the nbnxn i-cluster size in atoms for the nbnxn kernel type */
-int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type);
+/* The nbnxn i-cluster size in atoms for each nbnxn kernel type */
+static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType = {
+    { 0, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize,
+      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
+};
+
+/* The nbnxn j-cluster size in atoms for each nbnxn kernel type */
+static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType = {
+    { 0, c_nbnxnCpuIClusterSize,
+#if GMX_SIMD
+      GMX_SIMD_REAL_WIDTH, GMX_SIMD_REAL_WIDTH / 2,
+#else
+      0, 0,
+#endif
+      c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
+};
+
+/* Returns whether the pair-list corresponding to nb_kernel_type is simple */
+static inline bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
+{
+    return (kernelType == KernelType::Cpu4x4_PlainC || kernelType == KernelType::Cpu4xN_Simd_4xN
+            || kernelType == KernelType::Cpu4xN_Simd_2xNN);
+}
+
+static inline bool kernelTypeIsSimd(const KernelType kernelType)
+{
+    return (kernelType == KernelType::Cpu4xN_Simd_4xN || kernelType == KernelType::Cpu4xN_Simd_2xNN);
+}
+
+} // namespace Nbnxm
+
+/* Returns the effective list radius of the pair-list
+ *
+ * Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ *
+ * NOTE: If the i- and j-cluster sizes are identical and you know
+ *       the physical dimensions of the clusters, use the next function
+ *       for more accurate results
+ */
+real nbnxn_get_rlist_effective_inc(int jClusterSize, real atomDensity);
+
+/* Returns the effective list radius of the pair-list
+ *
+ * Due to the cluster size the effective pair-list is longer than
+ * that of a simple atom pair-list. This function gives the extra distance.
+ */
+real nbnxn_get_rlist_effective_inc(int clusterSize, const gmx::RVec& averageClusterBoundingBox);
 
 #endif

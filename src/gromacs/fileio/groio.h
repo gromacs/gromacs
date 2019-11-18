@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,30 +47,34 @@ struct t_atoms;
 struct t_symtab;
 struct t_trxframe;
 
-void get_coordnum(const char *infile, int *natoms);
-void gmx_gro_read_conf(const char *infile,
-                       t_symtab *symtab, char **name, t_atoms *atoms,
-                       rvec x[], rvec *v, matrix box);
+void get_coordnum(const char* infile, int* natoms);
+void gmx_gro_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], rvec* v, matrix box);
 /* If name is not nullptr, gmx_strdup the title string into it. */
 
-gmx_bool gro_next_x_or_v(FILE *status, struct t_trxframe *fr);
-int gro_first_x_or_v(FILE *status, struct t_trxframe *fr);
+gmx_bool gro_next_x_or_v(FILE* status, struct t_trxframe* fr);
+int      gro_first_x_or_v(FILE* status, struct t_trxframe* fr);
 /* read first/next x and/or v frame from gro file */
 
-void write_hconf_indexed_p(FILE *out, const char *title, const t_atoms *atoms,
-                           int nx, const int index[],
-                           const rvec *x, const rvec *v, const matrix box);
+void write_hconf_indexed_p(FILE*          out,
+                           const char*    title,
+                           const t_atoms* atoms,
+                           int            nx,
+                           const int      index[],
+                           const rvec*    x,
+                           const rvec*    v,
+                           const matrix   box);
 
-void write_hconf_mtop(FILE *out, const char *title, struct gmx_mtop_t *mtop,
-                      const rvec *x, const rvec *v, const matrix box);
+void write_hconf_mtop(FILE* out, const char* title, const gmx_mtop_t* mtop, const rvec* x, const rvec* v, const matrix box);
 
-void write_hconf_p(FILE *out, const char *title, const t_atoms *atoms,
-                   const rvec *x, const rvec *v, const matrix box);
+void write_hconf_p(FILE* out, const char* title, const t_atoms* atoms, const rvec* x, const rvec* v, const matrix box);
 /* Write a Gromos file with precision ndec: number of decimal places in x,
  * v has one place more. */
 
-void write_conf_p(const char *outfile, const char *title,
-                  const t_atoms *atoms,
-                  const rvec *x, const rvec *v, const matrix box);
+void write_conf_p(const char*    outfile,
+                  const char*    title,
+                  const t_atoms* atoms,
+                  const rvec*    x,
+                  const rvec*    v,
+                  const matrix   box);
 
 #endif

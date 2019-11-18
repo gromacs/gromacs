@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,16 +72,11 @@ using gmx::test::XvgMatch;
  */
 
 //! Test fixture for the `sasa` analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SasaInfo>
-    SasaModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::SasaInfo> SasaModuleTest;
 
 TEST_F(SasaModuleTest, BasicTest)
 {
-    const char *const cmdline[] = {
-        "sasa",
-        "-surface", "all",
-        "-output", "name N CA C O H"
-    };
+    const char* const cmdline[] = { "sasa", "-surface", "all", "-output", "name N CA C O H" };
     setTopology("lysozyme.gro");
     setOutputFile("-o", ".xvg", XvgMatch().testData(false));
     setOutputFile("-or", ".xvg", XvgMatch());
@@ -95,10 +90,7 @@ TEST_F(SasaModuleTest, BasicTest)
 
 TEST_F(SasaModuleTest, HandlesSelectedResidues)
 {
-    const char *const cmdline[] = {
-        "sasa",
-        "-surface", "resnr 2 4 to 5 8"
-    };
+    const char* const cmdline[] = { "sasa", "-surface", "resnr 2 4 to 5 8" };
     setTopology("lysozyme.gro");
     setOutputFile("-o", ".xvg", XvgMatch().testData(false));
     setOutputFile("-or", ".xvg", XvgMatch());
@@ -111,10 +103,7 @@ TEST_F(SasaModuleTest, HandlesSelectedResidues)
 
 TEST_F(SasaModuleTest, WritesConnollySurfaceWithSolute)
 {
-    const char *const cmdline[] = {
-        "sasa",
-        "-surface", "atomnr 1"
-    };
+    const char* const cmdline[] = { "sasa", "-surface", "atomnr 1" };
     setTopology("lysozyme.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     setOutputFile("-q", "connolly.pdb", ExactTextMatch());
@@ -145,11 +134,7 @@ TEST_F(SasaModuleTest, WritesConnollySurfaceWithoutSolute)
 
 TEST_F(SasaModuleTest, HandlesDynamicOutputGroup)
 {
-    const char *const cmdline[] = {
-        "sasa",
-        "-surface", "all",
-        "-output", "y > 1.5"
-    };
+    const char* const cmdline[] = { "sasa", "-surface", "all", "-output", "y > 1.5" };
     setTopology("lysozyme.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     setOutputFile("-or", ".xvg", NoTextMatch());
@@ -162,11 +147,7 @@ TEST_F(SasaModuleTest, HandlesDynamicOutputGroup)
 
 TEST_F(SasaModuleTest, HandlesDynamicCalculationGroup)
 {
-    const char *const cmdline[] = {
-        "sasa",
-        "-surface", "y > 1.5",
-        "-output", "y > 1.5 and z > 0"
-    };
+    const char* const cmdline[] = { "sasa", "-surface", "y > 1.5", "-output", "y > 1.5 and z > 0" };
     setTopology("lysozyme.gro");
     setOutputFile("-o", ".xvg", NoTextMatch());
     setOutputFile("-or", ".xvg", NoTextMatch());

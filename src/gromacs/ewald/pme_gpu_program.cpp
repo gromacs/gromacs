@@ -51,14 +51,14 @@
 
 #include "pme_gpu_program_impl.h"
 
-PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t *deviceInfo) :
+PmeGpuProgram::PmeGpuProgram(const gmx_device_info_t* deviceInfo) :
     impl_(std::make_unique<PmeGpuProgramImpl>(deviceInfo))
 {
 }
 
 PmeGpuProgram::~PmeGpuProgram() = default;
 
-PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t *deviceInfo)
+PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t* deviceInfo)
 {
     if (!deviceInfo)
     {

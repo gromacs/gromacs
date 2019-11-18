@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,8 +58,7 @@ namespace
 TEST(NotNullConstruction, Works)
 {
     // shared_ptr<int> is nullptr assignable
-    not_null < std::shared_ptr < int>> sharedPointer(
-            std::make_shared<int>(10));
+    not_null<std::shared_ptr<int>> sharedPointer(std::make_shared<int>(10));
 
 #ifndef NDEBUG
 /* The workaround here is needed because the intel implementation
@@ -67,20 +66,20 @@ TEST(NotNullConstruction, Works)
  * a valid object. This was needed due to an internal error
  * being triggered instead with the compiler under this condition.
  */
-#if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
-    int *nullPointer = nullptr;
-    EXPECT_DEATH_IF_SUPPORTED(not_null<int *> invalidNullPointer(nullPointer), "");
-#endif
+#    if !defined(__INTEL_COMPILER) || !(__INTEL_COMPILER == 1800 && __INTEL_COMPILER_UPDATE == 0)
+    int* nullPointer = nullptr;
+    EXPECT_DEATH_IF_SUPPORTED(not_null<int*> invalidNullPointer(nullPointer), "");
+#    endif
 #endif
 
     int  value        = 20;
-    int *validPointer = &value;
+    int* validPointer = &value;
     {
-        not_null<int *> validNotNullPointer(validPointer);
+        not_null<int*> validNotNullPointer(validPointer);
         GMX_UNUSED_VALUE(validNotNullPointer);
     }
     {
-        not_null<int *> validNotNullPointer = not_null<int *>(validPointer);
+        not_null<int*> validNotNullPointer = not_null<int*>(validPointer);
         GMX_UNUSED_VALUE(validNotNullPointer);
     }
 }
@@ -97,18 +96,14 @@ TEST(NotNullCasting, Works)
     {
     };
 
-    MyBase               base;
-    MyDerived            derived;
-    Unrelated            unrelated;
+    MyBase    base;
+    MyDerived derived;
+    Unrelated unrelated;
 
-    not_null<Unrelated*> u {
-        &unrelated
-    };
-    (void) u;
-    not_null<MyDerived*> p {
-        &derived
-    };
-    not_null<MyBase*> q(&base);
+    not_null<Unrelated*> u{ &unrelated };
+    (void)u;
+    not_null<MyDerived*> p{ &derived };
+    not_null<MyBase*>    q(&base);
     // Allowed with heterogeneous copy constructor
     q = p;
 
@@ -126,13 +121,13 @@ TEST(NotNullAssignment, Works)
 TEST(MakeNotNull, Works)
 {
     {
-        int                   i = 42;
+        int i = 42;
 
-        const not_null<int *> x = make_not_null(&i);
+        const not_null<int*> x = make_not_null(&i);
         EXPECT_EQ(*x, 42);
-        not_null<int *>       y = make_not_null(&i);
+        not_null<int*> y = make_not_null(&i);
         EXPECT_EQ(*y, 42);
-        not_null<const int *> z = make_not_null(&i);
+        not_null<const int*> z = make_not_null(&i);
         EXPECT_EQ(*z, 42);
     }
 
@@ -152,6 +147,25 @@ TEST(MakeNotNull, Works)
            EXPECT_EQ(*z, 42);
          */
     }
+
+    {
+        std::unique_ptr<int> i = std::make_unique<int>(42);
+
+        const not_null<int*> x = make_not_null(i);
+        EXPECT_EQ(*x, 42);
+        not_null<int*> y = make_not_null(i);
+        EXPECT_EQ(*y, 42);
+        not_null<const int*> z = make_not_null(i);
+        EXPECT_EQ(*z, 42);
+    }
+
+    {
+        std::unique_ptr<const int> i = std::make_unique<int>(42);
+
+        // not_null<int *> does not compile, as expected
+        not_null<const int*> z = make_not_null(i);
+        EXPECT_EQ(*z, 42);
+    }
 }
 
 TEST(NotNull, WorksInContainers)
@@ -159,7 +173,7 @@ TEST(NotNull, WorksInContainers)
     int            i = 12;
     not_null<int*> p(&i);
 
-    std::vector < not_null < int*>> v;
+    std::vector<not_null<int*>> v;
     v.push_back(p);
     EXPECT_EQ(*v.back(), 12);
 }

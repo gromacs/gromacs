@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,59 +57,23 @@ namespace
 {
 
 //! Database of 51 water atom input positions (taken from spc216.gro) for use as test inputs.
-gmx::RVec positions[] = {
-    { .130, -.041, -.291 },
-    { .120, -.056, -.192 },
-    { .044, -.005, -.327 },
-    { -.854, -.406, .477 },
-    { -.900, -.334, .425 },
-    { -.858, -.386, .575 },
-    { .351, -.061, .853 },
-    { .401, -.147, .859 },
-    { .416, .016, .850 },
-    { -.067, -.796, .873 },
-    { -.129, -.811, .797 },
-    { -.119, -.785, .958 },
-    { -.635, -.312, -.356 },
-    { -.629, -.389, -.292 },
-    { -.687, -.338, -.436 },
-    { .321, -.919, .242 },
-    { .403, -.880, .200 },
-    { .294, -1.001, .193 },
-    { -.404, .735, .728 },
-    { -.409, .670, .803 },
-    { -.324, .794, .741 },
-    { .461, -.596, -.135 },
-    { .411, -.595, -.221 },
-    { .398, -.614, -.059 },
-    { -.751, -.086, .237 },
-    { -.811, -.148, .287 },
-    { -.720, -.130, .152 },
-    { .202, .285, -.364 },
-    { .122, .345, -.377 },
-    { .192, .236, -.278 },
-    { -.230, -.485, .081 },
-    { -.262, -.391, .071 },
-    { -.306, -.548, .069 },
-    { .464, -.119, .323 },
-    { .497, -.080, .409 },
-    { .540, -.126, .258 },
-    { -.462, .107, .426 },
-    { -.486, .070, .336 },
-    { -.363, .123, .430 },
-    { .249, -.077, -.621 },
-    { .306, -.142, -.571 },
-    { .233, -.110, -.714 },
-    { -.922, -.164, .904 },
-    { -.842, -.221, .925 },
-    { -.971, -.204, .827 },
-    { .382, .700, .480 },
-    { .427, .610, .477 },
-    { .288, .689, .513 },
-    { .781, .264, -.113 },
-    { .848, .203, -.070 },
-    { .708, .283, -.048 }
-};
+gmx::RVec positions[] = { { .130, -.041, -.291 },  { .120, -.056, -.192 },  { .044, -.005, -.327 },
+                          { -.854, -.406, .477 },  { -.900, -.334, .425 },  { -.858, -.386, .575 },
+                          { .351, -.061, .853 },   { .401, -.147, .859 },   { .416, .016, .850 },
+                          { -.067, -.796, .873 },  { -.129, -.811, .797 },  { -.119, -.785, .958 },
+                          { -.635, -.312, -.356 }, { -.629, -.389, -.292 }, { -.687, -.338, -.436 },
+                          { .321, -.919, .242 },   { .403, -.880, .200 },   { .294, -1.001, .193 },
+                          { -.404, .735, .728 },   { -.409, .670, .803 },   { -.324, .794, .741 },
+                          { .461, -.596, -.135 },  { .411, -.595, -.221 },  { .398, -.614, -.059 },
+                          { -.751, -.086, .237 },  { -.811, -.148, .287 },  { -.720, -.130, .152 },
+                          { .202, .285, -.364 },   { .122, .345, -.377 },   { .192, .236, -.278 },
+                          { -.230, -.485, .081 },  { -.262, -.391, .071 },  { -.306, -.548, .069 },
+                          { .464, -.119, .323 },   { .497, -.080, .409 },   { .540, -.126, .258 },
+                          { -.462, .107, .426 },   { -.486, .070, .336 },   { -.363, .123, .430 },
+                          { .249, -.077, -.621 },  { .306, -.142, -.571 },  { .233, -.110, -.714 },
+                          { -.922, -.164, .904 },  { -.842, -.221, .925 },  { -.971, -.204, .827 },
+                          { .382, .700, .480 },    { .427, .610, .477 },    { .288, .689, .513 },
+                          { .781, .264, -.113 },   { .848, .203, -.070 },   { .708, .283, -.048 } };
 
 TEST(UpdateGroupsCog, ComputesCogs)
 {
@@ -119,11 +83,11 @@ TEST(UpdateGroupsCog, ComputesCogs)
     const int numMolecules   = gmx::exactDiv(numAtoms, atomsPerSettle);
 
     // Set up the topology.
-    gmx_mtop_t        mtop;
+    gmx_mtop_t mtop;
 
-    gmx_moltype_t     moltype;
+    gmx_moltype_t moltype;
     moltype.atoms.nr         = atomsPerSettle;
-    std::vector<int> &iatoms = moltype.ilist[F_SETTLE].iatoms;
+    std::vector<int>& iatoms = moltype.ilist[F_SETTLE].iatoms;
     iatoms.push_back(settleType);
     iatoms.push_back(0);
     iatoms.push_back(1);
@@ -137,16 +101,16 @@ TEST(UpdateGroupsCog, ComputesCogs)
     gmx_mtop_finalize(&mtop);
 
     // Set up the SETTLE parameters.
-    const real     dOH = 0.1;
-    const real     dHH = 0.1633;
-    t_iparams      iparams;
+    const real dOH = 0.1;
+    const real dHH = 0.1633;
+    t_iparams  iparams;
     iparams.settle.doh = dOH;
     iparams.settle.dhh = dHH;
     mtop.ffparams.iparams.push_back(iparams);
 
     // Run the test
-    auto            updateGroups = makeUpdateGroups(mtop);
-    real            temperature  = 300;
+    auto updateGroups = makeUpdateGroups(mtop);
+    real temperature  = 300;
 
     UpdateGroupsCog updateGroupsCog(mtop, updateGroups, temperature, numAtoms);
 
@@ -187,5 +151,5 @@ TEST(UpdateGroupsCog, ComputesCogs)
     EXPECT_EQ(updateGroupsCog.numCogs(), 0);
 }
 
-}  // namespace
-}  // namespace gmx
+} // namespace
+} // namespace gmx

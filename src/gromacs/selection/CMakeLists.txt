@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,24 +33,30 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB SELECTION_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES_GENERATED
-    "${CMAKE_CURRENT_LIST_DIR}/scanner.cpp"
-    "${CMAKE_CURRENT_LIST_DIR}/parser.cpp")
-list(REMOVE_ITEM SELECTION_SOURCES ${LIBGROMACS_SOURCES_GENERATED})
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${SELECTION_SOURCES} PARENT_SCOPE)
-target_sources(libgromacs_generated PRIVATE ${LIBGROMACS_SOURCES_GENERATED})
+file(GLOB SCANNER_SOURCES scanner.cpp parser.cpp)
+list(REMOVE_ITEM SELECTION_SOURCES ${SCANNER_SOURCES})
+# Add the non-generated sources to libgromacs, so that they have only the normal warning suppressions
+target_sources(libgromacs PRIVATE ${SELECTION_SOURCES})
 
-gmx_install_headers(
-    nbsearch.h
-    indexutil.h
-    position.h
-    selection.h
-    selectioncollection.h
-    selectionenums.h
-    selectionoption.h
-    selectionoptionbehavior.h
-    selectionoptionmanager.h
-    )
+add_library(scanner OBJECT ${SCANNER_SOURCES})
+gmx_target_compile_options(scanner)
+target_compile_definitions(scanner PRIVATE HAVE_CONFIG_H)
+# Compilers give lots of warnings on these generated files.  These
+# are awkward to suppress inline, so we do it in the compilation
+# command (after testing that the compiler supports the
+# suppressions).
+if (WIN32)
+    gmx_target_warning_suppression(scanner /wd4101 HAS_NO_MSVC_UNUSED)
+    gmx_target_warning_suppression(scanner /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION)
+    gmx_target_warning_suppression(scanner /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
+else()
+    gmx_target_warning_suppression(scanner -Wno-unused HAS_NO_UNUSED)
+    gmx_target_warning_suppression(scanner -Wno-unused-parameter HAS_NO_UNUSED_PARAMETER)
+    gmx_target_warning_suppression(scanner -Wno-missing-declarations HAS_NO_MISSING_DECLARATIONS)
+    gmx_target_warning_suppression(scanner -wd1419 HAS_DECL_IN_SOURCE)
+endif()
+list(APPEND libgromacs_object_library_dependencies scanner)
+set(libgromacs_object_library_dependencies ${libgromacs_object_library_dependencies} PARENT_SCOPE)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

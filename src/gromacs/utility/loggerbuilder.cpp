@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,37 +49,34 @@ namespace gmx
 
 class LogTargetCollection : public ILogTarget
 {
-    public:
-        void addTarget(ILogTarget *target)
-        {
-            targets_.push_back(target);
-        }
+public:
+    void addTarget(ILogTarget* target) { targets_.push_back(target); }
 
-        void writeEntry(const LogEntry &entry) override
+    void writeEntry(const LogEntry& entry) override
+    {
+        for (ILogTarget* target : targets_)
         {
-            for (ILogTarget *target : targets_)
-            {
-                target->writeEntry(entry);
-            }
+            target->writeEntry(entry);
         }
+    }
 
-    private:
-        std::vector<ILogTarget *> targets_;
+private:
+    std::vector<ILogTarget*> targets_;
 };
 
 class LogTargetFormatter : public ILogTarget
 {
-    public:
-        explicit LogTargetFormatter(TextOutputStream *stream) : writer_(stream) {}
+public:
+    explicit LogTargetFormatter(TextOutputStream* stream) : writer_(stream) {}
 
-        void writeEntry(const LogEntry &entry) override;
+    void writeEntry(const LogEntry& entry) override;
 
-    private:
-        TextWriter writer_;
+private:
+    TextWriter writer_;
 };
 
 
-void LogTargetFormatter::writeEntry(const LogEntry &entry)
+void LogTargetFormatter::writeEntry(const LogEntry& entry)
 {
     if (entry.asParagraph)
     {
@@ -98,41 +95,38 @@ void LogTargetFormatter::writeEntry(const LogEntry &entry)
 
 class LoggerOwner::Impl
 {
-    public:
-        explicit Impl(ILogTarget *loggerTargets[MDLogger::LogLevelCount])
-            : logger_(loggerTargets)
-        {
-        }
+public:
+    explicit Impl(ILogTarget* loggerTargets[MDLogger::LogLevelCount]) : logger_(loggerTargets) {}
 
-        MDLogger                                        logger_;
-        std::vector<std::unique_ptr<TextOutputStream> > streams_;
-        std::vector<std::unique_ptr<ILogTarget> >       targets_;
+    MDLogger                                       logger_;
+    std::vector<std::unique_ptr<TextOutputStream>> streams_;
+    std::vector<std::unique_ptr<ILogTarget>>       targets_;
 };
 
 /********************************************************************
  * LoggerOwner
  */
 
-LoggerOwner::LoggerOwner(std::unique_ptr<Impl> impl)
-    : impl_(impl.release()), logger_(&impl_->logger_)
+LoggerOwner::LoggerOwner(std::unique_ptr<Impl> impl) :
+    impl_(impl.release()),
+    logger_(&impl_->logger_)
 {
 }
 
-LoggerOwner::LoggerOwner(LoggerOwner &&other) noexcept
-    : impl_(std::move(other.impl_)), logger_(&impl_->logger_)
+LoggerOwner::LoggerOwner(LoggerOwner&& other) noexcept :
+    impl_(std::move(other.impl_)),
+    logger_(&impl_->logger_)
 {
 }
 
-LoggerOwner &LoggerOwner::operator=(LoggerOwner &&other) noexcept
+LoggerOwner& LoggerOwner::operator=(LoggerOwner&& other) noexcept
 {
     impl_   = std::move(other.impl_);
     logger_ = &impl_->logger_;
     return *this;
 }
 
-LoggerOwner::~LoggerOwner()
-{
-}
+LoggerOwner::~LoggerOwner() {}
 
 /********************************************************************
  * LoggerBuilder::Impl
@@ -140,36 +134,31 @@ LoggerOwner::~LoggerOwner()
 
 class LoggerBuilder::Impl
 {
-    public:
-        std::vector<std::unique_ptr<TextOutputStream> > streams_;
-        std::vector<std::unique_ptr<ILogTarget> >       targets_;
-        std::vector<ILogTarget *> loggerTargets_[MDLogger::LogLevelCount];
+public:
+    std::vector<std::unique_ptr<TextOutputStream>> streams_;
+    std::vector<std::unique_ptr<ILogTarget>>       targets_;
+    std::vector<ILogTarget*>                       loggerTargets_[MDLogger::LogLevelCount];
 };
 
 /********************************************************************
  * LoggerBuilder
  */
 
-LoggerBuilder::LoggerBuilder()
-    : impl_(new Impl)
-{
-}
+LoggerBuilder::LoggerBuilder() : impl_(new Impl) {}
 
-LoggerBuilder::~LoggerBuilder()
-{
-}
+LoggerBuilder::~LoggerBuilder() {}
 
-void LoggerBuilder::addTargetStream(MDLogger::LogLevel level, TextOutputStream *stream)
+void LoggerBuilder::addTargetStream(MDLogger::LogLevel level, TextOutputStream* stream)
 {
     impl_->targets_.push_back(std::unique_ptr<ILogTarget>(new LogTargetFormatter(stream)));
-    ILogTarget *target = impl_->targets_.back().get();
+    ILogTarget* target = impl_->targets_.back().get();
     for (int i = 0; i <= static_cast<int>(level); ++i)
     {
         impl_->loggerTargets_[i].push_back(target);
     }
 }
 
-void LoggerBuilder::addTargetFile(MDLogger::LogLevel level, FILE *fp)
+void LoggerBuilder::addTargetFile(MDLogger::LogLevel level, FILE* fp)
 {
     std::unique_ptr<TextOutputStream> stream(new TextOutputFile(fp));
     addTargetStream(level, stream.get());
@@ -178,11 +167,11 @@ void LoggerBuilder::addTargetFile(MDLogger::LogLevel level, FILE *fp)
 
 LoggerOwner LoggerBuilder::build()
 {
-    ILogTarget *loggerTargets[MDLogger::LogLevelCount];
+    ILogTarget* loggerTargets[MDLogger::LogLevelCount];
     for (int i = 0; i < MDLogger::LogLevelCount; ++i)
     {
-        auto &levelTargets = impl_->loggerTargets_[i];
-        loggerTargets[i] = nullptr;
+        auto& levelTargets = impl_->loggerTargets_[i];
+        loggerTargets[i]   = nullptr;
         if (!levelTargets.empty())
         {
             if (levelTargets.size() == 1)
@@ -192,7 +181,7 @@ LoggerOwner LoggerBuilder::build()
             else
             {
                 std::unique_ptr<LogTargetCollection> collection(new LogTargetCollection);
-                for (auto &target : levelTargets)
+                for (auto& target : levelTargets)
                 {
                     collection->addTarget(target);
                 }

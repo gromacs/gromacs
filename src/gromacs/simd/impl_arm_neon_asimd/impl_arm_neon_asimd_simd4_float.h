@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,80 +45,59 @@
 namespace gmx
 {
 
-static inline Simd4Float gmx_simdcall
-fma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
-    };
+    return { vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-fms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
-    };
+    return { vnegq_f32(vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)) };
 }
 
-static inline Simd4Float gmx_simdcall
-fnma(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnma(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)
-    };
+    return { vfmsq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-fnms(Simd4Float a, Simd4Float b, Simd4Float c)
+static inline Simd4Float gmx_simdcall fnms(Simd4Float a, Simd4Float b, Simd4Float c)
 {
-    return {
-               vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_))
-    };
+    return { vnegq_f32(vfmaq_f32(c.simdInternal_, b.simdInternal_, a.simdInternal_)) };
 }
 
-static inline Simd4Float gmx_simdcall
-round(Simd4Float x)
+static inline Simd4Float gmx_simdcall round(Simd4Float x)
 {
-    return {
-               vrndnq_f32(x.simdInternal_)
-    };
+    return { vrndnq_f32(x.simdInternal_) };
 }
 
-static inline Simd4Float gmx_simdcall
-trunc(Simd4Float x)
+static inline Simd4Float gmx_simdcall trunc(Simd4Float x)
 {
-    return {
-               vrndq_f32(x.simdInternal_)
-    };
+    return { vrndq_f32(x.simdInternal_) };
 }
 
-static inline bool gmx_simdcall
-anyTrue(Simd4FBool a)
+static inline bool gmx_simdcall anyTrue(Simd4FBool a)
 {
     return (vmaxvq_u32(a.simdInternal_) != 0);
 }
 
-static inline float gmx_simdcall
-reduce(Simd4Float a)
+static inline float gmx_simdcall reduce(Simd4Float a)
 {
     float32x4_t b = a.simdInternal_;
-    b = vpaddq_f32(b, b);
-    b = vpaddq_f32(b, b);
+    b             = vpaddq_f32(b, b);
+    b             = vpaddq_f32(b, b);
     return vgetq_lane_f32(b, 0);
 }
 
-static inline float gmx_simdcall
-dotProduct(Simd4Float a, Simd4Float b)
+static inline float gmx_simdcall dotProduct(Simd4Float a, Simd4Float b)
 {
     Simd4Float c;
 
     c = a * b;
     /* set 4th element to 0, then add all of them */
-    c.simdInternal_ = vsetq_lane_f32(0.0f, c.simdInternal_, 3);
+    c.simdInternal_ = vsetq_lane_f32(0.0F, c.simdInternal_, 3);
     return reduce(c);
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_ARM_NEON_ASIMD_SIMD4_FLOAT_H

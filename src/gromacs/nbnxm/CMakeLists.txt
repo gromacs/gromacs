@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB NBNXM_SOURCES kernels_reference/*.cpp kernels_simd_4xm/*.cpp kernels_simd_2xmm/*.cpp *.cpp)
+file(GLOB NBNXM_SOURCES kernels_reference/*.cpp kernels_simd_4xm/*.cpp kernels_simd_2xmm/*.cpp *.cpp benchmark/*.cpp)
 
 if(GMX_USE_CUDA)
     add_subdirectory(cuda)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -111,18 +111,19 @@ bool threadMpiTestRunner(std::function<void()> testBody);
  * \ingroup module_testutils
  */
 #if GMX_THREAD_MPI
-#define GMX_MPI_TEST(expectedRankCount) \
-    do { \
-        ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks()); \
-        typedef std::remove_reference<decltype(*this)>::type MyTestClass; \
-        if (!::gmx::test::threadMpiTestRunner(std::bind(&MyTestClass::TestBody, this))) \
-        { \
-            return; \
-        } \
-    } while (0)
+#    define GMX_MPI_TEST(expectedRankCount)                                                 \
+        do                                                                                  \
+        {                                                                                   \
+            ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks());           \
+            using MyTestClass = std::remove_reference_t<decltype(*this)>;                   \
+            if (!::gmx::test::threadMpiTestRunner(std::bind(&MyTestClass::TestBody, this))) \
+            {                                                                               \
+                return;                                                                     \
+            }                                                                               \
+        } while (0)
 #else
-#define GMX_MPI_TEST(expectedRankCount) \
-    ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks())
+#    define GMX_MPI_TEST(expectedRankCount) \
+        ASSERT_EQ(expectedRankCount, ::gmx::test::getNumberOfTestMpiRanks())
 #endif
 
 } // namespace test

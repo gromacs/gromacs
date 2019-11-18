@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,9 +50,7 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/ns.h"
 #include "gromacs/mdlib/qmmm.h"
-#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
@@ -64,14 +62,16 @@
 
 /* ORCA interface routines */
 
-void init_orca(t_QMrec *qm)
+void init_orca(t_QMrec* qm)
 {
-    char *buf;
+    char* buf;
     snew(buf, 200);
 
     if (!GMX_QMMM_ORCA)
     {
-        gmx_fatal(FARGS, "Cannot call ORCA unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=ORCA, and ensure that linking will work correctly.");
+        gmx_fatal(FARGS,
+                  "Cannot call ORCA unless linked against it. Use cmake -DGMX_QMMM_PROGRAM=ORCA, "
+                  "and ensure that linking will work correctly.");
     }
 
     /* ORCA settings on the system */
@@ -109,19 +109,16 @@ void init_orca(t_QMrec *qm)
 }
 
 
-static void write_orca_input(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+static void write_orca_input(const t_QMMMrec* QMMMrec, t_QMrec* qm, t_MMrec* mm)
 {
-    int        i;
-    t_QMMMrec *QMMMrec;
-    FILE      *out, *pcFile, *addInputFile;
-    char      *buf, *orcaInput, *addInputFilename, *pcFilename;
-
-    QMMMrec = fr->qr;
+    int   i;
+    FILE *pcFile, *addInputFile;
+    char *buf, *orcaInput, *addInputFilename, *pcFilename;
 
     /* write the first part of the input-file */
     snew(orcaInput, 200);
     sprintf(orcaInput, "%s.inp", qm->orca_basename);
-    out = fopen(orcaInput, "w");
+    FILE* out = fopen(orcaInput, "w");
 
     snew(addInputFilename, 200);
     sprintf(addInputFilename, "%s.ORCAINFO", qm->orca_basename);
@@ -165,11 +162,8 @@ static void write_orca_input(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         {
             atomNr = qm->atomicnumberQM[i];
         }
-        fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n",
-                atomNr,
-                qm->xQM[i][XX]/0.1,
-                qm->xQM[i][YY]/0.1,
-                qm->xQM[i][ZZ]/0.1);
+        fprintf(out, "%3d %10.7f  %10.7f  %10.7f\n", atomNr, qm->xQM[i][XX] / 0.1,
+                qm->xQM[i][YY] / 0.1, qm->xQM[i][ZZ] / 0.1);
     }
     fprintf(out, "*\n");
 
@@ -184,11 +178,8 @@ static void write_orca_input(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
         fprintf(pcFile, "%d\n", mm->nrMMatoms);
         for (i = 0; i < mm->nrMMatoms; i++)
         {
-            fprintf(pcFile, "%8.4f %10.7f  %10.7f  %10.7f\n",
-                    mm->MMcharges[i],
-                    mm->xMM[i][XX]/0.1,
-                    mm->xMM[i][YY]/0.1,
-                    mm->xMM[i][ZZ]/0.1);
+            fprintf(pcFile, "%8.4f %10.7f  %10.7f  %10.7f\n", mm->MMcharges[i],
+                    mm->xMM[i][XX] / 0.1, mm->xMM[i][YY] / 0.1, mm->xMM[i][ZZ] / 0.1);
         }
         fprintf(pcFile, "\n");
         fclose(pcFile);
@@ -196,23 +187,15 @@ static void write_orca_input(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fprintf(out, "\n");
 
     fclose(out);
-}  /* write_orca_input */
+} /* write_orca_input */
 
-static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_forcerec *fr,
-                             t_QMrec *qm, t_MMrec *mm)
+static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_QMMMrec* QMMMrec, t_QMrec* qm, t_MMrec* mm)
 {
-    int
-        i, j;
-    char
-        buf[300], orca_pcgradFilename[300], orca_engradFilename[300];
-    real
-        QMener;
-    FILE
-       *pcgrad, *engrad;
-    int k;
-    t_QMMMrec
-       *QMMMrec;
-    QMMMrec = fr->qr;
+    int   i, j;
+    char  buf[300], orca_pcgradFilename[300], orca_engradFilename[300];
+    real  QMener;
+    FILE *pcgrad, *engrad;
+    int   k;
 
     /* the energy and gradients for the QM part are stored in the engrad file
      * and the gradients for the point charges are stored in the pc file.
@@ -255,36 +238,36 @@ static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_forcerec *fr,
      * (atom1 x \n atom1 y \n atom1 z \n atom2 x ...
      */
 
-    for (i = 0; i < 3*qm->nrQMatoms; i++)
+    for (i = 0; i < 3 * qm->nrQMatoms; i++)
     {
-        k = i/3;
+        k = i / 3;
         if (fgets(buf, 300, engrad) == nullptr)
         {
             gmx_fatal(FARGS, "Unexpected end of ORCA output");
         }
 #if GMX_DOUBLE
-        if (i%3 == 0)
+        if (i % 3 == 0)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][XX]);
         }
-        else if (i%3 == 1)
+        else if (i % 3 == 1)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][YY]);
         }
-        else if (i%3 == 2)
+        else if (i % 3 == 2)
         {
             sscanf(buf, "%lf\n", &QMgrad[k][ZZ]);
         }
 #else
-        if (i%3 == 0)
+        if (i % 3 == 0)
         {
             sscanf(buf, "%f\n", &QMgrad[k][XX]);
         }
-        else if (i%3 == 1)
+        else if (i % 3 == 1)
         {
             sscanf(buf, "%f\n", &QMgrad[k][YY]);
         }
-        else if (i%3 == 2)
+        else if (i % 3 == 2)
         {
             sscanf(buf, "%f\n", &QMgrad[k][ZZ]);
         }
@@ -312,37 +295,26 @@ static real read_orca_output(rvec QMgrad[], rvec MMgrad[], const t_forcerec *fr,
             {
                 gmx_fatal(FARGS, "Unexpected end of ORCA output");
             }
-    #if GMX_DOUBLE
-            sscanf(buf, "%lf%lf%lf\n",
-                   &MMgrad[i][XX],
-                   &MMgrad[i][YY],
-                   &MMgrad[i][ZZ]);
-    #else
-            sscanf(buf, "%f%f%f\n",
-                   &MMgrad[i][XX],
-                   &MMgrad[i][YY],
-                   &MMgrad[i][ZZ]);
-    #endif
+#if GMX_DOUBLE
+            sscanf(buf, "%lf%lf%lf\n", &MMgrad[i][XX], &MMgrad[i][YY], &MMgrad[i][ZZ]);
+#else
+            sscanf(buf, "%f%f%f\n", &MMgrad[i][XX], &MMgrad[i][YY], &MMgrad[i][ZZ]);
+#endif
         }
         fclose(pcgrad);
     }
-    return(QMener);
+    return (QMener);
 }
 
-static void do_orca(char *orca_dir, char *basename)
+static void do_orca(char* orca_dir, char* basename)
 {
 
     /* make the call to the orca binary through system()
      * The location of the binary is set through the
      * environment.
      */
-    char
-        buf[100];
-    sprintf(buf, "%s/%s %s.inp >> %s.out",
-            orca_dir,
-            "orca",
-            basename,
-            basename);
+    char buf[100];
+    sprintf(buf, "%s/%s %s.inp >> %s.out", orca_dir, "orca", basename, basename);
     fprintf(stderr, "Calling '%s'\n", buf);
     if (system(buf) != 0)
     {
@@ -350,51 +322,45 @@ static void do_orca(char *orca_dir, char *basename)
     }
 }
 
-real call_orca(const t_forcerec *fr,
-               t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
+real call_orca(const t_QMMMrec* qmmm, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fshift[])
 {
     /* normal orca jobs */
-    static int
-        step = 0;
-    int
-        i, j;
-    real
-        QMener;
-    rvec
-       *QMgrad, *MMgrad;
-    char
-       *exe;
+    static int step = 0;
+    int        i, j;
+    real       QMener;
+    rvec *     QMgrad, *MMgrad;
+    char*      exe;
 
     snew(exe, 30);
     sprintf(exe, "%s", "orca");
     snew(QMgrad, qm->nrQMatoms);
     snew(MMgrad, mm->nrMMatoms);
 
-    write_orca_input(fr, qm, mm);
+    write_orca_input(qmmm, qm, mm);
     do_orca(qm->orca_dir, qm->orca_basename);
-    QMener = read_orca_output(QMgrad, MMgrad, fr, qm, mm);
+    QMener = read_orca_output(QMgrad, MMgrad, qmmm, qm, mm);
     /* put the QMMM forces in the force array and to the fshift
      */
     for (i = 0; i < qm->nrQMatoms; i++)
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i][j]      = HARTREE_BOHR2MD*QMgrad[i][j];
-            fshift[i][j] = HARTREE_BOHR2MD*QMgrad[i][j];
+            f[i][j]      = HARTREE_BOHR2MD * QMgrad[i][j];
+            fshift[i][j] = HARTREE_BOHR2MD * QMgrad[i][j];
         }
     }
     for (i = 0; i < mm->nrMMatoms; i++)
     {
         for (j = 0; j < DIM; j++)
         {
-            f[i+qm->nrQMatoms][j]      = HARTREE_BOHR2MD*MMgrad[i][j];
-            fshift[i+qm->nrQMatoms][j] = HARTREE_BOHR2MD*MMgrad[i][j];
+            f[i + qm->nrQMatoms][j]      = HARTREE_BOHR2MD * MMgrad[i][j];
+            fshift[i + qm->nrQMatoms][j] = HARTREE_BOHR2MD * MMgrad[i][j];
         }
     }
-    QMener = QMener*HARTREE2KJ*AVOGADRO;
+    QMener = QMener * HARTREE2KJ * AVOGADRO;
     step++;
     free(exe);
-    return(QMener);
+    return (QMener);
 } /* call_orca */
 
 /* end of orca sub routines */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,8 +63,7 @@
 namespace gmx
 {
 
-unsigned int
-log2I(std::uint32_t n)
+unsigned int log2I(std::uint32_t n)
 {
     GMX_ASSERT(n > 0, "The behavior of log(0) is undefined");
 #if HAVE_BUILTIN_CLZ
@@ -82,26 +81,17 @@ log2I(std::uint32_t n)
 #else
     // http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogLookup
 
-    static const std::array<char, 256>
-    log2TableByte =
-    {{
-         0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-         4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
-         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-         5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-         7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
-     }};
+    static const std::array<char, 256> log2TableByte = {
+        { 0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+          4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+          5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+          6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+          6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+          7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+          7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+          7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+          7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 }
+    };
 
     unsigned int result;
     unsigned int tmp1, tmp2;
@@ -119,8 +109,7 @@ log2I(std::uint32_t n)
 }
 
 
-unsigned int
-log2I(std::uint64_t n)
+unsigned int log2I(std::uint64_t n)
 {
     GMX_ASSERT(n > 0, "The behavior of log(0) is undefined");
 #if HAVE_BUILTIN_CLZLL
@@ -137,7 +126,7 @@ log2I(std::uint64_t n)
     // No 64-bit log2 instrinsic available. Solve it by calling our internal
     // 32-bit version (which in turn might defer to a software solution)
 
-    std::uint32_t high32Bits = static_cast<std::uint32_t>(n>>32);
+    std::uint32_t high32Bits = static_cast<std::uint32_t>(n >> 32);
     std::uint32_t result;
 
     if (high32Bits)
@@ -153,23 +142,19 @@ log2I(std::uint64_t n)
 #endif
 }
 
-unsigned int
-log2I(std::int32_t n)
+unsigned int log2I(std::int32_t n)
 {
     GMX_ASSERT(n > 0, "The behavior of log(n) for n<=0 is undefined");
     return log2I(static_cast<std::uint32_t>(n));
 }
 
-unsigned int
-log2I(std::int64_t n)
+unsigned int log2I(std::int64_t n)
 {
     GMX_ASSERT(n > 0, "The behavior of log(n) for n<=0 is undefined");
     return log2I(static_cast<std::uint64_t>(n));
 }
 
-std::int64_t
-greatestCommonDivisor(std::int64_t   p,
-                      std::int64_t   q)
+std::int64_t greatestCommonDivisor(std::int64_t p, std::int64_t q)
 {
     while (q != 0)
     {
@@ -180,8 +165,7 @@ greatestCommonDivisor(std::int64_t   p,
     return p;
 }
 
-double
-erfinv(double x)
+double erfinv(double x)
 {
     double xabs = std::abs(x);
 
@@ -205,68 +189,67 @@ erfinv(double x)
     if (xabs <= 0.7)
     {
         // Rational approximation in range [0,0.7]
-        double z = x*x;
+        double z = x * x;
         double P = (((-0.140543331 * z + 0.914624893) * z - 1.645349621) * z + 0.886226899);
         double Q = ((((0.012229801 * z - 0.329097515) * z + 1.442710462) * z - 2.118377725) * z + 1.0);
-        res = x * P/Q;
+        res      = x * P / Q;
     }
     else
     {
         // Rational approximation in range [0.7,1)
-        double z = std::sqrt(-std::log((1.0 - std::abs(x))/2.0));
+        double z = std::sqrt(-std::log((1.0 - std::abs(x)) / 2.0));
         double P = ((1.641345311 * z + 3.429567803) * z - 1.624906493) * z - 1.970840454;
         double Q = (1.637067800 * z + 3.543889200) * z + 1.0;
-        res = std::copysign(1.0, x) * P/Q;
+        res      = std::copysign(1.0, x) * P / Q;
     }
 
     // Double precision requires two N-R iterations
-    res = res - (std::erf(res) - x)/( (2.0/std::sqrt(M_PI))*std::exp(-res*res));
-    res = res - (std::erf(res) - x)/( (2.0/std::sqrt(M_PI))*std::exp(-res*res));
+    res = res - (std::erf(res) - x) / ((2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
+    res = res - (std::erf(res) - x) / ((2.0 / std::sqrt(M_PI)) * std::exp(-res * res));
 
     return res;
 }
 
-float
-erfinv(float x)
+float erfinv(float x)
 {
     float xabs = std::abs(x);
 
-    if (xabs > 1.0f)
+    if (xabs > 1.0F)
     {
         return std::nan("");
     }
 
-    if (x == 1.0f)
+    if (x == 1.0F)
     {
         return std::numeric_limits<float>::infinity();
     }
 
-    if (x == -1.0f)
+    if (x == -1.0F)
     {
         return -std::numeric_limits<float>::infinity();
     }
 
     float res;
 
-    if (xabs <= 0.7f)
+    if (xabs <= 0.7F)
     {
         // Rational approximation in range [0,0.7]
-        float z = x*x;
-        float P = (((-0.140543331f * z + 0.914624893f) * z - 1.645349621f) * z + 0.886226899f);
-        float Q = ((((0.012229801f * z - 0.329097515f) * z + 1.442710462f) * z - 2.118377725f) * z + 1.0f);
-        res = x * P/Q;
+        float z = x * x;
+        float P = (((-0.140543331F * z + 0.914624893F) * z - 1.645349621F) * z + 0.886226899F);
+        float Q = ((((0.012229801F * z - 0.329097515F) * z + 1.442710462F) * z - 2.118377725F) * z + 1.0F);
+        res = x * P / Q;
     }
     else
     {
         // Rational approximation in range [0.7,1)
-        float z = std::sqrt(-std::log((1.0 - std::abs(x))/2.0f));
-        float P = ((1.641345311f * z + 3.429567803f) * z - 1.624906493f) * z - 1.970840454f;
-        float Q = (1.637067800f * z + 3.543889200f) * z + 1.0f;
-        res = std::copysign(1.0f, x) * P/Q;
+        float z = std::sqrt(-std::log((1.0 - std::abs(x)) / 2.0F));
+        float P = ((1.641345311F * z + 3.429567803F) * z - 1.624906493F) * z - 1.970840454F;
+        float Q = (1.637067800F * z + 3.543889200F) * z + 1.0F;
+        res     = std::copysign(1.0F, x) * P / Q;
     }
 
     // Single N-R iteration sufficient for single precision
-    res = res - (std::erf(res) - x)/( (2.0f/std::sqrt(M_PI))*std::exp(-res*res));
+    res = res - (std::erf(res) - x) / ((2.0F / std::sqrt(M_PI)) * std::exp(-res * res));
 
     return res;
 }

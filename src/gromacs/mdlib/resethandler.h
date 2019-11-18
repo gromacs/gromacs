@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -89,7 +89,8 @@ namespace gmx
  */
 enum class ResetSignal
 {
-    noSignal = 0, doResetCounters = 1
+    noSignal        = 0,
+    doResetCounters = 1
 };
 
 /*! \libinternal
@@ -101,103 +102,98 @@ enum class ResetSignal
  */
 class ResetHandler final
 {
-    public:
-        /*! \brief ResetHandler constructor
-         *
-         * Needs a pointer to the signal to communicate between ranks, information on whether
-         * multiple simulations need to be synchronized, and additional data to determine
-         * whether counter resetting takes place at all, and whether the current rank can set
-         * the resetting signal.
-         */
-        ResetHandler(
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationsShareState,
-            int64_t                             nsteps,
-            bool                                isMaster,
-            bool                                resetHalfway,
-            real                                maximumHoursToRun,
-            const MDLogger                     &mdlog,
-            gmx_wallcycle                      *wcycle,
-            gmx_walltime_accounting            *walltime_accounting);
+public:
+    /*! \brief ResetHandler constructor
+     *
+     * Needs a pointer to the signal to communicate between ranks, information on whether
+     * multiple simulations need to be synchronized, and additional data to determine
+     * whether counter resetting takes place at all, and whether the current rank can set
+     * the resetting signal.
+     */
+    ResetHandler(compat::not_null<SimulationSignal*> signal,
+                 bool                                simulationsShareState,
+                 int64_t                             nsteps,
+                 bool                                isMaster,
+                 bool                                resetHalfway,
+                 real                                maximumHoursToRun,
+                 const MDLogger&                     mdlog,
+                 gmx_wallcycle*                      wcycle,
+                 gmx_walltime_accounting*            walltime_accounting);
 
-        /*! \brief Decides whether a reset signal needs to be set
-         *
-         * Reset signal is set if run time is greater than 49.5% of maximal run time.
-         */
-        void setSignal(gmx_walltime_accounting *walltime_accounting)
+    /*! \brief Decides whether a reset signal needs to be set
+     *
+     * Reset signal is set if run time is greater than 49.5% of maximal run time.
+     */
+    void setSignal(gmx_walltime_accounting* walltime_accounting)
+    {
+        if (rankCanSetSignal_)
         {
-            if (rankCanSetSignal_)
+            if (setSignalImpl(walltime_accounting))
             {
-                if (setSignalImpl(walltime_accounting))
-                {
-                    // need to set the reset signal only once
-                    rankCanSetSignal_ = false;
-                }
+                // need to set the reset signal only once
+                rankCanSetSignal_ = false;
             }
         }
+    }
 
-        /*! \brief Decides whether the counters are reset, and performs the reset if needed
-         *
-         * The counters are reset if
-         *
-         *     * the signal for resetting was received, or
-         *     * the (local) number of steps reached the defined counter reset step.
-         *
-         * Note that even if two reset conditions are present (at a specific step and a
-         * specific time), the reset will only take place once, whenever the first condition
-         * is met.
-         */
-        void resetCounters(
-            int64_t                     step,
-            int64_t                     step_rel,
-            const MDLogger             &mdlog,
-            FILE                       *fplog,
-            const t_commrec            *cr,
-            nonbonded_verlet_t         *nbv,
-            t_nrnb                     *nrnb,
-            const gmx_pme_t            *pme,
-            const pme_load_balancing_t *pme_loadbal,
-            gmx_wallcycle              *wcycle,
-            gmx_walltime_accounting    *walltime_accounting)
+    /*! \brief Decides whether the counters are reset, and performs the reset if needed
+     *
+     * The counters are reset if
+     *
+     *     * the signal for resetting was received, or
+     *     * the (local) number of steps reached the defined counter reset step.
+     *
+     * Note that even if two reset conditions are present (at a specific step and a
+     * specific time), the reset will only take place once, whenever the first condition
+     * is met.
+     */
+    void resetCounters(int64_t                     step,
+                       int64_t                     step_rel,
+                       const MDLogger&             mdlog,
+                       FILE*                       fplog,
+                       const t_commrec*            cr,
+                       nonbonded_verlet_t*         nbv,
+                       t_nrnb*                     nrnb,
+                       const gmx_pme_t*            pme,
+                       const pme_load_balancing_t* pme_loadbal,
+                       gmx_wallcycle*              wcycle,
+                       gmx_walltime_accounting*    walltime_accounting)
+    {
+        if (simulationNeedsReset_)
         {
-            if (simulationNeedsReset_)
+            if (resetCountersImpl(step, step_rel, mdlog, fplog, cr, nbv, nrnb, pme, pme_loadbal,
+                                  wcycle, walltime_accounting))
             {
-                if (resetCountersImpl(
-                            step, step_rel, mdlog, fplog,
-                            cr, nbv, nrnb, pme, pme_loadbal,
-                            wcycle, walltime_accounting))
-                {
-                    // need to reset the counters only once
-                    simulationNeedsReset_ = false;
-                    rankCanSetSignal_     = false;
-                }
+                // need to reset the counters only once
+                simulationNeedsReset_ = false;
+                rankCanSetSignal_     = false;
             }
         }
+    }
 
-    private:
-        //! Implementation of the setSignal() function
-        bool setSignalImpl(gmx_walltime_accounting *walltime_accounting);
+private:
+    //! Implementation of the setSignal() function
+    bool setSignalImpl(gmx_walltime_accounting* walltime_accounting);
 
-        //! Implementation of the resetCounters() function
-        bool resetCountersImpl(
-            int64_t                     step,
-            int64_t                     step_rel,
-            const MDLogger             &mdlog,
-            FILE                       *fplog,
-            const t_commrec            *cr,
-            nonbonded_verlet_t         *nbv,
-            t_nrnb                     *nrnb,
-            const gmx_pme_t            *pme,
-            const pme_load_balancing_t *pme_loadbal,
-            gmx_wallcycle              *wcycle,
-            gmx_walltime_accounting    *walltime_accounting);
+    //! Implementation of the resetCounters() function
+    bool resetCountersImpl(int64_t                     step,
+                           int64_t                     step_rel,
+                           const MDLogger&             mdlog,
+                           FILE*                       fplog,
+                           const t_commrec*            cr,
+                           nonbonded_verlet_t*         nbv,
+                           t_nrnb*                     nrnb,
+                           const gmx_pme_t*            pme,
+                           const pme_load_balancing_t* pme_loadbal,
+                           gmx_wallcycle*              wcycle,
+                           gmx_walltime_accounting*    walltime_accounting);
 
-        SimulationSignal &signal_;
+    SimulationSignal& signal_;
 
-        bool              rankCanSetSignal_;
-        bool              simulationNeedsReset_;
-        const real        maximumHoursToRun_;
+    bool       rankCanSetSignal_;
+    bool       simulationNeedsReset_;
+    const real maximumHoursToRun_;
 };
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_RESETHANDLER_H

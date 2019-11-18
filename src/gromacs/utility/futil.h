@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,15 +58,15 @@
  * Maximum path length, if the OS provides one, otherwise a fixed constant.
  */
 #ifdef PATH_MAX
-#  define GMX_PATH_MAX PATH_MAX
+#    define GMX_PATH_MAX PATH_MAX
 #elif defined MAX_PATH
-#  define GMX_PATH_MAX MAX_PATH
+#    define GMX_PATH_MAX MAX_PATH
 #else
-#  define GMX_PATH_MAX 4096
+#    define GMX_PATH_MAX 4096
 #endif
 
 /** \Gromacs definition to use instead of `off_t`. */
-typedef int64_t    gmx_off_t;
+typedef int64_t gmx_off_t;
 
 /*! \brief
  * Turn off buffering for output files (which is default) for debugging
@@ -95,12 +95,12 @@ void gmx_set_max_backup_count(int count);
  * Note that this returns `TRUE` even if \p fname is a directory instead of a
  * file.
  */
-gmx_bool gmx_fexist(const std::string &fname);
+gmx_bool gmx_fexist(const std::string& fname);
 
 /*! \brief
  * Makes a backup of file if the file exists.
  */
-void make_backup(const std::string &file);
+void make_backup(const std::string& file);
 
 /*! \brief
  * Opens a file, with \Gromacs-specific additions.
@@ -115,10 +115,10 @@ void make_backup(const std::string &file);
  * overwriting it.
  * A fatal error results if the file cannot be opened, for whatever reason.
  */
-FILE *gmx_ffopen(const std::string &file, const char *mode);
+FILE* gmx_ffopen(const std::string& file, const char* mode);
 
 /** Closes a file opened with gmx_ffopen(). */
-int gmx_ffclose(FILE *fp);
+int gmx_ffclose(FILE* fp);
 
 /*! \brief
  * Wraps rewind() for files opened with gmx_ffopen().
@@ -126,22 +126,22 @@ int gmx_ffclose(FILE *fp);
  * A fatal error results if this function is called for a pipe (a compressed
  * input file).
  */
-void frewind(FILE *fp);
+void frewind(FILE* fp);
 
 /** OS-independent 64-bit fseek().
  *
  * \return 0 when successful, or -1 (and set errno) in case of error.
  */
-int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
+int gmx_fseek(FILE* stream, gmx_off_t offset, int whence);
 
 /** OS-independent 64-bit ftell().
  *
  * \return The current offset when successful, or -1 (and set errno) in case of error.
  */
-gmx_off_t gmx_ftell(FILE *stream);
+gmx_off_t gmx_ftell(FILE* stream);
 
 /** OS-independent truncate(). */
-int gmx_truncate(const std::string &filename, gmx_off_t length);
+int gmx_truncate(const std::string& filename, gmx_off_t length);
 
 namespace gmx
 {
@@ -154,9 +154,9 @@ namespace gmx
  * error results if the file is not found in any location and \c
  * bFatal is true.
  */
-std::string findLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+std::string findLibraryFile(const std::string& filename, bool bAddCWD = true, bool bFatal = true);
 //! \copydoc findLibraryFile(const std::string &, bool, bool)
-std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
+std::string findLibraryFile(const char* filename, bool bAddCWD = true, bool bFatal = true);
 
 /*! \brief
  * Opens a library file for reading in an RAII-style `FILE` handle.
@@ -164,9 +164,9 @@ std::string findLibraryFile(const char *filename, bool bAddCWD = true, bool bFat
  * Works as findLibraryFile(), except that it opens the file and
  * returns a file handle.
  */
-FilePtr openLibraryFile(const std::string &filename, bool bAddCWD = true, bool bFatal = true);
+FilePtr openLibraryFile(const std::string& filename, bool bAddCWD = true, bool bFatal = true);
 //! \copydoc openLibraryFile(const std::string &, bool, bool)
-FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal = true);
+FilePtr openLibraryFile(const char* filename, bool bAddCWD = true, bool bFatal = true);
 
 } // namespace gmx
 
@@ -175,48 +175,48 @@ FilePtr openLibraryFile(const char *filename, bool bAddCWD = true, bool bFatal =
  *
  * \p buf should be at least 7 bytes long
  */
-FILE *gmx_fopen_temporary(char *buf);
+FILE* gmx_fopen_temporary(char* buf);
 
 /*! \brief
  * Creates unique name for temp file (wrapper around mkstemp).
  *
  * \p buf should be at least 7 bytes long
  */
-void gmx_tmpnam(char *buf);
+void gmx_tmpnam(char* buf);
 
 /*! \brief
  * OS-independent rename().
  *
  * Renames/moves a file atomically, if the OS makes that available.
  */
-int gmx_file_rename(const char *oldname, const char *newname);
+int gmx_file_rename(const char* oldname, const char* newname);
 
 /*! \brief
  * Copies a file (data only) oldname to newname.
  *
  * If \p copy_if_empty is `FALSE`, the file won't be copied if it's empty.
  */
-int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty);
+int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_empty);
 
 /*! \brief
  * OS-independent fsync().
  *
  * Only use this during checkpointing!
  */
-int gmx_fsync(FILE *fp);
+int gmx_fsync(FILE* fp);
 
 /*! \brief
  * OS-independent chdir().
  *
  * Exits with a fatal error if changing the directory fails.
  */
-void gmx_chdir(const char *directory);
+void gmx_chdir(const char* directory);
 /*! \brief
  * OS-independent getcwd().
  *
  * Exits with a fatal error if the call fails.
  */
-void gmx_getcwd(char *buffer, size_t size);
+void gmx_getcwd(char* buffer, size_t size);
 
 namespace gmx
 {
@@ -240,7 +240,7 @@ class DataFileFinder;
  *
  * \ingroup module_utility
  */
-const DataFileFinder &getLibraryFileFinder();
+const DataFileFinder& getLibraryFileFinder();
 /*! \brief
  * Sets a finder for location data files from share/top/.
  *
@@ -258,7 +258,7 @@ const DataFileFinder &getLibraryFileFinder();
  *
  * Does not throw.
  */
-void setLibraryFileFinder(const DataFileFinder *finder);
+void setLibraryFileFinder(const DataFileFinder* finder);
 
 } // namespace gmx
 

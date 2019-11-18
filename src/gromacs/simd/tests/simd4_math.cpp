@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,8 +34,6 @@
  */
 #include "gmxpre.h"
 
-#include "config.h"
-
 #include <cmath>
 #include <cstdint>
 
@@ -55,133 +53,16 @@ namespace gmx
 namespace test
 {
 
+
+#    if GMX_SIMD4_HAVE_REAL
+
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
-
 class Simd4MathTest : public Simd4Test
 {
-    public:
-        ::testing::AssertionResult
-                             compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                                      real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x));
 };
-
-/*! \brief Test approximate equality of SIMD4 vs reference version of a function.
- *
- * This macro takes vanilla C and SIMD flavors of a function and tests it with
- * the number of points, range, and tolerances specified by the test fixture class.
- */
-#define GMX_EXPECT_SIMD4_FUNC_NEAR(refFunc, tstFunc) \
-    EXPECT_PRED_FORMAT2(compareSimd4MathFunction, refFunc, tstFunc)
-
-
-/*! \brief Implementation routine to compare SIMD4 vs reference functions.
- *
- * \param refFuncExpr    Description of reference function expression
- * \param simd4FuncExpr  Description of SIMD function expression
- * \param refFunc        Reference math function pointer
- * \param simd4Func      SIMD math function pointer
- *
- * The function will be tested with the range and tolerances specified in
- * the SimdBaseTest class. You should not never call this function directly,
- * but use the macro GMX_EXPECT_SIMD4_FUNC_NEAR(refFunc,tstFunc) instead.
- */
-::testing::AssertionResult
-Simd4MathTest::compareSimd4MathFunction(const char * refFuncExpr, const char *simd4FuncExpr,
-                                        real refFunc(real x),     Simd4Real gmx_simdcall simd4Func(Simd4Real x))
-{
-    std::vector<real>            vx(GMX_SIMD4_WIDTH);
-    std::vector<real>            vref(GMX_SIMD4_WIDTH);
-    std::vector<real>            vtst(GMX_SIMD4_WIDTH);
-    real                         dx;
-    std::int64_t                 ulpDiff, maxUlpDiff;
-    real                         maxUlpDiffPos;
-    real                         refValMaxUlpDiff, simdValMaxUlpDiff;
-    int                          niter   = s_nPoints/GMX_SIMD4_WIDTH;
-    int                          npoints = niter*GMX_SIMD4_WIDTH;
-#    if GMX_DOUBLE
-    union {
-        double r; std::int64_t i;
-    } conv0, conv1;
-#    else
-    union {
-        float  r; std::int32_t i;
-    } conv0, conv1;
-#    endif
-
-    maxUlpDiff = 0;
-    dx         = (range_.second-range_.first)/npoints;
-
-    for (int iter = 0; iter < niter; iter++)
-    {
-        for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
-        {
-            vx[i]   = range_.first+dx*(iter*GMX_SIMD4_WIDTH+i);
-            vref[i] = refFunc(vx[i]);
-        }
-        vtst  = simd4Real2Vector(simd4Func(vector2Simd4Real(vx)));
-
-        bool eq = true, signOk = true;
-        for (int i = 0; i < GMX_SIMD4_WIDTH && eq; i++)
-        {
-            eq     = eq && ( std::abs(vref[i]-vtst[i]) < absTol_ );
-            signOk = signOk && ( vref[i]*vtst[i] >= 0 );
-        }
-        if (eq)
-        {
-            // Go to next point if everything within absolute tolerance
-            continue;
-        }
-        else if (!signOk)
-        {
-            return ::testing::AssertionFailure()
-                   << "Failing SIMD4 math function comparison due to sign differences." << std::endl
-                   << "Reference function: " << refFuncExpr << std::endl
-                   << "Simd function:      " << simd4FuncExpr << std::endl
-                   << "Test range is ( " << range_.first << " , " << range_.second << " ) " << std::endl
-                   << "First sign difference around x=" << std::setprecision(20) << ::testing::PrintToString(vx) << std::endl
-                   << "Ref values:   " << std::setprecision(20) << ::testing::PrintToString(vref) << std::endl
-                   << "SIMD4 values: " << std::setprecision(20) << ::testing::PrintToString(vtst) << std::endl;
-        }
-        /* We replicate the trivial ulp differences comparison here rather than
-         * calling the lower-level routine for comparing them, since this enables
-         * us to run through the entire test range and report the largest deviation
-         * without lots of extra glue routines.
-         */
-        for (int i = 0; i < GMX_SIMD4_WIDTH; i++)
-        {
-            conv0.r = vref[i];
-            conv1.r = vtst[i];
-            ulpDiff = llabs(conv0.i-conv1.i);
-            if (ulpDiff > maxUlpDiff)
-            {
-                maxUlpDiff        = ulpDiff;
-                maxUlpDiffPos     = vx[i];
-                refValMaxUlpDiff  = vref[i];
-                simdValMaxUlpDiff = vtst[i];
-            }
-        }
-    }
-    GMX_RELEASE_ASSERT(ulpTol_ >= 0, "Invalid ulp value.");
-    if (maxUlpDiff <= ulpTol_)
-    {
-        return ::testing::AssertionSuccess();
-    }
-    else
-    {
-        return ::testing::AssertionFailure()
-               << "Failing SIMD4 math function ulp comparison between " << refFuncExpr << " and " << simd4FuncExpr << std::endl
-               << "Requested ulp tolerance: " << ulpTol_ << std::endl
-               << "Requested abs tolerance: " << absTol_ << std::endl
-               << "Largest Ulp difference occurs for x=" << std::setprecision(20) << maxUlpDiffPos << std::endl
-               << "Ref  values:  " << std::setprecision(20) << refValMaxUlpDiff << std::endl
-               << "SIMD4 values: " << std::setprecision(20) << simdValMaxUlpDiff << std::endl
-               << "Ulp diff.:   " << std::setprecision(20) << maxUlpDiff << std::endl;
-    }
-}
 
 /*! \} */
 /*! \endcond */
@@ -195,35 +76,44 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-/*! \brief Function wrapper to evaluate reference 1/sqrt(x) */
-real
-refInvsqrt(real x)
-{
-    return 1.0/std::sqrt(x);
-}
+// Presently, the only SIMD4 math function is 1/sqrt(x), which
+// has a close-to-trivial implementation without different
+// approximation intervals or special threshold points. To
+// avoid having to re-implement the entire SIMD math function
+// test infrastructure we only test these functions for a few
+// values that are either special or exercise all bits.
 
 TEST_F(Simd4MathTest, invsqrt)
 {
-    setRange(1e-10, 1e10);
-    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrt);
+    const real x0 = std::numeric_limits<float>::min();
+    const real x1 = std::numeric_limits<float>::max();
+    const real x2 = M_PI;
+
+    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0 / sqrt(x0), 1.0 / sqrt(x1), 1.0 / sqrt(x2)),
+                               invsqrt(setSimd4RealFrom3R(x0, x1, x2)));
 }
 
-TEST_F(Simd4MathTest, invsqrtSingleaccuracy)
+TEST_F(Simd4MathTest, invsqrtSingleAccuracy)
 {
-    setRange(1e-10, 1e10);
+    const real x0 = std::numeric_limits<float>::min();
+    const real x1 = std::numeric_limits<float>::max();
+    const real x2 = M_PI;
+
     /* Increase the allowed error by the difference between the actual precision and single */
     setUlpTolSingleAccuracy(ulpTol_);
-    GMX_EXPECT_SIMD4_FUNC_NEAR(refInvsqrt, invsqrtSingleAccuracy);
+
+    GMX_EXPECT_SIMD4_REAL_NEAR(setSimd4RealFrom3R(1.0 / sqrt(x0), 1.0 / sqrt(x1), 1.0 / sqrt(x2)),
+                               invsqrtSingleAccuracy(setSimd4RealFrom3R(x0, x1, x2)));
 }
-
-}      // namespace
-
-#endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace test
-}      // namespace gmx
+} // namespace
+
+#    endif // GMX_SIMD4_HAVE_REAL
+
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD

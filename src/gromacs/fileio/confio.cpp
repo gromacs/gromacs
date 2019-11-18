@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,14 +61,19 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-void write_sto_conf_indexed(const char *outfile, const char *title,
-                            const t_atoms *atoms,
-                            const rvec x[], const rvec *v, int ePBC, const matrix box,
-                            int nindex, int index[])
+void write_sto_conf_indexed(const char*    outfile,
+                            const char*    title,
+                            const t_atoms* atoms,
+                            const rvec     x[],
+                            const rvec*    v,
+                            int            ePBC,
+                            const matrix   box,
+                            int            nindex,
+                            int            index[])
 {
-    FILE       *out;
-    int         ftp;
-    t_trxframe  fr;
+    FILE*      out;
+    int        ftp;
+    t_trxframe fr;
 
     ftp = fn2ftp(outfile);
     switch (ftp)
@@ -82,13 +87,13 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             clear_trxframe(&fr, TRUE);
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
-            fr.atoms  = const_cast<t_atoms *>(atoms);
+            fr.atoms  = const_cast<t_atoms*>(atoms);
             fr.bX     = TRUE;
-            fr.x      = const_cast<rvec *>(x);
+            fr.x      = const_cast<rvec*>(x);
             if (v)
             {
                 fr.bV = TRUE;
-                fr.v  = const_cast<rvec *>(v);
+                fr.v  = const_cast<rvec*>(v);
             }
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
@@ -101,7 +106,8 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
         case efENT:
         case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr, TRUE, ftp == efPQR);
+            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr,
+                                  ftp == efPQR);
             gmx_fio_fclose(out);
             break;
         case efESP:
@@ -109,37 +115,38 @@ void write_sto_conf_indexed(const char *outfile, const char *title,
             write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
-        default:
-            gmx_incons("Not supported in write_sto_conf_indexed");
+        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+        default: gmx_incons("Not supported in write_sto_conf_indexed");
     }
 }
 
-void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms,
-                    const rvec x[], const rvec *v, int ePBC, const matrix box)
+void write_sto_conf(const char*    outfile,
+                    const char*    title,
+                    const t_atoms* atoms,
+                    const rvec     x[],
+                    const rvec*    v,
+                    int            ePBC,
+                    const matrix   box)
 {
-    FILE       *out;
-    int         ftp;
-    t_trxframe  fr;
+    FILE*      out;
+    int        ftp;
+    t_trxframe fr;
 
     ftp = fn2ftp(outfile);
     switch (ftp)
     {
-        case efGRO:
-            write_conf_p(outfile, title, atoms, x, v, box);
-            break;
+        case efGRO: write_conf_p(outfile, title, atoms, x, v, box); break;
         case efG96:
             clear_trxframe(&fr, TRUE);
             fr.natoms = atoms->nr;
             fr.bAtoms = TRUE;
-            fr.atoms  = const_cast<t_atoms *>(atoms); // TODO check
+            fr.atoms  = const_cast<t_atoms*>(atoms); // TODO check
             fr.bX     = TRUE;
-            fr.x      = const_cast<rvec *>(x);
+            fr.x      = const_cast<rvec*>(x);
             if (v)
             {
                 fr.bV = TRUE;
-                fr.v  = const_cast<rvec *>(v);
+                fr.v  = const_cast<rvec*>(v);
             }
             fr.bBox = TRUE;
             copy_mat(box, fr.box);
@@ -151,7 +158,7 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
         case efBRK:
         case efENT:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1, nullptr, TRUE);
+            write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1, nullptr);
             gmx_fio_fclose(out);
             break;
         case efESP:
@@ -159,19 +166,21 @@ void write_sto_conf(const char *outfile, const char *title, const t_atoms *atoms
             write_espresso_conf_indexed(out, title, atoms, atoms->nr, nullptr, x, v, box);
             gmx_fio_fclose(out);
             break;
-        case efTPR:
-            gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
-        default:
-            gmx_incons("Not supported in write_sto_conf");
+        case efTPR: gmx_fatal(FARGS, "Sorry, can not write a topology to %s", outfile);
+        default: gmx_incons("Not supported in write_sto_conf");
     }
 }
 
-void write_sto_conf_mtop(const char *outfile, const char *title,
-                         gmx_mtop_t *mtop,
-                         const rvec x[], const rvec *v, int ePBC, const matrix box)
+void write_sto_conf_mtop(const char*       outfile,
+                         const char*       title,
+                         const gmx_mtop_t* mtop,
+                         const rvec        x[],
+                         const rvec*       v,
+                         int               ePBC,
+                         const matrix      box)
 {
     int     ftp;
-    FILE   *out;
+    FILE*   out;
     t_atoms atoms;
 
     ftp = fn2ftp(outfile);
@@ -195,20 +204,18 @@ void write_sto_conf_mtop(const char *outfile, const char *title,
     }
 }
 
-static void get_stx_coordnum(const char *infile, int *natoms)
+static void get_stx_coordnum(const char* infile, int* natoms)
 {
-    FILE      *in;
+    FILE*      in;
     int        ftp;
     t_trxframe fr;
-    char       g96_line[STRLEN+1];
+    char       g96_line[STRLEN + 1];
 
     ftp = fn2ftp(infile);
     range_check(ftp, 0, efNR);
     switch (ftp)
     {
-        case efGRO:
-            get_coordnum(infile, natoms);
-            break;
+        case efGRO: get_coordnum(infile, natoms); break;
         case efG96:
         {
             in        = gmx_fio_fopen(infile, "r");
@@ -228,67 +235,78 @@ static void get_stx_coordnum(const char *infile, int *natoms)
             get_pdb_coordnum(in, natoms);
             gmx_fio_fclose(in);
             break;
-        case efESP:
-            *natoms = get_espresso_coordnum(infile);
-            break;
-        default:
-            gmx_fatal(FARGS, "File type %s not supported in get_stx_coordnum",
-                      ftp2ext(ftp));
+        case efESP: *natoms = get_espresso_coordnum(infile); break;
+        default: gmx_fatal(FARGS, "File type %s not supported in get_stx_coordnum", ftp2ext(ftp));
     }
 }
 
-// TODO molecule index handling is suspected of being broken here
-static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
+//! Constructs plausible chain IDs for multi-molecule systems, e.g. when read from .tpr files
+class ChainIdFiller
 {
-    /* We always assign a new chain number, but save the chain id characters
-     * for larger molecules.
-     */
-    const int chainMinAtoms = 15;
+public:
+    //! Fill in the chain ID for the indicated atom range, which might be a molecule.
+    void fill(t_atoms* atoms, int startAtomIndex, int endAtomIndex);
+    //! If only one chain was found, we don't add a chain ID.
+    void clearIfNeeded(t_atoms* atoms) const;
 
-    int       chainnum = 0;
-    char      chainid  = 'A';
-    bool      outOfIds = false;
-    for (int m = 0; m < mols->nr; m++)
+private:
+    //! Minimum size for a chain worth giving an ID
+    static constexpr int s_chainMinAtoms = 15;
+
+    //! The number of the next chain that will be assigned.
+    int nextChainNumber_ = 0;
+    //! The chain ID of the next chain that will be assigned.
+    char nextChainId_ = 'A';
+    //! Whether the set of chain IDs (ie. upper- and lower-case letters and single digits) is exhausted.
+    bool outOfIds_ = false;
+};
+
+void ChainIdFiller::fill(t_atoms* atoms, const int startAtomIndex, const int endAtomIndex)
+{
+    // TODO remove these some time, extra braces added for review convenience
     {
-        int a0 = mols->index[m];
-        int a1 = mols->index[m+1];
-        int c;
-        if (a1 - a0 >= chainMinAtoms && !outOfIds)
+        // We always assign a new chain number, but only assign a chain id
+        // characters for larger molecules.
+        int chainIdToAssign;
+        if (endAtomIndex - startAtomIndex >= s_chainMinAtoms && !outOfIds_)
         {
             /* Set the chain id for the output */
-            c = chainid;
+            chainIdToAssign = nextChainId_;
             /* Here we allow for the max possible 2*26+10=62 chain ids */
-            if (chainid == 'Z')
+            if (nextChainId_ == 'Z')
             {
-                chainid = 'a';
+                nextChainId_ = 'a';
             }
-            else if (chainid == 'z')
+            else if (nextChainId_ == 'z')
             {
-                chainid = '0';
+                nextChainId_ = '0';
             }
-            else if (chainid == '9')
+            else if (nextChainId_ == '9')
             {
-                outOfIds = true;
+                outOfIds_ = true;
             }
             else
             {
-                chainid++;
+                nextChainId_++;
             }
         }
         else
         {
-            c = ' ';
+            chainIdToAssign = ' ';
         }
-        for (int a = a0; a < a1; a++)
+        for (int a = startAtomIndex; a < endAtomIndex; a++)
         {
-            atoms->resinfo[atoms->atom[a].resind].chainnum = chainnum;
-            atoms->resinfo[atoms->atom[a].resind].chainid  = c;
+            atoms->resinfo[atoms->atom[a].resind].chainnum = nextChainNumber_;
+            atoms->resinfo[atoms->atom[a].resind].chainid  = chainIdToAssign;
         }
-        chainnum++;
+        nextChainNumber_++;
     }
+}
 
+void ChainIdFiller::clearIfNeeded(t_atoms* atoms) const
+{
     /* Blank out the chain id if there was only one chain */
-    if (chainid == 'B')
+    if (nextChainId_ == 'B')
     {
         for (int r = 0; r < atoms->nres; r++)
         {
@@ -297,14 +315,41 @@ static void tpx_make_chain_identifiers(t_atoms *atoms, t_block *mols)
     }
 }
 
-static void read_stx_conf(const char *infile,
-                          t_symtab *symtab, char **name, t_atoms *atoms,
-                          rvec x[], rvec *v, int *ePBC, matrix box)
+//! Make chain IDs in the t_atoms for a gmx_mtop_t built from a .tpr file
+static void makeChainIdentifiersAfterTprReading(t_atoms* atoms, const gmx::RangePartitioning& mols)
 {
-    FILE       *in;
-    t_trxframe  fr;
-    int         ftp;
-    char        g96_line[STRLEN+1];
+    ChainIdFiller filler;
+    for (auto m = 0; m != mols.numBlocks(); ++m)
+    {
+        filler.fill(atoms, mols.block(m).begin(), mols.block(m).end());
+    }
+    filler.clearIfNeeded(atoms);
+}
+
+//! Make chain IDs in the t_atoms for a legacy t_topology built from a .tpr file
+static void tpx_make_chain_identifiers(t_atoms* atoms, const t_block* mols)
+{
+    ChainIdFiller filler;
+    for (int m = 0; m < mols->nr; m++)
+    {
+        filler.fill(atoms, mols->index[m], mols->index[m + 1]);
+    }
+    filler.clearIfNeeded(atoms);
+}
+
+static void read_stx_conf(const char* infile,
+                          t_symtab*   symtab,
+                          char**      name,
+                          t_atoms*    atoms,
+                          rvec        x[],
+                          rvec*       v,
+                          int*        ePBC,
+                          matrix      box)
+{
+    FILE*      in;
+    t_trxframe fr;
+    int        ftp;
+    char       g96_line[STRLEN + 1];
 
     if (atoms->nr == 0)
     {
@@ -323,9 +368,7 @@ static void read_stx_conf(const char *infile,
     ftp = fn2ftp(infile);
     switch (ftp)
     {
-        case efGRO:
-            gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box);
-            break;
+        case efGRO: gmx_gro_read_conf(infile, symtab, name, atoms, x, v, box); break;
         case efG96:
             fr.natoms = atoms->nr;
             fr.atoms  = atoms;
@@ -339,22 +382,44 @@ static void read_stx_conf(const char *infile,
             break;
         case efPDB:
         case efBRK:
-        case efENT:
-            gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box);
-            break;
-        case efESP:
-            gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box);
-            break;
-        default:
-            gmx_incons("Not supported in read_stx_conf");
+        case efENT: gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box); break;
+        case efESP: gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box); break;
+        default: gmx_incons("Not supported in read_stx_conf");
     }
 }
 
-void readConfAndAtoms(const char *infile,
-                      t_symtab *symtab, char **name, t_atoms *atoms,
-                      int *ePBC,
-                      rvec **x, rvec **v, matrix box)
+void readConfAndAtoms(const char* infile,
+                      t_symtab*   symtab,
+                      char**      name,
+                      t_atoms*    atoms,
+                      int*        ePBC,
+                      rvec**      x,
+                      rvec**      v,
+                      matrix      box)
 {
+    GMX_RELEASE_ASSERT(infile, "Need a valid file name string");
+
+    if (fn2ftp(infile) == efTPR)
+    {
+        bool       haveTopology;
+        gmx_mtop_t mtop;
+        readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
+        *symtab                          = mtop.symtab;
+        *name                            = gmx_strdup(*mtop.name);
+        *atoms                           = gmx_mtop_global_atoms(&mtop);
+        gmx::RangePartitioning molecules = gmx_mtop_molecules(mtop);
+        makeChainIdentifiersAfterTprReading(atoms, molecules);
+
+        /* Inelegant solution to avoid all char pointers in atoms becoming
+         * invalid after destruction of mtop.
+         * This will be fixed soon by converting t_symtab to C++.
+         */
+        mtop.symtab.symbuf = nullptr;
+        mtop.symtab.nr     = 0;
+
+        return;
+    }
+
     int natoms;
     get_stx_coordnum(infile, &natoms);
 
@@ -371,9 +436,7 @@ void readConfAndAtoms(const char *infile,
     {
         snew(*v, natoms);
     }
-    read_stx_conf(infile,
-                  symtab, name, atoms,
-                  *x, (v == nullptr) ? nullptr : *v, ePBC, box);
+    read_stx_conf(infile, symtab, name, atoms, *x, (v == nullptr) ? nullptr : *v, ePBC, box);
     if (xIsNull)
     {
         sfree(*x);
@@ -381,10 +444,7 @@ void readConfAndAtoms(const char *infile,
     }
 }
 
-void readConfAndTopology(const char *infile,
-                         bool *haveTopology, gmx_mtop_t *mtop,
-                         int *ePBC,
-                         rvec **x, rvec **v, matrix box)
+void readConfAndTopology(const char* infile, bool* haveTopology, gmx_mtop_t* mtop, int* ePBC, rvec** x, rvec** v, matrix box)
 {
     GMX_RELEASE_ASSERT(mtop != nullptr, "readConfAndTopology requires mtop!=NULL");
 
@@ -396,8 +456,7 @@ void readConfAndTopology(const char *infile,
     *haveTopology = fn2bTPX(infile);
     if (*haveTopology)
     {
-        t_tpxheader header;
-        read_tpxheader(infile, &header, TRUE);
+        TpxFileHeader header = readTpxHeader(infile, true);
         if (x)
         {
             snew(*x, header.natoms);
@@ -407,9 +466,8 @@ void readConfAndTopology(const char *infile,
             snew(*v, header.natoms);
         }
         int natoms;
-        int ePBC_tmp
-            = read_tpx(infile, nullptr, box, &natoms,
-                       (x == nullptr) ? nullptr : *x, (v == nullptr) ? nullptr : *v, mtop);
+        int ePBC_tmp = read_tpx(infile, nullptr, box, &natoms, (x == nullptr) ? nullptr : *x,
+                                (v == nullptr) ? nullptr : *v, mtop);
         if (ePBC != nullptr)
         {
             *ePBC = ePBC_tmp;
@@ -417,9 +475,9 @@ void readConfAndTopology(const char *infile,
     }
     else
     {
-        t_symtab   symtab;
-        char      *name;
-        t_atoms    atoms;
+        t_symtab symtab;
+        char*    name;
+        t_atoms  atoms;
 
         open_symtab(&symtab);
 
@@ -430,11 +488,10 @@ void readConfAndTopology(const char *infile,
     }
 }
 
-gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
-                       rvec **x, rvec **v, matrix box, gmx_bool requireMasses)
+gmx_bool read_tps_conf(const char* infile, t_topology* top, int* ePBC, rvec** x, rvec** v, matrix box, gmx_bool requireMasses)
 {
-    bool        haveTopology;
-    gmx_mtop_t  mtop;
+    bool       haveTopology;
+    gmx_mtop_t mtop;
 
     readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
 
@@ -448,7 +505,10 @@ gmx_bool read_tps_conf(const char *infile, t_topology *top, int *ePBC,
 
         if (!top->atoms.haveMass)
         {
-            gmx_fatal(FARGS, "Masses were requested, but for some atom(s) masses could not be found in the database. Use a tpr file as input, if possible, or add these atoms to the mass database.");
+            gmx_fatal(FARGS,
+                      "Masses were requested, but for some atom(s) masses could not be found in "
+                      "the database. Use a tpr file as input, if possible, or add these atoms to "
+                      "the mass database.");
         }
     }
 

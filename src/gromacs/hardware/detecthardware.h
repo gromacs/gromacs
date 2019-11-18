@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,24 +43,26 @@ namespace gmx
 class MDLogger;
 class PhysicalNodeCommunicator;
 
-/*! \brief Run detection, consistency checks, and make available on all ranks.
+/*! \brief Run detection, consistency checks, and make consistent
+ * hardware information available on all ranks.
  *
  * This routine constructs the global hwinfo structure and returns a pointer to
  * it. It will run a preamble before executing cpu and hardware checks, and
  * then run consistency checks afterwards. The results will also be made
  * available on all nodes.
- * Caller is responsible for calling gmx_hardware_info_free() when finished.
  *
  * May do communication on MPI_COMM_WORLD when compiled with real MPI.
- */
-gmx_hw_info_t *gmx_detect_hardware(const gmx::MDLogger            &mdlog,
-                                   const PhysicalNodeCommunicator &physicalNodeComm);
-
-/*! \brief Free the hwinfo structure */
-void gmx_hardware_info_free();
+ *
+ * All processes in a physical node need to coordinate calling this
+ * routine. With thread-MPI only the first call leads to detection
+ * work, and any subsequent call receives the same handle. With real
+ * MPI, communication is needed to coordinate the results. In all
+ * cases, any thread within a process may use the returned handle. */
+gmx_hw_info_t* gmx_detect_hardware(const gmx::MDLogger&            mdlog,
+                                   const PhysicalNodeCommunicator& physicalNodeComm);
 
 //! Return whether compatible GPUs were found.
-bool compatibleGpusFound(const gmx_gpu_info_t &gpu_info);
+bool compatibleGpusFound(const gmx_gpu_info_t& gpu_info);
 
 } // namespace gmx
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@
 #include <gtest/gtest-spi.h>
 
 #include "gromacs/ewald/pme.h"
-#include "gromacs/gpu_utils/gpu_utils.h"
+#include "gromacs/gpu_utils/gpu_testutils.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/hardware/gpu_hw_info.h"
 #include "gromacs/trajectory/energyframe.h"
@@ -83,36 +83,25 @@ namespace
  * \todo Consider also using GpuTest class. */
 class PmeTest : public MdrunTestFixture
 {
-    public:
-        //! Before any test is run, work out whether any compatible GPUs exist.
-        static void SetUpTestCase();
-        //! Store whether any compatible GPUs exist.
-        static bool s_hasCompatibleGpus;
-        //! Convenience typedef
-        using RunModesList = std::map < std::string, std::vector < const char *>>;
-        //! Runs the test with the given inputs
-        void runTest(const RunModesList &runModes);
+public:
+    //! Before any test is run, work out whether any compatible GPUs exist.
+    static void SetUpTestCase();
+    //! Store whether any compatible GPUs exist.
+    static bool s_hasCompatibleGpus;
+    //! Convenience typedef
+    using RunModesList = std::map<std::string, std::vector<const char*>>;
+    //! Runs the test with the given inputs
+    void runTest(const RunModesList& runModes);
 };
 
 bool PmeTest::s_hasCompatibleGpus = false;
 
 void PmeTest::SetUpTestCase()
 {
-    gmx_gpu_info_t gpuInfo {};
-    // It would be nicer to do this detection once and have mdrun
-    // re-use it, but this is OK. Note that this also caters for when
-    // there is no GPU support in the build.
-    //
-    // TODO report any error messages gracefully.
-    if (canDetectGpus(nullptr))
-    {
-        findGpus(&gpuInfo);
-        s_hasCompatibleGpus = (gpuInfo.n_dev_compatible > 0);
-    }
-    free_gpu_info(&gpuInfo);
+    s_hasCompatibleGpus = canComputeOnGpu();
 }
 
-void PmeTest::runTest(const RunModesList &runModes)
+void PmeTest::runTest(const RunModesList& runModes)
 {
     const std::string inputFile = "spc-and-methanol";
     runner_.useTopGroAndNdxFromDatabase(inputFile);
@@ -132,11 +121,10 @@ void PmeTest::runTest(const RunModesList &runModes)
         EXPECT_NONFATAL_FAILURE(rootChecker.checkUnusedEntries(), ""); // skip checks on other ranks
     }
 
-    auto hardwareInfo_ = gmx_detect_hardware(MDLogger {},
-                                             PhysicalNodeCommunicator(MPI_COMM_WORLD,
-                                                                      gmx_physicalnode_id_hash()));
+    auto hardwareInfo_ = gmx_detect_hardware(
+            MDLogger{}, PhysicalNodeCommunicator(MPI_COMM_WORLD, gmx_physicalnode_id_hash()));
 
-    for (const auto &mode : runModes)
+    for (const auto& mode : runModes)
     {
         auto modeTargetsGpus = (mode.first.find("Gpu") != std::string::npos);
         if (modeTargetsGpus && !s_hasCompatibleGpus)
@@ -147,7 +135,8 @@ void PmeTest::runTest(const RunModesList &runModes)
             continue;
         }
         auto modeTargetsPmeOnGpus = (mode.first.find("PmeOnGpu") != std::string::npos);
-        if (modeTargetsPmeOnGpus && !pme_gpu_supports_build(*hardwareInfo_, nullptr))
+        if (modeTargetsPmeOnGpus
+            && !(pme_gpu_supports_build(nullptr) && pme_gpu_supports_hardware(*hardwareInfo_, nullptr)))
         {
             // This run mode will cause a fatal error from mdrun when
             // it finds an unsuitable device, which is not something
@@ -155,11 +144,12 @@ void PmeTest::runTest(const RunModesList &runModes)
             continue;
         }
 
-        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
+        runner_.edrFileName_ =
+                fileManager_.getTemporaryFilePath(inputFile + "_" + mode.first + ".edr");
 
         CommandLine commandLine(mode.second);
 
-        const bool  usePmeTuning = (mode.first.find("Tune") != std::string::npos);
+        const bool usePmeTuning = (mode.first.find("Tune") != std::string::npos);
         if (usePmeTuning)
         {
             commandLine.append("-tunepme");
@@ -178,13 +168,14 @@ void PmeTest::runTest(const RunModesList &runModes)
 
         if (thisRankChecks)
         {
-            auto energyReader      = openEnergyFileToReadFields(runner_.edrFileName_, {"Coul. recip.", "Total Energy", "Kinetic En."});
+            auto energyReader = openEnergyFileToReadTerms(
+                    runner_.edrFileName_, { "Coul. recip.", "Total Energy", "Kinetic En." });
             auto conservedChecker  = rootChecker.checkCompound("Energy", "Conserved");
             auto reciprocalChecker = rootChecker.checkCompound("Energy", "Reciprocal");
             bool firstIteration    = true;
             while (energyReader->readNextFrame())
             {
-                const EnergyFrame &frame            = energyReader->frame();
+                const EnergyFrame& frame            = energyReader->frame();
                 const std::string  stepName         = frame.frameName();
                 const real         conservedEnergy  = frame.at("Total Energy");
                 const real         reciprocalEnergy = frame.at("Coul. recip.");
@@ -192,8 +183,10 @@ void PmeTest::runTest(const RunModesList &runModes)
                 {
                     // use first step values as references for tolerance
                     const real startingKineticEnergy = frame.at("Kinetic En.");
-                    const auto conservedTolerance    = relativeToleranceAsFloatingPoint(startingKineticEnergy, 2e-5);
-                    const auto reciprocalTolerance   = relativeToleranceAsFloatingPoint(reciprocalEnergy, 3e-5);
+                    const auto conservedTolerance =
+                            relativeToleranceAsFloatingPoint(startingKineticEnergy, 2e-5);
+                    const auto reciprocalTolerance =
+                            relativeToleranceAsFloatingPoint(reciprocalEnergy, 3e-5);
                     reciprocalChecker.setDefaultTolerance(reciprocalTolerance);
                     conservedChecker.setDefaultTolerance(conservedTolerance);
                     firstIteration = false;
@@ -211,27 +204,27 @@ void PmeTest::runTest(const RunModesList &runModes)
 TEST_F(PmeTest, ReproducesEnergies)
 {
     const int         nsteps     = 20;
-    const std::string theMdpFile = formatString("coulombtype     = PME\n"
-                                                "nstcalcenergy   = 1\n"
-                                                "nstenergy       = 1\n"
-                                                "pme-order       = 4\n"
-                                                "nsteps          = %d\n",
-                                                nsteps
-                                                );
+    const std::string theMdpFile = formatString(
+            "coulombtype     = PME\n"
+            "nstcalcenergy   = 1\n"
+            "nstenergy       = 1\n"
+            "pme-order       = 4\n"
+            "nsteps          = %d\n",
+            nsteps);
 
     runner_.useStringAsMdpFile(theMdpFile);
 
-    //TODO test all proper/improper combinations in more thorough way?
+    // TODO test all proper/improper combinations in more thorough way?
     RunModesList runModes;
-    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
-    runModes["PmeAuto"]          = {"-pme", "auto"};
-    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
-    runModes["PmeOnGpuFftAuto"]  = {"-pme", "gpu", "-pmefft", "auto"};
+    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
+    runModes["PmeAuto"]          = { "-pme", "auto" };
+    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
+    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
+    runModes["PmeOnGpuFftAuto"]  = { "-pme", "gpu", "-pmefft", "auto" };
     // same manual modes but marked for PME tuning
-    runModes["PmeOnCpuTune"]         = {"-pme", "cpu"};
-    runModes["PmeOnGpuFftOnCpuTune"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    runModes["PmeOnGpuFftOnGpuTune"] = {"-pme", "gpu", "-pmefft", "gpu"};
+    runModes["PmeOnCpuTune"]         = { "-pme", "cpu" };
+    runModes["PmeOnGpuFftOnCpuTune"] = { "-pme", "gpu", "-pmefft", "cpu" };
+    runModes["PmeOnGpuFftOnGpuTune"] = { "-pme", "gpu", "-pmefft", "gpu" };
 
     runTest(runModes);
 }
@@ -239,30 +232,52 @@ TEST_F(PmeTest, ReproducesEnergies)
 TEST_F(PmeTest, ScalesTheBox)
 {
     const int         nsteps     = 0;
-    const std::string theMdpFile = formatString("coulombtype     = PME\n"
-                                                "nstcalcenergy   = 1\n"
-                                                "nstenergy       = 1\n"
-                                                "pme-order       = 4\n"
-                                                "pbc             = xy\n"
-                                                "nwall           = 2\n"
-                                                "ewald-geometry  = 3dc\n"
-                                                "wall_atomtype   = OMet CMet\n"
-                                                "wall_density    = 9 9.0\n"
-                                                "wall-ewald-zfac = 5\n"
-                                                "nsteps          = %d\n",
-                                                nsteps
-                                                );
+    const std::string theMdpFile = formatString(
+            "coulombtype     = PME\n"
+            "nstcalcenergy   = 1\n"
+            "nstenergy       = 1\n"
+            "pme-order       = 4\n"
+            "pbc             = xyz\n"
+            "nsteps          = %d\n",
+            nsteps);
 
     runner_.useStringAsMdpFile(theMdpFile);
 
     RunModesList runModes;
-    runModes["PmeOnCpu"]         = {"-pme", "cpu"};
-    runModes["PmeOnGpuFftOnCpu"] = {"-pme", "gpu", "-pmefft", "cpu"};
-    runModes["PmeOnGpuFftOnGpu"] = {"-pme", "gpu", "-pmefft", "gpu"};
+    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
+    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
+    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
 
     runTest(runModes);
 }
 
-}  // namespace
-}  // namespace test
-}  // namespace gmx
+TEST_F(PmeTest, ScalesTheBoxWithWalls)
+{
+    const int         nsteps     = 0;
+    const std::string theMdpFile = formatString(
+            "coulombtype     = PME\n"
+            "nstcalcenergy   = 1\n"
+            "nstenergy       = 1\n"
+            "pme-order       = 4\n"
+            "pbc             = xy\n"
+            "nwall           = 2\n"
+            "ewald-geometry  = 3dc\n"
+            "wall_atomtype   = CMet H\n"
+            "wall_density    = 9 9.0\n"
+            "wall-ewald-zfac = 5\n"
+            "nsteps          = %d\n",
+            nsteps);
+
+    runner_.useStringAsMdpFile(theMdpFile);
+
+    RunModesList runModes;
+    runModes["PmeOnCpu"]         = { "-pme", "cpu" };
+    runModes["PmeOnGpuFftOnCpu"] = { "-pme", "gpu", "-pmefft", "cpu" };
+    runModes["PmeOnGpuFftOnGpu"] = { "-pme", "gpu", "-pmefft", "gpu" };
+
+    runTest(runModes);
+}
+
+} // namespace
+} // namespace test
+} // namespace gmx

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,37 +59,25 @@
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
 
-static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
+static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int* l)
 {
 #define AA 0.081649
 #define BB 0.0
 #define CC 0.0577350
-    const  dvec   matrix1[6] = {
-        { AA,     BB,     CC },
-        { AA,     BB,     CC },
-        { AA,     BB,     CC },
-        { -AA,    BB,     CC },
-        { -AA,    BB,     CC },
-        { BB,     AA,    -CC }
-    };
-    const  dvec   matrix2[6] = {
-        { -AA,   BB,   CC },
-        { BB,    AA,  -CC },
-        { BB,   -AA,  -CC },
-        { BB,    AA,  -CC },
-        { BB,   -AA,  -CC },
-        { BB,   -AA,  -CC }
-    };
+    const dvec matrix1[6] = { { AA, BB, CC },  { AA, BB, CC },  { AA, BB, CC },
+                              { -AA, BB, CC }, { -AA, BB, CC }, { BB, AA, -CC } };
+    const dvec matrix2[6] = { { -AA, BB, CC }, { BB, AA, -CC },  { BB, -AA, -CC },
+                              { BB, AA, -CC }, { BB, -AA, -CC }, { BB, -AA, -CC } };
 #undef AA
 #undef BB
 #undef CC
-    int        m;
+    int m;
 
     /* This was copied from Gromos */
     for (m = 0; (m < DIM); m++)
     {
-        xH1[m] = xAI[m]+matrix1[*l][m];
-        xH2[m] = xAI[m]+matrix2[*l][m];
+        xH1[m] = xAI[m] + matrix1[*l][m];
+        xH2[m] = xAI[m] + matrix2[*l][m];
     }
     if (nh > 2)
     {
@@ -100,28 +88,28 @@ static void gen_waterhydrogen(int nh, rvec xa[], rvec xh[], int *l)
         copy_rvec(xAI, xH4);
     }
 
-    *l = (*l+1) % 6;
+    *l = (*l + 1) % 6;
 }
 
-void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
+void calc_h_pos(int nht, rvec xa[], rvec xh[], int* l)
 {
-#define alfaH   (acos(-1/3.0)) /* 109.47 degrees */
-#define alfaHpl (2*M_PI/3)     /* 120 degrees */
-#define distH   0.1
+#define alfaH (acos(-1 / 3.0)) /* 109.47 degrees */
+#define alfaHpl (2 * M_PI / 3) /* 120 degrees */
+#define distH 0.1
 
-#define alfaCOM (DEG2RAD*117)
-#define alfaCO  (DEG2RAD*121)
-#define alfaCOA (DEG2RAD*115)
+#define alfaCOM (DEG2RAD * 117)
+#define alfaCO (DEG2RAD * 121)
+#define alfaCOA (DEG2RAD * 115)
 
-#define distO   0.123
-#define distOA  0.125
-#define distOM  0.136
+#define distO 0.123
+#define distOA 0.125
+#define distOM 0.136
 
     rvec sa, sb, sij;
     real s6, rij, ra, rb, xd;
     int  d;
 
-    s6 = 0.5*std::sqrt(3.e0);
+    s6 = 0.5 * std::sqrt(3.e0);
 
     /* common work for constructing one, two or three dihedral hydrogens */
     switch (nht)
@@ -135,29 +123,29 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             for (d = 0; (d < DIM); d++)
             {
                 xd     = xAJ[d];
-                sij[d] = xAI[d]-xd;
-                sb[d]  = xd-xAK[d];
-                rij   += gmx::square(sij[d]);
+                sij[d] = xAI[d] - xd;
+                sb[d]  = xd - xAK[d];
+                rij += gmx::square(sij[d]);
             }
             rij    = std::sqrt(rij);
-            sa[XX] = sij[YY]*sb[ZZ]-sij[ZZ]*sb[YY];
-            sa[YY] = sij[ZZ]*sb[XX]-sij[XX]*sb[ZZ];
-            sa[ZZ] = sij[XX]*sb[YY]-sij[YY]*sb[XX];
+            sa[XX] = sij[YY] * sb[ZZ] - sij[ZZ] * sb[YY];
+            sa[YY] = sij[ZZ] * sb[XX] - sij[XX] * sb[ZZ];
+            sa[ZZ] = sij[XX] * sb[YY] - sij[YY] * sb[XX];
             ra     = 0.e0;
             for (d = 0; (d < DIM); d++)
             {
-                sij[d] = sij[d]/rij;
-                ra    += gmx::square(sa[d]);
+                sij[d] = sij[d] / rij;
+                ra += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
             {
-                sa[d] = sa[d]/ra;
+                sa[d] = sa[d] / ra;
             }
 
-            sb[XX] = sa[YY]*sij[ZZ]-sa[ZZ]*sij[YY];
-            sb[YY] = sa[ZZ]*sij[XX]-sa[XX]*sij[ZZ];
-            sb[ZZ] = sa[XX]*sij[YY]-sa[YY]*sij[XX];
+            sb[XX] = sa[YY] * sij[ZZ] - sa[ZZ] * sij[YY];
+            sb[YY] = sa[ZZ] * sij[XX] - sa[XX] * sij[ZZ];
+            sb[ZZ] = sa[XX] * sij[YY] - sa[YY] * sij[XX];
             break;
     } /* end switch */
 
@@ -168,52 +156,48 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             rb  = 0.e0;
             for (d = 0; (d < DIM); d++)
             {
-                sij[d] = xAI[d]-xAJ[d];
-                sb[d]  = xAI[d]-xAK[d];
-                rij   += gmx::square(sij[d]);
-                rb    += gmx::square(sb[d]);
+                sij[d] = xAI[d] - xAJ[d];
+                sb[d]  = xAI[d] - xAK[d];
+                rij += gmx::square(sij[d]);
+                rb += gmx::square(sb[d]);
             }
             rij = std::sqrt(rij);
             rb  = std::sqrt(rb);
             ra  = 0.e0;
             for (d = 0; (d < DIM); d++)
             {
-                sa[d] = sij[d]/rij+sb[d]/rb;
-                ra   += gmx::square(sa[d]);
+                sa[d] = sij[d] / rij + sb[d] / rb;
+                ra += gmx::square(sa[d]);
             }
             ra = std::sqrt(ra);
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]+distH*sa[d]/ra;
+                xH1[d] = xAI[d] + distH * sa[d] / ra;
             }
             break;
         case 2: /* one single hydrogen, e.g. hydroxyl */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]+distH*sin(alfaH)*sb[d]-distH*cos(alfaH)*sij[d];
+                xH1[d] = xAI[d] + distH * sin(alfaH) * sb[d] - distH * cos(alfaH) * sij[d];
             }
             break;
         case 3: /* two planar hydrogens, e.g. -NH2 */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]-distH*sin(alfaHpl)*sb[d]-distH*cos(alfaHpl)*sij[d];
-                xH2[d] = xAI[d]+distH*sin(alfaHpl)*sb[d]-distH*cos(alfaHpl)*sij[d];
+                xH1[d] = xAI[d] - distH * sin(alfaHpl) * sb[d] - distH * cos(alfaHpl) * sij[d];
+                xH2[d] = xAI[d] + distH * sin(alfaHpl) * sb[d] - distH * cos(alfaHpl) * sij[d];
             }
             break;
         case 4: /* two or three tetrahedral hydrogens, e.g. -CH3 */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]+distH*sin(alfaH)*sb[d]-distH*cos(alfaH)*sij[d];
-                xH2[d] = ( xAI[d]
-                           - distH*sin(alfaH)*0.5*sb[d]
-                           + distH*sin(alfaH)*s6*sa[d]
-                           - distH*cos(alfaH)*sij[d] );
+                xH1[d] = xAI[d] + distH * sin(alfaH) * sb[d] - distH * cos(alfaH) * sij[d];
+                xH2[d] = (xAI[d] - distH * sin(alfaH) * 0.5 * sb[d]
+                          + distH * sin(alfaH) * s6 * sa[d] - distH * cos(alfaH) * sij[d]);
                 if (xH3[XX] != NOTSET && xH3[YY] != NOTSET && xH3[ZZ] != NOTSET)
                 {
-                    xH3[d] = ( xAI[d]
-                               - distH*sin(alfaH)*0.5*sb[d]
-                               - distH*sin(alfaH)*s6*sa[d]
-                               - distH*cos(alfaH)*sij[d] );
+                    xH3[d] = (xAI[d] - distH * sin(alfaH) * 0.5 * sb[d]
+                              - distH * sin(alfaH) * s6 * sa[d] - distH * cos(alfaH) * sij[d]);
                 }
             }
             break;
@@ -224,13 +208,13 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
             for (d = 0; (d < DIM); d++)
             {
-                center = (xAJ[d]+xAK[d]+xAL[d])/3.0;
-                dxc[d] = xAI[d]-center;
+                center = (xAJ[d] + xAK[d] + xAL[d]) / 3.0;
+                dxc[d] = xAI[d] - center;
             }
             center = norm(dxc);
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]+dxc[d]*distH/center;
+                xH1[d] = xAI[d] + dxc[d] * distH / center;
             }
             break;
         }
@@ -241,7 +225,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
             for (d = 0; (d < DIM); d++)
             {
-                rBB[d] = xAI[d]-0.5*(xAJ[d]+xAK[d]);
+                rBB[d] = xAI[d] - 0.5 * (xAJ[d] + xAK[d]);
             }
             bb = norm(rBB);
 
@@ -252,38 +236,30 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
 
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]+distH*(cos(alfaH/2.0)*rBB[d]/bb+
-                                       sin(alfaH/2.0)*rNN[d]/nn);
-                xH2[d] = xAI[d]+distH*(cos(alfaH/2.0)*rBB[d]/bb-
-                                       sin(alfaH/2.0)*rNN[d]/nn);
+                xH1[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb + sin(alfaH / 2.0) * rNN[d] / nn);
+                xH2[d] = xAI[d] + distH * (cos(alfaH / 2.0) * rBB[d] / bb - sin(alfaH / 2.0) * rNN[d] / nn);
             }
             break;
         }
-        case 7: /* two water hydrogens */
-            gen_waterhydrogen(2, xa, xh, l);
-            break;
-        case 10: /* three water hydrogens */
-            gen_waterhydrogen(3, xa, xh, l);
-            break;
-        case 11: /* four water hydrogens */
-            gen_waterhydrogen(4, xa, xh, l);
-            break;
+        case 7: /* two water hydrogens */ gen_waterhydrogen(2, xa, xh, l); break;
+        case 10: /* three water hydrogens */ gen_waterhydrogen(3, xa, xh, l); break;
+        case 11: /* four water hydrogens */ gen_waterhydrogen(4, xa, xh, l); break;
         case 8: /* two carboxyl oxygens, -COO- */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]-distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
-                xH2[d] = xAI[d]+distOM*sin(alfaCOM)*sb[d]-distOM*cos(alfaCOM)*sij[d];
+                xH1[d] = xAI[d] - distOM * sin(alfaCOM) * sb[d] - distOM * cos(alfaCOM) * sij[d];
+                xH2[d] = xAI[d] + distOM * sin(alfaCOM) * sb[d] - distOM * cos(alfaCOM) * sij[d];
             }
             break;
-        case 9:          /* carboxyl oxygens and hydrogen, -COOH */
+        case 9: /* carboxyl oxygens and hydrogen, -COOH */
         {
             rvec xa2[4]; /* i,j,k,l   */
 
             /* first add two oxygens */
             for (d = 0; (d < DIM); d++)
             {
-                xH1[d] = xAI[d]-distO *sin(alfaCO )*sb[d]-distO *cos(alfaCO )*sij[d];
-                xH2[d] = xAI[d]+distOA*sin(alfaCOA)*sb[d]-distOA*cos(alfaCOA)*sij[d];
+                xH1[d] = xAI[d] - distO * sin(alfaCO) * sb[d] - distO * cos(alfaCO) * sij[d];
+                xH2[d] = xAI[d] + distOA * sin(alfaCOA) * sb[d] - distOA * cos(alfaCOA) * sij[d];
             }
 
             /* now use rule 2 to add hydrogen to 2nd oxygen */
@@ -291,11 +267,10 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l)
             copy_rvec(xAI, xa2[1]); /* new j = i  */
             copy_rvec(xAJ, xa2[2]); /* new k = j  */
             copy_rvec(xAK, xa2[3]); /* new l = k, not used */
-            calc_h_pos(2, xa2, (xh+2), l);
+            calc_h_pos(2, xa2, (xh + 2), l);
 
             break;
         }
-        default:
-            gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
+        default: gmx_fatal(FARGS, "Invalid argument (%d) for nht in routine genh\n", nht);
     } /* end switch */
 }

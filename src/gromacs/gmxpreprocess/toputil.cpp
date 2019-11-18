@@ -57,231 +57,62 @@
 
 /* UTILITIES */
 
-void set_p_string(t_param *p, const char *s)
+void add_param_to_list(InteractionsOfType* list, const InteractionOfType& b)
 {
-    if (s)
-    {
-        if (strlen(s) < sizeof(p->s)-1)
-        {
-            strncpy(p->s, s, sizeof(p->s));
-        }
-        else
-        {
-            gmx_fatal(FARGS, "Increase MAXSLEN in the grompp code to at least %zu,"
-                      " or shorten your definition of bonds like %s to at most %d",
-                      strlen(s)+1, s, MAXSLEN-1);
-        }
-    }
-    else
-    {
-        strcpy(p->s, "");
-    }
-}
-
-void pr_alloc (int extra, t_params *pr)
-{
-    int i, j;
-
-    /* get new space for arrays */
-    if (extra < 0)
-    {
-        gmx_fatal(FARGS, "Trying to make array smaller.\n");
-    }
-    if (extra == 0)
-    {
-        return;
-    }
-    GMX_ASSERT(pr->nr != 0 || pr->param == nullptr, "Invalid t_params object");
-    if (pr->nr+extra > pr->maxnr)
-    {
-        pr->maxnr = std::max(static_cast<int>(1.2*pr->maxnr), pr->maxnr + extra);
-        srenew(pr->param, pr->maxnr);
-        for (i = pr->nr; (i < pr->maxnr); i++)
-        {
-            for (j = 0; (j < MAXATOMLIST); j++)
-            {
-                pr->param[i].a[j] = 0;
-            }
-            for (j = 0; (j < MAXFORCEPARAM); j++)
-            {
-                pr->param[i].c[j] = 0;
-            }
-            set_p_string(&(pr->param[i]), "");
-        }
-    }
-}
-
-void init_plist(t_params plist[])
-{
-    int i;
-
-    for (i = 0; (i < F_NRE); i++)
-    {
-        plist[i].nr    = 0;
-        plist[i].maxnr = 0;
-        plist[i].param = nullptr;
-
-        /* CMAP */
-        plist[i].ncmap        = 0;
-        plist[i].cmap         = nullptr;
-        plist[i].grid_spacing = 0;
-        plist[i].nc           = 0;
-        plist[i].nct          = 0;
-        plist[i].cmap_types   = nullptr;
-    }
-}
-
-void done_plist(t_params *plist)
-{
-    for (int i = 0; i < F_NRE; i++)
-    {
-        t_params *pl = &plist[i];
-        sfree(pl->param);
-        sfree(pl->cmap);
-        sfree(pl->cmap_types);
-    }
-}
-
-void cp_param(t_param *dest, t_param *src)
-{
-    int j;
-
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        dest->a[j] = src->a[j];
-    }
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        dest->c[j] = src->c[j];
-    }
-    strncpy(dest->s, src->s, sizeof(dest->s));
-}
-
-void add_param_to_list(t_params *list, t_param *b)
-{
-    int j;
-
-    /* allocate one position extra */
-    pr_alloc (1, list);
-
-    /* fill the arrays */
-    for (j = 0; (j < MAXFORCEPARAM); j++)
-    {
-        list->param[list->nr].c[j]   = b->c[j];
-    }
-    for (j = 0; (j < MAXATOMLIST); j++)
-    {
-        list->param[list->nr].a[j]   = b->a[j];
-    }
-    memset(list->param[list->nr].s, 0, sizeof(list->param[list->nr].s));
-
-    list->nr++;
-}
-
-
-void init_molinfo(t_molinfo *mol)
-{
-    mol->nrexcl     = 0;
-    mol->excl_set   = FALSE;
-    mol->bProcessed = FALSE;
-    init_plist(mol->plist);
-    init_block(&mol->cgs);
-    init_block(&mol->mols);
-    init_blocka(&mol->excls);
-    init_t_atoms(&mol->atoms, 0, FALSE);
-}
-
-/* FREEING MEMORY */
-
-void done_mi(t_molinfo *mi)
-{
-    done_atom (&(mi->atoms));
-    done_block(&(mi->cgs));
-    done_block(&(mi->mols));
-    done_plist(mi->plist);
+    list->interactionTypes.emplace_back(b);
 }
 
 /* PRINTING STRUCTURES */
 
-static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
-                     int ftype, int fsubtype, t_params plist[],
-                     bool bFullDih)
+static void print_bt(FILE*                                   out,
+                     Directive                               d,
+                     PreprocessingAtomTypes*                 at,
+                     int                                     ftype,
+                     int                                     fsubtype,
+                     gmx::ArrayRef<const InteractionsOfType> plist,
+                     bool                                    bFullDih)
 {
     /* This dihp is a DIRTY patch because the dih-types do not use
      * all four atoms to determine the type.
      */
-    const int    dihp[2][2] = { { 1, 2 }, { 0, 3 } };
-    t_params    *bt;
-    int          i, j, f, nral, nrfp;
-    bool         bDih = FALSE, bSwapParity;
+    const int dihp[2][2] = { { 1, 2 }, { 0, 3 } };
+    int       nral, nrfp;
+    bool      bDih = false, bSwapParity;
 
-    bt = &(plist[ftype]);
+    const InteractionsOfType* bt = &(plist[ftype]);
 
-    if (!bt->nr)
+    if (bt->size() == 0)
     {
         return;
     }
 
-    f = 0;
+    int f = 0;
     switch (ftype)
     {
-        case F_G96ANGLES:
-            f = 1;
-            break;
-        case F_G96BONDS:
-            f = 1;
-            break;
-        case F_MORSE:
-            f = 2;
-            break;
-        case F_CUBICBONDS:
-            f = 3;
-            break;
-        case F_CONNBONDS:
-            f = 4;
-            break;
-        case F_HARMONIC:
-            f = 5;
-            break;
-        case F_CROSS_BOND_ANGLES:
-            f = 2;
-            break;
-        case F_CROSS_BOND_BONDS:
-            f = 3;
-            break;
-        case F_UREY_BRADLEY:
-            f = 4;
-            break;
+        case F_G96ANGLES: f = 1; break;
+        case F_G96BONDS: f = 1; break;
+        case F_MORSE: f = 2; break;
+        case F_CUBICBONDS: f = 3; break;
+        case F_CONNBONDS: f = 4; break;
+        case F_HARMONIC: f = 5; break;
+        case F_CROSS_BOND_ANGLES: f = 2; break;
+        case F_CROSS_BOND_BONDS: f = 3; break;
+        case F_UREY_BRADLEY: f = 4; break;
         case F_PDIHS:
         case F_RBDIHS:
-        case F_FOURDIHS:
-            bDih = TRUE;
-            break;
+        case F_FOURDIHS: bDih = TRUE; break;
         case F_IDIHS:
             f    = 1;
             bDih = TRUE;
             break;
-        case F_CONSTRNC:
-            f = 1;
-            break;
-        case F_VSITE3FD:
-            f = 1;
-            break;
-        case F_VSITE3FAD:
-            f = 2;
-            break;
-        case F_VSITE3OUT:
-            f = 3;
-            break;
-        case F_VSITE4FDN:
-            f = 1;
-            break;
-        case F_CMAP:
-            f = 1;
-            break;
+        case F_CONSTRNC: f = 1; break;
+        case F_VSITE3FD: f = 1; break;
+        case F_VSITE3FAD: f = 2; break;
+        case F_VSITE3OUT: f = 3; break;
+        case F_VSITE4FDN: f = 1; break;
+        case F_CMAP: f = 1; break;
 
-        default:
-            bDih = FALSE;
+        default: bDih = FALSE;
     }
     if (bFullDih)
     {
@@ -289,7 +120,7 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
     }
     if (fsubtype)
     {
-        f = fsubtype-1;
+        f = fsubtype - 1;
     }
 
     nral = NRAL(ftype);
@@ -300,93 +131,72 @@ static void print_bt(FILE *out, Directive d, gpp_atomtype *at,
     fprintf(out, "; ");
     if (!bDih)
     {
-        fprintf (out, "%3s  %4s", "ai", "aj");
-        for (j = 2; (j < nral); j++)
+        fprintf(out, "%3s  %4s", "ai", "aj");
+        for (int j = 2; (j < nral); j++)
         {
-            fprintf (out, "  %3c%c", 'a', 'i'+j);
+            fprintf(out, "  %3c%c", 'a', 'i' + j);
         }
     }
     else
     {
-        for (j = 0; (j < 2); j++)
+        for (int j = 0; (j < 2); j++)
         {
-            fprintf (out, "%3c%c", 'a', 'i'+dihp[f][j]);
+            fprintf(out, "%3c%c", 'a', 'i' + dihp[f][j]);
         }
     }
 
-    fprintf (out, " funct");
-    for (j = 0; (j < nrfp); j++)
+    fprintf(out, " funct");
+    for (int j = 0; (j < nrfp); j++)
     {
-        fprintf (out, " %12c%1d", 'c', j);
+        fprintf(out, " %12c%1d", 'c', j);
     }
-    fprintf (out, "\n");
+    fprintf(out, "\n");
 
     /* print bondtypes */
-    for (i = 0; (i < bt->nr); i++)
+    for (const auto& parm : bt->interactionTypes)
     {
-        bSwapParity = (bt->param[i].c0() == NOTSET) && (bt->param[i].c1() == -1);
+        bSwapParity                    = (parm.c0() == NOTSET) && (parm.c1() == -1);
+        gmx::ArrayRef<const int> atoms = parm.atoms();
         if (!bDih)
         {
-            for (j = 0; (j < nral); j++)
+            for (int j = 0; (j < nral); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[j], at));
+                fprintf(out, "%5s ", at->atomNameFromAtomType(atoms[j]));
             }
         }
         else
         {
-            for (j = 0; (j < 2); j++)
+            for (int j = 0; (j < 2); j++)
             {
-                fprintf (out, "%5s ", get_atomtype_name(bt->param[i].a[dihp[f][j]], at));
+                fprintf(out, "%5s ", at->atomNameFromAtomType(atoms[dihp[f][j]]));
             }
         }
-        fprintf (out, "%5d ", bSwapParity ? -f-1 : f+1);
+        fprintf(out, "%5d ", bSwapParity ? -f - 1 : f + 1);
 
-        if (bt->param[i].s[0])
+        if (!parm.interactionTypeName().empty())
         {
-            fprintf(out, "   %s", bt->param[i].s);
+            fprintf(out, "   %s", parm.interactionTypeName().c_str());
         }
         else
         {
-            for (j = 0; (j < nrfp && (bt->param[i].c[j] != NOTSET)); j++)
+            gmx::ArrayRef<const real> forceParam = parm.forceParam();
+            for (int j = 0; (j < nrfp) && (forceParam[j] != NOTSET); j++)
             {
-                fprintf (out, "%13.6e ", bt->param[i].c[j]);
+                fprintf(out, "%13.6e ", forceParam[j]);
             }
         }
 
-        fprintf (out, "\n");
+        fprintf(out, "\n");
     }
-    fprintf (out, "\n");
-    fflush (out);
+    fprintf(out, "\n");
+    fflush(out);
 }
 
-void print_blocka(FILE *out, const char *szName,
-                  const char *szIndex, const char *szA,
-                  t_blocka *block)
+void print_excl(FILE* out, int natoms, t_excls excls[])
 {
-    int i, j;
-
-    fprintf (out, "; %s\n", szName);
-    fprintf (out, "; %4s    %s\n", szIndex, szA);
-    for (i = 0; (i < block->nr); i++)
-    {
-        for (i = 0; (i < block->nr); i++)
-        {
-            fprintf (out, "%6d", i+1);
-            for (j = block->index[i]; (j < (block->index[i+1])); j++)
-            {
-                fprintf (out, "%5d", block->a[j]+1);
-            }
-            fprintf (out, "\n");
-        }
-        fprintf (out, "\n");
-    }
-}
-
-void print_excl(FILE *out, int natoms, t_excls excls[])
-{
-    int         i;
-    bool        have_excl;
-    int         j;
+    int  i;
+    bool have_excl;
+    int  j;
 
     have_excl = FALSE;
     for (i = 0; i < natoms && !have_excl; i++)
@@ -396,26 +206,26 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
 
     if (have_excl)
     {
-        fprintf (out, "[ %s ]\n", dir2str(Directive::d_exclusions));
-        fprintf (out, "; %4s    %s\n", "i", "excluded from i");
+        fprintf(out, "[ %s ]\n", dir2str(Directive::d_exclusions));
+        fprintf(out, "; %4s    %s\n", "i", "excluded from i");
         for (i = 0; i < natoms; i++)
         {
             if (excls[i].nr > 0)
             {
-                fprintf (out, "%6d ", i+1);
+                fprintf(out, "%6d ", i + 1);
                 for (j = 0; j < excls[i].nr; j++)
                 {
-                    fprintf (out, " %5d", excls[i].e[j]+1);
+                    fprintf(out, " %5d", excls[i].e[j] + 1);
                 }
-                fprintf (out, "\n");
+                fprintf(out, "\n");
             }
         }
-        fprintf (out, "\n");
+        fprintf(out, "\n");
         fflush(out);
     }
 }
 
-static double get_residue_charge(const t_atoms *atoms, int at)
+static double get_residue_charge(const t_atoms* atoms, int at)
 {
     int    ri;
     double q;
@@ -431,21 +241,20 @@ static double get_residue_charge(const t_atoms *atoms, int at)
     return q;
 }
 
-void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
-                 bool bRTPresname)
+void print_atoms(FILE* out, PreprocessingAtomTypes* atype, t_atoms* at, int* cgnr, bool bRTPresname)
 {
     int         i, ri;
     int         tpA, tpB;
-    const char *as;
-    char       *tpnmA, *tpnmB;
+    const char* as;
+    const char *tpnmA, *tpnmB;
     double      qres, qtot;
 
     as = dir2str(Directive::d_atoms);
     fprintf(out, "[ %s ]\n", as);
-    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n",
-            "nr", "type", "resnr", "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
+    fprintf(out, "; %4s %10s %6s %7s%6s %6s %10s %10s %6s %10s %10s\n", "nr", "type", "resnr",
+            "residue", "atom", "cgnr", "charge", "mass", "typeB", "chargeB", "massB");
 
-    qtot  = 0;
+    qtot = 0;
 
     if (at->nres)
     {
@@ -453,14 +262,11 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
         for (i = 0; (i < at->nr); i++)
         {
             ri = at->atom[i].resind;
-            if ((i == 0 || ri != at->atom[i-1].resind) &&
-                at->resinfo[ri].rtp != nullptr)
+            if ((i == 0 || ri != at->atom[i - 1].resind) && at->resinfo[ri].rtp != nullptr)
             {
                 qres = get_residue_charge(at, i);
-                fprintf(out, "; residue %3d %-3s rtp %-4s q ",
-                        at->resinfo[ri].nr,
-                        *at->resinfo[ri].name,
-                        *at->resinfo[ri].rtp);
+                fprintf(out, "; residue %3d %-3s rtp %-4s q ", at->resinfo[ri].nr,
+                        *at->resinfo[ri].name, *at->resinfo[ri].rtp);
                 if (fabs(qres) < 0.001)
                 {
                     fprintf(out, " %s", "0.0");
@@ -472,31 +278,27 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
                 fprintf(out, "\n");
             }
             tpA = at->atom[i].type;
-            if ((tpnmA = get_atomtype_name(tpA, atype)) == nullptr)
+            if ((tpnmA = atype->atomNameFromAtomType(tpA)) == nullptr)
             {
                 gmx_fatal(FARGS, "tpA = %d, i= %d in print_atoms", tpA, i);
             }
 
             /* This is true by construction, but static analysers don't know */
-            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp, "-rtpres did not have residue name available");
-            fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g",
-                    i+1, tpnmA,
-                    at->resinfo[ri].nr,
+            GMX_ASSERT(!bRTPresname || at->resinfo[at->atom[i].resind].rtp,
+                       "-rtpres did not have residue name available");
+            fprintf(out, "%6d %10s %6d%c %5s %6s %6d %10g %10g", i + 1, tpnmA, at->resinfo[ri].nr,
                     at->resinfo[ri].ic,
-                    bRTPresname ?
-                    *(at->resinfo[at->atom[i].resind].rtp) :
-                    *(at->resinfo[at->atom[i].resind].name),
-                    *(at->atomname[i]), cgnr[i],
-                    at->atom[i].q, at->atom[i].m);
+                    bRTPresname ? *(at->resinfo[at->atom[i].resind].rtp)
+                                : *(at->resinfo[at->atom[i].resind].name),
+                    *(at->atomname[i]), cgnr[i], at->atom[i].q, at->atom[i].m);
             if (PERTURBED(at->atom[i]))
             {
                 tpB = at->atom[i].typeB;
-                if ((tpnmB = get_atomtype_name(tpB, atype)) == nullptr)
+                if ((tpnmB = atype->atomNameFromAtomType(tpB)) == nullptr)
                 {
                     gmx_fatal(FARGS, "tpB = %d, i= %d in print_atoms", tpB, i);
                 }
-                fprintf(out, " %6s %10g %10g",
-                        tpnmB, at->atom[i].qB, at->atom[i].mB);
+                fprintf(out, " %6s %10g %10g", tpnmB, at->atom[i].qB, at->atom[i].mB);
             }
             // Accumulate the total charge to help troubleshoot issues.
             qtot += static_cast<double>(at->atom[i].q);
@@ -509,7 +311,7 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
             // Write the total charge for the last atom of the system
             // and/or residue, because generally that's where it is
             // expected to be an integer.
-            if (i == at->nr-1 || ri != at->atom[i+1].resind)
+            if (i == at->nr - 1 || ri != at->atom[i + 1].resind)
             {
                 fprintf(out, "   ; qtot %.4g\n", qtot);
             }
@@ -523,29 +325,22 @@ void print_atoms(FILE *out, gpp_atomtype *atype, t_atoms *at, int *cgnr,
     fflush(out);
 }
 
-void print_bondeds(FILE *out, int natoms, Directive d,
-                   int ftype, int fsubtype, t_params plist[])
+void print_bondeds(FILE* out, int natoms, Directive d, int ftype, int fsubtype, gmx::ArrayRef<const InteractionsOfType> plist)
 {
-    t_symtab       stab;
-    gpp_atomtype  *atype;
-    t_param       *param;
-    t_atom        *a;
-    int            i;
+    t_symtab stab;
+    t_atom*  a;
 
-    atype = init_atomtype();
+    PreprocessingAtomTypes atype;
     snew(a, 1);
-    snew(param, 1);
     open_symtab(&stab);
-    for (i = 0; (i < natoms); i++)
+    for (int i = 0; (i < natoms); i++)
     {
         char buf[12];
-        sprintf(buf, "%4d", (i+1));
-        add_atomtype(atype, &stab, a, buf, param, 0, 0);
+        sprintf(buf, "%4d", (i + 1));
+        atype.addType(&stab, *a, buf, InteractionOfType({}, {}), 0, 0);
     }
-    print_bt(out, d, atype, ftype, fsubtype, plist, TRUE);
+    print_bt(out, d, &atype, ftype, fsubtype, plist, TRUE);
 
     done_symtab(&stab);
     sfree(a);
-    sfree(param);
-    done_atomtype(atype);
 }

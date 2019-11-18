@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,8 +46,6 @@
 #include <cstring>
 
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/position.h"
-#include "gromacs/selection/selectionenums.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
@@ -57,6 +55,8 @@
 #include "keywords.h"
 #include "mempool.h"
 #include "poscalc.h"
+#include "position.h"
+#include "selectionenums.h"
 #include "selmethod.h"
 
 /*!
@@ -67,21 +67,22 @@
  *
  * The function returns NULL if \p sel->type is not one of the valid values.
  */
-const char *
-_gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
+const char* _gmx_selelem_type_str(const gmx::SelectionTreeElement& sel)
 {
-    const char *p = nullptr;
+    const char* p = nullptr;
     switch (sel.type)
     {
-        case SEL_CONST:      p = "CONST";    break;
-        case SEL_EXPRESSION: p = "EXPR";     break;
-        case SEL_BOOLEAN:    p = "BOOL";     break;
-        case SEL_ARITHMETIC: p = "ARITH";    break;
-        case SEL_ROOT:       p = "ROOT";     break;
-        case SEL_SUBEXPR:    p = "SUBEXPR";  break;
-        case SEL_SUBEXPRREF: p = "REF";      break;
-        case SEL_GROUPREF:   p = "GROUPREF"; break;
-        case SEL_MODIFIER:   p = "MODIFIER"; break;
+        case SEL_CONST: p = "CONST"; break;
+        case SEL_EXPRESSION: p = "EXPR"; break;
+        case SEL_BOOLEAN: p = "BOOL"; break;
+        case SEL_ARITHMETIC: p = "ARITH"; break;
+        case SEL_ROOT: p = "ROOT"; break;
+        case SEL_SUBEXPR: p = "SUBEXPR"; break;
+        case SEL_SUBEXPRREF: p = "REF"; break;
+        case SEL_GROUPREF: p = "GROUPREF"; break;
+        case SEL_MODIFIER:
+            p = "MODIFIER";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -95,18 +96,19 @@ _gmx_selelem_type_str(const gmx::SelectionTreeElement &sel)
  *
  * The return value points to a string constant and should not be \p free'd.
  */
-const char *
-_gmx_sel_value_type_str(const gmx_ana_selvalue_t *val)
+const char* _gmx_sel_value_type_str(const gmx_ana_selvalue_t* val)
 {
-    const char *p = nullptr;
+    const char* p = nullptr;
     switch (val->type)
     {
-        case NO_VALUE:       p = "NONE";  break;
-        case INT_VALUE:      p = "INT";   break;
-        case REAL_VALUE:     p = "REAL";  break;
-        case STR_VALUE:      p = "STR";   break;
-        case POS_VALUE:      p = "VEC";   break;
-        case GROUP_VALUE:    p = "GROUP"; break;
+        case NO_VALUE: p = "NONE"; break;
+        case INT_VALUE: p = "INT"; break;
+        case REAL_VALUE: p = "REAL"; break;
+        case STR_VALUE: p = "STR"; break;
+        case POS_VALUE: p = "VEC"; break;
+        case GROUP_VALUE:
+            p = "GROUP";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -114,16 +116,17 @@ _gmx_sel_value_type_str(const gmx_ana_selvalue_t *val)
 }
 
 /*! \copydoc _gmx_selelem_type_str() */
-const char *
-_gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel)
+const char* _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement& sel)
 {
-    const char *p = nullptr;
+    const char* p = nullptr;
     switch (sel.u.boolt)
     {
-        case BOOL_NOT:  p = "NOT"; break;
-        case BOOL_AND:  p = "AND"; break;
-        case BOOL_OR:   p = "OR";  break;
-        case BOOL_XOR:  p = "XOR"; break;
+        case BOOL_NOT: p = "NOT"; break;
+        case BOOL_AND: p = "AND"; break;
+        case BOOL_OR: p = "OR"; break;
+        case BOOL_XOR:
+            p = "XOR";
+            break;
             // No default clause so we intentionally get compiler errors
             // if new selection choices are added later.
     }
@@ -134,12 +137,11 @@ _gmx_selelem_boolean_type_str(const gmx::SelectionTreeElement &sel)
 namespace gmx
 {
 
-SelectionTreeElement::SelectionTreeElement(e_selelem_t              type,
-                                           const SelectionLocation &location)
-    : location_(location)
+SelectionTreeElement::SelectionTreeElement(e_selelem_t type, const SelectionLocation& location) :
+    location_(location)
 {
-    this->type       = type;
-    this->flags      = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
+    this->type  = type;
+    this->flags = (type != SEL_ROOT) ? SEL_ALLOCVAL : 0;
     if (type == SEL_BOOLEAN)
     {
         this->v.type = GROUP_VALUE;
@@ -151,9 +153,9 @@ SelectionTreeElement::SelectionTreeElement(e_selelem_t              type,
     }
     _gmx_selvalue_clear(&this->v);
     std::memset(&this->u, 0, sizeof(this->u));
-    this->evaluate   = nullptr;
-    this->mempool    = nullptr;
-    this->cdata      = nullptr;
+    this->evaluate = nullptr;
+    this->mempool  = nullptr;
+    this->cdata    = nullptr;
 }
 
 SelectionTreeElement::~SelectionTreeElement()
@@ -195,8 +197,7 @@ void SelectionTreeElement::freeValues()
                     gmx_ana_index_deinit(&v.u.g[i]);
                 }
                 break;
-            default: /* No special handling for other types */
-                break;
+            default: /* No special handling for other types */ break;
         }
     }
     _gmx_selvalue_free(&v);
@@ -209,8 +210,7 @@ void SelectionTreeElement::freeValues()
     }
 }
 
-void
-SelectionTreeElement::freeExpressionData()
+void SelectionTreeElement::freeExpressionData()
 {
     if (type == SEL_EXPRESSION || type == SEL_MODIFIER)
     {
@@ -232,8 +232,7 @@ SelectionTreeElement::freeExpressionData()
         sfree(u.arith.opstr);
         u.arith.opstr = nullptr;
     }
-    if (type == SEL_SUBEXPR || type == SEL_ROOT
-        || (type == SEL_CONST && v.type == GROUP_VALUE))
+    if (type == SEL_SUBEXPR || type == SEL_ROOT || (type == SEL_CONST && v.type == GROUP_VALUE))
     {
         gmx_ana_index_deinit(&u.cgrp);
     }
@@ -252,21 +251,16 @@ void SelectionTreeElement::mempoolReserve(int count)
     switch (v.type)
     {
         case INT_VALUE:
-            v.u.i = static_cast<int *>(
-                    _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.i)*count));
+            v.u.i = static_cast<int*>(_gmx_sel_mempool_alloc(mempool, sizeof(*v.u.i) * count));
             break;
 
         case REAL_VALUE:
-            v.u.r = static_cast<real *>(
-                    _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.r)*count));
+            v.u.r = static_cast<real*>(_gmx_sel_mempool_alloc(mempool, sizeof(*v.u.r) * count));
             break;
 
-        case GROUP_VALUE:
-            _gmx_sel_mempool_alloc_group(mempool, v.u.g, count);
-            break;
+        case GROUP_VALUE: _gmx_sel_mempool_alloc_group(mempool, v.u.g, count); break;
 
-        default:
-            gmx_incons("Memory pooling not implemented for requested type");
+        default: gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 
@@ -291,15 +285,13 @@ void SelectionTreeElement::mempoolRelease()
             }
             break;
 
-        default:
-            gmx_incons("Memory pooling not implemented for requested type");
+        default: gmx_incons("Memory pooling not implemented for requested type");
     }
 }
 
-void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
+void SelectionTreeElement::fillNameIfMissing(const char* selectionText)
 {
-    GMX_RELEASE_ASSERT(type == SEL_ROOT,
-                       "Should not be called for non-root elements");
+    GMX_RELEASE_ASSERT(type == SEL_ROOT, "Should not be called for non-root elements");
     if (name().empty())
     {
         // Check whether the actual selection given was from an external group,
@@ -308,8 +300,7 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
         if (_gmx_selelem_is_default_kwpos(*child) && child->child
             && child->child->type == SEL_SUBEXPRREF && child->child->child)
         {
-            if (child->child->child->type == SEL_CONST
-                && child->child->child->v.type == GROUP_VALUE)
+            if (child->child->child->type == SEL_CONST && child->child->child->v.type == GROUP_VALUE)
             {
                 setName(child->child->child->name());
                 return;
@@ -326,8 +317,7 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
     }
 }
 
-SelectionTopologyProperties
-SelectionTreeElement::requiredTopologyProperties() const
+SelectionTopologyProperties SelectionTreeElement::requiredTopologyProperties() const
 {
     SelectionTopologyProperties props;
     if (type == SEL_EXPRESSION || type == SEL_MODIFIER)
@@ -342,10 +332,12 @@ SelectionTreeElement::requiredTopologyProperties() const
         if (u.expr.pc != nullptr)
         {
             auto requiredTopologyInfo = gmx_ana_poscalc_required_topology_info(u.expr.pc);
-            needsTop    = needsTop
-                || (requiredTopologyInfo != PositionCalculationCollection::RequiredTopologyInfo::None);
+            needsTop                  = needsTop
+                       || (requiredTopologyInfo
+                           != PositionCalculationCollection::RequiredTopologyInfo::None);
             needsMasses = needsMasses
-                || (requiredTopologyInfo == PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses);
+                          || (requiredTopologyInfo
+                              == PositionCalculationCollection::RequiredTopologyInfo::TopologyAndMasses);
         }
         if (needsTop)
         {
@@ -365,12 +357,11 @@ SelectionTreeElement::requiredTopologyProperties() const
     return props;
 }
 
-void SelectionTreeElement::checkUnsortedAtoms(
-        bool bUnsortedAllowed, ExceptionInitializer *errors) const
+void SelectionTreeElement::checkUnsortedAtoms(bool bUnsortedAllowed, ExceptionInitializer* errors) const
 {
-    const bool bUnsortedSupported
-        = (type == SEL_CONST && v.type == GROUP_VALUE)
-            || type == SEL_ROOT || type == SEL_SUBEXPR || type == SEL_SUBEXPRREF
+    const bool bUnsortedSupported =
+            (type == SEL_CONST && v.type == GROUP_VALUE) || type == SEL_ROOT || type == SEL_SUBEXPR
+            || type == SEL_SUBEXPRREF
             // TODO: Consolidate.
             || type == SEL_MODIFIER
             || (type == SEL_EXPRESSION && ((u.expr.method->flags & SMETH_ALLOW_UNSORTED) != 0));
@@ -381,23 +372,21 @@ void SelectionTreeElement::checkUnsortedAtoms(
     SelectionTreeElementPointer child = this->child;
     while (child)
     {
-        child->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported,
-                                  errors);
+        child->checkUnsortedAtoms(bUnsortedAllowed && bUnsortedSupported, errors);
         child = child->next;
     }
 
     // The logic here is simplified by the fact that only constant groups can
     // currently be the root cause of SEL_UNSORTED being set, so only those
     // need to be considered in triggering the error.
-    if (!bUnsortedAllowed && (flags & SEL_UNSORTED)
-        && type == SEL_CONST && v.type == GROUP_VALUE)
+    if (!bUnsortedAllowed && (flags & SEL_UNSORTED) && type == SEL_CONST && v.type == GROUP_VALUE)
     {
         std::string message = formatString(
-                    "Group '%s' cannot be used in selections except "
-                    "as a full value of the selection, "
-                    "because atom indices in it are not sorted and/or "
-                    "it contains duplicate atoms.",
-                    name().c_str());
+                "Group '%s' cannot be used in selections except "
+                "as a full value of the selection, "
+                "because atom indices in it are not sorted and/or "
+                "it contains duplicate atoms.",
+                name().c_str());
         errors->addNested(InconsistentInputError(message));
     }
 }
@@ -420,16 +409,14 @@ bool SelectionTreeElement::requiresIndexGroups() const
     return false;
 }
 
-void SelectionTreeElement::resolveIndexGroupReference(
-        gmx_ana_indexgrps_t *grps, int natoms)
+void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t* grps, int natoms)
 {
     GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
                        "Should only be called for index group reference elements");
     if (grps == nullptr)
     {
         std::string message = formatString(
-                    "Cannot match '%s', because index groups are not available.",
-                    name().c_str());
+                "Cannot match '%s', because index groups are not available.", name().c_str());
         GMX_THROW(InconsistentInputError(message));
     }
 
@@ -440,8 +427,7 @@ void SelectionTreeElement::resolveIndexGroupReference(
         if (!gmx_ana_indexgrps_find(&foundGroup, &foundName, grps, u.gref.name))
         {
             std::string message = formatString(
-                        "Cannot match '%s', because no such index group can be found.",
-                        name().c_str());
+                    "Cannot match '%s', because no such index group can be found.", name().c_str());
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -450,8 +436,7 @@ void SelectionTreeElement::resolveIndexGroupReference(
         if (!gmx_ana_indexgrps_extract(&foundGroup, &foundName, grps, u.gref.id))
         {
             std::string message = formatString(
-                        "Cannot match '%s', because no such index group can be found.",
-                        name().c_str());
+                    "Cannot match '%s', because no such index group can be found.", name().c_str());
             GMX_THROW(InconsistentInputError(message));
         }
     }
@@ -463,8 +448,7 @@ void SelectionTreeElement::resolveIndexGroupReference(
 
     sfree(u.gref.name);
     type = SEL_CONST;
-    gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
-                      foundGroup.nalloc_index);
+    gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index, foundGroup.nalloc_index);
     setName(foundName);
 
     if (natoms > 0)
@@ -480,10 +464,10 @@ void SelectionTreeElement::checkIndexGroup(int natoms)
     if (!gmx_ana_index_check_range(&u.cgrp, natoms))
     {
         std::string message = formatString(
-                    "Group '%s' cannot be used in selections, because it "
-                    "contains negative atom indices and/or references atoms "
-                    "not present (largest allowed atom index is %d).",
-                    name().c_str(), natoms);
+                "Group '%s' cannot be used in selections, because it "
+                "contains negative atom indices and/or references atoms "
+                "not present (largest allowed atom index is %d).",
+                name().c_str(), natoms);
         GMX_THROW(InconsistentInputError(message));
     }
 }
@@ -500,9 +484,7 @@ void SelectionTreeElement::checkIndexGroup(int natoms)
  * This function should only be called at most once for each element,
  * preferably right after calling _gmx_selelem_create().
  */
-void
-_gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t                            vtype)
+void _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer& sel, e_selvalue_t vtype)
 {
     GMX_RELEASE_ASSERT(sel->type != SEL_BOOLEAN || vtype == GROUP_VALUE,
                        "Boolean elements must have a group value");
@@ -515,8 +497,7 @@ _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
     }
 }
 
-void
-_gmx_selelem_free_param(gmx_ana_selparam_t *param)
+void _gmx_selelem_free_param(gmx_ana_selparam_t* param)
 {
     if (param->val.u.ptr != nullptr)
     {
@@ -531,8 +512,7 @@ _gmx_selelem_free_param(gmx_ana_selparam_t *param)
     }
 }
 
-void
-_gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
+void _gmx_selelem_free_method(gmx_ana_selmethod_t* method, void* mdata)
 {
     sel_freefunc free_func = nullptr;
 
@@ -578,14 +558,12 @@ _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
  *   are printed as well.
  * \param[in] level   Indentation level, starting from zero.
  */
-void
-_gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
-                        bool bValues, int level)
+void _gmx_selelem_print_tree(FILE* fp, const gmx::SelectionTreeElement& sel, bool bValues, int level)
 {
-    int          i;
+    int i;
 
-    fprintf(fp, "%*c %s %s", level*2+1, '*',
-            _gmx_selelem_type_str(sel), _gmx_sel_value_type_str(&sel.v));
+    fprintf(fp, "%*c %s %s", level * 2 + 1, '*', _gmx_selelem_type_str(sel),
+            _gmx_sel_value_type_str(&sel.v));
     if (!sel.name().empty())
     {
         fprintf(fp, " \"%s\"", sel.name().c_str());
@@ -639,7 +617,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
         }
         else if (sel.v.type == GROUP_VALUE)
         {
-            const gmx_ana_index_t *g = sel.v.u.g;
+            const gmx_ana_index_t* g = sel.v.u.g;
             if (!g || g->isize == 0)
             {
                 g = &sel.u.cgrp;
@@ -651,8 +629,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     {
         fprintf(fp, " %s", _gmx_selelem_boolean_type_str(sel));
     }
-    else if (sel.type == SEL_EXPRESSION
-             && sel.u.expr.method->name == sm_compare.name)
+    else if (sel.type == SEL_EXPRESSION && sel.u.expr.method->name == sm_compare.name)
     {
         _gmx_selelem_print_compare_info(fp, sel.u.expr.mdata);
     }
@@ -669,18 +646,18 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
 
     if ((sel.type == SEL_CONST && sel.v.type == GROUP_VALUE) || sel.type == SEL_ROOT)
     {
-        const gmx_ana_index_t *g = sel.v.u.g;
+        const gmx_ana_index_t* g = sel.v.u.g;
         if (!g || g->isize == 0 || sel.evaluate != nullptr)
         {
             g = &sel.u.cgrp;
         }
         if (g->isize < 0)
         {
-            fprintf(fp, "%*c group: (null)\n", level*2+1, ' ');
+            fprintf(fp, "%*c group: (null)\n", level * 2 + 1, ' ');
         }
         else if (g->isize > 0)
         {
-            fprintf(fp, "%*c group:", level*2+1, ' ');
+            fprintf(fp, "%*c group:", level * 2 + 1, ' ');
             if (g->isize <= 20)
             {
                 for (i = 0; i < g->isize; ++i)
@@ -699,13 +676,13 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     {
         if (sel.u.expr.pc)
         {
-            fprintf(fp, "%*c COM", level*2+3, '*');
+            fprintf(fp, "%*c COM", level * 2 + 3, '*');
             fprintf(fp, "\n");
         }
     }
     else if (sel.type == SEL_SUBEXPRREF && sel.u.param != nullptr)
     {
-        fprintf(fp, "%*c param", level*2+1, ' ');
+        fprintf(fp, "%*c param", level * 2 + 1, ' ');
         if (sel.u.param->name != nullptr)
         {
             fprintf(fp, " \"%s\"", sel.u.param->name);
@@ -728,7 +705,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
 
     if (bValues && sel.type != SEL_CONST && sel.type != SEL_ROOT && sel.v.u.ptr)
     {
-        fprintf(fp, "%*c value: ", level*2+1, ' ');
+        fprintf(fp, "%*c value: ", level * 2 + 1, ' ');
         switch (sel.v.type)
         {
             case POS_VALUE:
@@ -737,8 +714,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
                  * segfaults when printing the selection tree. */
                 if (sel.v.u.p->x)
                 {
-                    fprintf(fp, "(%f, %f, %f)",
-                            sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY],
+                    fprintf(fp, "(%f, %f, %f)", sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY],
                             sel.v.u.p->x[0][ZZ]);
                 }
                 else
@@ -760,9 +736,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
                     }
                 }
                 break;
-            default:
-                fprintf(fp, "???");
-                break;
+            default: fprintf(fp, "???"); break;
         }
         fprintf(fp, "\n");
     }
@@ -773,7 +747,7 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     {
         if (!(sel.type == SEL_SUBEXPRREF && child->type == SEL_SUBEXPR))
         {
-            _gmx_selelem_print_tree(fp, *child, bValues, level+1);
+            _gmx_selelem_print_tree(fp, *child, bValues, level + 1);
         }
         child = child->next;
     }

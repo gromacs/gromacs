@@ -33,75 +33,114 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief
+ * Declares the PairlistSet class
+ *
+ * There is one PairlistSet object per locality. A PairlistSet
+ * holds a list of CPU- or GPU-type pairlist objects, one for each thread,
+ * as well as helper objects to construct each of those pairlists.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
+
 #ifndef GMX_NBNXM_PAIRLISTSET_H
 #define GMX_NBNXM_PAIRLISTSET_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
-#include "locality.h"
+#include "pairlist.h"
 
-struct gmx_domdec_zones_t;
-struct gmx_groups_t;
 struct nbnxn_atomdata_t;
-struct nbnxn_pairlist_set_t;
-struct nbnxn_search;
+struct PairlistParams;
+struct PairsearchWork;
+struct SearchCycleCounting;
 struct t_blocka;
 struct t_nrnb;
 
-/* Function that should return a pointer *ptr to memory
- * of size nbytes.
- * Error handling should be done within this function.
+namespace Nbnxm
+{
+class GridSet;
+}
+
+/*! \internal
+ * \brief An object that holds the local or non-local pairlists
  */
-typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
+class PairlistSet
+{
+public:
+    //! Constructor: initializes the pairlist set as empty
+    PairlistSet(gmx::InteractionLocality locality, const PairlistParams& listParams);
 
-/* Function that should free the memory pointed to by *ptr.
- * NULL should not be passed to this function.
- */
-typedef void nbnxn_free_t (void *ptr);
+    ~PairlistSet();
 
-/* Tells if the pair-list corresponding to nb_kernel_type is simple.
- * Returns FALSE for super-sub type pair-list.
- */
-gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type);
+    //! Constructs the pairlists in the set using the coordinates in \p nbat
+    void constructPairlists(const Nbnxm::GridSet&         gridSet,
+                            gmx::ArrayRef<PairsearchWork> searchWork,
+                            nbnxn_atomdata_t*             nbat,
+                            const t_blocka*               excl,
+                            int                           minimumIlistCountForGpuBalancing,
+                            t_nrnb*                       nrnb,
+                            SearchCycleCounting*          searchCycleCounting);
 
-/* Due to the cluster size the effective pair-list is longer than
- * that of a simple atom pair-list. This function gives the extra distance.
- */
-real nbnxn_get_rlist_effective_inc(int cluster_size, real atom_density);
+    //! Dispatch the kernel for dynamic pairlist pruning
+    void dispatchPruneKernel(const nbnxn_atomdata_t* nbat, const rvec* shift_vec);
 
-/* Allocates and initializes a pair search data structure */
-nbnxn_search *nbnxn_init_search(const ivec                *n_dd_cells,
-                                const gmx_domdec_zones_t  *zones,
-                                gmx_bool                   bFEP,
-                                int                        nthread_max);
+    //! Returns the locality
+    gmx::InteractionLocality locality() const { return locality_; }
 
-/* Initializes a set of pair lists stored in nbnxn_pairlist_set_t */
-void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
-                             gmx_bool simple, gmx_bool combined);
+    //! Returns the lists of CPU pairlists
+    gmx::ArrayRef<const NbnxnPairlistCpu> cpuLists() const { return cpuLists_; }
 
-/* Make a pair-list with radius rlist, store it in nbl.
- * The parameter min_ci_balanced sets the minimum required
- * number or roughly equally sized ci blocks in nbl.
- * When set >0 ci lists will be chopped up when the estimate
- * for the number of equally sized lists is below min_ci_balanced.
- * With perturbed particles, also a group scheme style nbl_fep list is made.
- */
-void nbnxn_make_pairlist(nbnxn_search               *nbs,
-                         nbnxn_atomdata_t           *nbat,
-                         const t_blocka             *excl,
-                         real                        rlist,
-                         int                         min_ci_balanced,
-                         nbnxn_pairlist_set_t       *nbl_list,
-                         Nbnxm::InteractionLocality  iloc,
-                         int                         nb_kernel_type,
-                         t_nrnb                     *nrnb);
+    //! Returns a pointer to the GPU pairlist, nullptr when not present
+    const NbnxnPairlistGpu* gpuList() const
+    {
+        if (!gpuLists_.empty())
+        {
+            return &gpuLists_[0];
+        }
+        else
+        {
+            return nullptr;
+        }
+    }
 
-/*! \brief Prepare the list-set produced by the search for dynamic pruning
- *
- * \param[in,out] listSet  The list-set to prepare for dynamic pruning.
- */
-void nbnxnPrepareListForDynamicPruning(nbnxn_pairlist_set_t *listSet);
+    //! Returns the lists of free-energy pairlists, empty when nonbonded interactions are not perturbed
+    gmx::ArrayRef<const std::unique_ptr<t_nblist>> fepLists() const { return fepLists_; }
+
+private:
+    //! The locality of the pairlist set
+    gmx::InteractionLocality locality_;
+    //! List of pairlists in CPU layout
+    std::vector<NbnxnPairlistCpu> cpuLists_;
+    //! List of working list for rebalancing CPU lists
+    std::vector<NbnxnPairlistCpu> cpuListsWork_;
+    //! List of pairlists in GPU layout
+    std::vector<NbnxnPairlistGpu> gpuLists_;
+    //! Pairlist parameters describing setup and ranges
+    const PairlistParams& params_;
+    //! Tells whether multiple lists get merged into one (the first) after creation
+    bool combineLists_;
+    //! Tells whether the lists is of CPU type, otherwise GPU type
+    gmx_bool isCpuType_;
+    //! Lists for perturbed interactions in simple atom-atom layout
+    std::vector<std::unique_ptr<t_nblist>> fepLists_;
+
+public:
+    /* Pair counts for flop counting */
+    //! Total number of atom pairs for LJ+Q kernel
+    int natpair_ljq_;
+    //! Total number of atom pairs for LJ kernel
+    int natpair_lj_;
+    //! Total number of atom pairs for Q kernel
+    int natpair_q_;
+};
 
 #endif

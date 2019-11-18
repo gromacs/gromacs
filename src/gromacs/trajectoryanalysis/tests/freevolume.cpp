@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,14 +59,11 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the angle analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::FreeVolumeInfo>
-    FreeVolumeModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::FreeVolumeInfo> FreeVolumeModuleTest;
 
 TEST_F(FreeVolumeModuleTest, ComputesFreeVolume)
 {
-    const char *const cmdline[] = {
-        "freevolume", "-seed", "13"
-    };
+    const char* const cmdline[] = { "freevolume", "-seed", "13" };
     setTopology("freevolume.tpr");
     setTrajectory("freevolume.xtc");
     runTest(CommandLine(cmdline));
@@ -74,10 +71,7 @@ TEST_F(FreeVolumeModuleTest, ComputesFreeVolume)
 
 TEST_F(FreeVolumeModuleTest, ComputesFreeVolumeSelection)
 {
-    const char *const cmdline[] = {
-        "freevolume",
-        "-select", "not resname = CO2", "-seed", "17"
-    };
+    const char* const cmdline[] = { "freevolume", "-select", "not resname = CO2", "-seed", "17" };
     setTopology("freevolume.tpr");
     setTrajectory("freevolume.xtc");
     runTest(CommandLine(cmdline));

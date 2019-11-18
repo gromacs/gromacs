@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,38 +58,35 @@ namespace gmx
  */
 class AlignedAllocationPolicy
 {
-    public:
-        /*! \brief Return the alignment size. */
-        static std::size_t
-        alignment();
-        /*! \brief Allocate memory aligned to alignment() bytes.
-         *
-         *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
-         *               0 bytes, which will return a non-null pointer that is properly
-         *               aligned and padded (but that you should not use).
-         *
-         * \return Valid pointer if the allocation worked, otherwise nullptr.
-         *
-         * The memory will always be aligned to 128 bytes, which is our
-         * estimate of the longest cache lines on architectures currently in use.
-         * It will also be padded by the same amount at the end of the
-         * area, to help avoid false cache sharing.
-         *
-         *  \note Memory allocated with this routine must be released with
-         *        gmx::AlignedAllocationPolicy::free(), and absolutely not the system free().
-         */
-        static void *
-        malloc(std::size_t bytes);
-        /*! \brief Free aligned memory
-         *
-         *  \param p  Memory pointer previously returned from malloc()
-         *
-         *  \note This routine should only be called with pointers obtained from
-         *        gmx::AlignedAllocationPolicy::malloc(), and absolutely not any
-         *        pointers obtained the system malloc().
-         */
-        static void
-        free(void *p);
+public:
+    /*! \brief Return the alignment size. */
+    static std::size_t alignment();
+    /*! \brief Allocate memory aligned to alignment() bytes.
+     *
+     *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
+     *               0 bytes, which will return a non-null pointer that is properly
+     *               aligned and padded (but that you should not use).
+     *
+     * \return Valid pointer if the allocation worked, otherwise nullptr.
+     *
+     * The memory will always be aligned to 128 bytes, which is our
+     * estimate of the longest cache lines on architectures currently in use.
+     * It will also be padded by the same amount at the end of the
+     * area, to help avoid false cache sharing.
+     *
+     *  \note Memory allocated with this routine must be released with
+     *        gmx::AlignedAllocationPolicy::free(), and absolutely not the system free().
+     */
+    static void* malloc(std::size_t bytes);
+    /*! \brief Free aligned memory
+     *
+     *  \param p  Memory pointer previously returned from malloc()
+     *
+     *  \note This routine should only be called with pointers obtained from
+     *        gmx::AlignedAllocationPolicy::malloc(), and absolutely not any
+     *        pointers obtained the system malloc().
+     */
+    static void free(void* p);
 };
 
 /*! \brief Aligned memory allocator.
@@ -103,7 +100,7 @@ class AlignedAllocationPolicy
  * always be aligned according to the behavior of
  * AlignedAllocationPolicy.
  */
-template <class T>
+template<class T>
 using AlignedAllocator = Allocator<T, AlignedAllocationPolicy>;
 
 
@@ -123,35 +120,32 @@ std::size_t pageSize();
  */
 class PageAlignedAllocationPolicy
 {
-    public:
-        /*! \brief Return the alignment size of memory pages on this system.
-         *
-         * Queries sysconf/WinAPI, otherwise guesses 4096. */
-        static std::size_t
-        alignment();
-        /*! \brief Allocate memory aligned to alignment() bytes.
-         *
-         *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
-         *               0 bytes, which will return a non-null pointer that is properly
-         *               aligned and padded (but that you should not use).
-         *
-         * \return Valid pointer if the allocation worked, otherwise nullptr.
-         *
-         *  \note Memory allocated with this routine must be released with
-         *        gmx::PageAlignedAllocationPolicy::free(), and absolutely not the system free().
-         */
-        static void *
-        malloc(std::size_t bytes);
-        /*! \brief Free aligned memory
-         *
-         *  \param p  Memory pointer previously returned from malloc()
-         *
-         *  \note This routine should only be called with pointers obtained from
-         *        gmx::PageAlignedAllocationPolicy::malloc(), and absolutely not any
-         *        pointers obtained the system malloc().
-         */
-        static void
-        free(void *p);
+public:
+    /*! \brief Return the alignment size of memory pages on this system.
+     *
+     * Queries sysconf/WinAPI, otherwise guesses 4096. */
+    static std::size_t alignment();
+    /*! \brief Allocate memory aligned to alignment() bytes.
+     *
+     *  \param bytes Amount of memory (bytes) to allocate. It is valid to ask for
+     *               0 bytes, which will return a non-null pointer that is properly
+     *               aligned and padded (but that you should not use).
+     *
+     * \return Valid pointer if the allocation worked, otherwise nullptr.
+     *
+     *  \note Memory allocated with this routine must be released with
+     *        gmx::PageAlignedAllocationPolicy::free(), and absolutely not the system free().
+     */
+    static void* malloc(std::size_t bytes);
+    /*! \brief Free aligned memory
+     *
+     *  \param p  Memory pointer previously returned from malloc()
+     *
+     *  \note This routine should only be called with pointers obtained from
+     *        gmx::PageAlignedAllocationPolicy::malloc(), and absolutely not any
+     *        pointers obtained the system malloc().
+     */
+    static void free(void* p);
 };
 
 /*! \brief PageAligned memory allocator.
@@ -165,9 +159,9 @@ class PageAlignedAllocationPolicy
  * memory will always be aligned according to the behavior of
  * PageAlignedAllocationPolicy.
  */
-template <class T>
+template<class T>
 using PageAlignedAllocator = Allocator<T, PageAlignedAllocationPolicy>;
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_UTILITY_ALIGNEDALLOCATOR_H

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,26 +45,14 @@
 
 #include "gromacs/utility/fatalerror.h"
 
-const char *gmx_stop_cond_name[] =
-{
-    "None",
-    "Stop at the next neighbor search step",
-    "Stop at the next step",
-    "Abort"
-};
+const char* gmx_stop_cond_name[] = { "None", "Stop at the next neighbor search step",
+                                     "Stop at the next step", "Abort" };
 
 /* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */
-static const char *gmx_signal_name[] =
-{
-    "None",
-    "INT",
-    "TERM",
-    "second INT/TERM",
-    "remote INT/TERM",
-    "remote second INT/TERM",
-    "USR1",
-    "Abort"
+static const char* gmx_signal_name[] = {
+    "None", "INT",  "TERM", "second INT/TERM", "remote INT/TERM", "remote second INT/TERM",
+    "USR1", "Abort"
 };
 
 static volatile sig_atomic_t stop_condition   = gmx_stop_cond_none;
@@ -74,7 +62,7 @@ static volatile sig_atomic_t usr_condition = 0;
 
 void gmx_reset_stop_condition()
 {
-    stop_condition   = gmx_stop_cond_none;
+    stop_condition = gmx_stop_cond_none;
     // last_signal_name and usr_condition are left untouched by reset.
 }
 
@@ -82,9 +70,9 @@ static void signal_handler(int n)
 {
     switch (n)
     {
-/* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in
-   ANSI C89, and windows spawns a thread specifically to run the INT signal
-   handler), but that doesn't matter for a simple signal handler like this. */
+            /* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in
+               ANSI C89, and windows spawns a thread specifically to run the INT signal
+               handler), but that doesn't matter for a simple signal handler like this. */
         case SIGTERM:
         case SIGINT:
             /* we explicitly set things up to allow this: */
@@ -107,12 +95,9 @@ static void signal_handler(int n)
             }
             break;
 #if HAVE_SIGUSR1
-        case SIGUSR1:
-            usr_condition = 1;
-            break;
+        case SIGUSR1: usr_condition = 1; break;
 #endif
-        default:
-            break;
+        default: break;
     }
 }
 
@@ -180,7 +165,7 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
     }
 }
 
-const char *gmx_get_signal_name()
+const char* gmx_get_signal_name()
 {
     return gmx_signal_name[last_signal_name];
 }
@@ -188,7 +173,7 @@ const char *gmx_get_signal_name()
 gmx_bool gmx_got_usr_signal()
 {
 #if HAVE_SIGUSR1
-    gmx_bool ret = static_cast<gmx_bool>(usr_condition);
+    gmx_bool ret  = static_cast<gmx_bool>(usr_condition);
     usr_condition = 0;
     return ret;
 #else

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,30 +65,26 @@ namespace
 
 class ConfMatcher : public ITextBlockMatcher
 {
-    public:
-        explicit ConfMatcher(const ConfMatchSettings &settings) : settings_(settings)
-        {
-        }
+public:
+    explicit ConfMatcher(const ConfMatchSettings& settings) : settings_(settings) {}
 
-        void checkStream(TextInputStream      *stream,
-                         TestReferenceChecker *checker) override
-        {
-            checkConfFile(stream, checker, settings_);
-        }
-    private:
-        ConfMatchSettings settings_;
+    void checkStream(TextInputStream* stream, TestReferenceChecker* checker) override
+    {
+        checkConfFile(stream, checker, settings_);
+    }
+
+private:
+    ConfMatchSettings settings_;
 };
 
-}       // namespace
+} // namespace
 
-void checkConfFile(TextInputStream         *input,
-                   TestReferenceChecker    *checker,
-                   const ConfMatchSettings  & /*unused*/)
+void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& /*unused*/)
 {
 
     TestReferenceChecker groChecker(checker->checkCompound("GroFile", "Header"));
     // Just check the first two lines of the output file
-    std::string          line;
+    std::string line;
     EXPECT_TRUE(input->readLine(&line));
     line = stripSuffixIfPresent(line, "\n");
     groChecker.checkString(line, "Title");

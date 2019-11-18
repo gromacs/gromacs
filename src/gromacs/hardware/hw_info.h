@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,7 @@
 #ifndef GMX_HARDWARE_HWINFO_H
 #define GMX_HARDWARE_HWINFO_H
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -45,47 +46,62 @@ namespace gmx
 {
 class CpuInfo;
 class HardwareTopology;
-} // namespace
+} // namespace gmx
 
 /* Hardware information structure with CPU and GPU information.
  * It is initialized by gmx_detect_hardware().
- * NOTE: this structure may only contain structures that are globally valid
- *       (i.e. must be able to be shared among all threads) */
+ * NOTE: this structure may only contain structures that are
+ *       valid over the whole process (i.e. must be able to
+ *       be shared among all threads) */
 struct gmx_hw_info_t
 {
+    gmx_hw_info_t(std::unique_ptr<gmx::CpuInfo>          cpuInfo,
+                  std::unique_ptr<gmx::HardwareTopology> hardwareTopology);
+    ~gmx_hw_info_t();
+
     /* Data for our local physical node */
-    struct gmx_gpu_info_t gpu_info;                /* Information about GPUs detected in the system */
+    //! Information about GPUs detected on this physical node
+    gmx_gpu_info_t gpu_info;
 
-    int                   nthreads_hw_avail;       /* Number of hardware threads available; this number
-                                                      is based on the number of CPUs reported as available
-                                                      by the OS at the time of detection. */
+    /*! \brief Number of hardware threads available.
+     *
+     * This number is based on the number of CPUs reported as
+     * available by the OS at the time of detection. */
+    int nthreads_hw_avail;
 
-    const gmx::CpuInfo *         cpuInfo;          /* Information about CPU capabilities */
-    const gmx::HardwareTopology *hardwareTopology; /* Information about hardware topology */
+
+    std::unique_ptr<gmx::CpuInfo>          cpuInfo; /* Information about CPU capabilities */
+    std::unique_ptr<gmx::HardwareTopology> hardwareTopology; /* Information about hardware topology */
+
 
     /* Data reduced through MPI over all physical nodes */
-    int                 nphysicalnode;       /* Number of physical nodes */
-    int                 ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
-    int                 ncore_min;           /* Min #cores over all nodes */
-    int                 ncore_max;           /* Max #cores over all nodes */
-    int                 nhwthread_tot;       /* Sum of #hwthreads over all nodes */
-    int                 nhwthread_min;       /* Min #hwthreads over all nodes */
-    int                 nhwthread_max;       /* Max #hwthreads over all nodes */
-    int                 ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
-    int                 ngpu_compatible_min; /* Min #GPUs over all nodes */
-    int                 ngpu_compatible_max; /* Max #GPUs over all nodes */
+    int nphysicalnode;       /* Number of physical nodes */
+    int ncore_tot;           /* Sum of #cores over all nodes, can be 0 */
+    int ncore_min;           /* Min #cores over all nodes */
+    int ncore_max;           /* Max #cores over all nodes */
+    int nhwthread_tot;       /* Sum of #hwthreads over all nodes */
+    int nhwthread_min;       /* Min #hwthreads over all nodes */
+    int nhwthread_max;       /* Max #hwthreads over all nodes */
+    int ngpu_compatible_tot; /* Sum of #GPUs over all nodes */
+    int ngpu_compatible_min; /* Min #GPUs over all nodes */
+    int ngpu_compatible_max; /* Max #GPUs over all nodes */
 
-    int                 simd_suggest_min;    /* Highest SIMD instruction set supported by all ranks */
-    int                 simd_suggest_max;    /* Highest SIMD instruction set supported by at least one rank */
+    int simd_suggest_min; /* Highest SIMD instruction set supported by all ranks */
+    int simd_suggest_max; /* Highest SIMD instruction set supported by at least one rank */
 
-    gmx_bool            bIdenticalGPUs;      /* TRUE if all ranks have the same type(s) and order of GPUs */
-    bool                haveAmdZenCpu;       /* TRUE when at least one CPU in any of the nodes is AMD Zen */
+    gmx_bool bIdenticalGPUs; /* TRUE if all ranks have the same type(s) and order of GPUs */
+    bool     haveAmdZen1Cpu; /* TRUE when at least one CPU in any of the nodes is AMD Zen of the first generation */
 };
 
 
 /* The options for the thread affinity setting, default: auto */
-enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
+enum class ThreadAffinity
+{
+    Select,
+    Auto,
+    On,
+    Off,
+    Count
 };
 
 /*! \internal \brief Threading and GPU options, can be set automatically or by the user
@@ -100,25 +116,25 @@ enum {
 struct gmx_hw_opt_t
 {
     //! Total number of threads requested (thread-MPI + OpenMP).
-    int           nthreads_tot = 0;
+    int nthreads_tot = 0;
     //! Number of thread-MPI threads requested.
-    int           nthreads_tmpi = 0;
+    int nthreads_tmpi = 0;
     //! Number of OpenMP threads requested.
-    int           nthreads_omp = 0;
+    int nthreads_omp = 0;
     //! Number of OpenMP threads to use on PME_only ranks.
-    int           nthreads_omp_pme = 0;
+    int nthreads_omp_pme = 0;
     //! Thread affinity switch, see enum above.
-    int           thread_affinity = threadaffSEL;
+    ThreadAffinity threadAffinity = ThreadAffinity::Select;
     //! Logical core pinning stride.
-    int           core_pinning_stride = 0;
+    int core_pinning_stride = 0;
     //! Logical core pinning offset.
-    int           core_pinning_offset = 0;
+    int core_pinning_offset = 0;
     //! Empty, or a string provided by the user declaring (unique) GPU IDs available for mdrun to use.
-    std::string   gpuIdsAvailable = "";
+    std::string gpuIdsAvailable = "";
     //! Empty, or a string provided by the user mapping GPU tasks to devices.
-    std::string   userGpuTaskAssignment = "";
+    std::string userGpuTaskAssignment = "";
     //! Tells whether mdrun is free to choose the total number of threads (by choosing the number of OpenMP and/or thread-MPI threads).
-    bool          totNumThreadsIsAuto;
+    bool totNumThreadsIsAuto;
 };
 
 #endif

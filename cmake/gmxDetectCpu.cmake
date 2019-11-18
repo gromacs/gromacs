@@ -78,12 +78,12 @@ function(gmx_run_cpu_detection TYPE)
             # for x86 we need inline assembly to use cpuid
             gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
             if(GMX_X86_GCC_INLINE_ASM)
-                set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=1")
+                set(GCC_INLINE_ASM_DEFINE -DGMX_X86_GCC_INLINE_ASM=1)
             else()
-                set(GCC_INLINE_ASM_DEFINE "-DGMX_X86_GCC_INLINE_ASM=0")
+                set(GCC_INLINE_ASM_DEFINE -DGMX_X86_GCC_INLINE_ASM=0)
             endif()
 
-            set(_compile_definitions "${GCC_INLINE_ASM_DEFINE} -I${PROJECT_SOURCE_DIR}/src -DGMX_CPUINFO_STANDALONE -DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE}")
+            set(_compile_definitions ${GCC_INLINE_ASM_DEFINE};-I${PROJECT_SOURCE_DIR}/src;-DGMX_CPUINFO_STANDALONE=1;-DGMX_TARGET_X86=${GMX_TARGET_X86_VALUE})
             try_compile(CPU_DETECTION_COMPILED
                 "${PROJECT_BINARY_DIR}"
                 "${PROJECT_SOURCE_DIR}/src/gromacs/hardware/cpuinfo.cpp"
@@ -92,7 +92,11 @@ function(gmx_run_cpu_detection TYPE)
                 OUTPUT_VARIABLE CPU_DETECTION_COMPILED_OUTPUT
                 COPY_FILE ${CPU_DETECTION_BINARY})
             if(NOT CPU_DETECTION_COMPILED AND NOT RUN_CPU_DETECTION_COMPILATION_QUIETLY)
-                message(STATUS "Did not detect build CPU ${LOWERTYPE} - detection program did not compile")
+                if(GMX_TARGET_X86)
+                    message(WARNING "CPU detection program did not compile on x86 host - this should never happen. It is VERY bad for performance, since you will lose all SIMD support. Please file a bug report.")
+                else()
+                    message(WARNING "Did not detect build CPU ${LOWERTYPE} - detection program did not compile. Please file a bug report if this is a common platform.")
+                endif()
             endif()
             set(RUN_CPU_DETECTION_COMPILATION_QUIETLY TRUE CACHE INTERNAL "Keep quiet on any future compilation attempts")
         endif()

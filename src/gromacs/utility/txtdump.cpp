@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 
 #include "gromacs/utility/cstringutil.h"
 
-int pr_indent(FILE *fp, int n)
+int pr_indent(FILE* fp, int n)
 {
     int i;
 
@@ -56,7 +56,7 @@ int pr_indent(FILE *fp, int n)
     return n;
 }
 
-bool available(FILE *fp, const void *p, int indent, const char *title)
+bool available(FILE* fp, const void* p, int indent, const char* title)
 {
     if (!p)
     {
@@ -69,28 +69,28 @@ bool available(FILE *fp, const void *p, int indent, const char *title)
     return (p != nullptr);
 }
 
-int pr_title(FILE *fp, int indent, const char *title)
+int pr_title(FILE* fp, int indent, const char* title)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s:\n", title);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
-int pr_title_n(FILE *fp, int indent, const char *title, int n)
+int pr_title_n(FILE* fp, int indent, const char* title, int n)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s (%d):\n", title, n);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
-int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2)
+int pr_title_nxn(FILE* fp, int indent, const char* title, int n1, int n2)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%s (%dx%d):\n", title, n1, n2);
-    return (indent+INDENT);
+    return (indent + INDENT);
 }
 
-void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)
+void pr_reals(FILE* fp, int indent, const char* title, const real* vec, int n)
 {
     int i;
 
@@ -106,7 +106,7 @@ void pr_reals(FILE *fp, int indent, const char *title, const real *vec, int n)
     }
 }
 
-void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n)
+void pr_doubles(FILE* fp, int indent, const char* title, const double* vec, int n)
 {
     int i;
 
@@ -122,12 +122,12 @@ void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int 
     }
 }
 
-void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, int n, int dim)
+void pr_reals_of_dim(FILE* fp, int indent, const char* title, const real* vec, int n, int dim)
 {
     int         i, j;
-    const char *fshort = "%12.5e";
-    const char *flong  = "%15.8e";
-    const char *format;
+    const char* fshort = "%12.5e";
+    const char* flong  = "%15.8e";
+    const char* format;
 
     if (getenv("GMX_PRINT_LONGFORMAT") != nullptr)
     {
@@ -151,20 +151,20 @@ void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, i
                 {
                     fprintf(fp, ", ");
                 }
-                fprintf(fp, format, vec[i * dim  + j]);
+                fprintf(fp, format, vec[i * dim + j]);
             }
             fprintf(fp, "}\n");
         }
     }
 }
 
-void pr_int(FILE *fp, int indent, const char *title, int i)
+void pr_int(FILE* fp, int indent, const char* title, int i)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%-30s = %d\n", title, i);
 }
 
-void pr_int64(FILE *fp, int indent, const char *title, int64_t i)
+void pr_int64(FILE* fp, int indent, const char* title, int64_t i)
 {
     char buf[STEPSTRSIZE];
 
@@ -172,25 +172,25 @@ void pr_int64(FILE *fp, int indent, const char *title, int64_t i)
     fprintf(fp, "%-30s = %s\n", title, gmx_step_str(i, buf));
 }
 
-void pr_real(FILE *fp, int indent, const char *title, real r)
+void pr_real(FILE* fp, int indent, const char* title, real r)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%-30s = %g\n", title, r);
 }
 
-void pr_double(FILE *fp, int indent, const char *title, double d)
+void pr_double(FILE* fp, int indent, const char* title, double d)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%-30s = %g\n", title, d);
 }
 
-void pr_str(FILE *fp, int indent, const char *title, const char *s)
+void pr_str(FILE* fp, int indent, const char* title, const char* s)
 {
     pr_indent(fp, indent);
     fprintf(fp, "%-30s = %s\n", title, s);
 }
 
-void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_bool bShowNumbers)
+void pr_strings(FILE* fp, int indent, const char* title, char*** nm, int n, gmx_bool bShowNumbers)
 {
     int i;
 
@@ -200,8 +200,7 @@ void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_
         for (i = 0; i < n; i++)
         {
             pr_indent(fp, indent);
-            fprintf(fp, "%s[%d]={name=\"%s\"}\n",
-                    title, bShowNumbers ? i : -1, *(nm[i]));
+            fprintf(fp, "%s[%d]={name=\"%s\"}\n", title, bShowNumbers ? i : -1, *(nm[i]));
         }
     }
 }

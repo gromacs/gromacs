@@ -57,8 +57,10 @@ namespace test
 
 TEST(gridTest, neighborhood)
 {
-    constexpr double pointsPerScope = Grid::c_scopeCutoff*Grid::c_numPointsPerSigma;
-    GMX_RELEASE_ASSERT(std::abs(pointsPerScope - std::round(pointsPerScope)) > 1e-4, "If the scope is close to an integer number of points, this test can be unstable due to rounding issues");
+    constexpr double pointsPerScope = Grid::c_scopeCutoff * Grid::c_numPointsPerSigma;
+    GMX_RELEASE_ASSERT(std::abs(pointsPerScope - std::round(pointsPerScope)) > 1e-4,
+                       "If the scope is close to an integer number of points, this test can be "
+                       "unstable due to rounding issues");
 
     const int scopeInPoints = static_cast<int>(pointsPerScope);
 
@@ -71,34 +73,36 @@ TEST(gridTest, neighborhood)
     const int                 numDim = 2;
     std::vector<AwhDimParams> awhDimParams(numDim);
 
-    awhDimParams[0].origin      = -5;
-    awhDimParams[0].end         = 5;
-    awhDimParams[0].period      = 10;
+    awhDimParams[0].origin = -5;
+    awhDimParams[0].end    = 5;
+    awhDimParams[0].period = 10;
 
-    awhDimParams[1].origin      = 0.5;
-    awhDimParams[1].end         = 2.0;
-    awhDimParams[1].period      =   0;
+    awhDimParams[1].origin = 0.5;
+    awhDimParams[1].end    = 2.0;
+    awhDimParams[1].period = 0;
 
     const real conversionFactor = 1;
     const real beta             = 3.0;
 
     /* Set up dimParams to get about 15 points along each dimension */
     std::vector<DimParams> dimParams;
-    dimParams.emplace_back(conversionFactor, 1/(beta*0.7*0.7), beta);
-    dimParams.emplace_back(conversionFactor, 1/(beta*0.1*0.1), beta);
+    dimParams.emplace_back(conversionFactor, 1 / (beta * 0.7 * 0.7), beta);
+    dimParams.emplace_back(conversionFactor, 1 / (beta * 0.1 * 0.1), beta);
 
-    Grid       grid(dimParams, awhDimParams.data());
+    Grid grid(dimParams, awhDimParams.data());
 
-    const int  numPoints         = grid.numPoints();
+    const int numPoints = grid.numPoints();
 
-    int        numPointsDim[numDim];
+    int numPointsDim[numDim];
     for (int d = 0; d < numDim; d++)
     {
-        numPointsDim[d]          = grid.axis(d).numPoints();
+        numPointsDim[d] = grid.axis(d).numPoints();
 
-        GMX_RELEASE_ASSERT(numPointsDim[d] >= 2*scopeInPoints + 1, "The test code currently assume that the grid is larger of equal to the scope in each dimension");
+        GMX_RELEASE_ASSERT(numPointsDim[d] >= 2 * scopeInPoints + 1,
+                           "The test code currently assume that the grid is larger of equal to the "
+                           "scope in each dimension");
     }
-    int  halfNumPoints0          = numPointsDim[0]/2;
+    int halfNumPoints0 = numPointsDim[0] / 2;
 
     bool haveOutOfGridNeighbors  = false;
     bool haveDuplicateNeighbors  = false;
@@ -111,24 +115,25 @@ TEST(gridTest, neighborhood)
     /* Checking for all points is overkill, we check every 7th */
     for (size_t i = 0; i < grid.numPoints(); i += 7)
     {
-        const GridPoint &point = grid.point(i);
+        const GridPoint& point = grid.point(i);
 
         /* NOTE: This code relies on major-minor index ordering in Grid */
-        int    pointIndex0       = i/numPointsDim[1];
-        int    pointIndex1       = i - pointIndex0*numPointsDim[1];
+        int pointIndex0 = i / numPointsDim[1];
+        int pointIndex1 = i - pointIndex0 * numPointsDim[1];
 
         /* To check if we have the correct neighbors, we check the expected
          * number of neighbors, if all neighbors are within the grid bounds
          * and if they are within scope.
          */
         int    distanceFromEdge1 = std::min(pointIndex1, numPointsDim[1] - 1 - pointIndex1);
-        size_t numNeighbors      = (2*scopeInPoints + 1)*(scopeInPoints + std::min(scopeInPoints, distanceFromEdge1) + 1);
+        size_t numNeighbors      = (2 * scopeInPoints + 1)
+                              * (scopeInPoints + std::min(scopeInPoints, distanceFromEdge1) + 1);
         if (point.neighbor.size() != numNeighbors)
         {
             haveCorrectNumNeighbors = false;
         }
 
-        for (auto &j : point.neighbor)
+        for (auto& j : point.neighbor)
         {
             if (j >= 0 && j < numPoints)
             {
@@ -138,11 +143,11 @@ TEST(gridTest, neighborhood)
                 }
                 isInNeighborhood[j] = true;
 
-                int neighborIndex0  = j/numPointsDim[1];
-                int neighborIndex1  = j - neighborIndex0*numPointsDim[1];
+                int neighborIndex0 = j / numPointsDim[1];
+                int neighborIndex1 = j - neighborIndex0 * numPointsDim[1];
 
-                int distance0       = neighborIndex0 - pointIndex0;
-                int distance1       = neighborIndex1 - pointIndex1;
+                int distance0 = neighborIndex0 - pointIndex0;
+                int distance1 = neighborIndex1 - pointIndex1;
                 /* Adjust distance for periodicity of dimension 0 */
                 if (distance0 < -halfNumPoints0)
                 {
@@ -153,8 +158,8 @@ TEST(gridTest, neighborhood)
                     distance0 -= numPointsDim[0];
                 }
                 /* Check if the distance is within scope */
-                if (distance0 < -scopeInPoints || distance0 > scopeInPoints ||
-                    distance1 < -scopeInPoints || distance1 > scopeInPoints)
+                if (distance0 < -scopeInPoints || distance0 > scopeInPoints
+                    || distance1 < -scopeInPoints || distance1 > scopeInPoints)
                 {
                     haveIncorrectNeighbors = true;
                 }
@@ -166,7 +171,7 @@ TEST(gridTest, neighborhood)
         }
 
         /* Clear the marked points in the checking grid */
-        for (auto &neighbor : point.neighbor)
+        for (auto& neighbor : point.neighbor)
         {
             if (neighbor >= 0 && neighbor < numPoints)
             {
@@ -181,5 +186,5 @@ TEST(gridTest, neighborhood)
     EXPECT_TRUE(haveCorrectNumNeighbors);
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

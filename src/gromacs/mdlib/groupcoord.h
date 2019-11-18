@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -74,10 +74,13 @@ struct t_commrec;
  *                            in the communicate_group_positions routine.
  */
 
-extern void dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
-                                        int nr, int anrs[], int *nr_loc,
-                                        int *anrs_loc[], int *nalloc_loc,
-                                        int coll_ind[]);
+extern void dd_make_local_group_indices(const gmx_ga2la_t* ga2la,
+                                        int                nr,
+                                        int                anrs[],
+                                        int*               nr_loc,
+                                        int*               anrs_loc[],
+                                        int*               nalloc_loc,
+                                        int                coll_ind[]);
 
 
 /*! \brief Assemble local positions into a collective array present on all nodes.
@@ -123,11 +126,18 @@ extern void dd_make_local_group_indices(const gmx_ga2la_t *ga2la,
  * \param[in]     box          Simulation box matrix, needed to shift xcoll such that
  *                             the group becomes whole (optional).
  */
-extern void communicate_group_positions(const t_commrec *cr, rvec *xcoll, ivec *shifts,
-                                        ivec *extra_shifts, gmx_bool bNS,
-                                        const rvec *x_loc, int nr, int nr_loc,
-                                        const int *anrs_loc, const int *coll_ind, rvec *xcoll_old,
-                                        const matrix box);
+extern void communicate_group_positions(const t_commrec* cr,
+                                        rvec*            xcoll,
+                                        ivec*            shifts,
+                                        ivec*            extra_shifts,
+                                        gmx_bool         bNS,
+                                        const rvec*      x_loc,
+                                        int              nr,
+                                        int              nr_loc,
+                                        const int*       anrs_loc,
+                                        const int*       coll_ind,
+                                        rvec*            xcoll_old,
+                                        const matrix     box);
 
 /*! \brief Calculates the center of the positions x locally.
  *
@@ -178,8 +188,7 @@ extern double get_sum_of_positions(rvec x[], real weight[], int nr, dvec dsumvec
  * \param[out]  center       The (weighted) center of all x_loc from all the
  *                           nodes.
  */
-extern void get_center_comm(const t_commrec *cr, rvec x_loc[], real weight_loc[],
-                            int nr_loc, int nr_group, rvec center);
+extern void get_center_comm(const t_commrec* cr, rvec x_loc[], real weight_loc[], int nr_loc, int nr_group, rvec center);
 
 
 /*! \brief Translate positions.

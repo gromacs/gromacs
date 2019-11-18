@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,20 +67,20 @@ namespace
 
 class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 {
-    public:
-        CommandLineHelpWriterTest() : bHidden_(false) {}
+public:
+    CommandLineHelpWriterTest() : bHidden_(false) {}
 
-        void checkHelp(gmx::CommandLineHelpWriter *writer);
+    void checkHelp(gmx::CommandLineHelpWriter* writer);
 
-        bool                       bHidden_;
+    bool bHidden_;
 };
 
-void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
+void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter* writer)
 {
     gmx::StringOutputStream     stream;
     gmx::TextWriter             streamWriter(&stream);
-    gmx::CommandLineHelpContext context(&streamWriter, gmx::eHelpOutputFormat_Console,
-                                        nullptr, "test");
+    gmx::CommandLineHelpContext context(&streamWriter, gmx::eHelpOutputFormat_Console, nullptr,
+                                        "test");
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
     stream.close();
@@ -102,51 +102,49 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
     using namespace gmx;
 
     Options options;
-    options.addOption(BooleanOption("bool").description("Boolean option")
-                          .defaultValue(true));
-    options.addOption(BooleanOption("hidden").description("Hidden option")
-                          .hidden().defaultValue(true));
-    options.addOption(IntegerOption("int").description("Integer option")
-                          .defaultValue(2));
-    ivec intvec = {1, 2, 3};
-    options.addOption(IntegerOption("ivec").description("Integer vector option")
-                          .vector().store(intvec));
-    options.addOption(DoubleOption("double").description("Double option")
-                          .defaultValue(2.5));
-    dvec dblvec = {1.1, 2.3, 3.2};
-    options.addOption(DoubleOption("dvec").description("Double vector option")
-                          .vector().store(dblvec));
-    options.addOption(DoubleOption("time").description("Time option (%t)")
-                          .timeValue().defaultValue(10.0));
-    options.addOption(StringOption("string").description("String option")
-                          .defaultValue("test"));
-    const char * const enumValues[] = { "no", "opt1", "opt2" };
-    options.addOption(StringOption("enum").description("Enum option")
-                          .enumValue(enumValues).defaultEnumIndex(0));
-    options.addOption(EnumIntOption("ienum").description("Enum option")
-                          .enumValue(enumValues).defaultValue(1));
+    options.addOption(BooleanOption("bool").description("Boolean option").defaultValue(true));
+    options.addOption(BooleanOption("hidden").description("Hidden option").hidden().defaultValue(true));
+    options.addOption(IntegerOption("int").description("Integer option").defaultValue(2));
+    ivec intvec = { 1, 2, 3 };
+    options.addOption(IntegerOption("ivec").description("Integer vector option").vector().store(intvec));
+    options.addOption(DoubleOption("double").description("Double option").defaultValue(2.5));
+    dvec dblvec = { 1.1, 2.3, 3.2 };
+    options.addOption(DoubleOption("dvec").description("Double vector option").vector().store(dblvec));
+    options.addOption(DoubleOption("time").description("Time option (%t)").timeValue().defaultValue(10.0));
+    options.addOption(StringOption("string").description("String option").defaultValue("test"));
+    const char* const enumValues[] = { "no", "opt1", "opt2" };
+    options.addOption(
+            StringOption("enum").description("Enum option").enumValue(enumValues).defaultEnumIndex(0));
+    options.addOption(
+            EnumIntOption("ienum").description("Enum option").enumValue(enumValues).defaultValue(1));
 
     std::string filename;
     options.addOption(FileNameOption("f")
-                          .description("Input file description")
-                          .filetype(eftTrajectory).inputFile().required()
-                          .defaultBasename("traj"));
+                              .description("Input file description")
+                              .filetype(eftTrajectory)
+                              .inputFile()
+                              .required()
+                              .defaultBasename("traj"));
     options.addOption(FileNameOption("mult")
-                          .description("Multiple file description")
-                          .filetype(eftTrajectory).inputFile().multiValue()
-                          .defaultBasename("traj"));
+                              .description("Multiple file description")
+                              .filetype(eftTrajectory)
+                              .inputFile()
+                              .multiValue()
+                              .defaultBasename("traj"));
     options.addOption(FileNameOption("lib")
-                          .description("Library file description")
-                          .filetype(eftGenericData).inputFile().libraryFile()
-                          .defaultBasename("libdata"));
+                              .description("Library file description")
+                              .filetype(eftGenericData)
+                              .inputFile()
+                              .libraryFile()
+                              .defaultBasename("libdata"));
     options.addOption(FileNameOption("io")
-                          .store(&filename)
-                          .description("Input/Output file description")
-                          .filetype(eftGenericData).inputOutputFile()
-                          .defaultBasename("inout"));
-    options.addOption(FileNameOption("o")
-                          .description("Output file description")
-                          .filetype(eftPlot).outputFile());
+                              .store(&filename)
+                              .description("Input/Output file description")
+                              .filetype(eftGenericData)
+                              .inputOutputFile()
+                              .defaultBasename("inout"));
+    options.addOption(
+            FileNameOption("o").description("Output file description").filetype(eftPlot).outputFile());
 
     CommandLineHelpWriter writer(options);
     bHidden_ = true;
@@ -154,8 +152,10 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 }
 
 //! Enum value for testing.
-enum TestEnum {
-    eFoo, eBar
+enum TestEnum
+{
+    eFoo,
+    eBar
 };
 
 /*
@@ -168,27 +168,24 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
 
     Options options;
 
-    bool    bValue = true;
-    options.addOption(BooleanOption("bool").description("Boolean option")
-                          .store(&bValue));
+    bool bValue = true;
+    options.addOption(BooleanOption("bool").description("Boolean option").store(&bValue));
 
     int ivalue = 3;
-    options.addOption(IntegerOption("int").description("Integer option")
-                          .store(&ivalue));
+    options.addOption(IntegerOption("int").description("Integer option").store(&ivalue));
 
-    int iavalue[] = {2, 3};
-    options.addOption(IntegerOption("int2").description("Integer 2-value option")
-                          .store(iavalue).valueCount(2));
+    int iavalue[] = { 2, 3 };
+    options.addOption(
+            IntegerOption("int2").description("Integer 2-value option").store(iavalue).valueCount(2));
 
     std::vector<std::string> svalues;
     svalues.emplace_back("foo");
-    options.addOption(StringOption("str").description("String option")
-                          .storeVector(&svalues).multiValue());
+    options.addOption(StringOption("str").description("String option").storeVector(&svalues).multiValue());
 
     TestEnum          evalue    = eBar;
-    const char *const allowed[] = { "foo", "bar" };
-    options.addOption(EnumOption<TestEnum>("enum").description("Enum option")
-                          .enumValue(allowed).store(&evalue));
+    const char* const allowed[] = { "foo", "bar" };
+    options.addOption(
+            EnumOption<TestEnum>("enum").description("Enum option").enumValue(allowed).store(&evalue));
 
     CommandLineHelpWriter writer(options);
     checkHelp(&writer);
@@ -200,31 +197,40 @@ TEST_F(CommandLineHelpWriterTest, HandlesDefaultValuesFromVariables)
  */
 TEST_F(CommandLineHelpWriterTest, HandlesLongFileOptions)
 {
-    using gmx::FileNameOption;
     using gmx::eftGenericData;
     using gmx::eftTrajectory;
+    using gmx::FileNameOption;
 
     gmx::Options options;
     options.addOption(FileNameOption("f")
-                          .description("File name option with a long value")
-                          .filetype(eftTrajectory).inputFile().required()
-                          .defaultBasename("path/to/long/trajectory/name"));
+                              .description("File name option with a long value")
+                              .filetype(eftTrajectory)
+                              .inputFile()
+                              .required()
+                              .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("f2")
-                          .description("File name option with a long value")
-                          .filetype(eftTrajectory).inputFile().required()
-                          .defaultBasename("path/to/long/trajectory"));
+                              .description("File name option with a long value")
+                              .filetype(eftTrajectory)
+                              .inputFile()
+                              .required()
+                              .defaultBasename("path/to/long/trajectory"));
     options.addOption(FileNameOption("lib")
-                          .description("File name option with a long value and type")
-                          .filetype(eftTrajectory).inputFile().libraryFile()
-                          .defaultBasename("path/to/long/trajectory/name"));
+                              .description("File name option with a long value and type")
+                              .filetype(eftTrajectory)
+                              .inputFile()
+                              .libraryFile()
+                              .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("longfileopt")
-                          .description("File name option with a long name")
-                          .filetype(eftGenericData).inputFile()
-                          .defaultBasename("deffile"));
+                              .description("File name option with a long name")
+                              .filetype(eftGenericData)
+                              .inputFile()
+                              .defaultBasename("deffile"));
     options.addOption(FileNameOption("longfileopt2")
-                          .description("File name option with multiple long fields")
-                          .filetype(eftGenericData).inputFile().libraryFile()
-                          .defaultBasename("path/to/long/file/name"));
+                              .description("File name option with multiple long fields")
+                              .filetype(eftGenericData)
+                              .inputFile()
+                              .libraryFile()
+                              .defaultBasename("path/to/long/file/name"));
 
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
@@ -241,20 +247,19 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
     using gmx::StringOption;
 
     gmx::Options options;
-    options.addOption(BooleanOption("longboolean")
-                          .description("Boolean option with a long name")
-                          .defaultValue(true));
-    dvec dblvec = {1.135, 2.32, 3.2132};
-    options.addOption(DoubleOption("dvec").description("Double vector option")
-                          .vector().store(dblvec));
+    options.addOption(
+            BooleanOption("longboolean").description("Boolean option with a long name").defaultValue(true));
+    dvec dblvec = { 1.135, 2.32, 3.2132 };
+    options.addOption(DoubleOption("dvec").description("Double vector option").vector().store(dblvec));
     std::vector<std::string> values;
     values.emplace_back("A very long string value that overflows even the description column");
-    values.emplace_back("Another very long string value that overflows even the description column");
+    values.emplace_back(
+            "Another very long string value that overflows even the description column");
     options.addOption(StringOption("string")
-                          .description("String option with very long values (may "
-                                       "be less relevant with selections having "
-                                       "their own option type)")
-                          .storeVector(&values));
+                              .description("String option with very long values (may "
+                                           "be less relevant with selections having "
+                                           "their own option type)")
+                              .storeVector(&values));
 
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
@@ -299,8 +304,8 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionGroups)
     using gmx::IntegerOption;
 
     gmx::Options            options;
-    gmx::IOptionsContainer &group1 = options.addGroup();
-    gmx::IOptionsContainer &group2 = options.addGroup();
+    gmx::IOptionsContainer& group1 = options.addGroup();
+    gmx::IOptionsContainer& group2 = options.addGroup();
     group2.addOption(IntegerOption("sub2").description("Option in group 2"));
     group1.addOption(IntegerOption("sub11").description("Option in group 1"));
     options.addOption(IntegerOption("main").description("Option in root group"));
@@ -315,18 +320,30 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionGroups)
  */
 TEST_F(CommandLineHelpWriterTest, HandlesHelpText)
 {
-    const char *const help[] = {
-        "Help text",
-        "for testing."
-    };
+    const char* const help[] = { "Help text", "for testing." };
     using gmx::IntegerOption;
 
     gmx::Options options;
-    options.addOption(IntegerOption("int").description("Integer option")
-                          .defaultValue(2));
+    options.addOption(IntegerOption("int").description("Integer option").defaultValue(2));
 
     gmx::CommandLineHelpWriter writer(options);
     writer.setHelpText(help);
+    checkHelp(&writer);
+}
+
+/*
+ * Test known issue output.
+ */
+TEST_F(CommandLineHelpWriterTest, HandlesKnownIssues)
+{
+    const char* const bugs[] = { "This is a bug.", "And this is another one." };
+    using gmx::IntegerOption;
+
+    gmx::Options options;
+    options.addOption(IntegerOption("int").description("Integer option").defaultValue(2));
+
+    gmx::CommandLineHelpWriter writer(options);
+    writer.setKnownIssues(bugs);
     checkHelp(&writer);
 }
 

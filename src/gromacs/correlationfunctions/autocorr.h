@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,25 +56,25 @@
 struct gmx_output_env_t;
 
 /*! \brief Normal correlation f(t)*f(t+dt) */
-#define eacNormal (1<<0)
+#define eacNormal (1 << 0)
 /*! \brief Cosine correlation cos(f(t)-f(t+dt)) */
-#define eacCos    (1<<1)
+#define eacCos (1 << 1)
 /*! \brief Vector correlation f(t).f(t+dt) */
-#define eacVector (1<<2)
+#define eacVector (1 << 2)
 /*! \brief Norm of cross product |f(t) (x) f(t+dt)| */
-#define eacRcross (1<<3  | eacVector)
+#define eacRcross (1 << 3 | eacVector)
 /*! \brief Vector with Legendre polynomial of order 0 (same as vector) */
-#define eacP0     (1<<4  | eacVector)
+#define eacP0 (1 << 4 | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_1(f(t).f(t+dt)) */
-#define eacP1     (1<<5  | eacVector)
+#define eacP1 (1 << 5 | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_2(f(t).f(t+dt)) */
-#define eacP2     (1<<6  | eacVector)
+#define eacP2 (1 << 6 | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_3(f(t).f(t+dt)) */
-#define eacP3     (1<<7  | eacVector)
+#define eacP3 (1 << 7 | eacVector)
 /*! \brief Vector with Legendre polynomial of order P_4(f(t).f(t+dt)) */
-#define eacP4     (1<<8  | eacVector)
+#define eacP4 (1 << 8 | eacVector)
 /*! \brief Binary identy correlation (f(t) == f(t+dt)) */
-#define eacIden   (1<<9) //Not supported for multiple cores
+#define eacIden (1 << 9) // Not supported for multiple cores
 
 /*! \brief
  * Add commandline arguments related to autocorrelations to the existing array.
@@ -85,7 +85,7 @@ struct gmx_output_env_t;
  * \param[in] pa The initial argument list
  * \return the new array
  */
-t_pargs *add_acf_pargs(int *npargs, t_pargs *pa);
+t_pargs* add_acf_pargs(int* npargs, t_pargs* pa);
 
 /*! \brief
  * Returns the number of points to output from a correlation function.
@@ -117,10 +117,15 @@ int get_acffitfn();
  * \param[in] bAver    If set, all ndih C(t) functions are averaged into a single
  *          C(t)
  */
-void do_autocorr(const char *fn, const gmx_output_env_t *oenv,
-                 const char *title,
-                 int nframes, int nitem, real **c1,
-                 real dt, unsigned long mode, gmx_bool bAver);
+void do_autocorr(const char*             fn,
+                 const gmx_output_env_t* oenv,
+                 const char*             title,
+                 int                     nframes,
+                 int                     nitem,
+                 real**                  c1,
+                 real                    dt,
+                 unsigned long           mode,
+                 gmx_bool                bAver);
 
 /*! \brief
  * Low level computation of autocorrelation functions
@@ -171,11 +176,21 @@ void do_autocorr(const char *fn, const gmx_output_env_t *oenv,
  * \param[in] tendfit Time to end fitting to the ACF
  * \param[in] nfitparm Number of fitting parameters in a multi-exponential fit
  */
-void low_do_autocorr(const char *fn, const gmx_output_env_t *oenv,
-                     const char *title, int  nframes, int nitem,
-                     int nout, real **c1, real dt, unsigned long mode,
-                     int nrestart, gmx_bool bAver, gmx_bool bNormalize,
-                     gmx_bool bVerbose, real tbeginfit, real tendfit,
-                     int nfitparm);
+void low_do_autocorr(const char*             fn,
+                     const gmx_output_env_t* oenv,
+                     const char*             title,
+                     int                     nframes,
+                     int                     nitem,
+                     int                     nout,
+                     real**                  c1,
+                     real                    dt,
+                     unsigned long           mode,
+                     int                     nrestart,
+                     gmx_bool                bAver,
+                     gmx_bool                bNormalize,
+                     gmx_bool                bVerbose,
+                     real                    tbeginfit,
+                     real                    tendfit,
+                     int                     nfitparm);
 
 #endif

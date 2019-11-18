@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,24 +48,21 @@ namespace
 
 class DefaultKeyValueTreeErrorHandler : public IKeyValueTreeErrorHandler
 {
-    public:
-        bool onError(UserInputError *ex, const KeyValueTreePath &context) override
-        {
-            std::string message
-                = formatString("While processing '%s':", context.toString().c_str());
-            ex->prependContext(message);
-            return false;
-        }
+public:
+    bool onError(UserInputError* ex, const KeyValueTreePath& context) override
+    {
+        std::string message = formatString("While processing '%s':", context.toString().c_str());
+        ex->prependContext(message);
+        return false;
+    }
 };
 
-}   // namespace
+} // namespace
 
-IKeyValueTreeErrorHandler::~IKeyValueTreeErrorHandler()
-{
-}
+IKeyValueTreeErrorHandler::~IKeyValueTreeErrorHandler() {}
 
 //! \cond libapi
-IKeyValueTreeErrorHandler *defaultKeyValueTreeErrorHandler()
+IKeyValueTreeErrorHandler* defaultKeyValueTreeErrorHandler()
 {
     static DefaultKeyValueTreeErrorHandler instance;
     return &instance;

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +63,7 @@ void gmx_mat4_transform_point(mat4 m, const rvec x, vec4 v)
 
     for (i = 0; (i < N); i++)
     {
-        v[i] = m[XX][i]*x[XX]+m[YY][i]*x[YY]+m[ZZ][i]*x[ZZ]+m[WW][i];
+        v[i] = m[XX][i] * x[XX] + m[YY][i] * x[YY] + m[ZZ][i] * x[ZZ] + m[WW][i];
     }
 }
 
@@ -78,7 +78,7 @@ void gmx_mat4_mmul(mat4 A, mat4 B, mat4 C)
             A[i][j] = 0;
             for (k = 0; (k < N); k++)
             {
-                A[i][j] += B[i][k]*C[k][j];
+                A[i][j] += B[i][k] * C[k][j];
             }
         }
     }
@@ -111,25 +111,24 @@ void gmx_mat4_init_rotation(int axis, real angle, mat4 A)
     switch (axis)
     {
         case XX:
-            A[YY][YY] =  cos(angle);
+            A[YY][YY] = cos(angle);
             A[YY][ZZ] = -sin(angle);
-            A[ZZ][YY] =  sin(angle);
-            A[ZZ][ZZ] =  cos(angle);
+            A[ZZ][YY] = sin(angle);
+            A[ZZ][ZZ] = cos(angle);
             break;
         case YY:
-            A[XX][XX] =  cos(angle);
-            A[XX][ZZ] =  sin(angle);
+            A[XX][XX] = cos(angle);
+            A[XX][ZZ] = sin(angle);
             A[ZZ][XX] = -sin(angle);
-            A[ZZ][ZZ] =  cos(angle);
+            A[ZZ][ZZ] = cos(angle);
             break;
         case ZZ:
-            A[XX][XX] =  cos(angle);
+            A[XX][XX] = cos(angle);
             A[XX][YY] = -sin(angle);
-            A[YY][XX] =  sin(angle);
-            A[YY][YY] =  cos(angle);
+            A[YY][XX] = sin(angle);
+            A[YY][YY] = cos(angle);
             break;
-        default:
-            gmx_fatal(FARGS, "Error: invalid axis: %d", axis);
+        default: gmx_fatal(FARGS, "Error: invalid axis: %d", axis);
     }
 }
 
@@ -141,7 +140,7 @@ void gmx_mat4_init_translation(real tx, real ty, real tz, mat4 A)
     A[3][ZZ] = tz;
 }
 
-void gmx_mat4_print(FILE *fp, const char *s, mat4 A)
+void gmx_mat4_print(FILE* fp, const char* s, mat4 A)
 {
     int i, j;
 
@@ -160,7 +159,7 @@ void gmx_mat4_print(FILE *fp, const char *s, mat4 A)
     }
 }
 
-void gmx_vec4_print(FILE *fp, const char *s, vec4 a)
+void gmx_vec4_print(FILE* fp, const char* s, vec4 a)
 {
     int j;
 

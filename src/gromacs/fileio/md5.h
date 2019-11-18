@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,7 @@
  */
 
 #ifndef GMX_md5_INCLUDED
-#  define GMX_md5_INCLUDED
+#define GMX_md5_INCLUDED
 
 #include <array>
 
@@ -100,22 +100,23 @@
  */
 
 typedef unsigned char md5_byte_t; /* 8-bit byte */
-typedef unsigned int md5_word_t;  /* 32-bit word */
+typedef unsigned int  md5_word_t; /* 32-bit word */
 
 /* Define the state of the MD5 Algorithm. */
-typedef struct md5_state_s {
-    md5_word_t count[2];    /* message length in bits, lsw first */
-    md5_word_t abcd[4];     /* digest buffer */
-    md5_byte_t buf[64];     /* accumulate block */
+typedef struct md5_state_s
+{
+    md5_word_t count[2]; /* message length in bits, lsw first */
+    md5_word_t abcd[4];  /* digest buffer */
+    md5_byte_t buf[64];  /* accumulate block */
 } md5_state_t;
 
 /* Initialize the algorithm. */
-void gmx_md5_init(md5_state_t *pms);
+void gmx_md5_init(md5_state_t* pms);
 
 /* Append a string to the message. */
-void gmx_md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes);
+void gmx_md5_append(md5_state_t* pms, const md5_byte_t* data, int nbytes);
 
 /* Finish the message and return the digest. */
-std::array<unsigned char, 16> gmx_md5_finish(md5_state_t *pms);
+std::array<unsigned char, 16> gmx_md5_finish(md5_state_t* pms);
 
 #endif

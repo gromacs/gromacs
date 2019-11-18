@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,9 +53,9 @@ unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
 /* These colours will be mapped to white on a monochrome screen */
 unsigned long LIGHTBLUE, LIGHTGREEN, LIGHTGREY, LIGHTCYAN, LIGHTRED, VIOLET, YELLOW, WHITE;
 
-static XFontStruct *XLQF(FILE gmx_unused *err, Display *disp, const char *name)
+static XFontStruct* XLQF(FILE gmx_unused* err, Display* disp, const char* name)
 {
-    XFontStruct *font = XLoadQueryFont(disp, name);
+    XFontStruct* font = XLoadQueryFont(disp, name);
 #ifdef DEBUG
     if (font != NULL)
     {
@@ -65,18 +65,15 @@ static XFontStruct *XLQF(FILE gmx_unused *err, Display *disp, const char *name)
     return font;
 }
 
-static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
+static XFontStruct* GetFont(FILE* err, Display* disp, char* name)
 {
-    static const char *fontnames[] = {
-        "sansb12", "8x13bold", "8x13",
-        "9x15", "6x13", "fixed"
-    };
-#define MAXNAMES (sizeof(fontnames)/sizeof(fontnames[0]))
-    unsigned int       i;
-    XFontStruct       *font;
-    int                count;
-    char             **fontlist;
-    bool               bFont = false;
+    static const char* fontnames[] = { "sansb12", "8x13bold", "8x13", "9x15", "6x13", "fixed" };
+#define MAXNAMES (sizeof(fontnames) / sizeof(fontnames[0]))
+    unsigned int i;
+    XFontStruct* font;
+    int          count;
+    char**       fontlist;
+    bool         bFont = false;
 
     if (name)
     {
@@ -102,22 +99,22 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
     }
     if (!bFont)
     {
-        fprintf (err, "Cannot load any suitable font\n");
+        fprintf(err, "Cannot load any suitable font\n");
     }
     return font;
 }
 
-static GC GetGC(Display *disp, XFontStruct *font)
+static GC GetGC(Display* disp, XFontStruct* font)
 {
-    XGCValues     values;
+    XGCValues values;
 
     values.font       = font->fid;
     values.foreground = WhitePixel(disp, DefaultScreen(disp));
 
-    return XCreateGC(disp, DefaultRootWindow(disp), GCForeground|GCFont, &values);
+    return XCreateGC(disp, DefaultRootWindow(disp), GCForeground | GCFont, &values);
 }
 
-void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col)
+void GetNamedColor(t_x11* x11, const char* name, unsigned long* col)
 {
     /* If name is found than col set to that colour else col is unchanged */
     XColor exact, clr;
@@ -132,9 +129,9 @@ void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col)
     }
 }
 
-static t_wlist *GetWList(t_x11 *x11, Window w)
+static t_wlist* GetWList(t_x11* x11, Window w)
 {
-    t_wlist *curs;
+    t_wlist* curs;
 
     curs = x11->wlist;
     while (curs && (curs->w != w))
@@ -145,14 +142,14 @@ static t_wlist *GetWList(t_x11 *x11, Window w)
     return curs;
 }
 
-static void MainLoop(t_x11 *x11)
+static void MainLoop(t_x11* x11)
 {
-    bool        bReturn;
-    XEvent      event;
-    t_wlist    *curs;
-    Window      w;
+    bool     bReturn;
+    XEvent   event;
+    t_wlist* curs;
+    Window   w;
 
-    for (bReturn = false; (!bReturn); )
+    for (bReturn = false; (!bReturn);)
     {
         if (x11->wlist)
         {
@@ -179,8 +176,7 @@ static void MainLoop(t_x11 *x11)
                            if (XCheckTypedWindowEvent(x11->disp,w,ConfigureNotify,&config))
                            curs=NULL; */
                         break;
-                    default:
-                        break;
+                    default: break;
                 }
                 if (curs)
                 {
@@ -191,8 +187,7 @@ static void MainLoop(t_x11 *x11)
     }
 }
 
-static void RegisterCallback(t_x11 *x11, Window w, Window Parent,
-                             CallBack cb, void *data)
+static void RegisterCallback(t_x11* x11, Window w, Window Parent, CallBack cb, void* data)
 {
     t_wlist *curs, *item;
 
@@ -219,9 +214,9 @@ static void RegisterCallback(t_x11 *x11, Window w, Window Parent,
     }
 }
 
-static void UnRegisterCallback(t_x11 *x11, Window w)
+static void UnRegisterCallback(t_x11* x11, Window w)
 {
-    t_wlist *curs;
+    t_wlist* curs;
 
     curs = x11->wlist;
     if (curs)
@@ -239,7 +234,7 @@ static void UnRegisterCallback(t_x11 *x11, Window w)
             }
             if (curs->next)
             {
-                t_wlist *tmp = curs->next;
+                t_wlist* tmp = curs->next;
 
                 curs->next = curs->next->next;
                 sfree(tmp);
@@ -248,9 +243,9 @@ static void UnRegisterCallback(t_x11 *x11, Window w)
     }
 }
 
-static void SetInputMask(t_x11 *x11, Window w, unsigned long mask)
+static void SetInputMask(t_x11* x11, Window w, unsigned long mask)
 {
-    t_wlist *curs;
+    t_wlist* curs;
 
     curs = GetWList(x11, w);
     if (curs)
@@ -264,9 +259,9 @@ static void SetInputMask(t_x11 *x11, Window w, unsigned long mask)
     }
 }
 
-static unsigned long GetInputMask(t_x11 *x11, Window w)
+static unsigned long GetInputMask(t_x11* x11, Window w)
 {
-    t_wlist *curs;
+    t_wlist* curs;
 
     curs = GetWList(x11, w);
     if (curs)
@@ -279,9 +274,9 @@ static unsigned long GetInputMask(t_x11 *x11, Window w)
     }
 }
 
-static void CleanUp(t_x11 *x11)
+static void CleanUp(t_x11* x11)
 {
-    t_wlist *curs;
+    t_wlist* curs;
 
     curs = x11->wlist;
     while (curs)
@@ -294,32 +289,27 @@ static void CleanUp(t_x11 *x11)
     XCloseDisplay(x11->disp);
 }
 
-static void Flush(t_x11 *x11)
+static void Flush(t_x11* x11)
 {
     std::fflush(x11->console);
 }
 
-t_x11 *GetX11(int *argc, char *argv[])
+t_x11* GetX11(int* argc, char* argv[])
 {
-    static const char *v_name[] = {
-        "DirectColor", "TrueColor", "PseudoColor",
-        "StaticColor", "GrayScale", "StaticGray"
-    };
-    static int         v_class[] = {
-        DirectColor, TrueColor, PseudoColor,
-        StaticColor, GrayScale, StaticGray
-    };
-#define NCLASS (sizeof(v_class)/sizeof(v_class[0]))
+    static const char* v_name[] = { "DirectColor", "TrueColor", "PseudoColor",
+                                    "StaticColor", "GrayScale", "StaticGray" };
+    static int v_class[] = { DirectColor, TrueColor, PseudoColor, StaticColor, GrayScale, StaticGray };
+#define NCLASS (sizeof(v_class) / sizeof(v_class[0]))
 
-    XVisualInfo     v_info;
-    t_x11          *x11;
-    int             ARGC;
-    char          **ARGV;
-    char           *display;
-    char           *fontname;
-    char           *title, *FG = nullptr, *BG = nullptr;
-    bool            bVerbose = false;
-    int             i;
+    XVisualInfo v_info;
+    t_x11*      x11;
+    int         ARGC;
+    char**      ARGV;
+    char*       display;
+    char*       fontname;
+    char *      title, *FG = nullptr, *BG = nullptr;
+    bool        bVerbose = false;
+    int         i;
 
     title = gmx_strdup(argv[0]);
 
@@ -335,37 +325,25 @@ t_x11 *GetX11(int *argc, char *argv[])
         {
             if (strlen(argv[i]) > 1)
             {
-                if ((*argc) > i+1)
+                if ((*argc) > i + 1)
                 {
                     switch (argv[i][1])
                     {
-                        case 'b':
-                            BG = argv[++i];
-                            break;
-                        case 'd':
-                            display = argv[++i];
-                            break;
+                        case 'b': BG = argv[++i]; break;
+                        case 'd': display = argv[++i]; break;
                         case 'f':
                             switch (argv[i][2])
                             {
-                                case 'o':
-                                    fontname = argv[++i];
-                                    break;
-                                case 'g':
-                                    FG = argv[++i];
-                                    break;
+                                case 'o': fontname = argv[++i]; break;
+                                case 'g': FG = argv[++i]; break;
                             }
                             break;
                         case 't':
                             sfree(title);
                             title = gmx_strdup(argv[++i]);
                             break;
-                        case 'v':
-                            bVerbose = true;
-                            break;
-                        default:
-                            ARGV[ARGC++] = argv[i];
-                            break;
+                        case 'v': bVerbose = true; break;
+                        default: ARGV[ARGC++] = argv[i]; break;
                     }
                 }
             }
@@ -388,8 +366,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     {
         x11->console = stderr;
     }
-    else
-    if ((x11->console = std::fopen("/dev/null", "w")) == nullptr)
+    else if ((x11->console = std::fopen("/dev/null", "w")) == nullptr)
     {
         x11->console = stderr;
     }
@@ -419,20 +396,18 @@ t_x11 *GetX11(int *argc, char *argv[])
 
     /* These colours will be mapped to black on a monochrome screen */
     x11->fg = BLACK = BLUE = GREEN = CYAN = RED = BROWN = GREY = DARKGREY =
-                                        BlackPixel(x11->disp, x11->screen);
+            BlackPixel(x11->disp, x11->screen);
 
     /* These colours will be mapped to white on a monochrome screen */
-    x11->bg       =
-        LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE =
-                                        WhitePixel(x11->disp, x11->screen);
+    x11->bg = LIGHTBLUE = LIGHTGREY = LIGHTGREEN = LIGHTCYAN = LIGHTRED = VIOLET = YELLOW = WHITE =
+            WhitePixel(x11->disp, x11->screen);
 
     if (x11->depth > 1)
     {
         /* Not B & W, Look what kind of screen we've got... */
         for (i = 0; (i < (int)NCLASS); i++)
         {
-            if (!XMatchVisualInfo(x11->disp, x11->screen, x11->depth,
-                                  v_class[i], &v_info))
+            if (!XMatchVisualInfo(x11->disp, x11->screen, x11->depth, v_class[i], &v_info))
             {
                 break;
             }

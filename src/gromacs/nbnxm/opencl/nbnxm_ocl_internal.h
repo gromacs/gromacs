@@ -44,18 +44,18 @@
 #include "nbnxm_ocl_types.h"
 
 #ifndef NBNXN_OCL_INTERNAL_H
-#define NBNXN_OCL_INTERNAL_H
+#    define NBNXN_OCL_INTERNAL_H
 
 namespace Nbnxm
 {
 
 /*! \brief Returns true if LJ combination rules are used in the non-bonded kernels.
  *
- *  \param[in] vdwType The VdW interaction/implementation type as defined by evdwOcl in nbnxn_ocl_types.h.
- *  \returns           True if combination rules are used by the run
+ *  \param[in] vdwType The VdW interaction/implementation type as defined by evdwOcl in
+ * nbnxn_ocl_types.h. \returns           True if combination rules are used by the run
  */
 bool useLjCombRule(int vdwType);
 
-}      // namespace Nbnxm
+} // namespace Nbnxm
 
 #endif /* NBNXN_OCL_INTERNAL_H */

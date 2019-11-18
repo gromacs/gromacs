@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int Name="Number of Energy Terms">97</Int>
+  <String Name="log">Current ref_t for group Water:      0.0
+Current ref_t for group Lipid:      0.0
+
+Not enough data recorded to report energy averages
+</String>
+</ReferenceData>

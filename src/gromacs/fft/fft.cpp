@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2003 Erik Lindahl, David van der Spoel, University of Groningen.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,8 @@
 
 #if !GMX_FFT_FFTW3 && !GMX_FFT_ARMPL_FFTW3
 
-struct gmx_many_fft {
+struct gmx_many_fft
+{
     int       howmany;
     int       dist;
     gmx_fft_t fft;
@@ -63,11 +64,7 @@ struct gmx_many_fft {
 
 typedef struct gmx_many_fft* gmx_many_fft_t;
 
-int
-gmx_fft_init_many_1d(gmx_fft_t *        pfft,
-                     int                nx,
-                     int                howmany,
-                     gmx_fft_flag       flags)
+int gmx_fft_init_many_1d(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag flags)
 {
     gmx_many_fft_t fft;
     if (pfft == nullptr)
@@ -77,24 +74,20 @@ gmx_fft_init_many_1d(gmx_fft_t *        pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
 
     gmx_fft_init_1d(&fft->fft, nx, flags);
     fft->howmany = howmany;
-    fft->dist    = 2*nx;
+    fft->dist    = 2 * nx;
 
-    *pfft = (gmx_fft_t)fft;
+    *pfft = reinterpret_cast<gmx_fft_t>(fft);
     return 0;
 }
 
-int
-gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
-                          int                nx,
-                          int                howmany,
-                          gmx_fft_flag       flags)
+int gmx_fft_init_many_1d_real(gmx_fft_t* pfft, int nx, int howmany, gmx_fft_flag flags)
 {
     gmx_many_fft_t fft;
     if (pfft == nullptr)
@@ -104,26 +97,22 @@ gmx_fft_init_many_1d_real(gmx_fft_t *        pfft,
     }
     *pfft = nullptr;
 
-    if ( (fft = (gmx_many_fft_t)malloc(sizeof(struct gmx_many_fft))) == nullptr)
+    if ((fft = static_cast<gmx_many_fft_t>(malloc(sizeof(struct gmx_many_fft)))) == nullptr)
     {
         return ENOMEM;
     }
 
     gmx_fft_init_1d_real(&fft->fft, nx, flags);
     fft->howmany = howmany;
-    fft->dist    = 2*(nx/2+1);
+    fft->dist    = 2 * (nx / 2 + 1);
 
-    *pfft = (gmx_fft_t)fft;
+    *pfft = reinterpret_cast<gmx_fft_t>(fft);
     return 0;
 }
 
-int
-gmx_fft_many_1d     (gmx_fft_t                  fft,
-                     enum gmx_fft_direction     dir,
-                     void *                     in_data,
-                     void *                     out_data)
+int gmx_fft_many_1d(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, void* out_data)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     int            i, ret;
     for (i = 0; i < mfft->howmany; i++)
     {
@@ -132,19 +121,15 @@ gmx_fft_many_1d     (gmx_fft_t                  fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data+mfft->dist;
-        out_data = (real*)out_data+mfft->dist;
+        in_data  = static_cast<real*>(in_data) + mfft->dist;
+        out_data = static_cast<real*>(out_data) + mfft->dist;
     }
     return 0;
 }
 
-int
-gmx_fft_many_1d_real     (gmx_fft_t                  fft,
-                          enum gmx_fft_direction     dir,
-                          void *                     in_data,
-                          void *                     out_data)
+int gmx_fft_many_1d_real(gmx_fft_t fft, enum gmx_fft_direction dir, void* in_data, void* out_data)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     int            i, ret;
     for (i = 0; i < mfft->howmany; i++)
     {
@@ -153,17 +138,16 @@ gmx_fft_many_1d_real     (gmx_fft_t                  fft,
         {
             return ret;
         }
-        in_data  = (real*)in_data+mfft->dist;
-        out_data = (real*)out_data+mfft->dist;
+        in_data  = static_cast<real*>(in_data) + mfft->dist;
+        out_data = static_cast<real*>(out_data) + mfft->dist;
     }
     return 0;
 }
 
 
-void
-gmx_many_fft_destroy(gmx_fft_t    fft)
+void gmx_many_fft_destroy(gmx_fft_t fft)
 {
-    gmx_many_fft_t mfft = (gmx_many_fft_t)fft;
+    gmx_many_fft_t mfft = reinterpret_cast<gmx_many_fft_t>(fft);
     if (mfft != nullptr)
     {
         if (mfft->fft != nullptr)
@@ -174,31 +158,28 @@ gmx_many_fft_destroy(gmx_fft_t    fft)
     }
 }
 
-#endif //not GMX_FFT_FFTW3
+#endif // not GMX_FFT_FFTW3
 
-int gmx_fft_transpose_2d(t_complex *          in_data,
-                         t_complex *          out_data,
-                         int                  nx,
-                         int                  ny)
+int gmx_fft_transpose_2d(t_complex* in_data, t_complex* out_data, int nx, int ny)
 {
-    int        i, j, k, im, n, ncount;
-    bool       done1, done2;
-    int        i1, i1c, i2, i2c, kmi, max;
+    int  i, j, k, im, n, ncount;
+    bool done1, done2;
+    int  i1, i1c, i2, i2c, kmi, max;
 
     t_complex  tmp1, tmp2, tmp3;
-    t_complex *data;
+    t_complex* data;
 
     /* Use 500 bytes on stack to indicate moves.
      * This is just for optimization, it does not limit any dimensions.
      */
-    char          move[500];
-    int           nmove = 500;
+    char move[500];
+    int  nmove = 500;
 
     if (nx < 2 || ny < 2)
     {
         if (in_data != out_data)
         {
-            memcpy(out_data, in_data, sizeof(t_complex)*nx*ny);
+            memcpy(out_data, in_data, sizeof(t_complex) * nx * ny);
         }
         return 0;
     }
@@ -210,8 +191,8 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
         {
             for (j = 0; j < ny; j++)
             {
-                out_data[j*nx+i].re = in_data[i*ny+j].re;
-                out_data[j*nx+i].im = in_data[i*ny+j].im;
+                out_data[j * nx + i].re = in_data[i * ny + j].re;
+                out_data[j * nx + i].im = in_data[i * ny + j].im;
             }
         }
         return 0;
@@ -225,14 +206,14 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
         /* trivial case, just swap elements */
         for (i = 0; i < nx; i++)
         {
-            for (j = i+1; j < nx; j++)
+            for (j = i + 1; j < nx; j++)
             {
-                tmp1.re         = data[i*nx+j].re;
-                tmp1.im         = data[i*nx+j].im;
-                data[i*nx+j].re = data[j*nx+i].re;
-                data[i*nx+j].im = data[j*nx+i].im;
-                data[j*nx+i].re = tmp1.re;
-                data[j*nx+i].im = tmp1.im;
+                tmp1.re             = data[i * nx + j].re;
+                tmp1.im             = data[i * nx + j].im;
+                data[i * nx + j].re = data[j * nx + i].re;
+                data[i * nx + j].im = data[j * nx + i].im;
+                data[j * nx + i].re = tmp1.re;
+                data[j * nx + i].im = tmp1.im;
             }
         }
         return 0;
@@ -247,19 +228,18 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
 
     if (nx > 2 && ny > 2)
     {
-        i = nx-1;
-        j = ny-1;
+        i = nx - 1;
+        j = ny - 1;
         do
         {
             k = i % j;
             i = j;
             j = k;
-        }
-        while (k != 0);
-        ncount += i-1;
+        } while (k != 0);
+        ncount += i - 1;
     }
 
-    n  = nx*ny;
+    n  = nx * ny;
     k  = n - 1;
     i  = 1;
     im = ny;
@@ -268,7 +248,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
     do
     {
         i1      = i;
-        kmi     = k-i;
+        kmi     = k - i;
         tmp1.re = data[i1].re;
         tmp1.im = data[i1].im;
         i1c     = kmi;
@@ -278,8 +258,8 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
         done2 = false;
         do
         {
-            i2  = ny*i1-k*(i1/nx);
-            i2c = k-i2;
+            i2  = ny * i1 - k * (i1 / nx);
+            i2c = k - i2;
             if (i1 < nmove)
             {
                 move[i1] = 1;
@@ -312,8 +292,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                 i1           = i2;
                 i1c          = i2c;
             }
-        }
-        while (!done2);
+        } while (!done2);
 
         data[i1].re  = tmp1.re;
         data[i1].im  = tmp1.im;
@@ -329,7 +308,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
             done2 = false;
             do
             {
-                max = k-i;
+                max = k - i;
                 i++;
                 im += ny;
                 if (im > k)
@@ -344,7 +323,7 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                         while (i2 > i && i2 < max)
                         {
                             i1 = i2;
-                            i2 = ny*i1-k*(i1/nx);
+                            i2 = ny * i1 - k * (i1 / nx);
                         }
                         if (i2 == i)
                         {
@@ -356,11 +335,9 @@ int gmx_fft_transpose_2d(t_complex *          in_data,
                         done2 = true;
                     }
                 }
-            }
-            while (!done2);
+            } while (!done2);
         }
-    }
-    while (!done1);
+    } while (!done1);
 
     return 0;
 }

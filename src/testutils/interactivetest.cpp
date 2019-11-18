@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,107 +68,104 @@ namespace test
 
 class MockTextInputStream : public TextInputStream
 {
-    public:
-        MOCK_METHOD1(readLine, bool(std::string *));
-        MOCK_METHOD0(close, void());
+public:
+    MOCK_METHOD1(readLine, bool(std::string*));
+    MOCK_METHOD0(close, void());
 };
 
 class MockTextOutputStream : public TextOutputStream
 {
-    public:
-        MOCK_METHOD1(write, void(const char *));
-        MOCK_METHOD0(close, void());
+public:
+    MOCK_METHOD1(write, void(const char*));
+    MOCK_METHOD0(close, void());
 };
 
 class InteractiveTestHelper::Impl
 {
-    public:
-        explicit Impl(TestReferenceChecker checker)
-            : checker_(std::move(checker)), bLastNewline_(true),
-              currentLine_(0), bHasOutput_(false)
-        {
-            using ::testing::_;
-            using ::testing::Invoke;
-            EXPECT_CALL(inputStream_, readLine(_))
-                .WillRepeatedly(Invoke(this, &Impl::readInputLine));
-            EXPECT_CALL(inputStream_, close()).Times(0);
-            EXPECT_CALL(outputStream_, write(_))
-                .WillRepeatedly(Invoke(this, &Impl::addOutput));
-            EXPECT_CALL(outputStream_, close()).Times(0);
-        }
+public:
+    explicit Impl(TestReferenceChecker checker) :
+        checker_(std::move(checker)),
+        bLastNewline_(true),
+        currentLine_(0),
+        bHasOutput_(false)
+    {
+        using ::testing::_;
+        using ::testing::Invoke;
+        EXPECT_CALL(inputStream_, readLine(_)).WillRepeatedly(Invoke(this, &Impl::readInputLine));
+        EXPECT_CALL(inputStream_, close()).Times(0);
+        EXPECT_CALL(outputStream_, write(_)).WillRepeatedly(Invoke(this, &Impl::addOutput));
+        EXPECT_CALL(outputStream_, close()).Times(0);
+    }
 
-        bool readInputLine(std::string *line)
+    bool readInputLine(std::string* line)
+    {
+        checkOutput();
+        line->clear();
+        const bool bPresent = (currentLine_ < index(inputLines_.size()));
+        if (bPresent)
         {
-            checkOutput();
-            line->clear();
-            const bool bPresent = (currentLine_ < index(inputLines_.size()));
-            if (bPresent)
+            line->assign(inputLines_[currentLine_]);
+            if (bLastNewline_ || currentLine_ + 1 < index(inputLines_.size()))
             {
-                line->assign(inputLines_[currentLine_]);
-                if (bLastNewline_ || currentLine_ + 1 < index(inputLines_.size()))
-                {
-                    line->append("\n");
-                }
+                line->append("\n");
             }
-            ++currentLine_;
-            const std::string id = formatString("Input%d", static_cast<int>(currentLine_));
-            StringTestBase::checkText(&checker_, *line, id.c_str());
-            return bPresent;
         }
-        void addOutput(const char *str)
-        {
-            bHasOutput_ = true;
-            currentOutput_.append(str);
-        }
+        ++currentLine_;
+        const std::string id = formatString("Input%d", static_cast<int>(currentLine_));
+        StringTestBase::checkText(&checker_, *line, id.c_str());
+        return bPresent;
+    }
+    void addOutput(const char* str)
+    {
+        bHasOutput_ = true;
+        currentOutput_.append(str);
+    }
 
-        void checkOutput()
+    void checkOutput()
+    {
+        if (bHasOutput_)
         {
-            if (bHasOutput_)
-            {
-                const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
-                StringTestBase::checkText(&checker_, currentOutput_, id.c_str());
-                bHasOutput_ = false;
-            }
-            currentOutput_.clear();
+            const std::string id = formatString("Output%d", static_cast<int>(currentLine_));
+            StringTestBase::checkText(&checker_, currentOutput_, id.c_str());
+            bHasOutput_ = false;
         }
+        currentOutput_.clear();
+    }
 
-        TestReferenceChecker             checker_;
-        ArrayRef<const char *const>      inputLines_;
-        bool                             bLastNewline_;
-        index                            currentLine_;
-        bool                             bHasOutput_;
-        std::string                      currentOutput_;
-        MockTextInputStream              inputStream_;
-        MockTextOutputStream             outputStream_;
+    TestReferenceChecker        checker_;
+    ArrayRef<const char* const> inputLines_;
+    bool                        bLastNewline_;
+    index                       currentLine_;
+    bool                        bHasOutput_;
+    std::string                 currentOutput_;
+    MockTextInputStream         inputStream_;
+    MockTextOutputStream        outputStream_;
 };
 
-InteractiveTestHelper::InteractiveTestHelper(TestReferenceChecker checker)
-    : impl_(new Impl(checker.checkCompound("InteractiveSession", "Interactive")))
+InteractiveTestHelper::InteractiveTestHelper(TestReferenceChecker checker) :
+    impl_(new Impl(checker.checkCompound("InteractiveSession", "Interactive")))
 {
 }
 
-InteractiveTestHelper::~InteractiveTestHelper()
-{
-}
+InteractiveTestHelper::~InteractiveTestHelper() {}
 
 void InteractiveTestHelper::setLastNewline(bool bInclude)
 {
     impl_->bLastNewline_ = bInclude;
 }
 
-void InteractiveTestHelper::setInputLines(
-        const ArrayRef<const char *const> &inputLines)
+void InteractiveTestHelper::setInputLines(const ArrayRef<const char* const>& inputLines)
 {
     impl_->inputLines_  = inputLines;
     impl_->currentLine_ = 0;
 }
 
-TextInputStream &InteractiveTestHelper::inputStream()
+TextInputStream& InteractiveTestHelper::inputStream()
 {
     return impl_->inputStream_;
 }
 
-TextOutputStream &InteractiveTestHelper::outputStream()
+TextOutputStream& InteractiveTestHelper::outputStream()
 {
     return impl_->outputStream_;
 }

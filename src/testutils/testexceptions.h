@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,25 +62,23 @@ namespace test
  */
 class TestException : public GromacsException
 {
-    public:
-        /*! \brief
-         * Creates a test exception object with the provided detailed reason.
-         *
-         * \param[in] reason Detailed reason for the exception.
-         */
-        explicit TestException(const std::string &reason)
-            : GromacsException(reason) {}
-        /*! \brief
-         * Creates a test exception based on another GromacsException object.
-         *
-         * \param[in] base  Exception to wrap.
-         *
-         * \see GMX_THROW_WRAPPER_TESTEXCEPTION
-         */
-        explicit TestException(const GromacsException &base)
-            : GromacsException(base) {}
+public:
+    /*! \brief
+     * Creates a test exception object with the provided detailed reason.
+     *
+     * \param[in] reason Detailed reason for the exception.
+     */
+    explicit TestException(const std::string& reason) : GromacsException(reason) {}
+    /*! \brief
+     * Creates a test exception based on another GromacsException object.
+     *
+     * \param[in] base  Exception to wrap.
+     *
+     * \see GMX_THROW_WRAPPER_TESTEXCEPTION
+     */
+    explicit TestException(const GromacsException& base) : GromacsException(base) {}
 
-        int errorCode() const override { return -1; }
+    int errorCode() const override { return -1; }
 };
 
 /*! \brief
@@ -109,8 +107,7 @@ class TestException : public GromacsException
    }
  * \endcode
  */
-#define GMX_THROW_WRAPPER_TESTEXCEPTION(e) \
-    throw ::gmx::test::TestException(e)
+#define GMX_THROW_WRAPPER_TESTEXCEPTION(e) throw ::gmx::test::TestException(e)
 
 } // namespace test
 } // namespace gmx

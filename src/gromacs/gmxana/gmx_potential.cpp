@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,67 +75,77 @@ static int ce = 0, cb = 0;
 
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-static void p_integrate(double *result, const double data[], int ndata, double slWidth)
+static void p_integrate(double* result, const double data[], int ndata, double slWidth)
 {
     int    i, slice;
     double sum;
 
     if (ndata <= 2)
     {
-        fprintf(stderr, "Warning: nr of slices very small. This will result"
+        fprintf(stderr,
+                "Warning: nr of slices very small. This will result"
                 "in nonsense.\n");
     }
 
-    fprintf(stderr, "Integrating from slice %d to slice %d\n", cb, ndata-ce);
+    fprintf(stderr, "Integrating from slice %d to slice %d\n", cb, ndata - ce);
 
-    for (slice = cb; slice < (ndata-ce); slice++)
+    for (slice = cb; slice < (ndata - ce); slice++)
     {
         sum = 0;
         for (i = cb; i < slice; i++)
         {
-            sum += slWidth * (data[i] + 0.5 * (data[i+1] - data[i]));
+            sum += slWidth * (data[i] + 0.5 * (data[i + 1] - data[i]));
         }
         result[slice] = sum;
     }
 }
 
-static void calc_potential(const char *fn, int **index, int gnx[],
-                           double ***slPotential, double ***slCharge,
-                           double ***slField, int *nslices,
-                           const t_topology *top, int ePBC,
-                           int axis, int nr_grps, double *slWidth,
-                           double fudge_z, gmx_bool bSpherical, gmx_bool bCorrect,
-                           const gmx_output_env_t *oenv)
+static void calc_potential(const char*             fn,
+                           int**                   index,
+                           int                     gnx[],
+                           double***               slPotential,
+                           double***               slCharge,
+                           double***               slField,
+                           int*                    nslices,
+                           const t_topology*       top,
+                           int                     ePBC,
+                           int                     axis,
+                           int                     nr_grps,
+                           double*                 slWidth,
+                           double                  fudge_z,
+                           gmx_bool                bSpherical,
+                           gmx_bool                bCorrect,
+                           const gmx_output_env_t* oenv)
 {
-    rvec        *x0;     /* coordinates without pbc */
+    rvec*        x0;     /* coordinates without pbc */
     matrix       box;    /* box (3x3) */
     int          natoms; /* nr. atoms in trj */
-    t_trxstatus *status;
-    int          i, n,   /* loop indices */
-                 teller    = 0,
-                 ax1       = 0, ax2 = 0,
-                 nr_frames = 0, /* number of frames */
-                 slice;         /* current slice */
-    double       slVolume;      /* volume of slice for spherical averaging */
-    double       qsum, nn;
-    real         t;
-    double       z;
-    rvec         xcm;
-    gmx_rmpbc_t  gpbc = nullptr;
+    t_trxstatus* status;
+    int          i, n,                                   /* loop indices */
+            teller = 0, ax1 = 0, ax2 = 0, nr_frames = 0, /* number of frames */
+            slice;                                       /* current slice */
+    double      slVolume; /* volume of slice for spherical averaging */
+    double      qsum, nn;
+    real        t;
+    double      z;
+    rvec        xcm;
+    gmx_rmpbc_t gpbc = nullptr;
 
     switch (axis)
     {
         case 0:
-            ax1 = 1; ax2 = 2;
+            ax1 = 1;
+            ax2 = 2;
             break;
         case 1:
-            ax1 = 0; ax2 = 2;
+            ax1 = 0;
+            ax2 = 2;
             break;
         case 2:
-            ax1 = 0; ax2 = 1;
+            ax1 = 0;
+            ax2 = 1;
             break;
-        default:
-            gmx_fatal(FARGS, "Invalid axes. Terminating\n");
+        default: gmx_fatal(FARGS, "Invalid axes. Terminating\n");
     }
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
@@ -146,7 +156,6 @@ static void calc_potential(const char *fn, int **index, int gnx[],
     if (!*nslices)
     {
         *nslices = static_cast<int>(box[axis][axis] * 10.0); /* default value */
-
     }
     fprintf(stderr, "\nDividing the box in %d slices\n", *nslices);
 
@@ -167,7 +176,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
     /*********** Start processing trajectory ***********/
     do
     {
-        *slWidth = box[axis][axis]/(*nslices);
+        *slWidth = box[axis][axis] / static_cast<real>((*nslices));
         teller++;
         gmx_rmpbc(gpbc, natoms, box, x0);
 
@@ -181,8 +190,10 @@ static void calc_potential(const char *fn, int **index, int gnx[],
              * group in the trajectory file */
             if (gnx[n] > natoms)
             {
-                gmx_fatal(FARGS, "You selected a group with %d atoms, but only %d atoms\n"
-                          "were found in the trajectory.\n", gnx[n], natoms);
+                gmx_fatal(FARGS,
+                          "You selected a group with %d atoms, but only %d atoms\n"
+                          "were found in the trajectory.\n",
+                          gnx[n], natoms);
             }
             for (i = 0; i < gnx[n]; i++) /* loop over all atoms in index file */
             {
@@ -190,7 +201,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                 {
                     rvec_add(x0[index[n][i]], xcm, x0[index[n][i]]);
                     /* only distance from origin counts, not sign */
-                    slice = static_cast<int>(norm(x0[index[n][i]])/(*slWidth));
+                    slice = static_cast<int>(norm(x0[index[n][i]]) / (*slWidth));
 
                     /* this is a nice check for spherical groups but not for
                        all water in a cubic box since a lot will fall outside
@@ -215,14 +226,13 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                         z -= box[axis][axis];
                     }
                     /* determine which slice atom is in */
-                    slice                  = static_cast<int>((z / (*slWidth)));
+                    slice = static_cast<int>((z / (*slWidth)));
                     (*slCharge)[n][slice] += top->atoms.atom[index[n][i]].q;
                 }
             }
         }
         nr_frames++;
-    }
-    while (read_next_x(oenv, status, &t, x0, box));
+    } while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -236,13 +246,14 @@ static void calc_potential(const char *fn, int **index, int gnx[],
 
     if (bSpherical)
     {
-        fprintf(stderr, "\n\nRead %d frames from trajectory. Calculating potential"
-                "in spherical coordinates\n", nr_frames);
+        fprintf(stderr,
+                "\n\nRead %d frames from trajectory. Calculating potential"
+                "in spherical coordinates\n",
+                nr_frames);
     }
     else
     {
-        fprintf(stderr, "\n\nRead %d frames from trajectory. Calculating potential\n",
-                nr_frames);
+        fprintf(stderr, "\n\nRead %d frames from trajectory. Calculating potential\n", nr_frames);
     }
 
     for (n = 0; n < nr_grps; n++)
@@ -254,7 +265,7 @@ static void calc_potential(const char *fn, int **index, int gnx[],
                 /* charge per volume is now the summed charge, divided by the nr
                    of frames and by the volume of the slice it's in, 4pi r^2 dr
                  */
-                slVolume = 4*M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
+                slVolume = 4 * M_PI * gmx::square(i) * gmx::square(*slWidth) * *slWidth;
                 if (slVolume == 0)
                 {
                     (*slCharge)[n][i] = 0;
@@ -267,8 +278,9 @@ static void calc_potential(const char *fn, int **index, int gnx[],
             else
             {
                 /* get charge per volume */
-                (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
-                    (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
+                (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices)
+                                    / (static_cast<real>(nr_frames) * box[axis][axis]
+                                       * box[ax1][ax1] * box[ax2][ax2]);
             }
         }
         /* Now we have charge densities */
@@ -343,10 +355,8 @@ static void calc_potential(const char *fn, int **index, int gnx[],
         {
             if (bSpherical)
             {
-                (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 /
-                    (EPS0 * i * (*slWidth));
-                (*slField)[n][i] = ELC * (*slField)[n][i] * 1E18 /
-                    (EPS0 * i * (*slWidth));
+                (*slPotential)[n][i] = ELC * (*slPotential)[n][i] * -1.0E9 / (EPS0 * i * (*slWidth));
+                (*slField)[n][i]     = ELC * (*slField)[n][i] * 1E18 / (EPS0 * i * (*slWidth));
             }
             else
             {
@@ -359,16 +369,23 @@ static void calc_potential(const char *fn, int **index, int gnx[],
     sfree(x0); /* free memory used by coordinate array */
 }
 
-static void plot_potential(double *potential[], double *charge[], double *field[],
-                           const char *afile, const char *bfile, const char *cfile,
-                           int nslices, int nr_grps, const char *const grpname[], double slWidth,
-                           const gmx_output_env_t *oenv)
+static void plot_potential(double*                 potential[],
+                           double*                 charge[],
+                           double*                 field[],
+                           const char*             afile,
+                           const char*             bfile,
+                           const char*             cfile,
+                           int                     nslices,
+                           int                     nr_grps,
+                           const char* const       grpname[],
+                           double                  slWidth,
+                           const gmx_output_env_t* oenv)
 {
-    FILE       *pot,     /* xvgr file with potential */
-    *cha,                /* xvgr file with charges   */
-    *fie;                /* xvgr files with fields   */
-    char       buf[256]; /* for xvgr title */
-    int        slice, n;
+    FILE *pot,     /* xvgr file with potential */
+            *cha,  /* xvgr file with charges   */
+            *fie;  /* xvgr files with fields   */
+    char buf[256]; /* for xvgr title */
+    int  slice, n;
 
     sprintf(buf, "Electrostatic Potential");
     pot = xvgropen(afile, buf, "Box (nm)", "Potential (V)", oenv);
@@ -390,7 +407,7 @@ static void plot_potential(double *potential[], double *charge[], double *field[
         for (n = 0; n < nr_grps; n++)
         {
             fprintf(pot, "   %20.16g", potential[n][slice]);
-            fprintf(fie, "   %20.16g", field[n][slice]/1e9); /* convert to V/nm */
+            fprintf(fie, "   %20.16g", field[n][slice] / 1e9); /* convert to V/nm */
             fprintf(cha, "   %20.16g", charge[n][slice]);
         }
         fprintf(pot, "\n");
@@ -403,9 +420,9 @@ static void plot_potential(double *potential[], double *charge[], double *field[
     xvgrclose(fie);
 }
 
-int gmx_potential(int argc, char *argv[])
+int gmx_potential(int argc, char* argv[])
 {
-    const char        *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes the electrostatical potential across the box. The potential is",
         "calculated by first summing the charges per slice and then integrating",
         "twice of this charge distribution. Periodic boundaries are not taken",
@@ -415,50 +432,65 @@ int gmx_potential(int argc, char *argv[])
         "spherical slices and twice integrating them. epsilon_r is taken as 1,",
         "but 2 is more appropriate in many cases."
     };
-    gmx_output_env_t  *oenv;
-    static int         axis       = 2;       /* normal to memb. default z  */
-    static const char *axtitle    = "Z";
-    static int         nslices    = 10;      /* nr of slices defined       */
+    gmx_output_env_t*  oenv;
+    static int         axis       = 2; /* normal to memb. default z  */
+    static const char* axtitle    = "Z";
+    static int         nslices    = 10; /* nr of slices defined       */
     static int         ngrps      = 1;
-    static gmx_bool    bSpherical = FALSE;   /* default is bilayer types   */
-    static real        fudge_z    = 0;       /* translate coordinates      */
+    static gmx_bool    bSpherical = FALSE; /* default is bilayer types   */
+    static real        fudge_z    = 0;     /* translate coordinates      */
     static gmx_bool    bCorrect   = false;
-    t_pargs            pa []      = {
-        { "-d",   FALSE, etSTR, {&axtitle},
+    t_pargs            pa[]       = {
+        { "-d",
+          FALSE,
+          etSTR,
+          { &axtitle },
           "Take the normal on the membrane in direction X, Y or Z." },
-        { "-sl",  FALSE, etINT, {&nslices},
+        { "-sl",
+          FALSE,
+          etINT,
+          { &nslices },
           "Calculate potential as function of boxlength, dividing the box"
           " in this number of slices." },
-        { "-cb",  FALSE, etINT, {&cb},
+        { "-cb",
+          FALSE,
+          etINT,
+          { &cb },
           "Discard this number of  first slices of box for integration" },
-        { "-ce",  FALSE, etINT, {&ce},
+        { "-ce",
+          FALSE,
+          etINT,
+          { &ce },
           "Discard this number of last slices of box for integration" },
-        { "-tz",  FALSE, etREAL, {&fudge_z},
+        { "-tz",
+          FALSE,
+          etREAL,
+          { &fudge_z },
           "Translate all coordinates by this distance in the direction of the box" },
-        { "-spherical", FALSE, etBOOL, {&bSpherical},
-          "Calculate in spherical coordinates" },
-        { "-ng",       FALSE, etINT, {&ngrps},
-          "Number of groups to consider" },
-        { "-correct",  FALSE, etBOOL, {&bCorrect},
+        { "-spherical", FALSE, etBOOL, { &bSpherical }, "Calculate in spherical coordinates" },
+        { "-ng", FALSE, etINT, { &ngrps }, "Number of groups to consider" },
+        { "-correct",
+          FALSE,
+          etBOOL,
+          { &bCorrect },
           "Assume net zero charge of groups to improve accuracy" }
     };
-    const char        *bugs[] = {
-        "Discarding slices for integration should not be necessary."
-    };
+    const char* bugs[] = { "Discarding slices for integration should not be necessary." };
 
-    double           **potential,              /* potential per slice        */
-    **charge,                                  /* total charge per slice     */
-    **field,                                   /* field per slice            */
-                       slWidth;                /* width of one slice         */
-    char      **grpname;                       /* groupnames                 */
-    int        *ngx;                           /* sizes of groups            */
-    t_topology *top;                           /* topology        */
+    double **potential,  /* potential per slice        */
+            **charge,    /* total charge per slice     */
+            **field,     /* field per slice            */
+            slWidth;     /* width of one slice         */
+    char**      grpname; /* groupnames                 */
+    int*        ngx;     /* sizes of groups            */
+    t_topology* top;     /* topology        */
     int         ePBC;
-    int       **index;                         /* indices for all groups     */
-    t_filenm    fnm[] = {                      /* files for g_order       */
-        { efTRX, "-f", nullptr,  ffREAD },     /* trajectory file             */
-        { efNDX, nullptr, nullptr,  ffREAD },  /* index file          */
-        { efTPR, nullptr, nullptr,  ffREAD },  /* topology file               */
+    int**       index; /* indices for all groups     */
+    t_filenm    fnm[] = {
+        /* files for g_order       */
+        { efTRX, "-f", nullptr, ffREAD },      /* trajectory file             */
+        { efNDX, nullptr, nullptr, ffREAD },   /* index file          */
+        { efTPR, nullptr, nullptr, ffREAD },   /* topology file               */
         { efXVG, "-o", "potential", ffWRITE }, /* xvgr output file    */
         { efXVG, "-oc", "charge", ffWRITE },   /* xvgr output file    */
         { efXVG, "-of", "field", ffWRITE },    /* xvgr output file    */
@@ -466,9 +498,8 @@ int gmx_potential(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
-                           &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
     {
         return 0;
     }
@@ -485,14 +516,11 @@ int gmx_potential(int argc, char *argv[])
     rd_index(ftp2fn(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
 
 
-    calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx,
-                   &potential, &charge, &field,
-                   &nslices, top, ePBC, axis, ngrps, &slWidth, fudge_z,
-                   bSpherical, bCorrect, oenv);
+    calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx, &potential, &charge, &field, &nslices,
+                   top, ePBC, axis, ngrps, &slWidth, fudge_z, bSpherical, bCorrect, oenv);
 
-    plot_potential(potential, charge, field, opt2fn("-o", NFILE, fnm),
-                   opt2fn("-oc", NFILE, fnm), opt2fn("-of", NFILE, fnm),
-                   nslices, ngrps, grpname, slWidth, oenv);
+    plot_potential(potential, charge, field, opt2fn("-o", NFILE, fnm), opt2fn("-oc", NFILE, fnm),
+                   opt2fn("-of", NFILE, fnm), nslices, ngrps, grpname, slWidth, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), nullptr);  /* view xvgr file */
     do_view(oenv, opt2fn("-oc", NFILE, fnm), nullptr); /* view xvgr file */

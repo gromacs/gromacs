@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,12 +52,12 @@
 #include <sys/types.h>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 #if GMX_NATIVE_WINDOWS
-#include <direct.h>   // For _chdir() and _getcwd()
-#include <io.h>
-#include <windows.h>
+#    include <direct.h> // For _chdir() and _getcwd()
+#    include <io.h>
+#    include <windows.h>
 #endif
 
 #include "gromacs/utility/cstringutil.h"
@@ -75,14 +75,15 @@
    compressed or .gzipped files. This way we can distinguish between them
    without having to change the semantics of reading from/writing to files)
  */
-typedef struct t_pstack {
-    FILE            *fp;
-    struct t_pstack *prev;
+typedef struct t_pstack
+{
+    FILE*            fp;
+    struct t_pstack* prev;
 } t_pstack;
 
-static t_pstack    *pstack           = nullptr;
-static bool         bUnbuffered      = false;
-static int          s_maxBackupCount = 0;
+static t_pstack* pstack           = nullptr;
+static bool      bUnbuffered      = false;
+static int       s_maxBackupCount = 0;
 
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
@@ -95,12 +96,12 @@ namespace gmx
 namespace
 {
 //! Global library file finder; stores the object set with setLibraryFileFinder().
-const DataFileFinder *g_libFileFinder;
+const DataFileFinder* g_libFileFinder;
 //! Default library file finder if nothing is set.
-const DataFileFinder  g_defaultLibFileFinder;
-}   // namespace
+const DataFileFinder g_defaultLibFileFinder;
+} // namespace
 
-const DataFileFinder &getLibraryFileFinder()
+const DataFileFinder& getLibraryFileFinder()
 {
     if (g_libFileFinder != nullptr)
     {
@@ -109,7 +110,7 @@ const DataFileFinder &getLibraryFileFinder()
     return g_defaultLibFileFinder;
 }
 
-void setLibraryFileFinder(const DataFileFinder *finder)
+void setLibraryFileFinder(const DataFileFinder* finder)
 {
     g_libFileFinder = finder;
 }
@@ -125,7 +126,7 @@ void gmx_set_max_backup_count(int count)
 {
     if (count < 0)
     {
-        const char *env = getenv("GMX_MAXBACKUP");
+        const char* env = getenv("GMX_MAXBACKUP");
         if (env != nullptr)
         {
             // TODO: Check that the value is converted properly.
@@ -146,11 +147,11 @@ void gmx_set_max_backup_count(int count)
     s_maxBackupCount = count;
 }
 
-static void push_ps(FILE *fp)
+static void push_ps(FILE* fp)
 {
-    t_pstack *ps;
+    t_pstack* ps;
 
-    Lock      pstackLock(pstack_mutex);
+    Lock pstackLock(pstack_mutex);
 
     snew(ps, 1);
     ps->fp   = fp;
@@ -160,31 +161,31 @@ static void push_ps(FILE *fp)
 
 #if GMX_FAHCORE
 /* don't use pipes!*/
-#define popen fah_fopen
-#define pclose fah_fclose
-#define SKIP_FFOPS 1
+#    define popen fah_fopen
+#    define pclose fah_fclose
+#    define SKIP_FFOPS 1
 #else
-#ifdef gmx_ffclose
-#undef gmx_ffclose
-#endif
-#if (!HAVE_PIPES && !defined(__native_client__))
-static FILE *popen(const char *nm, const char *mode)
+#    ifdef gmx_ffclose
+#        undef gmx_ffclose
+#    endif
+#    if (!HAVE_PIPES && !defined(__native_client__))
+static FILE* popen(const char* nm, const char* mode)
 {
     gmx_impl("Sorry no pipes...");
 
     return NULL;
 }
 
-static int pclose(FILE *fp)
+static int pclose(FILE* fp)
 {
     gmx_impl("Sorry no pipes...");
 
     return 0;
 }
-#endif /* !HAVE_PIPES && !defined(__native_client__) */
-#endif /* GMX_FAHCORE */
+#    endif /* !HAVE_PIPES && !defined(__native_client__) */
+#endif     /* GMX_FAHCORE */
 
-int gmx_ffclose(FILE *fp)
+int gmx_ffclose(FILE* fp)
 {
 #ifdef SKIP_FFOPS
     return fclose(fp);
@@ -192,7 +193,7 @@ int gmx_ffclose(FILE *fp)
     t_pstack *ps, *tmp;
     int       ret = 0;
 
-    Lock      pstackLock(pstack_mutex);
+    Lock pstackLock(pstack_mutex);
 
     ps = pstack;
     if (ps == nullptr)
@@ -241,11 +242,11 @@ int gmx_ffclose(FILE *fp)
 }
 
 
-void frewind(FILE *fp)
+void frewind(FILE* fp)
 {
-    Lock      pstackLock(pstack_mutex);
+    Lock pstackLock(pstack_mutex);
 
-    t_pstack *ps = pstack;
+    t_pstack* ps = pstack;
     while (ps != nullptr)
     {
         if (ps->fp == fp)
@@ -258,49 +259,49 @@ void frewind(FILE *fp)
     rewind(fp);
 }
 
-int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
+int gmx_fseek(FILE* stream, gmx_off_t offset, int whence)
 {
 #if HAVE_FSEEKO
     return fseeko(stream, offset, whence);
 #else
-#if HAVE__FSEEKI64
+#    if HAVE__FSEEKI64
     return _fseeki64(stream, offset, whence);
-#else
+#    else
     return fseek(stream, offset, whence);
-#endif
+#    endif
 #endif
 }
 
-gmx_off_t gmx_ftell(FILE *stream)
+gmx_off_t gmx_ftell(FILE* stream)
 {
 #if HAVE_FSEEKO
     return ftello(stream);
 #else
-#if HAVE__FSEEKI64
-#ifndef __MINGW32__
+#    if HAVE__FSEEKI64
+#        ifndef __MINGW32__
     return _ftelli64(stream);
-#else
+#        else
     return ftello64(stream);
-#endif
-#else
+#        endif
+#    else
     return ftell(stream);
-#endif
+#    endif
 #endif
 }
 
-int gmx_truncate(const std::string &filename, gmx_off_t length)
+int gmx_truncate(const std::string& filename, gmx_off_t length)
 {
 #if GMX_NATIVE_WINDOWS
-    FILE *fp = fopen(filename.c_str(), "rb+");
+    FILE* fp = fopen(filename.c_str(), "rb+");
     if (fp == NULL)
     {
         return -1;
     }
-#ifdef _MSC_VER
+#    ifdef _MSC_VER
     int rc = _chsize_s(fileno(fp), length);
-#else
+#    else
     int rc = _chsize(fileno(fp), length);
-#endif
+#    endif
     fclose(fp);
     return rc;
 #else
@@ -308,9 +309,9 @@ int gmx_truncate(const std::string &filename, gmx_off_t length)
 #endif
 }
 
-static FILE *uncompress(const std::string &fn, const char *mode)
+static FILE* uncompress(const std::string& fn, const char* mode)
 {
-    FILE       *fp;
+    FILE*       fp;
     std::string buf = "uncompress -c < " + fn;
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
     if ((fp = popen(buf.c_str(), mode)) == nullptr)
@@ -322,9 +323,9 @@ static FILE *uncompress(const std::string &fn, const char *mode)
     return fp;
 }
 
-static FILE *gunzip(const std::string &fn, const char *mode)
+static FILE* gunzip(const std::string& fn, const char* mode)
 {
-    FILE       *fp;
+    FILE*       fp;
     std::string buf = "gunzip -c < ";
     buf += fn;
     fprintf(stderr, "Going to execute '%s'\n", buf.c_str());
@@ -337,9 +338,9 @@ static FILE *gunzip(const std::string &fn, const char *mode)
     return fp;
 }
 
-gmx_bool gmx_fexist(const std::string &fname)
+gmx_bool gmx_fexist(const std::string& fname)
 {
-    FILE *test;
+    FILE* test;
 
     if (fname.empty())
     {
@@ -348,13 +349,13 @@ gmx_bool gmx_fexist(const std::string &fname)
     test = fopen(fname.c_str(), "r");
     if (test == nullptr)
     {
-        /*Windows doesn't allow fopen of directory - so we need to check this seperately */
-        #if GMX_NATIVE_WINDOWS
+/*Windows doesn't allow fopen of directory - so we need to check this seperately */
+#if GMX_NATIVE_WINDOWS
         DWORD attr = GetFileAttributes(fname.c_str());
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
-        #else
+#else
         return FALSE;
-        #endif
+#endif
     }
     else
     {
@@ -363,12 +364,13 @@ gmx_bool gmx_fexist(const std::string &fname)
     }
 }
 
-static std::string backup_fn(const std::string &file)
+static std::string backup_fn(const std::string& file)
 {
-    int          count = 1;
+    int count = 1;
 
-    std::string  directory, fn, buf;
-    std::tie(directory, fn) = gmx::Path::getParentPathAndBasename(file);
+    std::string directory = gmx::Path::getParentPath(file);
+    std::string fn        = gmx::Path::getFilename(file);
+    std::string buf;
     if (directory.empty())
     {
         directory = ".";
@@ -377,15 +379,15 @@ static std::string backup_fn(const std::string &file)
     {
         buf = gmx::formatString("%s/#%s.%d#", directory.c_str(), fn.c_str(), count);
         count++;
-    }
-    while ((count <= s_maxBackupCount) && gmx_fexist(buf));
+    } while ((count <= s_maxBackupCount) && gmx_fexist(buf));
 
     /* Arbitrarily bail out */
     if (count > s_maxBackupCount)
     {
         /* TODO: The error message is only accurate for code that starts with
          * Gromacs command-line interface. */
-        gmx_fatal(FARGS, "Won't make more than %d backups of %s for you.\n"
+        gmx_fatal(FARGS,
+                  "Won't make more than %d backups of %s for you.\n"
                   "The env.var. GMX_MAXBACKUP controls this maximum, -1 disables backups.",
                   s_maxBackupCount, fn.c_str());
     }
@@ -393,7 +395,7 @@ static std::string backup_fn(const std::string &file)
     return buf;
 }
 
-void make_backup(const std::string &name)
+void make_backup(const std::string& name)
 {
     if (s_maxBackupCount <= 0)
     {
@@ -404,8 +406,7 @@ void make_backup(const std::string &name)
         auto backup = backup_fn(name);
         if (rename(name.c_str(), backup.c_str()) == 0)
         {
-            fprintf(stderr, "\nBack Off! I just backed up %s to %s\n",
-                    name.c_str(), backup.c_str());
+            fprintf(stderr, "\nBack Off! I just backed up %s to %s\n", name.c_str(), backup.c_str());
         }
         else
         {
@@ -414,12 +415,12 @@ void make_backup(const std::string &name)
     }
 }
 
-FILE *gmx_ffopen(const std::string &file, const char *mode)
+FILE* gmx_ffopen(const std::string& file, const char* mode)
 {
 #ifdef SKIP_FFOPS
     return fopen(file, mode);
 #else
-    FILE    *ff = nullptr;
+    FILE*    ff = nullptr;
     gmx_bool bRead;
     int      bs;
 
@@ -443,7 +444,7 @@ FILE *gmx_ffopen(const std::string &file, const char *mode)
         /* Check whether we should be using buffering (default) or not
          * (for debugging)
          */
-        const char *bufsize = nullptr;
+        const char* bufsize = nullptr;
         if (bUnbuffered || ((bufsize = getenv("GMX_LOG_BUFFER")) != nullptr))
         {
             /* Check whether to use completely unbuffered */
@@ -461,8 +462,8 @@ FILE *gmx_ffopen(const std::string &file, const char *mode)
             }
             else
             {
-                char *ptr;
-                snew(ptr, bs+8);
+                char* ptr;
+                snew(ptr, bs + 8);
                 if (setvbuf(ff, ptr, _IOFBF, bs) != 0)
                 {
                     gmx_file("Buffering File");
@@ -480,7 +481,7 @@ FILE *gmx_ffopen(const std::string &file, const char *mode)
         }
         else
         {
-            compressedFileName  = file;
+            compressedFileName = file;
             compressedFileName += ".gz";
             if (gmx_fexist(compressedFileName))
             {
@@ -499,55 +500,56 @@ FILE *gmx_ffopen(const std::string &file, const char *mode)
 namespace gmx
 {
 
-std::string findLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+std::string findLibraryFile(const std::string& filename, bool bAddCWD, bool bFatal)
 {
     std::string result;
     try
     {
-        const DataFileFinder &finder = getLibraryFileFinder();
-        result = finder.findFile(DataFileOptions(filename)
-                                     .includeCurrentDir(bAddCWD)
-                                     .throwIfNotFound(bFatal));
+        const DataFileFinder& finder = getLibraryFileFinder();
+        result                       = finder.findFile(
+                DataFileOptions(filename).includeCurrentDir(bAddCWD).throwIfNotFound(bFatal));
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     return result;
 }
 
-std::string findLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
+std::string findLibraryFile(const char* filename, bool bAddCWD, bool bFatal)
 {
     return findLibraryFile(std::string(filename), bAddCWD, bFatal);
 }
 
-FilePtr openLibraryFile(const std::string &filename, bool bAddCWD, bool bFatal)
+FilePtr openLibraryFile(const std::string& filename, bool bAddCWD, bool bFatal)
 {
     FilePtr fp;
     try
     {
-        const DataFileFinder &finder = getLibraryFileFinder();
-        fp = finder.openFile(DataFileOptions(filename)
-                                 .includeCurrentDir(bAddCWD)
-                                 .throwIfNotFound(bFatal));
+        const DataFileFinder& finder = getLibraryFileFinder();
+        fp = finder.openFile(DataFileOptions(filename).includeCurrentDir(bAddCWD).throwIfNotFound(bFatal));
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     return fp;
 }
 
-FilePtr openLibraryFile(const char *filename, bool bAddCWD, bool bFatal)
+FilePtr openLibraryFile(const char* filename, bool bAddCWD, bool bFatal)
 {
     return openLibraryFile(std::string(filename), bAddCWD, bFatal);
 }
 
 } // namespace gmx
 
-void gmx_tmpnam(char *buf)
+/*! \brief Use mkstemp (or similar function to make a new temporary
+ * file and (on non-Windows systems) return a file descriptor to it.
+ *
+ * \todo Use std::string and std::vector<char>. */
+static int makeTemporaryFilename(char* buf)
 {
-    int i, len;
+    int len;
 
     if ((len = strlen(buf)) < 7)
     {
         gmx_fatal(FARGS, "Buf passed to gmx_tmpnam must be at least 7 bytes long");
     }
-    for (i = len-6; (i < len); i++)
+    for (int i = len - 6; (i < len); i++)
     {
         buf[i] = 'X';
     }
@@ -555,79 +557,61 @@ void gmx_tmpnam(char *buf)
      * since windows doesnt support it we have to separate the cases.
      * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
      */
+    int fd;
 #if GMX_NATIVE_WINDOWS
     _mktemp(buf);
     if (buf == NULL)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
     }
+    fd = 0;
 #else
-    int fd = mkstemp(buf);
+    fd = mkstemp(buf);
 
     if (fd < 0)
     {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
+        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf, strerror(errno));
     }
+#endif
+    return fd;
+}
+// TODO use std::string
+void gmx_tmpnam(char* buf)
+{
+    int fd = makeTemporaryFilename(buf);
+#if !GMX_NATIVE_WINDOWS
     close(fd);
 #endif
-    /* name in Buf should now be OK and file is CLOSED */
 }
 
-FILE *gmx_fopen_temporary(char *buf)
+// TODO use std::string
+FILE* gmx_fopen_temporary(char* buf)
 {
-    int   i, len;
-    FILE *fpout = nullptr;
+    FILE* fpout = nullptr;
+    int   fd    = makeTemporaryFilename(buf);
 
-    if ((len = strlen(buf)) < 7)
-    {
-        gmx_fatal(FARGS, "Buf passed to gmx_fopentmp must be at least 7 bytes long");
-    }
-    for (i = len-6; (i < len); i++)
-    {
-        buf[i] = 'X';
-    }
-    /* mktemp is dangerous and we should use mkstemp instead, but
-     * since windows doesnt support it we have to separate the cases.
-     * 20090307: mktemp deprecated, use iso c++ _mktemp instead.
-     */
 #if GMX_NATIVE_WINDOWS
-    _mktemp(buf);
-    if (buf == NULL)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
     if ((fpout = fopen(buf, "w")) == NULL)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #else
-    int fd = mkstemp(buf);
-    if (fd < 0)
-    {
-        gmx_fatal(FARGS, "Error creating temporary file %s: %s", buf,
-                  strerror(errno));
-    }
     if ((fpout = fdopen(fd, "w")) == nullptr)
     {
         gmx_fatal(FARGS, "Cannot open temporary file %s", buf);
     }
 #endif
-    /* name in Buf should now be OK and file is open */
 
     return fpout;
 }
 
-int gmx_file_rename(const char *oldname, const char *newname)
+int gmx_file_rename(const char* oldname, const char* newname)
 {
 #if !GMX_NATIVE_WINDOWS
     /* under unix, rename() is atomic (at least, it should be). */
     return rename(oldname, newname);
 #else
-    if (MoveFileEx(oldname, newname,
-                   MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH))
+    if (MoveFileEx(oldname, newname, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
     {
         return 0;
     }
@@ -638,7 +622,7 @@ int gmx_file_rename(const char *oldname, const char *newname)
 #endif
 }
 
-int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty)
+int gmx_file_copy(const char* oldname, const char* newname, gmx_bool copy_if_empty)
 {
     gmx::FilePtr in(fopen(oldname, "rb"));
     if (!in)
@@ -659,7 +643,7 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
     }
 
     /* the full copy buffer size: */
-    constexpr int     FILECOPY_BUFSIZE = 1<<16;
+    constexpr int     FILECOPY_BUFSIZE = 1 << 16;
     std::vector<char> buf(FILECOPY_BUFSIZE);
 
     while (!feof(in.get()))
@@ -695,7 +679,7 @@ int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_emp
 }
 
 
-int gmx_fsync(FILE *fp)
+int gmx_fsync(FILE* fp)
 {
     int rc = 0;
 
@@ -707,22 +691,22 @@ int gmx_fsync(FILE *fp)
         int fn;
 
         /* get the file number */
-#if HAVE_FILENO
+#    if HAVE_FILENO
         fn = fileno(fp);
-#elif HAVE__FILENO
+#    elif HAVE__FILENO
         fn = _fileno(fp);
-#else
+#    else
         fn = -1;
-#endif
+#    endif
 
         /* do the actual fsync */
         if (fn >= 0)
         {
-#if HAVE_FSYNC
+#    if HAVE_FSYNC
             rc = fsync(fn);
-#elif HAVE__COMMIT
+#    elif HAVE__COMMIT
             rc = _commit(fn);
-#endif
+#    endif
         }
     }
 #endif /* GMX_FAHCORE */
@@ -748,30 +732,28 @@ int gmx_fsync(FILE *fp)
     return rc;
 }
 
-void gmx_chdir(const char *directory)
+void gmx_chdir(const char* directory)
 {
 #if GMX_NATIVE_WINDOWS
     int rc = _chdir(directory);
 #else
-    int rc = chdir(directory);
+    int   rc   = chdir(directory);
 #endif
     if (rc != 0)
     {
-        gmx_fatal(FARGS, "Cannot change directory to '%s'. Reason: %s",
-                  directory, strerror(errno));
+        gmx_fatal(FARGS, "Cannot change directory to '%s'. Reason: %s", directory, strerror(errno));
     }
 }
 
-void gmx_getcwd(char *buffer, size_t size)
+void gmx_getcwd(char* buffer, size_t size)
 {
 #if GMX_NATIVE_WINDOWS
-    char *pdum = _getcwd(buffer, size);
+    char* pdum = _getcwd(buffer, size);
 #else
-    char *pdum = getcwd(buffer, size);
+    char* pdum = getcwd(buffer, size);
 #endif
     if (pdum == nullptr)
     {
-        gmx_fatal(FARGS, "Cannot get working directory. Reason: %s",
-                  strerror(errno));
+        gmx_fatal(FARGS, "Cannot get working directory. Reason: %s", strerror(errno));
     }
 }

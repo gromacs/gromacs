@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,7 +48,7 @@
 #include <cstdlib>
 
 #if GMX_OPENMP
-#include <omp.h>
+#    include <omp.h>
 #endif
 
 #include "gromacs/utility/basedefinitions.h"
@@ -94,7 +94,7 @@ void gmx_omp_set_num_threads(int num_threads)
 #endif
 }
 
-gmx_bool gmx_omp_check_thread_affinity(char **message)
+gmx_bool gmx_omp_check_thread_affinity(char** message)
 {
     bool shouldSetAffinity = true;
 
@@ -103,15 +103,15 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
     /* We assume that the affinity setting is available on all platforms
      * gcc supports. Even if this is not the case (e.g. Mac OS) the user
      * will only get a warning. */
-#if defined(__GNUC__) || defined(__INTEL_COMPILER)
-    const char *programName;
+#    if defined(__GNUC__) || defined(__INTEL_COMPILER)
+    const char* programName;
     try
     {
         programName = gmx::getProgramContext().displayName();
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
-    const char *const gomp_env            = getenv("GOMP_CPU_AFFINITY");
+    const char* const gomp_env            = getenv("GOMP_CPU_AFFINITY");
     const bool        bGompCpuAffinitySet = (gomp_env != nullptr);
 
     /* turn off internal pinning if GOMP_CPU_AFFINITY is set & non-empty */
@@ -120,42 +120,40 @@ gmx_bool gmx_omp_check_thread_affinity(char **message)
         try
         {
             std::string buf = gmx::formatString(
-                        "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
-                        "      setting as the two can conflict and cause performance degradation.\n"
-                        "      To keep using the %s internal affinity setting, unset the\n"
-                        "      GOMP_CPU_AFFINITY environment variable.",
-                        programName, programName);
+                    "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
+                    "      setting as the two can conflict and cause performance degradation.\n"
+                    "      To keep using the %s internal affinity setting, unset the\n"
+                    "      GOMP_CPU_AFFINITY environment variable.",
+                    programName, programName);
             *message = gmx_strdup(buf.c_str());
         }
-        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
         shouldSetAffinity = false;
     }
-#endif /* __GNUC__ || __INTEL_COMPILER */
+#    endif /* __GNUC__ || __INTEL_COMPILER */
 
-#if defined(__INTEL_COMPILER)
-    const char *const kmp_env         = getenv("KMP_AFFINITY");
+#    if defined(__INTEL_COMPILER)
+    const char* const kmp_env         = getenv("KMP_AFFINITY");
     const bool        bKmpAffinitySet = (kmp_env != NULL);
 
     // turn off internal pinning if KMP_AFFINITY is set but does not contain
     // the settings 'disabled' or 'none'.
-    if (bKmpAffinitySet &&
-        (strstr(kmp_env, "disabled") == NULL) &&
-        (strstr(kmp_env, "none") == NULL))
+    if (bKmpAffinitySet && (strstr(kmp_env, "disabled") == NULL) && (strstr(kmp_env, "none") == NULL))
     {
         try
         {
             std::string buf = gmx::formatString(
-                        "NOTE: KMP_AFFINITY set, will turn off %s internal affinity\n"
-                        "      setting as the two can conflict and cause performance degradation.\n"
-                        "      To keep using the %s internal affinity setting, unset the\n"
-                        "      KMP_AFFINITY environment variable or set it to 'none' or 'disabled'.",
-                        programName, programName);
+                    "NOTE: KMP_AFFINITY set, will turn off %s internal affinity\n"
+                    "      setting as the two can conflict and cause performance degradation.\n"
+                    "      To keep using the %s internal affinity setting, unset the\n"
+                    "      KMP_AFFINITY environment variable or set it to 'none' or 'disabled'.",
+                    programName, programName);
             *message = gmx_strdup(buf.c_str());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         shouldSetAffinity = false;
     }
-#endif /* __INTEL_COMPILER */
+#    endif /* __INTEL_COMPILER */
 
 #endif /* GMX_OPENMP */
     return shouldSetAffinity;

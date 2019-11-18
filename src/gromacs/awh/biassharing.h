@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,7 @@ struct AwhParams;
  *
  * \param[in] awhParams  The AWH parameters.
  */
-bool haveBiasSharingWithinSimulation(const AwhParams &awhParams);
+bool haveBiasSharingWithinSimulation(const AwhParams& awhParams);
 
 /*! \brief Checks if biases are compatible for sharing between simulations, throws if not.
  *
@@ -75,10 +75,10 @@ bool haveBiasSharingWithinSimulation(const AwhParams &awhParams);
  * \param[in] pointSize     Vector of grid-point sizes for each bias.
  * \param[in] multiSimComm  Struct for multi-simulation communication.
  */
-void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams           &awhParams,
-                                                     const std::vector<size_t> &pointSize,
-                                                     const gmx_multisim_t      *multiSimComm);
+void biasesAreCompatibleForSharingBetweenSimulations(const AwhParams&           awhParams,
+                                                     const std::vector<size_t>& pointSize,
+                                                     const gmx_multisim_t*      multiSimComm);
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_BIASSHARING_H */

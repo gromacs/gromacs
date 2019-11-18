@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,121 +60,119 @@
  */
 class gmx_ga2la_t
 {
-    public:
-        /*! \libinternal \brief Structure for the local atom info */
-        struct Entry
-        {
-            int  la;   /**< The local atom index */
-            int  cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
-        };
+public:
+    /*! \libinternal \brief Structure for the local atom info */
+    struct Entry
+    {
+        int la;   /**< The local atom index */
+        int cell; /**< The DD zone index for neighboring domains, zone+zone otherwise */
+    };
 
-        /*! \brief Constructor
-         *
-         * \param[in] numAtomsTotal  The total number of atoms in the system
-         * \param[in] numAtomsLocal  An estimate of the number of home+communicated atoms
-         */
-        gmx_ga2la_t(int numAtomsTotal,
-                    int numAtomsLocal);
-        ~gmx_ga2la_t()
+    /*! \brief Constructor
+     *
+     * \param[in] numAtomsTotal  The total number of atoms in the system
+     * \param[in] numAtomsLocal  An estimate of the number of home+communicated atoms
+     */
+    gmx_ga2la_t(int numAtomsTotal, int numAtomsLocal);
+    ~gmx_ga2la_t() { usingDirect_ ? data_.direct.~vector() : data_.hashed.~HashedMap(); }
+
+    /*! \brief Inserts an entry, there should not already be an entry for \p a_gl
+     *
+     * \param[in]  a_gl   The global atom index
+     * \param[in]  value  The value to set for this index
+     */
+    void insert(int a_gl, const Entry& value)
+    {
+        GMX_ASSERT(a_gl >= 0, "Only global atom indices >= 0 are supported");
+        if (usingDirect_)
         {
-            usingDirect_ ? data_.direct.~vector() : data_.hashed.~HashedMap();
+            GMX_ASSERT(data_.direct[a_gl].cell == -1,
+                       "The key to be inserted should not be present");
+            data_.direct[a_gl] = value;
         }
-
-        /*! \brief Inserts an entry, there should not already be an entry for \p a_gl
-         *
-         * \param[in]  a_gl   The global atom index
-         * \param[in]  value  The value to set for this index
-         */
-        void insert(int          a_gl,
-                    const Entry &value)
+        else
         {
-            GMX_ASSERT(a_gl >= 0, "Only global atom indices >= 0 are supported");
-            if (usingDirect_)
-            {
-                GMX_ASSERT(data_.direct[a_gl].cell == -1, "The key to be inserted should not be present");
-                data_.direct[a_gl] = value;
-            }
-            else
-            {
-                data_.hashed.insert(a_gl, value);
-            }
+            data_.hashed.insert(a_gl, value);
         }
+    }
 
-        //! Delete the entry for global atom a_gl
-        void erase(int a_gl)
+    //! Delete the entry for global atom a_gl
+    void erase(int a_gl)
+    {
+        if (usingDirect_)
         {
-            if (usingDirect_)
-            {
-                data_.direct[a_gl].cell = -1;
-            }
-            else
-            {
-                data_.hashed.erase(a_gl);
-            }
+            data_.direct[a_gl].cell = -1;
         }
-
-        //! Returns a pointer to the entry when present, nullptr otherwise
-        const Entry* find(int a_gl) const
+        else
         {
-            if (usingDirect_)
-            {
-                return (data_.direct[a_gl].cell == -1) ? nullptr : &(data_.direct[a_gl]);
-            }
-            else
-            {
-                return (data_.hashed.find(a_gl));
-            }
+            data_.hashed.erase(a_gl);
         }
+    }
 
-        //! Returns the local atom index if it is a home atom, nullptr otherwise
-        const int* findHome(int a_gl) const
+    //! Returns a pointer to the entry when present, nullptr otherwise
+    const Entry* find(int a_gl) const
+    {
+        if (usingDirect_)
         {
-            const Entry* const e = find(a_gl);
-            return (e && e->cell == 0) ? &(e->la) : nullptr;
+            return (data_.direct[a_gl].cell == -1) ? nullptr : &(data_.direct[a_gl]);
         }
-
-        /*! \brief Returns a reference to the entry for a_gl
-         *
-         * A non-release assert checks that a_gl is present.
-         */
-        Entry &at(int a_gl)
+        else
         {
-            if (usingDirect_)
-            {
-                GMX_ASSERT(data_.direct[a_gl].cell >= 0, "a_gl should be present");
-                return data_.direct[a_gl];
-            }
-            else
-            {
-                Entry *search = data_.hashed.find(a_gl);
-                GMX_ASSERT(search, "a_gl should be present");
-                return *search;
-            }
+            return (data_.hashed.find(a_gl));
         }
+    }
 
-        //! Clear all the entries in the list.
-        void clear()
+    //! Returns the local atom index if it is a home atom, nullptr otherwise
+    const int* findHome(int a_gl) const
+    {
+        const Entry* const e = find(a_gl);
+        return (e && e->cell == 0) ? &(e->la) : nullptr;
+    }
+
+    /*! \brief Returns a reference to the entry for a_gl
+     *
+     * A non-release assert checks that a_gl is present.
+     */
+    Entry& at(int a_gl)
+    {
+        if (usingDirect_)
         {
-            if (usingDirect_)
+            GMX_ASSERT(data_.direct[a_gl].cell >= 0, "a_gl should be present");
+            return data_.direct[a_gl];
+        }
+        else
+        {
+            Entry* search = data_.hashed.find(a_gl);
+            GMX_ASSERT(search, "a_gl should be present");
+            return *search;
+        }
+    }
+
+    //! Clear all the entries in the list.
+    void clear()
+    {
+        if (usingDirect_)
+        {
+            for (Entry& entry : data_.direct)
             {
-                for (Entry &entry : data_.direct) {entry.cell = -1; }
-            }
-            else
-            {
-                data_.hashed.clear();
+                entry.cell = -1;
             }
         }
-
-    private:
-        union Data
+        else
         {
-            std::vector<Entry>    direct;
-            gmx::HashedMap<Entry> hashed;
-            // constructor and destructor function in parent class
-            Data()  {}
-            ~Data() {}
-        } data_;
-        const bool usingDirect_;
+            data_.hashed.clear();
+        }
+    }
+
+private:
+    union Data {
+        std::vector<Entry>    direct;
+        gmx::HashedMap<Entry> hashed;
+        // constructor and destructor function in parent class
+        Data() {}
+        ~Data() {}
+    } data_;
+    const bool usingDirect_;
 };
 
 #endif

@@ -48,8 +48,6 @@ struct t_atoms;
  * default value. Used directly and indirectly by solvate and
  * insert-molecules for deciding whether molecules clash. The return
  * pointer should be freed by the caller. */
-std::vector<real>
-makeExclusionDistances(const t_atoms *a, AtomProperties *aps,
-                       real defaultDistance, real scaleFactor);
+std::vector<real> makeExclusionDistances(const t_atoms* a, AtomProperties* aps, real defaultDistance, real scaleFactor);
 
 #endif

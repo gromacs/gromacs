@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 
 #include "gromacs/utility/strconvert.h"
 
-void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
+void cmp_int(FILE* fp, const char* s, int index, int i1, int i2)
 {
     if (i1 != i2)
     {
@@ -61,7 +61,7 @@ void cmp_int(FILE *fp, const char *s, int index, int i1, int i2)
     }
 }
 
-void cmp_int64(FILE *fp, const char *s, int64_t i1, int64_t i2)
+void cmp_int64(FILE* fp, const char* s, int64_t i1, int64_t i2)
 {
     if (i1 != i2)
     {
@@ -73,7 +73,7 @@ void cmp_int64(FILE *fp, const char *s, int64_t i1, int64_t i2)
     }
 }
 
-void cmp_us(FILE *fp, const char *s, int index, unsigned short i1, unsigned short i2)
+void cmp_us(FILE* fp, const char* s, int index, unsigned short i1, unsigned short i2)
 {
     if (i1 != i2)
     {
@@ -88,40 +88,38 @@ void cmp_us(FILE *fp, const char *s, int index, unsigned short i1, unsigned shor
     }
 }
 
-void cmp_uc(FILE *fp, const char *s, int index, unsigned char i1, unsigned char i2)
+void cmp_uc(FILE* fp, const char* s, int index, unsigned char i1, unsigned char i2)
 {
     if (i1 != i2)
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, int{i1}, int{i2});
+            fprintf(fp, "%s[%d] (%d - %d)\n", s, index, int{ i1 }, int{ i2 });
         }
         else
         {
-            fprintf(fp, "%s (%d - %d)\n", s, int{i1}, int{i2});
+            fprintf(fp, "%s (%d - %d)\n", s, int{ i1 }, int{ i2 });
         }
     }
 }
 
-gmx_bool cmp_bool(FILE *fp, const char *s, int index, gmx_bool b1, gmx_bool b2)
+gmx_bool cmp_bool(FILE* fp, const char* s, int index, gmx_bool b1, gmx_bool b2)
 {
     if (b1 != b2)
     {
         if (index != -1)
         {
-            fprintf(fp, "%s[%d] (%s - %s)\n", s, index,
-                    gmx::boolToString(b1), gmx::boolToString(b2));
+            fprintf(fp, "%s[%d] (%s - %s)\n", s, index, gmx::boolToString(b1), gmx::boolToString(b2));
         }
         else
         {
-            fprintf(fp, "%s (%s - %s)\n", s,
-                    gmx::boolToString(b1), gmx::boolToString(b2));
+            fprintf(fp, "%s (%s - %s)\n", s, gmx::boolToString(b1), gmx::boolToString(b2));
         }
     }
     return b1 && b2;
 }
 
-void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
+void cmp_str(FILE* fp, const char* s, int index, const char* s1, const char* s2)
 {
     if (std::strcmp(s1, s2) != 0)
     {
@@ -138,21 +136,21 @@ void cmp_str(FILE *fp, const char *s, int index, const char *s1, const char *s2)
 
 gmx_bool equal_real(real i1, real i2, real ftol, real abstol)
 {
-    return ( ( 2*std::fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || std::fabs(i1-i2) <= abstol );
+    return ((2 * std::fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol) || std::fabs(i1 - i2) <= abstol);
 }
 
 gmx_bool equal_float(float i1, float i2, float ftol, float abstol)
 {
-    return ( ( 2*std::fabs(i1 - i2) <= (std::fabs(i1) + std::fabs(i2))*ftol ) || std::fabs(i1-i2) <= abstol );
+    return ((2 * std::fabs(i1 - i2) <= (std::fabs(i1) + std::fabs(i2)) * ftol)
+            || std::fabs(i1 - i2) <= abstol);
 }
 
 gmx_bool equal_double(double i1, double i2, real ftol, real abstol)
 {
-    return ( ( 2*fabs(i1 - i2) <= (fabs(i1) + fabs(i2))*ftol ) || fabs(i1-i2) <= abstol );
+    return ((2 * fabs(i1 - i2) <= (fabs(i1) + fabs(i2)) * ftol) || fabs(i1 - i2) <= abstol);
 }
 
-void
-cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real abstol)
+void cmp_real(FILE* fp, const char* s, int index, real i1, real i2, real ftol, real abstol)
 {
     if (!equal_real(i1, i2, ftol, abstol))
     {
@@ -167,8 +165,7 @@ cmp_real(FILE *fp, const char *s, int index, real i1, real i2, real ftol, real a
     }
 }
 
-void
-cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float ftol, float abstol)
+void cmp_float(FILE* fp, const char* s, int index, float i1, float i2, float ftol, float abstol)
 {
     if (!equal_float(i1, i2, ftol, abstol))
     {
@@ -183,8 +180,7 @@ cmp_float(FILE *fp, const char *s, int index, float i1, float i2, float ftol, fl
     }
 }
 
-void
-cmp_double(FILE *fp, const char *s, int index, double i1, double i2, double ftol, double abstol)
+void cmp_double(FILE* fp, const char* s, int index, double i1, double i2, double ftol, double abstol)
 {
     if (!equal_double(i1, i2, ftol, abstol))
     {

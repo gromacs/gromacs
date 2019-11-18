@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,12 +57,12 @@ namespace
 
 TEST(ExponentialDistributionTest, Output)
 {
-    gmx::test::TestReferenceData        data;
-    gmx::test::TestReferenceChecker     checker(data.rootChecker());
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
 
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    gmx::ExponentialDistribution<real>  dist(5.0);
-    std::vector<real>                   result;
+    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
+    gmx::ExponentialDistribution<real> dist(5.0);
+    std::vector<real>                  result;
 
     result.reserve(10);
     for (int i = 0; i < 10; i++)
@@ -72,9 +72,9 @@ TEST(ExponentialDistributionTest, Output)
 
     // The implementation of the exponential distribution both in GROMACS and all current C++
     // standard libraries tested is fragile since it computes an intermediate value by subtracting
-    // a random number in [0,1) from 1.0. This should not affect the accuracy of the final distribution,
-    // but depending on the compiler optimization individual values will show a somewhat larger
-    // fluctuation compared to the other distributions.
+    // a random number in [0,1) from 1.0. This should not affect the accuracy of the final
+    // distribution, but depending on the compiler optimization individual values will show a
+    // somewhat larger fluctuation compared to the other distributions.
     checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
     checker.checkSequence(result.begin(), result.end(), "ExponentialDistribution");
 }
@@ -82,10 +82,10 @@ TEST(ExponentialDistributionTest, Output)
 
 TEST(ExponentialDistributionTest, Logical)
 {
-    gmx::ThreeFry2x64<8>                rng(123456, gmx::RandomDomain::Other);
-    gmx::ExponentialDistribution<real>  distA(2.0);
-    gmx::ExponentialDistribution<real>  distB(2.0);
-    gmx::ExponentialDistribution<real>  distC(3.0);
+    gmx::ThreeFry2x64<8>               rng(123456, gmx::RandomDomain::Other);
+    gmx::ExponentialDistribution<real> distA(2.0);
+    gmx::ExponentialDistribution<real> distB(2.0);
+    gmx::ExponentialDistribution<real> distC(3.0);
 
     EXPECT_EQ(distA, distB);
     EXPECT_NE(distA, distC);
@@ -94,10 +94,10 @@ TEST(ExponentialDistributionTest, Logical)
 
 TEST(ExponentialDistributionTest, Reset)
 {
-    gmx::ThreeFry2x64<8>                                rng(123456, gmx::RandomDomain::Other);
-    gmx::ExponentialDistribution<real>                  distA(2.0);
-    gmx::ExponentialDistribution<real>                  distB(2.0);
-    gmx::ExponentialDistribution<>::result_type         valA, valB;
+    gmx::ThreeFry2x64<8>                        rng(123456, gmx::RandomDomain::Other);
+    gmx::ExponentialDistribution<real>          distA(2.0);
+    gmx::ExponentialDistribution<real>          distB(2.0);
+    gmx::ExponentialDistribution<>::result_type valA, valB;
 
     valA = distA(rng);
 
@@ -112,11 +112,11 @@ TEST(ExponentialDistributionTest, Reset)
 
 TEST(ExponentialDistributionTest, AltParam)
 {
-    gmx::ThreeFry2x64<8>                            rngA(123456, gmx::RandomDomain::Other);
-    gmx::ThreeFry2x64<8>                            rngB(123456, gmx::RandomDomain::Other);
-    gmx::ExponentialDistribution<real>              distA(2.0);
-    gmx::ExponentialDistribution<real>              distB; // default parameters
-    gmx::ExponentialDistribution<real>::param_type  paramA(2.0);
+    gmx::ThreeFry2x64<8>                           rngA(123456, gmx::RandomDomain::Other);
+    gmx::ThreeFry2x64<8>                           rngB(123456, gmx::RandomDomain::Other);
+    gmx::ExponentialDistribution<real>             distA(2.0);
+    gmx::ExponentialDistribution<real>             distB; // default parameters
+    gmx::ExponentialDistribution<real>::param_type paramA(2.0);
 
     EXPECT_NE(distA(rngA), distB(rngB));
     rngA.restart();
@@ -126,6 +126,6 @@ TEST(ExponentialDistributionTest, AltParam)
     EXPECT_REAL_EQ_TOL(distA(rngA), distB(rngB, paramA), gmx::test::ulpTolerance(0));
 }
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,38 +47,37 @@
 
 #include "gmx_lapack.h"
 
-double **alloc_matrix(int n, int m)
+double** alloc_matrix(int n, int m)
 {
-    double **ptr;
+    double** ptr;
     int      i;
 
     /* There's always time for more pointer arithmetic! */
     /* This is necessary in order to be able to work with LAPACK */
     snew(ptr, n);
-    snew(ptr[0], n*m);
+    snew(ptr[0], n * m);
     for (i = 1; (i < n); i++)
     {
-        ptr[i] = ptr[i-1]+m;
+        ptr[i] = ptr[i - 1] + m;
     }
     return ptr;
 }
 
-void free_matrix(double **a)
+void free_matrix(double** a)
 {
     sfree(a[0]);
     sfree(a);
 }
 
 #define DEBUG_MATRIX
-void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
+void matrix_multiply(FILE* fp, int n, int m, double** x, double** y, double** z)
 {
     int i, j, k;
 
 #ifdef DEBUG_MATRIX
     if (fp)
     {
-        fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n",
-                n, m, m, n);
+        fprintf(fp, "Multiplying %d x %d matrix with a %d x %d matrix\n", n, m, m, n);
     }
     if (fp)
     {
@@ -99,13 +98,13 @@ void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z)
             z[i][j] = 0;
             for (k = 0; (k < n); k++)
             {
-                z[i][j] += x[k][i]*y[j][k];
+                z[i][j] += x[k][i] * y[j][k];
             }
         }
     }
 }
 
-static void dump_matrix(FILE *fp, const char *title, int n, double **a)
+static void dump_matrix(FILE* fp, const char* title, int n, double** a)
 {
     double d = 1;
     int    i, j;
@@ -113,7 +112,7 @@ static void dump_matrix(FILE *fp, const char *title, int n, double **a)
     fprintf(fp, "%s\n", title);
     for (i = 0; (i < n); i++)
     {
-        d = d*a[i][i];
+        d = d * a[i][i];
         for (j = 0; (j < n); j++)
         {
             fprintf(fp, " %8.2f", a[i][j]);
@@ -123,7 +122,7 @@ static void dump_matrix(FILE *fp, const char *title, int n, double **a)
     fprintf(fp, "Prod a[i][i] = %g\n", d);
 }
 
-int matrix_invert(FILE *fp, int n, double **a)
+int matrix_invert(FILE* fp, int n, double** a)
 {
     int      i, j, m, lda, *ipiv, lwork, info;
     double **test = nullptr, **id, *work;
@@ -144,11 +143,11 @@ int matrix_invert(FILE *fp, int n, double **a)
     }
 #endif
     snew(ipiv, n);
-    lwork = n*n;
+    lwork = n * n;
     snew(work, lwork);
-    m     = lda   = n;
-    info  = 0;
-    F77_FUNC(dgetrf, DGETRF) (&n, &m, a[0], &lda, ipiv, &info);
+    m = lda = n;
+    info    = 0;
+    F77_FUNC(dgetrf, DGETRF)(&n, &m, a[0], &lda, ipiv, &info);
 #ifdef DEBUG_MATRIX
     if (fp)
     {
@@ -159,7 +158,7 @@ int matrix_invert(FILE *fp, int n, double **a)
     {
         return info;
     }
-    F77_FUNC(dgetri, DGETRI) (&n, a[0], &lda, ipiv, work, &lwork, &info);
+    F77_FUNC(dgetri, DGETRI)(&n, a[0], &lda, ipiv, work, &lwork, &info);
 #ifdef DEBUG_MATRIX
     if (fp)
     {
@@ -187,8 +186,7 @@ int matrix_invert(FILE *fp, int n, double **a)
     return 0;
 }
 
-double multi_regression(FILE *fp, int nrow, double *y, int ncol,
-                        double **xx, double *a0)
+double multi_regression(FILE* fp, int nrow, double* y, int ncol, double** xx, double* a0)
 {
     int    row, i, j;
     double ax, chi2, **a, **at, **ata, *atx;
@@ -206,8 +204,11 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
     matrix_multiply(fp, nrow, ncol, a, at, ata);
     if ((row = matrix_invert(fp, ncol, ata)) != 0)
     {
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row);
+        gmx_fatal(
+                FARGS,
+                "Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do "
+                "not have sufficient data points, or that some parameters are linearly dependent.",
+                row);
     }
     snew(atx, ncol);
 
@@ -216,7 +217,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         atx[i] = 0;
         for (j = 0; (j < nrow); j++)
         {
-            atx[i] += at[i][j]*y[j];
+            atx[i] += at[i][j] * y[j];
         }
     }
     for (i = 0; (i < ncol); i++)
@@ -224,7 +225,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         a0[i] = 0;
         for (j = 0; (j < ncol); j++)
         {
-            a0[i] += ata[i][j]*atx[j];
+            a0[i] += ata[i][j] * atx[j];
         }
     }
     chi2 = 0;
@@ -233,7 +234,7 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
         ax = 0;
         for (i = 0; (i < ncol); i++)
         {
-            ax += a0[i]*a[j][i];
+            ax += a0[i] * a[j][i];
         }
         chi2 += (y[j] - ax) * (y[j] - ax);
     }

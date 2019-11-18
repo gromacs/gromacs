@@ -8,7 +8,7 @@
 ; e.g.: -I/home/joe/doe -I/home/mary/roe
 include                  = -I/home/me/stuff
 ; e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
-define                   = 
+define                   = -DBOOLVAR -DVAR=VALUE
 
 ; RUN CONTROL PARAMETERS
 integrator               = steep
@@ -71,8 +71,6 @@ energygrps               =
 cutoff-scheme            = Verlet
 ; nblist update frequency
 nstlist                  = 10
-; ns algorithm (simple or grid)
-ns-type                  = Grid
 ; Periodic boundary conditions: xyz, no, xy
 pbc                      = xyz
 periodic-molecules       = no
@@ -317,5 +315,8 @@ userreal4                = 0
 electric-field-x         = 0 0 0 0
 electric-field-y         = 0 0 0 0
 electric-field-z         = 0 0 0 0
+
+; Density guided simulation
+density-guided-simulation-active = false
 </String>
 </ReferenceData>

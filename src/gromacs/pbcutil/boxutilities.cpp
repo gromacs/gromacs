@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,8 +48,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 
-void do_box_rel(int ndim, const matrix deform, matrix box_rel,
-                matrix b, bool bInit)
+void do_box_rel(int ndim, const matrix deform, matrix box_rel, matrix b, bool bInit)
 {
     for (int d = YY; d <= ZZ; ++d)
     {
@@ -59,17 +58,16 @@ void do_box_rel(int ndim, const matrix deform, matrix box_rel,
              * or if deformation of another component might cause
              * changes in this component due to box corrections.
              */
-            if (deform[d][d2] == 0 &&
-                !(d == ZZ && d2 == XX && deform[d][YY] != 0 &&
-                  (b[YY][d2] != 0 || deform[YY][d2] != 0)))
+            if (deform[d][d2] == 0
+                && !(d == ZZ && d2 == XX && deform[d][YY] != 0 && (b[YY][d2] != 0 || deform[YY][d2] != 0)))
             {
                 if (bInit)
                 {
-                    box_rel[d][d2] = b[d][d2]/b[XX][XX];
+                    box_rel[d][d2] = b[d][d2] / b[XX][XX];
                 }
                 else
                 {
-                    b[d][d2] = b[XX][XX]*box_rel[d][d2];
+                    b[d][d2] = b[XX][XX] * box_rel[d][d2];
                 }
             }
         }
@@ -88,30 +86,24 @@ bool boxElementEqual(real element1, real element2)
     // Compare with a relative tolerance (for big boxes) and with
     // an absolute tolerance (small boxes are generally not specified with very
     // high number of decimals).
-    return gmx_within_tol(element1, element2, 10*GMX_REAL_EPS)
-           || std::fabs(element1 - element2) < 1e-3;
+    return gmx_within_tol(element1, element2, 10 * GMX_REAL_EPS) || std::fabs(element1 - element2) < 1e-3;
 }
 
-}   // namespace
+} // namespace
 
 bool boxesAreEqual(const matrix box1, const matrix box2)
 {
-    return boxElementEqual(box1[XX][XX], box2[XX][XX])
-           && boxElementEqual(box1[YY][XX], box2[YY][XX])
+    return boxElementEqual(box1[XX][XX], box2[XX][XX]) && boxElementEqual(box1[YY][XX], box2[YY][XX])
            && boxElementEqual(box1[YY][YY], box2[YY][YY])
-           && boxElementEqual(box1[ZZ][XX], box2[ZZ][XX])
-           && boxElementEqual(box1[ZZ][YY], box2[ZZ][YY])
+           && boxElementEqual(box1[ZZ][XX], box2[ZZ][XX]) && boxElementEqual(box1[ZZ][YY], box2[ZZ][YY])
            && boxElementEqual(box1[ZZ][ZZ], box2[ZZ][ZZ]);
 }
 
 bool boxIsZero(const matrix box)
 {
-    return boxElementEqual(box[XX][XX], 0.0)
-           && boxElementEqual(box[YY][XX], 0.0)
-           && boxElementEqual(box[YY][YY], 0.0)
-           && boxElementEqual(box[ZZ][XX], 0.0)
-           && boxElementEqual(box[ZZ][YY], 0.0)
-           && boxElementEqual(box[ZZ][ZZ], 0.0);
+    return boxElementEqual(box[XX][XX], 0.0) && boxElementEqual(box[YY][XX], 0.0)
+           && boxElementEqual(box[YY][YY], 0.0) && boxElementEqual(box[ZZ][XX], 0.0)
+           && boxElementEqual(box[ZZ][YY], 0.0) && boxElementEqual(box[ZZ][ZZ], 0.0);
 }
 
 } // namespace gmx

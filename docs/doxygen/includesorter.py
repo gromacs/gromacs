@@ -1,8 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -41,19 +41,23 @@ the paths to use either relative paths or paths relative to src/.
 It groups includes in groups of related headers, sorts the headers
 alphabetically within each block, and inserts empty lines in between.
 It can be run as a standalone script, in which case it requires an up-to-date
-list of installed headers and Doxygen XML documentation to be present in the
+Doxygen XML documentation to be present in the
 build tree.  It can also be imported as a module to be embedded in other
 scripts.  In the latter case, the IncludeSorter provides the main interface.
 
 The sorting assumes some conventions (e.g., that system headers are included
 with angle brackets instead of quotes).  Generally, these conventions are
 checked by the check-source.py script.
+
+A more detailed description can be found in the developer manual.
 """
 
 import os.path
 import re
 import sys
+import functools
 
+@functools.total_ordering
 class IncludeGroup(object):
 
     """Enumeration type for grouping includes."""
@@ -66,9 +70,13 @@ class IncludeGroup(object):
         """
         self._value = value
 
-    def __cmp__(self, other):
+    def __eq__(self, other):
         """Order include groups in the desired order."""
-        return cmp(self._value, other._value)
+        return self._value == other._value
+
+    def __lt__(self, other):
+        """Order include groups in the desired order."""
+        return self._value < other._value
 
 # gmxpre.h is always first
 IncludeGroup.pre = IncludeGroup(0)
@@ -277,8 +285,7 @@ class IncludeSorter(object):
         Returns a new list of lines for the block.
         If anything is changed, self._changed is set to True, and the caller
         can check that."""
-        includes = map(self._sortmethod.get_sortable_object, block.get_includes())
-        includes.sort()
+        includes = sorted(map(self._sortmethod.get_sortable_object, block.get_includes()))
         result = []
         prev = None
         current_line_number = block.get_first_line()-1
@@ -383,7 +390,6 @@ def main():
         sys.stderr.write('Build root required not specified.\n')
         sys.exit(2)
     tree = GromacsTree(options.source_root, options.build_root, reporter)
-    tree.load_installed_file_list()
     files = []
     for filename in filelist:
         fileobj = tree.get_file(os.path.abspath(filename))

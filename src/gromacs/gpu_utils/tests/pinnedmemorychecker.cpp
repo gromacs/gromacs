@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -106,7 +106,7 @@ TEST_F(PinnedMemoryCheckerTest, DefaultCBufferIsRecognized)
         return;
     }
 
-    real *dummy;
+    real* dummy;
     snew(dummy, 3);
     EXPECT_FALSE(isHostMemoryPinned(dummy));
     sfree(dummy);
@@ -119,12 +119,12 @@ TEST_F(PinnedMemoryCheckerTest, PinnedCBufferIsRecognized)
         return;
     }
 
-    real *dummy = nullptr;
-    pmalloc((void **)&dummy, 3 * sizeof(real));
+    real* dummy = nullptr;
+    pmalloc(reinterpret_cast<void**>(&dummy), 3 * sizeof(real));
     EXPECT_TRUE(isHostMemoryPinned(dummy));
     pfree(dummy);
 }
 
 } // namespace
-} // namespace
-} // namespace
+} // namespace test
+} // namespace gmx

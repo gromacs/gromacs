@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,23 +62,18 @@ namespace gmx
 
 class AnalysisDataAverageModule::Impl
 {
-    public:
-        Impl() : bDataSets_(false) {}
+public:
+    Impl() : bDataSets_(false) {}
 
-        //! Averaging helper objects for each input data set.
-        std::vector<AnalysisDataFrameAverager>  averagers_;
-        //! Whether to average all columns in a data set into a single value.
-        bool                                    bDataSets_;
+    //! Averaging helper objects for each input data set.
+    std::vector<AnalysisDataFrameAverager> averagers_;
+    //! Whether to average all columns in a data set into a single value.
+    bool bDataSets_;
 };
 
-AnalysisDataAverageModule::AnalysisDataAverageModule()
-    : impl_(new Impl())
-{
-}
+AnalysisDataAverageModule::AnalysisDataAverageModule() : impl_(new Impl()) {}
 
-AnalysisDataAverageModule::~AnalysisDataAverageModule()
-{
-}
+AnalysisDataAverageModule::~AnalysisDataAverageModule() {}
 
 void AnalysisDataAverageModule::setAverageDataSets(bool bDataSets)
 {
@@ -87,12 +82,10 @@ void AnalysisDataAverageModule::setAverageDataSets(bool bDataSets)
 
 int AnalysisDataAverageModule::flags() const
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
-           | efAllowMultipleDataSets;
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing | efAllowMultipleDataSets;
 }
 
-void
-AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataAverageModule::dataStarted(AbstractAnalysisData* data)
 {
     if (impl_->bDataSets_)
     {
@@ -115,13 +108,9 @@ AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
     }
 }
 
-void
-AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
-{
-}
+void AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader& /*header*/) {}
 
-void
-AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     if (impl_->bDataSets_)
     {
@@ -140,13 +129,9 @@ AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     }
 }
 
-void
-AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
-{
-}
+void AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader& /*header*/) {}
 
-void
-AnalysisDataAverageModule::dataFinished()
+void AnalysisDataAverageModule::dataFinished()
 {
     allocateValues();
     for (int i = 0; i < columnCount(); ++i)
@@ -170,8 +155,7 @@ real AnalysisDataAverageModule::average(int dataSet, int column) const
 {
     if (impl_->bDataSets_)
     {
-        GMX_ASSERT(column == 0,
-                   "Column should be zero with setAverageDataSets(true)");
+        GMX_ASSERT(column == 0, "Column should be zero with setAverageDataSets(true)");
         std::swap(dataSet, column);
     }
     return value(column, dataSet).value();
@@ -181,8 +165,7 @@ real AnalysisDataAverageModule::standardDeviation(int dataSet, int column) const
 {
     if (impl_->bDataSets_)
     {
-        GMX_ASSERT(column == 0,
-                   "Column should be zero with setAverageDataSets(true)");
+        GMX_ASSERT(column == 0, "Column should be zero with setAverageDataSets(true)");
         std::swap(dataSet, column);
     }
     return value(column, dataSet).error();
@@ -192,8 +175,7 @@ int AnalysisDataAverageModule::sampleCount(int dataSet, int column) const
 {
     if (impl_->bDataSets_)
     {
-        GMX_ASSERT(column == 0,
-                   "Column should be zero with setAverageDataSets(true)");
+        GMX_ASSERT(column == 0, "Column should be zero with setAverageDataSets(true)");
         std::swap(dataSet, column);
     }
     return impl_->averagers_[dataSet].sampleCount(column);
@@ -206,47 +188,37 @@ int AnalysisDataAverageModule::sampleCount(int dataSet, int column) const
 
 class AnalysisDataFrameAverageModule::Impl
 {
-    public:
-        //! Storage implementation object.
-        AnalysisDataStorage     storage_;
-        //! Number of samples in a frame for each data set.
-        std::vector<int>        sampleCount_;
+public:
+    //! Storage implementation object.
+    AnalysisDataStorage storage_;
+    //! Number of samples in a frame for each data set.
+    std::vector<int> sampleCount_;
 };
 
-AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
-    : impl_(new Impl())
-{
-}
+AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule() : impl_(new Impl()) {}
 
-AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
-{
-}
+AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule() {}
 
-int
-AnalysisDataFrameAverageModule::frameCount() const
+int AnalysisDataFrameAverageModule::frameCount() const
 {
     return impl_->storage_.frameCount();
 }
 
-int
-AnalysisDataFrameAverageModule::flags() const
+int AnalysisDataFrameAverageModule::flags() const
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
-           | efAllowMultipleDataSets;
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing | efAllowMultipleDataSets;
 }
 
-void
-AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
+void AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData* data)
 {
     setColumnCount(0, data->dataSetCount());
     impl_->sampleCount_.resize(data->dataSetCount());
     impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
-void
-AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &header)
+void AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader& header)
 {
-    AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
+    AnalysisDataStorageFrame& frame = impl_->storage_.startFrame(header);
     for (int i = 0; i < columnCount(); ++i)
     {
         impl_->sampleCount_[i] = 0;
@@ -254,12 +226,10 @@ AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &head
     }
 }
 
-void
-AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
+void AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef& points)
 {
     const int                 dataSet = points.dataSetIndex();
-    AnalysisDataStorageFrame &frame   =
-        impl_->storage_.currentFrame(points.frameIndex());
+    AnalysisDataStorageFrame& frame   = impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
@@ -268,31 +238,27 @@ AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &point
             const real y     = points.y(i);
             const real delta = y - frame.value(dataSet);
             impl_->sampleCount_[dataSet] += 1;
-            frame.value(dataSet)         += delta / impl_->sampleCount_[dataSet];
+            frame.value(dataSet) += delta / impl_->sampleCount_[dataSet];
         }
     }
 }
 
-void
-AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
+void AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader& header)
 {
     impl_->storage_.finishFrame(header.index());
 }
 
-void
-AnalysisDataFrameAverageModule::dataFinished()
+void AnalysisDataFrameAverageModule::dataFinished()
 {
     impl_->storage_.finishDataStorage();
 }
 
-AnalysisDataFrameRef
-AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
+AnalysisDataFrameRef AnalysisDataFrameAverageModule::tryGetDataFrameInternal(int index) const
 {
     return impl_->storage_.tryGetDataFrame(index);
 }
 
-bool
-AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
+bool AnalysisDataFrameAverageModule::requestStorageInternal(int nframes)
 {
     return impl_->storage_.requestStorage(nframes);
 }

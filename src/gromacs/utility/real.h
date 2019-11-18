@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,22 +45,22 @@
 #define GMX_UTILITY_REAL_H
 
 /*! \brief Double precision accuracy */
-#define GMX_DOUBLE_EPS   2.2204460492503131e-16
+#define GMX_DOUBLE_EPS 2.2204460492503131e-16
 
 /*! \brief Maximum double precision value - reduced 1 unit in last digit for MSVC */
-#define GMX_DOUBLE_MAX   1.7976931348623157e+308
+#define GMX_DOUBLE_MAX 1.7976931348623157e+308
 
 /*! \brief Minimum double precision value */
-#define GMX_DOUBLE_MIN   2.2250738585072014e-308
+#define GMX_DOUBLE_MIN 2.2250738585072014e-308
 
 /*! \brief Single precision accuracy */
-#define GMX_FLOAT_EPS    1.19209290e-07F
+#define GMX_FLOAT_EPS 1.19209290e-07F
 
 /*! \brief Maximum single precision value - reduced 1 unit in last digit for MSVC */
-#define GMX_FLOAT_MAX    3.40282346E+38F
+#define GMX_FLOAT_MAX 3.40282346E+38F
 
 /*! \brief Minimum single precision value */
-#define GMX_FLOAT_MIN    1.175494351E-38F
+#define GMX_FLOAT_MIN 1.175494351E-38F
 
 #ifdef __PGI
 /* The portland group x86 C/C++ compilers do not treat negative zero initializers
@@ -71,14 +71,28 @@
  * be different for byte and word order), so check that it works for your platform
  * and add a separate section if necessary before adding to the ifdef above.
  */
-#    define GMX_DOUBLE_NEGZERO  ({ const union { int  di[2]; double d; } _gmx_dzero = {0, -2147483648}; _gmx_dzero.d; })
-#    define GMX_FLOAT_NEGZERO   ({ const union { int  fi; float f; } _gmx_fzero = {-2147483648}; _gmx_fzero.f; })
+#    define GMX_DOUBLE_NEGZERO                 \
+        ({                                     \
+            const union {                      \
+                int    di[2];                  \
+                double d;                      \
+            } _gmx_dzero = { 0, -2147483648 }; \
+            _gmx_dzero.d;                      \
+        })
+#    define GMX_FLOAT_NEGZERO               \
+        ({                                  \
+            const union {                   \
+                int   fi;                   \
+                float f;                    \
+            } _gmx_fzero = { -2147483648 }; \
+            _gmx_fzero.f;                   \
+        })
 #else
 /*! \brief Negative zero in double */
-#    define GMX_DOUBLE_NEGZERO  (-0.0)
+#    define GMX_DOUBLE_NEGZERO (-0.0)
 
 /*! \brief Negative zero in float */
-#    define GMX_FLOAT_NEGZERO   (-0.0f)
+#    define GMX_FLOAT_NEGZERO (-0.0F)
 #endif
 
 /*! \typedef real
@@ -115,38 +129,38 @@
  * \brief The maximum supported number of `real` elements in a SIMD register.
  */
 
-#define GMX_FLOAT_MAX_SIMD_WIDTH   16
-#define GMX_DOUBLE_MAX_SIMD_WIDTH   8
+#define GMX_FLOAT_MAX_SIMD_WIDTH 16
+#define GMX_DOUBLE_MAX_SIMD_WIDTH 8
 
 #if GMX_DOUBLE
 
-#ifndef HAVE_REAL
-typedef double      real;
-#define HAVE_REAL
-#endif
+#    ifndef HAVE_REAL
+typedef double real;
+#        define HAVE_REAL
+#    endif
 
-#define GMX_MPI_REAL      MPI_DOUBLE
-#define GMX_REAL_EPS      GMX_DOUBLE_EPS
-#define GMX_REAL_MIN      GMX_DOUBLE_MIN
-#define GMX_REAL_MAX      GMX_DOUBLE_MAX
-#define GMX_REAL_NEGZERO  GMX_DOUBLE_NEGZERO
-#define gmx_real_fullprecision_pfmt "%21.14e"
-#define GMX_REAL_MAX_SIMD_WIDTH  GMX_DOUBLE_MAX_SIMD_WIDTH
+#    define GMX_MPI_REAL MPI_DOUBLE
+#    define GMX_REAL_EPS GMX_DOUBLE_EPS
+#    define GMX_REAL_MIN GMX_DOUBLE_MIN
+#    define GMX_REAL_MAX GMX_DOUBLE_MAX
+#    define GMX_REAL_NEGZERO GMX_DOUBLE_NEGZERO
+#    define gmx_real_fullprecision_pfmt "%21.14e"
+#    define GMX_REAL_MAX_SIMD_WIDTH GMX_DOUBLE_MAX_SIMD_WIDTH
 
 #else /* GMX_DOUBLE */
 
-#ifndef HAVE_REAL
-typedef float           real;
-#define HAVE_REAL
-#endif
+#    ifndef HAVE_REAL
+typedef float real;
+#        define HAVE_REAL
+#    endif
 
-#define GMX_MPI_REAL      MPI_FLOAT
-#define GMX_REAL_EPS      GMX_FLOAT_EPS
-#define GMX_REAL_MIN      GMX_FLOAT_MIN
-#define GMX_REAL_MAX      GMX_FLOAT_MAX
-#define GMX_REAL_NEGZERO  GMX_FLOAT_NEGZERO
-#define gmx_real_fullprecision_pfmt "%14.7e"
-#define GMX_REAL_MAX_SIMD_WIDTH  GMX_FLOAT_MAX_SIMD_WIDTH
+#    define GMX_MPI_REAL MPI_FLOAT
+#    define GMX_REAL_EPS GMX_FLOAT_EPS
+#    define GMX_REAL_MIN GMX_FLOAT_MIN
+#    define GMX_REAL_MAX GMX_FLOAT_MAX
+#    define GMX_REAL_NEGZERO GMX_FLOAT_NEGZERO
+#    define gmx_real_fullprecision_pfmt "%14.7e"
+#    define GMX_REAL_MAX_SIMD_WIDTH GMX_FLOAT_MAX_SIMD_WIDTH
 
 #endif /* GMX_DOUBLE */
 
@@ -155,12 +169,15 @@ typedef float           real;
  * Examples: 2._real, 2.5_real, .5_real. The number is always of type real.
  *
  * It is best to use a real constant whenever it is used only with operands which are real.
- * If a constant is double than the compiler is forced to do operations directly involving the constant
- * in double even if all variables are real. A constant shouldn't be real when used with double operands,
- * because then the constant is less accurate with GMX_DOUBLE=no.
+ * If a constant is double than the compiler is forced to do operations directly involving the
+ * constant in double even if all variables are real. A constant shouldn't be real when used with
+ * double operands, because then the constant is less accurate with GMX_DOUBLE=no.
  *
  * See https://en.cppreference.com/w/cpp/language/user_literal for details on this lanuage feature.
  */
-constexpr real operator"" _real(long double x) { return real(x); }
+constexpr real operator"" _real(long double x)
+{
+    return real(x);
+}
 
 #endif

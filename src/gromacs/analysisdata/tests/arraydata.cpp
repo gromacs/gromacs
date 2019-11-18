@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,34 +68,34 @@ typedef gmx::test::AnalysisDataTestFixture AnalysisArrayDataTest;
 // Input data for gmx::AnalysisArrayData tests.
 class SimpleInputData
 {
-    public:
-        static const AnalysisDataTestInput &get()
-        {
+public:
+    static const AnalysisDataTestInput& get()
+    {
 #ifndef STATIC_ANON_NAMESPACE_BUG
-            static SimpleInputData singleton;
-            return singleton.data_;
+        static SimpleInputData singleton;
+        return singleton.data_;
 #else
-            static SimpleInputData singleton_arraydata;
-            return singleton_arraydata.data_;
+        static SimpleInputData singleton_arraydata;
+        return singleton_arraydata.data_;
 #endif
-        }
+    }
 
-        SimpleInputData() : data_(1, false)
-        {
-            data_.setColumnCount(0, 3);
-            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
-            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
-            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
-            data_.addFrameWithValues(4.0,  3.0, 2.0, 1.0);
-        }
+    SimpleInputData() : data_(1, false)
+    {
+        data_.setColumnCount(0, 3);
+        data_.addFrameWithValues(1.0, 0.0, 1.0, 2.0);
+        data_.addFrameWithValues(2.0, 1.0, 1.0, 1.0);
+        data_.addFrameWithValues(3.0, 2.0, 0.0, 0.0);
+        data_.addFrameWithValues(4.0, 3.0, 2.0, 1.0);
+    }
 
-    private:
-        AnalysisDataTestInput  data_;
+private:
+    AnalysisDataTestInput data_;
 };
 
 TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
+    const AnalysisDataTestInput& input = SimpleInputData::get();
     gmx::AnalysisArrayData       data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
@@ -107,7 +107,7 @@ TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 
 TEST_F(AnalysisArrayDataTest, StorageWorks)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
+    const AnalysisDataTestInput& input = SimpleInputData::get();
     gmx::AnalysisArrayData       data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
@@ -118,7 +118,7 @@ TEST_F(AnalysisArrayDataTest, StorageWorks)
 
 TEST_F(AnalysisArrayDataTest, CanSetXAxis)
 {
-    gmx::AnalysisArrayData       data;
+    gmx::AnalysisArrayData data;
     data.setRowCount(5);
     data.setXAxis(1.0, 1.0);
     EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
@@ -135,7 +135,7 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxis)
 TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
 {
     {
-        gmx::AnalysisArrayData       data;
+        gmx::AnalysisArrayData data;
         data.setXAxis(1.0, 1.0);
         data.setRowCount(5);
         EXPECT_FLOAT_EQ(1.0, data.xvalue(0));
@@ -143,7 +143,7 @@ TEST_F(AnalysisArrayDataTest, CanSetXAxisBeforeRowCount)
         EXPECT_FLOAT_EQ(5.0, data.xvalue(4));
     }
     {
-        gmx::AnalysisArrayData       data;
+        gmx::AnalysisArrayData data;
         data.setXAxisValue(0, 2.0);
         data.setXAxisValue(1, 3.0);
         data.setXAxisValue(2, 5.0);

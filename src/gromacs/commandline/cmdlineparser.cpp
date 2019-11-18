@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,38 +67,40 @@ namespace gmx
  */
 class CommandLineParser::Impl
 {
-    public:
-        //! Sets the options object to parse to.
-        explicit Impl(Options *options);
+public:
+    //! Sets the options object to parse to.
+    explicit Impl(Options* options);
 
-        /*! \brief
-         * Determines whether a cmdline parameter starts an option and the name
-         * of that option.
-         *
-         * \param[in] arg  Individual argument from \c argv.
-         * \returns The beginning of the option name in \p arg, or NULL if
-         *     \p arg does not look like an option.
-         */
-        const char *toOptionName(const char *arg) const;
+    /*! \brief
+     * Determines whether a cmdline parameter starts an option and the name
+     * of that option.
+     *
+     * \param[in] arg  Individual argument from \c argv.
+     * \returns The beginning of the option name in \p arg, or NULL if
+     *     \p arg does not look like an option.
+     */
+    const char* toOptionName(const char* arg) const;
 
-        //! Helper object for assigning the options.
-        OptionsAssigner         assigner_;
-        //! Whether to allow and skip unknown options.
-        bool                    bSkipUnknown_;
-        /*! \brief Whether to allow positional arguments
-         *
-         * These are not options (no leading hyphen), and come before
-         * all options. */
-        bool                    bAllowPositionalArguments_;
+    //! Helper object for assigning the options.
+    OptionsAssigner assigner_;
+    //! Whether to allow and skip unknown options.
+    bool bSkipUnknown_;
+    /*! \brief Whether to allow positional arguments
+     *
+     * These are not options (no leading hyphen), and come before
+     * all options. */
+    bool bAllowPositionalArguments_;
 };
 
-CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options), bSkipUnknown_(false), bAllowPositionalArguments_(false)
+CommandLineParser::Impl::Impl(Options* options) :
+    assigner_(options),
+    bSkipUnknown_(false),
+    bAllowPositionalArguments_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
 }
 
-const char *CommandLineParser::Impl::toOptionName(const char *arg) const
+const char* CommandLineParser::Impl::toOptionName(const char* arg) const
 {
     // Lone '-' or '--' is not an option.
     if (arg[0] != '-' || arg[1] == '\0' || (arg[1] == '-' && arg[2] == '\0'))
@@ -110,7 +113,7 @@ const char *CommandLineParser::Impl::toOptionName(const char *arg) const
         return arg + 2;
     }
     // Don't return numbers as option names.
-    char *endptr;
+    char* endptr;
     // We are only interested in endptr, not in the actual value.
     GMX_IGNORE_RETURN_VALUE(std::strtod(arg, &endptr));
     if (*endptr == '\0')
@@ -124,28 +127,23 @@ const char *CommandLineParser::Impl::toOptionName(const char *arg) const
  * CommandLineParser
  */
 
-CommandLineParser::CommandLineParser(Options *options)
-    : impl_(new Impl(options))
-{
-}
+CommandLineParser::CommandLineParser(Options* options) : impl_(new Impl(options)) {}
 
-CommandLineParser::~CommandLineParser()
-{
-}
+CommandLineParser::~CommandLineParser() {}
 
-CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
+CommandLineParser& CommandLineParser::skipUnknown(bool bEnabled)
 {
     impl_->bSkipUnknown_ = bEnabled;
     return *this;
 }
 
-CommandLineParser &CommandLineParser::allowPositionalArguments(bool bEnabled)
+CommandLineParser& CommandLineParser::allowPositionalArguments(bool bEnabled)
 {
     impl_->bAllowPositionalArguments_ = bEnabled;
     return *this;
 }
 
-void CommandLineParser::parse(int *argc, char *argv[])
+void CommandLineParser::parse(int* argc, char* argv[])
 {
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
@@ -160,7 +158,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
     // First, process any permitted leading positional arguments.
     for (; i < *argc; ++i)
     {
-        const char *const arg        = argv[i];
+        const char* const arg = argv[i];
         if (impl_->toOptionName(arg) != nullptr)
         {
             // If we find an option, no more positional arguments
@@ -170,9 +168,11 @@ void CommandLineParser::parse(int *argc, char *argv[])
 
         if (!impl_->bAllowPositionalArguments_)
         {
-            GMX_THROW(InvalidInputError
-                          ("Positional argument '" + std::string(arg) + "' cannot be accepted. "
-                          "Perhaps you forgot to put a hyphen before an option name."));
+            GMX_THROW(
+                    InvalidInputError(
+                            "Positional argument '" + std::string(arg)
+                            + "' cannot be accepted. "
+                              "Perhaps you forgot to put a hyphen before an option name."));
         }
         // argv[i] is not an option, so preserve it in the argument list
         // by incrementing newi. There's no need to copy argv contents
@@ -184,8 +184,8 @@ void CommandLineParser::parse(int *argc, char *argv[])
     impl_->assigner_.start();
     for (; i < *argc; ++i)
     {
-        const char *const arg        = argv[i];
-        const char *const optionName = impl_->toOptionName(arg);
+        const char* const arg        = argv[i];
+        const char* const optionName = impl_->toOptionName(arg);
         if (optionName != nullptr)
         {
             if (bInOption)
@@ -194,7 +194,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 {
                     impl_->assigner_.finishOption();
                 }
-                catch (UserInputError &ex)
+                catch (UserInputError& ex)
                 {
                     ex.prependContext(currentContext);
                     errors.addCurrentExceptionAsNested();
@@ -209,13 +209,12 @@ void CommandLineParser::parse(int *argc, char *argv[])
                     currentContext.clear();
                     if (!impl_->bSkipUnknown_)
                     {
-                        std::string message =
-                            "Unknown command-line option " + std::string(arg);
+                        std::string message = "Unknown command-line option " + std::string(arg);
                         GMX_THROW(InvalidInputError(message));
                     }
                 }
             }
-            catch (UserInputError &ex)
+            catch (UserInputError& ex)
             {
                 // If tryStartOption() throws, make sure that the rest gets
                 // ignored.
@@ -236,7 +235,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
             }
             // TODO: Consider if some types of exceptions would be better left
             // unhandled.
-            catch (GromacsException &ex)
+            catch (GromacsException& ex)
             {
                 ex.prependContext(currentContext);
                 errors.addCurrentExceptionAsNested();
@@ -263,7 +262,7 @@ void CommandLineParser::parse(int *argc, char *argv[])
         {
             impl_->assigner_.finishOption();
         }
-        catch (UserInputError &ex)
+        catch (UserInputError& ex)
         {
             ex.prependContext(currentContext);
             errors.addCurrentExceptionAsNested();

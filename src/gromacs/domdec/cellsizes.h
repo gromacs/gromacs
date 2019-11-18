@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,15 +56,13 @@ struct gmx_domdec_t;
 /*! \brief Options for setting up a regular, possibly static load balanced, cell grid geometry */
 enum
 {
-    setcellsizeslbLOCAL,      //!< Set cell sizes locally on each rank
-    setcellsizeslbMASTER,     //!< Set cell sizes on master rank only
-    setcellsizeslbPULSE_ONLY  //!< Only set the communication pulses, not the cell sizes
+    setcellsizeslbLOCAL,     //!< Set cell sizes locally on each rank
+    setcellsizeslbMASTER,    //!< Set cell sizes on master rank only
+    setcellsizeslbPULSE_ONLY //!< Only set the communication pulses, not the cell sizes
 };
 
 /*! \brief Returns the minimum allowed distance between lower and upper bounds of zones along dimension dim_ind */
-real grid_jump_limit(const gmx_domdec_comm_t *comm,
-                     real                     cutoff,
-                     int                      dim_ind);
+real grid_jump_limit(const gmx_domdec_comm_t* comm, real cutoff, int dim_ind);
 
 /*! \brief Sets up an initial, non-staggered grid geometry, possibly using static load balancing
  *
@@ -72,16 +70,16 @@ real grid_jump_limit(const gmx_domdec_comm_t *comm,
  * When setmode==setcellsizeslbMASTER, the cell boundaries per dimension are
  * returned, otherwise an empty arrayref is returned.
  */
-gmx::ArrayRef < const std::vector < real>>
-set_dd_cell_sizes_slb(gmx_domdec_t      *dd,
-                      const gmx_ddbox_t *ddbox,
-                      int                setmode,
-                      ivec               numPulses);
+gmx::ArrayRef<const std::vector<real>>
+set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, ivec numPulses);
 
 /*! \brief General cell size adjustment, possibly applying dynamic load balancing */
-void set_dd_cell_sizes(gmx_domdec_t *dd,
-                       const gmx_ddbox_t *ddbox, gmx_bool bDynamicBox,
-                       gmx_bool bUniform, gmx_bool bDoDLB, int64_t step,
-                       gmx_wallcycle_t wcycle);
+void set_dd_cell_sizes(gmx_domdec_t*      dd,
+                       const gmx_ddbox_t* ddbox,
+                       gmx_bool           bDynamicBox,
+                       gmx_bool           bUniform,
+                       gmx_bool           bDoDLB,
+                       int64_t            step,
+                       gmx_wallcycle_t    wcycle);
 
 #endif

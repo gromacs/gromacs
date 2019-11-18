@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,12 +55,12 @@
 #include "thread_mpi/system_error.h"
 
 #include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "errorcodes.h"
 #include "errorformat.h"
 
 namespace gmx
@@ -68,17 +69,15 @@ namespace gmx
 namespace internal
 {
 
-IExceptionInfo::~IExceptionInfo()
-{
-}
+IExceptionInfo::~IExceptionInfo() {}
 
 class ExceptionData
 {
-    public:
-        std::map<std::type_index, ExceptionInfoPointer> infos_;
+public:
+    std::map<std::type_index, ExceptionInfoPointer> infos_;
 };
 
-}    // namespace internal
+} // namespace internal
 
 namespace
 {
@@ -98,43 +97,42 @@ namespace
  */
 class ErrorMessage
 {
-    public:
-        /*! \brief
-         * Creates an error message object with the specified text.
-         *
-         * \param[in] text  Text for the message.
-         */
-        explicit ErrorMessage(const std::string &text);
+public:
+    /*! \brief
+     * Creates an error message object with the specified text.
+     *
+     * \param[in] text  Text for the message.
+     */
+    explicit ErrorMessage(const std::string& text);
 
-        //! Whether this object is a context string.
-        bool isContext() const { return static_cast<bool>(child_); }
-        //! Returns the text for this object.
-        const std::string &text() const { return text_; }
-        /*! \brief
-         * Returns the child object for a context object.
-         *
-         * Must not be called if isContext() returns false.
-         */
-        const ErrorMessage &child() const
-        {
-            GMX_ASSERT(isContext(),
-                       "Attempting to access nonexistent message object");
-            return *child_;
-        }
+    //! Whether this object is a context string.
+    bool isContext() const { return static_cast<bool>(child_); }
+    //! Returns the text for this object.
+    const std::string& text() const { return text_; }
+    /*! \brief
+     * Returns the child object for a context object.
+     *
+     * Must not be called if isContext() returns false.
+     */
+    const ErrorMessage& child() const
+    {
+        GMX_ASSERT(isContext(), "Attempting to access nonexistent message object");
+        return *child_;
+    }
 
-        /*! \brief
-         * Creates a new message object with context prepended.
-         *
-         * \param[in] context  Context string to add.
-         * \returns   New error message object that has \p context as its text
-         *      and \c this as its child.
-         * \throws    std::bad_alloc if out of memory.
-         */
-        ErrorMessage prependContext(const std::string &context) const;
+    /*! \brief
+     * Creates a new message object with context prepended.
+     *
+     * \param[in] context  Context string to add.
+     * \returns   New error message object that has \p context as its text
+     *      and \c this as its child.
+     * \throws    std::bad_alloc if out of memory.
+     */
+    ErrorMessage prependContext(const std::string& context) const;
 
-    private:
-        std::string                     text_;
-        std::shared_ptr<ErrorMessage>   child_;
+private:
+    std::string                   text_;
+    std::shared_ptr<ErrorMessage> child_;
 };
 
 /*! \internal \brief
@@ -142,11 +140,9 @@ class ErrorMessage
  *
  * \ingroup module_utility
  */
-typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage>
-    ExceptionInfoMessage;
+typedef ExceptionInfo<struct ExceptionInfoMessage_, ErrorMessage> ExceptionInfoMessage;
 
-ErrorMessage::ErrorMessage(const std::string &text)
-    : text_(text)
+ErrorMessage::ErrorMessage(const std::string& text) : text_(text)
 {
     size_t length = text_.find_last_not_of(" \n");
     if (length == std::string::npos)
@@ -156,8 +152,7 @@ ErrorMessage::ErrorMessage(const std::string &text)
     text_.resize(length + 1);
 }
 
-ErrorMessage
-ErrorMessage::prependContext(const std::string &context) const
+ErrorMessage ErrorMessage::prependContext(const std::string& context) const
 {
     ErrorMessage newMessage(context);
     newMessage.child_ = std::make_shared<ErrorMessage>(*this);
@@ -169,17 +164,16 @@ ErrorMessage::prependContext(const std::string &context) const
  *
  * \ingroup module_utility
  */
-typedef ExceptionInfo<struct ExceptionInfoNestedExceptions_, internal::NestedExceptionList>
-    ExceptionInfoNestedExceptions;
+typedef ExceptionInfo<struct ExceptionInfoNestedExceptions_, internal::NestedExceptionList> ExceptionInfoNestedExceptions;
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * GromacsException
  */
 
-GromacsException::GromacsException(const ExceptionInitializer &details)
-    : data_(new internal::ExceptionData)
+GromacsException::GromacsException(const ExceptionInitializer& details) :
+    data_(new internal::ExceptionData)
 {
     setInfo(ExceptionInfoMessage(ErrorMessage(details.reason_)));
     if (details.hasNestedExceptions())
@@ -188,9 +182,9 @@ GromacsException::GromacsException(const ExceptionInitializer &details)
     }
 }
 
-const char *GromacsException::what() const noexcept
+const char* GromacsException::what() const noexcept
 {
-    const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
+    const ErrorMessage* msg = getInfo<ExceptionInfoMessage>();
     if (msg == nullptr)
     {
         return "No reason provided";
@@ -202,15 +196,14 @@ const char *GromacsException::what() const noexcept
     return msg->text().c_str();
 }
 
-void GromacsException::prependContext(const std::string &context)
+void GromacsException::prependContext(const std::string& context)
 {
-    const ErrorMessage *msg = getInfo<ExceptionInfoMessage>();
+    const ErrorMessage* msg = getInfo<ExceptionInfoMessage>();
     GMX_RELEASE_ASSERT(msg != nullptr, "Message should always be set");
     setInfo(ExceptionInfoMessage(msg->prependContext(context)));
 }
 
-const internal::IExceptionInfo *
-GromacsException::getInfo(const std::type_index &index) const
+const internal::IExceptionInfo* GromacsException::getInfo(const std::type_index& index) const
 {
     auto iter = data_->infos_.find(index);
     if (iter != data_->infos_.end())
@@ -220,8 +213,7 @@ GromacsException::getInfo(const std::type_index &index) const
     return nullptr;
 }
 
-void GromacsException::setInfo(
-        const std::type_index &index, internal::ExceptionInfoPointer &&item)
+void GromacsException::setInfo(const std::type_index& index, internal::ExceptionInfoPointer&& item)
 {
     data_->infos_[index] = std::move(item);
 }
@@ -275,6 +267,11 @@ int NotImplementedError::errorCode() const
     return eeNotImplemented;
 }
 
+int ParallelConsistencyError::errorCode() const
+{
+    return eeParallelConsistency;
+}
+
 
 /********************************************************************
  * Global functions
@@ -297,25 +294,24 @@ namespace
  */
 class IMessageWriter
 {
-    public:
-        virtual ~IMessageWriter() {}
+public:
+    virtual ~IMessageWriter() {}
 
-        /*! \brief
-         * Writes a single line of text into the output.
-         *
-         * \param[in] text    Text to write on the line.
-         * \param[in] indent  Suggested number of spaces to indent the line.
-         */
-        virtual void writeLine(const char *text, int indent) = 0;
-        /*! \brief
-         * Writes information about a system error (errno-based).
-         *
-         * \param[in] errorNumber  errno value
-         * \param[in] funcName     Name of the system call (can be NULL).
-         * \param[in] indent       Suggested number of spaces to indent the output.
-         */
-        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
-                                    int indent) = 0;
+    /*! \brief
+     * Writes a single line of text into the output.
+     *
+     * \param[in] text    Text to write on the line.
+     * \param[in] indent  Suggested number of spaces to indent the line.
+     */
+    virtual void writeLine(const char* text, int indent) = 0;
+    /*! \brief
+     * Writes information about a system error (errno-based).
+     *
+     * \param[in] errorNumber  errno value
+     * \param[in] funcName     Name of the system call (can be NULL).
+     * \param[in] indent       Suggested number of spaces to indent the output.
+     */
+    virtual void writeErrNoInfo(int errorNumber, const char* funcName, int indent) = 0;
 };
 
 /*! \brief
@@ -326,28 +322,26 @@ class IMessageWriter
  */
 class MessageWriterFileNoThrow : public IMessageWriter
 {
-    public:
-        //! Initializes a writer that writes to the given file handle.
-        explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
+public:
+    //! Initializes a writer that writes to the given file handle.
+    explicit MessageWriterFileNoThrow(FILE* fp) : fp_(fp) {}
 
-        void writeLine(const char *text, int indent) override
+    void writeLine(const char* text, int indent) override
+    {
+        internal::printFatalErrorMessageLine(fp_, text, indent);
+    }
+    void writeErrNoInfo(int errorNumber, const char* funcName, int indent) override
+    {
+        std::fprintf(fp_, "%*sReason: %s\n", indent, "", std::strerror(errorNumber));
+        if (funcName != nullptr)
         {
-            internal::printFatalErrorMessageLine(fp_, text, indent);
+            std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n", indent, "", funcName,
+                         errorNumber);
         }
-        void writeErrNoInfo(int errorNumber, const char *funcName,
-                            int indent) override
-        {
-            std::fprintf(fp_, "%*sReason: %s\n", indent, "",
-                         std::strerror(errorNumber));
-            if (funcName != nullptr)
-            {
-                std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
-                             indent, "", funcName, errorNumber);
-            }
-        }
+    }
 
-    private:
-        FILE                   *fp_;
+private:
+    FILE* fp_;
 };
 
 /*! \brief
@@ -355,32 +349,27 @@ class MessageWriterFileNoThrow : public IMessageWriter
  */
 class MessageWriterTextWriter : public IMessageWriter
 {
-    public:
-        //! Initializes a writer that writes to the given stream.
-        explicit MessageWriterTextWriter(TextWriter *writer) : writer_(writer)
-        {
-        }
+public:
+    //! Initializes a writer that writes to the given stream.
+    explicit MessageWriterTextWriter(TextWriter* writer) : writer_(writer) {}
 
-        void writeLine(const char *text, int indent) override
+    void writeLine(const char* text, int indent) override
+    {
+        writer_->wrapperSettings().setIndent(indent);
+        writer_->writeLine(text);
+    }
+    void writeErrNoInfo(int errorNumber, const char* funcName, int indent) override
+    {
+        writer_->wrapperSettings().setIndent(indent);
+        writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
+        if (funcName != nullptr)
         {
-            writer_->wrapperSettings().setIndent(indent);
-            writer_->writeLine(text);
+            writer_->writeLine(formatString("(call to %s() returned error code %d)", funcName, errorNumber));
         }
-        void writeErrNoInfo(int errorNumber, const char *funcName,
-                            int indent) override
-        {
-            writer_->wrapperSettings().setIndent(indent);
-            writer_->writeLine(formatString("Reason: %s", std::strerror(errorNumber)));
-            if (funcName != nullptr)
-            {
-                writer_->writeLine(
-                        formatString("(call to %s() returned error code %d)",
-                                     funcName, errorNumber));
-            }
-        }
+    }
 
-    private:
-        TextWriter     *writer_;
+private:
+    TextWriter* writer_;
 };
 
 /*! \brief
@@ -388,39 +377,36 @@ class MessageWriterTextWriter : public IMessageWriter
  */
 class MessageWriterString : public IMessageWriter
 {
-    public:
-        //! Post-processes the output string to not end in a line feed.
-        void removeTerminatingLineFeed()
+public:
+    //! Post-processes the output string to not end in a line feed.
+    void removeTerminatingLineFeed()
+    {
+        if (!result_.empty())
         {
-            if (!result_.empty())
-            {
-                result_.erase(result_.size() - 1);
-            }
+            result_.erase(result_.size() - 1);
         }
-        //! Returns the constructed string.
-        const std::string &result() const { return result_; }
+    }
+    //! Returns the constructed string.
+    const std::string& result() const { return result_; }
 
-        void writeLine(const char *text, int indent) override
+    void writeLine(const char* text, int indent) override
+    {
+        result_.append(indent, ' ');
+        result_.append(text);
+        result_.append("\n");
+    }
+    void writeErrNoInfo(int errorNumber, const char* funcName, int indent) override
+    {
+        writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(), indent);
+        if (funcName != nullptr)
         {
-            result_.append(indent, ' ');
-            result_.append(text);
-            result_.append("\n");
-        }
-        void writeErrNoInfo(int errorNumber, const char *funcName,
-                            int indent) override
-        {
-            writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
+            writeLine(formatString("(call to %s() returned error code %d)", funcName, errorNumber).c_str(),
                       indent);
-            if (funcName != nullptr)
-            {
-                writeLine(formatString("(call to %s() returned error code %d)",
-                                       funcName, errorNumber).c_str(),
-                          indent);
-            }
         }
+    }
 
-    private:
-        std::string             result_;
+private:
+    std::string result_;
 };
 
 /*! \brief
@@ -435,10 +421,9 @@ class MessageWriterString : public IMessageWriter
  *
  * Does not throw unless the writer throws.
  */
-void formatExceptionMessageInternal(IMessageWriter *writer,
-                                    const std::exception &ex, int indent)
+void formatExceptionMessageInternal(IMessageWriter* writer, const std::exception& ex, int indent)
 {
-    const GromacsException *gmxEx = dynamic_cast<const GromacsException *>(&ex);
+    const GromacsException* gmxEx = dynamic_cast<const GromacsException*>(&ex);
     if (gmxEx != nullptr)
     {
         // TODO: Add an option to print location information for the tests
@@ -450,42 +435,39 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
         //                           funcPtr != NULL ? *funcPtr : "");
         // }
 
-        bool                bAnythingWritten = false;
+        bool bAnythingWritten = false;
         // TODO: Remove duplicate context if present in multiple nested exceptions.
-        const ErrorMessage *msg = gmxEx->getInfo<ExceptionInfoMessage>();
+        const ErrorMessage* msg = gmxEx->getInfo<ExceptionInfoMessage>();
         if (msg != nullptr)
         {
             while (msg != nullptr && msg->isContext())
             {
-                writer->writeLine(msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent * 2);
                 ++indent;
                 msg = &msg->child();
             }
             if (msg != nullptr && !msg->text().empty())
             {
-                writer->writeLine(msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent * 2);
                 bAnythingWritten = true;
             }
         }
         else
         {
-            writer->writeLine(ex.what(), indent*2);
+            writer->writeLine(ex.what(), indent * 2);
             bAnythingWritten = true;
         }
 
-        const int *errorNumber = gmxEx->getInfo<ExceptionInfoErrno>();
+        const int* errorNumber = gmxEx->getInfo<ExceptionInfoErrno>();
         if (errorNumber != nullptr && *errorNumber != 0)
         {
-            const char * const *funcName
-                = gmxEx->getInfo<ExceptionInfoApiFunction>();
-            writer->writeErrNoInfo(*errorNumber,
-                                   funcName != nullptr ? *funcName : nullptr,
-                                   (indent+1)*2);
+            const char* const* funcName = gmxEx->getInfo<ExceptionInfoApiFunction>();
+            writer->writeErrNoInfo(*errorNumber, funcName != nullptr ? *funcName : nullptr,
+                                   (indent + 1) * 2);
             bAnythingWritten = true;
         }
 
-        const internal::NestedExceptionList *nested
-            = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
+        const internal::NestedExceptionList* nested = gmxEx->getInfo<ExceptionInfoNestedExceptions>();
         if (nested != nullptr)
         {
             internal::NestedExceptionList::const_iterator ni;
@@ -495,7 +477,7 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
                 {
                     std::rethrow_exception(*ni);
                 }
-                catch (const std::exception &nestedEx)
+                catch (const std::exception& nestedEx)
                 {
                     const int newIndent = indent + (bAnythingWritten ? 1 : 0);
                     formatExceptionMessageInternal(writer, nestedEx, newIndent);
@@ -505,38 +487,38 @@ void formatExceptionMessageInternal(IMessageWriter *writer,
     }
     else
     {
-        writer->writeLine(ex.what(), indent*2);
+        writer->writeLine(ex.what(), indent * 2);
     }
 }
 
 //! \}
 
-}   // namespace
+} // namespace
 
-void printFatalErrorMessage(FILE *fp, const std::exception &ex)
+void printFatalErrorMessage(FILE* fp, const std::exception& ex)
 {
-    const char             *title      = "Unknown exception";
+    const char*             title      = "Unknown exception";
     bool                    bPrintType = false;
-    const GromacsException *gmxEx      = dynamic_cast<const GromacsException *>(&ex);
+    const GromacsException* gmxEx      = dynamic_cast<const GromacsException*>(&ex);
     // TODO: Treat more of the standard exceptions
     if (gmxEx != nullptr)
     {
         title = getErrorCodeString(gmxEx->errorCode());
     }
-    else if (dynamic_cast<const tMPI::system_error *>(&ex) != nullptr)
+    else if (dynamic_cast<const tMPI::system_error*>(&ex) != nullptr)
     {
         title = "System error in thread synchronization";
     }
-    else if (dynamic_cast<const std::bad_alloc *>(&ex) != nullptr)
+    else if (dynamic_cast<const std::bad_alloc*>(&ex) != nullptr)
     {
         title = "Memory allocation failed";
     }
-    else if (dynamic_cast<const std::logic_error *>(&ex) != nullptr)
+    else if (dynamic_cast<const std::logic_error*>(&ex) != nullptr)
     {
         title      = "Standard library logic error (bug)";
         bPrintType = true;
     }
-    else if (dynamic_cast<const std::runtime_error *>(&ex) != nullptr)
+    else if (dynamic_cast<const std::runtime_error*>(&ex) != nullptr)
     {
         title      = "Standard library runtime error (possible bug)";
         bPrintType = true;
@@ -545,12 +527,12 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     {
         bPrintType = true;
     }
-    const char *func = nullptr;
-    const char *file = nullptr;
+    const char* func = nullptr;
+    const char* file = nullptr;
     int         line = 0;
     if (gmxEx != nullptr)
     {
-        const ThrowLocation *loc = gmxEx->getInfo<ExceptionInfoLocation>();
+        const ThrowLocation* loc = gmxEx->getInfo<ExceptionInfoLocation>();
         if (loc != nullptr)
         {
             func = loc->func;
@@ -568,7 +550,7 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     internal::printFatalErrorFooter(fp);
 }
 
-std::string formatExceptionMessageToString(const std::exception &ex)
+std::string formatExceptionMessageToString(const std::exception& ex)
 {
     MessageWriterString writer;
     formatExceptionMessageInternal(&writer, ex, 0);
@@ -576,20 +558,19 @@ std::string formatExceptionMessageToString(const std::exception &ex)
     return writer.result();
 }
 
-void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
+void formatExceptionMessageToFile(FILE* fp, const std::exception& ex)
 {
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);
 }
 
-void formatExceptionMessageToWriter(TextWriter           *writer,
-                                    const std::exception &ex)
+void formatExceptionMessageToWriter(TextWriter* writer, const std::exception& ex)
 {
     MessageWriterTextWriter messageWriter(writer);
     formatExceptionMessageInternal(&messageWriter, ex, 0);
 }
 
-int processExceptionAtExit(const std::exception & /*ex*/)
+int processExceptionAtExit(const std::exception& /*ex*/)
 {
     int returnCode = 1;
     // If we have more than one rank (whether real MPI or thread-MPI),
@@ -604,7 +585,7 @@ int processExceptionAtExit(const std::exception & /*ex*/)
     return returnCode;
 }
 
-void processExceptionAsFatalError(const std::exception &ex)
+void processExceptionAsFatalError(const std::exception& ex)
 {
     printFatalErrorMessage(stderr, ex);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);

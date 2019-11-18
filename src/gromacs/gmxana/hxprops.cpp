@@ -55,34 +55,25 @@
 
 real ellipticity(int nres, t_bb bb[])
 {
-    typedef struct {
+    typedef struct
+    {
         real phi, psi, w;
     } t_ppwstr;
     // Avoid warnings about narrowing conversions from double to real
 #ifdef _MSC_VER
-#pragma warning(disable: 4838)
+#    pragma warning(disable : 4838)
 #endif
-    static const t_ppwstr ppw[] = {
-        {  -67,  -44,  0.31 },
-        {  -66,  -41,  0.31 },
-        {  -59,  -44,  0.44 },
-        {  -57,  -47,  0.56 },
-        {  -53,  -52,  0.78 },
-        {  -48,  -57,  1.00 },
-        {  -70.5, -35.8, 0.15 },
-        {  -57,  -79,  0.23 },
-        {  -38,  -78,  1.20 },
-        {  -60,  -30,  0.24 },
-        {  -54,  -28,  0.46 },
-        {  -44,  -33,  0.68 }
-    };
+    static const t_ppwstr ppw[] = { { -67, -44, 0.31 },     { -66, -41, 0.31 }, { -59, -44, 0.44 },
+                                    { -57, -47, 0.56 },     { -53, -52, 0.78 }, { -48, -57, 1.00 },
+                                    { -70.5, -35.8, 0.15 }, { -57, -79, 0.23 }, { -38, -78, 1.20 },
+                                    { -60, -30, 0.24 },     { -54, -28, 0.46 }, { -44, -33, 0.68 } };
 #ifdef _MSC_VER
-#pragma warning(default: 4838)
+#    pragma warning(default : 4838)
 #endif
 #define NPPW asize(ppw)
 
-    int        i, j;
-    real       ell, pp2, phi, psi;
+    int  i, j;
+    real ell, pp2, phi, psi;
 
     ell = 0;
     for (i = 0; (i < nres); i++)
@@ -91,7 +82,7 @@ real ellipticity(int nres, t_bb bb[])
         psi = bb[i].psi;
         for (j = 0; (j < NPPW); j++)
         {
-            pp2 = gmx::square(phi-ppw[j].phi)+gmx::square(psi-ppw[j].psi);
+            pp2 = gmx::square(phi - ppw[j].phi) + gmx::square(psi - ppw[j].psi);
             if (pp2 < 64)
             {
                 bb[i].nhx++;
@@ -108,12 +99,12 @@ real ahx_len(int gnx, const int index[], rvec x[])
 {
     rvec dx;
 
-    rvec_sub(x[index[0]], x[index[gnx-1]], dx);
+    rvec_sub(x[index[0]], x[index[gnx - 1]], dx);
 
     return norm(dx);
 }
 
-real radius(FILE *fp, int nca, const int ca_index[], rvec x[])
+real radius(FILE* fp, int nca, const int ca_index[], rvec x[])
 /* Assume we have all the backbone */
 {
     real dl2, dlt;
@@ -123,7 +114,7 @@ real radius(FILE *fp, int nca, const int ca_index[], rvec x[])
     for (i = 0; (i < nca); i++)
     {
         ai  = ca_index[i];
-        dl2 = gmx::square(x[ai][XX])+gmx::square(x[ai][YY]);
+        dl2 = gmx::square(x[ai][XX]) + gmx::square(x[ai][YY]);
 
         if (fp)
         {
@@ -137,7 +128,7 @@ real radius(FILE *fp, int nca, const int ca_index[], rvec x[])
         fprintf(fp, "\n");
     }
 
-    return std::sqrt(dlt/nca);
+    return std::sqrt(dlt / nca);
 }
 
 static real rot(rvec x1, const rvec x2)
@@ -148,10 +139,10 @@ static real rot(rvec x1, const rvec x2)
     phi1 = std::atan2(x1[YY], x1[XX]);
     cp   = std::cos(phi1);
     sp   = std::sin(phi1);
-    xx   = cp*x2[XX]+sp*x2[YY];
-    yy   = -sp*x2[XX]+cp*x2[YY];
+    xx   = cp * x2[XX] + sp * x2[YY];
+    yy   = -sp * x2[XX] + cp * x2[YY];
 
-    dphi = RAD2DEG*std::atan2(yy, xx);
+    dphi = RAD2DEG * std::atan2(yy, xx);
 
     return dphi;
 }
@@ -173,10 +164,10 @@ real twist(int nca, const int caindex[], rvec x[])
             dphi += 360;
         }
         pt += dphi;
-        a0  = a1;
+        a0 = a1;
     }
 
-    return (pt/(nca-1));
+    return (pt / (nca - 1));
 }
 
 real ca_phi(int gnx, const int index[], rvec x[])
@@ -192,20 +183,18 @@ real ca_phi(int gnx, const int index[], rvec x[])
     }
 
     phitot = 0;
-    for (i = 0; (i < gnx-4); i++)
+    for (i = 0; (i < gnx - 4); i++)
     {
-        ai  = index[i+0];
-        aj  = index[i+1];
-        ak  = index[i+2];
-        al  = index[i+3];
-        phi = RAD2DEG*
-            dih_angle(x[ai], x[aj], x[ak], x[al], nullptr,
-                      r_ij, r_kj, r_kl, m, n,
-                      &t1, &t2, &t3);
+        ai  = index[i + 0];
+        aj  = index[i + 1];
+        ak  = index[i + 2];
+        al  = index[i + 3];
+        phi = RAD2DEG
+              * dih_angle(x[ai], x[aj], x[ak], x[al], nullptr, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
         phitot += phi;
     }
 
-    return (phitot/(gnx-4.0));
+    return (phitot / (gnx - 4.0));
 }
 
 real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
@@ -221,7 +210,7 @@ real dip(int nbb, int const bbind[], const rvec x[], const t_atom atom[])
         q  = atom[ai].q;
         for (m = 0; (m < DIM); m++)
         {
-            dipje[m] += x[ai][m]*q;
+            dipje[m] += x[ai][m] * q;
         }
     }
     return norm(dipje);
@@ -238,37 +227,34 @@ real rise(int gnx, const int index[], rvec x[])
     ztot = 0;
     for (i = 1; (i < gnx); i++)
     {
-        ai    = index[i];
-        z     = x[ai][ZZ];
-        ztot += (z-z0);
-        z0    = z;
+        ai = index[i];
+        z  = x[ai][ZZ];
+        ztot += (z - z0);
+        z0 = z;
     }
 
-    return (ztot/(gnx-1.0));
+    return (ztot / (gnx - 1.0));
 }
 
-void av_hblen(FILE *fp3, FILE *fp3a,
-              FILE *fp4, FILE *fp4a,
-              FILE *fp5, FILE *fp5a,
-              real t, int nres, t_bb bb[])
+void av_hblen(FILE* fp3, FILE* fp3a, FILE* fp4, FILE* fp4a, FILE* fp5, FILE* fp5a, real t, int nres, t_bb bb[])
 {
     int  i, n3 = 0, n4 = 0, n5 = 0;
     real d3 = 0, d4 = 0, d5 = 0;
 
-    for (i = 0; (i < nres-3); i++)
+    for (i = 0; (i < nres - 3); i++)
     {
         if (bb[i].bHelix)
         {
-            fprintf(fp3a,  "%10g", bb[i].d3);
+            fprintf(fp3a, "%10g", bb[i].d3);
             n3++;
             d3 += bb[i].d3;
-            if (i < nres-4)
+            if (i < nres - 4)
             {
                 fprintf(fp4a, "%10g", bb[i].d4);
                 n4++;
                 d4 += bb[i].d4;
             }
-            if (i < nres-5)
+            if (i < nres - 5)
             {
                 fprintf(fp5a, "%10g", bb[i].d5);
                 n5++;
@@ -276,17 +262,15 @@ void av_hblen(FILE *fp3, FILE *fp3a,
             }
         }
     }
-    fprintf(fp3, "%10g  %10g\n", t, d3/n3);
-    fprintf(fp4, "%10g  %10g\n", t, d4/n4);
-    fprintf(fp5, "%10g  %10g\n", t, d5/n5);
+    fprintf(fp3, "%10g  %10g\n", t, d3 / n3);
+    fprintf(fp4, "%10g  %10g\n", t, d4 / n4);
+    fprintf(fp5, "%10g  %10g\n", t, d5 / n5);
     fprintf(fp3a, "\n");
     fprintf(fp4a, "\n");
     fprintf(fp5a, "\n");
-
 }
 
-void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
-               real t, int nres, t_bb bb[])
+void av_phipsi(FILE* fphi, FILE* fpsi, FILE* fphi2, FILE* fpsi2, real t, int nres, t_bb bb[])
 {
     int  i, n = 0;
     real phi = 0, psi = 0;
@@ -304,8 +288,8 @@ void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
             n++;
         }
     }
-    fprintf(fphi, "%10g  %10g\n", t, (phi/n));
-    fprintf(fpsi, "%10g  %10g\n", t, (psi/n));
+    fprintf(fphi, "%10g  %10g\n", t, (phi / n));
+    fprintf(fpsi, "%10g  %10g\n", t, (psi / n));
     fprintf(fphi2, "\n");
     fprintf(fpsi2, "\n");
 }
@@ -317,12 +301,12 @@ static void set_ahcity(int nbb, t_bb bb[])
 
     for (n = 0; (n < nbb); n++)
     {
-        pp2 = gmx::square(bb[n].phi-PHI_AHX)+gmx::square(bb[n].psi-PSI_AHX);
+        pp2 = gmx::square(bb[n].phi - PHI_AHX) + gmx::square(bb[n].psi - PSI_AHX);
 
         bb[n].bHelix = FALSE;
         if (pp2 < 2500)
         {
-            if ((bb[n].d4 < 0.36) || ((n > 0) && bb[n-1].bHelix))
+            if ((bb[n].d4 < 0.36) || ((n > 0) && bb[n - 1].bHelix))
             {
                 bb[n].bHelix = TRUE;
             }
@@ -330,16 +314,21 @@ static void set_ahcity(int nbb, t_bb bb[])
     }
 }
 
-t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-              int *nall, int **index,
-              char ***atomname, t_atom atom[],
-              t_resinfo *resinfo)
+t_bb* mkbbind(const char* fn,
+              int*        nres,
+              int*        nbb,
+              int         res0,
+              int*        nall,
+              int**       index,
+              char***     atomname,
+              t_atom      atom[],
+              t_resinfo*  resinfo)
 {
-    static const char * bb_nm[] = { "N", "H", "CA", "C", "O", "HN" };
+    static const char* bb_nm[] = { "N", "H", "CA", "C", "O", "HN" };
 #define NBB asize(bb_nm)
-    t_bb               *bb;
-    char               *grpname;
-    int                 ai, i, i0, i1, j, k, rnr, gnx, r0, r1;
+    t_bb* bb;
+    char* grpname;
+    int   ai, i, i0, i1, j, k, rnr, gnx, r0, r1;
 
     fprintf(stderr, "Please select a group containing the entire backbone\n");
     rd_index(fn, 1, &gnx, index, &grpname);
@@ -351,12 +340,13 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
         r0 = std::min(r0, atom[(*index)[i]].resind);
         r1 = std::max(r1, atom[(*index)[i]].resind);
     }
-    rnr = r1-r0+1;
+    rnr = r1 - r0 + 1;
     fprintf(stderr, "There are %d residues\n", rnr);
     snew(bb, rnr);
     for (i = 0; (i < rnr); i++)
     {
-        bb[i].N = bb[i].H = bb[i].CA = bb[i].C = bb[i].O = -1; bb[i].resno = res0+i;
+        bb[i].N = bb[i].H = bb[i].CA = bb[i].C = bb[i].O = -1;
+        bb[i].resno                                      = res0 + i;
     }
 
     for (i = j = 0; (i < gnx); i++)
@@ -366,7 +356,7 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
         int resindex = atom[ai].resind;
         // Create an index into the residues present in the selected
         // index group.
-        int bbindex  = resindex -r0;
+        int bbindex = resindex - r0;
         if (std::strcmp(*(resinfo[resindex].name), "PRO") == 0)
         {
             // For PRO in a peptide, there is no H bound to backbone
@@ -385,42 +375,31 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
         }
         switch (k)
         {
-            case 0:
-                bb[bbindex].N = ai;
-                break;
+            case 0: bb[bbindex].N = ai; break;
             case 1:
             case 5:
                 /* No attempt to address the case where some weird input has both H and HN atoms in the group */
                 bb[bbindex].H = ai;
                 break;
-            case 2:
-                bb[bbindex].CA = ai;
-                break;
-            case 3:
-                bb[bbindex].C = ai;
-                break;
-            case 4:
-                bb[bbindex].O = ai;
-                break;
-            default:
-                break;
+            case 2: bb[bbindex].CA = ai; break;
+            case 3: bb[bbindex].C = ai; break;
+            case 4: bb[bbindex].O = ai; break;
+            default: break;
         }
     }
 
     for (i0 = 0; (i0 < rnr); i0++)
     {
-        if ((bb[i0].N != -1) && (bb[i0].H != -1) &&
-            (bb[i0].CA != -1) &&
-            (bb[i0].C != -1) && (bb[i0].O != -1))
+        if ((bb[i0].N != -1) && (bb[i0].H != -1) && (bb[i0].CA != -1) && (bb[i0].C != -1)
+            && (bb[i0].O != -1))
         {
             break;
         }
     }
-    for (i1 = rnr-1; (i1 >= 0); i1--)
+    for (i1 = rnr - 1; (i1 >= 0); i1--)
     {
-        if ((bb[i1].N != -1) && (bb[i1].H != -1) &&
-            (bb[i1].CA != -1) &&
-            (bb[i1].C != -1) && (bb[i1].O != -1))
+        if ((bb[i1].N != -1) && (bb[i1].H != -1) && (bb[i1].CA != -1) && (bb[i1].C != -1)
+            && (bb[i1].O != -1))
         {
             break;
         }
@@ -429,19 +408,19 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     {
         i0++;
     }
-    if (i1 == rnr-1)
+    if (i1 == rnr - 1)
     {
         i1--;
     }
 
     for (i = i0; (i < i1); i++)
     {
-        bb[i].Cprev = bb[i-1].C;
-        bb[i].Nnext = bb[i+1].N;
+        bb[i].Cprev = bb[i - 1].C;
+        bb[i].Nnext = bb[i + 1].N;
     }
-    rnr = std::max(0, i1-i0+1);
-    fprintf(stderr, "There are %d complete backbone residues (from %d to %d)\n",
-            rnr, bb[i0].resno, bb[i1].resno);
+    rnr = std::max(0, i1 - i0 + 1);
+    fprintf(stderr, "There are %d complete backbone residues (from %d to %d)\n", rnr, bb[i0].resno,
+            bb[i1].resno);
     if (rnr == 0)
     {
         gmx_fatal(FARGS, "Zero complete backbone residues were found, cannot proceed");
@@ -459,12 +438,12 @@ t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
     }
 
     *nres = rnr;
-    *nbb  = rnr*asize(bb_nm);
+    *nbb  = rnr * asize(bb_nm);
 
     return bb;
 }
 
-real pprms(FILE *fp, int nbb, t_bb bb[])
+real pprms(FILE* fp, int nbb, t_bb bb[])
 {
     int  i, n;
     real rms, rmst, rms2;
@@ -474,7 +453,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
     {
         if (bb[i].bHelix)
         {
-            rms   = std::sqrt(bb[i].pprms2);
+            rms = std::sqrt(bb[i].pprms2);
             rmst += rms;
             rms2 += bb[i].pprms2;
             fprintf(fp, "%10g  ", rms);
@@ -482,7 +461,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
         }
     }
     fprintf(fp, "\n");
-    rms = std::sqrt(rms2/n-gmx::square(rmst/n));
+    rms = std::sqrt(rms2 / n - gmx::square(rmst / n));
 
     return rms;
 }
@@ -496,80 +475,67 @@ void calc_hxprops(int nres, t_bb bb[], const rvec x[])
     {
         ao       = bb[i].O;
         bb[i].d4 = bb[i].d3 = bb[i].d5 = 0;
-        if (i < nres-3)
+        if (i < nres - 3)
         {
-            an = bb[i+3].N;
+            an = bb[i + 3].N;
             rvec_sub(x[ao], x[an], dx);
             bb[i].d3 = norm(dx);
         }
-        if (i < nres-4)
+        if (i < nres - 4)
         {
-            an = bb[i+4].N;
+            an = bb[i + 4].N;
             rvec_sub(x[ao], x[an], dx);
             bb[i].d4 = norm(dx);
         }
-        if (i < nres-5)
+        if (i < nres - 5)
         {
-            an = bb[i+5].N;
+            an = bb[i + 5].N;
             rvec_sub(x[ao], x[an], dx);
             bb[i].d5 = norm(dx);
         }
 
-        bb[i].phi = RAD2DEG*
-            dih_angle(x[bb[i].Cprev], x[bb[i].N], x[bb[i].CA], x[bb[i].C], nullptr,
-                      r_ij, r_kj, r_kl, m, n,
-                      &t1, &t2, &t3);
-        bb[i].psi = RAD2DEG*
-            dih_angle(x[bb[i].N], x[bb[i].CA], x[bb[i].C], x[bb[i].Nnext], nullptr,
-                      r_ij, r_kj, r_kl, m, n,
-                      &t1, &t2, &t3);
-        bb[i].pprms2 = gmx::square(bb[i].phi-PHI_AHX)+gmx::square(bb[i].psi-PSI_AHX);
+        bb[i].phi = RAD2DEG
+                    * dih_angle(x[bb[i].Cprev], x[bb[i].N], x[bb[i].CA], x[bb[i].C], nullptr, r_ij,
+                                r_kj, r_kl, m, n, &t1, &t2, &t3);
+        bb[i].psi = RAD2DEG
+                    * dih_angle(x[bb[i].N], x[bb[i].CA], x[bb[i].C], x[bb[i].Nnext], nullptr, r_ij,
+                                r_kj, r_kl, m, n, &t1, &t2, &t3);
+        bb[i].pprms2 = gmx::square(bb[i].phi - PHI_AHX) + gmx::square(bb[i].psi - PSI_AHX);
 
-        bb[i].jcaha +=
-            1.4*std::sin((bb[i].psi+138.0)*DEG2RAD) -
-            4.1*std::cos(2.0*DEG2RAD*(bb[i].psi+138.0)) +
-            2.0*std::cos(2.0*DEG2RAD*(bb[i].phi+30.0));
+        bb[i].jcaha += 1.4 * std::sin((bb[i].psi + 138.0) * DEG2RAD)
+                       - 4.1 * std::cos(2.0 * DEG2RAD * (bb[i].psi + 138.0))
+                       + 2.0 * std::cos(2.0 * DEG2RAD * (bb[i].phi + 30.0));
     }
 }
 
-static void check_ahx(int nres, t_bb bb[],
-                      int *hstart, int *hend)
+static void check_ahx(int nres, t_bb bb[], int* hstart, int* hend)
 {
-    int  h0, h1, h0sav, h1sav;
+    int h0, h1, h0sav, h1sav;
 
     set_ahcity(nres, bb);
     h0 = h0sav = h1sav = 0;
     do
     {
-        for (; (!bb[h0].bHelix) && (h0 < nres-4); h0++)
-        {
-            ;
-        }
-        for (h1 = h0; bb[h1+1].bHelix && (h1 < nres-1); h1++)
-        {
-            ;
-        }
+        for (; (!bb[h0].bHelix) && (h0 < nres - 4); h0++) {}
+        for (h1 = h0; bb[h1 + 1].bHelix && (h1 < nres - 1); h1++) {}
         if (h1 > h0)
         {
             /*fprintf(stderr,"Helix from %d to %d\n",h0,h1);*/
-            if (h1-h0 > h1sav-h0sav)
+            if (h1 - h0 > h1sav - h0sav)
             {
                 h0sav = h0;
                 h1sav = h1;
             }
         }
-        h0 = h1+1;
-    }
-    while (h1 < nres-1);
+        h0 = h1 + 1;
+    } while (h1 < nres - 1);
     *hstart = h0sav;
     *hend   = h1sav;
 }
 
-void do_start_end(int nres, t_bb bb[], int *nbb, int bbindex[],
-                  int *nca, int caindex[],
-                  gmx_bool bRange, int rStart, int rEnd)
+void do_start_end(int nres, t_bb bb[], int* nbb, int bbindex[], int* nca, int caindex[], gmx_bool bRange, int rStart, int rEnd)
 {
-    int    i, j, hstart = 0, hend = 0;
+    int i, j, hstart = 0, hend = 0;
 
     if (bRange)
     {
@@ -594,34 +560,32 @@ void do_start_end(int nres, t_bb bb[], int *nbb, int bbindex[],
         /* Find start and end of longest helix fragment */
         check_ahx(nres, bb, &hstart, &hend);
     }
-    fprintf(stderr, "helix from: %d through %d\n",
-            bb[hstart].resno, bb[hend].resno);
+    fprintf(stderr, "helix from: %d through %d\n", bb[hstart].resno, bb[hend].resno);
 
     for (j = 0, i = hstart; (i <= hend); i++)
     {
-        bbindex[j++]      = bb[i].N;
-        bbindex[j++]      = bb[i].H;
-        bbindex[j++]      = bb[i].CA;
-        bbindex[j++]      = bb[i].C;
-        bbindex[j++]      = bb[i].O;
-        caindex[i-hstart] = bb[i].CA;
+        bbindex[j++]        = bb[i].N;
+        bbindex[j++]        = bb[i].H;
+        bbindex[j++]        = bb[i].CA;
+        bbindex[j++]        = bb[i].C;
+        bbindex[j++]        = bb[i].O;
+        caindex[i - hstart] = bb[i].CA;
     }
     *nbb = j;
-    *nca = (hend-hstart+1);
+    *nca = (hend - hstart + 1);
 }
 
-void pr_bb(FILE *fp, int nres, t_bb bb[])
+void pr_bb(FILE* fp, int nres, t_bb bb[])
 {
     int i;
 
     fprintf(fp, "\n");
-    fprintf(fp, "%3s %3s %3s %3s %3s %7s %7s %7s %7s %7s %3s\n",
-            "AA", "N", "Ca", "C", "O", "Phi", "Psi", "D3", "D4", "D5", "Hx?");
+    fprintf(fp, "%3s %3s %3s %3s %3s %7s %7s %7s %7s %7s %3s\n", "AA", "N", "Ca", "C", "O", "Phi",
+            "Psi", "D3", "D4", "D5", "Hx?");
     for (i = 0; (i < nres); i++)
     {
-        fprintf(fp, "%3d %3d %3d %3d %3d %7.2f %7.2f %7.3f %7.3f %7.3f %3s\n",
-                bb[i].resno, bb[i].N, bb[i].CA, bb[i].C, bb[i].O,
-                bb[i].phi, bb[i].psi, bb[i].d3, bb[i].d4, bb[i].d5,
+        fprintf(fp, "%3d %3d %3d %3d %3d %7.2f %7.2f %7.3f %7.3f %7.3f %3s\n", bb[i].resno, bb[i].N,
+                bb[i].CA, bb[i].C, bb[i].O, bb[i].phi, bb[i].psi, bb[i].d3, bb[i].d4, bb[i].d5,
                 bb[i].bHelix ? "Yes" : "No");
     }
     fprintf(fp, "\n");

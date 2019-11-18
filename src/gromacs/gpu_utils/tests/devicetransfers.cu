@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,19 +65,18 @@ namespace
  *
  * \throws InternalError  If status indicates failure, supplying
  *                        descriptive text from \c message. */
-static void throwUponFailure(cudaError_t status, const char *message)
+static void throwUponFailure(cudaError_t status, const char* message)
 {
     if (status != cudaSuccess)
     {
-        GMX_THROW(InternalError(formatString("Failure while %s", message)));;
+        GMX_THROW(InternalError(formatString("Failure while %s", message)));
+        ;
     }
 }
 
-}   // namespace
+} // namespace
 
-void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
-                       ArrayRef<const char>  input,
-                       ArrayRef<char>        output)
+void doDeviceTransfers(const gmx_gpu_info_t& gpuInfo, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
     const auto compatibleGpus = getCompatibleGpus(gpuInfo);
@@ -88,7 +87,7 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
     }
     cudaError_t status;
 
-    const auto *device = getDeviceInfo(gpuInfo, compatibleGpus[0]);
+    const auto* device = getDeviceInfo(gpuInfo, compatibleGpus[0]);
     int         oldDeviceId;
 
     status = cudaGetDevice(&oldDeviceId);
@@ -96,7 +95,7 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
     status = cudaSetDevice(device->id);
     throwUponFailure(status, "setting device id to the first compatible GPU");
 
-    void       *devicePointer;
+    void* devicePointer;
     status = cudaMalloc(&devicePointer, input.size());
     throwUponFailure(status, "creating buffer");
 

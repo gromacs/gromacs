@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,11 +60,9 @@ class TestReferenceChecker;
 
 struct ConfMatchSettings
 {
-    ConfMatchSettings() : tolerance(defaultRealTolerance())
-    {
-    }
+    ConfMatchSettings() : tolerance(defaultRealTolerance()) {}
 
-    FloatingPointTolerance  tolerance;
+    FloatingPointTolerance tolerance;
 };
 
 /*! \brief
@@ -79,9 +77,7 @@ struct ConfMatchSettings
  *
  * \see ConfMatch
  */
-void checkConfFile(TextInputStream         *input,
-                   TestReferenceChecker    *checker,
-                   const ConfMatchSettings &settings);
+void checkConfFile(TextInputStream* input, TestReferenceChecker* checker, const ConfMatchSettings& settings);
 
 /*! \libinternal \brief
  * Match the contents as an gro file.
@@ -93,18 +89,18 @@ void checkConfFile(TextInputStream         *input,
  */
 class ConfMatch : public ITextBlockMatcherSettings
 {
-    public:
-        //! Sets the tolerance for matching floating point values.
-        ConfMatch &tolerance(const FloatingPointTolerance &tolerance)
-        {
-            settings_.tolerance = tolerance;
-            return *this;
-        }
+public:
+    //! Sets the tolerance for matching floating point values.
+    ConfMatch& tolerance(const FloatingPointTolerance& tolerance)
+    {
+        settings_.tolerance = tolerance;
+        return *this;
+    }
 
-        TextBlockMatcherPointer createMatcher() const override;
+    TextBlockMatcherPointer createMatcher() const override;
 
-    private:
-        ConfMatchSettings  settings_;
+private:
+    ConfMatchSettings settings_;
 };
 
 } // namespace test

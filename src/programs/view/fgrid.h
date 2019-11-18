@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,47 +42,60 @@
 
 #include "xdlgitem.h"
 
-typedef struct {
+typedef struct
+{
     edlgitem edlg;
     bool     bDef;
     int      nname;
-    char   **name;
-    char    *set, *get, *def, *help;
+    char**   name;
+    char *   set, *get, *def, *help;
 } t_fitem;
 
-typedef struct {
-    char     *name;
+typedef struct
+{
+    char*     name;
     int       x, y, w, h;
     int       nfitem;
-    t_fitem **fitem;
+    t_fitem** fitem;
 } t_fgroup;
 
-typedef struct {
+typedef struct
+{
     int      x, y, w, h;
-    t_fitem *fitem;
+    t_fitem* fitem;
 } t_fsimple;
 
-typedef struct {
+typedef struct
+{
     int         w, h;
     int         nfgroup;
-    t_fgroup  **fgroup;
+    t_fgroup**  fgroup;
     int         nfsimple;
-    t_fsimple **fsimple;
+    t_fsimple** fsimple;
 } t_fgrid;
 
-typedef enum {
-    eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT,
-    eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS
+typedef enum
+{
+    eGRIDEXP,
+    eACCOEXP,
+    eACCCEXP,
+    eGRPEXP,
+    eITEMEXP,
+    eSAMEPOINT,
+    eTOOWIDE,
+    eTOOHIGH,
+    eQUOTE,
+    eNOVALS
 } eDLGERR;
 
-void ReadDlgErr(const char *infile, eDLGERR err, const char *s);
+void ReadDlgErr(const char* infile, eDLGERR err, const char* s);
 
-t_fgrid *FGridFromFile(const char *infile);
+t_fgrid* FGridFromFile(const char* infile);
 
-void DoneFGrid(t_fgrid *fgrid);
+void DoneFGrid(t_fgrid* fgrid);
 
-void DumpFGrid(t_fgrid *fgrid);
+void DumpFGrid(t_fgrid* fgrid);
 
-void ReadQuoteString(const char *infile, FILE *in, char *buf);
+void ReadQuoteString(const char* infile, FILE* in, char* buf);
 
-#endif  /* _fgrid_h */
+#endif /* _fgrid_h */

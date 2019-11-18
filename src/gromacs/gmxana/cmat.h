@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,50 +43,52 @@
 
 struct gmx_output_env_t;
 
-typedef struct {
+typedef struct
+{
     int  i, j;
     real dist;
 } t_dist;
 
-typedef struct {
-    int  conf, clust;
+typedef struct
+{
+    int conf, clust;
 } t_clustid;
 
-typedef struct {
+typedef struct
+{
     int      n1, nn;
-    int     *m_ind;
+    int*     m_ind;
     gmx_bool b1D;
     real     minrms, maxrms, sumrms;
-    real    *erow;
-    real   **mat;
+    real*    erow;
+    real**   mat;
 } t_mat;
 
 /* The matrix is indexed using the matrix index */
-#define EROW(m, i)  m->erow[i]
+#define EROW(m, i) m->erow[i]
 
-extern t_mat *init_mat(int n1, gmx_bool b1D);
+extern t_mat* init_mat(int n1, gmx_bool b1D);
 
-extern void copy_t_mat(t_mat *dst, t_mat *src);
+extern void copy_t_mat(t_mat* dst, t_mat* src);
 
-extern void enlarge_mat(t_mat *m, int deltan);
+extern void enlarge_mat(t_mat* m, int deltan);
 
-extern void reset_index(t_mat *m);
+extern void reset_index(t_mat* m);
 
-extern void swap_rows(t_mat *m, int iswap, int jswap);
+extern void swap_rows(t_mat* m, int iswap, int jswap);
 
-extern void set_mat_entry(t_mat *m, int i, int j, real val);
+extern void set_mat_entry(t_mat* m, int i, int j, real val);
 
-extern void done_mat(t_mat **m);
+extern void done_mat(t_mat** m);
 
-extern real mat_energy(t_mat *mat);
+extern real mat_energy(t_mat* mat);
 
-extern void swap_mat(t_mat *m);
+extern void swap_mat(t_mat* m);
 
-extern void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
-                          const gmx_output_env_t *oenv);
+extern void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_output_env_t* oenv);
 
-extern void rmsd_distribution(const char *fn, t_mat *m, const gmx_output_env_t *oenv);
+extern void rmsd_distribution(const char* fn, t_mat* m, const gmx_output_env_t* oenv);
 
-extern t_clustid *new_clustid(int n1);
+extern t_clustid* new_clustid(int n1);
 
 #endif

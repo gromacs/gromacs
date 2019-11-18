@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,7 +46,6 @@
 #include <string>
 
 #include "gromacs/selection/nbsearch.h"
-#include "gromacs/selection/position.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
@@ -54,6 +53,7 @@
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
+#include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
 
@@ -67,12 +67,15 @@ namespace internal
  * SelectionData
  */
 
-SelectionData::SelectionData(SelectionTreeElement *elem,
-                             const char           *selstr)
-    : name_(elem->name()), selectionText_(selstr),
-      rootElement_(*elem), coveredFractionType_(CFRAC_NONE),
-      coveredFraction_(1.0), averageCoveredFraction_(1.0),
-      bDynamic_(false), bDynamicCoveredFraction_(false)
+SelectionData::SelectionData(SelectionTreeElement* elem, const char* selstr) :
+    name_(elem->name()),
+    selectionText_(selstr),
+    rootElement_(*elem),
+    coveredFractionType_(CFRAC_NONE),
+    coveredFraction_(1.0),
+    averageCoveredFraction_(1.0),
+    bDynamic_(false),
+    bDynamicCoveredFraction_(false)
 {
     if (elem->child->type == SEL_CONST)
     {
@@ -82,7 +85,7 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
     else
     {
         SelectionTreeElementPointer child = elem->child;
-        child->flags     &= ~SEL_ALLOCVAL;
+        child->flags &= ~SEL_ALLOCVAL;
         _gmx_selvalue_setstore(&child->v, &rawPositions_);
         /* We should also skip any modifiers to determine the dynamic
          * status. */
@@ -121,13 +124,10 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
 }
 
 
-SelectionData::~SelectionData()
-{
-}
+SelectionData::~SelectionData() {}
 
 
-bool
-SelectionData::initCoveredFraction(e_coverfrac_t type)
+bool SelectionData::initCoveredFraction(e_coverfrac_t type)
 {
     coveredFractionType_ = type;
     if (type == CFRAC_NONE)
@@ -161,9 +161,10 @@ namespace
  *
  * Does not throw if enough space has been reserved for the output vectors.
  */
-void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
-                             std::vector<real> *masses,
-                             std::vector<real> *charges)
+void computeMassesAndCharges(const gmx_mtop_t*    top,
+                             const gmx_ana_pos_t& pos,
+                             std::vector<real>*   masses,
+                             std::vector<real>*   charges)
 {
     GMX_ASSERT(top != nullptr, "Should not have been called with NULL topology");
     masses->clear();
@@ -173,40 +174,36 @@ void computeMassesAndCharges(const gmx_mtop_t *top, const gmx_ana_pos_t &pos,
     {
         real mass   = 0.0;
         real charge = 0.0;
-        for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
+        for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b + 1]; ++i)
         {
-            const int     index  = pos.m.mapb.a[i];
-            const t_atom &atom   = mtopGetAtomParameters(top, index, &molb);
-            mass                += atom.m;
-            charge              += atom.q;
+            const int     index = pos.m.mapb.a[i];
+            const t_atom& atom  = mtopGetAtomParameters(top, index, &molb);
+            mass += atom.m;
+            charge += atom.q;
         }
         masses->push_back(mass);
         charges->push_back(charge);
     }
 }
 
-}       // namespace
+} // namespace
 
-bool
-SelectionData::hasSortedAtomIndices() const
+bool SelectionData::hasSortedAtomIndices() const
 {
     gmx_ana_index_t g;
     gmx_ana_index_set(&g, rawPositions_.m.mapb.nra, rawPositions_.m.mapb.a, -1);
     return gmx_ana_index_check_sorted(&g);
 }
 
-void
-SelectionData::refreshName()
+void SelectionData::refreshName()
 {
     rootElement_.fillNameIfMissing(selectionText_.c_str());
     name_ = rootElement_.name();
 }
 
-void
-SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
+void SelectionData::initializeMassesAndCharges(const gmx_mtop_t* top)
 {
-    GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
-               "Should not be called more than once");
+    GMX_ASSERT(posMass_.empty() && posCharge_.empty(), "Should not be called more than once");
     posMass_.reserve(posCount());
     posCharge_.reserve(posCount());
     if (top == nullptr)
@@ -221,8 +218,7 @@ SelectionData::initializeMassesAndCharges(const gmx_mtop_t *top)
 }
 
 
-void
-SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
+void SelectionData::refreshMassesAndCharges(const gmx_mtop_t* top)
 {
     if (top != nullptr && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
@@ -231,20 +227,18 @@ SelectionData::refreshMassesAndCharges(const gmx_mtop_t *top)
 }
 
 
-void
-SelectionData::updateCoveredFractionForFrame()
+void SelectionData::updateCoveredFractionForFrame()
 {
     if (isCoveredFractionDynamic())
     {
-        real cfrac = _gmx_selelem_estimate_coverfrac(rootElement());
-        coveredFraction_         = cfrac;
+        real cfrac       = _gmx_selelem_estimate_coverfrac(rootElement());
+        coveredFraction_ = cfrac;
         averageCoveredFraction_ += cfrac;
     }
 }
 
 
-void
-SelectionData::computeAverageCoveredFraction(int nframes)
+void SelectionData::computeAverageCoveredFraction(int nframes)
 {
     if (isCoveredFractionDynamic() && nframes > 0)
     {
@@ -253,19 +247,17 @@ SelectionData::computeAverageCoveredFraction(int nframes)
 }
 
 
-void
-SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
+void SelectionData::restoreOriginalPositions(const gmx_mtop_t* top)
 {
     if (isDynamic())
     {
-        gmx_ana_pos_t &p = rawPositions_;
-        gmx_ana_indexmap_update(&p.m, rootElement().v.u.g,
-                                hasFlag(gmx::efSelection_DynamicMask));
+        gmx_ana_pos_t& p = rawPositions_;
+        gmx_ana_indexmap_update(&p.m, rootElement().v.u.g, hasFlag(gmx::efSelection_DynamicMask));
         refreshMassesAndCharges(top);
     }
 }
 
-}   // namespace internal
+} // namespace internal
 
 /********************************************************************
  * Selection
@@ -273,8 +265,7 @@ SelectionData::restoreOriginalPositions(const gmx_mtop_t *top)
 
 Selection::operator AnalysisNeighborhoodPositions() const
 {
-    AnalysisNeighborhoodPositions pos(data().rawPositions_.x,
-                                      data().rawPositions_.count());
+    AnalysisNeighborhoodPositions pos(data().rawPositions_.x, data().rawPositions_.count());
     if (hasOnlyAtoms())
     {
         pos.exclusionIds(atomIndices());
@@ -283,56 +274,50 @@ Selection::operator AnalysisNeighborhoodPositions() const
 }
 
 
-void
-Selection::setOriginalId(int i, int id)
+void Selection::setOriginalId(int i, int id)
 {
     data().rawPositions_.m.mapid[i] = id;
     data().rawPositions_.m.orgid[i] = id;
 }
 
 
-int
-Selection::initOriginalIdsToGroup(const gmx_mtop_t *top, e_index_t type)
+int Selection::initOriginalIdsToGroup(const gmx_mtop_t* top, e_index_t type)
 {
     try
     {
         return gmx_ana_indexmap_init_orgid_group(&data().rawPositions_.m, top, type);
     }
-    catch (const InconsistentInputError &)
+    catch (const InconsistentInputError&)
     {
         GMX_ASSERT(type == INDEX_RES || type == INDEX_MOL,
                    "Expected that only grouping by residue/molecule would fail");
-        std::string message =
-            formatString("Cannot group selection '%s' into %s, because some "
-                         "positions have atoms from more than one such group.",
-                         name(), type == INDEX_MOL ? "molecules" : "residues");
+        std::string message = formatString(
+                "Cannot group selection '%s' into %s, because some "
+                "positions have atoms from more than one such group.",
+                name(), type == INDEX_MOL ? "molecules" : "residues");
         GMX_THROW(InconsistentInputError(message));
     }
 }
 
 
-void
-Selection::printInfo(FILE *fp) const
+void Selection::printInfo(FILE* fp) const
 {
-    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name(),
-            posCount(),  posCount()  == 1 ? "" : "s",
-            atomCount(), atomCount() == 1 ? "" : "s",
-            isDynamic() ? ", dynamic" : "");
+    fprintf(fp, "\"%s\" (%d position%s, %d atom%s%s)", name(), posCount(), posCount() == 1 ? "" : "s",
+            atomCount(), atomCount() == 1 ? "" : "s", isDynamic() ? ", dynamic" : "");
     fprintf(fp, "\n");
 }
 
 
-void
-Selection::printDebugInfo(FILE *fp, int nmaxind) const
+void Selection::printDebugInfo(FILE* fp, int nmaxind) const
 {
-    const gmx_ana_pos_t &p = data().rawPositions_;
+    const gmx_ana_pos_t& p = data().rawPositions_;
 
     fprintf(fp, "  ");
     printInfo(fp);
     fprintf(fp, "    Group ");
     gmx_ana_index_t g;
     gmx_ana_index_set(&g, p.m.mapb.nra, p.m.mapb.a, 0);
-    TextWriter      writer(fp);
+    TextWriter writer(fp);
     gmx_ana_index_dump(&writer, &g, nmaxind);
 
     fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
@@ -407,8 +392,7 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 
 SelectionPosition::operator AnalysisNeighborhoodPositions() const
 {
-    AnalysisNeighborhoodPositions pos(sel_->rawPositions_.x,
-                                      sel_->rawPositions_.count());
+    AnalysisNeighborhoodPositions pos(sel_->rawPositions_.x, sel_->rawPositions_.count());
     if (sel_->hasOnlyAtoms())
     {
         // TODO: Move atomIndices() such that it can be reused here as well.

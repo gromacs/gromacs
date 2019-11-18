@@ -43,18 +43,7 @@ set_property(GLOBAL PROPERTY GMX_LIBGROMACS_GPU_IMPL_SOURCES)
 set_property(GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
 set_property(GLOBAL PROPERTY GMX_AVX_512_SOURCE)
 
-add_library(libgromacs_external OBJECT "")
-if(CMAKE_COMPILER_IS_GNUCXX)
-    # Keep quiet about e.g. linearalgebra module
-    target_compile_options(libgromacs_external PRIVATE ${CXXFLAGS_NO_STRINGOP_TRUNCATION})
-endif()
-
-add_library(libgromacs_generated OBJECT "")
-if (BUILD_SHARED_LIBS)
-    set_target_properties(libgromacs_external PROPERTIES POSITION_INDEPENDENT_CODE true)
-    set_target_properties(libgromacs_generated PROPERTIES POSITION_INDEPENDENT_CODE true)
-endif()
-
+set(libgromacs_object_library_dependencies "")
 function (_gmx_add_files_to_property PROPERTY)
     foreach (_file ${ARGN})
         if (IS_ABSOLUTE "${_file}")
@@ -76,23 +65,11 @@ function (gmx_compile_cpp_as_cuda)
     _gmx_add_files_to_property(GMX_LIBGROMACS_GPU_IMPL_SOURCES ${ARGN})
 endfunction ()
 
-function (gmx_install_headers)
-    if (NOT GMX_BUILD_MDRUN_ONLY)
-        file(RELATIVE_PATH _dest ${PROJECT_SOURCE_DIR}/src ${CMAKE_CURRENT_LIST_DIR})
-        install(FILES       ${ARGN}
-                DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${_dest}"
-                COMPONENT   development)
-    endif()
-    _gmx_add_files_to_property(GMX_INSTALLED_HEADERS ${ARGN})
-endfunction ()
-
-function (gmx_write_installed_header_list)
-    get_property(_list GLOBAL PROPERTY GMX_INSTALLED_HEADERS)
-    string(REPLACE ";" "\n" _list "${_list}")
-    # TODO: Make this only update the file timestamp if the contents actually change.
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/installed-headers.txt "${_list}")
-endfunction()
-
+# Add these contents first because linking their tests can take a lot
+# of time, so we want lots of parallel work still available after
+# linking starts.
+add_subdirectory(utility)
+# Add normal contents
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(applied_forces)
@@ -120,8 +97,6 @@ add_subdirectory(taskassignment)
 add_subdirectory(timing)
 add_subdirectory(topology)
 add_subdirectory(trajectory)
-add_subdirectory(utility)
-add_subdirectory(fileio)
 add_subdirectory(swap)
 add_subdirectory(essentialdynamics)
 add_subdirectory(pulling)
@@ -130,13 +105,14 @@ add_subdirectory(simd)
 add_subdirectory(imd)
 add_subdirectory(compat)
 add_subdirectory(mimic)
+add_subdirectory(modularsimulator)
 if (NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(gmxana)
     add_subdirectory(gmxpreprocess)
     add_subdirectory(correlationfunctions)
     add_subdirectory(statistics)
     add_subdirectory(analysisdata)
-    add_subdirectory(selection)
+    add_subdirectory(coordinateio)
     add_subdirectory(trajectoryanalysis)
     add_subdirectory(energyanalysis)
     add_subdirectory(tools)
@@ -151,26 +127,26 @@ list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOU
 #    add_subdirectory(thread_mpi)
 #endif()
 #target_link_libraries(gmx ${GMX_EXTRA_LIBRARIES} ${THREAD_MPI_LIB})
-
-tmpi_get_source_list(THREAD_MPI_SOURCES ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/src)
-target_sources(libgromacs_external PRIVATE ${THREAD_MPI_SOURCES})
+tmpi_get_source_list(THREAD_MPI_SOURCES ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/src)
+add_library(thread_mpi OBJECT ${THREAD_MPI_SOURCES})
+target_compile_definitions(thread_mpi PRIVATE HAVE_CONFIG_H)
+gmx_target_compile_options(thread_mpi)
+if (WIN32)
+    gmx_target_warning_suppression(thread_mpi /wd4996 HAS_NO_MSVC_UNSAFE_FUNCTION)
+endif()
+list(APPEND libgromacs_object_library_dependencies thread_mpi)
 
 configure_file(version.h.cmakein version.h)
-gmx_install_headers(
-    analysisdata.h
-    commandline.h
-    options.h
-    random.h
-    selection.h
-    trajectoryanalysis.h
-    utility.h
-    ${CMAKE_CURRENT_BINARY_DIR}/version.h
-    )
+if(GMX_INSTALL_LEGACY_API)
+  install(FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/version.h
+          DESTINATION include/gromacs)
+endif()
 
 # This code is here instead of utility/CMakeLists.txt, because CMake
 # custom commands and source file properties can only be set in the directory
 # that contains the target that uses them.
-# TODO: Generate a header instead that can be included from baseversion.c.
+# TODO: Generate a header instead that can be included from baseversion.cpp.
 # That probably simplifies things somewhat.
 set(GENERATED_VERSION_FILE utility/baseversion-gen.cpp)
 gmx_configure_version_file(
@@ -178,10 +154,10 @@ gmx_configure_version_file(
     REMOTE_HASH
     EXTRA_VARS
         GMX_SOURCE_DOI
-    )
-list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
-     $<TARGET_OBJECTS:libgromacs_external>
-     $<TARGET_OBJECTS:libgromacs_generated>)
+        GMX_RELEASE_HASH
+        GMX_SOURCE_HASH
+        )
+list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE})
 
 # Mark some shared GPU implementation files to compile with CUDA if needed
 if (GMX_USE_CUDA)
@@ -205,7 +181,7 @@ if (GMX_USE_CUDA)
     # with keywords otherwise...
     set(CUDA_LIBRARIES PRIVATE ${CUDA_LIBRARIES})
     if (NOT GMX_CLANG_CUDA)
-        cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
+        gmx_cuda_add_library(libgromacs ${LIBGROMACS_SOURCES})
     else()
         add_library(libgromacs ${LIBGROMACS_SOURCES})
     endif()
@@ -213,6 +189,31 @@ if (GMX_USE_CUDA)
 else()
     add_library(libgromacs ${LIBGROMACS_SOURCES})
 endif()
+
+# Add these contents first because linking their tests can take a lot
+# of time, so we want lots of parallel work still available after
+# linking starts.
+add_subdirectory(fileio)
+add_subdirectory(selection)
+
+# Suppress a warning about our abuse of t_inputrec
+gmx_source_file_warning_suppression(mdtypes/inputrec.cpp -Wno-class-memaccess HAS_NO_CLASS_MEMACCESS)
+
+# Handle the object libraries that contain the source file
+# dependencies that need special handling because they are generated
+# or external code.
+foreach(object_library ${libgromacs_object_library_dependencies})
+    if (BUILD_SHARED_LIBS)
+        set_target_properties(${object_library} PROPERTIES POSITION_INDEPENDENT_CODE true)
+    endif()
+    target_include_directories(${object_library} SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+
+    # Add the sources from the object libraries to the main library.
+    target_sources(libgromacs PRIVATE $<TARGET_OBJECTS:${object_library}>)
+endforeach()
+gmx_target_compile_options(libgromacs)
+target_compile_definitions(libgromacs PRIVATE HAVE_CONFIG_H)
+target_include_directories(libgromacs SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 if (GMX_USE_OPENCL)
     option(GMX_EXTERNAL_CLFFT "True if an external clFFT is required to be used" FALSE)
@@ -256,41 +257,18 @@ a clFFT package, or use the latest GROMACS 2018 point release.")
     endif()
 endif()
 
-# Recent versions of gcc and clang give warnings on scanner.cpp, which
-# is a generated source file. These are awkward to suppress inline, so
-# we do it in the compilation command (after testing that the compiler
-# supports the suppressions). Same issue exists for nonbonded kernels
-# so we supress them for all generated files.
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
-check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
-check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
-check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
-if (NOT MSVC)
-    check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
-endif()
-if (HAS_NO_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-unused;-Wno-unused-parameter")
-endif()
-if (HAS_NO_MISSING_DECL)
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-declarations")
-endif()
-# TODO The group scheme kernels don't use proper function prototype
-# declarations, and clang warns about such use, which we suppress
-# rather than fix. We would prefer to use no suppressions. However
-# other compilers do not support such a warning suppression for C++
-# source files, and issue warnings about that. Remove the use of
-# -Wno-missing-prototypes here and above when the group scheme is
-# removed.
-if (HAS_NO_MISSING_PROTO AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    target_compile_options(libgromacs_generated PRIVATE "-Wno-missing-prototypes")
-endif()
-if (HAS_NO_MSVC_UNUSED)
-    target_compile_options(libgromacs_generated PRIVATE "/wd4101")
-endif()
-if (HAS_DECL_IN_SOURCE)
-    target_compile_options(libgromacs_generated PRIVATE "-wd1419")
-endif()
+# Permit GROMACS code to include externally developed headers, such as
+# the functionality from the nonstd project that we use for
+# gmx::compat::optional. These are included as system headers so that
+# no warnings are issued from them.
+#
+# TODO Perhaps generalize this for all headers from src/external
+target_include_directories(libgromacs SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
+
+# Temporary fix to allow external access to restraintpotentail
+target_include_directories(libgromacs PUBLIC
+                           $<INSTALL_INTERFACE:include>
+                           )
 
 if(SIMD_AVX_512_CXX_SUPPORTED AND NOT ("${GMX_SIMD_ACTIVE}" STREQUAL "AVX_512_KNL"))
     # Since we might be overriding -march=core-avx2, add a flag so we don't warn for this specific file.
@@ -324,7 +302,10 @@ set_target_properties(libgromacs PROPERTIES
 gmx_manage_lmfit()
 target_link_libraries(libgromacs PRIVATE lmfit)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
+# Fix everything found by the latest version of clang that we use in
+# Jenkins testing. This should be updated when we update the latest
+# tested version of clang.
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^7\.0")
    target_compile_options(libgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -361,8 +342,6 @@ if (GMX_CLANG_TIDY)
        "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
-gmx_write_installed_header_list()
-
 # Only install the library in mdrun-only mode if it is actually necessary
 # for the binary
 if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
@@ -371,6 +350,7 @@ if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
             LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
             RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            INCLUDES DESTINATION include
             COMPONENT libraries)
 endif()
 

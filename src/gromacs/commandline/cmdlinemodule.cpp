@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,20 +50,15 @@ namespace gmx
 
 class CommandLineModuleSettings::Impl
 {
-    public:
-        Impl() : defaultNiceLevel_(19) {}
+public:
+    Impl() : defaultNiceLevel_(19) {}
 
-        int defaultNiceLevel_;
+    int defaultNiceLevel_;
 };
 
-CommandLineModuleSettings::CommandLineModuleSettings()
-    : impl_(new Impl)
-{
-}
+CommandLineModuleSettings::CommandLineModuleSettings() : impl_(new Impl) {}
 
-CommandLineModuleSettings::~CommandLineModuleSettings()
-{
-}
+CommandLineModuleSettings::~CommandLineModuleSettings() {}
 
 int CommandLineModuleSettings::defaultNiceLevel() const
 {
@@ -76,14 +71,14 @@ void CommandLineModuleSettings::setDefaultNiceLevel(int niceLevel)
 }
 
 //! \cond libapi
-void writeCommandLineHelpCMain(
-        const CommandLineHelpContext &context, const char *name,
-        int (*mainFunction)(int argc, char *argv[]))
+void writeCommandLineHelpCMain(const CommandLineHelpContext& context,
+                               const char*                   name,
+                               int (*mainFunction)(int argc, char* argv[]))
 {
-    char *argv[2];
+    char* argv[2];
     int   argc = 1;
     // TODO: The constness should not be cast away.
-    argv[0] = const_cast<char *>(name);
+    argv[0] = const_cast<char*>(name);
     argv[1] = nullptr;
     GlobalCommandLineHelpContext global(context);
     mainFunction(argc, argv);

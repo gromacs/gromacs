@@ -15,7 +15,6 @@ are unneeded for GROMACS:
 travis.h
 appveyor.yml
 build-aux
-cmake
 codegear
 configure.ac
 Makefile.am
@@ -24,21 +23,29 @@ m4
 xcode
 test
 scripts
-googletest/docs/V*md
+googletest/docs
 googletest/samples
-googlemock/docs/v*/*md
-
-The file CMakeLists.txt in this directory is part of the GROMACS build
-system and has been written from scratch.
+googlemock/docs
 
 This README.Gromacs file is new, of course.
 
-In the default version, googletest-1.8.0 assumes wcscasecmp() to be
-present on Linux.  This is not the case on all platforms, so in
-gtest/src/gtest.cc we have added a define to only use this if
-GTEST_HAS_WCSCASECMP is set. Since we never set this define, we fall
-back on the alternative internal implementation which should be
-perfectly fine for now.
+The top-level CMakeLists.txt has enable_testing() commented out, as we
+do not intend to test GoogleTest as part of a GROMACS build.
+
+The CMakeLists.txt files in googletest and googlemock have declared
+their include directories as SYSTEM INTERFACE (not just INTERFACE) so
+that compilers will include such headers with e.g. -isystem, so that
+they will not generate warnings from such headers included in GROMACS
+test code.
+
+The googlemock/CMakeLists.txt no longer builds
+googletest/src/gtest-all.cc as part of the gmock target, because it is
+already built as part of the gtest target, and this leads to duplicate
+definitions of extern symbols declared in gtest headers. Added the
+link-time dependency of gmock upon gtest that is now required.
+
+The gmock_main executables and library are not created,
+because GROMACS does not use them.
 
 googletest-1.8.0 also assumes that streaming results to a socket is
 something you can always do on Linux, but the implementation uses
@@ -48,7 +55,3 @@ use this feature, we'd just want to turn it off, but there's no
 interface for that. So, GTEST_CAN_STREAM_RESULTS is added in
 googletest/include/gtest/internal/gtest-port.h to allow the default
 behaviour to be applied only if the user hasn't gotten involved.
-
-Two helper functions for implementing INSTANTIATE_TEST_CASE_P in
-gtest-param-test.h have had the static specifer added to their
-declarations, which silences -Wmissing-prototype warnings.

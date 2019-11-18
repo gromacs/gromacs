@@ -45,19 +45,19 @@
 
 #ifndef DOXYGEN
 
-#if GMX_GPU == GMX_GPU_OPENCL
+#    if GMX_GPU == GMX_GPU_OPENCL
 struct gmx_nbnxn_ocl_t;
-typedef struct gmx_nbnxn_ocl_t gmx_nbnxn_gpu_t;
-#endif
+using gmx_nbnxn_gpu_t = gmx_nbnxn_ocl_t;
+#    endif
 
-#if GMX_GPU == GMX_GPU_CUDA
+#    if GMX_GPU == GMX_GPU_CUDA
 struct gmx_nbnxn_cuda_t;
-typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
-#endif
+using gmx_nbnxn_gpu_t = gmx_nbnxn_cuda_t;
+#    endif
 
-#if GMX_GPU == GMX_GPU_NONE
-typedef int gmx_nbnxn_gpu_t;
-#endif
+#    if GMX_GPU == GMX_GPU_NONE
+using gmx_nbnxn_gpu_t = int;
+#    endif
 
 #endif // !DOXYGEN
 

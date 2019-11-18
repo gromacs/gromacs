@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,8 +64,7 @@
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 
-static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
-                       rvec *x)
+static void norm_princ(const t_atoms* atoms, int isize, int* index, int natoms, rvec* x)
 {
     int  i, m;
     rvec princ, vec;
@@ -82,7 +81,7 @@ static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
         {
             vec[m] += gmx::square(x[index[i]][m]);
         }
-        vec[m] = std::sqrt(vec[m] / isize);
+        vec[m] = std::sqrt(vec[m] / static_cast<real>(isize));
         /* calculate scaling constants */
         vec[m] = 1.0 / (std::sqrt(3.0) * vec[m]);
     }
@@ -97,10 +96,9 @@ static void norm_princ(const t_atoms *atoms, int isize, int *index, int natoms,
     }
 }
 
-int gmx_rms(int argc, char *argv[])
+int gmx_rms(int argc, char* argv[])
 {
-    const char     *desc[] =
-    {
+    const char* desc[] = {
         "[THISMODULE] compares two structures by computing the root mean square",
         "deviation (RMSD), the size-independent [GRK]rho[grk] similarity parameter",
         "([TT]rho[tt]) or the scaled [GRK]rho[grk] ([TT]rhosc[tt]), ",
@@ -147,134 +145,103 @@ int gmx_rms(int argc, char *argv[])
         "analogously to the [TT]-m[tt] option. Only bonds between atoms in the",
         "comparison group are considered."
     };
-    static gmx_bool bPBC              = TRUE, bFitAll = TRUE, bSplit = FALSE;
-    static gmx_bool bDeltaLog         = FALSE;
-    static int      prev              = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
-    static real     rmsd_user_max     = -1, rmsd_user_min = -1, bond_user_max = -1,
-                    bond_user_min     = -1, delta_maxy = 0.0;
+    static gmx_bool bPBC = TRUE, bFitAll = TRUE, bSplit = FALSE;
+    static gmx_bool bDeltaLog = FALSE;
+    static int      prev = 0, freq = 1, freq2 = 1, nlevels = 80, avl = 0;
+    static real     rmsd_user_max = -1, rmsd_user_min = -1, bond_user_max = -1, bond_user_min = -1,
+                delta_maxy = 0.0;
     /* strings and things for selecting difference method */
     enum
     {
-        ewSel, ewRMSD, ewRho, ewRhoSc, ewNR
+        ewSel,
+        ewRMSD,
+        ewRho,
+        ewRhoSc,
+        ewNR
     };
     int         ewhat;
-    const char *what[ewNR + 1] =
-    { nullptr, "rmsd", "rho", "rhosc", nullptr };
-    const char *whatname[ewNR] =
-    { nullptr, "RMSD", "Rho", "Rho sc" };
-    const char *whatlabel[ewNR] =
-    { nullptr, "RMSD (nm)", "Rho", "Rho sc" };
-    const char *whatxvgname[ewNR] =
-    { nullptr, "RMSD", "\\8r\\4", "\\8r\\4\\ssc\\N" };
-    const char *whatxvglabel[ewNR] =
-    { nullptr, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N" };
+    const char* what[ewNR + 1]     = { nullptr, "rmsd", "rho", "rhosc", nullptr };
+    const char* whatname[ewNR]     = { nullptr, "RMSD", "Rho", "Rho sc" };
+    const char* whatlabel[ewNR]    = { nullptr, "RMSD (nm)", "Rho", "Rho sc" };
+    const char* whatxvgname[ewNR]  = { nullptr, "RMSD", "\\8r\\4", "\\8r\\4\\ssc\\N" };
+    const char* whatxvglabel[ewNR] = { nullptr, "RMSD (nm)", "\\8r\\4", "\\8r\\4\\ssc\\N" };
     /* strings and things for fitting methods */
     enum
     {
-        efSel, efFit, efReset, efNone, efNR
+        efSel,
+        efFit,
+        efReset,
+        efNone,
+        efNR
     };
     int             efit;
-    const char     *fit[efNR + 1] =
-    { nullptr, "rot+trans", "translation", "none", nullptr };
-    const char     *fitgraphlabel[efNR + 1] =
-    { nullptr, "lsq fit", "translational fit", "no fit" };
-    static int      nrms          = 1;
-    static gmx_bool bMassWeighted = TRUE;
-    t_pargs         pa[]          =
-    {
-        { "-what", FALSE, etENUM,
-          { what }, "Structural difference measure" },
-        { "-pbc", FALSE, etBOOL,
-          { &bPBC }, "PBC check" },
-        { "-fit", FALSE, etENUM,
-          { fit }, "Fit to reference structure" },
-        { "-prev", FALSE, etINT,
-          { &prev }, "Compare with previous frame" },
-        { "-split", FALSE, etBOOL,
-          { &bSplit }, "Split graph where time is zero" },
-        { "-fitall", FALSE, etBOOL,
-          { &bFitAll }, "HIDDENFit all pairs of structures in matrix" },
-        { "-skip", FALSE, etINT,
-          { &freq }, "Only write every nr-th frame to matrix" },
-        { "-skip2", FALSE, etINT,
-          { &freq2 }, "Only write every nr-th frame to matrix" },
-        { "-max", FALSE, etREAL,
-          { &rmsd_user_max }, "Maximum level in comparison matrix" },
-        { "-min", FALSE, etREAL,
-          { &rmsd_user_min }, "Minimum level in comparison matrix" },
-        { "-bmax", FALSE, etREAL,
-          { &bond_user_max }, "Maximum level in bond angle matrix" },
-        { "-bmin", FALSE, etREAL,
-          { &bond_user_min }, "Minimum level in bond angle matrix" },
-        { "-mw", FALSE, etBOOL,
-          { &bMassWeighted }, "Use mass weighting for superposition" },
-        { "-nlevels", FALSE, etINT,
-          { &nlevels }, "Number of levels in the matrices" },
-        { "-ng", FALSE, etINT,
-          { &nrms }, "Number of groups to compute RMS between" },
-        { "-dlog", FALSE, etBOOL,
-          { &bDeltaLog },
-          "HIDDENUse a log x-axis in the delta t matrix" },
-        { "-dmax", FALSE, etREAL,
-          { &delta_maxy }, "HIDDENMaximum level in delta matrix" },
-        { "-aver", FALSE, etINT,
-          { &avl },
-          "HIDDENAverage over this distance in the RMSD matrix" }
+    const char*     fit[efNR + 1] = { nullptr, "rot+trans", "translation", "none", nullptr };
+    const char*     fitgraphlabel[efNR + 1] = { nullptr, "lsq fit", "translational fit", "no fit" };
+    static int      nrms                    = 1;
+    static gmx_bool bMassWeighted           = TRUE;
+    t_pargs         pa[]                    = {
+        { "-what", FALSE, etENUM, { what }, "Structural difference measure" },
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "PBC check" },
+        { "-fit", FALSE, etENUM, { fit }, "Fit to reference structure" },
+        { "-prev", FALSE, etINT, { &prev }, "Compare with previous frame" },
+        { "-split", FALSE, etBOOL, { &bSplit }, "Split graph where time is zero" },
+        { "-fitall", FALSE, etBOOL, { &bFitAll }, "HIDDENFit all pairs of structures in matrix" },
+        { "-skip", FALSE, etINT, { &freq }, "Only write every nr-th frame to matrix" },
+        { "-skip2", FALSE, etINT, { &freq2 }, "Only write every nr-th frame to matrix" },
+        { "-max", FALSE, etREAL, { &rmsd_user_max }, "Maximum level in comparison matrix" },
+        { "-min", FALSE, etREAL, { &rmsd_user_min }, "Minimum level in comparison matrix" },
+        { "-bmax", FALSE, etREAL, { &bond_user_max }, "Maximum level in bond angle matrix" },
+        { "-bmin", FALSE, etREAL, { &bond_user_min }, "Minimum level in bond angle matrix" },
+        { "-mw", FALSE, etBOOL, { &bMassWeighted }, "Use mass weighting for superposition" },
+        { "-nlevels", FALSE, etINT, { &nlevels }, "Number of levels in the matrices" },
+        { "-ng", FALSE, etINT, { &nrms }, "Number of groups to compute RMS between" },
+        { "-dlog", FALSE, etBOOL, { &bDeltaLog }, "HIDDENUse a log x-axis in the delta t matrix" },
+        { "-dmax", FALSE, etREAL, { &delta_maxy }, "HIDDENMaximum level in delta matrix" },
+        { "-aver", FALSE, etINT, { &avl }, "HIDDENAverage over this distance in the RMSD matrix" }
     };
-    int             natoms_trx, natoms_trx2, natoms;
-    int             i, j, k, m;
+    int natoms_trx, natoms_trx2, natoms;
+    int i, j, k, m;
 #define NFRAME 5000
-    int             maxframe = NFRAME, maxframe2 = NFRAME;
-    real            t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
-    gmx_bool        bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
-    gmx_bool        bFit, bReset;
-    t_topology      top;
-    int             ePBC;
-    t_iatom        *iatom = nullptr;
+    int        maxframe = NFRAME, maxframe2 = NFRAME;
+    real       t, *w_rls, *w_rms, *w_rls_m = nullptr, *w_rms_m = nullptr;
+    gmx_bool   bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
+    gmx_bool   bFit, bReset;
+    t_topology top;
+    int        ePBC;
+    t_iatom*   iatom = nullptr;
 
-    matrix          box = {{0}};
-    rvec           *x, *xp, *xm = nullptr, **mat_x = nullptr, **mat_x2, *mat_x2_j = nullptr, vec1,
-                    vec2;
-    t_trxstatus    *status;
-    char            buf[256], buf2[256];
-    int             ncons = 0;
-    FILE           *fp;
-    real            rlstot = 0, **rls, **rlsm = nullptr, *time, *time2, *rlsnorm = nullptr,
-    **rmsd_mat             = nullptr, **bond_mat = nullptr, *axis, *axis2, *del_xaxis,
-    *del_yaxis, rmsd_max, rmsd_min, rmsd_avg, bond_max, bond_min, ang;
-    real            **rmsdav_mat = nullptr, av_tot, weight, weight_tot;
-    real            **delta      = nullptr, delta_max, delta_scalex = 0, delta_scaley = 0,
-    *delta_tot;
-    int               delta_xsize = 0, del_lev = 100, mx, my, abs_my;
-    gmx_bool          bA1, bA2, bPrev, bTop, *bInMat = nullptr;
-    int               ifit, *irms, ibond = 0, *ind_bond1 = nullptr, *ind_bond2 = nullptr, n_ind_m =
-        0;
-    int              *ind_fit, **ind_rms, *ind_m = nullptr, *rev_ind_m = nullptr, *ind_rms_m =
-        nullptr;
-    char             *gn_fit, **gn_rms;
-    t_rgb             rlo, rhi;
-    gmx_output_env_t *oenv;
+    matrix box = { { 0 } };
+    rvec * x, *xp, *xm = nullptr, **mat_x = nullptr, **mat_x2, *mat_x2_j = nullptr, vec1, vec2;
+    t_trxstatus* status;
+    char         buf[256], buf2[256];
+    int          ncons = 0;
+    FILE*        fp;
+    real         rlstot = 0, **rls, **rlsm = nullptr, *time, *time2, *rlsnorm = nullptr,
+         **rmsd_mat = nullptr, **bond_mat = nullptr, *axis, *axis2, *del_xaxis, *del_yaxis,
+         rmsd_max, rmsd_min, rmsd_avg, bond_max, bond_min, ang;
+    real **  rmsdav_mat = nullptr, av_tot, weight, weight_tot;
+    real **  delta = nullptr, delta_max, delta_scalex = 0, delta_scaley = 0, *delta_tot;
+    int      delta_xsize = 0, del_lev = 100, mx, my, abs_my;
+    gmx_bool bA1, bA2, bPrev, bTop, *bInMat = nullptr;
+    int      ifit, *irms, ibond = 0, *ind_bond1 = nullptr, *ind_bond2 = nullptr, n_ind_m = 0;
+    int *    ind_fit, **ind_rms, *ind_m = nullptr, *rev_ind_m = nullptr, *ind_rms_m = nullptr;
+    char *   gn_fit, **gn_rms;
+    t_rgb    rlo, rhi;
+    gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
 
-    t_filenm          fnm[] =
-    {
-        { efTPS, nullptr, nullptr, ffREAD },
-        { efTRX, "-f", nullptr, ffREAD },
-        { efTRX, "-f2", nullptr, ffOPTRD },
-        { efNDX, nullptr, nullptr, ffOPTRD },
-        { efXVG, nullptr, "rmsd", ffWRITE },
-        { efXVG, "-mir", "rmsdmir", ffOPTWR },
-        { efXVG, "-a", "avgrp", ffOPTWR },
-        { efXVG, "-dist", "rmsd-dist", ffOPTWR },
-        { efXPM, "-m", "rmsd", ffOPTWR },
-        { efDAT, "-bin", "rmsd", ffOPTWR },
+    t_filenm fnm[] = {
+        { efTPS, nullptr, nullptr, ffREAD }, { efTRX, "-f", nullptr, ffREAD },
+        { efTRX, "-f2", nullptr, ffOPTRD },  { efNDX, nullptr, nullptr, ffOPTRD },
+        { efXVG, nullptr, "rmsd", ffWRITE }, { efXVG, "-mir", "rmsdmir", ffOPTWR },
+        { efXVG, "-a", "avgrp", ffOPTWR },   { efXVG, "-dist", "rmsd-dist", ffOPTWR },
+        { efXPM, "-m", "rmsd", ffOPTWR },    { efDAT, "-bin", "rmsd", ffOPTWR },
         { efXPM, "-bm", "bond", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr,
-                           &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -303,11 +270,12 @@ int gmx_rms(int argc, char *argv[])
     bBond   = opt2bSet("-bm", NFILE, fnm);
     bDelta  = (delta_maxy > 0); /* calculate rmsd vs delta t matrix from *
                                  *	your RMSD matrix (hidden option       */
-    bNorm   = opt2bSet("-a", NFILE, fnm);
-    bFreq2  = opt2parg_bSet("-skip2", asize(pa), pa);
+    bNorm  = opt2bSet("-a", NFILE, fnm);
+    bFreq2 = opt2parg_bSet("-skip2", asize(pa), pa);
     if (freq <= 0)
     {
-        fprintf(stderr, "The number of frames to skip is <= 0. "
+        fprintf(stderr,
+                "The number of frames to skip is <= 0. "
                 "Writing out all frames.\n\n");
         freq = 1;
     }
@@ -326,7 +294,8 @@ int gmx_rms(int argc, char *argv[])
     bPrev = (prev > 0);
     if (bPrev)
     {
-        fprintf(stderr, "WARNING: using option -prev with large trajectories will\n"
+        fprintf(stderr,
+                "WARNING: using option -prev with large trajectories will\n"
                 "         require a lot of memory and could lead to crashes\n");
         prev = abs(prev);
         if (freq != 1)
@@ -337,11 +306,10 @@ int gmx_rms(int argc, char *argv[])
 
     if (bFile2 && !bMat && !bBond)
     {
-        fprintf(
-                stderr,
+        fprintf(stderr,
                 "WARNING: second trajectory (-f2) useless when not calculating matrix (-m/-bm),\n"
-                "         will not read from %s\n", opt2fn("-f2", NFILE,
-                                                           fnm));
+                "         will not read from %s\n",
+                opt2fn("-f2", NFILE, fnm));
         bFile2 = FALSE;
     }
 
@@ -352,14 +320,13 @@ int gmx_rms(int argc, char *argv[])
         {
             fprintf(stderr,
                     "WARNING: second trajectory (-f2) useless when making delta matrix,\n"
-                    "         will not read from %s\n", opt2fn("-f2",
-                                                               NFILE, fnm));
+                    "         will not read from %s\n",
+                    opt2fn("-f2", NFILE, fnm));
             bFile2 = FALSE;
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp,
-                         nullptr, box, TRUE);
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, TRUE);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
 
@@ -373,10 +340,8 @@ int gmx_rms(int argc, char *argv[])
 
     if (bReset)
     {
-        fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares"
-                : "translational");
-        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit,
-                  &ind_fit, &gn_fit);
+        fprintf(stderr, "Select group for %s fit\n", bFit ? "least squares" : "translational");
+        get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &ifit, &ind_fit, &gn_fit);
     }
     else
     {
@@ -387,7 +352,7 @@ int gmx_rms(int argc, char *argv[])
     {
         if (bFit && ifit < 3)
         {
-            gmx_fatal(FARGS, "Need >= 3 points to fit!\n" );
+            gmx_fatal(FARGS, "Need >= 3 points to fit!\n");
         }
 
         bMass = FALSE;
@@ -422,10 +387,8 @@ int gmx_rms(int argc, char *argv[])
     snew(ind_rms, nrms);
     snew(irms, nrms);
 
-    fprintf(stderr, "Select group%s for %s calculation\n",
-            (nrms > 1) ? "s" : "", whatname[ewhat]);
-    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm),
-              nrms, irms, ind_rms, gn_rms);
+    fprintf(stderr, "Select group%s for %s calculation\n", (nrms > 1) ? "s" : "", whatname[ewhat]);
+    get_index(&(top.atoms), ftp2fn_null(efNDX, NFILE, fnm), nrms, irms, ind_rms, gn_rms);
 
     if (bNorm)
     {
@@ -498,8 +461,7 @@ int gmx_rms(int argc, char *argv[])
     natoms_trx = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
     if (natoms_trx != top.atoms.nr)
     {
-        fprintf(stderr,
-                "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
+        fprintf(stderr, "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
                 top.atoms.nr, natoms_trx);
     }
     natoms = std::min(top.atoms.nr, natoms_trx);
@@ -565,7 +527,7 @@ int gmx_rms(int argc, char *argv[])
         {
             if (IS_CHEMBOND(k))
             {
-                ncons += top.idef.il[k].nr/3;
+                ncons += top.idef.il[k].nr / 3;
             }
         }
         fprintf(stderr, "Found %d bonds in topology\n", ncons);
@@ -577,26 +539,26 @@ int gmx_rms(int argc, char *argv[])
             if (IS_CHEMBOND(k))
             {
                 iatom = top.idef.il[k].iatoms;
-                ncons = top.idef.il[k].nr/3;
+                ncons = top.idef.il[k].nr / 3;
                 for (i = 0; i < ncons; i++)
                 {
                     bA1 = FALSE;
                     bA2 = FALSE;
                     for (j = 0; j < irms[0]; j++)
                     {
-                        if (iatom[3*i+1] == ind_rms[0][j])
+                        if (iatom[3 * i + 1] == ind_rms[0][j])
                         {
                             bA1 = TRUE;
                         }
-                        if (iatom[3*i+2] == ind_rms[0][j])
+                        if (iatom[3 * i + 2] == ind_rms[0][j])
                         {
                             bA2 = TRUE;
                         }
                     }
                     if (bA1 && bA2)
                     {
-                        ind_bond1[ibond] = rev_ind_m[iatom[3*i+1]];
-                        ind_bond2[ibond] = rev_ind_m[iatom[3*i+2]];
+                        ind_bond1[ibond] = rev_ind_m[iatom[3 * i + 1]];
+                        ind_bond2[ibond] = rev_ind_m[iatom[3 * i + 2]];
                         ibond++;
                     }
                 }
@@ -642,7 +604,7 @@ int gmx_rms(int argc, char *argv[])
             {
                 if (tel_mat >= NFRAME)
                 {
-                    srenew(mat_x, tel_mat+1);
+                    srenew(mat_x, tel_mat + 1);
                 }
                 snew(mat_x[tel_mat], n_ind_m);
                 for (i = 0; i < n_ind_m; i++)
@@ -655,7 +617,7 @@ int gmx_rms(int argc, char *argv[])
             /*calculate energy of root_least_squares*/
             if (bPrev)
             {
-                j = tel_mat-prev-1;
+                j = tel_mat - prev - 1;
                 if (j < 0)
                 {
                     j = 0;
@@ -675,15 +637,13 @@ int gmx_rms(int argc, char *argv[])
             }
             for (j = 0; (j < nrms); j++)
             {
-                rls[j][teller] =
-                    calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
+                rls[j][teller] = calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xp);
             }
             if (bNorm)
             {
                 for (j = 0; (j < irms[0]); j++)
                 {
-                    rlsnorm[j] +=
-                        calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
+                    rlsnorm[j] += calc_similar_ind(ewhat != ewRMSD, 1, &(ind_rms[0][j]), w_rms, x, xp);
                 }
             }
 
@@ -698,7 +658,7 @@ int gmx_rms(int argc, char *argv[])
                 for (j = 0; j < nrms; j++)
                 {
                     rlsm[j][teller] =
-                        calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
+                            calc_similar_ind(ewhat != ewRMSD, irms[j], ind_rms[j], w_rms, x, xm);
                 }
             }
             time[teller] = output_env_conv_time(oenv, t);
@@ -722,8 +682,7 @@ int gmx_rms(int argc, char *argv[])
                 }
             }
         }
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
 
     int tel_mat2 = 0;
@@ -735,13 +694,13 @@ int gmx_rms(int argc, char *argv[])
 
         fprintf(stderr, "\nWill read second trajectory file\n");
         snew(mat_x2, NFRAME);
-        natoms_trx2 =
-            read_first_x(oenv, &status, opt2fn("-f2", NFILE, fnm), &t, &x, box);
+        natoms_trx2 = read_first_x(oenv, &status, opt2fn("-f2", NFILE, fnm), &t, &x, box);
         if (natoms_trx2 != natoms_trx)
         {
             gmx_fatal(FARGS,
                       "Second trajectory (%d atoms) does not match the first one"
-                      " (%d atoms)", natoms_trx2, natoms_trx);
+                      " (%d atoms)",
+                      natoms_trx2, natoms_trx);
         }
         frame2 = 0;
         do
@@ -773,7 +732,7 @@ int gmx_rms(int argc, char *argv[])
                 {
                     if (tel_mat2 >= NFRAME)
                     {
-                        srenew(mat_x2, tel_mat2+1);
+                        srenew(mat_x2, tel_mat2 + 1);
                     }
                     snew(mat_x2[tel_mat2], n_ind_m);
                     for (i = 0; i < n_ind_m; i++)
@@ -793,8 +752,7 @@ int gmx_rms(int argc, char *argv[])
                 maxframe2 += NFRAME;
                 srenew(time2, maxframe2);
             }
-        }
-        while (read_next_x(oenv, status, &t, x, box));
+        } while (read_next_x(oenv, status, &t, x, box));
         close_trx(status);
     }
     else
@@ -812,14 +770,12 @@ int gmx_rms(int argc, char *argv[])
         fprintf(stderr, "\n");
         if (bMat)
         {
-            fprintf(stderr, "Building %s matrix, %dx%d elements\n",
-                    whatname[ewhat], tel_mat, tel_mat2);
+            fprintf(stderr, "Building %s matrix, %dx%d elements\n", whatname[ewhat], tel_mat, tel_mat2);
             snew(rmsd_mat, tel_mat);
         }
         if (bBond)
         {
-            fprintf(stderr, "Building bond angle matrix, %dx%d elements\n",
-                    tel_mat, tel_mat2);
+            fprintf(stderr, "Building bond angle matrix, %dx%d elements\n", tel_mat, tel_mat2);
             snew(bond_mat, tel_mat);
         }
         snew(axis, tel_mat);
@@ -838,24 +794,24 @@ int gmx_rms(int argc, char *argv[])
         bond_min = 1e10;
         for (j = 0; j < tel_mat2; j++)
         {
-            axis2[j] = time2[freq2*j];
+            axis2[j] = time2[freq2 * j];
         }
         if (bDelta)
         {
             if (bDeltaLog)
             {
-                delta_scalex = 8.0/std::log(2.0);
-                delta_xsize  = gmx::roundToInt(std::log(tel_mat/2.)*delta_scalex)+1;
+                delta_scalex = 8.0 / std::log(2.0);
+                delta_xsize  = gmx::roundToInt(std::log(tel_mat / 2.) * delta_scalex) + 1;
             }
             else
             {
-                delta_xsize = tel_mat/2;
+                delta_xsize = tel_mat / 2;
             }
-            delta_scaley = 1.0/delta_maxy;
+            delta_scaley = 1.0 / delta_maxy;
             snew(delta, delta_xsize);
             for (j = 0; j < delta_xsize; j++)
             {
-                snew(delta[j], del_lev+1);
+                snew(delta[j], del_lev + 1);
             }
             if (avl > 0)
             {
@@ -873,7 +829,7 @@ int gmx_rms(int argc, char *argv[])
         }
         for (i = 0; i < tel_mat; i++)
         {
-            axis[i] = time[freq*i];
+            axis[i] = time[freq * i];
             fprintf(stderr, "\r element %5d; time %5.2f  ", i, axis[i]);
             fflush(stderr);
             if (bMat)
@@ -902,9 +858,8 @@ int gmx_rms(int argc, char *argv[])
                 {
                     if (bFile2 || (i < j))
                     {
-                        rmsd_mat[i][j] =
-                            calc_similar_ind(ewhat != ewRMSD, irms[0], ind_rms_m,
-                                             w_rms_m, mat_x[i], mat_x2_j);
+                        rmsd_mat[i][j] = calc_similar_ind(ewhat != ewRMSD, irms[0], ind_rms_m,
+                                                          w_rms_m, mat_x[i], mat_x2_j);
                         if (rmsd_mat[i][j] > rmsd_max)
                         {
                             rmsd_max = rmsd_mat[i][j];
@@ -931,7 +886,7 @@ int gmx_rms(int argc, char *argv[])
                             rvec_sub(mat_x2_j[ind_bond1[m]], mat_x2_j[ind_bond2[m]], vec2);
                             ang += std::acos(cos_angle(vec1, vec2));
                         }
-                        bond_mat[i][j] = ang*180.0/(M_PI*ibond);
+                        bond_mat[i][j] = ang * 180.0 / (M_PI * ibond);
                         if (bond_mat[i][j] > bond_max)
                         {
                             bond_max = bond_mat[i][j];
@@ -950,40 +905,40 @@ int gmx_rms(int argc, char *argv[])
         }
         if (bFile2)
         {
-            rmsd_avg /= tel_mat*tel_mat2;
+            rmsd_avg /= static_cast<real>(tel_mat) * static_cast<real>(tel_mat2);
         }
         else
         {
-            rmsd_avg /= tel_mat*(tel_mat - 1)/2.;
+            rmsd_avg /= tel_mat * (tel_mat - 1) / 2.;
         }
         if (bMat && (avl > 0))
         {
             rmsd_max = 0.0;
             rmsd_min = 0.0;
             rmsd_avg = 0.0;
-            for (j = 0; j < tel_mat-1; j++)
+            for (j = 0; j < tel_mat - 1; j++)
             {
-                for (i = j+1; i < tel_mat; i++)
+                for (i = j + 1; i < tel_mat; i++)
                 {
                     av_tot     = 0;
                     weight_tot = 0;
                     for (my = -avl; my <= avl; my++)
                     {
-                        if ((j+my >= 0) && (j+my < tel_mat))
+                        if ((j + my >= 0) && (j + my < tel_mat))
                         {
                             abs_my = std::abs(my);
                             for (mx = -avl; mx <= avl; mx++)
                             {
-                                if ((i+mx >= 0) && (i+mx < tel_mat))
+                                if ((i + mx >= 0) && (i + mx < tel_mat))
                                 {
-                                    weight      = avl+1.0-std::max(std::abs(mx), abs_my);
-                                    av_tot     += weight*rmsd_mat[i+mx][j+my];
+                                    weight = avl + 1.0 - std::max(std::abs(mx), abs_my);
+                                    av_tot += weight * rmsd_mat[i + mx][j + my];
                                     weight_tot += weight;
                                 }
                             }
                         }
                     }
-                    rmsdav_mat[i][j] = av_tot/weight_tot;
+                    rmsdav_mat[i][j] = av_tot / weight_tot;
                     rmsdav_mat[j][i] = rmsdav_mat[i][j];
                     if (rmsdav_mat[i][j] > rmsd_max)
                     {
@@ -996,10 +951,13 @@ int gmx_rms(int argc, char *argv[])
 
         if (bMat)
         {
-            fprintf(stderr, "\n%s: Min %f, Max %f, Avg %f\n",
-                    whatname[ewhat], rmsd_min, rmsd_max, rmsd_avg);
-            rlo.r = 1; rlo.g = 1; rlo.b = 1;
-            rhi.r = 0; rhi.g = 0; rhi.b = 0;
+            fprintf(stderr, "\n%s: Min %f, Max %f, Avg %f\n", whatname[ewhat], rmsd_min, rmsd_max, rmsd_avg);
+            rlo.r = 1;
+            rlo.g = 1;
+            rlo.b = 1;
+            rhi.r = 0;
+            rhi.g = 0;
+            rhi.b = 0;
             if (rmsd_user_max != -1)
             {
                 rmsd_max = rmsd_user_max;
@@ -1008,15 +966,14 @@ int gmx_rms(int argc, char *argv[])
             {
                 rmsd_min = rmsd_user_min;
             }
-            if ((rmsd_user_max !=  -1) || (rmsd_user_min != -1))
+            if ((rmsd_user_max != -1) || (rmsd_user_min != -1))
             {
-                fprintf(stderr, "Min and Max value set to resp. %f and %f\n",
-                        rmsd_min, rmsd_max);
+                fprintf(stderr, "Min and Max value set to resp. %f and %f\n", rmsd_min, rmsd_max);
             }
             sprintf(buf, "%s %s matrix", gn_rms[0], whatname[ewhat]);
             write_xpm(opt2FILE("-m", NFILE, fnm, "w"), 0, buf, whatlabel[ewhat],
-                      output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat, tel_mat2,
-                      axis, axis2, rmsd_mat, rmsd_min, rmsd_max, rlo, rhi, &nlevels);
+                      output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat,
+                      tel_mat2, axis, axis2, rmsd_mat, rmsd_min, rmsd_max, rlo, rhi, &nlevels);
             /* Print the distribution of RMSD values */
             if (opt2bSet("-dist", NFILE, fnm))
             {
@@ -1026,18 +983,18 @@ int gmx_rms(int argc, char *argv[])
             if (bDelta)
             {
                 snew(delta_tot, delta_xsize);
-                for (j = 0; j < tel_mat-1; j++)
+                for (j = 0; j < tel_mat - 1; j++)
                 {
-                    for (i = j+1; i < tel_mat; i++)
+                    for (i = j + 1; i < tel_mat; i++)
                     {
-                        mx = i-j;
-                        if (mx < tel_mat/2)
+                        mx = i - j;
+                        if (mx < tel_mat / 2)
                         {
                             if (bDeltaLog)
                             {
-                                mx = gmx::roundToInt(std::log(static_cast<real>(mx))*delta_scalex);
+                                mx = gmx::roundToInt(std::log(static_cast<real>(mx)) * delta_scalex);
                             }
-                            my             = gmx::roundToInt(rmsd_mat[i][j]*delta_scaley*del_lev);
+                            my = gmx::roundToInt(rmsd_mat[i][j] * delta_scaley * static_cast<real>(del_lev));
                             delta_tot[mx] += 1.0;
                             if ((rmsd_mat[i][j] >= 0) && (rmsd_mat[i][j] <= delta_maxy))
                             {
@@ -1051,7 +1008,7 @@ int gmx_rms(int argc, char *argv[])
                 {
                     if (delta_tot[i] > 0.0)
                     {
-                        delta_tot[i] = 1.0/delta_tot[i];
+                        delta_tot[i] = 1.0 / delta_tot[i];
                         for (j = 0; j <= del_lev; j++)
                         {
                             delta[i][j] *= delta_tot[i];
@@ -1064,20 +1021,20 @@ int gmx_rms(int argc, char *argv[])
                 }
                 fprintf(stderr, "Maximum in delta matrix: %f\n", delta_max);
                 snew(del_xaxis, delta_xsize);
-                snew(del_yaxis, del_lev+1);
+                snew(del_yaxis, del_lev + 1);
                 for (i = 0; i < delta_xsize; i++)
                 {
-                    del_xaxis[i] = axis[i]-axis[0];
+                    del_xaxis[i] = axis[i] - axis[0];
                 }
-                for (i = 0; i < del_lev+1; i++)
+                for (i = 0; i < del_lev + 1; i++)
                 {
-                    del_yaxis[i] = delta_maxy*i/del_lev;
+                    del_yaxis[i] = delta_maxy * static_cast<real>(i) / static_cast<real>(del_lev);
                 }
                 sprintf(buf, "%s %s vs. delta t", gn_rms[0], whatname[ewhat]);
                 fp = gmx_ffopen("delta.xpm", "w");
                 write_xpm(fp, 0, buf, "density", output_env_get_time_label(oenv), whatlabel[ewhat],
-                          delta_xsize, del_lev+1, del_xaxis, del_yaxis,
-                          delta, 0.0, delta_max, rlo, rhi, &nlevels);
+                          delta_xsize, del_lev + 1, del_xaxis, del_yaxis, delta, 0.0, delta_max,
+                          rlo, rhi, &nlevels);
                 gmx_ffclose(fp);
             }
             if (opt2bSet("-bin", NFILE, fnm))
@@ -1105,17 +1062,23 @@ int gmx_rms(int argc, char *argv[])
             {
                 bond_min = bond_user_min;
             }
-            if ((bond_user_max !=  -1) || (bond_user_min != -1))
+            if ((bond_user_max != -1) || (bond_user_min != -1))
             {
-                fprintf(stderr, "Bond angle Min and Max set to:\n"
-                        "Min. angle: %f, Max. angle: %f\n", bond_min, bond_max);
+                fprintf(stderr,
+                        "Bond angle Min and Max set to:\n"
+                        "Min. angle: %f, Max. angle: %f\n",
+                        bond_min, bond_max);
             }
-            rlo.r = 1; rlo.g = 1; rlo.b = 1;
-            rhi.r = 0; rhi.g = 0; rhi.b = 0;
+            rlo.r = 1;
+            rlo.g = 1;
+            rlo.b = 1;
+            rhi.r = 0;
+            rhi.g = 0;
+            rhi.b = 0;
             sprintf(buf, "%s av. bond angle deviation", gn_rms[0]);
             write_xpm(opt2FILE("-bm", NFILE, fnm, "w"), 0, buf, "degrees",
-                      output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat, tel_mat2,
-                      axis, axis2, bond_mat, bond_min, bond_max, rlo, rhi, &nlevels);
+                      output_env_get_time_label(oenv), output_env_get_time_label(oenv), tel_mat,
+                      tel_mat2, axis, axis2, bond_mat, bond_min, bond_max, rlo, rhi, &nlevels);
         }
     }
 
@@ -1128,16 +1091,15 @@ int gmx_rms(int argc, char *argv[])
     }
     else
     {
-        sprintf(buf, "%s with frame %g %s ago", whatxvgname[ewhat],
-                time[prev*freq]-time[0], output_env_get_time_label(oenv).c_str());
+        sprintf(buf, "%s with frame %g %s ago", whatxvgname[ewhat], time[prev * freq] - time[0],
+                output_env_get_time_label(oenv).c_str());
     }
     fp = xvgropen(opt2fn("-o", NFILE, fnm), buf, output_env_get_xvgr_tlabel(oenv),
                   whatxvglabel[ewhat], oenv);
     if (output_env_get_print_xvgr_codes(oenv))
     {
-        fprintf(fp, "@ subtitle \"%s%s after %s%s%s\"\n",
-                (nrms == 1) ? "" : "of ", gn_rms[0], fitgraphlabel[efit],
-                bFit     ? " to " : "", bFit ? gn_fit : "");
+        fprintf(fp, "@ subtitle \"%s%s after %s%s%s\"\n", (nrms == 1) ? "" : "of ", gn_rms[0],
+                fitgraphlabel[efit], bFit ? " to " : "", bFit ? gn_fit : "");
     }
     if (nrms != 1)
     {
@@ -1145,12 +1107,11 @@ int gmx_rms(int argc, char *argv[])
     }
     for (i = 0; (i < teller); i++)
     {
-        if (bSplit && i > 0 &&
-            std::abs(time[bPrev ? freq*i : i]/output_env_get_time_factor(oenv)) < 1e-5)
+        if (bSplit && i > 0 && std::abs(time[bPrev ? freq * i : i] / output_env_get_time_factor(oenv)) < 1e-5)
         {
             fprintf(fp, "%s\n", output_env_get_print_xvgr_codes(oenv) ? "&" : "");
         }
-        fprintf(fp, "%12.7f", time[bPrev ? freq*i : i]);
+        fprintf(fp, "%12.7f", time[bPrev ? freq * i : i]);
         for (j = 0; (j < nrms); j++)
         {
             fprintf(fp, " %12.7f", rls[j][i]);
@@ -1168,14 +1129,13 @@ int gmx_rms(int argc, char *argv[])
         /* Write the mirror RMSD's to file */
         sprintf(buf, "%s with Mirror", whatxvgname[ewhat]);
         sprintf(buf2, "Mirror %s", whatxvglabel[ewhat]);
-        fp = xvgropen(opt2fn("-mir", NFILE, fnm), buf, output_env_get_xvgr_tlabel(oenv),
-                      buf2, oenv);
+        fp = xvgropen(opt2fn("-mir", NFILE, fnm), buf, output_env_get_xvgr_tlabel(oenv), buf2, oenv);
         if (nrms == 1)
         {
             if (output_env_get_print_xvgr_codes(oenv))
             {
-                fprintf(fp, "@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
-                        gn_rms[0], bFit ? gn_fit : "");
+                fprintf(fp, "@ subtitle \"of %s after lsq fit to mirror of %s\"\n", gn_rms[0],
+                        bFit ? gn_fit : "");
             }
         }
         else
@@ -1209,7 +1169,7 @@ int gmx_rms(int argc, char *argv[])
         fp = xvgropen(opt2fn("-a", NFILE, fnm), buf, "Residue", buf2, oenv);
         for (j = 0; (j < nrms); j++)
         {
-            fprintf(fp, "%10d  %10g\n", j, rlstot/teller);
+            fprintf(fp, "%10d  %10g\n", j, rlstot / static_cast<real>(teller));
         }
         xvgrclose(fp);
     }
@@ -1219,7 +1179,7 @@ int gmx_rms(int argc, char *argv[])
         fp = xvgropen("aver.xvg", gn_rms[0], "Residue", whatxvglabel[ewhat], oenv);
         for (j = 0; (j < irms[0]); j++)
         {
-            fprintf(fp, "%10d  %10g\n", j, rlsnorm[j]/teller);
+            fprintf(fp, "%10d  %10g\n", j, rlsnorm[j] / static_cast<real>(teller));
         }
         xvgrclose(fp);
     }

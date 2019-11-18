@@ -59,47 +59,47 @@
  */
 class GpuEventSynchronizer
 {
-    public:
-        GpuEventSynchronizer()
-        {
-            cudaError_t gmx_used_in_debug stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
-            GMX_RELEASE_ASSERT(stat == cudaSuccess, "cudaEventCreate failed");
-        }
-        ~GpuEventSynchronizer()
-        {
-            cudaError_t gmx_used_in_debug stat = cudaEventDestroy(event_);
-            GMX_ASSERT(stat == cudaSuccess, "cudaEventDestroy failed");
-        }
-        //! No copying
-        GpuEventSynchronizer(const GpuEventSynchronizer &)       = delete;
-        //! No assignment
-        GpuEventSynchronizer &operator = (GpuEventSynchronizer &&) = delete;
-        //! Moving is disabled but can be considered in the future if needed
-        GpuEventSynchronizer(GpuEventSynchronizer &&)            = delete;
+public:
+    GpuEventSynchronizer()
+    {
+        cudaError_t gmx_used_in_debug stat = cudaEventCreateWithFlags(&event_, cudaEventDisableTiming);
+        GMX_RELEASE_ASSERT(stat == cudaSuccess, "cudaEventCreate failed");
+    }
+    ~GpuEventSynchronizer()
+    {
+        cudaError_t gmx_used_in_debug stat = cudaEventDestroy(event_);
+        GMX_ASSERT(stat == cudaSuccess, "cudaEventDestroy failed");
+    }
+    //! No copying
+    GpuEventSynchronizer(const GpuEventSynchronizer&) = delete;
+    //! No assignment
+    GpuEventSynchronizer& operator=(GpuEventSynchronizer&&) = delete;
+    //! Moving is disabled but can be considered in the future if needed
+    GpuEventSynchronizer(GpuEventSynchronizer&&) = delete;
 
-        /*! \brief Marks the synchronization point in the \p stream.
-         * Should be followed by waitForEvent().
-         */
-        inline void markEvent(CommandStream stream)
-        {
-            cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, stream);
-            GMX_ASSERT(stat == cudaSuccess, "cudaEventRecord failed");
-        }
-        /*! \brief Synchronizes the host thread on the marked event. */
-        inline void waitForEvent()
-        {
-            cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
-            GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
-        }
-        /*! \brief Enqueues a wait for the recorded event in stream \p stream */
-        inline void enqueueWaitEvent(CommandStream stream)
-        {
-            cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(stream, event_, 0);
-            GMX_ASSERT(stat == cudaSuccess, "cudaStreamWaitEvent failed");
-        }
+    /*! \brief Marks the synchronization point in the \p stream.
+     * Should be followed by waitForEvent().
+     */
+    inline void markEvent(CommandStream stream)
+    {
+        cudaError_t gmx_used_in_debug stat = cudaEventRecord(event_, stream);
+        GMX_ASSERT(stat == cudaSuccess, "cudaEventRecord failed");
+    }
+    /*! \brief Synchronizes the host thread on the marked event. */
+    inline void waitForEvent()
+    {
+        cudaError_t gmx_used_in_debug stat = cudaEventSynchronize(event_);
+        GMX_ASSERT(stat == cudaSuccess, "cudaEventSynchronize failed");
+    }
+    /*! \brief Enqueues a wait for the recorded event in stream \p stream */
+    inline void enqueueWaitEvent(CommandStream stream)
+    {
+        cudaError_t gmx_used_in_debug stat = cudaStreamWaitEvent(stream, event_, 0);
+        GMX_ASSERT(stat == cudaSuccess, "cudaStreamWaitEvent failed");
+    }
 
-    private:
-        cudaEvent_t event_;
+private:
+    cudaEvent_t event_;
 };
 
 #endif

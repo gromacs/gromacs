@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016, by the GROMACS development team, led by
+ * Copyright (c) 2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,11 +55,10 @@ namespace
 
 class MpiSelfTest : public ::testing::Test
 {
-    public:
-        MpiSelfTest() : reached {0, 0}
-        {}
+public:
+    MpiSelfTest() : reached{ 0, 0 } {}
 
-        int reached[2];
+    int reached[2];
 };
 
 TEST_F(MpiSelfTest, Runs)

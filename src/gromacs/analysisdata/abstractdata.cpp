@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,19 +68,18 @@ namespace gmx
  */
 class AbstractAnalysisData::Impl
 {
-    public:
-        Impl();
+public:
+    Impl();
 
-        //! Column counts for each data set in the data.
-        std::vector<int>           columnCounts_;
-        //! Whether the data is multipoint.
-        bool                       bMultipoint_;
-        //! Manager for the added modules.
-        AnalysisDataModuleManager  modules_;
+    //! Column counts for each data set in the data.
+    std::vector<int> columnCounts_;
+    //! Whether the data is multipoint.
+    bool bMultipoint_;
+    //! Manager for the added modules.
+    AnalysisDataModuleManager modules_;
 };
 
-AbstractAnalysisData::Impl::Impl()
-    : bMultipoint_(false)
+AbstractAnalysisData::Impl::Impl() : bMultipoint_(false)
 {
     columnCounts_.push_back(0);
 }
@@ -90,47 +89,35 @@ AbstractAnalysisData::Impl::Impl()
  * AbstractAnalysisData
  */
 /*! \cond libapi */
-AbstractAnalysisData::AbstractAnalysisData()
-    : impl_(new Impl())
-{
-}
+AbstractAnalysisData::AbstractAnalysisData() : impl_(new Impl()) {}
 //! \endcond
 
-AbstractAnalysisData::~AbstractAnalysisData()
-{
-}
+AbstractAnalysisData::~AbstractAnalysisData() {}
 
-bool
-AbstractAnalysisData::isMultipoint() const
+bool AbstractAnalysisData::isMultipoint() const
 {
     return impl_->bMultipoint_;
 }
 
-int
-AbstractAnalysisData::dataSetCount() const
+int AbstractAnalysisData::dataSetCount() const
 {
     return impl_->columnCounts_.size();
 }
 
-int
-AbstractAnalysisData::columnCount(int dataSet) const
+int AbstractAnalysisData::columnCount(int dataSet) const
 {
-    GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
-               "Out of range data set index");
+    GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out of range data set index");
     return impl_->columnCounts_[dataSet];
 }
 
-int
-AbstractAnalysisData::columnCount() const
+int AbstractAnalysisData::columnCount() const
 {
-    GMX_ASSERT(dataSetCount() == 1,
-               "Convenience method not available for multiple data sets");
+    GMX_ASSERT(dataSetCount() == 1, "Convenience method not available for multiple data sets");
     return columnCount(0);
 }
 
 
-AnalysisDataFrameRef
-AbstractAnalysisData::tryGetDataFrame(int index) const
+AnalysisDataFrameRef AbstractAnalysisData::tryGetDataFrame(int index) const
 {
     if (index < 0 || index >= frameCount())
     {
@@ -140,8 +127,7 @@ AbstractAnalysisData::tryGetDataFrame(int index) const
 }
 
 
-AnalysisDataFrameRef
-AbstractAnalysisData::getDataFrame(int index) const
+AnalysisDataFrameRef AbstractAnalysisData::getDataFrame(int index) const
 {
     AnalysisDataFrameRef frame = tryGetDataFrame(index);
     if (!frame.isValid())
@@ -152,8 +138,7 @@ AbstractAnalysisData::getDataFrame(int index) const
 }
 
 
-bool
-AbstractAnalysisData::requestStorage(int nframes)
+bool AbstractAnalysisData::requestStorage(int nframes)
 {
     GMX_RELEASE_ASSERT(nframes >= -1, "Invalid number of frames requested");
     if (nframes == 0)
@@ -164,47 +149,38 @@ AbstractAnalysisData::requestStorage(int nframes)
 }
 
 
-void
-AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
+void AbstractAnalysisData::addModule(const AnalysisDataModulePointer& module)
 {
-    impl_->modules_.addModule(this, std::move(module));
+    impl_->modules_.addModule(this, module);
 }
 
 
-void
-AbstractAnalysisData::addColumnModule(int col, int span,
-                                      AnalysisDataModulePointer module)
+void AbstractAnalysisData::addColumnModule(int col, int span, const AnalysisDataModulePointer& module)
 {
-    GMX_RELEASE_ASSERT(col >= 0 && span >= 1,
-                       "Invalid columns specified for a column module");
-    std::shared_ptr<AnalysisDataProxy> proxy(
-            new AnalysisDataProxy(col, span, this));
-    proxy->addModule(std::move(module));
+    GMX_RELEASE_ASSERT(col >= 0 && span >= 1, "Invalid columns specified for a column module");
+    std::shared_ptr<AnalysisDataProxy> proxy(new AnalysisDataProxy(col, span, this));
+    proxy->addModule(module);
     addModule(proxy);
 }
 
 
-void
-AbstractAnalysisData::applyModule(IAnalysisDataModule *module)
+void AbstractAnalysisData::applyModule(IAnalysisDataModule* module)
 {
     impl_->modules_.applyModule(this, module);
 }
 
 /*! \cond libapi */
-void
-AbstractAnalysisData::setDataSetCount(int dataSetCount)
+void AbstractAnalysisData::setDataSetCount(int dataSetCount)
 {
     GMX_RELEASE_ASSERT(dataSetCount > 0, "Invalid data column count");
-    impl_->modules_.dataPropertyAboutToChange(
-            AnalysisDataModuleManager::eMultipleDataSets, dataSetCount > 1);
+    impl_->modules_.dataPropertyAboutToChange(AnalysisDataModuleManager::eMultipleDataSets,
+                                              dataSetCount > 1);
     impl_->columnCounts_.resize(dataSetCount);
 }
 
-void
-AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
+void AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
 {
-    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
-                       "Out of range data set index");
+    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(), "Out of range data set index");
     GMX_RELEASE_ASSERT(columnCount > 0, "Invalid data column count");
 
     bool bMultipleColumns = columnCount > 1;
@@ -215,25 +191,22 @@ AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
             bMultipleColumns = true;
         }
     }
-    impl_->modules_.dataPropertyAboutToChange(
-            AnalysisDataModuleManager::eMultipleColumns, bMultipleColumns);
+    impl_->modules_.dataPropertyAboutToChange(AnalysisDataModuleManager::eMultipleColumns, bMultipleColumns);
     impl_->columnCounts_[dataSet] = columnCount;
 }
 
-void
-AbstractAnalysisData::setMultipoint(bool bMultipoint)
+void AbstractAnalysisData::setMultipoint(bool bMultipoint)
 {
-    impl_->modules_.dataPropertyAboutToChange(
-            AnalysisDataModuleManager::eMultipoint, bMultipoint);
+    impl_->modules_.dataPropertyAboutToChange(AnalysisDataModuleManager::eMultipoint, bMultipoint);
     impl_->bMultipoint_ = bMultipoint;
 }
 
-AnalysisDataModuleManager &AbstractAnalysisData::moduleManager()
+AnalysisDataModuleManager& AbstractAnalysisData::moduleManager()
 {
     return impl_->modules_;
 }
 
-const AnalysisDataModuleManager &AbstractAnalysisData::moduleManager() const
+const AnalysisDataModuleManager& AbstractAnalysisData::moduleManager() const
 {
     return impl_->modules_;
 }

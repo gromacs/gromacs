@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,19 +48,19 @@
 
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
 // Needed for construction of the FFT library description string
-#include <fftw3.h>
+#    include <fftw3.h>
 #endif
 
 #ifdef HAVE_LIBMKL
-#include <mkl.h>
+#    include <mkl.h>
 #endif
 
 #if HAVE_EXTRAE
-#include <extrae_user_events.h>
+#    include <extrae_user_events.h>
 #endif
 
 #if GMX_USE_HWLOC
-#include <hwloc.h>
+#    include <hwloc.h>
 #endif
 
 #include <cstdio>
@@ -68,6 +68,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <array>
 #include <string>
 
 /* This file is completely threadsafe - keep it that way! */
@@ -97,63 +98,31 @@ int centeringOffset(int width, int length)
     return std::max(width - length, 0) / 2;
 }
 
-std::string formatCentered(int width, const char *text)
+std::string formatCentered(int width, const char* text)
 {
     const int offset = centeringOffset(width, std::strlen(text));
     return formatString("%*s%s", offset, "", text);
 }
 
-void printCopyright(gmx::TextWriter *writer)
+void printCopyright(gmx::TextWriter* writer)
 {
-    static const char * const Contributors[] = {
-        "Emile Apol",
-        "Rossen Apostolov",
-        "Paul Bauer",
-        "Herman J.C. Berendsen",
-        "Par Bjelkmar",
-        "Christian Blau",
-        "Viacheslav Bolnykh",
-        "Kevin Boyd",
-        "Aldert van Buuren",
-        "Rudi van Drunen",
-        "Anton Feenstra",
-        "Alan Gray",
-        "Gerrit Groenhof",
-        "Anca Hamuraru",
-        "Vincent Hindriksen",
-        "M. Eric Irrgang",
-        "Aleksei Iupinov",
-        "Christoph Junghans",
-        "Joe Jordan",
-        "Dimitrios Karkoulis",
-        "Peter Kasson",
-        "Jiri Kraus",
-        "Carsten Kutzner",
-        "Per Larsson",
-        "Justin A. Lemkul",
-        "Viveca Lindahl",
-        "Magnus Lundborg",
-        "Erik Marklund",
-        "Pascal Merz",
-        "Pieter Meulenhoff",
-        "Teemu Murtola",
-        "Szilard Pall",
-        "Sander Pronk",
-        "Roland Schulz",
-        "Michael Shirts",
-        "Alexey Shvetsov",
-        "Alfons Sijbers",
-        "Peter Tieleman",
-        "Jon Vincent",
-        "Teemu Virolainen",
-        "Christian Wennberg",
-        "Maarten Wolf"
+    static const char* const Contributors[] = {
+        "Emile Apol",         "Rossen Apostolov",   "Paul Bauer",         "Herman J.C. Berendsen",
+        "Par Bjelkmar",       "Christian Blau",     "Viacheslav Bolnykh", "Kevin Boyd",
+        "Aldert van Buuren",  "Rudi van Drunen",    "Anton Feenstra",     "Alan Gray",
+        "Gerrit Groenhof",    "Anca Hamuraru",      "Vincent Hindriksen", "M. Eric Irrgang",
+        "Aleksei Iupinov",    "Christoph Junghans", "Joe Jordan",         "Dimitrios Karkoulis",
+        "Peter Kasson",       "Jiri Kraus",         "Carsten Kutzner",    "Per Larsson",
+        "Justin A. Lemkul",   "Viveca Lindahl",     "Magnus Lundborg",    "Erik Marklund",
+        "Pascal Merz",        "Pieter Meulenhoff",  "Teemu Murtola",      "Szilard Pall",
+        "Sander Pronk",       "Roland Schulz",      "Michael Shirts",     "Alexey Shvetsov",
+        "Alfons Sijbers",     "Peter Tieleman",     "Jon Vincent",        "Teemu Virolainen",
+        "Christian Wennberg", "Maarten Wolf",       "Artem Zhmurov"
     };
-    static const char * const CopyrightText[] = {
+    static const char* const CopyrightText[] = {
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-        "Copyright (c) 2001-2018, The GROMACS development team at",
-        "Uppsala University, Stockholm University and",
-        "the Royal Institute of Technology, Sweden.",
+        "Copyright (c) 2001-2019, The GROMACS development team at",
+        "Uppsala University, Stockholm University and", "the Royal Institute of Technology, Sweden.",
         "check out http://www.gromacs.org for more information."
     };
 
@@ -162,23 +131,24 @@ void printCopyright(gmx::TextWriter *writer)
 
     // TODO a centering behaviour of TextWriter could be useful here
     writer->writeLine(formatCentered(78, "GROMACS is written by:"));
-    for (int i = 0; i < NCONTRIBUTORS; )
+    for (int i = 0; i < NCONTRIBUTORS;)
     {
         for (int j = 0; j < 4 && i < NCONTRIBUTORS; ++j, ++i)
         {
-            const int width = 18;
-            char      buf[30];
-            const int offset = centeringOffset(width, strlen(Contributors[i]));
-            GMX_RELEASE_ASSERT(strlen(Contributors[i]) + offset < asize(buf),
+            const int            width = 18;
+            std::array<char, 30> buf;
+            const int            offset = centeringOffset(width, strlen(Contributors[i]));
+            GMX_RELEASE_ASSERT(static_cast<int>(strlen(Contributors[i])) + offset < gmx::ssize(buf),
                                "Formatting buffer is not long enough");
-            std::fill(buf, buf+width, ' ');
-            std::strcpy(buf+offset, Contributors[i]);
-            writer->writeString(formatString(" %-*s", width, buf));
+            std::fill(buf.begin(), buf.begin() + offset, ' ');
+            std::strncpy(buf.data() + offset, Contributors[i], gmx::ssize(buf) - offset);
+            writer->writeString(formatString(" %-*s", width, buf.data()));
         }
         writer->ensureLineBreak();
     }
     writer->writeLine(formatCentered(78, "and the project leaders:"));
-    writer->writeLine(formatCentered(78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel"));
+    writer->writeLine(
+            formatCentered(78, "Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel"));
     writer->ensureEmptyLine();
     for (int i = 0; i < NCR; ++i)
     {
@@ -199,21 +169,21 @@ void printCopyright(gmx::TextWriter *writer)
 }
 
 // Construct a string that describes the library that provides FFT support to this build
-const char *getFftDescriptionString()
+const char* getFftDescriptionString()
 {
 // Define the FFT description string
 #if GMX_FFT_FFTW3 || GMX_FFT_ARMPL_FFTW3
-#  if GMX_NATIVE_WINDOWS
+#    if GMX_NATIVE_WINDOWS
     // Don't buy trouble
     return "fftw3";
-#  else
-    // Use the version string provided by libfftw3
-#    if GMX_DOUBLE
-    return fftw_version;
 #    else
+    // Use the version string provided by libfftw3
+#        if GMX_DOUBLE
+    return fftw_version;
+#        else
     return fftwf_version;
+#        endif
 #    endif
-#  endif
 #endif
 #if GMX_FFT_MKL
     return "Intel MKL";
@@ -223,26 +193,66 @@ const char *getFftDescriptionString()
 #endif
 };
 
-void gmx_print_version_info(gmx::TextWriter *writer)
+void gmx_print_version_info(gmx::TextWriter* writer)
 {
     writer->writeLine(formatString("GROMACS version:    %s", gmx_version()));
-    const char *const git_hash = gmx_version_git_full_hash();
+    const char* const git_hash = gmx_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
         writer->writeLine(formatString("GIT SHA1 hash:      %s", git_hash));
     }
-    const char *const base_hash = gmx_version_git_central_base_hash();
+    const char* const base_hash = gmx_version_git_central_base_hash();
     if (base_hash[0] != '\0')
     {
         writer->writeLine(formatString("Branched from:      %s", base_hash));
     }
+    const char* const releaseSourceChecksum = gmxReleaseSourceChecksum();
+    const char* const currentSourceChecksum = gmxCurrentSourceChecksum();
+    if (releaseSourceChecksum[0] != '\0')
+    {
+        if (std::strcmp(releaseSourceChecksum, "NoChecksumFile") == 0)
+        {
+            writer->writeLine(formatString(
+                    "The source code this program was compiled from has not been verified because "
+                    "the reference checksum was missing during compilation. This means you have an "
+                    "incomplete GROMACS distribution, please make sure to download an intact "
+                    "source distribution and compile that before proceeding."));
+            writer->writeLine(formatString("Computed checksum: %s", currentSourceChecksum));
+        }
+        else if (std::strcmp(releaseSourceChecksum, "NoPythonAvailable") == 0)
+        {
+            writer->writeLine(
+                    formatString("Build source could not be verified, because the checksum could "
+                                 "not be computed."));
+        }
+        else if (std::strcmp(releaseSourceChecksum, currentSourceChecksum) != 0)
+        {
+            writer->writeLine(formatString(
+                    "This program has been built from source code that has been altered and does "
+                    "not match the code released as part of the official GROMACS version %s. If "
+                    "you did not intend to use an altered GROMACS version, make sure to download "
+                    "an intact source distribution and compile that before proceeding.",
+                    gmx_version()));
+            writer->writeLine(formatString(
+                    "If you have modified the source code, you are strongly encouraged to set your "
+                    "custom version suffix (using -DGMX_VERSION_STRING_OF_FORK) which will can "
+                    "help later with scientific reproducibility but also when reporting bugs."));
+            writer->writeLine(formatString("Release checksum: %s", releaseSourceChecksum));
+            writer->writeLine(formatString("Computed checksum: %s", currentSourceChecksum));
+        }
+        else
+        {
+            writer->writeLine(formatString("Verified release checksum is %s", releaseSourceChecksum));
+        }
+    }
+
 
 #if GMX_DOUBLE
     writer->writeLine("Precision:          double");
 #else
     writer->writeLine("Precision:          single");
 #endif
-    writer->writeLine(formatString("Memory model:       %u bit", static_cast<unsigned>(8*sizeof(void *))));
+    writer->writeLine(formatString("Memory model:       %u bit", static_cast<unsigned>(8 * sizeof(void*))));
 
 #if GMX_THREAD_MPI
     writer->writeLine("MPI library:        thread_mpi");
@@ -252,7 +262,8 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine("MPI library:        none");
 #endif
 #if GMX_OPENMP
-    writer->writeLine(formatString("OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)", GMX_OPENMP_MAX_THREADS));
+    writer->writeLine(formatString("OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)",
+                                   GMX_OPENMP_MAX_THREADS));
 #else
     writer->writeLine("OpenMP support:     disabled");
 #endif
@@ -273,7 +284,8 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 #if HAVE_EXTRAE
     unsigned major, minor, revision;
     Extrae_get_version(&major, &minor, &revision);
-    writer->writeLine(formatString("Tracing support:    enabled. Using Extrae-%d.%d.%d", major, minor, revision));
+    writer->writeLine(formatString("Tracing support:    enabled. Using Extrae-%d.%d.%d", major,
+                                   minor, revision));
 #else
     writer->writeLine("Tracing support:    disabled");
 #endif
@@ -288,8 +300,8 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine(formatString("C++ compiler flags: %s", BUILD_CXXFLAGS));
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    writer->writeLine(formatString("Linked with Intel MKL version %d.%d.%d.",
-                                   __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__));
+    writer->writeLine(formatString("Linked with Intel MKL version %d.%d.%d.", __INTEL_MKL__,
+                                   __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__));
 #endif
 #if GMX_GPU == GMX_GPU_OPENCL
     writer->writeLine(formatString("OpenCL include dir: %s", OPENCL_INCLUDE_DIR));
@@ -311,45 +323,47 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 namespace gmx
 {
 
-BinaryInformationSettings::BinaryInformationSettings()
-    : bExtendedInfo_(false), bCopyright_(false),
-      bProcessId_(false),
-      bGeneratedByHeader_(false), prefix_(""), suffix_("")
+BinaryInformationSettings::BinaryInformationSettings() :
+    bExtendedInfo_(false),
+    bCopyright_(false),
+    bProcessId_(false),
+    bGeneratedByHeader_(false),
+    prefix_(""),
+    suffix_("")
 {
 }
 
-void printBinaryInformation(FILE                  *fp,
-                            const IProgramContext &programContext)
+void printBinaryInformation(FILE* fp, const IProgramContext& programContext)
 {
     TextWriter writer(fp);
     printBinaryInformation(&writer, programContext, BinaryInformationSettings());
 }
 
-void printBinaryInformation(FILE                            *fp,
-                            const IProgramContext           &programContext,
-                            const BinaryInformationSettings &settings)
+void printBinaryInformation(FILE*                            fp,
+                            const IProgramContext&           programContext,
+                            const BinaryInformationSettings& settings)
 {
     try
     {
         TextWriter writer(fp);
         printBinaryInformation(&writer, programContext, settings);
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-void printBinaryInformation(TextWriter                      *writer,
-                            const IProgramContext           &programContext,
-                            const BinaryInformationSettings &settings)
+void printBinaryInformation(TextWriter*                      writer,
+                            const IProgramContext&           programContext,
+                            const BinaryInformationSettings& settings)
 {
     // TODO Perhaps the writer could be configured with the prefix and
     // suffix strings from the settings?
-    const char *prefix          = settings.prefix_;
-    const char *suffix          = settings.suffix_;
-    const char *precisionString = "";
+    const char* prefix          = settings.prefix_;
+    const char* suffix          = settings.suffix_;
+    const char* precisionString = "";
 #if GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const char *const name = programContext.displayName();
+    const char* const name = programContext.displayName();
     if (settings.bGeneratedByHeader_)
     {
         writer->writeLine(formatString("%sCreated by:%s", prefix, suffix));
@@ -357,10 +371,9 @@ void printBinaryInformation(TextWriter                      *writer,
     // TODO: It would be nice to know here whether we are really running a
     // Gromacs binary or some other binary that is calling Gromacs; we
     // could then print "%s is part of GROMACS" or some alternative text.
-    std::string title
-        = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
-    const int   indent
-        = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
+    std::string title = formatString(":-) GROMACS - %s, %s%s (-:", name, gmx_version(), precisionString);
+    const int indent =
+            centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
     writer->writeLine(formatString("%s%*c%s%s", prefix, indent, ' ', title.c_str(), suffix));
     writer->writeLine(formatString("%s%s", prefix, suffix));
     if (settings.bCopyright_)
@@ -377,7 +390,7 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine(formatString("%sGROMACS:      %s, version %s%s%s", prefix, name,
                                        gmx_version(), precisionString, suffix));
     }
-    const char *const binaryPath = programContext.fullBinaryPath();
+    const char* const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {
         writer->writeLine(formatString("%sExecutable:   %s%s", prefix, binaryPath, suffix));
@@ -397,11 +410,11 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sProcess ID:   %d%s", prefix, gmx_getpid(), suffix));
     }
-    const char *const commandLine = programContext.commandLine();
+    const char* const commandLine = programContext.commandLine();
     if (!gmx::isNullOrEmpty(commandLine))
     {
-        writer->writeLine(formatString("%sCommand line:%s\n%s  %s%s",
-                                       prefix, suffix, prefix, commandLine, suffix));
+        writer->writeLine(formatString("%sCommand line:%s\n%s  %s%s", prefix, suffix, prefix,
+                                       commandLine, suffix));
     }
     if (settings.bExtendedInfo_)
     {

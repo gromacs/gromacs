@@ -62,7 +62,7 @@ simulations. Some stages are optional for some kinds of simulations.
    favourite text editor in concert with chapter 5 of the |Gromacs|
    `Reference Manual`_. For the AMBER force fields, `antechamber
    <http://amber.scripps.edu/antechamber/antechamber.html>`__ or
-   `acpype <https://github.com/choderalab/mmtools/blob/master/converters/acpype.py>`__
+   `acpype <https://github.com/alanwilter/acpype>`__
    might be appropriate.
 
 6. Describe a simulation box (e.g. using :ref:`gmx editconf`) whose

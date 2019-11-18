@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,22 +59,22 @@ class PhysicalNodeCommunicator;
 
 class IThreadAffinityAccess
 {
-    public:
-        virtual bool isThreadAffinitySupported() const        = 0;
-        virtual bool setCurrentThreadAffinityToCore(int core) = 0;
+public:
+    virtual bool isThreadAffinitySupported() const        = 0;
+    virtual bool setCurrentThreadAffinityToCore(int core) = 0;
 
-    protected:
-        virtual ~IThreadAffinityAccess();
+protected:
+    virtual ~IThreadAffinityAccess();
 };
 
 } // namespace gmx
 
 /*! \brief Communicates within physical nodes to discover the
  * distribution of threads over ranks. */
-void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeComm,
+void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator& physicalNodeComm,
                               int                                  numThreadsOnThisRank,
-                              int                                 *numThreadsOnThisNode,
-                              int                                 *intraNodeThreadOffset);
+                              int*                                 numThreadsOnThisNode,
+                              int*                                 intraNodeThreadOffset);
 
 /*! \brief
  * Sets the thread affinity using the requested setting stored in hw_opt.
@@ -91,15 +91,14 @@ void analyzeThreadsOnThisNode(const gmx::PhysicalNodeCommunicator &physicalNodeC
  *   in the set of all the threads of all MPI ranks within a node (ordered by MPI rank ID).
  * \param[in]  affinityAccess         Interface for low-level access to affinity details.
  */
-void
-gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
-                        const t_commrec             *cr,
-                        const gmx_hw_opt_t          *hw_opt,
-                        const gmx::HardwareTopology &hwTop,
-                        int                          numThreadsOnThisRank,
-                        int                          numThreadsOnThisNode,
-                        int                          intraNodeThreadOffset,
-                        gmx::IThreadAffinityAccess  *affinityAccess);
+void gmx_set_thread_affinity(const gmx::MDLogger&         mdlog,
+                             const t_commrec*             cr,
+                             const gmx_hw_opt_t*          hw_opt,
+                             const gmx::HardwareTopology& hwTop,
+                             int                          numThreadsOnThisRank,
+                             int                          numThreadsOnThisNode,
+                             int                          intraNodeThreadOffset,
+                             gmx::IThreadAffinityAccess*  affinityAccess);
 
 /*! \brief
  * Checks the process affinity mask and if it is found to be non-zero,
@@ -115,9 +114,9 @@ gmx_set_thread_affinity(const gmx::MDLogger         &mdlog,
  * With bAfterOpenmpInit false, it will also detect whether OpenMP environment
  * variables for setting the affinity are set.
  */
-void
-gmx_check_thread_affinity_set(const gmx::MDLogger &mdlog, const t_commrec *cr,
-                              gmx_hw_opt_t *hw_opt, int ncpus,
-                              gmx_bool bAfterOpenmpInit);
+void gmx_check_thread_affinity_set(const gmx::MDLogger& mdlog,
+                                   gmx_hw_opt_t*        hw_opt,
+                                   int                  ncpus,
+                                   gmx_bool             bAfterOpenmpInit);
 
 #endif

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017, by the GROMACS development team, led by
+ * Copyright (c) 2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@ namespace gmx
  *
  * Does not throw.
  */
-CUDA_FUNC_QUALIFIER void pinBuffer(void *CUDA_FUNC_ARGUMENT(pointer),
-                                   std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void pinBuffer(void*       CUDA_FUNC_ARGUMENT(pointer),
+                                   std::size_t CUDA_FUNC_ARGUMENT(numBytes)) noexcept CUDA_FUNC_TERM;
 
 /*! \brief Unpin the allocation.
  *
@@ -63,6 +63,6 @@ CUDA_FUNC_QUALIFIER void pinBuffer(void *CUDA_FUNC_ARGUMENT(pointer),
  *
  * Does not throw.
  */
-CUDA_FUNC_QUALIFIER void unpinBuffer(void *CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM
+CUDA_FUNC_QUALIFIER void unpinBuffer(void* CUDA_FUNC_ARGUMENT(pointer)) noexcept CUDA_FUNC_TERM;
 
 } // namespace gmx

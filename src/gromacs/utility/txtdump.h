@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,41 +50,41 @@
 #include "gromacs/utility/real.h"
 
 //! Line width for text dump output.
-#define LINE_WIDTH  80
+#define LINE_WIDTH 80
 //! Right margin for text dump output.
-#define RMARGIN     10
+#define RMARGIN 10
 //! Actual line length for text dump output.
-#define USE_WIDTH   ((LINE_WIDTH)-(RMARGIN))
+#define USE_WIDTH ((LINE_WIDTH) - (RMARGIN))
 //! Default indentation for text dump output.
-#define INDENT      3
+#define INDENT 3
 
 //! Prints an initial indentation for a line.
-int pr_indent(FILE *fp, int n);
+int pr_indent(FILE* fp, int n);
 //! Returns whether \p is available (not null), and prints a note if it is not.
-bool available(FILE *fp, const void *p, int indent, const char *title);
+bool available(FILE* fp, const void* p, int indent, const char* title);
 //! Prints a title for a dumped section.
-int pr_title(FILE *fp, int indent, const char *title);
+int pr_title(FILE* fp, int indent, const char* title);
 //! Prints a title for a dumped section with a number suffixed.
-int pr_title_n(FILE *fp, int indent, const char *title, int n);
+int pr_title_n(FILE* fp, int indent, const char* title, int n);
 //! Prints a title for a dumped section with two numbers suffixed (in NxM format).
-int pr_title_nxn(FILE *fp, int indent, const char *title, int n1, int n2);
+int pr_title_nxn(FILE* fp, int indent, const char* title, int n1, int n2);
 //! Prints an array of reals.
-void pr_reals(FILE *fp, int indent, const char *title, const real vec[], int n);
+void pr_reals(FILE* fp, int indent, const char* title, const real vec[], int n);
 //! Prints an array of doubles.
-void pr_doubles(FILE *fp, int indent, const char *title, const double *vec, int n);
+void pr_doubles(FILE* fp, int indent, const char* title, const double* vec, int n);
 //! Prints an array of reals as a matrix with inner dimension dim.
-void pr_reals_of_dim(FILE *fp, int indent, const char *title, const real *vec, int n, int dim);
+void pr_reals_of_dim(FILE* fp, int indent, const char* title, const real* vec, int n, int dim);
 //! Prints an integer value.
-void pr_int(FILE *fp, int indent, const char *title, int i);
+void pr_int(FILE* fp, int indent, const char* title, int i);
 //! Prints a int64_t value.
-void pr_int64(FILE *fp, int indent, const char *title, int64_t i);
+void pr_int64(FILE* fp, int indent, const char* title, int64_t i);
 //! Prints a floating-point value.
-void pr_real(FILE *fp, int indent, const char *title, real r);
+void pr_real(FILE* fp, int indent, const char* title, real r);
 //! Prints a double-precision floating-point value.
-void pr_double(FILE *fp, int indent, const char *title, double d);
+void pr_double(FILE* fp, int indent, const char* title, double d);
 //! Prints a string value.
-void pr_str(FILE *fp, int indent, const char *title, const char *s);
+void pr_str(FILE* fp, int indent, const char* title, const char* s);
 //! Prints strings as a section; intended to be used for an array of names.
-void pr_strings(FILE *fp, int indent, const char *title, char ***nm, int n, gmx_bool bShowNumbers);
+void pr_strings(FILE* fp, int indent, const char* title, char*** nm, int n, gmx_bool bShowNumbers);
 
 #endif

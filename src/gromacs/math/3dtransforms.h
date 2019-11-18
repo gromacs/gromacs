@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,8 +76,8 @@ void gmx_mat4_init_rotation(int axis, real angle, mat4 A);
 
 void gmx_mat4_init_translation(real tx, real ty, real tz, mat4 A);
 
-void gmx_mat4_print(FILE *fp, const char *s, mat4 A);
+void gmx_mat4_print(FILE* fp, const char* s, mat4 A);
 
-void gmx_vec4_print(FILE *fp, const char *s, vec4 a);
+void gmx_vec4_print(FILE* fp, const char* s, vec4 a);
 
 #endif

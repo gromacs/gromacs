@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,31 +50,32 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "errorcodes.h"
+
 #if GMX_MPI
-#include "gromacs/utility/basenetwork.h"
-#include "gromacs/utility/gmxmpi.h"
+#    include "gromacs/utility/basenetwork.h"
+#    include "gromacs/utility/gmxmpi.h"
 #endif
 
 #include "errorformat.h"
 
-static bool       bDebug         = false;
+static bool       bDebug = false;
 static gmx::Mutex where_mutex;
 
-FILE             *debug          = nullptr;
-gmx_bool          gmx_debug_at   = FALSE;
+FILE*    debug        = nullptr;
+gmx_bool gmx_debug_at = FALSE;
 
-static FILE      *log_file       = nullptr;
+static FILE*      log_file = nullptr;
 static gmx::Mutex error_mutex;
 
 using Lock = gmx::lock_guard<gmx::Mutex>;
 
-void gmx_init_debug(const int dbglevel, const char *dbgfile)
+void gmx_init_debug(const int dbglevel, const char* dbgfile)
 {
     if (!bDebug)
     {
@@ -93,13 +94,12 @@ gmx_bool bDebugMode()
     return bDebug;
 }
 
-void gmx_fatal_set_log_file(FILE *fp)
+void gmx_fatal_set_log_file(FILE* fp)
 {
     log_file = fp;
 }
 
-static void default_error_handler(const char *title, const std::string &msg,
-                                  const char *file, int line)
+static void default_error_handler(const char* title, const std::string& msg, const char* file, int line)
 {
     if (log_file)
     {
@@ -120,30 +120,29 @@ void gmx_set_error_handler(gmx_error_handler_t func)
     gmx_error_handler = func;
 }
 
-static const char *gmx_strerror(const char *key)
+static const char* gmx_strerror(const char* key)
 {
-    struct ErrorKeyEntry {
-        const char *key;
-        const char *msg;
+    struct ErrorKeyEntry
+    {
+        const char* key;
+        const char* msg;
     };
-    ErrorKeyEntry map[] = {
-        { "call",   "Routine should not have been called" },
-        { "comm",   "Communication (parallel processing) problem" },
-        { "fatal",  "Fatal error" },
-        { "file",   "File input/output error" },
-        { "impl",   "Implementation restriction" },
-        { "incons", "Software inconsistency error" },
-        { "input",  "Input error or input inconsistency" },
-        { "mem",    "Memory allocation/freeing error" },
-        { "open",   "Cannot open file" },
-        { "range",  "Range checking error" }
-    };
+    ErrorKeyEntry map[] = { { "call", "Routine should not have been called" },
+                            { "comm", "Communication (parallel processing) problem" },
+                            { "fatal", "Fatal error" },
+                            { "file", "File input/output error" },
+                            { "impl", "Implementation restriction" },
+                            { "incons", "Software inconsistency error" },
+                            { "input", "Input error or input inconsistency" },
+                            { "mem", "Memory allocation/freeing error" },
+                            { "open", "Cannot open file" },
+                            { "range", "Range checking error" } };
 
     if (key == nullptr)
     {
         return "NULL error type (should not occur)";
     }
-    for (const ErrorKeyEntry &entry : map)
+    for (const ErrorKeyEntry& entry : map)
     {
         if (std::strcmp(key, entry.key) == 0)
         {
@@ -153,12 +152,10 @@ static const char *gmx_strerror(const char *key)
     return gmx::getErrorCodeString(gmx::eeUnknownError);
 }
 
-static void call_error_handler(const char *key, const char *file, int line, const std::string &msg)
+static void call_error_handler(const char* key, const char* file, int line, const std::string& msg)
 {
     Lock lock(error_mutex);
-    gmx_error_handler(gmx_strerror(key),
-                      msg.empty() ? "Empty gmx_fatal message (bug)." : msg,
-                      file, line);
+    gmx_error_handler(gmx_strerror(key), msg.empty() ? "Empty gmx_fatal message (bug)." : msg, file, line);
 }
 
 void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
@@ -179,15 +176,13 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
     {
         switch (exitType)
         {
-            case ExitType_CleanExit:
-                MPI_Finalize();
-                break;
+            case ExitType_CleanExit: MPI_Finalize(); break;
             case ExitType_Abort:
-#if GMX_LIB_MPI
+#    if GMX_LIB_MPI
                 gmx_abort(returnValue);
-#else
+#    else
                 break;
-#endif
+#    endif
             case ExitType_NonMasterAbort:
                 // Let all other processes wait till the master has printed
                 // the error message and issued MPI_Abort.
@@ -201,14 +196,18 @@ void gmx_exit_on_fatal_error(ExitType exitType, int returnValue)
     {
         std::exit(returnValue);
     }
-    // We cannot use std::exit() if other threads may still be executing, since that would cause destructors to be
-    // called for global objects that may still be in use elsewhere.
+    // We cannot use std::exit() if other threads may still be executing, since that would cause
+    // destructors to be called for global objects that may still be in use elsewhere.
     std::_Exit(returnValue);
 }
 
-void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
-                      gmx_bool bMaster, gmx_bool bFinalize,
-                      const char *fmt, va_list ap)
+void gmx_fatal_mpi_va(int /*f_errno*/,
+                      const char* file,
+                      int         line,
+                      gmx_bool    bMaster,
+                      gmx_bool    bFinalize,
+                      const char* fmt,
+                      va_list     ap)
 {
     if (bMaster)
     {
@@ -224,7 +223,7 @@ void gmx_fatal_mpi_va(int /*f_errno*/, const char *file, int line,
     gmx_exit_on_fatal_error(exitType, 1);
 }
 
-void gmx_fatal(int f_errno, const char *file, int line, gmx_fmtstr const char *fmt, ...)
+void gmx_fatal(int f_errno, const char* file, int line, gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -232,37 +231,33 @@ void gmx_fatal(int f_errno, const char *file, int line, gmx_fmtstr const char *f
     va_end(ap);
 }
 
-void _gmx_error(const char *key, const std::string &msg, const char *file, int line)
+void _gmx_error(const char* key, const std::string& msg, const char* file, int line)
 {
     call_error_handler(key, file, line, msg);
     gmx_exit_on_fatal_error(ExitType_Abort, 1);
 }
 
-void _range_check(int n, int n_min, int n_max, const char *warn_str,
-                  const char *var, const char *file, int line)
+void _range_check(int n, int n_min, int n_max, const char* warn_str, const char* var, const char* file, int line)
 {
-    char buf[1024];
-
     if ((n < n_min) || (n >= n_max))
     {
+        std::string buf;
         if (warn_str != nullptr)
         {
-            strcpy(buf, warn_str);
-            strcat(buf, "\n");
-        }
-        else
-        {
-            buf[0] = '\0';
+            buf = warn_str;
+            buf += "\n";
         }
 
-        sprintf(buf+strlen(buf), "Variable %s has value %d. It should have been "
-                "within [ %d .. %d ]\n", var, n, n_min, n_max);
+        buf += gmx::formatString(
+                "Variable %s has value %d. It should have been "
+                "within [ %d .. %d ]\n",
+                var, n, n_min, n_max);
 
         _gmx_error("range", buf, file, line);
     }
 }
 
-void gmx_warning(gmx_fmtstr const char *fmt, ...)
+void gmx_warning(gmx_fmtstr const char* fmt, ...)
 {
     va_list ap;
     char    msg[STRLEN];

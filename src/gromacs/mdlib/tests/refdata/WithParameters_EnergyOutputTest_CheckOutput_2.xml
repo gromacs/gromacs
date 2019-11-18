@@ -1,0 +1,873 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <File Name="EnergyFile">
+    <Sequence Name="EnergyTerms">
+      <Int Name="Length">97</Int>
+      <EnergyTerm>
+        <String Name="Name">LJ-14</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coulomb-14</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ (SR)</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Disper. corr.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coulomb (SR)</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul. recip.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ recip.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">COM Pull En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Quantum En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Potential</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Kinetic En.</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Total Energy</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Temperature</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres. DC</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pressure</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVremain/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dEkin/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVcoul/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVvdw/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVbonded/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">dVrestraint/dl</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Constr. rmsd</String>
+        <String Name="Units"></String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ShakeVir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">ForceVir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-XZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-YZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZX</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZY</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Vir-ZZ</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-XZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-YZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZX</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZY</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Pres-ZZ</String>
+        <String Name="Units">bar</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">#Surf*SurfTen</String>
+        <String Name="Units">bar nm</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-X</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-Y</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Mu-Z</String>
+        <String Name="Units">D</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">2CosZ*Vel-X</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">1/Viscosity</String>
+        <String Name="Units">m s/kg</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Protein</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Protein-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Water-Water</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Water-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-SR:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-SR:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Coul-14:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">LJ-14:Lipid-Lipid</String>
+        <String Name="Units">kJ/mol</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Protein</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Water</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">T-Lipid</String>
+        <String Name="Units">K</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Ux-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uy-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uz-Protein</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Ux-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uy-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+      <EnergyTerm>
+        <String Name="Name">Uz-Lipid</String>
+        <String Name="Units">nm/ps</String>
+      </EnergyTerm>
+    </Sequence>
+    <Sequence Name="Frames">
+      <Int Name="Length">1</Int>
+      <Frame>
+        <Real Name="Time">10.1</Real>
+        <Real Name="Timestep">0.001</Real>
+        <String Name="Step">0</String>
+        <String Name="NumSteps">0</String>
+        <Sequence Name="EnergyTerms">
+          <Int Name="Length">97</Int>
+          <EnergyTerm>
+            <String Name="Name">LJ-14</String>
+            <Real Name="Value">11.499999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb-14</String>
+            <Real Name="Value">11.599999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ (SR)</String>
+            <Real Name="Value">10.299999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Disper. corr.</String>
+            <Real Name="Value">12.499999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coulomb (SR)</String>
+            <Real Name="Value">10.399999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul. recip.</String>
+            <Real Name="Value">11.299999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ recip.</String>
+            <Real Name="Value">11.399999999999995</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">COM Pull En.</String>
+            <Real Name="Value">12.89999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Quantum En.</String>
+            <Real Name="Value">11.099999999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Potential</String>
+            <Real Name="Value">10.499999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Kinetic En.</String>
+            <Real Name="Value">10.599999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Total Energy</String>
+            <Real Name="Value">10.699999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Temperature</String>
+            <Real Name="Value">10.799999999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres. DC</String>
+            <Real Name="Value">12.599999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pressure</String>
+            <Real Name="Value">10.899999999999997</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVremain/dl</String>
+            <Real Name="Value">12.399999999999991</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dEkin/dl</String>
+            <Real Name="Value">12.299999999999992</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVcoul/dl</String>
+            <Real Name="Value">11.899999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVvdw/dl</String>
+            <Real Name="Value">11.999999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVbonded/dl</String>
+            <Real Name="Value">12.099999999999993</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">dVrestraint/dl</String>
+            <Real Name="Value">12.199999999999992</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Constr. rmsd</String>
+            <Real Name="Value">0</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XX</String>
+            <Real Name="Value">20.800000000000047</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XY</String>
+            <Real Name="Value">20.900000000000048</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-XZ</String>
+            <Real Name="Value">21.00000000000005</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YX</String>
+            <Real Name="Value">21.100000000000051</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YY</String>
+            <Real Name="Value">21.200000000000053</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-YZ</String>
+            <Real Name="Value">21.300000000000054</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZX</String>
+            <Real Name="Value">21.400000000000055</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZY</String>
+            <Real Name="Value">21.500000000000057</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ShakeVir-ZZ</String>
+            <Real Name="Value">21.600000000000058</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XX</String>
+            <Real Name="Value">21.70000000000006</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XY</String>
+            <Real Name="Value">21.800000000000061</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-XZ</String>
+            <Real Name="Value">21.900000000000063</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YX</String>
+            <Real Name="Value">22.000000000000064</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YY</String>
+            <Real Name="Value">22.100000000000065</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-YZ</String>
+            <Real Name="Value">22.200000000000067</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZX</String>
+            <Real Name="Value">22.300000000000068</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZY</String>
+            <Real Name="Value">22.40000000000007</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">ForceVir-ZZ</String>
+            <Real Name="Value">22.500000000000071</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XX</String>
+            <Real Name="Value">22.600000000000072</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XY</String>
+            <Real Name="Value">22.700000000000074</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-XZ</String>
+            <Real Name="Value">22.800000000000075</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YX</String>
+            <Real Name="Value">22.900000000000077</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YY</String>
+            <Real Name="Value">23.000000000000078</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-YZ</String>
+            <Real Name="Value">23.10000000000008</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZX</String>
+            <Real Name="Value">23.200000000000081</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZY</String>
+            <Real Name="Value">23.300000000000082</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Vir-ZZ</String>
+            <Real Name="Value">23.400000000000084</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XX</String>
+            <Real Name="Value">23.500000000000085</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XY</String>
+            <Real Name="Value">23.600000000000087</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-XZ</String>
+            <Real Name="Value">23.700000000000088</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YX</String>
+            <Real Name="Value">23.80000000000009</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YY</String>
+            <Real Name="Value">23.900000000000091</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-YZ</String>
+            <Real Name="Value">24.000000000000092</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZX</String>
+            <Real Name="Value">24.100000000000094</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZY</String>
+            <Real Name="Value">24.200000000000095</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Pres-ZZ</String>
+            <Real Name="Value">24.300000000000097</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">#Surf*SurfTen</String>
+            <Real Name="Value">12.420000000000204</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-X</String>
+            <Real Name="Value">24.400000000000098</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Y</String>
+            <Real Name="Value">24.500000000000099</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Mu-Z</String>
+            <Real Name="Value">24.600000000000101</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">2CosZ*Vel-X</String>
+            <Real Name="Value">18.90000000000002</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">1/Viscosity</String>
+            <Real Name="Value">45729160.574543945</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Protein</String>
+            <Real Name="Value">13.099999999999989</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Protein</String>
+            <Real Name="Value">13.199999999999989</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Protein</String>
+            <Real Name="Value">13.399999999999988</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Protein</String>
+            <Real Name="Value">13.499999999999988</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Water</String>
+            <Real Name="Value">13.599999999999987</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Water</String>
+            <Real Name="Value">13.699999999999987</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Water</String>
+            <Real Name="Value">13.899999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Water</String>
+            <Real Name="Value">13.999999999999986</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Protein-Lipid</String>
+            <Real Name="Value">14.099999999999985</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Protein-Lipid</String>
+            <Real Name="Value">14.199999999999985</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Protein-Lipid</String>
+            <Real Name="Value">14.399999999999984</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Protein-Lipid</String>
+            <Real Name="Value">14.499999999999984</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Water</String>
+            <Real Name="Value">15.099999999999982</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Water</String>
+            <Real Name="Value">15.199999999999982</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Water</String>
+            <Real Name="Value">15.399999999999981</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Water</String>
+            <Real Name="Value">15.49999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Water-Lipid</String>
+            <Real Name="Value">15.59999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Water-Lipid</String>
+            <Real Name="Value">15.69999999999998</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Water-Lipid</String>
+            <Real Name="Value">15.899999999999979</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Water-Lipid</String>
+            <Real Name="Value">15.999999999999979</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-SR:Lipid-Lipid</String>
+            <Real Name="Value">17.099999999999994</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-SR:Lipid-Lipid</String>
+            <Real Name="Value">17.199999999999996</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Coul-14:Lipid-Lipid</String>
+            <Real Name="Value">17.399999999999999</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">LJ-14:Lipid-Lipid</String>
+            <Real Name="Value">17.5</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Protein</String>
+            <Real Name="Value">17.600000000000001</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Water</String>
+            <Real Name="Value">17.800000000000004</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">T-Lipid</String>
+            <Real Name="Value">18.000000000000007</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Protein</String>
+            <Real Name="Value">18.20000000000001</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Protein</String>
+            <Real Name="Value">18.300000000000011</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Protein</String>
+            <Real Name="Value">18.400000000000013</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Ux-Lipid</String>
+            <Real Name="Value">18.500000000000014</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uy-Lipid</String>
+            <Real Name="Value">18.600000000000016</Real>
+          </EnergyTerm>
+          <EnergyTerm>
+            <String Name="Name">Uz-Lipid</String>
+            <Real Name="Value">18.700000000000017</Real>
+          </EnergyTerm>
+        </Sequence>
+      </Frame>
+    </Sequence>
+  </File>
+  <Int Name="Number of Energy Terms">97</Int>
+  <String Name="log">Current ref_t for group Water:     25.7
+Current ref_t for group Lipid:     25.8
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.06000e+01    1.07000e+01    1.08000e+01    1.26000e+01    1.09000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
+ dVrestraint/dl   Constr. rmsd
+    1.22000e+01    0.00000e+00
+
+Current ref_t for group Water:     25.7
+Current ref_t for group Lipid:     25.8
+
+	&lt;======  ###############  ==&gt;
+	&lt;====  A V E R A G E S  ====&gt;
+	&lt;==  ###############  ======&gt;
+
+	Statistics over 1 steps using 1 frames
+
+   Energies (kJ/mol)
+          LJ-14     Coulomb-14        LJ (SR)  Disper. corr.   Coulomb (SR)
+    1.15000e+01    1.16000e+01    1.03000e+01    1.25000e+01    1.04000e+01
+   Coul. recip.      LJ recip.   COM Pull En.    Quantum En.      Potential
+    1.13000e+01    1.14000e+01    1.29000e+01    1.11000e+01    1.05000e+01
+    Kinetic En.   Total Energy    Temperature Pres. DC (bar) Pressure (bar)
+    1.06000e+01    1.07000e+01    1.08000e+01    1.26000e+01    1.09000e+01
+    dVremain/dl       dEkin/dl      dVcoul/dl       dVvdw/dl    dVbonded/dl
+    1.24000e+01    1.23000e+01    1.19000e+01    1.20000e+01    1.21000e+01
+ dVrestraint/dl   Constr. rmsd
+    1.22000e+01    0.00000e+00
+
+   Constraint Virial (kJ/mol)
+    2.08000e+01    2.09000e+01    2.10000e+01
+    2.11000e+01    2.12000e+01    2.13000e+01
+    2.14000e+01    2.15000e+01    2.16000e+01
+
+   Force Virial (kJ/mol)
+    2.17000e+01    2.18000e+01    2.19000e+01
+    2.20000e+01    2.21000e+01    2.22000e+01
+    2.23000e+01    2.24000e+01    2.25000e+01
+
+   Total Virial (kJ/mol)
+    2.26000e+01    2.27000e+01    2.28000e+01
+    2.29000e+01    2.30000e+01    2.31000e+01
+    2.32000e+01    2.33000e+01    2.34000e+01
+
+   Pressure (bar)
+    2.35000e+01    2.36000e+01    2.37000e+01
+    2.38000e+01    2.39000e+01    2.40000e+01
+    2.41000e+01    2.42000e+01    2.43000e+01
+
+   Total Dipole (D)
+    2.44000e+01    2.45000e+01    2.46000e+01
+
+  Epot (kJ/mol)        Coul-SR          LJ-SR        Coul-14          LJ-14   
+Protein-Protein    1.31000e+01    1.32000e+01    1.34000e+01    1.35000e+01
+  Protein-Water    1.36000e+01    1.37000e+01    1.39000e+01    1.40000e+01
+  Protein-Lipid    1.41000e+01    1.42000e+01    1.44000e+01    1.45000e+01
+    Water-Water    1.51000e+01    1.52000e+01    1.54000e+01    1.55000e+01
+    Water-Lipid    1.56000e+01    1.57000e+01    1.59000e+01    1.60000e+01
+    Lipid-Lipid    1.71000e+01    1.72000e+01    1.74000e+01    1.75000e+01
+
+      T-Protein        T-Water        T-Lipid
+    1.76000e+01    1.78000e+01    1.80000e+01
+
+          Group             Ux             Uy             Uz
+        Protein    1.82000e+01    1.83000e+01    1.84000e+01
+          Lipid    1.85000e+01    1.86000e+01    1.87000e+01
+
+</String>
+</ReferenceData>

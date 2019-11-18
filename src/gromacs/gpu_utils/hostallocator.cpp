@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,23 +55,22 @@
 namespace gmx
 {
 
-HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy)
-    : pinningPolicy_(pinningPolicy)
+HostAllocationPolicy::HostAllocationPolicy(PinningPolicy pinningPolicy) :
+    pinningPolicy_(pinningPolicy)
 {
 }
 
 std::size_t HostAllocationPolicy::alignment() const noexcept
 {
-    return (pinningPolicy_ == PinningPolicy::PinnedIfSupported ?
-            PageAlignedAllocationPolicy::alignment() :
-            AlignedAllocationPolicy::alignment());
+    return (pinningPolicy_ == PinningPolicy::PinnedIfSupported ? PageAlignedAllocationPolicy::alignment()
+                                                               : AlignedAllocationPolicy::alignment());
 }
 
-void *HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
+void* HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
 {
     if (pinningPolicy_ == PinningPolicy::PinnedIfSupported)
     {
-        void *p = PageAlignedAllocationPolicy::malloc(bytes);
+        void* p = PageAlignedAllocationPolicy::malloc(bytes);
         if (p)
         {
             /* For every pin, unpin has to be called or resources will
@@ -96,7 +95,7 @@ void *HostAllocationPolicy::malloc(std::size_t bytes) const noexcept
     }
 }
 
-void HostAllocationPolicy::free(void *buffer) const noexcept
+void HostAllocationPolicy::free(void* buffer) const noexcept
 {
     if (buffer == nullptr)
     {

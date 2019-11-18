@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,27 +67,26 @@ class TestReferenceChecker;
  */
 class TestFileInputRedirector : public IFileInputRedirector
 {
-    public:
-        TestFileInputRedirector();
-        ~TestFileInputRedirector() override;
+public:
+    TestFileInputRedirector();
+    ~TestFileInputRedirector() override;
 
-        /*! \brief
-         * Marks the provided path as an existing file.
-         *
-         * \throws std::bad_alloc if out of memory.
-         *
-         * Further checks for existence of the given path will return `true`.
-         */
-        void addExistingFile(const char *filename);
+    /*! \brief
+     * Marks the provided path as an existing file.
+     *
+     * \throws std::bad_alloc if out of memory.
+     *
+     * Further checks for existence of the given path will return `true`.
+     */
+    void addExistingFile(const char* filename);
 
-        // From IFileInputRedirector
-        bool fileExists(const char            *filename,
-                        File::NotFoundHandler  onNotFound) const override;
+    // From IFileInputRedirector
+    bool fileExists(const char* filename, File::NotFoundHandler onNotFound) const override;
 
-    private:
-        std::set<std::string> existingFiles_;
+private:
+    std::set<std::string> existingFiles_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
+    GMX_DISALLOW_COPY_AND_ASSIGN(TestFileInputRedirector);
 };
 
 /*! \libinternal \brief
@@ -100,28 +99,28 @@ class TestFileInputRedirector : public IFileInputRedirector
  */
 class TestFileOutputRedirector : public IFileOutputRedirector
 {
-    public:
-        TestFileOutputRedirector();
-        ~TestFileOutputRedirector() override;
+public:
+    TestFileOutputRedirector();
+    ~TestFileOutputRedirector() override;
 
-        /*! \brief
-         * Checks contents of all redirected files (including stdout).
-         *
-         * This method should not be called if the redirector will still be
-         * used for further output in the test.  Behavior is not designed for
-         * checking in the middle of the test, although that could potentially
-         * be changed if necessary.
-         */
-        void checkRedirectedFiles(TestReferenceChecker *checker);
+    /*! \brief
+     * Checks contents of all redirected files (including stdout).
+     *
+     * This method should not be called if the redirector will still be
+     * used for further output in the test.  Behavior is not designed for
+     * checking in the middle of the test, although that could potentially
+     * be changed if necessary.
+     */
+    void checkRedirectedFiles(TestReferenceChecker* checker);
 
-        // From IFileOutputRedirector
-        TextOutputStream &standardOutput() override;
-        TextOutputStreamPointer openTextOutputFile(const char *filename) override;
+    // From IFileOutputRedirector
+    TextOutputStream&       standardOutput() override;
+    TextOutputStreamPointer openTextOutputFile(const char* filename) override;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

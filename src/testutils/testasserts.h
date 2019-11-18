@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,9 +77,9 @@ namespace internal
  *
  * \param[in] ex  Exception that was thrown.
  */
-void processExpectedException(const std::exception &ex);
+void processExpectedException(const std::exception& ex);
 //! \endcond
-}       // namespace internal
+} // namespace internal
 
 //! \libinternal \addtogroup module_testutils
 //! \{
@@ -105,36 +105,43 @@ void processExpectedException(const std::exception &ex);
  * The implementation is copied and adjusted from
  * include/gtest/internal/gtest-internal.h in Google Test 1.6.0.
  */
-#define GMX_TEST_THROW_(statement, expected_exception, fail) \
-    GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess()) { \
-        bool gmx_caught_expected = false; \
-        try { \
-            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-        } \
-        catch (expected_exception const &ex) { \
-            gmx_caught_expected = true; \
-            ::gmx::test::internal::processExpectedException(ex); \
-        } \
-        catch (std::exception const &ex) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws a different type.\n" \
-            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-        catch (...) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws a different type."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-        if (!gmx_caught_expected) { \
-            gmx_ar << "Expected: " #statement " throws an exception of type " \
-            << #expected_exception ".\n  Actual: it throws nothing."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
-        } \
-    } else \
-        GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__) : \
-            fail(gmx_ar.message())
+#define GMX_TEST_THROW_(statement, expected_exception, fail)                           \
+    GTEST_AMBIGUOUS_ELSE_BLOCKER_                                                      \
+    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess())             \
+    {                                                                                  \
+        bool gmx_caught_expected = false;                                              \
+        try                                                                            \
+        {                                                                              \
+            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);                 \
+        }                                                                              \
+        catch (expected_exception const& ex)                                           \
+        {                                                                              \
+            gmx_caught_expected = true;                                                \
+            ::gmx::test::internal::processExpectedException(ex);                       \
+        }                                                                              \
+        catch (std::exception const& ex)                                               \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws a different type.\n" \
+                   << "Exception details:\n"                                           \
+                   << ::gmx::formatExceptionMessageToString(ex);                       \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+        catch (...)                                                                    \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws a different type.";  \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+        if (!gmx_caught_expected)                                                      \
+        {                                                                              \
+            gmx_ar << "Expected: " #statement " throws an exception of type "          \
+                   << #expected_exception ".\n  Actual: it throws nothing.";           \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__);                  \
+        }                                                                              \
+    }                                                                                  \
+    else                                                                               \
+        GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__) : fail(gmx_ar.message())
 
 /*! \brief
  * Internal implementation macro for exception assertations.
@@ -145,26 +152,31 @@ void processExpectedException(const std::exception &ex);
  * The implementation is copied and adjusted from
  * include/gtest/internal/gtest-internal.h in Google Test 1.6.0.
  */
-#define GMX_TEST_NO_THROW_(statement, fail) \
-    GTEST_AMBIGUOUS_ELSE_BLOCKER_ \
-    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess()) { \
-        try { \
-            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement); \
-        } \
-        catch (std::exception const &ex) { \
+#define GMX_TEST_NO_THROW_(statement, fail)                                    \
+    GTEST_AMBIGUOUS_ELSE_BLOCKER_                                              \
+    if (::testing::AssertionResult gmx_ar = ::testing::AssertionSuccess())     \
+    {                                                                          \
+        try                                                                    \
+        {                                                                      \
+            GTEST_SUPPRESS_UNREACHABLE_CODE_WARNING_BELOW_(statement);         \
+        }                                                                      \
+        catch (std::exception const& ex)                                       \
+        {                                                                      \
             gmx_ar << "Expected: " #statement " doesn't throw an exception.\n" \
-            << "  Actual: it throws.\n" \
-            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__); \
-        } \
-        catch (...) { \
+                   << "  Actual: it throws.\n"                                 \
+                   << "Exception details:\n"                                   \
+                   << ::gmx::formatExceptionMessageToString(ex);               \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__);        \
+        }                                                                      \
+        catch (...)                                                            \
+        {                                                                      \
             gmx_ar << "Expected: " #statement " doesn't throw an exception.\n" \
-            << "  Actual: it throws."; \
-            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__); \
-        } \
-    } else \
-        GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__) : \
-            fail(gmx_ar.message())
+                   << "  Actual: it throws.";                                  \
+            goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__);        \
+        }                                                                      \
+    }                                                                          \
+    else                                                                       \
+        GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__) : fail(gmx_ar.message())
 //! \endcond
 
 /*! \brief
@@ -179,8 +191,7 @@ void processExpectedException(const std::exception &ex);
  *
  * \hideinitializer
  */
-#define EXPECT_NO_THROW_GMX(statement) \
-    GMX_TEST_NO_THROW_(statement, GTEST_NONFATAL_FAILURE_)
+#define EXPECT_NO_THROW_GMX(statement) GMX_TEST_NO_THROW_(statement, GTEST_NONFATAL_FAILURE_)
 /*! \brief
  * Asserts that a statement throws a given exception.
  *
@@ -193,8 +204,7 @@ void processExpectedException(const std::exception &ex);
  *
  * \hideinitializer
  */
-#define ASSERT_NO_THROW_GMX(statement) \
-    GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
+#define ASSERT_NO_THROW_GMX(statement) GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
 
 //! \}
 
@@ -208,79 +218,77 @@ void processExpectedException(const std::exception &ex);
  */
 class FloatingPointDifference
 {
-    public:
+public:
+    /*! \brief Initializes a single-precision difference.
+     *
+     *  \param ref    First term in difference
+     *  \param value  Second term in difference
+     *
+     *  For absolute and ULP differences the two parameters are equivalent,
+     *  since the difference is symmetric. For relative differences
+     *  the first term is interpreted as the reference value, from which
+     *  we extract the magnitude to compare with.
+     */
+    FloatingPointDifference(float ref, float value);
 
-        /*! \brief Initializes a single-precision difference.
-         *
-         *  \param ref    First term in difference
-         *  \param value  Second term in difference
-         *
-         *  For absolute and ULP differences the two parameters are equivalent,
-         *  since the difference is symmetric. For relative differences
-         *  the first term is interpreted as the reference value, from which
-         *  we extract the magnitude to compare with.
-         */
-        FloatingPointDifference(float ref, float value);
+    /*! \brief Initializes a double-precision difference.
+     *
+     *  \param ref    First term in difference
+     *  \param value  Second term in difference
+     *
+     *  For absolute and ULP differences the two parameters are equivalent,
+     *  since the difference is symmetric. For relative differences
+     *  the first term is interpreted as the reference value, from which
+     *  we extract the magnitude to compare with.
+     */
+    FloatingPointDifference(double ref, double value);
 
-        /*! \brief Initializes a double-precision difference.
-         *
-         *  \param ref    First term in difference
-         *  \param value  Second term in difference
-         *
-         *  For absolute and ULP differences the two parameters are equivalent,
-         *  since the difference is symmetric. For relative differences
-         *  the first term is interpreted as the reference value, from which
-         *  we extract the magnitude to compare with.
-         */
-        FloatingPointDifference(double ref, double value);
+    /*! \brief
+     * Whether one or both of the compared values were NaN.
+     *
+     * If this returns `true`, other accessors return meaningless values.
+     */
+    bool isNaN() const;
+    //! Returns the difference as an absolute number (always non-negative).
+    double asAbsolute() const { return absoluteDifference_; }
+    /*! \brief
+     * Returns the difference as ULPs (always non-negative).
+     *
+     * The ULPs are calculated for the type that corresponds to the
+     * constructor used to initialize the difference.
+     * The ULP difference between 0.0 and -0.0 is zero.
+     */
+    uint64_t asUlps() const { return ulpDifference_; }
+    /*! \brief
+     * Whether the compared values were of different sign.
+     *
+     * 0.0 and -0.0 are treated as positive and negative, respectively.
+     */
+    bool signsDiffer() const { return bSignDifference_; }
+    /*! \brief
+     * Whether the difference is between single- or double-precision
+     * numbers.
+     */
+    bool isDouble() const { return bDouble_; }
+    //! Formats the difference as a string for assertion failure messages.
+    std::string toString() const;
 
-        /*! \brief
-         * Whether one or both of the compared values were NaN.
-         *
-         * If this returns `true`, other accessors return meaningless values.
-         */
-        bool isNaN() const;
-        //! Returns the difference as an absolute number (always non-negative).
-        double asAbsolute() const { return absoluteDifference_; }
-        /*! \brief
-         * Returns the difference as ULPs (always non-negative).
-         *
-         * The ULPs are calculated for the type that corresponds to the
-         * constructor used to initialize the difference.
-         * The ULP difference between 0.0 and -0.0 is zero.
-         */
-        uint64_t asUlps() const { return ulpDifference_; }
-        /*! \brief
-         * Whether the compared values were of different sign.
-         *
-         * 0.0 and -0.0 are treated as positive and negative, respectively.
-         */
-        bool signsDiffer() const { return bSignDifference_; }
-        /*! \brief
-         * Whether the difference is between single- or double-precision
-         * numbers.
-         */
-        bool isDouble() const { return bDouble_; }
-        //! Formats the difference as a string for assertion failure messages.
-        std::string toString() const;
+    //! Returns the magnitude of the original second term of the difference.
+    double termMagnitude() const { return termMagnitude_; }
 
-        //! Returns the magnitude of the original second term of the difference.
-        double termMagnitude() const { return termMagnitude_; }
-
-    private:
-
-        //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
-        double       termMagnitude_;
-        //! Stores the absolute difference, or NaN if one or both values were NaN.
-        double       absoluteDifference_;
-        uint64_t     ulpDifference_;
-        bool         bSignDifference_;
-        /*! \brief
-         * Whether the difference was computed for single or double precision.
-         *
-         * This sets the units for `ulpDifference_`.
-         */
-        bool         bDouble_;
+private:
+    //! Save the magnitude of the reference value for relative (i.e., not ULP) tolerance
+    double termMagnitude_;
+    //! Stores the absolute difference, or NaN if one or both values were NaN.
+    double   absoluteDifference_;
+    uint64_t ulpDifference_;
+    bool     bSignDifference_;
+    /*! \brief
+     * Whether the difference was computed for single or double precision.
+     *
+     * This sets the units for `ulpDifference_`.
+     */
+    bool bDouble_;
 };
 
 /*! \libinternal \brief
@@ -333,60 +341,60 @@ class FloatingPointDifference
  */
 class FloatingPointTolerance
 {
-    public:
-        /*! \brief
-         * Creates a tolerance with the specified values.
-         *
-         * \param[in]  singleAbsoluteTolerance
-         *     Allowed absolute difference in a single-precision number.
-         * \param[in]  doubleAbsoluteTolerance
-         *     Allowed absolute difference in a double-precision number.
-         * \param[in]  singleRelativeTolerance
-         *     Allowed relative difference in a single-precision number.
-         * \param[in]  doubleRelativeTolerance
-         *     Allowed relative difference in a double-precision number.
-         * \param[in]  singleUlpTolerance
-         *     Allowed ULP difference in a single-precision number.
-         * \param[in]  doubleUlpTolerance
-         *     Allowed ULP difference in a double-precision number.
-         * \param[in]  bSignMustMatch
-         *     Whether sign mismatch fails the comparison.
-         */
-        FloatingPointTolerance(float        singleAbsoluteTolerance,
-                               double       doubleAbsoluteTolerance,
-                               float        singleRelativeTolerance,
-                               double       doubleRelativeTolerance,
-                               uint64_t     singleUlpTolerance,
-                               uint64_t     doubleUlpTolerance,
-                               bool         bSignMustMatch)
-            : singleAbsoluteTolerance_(singleAbsoluteTolerance),
-              doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
-              singleRelativeTolerance_(singleRelativeTolerance),
-              doubleRelativeTolerance_(doubleRelativeTolerance),
-              singleUlpTolerance_(singleUlpTolerance),
-              doubleUlpTolerance_(doubleUlpTolerance),
-              bSignMustMatch_(bSignMustMatch)
-        {
-        }
+public:
+    /*! \brief
+     * Creates a tolerance with the specified values.
+     *
+     * \param[in]  singleAbsoluteTolerance
+     *     Allowed absolute difference in a single-precision number.
+     * \param[in]  doubleAbsoluteTolerance
+     *     Allowed absolute difference in a double-precision number.
+     * \param[in]  singleRelativeTolerance
+     *     Allowed relative difference in a single-precision number.
+     * \param[in]  doubleRelativeTolerance
+     *     Allowed relative difference in a double-precision number.
+     * \param[in]  singleUlpTolerance
+     *     Allowed ULP difference in a single-precision number.
+     * \param[in]  doubleUlpTolerance
+     *     Allowed ULP difference in a double-precision number.
+     * \param[in]  bSignMustMatch
+     *     Whether sign mismatch fails the comparison.
+     */
+    FloatingPointTolerance(float    singleAbsoluteTolerance,
+                           double   doubleAbsoluteTolerance,
+                           float    singleRelativeTolerance,
+                           double   doubleRelativeTolerance,
+                           uint64_t singleUlpTolerance,
+                           uint64_t doubleUlpTolerance,
+                           bool     bSignMustMatch) :
+        singleAbsoluteTolerance_(singleAbsoluteTolerance),
+        doubleAbsoluteTolerance_(doubleAbsoluteTolerance),
+        singleRelativeTolerance_(singleRelativeTolerance),
+        doubleRelativeTolerance_(doubleRelativeTolerance),
+        singleUlpTolerance_(singleUlpTolerance),
+        doubleUlpTolerance_(doubleUlpTolerance),
+        bSignMustMatch_(bSignMustMatch)
+    {
+    }
 
-        /*! \brief
-         * Checks whether a difference is within the specified tolerance.
-         *
-         * NaNs are always treated outside the tolerance.
-         */
-        bool isWithin(const FloatingPointDifference &difference) const;
+    /*! \brief
+     * Checks whether a difference is within the specified tolerance.
+     *
+     * NaNs are always treated outside the tolerance.
+     */
+    bool isWithin(const FloatingPointDifference& difference) const;
 
-        //! Formats the tolerance as a string for assertion failure messages.
-        std::string toString(const FloatingPointDifference &difference) const;
+    //! Formats the tolerance as a string for assertion failure messages.
+    std::string toString(const FloatingPointDifference& difference) const;
 
-    private:
-        float        singleAbsoluteTolerance_;
-        double       doubleAbsoluteTolerance_;
-        float        singleRelativeTolerance_;
-        double       doubleRelativeTolerance_;
-        uint64_t     singleUlpTolerance_;
-        uint64_t     doubleUlpTolerance_;
-        bool         bSignMustMatch_;
+private:
+    float    singleAbsoluteTolerance_;
+    double   doubleAbsoluteTolerance_;
+    float    singleRelativeTolerance_;
+    double   doubleRelativeTolerance_;
+    uint64_t singleUlpTolerance_;
+    uint64_t doubleUlpTolerance_;
+    bool     bSignMustMatch_;
 };
 
 /*! \brief
@@ -397,8 +405,7 @@ class FloatingPointTolerance
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-ulpTolerance(uint64_t ulpDiff)
+static inline FloatingPointTolerance ulpTolerance(uint64_t ulpDiff)
 {
     return FloatingPointTolerance(0.0, 0.0, 0.0, 0.0, ulpDiff, ulpDiff, false);
 }
@@ -420,8 +427,32 @@ ulpTolerance(uint64_t ulpDiff)
  *
  * \related FloatingPointTolerance
  */
-FloatingPointTolerance
-    relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
+FloatingPointTolerance relativeToleranceAsFloatingPoint(double magnitude, double tolerance);
+
+/*! \brief
+ * Creates a tolerance that allows a precision-dependent difference in two
+ * compared values that is relative to the given magnitude.
+ *
+ * \param[in] magnitude        Magnitude of the numbers the computation
+ *     operates in.
+ * \param[in] singleTolerance  Relative tolerance permitted (e.g. 1e-4)
+ *     in single precision.
+ * \param[in] doubleTolerance  Relative tolerance permitted (e.g. 1e-4)
+ *     in double precision.
+ *
+ * In addition to setting an relative tolerance for both
+ * precisions, this sets the absolute tolerance such that values close to zero
+ * (in general, smaller than \p magnitude) do not fail the check if they
+ * differ by less than \p tolerance evaluated at \p magnitude.  This accounts
+ * for potential loss of precision for small values, and should be used when
+ * accuracy of values much less than \p magnitude do not matter for
+ * correctness.
+ *
+ * \related FloatingPointTolerance
+ */
+FloatingPointTolerance relativeToleranceAsPrecisionDependentFloatingPoint(double magnitude,
+                                                                          float  singleTolerance,
+                                                                          double doubleTolerance);
 
 /*! \brief
  * Creates a tolerance that allows a precision-dependent relative difference in
@@ -441,14 +472,12 @@ FloatingPointTolerance
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-relativeToleranceAsPrecisionDependentUlp(double       magnitude,
-                                         uint64_t     singleUlpDiff,
-                                         uint64_t     doubleUlpDiff)
+static inline FloatingPointTolerance relativeToleranceAsPrecisionDependentUlp(double   magnitude,
+                                                                              uint64_t singleUlpDiff,
+                                                                              uint64_t doubleUlpDiff)
 {
-    return FloatingPointTolerance(magnitude*singleUlpDiff*GMX_FLOAT_EPS,
-                                  magnitude*doubleUlpDiff*GMX_DOUBLE_EPS,
-                                  0.0, 0.0,
+    return FloatingPointTolerance(float(magnitude) * singleUlpDiff * GMX_FLOAT_EPS,
+                                  magnitude * doubleUlpDiff * GMX_DOUBLE_EPS, 0.0, 0.0,
                                   singleUlpDiff, doubleUlpDiff, false);
 }
 
@@ -457,11 +486,9 @@ relativeToleranceAsPrecisionDependentUlp(double       magnitude,
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-absoluteTolerance(double tolerance)
+static inline FloatingPointTolerance absoluteTolerance(double tolerance)
 {
-    return FloatingPointTolerance(tolerance, tolerance, 0.0, 0.0,
-                                  UINT64_MAX, UINT64_MAX, false);
+    return FloatingPointTolerance(float(tolerance), tolerance, 0.0, 0.0, UINT64_MAX, UINT64_MAX, false);
 }
 
 /*! \brief
@@ -480,8 +507,7 @@ absoluteTolerance(double tolerance)
  *
  * \related FloatingPointTolerance
  */
-static inline FloatingPointTolerance
-relativeToleranceAsUlp(double magnitude, uint64_t ulpDiff)
+static inline FloatingPointTolerance relativeToleranceAsUlp(double magnitude, uint64_t ulpDiff)
 {
     return relativeToleranceAsPrecisionDependentUlp(magnitude, ulpDiff, ulpDiff);
 }
@@ -490,7 +516,7 @@ namespace detail
 {
 //! Default tolerance in ULPs for two floating-point values to compare equal.
 constexpr uint64_t g_defaultUlpTolerance = 4;
-}
+} // namespace detail
 
 /*! \brief
  * Returns the default tolerance for comparing `real` numbers.
@@ -514,9 +540,9 @@ static inline FloatingPointTolerance defaultRealTolerance()
  */
 static inline FloatingPointTolerance defaultFloatTolerance()
 {
-    return relativeToleranceAsPrecisionDependentUlp
-               (1.0, detail::g_defaultUlpTolerance,
-               static_cast<uint64_t>(detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS)));
+    return relativeToleranceAsPrecisionDependentUlp(
+            1.0, detail::g_defaultUlpTolerance,
+            static_cast<uint64_t>(detail::g_defaultUlpTolerance * (GMX_FLOAT_EPS / GMX_DOUBLE_EPS)));
 }
 
 /*! \name Assertions for floating-point comparison
@@ -535,24 +561,25 @@ static inline FloatingPointTolerance defaultFloatTolerance()
 /*! \internal \brief
  * Assertion predicate formatter for comparing two floating-point values.
  */
-template <typename FloatType>
-static inline ::testing::AssertionResult assertEqualWithinTolerance(
-        const char *expr1, const char *expr2, const char * /*exprTolerance*/,
-        FloatType value1, FloatType value2,
-        const FloatingPointTolerance &tolerance)
+template<typename FloatType>
+static inline ::testing::AssertionResult assertEqualWithinTolerance(const char* expr1,
+                                                                    const char* expr2,
+                                                                    const char* /*exprTolerance*/,
+                                                                    FloatType value1,
+                                                                    FloatType value2,
+                                                                    const FloatingPointTolerance& tolerance)
 {
     FloatingPointDifference diff(value1, value2);
     if (tolerance.isWithin(diff))
     {
         return ::testing::AssertionSuccess();
     }
-    return ::testing::AssertionFailure()
-           << "  Value of: " << expr2 << std::endl
-           << "    Actual: " << value2 << std::endl
-           << "  Expected: " << expr1 << std::endl
-           << "  Which is: " << value1 << std::endl
-           << "Difference: " << diff.toString() << std::endl
-           << " Tolerance: " << tolerance.toString(diff);
+    return ::testing::AssertionFailure() << "  Value of: " << expr2 << std::endl
+                                         << "    Actual: " << value2 << std::endl
+                                         << "  Expected: " << expr1 << std::endl
+                                         << "  Which is: " << value1 << std::endl
+                                         << "Difference: " << diff.toString() << std::endl
+                                         << " Tolerance: " << tolerance.toString(diff);
 }
 //! \endcond
 
@@ -562,16 +589,14 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  * \hideinitializer
  */
 #define EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
-                        value1, value2, tolerance)
+    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, value1, value2, tolerance)
 /*! \brief
  * Asserts that two double-precision values are within the given tolerance.
  *
  * \hideinitializer
  */
 #define EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
-                        value1, value2, tolerance)
+    EXPECT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, value1, value2, tolerance)
 /*! \def EXPECT_REAL_EQ_TOL
  * \brief
  * Asserts that two `real` values are within the given tolerance.
@@ -584,16 +609,14 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  * \hideinitializer
  */
 #define ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, \
-                        value1, value2, tolerance)
+    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<float>, value1, value2, tolerance)
 /*! \brief
  * Asserts that two double-precision values are within the given tolerance.
  *
  * \hideinitializer
  */
 #define ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, \
-                        value1, value2, tolerance)
+    ASSERT_PRED_FORMAT3(::gmx::test::assertEqualWithinTolerance<double>, value1, value2, tolerance)
 /*! \def ASSERT_REAL_EQ_TOL
  * \brief
  * Asserts that two `real` values are within the given tolerance.
@@ -602,29 +625,31 @@ static inline ::testing::AssertionResult assertEqualWithinTolerance(
  */
 
 #if GMX_DOUBLE
-#define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance)
-#define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance)
+#    define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
+        EXPECT_DOUBLE_EQ_TOL(value1, value2, tolerance)
+#    define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
+        ASSERT_DOUBLE_EQ_TOL(value1, value2, tolerance)
 #else
-#define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
-    EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)
-#define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
-    ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#    define EXPECT_REAL_EQ_TOL(value1, value2, tolerance) \
+        EXPECT_FLOAT_EQ_TOL(value1, value2, tolerance)
+#    define ASSERT_REAL_EQ_TOL(value1, value2, tolerance) \
+        ASSERT_FLOAT_EQ_TOL(value1, value2, tolerance)
 #endif
 
 //! EXPECT_REAL_EQ_TOL with default tolerance
-#define EXPECT_REAL_EQ(value1, value2) EXPECT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
+#define EXPECT_REAL_EQ(value1, value2) \
+    EXPECT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
 //! ASSERT_REAL_EQ_TOL with default tolerance
-#define ASSERT_REAL_EQ(value1, value2) ASSERT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
+#define ASSERT_REAL_EQ(value1, value2) \
+    ASSERT_REAL_EQ_TOL(value1, value2, ::gmx::test::defaultRealTolerance())
 //! \}
 
 //! \cond internal
 /*! \internal \brief
  * Helper method for `(EXPECT|ASSERT)_PLAIN`.
  */
-static inline ::testing::AssertionResult
-plainAssertHelper(const char * /*expr*/, const ::testing::AssertionResult &expr)
+static inline ::testing::AssertionResult plainAssertHelper(const char* /*expr*/,
+                                                           const ::testing::AssertionResult& expr)
 {
     return expr;
 }

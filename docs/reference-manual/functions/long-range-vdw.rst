@@ -35,7 +35,7 @@ particles is written as:
 
 and the corresponding force is:
 
-.. math:: \mathbf{F}_ij ~=~- 6\,C_6\,r_{ij}^{-8}\mathbf{r}_ij
+.. math:: \mathbf{F}_{ij} ~=~- 6\,C_6\,r_{ij}^{-8}\mathbf{r}_{ij}
           :label: eqnlrljFdisp
 
 In a periodic system it is not easy to calculate the full potentials,
@@ -99,7 +99,7 @@ Virial and pressure
 The scalar virial of the system due to the dispersion interaction
 between two particles :math:`i` and :math:`j` is given by:
 
-.. math:: \Xi~=~-{\frac{1}{2}} \mathbf{r}_ij \cdot \mathbf{F}_ij ~=~ 3\,C_6\,r_{ij}^{-6}
+.. math:: \Xi~=~-{\frac{1}{2}} \mathbf{r}_{ij} \cdot \mathbf{F}_{ij} ~=~ 3\,C_6\,r_{ij}^{-6}
           :label: eqnlrljdispvirial
 
 The pressure is given by:

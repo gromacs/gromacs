@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,68 +65,51 @@ namespace test
 //! Test fixture for bonded interactions
 class MimicTest : public gmx::test::MdrunTestFixture
 {
-    public:
-        //! Execute the trajectory writing test
-        void setupGrompp(const char *index_file, const char *top_file, const char *gro_file)
-        {
-            runner_.topFileName_ = TestFileManager::getInputFilePath(top_file);
-            runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file);
-            runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file);
-            runner_.useStringAsMdpFile("integrator                = mimic\n"
-                                       "QMMM-grps                 = QMatoms");
-        }
-        //! Prepare an mdrun caller
-        CommandLine setupMdrun()
-        {
-            CommandLine rerunCaller;
-            rerunCaller.append("mdrun");
-            rerunCaller.addOption("-rerun", runner_.groFileName_);
-            runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
-            return rerunCaller;
-        }
-        //! Check the output of mdrun
-        void checkMdrun()
-        {
-            EnergyTolerances energiesToMatch
-            {{
-                 {
-                     interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4)
-                 },
-             }};
+public:
+    //! Execute the trajectory writing test
+    void setupGrompp(const char* index_file, const char* top_file, const char* gro_file)
+    {
+        runner_.topFileName_ = TestFileManager::getInputFilePath(top_file);
+        runner_.groFileName_ = TestFileManager::getInputFilePath(gro_file);
+        runner_.ndxFileName_ = TestFileManager::getInputFilePath(index_file);
+        runner_.useStringAsMdpFile(
+                "integrator                = mimic\n"
+                "QMMM-grps                 = QMatoms");
+    }
+    //! Prepare an mdrun caller
+    CommandLine setupRerun()
+    {
+        CommandLine rerunCaller;
+        rerunCaller.append("mdrun");
+        rerunCaller.addOption("-rerun", runner_.groFileName_);
+        runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
+        return rerunCaller;
+    }
+    //! Check the output of mdrun
+    void checkRerun()
+    {
+        EnergyTermsToCompare energyTermsToCompare{ {
+                { interaction_function[F_EPOT].longname, relativeToleranceAsFloatingPoint(-20.1, 1e-4) },
+        } };
 
-            TestReferenceData refData;
-            auto              checker = refData.rootChecker();
-            checkEnergiesAgainstReferenceData(runner_.edrFileName_,
-                                              energiesToMatch,
-                                              &checker);
-        }
+        TestReferenceData refData;
+        auto              checker = refData.rootChecker();
+        checkEnergiesAgainstReferenceData(runner_.edrFileName_, energyTermsToCompare, &checker);
+    }
 };
 
 // This test checks if the energies produced with one quantum molecule are reasonable
 TEST_F(MimicTest, OneQuantumMol)
 {
     setupGrompp("1quantum.ndx", "4water.top", "4water.gro");
-    if (gmx_node_rank() == 0)
-    {
-        EXPECT_EQ(0, runner_.callGromppOnThisRank());
-    }
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller = setupMdrun();
+    test::CommandLine rerunCaller = setupRerun();
 
-    int               dummy  = 0;
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
-    }
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     if (gmx_node_rank() == 0)
     {
-        checkMdrun();
-    }
-    // Stupid way of synchronizining ranks but simplest API does not allow us to have any other
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
+        checkRerun();
     }
 }
 
@@ -134,25 +117,13 @@ TEST_F(MimicTest, OneQuantumMol)
 TEST_F(MimicTest, AllQuantumMol)
 {
     setupGrompp("allquantum.ndx", "4water.top", "4water.gro");
-    if (gmx_node_rank() == 0)
-    {
-        EXPECT_EQ(0, runner_.callGromppOnThisRank());
-    }
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller = setupMdrun();
-    int               dummy       = 0;
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
-    }
+    test::CommandLine rerunCaller = setupRerun();
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     if (gmx_node_rank() == 0)
     {
-        checkMdrun();
-    }
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
+        checkRerun();
     }
 }
 
@@ -161,25 +132,13 @@ TEST_F(MimicTest, AllQuantumMol)
 TEST_F(MimicTest, TwoQuantumMol)
 {
     setupGrompp("2quantum.ndx", "4water.top", "4water.gro");
-    if (gmx_node_rank() == 0)
-    {
-        EXPECT_EQ(0, runner_.callGromppOnThisRank());
-    }
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller = setupMdrun();
-    int               dummy       = 0;
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
-    }
+    test::CommandLine rerunCaller = setupRerun();
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     if (gmx_node_rank() == 0)
     {
-        checkMdrun();
-    }
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
+        checkRerun();
     }
 }
 
@@ -187,25 +146,13 @@ TEST_F(MimicTest, TwoQuantumMol)
 TEST_F(MimicTest, BondCuts)
 {
     setupGrompp("ala.ndx", "ala.top", "ala.gro");
-    if (gmx_node_rank() == 0)
-    {
-        EXPECT_EQ(0, runner_.callGromppOnThisRank());
-    }
+    ASSERT_EQ(0, runner_.callGrompp());
 
-    test::CommandLine rerunCaller = setupMdrun();
-    int               dummy       = 0;
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
-    }
+    test::CommandLine rerunCaller = setupRerun();
     ASSERT_EQ(0, runner_.callMdrun(rerunCaller));
     if (gmx_node_rank() == 0)
     {
-        checkMdrun();
-    }
-    if (gmx_mpi_initialized())
-    {
-        gmx_broadcast_world(sizeof(int), &dummy);
+        checkRerun();
     }
 }
 

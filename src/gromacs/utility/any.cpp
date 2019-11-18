@@ -52,7 +52,7 @@ namespace gmx
 {
 
 //! \cond libapi
-std::string simpleValueToString(const Any &value)
+std::string simpleValueToString(const Any& value)
 {
     if (value.isType<bool>())
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,77 +46,54 @@ namespace gmx
 {
 
 template<int index>
-static inline std::int32_t gmx_simdcall
-extract(SimdFInt32 a)
+static inline std::int32_t gmx_simdcall extract(SimdFInt32 a)
 {
     return _mm_extract_epi32(a.simdInternal_, index);
 }
 
-static inline SimdFloat
-maskzRsqrt(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzRsqrt(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0F), x.simdInternal_, m.simdInternal_);
 #endif
-    return {
-               _mm_and_ps(_mm_rsqrt_ps(x.simdInternal_), m.simdInternal_)
-    };
+    return { _mm_and_ps(_mm_rsqrt_ps(x.simdInternal_), m.simdInternal_) };
 }
 
-static inline SimdFloat
-maskzRcp(SimdFloat x, SimdFBool m)
+static inline SimdFloat maskzRcp(SimdFloat x, SimdFBool m)
 {
 #ifndef NDEBUG
-    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0f), x.simdInternal_, m.simdInternal_);
+    x.simdInternal_ = _mm_blendv_ps(_mm_set1_ps(1.0F), x.simdInternal_, m.simdInternal_);
 #endif
-    return {
-               _mm_and_ps(_mm_rcp_ps(x.simdInternal_), m.simdInternal_)
-    };
+    return { _mm_and_ps(_mm_rcp_ps(x.simdInternal_), m.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-round(SimdFloat x)
+static inline SimdFloat gmx_simdcall round(SimdFloat x)
 {
-    return {
-               _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT)
-    };
+    return { _mm_round_ps(x.simdInternal_, _MM_FROUND_NINT) };
 }
 
-static inline SimdFloat gmx_simdcall
-trunc(SimdFloat x)
+static inline SimdFloat gmx_simdcall trunc(SimdFloat x)
 {
-    return {
-               _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC)
-    };
+    return { _mm_round_ps(x.simdInternal_, _MM_FROUND_TRUNC) };
 }
 
-static inline SimdFloat gmx_simdcall
-blend(SimdFloat a, SimdFloat b, SimdFBool sel)
+static inline SimdFloat gmx_simdcall blend(SimdFloat a, SimdFloat b, SimdFBool sel)
 {
-    return {
-               _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
-    };
+    return { _mm_blendv_ps(a.simdInternal_, b.simdInternal_, sel.simdInternal_) };
 }
 
-static inline SimdFInt32 gmx_simdcall
-operator*(SimdFInt32 a, SimdFInt32 b)
+static inline SimdFInt32 gmx_simdcall operator*(SimdFInt32 a, SimdFInt32 b)
 {
-    return {
-               _mm_mullo_epi32(a.simdInternal_, b.simdInternal_)
-    };
+    return { _mm_mullo_epi32(a.simdInternal_, b.simdInternal_) };
 }
 
-static inline SimdFInt32 gmx_simdcall
-blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
+static inline SimdFInt32 gmx_simdcall blend(SimdFInt32 a, SimdFInt32 b, SimdFIBool sel)
 {
-    return {
-               _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_)
-    };
+    return { _mm_blendv_epi8(a.simdInternal_, b.simdInternal_, sel.simdInternal_) };
 }
 
-template <MathOptimization opt = MathOptimization::Safe>
-static inline SimdFloat gmx_simdcall
-ldexp(SimdFloat value, SimdFInt32 exponent)
+template<MathOptimization opt = MathOptimization::Safe>
+static inline SimdFloat gmx_simdcall ldexp(SimdFloat value, SimdFInt32 exponent)
 {
     const __m128i exponentBias = _mm_set1_epi32(127);
     __m128i       iExponent;
@@ -129,13 +106,11 @@ ldexp(SimdFloat value, SimdFInt32 exponent)
         iExponent = _mm_max_epi32(iExponent, _mm_setzero_si128());
     }
 
-    iExponent = _mm_slli_epi32( iExponent, 23);
+    iExponent = _mm_slli_epi32(iExponent, 23);
 
-    return {
-               _mm_mul_ps(value.simdInternal_, _mm_castsi128_ps(iExponent))
-    };
+    return { _mm_mul_ps(value.simdInternal_, _mm_castsi128_ps(iExponent)) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_SSE4_1_SIMD_FLOAT_H

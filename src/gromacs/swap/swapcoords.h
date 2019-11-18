@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,8 @@
 
 #include <cstdio>
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
@@ -61,23 +63,32 @@ struct gmx_domdec_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
 struct gmx_wallcycle;
-struct MdrunOptions;
 struct swaphistory_t;
 struct t_commrec;
 struct t_inputrec;
 class t_state;
+struct t_swap;
 struct t_swapcoords;
 struct ObservablesHistory;
 
 namespace gmx
 {
+enum class StartingBehavior;
+class IMDModule;
 class LocalAtomSetManager;
-}
+struct MdrunOptions;
+
+/*! \brief
+ * Creates a module for Computational Electrophysiology swapping.
+ */
+std::unique_ptr<IMDModule> createSwapCoordinatesModule();
+
+} // namespace gmx
 
 /*! \brief Initialize ion / water position swapping ("Computational Electrophysiology").
  *
  * This routine does the memory allocation for various helper arrays, opens
- * the output file, sets up swap data checkpoint writing, etc.
+ * the output file, sets up swap data checkpoint writing, etc. and returns it.
  *
  * \param[in] fplog         General output file, normally md.log.
  * \param[in] ir            Structure containing MD input parameters, among those
@@ -90,25 +101,26 @@ class LocalAtomSetManager;
  * \param[in] atomSets      Manager tending to swap atom indices.
  * \param[in] oenv          Needed to open the swap output XVGR file.
  * \param[in] mdrunOptions  Options for mdrun.
+ * \param[in] startingBehavior  Describes whether this is a restart appending to output files
  */
-void init_swapcoords(
-        FILE                     *fplog,
-        t_inputrec               *ir,
-        const char               *fn,
-        gmx_mtop_t               *mtop,
-        const t_state            *globalState,
-        ObservablesHistory       *oh,
-        t_commrec                *cr,
-        gmx::LocalAtomSetManager *atomSets,
-        const gmx_output_env_t   *oenv,
-        const MdrunOptions       &mdrunOptions);
+t_swap* init_swapcoords(FILE*                     fplog,
+                        const t_inputrec*         ir,
+                        const char*               fn,
+                        gmx_mtop_t*               mtop,
+                        const t_state*            globalState,
+                        ObservablesHistory*       oh,
+                        t_commrec*                cr,
+                        gmx::LocalAtomSetManager* atomSets,
+                        const gmx_output_env_t*   oenv,
+                        const gmx::MdrunOptions&  mdrunOptions,
+                        gmx::StartingBehavior     startingBehavior);
 
 
-/*! \brief Finalizes ion / water position swapping.
+/*! \brief Finalizes ion / water position swapping, if it was active.
  *
- * \param[in] sc            Pointer to swap data.
+ * \param[in] s             Pointer to swap data.
  */
-void finish_swapcoords(t_swapcoords *sc);
+void finish_swapcoords(t_swap* s);
 
 
 /*! \brief "Computational Electrophysiology" main routine within MD loop.
@@ -116,8 +128,8 @@ void finish_swapcoords(t_swapcoords *sc);
  * \param[in] cr       Pointer to MPI communication data.
  * \param[in] step     The number of the MD time step.
  * \param[in] t        The time.
- * \param[in] ir       Structure containing MD input parameters, among those
- *                     also the structure needed for position swapping.
+ * \param[in] ir       Structure containing MD input parameters
+ * \param[in,out] s    The structure needed for position swapping.
  * \param[in] wcycle   Count wallcycles of swap routines for diagnostic output.
  * \param[in] x        Positions of home particles this node owns.
  * \param[in] box      The simulation box.
@@ -126,15 +138,15 @@ void finish_swapcoords(t_swapcoords *sc);
  *
  * \returns Whether at least one pair of molecules was swapped.
  */
-gmx_bool do_swapcoords(
-        t_commrec        *cr,
-        int64_t           step,
-        double            t,
-        t_inputrec       *ir,
-        gmx_wallcycle    *wcycle,
-        rvec              x[],
-        matrix            box,
-        gmx_bool          bVerbose,
-        gmx_bool          bRerun);
+gmx_bool do_swapcoords(t_commrec*     cr,
+                       int64_t        step,
+                       double         t,
+                       t_inputrec*    ir,
+                       t_swap*        s,
+                       gmx_wallcycle* wcycle,
+                       rvec           x[],
+                       matrix         box,
+                       gmx_bool       bVerbose,
+                       gmx_bool       bRerun);
 
 #endif

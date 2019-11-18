@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,22 +55,19 @@ struct t_commrec;
 struct t_inputrec;
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox(const gmx_domdec_t             &dd,
-               bool                            masterRankHasTheSystemState,
-               const matrix                    box,
-               bool                            calculateUnboundedSize,
-               gmx::ArrayRef<const gmx::RVec>  x,
-               gmx_ddbox_t                    *ddbox);
+void set_ddbox(const gmx_domdec_t&            dd,
+               bool                           masterRankHasTheSystemState,
+               const matrix                   box,
+               bool                           calculateUnboundedSize,
+               gmx::ArrayRef<const gmx::RVec> x,
+               gmx_ddbox_t*                   ddbox);
 
 /*! \brief Set the box and PBC data in \p ddbox */
-void set_ddbox_cr(const t_commrec                &cr,
-                  const ivec                     *dd_nc,
-                  const t_inputrec               &ir,
-                  const matrix                    box,
-                  gmx::ArrayRef<const gmx::RVec>  x,
-                  gmx_ddbox_t                    *ddbox);
-
-//! Returns whether the DD box can change size.
-bool dynamic_dd_box(const gmx_domdec_t &dd);
+void set_ddbox_cr(const t_commrec&               cr,
+                  const ivec*                    dd_nc,
+                  const t_inputrec&              ir,
+                  const matrix                   box,
+                  gmx::ArrayRef<const gmx::RVec> x,
+                  gmx_ddbox_t*                   ddbox);
 
 #endif

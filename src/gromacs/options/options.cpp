@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,33 +64,25 @@ namespace gmx
  * IOptionManager
  */
 
-IOptionManager::~IOptionManager()
-{
-}
+IOptionManager::~IOptionManager() {}
 
 /********************************************************************
  * IOptionsContainer
  */
 
-IOptionsContainer::~IOptionsContainer()
-{
-}
+IOptionsContainer::~IOptionsContainer() {}
 
 /********************************************************************
  * IOptionsContainerWithSections
  */
 
-IOptionsContainerWithSections::~IOptionsContainerWithSections()
-{
-}
+IOptionsContainerWithSections::~IOptionsContainerWithSections() {}
 
 /********************************************************************
  * IOptionSectionStorage
  */
 
-IOptionSectionStorage::~IOptionSectionStorage()
-{
-}
+IOptionSectionStorage::~IOptionSectionStorage() {}
 
 /********************************************************************
  * OptionsImpl
@@ -98,19 +91,15 @@ IOptionSectionStorage::~IOptionSectionStorage()
 namespace internal
 {
 
-OptionsImpl::OptionsImpl()
-    : rootSection_(managers_, nullptr, "")
-{
-}
+OptionsImpl::OptionsImpl() : rootSection_(managers_, nullptr, "") {}
 
 /********************************************************************
  * OptionSectionImpl
  */
 
-OptionSectionImpl *
-OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
+OptionSectionImpl* OptionSectionImpl::addSectionImpl(const AbstractOptionSection& section)
 {
-    const char *name = section.name_;
+    const char* name = section.name_;
     // Make sure that there are no duplicate sections.
     GMX_RELEASE_ASSERT(findSection(name) == nullptr, "Duplicate subsection name");
     std::unique_ptr<IOptionSectionStorage> storage(section.createStorage());
@@ -118,19 +107,19 @@ OptionSectionImpl::addSectionImpl(const AbstractOptionSection &section)
     return subsections_.back().get();
 }
 
-IOptionsContainer &OptionSectionImpl::addGroup()
+IOptionsContainer& OptionSectionImpl::addGroup()
 {
     return rootGroup_.addGroup();
 }
 
-OptionInfo *OptionSectionImpl::addOptionImpl(const AbstractOption &settings)
+OptionInfo* OptionSectionImpl::addOptionImpl(const AbstractOption& settings)
 {
     return rootGroup_.addOptionImpl(settings);
 }
 
-OptionSectionImpl *OptionSectionImpl::findSection(const char *name) const
+OptionSectionImpl* OptionSectionImpl::findSection(const char* name) const
 {
-    for (const auto &section : subsections_)
+    for (const auto& section : subsections_)
     {
         if (section->name_ == name)
         {
@@ -140,7 +129,7 @@ OptionSectionImpl *OptionSectionImpl::findSection(const char *name) const
     return nullptr;
 }
 
-AbstractOptionStorage *OptionSectionImpl::findOption(const char *name) const
+AbstractOptionStorage* OptionSectionImpl::findOption(const char* name) const
 {
     OptionMap::const_iterator i = optionMap_.find(name);
     if (i == optionMap_.end())
@@ -152,7 +141,7 @@ AbstractOptionStorage *OptionSectionImpl::findOption(const char *name) const
 
 void OptionSectionImpl::start()
 {
-    for (const auto &entry : optionMap_)
+    for (const auto& entry : optionMap_)
     {
         entry.second->startSource();
     }
@@ -170,15 +159,15 @@ void OptionSectionImpl::start()
 void OptionSectionImpl::finish()
 {
     // TODO: Consider how to customize these error messages based on context.
-    ExceptionInitializer  errors("Invalid input values");
-    for (const auto &entry : optionMap_)
+    ExceptionInitializer errors("Invalid input values");
+    for (const auto& entry : optionMap_)
     {
-        AbstractOptionStorage &option = *entry.second;
+        AbstractOptionStorage& option = *entry.second;
         try
         {
             option.finish();
         }
-        catch (UserInputError &ex)
+        catch (UserInputError& ex)
         {
             ex.prependContext("In option " + option.name());
             errors.addCurrentExceptionAsNested();
@@ -199,31 +188,28 @@ void OptionSectionImpl::finish()
  * OptionSectionImpl::Group
  */
 
-IOptionsContainer &OptionSectionImpl::Group::addGroup()
+IOptionsContainer& OptionSectionImpl::Group::addGroup()
 {
     subgroups_.emplace_back(parent_);
     return subgroups_.back();
 }
 
-OptionInfo *OptionSectionImpl::Group::addOptionImpl(const AbstractOption &settings)
+OptionInfo* OptionSectionImpl::Group::addOptionImpl(const AbstractOption& settings)
 {
-    OptionSectionImpl::AbstractOptionStoragePointer
-         option(settings.createStorage(parent_->managers_));
+    OptionSectionImpl::AbstractOptionStoragePointer option(settings.createStorage(parent_->managers_));
     options_.reserve(options_.size() + 1);
-    auto insertionResult =
-        parent_->optionMap_.insert(std::make_pair(option->name(),
-                                                  std::move(option)));
+    auto insertionResult = parent_->optionMap_.insert(std::make_pair(option->name(), std::move(option)));
     if (!insertionResult.second)
     {
-        const std::string &name = insertionResult.first->second->name();
+        const std::string& name = insertionResult.first->second->name();
         GMX_THROW(APIError("Duplicate option: " + name));
     }
-    AbstractOptionStorage &insertedOption = *insertionResult.first->second;
+    AbstractOptionStorage& insertedOption = *insertionResult.first->second;
     options_.push_back(&insertedOption);
     return &insertedOption.optionInfo();
 }
 
-}   // namespace internal
+} // namespace internal
 
 using internal::OptionsImpl;
 
@@ -231,17 +217,12 @@ using internal::OptionsImpl;
  * Options
  */
 
-Options::Options()
-    : impl_(new OptionsImpl)
-{
-}
+Options::Options() : impl_(new OptionsImpl) {}
 
-Options::~Options()
-{
-}
+Options::~Options() {}
 
 
-void Options::addManager(IOptionManager *manager)
+void Options::addManager(IOptionManager* manager)
 {
     // This ensures that all options see the same set of managers.
     GMX_RELEASE_ASSERT(impl_->rootSection_.optionMap_.empty(),
@@ -253,27 +234,27 @@ void Options::addManager(IOptionManager *manager)
     impl_->managers_.add(manager);
 }
 
-internal::OptionSectionImpl *Options::addSectionImpl(const AbstractOptionSection &section)
+internal::OptionSectionImpl* Options::addSectionImpl(const AbstractOptionSection& section)
 {
     return impl_->rootSection_.addSectionImpl(section);
 }
 
-IOptionsContainer &Options::addGroup()
+IOptionsContainer& Options::addGroup()
 {
     return impl_->rootSection_.addGroup();
 }
 
-OptionInfo *Options::addOptionImpl(const AbstractOption &settings)
+OptionInfo* Options::addOptionImpl(const AbstractOption& settings)
 {
     return impl_->rootSection_.addOptionImpl(settings);
 }
 
-OptionSectionInfo &Options::rootSection()
+OptionSectionInfo& Options::rootSection()
 {
     return impl_->rootSection_.info();
 }
 
-const OptionSectionInfo &Options::rootSection() const
+const OptionSectionInfo& Options::rootSection() const
 {
     return impl_->rootSection_.info();
 }

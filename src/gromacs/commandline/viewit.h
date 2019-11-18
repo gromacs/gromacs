@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,11 +56,11 @@ struct t_filenm;
  * (but note that if the caller provides program-specific \p opts, setting the
  * environment variable most likely breaks things).
  */
-void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts);
+void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts);
 
 /*! \brief
  * Calls do_view() for all viewable output files.
  */
-void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[]);
+void view_all(const gmx_output_env_t* oenv, int nf, t_filenm fnm[]);
 
 #endif

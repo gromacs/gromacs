@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,112 +55,104 @@ namespace gmx
 
 class TextWriter::Impl
 {
-    public:
-        explicit Impl(const TextOutputStreamPointer &stream)
-            : stream_(stream), newLineCount_(2), currentLineLength_(0),
-              pendingNewLine_(false)
-        {
-            wrapper_.settings().setKeepFinalSpaces(true);
-        }
+public:
+    explicit Impl(const TextOutputStreamPointer& stream) :
+        stream_(stream),
+        newLineCount_(2),
+        currentLineLength_(0),
+        pendingNewLine_(false)
+    {
+        wrapper_.settings().setKeepFinalSpaces(true);
+    }
 
-        void writeRawString(const char *str)
+    void writeRawString(const char* str)
+    {
+        if (pendingNewLine_ && str[0] != '\n')
         {
-            if (pendingNewLine_ && str[0] != '\n')
-            {
-                stream_->write("\n");
-            }
-            pendingNewLine_ = false;
-            const char *lastNewLine = std::strrchr(str, '\n');
-            if (lastNewLine == nullptr)
-            {
-                newLineCount_       = 0;
-                currentLineLength_ += std::strlen(str);
-            }
-            else if (lastNewLine[1] != '\0')
-            {
-                newLineCount_       = 0;
-                currentLineLength_ += std::strlen(lastNewLine+1);
-            }
-            else
-            {
-                currentLineLength_ = 0;
-                int newLineCount   = 0;
-                while (lastNewLine >= str && *lastNewLine == '\n')
-                {
-                    ++newLineCount;
-                    --lastNewLine;
-                }
-                if (lastNewLine >= str)
-                {
-                    newLineCount_ = 0;
-                }
-                newLineCount_ += newLineCount;
-            }
-            stream_->write(str);
+            stream_->write("\n");
         }
-        void writeRawString(const std::string &str)
+        pendingNewLine_         = false;
+        const char* lastNewLine = std::strrchr(str, '\n');
+        if (lastNewLine == nullptr)
         {
-            writeRawString(str.c_str());
+            newLineCount_ = 0;
+            currentLineLength_ += std::strlen(str);
         }
+        else if (lastNewLine[1] != '\0')
+        {
+            newLineCount_ = 0;
+            currentLineLength_ += std::strlen(lastNewLine + 1);
+        }
+        else
+        {
+            currentLineLength_ = 0;
+            int newLineCount   = 0;
+            while (lastNewLine >= str && *lastNewLine == '\n')
+            {
+                ++newLineCount;
+                --lastNewLine;
+            }
+            if (lastNewLine >= str)
+            {
+                newLineCount_ = 0;
+            }
+            newLineCount_ += newLineCount;
+        }
+        stream_->write(str);
+    }
+    void writeRawString(const std::string& str) { writeRawString(str.c_str()); }
 
-        void writeWrappedString(const std::string &str)
+    void writeWrappedString(const std::string& str)
+    {
+        if (newLineCount_ > 0)
         {
-            if (newLineCount_ > 0)
-            {
-                writeRawString(wrapper_.wrapToString(str));
-            }
-            else
-            {
-                writeRawString(str);
-            }
+            writeRawString(wrapper_.wrapToString(str));
         }
+        else
+        {
+            writeRawString(str);
+        }
+    }
 
-        TextOutputStreamPointer stream_;
-        TextLineWrapper         wrapper_;
-        int                     newLineCount_;
-        int                     currentLineLength_;
-        bool                    pendingNewLine_;
+    TextOutputStreamPointer stream_;
+    TextLineWrapper         wrapper_;
+    int                     newLineCount_;
+    int                     currentLineLength_;
+    bool                    pendingNewLine_;
 };
 
 // static
-void TextWriter::writeFileFromString(const std::string &filename,
-                                     const std::string &text)
+void TextWriter::writeFileFromString(const std::string& filename, const std::string& text)
 {
     TextWriter file(filename);
     file.writeString(text);
     file.close();
 }
 
-TextWriter::TextWriter(const std::string &filename)
-    : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(filename))))
+TextWriter::TextWriter(const std::string& filename) :
+    impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(filename))))
 {
 }
 
-TextWriter::TextWriter(FILE *fp)
-    : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(fp))))
+TextWriter::TextWriter(FILE* fp) : impl_(new Impl(TextOutputStreamPointer(new TextOutputFile(fp))))
 {
 }
 
-TextWriter::TextWriter(TextOutputStream *stream)
-    : impl_(new Impl(TextOutputStreamPointer(stream, no_delete<TextOutputStream>())))
+TextWriter::TextWriter(TextOutputStream* stream) :
+    impl_(new Impl(TextOutputStreamPointer(stream, no_delete<TextOutputStream>())))
 {
 }
 
-TextWriter::TextWriter(const TextOutputStreamPointer &stream)
-    : impl_(new Impl(stream))
-{
-}
+TextWriter::TextWriter(const TextOutputStreamPointer& stream) : impl_(new Impl(stream)) {}
 
-TextWriter::~TextWriter()
-{
-}
+TextWriter::~TextWriter() {}
 
-TextLineWrapperSettings &TextWriter::wrapperSettings()
+TextLineWrapperSettings& TextWriter::wrapperSettings()
 {
     return impl_->wrapper_.settings();
 }
 
-void TextWriter::writeString(const char *str)
+void TextWriter::writeString(const char* str)
 {
     if (impl_->wrapper_.isTrivial())
     {
@@ -172,12 +164,12 @@ void TextWriter::writeString(const char *str)
     }
 }
 
-void TextWriter::writeString(const std::string &str)
+void TextWriter::writeString(const std::string& str)
 {
     impl_->writeWrappedString(str);
 }
 
-void TextWriter::writeStringFormatted(const char *fmt, ...)
+void TextWriter::writeStringFormatted(const char* fmt, ...)
 {
     va_list ap;
 
@@ -186,19 +178,19 @@ void TextWriter::writeStringFormatted(const char *fmt, ...)
     va_end(ap);
 }
 
-void TextWriter::writeLine(const char *line)
+void TextWriter::writeLine(const char* line)
 {
     writeString(line);
     ensureLineBreak();
 }
 
-void TextWriter::writeLine(const std::string &line)
+void TextWriter::writeLine(const std::string& line)
 {
     writeString(line);
     ensureLineBreak();
 }
 
-void TextWriter::writeLineFormatted(const char *fmt, ...)
+void TextWriter::writeLineFormatted(const char* fmt, ...)
 {
     va_list ap;
 

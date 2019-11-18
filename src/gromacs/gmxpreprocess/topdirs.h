@@ -87,24 +87,24 @@ enum class Directive : int
 
 struct DirStack
 {
-    Directive           d;
-    DirStack           *prev;
+    Directive d;
+    DirStack* prev;
 };
 
 int ifunc_index(Directive d, int type);
 
-const char *dir2str (Directive d);
+const char* dir2str(Directive d);
 
-Directive str2dir (char *dstr);
+Directive str2dir(char* dstr);
 
-void DS_Init (DirStack **DS);
+void DS_Init(DirStack** DS);
 
-void DS_Done (DirStack **DS);
+void DS_Done(DirStack** DS);
 
-void DS_Push (DirStack **DS, Directive d);
+void DS_Push(DirStack** DS, Directive d);
 
-int  DS_Search (DirStack *DS, Directive d);
+int DS_Search(DirStack* DS, Directive d);
 
-int  DS_Check_Order (DirStack *DS, Directive d);
+int DS_Check_Order(DirStack* DS, Directive d);
 
 #endif

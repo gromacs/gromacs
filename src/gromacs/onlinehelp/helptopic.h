@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,24 +67,24 @@ namespace gmx
  */
 class AbstractSimpleHelpTopic : public IHelpTopic
 {
-    public:
-        const char *name() const  override = 0;
-        const char *title() const override = 0;
+public:
+    const char* name() const override  = 0;
+    const char* title() const override = 0;
 
-        bool hasSubTopics() const override;
-        const IHelpTopic *findSubTopic(const char *name) const override;
+    bool              hasSubTopics() const override;
+    const IHelpTopic* findSubTopic(const char* name) const override;
 
-        void writeHelp(const HelpWriterContext &context) const override;
+    void writeHelp(const HelpWriterContext& context) const override;
 
-    protected:
-        /*! \brief
-         * Returns the help text for this topic.
-         *
-         * writeHelp() calls this method to obtain the actual text to format
-         * for the topic.  Markup substitution etc. is done automatically by
-         * writeHelp().
-         */
-        virtual std::string helpText() const = 0;
+protected:
+    /*! \brief
+     * Returns the help text for this topic.
+     *
+     * writeHelp() calls this method to obtain the actual text to format
+     * for the topic.  Markup substitution etc. is done automatically by
+     * writeHelp().
+     */
+    virtual std::string helpText() const = 0;
 };
 
 /*! \libinternal \brief
@@ -105,78 +105,77 @@ class AbstractSimpleHelpTopic : public IHelpTopic
  */
 class AbstractCompositeHelpTopic : public IHelpTopic
 {
-    public:
-        AbstractCompositeHelpTopic();
-        ~AbstractCompositeHelpTopic() override;
+public:
+    AbstractCompositeHelpTopic();
+    ~AbstractCompositeHelpTopic() override;
 
-        const char *name() const  override = 0;
-        const char *title() const override = 0;
+    const char* name() const override  = 0;
+    const char* title() const override = 0;
 
-        bool hasSubTopics() const override;
-        const IHelpTopic *findSubTopic(const char *name) const override;
+    bool              hasSubTopics() const override;
+    const IHelpTopic* findSubTopic(const char* name) const override;
 
-        void writeHelp(const HelpWriterContext &context) const override;
+    void writeHelp(const HelpWriterContext& context) const override;
 
-        /*! \brief
-         * Adds a given topic as a subtopic of this topic.
-         *
-         * \param   topic  Topis to add.
-         * \throws  std::bad_alloc if out of memory.
-         *
-         * This topic takes ownership of the object.
-         *
-         * \see registerSubTopic()
-         */
-        void addSubTopic(HelpTopicPointer topic);
-        /*! \brief
-         * Registers a subtopic of a certain type to this topic.
-         *
-         * \tparam  Topic  Type of topic to register.
-         * \throws  std::bad_alloc if out of memory.
-         *
-         * \p Topic must be default-constructible and implement
-         * IHelpTopic.
-         *
-         * This method is provided as a convenient alternative to addSubTopic()
-         * for cases where each topic is implemented by a different type
-         * (which is a common case outside unit tests).
-         */
-        template <class Topic>
-        void registerSubTopic()
-        {
-            addSubTopic(HelpTopicPointer(new Topic));
-        }
+    /*! \brief
+     * Adds a given topic as a subtopic of this topic.
+     *
+     * \param   topic  Topis to add.
+     * \throws  std::bad_alloc if out of memory.
+     *
+     * This topic takes ownership of the object.
+     *
+     * \see registerSubTopic()
+     */
+    void addSubTopic(HelpTopicPointer topic);
+    /*! \brief
+     * Registers a subtopic of a certain type to this topic.
+     *
+     * \tparam  Topic  Type of topic to register.
+     * \throws  std::bad_alloc if out of memory.
+     *
+     * \p Topic must be default-constructible and implement
+     * IHelpTopic.
+     *
+     * This method is provided as a convenient alternative to addSubTopic()
+     * for cases where each topic is implemented by a different type
+     * (which is a common case outside unit tests).
+     */
+    template<class Topic>
+    void registerSubTopic()
+    {
+        addSubTopic(HelpTopicPointer(new Topic));
+    }
 
-    protected:
-        //! \copydoc gmx::AbstractSimpleHelpTopic::helpText()
-        virtual std::string helpText() const = 0;
+protected:
+    //! \copydoc gmx::AbstractSimpleHelpTopic::helpText()
+    virtual std::string helpText() const = 0;
 
-        /*! \brief
-         * Writes the list of subtopics.
-         *
-         * \param[in] context Context for writing the help.
-         * \param[in] title  Title for the written list.
-         * \returns   true if anything was printed.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    FileIOError on any I/O error.
-         *
-         * Subtopics with empty titles are skipped from the list.
-         * If there would be no subtopics in the list, \p title is not printed
-         * either.
-         *
-         * This method is provided for cases where helpText() does not provide
-         * the needed flexibility and the derived class needs to override
-         * writeHelp().  This method can then be called to print the same
-         * subtopic list that is printed by the default writeHelp()
-         * implementation.
-         */
-        bool writeSubTopicList(const HelpWriterContext &context,
-                               const std::string       &title) const;
+    /*! \brief
+     * Writes the list of subtopics.
+     *
+     * \param[in] context Context for writing the help.
+     * \param[in] title  Title for the written list.
+     * \returns   true if anything was printed.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    FileIOError on any I/O error.
+     *
+     * Subtopics with empty titles are skipped from the list.
+     * If there would be no subtopics in the list, \p title is not printed
+     * either.
+     *
+     * This method is provided for cases where helpText() does not provide
+     * the needed flexibility and the derived class needs to override
+     * writeHelp().  This method can then be called to print the same
+     * subtopic list that is printed by the default writeHelp()
+     * implementation.
+     */
+    bool writeSubTopicList(const HelpWriterContext& context, const std::string& title) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \cond libapi */
@@ -185,8 +184,7 @@ class AbstractCompositeHelpTopic : public IHelpTopic
  *
  * \inlibraryapi
  */
-typedef std::unique_ptr<AbstractCompositeHelpTopic>
-    CompositeHelpTopicPointer;
+typedef std::unique_ptr<AbstractCompositeHelpTopic> CompositeHelpTopicPointer;
 //! \endcond
 
 /*! \libinternal \brief
@@ -220,24 +218,15 @@ typedef std::unique_ptr<AbstractCompositeHelpTopic>
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-template <class HelpText>
+template<class HelpText>
 class SimpleHelpTopic : public AbstractSimpleHelpTopic
 {
-    public:
-        const char *name() const override
-        {
-            return HelpText::name;
-        }
-        const char *title() const override
-        {
-            return HelpText::title;
-        }
+public:
+    const char* name() const override { return HelpText::name; }
+    const char* title() const override { return HelpText::title; }
 
-    protected:
-        std::string helpText() const override
-        {
-            return joinStrings(HelpText::text, "\n");
-        }
+protected:
+    std::string helpText() const override { return joinStrings(HelpText::text, "\n"); }
 };
 
 /*! \libinternal \brief
@@ -253,28 +242,19 @@ class SimpleHelpTopic : public AbstractSimpleHelpTopic
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
-template <class HelpText>
+template<class HelpText>
 class CompositeHelpTopic : public AbstractCompositeHelpTopic
 {
-    public:
-        // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
-        //! \copydoc gmx::AbstractCompositeHelpTopic::name()
-        const char *name() const override
-        {
-            return HelpText::name;
-        }
-        //! \copydoc gmx::AbstractCompositeHelpTopic::title()
-        const char *title() const override
-        {
-            return HelpText::title;
-        }
+public:
+    // copydocs are needed with Doxygen 1.8.10, but not 1.8.5...
+    //! \copydoc gmx::AbstractCompositeHelpTopic::name()
+    const char* name() const override { return HelpText::name; }
+    //! \copydoc gmx::AbstractCompositeHelpTopic::title()
+    const char* title() const override { return HelpText::title; }
 
-    protected:
-        //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
-        std::string helpText() const override
-        {
-            return joinStrings(HelpText::text, "\n");
-        }
+protected:
+    //! \copydoc gmx::AbstractCompositeHelpTopic::helpText()
+    std::string helpText() const override { return joinStrings(HelpText::text, "\n"); }
 };
 
 } // namespace gmx

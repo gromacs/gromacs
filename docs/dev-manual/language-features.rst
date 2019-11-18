@@ -56,7 +56,20 @@ a release.
   prototype.
 * Use ``not_null<T>`` pointers wherever possible to convey the
   semantics that a pointer to a valid is required, and a reference
-  is inappropriate. See also |linkrefnotnull|.
+  is inappropriate. See also |linkrefnotnull1| and |linkrefnotnull2|.
+* Use ``string_view`` in cases where you want to only use a read-only-sequence
+  of characters instead of using ``const std::string &``. See also |linkrefstringview|.
+  Because null termination expected by some C APIs (e.g. fopen, fputs, fprintf)
+  is not guaranteed, string_view should not be used in such cases.
+* Use ``optional<T>`` types in situations where there is exactly one,
+  reason (that is clear to all parties) for having no value of type T,
+  and where the lack of value is as natural as having any regular
+  value of T. Good examples include the return type of a function that
+  parses an integer value from a string, searching for a matching
+  element in a range, or providing an optional name for a residue
+  type. Prefer some other construct when the logic requires an
+  explanation of the reason why no regular value for T exists, ie.  do
+  not use ``optional<T>`` for error handling.
 * Don't use C-style casts; use ``const_cast``, ``static_cast`` or
   ``reinterpret_cast as appropriate``. See the point on RTTI for
   ``dynamic_cast``. For emphasizing type (e.g. intentional integer division)
@@ -86,7 +99,11 @@ a release.
   "inherit to be reused, not to reuse." Also, you should not
   mix implementation and interface inheritance. For explanation please
   see |linkref7|.
-* Don't include unnecessary headers.
+* Don't include unnecessary headers. In header files, prefer to
+  forward declare the names of types used only "in name" in the header
+  file. This reduces compilation coupling and thus time. If a source
+  file also only uses the type by name (e.g. passing a pointer received
+  from the caller to a callee), then no include statements are needed!
 * Make liberal use of assertions to help document your intentions (but
   prefer to write the code such that no assertion is necessary).
 * Prefer ``GMX_ASSERT()`` and ``GMX_RELEASE_ASSERT()`` to naked
@@ -145,7 +162,11 @@ a release.
 .. |linkref7| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c129-when-designing-a-class-hierarchy-distinguish-between-implementation-inheritance-and-interface-inheritance>`__
 .. |linkref8| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Renum-class>`__
 .. |linkref9| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rc-explicit>`__
-.. |linkrefnotnull| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr> and here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
+.. |linkrefnotnull1| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Ri-nullptr>`__
+.. |linkrefnotnull2| replace:: `here <http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Rf-nullptr>`__
+.. |linkrefstringview| replace:: `here <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines.html#Rstr-view>`__
+
+
 
 .. _implementing exceptions:
 
@@ -187,7 +208,7 @@ Preprocessor considerations
   test what value it has. This is much more robust under maintance,
   because a compiler can tell you that the variable is undefined.
 * Avoid code with lengthy segments whose compilation depends on #if
-  (or worse, #ifdef).
+  (or worse, #ifdef of symbols provided from outside |Gromacs|).
 * Prefer to organize the definition of a const variable at the top of
   the source code file, and use that in the code.  This helps keep all
   compilation paths built in all configurations, which reduces the

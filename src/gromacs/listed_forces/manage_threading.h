@@ -56,20 +56,18 @@ struct t_idef;
  * This should be called each time the bonded setup changes;
  * i.e. at start-up without domain decomposition and at DD.
  */
-void setup_bonded_threading(bonded_threading_t *bt,
-                            int                 numAtoms,
-                            bool                useGpuForBondes,
-                            const t_idef       &idef);
+void setup_bonded_threading(bonded_threading_t* bt, int numAtoms, bool useGpuForBondes, const t_idef& idef);
 
 //! Destructor.
-void tear_down_bonded_threading(bonded_threading_t *bt);
+void tear_down_bonded_threading(bonded_threading_t* bt);
 
 /*! \brief Initialize the bonded threading data structures
  *
  * Allocates and initializes a bonded threading data structure.
  * A pointer to this struct is returned as \p *bb_ptr.
+ *
+ * \todo Avoid explicit pointers by using Impl
  */
-void init_bonded_threading(FILE *fplog, int nenergrp,
-                           bonded_threading_t **bt_ptr);
+bonded_threading_t* init_bonded_threading(FILE* fplog, int nenergrp);
 
 #endif

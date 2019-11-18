@@ -58,6 +58,7 @@
 #         GROMACS     2018   3
 #         GROMACS     2019   4
 #         GROMACS     2020   5
+#         GROMACS     2021   6
 #   LIBRARY_SOVERSION_MINOR so minor version for the built libraries.
 #       Should be increased for each release that changes only the implementation.
 #       In GROMACS, the typical policy is to increase it for each patch version
@@ -83,7 +84,6 @@
 #       This ID is used for the source code tarball.
 #   GMX_MANUAL_DOI_ID
 #       Same as above, but for the reference manual.
-# Setting and retrieving of those variables is handled in gmxCheckReleaseDOI.cmake
 # They are collected into a single section below.
 # The following variables are set based on these:
 #   GMX_VERSION            String composed from GMX_VERSION_* numeric variables
@@ -196,7 +196,7 @@
 
 # The GROMACS convention is that these are the version number of the next
 # release that is going to be made from this branch.
-set(GMX_VERSION_MAJOR 2020)
+set(GMX_VERSION_MAJOR 2021)
 set(GMX_VERSION_PATCH 0)
 # The suffix, on the other hand, is used mainly for betas and release
 # candidates, where it signifies the most recent such release from
@@ -213,7 +213,7 @@ set(GMX_VERSION_SUFFIX "")
 # here. The important thing is to minimize the chance of third-party
 # code being able to dynamically link with a version of libgromacs
 # that might not work.
-set(LIBRARY_SOVERSION_MAJOR 5)
+set(LIBRARY_SOVERSION_MAJOR 6)
 set(LIBRARY_SOVERSION_MINOR 0)
 set(LIBRARY_VERSION ${LIBRARY_SOVERSION_MAJOR}.${LIBRARY_SOVERSION_MINOR}.0)
 
@@ -226,6 +226,25 @@ else()
     set(GMX_VERSION "${GMX_VERSION_MAJOR}")
 endif()
 set(GMX_VERSION_STRING "${GMX_VERSION}${GMX_VERSION_SUFFIX}")
+
+# If you are making a custom fork of GROMACS, please describe your
+# fork, perhaps with its version number, in the value of
+# GMX_VERSION_STRING_OF_FORK here. This string will appear in the
+# header of log files that mdrun writes. This will help you, your
+# users, your system administrators, your maintainers and the
+# maintainers of GROMACS core understand how to troubleshoot and
+# reproduce potential problems.
+#
+# If you are distributing a patch to GROMACS, then this change would
+# be great as part of your patch. Otherwise for personal use, you can
+# also just set a CMake cache variable.
+set(GMX_VERSION_STRING_OF_FORK "" CACHE INTERNAL
+    "Version string for forks of GROMACS to set to describe themselves")
+mark_as_advanced(GMX_VERSION_STRING_OF_FORK)
+if (GMX_VERSION_STRING_OF_FORK)
+    set(GMX_VERSION_STRING "${GMX_VERSION_STRING}-${GMX_VERSION_STRING_OF_FORK}")
+endif()
+
 option(GMX_BUILD_TARBALL "Build tarball without -dev version suffix" OFF)
 mark_as_advanced(GMX_BUILD_TARBALL)
 # If run with cmake -P, the -dev suffix is managed elsewhere.
@@ -242,7 +261,7 @@ set(REGRESSIONTEST_BRANCH "refs/heads/master")
 # build the regressiontests tarball with all the right naming. The
 # naming affects the md5sum that has to go here, and if it isn't right
 # release workflow will report a failure.
-set(REGRESSIONTEST_MD5SUM "3d06d41e07f523d70ae575b9ad75c670" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
+set(REGRESSIONTEST_MD5SUM "162edf7d9d520672f5fa5888aae60989" CACHE INTERNAL "MD5 sum of the regressiontests tarball for this GROMACS version")
 
 math(EXPR GMX_VERSION_NUMERIC
      "${GMX_VERSION_MAJOR}*10000 + ${GMX_VERSION_PATCH}")
@@ -259,8 +278,17 @@ endif()
 # from Zenodo for the manual and source code
 # Has to be done by hand before every final release
 # Use force to override anything given as a cmake command line input
-set(GMX_MANUAL_DOI "" CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
-set(GMX_SOURCE_DOI "" CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
+# Actual input depends on the GMX_VERSION_STRING_OF_FORK variable being set or not.
+# If it is set, we always default to an empty string, otherwise to the value set for the release build.
+if (GMX_VERSION_STRING_OF_FORK)
+    set(GMX_MANUAL_DOI_INTERNAL "")
+    set(GMX_SOURCE_DOI_INTERNAL "")
+else()
+    set(GMX_MANUAL_DOI_INTERNAL "") # Set correct doi string here
+    set(GMX_SOURCE_DOI_INTERNAL "") # Set correct doi string here
+endif()
+set(GMX_MANUAL_DOI ${GMX_MANUAL_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS manual" FORCE)
+set(GMX_SOURCE_DOI ${GMX_SOURCE_DOI_INTERNAL} CACHE INTERNAL "reserved doi for GROMACS source code" FORCE)
 
 #####################################################################
 # git version info management
@@ -303,6 +331,12 @@ set(VERSION_INFO_DEPS         ${VERSION_INFO_CMAKE_FILE})
 # the function below.
 set(VERSION_INFO_CMAKEIN_FILE     ${CMAKE_CURRENT_LIST_DIR}/VersionInfo.cmake.cmakein)
 set(VERSION_INFO_CONFIGURE_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/gmxConfigureVersionInfo.cmake)
+# A set of directories to scan for calculating the hash of source files.
+set(SET_OF_DIRECTORIES_TO_CHECKSUM  "${PROJECT_SOURCE_DIR}/src")
+list(APPEND SET_OF_DIRECTORIES_TO_CHECKSUM "${PROJECT_SOURCE_DIR}/python_packaging")
+# Try to find python for the checksumming script
+set(PythonInterp_FIND_QUIETLY ON)
+find_package(PythonInterp 3.5)
 
 # Rules to create the VersionInfo.cmake file.
 # For git info, the sequence is:
@@ -367,11 +401,80 @@ else()
     set(GMX_VERSION_STRING_FULL       ${GMX_VERSION_STRING})
     set(GMX_VERSION_FULL_HASH         "")
     set(GMX_VERSION_CENTRAL_BASE_HASH "")
+    # To notify the user during compilation and at runtime that the build source
+    # has not been modified after unpacking the source tarball, the contents are hashed
+    # to be compared to a hash computed during the release process. If the hash matches
+    # all is fine and the user gets a message in the log file indicating that.
+    # If either the release hash file is missing, or if the hash does not match
+    # a different message is printed to indicate that the source has been changed
+    # compared to the version actually released. This is not needed in case a build
+    # is done in git, as we have the information there already.
+    # This is not done if the user has explicitly set an additional custom version string with
+    # -DGMX_VERSION_STRING_OF_FORK, as this indicates that they are knowing that a custom
+    # version of GROMACS is in use.
+    set(RELEASE_CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
+    if(NOT GMX_VERSION_STRING_OF_FORK OR "${GMX_VERSION_STRING_OF_FORK}" STREQUAL "")
+        if(EXISTS ${RELEASE_CHECKSUM_FILE} AND PythonInterp_FOUND)
+            file(READ ${RELEASE_CHECKSUM_FILE} GMX_RELEASE_SOURCE_FILE_CHECKSUM)
+            string(STRIP ${GMX_RELEASE_SOURCE_FILE_CHECKSUM} GMX_RELEASE_SOURCE_FILE_CHECKSUM)
+            set(CHECKSUM_RESULT_FILE "${CMAKE_CURRENT_BINARY_DIR}/computed_checksum")
+            execute_process(COMMAND ${PYTHON_EXECUTABLE} 
+                                    ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
+                                    -s ${SET_OF_DIRECTORIES_TO_CHECKSUM}
+                                    -o ${CHECKSUM_RESULT_FILE}
+                            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                            OUTPUT_QUIET)
+                        file(READ ${CHECKSUM_RESULT_FILE} GMX_CURRENT_SOURCE_FILE_CHECKSUM)
+            string(STRIP ${GMX_CURRENT_SOURCE_FILE_CHECKSUM} GMX_CURRENT_SOURCE_FILE_CHECKSUM)
+            if(NOT ${GMX_RELEASE_SOURCE_FILE_CHECKSUM} STREQUAL ${GMX_CURRENT_SOURCE_FILE_CHECKSUM})
+                set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-MODIFIED")
+                message(STATUS "The source code for this GROMACS installation is different from the officially released version.")
+            endif()
+        elseif(PythonInterp_FOUND)
+            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
+            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoChecksumFile")
+            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoChecksumFile")
+            message(WARNING "Could not valdiate the GROMACS source due to missing reference checksum file.")
+        else()
+            set(GMX_VERSION_STRING_FULL "${GMX_VERSION_STRING_FULL}-UNCHECKED")
+            set(GMX_RELEASE_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
+            set(GMX_CURRENT_SOURCE_FILE_CHECKSUM "NoPythonAvailable")
+            message(STATUS "Could not calculate checksum of source files without Python")
+        endif()
+    endif()
     configure_file(${VERSION_INFO_CMAKEIN_FILE} ${VERSION_INFO_CMAKE_FILE})
 endif()
 unset(GMX_VERSION_STRING_FULL)
 unset(GMX_VERSION_FULL_HASH)
 unset(GMX_VERSION_CENTRAL_BASE_HASH)
+unset(GMX_RELEASE_SOURCE_FILE_CHECKSUM)
+unset(GMX_CURRENT_SOURCE_FILE_CHECKSUM)
+
+
+# What file the checksum should be written to
+set(CHECKSUM_FILE "${PROJECT_SOURCE_DIR}/src/reference_checksum")
+
+# Target that allows checksumming a source tree when producing a tarball.
+# Allows verification of builds from the tarball to make sure the source had
+# not been tampered with.
+# Note: The RUN_ALWAYS here is to regenerate the hash file only, it does not
+# mean that the target is run in all builds
+if (PYTHONINTERP_FOUND)
+    gmx_add_custom_output_target(reference_checksum RUN_ALWAYS
+        OUTPUT ${CHECKSUM_FILE}
+        COMMAND ${PYTHON_EXECUTABLE}
+            ${PROJECT_SOURCE_DIR}/admin/createFileHash.py
+            -s ${SET_OF_DIRECTORIES_TO_CHECKSUM}
+            -o ${CHECKSUM_FILE}
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        COMMENT "Generating reference checksum of source files")
+else()
+    add_custom_target(reference_checksum
+        COMMAND ${CMAKE_COMMAND} -E echo
+        "Can not checksum files without python being available"
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        COMMENT "Generating reference checksum of source files")
+endif()
 
 # The main user-visible interface to the machinery.
 # See documentation at the top of the script.

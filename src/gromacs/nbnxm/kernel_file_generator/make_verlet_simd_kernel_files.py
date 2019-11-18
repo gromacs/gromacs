@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -160,7 +160,7 @@ for type in VerletKernelTypeDict:
     KernelsName = "{0}_simd_{1}".format(KernelNamePrefix,type)
     KernelsFileName = "{0}_simd_{1}".format(KernelFileNamePrefix,type)
     KernelsHeaderFileName = "kernels.h"
-    KernelsHeaderPathName = "gromacs/nbnxm/kernels_simd_{0}/{1}".format(type,KernelsHeaderFileName)
+    KernelsHeaderPathName = "{1}".format(type,KernelsHeaderFileName)
     KernelFunctionLookupTable = {}
     KernelDeclarations = ''
     KernelTemplate = read_kernel_template("{0}_kernel.cpp.pre".format(KernelsFileName))

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,29 +66,29 @@ namespace
 
 class FileMD5Test : public ::testing::Test
 {
-    public:
-        void prepareFile(int lengthInBytes)
+public:
+    void prepareFile(int lengthInBytes)
+    {
+        // Fill some memory with some arbitrary bits.
+        std::vector<char> data(lengthInBytes);
+        std::iota(data.begin(), data.end(), 1);
+        // Binary mode ensures it works the same on all OS
+        FILE* fp = fopen(filename_.c_str(), "wb");
+        fwrite(data.data(), sizeof(char), data.size(), fp);
+        fclose(fp);
+    }
+    ~FileMD5Test() override
+    {
+        if (file_)
         {
-            // Fill some memory with some arbitrary bits.
-            std::vector<char> data(lengthInBytes);
-            std::iota(data.begin(), data.end(), 1);
-            // Binary mode ensures it works the same on all OS
-            FILE *fp = fopen(filename_.c_str(), "wb");
-            fwrite(data.data(), sizeof(char), data.size(), fp);
-            fclose(fp);
+            gmx_fio_close(file_);
         }
-        ~FileMD5Test() override
-        {
-            if (file_)
-            {
-                gmx_fio_close(file_);
-            }
-        }
-        TestFileManager fileManager_;
-        // Make sure the file extension is one that gmx_fio_open will
-        // recognize to open as binary.
-        std::string     filename_ = fileManager_.getTemporaryFilePath("data.edr");
-        t_fileio       *file_     = nullptr;
+    }
+    TestFileManager fileManager_;
+    // Make sure the file extension is one that gmx_fio_open will
+    // recognize to open as binary.
+    std::string filename_ = fileManager_.getTemporaryFilePath("data.edr");
+    t_fileio*   file_     = nullptr;
 };
 
 TEST_F(FileMD5Test, CanComputeMD5)
@@ -96,11 +96,11 @@ TEST_F(FileMD5Test, CanComputeMD5)
     prepareFile(1000);
     file_ = gmx_fio_open(filename_.c_str(), "r+");
 
-    std::array<unsigned char, 16> digest = {0};
+    std::array<unsigned char, 16> digest = { 0 };
     // Chosen to be less than the full file length
-    gmx_off_t                     offset             = 64;
-    gmx_off_t                     expectedLength     = 64;
-    gmx_off_t                     lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
+    gmx_off_t offset             = 64;
+    gmx_off_t expectedLength     = 64;
+    gmx_off_t lengthActuallyRead = gmx_fio_get_file_md5(file_, offset, &digest);
 
     EXPECT_EQ(expectedLength, lengthActuallyRead);
     // Did we compute an actual reproducible checksum?

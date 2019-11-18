@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,27 +69,34 @@ namespace
 
 class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSettings
 {
-    public:
-        explicit CommandLineOptionsModuleSettings(
-            OptionsBehaviorCollection *behaviors)
-            : behaviors_(*behaviors)
-        {
-        }
+public:
+    explicit CommandLineOptionsModuleSettings(OptionsBehaviorCollection* behaviors) :
+        behaviors_(*behaviors)
+    {
+    }
 
-        const std::string &helpText() const { return helpText_; }
+    const std::string& helpText() const { return helpText_; }
 
-        void setHelpText(const ArrayRef<const char *const> &help) override
-        {
-            helpText_ = joinStrings(help, "\n");
-        }
-        void addOptionsBehavior(const OptionsBehaviorPointer &behavior) override
-        {
-            behaviors_.addBehavior(behavior);
-        }
+    ArrayRef<const std::string> bugText() const { return bugText_; }
 
-    private:
-        std::string                helpText_;
-        OptionsBehaviorCollection &behaviors_;
+    void setHelpText(const ArrayRef<const char* const>& help) override
+    {
+        helpText_ = joinStrings(help, "\n");
+    }
+
+    void setBugText(const ArrayRef<const char* const>& bug) override
+    {
+        bugText_ = std::vector<std::string>(bug.begin(), bug.end());
+    }
+    void addOptionsBehavior(const OptionsBehaviorPointer& behavior) override
+    {
+        behaviors_.addBehavior(behavior);
+    }
+
+private:
+    std::string                helpText_;
+    std::vector<std::string>   bugText_;
+    OptionsBehaviorCollection& behaviors_;
 };
 
 /********************************************************************
@@ -98,37 +105,39 @@ class CommandLineOptionsModuleSettings : public ICommandLineOptionsModuleSetting
 
 class CommandLineOptionsModule : public ICommandLineModule
 {
-    public:
-        //! Shorthand for the factory function pointer type.
-        typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
+public:
+    //! Shorthand for the factory function pointer type.
+    typedef ICommandLineOptionsModule::FactoryMethod FactoryMethod;
 
-        CommandLineOptionsModule(const char *name, const char *description,
-                                 FactoryMethod factory)
-            : name_(name), description_(description), factory_(std::move(factory))
-        {
-        }
-        CommandLineOptionsModule(const char *name, const char *description,
-                                 ICommandLineOptionsModulePointer module)
-            : name_(name), description_(description), module_(std::move(module))
-        {
-        }
-        const char *name() const override { return name_; }
-        const char *shortDescription() const override { return description_; }
+    CommandLineOptionsModule(const char* name, const char* description, FactoryMethod factory) :
+        name_(name),
+        description_(description),
+        factory_(std::move(factory))
+    {
+    }
+    CommandLineOptionsModule(const char* name, const char* description, ICommandLineOptionsModulePointer module) :
+        name_(name),
+        description_(description),
+        module_(std::move(module))
+    {
+    }
+    const char* name() const override { return name_; }
+    const char* shortDescription() const override { return description_; }
 
-        void init(CommandLineModuleSettings *settings) override;
-        int run(int argc, char *argv[]) override;
-        void writeHelp(const CommandLineHelpContext &context) const override;
+    void init(CommandLineModuleSettings* settings) override;
+    int  run(int argc, char* argv[]) override;
+    void writeHelp(const CommandLineHelpContext& context) const override;
 
-    private:
-        void parseOptions(int argc, char *argv[]);
+private:
+    void parseOptions(int argc, char* argv[]);
 
-        const char                       *name_;
-        const char                       *description_;
-        FactoryMethod                     factory_;
-        ICommandLineOptionsModulePointer  module_;
+    const char*                      name_;
+    const char*                      description_;
+    FactoryMethod                    factory_;
+    ICommandLineOptionsModulePointer module_;
 };
 
-void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
+void CommandLineOptionsModule::init(CommandLineModuleSettings* settings)
 {
     if (!module_)
     {
@@ -138,17 +147,17 @@ void CommandLineOptionsModule::init(CommandLineModuleSettings *settings)
     module_->init(settings);
 }
 
-int CommandLineOptionsModule::run(int argc, char *argv[])
+int CommandLineOptionsModule::run(int argc, char* argv[])
 {
     GMX_RELEASE_ASSERT(module_, "init() has not been called");
     parseOptions(argc, argv);
     return module_->run();
 }
 
-void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) const
+void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext& context) const
 {
-    ICommandLineOptionsModulePointer  moduleGuard;
-    ICommandLineOptionsModule        *module = module_.get();
+    ICommandLineOptionsModulePointer moduleGuard;
+    ICommandLineOptionsModule*       module = module_.get();
     if (!module)
     {
         GMX_RELEASE_ASSERT(factory_ != nullptr, "Neither factory nor module provided");
@@ -160,11 +169,12 @@ void CommandLineOptionsModule::writeHelp(const CommandLineHelpContext &context) 
     CommandLineOptionsModuleSettings settings(&behaviors);
     module->initOptions(&options, &settings);
     CommandLineHelpWriter(options)
-        .setHelpText(settings.helpText())
-        .writeHelp(context);
+            .setHelpText(settings.helpText())
+            .setKnownIssues(settings.bugText())
+            .writeHelp(context);
 }
 
-void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
+void CommandLineOptionsModule::parseOptions(int argc, char* argv[])
 {
     FileNameOptionManager fileoptManager;
     Options               options;
@@ -184,60 +194,57 @@ void CommandLineOptionsModule::parseOptions(int argc, char *argv[])
     behaviors.optionsFinished();
 }
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * ICommandLineOptionsModuleSettings
  */
 
-ICommandLineOptionsModuleSettings::~ICommandLineOptionsModuleSettings()
-{
-}
+ICommandLineOptionsModuleSettings::~ICommandLineOptionsModuleSettings() {}
 
 /********************************************************************
  * ICommandLineOptionsModule
  */
 
-ICommandLineOptionsModule::~ICommandLineOptionsModule()
-{
-}
+ICommandLineOptionsModule::~ICommandLineOptionsModule() {}
 
 // static
-std::unique_ptr<ICommandLineModule>
-ICommandLineOptionsModule::createModule(
-        const char *name, const char *description,
-        ICommandLineOptionsModulePointer module)
+std::unique_ptr<ICommandLineModule> ICommandLineOptionsModule::createModule(const char* name,
+                                                                            const char* description,
+                                                                            ICommandLineOptionsModulePointer module)
 {
     return std::unique_ptr<ICommandLineModule>(
             new CommandLineOptionsModule(name, description, std::move(module)));
 }
 
 // static
-int ICommandLineOptionsModule::runAsMain(
-        int argc, char *argv[], const char *name, const char *description,
-        FactoryMethod factory)
+int ICommandLineOptionsModule::runAsMain(int           argc,
+                                         char*         argv[],
+                                         const char*   name,
+                                         const char*   description,
+                                         FactoryMethod factory)
 {
     CommandLineOptionsModule module(name, description, std::move(factory));
     return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
 }
 
 // static
-void ICommandLineOptionsModule::registerModuleFactory(
-        CommandLineModuleManager *manager, const char *name,
-        const char *description, FactoryMethod factory)
+void ICommandLineOptionsModule::registerModuleFactory(CommandLineModuleManager* manager,
+                                                      const char*               name,
+                                                      const char*               description,
+                                                      FactoryMethod             factory)
 {
-    CommandLineModulePointer module(
-            new CommandLineOptionsModule(name, description, std::move(factory)));
+    CommandLineModulePointer module(new CommandLineOptionsModule(name, description, std::move(factory)));
     manager->addModule(std::move(module));
 }
 
 // static
-void ICommandLineOptionsModule::registerModuleDirect(
-        CommandLineModuleManager *manager, const char *name,
-        const char *description, ICommandLineOptionsModulePointer module)
+void ICommandLineOptionsModule::registerModuleDirect(CommandLineModuleManager*        manager,
+                                                     const char*                      name,
+                                                     const char*                      description,
+                                                     ICommandLineOptionsModulePointer module)
 {
-    CommandLineModulePointer wrapperModule(
-            createModule(name, description, std::move(module)));
+    CommandLineModulePointer wrapperModule(createModule(name, description, std::move(module)));
     manager->addModule(std::move(wrapperModule));
 }
 

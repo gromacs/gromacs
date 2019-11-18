@@ -34,11 +34,11 @@ Additionally:
 * Whenever you update a file, you should check that the current year is listed
   as a copyright year.
 
-Most of the above guidelines are enforced using uncrustify, an automatic source
-code formatting tool.  The copyright guidelines are enforced by a separate
-Python script.  See :doc:`uncrustify` for details.  Note that due to the
-nature of uncrustify (it only does all-or-nothing formatting), it enforces
-several additional formatting rules in addition to those above.
+Most of the above guidelines are enforced using clang-foramt or uncrustify,
+which are both  automatic source code formatting tool. The copyright guidelines
+are enforced by a separate Python script. See :doc:`code-formatting` for details.
+Note that due to the nature of those scripts (they only do all-or-nothing formatting),
+all the noted formatting rules are enforced at the same time.
 
 Enforcing a consistent formatting has a few advantages:
 
@@ -50,7 +50,7 @@ Enforcing a consistent formatting has a few advantages:
 
 A number of user provided set-ups are available for the correct settings of your
 favourite text editor. They are provided for convenience only, and may not
-exactly conform to the expectations of uncrustify.
+exactly conform to the expectations of either formatting tool.
 
 Emacs formatting set-up
 -----------------------

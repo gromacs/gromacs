@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +58,6 @@
 #include <memory>
 
 #include "gromacs/compat/pointers.h"
-#include "gromacs/mdlib/mdrun.h"
 #include "gromacs/mdlib/simulationsignal.h"
 
 struct gmx_walltime_accounting;
@@ -73,7 +72,8 @@ namespace gmx
  */
 enum class CheckpointSignal
 {
-    noSignal = 0, doCheckpoint = 1
+    noSignal     = 0,
+    doCheckpoint = 1
 };
 
 /*! \libinternal
@@ -84,71 +84,69 @@ enum class CheckpointSignal
  */
 class CheckpointHandler final
 {
-    public:
-        /*! \brief CheckpointHandler constructor
-         *
-         * Needs a non-null pointer to the signal which is reduced by compute_globals, and
-         * (const) references to data it needs to determine whether a signal needs to be
-         * set or handled.
-         */
-        CheckpointHandler(
-            compat::not_null<SimulationSignal*> signal,
-            bool                                simulationsShareState,
-            bool                                neverUpdateNeighborList,
-            bool                                isMaster,
-            bool                                writeFinalCheckpoint,
-            real                                checkpointingPeriod);
+public:
+    /*! \brief CheckpointHandler constructor
+     *
+     * Needs a non-null pointer to the signal which is reduced by compute_globals, and
+     * (const) references to data it needs to determine whether a signal needs to be
+     * set or handled.
+     */
+    CheckpointHandler(compat::not_null<SimulationSignal*> signal,
+                      bool                                simulationsShareState,
+                      bool                                neverUpdateNeighborList,
+                      bool                                isMaster,
+                      bool                                writeFinalCheckpoint,
+                      real                                checkpointingPeriod);
 
-        /*! \brief Decides whether a checkpointing signal needs to be set
-         *
-         * Checkpointing signal is set based on the elapsed run time and the checkpointing
-         * interval.
-         */
-        void setSignal(gmx_walltime_accounting *walltime_accounting) const
+    /*! \brief Decides whether a checkpointing signal needs to be set
+     *
+     * Checkpointing signal is set based on the elapsed run time and the checkpointing
+     * interval.
+     */
+    void setSignal(gmx_walltime_accounting* walltime_accounting) const
+    {
+        if (rankCanSetSignal_)
         {
-            if (rankCanSetSignal_)
-            {
-                setSignalImpl(walltime_accounting);
-            }
+            setSignalImpl(walltime_accounting);
         }
+    }
 
-        /*! \brief Decides whether a checkpoint shall be written at this step
-         *
-         * Checkpointing is done if this is not the initial step, and
-         *   * a signal has been set and the current step is a neighborlist creation
-         *     step, or
-         *   * the current step is the last step and a the simulation is writing
-         *     configurations.
-         */
-        void decideIfCheckpointingThisStep(bool bNS, bool bFirstStep, bool bLastStep)
+    /*! \brief Decides whether a checkpoint shall be written at this step
+     *
+     * Checkpointing is done if this is not the initial step, and
+     *   * a signal has been set and the current step is a neighborlist creation
+     *     step, or
+     *   * the current step is the last step and a the simulation is writing
+     *     configurations.
+     *
+     * \todo Change these bools to enums to make calls more self-explanatory
+     */
+    void decideIfCheckpointingThisStep(bool bNS, bool bFirstStep, bool bLastStep)
+    {
+        if (checkpointingIsActive_)
         {
-            if (checkpointingIsActive_)
-            {
-                decideIfCheckpointingThisStepImpl(bNS, bFirstStep, bLastStep);
-            }
+            decideIfCheckpointingThisStepImpl(bNS, bFirstStep, bLastStep);
         }
+    }
 
-        //! Query decision in decideIfCheckpointingThisStep()
-        bool isCheckpointingStep() const
-        {
-            return checkpointThisStep_;
-        }
+    //! Query decision in decideIfCheckpointingThisStep()
+    bool isCheckpointingStep() const { return checkpointThisStep_; }
 
-    private:
-        void setSignalImpl(gmx_walltime_accounting *walltime_accounting) const;
+private:
+    void setSignalImpl(gmx_walltime_accounting* walltime_accounting) const;
 
-        void decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
+    void decideIfCheckpointingThisStepImpl(bool bNS, bool bFirstStep, bool bLastStep);
 
-        SimulationSignal &signal_;
-        bool              checkpointThisStep_;
-        int               numberOfNextCheckpoint_;
+    SimulationSignal& signal_;
+    bool              checkpointThisStep_;
+    int               numberOfNextCheckpoint_;
 
-        const bool        rankCanSetSignal_;
-        const bool        checkpointingIsActive_;
-        const bool        writeFinalCheckpoint_;
-        const bool        neverUpdateNeighborlist_;
-        const real        checkpointingPeriod_;
+    const bool rankCanSetSignal_;
+    const bool checkpointingIsActive_;
+    const bool writeFinalCheckpoint_;
+    const bool neverUpdateNeighborlist_;
+    const real checkpointingPeriod_;
 };
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MDLIB_CHECKPOINTHANDLER_H

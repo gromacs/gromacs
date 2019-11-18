@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,18 +35,10 @@
 file(GLOB MATH_SOURCES *.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${MATH_SOURCES} PARENT_SCOPE)
 
-gmx_install_headers(
-    3dtransforms.h
-    arrayrefwithpadding.h
-    do_fit.h
-    functions.h
-    gmxcomplex.h
-    units.h
-    utilities.h
-    vec.h
-    vectypes.h
-    paddedvector.h
-    )
+# TODO: (https://redmine.gromacs.org/issues/988) Find a new convention for defining public API.
+install(FILES
+        vectypes.h
+        DESTINATION include/gromacs/math)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,88 +52,85 @@
 
 static real pot(real x, real qq, real c6, real cn, int npow)
 {
-    return cn*pow(x, -npow)-c6/gmx::power6(x)+qq*ONE_4PI_EPS0/x;
+    return cn * pow(x, -npow) - c6 / gmx::power6(x) + qq * ONE_4PI_EPS0 / x;
 }
 
 static real bhpot(real x, real A, real B, real C)
 {
-    return A*std::exp(-B*x) - C/gmx::power6(x);
+    return A * std::exp(-B * x) - C / gmx::power6(x);
 }
 
 static real dpot(real x, real qq, real c6, real cn, int npow)
 {
-    return -(npow*cn*std::pow(x, -npow-1)-6*c6/(x*gmx::power6(x))+qq*ONE_4PI_EPS0/gmx::square(x));
+    return -(npow * cn * std::pow(x, -npow - 1) - 6 * c6 / (x * gmx::power6(x))
+             + qq * ONE_4PI_EPS0 / gmx::square(x));
 }
 
-int gmx_sigeps(int argc, char *argv[])
+int gmx_sigeps(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] is a simple utility that converts C6/C12 or C6/Cn combinations",
         "to [GRK]sigma[grk] and [GRK]epsilon[grk], or vice versa. It can also plot the potential",
         "in  file. In addition, it makes an approximation of a Buckingham potential",
         "to a Lennard-Jones potential."
     };
-    static real       c6   = 1.0e-3, cn = 1.0e-6, qi = 0, qj = 0, sig = 0.3, eps = 1, sigfac = 0.7;
-    static real       Abh  = 1e5, Bbh = 32, Cbh = 1e-3;
-    static int        npow = 12;
-    t_pargs           pa[] = {
-        { "-c6",   FALSE,  etREAL,  {&c6},  "C6"   },
-        { "-cn",   FALSE,  etREAL,  {&cn},  "Constant for repulsion"   },
-        { "-pow",  FALSE,  etINT,   {&npow}, "Power of the repulsion term" },
-        { "-sig",  FALSE,  etREAL,  {&sig}, "[GRK]sigma[grk]"  },
-        { "-eps",  FALSE,  etREAL,  {&eps}, "[GRK]epsilon[grk]"  },
-        { "-A",    FALSE,  etREAL,  {&Abh}, "Buckingham A" },
-        { "-B",    FALSE,  etREAL,  {&Bbh}, "Buckingham B" },
-        { "-C",    FALSE,  etREAL,  {&Cbh}, "Buckingham C" },
-        { "-qi",   FALSE,  etREAL,  {&qi},  "qi"   },
-        { "-qj",   FALSE,  etREAL,  {&qj},  "qj"   },
-        { "-sigfac", FALSE, etREAL, {&sigfac}, "Factor in front of [GRK]sigma[grk] for starting the plot" }
-    };
-    t_filenm          fnm[] = {
-        { efXVG, "-o", "potje", ffWRITE }
-    };
-    gmx_output_env_t *oenv;
+    static real       c6 = 1.0e-3, cn = 1.0e-6, qi = 0, qj = 0, sig = 0.3, eps = 1, sigfac = 0.7;
+    static real       Abh = 1e5, Bbh = 32, Cbh = 1e-3;
+    static int        npow  = 12;
+    t_pargs           pa[]  = { { "-c6", FALSE, etREAL, { &c6 }, "C6" },
+                     { "-cn", FALSE, etREAL, { &cn }, "Constant for repulsion" },
+                     { "-pow", FALSE, etINT, { &npow }, "Power of the repulsion term" },
+                     { "-sig", FALSE, etREAL, { &sig }, "[GRK]sigma[grk]" },
+                     { "-eps", FALSE, etREAL, { &eps }, "[GRK]epsilon[grk]" },
+                     { "-A", FALSE, etREAL, { &Abh }, "Buckingham A" },
+                     { "-B", FALSE, etREAL, { &Bbh }, "Buckingham B" },
+                     { "-C", FALSE, etREAL, { &Cbh }, "Buckingham C" },
+                     { "-qi", FALSE, etREAL, { &qi }, "qi" },
+                     { "-qj", FALSE, etREAL, { &qj }, "qj" },
+                     { "-sigfac",
+                       FALSE,
+                       etREAL,
+                       { &sigfac },
+                       "Factor in front of [GRK]sigma[grk] for starting the plot" } };
+    t_filenm          fnm[] = { { efXVG, "-o", "potje", ffWRITE } };
+    gmx_output_env_t* oenv;
 #define NFILE asize(fnm)
-    const char       *legend[] = { "Lennard-Jones", "Buckingham" };
-    FILE             *fp;
-    int               i;
-    gmx_bool          bBham;
-    real              qq, x, oldx, minimum, mval, dp[2];
-    int               cur = 0;
-#define next (1-cur)
+    const char* legend[] = { "Lennard-Jones", "Buckingham" };
+    FILE*       fp;
+    int         i;
+    gmx_bool    bBham;
+    real        qq, x, oldx, minimum, mval, dp[2];
+    int         cur = 0;
+#define next (1 - cur)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc),
-                           desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, nullptr, &oenv))
     {
         return 0;
     }
 
-    bBham = (opt2parg_bSet("-A", asize(pa), pa) ||
-             opt2parg_bSet("-B", asize(pa), pa) ||
-             opt2parg_bSet("-C", asize(pa), pa));
+    bBham = (opt2parg_bSet("-A", asize(pa), pa) || opt2parg_bSet("-B", asize(pa), pa)
+             || opt2parg_bSet("-C", asize(pa), pa));
 
     if (bBham)
     {
         c6  = Cbh;
-        sig = std::pow((6.0/npow)*std::pow(npow/Bbh, npow-6), 1.0/(npow-6));
-        eps = c6/(4*gmx::power6(sig));
-        cn  = 4*eps*std::pow(sig, npow);
+        sig = std::pow((6.0 / npow) * std::pow(npow / Bbh, npow - 6), 1.0 / (npow - 6));
+        eps = c6 / (4 * gmx::power6(sig));
+        cn  = 4 * eps * std::pow(sig, npow);
     }
     else
     {
-        if (opt2parg_bSet("-sig", asize(pa), pa) ||
-            opt2parg_bSet("-eps", asize(pa), pa))
+        if (opt2parg_bSet("-sig", asize(pa), pa) || opt2parg_bSet("-eps", asize(pa), pa))
         {
-            c6  = 4*eps*gmx::power6(sig);
-            cn  = 4*eps*std::pow(sig, npow);
+            c6 = 4 * eps * gmx::power6(sig);
+            cn = 4 * eps * std::pow(sig, npow);
         }
-        else if (opt2parg_bSet("-c6", asize(pa), pa) ||
-                 opt2parg_bSet("-cn", asize(pa), pa) ||
-                 opt2parg_bSet("-pow", asize(pa), pa))
+        else if (opt2parg_bSet("-c6", asize(pa), pa) || opt2parg_bSet("-cn", asize(pa), pa)
+                 || opt2parg_bSet("-pow", asize(pa), pa))
         {
-            sig = std::pow(cn/c6, static_cast<real>(1.0/(npow-6)));
-            eps = 0.25*c6/gmx::power6(sig);
+            sig = std::pow(cn / c6, static_cast<real>(1.0 / (npow - 6)));
+            eps = 0.25 * c6 / gmx::power6(sig);
         }
         else
         {
@@ -142,37 +139,34 @@ int gmx_sigeps(int argc, char *argv[])
         printf("c6    = %12.5e, c%d    = %12.5e\n", c6, npow, cn);
         printf("sigma = %12.5f, epsilon = %12.5f\n", sig, eps);
 
-        minimum = std::pow(npow/6.0*std::pow(sig, npow-6), 1.0/(npow-6));
-        printf("Van der Waals minimum at %g, V = %g\n\n",
-               minimum, pot(minimum, 0, c6, cn, npow));
+        minimum = std::pow(npow / 6.0 * std::pow(sig, npow - 6), 1.0 / (npow - 6));
+        printf("Van der Waals minimum at %g, V = %g\n\n", minimum, pot(minimum, 0, c6, cn, npow));
         printf("Fit of Lennard Jones (%d-6) to Buckingham:\n", npow);
-        Bbh = npow/minimum;
+        Bbh = npow / minimum;
         Cbh = c6;
-        Abh = 4*eps*std::pow(sig/minimum, static_cast<real>(npow))*std::exp(static_cast<real>(npow));
+        Abh = 4 * eps * std::pow(sig / minimum, static_cast<real>(npow))
+              * std::exp(static_cast<real>(npow));
         printf("A = %g, B = %g, C = %g\n", Abh, Bbh, Cbh);
     }
-    qq = qi*qj;
+    qq = qi * qj;
 
-    fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Potential", "r (nm)", "E (kJ/mol)",
-                  oenv);
-    xvgr_legend(fp, asize(legend), legend,
-                oenv);
+    fp = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Potential", "r (nm)", "E (kJ/mol)", oenv);
+    xvgr_legend(fp, asize(legend), legend, oenv);
     if (sig == 0)
     {
         sig = 0.25;
     }
-    oldx    = 0;
+    oldx = 0;
     for (i = 0; (i < 100); i++)
     {
-        x        = sigfac*sig+sig*i*0.02;
+        x        = sigfac * sig + sig * i * 0.02;
         dp[next] = dpot(x, qq, c6, cn, npow);
-        fprintf(fp, "%10g  %10g  %10g\n", x, pot(x, qq, c6, cn, npow),
-                bhpot(x, Abh, Bbh, Cbh));
+        fprintf(fp, "%10g  %10g  %10g\n", x, pot(x, qq, c6, cn, npow), bhpot(x, Abh, Bbh, Cbh));
         if (qq != 0)
         {
-            if ((i > 0) && (dp[cur]*dp[next] < 0))
+            if ((i > 0) && (dp[cur] * dp[next] < 0))
             {
-                minimum = oldx + dp[cur]*(x-oldx)/(dp[cur]-dp[next]);
+                minimum = oldx + dp[cur] * (x - oldx) / (dp[cur] - dp[next]);
                 mval    = pot(minimum, qq, c6, cn, npow);
                 printf("Van der Waals + Coulomb minimum at r = %g (nm). Value = %g (kJ/mol)\n",
                        minimum, mval);
@@ -180,7 +174,6 @@ int gmx_sigeps(int argc, char *argv[])
         }
         cur  = next;
         oldx = x;
-
     }
     xvgrclose(fp);
 

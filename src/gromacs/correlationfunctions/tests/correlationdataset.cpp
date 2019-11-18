@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,14 +52,14 @@
 
 #include "testutils/testfilemanager.h"
 
-CorrelationDataSet::CorrelationDataSet(const std::string &fileName)
+CorrelationDataSet::CorrelationDataSet(const std::string& fileName)
 {
     std::string fileNm = gmx::test::TestFileManager::getInputFilePath(fileName.c_str());
-    nrLines_    = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
+    nrLines_           = read_xvg(fileNm.c_str(), &tempValues_, &nrColumns_);
 
-    dt_         = tempValues_[0][1] - tempValues_[0][0];
-    startTime_  = tempValues_[0][0];
-    endTime_    = tempValues_[0][nrLines_-1];
+    dt_        = tempValues_[0][1] - tempValues_[0][0];
+    startTime_ = tempValues_[0][0];
+    endTime_   = tempValues_[0][nrLines_ - 1];
 }
 
 CorrelationDataSet::~CorrelationDataSet()
@@ -76,9 +76,9 @@ CorrelationDataSet::~CorrelationDataSet()
 
 real CorrelationDataSet::getValue(int set, int time) const
 {
-    if (set+1 < nrColumns_)
+    if (set + 1 < nrColumns_)
     {
-        return tempValues_[set+1][time];
+        return tempValues_[set + 1][time];
     }
     else
     {

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2009-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,13 +65,60 @@
 #include <cstdio>
 
 #include <string>
+#include <vector>
 
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/arrayref.h"
 
 namespace gmx
 {
 class TextWriter;
-}
+
+/*!\internal \brief Bundle index groups with their names.
+ *
+ * \note This class has to outlive the t_blocka &indexGroup it is given.
+ *       We want to avoid a deep-copy due to the potentially very large data
+ *       stored in the t_blocka.
+ *
+ * \todo update this class, once the two legacy data structures, t_blocka and
+ *       the char ** of group names are refactored.
+ */
+class IndexGroupsAndNames
+{
+public:
+    /*!\brief Construct from index group and group names
+     * \param[in] indexGroup
+     * \param[in] groupNames names of the index groups
+     */
+    IndexGroupsAndNames(const t_blocka& indexGroup, ArrayRef<char const* const> groupNames);
+
+    /*!\brief Return if a group name is contained in the groups.
+     *
+     * String comparison is case insensitive
+     *
+     * \param[in] groupName the group name to be queried
+     * \returns true if index group name is contained
+     */
+    bool containsGroupName(const std::string& groupName) const;
+
+    /*!\brief Return the integer indices of a group.
+     *
+     * If two index groups share a name, return the one found first.
+     *
+     * Indices may be empty.
+     *
+     * \param[in] groupName the name of the group whose indices shall be returned
+     * \returns atom indices of the selected index group
+     * \throws if groupName is not present as index group
+     */
+    std::vector<index> indices(const std::string& groupName) const;
+
+private:
+    const t_blocka&          indexGroup_;
+    std::vector<std::string> groupNames_;
+};
+
+} // namespace gmx
 
 struct gmx_mtop_t;
 
@@ -97,11 +145,11 @@ typedef enum
 struct gmx_ana_index_t
 {
     /** Number of atoms. */
-    int                 isize;
+    int isize;
     /** List of atoms. */
-    int                *index;
+    int* index;
     /** Number of items allocated for \p index. */
-    int                 nalloc_index;
+    int nalloc_index;
 };
 
 /*! \brief
@@ -110,7 +158,7 @@ struct gmx_ana_index_t
 struct gmx_ana_indexmap_t
 {
     /** Type of the mapping. */
-    e_index_t           type;
+    e_index_t type;
     /*! \brief
      * Current reference IDs.
      *
@@ -122,7 +170,7 @@ struct gmx_ana_indexmap_t
      * for blocks not present in the current group are set to -1, otherwise
      * they are removed completely and the \p nr field updated.
      */
-    int                *refid;
+    int* refid;
     /*! \brief
      * Current mapped IDs.
      *
@@ -133,14 +181,14 @@ struct gmx_ana_indexmap_t
      * If \p bMaskOnly is provided to gmx_ana_indexmap_update(), this array
      * equals \p orgid.
      */
-    int                *mapid;
+    int* mapid;
     /*! \brief
      * Mapped block structure.
      *
      * A block structure that corresponds to the current index group.
      * \c mapb.nra and \c mapb.a correspond to the last mapped index group.
      */
-    t_blocka            mapb;
+    t_blocka mapb;
 
     /*! \brief
      * Customizable ID numbers for the original blocks.
@@ -158,7 +206,7 @@ struct gmx_ana_indexmap_t
      * if the above are not appropriate.
      * The mapped values can be read through \p mapid.
      */
-    int                *orgid;
+    int* orgid;
 
     /*! \brief
      * Block data that defines the mapping (internal use only).
@@ -169,7 +217,7 @@ struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() unless \p bMaskOnly was specified or the
      * index group is identical to the one provided to gmx_ana_indexmap_init().
      */
-    t_blocka            b;
+    t_blocka b;
     /*! \brief
      * true if the current reference IDs are for the whole group (internal use only).
      *
@@ -177,7 +225,7 @@ struct gmx_ana_indexmap_t
      * gmx_ana_indexmap_update() does not take any time if the group is
      * actually static.
      */
-    bool                bStatic;
+    bool bStatic;
 };
 
 
@@ -185,61 +233,46 @@ struct gmx_ana_indexmap_t
  */
 /*@{*/
 /** Reads index groups from a file or constructs them from topology. */
-void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, gmx_mtop_t *top,
-                       const char *fnm);
+void gmx_ana_indexgrps_init(gmx_ana_indexgrps_t** g, gmx_mtop_t* top, const char* fnm);
 /** Frees memory allocated for index groups. */
-void
-gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g);
+void gmx_ana_indexgrps_free(gmx_ana_indexgrps_t* g);
 /** Returns true if the index group structure is emtpy. */
-bool
-gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g);
+bool gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t* g);
 
 /** Returns a pointer to an index group. */
-gmx_ana_index_t *
-gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n);
+gmx_ana_index_t* gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t* g, int n);
 /** Extracts a single index group. */
-bool
-gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
-                          gmx_ana_indexgrps_t *src, int n);
+bool gmx_ana_indexgrps_extract(gmx_ana_index_t* dest, std::string* destName, gmx_ana_indexgrps_t* src, int n);
 /** Finds and extracts a single index group by name. */
-bool
-gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
-                       gmx_ana_indexgrps_t *src, const char *name);
+bool gmx_ana_indexgrps_find(gmx_ana_index_t*     dest,
+                            std::string*         destName,
+                            gmx_ana_indexgrps_t* src,
+                            const char*          name);
 
 /** Writes out a list of index groups. */
-void
-gmx_ana_indexgrps_print(gmx::TextWriter *writer, gmx_ana_indexgrps_t *g, int maxn);
+void gmx_ana_indexgrps_print(gmx::TextWriter* writer, gmx_ana_indexgrps_t* g, int maxn);
 /*@}*/
 
 /*! \name Functions for handling gmx_ana_index_t
  */
 /*@{*/
 /** Reserves memory to store an index group of size \p isize. */
-void
-gmx_ana_index_reserve(gmx_ana_index_t *g, int isize);
+void gmx_ana_index_reserve(gmx_ana_index_t* g, int isize);
 /** Frees any memory not necessary to hold the current contents. */
-void
-gmx_ana_index_squeeze(gmx_ana_index_t *g);
+void gmx_ana_index_squeeze(gmx_ana_index_t* g);
 /** Initializes an empty index group. */
-void
-gmx_ana_index_clear(gmx_ana_index_t *g);
+void gmx_ana_index_clear(gmx_ana_index_t* g);
 /** Constructs a \c gmx_ana_index_t from given values. */
-void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, int *index, int nalloc);
+void gmx_ana_index_set(gmx_ana_index_t* g, int isize, int* index, int nalloc);
 /** Creates a simple index group from the first to the \p natoms'th atom. */
-void
-gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms);
+void gmx_ana_index_init_simple(gmx_ana_index_t* g, int natoms);
 /** Frees memory allocated for an index group. */
-void
-gmx_ana_index_deinit(gmx_ana_index_t *g);
+void gmx_ana_index_deinit(gmx_ana_index_t* g);
 /** Copies a \c gmx_ana_index_t. */
-void
-gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
+void gmx_ana_index_copy(gmx_ana_index_t* dest, gmx_ana_index_t* src, bool bAlloc);
 
 /** Writes out the contents of a index group. */
-void
-gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn);
+void gmx_ana_index_dump(gmx::TextWriter* writer, gmx_ana_index_t* g, int maxn);
 
 /*! \brief
  * Returns maximum atom index that appears in an index group.
@@ -247,11 +280,9 @@ gmx_ana_index_dump(gmx::TextWriter *writer, gmx_ana_index_t *g, int maxn);
  * \param[in]  g      Index group to query.
  * \returns    Largest atom index that appears in \p g, or zero if \p g is empty.
  */
-int
-gmx_ana_index_get_max_index(gmx_ana_index_t *g);
+int gmx_ana_index_get_max_index(gmx_ana_index_t* g);
 /** Checks whether an index group is sorted. */
-bool
-gmx_ana_index_check_sorted(gmx_ana_index_t *g);
+bool gmx_ana_index_check_sorted(gmx_ana_index_t* g);
 /*! \brief
  * Checks whether an index group has atoms from a defined range.
  *
@@ -260,45 +291,33 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g);
  * \returns    true if all atoms in the index group are in the
  *     range 0 to \p natoms (i.e., no atoms over \p natoms are referenced).
  */
-bool
-gmx_ana_index_check_range(gmx_ana_index_t *g, int natoms);
+bool gmx_ana_index_check_range(gmx_ana_index_t* g, int natoms);
 /*@}*/
 
 /*! \name Functions for set operations on gmx_ana_index_t
  */
 /*@{*/
 /** Sorts the indices within an index group. */
-void
-gmx_ana_index_sort(gmx_ana_index_t *g);
+void gmx_ana_index_sort(gmx_ana_index_t* g);
 /*! \brief
  * Removes duplicates from a sorted index group.
  *
  * \param[in,out] g  Index group to be processed.
  */
-void
-gmx_ana_index_remove_duplicates(gmx_ana_index_t *g);
+void gmx_ana_index_remove_duplicates(gmx_ana_index_t* g);
 /** Checks whether two index groups are equal. */
-bool
-gmx_ana_index_equals(gmx_ana_index_t *a, gmx_ana_index_t *b);
+bool gmx_ana_index_equals(gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Checks whether a sorted index group contains another sorted index group. */
-bool
-gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b);
+bool gmx_ana_index_contains(gmx_ana_index_t* a, gmx_ana_index_t* b);
 
 /** Calculates the intersection between two sorted index groups. */
-void
-gmx_ana_index_intersection(gmx_ana_index_t *dest,
-                           gmx_ana_index_t *a, gmx_ana_index_t *b);
+void gmx_ana_index_intersection(gmx_ana_index_t* dest, gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Calculates the set difference between two sorted index groups. */
-void
-gmx_ana_index_difference(gmx_ana_index_t *dest,
-                         gmx_ana_index_t *a, gmx_ana_index_t *b);
+void gmx_ana_index_difference(gmx_ana_index_t* dest, gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Calculates the size of the difference between two sorted index groups. */
-int
-gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b);
+int gmx_ana_index_difference_size(gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Calculates the union of two sorted index groups. */
-void
-gmx_ana_index_union(gmx_ana_index_t *dest,
-                    gmx_ana_index_t *a, gmx_ana_index_t *b);
+void gmx_ana_index_union(gmx_ana_index_t* dest, gmx_ana_index_t* a, gmx_ana_index_t* b);
 /*! \brief
  * Calculates the union of two index groups, where the second group may not be sorted.
  *
@@ -309,47 +328,34 @@ gmx_ana_index_union(gmx_ana_index_t *dest,
  * \p a and \p b can have common items.
  * \p dest can equal \p a or \p b.
  */
-void
-gmx_ana_index_union_unsorted(gmx_ana_index_t *dest,
-                             gmx_ana_index_t *a, gmx_ana_index_t *b);
+void gmx_ana_index_union_unsorted(gmx_ana_index_t* dest, gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Merges two distinct sorted index groups. */
-void
-gmx_ana_index_merge(gmx_ana_index_t *dest,
-                    gmx_ana_index_t *a, gmx_ana_index_t *b);
+void gmx_ana_index_merge(gmx_ana_index_t* dest, gmx_ana_index_t* a, gmx_ana_index_t* b);
 /** Calculates the intersection and the difference in one call. */
-void
-gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
-                        gmx_ana_index_t *src, gmx_ana_index_t *g);
+void gmx_ana_index_partition(gmx_ana_index_t* dest1,
+                             gmx_ana_index_t* dest2,
+                             gmx_ana_index_t* src,
+                             gmx_ana_index_t* g);
 /*@}*/
 
 /*! \name Functions for handling gmx_ana_indexmap_t and related things
  */
 /*@{*/
 /** Partition a group based on topology information. */
-void
-gmx_ana_index_make_block(t_blocka *t, const gmx_mtop_t *top, gmx_ana_index_t *g,
-                         e_index_t type, bool bComplete);
+void gmx_ana_index_make_block(t_blocka* t, const gmx_mtop_t* top, gmx_ana_index_t* g, e_index_t type, bool bComplete);
 /** Checks whether a group consists of full blocks. */
-bool
-gmx_ana_index_has_full_blocks(const gmx_ana_index_t *g, const gmx::RangePartitioning *b);
+bool gmx_ana_index_has_full_blocks(const gmx_ana_index_t* g, const gmx::RangePartitioning* b);
 /** Checks whether a group consists of full blocks. */
-bool
-gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b);
+bool gmx_ana_index_has_full_ablocks(gmx_ana_index_t* g, t_blocka* b);
 /** Checks whether a group consists of full residues/molecules. */
-bool
-gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
-                                 const gmx_mtop_t *top);
+bool gmx_ana_index_has_complete_elems(gmx_ana_index_t* g, e_index_t type, const gmx_mtop_t* top);
 
 /** Initializes an empty index group mapping. */
-void
-gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m);
+void gmx_ana_indexmap_clear(gmx_ana_indexmap_t* m);
 /** Reserves memory for an index group mapping. */
-void
-gmx_ana_indexmap_reserve(gmx_ana_indexmap_t *m, int nr, int isize);
+void gmx_ana_indexmap_reserve(gmx_ana_indexmap_t* m, int nr, int isize);
 /** Initializes an index group mapping. */
-void
-gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
-                      const gmx_mtop_t *top, e_index_t type);
+void gmx_ana_indexmap_init(gmx_ana_indexmap_t* m, gmx_ana_index_t* g, const gmx_mtop_t* top, e_index_t type);
 /*! \brief
  * Initializes `orgid` entries based on topology grouping.
  *
@@ -374,21 +380,15 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
  *
  * Strong exception safety guarantee.
  */
-int
-gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t *m, const gmx_mtop_t *top,
-                                  e_index_t type);
+int gmx_ana_indexmap_init_orgid_group(gmx_ana_indexmap_t* m, const gmx_mtop_t* top, e_index_t type);
 /** Sets an index group mapping to be static. */
-void
-gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b);
+void gmx_ana_indexmap_set_static(gmx_ana_indexmap_t* m, t_blocka* b);
 /** Frees memory allocated for index group mapping. */
-void
-gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m);
+void gmx_ana_indexmap_deinit(gmx_ana_indexmap_t* m);
 /** Makes a deep copy of an index group mapping. */
-void
-gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bFirst);
+void gmx_ana_indexmap_copy(gmx_ana_indexmap_t* dest, gmx_ana_indexmap_t* src, bool bFirst);
 /** Updates an index group mapping. */
-void
-gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g, bool bMaskOnly);
+void gmx_ana_indexmap_update(gmx_ana_indexmap_t* m, gmx_ana_index_t* g, bool bMaskOnly);
 /*@}*/
 
 #endif

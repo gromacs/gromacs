@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 #include <cstdio>
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #include "gromacs/utility/exceptions.h"
@@ -63,7 +63,7 @@ namespace
 {
 
 //! Helper function for implementing readLine() for input streams.
-bool readLineImpl(FILE *fp, std::string *line)
+bool readLineImpl(FILE* fp, std::string* line)
 {
     line->clear();
     const size_t bufsize = 256;
@@ -81,14 +81,13 @@ bool readLineImpl(FILE *fp, std::string *line)
     }
     if (std::ferror(fp))
     {
-        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"),
-                             "fgets", errno);
+        GMX_THROW_WITH_ERRNO(FileIOError("Error while reading file"), "fgets", errno);
     }
     *line = result;
     return !result.empty() || (std::feof(fp) == 0);
 }
 
-}   // namespace
+} // namespace
 
 namespace internal
 {
@@ -99,63 +98,54 @@ namespace internal
 
 class FileStreamImpl
 {
-    public:
-        explicit FileStreamImpl(FILE *fp)
-            : fp_(fp), bClose_(false)
+public:
+    explicit FileStreamImpl(FILE* fp) : fp_(fp), bClose_(false) {}
+    FileStreamImpl(const char* filename, const char* mode) : fp_(nullptr), bClose_(true)
+    {
+        fp_ = std::fopen(filename, mode);
+        if (fp_ == nullptr)
         {
+            GMX_THROW_WITH_ERRNO(FileIOError(formatString("Could not open file '%s'", filename)),
+                                 "fopen", errno);
         }
-        FileStreamImpl(const char *filename, const char *mode)
-            : fp_(nullptr), bClose_(true)
+    }
+    ~FileStreamImpl()
+    {
+        if (fp_ != nullptr && bClose_)
         {
-            fp_ = std::fopen(filename, mode);
-            if (fp_ == nullptr)
+            if (std::fclose(fp_) != 0)
             {
-                GMX_THROW_WITH_ERRNO(
-                        FileIOError(formatString("Could not open file '%s'", filename)),
-                        "fopen", errno);
+                // TODO: Log the error somewhere
             }
         }
-        ~FileStreamImpl()
-        {
-            if (fp_ != nullptr && bClose_)
-            {
-                if (std::fclose(fp_) != 0)
-                {
-                    // TODO: Log the error somewhere
-                }
-            }
-        }
+    }
 
-        FILE *handle()
-        {
-            GMX_RELEASE_ASSERT(fp_ != nullptr,
-                               "Attempted to access a file object that is not open");
-            return fp_;
-        }
+    FILE* handle()
+    {
+        GMX_RELEASE_ASSERT(fp_ != nullptr, "Attempted to access a file object that is not open");
+        return fp_;
+    }
 
-        void close()
+    void close()
+    {
+        GMX_RELEASE_ASSERT(fp_ != nullptr, "Attempted to close a file object that is not open");
+        GMX_RELEASE_ASSERT(bClose_, "Attempted to close a file object that should not be");
+        const bool bOk = (std::fclose(fp_) == 0);
+        fp_            = nullptr;
+        if (!bOk)
         {
-            GMX_RELEASE_ASSERT(fp_ != nullptr,
-                               "Attempted to close a file object that is not open");
-            GMX_RELEASE_ASSERT(bClose_,
-                               "Attempted to close a file object that should not be");
-            const bool bOk = (std::fclose(fp_) == 0);
-            fp_ = nullptr;
-            if (!bOk)
-            {
-                GMX_THROW_WITH_ERRNO(
-                        FileIOError("Error while closing file"), "fclose", errno);
-            }
+            GMX_THROW_WITH_ERRNO(FileIOError("Error while closing file"), "fclose", errno);
         }
+    }
 
-    private:
-        //! File handle for this object (NULL if the stream has been closed).
-        FILE  *fp_;
-        //! Whether \p fp_ should be closed by this object.
-        bool   bClose_;
+private:
+    //! File handle for this object (NULL if the stream has been closed).
+    FILE* fp_;
+    //! Whether \p fp_ should be closed by this object.
+    bool bClose_;
 };
 
-}   // namespace internal
+} // namespace internal
 
 using internal::FileStreamImpl;
 
@@ -172,13 +162,13 @@ bool StandardInputStream::isInteractive() const
 #endif
 }
 
-bool StandardInputStream::readLine(std::string *line)
+bool StandardInputStream::readLine(std::string* line)
 {
     return readLineImpl(stdin, line);
 }
 
 // static
-StandardInputStream &StandardInputStream::instance()
+StandardInputStream& StandardInputStream::instance()
 {
     static StandardInputStream stdinObject;
     return stdinObject;
@@ -189,44 +179,38 @@ StandardInputStream &StandardInputStream::instance()
  */
 
 // static
-FilePtr TextInputFile::openRawHandle(const char *filename)
+FilePtr TextInputFile::openRawHandle(const char* filename)
 {
     FilePtr fp(fopen(filename, "r"));
     if (fp == nullptr)
     {
-        GMX_THROW_WITH_ERRNO(
-                FileIOError(formatString("Could not open file '%s'", filename)),
-                "fopen", errno);
+        GMX_THROW_WITH_ERRNO(FileIOError(formatString("Could not open file '%s'", filename)),
+                             "fopen", errno);
     }
     return fp;
 }
 
 // static
-FilePtr TextInputFile::openRawHandle(const std::string &filename)
+FilePtr TextInputFile::openRawHandle(const std::string& filename)
 {
     return openRawHandle(filename.c_str());
 }
 
-TextInputFile::TextInputFile(const std::string &filename)
-    : impl_(new FileStreamImpl(filename.c_str(), "r"))
+TextInputFile::TextInputFile(const std::string& filename) :
+    impl_(new FileStreamImpl(filename.c_str(), "r"))
 {
 }
 
-TextInputFile::TextInputFile(FILE *fp)
-    : impl_(new FileStreamImpl(fp))
-{
-}
+TextInputFile::TextInputFile(FILE* fp) : impl_(new FileStreamImpl(fp)) {}
 
-TextInputFile::~TextInputFile()
-{
-}
+TextInputFile::~TextInputFile() {}
 
-FILE *TextInputFile::handle()
+FILE* TextInputFile::handle()
 {
     return impl_->handle();
 }
 
-bool TextInputFile::readLine(std::string *line)
+bool TextInputFile::readLine(std::string* line)
 {
     return readLineImpl(impl_->handle(), line);
 }
@@ -240,26 +224,20 @@ void TextInputFile::close()
  * TextOutputFile
  */
 
-TextOutputFile::TextOutputFile(const std::string &filename)
-    : impl_(new FileStreamImpl(filename.c_str(), "w"))
+TextOutputFile::TextOutputFile(const std::string& filename) :
+    impl_(new FileStreamImpl(filename.c_str(), "w"))
 {
 }
 
-TextOutputFile::TextOutputFile(FILE *fp)
-    : impl_(new FileStreamImpl(fp))
-{
-}
+TextOutputFile::TextOutputFile(FILE* fp) : impl_(new FileStreamImpl(fp)) {}
 
-TextOutputFile::~TextOutputFile()
-{
-}
+TextOutputFile::~TextOutputFile() {}
 
-void TextOutputFile::write(const char *str)
+void TextOutputFile::write(const char* str)
 {
     if (std::fprintf(impl_->handle(), "%s", str) < 0)
     {
-        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
-                             "fprintf", errno);
+        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"), "fprintf", errno);
     }
 }
 
@@ -269,14 +247,14 @@ void TextOutputFile::close()
 }
 
 // static
-TextOutputFile &TextOutputFile::standardOutput()
+TextOutputFile& TextOutputFile::standardOutput()
 {
     static TextOutputFile stdoutObject(stdout);
     return stdoutObject;
 }
 
 // static
-TextOutputFile &TextOutputFile::standardError()
+TextOutputFile& TextOutputFile::standardError()
 {
     static TextOutputFile stderrObject(stderr);
     return stderrObject;

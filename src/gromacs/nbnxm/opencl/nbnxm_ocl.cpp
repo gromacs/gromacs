@@ -64,7 +64,7 @@
 #include <stdlib.h>
 
 #if defined(_MSVC)
-#include <limits>
+#    include <limits>
 #endif
 
 #include "thread_mpi/atomic.h"
@@ -72,7 +72,8 @@
 #include "gromacs/gpu_utils/gputraits_ocl.h"
 #include "gromacs/gpu_utils/oclutils.h"
 #include "gromacs/hardware/hw_info.h"
-#include "gromacs/mdlib/force_flags.h"
+#include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_common.h"
 #include "gromacs/nbnxm/gpu_common_utils.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
@@ -100,7 +101,9 @@ static const int c_clSize          = c_nbnxnGpuClusterSize;
 
 /*! \brief Validates the input global work size parameter.
  */
-static inline void validate_global_work_size(const KernelLaunchConfig &config, int work_dim, const gmx_device_info_t *dinfo)
+static inline void validate_global_work_size(const KernelLaunchConfig& config,
+                                             int                       work_dim,
+                                             const gmx_device_info_t*  dinfo)
 {
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;
@@ -132,16 +135,18 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
     {
         size_t device_limit;
 
-        device_limit = (1ull << device_size_t_size_bits) - 1;
+        device_limit = (1ULL << device_size_t_size_bits) - 1;
 
         for (int i = 0; i < work_dim; i++)
         {
             if (global_work_size[i] > device_limit)
             {
-                gmx_fatal(FARGS, "Watch out, the input system is too large to simulate!\n"
-                          "The number of nonbonded work units (=number of super-clusters) exceeds the"
-                          "device capabilities. Global work size limit exceeded (%zu > %zu)!",
-                          global_work_size[i], device_limit);
+                gmx_fatal(
+                        FARGS,
+                        "Watch out, the input system is too large to simulate!\n"
+                        "The number of nonbonded work units (=number of super-clusters) exceeds the"
+                        "device capabilities. Global work size limit exceeded (%zu > %zu)!",
+                        global_work_size[i], device_limit);
             }
         }
     }
@@ -156,47 +161,157 @@ static inline void validate_global_work_size(const KernelLaunchConfig &config, i
  */
 
 /*! \brief Force-only kernel function names. */
-static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl"      }
+static const char* nb_kfunc_noener_noprune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_F_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_F_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJCombLB_F_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_F_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJPsw_F_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_opencl", "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_opencl" }
 };
 
 /*! \brief Force + energy kernel function pointers. */
-static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl"      }
+static const char* nb_kfunc_ener_noprune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJFsw_VF_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJFsw_VF_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_opencl", "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJFsw_VF_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJPsw_VF_opencl", "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_opencl" }
 };
 
 /*! \brief Force + pruning kernel function pointers. */
-static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl"             },
-    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl"              },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl"         },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl"  },
-    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl"              },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl"       }
+static const char* nb_kfunc_noener_prune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_F_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecCut_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJFsw_F_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombLB_F_prune_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_F_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_F_prune_opencl" }
 };
 
 /*! \brief Force + energy + pruning kernel function pointers. */
-static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
-{
-    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl",            "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl"            },
-    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl",        "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl"        },
-    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_opencl", "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_opencl" },
-    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl",             "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl"             },
-    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl"      }
+static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] = {
+    { "nbnxn_kernel_ElecCut_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJFsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecCut_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecRF_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecRF_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecRF_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTab_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJFsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTab_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJFsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwQSTabTwinCut_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEw_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJFsw_VF_prune_opencl", "nbnxn_kernel_ElecEw_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEw_VdwLJEwCombLB_VF_prune_opencl" },
+    { "nbnxn_kernel_ElecEwTwinCut_VdwLJ_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJCombLB_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJFsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJPsw_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombGeom_VF_prune_opencl",
+      "nbnxn_kernel_ElecEwTwinCut_VdwLJEwCombLB_VF_prune_opencl" }
 };
 
 /*! \brief Return a pointer to the prune kernel version to be executed at the current invocation.
@@ -204,10 +319,9 @@ static const char* nb_kfunc_ener_prune_ptr[eelOclNR][evdwOclNR] =
  * \param[in] kernel_pruneonly  array of prune kernel objects
  * \param[in] firstPrunePass    true if the first pruning pass is being executed
  */
-static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[],
-                                          bool      firstPrunePass)
+static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[], bool firstPrunePass)
 {
-    cl_kernel  *kernelPtr;
+    cl_kernel* kernelPtr;
 
     if (firstPrunePass)
     {
@@ -226,17 +340,13 @@ static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[],
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
  *  found in the cache, it will be created and the cache will be updated.
  */
-static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
-                                            int                eeltype,
-                                            int                evdwtype,
-                                            bool               bDoEne,
-                                            bool               bDoPrune)
+static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t* nb, int eeltype, int evdwtype, bool bDoEne, bool bDoPrune)
 {
     const char* kernel_name_to_run;
-    cl_kernel  *kernel_ptr;
+    cl_kernel*  kernel_ptr;
     cl_int      cl_error;
 
-    assert(eeltype  < eelOclNR);
+    assert(eeltype < eelOclNR);
     assert(evdwtype < evdwOclNR);
 
     if (bDoEne)
@@ -278,25 +388,24 @@ static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t   *nb,
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use.
  */
-static inline int calc_shmem_required_nonbonded(int  vdwType,
-                                                bool bPrefetchLjParam)
+static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjParam)
 {
     int shmem;
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem  = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
+    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately
      * TODO: in the "nowarp kernels we load cj only once  so the factor 2 is not needed.
      */
-    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int);           /* cjs  */
+    shmem += 2 * c_nbnxnGpuJgroupSize * sizeof(int); /* cjs  */
     if (bPrefetchLjParam)
     {
         if (useLjCombRule(vdwType))
         {
             /* i-atom LJ combination parameters in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * 2*sizeof(float); /* atib abused for ljcp, float2 */
+            shmem += c_numClPerSupercl * c_clSize * 2 * sizeof(float); /* atib abused for ljcp, float2 */
         }
         else
         {
@@ -305,9 +414,9 @@ static inline int calc_shmem_required_nonbonded(int  vdwType,
         }
     }
     /* force reduction buffers in shared memory */
-    shmem += c_clSize * c_clSize * 3 * sizeof(float);    /* f_buf */
+    shmem += c_clSize * c_clSize * 3 * sizeof(float); /* f_buf */
     /* Warp vote. In fact it must be * number of warps in block.. */
-    shmem += sizeof(cl_uint) * 2;                        /* warp_any */
+    shmem += sizeof(cl_uint) * 2; /* warp_any */
     return shmem;
 }
 
@@ -319,8 +428,7 @@ static inline int calc_shmem_required_nonbonded(int  vdwType,
  *
  *  This function is called before the launch of both nbnxn and prune kernels.
  */
-static void fillin_ocl_structures(cl_nbparam_t        *nbp,
-                                  cl_nbparam_params_t *nbparams_params)
+static void fillin_ocl_structures(cl_nbparam_t* nbp, cl_nbparam_params_t* nbparams_params)
 {
     nbparams_params->coulomb_tab_scale = nbp->coulomb_tab_scale;
     nbparams_params->c_rf              = nbp->c_rf;
@@ -347,7 +455,7 @@ static void fillin_ocl_structures(cl_nbparam_t        *nbp,
  * Then it releases the event and sets it to 0.
  * Don't use this function when more than one wait will be issued for the event.
  * Equivalent to Cuda Stream Sync. */
-static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
+static void sync_ocl_event(cl_command_queue stream, cl_event* ocl_event)
 {
     cl_int gmx_unused cl_error;
 
@@ -362,22 +470,21 @@ static void sync_ocl_event(cl_command_queue stream, cl_event *ocl_event)
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
-                        const nbnxn_atomdata_t *nbatom,
-                        const AtomLocality      atomLocality,
-                        const bool              haveOtherWork)
+void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
     const InteractionLocality iloc = gpuAtomToInteractionLocality(atomLocality);
 
     /* local/nonlocal offset and length used for xq and f */
-    int                  adat_begin, adat_len;
+    int adat_begin, adat_len;
 
-    cl_atomdata_t       *adat    = nb->atdat;
-    cl_plist_t          *plist   = nb->plist[iloc];
-    cl_timers_t         *t       = nb->timers;
-    cl_command_queue     stream  = nb->stream[iloc];
+    cl_atomdata_t*   adat   = nb->atdat;
+    cl_plist_t*      plist  = nb->plist[iloc];
+    cl_timers_t*     t      = nb->timers;
+    cl_command_queue stream = nb->stream[iloc];
 
-    bool                 bDoTime = (nb->bDoTime) != 0;
+    bool bDoTime = (nb->bDoTime) != 0;
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
@@ -388,7 +495,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
        we always call the local local x+q copy (and the rest of the local
        work in nbnxn_gpu_launch_kernel().
      */
-    if (!haveOtherWork && canSkipWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -398,13 +505,13 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
     /* calculate the atom data index range based on locality */
     if (atomLocality == AtomLocality::Local)
     {
-        adat_begin  = 0;
-        adat_len    = adat->natoms_local;
+        adat_begin = 0;
+        adat_len   = adat->natoms_local;
     }
     else
     {
-        adat_begin  = adat->natoms_local;
-        adat_len    = adat->natoms - adat->natoms_local;
+        adat_begin = adat->natoms_local;
+        adat_len   = adat->natoms - adat->natoms_local;
     }
 
     /* beginning of timed HtoD section */
@@ -414,8 +521,9 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
     }
 
     /* HtoD x, q */
-    ocl_copy_H2D_async(adat->xq, nbatom->x().data() + adat_begin * 4, adat_begin*sizeof(float)*4,
-                       adat_len * sizeof(float) * 4, stream, bDoTime ? t->xf[atomLocality].nb_h2d.fetchNextEvent() : nullptr);
+    ocl_copy_H2D_async(adat->xq, nbatom->x().data() + adat_begin * 4,
+                       adat_begin * sizeof(float) * 4, adat_len * sizeof(float) * 4, stream,
+                       bDoTime ? t->xf[atomLocality].nb_h2d.fetchNextEvent() : nullptr);
 
     if (bDoTime)
     {
@@ -429,7 +537,8 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
     {
         if (iloc == InteractionLocality::Local)
         {
-            cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
+            cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(
+                    stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
             assert(CL_SUCCESS == cl_error);
 
             /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
@@ -465,24 +574,17 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t        *nb,
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
-                       const int                         flags,
-                       const Nbnxm::InteractionLocality  iloc)
+void gpu_launch_kernel(gmx_nbnxn_ocl_t* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
-    /* OpenCL kernel launch-related stuff */
-    cl_kernel            nb_kernel = nullptr;  /* fn pointer to the nonbonded kernel */
+    cl_atomdata_t*   adat   = nb->atdat;
+    cl_nbparam_t*    nbp    = nb->nbparam;
+    cl_plist_t*      plist  = nb->plist[iloc];
+    cl_timers_t*     t      = nb->timers;
+    cl_command_queue stream = nb->stream[iloc];
 
-    cl_atomdata_t       *adat    = nb->atdat;
-    cl_nbparam_t        *nbp     = nb->nbparam;
-    cl_plist_t          *plist   = nb->plist[iloc];
-    cl_timers_t         *t       = nb->timers;
-    cl_command_queue     stream  = nb->stream[iloc];
+    bool bDoTime = (nb->bDoTime) != 0;
 
-    bool                 bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
-    int                  bCalcFshift = flags & GMX_FORCE_VIRIAL;
-    bool                 bDoTime     = (nb->bDoTime) != 0;
-
-    cl_nbparam_params_t  nbparams_params;
+    cl_nbparam_params_t nbparams_params;
 
     /* Don't launch the non-local kernel if there is no work to do.
        Doing the same for the local kernel is more complicated, since the
@@ -493,7 +595,7 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
        clearing. All these operations, except for the local interaction kernel,
        are needed for the non-local interactions. The skip of the local kernel
        call is taken care of later in this function. */
-    if (canSkipWork(*nb, iloc))
+    if (canSkipNonbondedWork(*nb, iloc))
     {
         plist->haveFreshList = false;
 
@@ -522,13 +624,6 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
         t->interaction[iloc].nb_k.openTimingRegion(stream);
     }
 
-    /* get the pointer to the kernel flavor we need to use */
-    nb_kernel = select_nbnxn_kernel(nb,
-                                    nbp->eeltype,
-                                    nbp->vdwtype,
-                                    bCalcEner,
-                                    (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
-
     /* kernel launch config */
 
     KernelLaunchConfig config;
@@ -542,36 +637,43 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
 
     if (debug)
     {
-        fprintf(debug, "Non-bonded GPU launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
+        fprintf(debug,
+                "Non-bonded GPU launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
                 "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
-                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1], plist->nsci*c_numClPerSupercl,
-                c_numClPerSupercl, plist->na_c);
+                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
+                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    auto          *timingEvent  = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
+    auto*          timingEvent  = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_calc_nb";
+    const auto     kernel =
+            select_nbnxn_kernel(nb, nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
+                                (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune));
+
+
+    // The OpenCL kernel takes int as second to last argument because bool is
+    // not supported as a kernel argument type (sizeof(bool) is implementation defined).
+    const int computeFshift = static_cast<int>(stepWork.computeVirial);
     if (useLjCombRule(nb->nbparam->vdwtype))
     {
-        const auto kernelArgs = prepareGpuKernelArguments(nb_kernel, config,
-                                                          &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
-                                                          &adat->lj_comb,
-                                                          &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
-                                                          &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
+        const auto kernelArgs = prepareGpuKernelArguments(
+                kernel, config, &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el,
+                &adat->fshift, &adat->lj_comb, &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d,
+                &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4, &plist->excl, &computeFshift);
 
-        launchGpuKernel(nb_kernel, config, timingEvent, kernelName, kernelArgs);
+        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
     }
     else
     {
-        const auto kernelArgs = prepareGpuKernelArguments(nb_kernel, config,
-                                                          &adat->ntypes,
-                                                          &nbparams_params, &adat->xq, &adat->f, &adat->e_lj, &adat->e_el, &adat->fshift,
-                                                          &adat->atom_types,
-                                                          &adat->shift_vec, &nbp->nbfp_climg2d, &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d,
-                                                          &plist->sci, &plist->cj4, &plist->excl, &bCalcFshift);
-        launchGpuKernel(nb_kernel, config, timingEvent, kernelName, kernelArgs);
+        const auto kernelArgs = prepareGpuKernelArguments(
+                kernel, config, &adat->ntypes, &nbparams_params, &adat->xq, &adat->f, &adat->e_lj,
+                &adat->e_el, &adat->fshift, &adat->atom_types, &adat->shift_vec, &nbp->nbfp_climg2d,
+                &nbp->nbfp_comb_climg2d, &nbp->coulomb_tab_climg2d, &plist->sci, &plist->cj4,
+                &plist->excl, &computeFshift);
+        launchGpuKernel(kernel, config, timingEvent, kernelName, kernelArgs);
     }
 
     if (bDoTime)
@@ -586,36 +688,38 @@ void gpu_launch_kernel(gmx_nbnxn_ocl_t                  *nb,
  *  Note that for the sake of simplicity we use the CUDA terminology "shared memory"
  *  for OpenCL local memory.
  *
- * \param[in] num_threads_z cj4 concurrency equal to the number of threads/work items in the 3-rd dimension.
- * \returns   the amount of local memory in bytes required by the pruning kernel
+ * \param[in] num_threads_z cj4 concurrency equal to the number of threads/work items in the 3-rd
+ * dimension. \returns   the amount of local memory in bytes required by the pruning kernel
  */
 static inline int calc_shmem_required_prune(const int num_threads_z)
 {
     int shmem;
 
     /* i-atom x in shared memory (for convenience we load all 4 components including q) */
-    shmem  = c_numClPerSupercl * c_clSize * sizeof(float)*4;
+    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4;
     /* cj in shared memory, for each warp separately
      * Note: only need to load once per wavefront, but to keep the code simple,
      * for now we load twice on AMD.
      */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
     /* Warp vote, requires one uint per warp/32 threads per block. */
-    shmem += sizeof(cl_uint) * 2*num_threads_z;
+    shmem += sizeof(cl_uint) * 2 * num_threads_z;
 
     return shmem;
 }
 
-void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
-                                 const InteractionLocality  iloc,
-                                 const int                  numParts)
+/*! \brief
+ * Launch the pairlist prune only kernel for the given locality.
+ * \p numParts tells in how many parts, i.e. calls the list will be pruned.
+ */
+void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t* nb, const InteractionLocality iloc, const int numParts)
 {
-    cl_atomdata_t       *adat    = nb->atdat;
-    cl_nbparam_t        *nbp     = nb->nbparam;
-    cl_plist_t          *plist   = nb->plist[iloc];
-    cl_timers_t         *t       = nb->timers;
-    cl_command_queue     stream  = nb->stream[iloc];
-    bool                 bDoTime = nb->bDoTime == CL_TRUE;
+    cl_atomdata_t*   adat    = nb->atdat;
+    cl_nbparam_t*    nbp     = nb->nbparam;
+    cl_plist_t*      plist   = nb->plist[iloc];
+    cl_timers_t*     t       = nb->timers;
+    cl_command_queue stream  = nb->stream[iloc];
+    bool             bDoTime = nb->bDoTime == CL_TRUE;
 
     if (plist->haveFreshList)
     {
@@ -633,7 +737,8 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
         }
         else
         {
-            GMX_ASSERT(numParts == plist->rollingPruningNumParts, "It is not allowed to change numParts in between list generation steps");
+            GMX_ASSERT(numParts == plist->rollingPruningNumParts,
+                       "It is not allowed to change numParts in between list generation steps");
         }
     }
 
@@ -649,7 +754,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
     }
 
     /* Compute the number of list entries to prune in this pass */
-    int numSciInPart = (plist->nsci - part)/numParts;
+    int numSciInPart = (plist->nsci - part) / numParts;
 
     /* Don't launch the kernel if there is no work to do. */
     if (numSciInPart <= 0)
@@ -659,7 +764,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
         return;
     }
 
-    GpuRegionTimer *timer = nullptr;
+    GpuRegionTimer* timer = nullptr;
     if (bDoTime)
     {
         timer = &(plist->haveFreshList ? t->interaction[iloc].prune_k : t->interaction[iloc].rollingPrune_k);
@@ -676,8 +781,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int       num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
-    cl_kernel pruneKernel   = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
+    int num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->vendor_e);
 
     /* kernel launch config */
     KernelLaunchConfig config;
@@ -692,27 +796,29 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
 
     if (debug)
     {
-        fprintf(debug, "Pruning GPU kernel launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
+        fprintf(debug,
+                "Pruning GPU kernel launch configuration:\n\tLocal work size: %zux%zux%zu\n\t"
                 "\tGlobal work size: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
-                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1], plist->nsci*c_numClPerSupercl,
-                c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
+                config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
+                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
     }
 
-    cl_nbparam_params_t  nbparams_params;
+    cl_nbparam_params_t nbparams_params;
     fillin_ocl_structures(nbp, &nbparams_params);
 
-    auto          *timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
+    auto*          timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;
     constexpr char kernelName[] = "k_pruneonly";
-    const auto     kernelArgs   = prepareGpuKernelArguments(pruneKernel, config,
-                                                            &nbparams_params, &adat->xq, &adat->shift_vec,
-                                                            &plist->sci, &plist->cj4, &plist->imask, &numParts, &part);
+    const auto     pruneKernel  = selectPruneKernel(nb->kernel_pruneonly, plist->haveFreshList);
+    const auto     kernelArgs   = prepareGpuKernelArguments(pruneKernel, config, &nbparams_params,
+                                                      &adat->xq, &adat->shift_vec, &plist->sci,
+                                                      &plist->cj4, &plist->imask, &numParts, &part);
     launchGpuKernel(pruneKernel, config, timingEvent, kernelName, kernelArgs);
 
     if (plist->haveFreshList)
     {
-        plist->haveFreshList         = false;
+        plist->haveFreshList = false;
         /* Mark that pruning has been done */
         nb->timers->interaction[iloc].didPrune = true;
     }
@@ -732,29 +838,26 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t           *nb,
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
-                        struct nbnxn_atomdata_t       *nbatom,
-                        const int                      flags,
-                        const AtomLocality             aloc,
-                        const bool                     haveOtherWork)
+void gpu_launch_cpyback(gmx_nbnxn_ocl_t*         nb,
+                        struct nbnxn_atomdata_t* nbatom,
+                        const gmx::StepWorkload& stepWork,
+                        const AtomLocality       aloc)
 {
+    GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
+
     cl_int gmx_unused cl_error;
     int               adat_begin, adat_len; /* local/nonlocal offset and length used for xq and f */
 
     /* determine interaction locality from atom locality */
     const InteractionLocality iloc = gpuAtomToInteractionLocality(aloc);
 
-    cl_atomdata_t            *adat    = nb->atdat;
-    cl_timers_t              *t       = nb->timers;
-    bool                      bDoTime = nb->bDoTime == CL_TRUE;
-    cl_command_queue          stream  = nb->stream[iloc];
-
-    bool                      bCalcEner   = (flags & GMX_FORCE_ENERGY) != 0;
-    int                       bCalcFshift = flags & GMX_FORCE_VIRIAL;
-
+    cl_atomdata_t*   adat    = nb->atdat;
+    cl_timers_t*     t       = nb->timers;
+    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    cl_command_queue stream  = nb->stream[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */
-    if (!haveOtherWork && canSkipWork(*nb, iloc))
+    if ((iloc == InteractionLocality::NonLocal) && !haveGpuShortRangeWork(*nb, iloc))
     {
         /* TODO An alternative way to signal that non-local work is
            complete is to use a clEnqueueMarker+clEnqueueBarrier
@@ -784,8 +887,9 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     }
 
     /* DtoH f */
-    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f, adat_begin*3*sizeof(float),
-                       (adat_len)* adat->f_elem_size, stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
+    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f,
+                       adat_begin * 3 * sizeof(float), (adat_len)*adat->f_elem_size, stream,
+                       bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
     /* kick off work */
     cl_error = clFlush(stream);
@@ -805,21 +909,21 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
     /* only transfer energies in the local stream */
     if (iloc == InteractionLocality::Local)
     {
-        /* DtoH fshift */
-        if (bCalcFshift)
+        /* DtoH fshift when virial is needed */
+        if (stepWork.computeVirial)
         {
-            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0,
-                               SHIFTS * adat->fshift_elem_size, stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
+            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0, SHIFTS * adat->fshift_elem_size,
+                               stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
 
         /* DtoH energies */
-        if (bCalcEner)
+        if (stepWork.computeEnergy)
         {
-            ocl_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, 0,
-                               sizeof(float), stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
+            ocl_copy_D2H_async(nb->nbst.e_lj, adat->e_lj, 0, sizeof(float), stream,
+                               bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
-            ocl_copy_D2H_async(nb->nbst.e_el, adat->e_el, 0,
-                               sizeof(float), stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
+            ocl_copy_D2H_async(nb->nbst.e_el, adat->e_el, 0, sizeof(float), stream,
+                               bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
     }
 
@@ -831,8 +935,9 @@ void gpu_launch_cpyback(gmx_nbnxn_ocl_t               *nb,
 
 
 /*! \brief Selects the Ewald kernel type, analytical or tabulated, single or twin cut-off. */
-int gpu_pick_ewald_kernel_type(const bool bTwinCut)
+int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 {
+    bool bTwinCut = (ic.rcoulomb != ic.rvdw);
     bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
     int  kernel_type;
 
@@ -843,8 +948,9 @@ int gpu_pick_ewald_kernel_type(const bool bTwinCut)
 
     if (bForceAnalyticalEwald && bForceTabulatedEwald)
     {
-        gmx_incons("Both analytical and tabulated Ewald OpenCL non-bonded kernels "
-                   "requested through environment variables.");
+        gmx_incons(
+                "Both analytical and tabulated Ewald OpenCL non-bonded kernels "
+                "requested through environment variables.");
     }
 
     /* OpenCL: By default, use analytical Ewald

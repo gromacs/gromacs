@@ -87,107 +87,107 @@ namespace
  */
 class CMainCommandLineModule : public ICommandLineModule
 {
-    public:
-        //! \copydoc gmx::CommandLineModuleManager::CMainFunction
-        typedef CommandLineModuleManager::CMainFunction CMainFunction;
-        //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
-        typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
+public:
+    //! \copydoc gmx::CommandLineModuleManager::CMainFunction
+    typedef CommandLineModuleManager::CMainFunction CMainFunction;
+    //! \copydoc gmx::CommandLineModuleManager::InitSettingsFunction
+    typedef CommandLineModuleManager::InitSettingsFunction InitSettingsFunction;
 
-        /*! \brief
-         * Creates a wrapper module for the given main function.
-         *
-         * \param[in] name             Name for the module.
-         * \param[in] shortDescription One-line description for the module.
-         * \param[in] mainFunction     Main function to wrap.
-         * \param[in] settingsFunction Initializer for settings (can be null).
-         *
-         * Does not throw.  This is essential for correct implementation of
-         * CommandLineModuleManager::runAsMainCMain().
-         */
-        CMainCommandLineModule(const char *name, const char *shortDescription,
-                               CMainFunction mainFunction,
-                               InitSettingsFunction settingsFunction)
-            : name_(name), shortDescription_(shortDescription),
-              mainFunction_(mainFunction), settingsFunction_(settingsFunction)
-        {
-        }
+    /*! \brief
+     * Creates a wrapper module for the given main function.
+     *
+     * \param[in] name             Name for the module.
+     * \param[in] shortDescription One-line description for the module.
+     * \param[in] mainFunction     Main function to wrap.
+     * \param[in] settingsFunction Initializer for settings (can be null).
+     *
+     * Does not throw.  This is essential for correct implementation of
+     * CommandLineModuleManager::runAsMainCMain().
+     */
+    CMainCommandLineModule(const char*          name,
+                           const char*          shortDescription,
+                           CMainFunction        mainFunction,
+                           InitSettingsFunction settingsFunction) :
+        name_(name),
+        shortDescription_(shortDescription),
+        mainFunction_(mainFunction),
+        settingsFunction_(settingsFunction)
+    {
+    }
 
-        const char *name() const override
-        {
-            return name_;
-        }
-        const char *shortDescription() const override
-        {
-            return shortDescription_;
-        }
+    const char* name() const override { return name_; }
+    const char* shortDescription() const override { return shortDescription_; }
 
-        void init(CommandLineModuleSettings *settings) override
+    void init(CommandLineModuleSettings* settings) override
+    {
+        if (settingsFunction_ != nullptr)
         {
-            if (settingsFunction_ != nullptr)
-            {
-                settingsFunction_(settings);
-            }
+            settingsFunction_(settings);
         }
-        int run(int argc, char *argv[]) override
-        {
-            return mainFunction_(argc, argv);
-        }
-        void writeHelp(const CommandLineHelpContext &context) const override
-        {
-            writeCommandLineHelpCMain(context, name_, mainFunction_);
-        }
+    }
+    int  run(int argc, char* argv[]) override { return mainFunction_(argc, argv); }
+    void writeHelp(const CommandLineHelpContext& context) const override
+    {
+        writeCommandLineHelpCMain(context, name_, mainFunction_);
+    }
 
-    private:
-        const char             *name_;
-        const char             *shortDescription_;
-        CMainFunction           mainFunction_;
-        InitSettingsFunction    settingsFunction_;
+private:
+    const char*          name_;
+    const char*          shortDescription_;
+    CMainFunction        mainFunction_;
+    InitSettingsFunction settingsFunction_;
 };
 
 //! \}
 
-}   // namespace
+} // namespace
 
 /********************************************************************
  * CommandLineCommonOptionsHolder
  */
 
-CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder()
-    : bHelp_(false), bHidden_(false),
-      bQuiet_(false), bVersion_(false), bCopyright_(true),
-      niceLevel_(19), bNiceSet_(false), bBackup_(true), bFpexcept_(false),
-      debugLevel_(0)
+CommandLineCommonOptionsHolder::CommandLineCommonOptionsHolder() :
+    bHelp_(false),
+    bHidden_(false),
+    bQuiet_(false),
+    bVersion_(false),
+    bCopyright_(true),
+    niceLevel_(19),
+    bNiceSet_(false),
+    bBackup_(true),
+    bFpexcept_(false),
+    debugLevel_(0)
 {
     binaryInfoSettings_.copyright(true);
 }
 
-CommandLineCommonOptionsHolder::~CommandLineCommonOptionsHolder()
-{
-}
+CommandLineCommonOptionsHolder::~CommandLineCommonOptionsHolder() {}
 
 void CommandLineCommonOptionsHolder::initOptions()
 {
-    options_.addOption(BooleanOption("h").store(&bHelp_)
-                           .description("Print help and quit"));
-    options_.addOption(BooleanOption("hidden").store(&bHidden_)
-                           .hidden()
-                           .description("Show hidden options in help"));
-    options_.addOption(BooleanOption("quiet").store(&bQuiet_)
-                           .description("Do not print common startup info or quotes"));
-    options_.addOption(BooleanOption("version").store(&bVersion_)
-                           .description("Print extended version information and quit"));
-    options_.addOption(BooleanOption("copyright").store(&bCopyright_)
-                           .description("Print copyright information on startup"));
-    options_.addOption(IntegerOption("nice").store(&niceLevel_).storeIsSet(&bNiceSet_)
-                           .description("Set the nicelevel (default depends on command)"));
-    options_.addOption(BooleanOption("backup").store(&bBackup_)
-                           .description("Write backups if output files exist"));
-    options_.addOption(BooleanOption("fpexcept").store(&bFpexcept_)
-                           .hidden().description("Enable floating-point exceptions"));
-    options_.addOption(IntegerOption("debug").store(&debugLevel_)
-                           .hidden().defaultValueIfSet(1)
-                           .description("Write file with debug information, "
-                                        "1: short (default), 2: also x and f"));
+    options_.addOption(BooleanOption("h").store(&bHelp_).description("Print help and quit"));
+    options_.addOption(BooleanOption("hidden").store(&bHidden_).hidden().description(
+            "Show hidden options in help"));
+    options_.addOption(BooleanOption("quiet").store(&bQuiet_).description(
+            "Do not print common startup info or quotes"));
+    options_.addOption(
+            BooleanOption("version").store(&bVersion_).description("Print extended version information and quit"));
+    options_.addOption(
+            BooleanOption("copyright").store(&bCopyright_).description("Print copyright information on startup"));
+    options_.addOption(IntegerOption("nice")
+                               .store(&niceLevel_)
+                               .storeIsSet(&bNiceSet_)
+                               .description("Set the nicelevel (default depends on command)"));
+    options_.addOption(BooleanOption("backup").store(&bBackup_).description(
+            "Write backups if output files exist"));
+    options_.addOption(
+            BooleanOption("fpexcept").store(&bFpexcept_).hidden().description("Enable floating-point exceptions"));
+    options_.addOption(IntegerOption("debug")
+                               .store(&debugLevel_)
+                               .hidden()
+                               .defaultValueIfSet(1)
+                               .description("Write file with debug information, "
+                                            "1: short (default), 2: also x and f"));
 }
 
 bool CommandLineCommonOptionsHolder::finishOptions()
@@ -200,8 +200,7 @@ bool CommandLineCommonOptionsHolder::finishOptions()
     return !bVersion_;
 }
 
-void CommandLineCommonOptionsHolder::adjustFromSettings(
-        const CommandLineModuleSettings &settings)
+void CommandLineCommonOptionsHolder::adjustFromSettings(const CommandLineModuleSettings& settings)
 {
     if (!bNiceSet_)
     {
@@ -220,105 +219,104 @@ void CommandLineCommonOptionsHolder::adjustFromSettings(
  */
 class CommandLineModuleManager::Impl
 {
-    public:
-        /*! \brief
-         * Initializes the implementation class.
-         *
-         * \param[in] binaryName     Name of the running binary
-         *     (without Gromacs binary suffix or .exe on Windows).
-         * \param     programContext Program information for the running binary.
-         */
-        Impl(const char *binaryName, CommandLineProgramContext *programContext);
+public:
+    /*! \brief
+     * Initializes the implementation class.
+     *
+     * \param[in] binaryName     Name of the running binary
+     *     (without Gromacs binary suffix or .exe on Windows).
+     * \param     programContext Program information for the running binary.
+     */
+    Impl(const char* binaryName, CommandLineProgramContext* programContext);
 
-        /*! \brief
-         * Helper method that adds a given module to the module manager.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void addModule(CommandLineModulePointer module);
-        /*! \brief
-         * Creates the help module if it does not yet exist.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * This method should be called before accessing \a helpModule_.
-         */
-        void ensureHelpModuleExists();
+    /*! \brief
+     * Helper method that adds a given module to the module manager.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void addModule(CommandLineModulePointer module);
+    /*! \brief
+     * Creates the help module if it does not yet exist.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     *
+     * This method should be called before accessing \a helpModule_.
+     */
+    void ensureHelpModuleExists();
 
-        /*! \brief
-         * Finds a module that matches a name.
-         *
-         * \param[in] name  Module name to find.
-         * \returns   Iterator to the found module, or
-         *      \c modules_.end() if not found.
-         *
-         * Does not throw.
-         */
-        CommandLineModuleMap::const_iterator
-        findModuleByName(const std::string &name) const;
+    /*! \brief
+     * Finds a module that matches a name.
+     *
+     * \param[in] name  Module name to find.
+     * \returns   Iterator to the found module, or
+     *      \c modules_.end() if not found.
+     *
+     * Does not throw.
+     */
+    CommandLineModuleMap::const_iterator findModuleByName(const std::string& name) const;
 
-        /*! \brief
-         * Processes command-line options for the wrapper binary.
-         *
-         * \param[in,out] optionsHolder Common options.
-         * \param[in,out] argc          On input, argc passed to run().
-         *     On output, argc to be passed to the module.
-         * \param[in,out] argv          On input, argv passed to run().
-         *     On output, argv to be passed to the module.
-         * \throws    InvalidInputError if there are invalid options.
-         * \returns   The module that should be run.
-         *
-         * Handles command-line options that affect the wrapper binary
-         * (potentially changing the members of \c this in response to the
-         * options).  Also finds the module that should be run and the
-         * arguments that should be passed to it.
-         */
-        ICommandLineModule *
-        processCommonOptions(CommandLineCommonOptionsHolder *optionsHolder,
-                             int *argc, char ***argv);
+    /*! \brief
+     * Processes command-line options for the wrapper binary.
+     *
+     * \param[in,out] optionsHolder Common options.
+     * \param[in,out] argc          On input, argc passed to run().
+     *     On output, argc to be passed to the module.
+     * \param[in,out] argv          On input, argv passed to run().
+     *     On output, argv to be passed to the module.
+     * \throws    InvalidInputError if there are invalid options.
+     * \returns   The module that should be run.
+     *
+     * Handles command-line options that affect the wrapper binary
+     * (potentially changing the members of \c this in response to the
+     * options).  Also finds the module that should be run and the
+     * arguments that should be passed to it.
+     */
+    ICommandLineModule* processCommonOptions(CommandLineCommonOptionsHolder* optionsHolder,
+                                             int*                            argc,
+                                             char***                         argv);
 
-        //! Prints the footer at the end of execution.
-        void printThanks(FILE *fp);
+    //! Prints the footer at the end of execution.
+    void printThanks(FILE* fp);
 
-        /*! \brief
-         * Maps module names to module objects.
-         *
-         * Owns the contained modules.
-         */
-        CommandLineModuleMap         modules_;
-        /*! \brief
-         * List of groupings for modules for help output.
-         *
-         * Owns the contained module group data objects.
-         * CommandLineModuleGroup objects point to the data objects contained
-         * here.
-         */
-        CommandLineModuleGroupList   moduleGroups_;
-        //! Information about the currently running program.
-        CommandLineProgramContext   &programContext_;
-        //! Name of the binary.
-        std::string                  binaryName_;
-        /*! \brief
-         * Module that implements help for the binary.
-         *
-         * The pointed module is owned by the \a modules_ container.
-         */
-        CommandLineHelpModule       *helpModule_;
-        //! If non-NULL, run this module in single-module mode.
-        ICommandLineModule          *singleModule_;
-        //! Stores the value set with setQuiet().
-        bool                         bQuiet_;
+    /*! \brief
+     * Maps module names to module objects.
+     *
+     * Owns the contained modules.
+     */
+    CommandLineModuleMap modules_;
+    /*! \brief
+     * List of groupings for modules for help output.
+     *
+     * Owns the contained module group data objects.
+     * CommandLineModuleGroup objects point to the data objects contained
+     * here.
+     */
+    CommandLineModuleGroupList moduleGroups_;
+    //! Information about the currently running program.
+    CommandLineProgramContext& programContext_;
+    //! Name of the binary.
+    std::string binaryName_;
+    /*! \brief
+     * Module that implements help for the binary.
+     *
+     * The pointed module is owned by the \a modules_ container.
+     */
+    CommandLineHelpModule* helpModule_;
+    //! If non-NULL, run this module in single-module mode.
+    ICommandLineModule* singleModule_;
+    //! Stores the value set with setQuiet().
+    bool bQuiet_;
 
-    private:
-        GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
+private:
+    GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(const char                *binaryName,
-                                     CommandLineProgramContext *programContext)
-    : programContext_(*programContext),
-      binaryName_(binaryName != nullptr ? binaryName : ""),
-      helpModule_(nullptr), singleModule_(nullptr),
-      bQuiet_(false)
+CommandLineModuleManager::Impl::Impl(const char* binaryName, CommandLineProgramContext* programContext) :
+    programContext_(*programContext),
+    binaryName_(binaryName != nullptr ? binaryName : ""),
+    helpModule_(nullptr),
+    singleModule_(nullptr),
+    bQuiet_(false)
 {
     GMX_RELEASE_ASSERT(binaryName_.find('-') == std::string::npos,
                        "Help export does not currently work with binary names with dashes");
@@ -330,8 +328,7 @@ void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
                "Attempted to register a duplicate module name");
     ensureHelpModuleExists();
     HelpTopicPointer helpTopic(helpModule_->createModuleHelpTopic(*module));
-    modules_.insert(std::make_pair(std::string(module->name()),
-                                   std::move(module)));
+    modules_.insert(std::make_pair(std::string(module->name()), std::move(module)));
     helpModule_->addTopic(std::move(helpTopic), false);
 }
 
@@ -339,25 +336,23 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
     if (helpModule_ == nullptr)
     {
-        helpModule_ = new CommandLineHelpModule(programContext_, binaryName_,
-                                                modules_, moduleGroups_);
+        helpModule_ = new CommandLineHelpModule(programContext_, binaryName_, modules_, moduleGroups_);
         addModule(CommandLineModulePointer(helpModule_));
     }
 }
 
-CommandLineModuleMap::const_iterator
-CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
+CommandLineModuleMap::const_iterator CommandLineModuleManager::Impl::findModuleByName(const std::string& name) const
 {
     // TODO: Accept unambiguous prefixes?
     return modules_.find(name);
 }
 
-ICommandLineModule *
-CommandLineModuleManager::Impl::processCommonOptions(
-        CommandLineCommonOptionsHolder *optionsHolder, int *argc, char ***argv)
+ICommandLineModule* CommandLineModuleManager::Impl::processCommonOptions(CommandLineCommonOptionsHolder* optionsHolder,
+                                                                         int*    argc,
+                                                                         char*** argv)
 {
     // Check if we are directly invoking a certain module.
-    ICommandLineModule *module = singleModule_;
+    ICommandLineModule* module = singleModule_;
 
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
@@ -378,19 +373,16 @@ CommandLineModuleManager::Impl::processCommonOptions(
             // Process options that are provided to the wrapper
             // binary. These precede the module name, if one exists.
             int argcForWrapper = indexOfModuleName;
-            CommandLineParser(optionsHolder->options())
-                .parse(&argcForWrapper, *argv);
+            CommandLineParser(optionsHolder->options()).parse(&argcForWrapper, *argv);
         }
         // If no action requested and there is a module specified, process it.
         if (indexOfModuleName < *argc && !optionsHolder->shouldIgnoreActualModule())
         {
-            const char *moduleName = (*argv)[indexOfModuleName];
-            CommandLineModuleMap::const_iterator moduleIter
-                = findModuleByName(moduleName);
+            const char*                          moduleName = (*argv)[indexOfModuleName];
+            CommandLineModuleMap::const_iterator moduleIter = findModuleByName(moduleName);
             if (moduleIter == modules_.end())
             {
-                std::string message =
-                    formatString("'%s' is not a GROMACS command.", moduleName);
+                std::string message = formatString("'%s' is not a GROMACS command.", moduleName);
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();
@@ -409,9 +401,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
         // null.
-        CommandLineParser(optionsHolder->options())
-            .allowPositionalArguments(true)
-            .skipUnknown(true).parse(argc, *argv);
+        CommandLineParser(optionsHolder->options()).allowPositionalArguments(true).skipUnknown(true).parse(argc, *argv);
     }
     if (!optionsHolder->finishOptions())
     {
@@ -436,7 +426,7 @@ CommandLineModuleManager::Impl::processCommonOptions(
     return module;
 }
 
-void CommandLineModuleManager::Impl::printThanks(FILE *fp)
+void CommandLineModuleManager::Impl::printThanks(FILE* fp)
 {
     fprintf(fp, "\n%s\n\n", getCoolQuote().c_str());
 }
@@ -445,29 +435,26 @@ void CommandLineModuleManager::Impl::printThanks(FILE *fp)
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(
-        const char *binaryName, CommandLineProgramContext *programContext)
-    : impl_(new Impl(binaryName, programContext))
+CommandLineModuleManager::CommandLineModuleManager(const char*                binaryName,
+                                                   CommandLineProgramContext* programContext) :
+    impl_(new Impl(binaryName, programContext))
 {
 }
 
-CommandLineModuleManager::~CommandLineModuleManager()
-{
-}
+CommandLineModuleManager::~CommandLineModuleManager() {}
 
 void CommandLineModuleManager::setQuiet(bool bQuiet)
 {
     impl_->bQuiet_ = bQuiet;
 }
 
-void CommandLineModuleManager::setOutputRedirector(
-        IFileOutputRedirector *output)
+void CommandLineModuleManager::setOutputRedirector(IFileOutputRedirector* output)
 {
     impl_->ensureHelpModuleExists();
     impl_->helpModule_->setOutputRedirector(output);
 }
 
-void CommandLineModuleManager::setSingleModule(ICommandLineModule *module)
+void CommandLineModuleManager::setSingleModule(ICommandLineModule* module)
 {
     impl_->singleModule_ = module;
 }
@@ -477,30 +464,26 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
     impl_->addModule(std::move(module));
 }
 
-void CommandLineModuleManager::addModuleCMain(
-        const char *name, const char *shortDescription,
-        CMainFunction mainFunction)
+void CommandLineModuleManager::addModuleCMain(const char* name, const char* shortDescription, CMainFunction mainFunction)
 {
     CommandLineModulePointer module(
-            new CMainCommandLineModule(name, shortDescription, mainFunction,
-                                       nullptr));
+            new CMainCommandLineModule(name, shortDescription, mainFunction, nullptr));
     addModule(std::move(module));
 }
 
-void CommandLineModuleManager::addModuleCMainWithSettings(
-        const char *name, const char *shortDescription,
-        CMainFunction mainFunction, InitSettingsFunction settingsFunction)
+void CommandLineModuleManager::addModuleCMainWithSettings(const char*          name,
+                                                          const char*          shortDescription,
+                                                          CMainFunction        mainFunction,
+                                                          InitSettingsFunction settingsFunction)
 {
     CommandLineModulePointer module(
-            new CMainCommandLineModule(name, shortDescription, mainFunction,
-                                       settingsFunction));
+            new CMainCommandLineModule(name, shortDescription, mainFunction, settingsFunction));
     addModule(std::move(module));
 }
 
-CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(
-        const char *title)
+CommandLineModuleGroup CommandLineModuleManager::addModuleGroup(const char* title)
 {
-    const char *const                 binaryName = impl_->binaryName_.c_str();
+    const char* const                 binaryName = impl_->binaryName_.c_str();
     CommandLineModuleGroupDataPointer group(
             new CommandLineModuleGroupData(impl_->modules_, binaryName, title));
     impl_->moduleGroups_.push_back(std::move(group));
@@ -513,9 +496,9 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
     impl_->helpModule_->addTopic(std::move(topic), true);
 }
 
-int CommandLineModuleManager::run(int argc, char *argv[])
+int CommandLineModuleManager::run(int argc, char* argv[])
 {
-    ICommandLineModule            *module;
+    ICommandLineModule*            module;
     const bool                     bMaster = (gmx_node_rank() == 0);
     bool                           bQuiet  = impl_->bQuiet_ || !bMaster;
     CommandLineCommonOptionsHolder optionsHolder;
@@ -524,22 +507,20 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         optionsHolder.initOptions();
         module = impl_->processCommonOptions(&optionsHolder, &argc, &argv);
     }
-    catch (const std::exception &)
+    catch (const std::exception&)
     {
         bQuiet |= optionsHolder.shouldBeQuiet();
         if (!bQuiet)
         {
-            printBinaryInformation(stderr, impl_->programContext_,
-                                   optionsHolder.binaryInfoSettings());
+            printBinaryInformation(stderr, impl_->programContext_, optionsHolder.binaryInfoSettings());
         }
         throw;
     }
     bQuiet |= optionsHolder.shouldBeQuiet();
     if (!bQuiet)
     {
-        FILE *out = optionsHolder.startupInfoFile();
-        printBinaryInformation(out, impl_->programContext_,
-                               optionsHolder.binaryInfoSettings());
+        FILE* out = optionsHolder.startupInfoFile();
+        printBinaryInformation(out, impl_->programContext_, optionsHolder.binaryInfoSettings());
         fprintf(out, "\n");
     }
     if (module == nullptr)
@@ -579,7 +560,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (optionsHolder.enableFPExceptions())
     {
-        //TODO: currently it is always enabled for mdrun (verlet) and tests.
+        // TODO: currently it is always enabled for mdrun (verlet) and tests.
         gmx_feenableexcept();
     }
 
@@ -596,10 +577,9 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 }
 
 // static
-int CommandLineModuleManager::runAsMainSingleModule(
-        int argc, char *argv[], ICommandLineModule *module)
+int CommandLineModuleManager::runAsMainSingleModule(int argc, char* argv[], ICommandLineModule* module)
 {
-    CommandLineProgramContext &programContext = gmx::initForCommandLine(&argc, &argv);
+    CommandLineProgramContext& programContext = gmx::initForCommandLine(&argc, &argv);
     try
     {
         CommandLineModuleManager manager(nullptr, &programContext);
@@ -608,7 +588,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
         gmx::finalizeForCommandLine();
         return rc;
     }
-    catch (const std::exception &ex)
+    catch (const std::exception& ex)
     {
         printFatalErrorMessage(stderr, ex);
         return processExceptionAtExitForCommandLine(ex);
@@ -616,17 +596,17 @@ int CommandLineModuleManager::runAsMainSingleModule(
 }
 
 // static
-int CommandLineModuleManager::runAsMainCMain(
-        int argc, char *argv[], CMainFunction mainFunction)
+int CommandLineModuleManager::runAsMainCMain(int argc, char* argv[], CMainFunction mainFunction)
 {
     CMainCommandLineModule module(argv[0], nullptr, mainFunction, nullptr);
     return runAsMainSingleModule(argc, argv, &module);
 }
 
 // static
-int CommandLineModuleManager::runAsMainCMainWithSettings(
-        int argc, char *argv[], CMainFunction mainFunction,
-        InitSettingsFunction settingsFunction)
+int CommandLineModuleManager::runAsMainCMainWithSettings(int                  argc,
+                                                         char*                argv[],
+                                                         CMainFunction        mainFunction,
+                                                         InitSettingsFunction settingsFunction)
 {
     CMainCommandLineModule module(argv[0], nullptr, mainFunction, settingsFunction);
     return runAsMainSingleModule(argc, argv, &module);
@@ -636,19 +616,16 @@ int CommandLineModuleManager::runAsMainCMainWithSettings(
  * CommandLineModuleGroupData
  */
 
-void CommandLineModuleGroupData::addModule(const char *name,
-                                           const char *description)
+void CommandLineModuleGroupData::addModule(const char* name, const char* description)
 {
     CommandLineModuleMap::const_iterator moduleIter = allModules_.find(name);
-    GMX_RELEASE_ASSERT(moduleIter != allModules_.end(),
-                       "Non-existent module added to a group");
+    GMX_RELEASE_ASSERT(moduleIter != allModules_.end(), "Non-existent module added to a group");
     if (description == nullptr)
     {
         description = moduleIter->second->shortDescription();
-        GMX_RELEASE_ASSERT(description != nullptr,
-                           "Module without a description added to a group");
+        GMX_RELEASE_ASSERT(description != nullptr, "Module without a description added to a group");
     }
-    std::string       tag(formatString("%s-%s", binaryName_, name));
+    std::string tag(formatString("%s-%s", binaryName_, name));
     modules_.push_back(std::make_pair(tag, description));
 }
 
@@ -656,13 +633,12 @@ void CommandLineModuleGroupData::addModule(const char *name,
  * CommandLineModuleGroup
  */
 
-void CommandLineModuleGroup::addModule(const char *name)
+void CommandLineModuleGroup::addModule(const char* name)
 {
     impl_->addModule(name, nullptr);
 }
 
-void CommandLineModuleGroup::addModuleWithDescription(const char *name,
-                                                      const char *description)
+void CommandLineModuleGroup::addModuleWithDescription(const char* name, const char* description)
 {
     impl_->addModule(name, description);
 }

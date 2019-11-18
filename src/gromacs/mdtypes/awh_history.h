@@ -60,42 +60,43 @@ namespace gmx
 //! Grid point state history data.
 struct AwhPointStateHistory
 {
-    double         bias;                /**< Current biasing function estimate */
-    double         free_energy;         /**< Current estimate of the convolved free energy/PMF. */
-    double         target;              /**< Current target distribution, normalized to 1 */
-    double         weightsum_iteration; /**< Accumulated weight this iteration (1 replica) */
-    double         weightsum_covering;  /**< Accumulated weights for covering checks */
-    double         weightsum_tot;       /**< Accumulated weights, never reset */
-    double         weightsum_ref;       /**< The reference weight histogram determining the f updates */
-    int64_t        last_update_index;   /**< The last update that was performed at this point. */
-    double         log_pmfsum;          /**< Logarithm of the PMF histogram (for 1 replica) */
-    double         visits_iteration;    /**< Visits to this bin this iteration (1 replica) */
-    double         visits_tot;          /**< Accumulated visits to this bin */
+    double  bias;                /**< Current biasing function estimate */
+    double  free_energy;         /**< Current estimate of the convolved free energy/PMF. */
+    double  target;              /**< Current target distribution, normalized to 1 */
+    double  weightsum_iteration; /**< Accumulated weight this iteration (1 replica) */
+    double  weightsum_covering;  /**< Accumulated weights for covering checks */
+    double  weightsum_tot;       /**< Accumulated weights, never reset */
+    double  weightsum_ref;       /**< The reference weight histogram determining the f updates */
+    int64_t last_update_index;   /**< The last update that was performed at this point. */
+    double  log_pmfsum;          /**< Logarithm of the PMF histogram (for 1 replica) */
+    double  visits_iteration;    /**< Visits to this bin this iteration (1 replica) */
+    double  visits_tot;          /**< Accumulated visits to this bin */
 };
 
 //! The global AWH bias history state, contains most data of the corresponding struct in awh.h.
 struct AwhBiasStateHistory
 {
-    int         umbrellaGridpoint;        /**< Index for the current umbrella reference coordinate point (for umbrella potential type) */
-    int         origin_index_updatelist;  /**< Point index of the origin of the subgrid that has been touched since last update. */
-    int         end_index_updatelist;     /**< Point index of the end of the subgrid that has been touched since last update. */
-    bool        in_initial;               /**< True if in the intial stage. */
-    bool        equilibrateHistogram;     /**< True if histogram needs equilibration. */
-    double      histSize;                 /**< Size of reference weight histogram. */
-    double      logScaledSampleWeight;    /**< The log of the current sample weight, scaled because of the histogram rescaling. */
-    double      maxLogScaledSampleWeight; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
-    int64_t     numUpdates;               /**< The number of updates. */
+    int     umbrellaGridpoint; /**< Index for the current umbrella reference coordinate point (for umbrella potential type) */
+    int     origin_index_updatelist; /**< Point index of the origin of the subgrid that has been touched since last update. */
+    int     end_index_updatelist; /**< Point index of the end of the subgrid that has been touched since last update. */
+    bool    in_initial;           /**< True if in the intial stage. */
+    bool    equilibrateHistogram; /**< True if histogram needs equilibration. */
+    double  histSize;             /**< Size of reference weight histogram. */
+    double  logScaledSampleWeight; /**< The log of the current sample weight, scaled because of the histogram rescaling. */
+    double  maxLogScaledSampleWeight; /**< Maximum sample weight obtained for previous (smaller) histogram sizes. */
+    int64_t numUpdates; /**< The number of updates. */
 
     /*! \brief Constructor. */
-    AwhBiasStateHistory() : umbrellaGridpoint(0),
-                            origin_index_updatelist(0),
-                            end_index_updatelist(0),
-                            in_initial(false),
-                            equilibrateHistogram(false),
-                            histSize(0),
-                            logScaledSampleWeight(0),
-                            maxLogScaledSampleWeight(0),
-                            numUpdates(0)
+    AwhBiasStateHistory() :
+        umbrellaGridpoint(0),
+        origin_index_updatelist(0),
+        end_index_updatelist(0),
+        in_initial(false),
+        equilibrateHistogram(false),
+        histSize(0),
+        logScaledSampleWeight(0),
+        maxLogScaledSampleWeight(0),
+        numUpdates(0)
     {
     }
 };
@@ -103,23 +104,20 @@ struct AwhBiasStateHistory
 //! AWH bias history data. Note that this is a copy of an AWH internal struct.
 struct AwhBiasHistory
 {
-    std::vector<AwhPointStateHistory> pointState;           /**< History for grid coordinate points. */
+    std::vector<AwhPointStateHistory> pointState; /**< History for grid coordinate points. */
 
-    AwhBiasStateHistory               state;                /**< The global state of the AWH bias. */
-    CorrelationGridHistory            forceCorrelationGrid; /**< History for force correlation statistics. */
+    AwhBiasStateHistory    state;                /**< The global state of the AWH bias. */
+    CorrelationGridHistory forceCorrelationGrid; /**< History for force correlation statistics. */
 };
 
 //! A collection of AWH bias history data. */
 struct AwhHistory
 {
-    std::vector<AwhBiasHistory> bias;            /**< History for each bias. */
-    double                      potentialOffset; /**< The offset of the bias potential due to bias updates. */
+    std::vector<AwhBiasHistory> bias; /**< History for each bias. */
+    double potentialOffset;           /**< The offset of the bias potential due to bias updates. */
 
     /*! \brief Constructor. */
-    AwhHistory() :
-        potentialOffset(0)
-    {
-    }
+    AwhHistory() : potentialOffset(0) {}
 };
 
 /*! \endcond */

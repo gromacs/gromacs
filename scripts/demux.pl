@@ -30,7 +30,7 @@ open (TEMP,">$temp") || die("Opening $temp for writing");
 sub pr_order {
     my $t     = shift;
     my $nrepl = shift;
-    printf(NDX "%-20g",$t);
+    printf(NDX "%-20.2f",$t);
     for(my $k=0; ($k<$nrepl); $k++) {
 	my $oo = shift;
 	printf(NDX "  %3d",$oo);
@@ -41,7 +41,7 @@ sub pr_order {
 sub pr_revorder {
     my $t     = shift;
     my $nrepl = shift;
-    printf(TEMP "%-20g",$t);
+    printf(TEMP "%-20.2f",$t);
     for(my $k=0; ($k<$nrepl); $k++) {
 	my $oo = shift;
 	printf(TEMP "  %3d",$oo);

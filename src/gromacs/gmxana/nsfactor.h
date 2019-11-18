@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,55 +41,62 @@
 
 struct t_topology;
 
-typedef struct gmx_neutron_atomic_structurefactors_t {
-    int       nratoms;
-    int      *p;       /* proton number */
-    int      *n;       /* neuton number */
-    double   *slength; /* scattering length in fm */
-    char    **atomnm;  /* atom symbol */
+typedef struct gmx_neutron_atomic_structurefactors_t
+{
+    int     nratoms;
+    int*    p;       /* proton number */
+    int*    n;       /* neuton number */
+    double* slength; /* scattering length in fm */
+    char**  atomnm;  /* atom symbol */
 } gmx_neutron_atomic_structurefactors_t;
 
-typedef struct gmx_sans_t {
-    const t_topology *top;     /* topology */
-    double           *slength; /* scattering length for this topology */
+typedef struct gmx_sans_t
+{
+    const t_topology* top;     /* topology */
+    double*           slength; /* scattering length for this topology */
 } gmx_sans_t;
 
-typedef struct gmx_radial_distribution_histogram_t {
+typedef struct gmx_radial_distribution_histogram_t
+{
     int     grn;      /* number of bins */
     double  binwidth; /* bin size */
-    double *r;        /* Distances */
-    double *gr;       /* Probability */
+    double* r;        /* Distances */
+    double* gr;       /* Probability */
 } gmx_radial_distribution_histogram_t;
 
-typedef struct gmx_static_structurefactor_t {
-    int      qn;    /* number of items */
-    double  *s;     /* scattering */
-    double  *q;     /* q vectors */
-    double   qstep; /* q increment */
+typedef struct gmx_static_structurefactor_t
+{
+    int     qn;    /* number of items */
+    double* s;     /* scattering */
+    double* q;     /* q vectors */
+    double  qstep; /* q increment */
 } gmx_static_structurefactor_t;
 
 void check_binwidth(real binwidth);
 
 void check_mcover(real mcover);
 
-void normalize_probability(int n, double *a);
+void normalize_probability(int n, double* a);
 
-gmx_neutron_atomic_structurefactors_t *gmx_neutronstructurefactors_init(const char *datfn);
+gmx_neutron_atomic_structurefactors_t* gmx_neutronstructurefactors_init(const char* datfn);
 
-gmx_sans_t *gmx_sans_init(const t_topology *top, gmx_neutron_atomic_structurefactors_t *gnsf);
+gmx_sans_t* gmx_sans_init(const t_topology* top, gmx_neutron_atomic_structurefactors_t* gnsf);
 
-gmx_radial_distribution_histogram_t *calc_radial_distribution_histogram  (gmx_sans_t        *gsans,
-                                                                          rvec              *x,
-                                                                          matrix             box,
-                                                                          const int         *index,
-                                                                          int                isize,
-                                                                          double             binwidth,
-                                                                          gmx_bool           bMC,
-                                                                          gmx_bool           bNORM,
-                                                                          real               mcover,
-                                                                          unsigned int       seed);
+gmx_radial_distribution_histogram_t* calc_radial_distribution_histogram(gmx_sans_t*  gsans,
+                                                                        rvec*        x,
+                                                                        matrix       box,
+                                                                        const int*   index,
+                                                                        int          isize,
+                                                                        double       binwidth,
+                                                                        gmx_bool     bMC,
+                                                                        gmx_bool     bNORM,
+                                                                        real         mcover,
+                                                                        unsigned int seed);
 
-gmx_static_structurefactor_t *convert_histogram_to_intensity_curve (gmx_radial_distribution_histogram_t *pr, double start_q, double end_q, double q_step);
+gmx_static_structurefactor_t* convert_histogram_to_intensity_curve(gmx_radial_distribution_histogram_t* pr,
+                                                                   double start_q,
+                                                                   double end_q,
+                                                                   double q_step);
 
 
 #endif

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2013,2014,2015,2018, by the GROMACS development team, led by
+# Copyright (c) 2010,2013,2014,2015,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -34,13 +34,6 @@
 
 file(GLOB TRAJECTORYANALYSIS_SOURCES *.cpp modules/*.cpp)
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${TRAJECTORYANALYSIS_SOURCES} PARENT_SCOPE)
-
-gmx_install_headers(
-    analysismodule.h
-    analysissettings.h
-    cmdlinerunner.h
-    topologyinformation.h
-    )
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

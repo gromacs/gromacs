@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@ __forceinline__ __host__ __device__ float3 make_float3(float4 a)
 {
     return make_float3(a.x, a.y, a.z);
 }
-__forceinline__ __host__ __device__ float3 operator-(float3 &a)
+__forceinline__ __host__ __device__ float3 operator-(float3& a)
 {
     return make_float3(-a.x, -a.y, -a.z);
 }
@@ -65,17 +65,23 @@ __forceinline__ __host__ __device__ float3 operator*(float k, float3 a)
 {
     return make_float3(k * a.x, k * a.y, k * a.z);
 }
-__forceinline__ __host__ __device__ void operator += (float3 &a, float3 b)
+__forceinline__ __host__ __device__ void operator+=(float3& a, float3 b)
 {
-    a.x += b.x; a.y += b.y; a.z += b.z;
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
 }
-__forceinline__ __host__ __device__ void operator += (float3 &a, float4 b)
+__forceinline__ __host__ __device__ void operator+=(float3& a, float4 b)
 {
-    a.x += b.x; a.y += b.y; a.z += b.z;
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
 }
-__forceinline__ __host__ __device__ void operator -= (float3 &a, float3 b)
+__forceinline__ __host__ __device__ void operator-=(float3& a, float3 b)
 {
-    a.x -= b.x; a.y -= b.y; a.z -= b.z;
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
 }
 __forceinline__ __host__ __device__ float norm(float3 a)
 {
@@ -93,11 +99,19 @@ __forceinline__ __host__ __device__ float3 operator*(float3 a, float3 b)
 {
     return make_float3(a.x * b.x, a.y * b.y, a.z * b.z);
 }
-__forceinline__ __host__ __device__ void operator *= (float3 &a, float3 b)
+__forceinline__ __host__ __device__ void operator*=(float3& a, float3 b)
 {
-    a.x *= b.x; a.y *= b.y; a.z *= b.z;
+    a.x *= b.x;
+    a.y *= b.y;
+    a.z *= b.z;
 }
-__forceinline__ __device__ void atomicAdd(float3 *addr, float3 val)
+__forceinline__ __host__ __device__ void operator*=(float3& a, float b)
+{
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+}
+__forceinline__ __device__ void atomicAdd(float3* addr, float3 val)
 {
     atomicAdd(&addr->x, val.x);
     atomicAdd(&addr->y, val.y);
@@ -130,17 +144,24 @@ __forceinline__ __host__ __device__ float4 operator*(float4 a, float k)
 {
     return make_float4(k * a.x, k * a.y, k * a.z, k * a.w);
 }
-__forceinline__ __host__ __device__ void operator += (float4 &a, float4 b)
+__forceinline__ __host__ __device__ void operator+=(float4& a, float4 b)
 {
-    a.x += b.x; a.y += b.y; a.z += b.z; a.w += b.w;
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+    a.w += b.w;
 }
-__forceinline__ __host__ __device__ void operator += (float4 &a, float3 b)
+__forceinline__ __host__ __device__ void operator+=(float4& a, float3 b)
 {
-    a.x += b.x; a.y += b.y; a.z += b.z;
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
 }
-__forceinline__ __host__ __device__ void operator -= (float4 &a, float3 b)
+__forceinline__ __host__ __device__ void operator-=(float4& a, float3 b)
 {
-    a.x -= b.x; a.y -= b.y; a.z -= b.z;
+    a.x -= b.x;
+    a.y -= b.y;
+    a.z -= b.z;
 }
 
 __forceinline__ __host__ __device__ float norm(float4 a)

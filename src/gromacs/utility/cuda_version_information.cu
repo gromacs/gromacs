@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@ std::string getCudaDriverVersionString()
     {
         return "N/A";
     }
-    return formatString("%d.%d", cuda_driver/1000, cuda_driver%100);
+    return formatString("%d.%d", cuda_driver / 1000, cuda_driver % 100);
 }
 
 std::string getCudaRuntimeVersionString()
@@ -59,7 +59,7 @@ std::string getCudaRuntimeVersionString()
     {
         return "N/A";
     }
-    return formatString("%d.%d", cuda_runtime/1000, cuda_runtime%100);
+    return formatString("%d.%d", cuda_runtime / 1000, cuda_runtime % 100);
 }
 
-} // namespace
+} // namespace gmx

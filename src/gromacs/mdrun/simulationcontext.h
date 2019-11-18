@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,18 @@
  */
 
 #include <memory>
+#include <string>
 
-#include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdrunutility/multisim.h"
+#include "gromacs/utility/gmxmpi.h"
 
-struct t_filenm;
-struct t_commrec;
-struct gmx_output_env_t;
+struct gmx_multisim_t;
 
 namespace gmx
 {
+
+template<typename T>
+class ArrayRef;
 
 /*! \cond libapi
  * \libinternal
@@ -65,6 +68,13 @@ namespace gmx
  * SimulationContext allows a simulation module (\relates gmx::mdrun) to retrieve
  * runtime parameters and resources from client code. The client retains ownership
  * of the context and its resources, with exceptions as noted.
+ *
+ * A client must share ownership of some resources and transfer ownership of
+ * other resources to create or configure the context. The simulation may in
+ * turn consume or borrow some resources from the context. This is a new
+ * framework that will evolve in the contexts of
+ * https://redmine.gromacs.org/issues/2375
+ * https://redmine.gromacs.org/issues/2587
  *
  * The public interface of SimulationContext is not yet well-specified.
  * Client code can create an instance with gmx::createSimulationContext()
@@ -77,8 +87,7 @@ namespace gmx
  *
  * \internal
  * This is a minimal placeholder for a more complete implementation.
- * Interfaces for different API levels are not yet final, but also depend on
- * additional development of t_commrec and other resources.
+ * Interfaces for different API levels are not yet final.
  * \todo Impose sensible access restrictions.
  * Either the SimulationContext should be passed to the Mdrunner as logically constant or
  * a separate handle class can provide access to resources that have been
@@ -91,65 +100,48 @@ namespace gmx
  */
 class SimulationContext final
 {
-    public:
-        /*!
-         * \brief Object must be initialized with non-default constructor.
-         */
-        SimulationContext() = delete;
+public:
+    /*!
+     * \brief Object must be initialized with non-default constructor.
+     */
+    SimulationContext() = delete;
+    /*!
+     * \brief Construct
+     *
+     * \param communicator            MPI communicator for this (set of) simulations
+     * \param multiSimDirectoryNames  Names of any directories used with -multidir
+     */
+    explicit SimulationContext(MPI_Comm communicator, ArrayRef<const std::string> multiSimDirectoryNames);
 
-        /*!
-         * \brief Initializate with borrowed values.
-         *
-         * \param communicationRecord non-owning communication record handle.
-         *
-         * Client code is responsible for cleaning up communicationRecord after
-         * SimulationContext is destroyed.
-         *
-         * \internal
-         * SimulationContext should be the owner of these objects and these implementation
-         * details are subject to change as ownership semantics are clarified in future
-         * development.
-         */
-        explicit SimulationContext(t_commrec* communicationRecord);
+    /*!
+     * \brief MPI communicator object for this simulation object.
+     *
+     * With real MPI,
+     *   the gmx wrapper binary has called MPI_Init, thus
+     *     MPI_COMM_WORLD is now valid to use, and
+     *   (in future) the gmxapi runner will handle such details
+     *     (e.g. via mpi4py) before creating its SimulationContext.
+     * In both cases, if a multi-simulation is in use, then its
+     * communicator(s) are found in multiSimulation_. This
+     * communicator is that of all ranks from all simulations, and
+     * will later be split into one for each simulation.
+     * TODO Perhaps (for simplicity) that communicator splitting
+     * task can be undertaken during multi-sim setup.
+     *
+     * With thread-MPI in both cases, the communicator is set up later
+     * during the process of spawning the threads that will be the MPI
+     * ranks. (Multi-simulation is not supported with thread-MPI.)
+     */
+    MPI_Comm communicator_ = MPI_COMM_NULL;
 
-        /*!
-         * \brief Non-owning communicator handle.
-         *
-         * Communication record is allocated, initialized, and finalized by
-         * client code without clearly transferring ownership.
-         *
-         * \todo Context should own communicator.
-         */
-        t_commrec*           communicationRecord_;
+    /*!
+     * \brief Multi-sim handler (if required by e.g. gmx mdrun
+     * -multidir; only supported with real MPI)
+     */
+    std::unique_ptr<gmx_multisim_t> multiSimulation_;
 };
 //! \endcond
 
-/*! \cond libapi
- * \brief Get ownership of a new SimulationContext object.
- *
- * A client must share ownership of some resources and transfer ownership of
- * other resources to create or configure the context. The simulation may in
- * turn consume or borrow some resources from the context. This is a new
- * framework that will evolve in the contexts of
- * https://redmine.gromacs.org/issues/2375
- * https://redmine.gromacs.org/issues/2587
- * https://redmine.gromacs.org/issues/2605
- *
- * Ownership is returned as a smart pointer because ownership or reference may need to
- * be transferred through higher level code or maintained as a heap object,
- * and there is not yet a public interface, wrapper, or separate handle object.
- *
- * This call signature sets all parameters processed by the command-line client
- * code. Additional call signatures can allow implementation-specified default
- * values or newer initialization interfaces.
- *
- * \param simulationCommunicator Handle to communication data structure.
- *
- * \ingroup module_mdrun
- */
-SimulationContext createSimulationContext(t_commrec* simulationCommunicator);
-//! \endcond
+} // end namespace gmx
 
-}      // end namespace gmx
-
-#endif //GROMACS_SIMULATIONCONTEXT_H
+#endif // GROMACS_SIMULATIONCONTEXT_H

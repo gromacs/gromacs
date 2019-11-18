@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,23 +101,22 @@ namespace gmx
  *
  */
 template<class RealType = real, unsigned int Bits, class Rng>
-RealType
-generateCanonical(Rng &g)
+RealType generateCanonical(Rng& g)
 {
     // No point in using more bits than fit in RealType
-    const uint64_t     digits   = std::numeric_limits<RealType>::digits;
-    const uint64_t     realBits = std::min(digits, static_cast<uint64_t>(Bits));
-    const uint64_t     range    = Rng::max() - Rng::min() + uint64_t(1);
-    uint64_t           log2R    = (range == 0) ? std::numeric_limits<uint64_t>::digits : log2I(range);
-    uint64_t           k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
-    RealType           r        = Rng::max() - Rng::min() + RealType(1);
-    RealType           s        = g() - Rng::min();
-    RealType           base     = r;
-    RealType           result;
+    const uint64_t digits   = std::numeric_limits<RealType>::digits;
+    const uint64_t realBits = std::min(digits, static_cast<uint64_t>(Bits));
+    const uint64_t range    = Rng::max() - Rng::min() + uint64_t(1);
+    uint64_t       log2R    = (range == 0) ? std::numeric_limits<uint64_t>::digits : log2I(range);
+    uint64_t       k        = realBits / log2R + (realBits % log2R != 0) + (realBits == 0);
+    RealType       r        = Rng::max() - Rng::min() + RealType(1);
+    RealType       s        = g() - Rng::min();
+    RealType       base     = r;
+    RealType       result;
 
     for (uint64_t i = 1; i < k; ++i)
     {
-        s    += RealType(g()-Rng::min()) * base;
+        s += RealType(g() - Rng::min()) * base;
         base *= r;
     }
     result = s / base;
@@ -160,143 +159,130 @@ generateCanonical(Rng &g)
 template<class RealType = real>
 class UniformRealDistribution
 {
-    public:
-        /*! \brief Type of values returned */
-        typedef RealType result_type;
+public:
+    /*! \brief Type of values returned */
+    typedef RealType result_type;
 
-        /*! \brief Uniform real distribution parameters */
-        class param_type
-        {
-            /*! \brief Lower end of range (inclusive) */
-            result_type  a_;
-            /*! \brief Upper end of range (exclusive) */
-            result_type  b_;
-
-            public:
-                /*! \brief Reference back to the distribution class */
-                typedef UniformRealDistribution distribution_type;
-
-                /*! \brief Construct parameter block
-                 *
-                 * \param a   Lower end of range (inclusive)
-                 * \param b   Upper end of range (exclusive)
-                 */
-                explicit param_type(result_type a = 0.0, result_type b = 1.0)
-                    : a_(a), b_(b)
-                {
-                    GMX_RELEASE_ASSERT(a < b, "The uniform real distribution requires a<b");
-                }
-
-                /*! \brief Return first parameter */
-                result_type a() const { return a_; }
-                /*! \brief Return second parameter */
-                result_type b() const { return b_; }
-
-                /*! \brief True if two parameter sets will return the same uniform real distribution.
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool
-                operator==(const param_type &x) const
-                {
-                    return a_ == x.a_ && b_ == x.b_;
-                }
-
-                /*! \brief True if two parameter sets will return different uniform real distributions
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
-        };
+    /*! \brief Uniform real distribution parameters */
+    class param_type
+    {
+        /*! \brief Lower end of range (inclusive) */
+        result_type a_;
+        /*! \brief Upper end of range (exclusive) */
+        result_type b_;
 
     public:
+        /*! \brief Reference back to the distribution class */
+        typedef UniformRealDistribution distribution_type;
 
-        /*! \brief Construct new distribution with given floating-point parameters.
+        /*! \brief Construct parameter block
          *
          * \param a   Lower end of range (inclusive)
          * \param b   Upper end of range (exclusive)
          */
-        explicit UniformRealDistribution(result_type a = 0.0, result_type b = 1.0)
-            : param_(param_type(a, b)) {}
-
-        /*! \brief Construct new distribution from parameter class
-         *
-         * \param param  Parameter class as defined inside gmx::UniformRealDistribution.
-         */
-        explicit UniformRealDistribution(const param_type &param) : param_(param) {}
-
-        /*! \brief Flush all internal saved values  */
-        void
-        reset() { }
-
-        /*! \brief Return values from uniform real distribution with internal parameters
-         *
-         * \tparam Rng  Random engine class
-         *
-         * \param  g    Random engine
-         */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
-
-        /*! \brief Return value from uniform real distribution with given parameters
-         *
-         * \tparam Rng   Random engine class
-         *
-         * \param  g     Random engine
-         * \param  param Parameters to use
-         */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
+        explicit param_type(result_type a = 0.0, result_type b = 1.0) : a_(a), b_(b)
         {
-            result_type r = generateCanonical<RealType, std::numeric_limits<RealType>::digits>(g);
-            return ( param.b() - param.a() ) * r + param.a();
+            GMX_RELEASE_ASSERT(a < b, "The uniform real distribution requires a<b");
         }
 
-        /*! \brief Return the lower range uniform real distribution */
-        result_type
-        a() const { return param_.a(); }
+        /*! \brief Return first parameter */
+        result_type a() const { return a_; }
+        /*! \brief Return second parameter */
+        result_type b() const { return b_; }
 
-        /*! \brief Return the upper range of the uniform real distribution */
-        result_type
-        b() const { return param_.b(); }
-
-        /*! \brief Return the full parameter class of the uniform real distribution */
-        param_type param() const { return param_; }
-
-        /*! \brief Smallest value that can be returned from uniform real distribution */
-        result_type
-        min() const { return a(); }
-
-        /*! \brief Largest value that can be returned from uniform real distribution */
-        result_type
-        max() const { return b(); }
-
-        /*! \brief True if two uniform real distributions will produce the same values.
+        /*! \brief True if two parameter sets will return the same uniform real distribution.
          *
-         * \param  x     Instance to compare with.
+         * \param x  Instance to compare with.
          */
-        bool
-        operator==(const UniformRealDistribution &x) const
-        { return param_ == x.param_; }
+        bool operator==(const param_type& x) const { return a_ == x.a_ && b_ == x.b_; }
 
-        /*! \brief True if two uniform real distributions will produce different values.
+        /*! \brief True if two parameter sets will return different uniform real distributions
          *
-         * \param  x     Instance to compare with.
+         * \param x  Instance to compare with.
          */
-        bool
-        operator!=(const UniformRealDistribution &x) const
-        { return !operator==(x); }
+        bool operator!=(const param_type& x) const { return !operator==(x); }
+    };
 
-    private:
-        /*! \brief Internal value for parameters, can be overridden at generation time. */
-        param_type param_;
+public:
+    /*! \brief Construct new distribution with given floating-point parameters.
+     *
+     * \param a   Lower end of range (inclusive)
+     * \param b   Upper end of range (exclusive)
+     */
+    explicit UniformRealDistribution(result_type a = 0.0, result_type b = 1.0) :
+        param_(param_type(a, b))
+    {
+    }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(UniformRealDistribution);
+    /*! \brief Construct new distribution from parameter class
+     *
+     * \param param  Parameter class as defined inside gmx::UniformRealDistribution.
+     */
+    explicit UniformRealDistribution(const param_type& param) : param_(param) {}
+
+    /*! \brief Flush all internal saved values  */
+    void reset() {}
+
+    /*! \brief Return values from uniform real distribution with internal parameters
+     *
+     * \tparam Rng  Random engine class
+     *
+     * \param  g    Random engine
+     */
+    template<class Rng>
+    result_type operator()(Rng& g)
+    {
+        return (*this)(g, param_);
+    }
+
+    /*! \brief Return value from uniform real distribution with given parameters
+     *
+     * \tparam Rng   Random engine class
+     *
+     * \param  g     Random engine
+     * \param  param Parameters to use
+     */
+    template<class Rng>
+    result_type operator()(Rng& g, const param_type& param)
+    {
+        result_type r = generateCanonical<RealType, std::numeric_limits<RealType>::digits>(g);
+        return (param.b() - param.a()) * r + param.a();
+    }
+
+    /*! \brief Return the lower range uniform real distribution */
+    result_type a() const { return param_.a(); }
+
+    /*! \brief Return the upper range of the uniform real distribution */
+    result_type b() const { return param_.b(); }
+
+    /*! \brief Return the full parameter class of the uniform real distribution */
+    param_type param() const { return param_; }
+
+    /*! \brief Smallest value that can be returned from uniform real distribution */
+    result_type min() const { return a(); }
+
+    /*! \brief Largest value that can be returned from uniform real distribution */
+    result_type max() const { return b(); }
+
+    /*! \brief True if two uniform real distributions will produce the same values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator==(const UniformRealDistribution& x) const { return param_ == x.param_; }
+
+    /*! \brief True if two uniform real distributions will produce different values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator!=(const UniformRealDistribution& x) const { return !operator==(x); }
+
+private:
+    /*! \brief Internal value for parameters, can be overridden at generation time. */
+    param_type param_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(UniformRealDistribution);
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_RANDOM_UNIFORMREALDISTRIBUTION_H

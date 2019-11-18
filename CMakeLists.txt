@@ -36,10 +36,23 @@ cmake_minimum_required(VERSION 3.9.6)
 if(POLICY CMP0074) #3.12
     cmake_policy(SET CMP0074 NEW)
 endif()
+cmake_policy(SET CMP0068 NEW) # From CMake-3.9
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    # Providing a default value >=10.9 helps to find modern C++ compatibility,
+    # such as by defaulting to the Clang libc++ instead of libstdc++.
+    set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING
+        "OS X deployment target affects default SDK version and compiler flags."
+        FORCE)
+    # By default, limit the binary architecture to a single 64-bit build.
+    set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING
+        "OS X architecture affects the compatibility of the (potentially fat) binaries produced."
+        FORCE)
+endif()
 
 project(Gromacs)
 
@@ -181,6 +194,8 @@ gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 option(GMX_USE_OPENCL "Enable OpenCL acceleration" OFF)
 
+option(GMX_INSTALL_LEGACY_API "Install legacy headers" OFF)
+
 # The earliest version of the CUDA toolkit that supports c++14 is 9.0
 set(REQUIRED_CUDA_VERSION 9.0)
 set(REQUIRED_CUDA_COMPUTE_CAPABILITY 3.0)
@@ -310,13 +325,14 @@ include(gmxManageOpenMP)
 include(gmxCFlags)
 gmx_c_flags()
 
-# This variable should be used for additional compiler flags which are not
-# generated in gmxCFlags nor are SIMD or MPI related.
+# These variables should be used for CMake-style lists (ie. separated
+# by semicolons) of additional compiler flags which are not generated
+# in gmxCFlags nor are SIMD or MPI related.
 #
 # TODO These variables should be consolidated into
 # EXTRA_COMPILER_FLAGS so that we we don't perpetrate bugs where
 # things that work in C compilation (e.g. merging from old branches)
-# also work for C++ compilation.
+# might not also work for C++ compilation.
 set(EXTRA_C_FLAGS "")
 set(EXTRA_CXX_FLAGS "")
 
@@ -341,9 +357,9 @@ endif()
 add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
-if(WIN32)
+option(GMX_IMD "Enable Interactive Molecular Dynamics (IMD) sessions, e.g. with VMD" ON)
+if(GMX_IMD AND WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
-    add_definitions(-DGMX_HAVE_WINSOCK)
 endif()
 
 
@@ -360,6 +376,7 @@ check_include_files(time.h       HAVE_TIME_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
+check_include_files(xmmintrin.h  HAVE_XMMINTRIN_H)
 
 include(CheckCXXSymbolExists)
 check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
@@ -469,10 +486,10 @@ gmx_option_trivalue(
 
 if (GMX_HWLOC)
     # Find quietly the second time.
-    if(DEFINED HWLOC_LIBRARIES)
-        set(Hwloc_FIND_QUIETLY TRUE)
+    if (HWLOC_FIND_QUIETLY_AFTER_FIRST_RUN)
+        set(HWLOC_FIND_QUIETLY TRUE)
     endif()
-    find_package(Hwloc 1.5)
+    find_package(HWLOC 1.5) 
 
     if (HWLOC_FOUND)
         if (HWLOC_LIBRARIES MATCHES ".a$")
@@ -480,7 +497,7 @@ if (GMX_HWLOC)
         endif()
 
         gmx_check_if_changed(HWLOC_FOUND_CHANGED HWLOC_FOUND)
-        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED)
+        if (_STATIC_HWLOC AND HWLOC_FOUND_CHANGED AND NOT GMX_HWLOC_FORCE)
             message(STATUS "Static hwloc library found, will not attempt using it as it could lead to link-time errors. To use the detected library, manually set GMX_HWLOC=ON and you will likely have to pass appropriate linker flags too to satisfy the link-time dependencies of your hwloc library. Try \"pkg-config --libs --static hwloc\" for suggestions on what you will need.")
             set(GMX_USE_HWLOC OFF)
         else()
@@ -492,8 +509,10 @@ if (GMX_HWLOC)
             list(APPEND GMX_EXTRA_LIBRARIES ${HWLOC_LIBRARIES})
         endif()
     elseif(GMX_HWLOC_FORCE)
-        message(FATAL_ERROR "Hwloc package support required, but not found.")
+        message(FATAL_ERROR "HWLOC package support required, but not found.")
     endif()
+
+    set(HWLOC_FIND_QUIETLY_AFTER_FIRST_RUN TRUE CACHE INTERNAL "Be quiet during future attempts to find HWLOC")
 endif()
 
 option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version bundled with GROMACS." OFF)
@@ -570,15 +589,6 @@ if(WIN32)
     add_definitions(-DNOMINMAX)
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
-    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Intel" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-isystem ")
-    endif()
-    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
-    endif()
-endif()
-
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
 mark_as_advanced(GMX_BUILD_UNITTESTS)
 gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
@@ -587,11 +597,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 # Our own GROMACS tests
 ########################################################################
 
-add_definitions( -DHAVE_CONFIG_H )
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
-# TODO required at high level because both libgromacs and progs/mdrun
-# require it, both for thread-MPI and its atomics and mutexes.
-include_directories(BEFORE SYSTEM ${CMAKE_SOURCE_DIR}/src/external/thread_mpi/include)
 # Required for config.h, maybe should only be set in src/CMakeLists.txt
 include_directories(BEFORE ${CMAKE_BINARY_DIR}/src)
 
@@ -761,18 +767,18 @@ endif()
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
-    message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
-    message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
-    message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
-    message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
+    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_C_FLAGS};${GMXC_CFLAGS}")
+    foreach(build_type ${build_types_with_explicit_flags})
+        message("CMAKE_C_FLAGS_${build_type}: ${GMXC_CFLAGS_${build_type}}")
+    endforeach()
+    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS};${MPI_COMPILE_FLAGS};${EXTRA_CXX_FLAGS};${GMXC_CXXFLAGS}")
+    foreach(build_type ${build_types_with_explicit_flags})
+        message("CMAKE_CXX_FLAGS_${build_type}: ${GMXC_CXXFLAGS_${build_type}}")
+    endforeach()
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
 endif()
@@ -817,10 +823,7 @@ else()
     # RPATHs), and makes the binaries in the build tree relocatable.
     if(CMAKE_INSTALL_LIBDIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        if(POLICY CMP0068)
-            cmake_policy(SET CMP0068 NEW) # From CMake-3.9
-            set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
-        endif()
+        set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
@@ -851,10 +854,35 @@ if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
 endif()
 
+# TODO: Determine control flow and defaults for package installation and testing use cases.
+# Ref: http://redmine.gromacs.org/issues/2896
+option(GMX_PYTHON_PACKAGE "Configure gmxapi Python package" OFF)
+mark_as_advanced(GMX_PYTHON_PACKAGE)
+
 if (NOT GMX_BUILD_MDRUN_ONLY)
+    # Note: Though only documented as an output variable, PYTHON_EXECUTABLE is
+    # also effective as a CMake input variable to effectively hint the location
+    # of the Python interpreter. This may be helpful in environments with both
+    # Python 2 and Python 3 on the default PATH.
+    # Ref: https://cmake.org/cmake/help/latest/module/FindPythonInterp.html
+    if(FIND_PACKAGE_MESSAGE_DETAILS_PythonInterp)
+        # Keep quiet on subsequent runs of cmake
+        set(PythonInterp_FIND_QUIETLY ON)
+    endif()
+    # Older CMake versions might not search for Python newer than 3.7.
+    set(Python_ADDITIONAL_VERSIONS 3.8)
+    if(GMX_PYTHON_PACKAGE)
+        find_package(PythonInterp 3.5 REQUIRED)
+        # Note: PythonLibs will be found later by pybind11.
+        # TODO: (issue #2998) When CMake >= 3.12 is required, update detection.
+        # I.e.  find_package(Python3 3.5 COMPONENTS Interpreter Development REQUIRED)
+    else()
+        find_package(PythonInterp 3.5)
+    endif()
     find_package(ImageMagick QUIET COMPONENTS convert)
     include(gmxTestImageMagick)
     GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
+    # TODO: Resolve circular dependency between docs, gromacs, and python_packaging
     add_subdirectory(docs)
     add_subdirectory(share)
     add_subdirectory(scripts)
@@ -863,6 +891,10 @@ add_subdirectory(src)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
+endif()
+
+if(GMX_PYTHON_PACKAGE AND NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(python_packaging)
 endif()
 
 gmx_cpack_write_config()

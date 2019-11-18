@@ -57,7 +57,7 @@ namespace
 
 TEST(DefaultInitializationAllocator, PerformsValueInitialization)
 {
-    std::vector < int, DefaultInitializationAllocator < int>> v;
+    std::vector<int, DefaultInitializationAllocator<int>> v;
 
     v.resize(1, 2);
     EXPECT_EQ(v[0], 2);
@@ -65,15 +65,14 @@ TEST(DefaultInitializationAllocator, PerformsValueInitialization)
 
 TEST(DefaultInitializationAllocator, PerformsNoInitialization)
 {
-    std::vector < int, DefaultInitializationAllocator < int>> v {
-        1, 2, 3
-    };
+    std::vector<int, DefaultInitializationAllocator<int>> v{ 1, 2, 3 };
 
-    const int *oldData = v.data();
+    const int* oldData = v.data();
     v.resize(0);
     v.resize(3);
     GMX_RELEASE_ASSERT(v.data() == oldData,
-                       "According to the C++ standard std::vector will not reallocate when the capacity is sufficient");
+                       "According to the C++ standard std::vector will not reallocate when the "
+                       "capacity is sufficient");
     // The allocation is the same, so the default initialization should
     // not have changed the contents
     EXPECT_EQ(v[0], 1);

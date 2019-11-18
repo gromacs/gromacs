@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -108,6 +108,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
             NO_CMAKE_PATH
             NO_SYSTEM_ENVIRONMENT_PATH
             NO_CMAKE_SYSTEM_PATH)
+        mark_as_advanced(ARMPL_INCLUDE_DIR)
         if (ARMPL_INCLUDE_DIR)
             set(GMX_FFT_ARMPL_FFTW3 1)
             set(FFT_STATUS_MESSAGE "Using external FFT library - ARM Performance Library (FFTW3 compatibility mode)")
@@ -136,8 +137,8 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
         endif()
         # Some versions of icc require this in order that mkl.h can be
         # found at compile time.
-        set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} ${FFT_LINKER_FLAGS}")
-        set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} ${FFT_LINKER_FLAGS}")
+        list(APPEND EXTRA_C_FLAGS ${FFT_LINKER_FLAGS})
+        list(APPEND EXTRA_CXX_FLAGS ${FFT_LINKER_FLAGS})
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()

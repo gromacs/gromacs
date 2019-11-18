@@ -63,19 +63,16 @@ namespace test
 
 /*! \libinternal
  * \brief Templated test fixture. */
-template <typename T>
+template<typename T>
 class AllocatorTest : public ::testing::Test
 {
-    public:
-        /*! \brief Return a bitmask for testing the alignment.
-         *
-         * e.g. for 128-byte alignment the mask is 128-1 - all of
-         * these bits should be zero in pointers that have the
-         * intended alignment. */
-        std::size_t mask(const T &allocator)
-        {
-            return allocator.alignment() - 1;
-        }
+public:
+    /*! \brief Return a bitmask for testing the alignment.
+     *
+     * e.g. for 128-byte alignment the mask is 128-1 - all of
+     * these bits should be zero in pointers that have the
+     * intended alignment. */
+    std::size_t mask(const T& allocator) { return allocator.alignment() - 1; }
 };
 
 // NB need to use this->mask() because of GoogleTest quirks
@@ -127,13 +124,13 @@ TYPED_TEST(AllocatorTest, Move) //NOLINT(misc-definitions-in-headers)
 {
     using value_type = typename TypeParam::value_type;
     std::vector<value_type, TypeParam> v1(1);
-    value_type* data = v1.data();
+    value_type*                        data = v1.data();
     EXPECT_NE(data, nullptr);
     std::vector<value_type, TypeParam> v2(std::move(v1));
     EXPECT_EQ(data, v2.data());
 }
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

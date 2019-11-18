@@ -1,0 +1,4 @@
+# The following packages are not strictly necessary, but allow documentation builds.
+Pygments>=2.2.0
+Sphinx>=1.6.3
+sphinxcontrib-plantuml>=0.14

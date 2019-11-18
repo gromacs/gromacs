@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,11 +55,11 @@
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/strdb.h"
 
-static gmx_bool *bPhobics(int nres, char *resnm[])
+static gmx_bool* bPhobics(int nres, char* resnm[])
 {
     int       i, nb;
-    char    **cb;
-    gmx_bool *bb;
+    char**    cb;
+    gmx_bool* bb;
 
     nb = get_lines("phbres.dat", &cb);
     snew(bb, nres);
@@ -74,20 +74,19 @@ static gmx_bool *bPhobics(int nres, char *resnm[])
     return bb;
 }
 
-static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *title)
+static void wheel(const char* fn, int nres, char* resnm[], int r0, real rot0, char* title)
 {
     const real fontsize  = 16;
     const real gray      = 0.9;
     const real fontasp   = 0.6;
-    const real fontwidth = fontsize*fontasp;
+    const real fontwidth = fontsize * fontasp;
 
-    t_psdata   out;
-    int        i, sl, slen;
-    real       ring, inner, outer;
-    real       xc, yc, box;
-    gmx_bool  *bPh;
-    char     **rnms;
-    char       sign;
+    int       i, sl, slen;
+    real      ring, inner, outer;
+    real      xc, yc, box;
+    gmx_bool* bPh;
+    char**    rnms;
+    char      sign;
 
     inner = 75.0;
     slen  = 0;
@@ -96,74 +95,73 @@ static void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, ch
     {
         snew(rnms[i], 256);
         sl   = std::strlen(resnm[i]);
-        sign = resnm[i][sl-1];
+        sign = resnm[i][sl - 1];
         if ((sign == '+') || (sign == '-'))
         {
-            resnm[i][sl-1] = '\0';
+            resnm[i][sl - 1] = '\0';
         }
-        sprintf(rnms[i], "%s-%d", resnm[i], i+r0);
+        sprintf(rnms[i], "%s-%d", resnm[i], i + r0);
         if ((sign == '+') || (sign == '-'))
         {
-            sl            = std::strlen(rnms[i]);
-            rnms[i][sl]   = sign;
-            rnms[i][sl+1] = '\0';
+            sl              = std::strlen(rnms[i]);
+            rnms[i][sl]     = sign;
+            rnms[i][sl + 1] = '\0';
         }
 
         slen = std::max(slen, static_cast<int>(std::strlen(rnms[i])));
     }
-    ring  = (2+slen)*fontwidth;
-    outer = inner+ring;
-    box   = inner*1.5+(1+int{nres/18})*ring;
+    ring  = (2 + slen) * fontwidth;
+    outer = inner + ring;
+    box   = inner * 1.5 + (1 + int{ nres / 18 }) * ring;
 
     bPh = bPhobics(nres, resnm);
 
-    out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
-    xc  = box;
-    yc  = box;
+    t_psdata out = ps_open(fn, 0, 0, 2.0 * box, 2.0 * box);
+    xc           = box;
+    yc           = box;
 
-    ps_font(out, efontHELV, 1.5*fontsize);
-    ps_translate(out, xc, yc);
+    ps_font(&out, efontHELV, 1.5 * fontsize);
+    ps_translate(&out, xc, yc);
     if (title)
     {
-        ps_ctext(out, 0, -fontsize*1.5/2.0, title, eXCenter);
+        ps_ctext(&out, 0, -fontsize * 1.5 / 2.0, title, eXCenter);
     }
-    ps_font(out, efontHELV, fontsize);
-    ps_rotate(out, rot0);
-    for (i = 0; (i < nres); )
+    ps_font(&out, efontHELV, fontsize);
+    ps_rotate(&out, rot0);
+    for (i = 0; (i < nres);)
     {
         if (bPh[i])
         {
-            ps_color(out, gray, gray, gray);
-            ps_fillarcslice(out, 0, 0, inner, outer, -10, 10);
-            ps_color(out, 0, 0, 0);
+            ps_color(&out, gray, gray, gray);
+            ps_fillarcslice(&out, 0, 0, inner, outer, -10, 10);
+            ps_color(&out, 0, 0, 0);
         }
-        ps_arcslice(out, 0, 0, inner, outer, -10, 10);
+        ps_arcslice(&out, 0, 0, inner, outer, -10, 10);
 
-        ps_ctext(out, inner+fontwidth, -fontsize/2.0, rnms[i], eXLeft);
-        ps_rotate(out, -100);
+        ps_ctext(&out, inner + fontwidth, -fontsize / 2.0, rnms[i], eXLeft);
+        ps_rotate(&out, -100);
         i++;
 
         if ((i % 18) == 0)
         {
-            inner  = outer;
+            inner = outer;
             outer += ring;
         }
     }
-    ps_close(out);
+    ps_close(&out);
 }
 
-static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
+static void wheel2(const char* fn, int nres, char* resnm[], real rot0, char* title)
 {
     const real fontsize  = 14;
     const real gray      = 0.9;
     const real fontasp   = 0.45;
     const int  angle     = 9;
-    const real fontwidth = fontsize*fontasp;
+    const real fontwidth = fontsize * fontasp;
 
-    t_psdata   out;
-    int        i, slen;
-    real       ring, inner, outer;
-    real       xc, yc, box;
+    int  i, slen;
+    real ring, inner, outer;
+    real xc, yc, box;
 
     inner = 60.0;
     slen  = 0;
@@ -172,81 +170,80 @@ static void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *tit
         slen = std::max(slen, static_cast<int>(strlen(resnm[i])));
     }
     fprintf(stderr, "slen = %d\n", slen);
-    ring  = slen*fontwidth;
-    outer = inner+ring;
-    box   = (1+gmx::exactDiv(nres, 2*angle))*outer;
+    ring  = slen * fontwidth;
+    outer = inner + ring;
+    box   = (1 + gmx::exactDiv(nres, 2 * angle)) * outer;
 
-    out = ps_open(fn, 0, 0, 2.0*box, 2.0*box);
-    xc  = box;
-    yc  = box;
+    t_psdata out = ps_open(fn, 0, 0, 2.0 * box, 2.0 * box);
+    xc           = box;
+    yc           = box;
 
-    ps_font(out, efontHELV, 1.5*fontsize);
-    ps_translate(out, xc, yc);
-    ps_color(out, 0, 0, 0);
+    ps_font(&out, efontHELV, 1.5 * fontsize);
+    ps_translate(&out, xc, yc);
+    ps_color(&out, 0, 0, 0);
     if (title)
     {
-        ps_ctext(out, 0, -fontsize*1.5/2.0, title, eXCenter);
+        ps_ctext(&out, 0, -fontsize * 1.5 / 2.0, title, eXCenter);
     }
-    ps_font(out, efontHELV, fontsize);
+    ps_font(&out, efontHELV, fontsize);
 
-    ps_rotate(out, rot0);
-    for (i = 0; (i < nres); )
+    ps_rotate(&out, rot0);
+    for (i = 0; (i < nres);)
     {
         if ((i % 5) == 4)
         {
-            ps_color(out, gray, gray, 1.0);
-            ps_fillarcslice(out, 0, 0, inner, outer, -angle, angle);
-            ps_color(out, 0, 0, 0);
+            ps_color(&out, gray, gray, 1.0);
+            ps_fillarcslice(&out, 0, 0, inner, outer, -angle, angle);
+            ps_color(&out, 0, 0, 0);
         }
-        ps_arcslice(out, 0, 0, inner, outer, -angle, angle);
+        ps_arcslice(&out, 0, 0, inner, outer, -angle, angle);
 
-        ps_ctext(out, inner+fontwidth, -fontsize/2.0, resnm[i], eXLeft);
-        ps_rotate(out, -2*angle);
+        ps_ctext(&out, inner + fontwidth, -fontsize / 2.0, resnm[i], eXLeft);
+        ps_rotate(&out, -2 * angle);
         i++;
 
-        if ((i % (2*angle)) == 0)
+        if ((i % (2 * angle)) == 0)
         {
-            inner  = outer;
+            inner = outer;
             outer += ring;
         }
     }
-    ps_close(out);
+    ps_close(&out);
 }
 
-int gmx_wheel(int argc, char *argv[])
+int gmx_wheel(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] plots a helical wheel representation of your sequence.",
         "The input sequence is in the [REF].dat[ref] file where the first line contains",
         "the number of residues and each consecutive line contains a residue "
         "name."
     };
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
     static real       rot0  = 0;
     static gmx_bool   bNum  = TRUE;
-    static char      *title = nullptr;
+    static char*      title = nullptr;
     static int        r0    = 1;
-    t_pargs           pa [] = {
-        { "-r0",  FALSE, etINT, {&r0},
-          "The first residue number in the sequence" },
-        { "-rot0", FALSE, etREAL, {&rot0},
-          "Rotate around an angle initially (90 degrees makes sense)" },
-        { "-T",   FALSE, etSTR, {&title},
-          "Plot a title in the center of the wheel (must be shorter than 10 characters, or it will overwrite the wheel)" },
-        { "-nn",  FALSE, etBOOL, {&bNum},
-          "Toggle numbers" }
-    };
-    t_filenm          fnm[] = {
-        { efDAT, "-f", nullptr,  ffREAD  },
-        { efEPS, "-o", nullptr,  ffWRITE }
-    };
+    t_pargs  pa[]  = { { "-r0", FALSE, etINT, { &r0 }, "The first residue number in the sequence" },
+                     { "-rot0",
+                       FALSE,
+                       etREAL,
+                       { &rot0 },
+                       "Rotate around an angle initially (90 degrees makes sense)" },
+                     { "-T",
+                       FALSE,
+                       etSTR,
+                       { &title },
+                       "Plot a title in the center of the wheel (must be shorter than 10 "
+                       "characters, or it will overwrite the wheel)" },
+                     { "-nn", FALSE, etBOOL, { &bNum }, "Toggle numbers" } };
+    t_filenm fnm[] = { { efDAT, "-f", nullptr, ffREAD }, { efEPS, "-o", nullptr, ffWRITE } };
 #define NFILE asize(fnm)
 
     int    i, nres;
-    char **resnm;
+    char** resnm;
 
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                           asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }

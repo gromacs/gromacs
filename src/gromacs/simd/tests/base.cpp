@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,33 +58,36 @@ namespace
 GMX_TEST_OPTIONS(SimdBaseTestOptions, options)
 {
     options->addOption(::gmx::IntegerOption("npoints")
-                           .store(&SimdBaseTest::s_nPoints)
-                           .description("Number of points to test for SIMD math functions"));
+                               .store(&SimdBaseTest::s_nPoints)
+                               .description("Number of points to test for SIMD math functions"));
 }
 /*! \endcond */
 
-}       // namespace
+} // namespace
 
 /*! \cond internal */
 /*! \addtogroup module_simd */
 /*! \{ */
 
-int  SimdBaseTest::s_nPoints    = 10000;
+int SimdBaseTest::s_nPoints = 10000;
 
-::testing::AssertionResult
-SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
-                                   const std::vector<real> &ref, const std::vector<real> &tst)
+::testing::AssertionResult SimdBaseTest::compareVectorRealUlp(const char*              refExpr,
+                                                              const char*              tstExpr,
+                                                              const std::vector<real>& ref,
+                                                              const std::vector<real>& tst)
 {
-    std::vector<real>             absDiff(tst.size());
-    std::vector<std::int64_t>     ulpDiff(tst.size());
-    bool                          allOk;
-    size_t                        i;
+    std::vector<real>         absDiff(tst.size());
+    std::vector<std::int64_t> ulpDiff(tst.size());
+    bool                      allOk;
+    size_t                    i;
 
     union {
 #if GMX_DOUBLE
-        double r; std::int64_t i;
+        double       r;
+        std::int64_t i;
 #else
-        float  r; std::int32_t i;
+        float        r;
+        std::int32_t i;
 #endif
     } conv0, conv1;
 
@@ -97,13 +100,13 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 
     for (i = 0, allOk = true; i < tst.size(); i++)
     {
-        absDiff[i]  = std::abs(ref[i]-tst[i]);
-        conv0.r     = ref[i];
-        conv1.r     = tst[i];
-        ulpDiff[i]  = llabs(conv0.i-conv1.i);
+        absDiff[i] = std::abs(ref[i] - tst[i]);
+        conv0.r    = ref[i];
+        conv1.r    = tst[i];
+        ulpDiff[i] = llabs(conv0.i - conv1.i);
 
         /* Use strict smaller-than for absolute tolerance check, so we disable it with absTol_=0 */
-        allOk       = allOk && ( ( absDiff[i] < absTol_ ) || ( ( ref[i]*tst[i] >= 0 ) && (ulpDiff[i] <= ulpTol_) ) );
+        allOk = allOk && ((absDiff[i] < absTol_) || ((ref[i] * tst[i] >= 0) && (ulpDiff[i] <= ulpTol_)));
     }
 
     if (allOk)
@@ -127,5 +130,5 @@ SimdBaseTest::compareVectorRealUlp(const char * refExpr,   const char * tstExpr,
 /*! \} */
 /*! \endcond */
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx

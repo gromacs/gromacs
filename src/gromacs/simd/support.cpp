@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,35 +63,54 @@ namespace gmx
 
 /*! \cond libapi */
 
-const std::string &
-simdString(SimdType s)
+const std::string& simdString(SimdType s)
 {
-    static const std::map<SimdType, std::string> name =
-    {
-        { SimdType::None,           "None"            },
-        { SimdType::Reference,      "Reference"       },
-        { SimdType::Generic,        "Generic"         },
-        { SimdType::X86_Sse2,       "SSE2"            },
-        { SimdType::X86_Sse4_1,     "SSE4.1"          },
-        { SimdType::X86_Avx128Fma,  "AVX_128_FMA"     },
-        { SimdType::X86_Avx,        "AVX_256"         },
-        { SimdType::X86_Avx2,       "AVX2_256"        },
-        { SimdType::X86_Avx2_128,   "AVX2_128"        },
-        { SimdType::X86_Avx512,     "AVX_512"         },
-        { SimdType::X86_Avx512Knl,  "AVX_512_KNL"     },
-        { SimdType::X86_Mic,        "X86_MIC"         },
-        { SimdType::Arm_Neon,       "ARM_NEON"        },
-        { SimdType::Arm_NeonAsimd,  "ARM_NEON_ASIMD"  },
-        { SimdType::Ibm_Vmx,        "IBM_VMX"         },
-        { SimdType::Ibm_Vsx,        "IBM_VSX"         },
+    static const std::map<SimdType, std::string> name = {
+        { SimdType::None, "None" },
+        { SimdType::Reference, "Reference" },
+        { SimdType::Generic, "Generic" },
+        { SimdType::X86_Sse2, "SSE2" },
+        { SimdType::X86_Sse4_1, "SSE4.1" },
+        { SimdType::X86_Avx128Fma, "AVX_128_FMA" },
+        { SimdType::X86_Avx, "AVX_256" },
+        { SimdType::X86_Avx2, "AVX2_256" },
+        { SimdType::X86_Avx2_128, "AVX2_128" },
+        { SimdType::X86_Avx512, "AVX_512" },
+        { SimdType::X86_Avx512Knl, "AVX_512_KNL" },
+        { SimdType::X86_Mic, "X86_MIC" },
+        { SimdType::Arm_Neon, "ARM_NEON" },
+        { SimdType::Arm_NeonAsimd, "ARM_NEON_ASIMD" },
+        { SimdType::Ibm_Vmx, "IBM_VMX" },
+        { SimdType::Ibm_Vsx, "IBM_VSX" },
         { SimdType::Fujitsu_HpcAce, "Fujitsu HPC-ACE" }
     };
 
     return name.at(s);
 }
 
-SimdType
-simdSuggested(const CpuInfo &c)
+namespace
+{
+
+
+//! Helper to detect correct AMD Zen architecture.
+bool cpuIsAmdZen1(const CpuInfo& cpuInfo)
+{
+    // Both Zen/Zen+/Zen2 have family==23
+    // Model numbers for Zen:
+    // 1)  Naples, Whitehaven, Summit ridge, and Snowy Owl
+    // 17) Raven ridge
+    // Model numbers for Zen+:
+    // 8)  Pinnacle Ridge
+    // 24) Picasso
+    return (cpuInfo.vendor() == gmx::CpuInfo::Vendor::Amd && cpuInfo.family() == 23
+            && (cpuInfo.model() == 1 || cpuInfo.model() == 17 || cpuInfo.model() == 8
+                || cpuInfo.model() == 24));
+}
+
+} // namespace
+
+
+SimdType simdSuggested(const CpuInfo& c)
 {
     SimdType suggested = SimdType::None;
 
@@ -107,7 +126,7 @@ simdSuggested(const CpuInfo &c)
                 else if (c.feature(CpuInfo::Feature::X86_Avx512F))
                 {
                     // If we could not identify the number of AVX512 FMA units we assume 2
-                    suggested = ( identifyAvx512FmaUnits() == 1 ) ? SimdType::X86_Avx2 : SimdType::X86_Avx512;
+                    suggested = (identifyAvx512FmaUnits() == 1) ? SimdType::X86_Avx2 : SimdType::X86_Avx512;
                 }
                 else if (c.feature(CpuInfo::Feature::X86_Avx2))
                 {
@@ -127,12 +146,15 @@ simdSuggested(const CpuInfo &c)
                 }
                 break;
             case CpuInfo::Vendor::Amd:
+            case CpuInfo::Vendor::Hygon:
                 if (c.feature(CpuInfo::Feature::X86_Avx2))
                 {
-                    // AMD Ryzen supports 256-bit AVX2, but performs better with 128-bit
+                    // AMD Zen supports 256-bit AVX2, but Zen1 performs better with 128-bit
                     // since it can execute two independent such instructions per cycle,
                     // and wider SIMD has slightly lower efficiency in GROMACS.
-                    suggested = SimdType::X86_Avx2_128;
+                    // However... Zen2 supports full-width execution of 256-bit AVX2,
+                    // so we only want to apply this hack to Zen/Zen+.
+                    suggested = cpuIsAmdZen1(c) ? SimdType::X86_Avx2_128 : SimdType::X86_Avx2;
                 }
                 else if (c.feature(CpuInfo::Feature::X86_Avx))
                 {
@@ -182,15 +204,13 @@ simdSuggested(const CpuInfo &c)
                     suggested = SimdType::Fujitsu_HpcAce;
                 }
                 break;
-            default:
-                break;
+            default: break;
         }
     }
     return suggested;
 }
 
-SimdType
-simdCompiled()
+SimdType simdCompiled()
 {
 #if GMX_SIMD_X86_AVX_512_KNL
     return SimdType::X86_Avx512Knl;
@@ -227,12 +247,9 @@ simdCompiled()
 #endif
 }
 
-bool
-simdCheck(gmx::SimdType    wanted,
-          FILE *           log,
-          bool             warnToStdErr)
+bool simdCheck(gmx::SimdType wanted, FILE* log, bool warnToStdErr)
 {
-    SimdType             compiled  = simdCompiled();
+    SimdType compiled = simdCompiled();
 
     gmx::TextLineWrapper wrapper;
     std::string          logMsg;
@@ -242,29 +259,34 @@ simdCheck(gmx::SimdType    wanted,
 
     if (compiled == SimdType::X86_Avx2 && wanted == SimdType::X86_Avx512)
     {
-        logMsg = wrapper.wrapToString(formatString("Highest SIMD level requested by all nodes in run: %s\n"
-                                                   "SIMD instructions selected at compile time:       %s\n"
-                                                   "This program was compiled for different hardware than you are running on, "
-                                                   "which could influence performance. This build might have been configured on "
-                                                   "a login node with only a single AVX-512 FMA unit (in which case AVX2 is faster), "
-                                                   "while the node you are running on has dual AVX-512 FMA units.",
-                                                   simdString(wanted).c_str(), simdString(compiled).c_str()));
-        warnMsg = wrapper.wrapToString(formatString("Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                                                    simdString(compiled).c_str(), simdString(wanted).c_str()));
+        logMsg  = wrapper.wrapToString(formatString(
+                "Highest SIMD level requested by all nodes in run: %s\n"
+                "SIMD instructions selected at compile time:       %s\n"
+                "This program was compiled for different hardware than you are running on, "
+                "which could influence performance. This build might have been configured on "
+                "a login node with only a single AVX-512 FMA unit (in which case AVX2 is faster), "
+                "while the node you are running on has dual AVX-512 FMA units.",
+                simdString(wanted).c_str(), simdString(compiled).c_str()));
+        warnMsg = wrapper.wrapToString(formatString(
+                "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
+                simdString(compiled).c_str(), simdString(wanted).c_str()));
     }
-    else if (compiled == SimdType::X86_Avx512 && wanted == SimdType::X86_Avx2 && identifyAvx512FmaUnits() == 1)
+    else if (compiled == SimdType::X86_Avx512 && wanted == SimdType::X86_Avx2
+             && identifyAvx512FmaUnits() == 1)
     {
         // The reason for explicitly checking the number of FMA units above is to avoid triggering
         // this conditional if the AVX2 SIMD was requested by some other node in a heterogeneous MPI run.
-        logMsg = wrapper.wrapToString(formatString("Highest SIMD level requested by all nodes in run: %s\n"
-                                                   "SIMD instructions selected at compile time:       %s\n"
-                                                   "This program was compiled for different hardware than you are running on, "
-                                                   "which could influence performance."
-                                                   "This host supports AVX-512, but since it only has 1 AVX-512"
-                                                   "FMA unit, it would be faster to use AVX2 instead.",
-                                                   simdString(wanted).c_str(), simdString(compiled).c_str()));
-        warnMsg = wrapper.wrapToString(formatString("Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                                                    simdString(compiled).c_str(), simdString(wanted).c_str()));
+        logMsg  = wrapper.wrapToString(formatString(
+                "Highest SIMD level requested by all nodes in run: %s\n"
+                "SIMD instructions selected at compile time:       %s\n"
+                "This program was compiled for different hardware than you are running on, "
+                "which could influence performance."
+                "This host supports AVX-512, but since it only has 1 AVX-512"
+                "FMA unit, it would be faster to use AVX2 instead.",
+                simdString(wanted).c_str(), simdString(compiled).c_str()));
+        warnMsg = wrapper.wrapToString(formatString(
+                "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
+                simdString(compiled).c_str(), simdString(wanted).c_str()));
     }
     else if (compiled == SimdType::X86_Avx2 && wanted == SimdType::X86_Avx2_128)
     {
@@ -278,22 +300,25 @@ simdCheck(gmx::SimdType    wanted,
         // Normally it is close to catastrophic if the compiled SIMD type is larger than
         // the supported one, but AVX128Fma is an exception: AMD CPUs will (strongly) prefer
         // AVX128Fma, but they will work fine with AVX too. Thus, make an exception for this.
-        logMsg = wrapper.wrapToString(formatString("Highest SIMD level requested by all nodes in run: %s\n"
-                                                   "SIMD instructions selected at compile time:       %s\n"
-                                                   "Compiled SIMD newer than requested; program might crash.",
-                                                   simdString(wanted).c_str(), simdString(compiled).c_str()));
+        logMsg = wrapper.wrapToString(
+                formatString("Highest SIMD level requested by all nodes in run: %s\n"
+                             "SIMD instructions selected at compile time:       %s\n"
+                             "Compiled SIMD newer than requested; program might crash.",
+                             simdString(wanted).c_str(), simdString(compiled).c_str()));
         warnMsg = logMsg;
     }
     else if (wanted != compiled)
     {
         // This warning will also occur if compiled is X86_Avx and wanted is X86_Avx128Fma
-        logMsg = wrapper.wrapToString(formatString("Highest SIMD level requested by all nodes in run: %s\n"
-                                                   "SIMD instructions selected at compile time:       %s\n"
-                                                   "This program was compiled for different hardware than you are running on, "
-                                                   "which could influence performance.",
-                                                   simdString(wanted).c_str(), simdString(compiled).c_str()));
-        warnMsg = wrapper.wrapToString(formatString("Compiled SIMD: %s, but for this host/run %s might be better (see log).",
-                                                    simdString(compiled).c_str(), simdString(wanted).c_str()));
+        logMsg  = wrapper.wrapToString(formatString(
+                "Highest SIMD level requested by all nodes in run: %s\n"
+                "SIMD instructions selected at compile time:       %s\n"
+                "This program was compiled for different hardware than you are running on, "
+                "which could influence performance.",
+                simdString(wanted).c_str(), simdString(compiled).c_str()));
+        warnMsg = wrapper.wrapToString(formatString(
+                "Compiled SIMD: %s, but for this host/run %s might be better (see log).",
+                simdString(compiled).c_str(), simdString(wanted).c_str()));
     }
 
     if (!logMsg.empty() && log != nullptr)
@@ -310,4 +335,4 @@ simdCheck(gmx::SimdType    wanted,
 
 /*! \endcond */
 
-}  // namespace gmx
+} // namespace gmx

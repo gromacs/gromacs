@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ namespace
 /*! \addtogroup module_simd */
 /*! \{ */
 
-#if GMX_SIMD4_HAVE_REAL
+#    if GMX_SIMD4_HAVE_REAL
 
 /*! \brief Test fixture for SIMD4 vector operations (identical to the SIMD4 \ref Simd4Test) */
 typedef Simd4Test Simd4VectorOperationsTest;
@@ -65,21 +65,20 @@ TEST_F(Simd4VectorOperationsTest, norm2)
     Simd4Real simdX  = rSimd4_c0c1c2;
     Simd4Real simdY  = rSimd4_c3c4c5;
     Simd4Real simdZ  = rSimd4_c6c7c8;
-    Simd4Real simdR2 = setSimd4RealFrom3R(c0*c0 + c3*c3 + c6*c6,
-                                          c1*c1 + c4*c4 + c7*c7,
-                                          c2*c2 + c5*c5 + c8*c8);
+    Simd4Real simdR2 = setSimd4RealFrom3R(c0 * c0 + c3 * c3 + c6 * c6, c1 * c1 + c4 * c4 + c7 * c7,
+                                          c2 * c2 + c5 * c5 + c8 * c8);
 
     setUlpTol(2);
     GMX_EXPECT_SIMD4_REAL_NEAR(simdR2, norm2(simdX, simdY, simdZ));
 }
 
-#endif      // GMX_SIMD4_HAVE_REAL
+#    endif // GMX_SIMD4_HAVE_REAL
 
 /*! \} */
 /*! \endcond */
 
-}      // namespace
-}      // namespace test
-}      // namespace gmx
+} // namespace
+} // namespace test
+} // namespace gmx
 
 #endif // GMX_SIMD

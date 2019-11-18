@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,116 +69,93 @@ struct AwhDimParams;
  */
 class GridAxis
 {
-    public:
-        /*! \brief Constructor.
-         *
-         * The spacing and number of points are set such that we have
-         * at least the requested point density.
-         * Requesting 0 point density results in the minimum number
-         * of points (2).
-         *
-         * \param[in] origin           Starting value.
-         * \param[in] end              End value.
-         * \param[in] period           Period, pass 0 if not periodic.
-         * \param[in] pointDensity     Requested number of point per unit of axis length.
-         */
-        GridAxis(double origin, double end,
-                 double period, double pointDensity);
+public:
+    /*! \brief Constructor.
+     *
+     * The spacing and number of points are set such that we have
+     * at least the requested point density.
+     * Requesting 0 point density results in the minimum number
+     * of points (2).
+     *
+     * \param[in] origin           Starting value.
+     * \param[in] end              End value.
+     * \param[in] period           Period, pass 0 if not periodic.
+     * \param[in] pointDensity     Requested number of point per unit of axis length.
+     */
+    GridAxis(double origin, double end, double period, double pointDensity);
 
-        /*! \brief Constructor.
-         *
-         * \param[in] origin           Starting value.
-         * \param[in] end              End value.
-         * \param[in] period           Period, pass 0 if not periodic.
-         * \param[in] numPoints        The number of points.
-         */
-        GridAxis(double origin, double end,
-                 double period, int numPoints);
+    /*! \brief Constructor.
+     *
+     * \param[in] origin           Starting value.
+     * \param[in] end              End value.
+     * \param[in] period           Period, pass 0 if not periodic.
+     * \param[in] numPoints        The number of points.
+     */
+    GridAxis(double origin, double end, double period, int numPoints);
 
-        /*! \brief Returns if the axis has periodic boundaries.
-         */
-        bool isPeriodic() const
-        {
-            return period_ > 0;
-        }
+    /*! \brief Returns if the axis has periodic boundaries.
+     */
+    bool isPeriodic() const { return period_ > 0; }
 
-        /*! \brief Returns the period of the grid along the axis.
-         */
-        double period() const
-        {
-            return period_;
-        }
+    /*! \brief Returns the period of the grid along the axis.
+     */
+    double period() const { return period_; }
 
-        /*! \brief Returns the grid origin along the axis.
-         */
-        double origin() const
-        {
-            return origin_;
-        }
+    /*! \brief Returns the grid origin along the axis.
+     */
+    double origin() const { return origin_; }
 
-        /*! \brief Returns the grid point spacing along the axis.
-         */
-        double spacing() const
-        {
-            return spacing_;
-        }
+    /*! \brief Returns the grid point spacing along the axis.
+     */
+    double spacing() const { return spacing_; }
 
-        /*! \brief Returns the number of grid points along the axis.
-         */
-        int numPoints() const
-        {
-            return numPoints_;
-        }
+    /*! \brief Returns the number of grid points along the axis.
+     */
+    int numPoints() const { return numPoints_; }
 
-        /*! \brief Returns the period of the grid in points along the axis.
-         *
-         * Returns 0 if the axis is not periodic.
-         */
-        int numPointsInPeriod() const
-        {
-            return numPointsInPeriod_;
-        }
+    /*! \brief Returns the period of the grid in points along the axis.
+     *
+     * Returns 0 if the axis is not periodic.
+     */
+    int numPointsInPeriod() const { return numPointsInPeriod_; }
 
-        /*! \brief Returns the length of the interval.
-         *
-         * This returns the distance obtained by connecting the origin point to
-         * the end point in the positive direction. Note that this is generally
-         * not the shortest distance. For period > 0, both origin and
-         * end are expected to take values in the same periodic interval.
-         */
-        double length() const
-        {
-            return length_;
-        }
+    /*! \brief Returns the length of the interval.
+     *
+     * This returns the distance obtained by connecting the origin point to
+     * the end point in the positive direction. Note that this is generally
+     * not the shortest distance. For period > 0, both origin and
+     * end are expected to take values in the same periodic interval.
+     */
+    double length() const { return length_; }
 
-        /*! \brief Map a value to the nearest point index along an axis.
-         *
-         * \param[in] value  Value along the axis.
-         * \returns the index nearest to the value.
-         */
-        int nearestIndex(double value) const;
+    /*! \brief Map a value to the nearest point index along an axis.
+     *
+     * \param[in] value  Value along the axis.
+     * \returns the index nearest to the value.
+     */
+    int nearestIndex(double value) const;
 
-    private:
-        double   origin_;            /**< Interval start value */
-        double   length_;            /**< Interval length */
-        double   period_;            /**< The period, 0 if not periodic */
-        double   spacing_;           /**< Point spacing */
-        int      numPoints_;         /**< Number of points in the interval */
-        int      numPointsInPeriod_; /**< Number of points in a period (0 if no periodicity) */
+private:
+    double origin_;            /**< Interval start value */
+    double length_;            /**< Interval length */
+    double period_;            /**< The period, 0 if not periodic */
+    double spacing_;           /**< Point spacing */
+    int    numPoints_;         /**< Number of points in the interval */
+    int    numPointsInPeriod_; /**< Number of points in a period (0 if no periodicity) */
 };
 
 /*! \internal
  * \brief A point in the grid.
  *
- * A grid point has a coordinate value and a coordinate index of the same dimensionality as the grid.
- * It knows the the linear indices of its neighboring point (which are useful only when handed up to
- * the grid).
+ * A grid point has a coordinate value and a coordinate index of the same dimensionality as the
+ * grid. It knows the linear indices of its neighboring point (which are useful only when handed up
+ * to the grid).
  */
 struct GridPoint
 {
-    awh_dvec         coordValue;    /**< Multidimensional coordinate value of this point */
-    awh_ivec         index;         /**< Multidimensional point indices */
-    std::vector<int> neighbor;      /**< Linear point indices of the neighboring points */
+    awh_dvec         coordValue; /**< Multidimensional coordinate value of this point */
+    awh_ivec         index;      /**< Multidimensional point indices */
+    std::vector<int> neighbor;   /**< Linear point indices of the neighboring points */
 };
 
 /*! \internal
@@ -190,95 +167,79 @@ struct GridPoint
  */
 class Grid
 {
-    private:
-        /*! \brief Initializes the grid points.
-         */
-        void initPoints();
+private:
+    /*! \brief Initializes the grid points.
+     */
+    void initPoints();
 
-    public:
-        /*! \brief
-         * The point density per sigma of the Gaussian distribution in an umbrella.
-         *
-         * This value should be at least 1 to uniformly cover the reaction coordinate
-         * range with density and having it larger than 1 does not add information.
-         */
-        static constexpr double c_numPointsPerSigma = 1.0;
+public:
+    /*! \brief
+     * The point density per sigma of the Gaussian distribution in an umbrella.
+     *
+     * This value should be at least 1 to uniformly cover the reaction coordinate
+     * range with density and having it larger than 1 does not add information.
+     */
+    static constexpr double c_numPointsPerSigma = 1.0;
 
-        //! Cut-off in sigma for considering points, neglects 4e-8 of the density.
-        static constexpr double c_scopeCutoff       = 5.5;
+    //! Cut-off in sigma for considering points, neglects 4e-8 of the density.
+    static constexpr double c_scopeCutoff = 5.5;
 
-        /*! \brief Construct a grid using AWH input parameters.
-         *
-         * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
-         * \param[in] awhDimParams  Dimension params from inputrec.
-         */
-        Grid(const std::vector<DimParams> &dimParams,
-             const AwhDimParams           *awhDimParams);
+    /*! \brief Construct a grid using AWH input parameters.
+     *
+     * \param[in] dimParams     Dimension parameters including the expected inverse variance of the coordinate living on the grid (determines the grid spacing).
+     * \param[in] awhDimParams  Dimension params from inputrec.
+     */
+    Grid(const std::vector<DimParams>& dimParams, const AwhDimParams* awhDimParams);
 
-        /*! \brief Returns the number of points in the grid.
-         *
-         * \returns the number of points in the grid.
-         */
-        size_t numPoints() const
-        {
-            return point_.size();
-        }
+    /*! \brief Returns the number of points in the grid.
+     *
+     * \returns the number of points in the grid.
+     */
+    size_t numPoints() const { return point_.size(); }
 
-        /*! \brief Returns a reference to a point on the grid.
-         *
-         * \returns a constant reference to a point on the grid.
-         */
-        const GridPoint &point(size_t pointIndex) const
-        {
-            return point_[pointIndex];
-        }
+    /*! \brief Returns a reference to a point on the grid.
+     *
+     * \returns a constant reference to a point on the grid.
+     */
+    const GridPoint& point(size_t pointIndex) const { return point_[pointIndex]; }
 
-        /*! \brief Returns the dimensionality of the grid.
-         *
-         * \returns the dimensionality of the grid.
-         */
-        int numDimensions() const
-        {
-            return axis_.size();
-        }
+    /*! \brief Returns the dimensionality of the grid.
+     *
+     * \returns the dimensionality of the grid.
+     */
+    int numDimensions() const { return axis_.size(); }
 
-        /*! \brief Returns the grid axes.
-         *
-         * \returns a constant reference to the grid axes.
-         */
-        const std::vector<GridAxis> &axis() const
-        {
-            return axis_;
-        }
+    /*! \brief Returns the grid axes.
+     *
+     * \returns a constant reference to the grid axes.
+     */
+    const std::vector<GridAxis>& axis() const { return axis_; }
 
-        /*! \brief Returns a grid axis.
-         *
-         * param[in] dim  Dimension to return the grid axis for.
-         * \returns a constant reference to the grid axis.
-         */
-        const GridAxis &axis(int dim) const
-        {
-            return axis_[dim];
-        }
+    /*! \brief Returns a grid axis.
+     *
+     * param[in] dim  Dimension to return the grid axis for.
+     * \returns a constant reference to the grid axis.
+     */
+    const GridAxis& axis(int dim) const { return axis_[dim]; }
 
-        /*! \brief Find the grid point with value nearest to the given value.
-         *
-         * \param[in] value  Value vector.
-         * \returns the grid point index.
-         */
-        int nearestIndex(const awh_dvec value) const;
+    /*! \brief Find the grid point with value nearest to the given value.
+     *
+     * \param[in] value  Value vector.
+     * \returns the grid point index.
+     */
+    int nearestIndex(const awh_dvec value) const;
 
-        /*! \brief Query if the value is in the grid.
-         *
-         * \param[in] value  Value vector.
-         * \returns true if the value is in the grid.
-         * \note It is assumed that any periodicity of value has already been taken care of.
-         */
-        bool covers(const awh_dvec value) const;
+    /*! \brief Query if the value is in the grid.
+     *
+     * \param[in] value  Value vector.
+     * \returns true if the value is in the grid.
+     * \note It is assumed that any periodicity of value has already been taken care of.
+     */
+    bool covers(const awh_dvec value) const;
 
-    private:
-        std::vector<GridPoint> point_; /**< Points on the grid */
-        std::vector<GridAxis>  axis_;  /**< Axes, one for each dimension. */
+private:
+    std::vector<GridPoint> point_; /**< Points on the grid */
+    std::vector<GridAxis>  axis_;  /**< Axes, one for each dimension. */
 };
 
 /*! \endcond */
@@ -289,7 +250,7 @@ class Grid
  * \param[in] indexMulti  Multidimensional grid point index to convert to a linear one.
  * \returns the linear index.
  */
-int multiDimGridIndexToLinear(const Grid &grid, const awh_ivec indexMulti);
+int multiDimGridIndexToLinear(const Grid& grid, const awh_ivec indexMulti);
 
 /*! \brief Convert multidimensional array index to a linear one.
  *
@@ -299,9 +260,7 @@ int multiDimGridIndexToLinear(const Grid &grid, const awh_ivec indexMulti);
  * \returns the linear index.
  * \note This function can be used without having an initialized grid.
  */
-int multiDimArrayIndexToLinear(const awh_ivec indexMulti,
-                               int            numDim,
-                               const awh_ivec numPointsDim);
+int multiDimArrayIndexToLinear(const awh_ivec indexMulti, int numDim, const awh_ivec numPointsDim);
 
 /*! \brief Convert a linear grid point index to a multidimensional one.
  *
@@ -309,9 +268,7 @@ int multiDimArrayIndexToLinear(const awh_ivec indexMulti,
  * \param[in]  indexLinear  Linear grid point index to convert to a multidimensional one.
  * \param[out] indexMulti   The multidimensional index.
  */
-void linearGridindexToMultiDim(const Grid &grid,
-                               int         indexLinear,
-                               awh_ivec    indexMulti);
+void linearGridindexToMultiDim(const Grid& grid, int indexLinear, awh_ivec indexMulti);
 
 /*! \brief Convert a linear array index to a multidimensional one.
  *
@@ -320,10 +277,7 @@ void linearGridindexToMultiDim(const Grid &grid,
  * \param[in]  numPointsDim  Number of points for each dimension.
  * \param[out] indexMulti    The multidimensional index.
  */
-void linearArrayIndexToMultiDim(int            indexLinear,
-                                int            ndim,
-                                const awh_ivec numPointsDim,
-                                awh_ivec       indexMulti);
+void linearArrayIndexToMultiDim(int indexLinear, int ndim, const awh_ivec numPointsDim, awh_ivec indexMulti);
 
 /*! \brief
  * Find the next grid point in the sub-part of the grid given a starting point.
@@ -344,10 +298,10 @@ void linearArrayIndexToMultiDim(int            indexLinear,
  * \param[in,out] gridPointIndex  Pointer to the starting/next grid point index.
  * \returns true if the grid point was updated.
  */
-bool advancePointInSubgrid(const Grid     &grid,
-                           const awh_ivec  subgridOrigin,
-                           const awh_ivec  subgridNpoints,
-                           int            *gridPointIndex);
+bool advancePointInSubgrid(const Grid&    grid,
+                           const awh_ivec subgridOrigin,
+                           const awh_ivec subgridNpoints,
+                           int*           gridPointIndex);
 
 /*! \brief Maps each point in the grid to a point in the data grid.
  *
@@ -363,12 +317,12 @@ bool advancePointInSubgrid(const Grid     &grid,
  * \param[in]  grid                  The grid.
  * \param[in]  correctFormatMessage  String to include in error message if extracting the data fails.
  */
-void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
-                       const double* const *data,
+void mapGridToDataGrid(std::vector<int>*    gridpointToDatapoint,
+                       const double* const* data,
                        int                  numDataPoints,
-                       const std::string   &dataFilename,
-                       const Grid          &grid,
-                       const std::string   &correctFormatMessage);
+                       const std::string&   dataFilename,
+                       const Grid&          grid,
+                       const std::string&   correctFormatMessage);
 
 /*! \brief
  * Get the deviation along one dimension from the given value to a point in the grid.
@@ -379,10 +333,7 @@ void mapGridToDataGrid(std::vector<int>    *gridpointToDatapoint,
  * \param[in] value       Value along the given dimension.
  * \returns the deviation of the given value to the given point.
  */
-double getDeviationFromPointAlongGridAxis(const Grid &grid,
-                                          int         dimIndex,
-                                          int         pointIndex,
-                                          double      value);
+double getDeviationFromPointAlongGridAxis(const Grid& grid, int dimIndex, int pointIndex, double value);
 
 } // namespace gmx
 

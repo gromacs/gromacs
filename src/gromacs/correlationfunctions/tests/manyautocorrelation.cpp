@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,16 +63,16 @@ class ManyAutocorrelationTest : public ::testing::Test
 {
 };
 
-TEST_F (ManyAutocorrelationTest, Empty)
+TEST_F(ManyAutocorrelationTest, Empty)
 {
-    std::vector<std::vector<real> > c;
+    std::vector<std::vector<real>> c;
     EXPECT_THROW_GMX(many_auto_correl(&c), gmx::InconsistentInputError);
 }
 
 #ifndef NDEBUG
-TEST_F (ManyAutocorrelationTest, DifferentLength)
+TEST_F(ManyAutocorrelationTest, DifferentLength)
 {
-    std::vector<std::vector<real> > c;
+    std::vector<std::vector<real>> c;
     c.resize(3);
     c[0].resize(10);
     c[1].resize(10);
@@ -81,6 +81,6 @@ TEST_F (ManyAutocorrelationTest, DifferentLength)
 }
 #endif
 
-}  // namespace
+} // namespace
 
-}  // namespace gmx
+} // namespace gmx

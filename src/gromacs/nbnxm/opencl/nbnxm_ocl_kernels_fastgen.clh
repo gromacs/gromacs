@@ -48,9 +48,9 @@
 
 #include "nbnxm_ocl_kernel_utils.clh"
 
-#define NB_INDIRECT_1(x, eel, vdw, y) x ## eel ## vdw ## y
+#define NB_INDIRECT_1(x, eel, vdw, y) x##eel##vdw##y
 #define NB_INDIRECT_2(x, eel, vdw, y) NB_INDIRECT_1(x, eel, vdw, y)
-#define NB_KERNEL_FUNC_NAME(x, y)  NB_INDIRECT_2(x, EELNAME, VDWNAME, y)
+#define NB_KERNEL_FUNC_NAME(x, y) NB_INDIRECT_2(x, EELNAME, VDWNAME, y)
 
 #include "nbnxm_ocl_kernel.clh"
 

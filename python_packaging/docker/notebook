@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source /usr/local/gromacs/bin/GMXRC
+source $VENV/bin/activate
+jupyter notebook --ip=0.0.0.0 --no-browser  --NotebookApp.custom_display_url='http://localhost:8888/'

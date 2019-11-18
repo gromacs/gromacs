@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,29 +58,24 @@ namespace gmx
 
 class BoxDeformation
 {
-    public:
-        //! Trivial constructor.
-        BoxDeformation(double        timeStep,
-                       int64_t       initialStep,
-                       const tensor &deformationTensor,
-                       const matrix &referenceBox);
+public:
+    //! Trivial constructor.
+    BoxDeformation(double timeStep, int64_t initialStep, const tensor& deformationTensor, const matrix& referenceBox);
 
-        //! Deform \c x and \c box at this \c step;
-        void apply(ArrayRef<RVec> x,
-                   matrix         box,
-                   int64_t        step);
+    //! Deform \c x and \c box at this \c step;
+    void apply(ArrayRef<RVec> x, matrix box, int64_t step);
 
-    private:
-        //! The integrator time step.
-        double      timeStep_;
-        //! The initial step number (from the .tpr, which permits checkpointing to work correctly).
-        int64_t     initialStep_;
-        //! Non-zero elements provide a scaling factor for deformation in that box dimension.
-        tensor      deformationTensor_;
-        //! The initial box, ie from the .tpr file.
-        matrix      referenceBox_;
+private:
+    //! The integrator time step.
+    double timeStep_;
+    //! The initial step number (from the .tpr, which permits checkpointing to work correctly).
+    int64_t initialStep_;
+    //! Non-zero elements provide a scaling factor for deformation in that box dimension.
+    tensor deformationTensor_;
+    //! The initial box, ie from the .tpr file.
+    matrix referenceBox_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(BoxDeformation);
+    GMX_DISALLOW_COPY_AND_ASSIGN(BoxDeformation);
 };
 
 /*! \brief Factory function for box deformation module.
@@ -93,11 +88,10 @@ class BoxDeformation
  * \throws NotImplementedError if the \c inputrec specifies an
  * unsupported combination.
  */
-std::unique_ptr<BoxDeformation>
-prepareBoxDeformation(const matrix     &initialBox,
-                      t_commrec        *cr,
-                      const t_inputrec &inputrec);
+std::unique_ptr<BoxDeformation> prepareBoxDeformation(const matrix&     initialBox,
+                                                      t_commrec*        cr,
+                                                      const t_inputrec& inputrec);
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

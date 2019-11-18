@@ -44,6 +44,9 @@
 #ifndef GMX_MDSPAN_EXTENSIONS_H_
 #define GMX_MDSPAN_EXTENSIONS_H_
 
+#include <algorithm>
+#include <functional>
+
 #include "gromacs/mdspan/mdspan.h"
 
 namespace gmx
@@ -55,10 +58,9 @@ namespace gmx
  * \note Changing the elements that basic_mdspan views does not change
  *       the view itself, so a single begin that takes a const view suffices.
  */
-template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
-begin(const BasicMdspan &basicMdspan)
+template<class BasicMdspan>
+constexpr std::enable_if_t<BasicMdspan::is_always_contiguous(), typename BasicMdspan::pointer>
+begin(const BasicMdspan& basicMdspan)
 {
     return basicMdspan.data();
 }
@@ -69,14 +71,56 @@ begin(const BasicMdspan &basicMdspan)
  * \note Changing the elements that basic_mdspan views does not change
  *       the view itself, so a single end that takes a const view suffices.
  */
-template <class BasicMdspan>
-constexpr typename std::enable_if<BasicMdspan::is_always_contiguous(),
-                                  typename BasicMdspan::pointer>::type
-end(const BasicMdspan &basicMdspan)
+template<class BasicMdspan>
+constexpr std::enable_if_t<BasicMdspan::is_always_contiguous(), typename BasicMdspan::pointer>
+end(const BasicMdspan& basicMdspan)
 {
     return basicMdspan.data() + basicMdspan.mapping().required_span_size();
 }
 
-}      // namespace gmx
+//! Convenience type for often-used three dimensional extents
+using dynamicExtents3D = extents<dynamic_extent, dynamic_extent, dynamic_extent>;
+
+//! Elementwise addition
+template<class BasicMdspan>
+constexpr BasicMdspan addElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+                   std::plus<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise subtraction - left minus right
+template<class BasicMdspan>
+constexpr BasicMdspan subtractElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+                   std::minus<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise multiplication
+template<class BasicMdspan>
+constexpr BasicMdspan multiplyElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+                   std::multiplies<typename BasicMdspan::element_type>());
+    return result;
+}
+
+//! Elementwise division - left / right
+template<class BasicMdspan>
+constexpr BasicMdspan divideElementwise(const BasicMdspan& span1, const BasicMdspan& span2)
+{
+    BasicMdspan result(span1);
+    std::transform(begin(span1), end(span1), begin(span2), begin(result),
+                   std::divides<typename BasicMdspan::element_type>());
+    return result;
+}
+
+} // namespace gmx
 
 #endif // GMX_MDSPAN_EXTENSIONS_H_

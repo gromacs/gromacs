@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,12 +56,11 @@
 
 #include "domdec_internal.h"
 
-void write_dd_grid_pdb(const char *fn, int64_t step,
-                       gmx_domdec_t *dd, matrix box, gmx_ddbox_t *ddbox)
+void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix box, gmx_ddbox_t* ddbox)
 {
     rvec   grid_s[2], *grid_r = nullptr, cx, r;
     char   fname[STRLEN], buf[22];
-    FILE  *out;
+    FILE*  out;
     int    a, i, d, z, y, x;
     matrix tric;
     real   vol;
@@ -71,10 +70,10 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
 
     if (DDMASTER(dd))
     {
-        snew(grid_r, 2*dd->nnodes);
+        snew(grid_r, 2 * dd->nnodes);
     }
 
-    dd_gather(dd, 2*sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r : nullptr);
+    dd_gather(dd, 2 * sizeof(rvec), grid_s, DDMASTER(dd) ? grid_r : nullptr);
 
     if (DDMASTER(dd))
     {
@@ -90,7 +89,7 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
                 {
                     if (d < ddbox->npbcdim && dd->nc[d] > 1)
                     {
-                        tric[d][i] = box[i][d]/box[i][i];
+                        tric[d][i] = box[i][d] / box[i][i];
                     }
                     else
                     {
@@ -101,14 +100,14 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
         }
         sprintf(fname, "%s_%s.pdb", fn, gmx_step_str(step, buf));
         out = gmx_fio_fopen(fname, "w");
-        gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
+        gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
         a = 1;
         for (i = 0; i < dd->nnodes; i++)
         {
-            vol = dd->nnodes/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+            vol = dd->nnodes / (box[XX][XX] * box[YY][YY] * box[ZZ][ZZ]);
             for (d = 0; d < DIM; d++)
             {
-                vol *= grid_r[i*2+1][d] - grid_r[i*2][d];
+                vol *= grid_r[i * 2 + 1][d] - grid_r[i * 2][d];
             }
             for (z = 0; z < 2; z++)
             {
@@ -116,12 +115,12 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
                 {
                     for (x = 0; x < 2; x++)
                     {
-                        cx[XX] = grid_r[i*2+x][XX];
-                        cx[YY] = grid_r[i*2+y][YY];
-                        cx[ZZ] = grid_r[i*2+z][ZZ];
+                        cx[XX] = grid_r[i * 2 + x][XX];
+                        cx[YY] = grid_r[i * 2 + y][YY];
+                        cx[ZZ] = grid_r[i * 2 + z][ZZ];
                         mvmul(tric, cx, r);
-                        gmx_fprintf_pdb_atomline(out, epdbATOM, a++, "CA", ' ', "GLY", ' ', i+1, ' ',
-                                                 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol, "");
+                        gmx_fprintf_pdb_atomline(out, epdbATOM, a++, "CA", ' ', "GLY", ' ', i + 1, ' ',
+                                                 10 * r[XX], 10 * r[YY], 10 * r[ZZ], 1.0, vol, "");
                     }
                 }
             }
@@ -131,11 +130,11 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
                 {
                     switch (d)
                     {
-                        case 0: y = 1 + i*8 + 2*x; break;
-                        case 1: y = 1 + i*8 + 2*x - (x % 2); break;
-                        case 2: y = 1 + i*8 + x; break;
+                        case 0: y = 1 + i * 8 + 2 * x; break;
+                        case 1: y = 1 + i * 8 + 2 * x - (x % 2); break;
+                        case 2: y = 1 + i * 8 + x; break;
                     }
-                    fprintf(out, "%6s%5d%5d\n", "CONECT", y, y+(1<<d));
+                    fprintf(out, "%6s%5d%5d\n", "CONECT", y, y + (1 << d));
                 }
             }
         }
@@ -144,15 +143,20 @@ void write_dd_grid_pdb(const char *fn, int64_t step,
     }
 }
 
-void write_dd_pdb(const char *fn, int64_t step, const char *title,
-                  const gmx_mtop_t *mtop, const t_commrec *cr,
-                  int natoms, const rvec x[], const matrix box)
+void write_dd_pdb(const char*       fn,
+                  int64_t           step,
+                  const char*       title,
+                  const gmx_mtop_t* mtop,
+                  const t_commrec*  cr,
+                  int               natoms,
+                  const rvec        x[],
+                  const matrix      box)
 {
     char          fname[STRLEN], buf[22];
-    FILE         *out;
+    FILE*         out;
     int           resnr;
-    const char   *atomname, *resname;
-    gmx_domdec_t *dd;
+    const char *  atomname, *resname;
+    gmx_domdec_t* dd;
 
     dd = cr->dd;
     if (natoms == -1)
@@ -165,18 +169,18 @@ void write_dd_pdb(const char *fn, int64_t step, const char *title,
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, dd->bScrewPBC ? epbcSCREW : epbcXYZ, box);
+    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
     int molb = 0;
     for (int i = 0; i < natoms; i++)
     {
-        int  ii = dd->globalAtomIndices[i];
+        int ii = dd->globalAtomIndices[i];
         mtopGetAtomAndResidueName(mtop, ii, &molb, &atomname, &resnr, &resname, nullptr);
         int  c;
         real b;
         if (i < dd->comm->atomRanges.end(DDAtomRanges::Type::Zones))
         {
             c = 0;
-            while (i >= dd->atomGrouping().subRange(0, dd->comm->zones.cg_range[c + 1]).end())
+            while (i >= dd->comm->zones.cg_range[c + 1])
             {
                 c++;
             }
@@ -190,8 +194,8 @@ void write_dd_pdb(const char *fn, int64_t step, const char *title,
         {
             b = dd->comm->zones.n + 1;
         }
-        gmx_fprintf_pdb_atomline(out, epdbATOM, ii+1, atomname, ' ', resname, ' ', resnr, ' ',
-                                 10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ], 1.0, b, "");
+        gmx_fprintf_pdb_atomline(out, epdbATOM, ii + 1, atomname, ' ', resname, ' ', resnr, ' ',
+                                 10 * x[i][XX], 10 * x[i][YY], 10 * x[i][ZZ], 1.0, b, "");
     }
     fprintf(out, "TER\n");
 

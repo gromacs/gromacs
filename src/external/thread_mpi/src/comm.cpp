@@ -555,8 +555,8 @@ int tMPI_Comm_split(tMPI_Comm comm, int color, int key, tMPI_Comm *newcomm)
     int                 i, j;
     int                 N = tMPI_Comm_N(comm);
     volatile tMPI_Comm *newcomm_list;
-    volatile int        colors[MAX_PREALLOC_THREADS]; /* array with the colors
-                                                         of each thread */
+    volatile int        colors[MAX_PREALLOC_THREADS] = { 0 }; /* array with the colors
+                                                                 of each thread */
     volatile int        keys[MAX_PREALLOC_THREADS];   /* same for keys (only one of
                                                          the threads actually suplies
                                                          these arrays to the comm

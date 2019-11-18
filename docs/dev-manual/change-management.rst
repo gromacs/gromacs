@@ -19,7 +19,7 @@ Getting started
     to start with ``http(s)://``)
 #.  Choose a username and add an ssh key
 
-See `here <https://gerrit.gromacs.org/Documentation/intro-quick.html>`_ for
+See `here <https://gerrit.gromacs.org/Documentation/intro-quick.html>`_ for
 a quick intro into Gerrit.
 
 Creating the SSH key for Gerrit
@@ -148,23 +148,30 @@ When updating/replacing an existing change, make sure the commit message
 has the same Change-ID. Please see the section `Ammending a change <gmx-ammend-change>`
 below.
 
-Uploading a draft commit for review
------------------------------------
+Uploading a Work-In-Progress (WIP) or Private commit for review
+---------------------------------------------------------------
 
-Uploading a draft lets you share a change which isn't ready yet for
-review for merging. It is only visible to those people you invite as
-reviewers, which you need to add explicitly. You upload a change as a
-draft by uploading it to refs/drafts/branch instead of refs/for/branch.
-Typically you want to push to refs/drafts/master.
+You can use the WIP or Private workflow on Gerrit to upload changes
+that might not be ready yet for public review and merging.
+Those changes will only be visible to people explicitly added as reviewers,
+and will not automatically trigger Jenkins if the reviewer "Jenkins Buildbot"
+is not added manually to them.
 
-Jenkins is not automatically triggered for drafts, but if you add
-"Jenkins Buildbot" as a reviewer, it learns that you might be interested
-in having it try out your code. Then, you can go to Jenkins and log in
-with your OpenID. Then go to
+For uploading a new private change, push to refs/for/master%private
+(substituting master with the branch you want to push to). To remove the private
+flag when uploading a new patch set, use refs/for/master%remove-private.
+To mark change as Work-In-Progress, push to refs/for/master%wip,
+to unmark push to refs/for/master%ready.
+You can also mark and unmark changes as Private or WIP in the Gerrit web-interface.
+
+To manually trigger Jenkins on a WIP or Private change, you need to log in
+to Jenkis after adding the "Jenkins Buildbot" reviewer. In Jenkins, navigate to
 http://jenkins.gromacs.org/gerrit_manual_trigger/ and tell it to
 search for the commit for which you want to trigger the build agents.
 For example, https://gerrit.gromacs.org/#/c/1238/ is 1238 (but maybe
 SHA or ChangeID will work, too).
+Any change made to the commit after "Jenkins Buildbot" was added to the
+list of reviewers will also trigger Jenkins.
 
 After uploading a commit
 ------------------------

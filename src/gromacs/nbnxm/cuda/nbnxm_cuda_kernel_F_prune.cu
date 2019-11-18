@@ -35,8 +35,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernel_utils.cuh"
 
+#include "nbnxm_cuda_kernel_utils.cuh"
 #include "nbnxm_cuda_types.h"
 
 /* Top-level kernel generation: will generate through multiple
@@ -45,7 +45,7 @@
  */
 #define PRUNE_NBL
 #define FUNCTION_DECLARATION_ONLY
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 #undef FUNCTION_DECLARATION_ONLY
-#include "gromacs/nbnxm/cuda/nbnxm_cuda_kernels.cuh"
+#include "nbnxm_cuda_kernels.cuh"
 #undef PRUNE_NBL

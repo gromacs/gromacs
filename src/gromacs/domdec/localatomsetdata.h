@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,11 @@
 #ifndef GMX_DOMDEC_LOCALATOMSETDATA_H
 #define GMX_DOMDEC_LOCALATOMSETDATA_H
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/basedefinitions.h"
 
 class gmx_ga2la_t;
 
@@ -58,47 +60,69 @@ namespace internal
  */
 class LocalAtomSetData
 {
-    public:
-        /*! \brief Store the data for an atom set with an index group.
-         *
-         * Prior to domain decomposition, local atom indices are global atom indices
-         * and the collective index runs from 0..numberOfAtoms-1.
-         * local and collective indices will be updated in setLocalAndCollectiveIndices
-         * to match domain decompostion if domain decomposition is performed.
-         *
-         * \param[in] globalAtomIndex Indices of the atoms to be managed
-         */
-        explicit LocalAtomSetData(ArrayRef<const int> globalAtomIndex);
-        /*! \brief Sets the local and collective indices from a lookup in ga2la.
-         *
-         * Calculate local and collective indices of home atoms, assuming a valid
-         * global atom to local atom look-up table.
-         *
-         * \param[in] ga2la lookup table that reports if an atom is local.
-         */
-        void setLocalAndCollectiveIndices(const gmx_ga2la_t &ga2la);
-        /*! \brief Global indices of the atoms in this set. */
-        const std::vector<int> globalIndex_;
-        /*! \brief Maps indices on this rank [0..num_atoms_local_) to global atom indicices,
-         * so that localIndex[i] = globalIndex[collectiveIndex[i]].
-         *
-         * This translation of locally dense atom data to global representation,
-         * allows to adresses per-atom properties, e.g., scattering factors,
-         * that are stored in a global continuous array for each atom of the atom set.
-         */
-        std::vector<int> collectiveIndex_;
-        /*! \brief Local indices of the atoms.
-         * Access the i-th local atom coordinate of this set by x[local_index_[i]].
-         * Constructed and updated every domain-decomposition step.
-         */
-        std::vector<int> localIndex_;
+public:
+    /*! \brief Store the data for an atom set with an index group.
+     *
+     * Prior to domain decomposition, local atom indices are global atom indices
+     * and the collective index runs from 0..numberOfAtoms-1.
+     * local and collective indices will be updated in setLocalAndCollectiveIndices
+     * to match domain decompostion if domain decomposition is performed.
+     *
+     * \todo remove this constructor once all indices are represented
+     *       as gmx::index instead of int.
+     *
+     * \note Not created if the internal int type does match gmx::index
+     *
+     * \param[in] globalAtomIndex Indices of the atoms to be managed
+     */
+    template<typename T = void, typename U = std::enable_if_t<!std::is_same<int, index>::value, T>>
+    explicit LocalAtomSetData(ArrayRef<const int> globalAtomIndex) :
+        globalIndex_(globalAtomIndex.begin(), globalAtomIndex.end()),
+        localIndex_(globalAtomIndex.begin(), globalAtomIndex.end())
+    {
+        collectiveIndex_.resize(localIndex_.size());
+        std::iota(collectiveIndex_.begin(), collectiveIndex_.end(), 0);
+    }
+
+    /*! \brief Store the data for an atom set with an index group.
+     *
+     * Prior to domain decomposition, local atom indices are global atom indices
+     * and the collective index runs from 0..numberOfAtoms-1.
+     * local and collective indices will be updated in setLocalAndCollectiveIndices
+     * to match domain decompostion if domain decomposition is performed.
+     *
+     * \param[in] globalAtomIndex Indices of the atoms to be managed
+     */
+    explicit LocalAtomSetData(ArrayRef<const index> globalAtomIndex);
+
+    /*! \brief Sets the local and collective indices from a lookup in ga2la.
+     *
+     * Calculate local and collective indices of home atoms, assuming a valid
+     * global atom to local atom look-up table.
+     *
+     * \param[in] ga2la lookup table that reports if an atom is local.
+     */
+    void setLocalAndCollectiveIndices(const gmx_ga2la_t& ga2la);
+    /*! \brief Global indices of the atoms in this set. */
+    const std::vector<int> globalIndex_;
+    /*! \brief Maps indices on this rank [0..num_atoms_local_) to global atom indicices,
+     * so that localIndex[i] = globalIndex[collectiveIndex[i]].
+     *
+     * This translation of locally dense atom data to global representation,
+     * allows to adresses per-atom properties, e.g., scattering factors,
+     * that are stored in a global continuous array for each atom of the atom set.
+     */
+    std::vector<int> collectiveIndex_;
+    /*! \brief Local indices of the atoms.
+     * Access the i-th local atom coordinate of this set by x[local_index_[i]].
+     * Constructed and updated every domain-decomposition step.
+     */
+    std::vector<int> localIndex_;
 };
 
 } // namespace internal
 
 } // namespace gmx
-
-
 
 
 #endif

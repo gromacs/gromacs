@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,17 +58,40 @@ namespace test
 class TestReferenceChecker;
 
 //! Convenience type
-using EnergyTolerances = std::unordered_map<std::string, FloatingPointTolerance>;
+using EnergyTermsToCompare = std::unordered_map<std::string, FloatingPointTolerance>;
 
-/*! \brief Compare all fields of reference with all matching fields from test
- *
- * Ignore any key found in either \c reference or \c test that is not
- * found in the other. For all keys found in both frames, compare the
- * values with EXPECT_REAL_EQ_TOL and the given tolerance for that
- * key. */
-void compareEnergyFrames(const EnergyFrame      &reference,
-                         const EnergyFrame      &test,
-                         const EnergyTolerances &tolerances);
+/*! \internal
+ * \brief Function object to compare all energy terms of reference
+ * with all matching terms from test within the given tolerances. */
+class EnergyComparison
+{
+public:
+    //! Defaults for energy comparisons
+    static const EnergyTermsToCompare s_defaultEnergyTermsToCompare;
+    //! Constructor
+    EnergyComparison(const EnergyTermsToCompare& energyTermsToCompare);
+    /*! \brief Return the names of energies that will be compared
+     *
+     * This function can be used to provide an input for
+     * openEnergyFileToReadTerms().
+     *
+     * \todo This returns a copy of the keys, which is convenient, but
+     * inefficient. Alternatively, this could return a view of the keys
+     * from a range rather than a container, but there's no implementation
+     * of that in C++11 at the moment. */
+    std::vector<std::string> getEnergyNames() const;
+    /*! \brief Compare \c reference with \c test within \c
+     * energyTermsToCompare_
+     *
+     * Ignore any key found in either \c reference or \c test that is not
+     * found in the other. For all keys found in both frames, compare the
+     * values with EXPECT_REAL_EQ_TOL and the given tolerance for that
+     * key. */
+    void operator()(const EnergyFrame& reference, const EnergyFrame& test) const;
+
+    //! Energy terms to match with given tolerances.
+    EnergyTermsToCompare energyTermsToCompare_;
+};
 
 /*! \brief Check a subset of the energies found in an energy file
  * against reference data.
@@ -76,19 +99,18 @@ void compareEnergyFrames(const EnergyFrame      &reference,
  * Opens the energy file, loops over all frames, matching the
  * indicated energies against refdata at the given tolerance.
  *
- * \param[in]  energyFilename   The name of an energy file.
- * \param[in]  energiesToMatch  Set of energies to match at given tolerances.
- * \param[in]  checker          Root checker for reference data.
+ * \param[in]  energyFilename        The name of an energy file.
+ * \param[in]  energyTermsToCompare  Set of energies to match at given tolerances.
+ * \param[in]  checker               Root checker for reference data.
  *
  * \todo This is quite similar to the functionality used in PmeTest,
  * and we should consider reducing the duplication.
  */
-void
-checkEnergiesAgainstReferenceData(const std::string      &energyFilename,
-                                  const EnergyTolerances &energiesToMatch,
-                                  TestReferenceChecker   *checker);
+void checkEnergiesAgainstReferenceData(const std::string&          energyFilename,
+                                       const EnergyTermsToCompare& energyTermsToCompare,
+                                       TestReferenceChecker*       checker);
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

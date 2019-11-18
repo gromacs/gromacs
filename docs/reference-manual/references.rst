@@ -998,20 +998,6 @@ for parallelization of particle simulations," *J. Chem. Phys.*, **124**
 
 .. raw:: html
 
-   <div id="ref-Tironi95">
-
-.. _refTironi95:
-
-:sup:`71` I.G. Tironi, R. Sperb, P.E. Smith, and W.F. van Gunsteren, "A
-generalized reaction field method for molecular dynamics simulations,"
-*J. Chem. Phys.*, **102** 5451–5459 (1995).
-
-.. raw:: html
-
-   </div>
-
-.. raw:: html
-
    <div id="ref-Spoel2006a">
 
 .. _refSpoel2006a:
@@ -2554,5 +2540,60 @@ molecular dynamics simulations*, (2002).
 
 .. raw:: html
 
+   <div id="ref-GroenhofEwaldArtefact">
+
+.. _refGroenhofEwaldArtefact:
+
+:sup:`181` Hub, J. S., de Groot, B. L., Grubmüller, H., Groenhof, G.,
+"Quantifying artifacts in Ewald simulations of inhomogeneous systems with a net charge,"
+*J. Chem. Theory Comput.*, **10**, 381–390 (2014).
+
+.. raw:: html
+
    </div>
 
+.. raw:: html
+
+   <div id="ref-PallPairInteractions">
+
+.. _refPallPairInteractions:
+
+:sup:`182` Páll, S., Hess, B.,
+"A flexible algorithm for calculating pair interactions on SIMD architectures,"
+*Comput. Phys. Commun.*, **183**, 2641–2650 (2013).
+
+.. raw:: html
+
+   </div>
+
+
+.. raw:: html
+
+   <div id="ref-Orzechowski2019">
+
+.. _refOrzechowski2008:
+
+:sup:`182` Orzechowski M, Tama F., "Flexible fitting of high-resolution x-ray 
+structures into cryoelectron microscopy maps using biased molecular dynamics simulations",
+*Biophysical journal*, *95*, 5692–705, (2008).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   <div id="ref-Igaev2019">
+
+.. _refIgaev2019:
+
+:sup:`183` Igaev, M., Kutzner, C., Bock, L. V., Vaiana, A. C., & Grubmüller, H.,
+"Automated cryo-EM structure refinement using correlation-driven molecular dynamics", *eLife*, **8**, e43542 (2019).
+
+.. raw:: html
+
+   </div>
+
+.. raw:: html
+
+   </div>

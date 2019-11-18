@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,35 +48,31 @@
 
 #include "buttons.h"
 
-typedef struct {
-    const char    *tp;
-    unsigned long *col;
+typedef struct
+{
+    const char*    tp;
+    unsigned long* col;
     t_rgb          rgb;
 } t_atomcolor;
 
 static t_atomcolor ac[] = {
-    { "O",  &LIGHTRED,     { 1,  0,  0   } },
-    { "N",  &LIGHTCYAN,    { 0,  0,  1   } },
-    { "NA", &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "S",  &YELLOW,       { 1,  1,  0   } },
-    { "C",  &LIGHTGREEN,   { 0,  1,  0   } },
-    { "CL", &VIOLET,       { 1,  0,  1   } },
-    { "F",  &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "Z",  &LIGHTGREY,    { 0.6, 0.6, 0.6 } },
-    { "P",  &LIGHTBLUE,    { 0.4, 0.4, 1.0 } },
-    { "H",  &WHITE,        { 0.8, 0.8, 0.8 } }
+    { "O", &LIGHTRED, { 1, 0, 0 } },         { "N", &LIGHTCYAN, { 0, 0, 1 } },
+    { "NA", &LIGHTGREY, { 0.6, 0.6, 0.6 } }, { "S", &YELLOW, { 1, 1, 0 } },
+    { "C", &LIGHTGREEN, { 0, 1, 0 } },       { "CL", &VIOLET, { 1, 0, 1 } },
+    { "F", &LIGHTGREY, { 0.6, 0.6, 0.6 } },  { "Z", &LIGHTGREY, { 0.6, 0.6, 0.6 } },
+    { "P", &LIGHTBLUE, { 0.4, 0.4, 1.0 } },  { "H", &WHITE, { 0.8, 0.8, 0.8 } }
 };
 #define NAC asize(ac)
 
-static int search_ac(const char *type)
+static int search_ac(const char* type)
 {
-    unsigned int i, nb, mij, best, besti;
+    unsigned int nb, mij, best, besti;
 
     best  = 0;
     besti = 0;
     if (nullptr != type)
     {
-        for (i = 0; (i < NAC); i++)
+        for (int i = 0; (i < NAC); i++)
         {
             mij = std::min(static_cast<int>(std::strlen(type)), static_cast<int>(std::strlen(ac[i].tp)));
             for (nb = 0; (nb < mij); nb++)
@@ -96,7 +92,7 @@ static int search_ac(const char *type)
     return besti;
 }
 
-unsigned long Type2Color(const char *type)
+unsigned long Type2Color(const char* type)
 {
     int i;
 
@@ -105,7 +101,7 @@ unsigned long Type2Color(const char *type)
     return *(ac[i].col);
 }
 
-t_rgb *Type2RGB(const char *type)
+t_rgb* Type2RGB(const char* type)
 {
     int i;
 
@@ -114,58 +110,52 @@ t_rgb *Type2RGB(const char *type)
     return &(ac[i].rgb);
 }
 
-static void DrawLegend(t_x11 *x11, t_windata *Win)
+static void DrawLegend(t_x11* x11, t_windata* Win)
 {
 #define NLAB 6
 #define COLS 3
-    static const char *lab[NLAB] = { "C", "O", "H", "S", "N", "P" };
+    static const char* lab[NLAB] = { "C", "O", "H", "S", "N", "P" };
     int                i, i0, dh, dw, w, y, x1, x0;
     unsigned long      cind;
     real               h_2;
 
     XClearWindow(x11->disp, Win->self);
     w   = Win->width;
-    h_2 = Win->height/(2.0*NLAB/COLS);
-    dh  = h_2-2;
+    h_2 = Win->height / (2.0 * NLAB / COLS);
+    dh  = h_2 - 2;
     dw  = dh;
 
     for (i = 0; (i < NLAB); i++)
     {
-        i0   = i % (NLAB/COLS);
-        x0   = (i / (NLAB/COLS))*(Win->width/COLS)+AIR;
-        x1   = x0+2*dw+AIR;
+        i0   = i % (NLAB / COLS);
+        x0   = (i / (NLAB / COLS)) * (Win->width / COLS) + AIR;
+        x1   = x0 + 2 * dw + AIR;
         cind = Type2Color(lab[i]);
         XSetForeground(x11->disp, x11->gc, cind);
-        y = ((2*i0+1)*h_2);
-        XFillRectangle (x11->disp, Win->self, x11->gc, x0, y-dh, 2*dw, 2*dh);
+        y = ((2 * i0 + 1) * h_2);
+        XFillRectangle(x11->disp, Win->self, x11->gc, x0, y - dh, 2 * dw, 2 * dh);
         XSetForeground(x11->disp, x11->gc, WHITE);
-        TextInRect(x11, Win->self, lab[i], x1, y-dh, w-x1, 2*dh,
-                   eXLeft, eYCenter);
+        TextInRect(x11, Win->self, lab[i], x1, y - dh, w - x1, 2 * dh, eXLeft, eYCenter);
     }
     XSetForeground(x11->disp, x11->gc, x11->fg);
 }
 
-static bool LegWCallBack(t_x11 *x11, XEvent *event, Window /*w*/, void *data)
+static bool LegWCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
 {
-    t_legendwin *lw;
+    t_legendwin* lw;
 
-    lw = (t_legendwin *)data;
+    lw = (t_legendwin*)data;
     switch (event->type)
     {
-        case Expose:
-            DrawLegend(x11, &lw->wd);
-            break;
-        default:
-            break;
+        case Expose: DrawLegend(x11, &lw->wd); break;
+        default: break;
     }
     return false;
 }
 
-t_legendwin *init_legw(t_x11 *x11, Window Parent,
-                       int x, int y, int width, int height,
-                       unsigned long fg, unsigned long bg)
+t_legendwin* init_legw(t_x11* x11, Window Parent, int x, int y, int width, int height, unsigned long fg, unsigned long bg)
 {
-    t_legendwin *lw;
+    t_legendwin* lw;
 
     snew(lw, 1);
     InitWin(&lw->wd, x, y, width, height, 1, "Legend Window");
@@ -176,13 +166,13 @@ t_legendwin *init_legw(t_x11 *x11, Window Parent,
     return lw;
 }
 
-void map_legw(t_x11 *x11, t_legendwin *lw)
+void map_legw(t_x11* x11, t_legendwin* lw)
 {
     XMapWindow(x11->disp, lw->wd.self);
 }
 
 
-void done_legw(t_x11 *x11, t_legendwin *lw)
+void done_legw(t_x11* x11, t_legendwin* lw)
 {
     x11->UnRegisterCallback(x11, lw->wd.self);
     sfree(lw);

@@ -57,40 +57,53 @@ namespace gmx
 {
 
 //! Target distribution enum.
-enum {
-    eawhtargetCONSTANT, eawhtargetCUTOFF, eawhtargetBOLTZMANN, eawhtargetLOCALBOLTZMANN, eawhtargetNR
+enum
+{
+    eawhtargetCONSTANT,
+    eawhtargetCUTOFF,
+    eawhtargetBOLTZMANN,
+    eawhtargetLOCALBOLTZMANN,
+    eawhtargetNR
 };
 //! String for target distribution.
-extern const char *eawhtarget_names[eawhtargetNR+1];
+extern const char* eawhtarget_names[eawhtargetNR + 1];
 //! Macro for target distribution string.
-#define EAWHTARGET(e)  enum_name(e, gmx::eawhtargetNR, gmx::eawhtarget_names)
+#define EAWHTARGET(e) enum_name(e, gmx::eawhtargetNR, gmx::eawhtarget_names)
 
 //! Weight histogram growth enum.
-enum {
-    eawhgrowthEXP_LINEAR, eawhgrowthLINEAR, eawhgrowthNR
+enum
+{
+    eawhgrowthEXP_LINEAR,
+    eawhgrowthLINEAR,
+    eawhgrowthNR
 };
 //! String for weight histogram growth
-extern const char *eawhgrowth_names[eawhgrowthNR+1];
+extern const char* eawhgrowth_names[eawhgrowthNR + 1];
 //! Macro for weight histogram growth string.
-#define EAWHGROWTH(e)    enum_name(e, gmx::eawhgrowthNR, gmx::eawhgrowth_names)
+#define EAWHGROWTH(e) enum_name(e, gmx::eawhgrowthNR, gmx::eawhgrowth_names)
 
 //! AWH potential type enum.
-enum {
-    eawhpotentialCONVOLVED, eawhpotentialUMBRELLA, eawhpotentialNR
+enum
+{
+    eawhpotentialCONVOLVED,
+    eawhpotentialUMBRELLA,
+    eawhpotentialNR
 };
 //! String for AWH potential type
-extern const char *eawhpotential_names[eawhpotentialNR+1];
+extern const char* eawhpotential_names[eawhpotentialNR + 1];
 //! Macro for AWH potential type string.
-#define EAWHPOTENTIAL(e)    enum_name(e, gmx::eawhpotentialNR, gmx::eawhpotential_names)
+#define EAWHPOTENTIAL(e) enum_name(e, gmx::eawhpotentialNR, gmx::eawhpotential_names)
 
 //! AWH bias reaction coordinate provider
-enum {
-    eawhcoordproviderPULL, eawhcoordproviderNR
+enum
+{
+    eawhcoordproviderPULL,
+    eawhcoordproviderNR
 };
 //! String for AWH bias reaction coordinate provider.
-extern const char *eawhcoordprovider_names[eawhcoordproviderNR+1];
+extern const char* eawhcoordprovider_names[eawhcoordproviderNR + 1];
 //! Macro for AWH bias reaction coordinate provider.
-#define EAWHCOORDPROVIDER(e)    enum_name(e, gmx::eawhcoordproviderNR, gmx::eawhcoordprovider_names)
+#define EAWHCOORDPROVIDER(e) enum_name(e, gmx::eawhcoordproviderNR, gmx::eawhcoordprovider_names)
 
 /*! \cond INTERNAL */
 
@@ -105,41 +118,41 @@ struct AwhDimParams
     double forceConstant;  /**< The force constant in kJ/mol/nm^2, kJ/mol/rad^2 */
     double diffusion;      /**< Estimated diffusion constant in units of nm^2/ps or rad^2/ps. */
     double coordValueInit; /**< The initial coordinate value. */
-    double coverDiameter;  /**< The diameter that needs to be sampled around a point before it is considered covered. */
+    double coverDiameter; /**< The diameter that needs to be sampled around a point before it is considered covered. */
 };
 
 //! Parameters for an AWH bias.
 struct AwhBiasParams
 {
     // TODO: Turn dimParams into a std::vector when moved into AWH module
-    int           ndim;                  /**< Dimension of the coordinate space. */
-    AwhDimParams *dimParams;             /**< AWH parameters per dimension. */
-    int           eTarget;               /**< Type of target distribution. */
-    double        targetBetaScaling;     /**< Beta scaling value for Boltzmann type target distributions. */
-    double        targetCutoff;          /**< Free energy cutoff value for cutoff type target distribution in kJ/mol.*/
-    int           eGrowth;               /**< How the biasing histogram grows. */
-    int           bUserData;             /**< Is there a user-defined initial PMF estimate and target estimate? */
-    double        errorInitial;          /**< Estimated initial free energy error in kJ/mol. */
-    int           shareGroup;            /**< When >0, the bias is shared with biases of the same group and across multiple simulations when shareBiasMultisim=true */
-    gmx_bool      equilibrateHistogram;  /**< True if the simulation starts out by equilibrating the histogram.  */
+    int           ndim;         /**< Dimension of the coordinate space. */
+    AwhDimParams* dimParams;    /**< AWH parameters per dimension. */
+    int           eTarget;      /**< Type of target distribution. */
+    double   targetBetaScaling; /**< Beta scaling value for Boltzmann type target distributions. */
+    double   targetCutoff; /**< Free energy cutoff value for cutoff type target distribution in kJ/mol.*/
+    int      eGrowth;      /**< How the biasing histogram grows. */
+    int      bUserData;    /**< Is there a user-defined initial PMF estimate and target estimate? */
+    double   errorInitial; /**< Estimated initial free energy error in kJ/mol. */
+    int      shareGroup; /**< When >0, the bias is shared with biases of the same group and across multiple simulations when shareBiasMultisim=true */
+    gmx_bool equilibrateHistogram; /**< True if the simulation starts out by equilibrating the histogram. */
 };
 
 //! Parameters for AWH.
 struct AwhParams
 {
     // TODO: Turn awhBiasParams into a std::vector when moved into AWH module
-    int            numBias;                    /**< The number of AWH biases.*/
-    AwhBiasParams *awhBiasParams;              /**< AWH bias parameters.*/
-    int64_t        seed;                       /**< Random seed.*/
-    int            nstOut;                     /**< Output step interval.*/
-    int            nstSampleCoord;             /**< Number of samples per coordinate sample (also used for PMF) */
-    int            numSamplesUpdateFreeEnergy; /**< Number of samples per free energy update. */
-    int            ePotential;                 /**< Type of potential. */
-    gmx_bool       shareBiasMultisim;          /**< When true, share biases with shareGroup>0 between multi-simulations */
+    int            numBias;       /**< The number of AWH biases.*/
+    AwhBiasParams* awhBiasParams; /**< AWH bias parameters.*/
+    int64_t        seed;          /**< Random seed.*/
+    int            nstOut;        /**< Output step interval.*/
+    int      nstSampleCoord; /**< Number of samples per coordinate sample (also used for PMF) */
+    int      numSamplesUpdateFreeEnergy; /**< Number of samples per free energy update. */
+    int      ePotential;                 /**< Type of potential. */
+    gmx_bool shareBiasMultisim; /**< When true, share biases with shareGroup>0 between multi-simulations */
 };
 
 /*! \endcond */
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_MDTYPES_AWH_PARAMS_H */

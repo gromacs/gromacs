@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,19 +58,18 @@ namespace
  * \param[in] b  Second exponent.
  * \returns c.
  */
-double expSum(double a,
-              double b)
+double expSum(double a, double b)
 {
     return (a > b ? a : b) + std::log1p(std::exp(-std::fabs(a - b)));
 }
 
-}   // namespace
+} // namespace
 
 void PointState::samplePmf(double convolvedBias)
 {
     if (inTargetRegion())
     {
-        logPmfSum_           = expSum(logPmfSum_, -convolvedBias);
+        logPmfSum_ = expSum(logPmfSum_, -convolvedBias);
         numVisitsIteration_ += 1;
     }
 }

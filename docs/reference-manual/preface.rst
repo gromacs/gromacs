@@ -14,7 +14,8 @@ Jiri Kraus, Carsten Kutzner, Per Larsson, Justin A. Lemkul,
 Viveca Lindahl, Magnus Lundborg, Erik Marklund,Pascal Merz,
 Pieter Meulenhoff, Teemu Murtola, Szilárd Páll, Sander Pronk,
 Roland Schulz, Michael Shirts, Alexey Shvetsov, Alfons Sijbers,
-Peter Tieleman, Teemu Virolainen, Christian Wennberg, and Maarten Wolf.
+Peter Tieleman, Teemu Virolainen, Christian Wennberg, Maarten Wolf,
+and Artem Zhmurov.
 
 Mark Abraham, Berk Hess, David van der Spoel, and Erik Lindahl.
 

@@ -38,3 +38,5 @@ const char _gmx_ver_string[] = "@GMX_VERSION_STRING_FULL@";
 const char _gmx_full_git_hash[] = "@GMX_VERSION_FULL_HASH@";
 const char _gmx_central_base_hash[] = "@GMX_VERSION_CENTRAL_BASE_HASH@";
 const char gmxSourceDoiString[] = "@GMX_SOURCE_DOI@";
+const char gmxReleaseSourceFileChecksum[] = "@GMX_RELEASE_SOURCE_FILE_CHECKSUM@"; 
+const char gmxCurrentSourceFileChecksum[] = "@GMX_CURRENT_SOURCE_FILE_CHECKSUM@";

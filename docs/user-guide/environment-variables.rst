@@ -244,11 +244,6 @@ Performance and Run Control
         if set to -1, :ref:`gmx mdrun` will
         not exit if it produces too many LINCS warnings.
 
-``GMX_NB_GENERIC``
-        use the generic C kernel.  Should be set if using
-        the group-based cutoff scheme and also sets ``GMX_NO_SOLV_OPT`` to be true,
-        thus disabling solvent optimizations as well.
-
 ``GMX_NB_MIN_CI``
         neighbor list balancing parameter used when running on GPU. Sets the
         target minimum number pair-lists in order to improve multi-processor load-balance for better
@@ -308,10 +303,6 @@ Performance and Run Control
 
 ``GMX_NOPREDICT``
         shell positions are not predicted.
-
-``GMX_NO_SOLV_OPT``
-        turns off solvent optimizations; automatic if ``GMX_NB_GENERIC``
-        is enabled.
 
 ``GMX_NO_UPDATEGROUPS``
         turns off update groups. May allow for a decomposition of more

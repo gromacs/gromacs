@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="OutputStream"><![CDATA[
+line
+
+par
+
+line2
+formatted
+debugline
+verbose
+]]></String>
+  <String Name="OutputFile"><![CDATA[
+line
+
+par
+
+line2
+formatted
+debugline
+verbose
+]]></String>
+</ReferenceData>

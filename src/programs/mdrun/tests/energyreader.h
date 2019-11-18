@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,106 +72,85 @@ class EnergyFrame;
 namespace test
 {
 
-/*! \brief Convenience function to get std::string keys from a map.
- *
- * This function can be used to provide an input for
- * openEnergyFileToReadFields().
- *
- * \todo This returns a copy of the keys, which is convenient, but
- * inefficient. Alternatively, this could return a view of the keys
- * from a range rather than a container, but there's no implementation
- * of that in C++11 at the moment. */
-template <typename Map>
-std::vector<std::string> getKeys(const Map &m)
-{
-    std::vector<std::string> keys;
-    keys.reserve(m.size());
-    for (const auto &it : m)
-    {
-        keys.push_back(it.first);
-    }
-    return keys;
-}
-
 class EnergyFrameReader;
 //! Convenience smart pointer typedef
 typedef std::unique_ptr<EnergyFrameReader> EnergyFrameReaderPtr;
 
-/*! \brief Open the file and return an object that can read the required fields from frames of an .edr file.
+/*! \brief Open the file and return an object that can read the required terms from frames of an .edr file.
  *
  * \param[in] filename                 Name of the energy file to use
- * \param[in] requiredEnergyFieldNames Names of the energy fields that the caller requires to
+ * \param[in] requiredEnergyTermNames  Names of the energy terms that the caller requires to
  *                                     be present for an .edr file frame to be considered valid
  * \throws    FileIOError              If the .edr file cannot be opened
- * \throws    APIError                 If any required energy field is not present in the file
+ * \throws    APIError                 If any required energy term is not present in the file
  * \throws    std::bad_alloc           When out of memory
  *
  * This function is intended to have the main responsibility for
  * making EnergyFrameReader objects. */
-EnergyFrameReaderPtr openEnergyFileToReadFields(const std::string              &filename,
-                                                const std::vector<std::string> &requiredEnergyFieldNames);
+EnergyFrameReaderPtr openEnergyFileToReadTerms(const std::string&              filename,
+                                               const std::vector<std::string>& requiredEnergyTermNames);
 
 //! Convenience smart pointer typedef
 typedef unique_cptr<ener_file, done_ener_file> ener_file_ptr;
 //! Helper function to free resources (NB free_enxframe only frees the contents, not the pointer itself)
-void done_enxframe(t_enxframe *fr);
+void done_enxframe(t_enxframe* fr);
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_enxframe, done_enxframe> enxframe_ptr;
 
 /*! \internal
  * \brief Manages returning an EnergyFrame containing required energy
- * field values read from successive frames of an .edr file. */
+ * term values read from successive frames of an .edr file. */
 class EnergyFrameReader
 {
-    public:
-        /*! \brief Attempt to read the next frame from the energy file.
-         *
-         * \return Whether a frame was available to read.
-         *
-         * If true is returned, then frame() should be called
-         * to get access to the data. If false is returned, then no
-         * further data exists and no further call to
-         * readNextFrame() or frame() should occur.
-         *
-         * \throws APIError  if an earlier probe has not been properly handled
-         *                   (by calling frame(), or stopping trying to read
-         *                   from the file). */
-        bool readNextFrame();
-        /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
-         *
-         * If the next frame has not been probed for, then probe for
-         * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrame() itself if this
-         * is possible. (This permits user code to avoid making calls
-         * to readNextFrame() in a case where it already knows that
-         * the frame exists.)
-         *
-         * \throws APIError        if no next frame exists.
-         * \throws std::bad_alloc  when out of memory. */
-        EnergyFrame frame();
-        /*! \brief Constructor
-         *
-         * \param[in] indicesOfEnergyFields  Looks up energy fields by name to get the index into a t_enxframe structure read by the legacy API.
-         * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
-        explicit EnergyFrameReader(const std::map<std::string, int> &indicesOfEnergyFields,
-                                   ener_file *energyFile);
-    private:
-        //! Convert energy field name to its index within a t_enxframe from this file.
-        std::map<std::string, int> indicesOfEnergyFields_;
-        //! Owning handle of an open energy file ready to read frames.
-        const ener_file_ptr        energyFileGuard_;
-        //! Owning handle of contents of .edr file frame after reading.
-        const enxframe_ptr         enxframeGuard_;
-        //! Whether the API has been used properly (ie. probe before reading).
-        bool                       haveProbedForNextFrame_;
-        //! Whether there has been a probe that found a next frame.
-        bool                       nextFrameExists_;
+public:
+    /*! \brief Attempt to read the next frame from the energy file.
+     *
+     * \return Whether a frame was available to read.
+     *
+     * If true is returned, then frame() should be called
+     * to get access to the data. If false is returned, then no
+     * further data exists and no further call to
+     * readNextFrame() or frame() should occur.
+     *
+     * \throws APIError  if an earlier probe has not been properly handled
+     *                   (by calling frame(), or stopping trying to read
+     *                   from the file). */
+    bool readNextFrame();
+    /*! \brief Make an EnergyFrame from the contents of the next frame in the energy file.
+     *
+     * If the next frame has not been probed for, then probe for
+     * it. If no next frame exists, then throw APIError, because
+     * user code should have called readNextFrame() itself if this
+     * is possible. (This permits user code to avoid making calls
+     * to readNextFrame() in a case where it already knows that
+     * the frame exists.)
+     *
+     * \throws APIError        if no next frame exists.
+     * \throws std::bad_alloc  when out of memory. */
+    EnergyFrame frame();
+    /*! \brief Constructor
+     *
+     * \param[in] indicesOfEnergyTerms   Looks up energy terms by name to get the index into a t_enxframe structure read by the legacy API.
+     * \param[in] energyFile             Open energy file object to manage, and from which to read frames */
+    explicit EnergyFrameReader(const std::map<std::string, int>& indicesOfEnergyTerms, ener_file* energyFile);
 
-        // Multiple owners of these resources isn't very sensible, so prevent it
-        GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
+private:
+    //! Convert energy term name to its index within a t_enxframe from this file.
+    std::map<std::string, int> indicesOfEnergyTerms_;
+    //! Owning handle of an open energy file ready to read frames.
+    const ener_file_ptr energyFileGuard_;
+    //! Owning handle of contents of .edr file frame after reading.
+    const enxframe_ptr enxframeGuard_;
+    //! Whether the API has been used properly (ie. probe before reading).
+    bool haveProbedForNextFrame_;
+    //! Whether there has been a probe that found a next frame.
+    bool nextFrameExists_;
+
+    // Multiple owners of these resources isn't very sensible, so prevent it
+    GMX_DISALLOW_COPY_AND_ASSIGN(EnergyFrameReader);
 };
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

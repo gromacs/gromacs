@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ typedef unique_cptr<gmx_output_env_t, output_env_done> oenv_ptr;
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_trxstatus, close_trx> trxstatus_file_ptr;
 //! Helper function to free all resources
-void done_trxframe(t_trxframe *fr);
+void done_trxframe(t_trxframe* fr);
 //! Convenience smart pointer typedef
 typedef unique_cptr<t_trxframe, done_trxframe> trxframe_ptr;
 
@@ -78,61 +78,62 @@ typedef unique_cptr<t_trxframe, done_trxframe> trxframe_ptr;
  * successive frames of an trajectory file. */
 class TrajectoryFrameReader
 {
-    public:
-        /*! \brief Attempt to read the next frame from the trajectory file.
-         *
-         * \return Whether a frame was available to read.
-         *
-         * This call wraps the read_first_frame()/read_next_frame()
-         * API, which does the file opening as a side effect of
-         * reading the first frame.
-         *
-         * If true is returned, then TrajectoryFrame frame() should be called
-         * to get access to the data. If false is returned, then no
-         * further data exists and no further call to
-         * readNextFrameStub or TrajectoryFrame frame() should occur.
-         *
-         * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
-         * \throws APIError    if an earlier probe has not been properly handled
-         *                     (by calling frame(), or stopping trying to read
-         *                     from the file). */
-        bool readNextFrame();
-        /*! \brief Return the next frame from the trajectory file.
-         *
-         * If the next frame has not been probed for, then probe for
-         * it. If no next frame exists, then throw APIError, because
-         * user code should have called readNextFrameStub itself if this
-         * is possible. (This permits user code to avoid making calls
-         * to readNextFrameStub in a case where it already knows that
-         * the frame exists.)
-         *
-         * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
-        TrajectoryFrame frame();
-        /*! \brief Constructor
-         *
-         * \param[in] filename  Name of trajectory file to open and read. */
-        explicit TrajectoryFrameReader(const std::string &filename);
-    private:
-        //! Name of trajectory file to open and read
-        std::string        filename_;
-        //! Owning handle of output environment object
-        oenv_ptr           oenvGuard_;
-        //! Owning handle of an open trajectory file ready to read frames.
-        trxstatus_file_ptr trajectoryFileGuard_;
-        //! Owning handle of contents of trajectory file frame after reading.
-        const trxframe_ptr trxframeGuard_;
-        //! Whether the first frame has been read
-        bool               haveReadFirstFrame_;
-        //! Whether the API has been used properly (ie. probe before reading).
-        bool               haveProbedForNextFrame_;
-        //! Whether there has been a probe that found a next frame.
-        bool               nextFrameExists_;
+public:
+    /*! \brief Attempt to read the next frame from the trajectory file.
+     *
+     * \return Whether a frame was available to read.
+     *
+     * This call wraps the read_first_frame()/read_next_frame()
+     * API, which does the file opening as a side effect of
+     * reading the first frame.
+     *
+     * If true is returned, then TrajectoryFrame frame() should be called
+     * to get access to the data. If false is returned, then no
+     * further data exists and no further call to
+     * readNextFrameStub or TrajectoryFrame frame() should occur.
+     *
+     * \throws FileIOError upon reading the first frame, if the trajectory file cannot be opened
+     * \throws APIError    if an earlier probe has not been properly handled
+     *                     (by calling frame(), or stopping trying to read
+     *                     from the file). */
+    bool readNextFrame();
+    /*! \brief Return the next frame from the trajectory file.
+     *
+     * If the next frame has not been probed for, then probe for
+     * it. If no next frame exists, then throw APIError, because
+     * user code should have called readNextFrameStub itself if this
+     * is possible. (This permits user code to avoid making calls
+     * to readNextFrameStub in a case where it already knows that
+     * the frame exists.)
+     *
+     * \throws APIError  if no next frame exists, or if it lacks either time or step number. */
+    TrajectoryFrame frame();
+    /*! \brief Constructor
+     *
+     * \param[in] filename  Name of trajectory file to open and read. */
+    explicit TrajectoryFrameReader(const std::string& filename);
 
-        // Multiple owners of these resources isn't very sensible, so prevent it
-        GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
+private:
+    //! Name of trajectory file to open and read
+    std::string filename_;
+    //! Owning handle of output environment object
+    oenv_ptr oenvGuard_;
+    //! Owning handle of an open trajectory file ready to read frames.
+    trxstatus_file_ptr trajectoryFileGuard_;
+    //! Owning handle of contents of trajectory file frame after reading.
+    const trxframe_ptr trxframeGuard_;
+    //! Whether the first frame has been read
+    bool haveReadFirstFrame_;
+    //! Whether the API has been used properly (ie. probe before reading).
+    bool haveProbedForNextFrame_;
+    //! Whether there has been a probe that found a next frame.
+    bool nextFrameExists_;
+
+    // Multiple owners of these resources isn't very sensible, so prevent it
+    GMX_DISALLOW_COPY_AND_ASSIGN(TrajectoryFrameReader);
 };
 
-}  // namespace test
-}  // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

@@ -35,7 +35,7 @@ The bond stretching between two covalently bonded atoms :math:`i` and
 
 See also :numref:`Fig. %s <fig-bstretch1>`, with the force given by:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = k^b_{ij}({r_{ij}}-b_{ij}) {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = k^b_{ij}({r_{ij}}-b_{ij}) {\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqnharmbondstretchforce
 
 .. _g96bond:
@@ -51,7 +51,7 @@ potential is, for reasons of computational efficiency, written as:
 
 The corresponding force is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = k^b_{ij}({r_{ij}}^2-b_{ij}^2)~\mathbf{r}_ij
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = k^b_{ij}({r_{ij}}^2-b_{ij}^2)~\mathbf{r}_ij
           :label: eqng96bondforce
 
 The force constants for this form of the potential are related to the
@@ -154,7 +154,7 @@ energies. The integration timestep is therefore limited to 1 fs.
 
 The force corresponding to this potential is:
 
-.. math:: \mathbf{F}_i(\mathbf{r}_ij) = 2k^b_{ij}({r_{ij}}-b_{ij})~{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}+ 3k^b_{ij}k^{cub}_{ij}({r_{ij}}-b_{ij})^2~{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
+.. math:: \mathbf{F}_i(\mathbf{r}_{ij}) = 2k^b_{ij}({r_{ij}}-b_{ij})~{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}+ 3k^b_{ij}k^{cub}_{ij}({r_{ij}}-b_{ij})^2~{\frac{{\mathbf{r}_{ij}}}{{r_{ij}}}}
           :label: eqncubicbondforce
 
 FENE bond stretching potential
@@ -170,8 +170,8 @@ FENE (finitely extensible nonlinear elastic) potential \ :ref:`82 <refWarner72>
 The potential looks complicated, but the expression for the force is
 simpler:
 
-.. math:: F_{\mbox{FENE}}(\mathbf{r}_ij) =
-          -k^b_{ij} \left(1 - \frac{{r_{ij}}^2}{b^2_{ij}}\right)^{-1} \mathbf{r}_ij
+.. math:: F_{\mbox{FENE}}(\mathbf{r}_{ij}) =
+          -k^b_{ij} \left(1 - \frac{{r_{ij}}^2}{b^2_{ij}}\right)^{-1} \mathbf{r}_{ij}
           :label: eqnfenebondforce
 
 At short distances the potential asymptotically goes to a harmonic
@@ -209,7 +209,7 @@ The force equations are given by the chain rule:
           \mathbf{F}_j    ~=~ -\mathbf{F}_i-\mathbf{F}_k
           \end{array}
           ~ \mbox{ ~ where ~ } ~
-           {\theta_{ijk}}= \arccos \frac{(\mathbf{r}_ij \cdot \mathbf{r}_{kj})}{r_{ij}r_{kj}}
+           {\theta_{ijk}}= \arccos \frac{(\mathbf{r}_{ij} \cdot \mathbf{r}_{kj})}{r_{ij}r_{kj}}
           :label: eqnharmangleforce
 
 The numbering :math:`i,j,k` is in sequence of covalently bonded atoms.
@@ -231,7 +231,7 @@ angle vibrations:
 
 where
 
-.. math:: \cos({\theta_{ijk}}) = \frac{\mathbf{r}_ij\cdot\mathbf{r}_{kj}}{{r_{ij}}r_{kj}}
+.. math:: \cos({\theta_{ijk}}) = \frac{\mathbf{r}_{ij}\cdot\mathbf{r}_{kj}}{{r_{ij}}r_{kj}}
           :label: eqnG96anglecos
 
 The corresponding force can be derived by partial differentiation with
@@ -597,7 +597,7 @@ torsion angle at only one minimum value. In this case, the factor
 cannot have maxima both at :math:`-\phi_0` and :math:`+\phi_0` maxima,
 but only one of them. For this reason, all the dihedral angles of the
 starting configuration should have their values in the desired angles
-interval and the the equilibrium :math:`\phi_0` value should not be too
+interval and the equilibrium :math:`\phi_0` value should not be too
 close to the interval limits (as for the restricted bending potential,
 described in :ref:`ReB`, at least :math:`10^{\circ}` difference is
 recommended).

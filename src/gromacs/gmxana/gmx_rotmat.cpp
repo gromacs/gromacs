@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2009-2017, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,18 +56,25 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int skip,
-                     int gnx, int *index,
-                     gmx_bool bMW, const t_topology *top, int ePBC, rvec *x_ref)
+static void get_refx(gmx_output_env_t* oenv,
+                     const char*       trxfn,
+                     int               nfitdim,
+                     int               skip,
+                     int               gnx,
+                     int*              index,
+                     gmx_bool          bMW,
+                     const t_topology* top,
+                     int               ePBC,
+                     rvec*             x_ref)
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
-    t_trxstatus *status;
-    real        *ti, min_t;
+    t_trxstatus* status;
+    real *       ti, min_t;
     double       tot_mass, msd, *srmsd, min_srmsd, srmsd_tot;
-    rvec        *x, **xi;
+    rvec *       x, **xi;
     real         xf;
     matrix       box, R;
-    real        *w_rls;
+    real*        w_rls;
     gmx_rmpbc_t  gpbc = nullptr;
 
 
@@ -82,9 +90,11 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     {
         if (index[a] >= natoms)
         {
-            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[a]+1, natoms);
+            gmx_fatal(FARGS,
+                      "Atom index (%d) is larger than the number of atoms in the trajecory (%d)",
+                      index[a] + 1, natoms);
         }
-        w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
+        w_rls[a] = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
@@ -103,13 +113,12 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
             nfr++;
             if (nfr % 100 == 0)
             {
-                srenew(ti, nfr+100);
-                srenew(xi, nfr+100);
+                srenew(ti, nfr + 100);
+                srenew(xi, nfr + 100);
             }
         }
         nfr_all++;
-    }
-    while (read_next_x(oenv, status, &ti[nfr], x, box));
+    } while (read_next_x(oenv, status, &ti[nfr], x, box));
     close_trx(status);
     sfree(x);
 
@@ -120,7 +129,7 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     {
         fprintf(stdout, "\rProcessing frame %d of %d", i, nfr);
         fflush(stdout);
-        for (j = i+1; j < nfr; j++)
+        for (j = i + 1; j < nfr; j++)
         {
             calc_fit_R(nfitdim, gnx, w_rls, xi[i], xi[j], R);
 
@@ -132,12 +141,12 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
                     xf = 0;
                     for (c = 0; c < DIM; c++)
                     {
-                        xf += R[r][c]*xi[j][a][c];
+                        xf += R[r][c] * xi[j][a][c];
                     }
-                    msd += w_rls[a]*gmx::square(xi[i][a][r] - xf);
+                    msd += w_rls[a] * gmx::square(xi[i][a][r] - xf);
                 }
             }
-            msd      /= tot_mass;
+            msd /= tot_mass;
             srmsd[i] += std::sqrt(msd);
             srmsd[j] += std::sqrt(msd);
         }
@@ -163,9 +172,8 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     }
     sfree(srmsd);
 
-    printf("Average RMSD between all structures: %.3f\n", srmsd_tot/nfr);
-    printf("Structure with lowest RMSD to all others: time %g, av. RMSD %.3f\n",
-           min_t, min_srmsd);
+    printf("Average RMSD between all structures: %.3f\n", srmsd_tot / nfr);
+    printf("Structure with lowest RMSD to all others: time %g, av. RMSD %.3f\n", min_t, min_srmsd);
 
     for (a = 0; a < gnx; a++)
     {
@@ -175,9 +183,9 @@ static void get_refx(gmx_output_env_t *oenv, const char *trxfn, int nfitdim, int
     sfree(xi);
 }
 
-int gmx_rotmat(int argc, char *argv[])
+int gmx_rotmat(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] plots the rotation matrix required for least squares fitting",
         "a conformation onto the reference conformation provided with",
         "[TT]-s[tt]. Translation is removed before fitting.",
@@ -203,46 +211,43 @@ int gmx_rotmat(int argc, char *argv[])
         "Option [TT]-fitxy[tt] fits in the [IT]x-y[it] plane before determining",
         "the rotation matrix."
     };
-    const char       *reffit[] =
-    { nullptr, "none", "xyz", "xy", nullptr };
-    static int        skip   = 1;
-    static gmx_bool   bFitXY = FALSE, bMW = TRUE;
-    t_pargs           pa[]   = {
-        { "-ref", FALSE, etENUM, {reffit},
-          "Determine the optimal reference structure" },
-        { "-skip", FALSE, etINT, {&skip},
-          "Use every nr-th frame for [TT]-ref[tt]" },
-        { "-fitxy", FALSE, etBOOL, {&bFitXY},
+    const char*     reffit[] = { nullptr, "none", "xyz", "xy", nullptr };
+    static int      skip     = 1;
+    static gmx_bool bFitXY = FALSE, bMW = TRUE;
+    t_pargs         pa[] = {
+        { "-ref", FALSE, etENUM, { reffit }, "Determine the optimal reference structure" },
+        { "-skip", FALSE, etINT, { &skip }, "Use every nr-th frame for [TT]-ref[tt]" },
+        { "-fitxy",
+          FALSE,
+          etBOOL,
+          { &bFitXY },
           "Fit the x/y rotation before determining the rotation" },
-        { "-mw", FALSE, etBOOL, {&bMW},
-          "Use mass weighted fitting" }
+        { "-mw", FALSE, etBOOL, { &bMW }, "Use mass weighted fitting" }
     };
-    FILE             *out;
-    t_trxstatus      *status;
+    FILE*             out;
+    t_trxstatus*      status;
     t_topology        top;
     int               ePBC;
-    rvec             *x_ref, *x;
+    rvec *            x_ref, *x;
     matrix            box, R;
     real              t;
     int               natoms, i;
-    char             *grpname;
+    char*             grpname;
     int               gnx;
     gmx_rmpbc_t       gpbc = nullptr;
-    int              *index;
-    gmx_output_env_t *oenv;
-    real             *w_rls;
-    const char       *leg[]  = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
+    int*              index;
+    gmx_output_env_t* oenv;
+    real*             w_rls;
+    const char*       leg[] = { "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz" };
 #define NLEG asize(leg)
-    t_filenm          fnm[] = {
-        { efTRX, "-f",   nullptr,       ffREAD },
-        { efTPS, nullptr,   nullptr,       ffREAD },
-        { efNDX, nullptr,   nullptr,       ffOPTRD },
-        { efXVG, nullptr,   "rotmat",   ffWRITE }
-    };
+    t_filenm fnm[] = { { efTRX, "-f", nullptr, ffREAD },
+                       { efTPS, nullptr, nullptr, ffREAD },
+                       { efNDX, nullptr, nullptr, ffOPTRD },
+                       { efXVG, nullptr, "rotmat", ffWRITE } };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -258,8 +263,8 @@ int gmx_rotmat(int argc, char *argv[])
     GMX_RELEASE_ASSERT(reffit[0] != nullptr, "Options inconsistency; reffit[0] is NULL");
     if (reffit[0][0] != 'n')
     {
-        get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip,
-                 gnx, index, bMW, &top, ePBC, x_ref);
+        get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip, gnx, index,
+                 bMW, &top, ePBC, x_ref);
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
@@ -269,7 +274,9 @@ int gmx_rotmat(int argc, char *argv[])
     {
         if (index[i] >= natoms)
         {
-            gmx_fatal(FARGS, "Atom index (%d) is larger than the number of atoms in the trajecory (%d)", index[i]+1, natoms);
+            gmx_fatal(FARGS,
+                      "Atom index (%d) is larger than the number of atoms in the trajecory (%d)",
+                      index[i] + 1, natoms);
         }
         w_rls[index[i]] = (bMW ? top.atoms.atom[index[i]].m : 1.0);
     }
@@ -279,8 +286,7 @@ int gmx_rotmat(int argc, char *argv[])
         reset_x(gnx, index, natoms, nullptr, x_ref, w_rls);
     }
 
-    out = xvgropen(ftp2fn(efXVG, NFILE, fnm),
-                   "Fit matrix", "Time (ps)", "", oenv);
+    out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Fit matrix", "Time (ps)", "", oenv);
     xvgr_legend(out, NLEG, leg, oenv);
 
     do
@@ -296,14 +302,9 @@ int gmx_rotmat(int argc, char *argv[])
 
         calc_fit_R(DIM, natoms, w_rls, x_ref, x, R);
 
-        fprintf(out,
-                "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n",
-                t,
-                R[XX][XX], R[XX][YY], R[XX][ZZ],
-                R[YY][XX], R[YY][YY], R[YY][ZZ],
-                R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+        fprintf(out, "%7g %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f %7.4f\n", t, R[XX][XX],
+                R[XX][YY], R[XX][ZZ], R[YY][XX], R[YY][YY], R[YY][ZZ], R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);
+    } while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

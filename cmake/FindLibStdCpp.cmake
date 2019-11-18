@@ -89,7 +89,7 @@ if(NEED_TO_FIND_GPLUSPLUS)
     find_program(GMX_GPLUSPLUS_PATH g++)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         set(EXTRA_MESSAGE
-            " Clang supports using libc++ (CXXFLAGS=--stdlib=libc++), and if so there will be no need to find g++.")
+            " Clang supports using libc++ with -DCMAKE_CXX_FLAGS=--stdlib=libc++, and if so there will be no need to find g++.")
     endif()
     if (NOT EXISTS "${GMX_GPLUSPLUS_PATH}")
         message(FATAL_ERROR "Couldn't find g++. Please set GMX_GPLUSPLUS_PATH, PATH or CMAKE_PREFIX_PATH "

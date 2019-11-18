@@ -63,8 +63,7 @@
 namespace gmx
 {
 
-HistogramSize::HistogramSize(const AwhBiasParams &awhBiasParams,
-                             double               histogramSizeInitial) :
+HistogramSize::HistogramSize(const AwhBiasParams& awhBiasParams, double histogramSizeInitial) :
     numUpdates_(0),
     histogramSize_(histogramSizeInitial),
     inInitialStage_(awhBiasParams.eGrowth == eawhgrowthEXP_LINEAR),
@@ -75,17 +74,15 @@ HistogramSize::HistogramSize(const AwhBiasParams &awhBiasParams,
 {
 }
 
-double HistogramSize::newHistogramSizeInitialStage(const BiasParams &params,
+double HistogramSize::newHistogramSizeInitialStage(const BiasParams& params,
                                                    double            t,
                                                    bool              detectedCovering,
                                                    ArrayRef<double>  weightsumCovering,
-                                                   FILE             *fplog)
+                                                   FILE*             fplog)
 {
     /* The histogram size is kept constant until the sampling region has been covered
-       and the the current sample weight is large enough and the histogram is ready. */
-    if (!detectedCovering ||
-        (logScaledSampleWeight_ < maxLogScaledSampleWeight_) ||
-        equilibrateHistogram_)
+       and the current sample weight is large enough and the histogram is ready. */
+    if (!detectedCovering || (logScaledSampleWeight_ < maxLogScaledSampleWeight_) || equilibrateHistogram_)
     {
         return histogramSize_;
     }
@@ -97,7 +94,7 @@ double HistogramSize::newHistogramSizeInitialStage(const BiasParams &params,
 
     /*  The current sample weigth is now the maximum. */
     double prevMaxLogScaledSampleWeight = maxLogScaledSampleWeight_;
-    maxLogScaledSampleWeight_ = logScaledSampleWeight_;
+    maxLogScaledSampleWeight_           = logScaledSampleWeight_;
 
     /* Increase the histogram size by a constant scale factor if we can, i.e. if the sample weight
        resulting from such a scaling is still larger than the previous maximum sample weight
@@ -109,10 +106,12 @@ double HistogramSize::newHistogramSizeInitialStage(const BiasParams &params,
     static const double growthFactor = 3;
 
     /* The scale factor is in most cases very close to the histogram growth factor. */
-    double scaleFactor      = growthFactor/(1. + params.updateWeight*params.localWeightScaling/histogramSize_);
+    double scaleFactor =
+            growthFactor / (1. + params.updateWeight * params.localWeightScaling / histogramSize_);
 
-    bool   exitInitialStage = (logScaledSampleWeight_ - std::log(scaleFactor) <= prevMaxLogScaledSampleWeight);
-    double newHistogramSize = exitInitialStage ? histogramSize_ : histogramSize_*growthFactor;
+    bool exitInitialStage =
+            (logScaledSampleWeight_ - std::log(scaleFactor) <= prevMaxLogScaledSampleWeight);
+    double newHistogramSize = exitInitialStage ? histogramSize_ : histogramSize_ * growthFactor;
 
     /* Update the AWH bias about the exit. */
     inInitialStage_ = !exitInitialStage;
@@ -150,12 +149,12 @@ namespace
  * \param[in] pointStates  The state of the bias points.
  * \returns true if the histogram is equilibrated.
  */
-bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
+bool histogramIsEquilibrated(const std::vector<PointState>& pointStates)
 {
     /* Get the total weight of the total weight histogram; needed for normalization. */
     double totalWeight     = 0;
     int    numTargetPoints = 0;
-    for (auto &pointState : pointStates)
+    for (auto& pointState : pointStates)
     {
         if (!pointState.inTargetRegion())
         {
@@ -165,22 +164,22 @@ bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
         numTargetPoints++;
     }
     GMX_RELEASE_ASSERT(totalWeight > 0, "No samples when normalizing AWH histogram.");
-    double              inverseTotalWeight   = 1./totalWeight;
+    double inverseTotalWeight = 1. / totalWeight;
 
     /* Points with target weight below a certain cutoff are ignored. */
-    static const double minTargetCutoff  = 0.05;
-    double              minTargetWeight  = 1./numTargetPoints*minTargetCutoff;
+    static const double minTargetCutoff = 0.05;
+    double              minTargetWeight = 1. / numTargetPoints * minTargetCutoff;
 
     /* Points with error less than this tolerance pass the check.*/
-    static const double errorTolerance   = 0.2;
+    static const double errorTolerance = 0.2;
 
     /* Sum up weight of points that do or don't pass the check. */
     double equilibratedWeight    = 0;
     double notEquilibratedWeight = 0;
-    for (auto &pointState : pointStates)
+    for (auto& pointState : pointStates)
     {
         double targetWeight  = pointState.target();
-        double sampledWeight = pointState.weightSumTot()*inverseTotalWeight;
+        double sampledWeight = pointState.weightSumTot() * inverseTotalWeight;
 
         /* Ignore these points. */
         if (!pointState.inTargetRegion() || targetWeight < minTargetWeight)
@@ -188,7 +187,7 @@ bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
             continue;
         }
 
-        if (std::abs(sampledWeight/targetWeight - 1) > errorTolerance)
+        if (std::abs(sampledWeight / targetWeight - 1) > errorTolerance)
         {
             notEquilibratedWeight += targetWeight;
         }
@@ -202,17 +201,17 @@ bool histogramIsEquilibrated(const std::vector<PointState> &pointStates)
        distribution. Boundaries will in general fail and this should be ignored (to some extent). */
     static const double minFraction = 0.8;
 
-    return equilibratedWeight/(equilibratedWeight + notEquilibratedWeight) > minFraction;;
+    return equilibratedWeight / (equilibratedWeight + notEquilibratedWeight) > minFraction;
 }
 
-}   // namespace
+} // namespace
 
-double HistogramSize::newHistogramSize(const BiasParams              &params,
+double HistogramSize::newHistogramSize(const BiasParams&              params,
                                        double                         t,
                                        bool                           covered,
-                                       const std::vector<PointState> &pointStates,
+                                       const std::vector<PointState>& pointStates,
                                        ArrayRef<double>               weightsumCovering,
-                                       FILE                          *fplog)
+                                       FILE*                          fplog)
 {
     double newHistogramSize;
     if (inInitialStage_)
@@ -232,7 +231,8 @@ double HistogramSize::newHistogramSize(const BiasParams              &params,
                 }
                 else if (!havePrintedAboutCovering_)
                 {
-                    fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n", prefix.c_str(), t);
+                    fprintf(fplog, "%s covered but histogram not equilibrated at t = %g ps.\n",
+                            prefix.c_str(), t);
                     havePrintedAboutCovering_ = true; /* Just print once. */
                 }
             }
@@ -244,14 +244,13 @@ double HistogramSize::newHistogramSize(const BiasParams              &params,
     else
     {
         /* If not in the initial stage, the histogram grows at a linear, possibly scaled down, rate. */
-        newHistogramSize = histogramSize_ + params.updateWeight*params.localWeightScaling;
+        newHistogramSize = histogramSize_ + params.updateWeight * params.localWeightScaling;
     }
 
     return newHistogramSize;
 }
 
-void HistogramSize::setHistogramSize(double histogramSize,
-                                     double weightHistogramScalingFactor)
+void HistogramSize::setHistogramSize(double histogramSize, double weightHistogramScalingFactor)
 {
     GMX_ASSERT(histogramSize > 0, "The histogram should not be empty");
     GMX_ASSERT(weightHistogramScalingFactor > 0, "The histogram scaling factor should be positive");
@@ -265,7 +264,7 @@ void HistogramSize::setHistogramSize(double histogramSize,
     logScaledSampleWeight_ -= std::log(weightHistogramScalingFactor);
 };
 
-void HistogramSize::restoreFromHistory(const AwhBiasStateHistory &stateHistory)
+void HistogramSize::restoreFromHistory(const AwhBiasStateHistory& stateHistory)
 {
     numUpdates_               = stateHistory.numUpdates;
     histogramSize_            = stateHistory.histSize;
@@ -276,7 +275,7 @@ void HistogramSize::restoreFromHistory(const AwhBiasStateHistory &stateHistory)
     havePrintedAboutCovering_ = false;
 }
 
-void HistogramSize::storeState(AwhBiasStateHistory *stateHistory) const
+void HistogramSize::storeState(AwhBiasStateHistory* stateHistory) const
 {
     stateHistory->numUpdates               = numUpdates_;
     stateHistory->histSize                 = histogramSize_;

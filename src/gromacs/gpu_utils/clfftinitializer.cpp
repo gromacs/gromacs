@@ -45,46 +45,67 @@
 
 #include "config.h"
 
-#include <memory>
-
+#include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
 #if GMX_GPU == GMX_GPU_OPENCL
-#include <clFFT.h>
+#    include <clFFT.h>
 #endif
 
 namespace gmx
 {
 
+namespace
+{
+
+/*! \brief The clFFT library may only be initialized once per process,
+ * and this is orchestrated by this shared value and mutex.
+ *
+ * This ensures that thread-MPI and OpenMP builds can't accidentally
+ * initialize it more than once. */
+//! @{
+gmx_unused bool g_clfftInitialized = false;
+gmx::Mutex      g_clfftMutex;
+//! @}
+
+} // namespace
+
 ClfftInitializer::ClfftInitializer()
 {
 #if GMX_GPU == GMX_GPU_OPENCL
-    clfftSetupData fftSetup;
-    int            initErrorCode = clfftInitSetupData(&fftSetup);
+    gmx::lock_guard<gmx::Mutex> guard(g_clfftMutex);
+    clfftSetupData              fftSetup;
+    int                         initErrorCode = clfftInitSetupData(&fftSetup);
     if (initErrorCode != 0)
     {
-        GMX_THROW(InternalError(formatString("Failed to initialize the clFFT library, error code %d", initErrorCode)));
+        GMX_THROW(InternalError(formatString(
+                "Failed to initialize the clFFT library, error code %d", initErrorCode)));
     }
     initErrorCode = clfftSetup(&fftSetup);
     if (initErrorCode != 0)
     {
-        GMX_THROW(InternalError(formatString("Failed to initialize the clFFT library, error code %d", initErrorCode)));
+        GMX_THROW(InternalError(formatString(
+                "Failed to initialize the clFFT library, error code %d", initErrorCode)));
     }
+    g_clfftInitialized = true;
+#else
+    GMX_UNUSED_VALUE(g_clfftInitialized);
 #endif
 }
 
 ClfftInitializer::~ClfftInitializer()
 {
 #if GMX_GPU == GMX_GPU_OPENCL
-    clfftTeardown();
-    // TODO: log non-0 return values (errors)
+    gmx::lock_guard<gmx::Mutex> guard(g_clfftMutex);
+    if (g_clfftInitialized)
+    {
+        clfftTeardown();
+        // TODO: log non-zero return values (errors)
+    }
+    g_clfftInitialized = false;
 #endif
 }
 
-std::unique_ptr<ClfftInitializer> initializeClfftLibrary()
-{
-    return std::make_unique<ClfftInitializer>();
-}
-
-}  // namespace gmx
+} // namespace gmx

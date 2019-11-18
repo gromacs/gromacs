@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,11 +57,10 @@ using ::testing::internal::FloatingPoint;
  *
  * \ingroup module_testutils
  */
-template <typename FloatType>
+template<typename FloatType>
 FloatType addUlps(FloatType value, int ulps)
 {
-    return FloatingPoint<FloatType>::ReinterpretBits(
-            FloatingPoint<FloatType>(value).bits() + ulps);
+    return FloatingPoint<FloatType>::ReinterpretBits(FloatingPoint<FloatType>(value).bits() + ulps);
 }
 
 using ::gmx::test::FloatingPointDifference;
@@ -72,18 +71,18 @@ TEST(FloatingPointDifferenceTest, HandlesEqualValues)
     EXPECT_TRUE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
 // TODO: Use typed tests to run all the tests for single and double.
 TEST(FloatingPointDifferenceTest, HandlesFloatValues)
 {
-    FloatingPointDifference diff(1.2f, 1.2f);
+    FloatingPointDifference diff(1.2F, 1.2F);
     EXPECT_FALSE(diff.isDouble());
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_FALSE(diff.signsDiffer());
 }
 
@@ -92,7 +91,7 @@ TEST(FloatingPointDifferenceTest, HandlesZerosOfDifferentSign)
     FloatingPointDifference diff(0.0, GMX_DOUBLE_NEGZERO);
     EXPECT_FALSE(diff.isNaN());
     EXPECT_EQ(0.0, diff.asAbsolute());
-    EXPECT_EQ(0U,  diff.asUlps());
+    EXPECT_EQ(0U, diff.asUlps());
     EXPECT_TRUE(diff.signsDiffer());
 }
 
@@ -135,7 +134,7 @@ TEST(FloatingPointDifferenceTest, HandlesUlpDifferences)
 TEST(FloatingPointDifferenceTest, HandlesUlpDifferenceAcrossZero)
 {
     const double            first  = addUlps(GMX_DOUBLE_NEGZERO, 2);
-    const double            second = addUlps( 0.0, 2);
+    const double            second = addUlps(0.0, 2);
     FloatingPointDifference diff(first, second);
     EXPECT_FALSE(diff.isNaN());
     EXPECT_DOUBLE_EQ(second - first, diff.asAbsolute());
@@ -156,14 +155,14 @@ TEST(FloatingPointToleranceTest, UlpTolerance)
     using gmx::test::ulpTolerance;
 
     FloatingPointDifference fequal(1.0, 1.0);
-    FloatingPointDifference fulp2(1.0f, addUlps(1.0f, 2));
+    FloatingPointDifference fulp2(1.0F, addUlps(1.0F, 2));
     EXPECT_TRUE(ulpTolerance(0).isWithin(fequal));
     EXPECT_FALSE(ulpTolerance(1).isWithin(fulp2));
     EXPECT_TRUE(ulpTolerance(2).isWithin(fulp2));
 
     FloatingPointDifference dequal(1.0, 1.0);
-    FloatingPointDifference dulp2(1.0,  addUlps(1.0, 2));
-    FloatingPointDifference dulp2f(1.0,  static_cast<double>(addUlps(1.0f, 2)));
+    FloatingPointDifference dulp2(1.0, addUlps(1.0, 2));
+    FloatingPointDifference dulp2f(1.0, static_cast<double>(addUlps(1.0F, 2)));
     EXPECT_TRUE(ulpTolerance(0).isWithin(dequal));
     EXPECT_TRUE(ulpTolerance(2).isWithin(dulp2));
     EXPECT_FALSE(ulpTolerance(2).isWithin(dulp2f));
@@ -173,11 +172,11 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsFloatingPoint)
 {
     using gmx::test::relativeToleranceAsFloatingPoint;
 
-    FloatingPointDifference fequal(1.0f, 1.0f);
-    FloatingPointDifference fulp2(1.0f, addUlps(1.0f, 2));
-    FloatingPointDifference fdiff(1.0f, 1.011f);
-    FloatingPointDifference fsmall(0.1f, 0.111f);
-    FloatingPointDifference fsmall2(0.1f, 0.121f);
+    FloatingPointDifference fequal(1.0F, 1.0F);
+    FloatingPointDifference fulp2(1.0F, addUlps(1.0F, 2));
+    FloatingPointDifference fdiff(1.0F, 1.011F);
+    FloatingPointDifference fsmall(0.1F, 0.111F);
+    FloatingPointDifference fsmall2(0.1F, 0.121F);
     EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(fequal));
     EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-9).isWithin(fequal));
     EXPECT_TRUE(relativeToleranceAsFloatingPoint(1.0, 1e-2).isWithin(fulp2));
@@ -189,7 +188,7 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsFloatingPoint)
     EXPECT_FALSE(relativeToleranceAsFloatingPoint(1.0, 2e-2).isWithin(fsmall2));
 
     FloatingPointDifference dequal(1.0, 1.0);
-    FloatingPointDifference dulp2f(1.0, static_cast<double>(addUlps(1.0f, 2)));
+    FloatingPointDifference dulp2f(1.0, static_cast<double>(addUlps(1.0F, 2)));
     FloatingPointDifference ddiff(1.0, 1.011);
     FloatingPointDifference dsmall(0.1, 0.111);
     FloatingPointDifference dsmall2(0.1, 0.121);
@@ -208,10 +207,10 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsUlp)
 {
     using gmx::test::relativeToleranceAsUlp;
 
-    FloatingPointDifference fequal(1.0f, 1.0f);
-    FloatingPointDifference fulp4(1.0f, addUlps(1.0f, 4));
-    FloatingPointDifference fsmall(0.1f, addUlps(1.0f, 2) - 0.9f);
-    FloatingPointDifference fsmall2(0.1f, addUlps(1.0f, 6) - 0.9f);
+    FloatingPointDifference fequal(1.0F, 1.0F);
+    FloatingPointDifference fulp4(1.0F, addUlps(1.0F, 4));
+    FloatingPointDifference fsmall(0.1F, addUlps(1.0F, 2) - 0.9F);
+    FloatingPointDifference fsmall2(0.1F, addUlps(1.0F, 6) - 0.9F);
     EXPECT_TRUE(relativeToleranceAsUlp(1.0, 2).isWithin(fequal));
     EXPECT_FALSE(relativeToleranceAsUlp(1.0, 2).isWithin(fulp4));
     EXPECT_TRUE(relativeToleranceAsUlp(1.0, 4).isWithin(fulp4));
@@ -221,7 +220,7 @@ TEST(FloatingPointToleranceTest, RelativeToleranceAsUlp)
 
     FloatingPointDifference dequal(1.0, 1.0);
     FloatingPointDifference dulp4(1.0, addUlps(1.0, 4));
-    FloatingPointDifference dulp4f(1.0,  static_cast<double>(addUlps(1.0f, 4)));
+    FloatingPointDifference dulp4f(1.0, static_cast<double>(addUlps(1.0F, 4)));
     FloatingPointDifference dsmall(0.1, addUlps(1.0, 2) - 0.9);
     FloatingPointDifference dsmall2(0.1, addUlps(1.0, 6) - 0.9);
     EXPECT_TRUE(relativeToleranceAsUlp(1.0, 2).isWithin(dequal));
@@ -238,11 +237,11 @@ TEST(FloatingPointToleranceTest, DefaultFloatTolerance)
     using gmx::test::defaultFloatTolerance;
 
     // Differences within 4 single-precision ULPs are within the tolerance
-    FloatingPointDifference fequal(1.0f, 1.0f);
-    FloatingPointDifference fulp4(1.0f, addUlps(1.0f, 4));
-    FloatingPointDifference fulp8(1.0f, addUlps(1.0f, 8));
-    FloatingPointDifference fsmall(0.1f, addUlps(1.0f, 2) - 0.9f);
-    FloatingPointDifference fsmall2(0.1f, addUlps(1.0f, 6) - 0.9f);
+    FloatingPointDifference fequal(1.0F, 1.0F);
+    FloatingPointDifference fulp4(1.0F, addUlps(1.0F, 4));
+    FloatingPointDifference fulp8(1.0F, addUlps(1.0F, 8));
+    FloatingPointDifference fsmall(0.1F, addUlps(1.0F, 2) - 0.9F);
+    FloatingPointDifference fsmall2(0.1F, addUlps(1.0F, 6) - 0.9F);
     EXPECT_TRUE(defaultFloatTolerance().isWithin(fequal));
     EXPECT_TRUE(defaultFloatTolerance().isWithin(fulp4));
     EXPECT_FALSE(defaultFloatTolerance().isWithin(fulp8));
@@ -254,10 +253,10 @@ TEST(FloatingPointToleranceTest, DefaultFloatTolerance)
     FloatingPointDifference dequal(1.0, 1.0);
     FloatingPointDifference dulp4(1.0, addUlps(1.0, 4));
     FloatingPointDifference dulp8(1.0, addUlps(1.0, 8));
-    FloatingPointDifference dulp4f(1.0, static_cast<double>(addUlps(1.0f, 4)));
-    FloatingPointDifference dulp8f(1.0, static_cast<double>(addUlps(1.0f, 8)));
-    FloatingPointDifference dsmallf(0.1, static_cast<double>(addUlps(1.0f, 2) - 0.9f));
-    FloatingPointDifference dsmall2f(0.1, static_cast<double>(addUlps(1.0f, 6) - 0.9f));
+    FloatingPointDifference dulp4f(1.0, static_cast<double>(addUlps(1.0F, 4)));
+    FloatingPointDifference dulp8f(1.0, static_cast<double>(addUlps(1.0F, 8)));
+    FloatingPointDifference dsmallf(0.1, static_cast<double>(addUlps(1.0F, 2) - 0.9F));
+    FloatingPointDifference dsmall2f(0.1, static_cast<double>(addUlps(1.0F, 6) - 0.9F));
     EXPECT_TRUE(defaultFloatTolerance().isWithin(dequal));
     EXPECT_TRUE(defaultFloatTolerance().isWithin(dulp4));
     EXPECT_TRUE(defaultFloatTolerance().isWithin(dulp8));

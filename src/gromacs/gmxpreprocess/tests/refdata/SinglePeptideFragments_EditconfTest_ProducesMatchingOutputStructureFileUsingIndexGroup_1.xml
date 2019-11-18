@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Output file type using index group">gro</String>
+  <OutputFiles Name="Files">
+    <File Name="-o">
+      <String Name="Contents"><![CDATA[
+Protein (first fragment of regressiontests/complex/aminoacids.gro)
+   23
+    3CYS      N   13   4.141   1.964  -0.013
+    3CYS      H   14   4.193   1.988  -0.095
+    3CYS     CA   15   4.000   1.996  -0.004
+    3CYS     HA   16   3.973   1.955   0.083
+    3CYS     CB   17   3.969   2.151  -0.004
+    3CYS    HB1   18   4.009   2.190  -0.087
+    3CYS    HB2   19   3.870   2.162  -0.007
+    3CYS     SG   20   4.043   2.219   0.147
+    3CYS     HG   21   4.026   2.317   0.151
+    3CYS      C   22   3.930   1.933  -0.122
+    3CYS      O   23   3.817   1.968  -0.155
+    4ASP      N   24   4.000   1.846  -0.198
+    4ASP      H   25   4.097   1.837  -0.175
+    4ASP     CA   26   3.953   1.764  -0.309
+    4ASP     HA   27   3.911   1.822  -0.379
+    4ASP     CB   28   4.078   1.694  -0.374
+    4ASP    HB1   29   4.050   1.636  -0.451
+    4ASP    HB2   30   4.144   1.762  -0.406
+    4ASP     CG   31   4.143   1.608  -0.268
+    4ASP    OD1   32   4.122   1.485  -0.281
+    4ASP    OD2   33   4.194   1.658  -0.163
+    4ASP      C   34   3.841   1.669  -0.256
+    4ASP      O   35   3.747   1.701  -0.182
+   8.05620   5.63710   7.44500
+]]></String>
+    </File>
+  </OutputFiles>
+</ReferenceData>

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,9 +47,10 @@
 #define GMX_OPTIONS_ABSTRACTSECTION_H
 
 #include "gromacs/options/ioptionscontainerwithsections.h"
-#include "gromacs/options/isectionstorage.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "isectionstorage.h"
 
 namespace gmx
 {
@@ -68,23 +69,23 @@ class OptionSectionImpl;
  */
 class AbstractOptionSection
 {
-    protected:
-        //! \cond libapi
-        //! Initializes option properties with the given name.
-        explicit AbstractOptionSection(const char *name) : name_(name) {}
-        virtual ~AbstractOptionSection() {}
-        /*! \brief
-         * Creates a storage object corresponding to this section.
-         *
-         * Similar to AbstractOption::createStorage().
-         */
-        virtual std::unique_ptr<IOptionSectionStorage> createStorage() const = 0;
-        //! \endcond
+protected:
+    //! \cond libapi
+    //! Initializes option properties with the given name.
+    explicit AbstractOptionSection(const char* name) : name_(name) {}
+    virtual ~AbstractOptionSection() {}
+    /*! \brief
+     * Creates a storage object corresponding to this section.
+     *
+     * Similar to AbstractOption::createStorage().
+     */
+    virtual std::unique_ptr<IOptionSectionStorage> createStorage() const = 0;
+    //! \endcond
 
-    private:
-        const char *name_;
+private:
+    const char* name_;
 
-        friend class internal::OptionSectionImpl;
+    friend class internal::OptionSectionImpl;
 };
 
 /*! \brief
@@ -97,76 +98,70 @@ class AbstractOptionSection
  */
 class AbstractOptionSectionHandle : public IOptionsContainerWithSections
 {
-    public:
-        // From IOptionsContainer
-        //! \copydoc IOptionsContainer::addGroup()
-        IOptionsContainer &addGroup() override;
+public:
+    // From IOptionsContainer
+    //! \copydoc IOptionsContainer::addGroup()
+    IOptionsContainer& addGroup() override;
 
-    protected:
-        //! \cond libapi
-        /*! \brief
-         * Returns the storage for a particular type of section.
-         *
-         * This is intended for use in derived class constructors, where the
-         * handle needs access to the actual storage.  The handle should know
-         * the type of storage created for the section type it deals with, so
-         * the cast should always be successful.
-         */
-        template <typename StorageType>
-        static StorageType *getStorage(internal::OptionSectionImpl *section)
-        {
-            IOptionSectionStorage *storage = getStorage(section);
-            StorageType           *typedStorage
-                = dynamic_cast<StorageType *>(storage);
-            GMX_ASSERT(typedStorage != nullptr, "Mismatching section storage type");
-            return typedStorage;
-        }
+protected:
+    //! \cond libapi
+    /*! \brief
+     * Returns the storage for a particular type of section.
+     *
+     * This is intended for use in derived class constructors, where the
+     * handle needs access to the actual storage.  The handle should know
+     * the type of storage created for the section type it deals with, so
+     * the cast should always be successful.
+     */
+    template<typename StorageType>
+    static StorageType* getStorage(internal::OptionSectionImpl* section)
+    {
+        IOptionSectionStorage* storage      = getStorage(section);
+        StorageType*           typedStorage = dynamic_cast<StorageType*>(storage);
+        GMX_ASSERT(typedStorage != nullptr, "Mismatching section storage type");
+        return typedStorage;
+    }
 
-        //! Wraps a given section storage object.
-        explicit AbstractOptionSectionHandle(internal::OptionSectionImpl *section)
-            : section_(section)
-        {
-        }
-        //! \endcond
+    //! Wraps a given section storage object.
+    explicit AbstractOptionSectionHandle(internal::OptionSectionImpl* section) : section_(section)
+    {
+    }
+    //! \endcond
 
-    private:
-        // From IOptionsContainerWithSections
-        internal::OptionSectionImpl *
-        addSectionImpl(const AbstractOptionSection &section) override;
-        // From IOptionsContainer
-        OptionInfo *addOptionImpl(const AbstractOption &settings) override;
+private:
+    // From IOptionsContainerWithSections
+    internal::OptionSectionImpl* addSectionImpl(const AbstractOptionSection& section) override;
+    // From IOptionsContainer
+    OptionInfo* addOptionImpl(const AbstractOption& settings) override;
 
-        /*! \brief
-         * Implementation helper for the template method.
-         *
-         * This allows encapsulating the implementation within the source file.
-         */
-        static IOptionSectionStorage *getStorage(internal::OptionSectionImpl *section);
+    /*! \brief
+     * Implementation helper for the template method.
+     *
+     * This allows encapsulating the implementation within the source file.
+     */
+    static IOptionSectionStorage* getStorage(internal::OptionSectionImpl* section);
 
-        internal::OptionSectionImpl *section_;
+    internal::OptionSectionImpl* section_;
 };
 
 class AbstractOptionSectionInfo
 {
-    public:
-        //! Wraps a given section storage object.
-        explicit AbstractOptionSectionInfo(internal::OptionSectionImpl *section)
-            : section_(*section)
-        {
-        }
+public:
+    //! Wraps a given section storage object.
+    explicit AbstractOptionSectionInfo(internal::OptionSectionImpl* section) : section_(*section) {}
 
-        //! Returns the name of the section.
-        const std::string &name() const;
+    //! Returns the name of the section.
+    const std::string& name() const;
 
-        //! Returns the wrapped section storage object.
-        internal::OptionSectionImpl       &section() { return section_; }
-        //! Returns the wrapped section storage object.
-        const internal::OptionSectionImpl &section() const { return section_; }
+    //! Returns the wrapped section storage object.
+    internal::OptionSectionImpl& section() { return section_; }
+    //! Returns the wrapped section storage object.
+    const internal::OptionSectionImpl& section() const { return section_; }
 
-    private:
-        internal::OptionSectionImpl &section_;
+private:
+    internal::OptionSectionImpl& section_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionSectionInfo);
+    GMX_DISALLOW_COPY_AND_ASSIGN(AbstractOptionSectionInfo);
 };
 
 } // namespace gmx

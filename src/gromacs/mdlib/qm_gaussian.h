@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,28 +45,28 @@ struct t_forcerec;
  *
  * \param[in] qm QM forcerec.
  */
-void init_gaussian(t_QMrec *qm);
+void init_gaussian(t_QMrec* qm);
 
 /*! \brief
  * Call gaussian to do qm calculation.
  *
- * \param[in] fr Global forcerec.
- * \param[in] qm QM part of forcerec.
- * \param[in] mm mm part of forcerec.
- * \param[in] f  force vector.
+ * \param[in] qmmm   QMMM part forcerec.
+ * \param[in] qm     QM part of forcerec.
+ * \param[in] mm     mm part of forcerec.
+ * \param[in] f      force vector.
  * \param[in] fshift shift of force vector.
  */
-real call_gaussian(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
+real call_gaussian(const t_QMMMrec* qmmm, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fshift[]);
 
 /*! \brief
  * Call gaussian SH(?) to do qm calculation.
  *
- * \param[in] fr Global forcerec.
- * \param[in] qm QM part of forcerec.
- * \param[in] mm mm part of forcerec.
- * \param[in] f  force vector.
+ * \param[in] qmmm   QMMM part forcerec.
+ * \param[in] qm     QM part of forcerec.
+ * \param[in] mm     mm part of forcerec.
+ * \param[in] f      force vector.
  * \param[in] fshift shift of force vector.
  */
-real call_gaussian_SH(const t_forcerec *fr, t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[]);
+real call_gaussian_SH(const t_QMMMrec* qmmm, t_QMrec* qm, t_MMrec* mm, rvec f[], rvec fshift[]);
 
 #endif

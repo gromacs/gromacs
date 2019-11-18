@@ -41,45 +41,43 @@
 #include "gromacs/fileio/tngio.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/mdoutf.h"
-#include "gromacs/mdlib/mdrun.h"
-#include "gromacs/mdlib/sim_util.h"
+#include "gromacs/mdlib/stat.h"
 #include "gromacs/mdlib/update.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/observableshistory.h"
 #include "gromacs/mdtypes/state.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/smalloc.h"
 
-void
-do_md_trajectory_writing(FILE                     *fplog,
-                         t_commrec                *cr,
-                         int                       nfile,
-                         const t_filenm            fnm[],
-                         int64_t                   step,
-                         int64_t                   step_rel,
-                         double                    t,
-                         t_inputrec               *ir,
-                         t_state                  *state,
-                         t_state                  *state_global,
-                         ObservablesHistory       *observablesHistory,
-                         gmx_mtop_t               *top_global,
-                         t_forcerec               *fr,
-                         gmx_mdoutf_t              outf,
-                         const gmx::EnergyOutput  &energyOutput,
-                         gmx_ekindata_t           *ekind,
-                         gmx::ArrayRef<gmx::RVec>  f,
-                         gmx_bool                  bCPT,
-                         gmx_bool                  bRerunMD,
-                         gmx_bool                  bLastStep,
-                         gmx_bool                  bDoConfOut,
-                         gmx_bool                  bSumEkinhOld
-                         )
+void do_md_trajectory_writing(FILE*                    fplog,
+                              t_commrec*               cr,
+                              int                      nfile,
+                              const t_filenm           fnm[],
+                              int64_t                  step,
+                              int64_t                  step_rel,
+                              double                   t,
+                              t_inputrec*              ir,
+                              t_state*                 state,
+                              t_state*                 state_global,
+                              ObservablesHistory*      observablesHistory,
+                              const gmx_mtop_t*        top_global,
+                              t_forcerec*              fr,
+                              gmx_mdoutf_t             outf,
+                              const gmx::EnergyOutput& energyOutput,
+                              gmx_ekindata_t*          ekind,
+                              gmx::ArrayRef<gmx::RVec> f,
+                              gmx_bool                 bCPT,
+                              gmx_bool                 bRerunMD,
+                              gmx_bool                 bLastStep,
+                              gmx_bool                 bDoConfOut,
+                              gmx_bool                 bSumEkinhOld)
 {
     int   mdof_flags;
-    rvec *x_for_confout = nullptr;
+    rvec* x_for_confout = nullptr;
 
     mdof_flags = 0;
     if (do_per_step(step, ir->nstxout))
@@ -127,12 +125,12 @@ do_md_trajectory_writing(FILE                     *fplog,
     }
     if (MASTER(cr))
     {
-        fcReportProgress( ir->nsteps, step );
+        fcReportProgress(ir->nsteps, step);
     }
 
-#if defined(__native_client__)
+#    if defined(__native_client__)
     fcCheckin(MASTER(cr));
-#endif
+#    endif
 
     /* sync bCPT and fc record-keeping */
     if (bCPT && MASTER(cr))
@@ -161,11 +159,9 @@ do_md_trajectory_writing(FILE                     *fplog,
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
-        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
-                                         step, t, state, state_global, observablesHistory, f);
-        if (bLastStep && step_rel == ir->nsteps &&
-            bDoConfOut && MASTER(cr) &&
-            !bRerunMD)
+        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step, t,
+                                         state, state_global, observablesHistory, f);
+        if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MASTER(cr) && !bRerunMD)
         {
             if (fr->bMolPBC && state == state_global)
             {
@@ -194,12 +190,10 @@ do_md_trajectory_writing(FILE                     *fplog,
             if (fr->bMolPBC && !ir->bPeriodicMols)
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, x_for_confout);
+                do_pbc_mtop(ir->ePBC, state->box, top_global, x_for_confout);
             }
-            write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
-                                *top_global->name, top_global,
-                                x_for_confout, state_global->v.rvec_array(),
-                                ir->ePBC, state->box);
+            write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm), *top_global->name, top_global,
+                                x_for_confout, state_global->v.rvec_array(), ir->ePBC, state->box);
             if (fr->bMolPBC && state == state_global)
             {
                 sfree(x_for_confout);

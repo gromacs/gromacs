@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,15 +52,15 @@
 
 #define MSIZE 4
 
-static void ps_draw_atom(t_psdata ps, int ai, iv2 vec2[], char **atomnm[])
+static void ps_draw_atom(t_psdata* ps, int ai, iv2 vec2[], char** atomnm[])
 {
     int xi, yi;
 
     xi = vec2[ai][XX];
     yi = vec2[ai][YY];
     ps_rgb(ps, Type2RGB(*atomnm[ai]));
-    ps_line(ps, xi-MSIZE, yi, xi+MSIZE+1, yi);
-    ps_line(ps, xi, yi-MSIZE, xi, yi+MSIZE+1);
+    ps_line(ps, xi - MSIZE, yi, xi + MSIZE + 1, yi);
+    ps_line(ps, xi, yi - MSIZE, xi, yi + MSIZE + 1);
 }
 
 /* Global variables */
@@ -72,8 +72,8 @@ static void init_pbc(matrix box)
 
     for (i = 0; (i < DIM); i++)
     {
-        gl_fbox[i]  =  box[i][i];
-        gl_hbox[i]  =  gl_fbox[i]*0.5;
+        gl_fbox[i]  = box[i][i];
+        gl_hbox[i]  = gl_fbox[i] * 0.5;
         gl_mhbox[i] = -gl_hbox[i];
     }
 }
@@ -85,7 +85,7 @@ static bool local_pbc_dx(rvec x1, rvec x2)
 
     for (i = 0; (i < DIM); i++)
     {
-        dx = x1[i]-x2[i];
+        dx = x1[i] - x2[i];
         if (dx > gl_hbox[i])
         {
             return false;
@@ -98,13 +98,11 @@ static bool local_pbc_dx(rvec x1, rvec x2)
     return true;
 }
 
-static void ps_draw_bond(t_psdata ps,
-                         int ai, int aj, iv2 vec2[],
-                         rvec x[], char **atomnm[])
+static void ps_draw_bond(t_psdata* ps, int ai, int aj, iv2 vec2[], rvec x[], char** atomnm[])
 {
-    char    *ic, *jc;
-    int      xi, yi, xj, yj;
-    int      xm, ym;
+    char *ic, *jc;
+    int   xi, yi, xj, yj;
+    int   xm, ym;
 
     if (local_pbc_dx(x[ai], x[aj]))
     {
@@ -117,8 +115,8 @@ static void ps_draw_bond(t_psdata ps,
 
         if (ic != jc)
         {
-            xm = (xi+xj) >> 1;
-            ym = (yi+yj) >> 1;
+            xm = (xi + xj) >> 1;
+            ym = (yi + yj) >> 1;
 
             ps_rgb(ps, Type2RGB(ic));
             ps_line(ps, xi, yi, xm, ym);
@@ -133,31 +131,25 @@ static void ps_draw_bond(t_psdata ps,
     }
 }
 
-static void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[],
-                            rvec x[], char **atomnm[], bool bShowHydro)
+static void ps_draw_objects(t_psdata* ps, int nobj, t_object objs[], iv2 vec2[], rvec x[], char** atomnm[], bool bShowHydro)
 {
-    int          i;
-    t_object    *obj;
+    int       i;
+    t_object* obj;
 
     for (i = 0; (i < nobj); i++)
     {
         obj = &(objs[i]);
         switch (obj->eO)
         {
-            case eOSingle:
-                ps_draw_atom(ps, obj->ai, vec2, atomnm);
-                break;
-            case eOBond:
-                ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
-                break;
+            case eOSingle: ps_draw_atom(ps, obj->ai, vec2, atomnm); break;
+            case eOBond: ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm); break;
             case eOHBond:
                 if (bShowHydro)
                 {
                     ps_draw_bond(ps, obj->ai, obj->aj, vec2, x, atomnm);
                 }
                 break;
-            default:
-                break;
+            default: break;
         }
     }
 }
@@ -166,23 +158,17 @@ static void v4_to_iv2(vec4 x4, iv2 v2, int x0, int y0, real sx, real sy)
 {
     real inv_z;
 
-    inv_z  = 1.0/x4[ZZ];
-    v2[XX] = x0+sx*x4[XX]*inv_z;
-    v2[YY] = y0-sy*x4[YY]*inv_z;
+    inv_z  = 1.0 / x4[ZZ];
+    v2[XX] = x0 + sx * x4[XX] * inv_z;
+    v2[YY] = y0 - sy * x4[YY] * inv_z;
 }
 
-static void draw_box(t_psdata ps, t_3dview *view, matrix box,
-                     int x0, int y0, real sx, real sy)
+static void draw_box(t_psdata* ps, t_3dview* view, matrix box, int x0, int y0, real sx, real sy)
 {
-    int  ivec[8][4] =  {
-        { 0, 0, 0, 1 }, { 1, 0, 0, 1 }, { 1, 1, 0, 1 }, { 0, 1, 0, 1 },
-        { 0, 0, 1, 1 }, { 1, 0, 1, 1 }, { 1, 1, 1, 1 }, { 0, 1, 1, 1 }
-    };
-    int  bonds[12][2] = {
-        { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 },
-        { 4, 5 }, { 5, 6 }, { 6, 7 }, { 7, 4 },
-        { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 }
-    };
+    int  ivec[8][4]   = { { 0, 0, 0, 1 }, { 1, 0, 0, 1 }, { 1, 1, 0, 1 }, { 0, 1, 0, 1 },
+                       { 0, 0, 1, 1 }, { 1, 0, 1, 1 }, { 1, 1, 1, 1 }, { 0, 1, 1, 1 } };
+    int  bonds[12][2] = { { 0, 1 }, { 1, 2 }, { 2, 3 }, { 3, 0 }, { 4, 5 }, { 5, 6 },
+                         { 6, 7 }, { 7, 4 }, { 0, 4 }, { 1, 5 }, { 2, 6 }, { 3, 7 } };
     int  i, j;
     rvec corner[8];
     vec4 x4;
@@ -192,7 +178,7 @@ static void draw_box(t_psdata ps, t_3dview *view, matrix box,
     {
         for (j = 0; (j < DIM); j++)
         {
-            corner[i][j] = ivec[i][j]*box[j][j];
+            corner[i][j] = ivec[i][j] * box[j][j];
         }
         gmx_mat4_transform_point(view->proj, corner[i], x4);
         v4_to_iv2(x4, vec2[i], x0, y0, sx, sy);
@@ -200,21 +186,20 @@ static void draw_box(t_psdata ps, t_3dview *view, matrix box,
     ps_color(ps, 0, 0, 0.5);
     for (i = 0; (i < 12); i++)
     {
-        ps_line(ps,
-                vec2[bonds[i][0]][XX], vec2[bonds[i][0]][YY],
-                vec2[bonds[i][1]][XX], vec2[bonds[i][1]][YY]);
+        ps_line(ps, vec2[bonds[i][0]][XX], vec2[bonds[i][0]][YY], vec2[bonds[i][1]][XX],
+                vec2[bonds[i][1]][YY]);
     }
 }
 
-void ps_draw_mol(t_psdata ps, t_manager *man)
+void ps_draw_mol(t_psdata* ps, t_manager* man)
 {
-    t_windata  *win;
-    t_3dview   *view;
-    t_molwin   *mw;
-    int         i, x0, y0, nvis;
-    iv2        *vec2;
-    real        sx, sy;
-    vec4        x4;
+    t_windata* win;
+    t_3dview*  view;
+    t_molwin*  mw;
+    int        i, x0, y0, nvis;
+    iv2*       vec2;
+    real       sx, sy;
+    vec4       x4;
 
     if (!man->status)
     {
@@ -227,10 +212,10 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     win = &(mw->wd);
 
     vec2 = man->ix;
-    x0   = win->width/2;
-    y0   = win->height/2;
-    sx   = win->width/2*view->sc_x;
-    sy   = win->height/2*view->sc_y;
+    x0   = win->width / 2;
+    y0   = win->height / 2;
+    sx   = win->width / 2 * view->sc_x;
+    sy   = win->height / 2 * view->sc_y;
 
     init_pbc(man->box);
 
@@ -245,7 +230,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     }
     set_sizes(man);
 
-    z_fill (man, man->zz);
+    z_fill(man, man->zz);
 
     /* Start drawing
        XClearWindow(x11->disp,win->self); */
@@ -263,9 +248,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     }
 
     /* Draw the objects */
-    ps_draw_objects(ps,
-                    nvis, man->obj, man->ix, man->x, man->top.atoms.atomname,
-                    mw->bShowHydrogen);
+    ps_draw_objects(ps, nvis, man->obj, man->ix, man->x, man->top.atoms.atomname, mw->bShowHydrogen);
 
     /* Draw the labels */
     ps_color(ps, 0, 0, 0);
@@ -273,7 +256,7 @@ void ps_draw_mol(t_psdata ps, t_manager *man)
     {
         if (man->bLabel[i] && man->bVis[i])
         {
-            ps_text(ps, vec2[i][XX]+2, vec2[i][YY]-2, man->szLab[i]);
+            ps_text(ps, vec2[i][XX] + 2, vec2[i][YY] - 2, man->szLab[i]);
         }
     }
 }

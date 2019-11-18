@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,7 +65,8 @@ namespace gmx
 template<std::uint64_t n>
 struct StaticLog2
 {
-    static const int value = StaticLog2<n/2>::value+1; //!< Variable value used for recursive static calculation of Log2(int)
+    static const int value = StaticLog2<n / 2>::value
+                             + 1; //!< Variable value used for recursive static calculation of Log2(int)
 };
 
 /*! \brief Specialization of StaticLog2<n> for n==1.
@@ -104,8 +105,7 @@ struct StaticLog2<0>
  *  \note This version of the overloaded function will assert that x is
  *        not negative.
  */
-unsigned int
-log2I(std::int32_t x);
+unsigned int log2I(std::int32_t x);
 
 /*! \brief Compute floor of logarithm to base 2, 64 bit signed argument
  *
@@ -116,8 +116,7 @@ log2I(std::int32_t x);
  *  \note This version of the overloaded function will assert that x is
  *        not negative.
  */
-unsigned int
-log2I(std::int64_t x);
+unsigned int log2I(std::int64_t x);
 
 /*! \brief Compute floor of logarithm to base 2, 32 bit unsigned argument
  *
@@ -128,8 +127,7 @@ log2I(std::int64_t x);
  *  \note This version of the overloaded function uses unsigned arguments to
  *        be able to handle arguments using all 32 bits.
  */
-unsigned int
-log2I(std::uint32_t x);
+unsigned int log2I(std::uint32_t x);
 
 /*! \brief Compute floor of logarithm to base 2, 64 bit unsigned argument
  *
@@ -140,8 +138,7 @@ log2I(std::uint32_t x);
  *  \note This version of the overloaded function uses unsigned arguments to
  *        be able to handle arguments using all 64 bits.
  */
-unsigned int
-log2I(std::uint64_t x);
+unsigned int log2I(std::uint64_t x);
 
 /*! \brief Find greatest common divisor of two numbers
  *
@@ -150,8 +147,7 @@ log2I(std::uint64_t x);
  *
  * \return Greatest common divisor of p and q
  */
-std::int64_t
-greatestCommonDivisor(std::int64_t p, std::int64_t q);
+std::int64_t greatestCommonDivisor(std::int64_t p, std::int64_t q);
 
 
 /*! \brief Calculate 1.0/sqrt(x) in single precision
@@ -164,10 +160,9 @@ greatestCommonDivisor(std::int64_t p, std::int64_t q);
  *
  * \return 1.0/sqrt(x)
  */
-static inline float
-invsqrt(float x)
+static inline float invsqrt(float x)
 {
-    return 1.0f/std::sqrt(x);
+    return 1.0F / std::sqrt(x);
 }
 
 /*! \brief Calculate 1.0/sqrt(x) in double precision, but single range
@@ -181,10 +176,9 @@ invsqrt(float x)
  *
  * \return 1.0/sqrt(x)
  */
-static inline double
-invsqrt(double x)
+static inline double invsqrt(double x)
 {
-    return 1.0/std::sqrt(x);
+    return 1.0 / std::sqrt(x);
 }
 
 /*! \brief Calculate 1.0/sqrt(x) for integer x in double precision.
@@ -193,8 +187,7 @@ invsqrt(double x)
  *
  * \return 1.0/sqrt(x)
  */
-static inline double
-invsqrt(int x)
+static inline double invsqrt(int x)
 {
     return invsqrt(static_cast<double>(x));
 }
@@ -207,10 +200,9 @@ invsqrt(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-invcbrt(float x)
+static inline float invcbrt(float x)
 {
-    return 1.0f/std::cbrt(x);
+    return 1.0F / std::cbrt(x);
 }
 
 /*! \brief Calculate inverse sixth root of x in double precision
@@ -221,10 +213,9 @@ invcbrt(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invcbrt(double x)
+static inline double invcbrt(double x)
 {
-    return 1.0/std::cbrt(x);
+    return 1.0 / std::cbrt(x);
 }
 
 /*! \brief Calculate inverse sixth root of integer x in double precision
@@ -235,10 +226,9 @@ invcbrt(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invcbrt(int x)
+static inline double invcbrt(int x)
 {
-    return 1.0/std::cbrt(x);
+    return 1.0 / std::cbrt(x);
 }
 
 /*! \brief Calculate sixth root of x in single precision.
@@ -249,8 +239,7 @@ invcbrt(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-sixthroot(float x)
+static inline float sixthroot(float x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -263,8 +252,7 @@ sixthroot(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-sixthroot(double x)
+static inline double sixthroot(double x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -277,8 +265,7 @@ sixthroot(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-sixthroot(int x)
+static inline double sixthroot(int x)
 {
     return std::sqrt(std::cbrt(x));
 }
@@ -291,8 +278,7 @@ sixthroot(int x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline float
-invsixthroot(float x)
+static inline float invsixthroot(float x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -305,8 +291,7 @@ invsixthroot(float x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invsixthroot(double x)
+static inline double invsixthroot(double x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -319,8 +304,7 @@ invsixthroot(double x)
  *
  *  This routine is typically faster than using std::pow().
  */
-static inline double
-invsixthroot(int x)
+static inline double invsixthroot(int x)
 {
     return invsqrt(std::cbrt(x));
 }
@@ -332,11 +316,10 @@ invsixthroot(int x)
  *
  *  \return x^2
  */
-template <typename T>
-T
-square(T x)
+template<typename T>
+T square(T x)
 {
-    return x*x;
+    return x * x;
 }
 
 /*! \brief calculate x^3
@@ -346,11 +329,10 @@ square(T x)
  *
  *  \return x^3
  */
-template <typename T>
-T
-power3(T x)
+template<typename T>
+T power3(T x)
 {
-    return x*square(x);
+    return x * square(x);
 }
 
 /*! \brief calculate x^4
@@ -360,9 +342,8 @@ power3(T x)
  *
  *  \return x^4
  */
-template <typename T>
-T
-power4(T x)
+template<typename T>
+T power4(T x)
 {
     return square(square(x));
 }
@@ -374,11 +355,10 @@ power4(T x)
  *
  *  \return x^5
  */
-template <typename T>
-T
-power5(T x)
+template<typename T>
+T power5(T x)
 {
-    return x*power4(x);
+    return x * power4(x);
 }
 
 /*! \brief calculate x^6
@@ -388,9 +368,8 @@ power5(T x)
  *
  *  \return x^6
  */
-template <typename T>
-T
-power6(T x)
+template<typename T>
+T power6(T x)
 {
     return square(power3(x));
 }
@@ -402,9 +381,8 @@ power6(T x)
  *
  *  \return x^12
  */
-template <typename T>
-T
-power12(T x)
+template<typename T>
+T power12(T x)
 {
     return square(power6(x));
 }
@@ -417,8 +395,12 @@ power12(T x)
  */
 static inline real series_sinhx(real x)
 {
-    real x2 = x*x;
-    return (1 + (x2/6.0)*(1 + (x2/20.0)*(1 + (x2/42.0)*(1 + (x2/72.0)*(1 + (x2/110.0))))));
+    real x2 = x * x;
+    return (1
+            + (x2 / 6.0_real)
+                      * (1
+                         + (x2 / 20.0_real)
+                                   * (1 + (x2 / 42.0_real) * (1 + (x2 / 72.0_real) * (1 + (x2 / 110.0_real))))));
 }
 
 /*! \brief Inverse error function, double precision.
@@ -428,8 +410,7 @@ static inline real series_sinhx(real x)
  *  \return The inverse of the error function if the argument is inside the
  *          range, +/- infinity if it is exactly 1.0 or -1.0, and NaN otherwise.
  */
-double
-erfinv(double x);
+double erfinv(double x);
 
 /*! \brief Inverse error function, single precision.
  *
@@ -438,8 +419,7 @@ erfinv(double x);
  *  \return The inverse of the error function if the argument is inside the
  *          range, +/- infinity if it is exactly 1.0 or -1.0, and NaN otherwise.
  */
-float
-erfinv(float x);
+float erfinv(float x);
 
 /*! \brief Exact integer division, 32bit.
  *
@@ -450,13 +430,13 @@ erfinv(float x);
  */
 constexpr int32_t exactDiv(int32_t a, int32_t b)
 {
-    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+    return GMX_ASSERT(a % b == 0, "exactDiv called with non-divisible arguments"), a / b;
 }
 
 //! Exact integer division, 64bit.
 constexpr int64_t exactDiv(int64_t a, int64_t b)
 {
-    return GMX_ASSERT(a%b == 0, "exactDiv called with non-divisible arguments"), a/b;
+    return GMX_ASSERT(a % b == 0, "exactDiv called with non-divisible arguments"), a / b;
 }
 
 /*! \brief Round float to int

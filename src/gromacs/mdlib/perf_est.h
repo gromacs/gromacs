@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,14 @@
 struct gmx_mtop_t;
 struct t_inputrec;
 
-void count_bonded_distances(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                            double *ndistance_c, double *ndistance_simd);
+void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double* ndistance_c, double* ndistance_simd);
 /* Count the number of distance calculations in bonded interactions,
  * separately for plain-C and SIMD bonded functions.
  * The computational cost is nearly proportional to the numbers.
  * It is allowed to pass NULL for the last two arguments.
  */
 
-float pme_load_estimate(const gmx_mtop_t *mtop, const t_inputrec *ir,
-                        const matrix box);
+float pme_load_estimate(const gmx_mtop_t& mtop, const t_inputrec& ir, const matrix box);
 /* Returns an estimate for the relative load of the PME mesh calculation
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.

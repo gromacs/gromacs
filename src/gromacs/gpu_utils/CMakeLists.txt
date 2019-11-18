@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@ gmx_add_libgromacs_sources(
         clfftinitializer.cpp
         hostallocator.cpp
         gpu_utils.cpp
+        gpu_testutils.cpp
         )
 if(GMX_USE_OPENCL)
     gmx_add_libgromacs_sources(
@@ -56,9 +57,6 @@ elseif(GMX_USE_CUDA)
         pmalloc_cuda.cu
         )
 endif()
-
-# workaround for the state - host allocator dependency
-gmx_install_headers(hostallocator.h)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

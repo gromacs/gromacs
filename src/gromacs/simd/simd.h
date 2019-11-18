@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,6 +76,7 @@
 #include <cstdint>
 
 #include <array>
+#include <type_traits>
 
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/real.h"
@@ -90,14 +91,22 @@
 namespace gmx
 {
 /*! \libinternal \brief Tag type to select to load SimdFloat with simdLoad(U) */
-struct SimdFloatTag {};
+struct SimdFloatTag
+{
+};
 /*! \libinternal \brief Tag type to select to load SimdDouble with simdLoad(U) */
-struct SimdDoubleTag {};
+struct SimdDoubleTag
+{
+};
 /*! \libinternal \brief Tag type to select to load SimdFInt32 with simdLoad(U) */
-struct SimdFInt32Tag {};
+struct SimdFInt32Tag
+{
+};
 /*! \libinternal \brief Tag type to select to load SimdDInt32 with simdLoad(U) */
-struct SimdDInt32Tag {};
-}  // namespace gmx
+struct SimdDInt32Tag
+{
+};
+} // namespace gmx
 
 /*! \name SIMD predefined macros to describe high-level capabilities
  *
@@ -109,14 +118,14 @@ struct SimdDInt32Tag {};
  */
 
 #ifdef __clang__
-#pragma clang diagnostic push
+#    pragma clang diagnostic push
 /* reinterpret_cast is used for SIMD->scalar conversion
  *
  * In general using reinterpret_cast for bit_cast is UB but
  * for intrinsics types it works for all known compilers
  * and not all compilers produce as good code for memcpy.
  */
-#pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
+#    pragma clang diagnostic ignored "-Wundefined-reinterpret-cast"
 #endif
 
 #if GMX_SIMD_X86_SSE2
@@ -152,7 +161,7 @@ struct SimdDInt32Tag {};
 #endif
 
 #ifdef __clang__
-#pragma clang diagnostic pop
+#    pragma clang diagnostic pop
 #endif
 
 // The scalar SIMD-mimicking functions are always included so we can use
@@ -163,68 +172,70 @@ struct SimdDInt32Tag {};
 
 
 #if GMX_DOUBLE
-#    define GMX_SIMD_HAVE_REAL                                     GMX_SIMD_HAVE_DOUBLE
-#    define GMX_SIMD_REAL_WIDTH                                    GMX_SIMD_DOUBLE_WIDTH
-#    define GMX_SIMD_HAVE_INT32_EXTRACT                            GMX_SIMD_HAVE_DINT32_EXTRACT
-#    define GMX_SIMD_HAVE_INT32_LOGICAL                            GMX_SIMD_HAVE_DINT32_LOGICAL
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS                        GMX_SIMD_HAVE_DINT32_ARITHMETICS
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
-#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL                          GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
-#    define GMX_SIMD4_HAVE_REAL                                    GMX_SIMD4_HAVE_DOUBLE
+#    define GMX_SIMD_HAVE_REAL GMX_SIMD_HAVE_DOUBLE
+#    define GMX_SIMD_REAL_WIDTH GMX_SIMD_DOUBLE_WIDTH
+#    define GMX_SIMD_HAVE_INT32_EXTRACT GMX_SIMD_HAVE_DINT32_EXTRACT
+#    define GMX_SIMD_HAVE_INT32_LOGICAL GMX_SIMD_HAVE_DINT32_LOGICAL
+#    define GMX_SIMD_HAVE_INT32_ARITHMETICS GMX_SIMD_HAVE_DINT32_ARITHMETICS
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL \
+        GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE
+#    define GMX_SIMD4_HAVE_REAL GMX_SIMD4_HAVE_DOUBLE
 #else // GMX_DOUBLE
 
 /*! \brief 1 if SimdReal is available, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_HAVE_FLOAT.
  */
-#    define GMX_SIMD_HAVE_REAL               GMX_SIMD_HAVE_FLOAT
+#    define GMX_SIMD_HAVE_REAL GMX_SIMD_HAVE_FLOAT
 
 /*! \brief Width of SimdReal.
  *
  *  \ref GMX_SIMD_DOUBLE_WIDTH if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD_FLOAT_WIDTH.
  */
-#    define GMX_SIMD_REAL_WIDTH              GMX_SIMD_FLOAT_WIDTH
+#    define GMX_SIMD_REAL_WIDTH GMX_SIMD_FLOAT_WIDTH
 
 /*! \brief 1 if support is available for extracting elements from SimdInt32, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_DINT32_EXTRACT if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_EXTRACT.
  */
-#    define GMX_SIMD_HAVE_INT32_EXTRACT      GMX_SIMD_HAVE_FINT32_EXTRACT
+#    define GMX_SIMD_HAVE_INT32_EXTRACT GMX_SIMD_HAVE_FINT32_EXTRACT
 
 /*! \brief 1 if logical ops are supported on SimdInt32, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DINT32_LOGICAL if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_LOGICAL.
  */
-#    define GMX_SIMD_HAVE_INT32_LOGICAL      GMX_SIMD_HAVE_FINT32_LOGICAL
+#    define GMX_SIMD_HAVE_INT32_LOGICAL GMX_SIMD_HAVE_FINT32_LOGICAL
 
 /*! \brief 1 if arithmetic ops are supported on SimdInt32, otherwise 0.
  *
  *  \ref GMX_SIMD_HAVE_DINT32_ARITHMETICS if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_FINT32_ARITHMETICS.
  */
-#    define GMX_SIMD_HAVE_INT32_ARITHMETICS  GMX_SIMD_HAVE_FINT32_ARITHMETICS
+#    define GMX_SIMD_HAVE_INT32_ARITHMETICS GMX_SIMD_HAVE_FINT32_ARITHMETICS
 
 /*! \brief 1 if gmx::simdGatherLoadUBySimdIntTranspose is present, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT.
  */
-#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL    GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
+#    define GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_REAL \
+        GMX_SIMD_HAVE_GATHER_LOADU_BYSIMDINT_TRANSPOSE_FLOAT
 
 /*! \brief 1 if real half-register load/store/reduce utils present, otherwise 0
  *
  *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_DOUBLE if GMX_DOUBLE is 1, otherwise
  *  \ref GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT.
  */
-#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL    GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
+#    define GMX_SIMD_HAVE_HSIMD_UTIL_REAL GMX_SIMD_HAVE_HSIMD_UTIL_FLOAT
 
 /*! \brief 1 if Simd4Real is available, otherwise 0.
  *
  *  \ref GMX_SIMD4_HAVE_DOUBLE if GMX_DOUBLE is 1, otherwise \ref GMX_SIMD4_HAVE_FLOAT.
  */
-#    define GMX_SIMD4_HAVE_REAL              GMX_SIMD4_HAVE_FLOAT
+#    define GMX_SIMD4_HAVE_REAL GMX_SIMD4_HAVE_FLOAT
 
 #endif // GMX_DOUBLE
 
@@ -241,7 +252,8 @@ struct AlignedArray;
  *  Should not be deleted through base pointer (destructor is non-virtual).
  */
 template<size_t N>
-struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : public std::array<float, N>
+struct alignas(GMX_SIMD_FLOAT_WIDTH * sizeof(float)) AlignedArray<float, N> :
+    public std::array<float, N>
 {
 };
 #endif
@@ -251,7 +263,8 @@ struct alignas(GMX_SIMD_FLOAT_WIDTH*sizeof(float))AlignedArray<float, N> : publi
  *  Should not be deleted through base pointer (destructor is non-virtual).
  */
 template<size_t N>
-struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : public std::array<double, N>
+struct alignas(GMX_SIMD_DOUBLE_WIDTH * sizeof(double)) AlignedArray<double, N> :
+    public std::array<double, N>
 {
 };
 #endif
@@ -278,9 +291,9 @@ struct alignas(GMX_SIMD_DOUBLE_WIDTH*sizeof(double))AlignedArray<double, N> : pu
  *       memory on the heap, but it occurs for stack structures too.
  */
 #    if GMX_DOUBLE
-typedef SimdDouble               SimdReal;
+typedef SimdDouble SimdReal;
 #    else
-typedef SimdFloat                SimdReal;
+typedef SimdFloat  SimdReal;
 #    endif
 
 
@@ -302,9 +315,9 @@ typedef SimdFloat                SimdReal;
  *       memory on the heap, but it occurs for stack structures too.
  */
 #    if GMX_DOUBLE
-typedef SimdDBool                SimdBool;
+typedef SimdDBool SimdBool;
 #    else
-typedef SimdFBool                SimdBool;
+typedef SimdFBool  SimdBool;
 #    endif
 
 
@@ -323,12 +336,12 @@ typedef SimdFBool                SimdBool;
  *       memory on the heap, but it occurs for stack structures too.
  */
 #    if GMX_DOUBLE
-typedef SimdDInt32               SimdInt32;
+typedef SimdDInt32 SimdInt32;
 #    else
-typedef SimdFInt32               SimdInt32;
+typedef SimdFInt32 SimdInt32;
 #    endif
 
-#if GMX_SIMD_HAVE_INT32_ARITHMETICS
+#    if GMX_SIMD_HAVE_INT32_ARITHMETICS
 /*! \brief Boolean SIMD type for usage with \ref SimdInt32.
  *
  * This type is only available if \ref GMX_SIMD_HAVE_INT32_ARITHMETICS is 1.
@@ -352,21 +365,21 @@ typedef SimdFInt32               SimdInt32;
  *       alignment. This is likely particularly severe when allocating such
  *       memory on the heap, but it occurs for stack structures too.
  */
+#        if GMX_DOUBLE
+typedef SimdDIBool SimdIBool;
+#        else
+typedef SimdFIBool SimdIBool;
+#        endif
+#    endif // GMX_SIMD_HAVE_INT32_ARITHMETICS
+
+
 #    if GMX_DOUBLE
-typedef SimdDIBool               SimdIBool;
-#    else
-typedef SimdFIBool               SimdIBool;
-#    endif
-#endif  // GMX_SIMD_HAVE_INT32_ARITHMETICS
-
-
-#if GMX_DOUBLE
 const int c_simdBestPairAlignment = c_simdBestPairAlignmentDouble;
-#else
-const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
-#endif
+#    else
+const int          c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
+#    endif
 
-#endif  // GMX_SIMD_HAVE_REAL
+#endif // GMX_SIMD_HAVE_REAL
 
 #if GMX_SIMD4_HAVE_REAL
 /*! \brief Real precision floating-point SIMD4 datatype.
@@ -381,9 +394,9 @@ const int c_simdBestPairAlignment = c_simdBestPairAlignmentFloat;
  *       memory on the heap, but it occurs for stack structures too.
  */
 #    if GMX_DOUBLE
-typedef Simd4Double               Simd4Real;
+typedef Simd4Double Simd4Real;
 #    else
-typedef Simd4Float                Simd4Real;
+typedef Simd4Float Simd4Real;
 #    endif
 
 
@@ -403,9 +416,9 @@ typedef Simd4Float                Simd4Real;
  *       memory on the heap, but it occurs for stack structures too.
  */
 #    if GMX_DOUBLE
-typedef Simd4DBool                Simd4Bool;
+typedef Simd4DBool Simd4Bool;
 #    else
-typedef Simd4FBool                Simd4Bool;
+typedef Simd4FBool Simd4Bool;
 #    endif
 #endif // GMX_SIMD4_HAVE_REAL
 
@@ -427,63 +440,69 @@ namespace internal
  *  - tag: tag used for type dispatch of load function
  */
 template<typename T>
-struct SimdTraits {};
+struct SimdTraits
+{
+};
 
 #if GMX_SIMD_HAVE_FLOAT
 template<>
 struct SimdTraits<SimdFloat>
 {
-    using type = float;
+    using type                 = float;
     static constexpr int width = GMX_SIMD_FLOAT_WIDTH;
-    using tag = SimdFloatTag;
+    using tag                  = SimdFloatTag;
 };
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
 template<>
 struct SimdTraits<SimdDouble>
 {
-    using type = double;
+    using type                 = double;
     static constexpr int width = GMX_SIMD_DOUBLE_WIDTH;
-    using tag = SimdDoubleTag;
+    using tag                  = SimdDoubleTag;
 };
 #endif
 #if GMX_SIMD_HAVE_FLOAT
 template<>
 struct SimdTraits<SimdFInt32>
 {
-    using type = int;
+    using type                 = int;
     static constexpr int width = GMX_SIMD_FINT32_WIDTH;
-    using tag = SimdFInt32Tag;
+    using tag                  = SimdFInt32Tag;
 };
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
 template<>
 struct SimdTraits<SimdDInt32>
 {
-    using type = int;
+    using type                 = int;
     static constexpr int width = GMX_SIMD_DINT32_WIDTH;
-    using tag = SimdDInt32Tag;
+    using tag                  = SimdDInt32Tag;
 };
 #endif
 
 template<typename T>
 struct SimdTraits<const T>
 {
-    using type = const typename SimdTraits<T>::type;
+    using type                 = const typename SimdTraits<T>::type;
     static constexpr int width = SimdTraits<T>::width;
-    using tag = typename SimdTraits<T>::tag;
+    using tag                  = typename SimdTraits<T>::tag;
 };
-}   //namespace internal
+} // namespace internal
 
 /*! \brief Load function that returns SIMD or scalar
+ *
+ * Note that a load of T* where T is const returns a value, which is a
+ * copy, and the caller cannot be constrained to not change it, so the
+ * return type uses std::remove_const_t.
  *
  * \tparam T Type to load (type is always mandatory)
  * \param  m Pointer to aligned memory
  * \return   Loaded value
  */
 template<typename T>
-static inline T
-load(const typename internal::SimdTraits<T>::type *m) //disabled by SFINAE for non-SIMD types
+static inline std::remove_const_t<T>
+load(const typename internal::SimdTraits<T>::type* m) // disabled by SFINAE for non-SIMD types
 {
     return simdLoad(m, typename internal::SimdTraits<T>::tag());
 }
@@ -495,14 +514,13 @@ static inline T
  * 2) load(real*); template parameter is mandatory because otherwise ambiguity is
  *    created. The dependent type disables type deduction.
  */
-load(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
+load(const std::enable_if_t<std::is_arithmetic<T>::value, T> *m)
 {
     return *m;
 }
 
-template <typename T, size_t N>
-static inline T gmx_simdcall
-load(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
+template<typename T, size_t N>
+static inline T gmx_simdcall load(const AlignedArray<typename internal::SimdTraits<T>::type, N>& m)
 {
     return simdLoad(m.data(), typename internal::SimdTraits<T>::tag());
 }
@@ -514,22 +532,19 @@ load(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
  * \return Loaded SimdFloat/Double/Int or basic scalar type
  */
 template<typename T>
-static inline T
-loadU(const typename internal::SimdTraits<T>::type *m)
+static inline T loadU(const typename internal::SimdTraits<T>::type* m)
 {
     return simdLoadU(m, typename internal::SimdTraits<T>::tag());
 }
 
 template<typename T>
-static inline T
-loadU(const typename std::enable_if<std::is_arithmetic<T>::value, T>::type *m)
+static inline T loadU(const std::enable_if_t<std::is_arithmetic<T>::value, T>* m)
 {
     return *m;
 }
 
-template <typename T, size_t N>
-static inline T gmx_simdcall
-loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
+template<typename T, size_t N>
+static inline T gmx_simdcall loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N>& m)
 {
     return simdLoadU(m.data(), typename internal::SimdTraits<T>::tag());
 }
@@ -541,32 +556,32 @@ loadU(const AlignedArray<typename internal::SimdTraits<T>::type, N> &m)
  */
 class SimdSetZeroProxy
 {
-    public:
-        //!\brief Conversion method that returns 0.0 as float
-        operator float() const { return 0.0f; }
-        //!\brief Conversion method that returns 0.0 as double
-        operator double() const { return 0.0; }
-        //!\brief Conversion method that returns 0.0 as int32
-        operator std::int32_t() const { return 0; }
+public:
+    //!\brief Conversion method that returns 0.0 as float
+    operator float() const { return 0.0F; }
+    //!\brief Conversion method that returns 0.0 as double
+    operator double() const { return 0.0; }
+    //!\brief Conversion method that returns 0.0 as int32
+    operator std::int32_t() const { return 0; }
 #if GMX_SIMD_HAVE_FLOAT
-        //!\brief Conversion method that will execute setZero() for SimdFloat
-        operator SimdFloat() const { return setZeroF(); }
-        //!\brief Conversion method that will execute setZero() for SimdFInt32
-        operator SimdFInt32() const { return setZeroFI(); }
+    //!\brief Conversion method that will execute setZero() for SimdFloat
+    operator SimdFloat() const { return setZeroF(); }
+    //!\brief Conversion method that will execute setZero() for SimdFInt32
+    operator SimdFInt32() const { return setZeroFI(); }
 #endif
 #if GMX_SIMD4_HAVE_FLOAT
-        //!\brief Conversion method that will execute setZero() for Simd4Float
-        operator Simd4Float() const { return simd4SetZeroF(); }
+    //!\brief Conversion method that will execute setZero() for Simd4Float
+    operator Simd4Float() const { return simd4SetZeroF(); }
 #endif
 #if GMX_SIMD_HAVE_DOUBLE
-        //!\brief Conversion method that will execute setZero() for SimdDouble
-        operator SimdDouble() const { return setZeroD(); }
-        //!\brief Conversion method that will execute setZero() for SimdDInt32
-        operator SimdDInt32() const { return setZeroDI(); }
+    //!\brief Conversion method that will execute setZero() for SimdDouble
+    operator SimdDouble() const { return setZeroD(); }
+    //!\brief Conversion method that will execute setZero() for SimdDInt32
+    operator SimdDInt32() const { return setZeroDI(); }
 #endif
 #if GMX_SIMD4_HAVE_DOUBLE
-        //!\brief Conversion method that will execute setZero() for Simd4Double
-        operator Simd4Double() const { return simd4SetZeroD(); }
+    //!\brief Conversion method that will execute setZero() for Simd4Double
+    operator Simd4Double() const { return simd4SetZeroD(); }
 #endif
 };
 
@@ -576,17 +591,18 @@ class SimdSetZeroProxy
  *         variable to zero based on the conversion function called when you
  *         assign the result.
  */
-static inline const SimdSetZeroProxy gmx_simdcall
-setZero()
+static inline SimdSetZeroProxy gmx_simdcall setZero()
 {
     return {};
 }
 
 namespace internal
 {
-//TODO: Don't foward function but properly rename them and use proper traits
+// TODO: Don't foward function but properly rename them and use proper traits
 template<typename T>
-struct Simd4Traits {};
+struct Simd4Traits
+{
+};
 
 #if GMX_SIMD4_HAVE_FLOAT
 template<>
@@ -603,7 +619,7 @@ struct Simd4Traits<Simd4Double>
     using type = double;
 };
 #endif
-}   //namespace internal
+} // namespace internal
 
 #if GMX_SIMD4_HAVE_REAL
 template<typename T>
@@ -623,126 +639,116 @@ T loadU(const typename internal::Simd4Traits<T>::type* m)
  * For width=4 all functions are forwarded and for width=8 all but loadU4NOffset are forwarded.
  */
 #if GMX_SIMD_HAVE_FLOAT
-#if GMX_SIMD_FLOAT_WIDTH < 4
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_FLOAT)
-#elif GMX_SIMD_FLOAT_WIDTH == 4
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT GMX_SIMD_HAVE_LOADU
-//For GMX_SIMD_FLOAT_WIDTH>4 it is the reponsibility of the implementation to set
-//GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
-#endif
+#    if GMX_SIMD_FLOAT_WIDTH < 4
+#        define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_FLOAT)
+#    elif GMX_SIMD_FLOAT_WIDTH == 4
+#        define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT GMX_SIMD_HAVE_LOADU
+// For GMX_SIMD_FLOAT_WIDTH>4 it is the reponsibility of the implementation to set
+// GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#    endif
 
-#if GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
-#if GMX_SIMD_FLOAT_WIDTH < 4
+#    if GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#        if GMX_SIMD_FLOAT_WIDTH < 4
 using Simd4NFloat = Simd4Float;
-#define GMX_SIMD4N_FLOAT_WIDTH 4
-#else
+#            define GMX_SIMD4N_FLOAT_WIDTH 4
+#        else
 using Simd4NFloat = SimdFloat;
-#define GMX_SIMD4N_FLOAT_WIDTH GMX_SIMD_FLOAT_WIDTH
-#endif
+#            define GMX_SIMD4N_FLOAT_WIDTH GMX_SIMD_FLOAT_WIDTH
+#        endif
 
-#if GMX_SIMD_FLOAT_WIDTH <= 4
-static inline Simd4NFloat gmx_simdcall
-loadUNDuplicate4(const float* f)
+#        if GMX_SIMD_FLOAT_WIDTH <= 4
+static inline Simd4NFloat gmx_simdcall loadUNDuplicate4(const float* f)
 {
     return Simd4NFloat(*f);
 }
-static inline Simd4NFloat gmx_simdcall
-load4DuplicateN(const float* f)
+static inline Simd4NFloat gmx_simdcall load4DuplicateN(const float* f)
 {
     return load<Simd4NFloat>(f);
 }
-static inline Simd4NFloat gmx_simdcall
-loadU4NOffset(const float* f, int)
+static inline Simd4NFloat gmx_simdcall loadU4NOffset(const float* f, int)
 {
     return loadU<Simd4NFloat>(f);
 }
-#elif GMX_SIMD_FLOAT_WIDTH == 8
-static inline Simd4NFloat gmx_simdcall
-loadUNDuplicate4(const float* f)
+#        elif GMX_SIMD_FLOAT_WIDTH == 8
+static inline Simd4NFloat gmx_simdcall loadUNDuplicate4(const float* f)
 {
     return loadU1DualHsimd(f);
 }
-static inline Simd4NFloat gmx_simdcall
-load4DuplicateN(const float* f)
+static inline Simd4NFloat gmx_simdcall load4DuplicateN(const float* f)
 {
     return loadDuplicateHsimd(f);
 }
-#endif
-#endif //GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
-#else  //GMX_SIMD_HAVE_FLOAT
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
+#        endif
+#    endif // GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#else      // GMX_SIMD_HAVE_FLOAT
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT 0
 #endif
 
 #if GMX_SIMD_HAVE_DOUBLE
-#if GMX_SIMD_DOUBLE_WIDTH < 4
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_DOUBLE)
-#elif GMX_SIMD_DOUBLE_WIDTH == 4
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE GMX_SIMD_HAVE_LOADU
-//For GMX_SIMD_DOUBLE_WIDTH>4 it is the reponsibility of the implementation to set
-//GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
-#endif
+#    if GMX_SIMD_DOUBLE_WIDTH < 4
+#        define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE (GMX_SIMD_HAVE_LOADU && GMX_SIMD4_HAVE_DOUBLE)
+#    elif GMX_SIMD_DOUBLE_WIDTH == 4
+#        define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE GMX_SIMD_HAVE_LOADU
+// For GMX_SIMD_DOUBLE_WIDTH>4 it is the reponsibility of the implementation to set
+// GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#    endif
 
-#if GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
-#if GMX_SIMD_DOUBLE_WIDTH < 4
+#    if GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#        if GMX_SIMD_DOUBLE_WIDTH < 4
 using Simd4NDouble = Simd4Double;
-#define GMX_SIMD4N_DOUBLE_WIDTH 4
-#else
+#            define GMX_SIMD4N_DOUBLE_WIDTH 4
+#        else
 using Simd4NDouble = SimdDouble;
-#define GMX_SIMD4N_DOUBLE_WIDTH GMX_SIMD_DOUBLE_WIDTH
-#endif
+#            define GMX_SIMD4N_DOUBLE_WIDTH GMX_SIMD_DOUBLE_WIDTH
+#        endif
 
-#if GMX_SIMD_DOUBLE_WIDTH <= 4
-static inline Simd4NDouble gmx_simdcall
-loadUNDuplicate4(const double* f)
+#        if GMX_SIMD_DOUBLE_WIDTH <= 4
+static inline Simd4NDouble gmx_simdcall loadUNDuplicate4(const double* f)
 {
     return Simd4NDouble(*f);
 }
-static inline Simd4NDouble gmx_simdcall
-load4DuplicateN(const double* f)
+static inline Simd4NDouble gmx_simdcall load4DuplicateN(const double* f)
 {
     return load<Simd4NDouble>(f);
 }
-static inline Simd4NDouble gmx_simdcall
-loadU4NOffset(const double* f, int /*unused*/)
+static inline Simd4NDouble gmx_simdcall loadU4NOffset(const double* f, int /*unused*/)
 {
     return loadU<Simd4NDouble>(f);
 }
-#elif GMX_SIMD_DOUBLE_WIDTH == 8
-static inline Simd4NDouble gmx_simdcall
-loadUNDuplicate4(const double* f)
+#        elif GMX_SIMD_DOUBLE_WIDTH == 8
+static inline Simd4NDouble gmx_simdcall loadUNDuplicate4(const double* f)
 {
     return loadU1DualHsimd(f);
 }
-static inline Simd4NDouble gmx_simdcall
-load4DuplicateN(const double* f)
+static inline Simd4NDouble gmx_simdcall load4DuplicateN(const double* f)
 {
     return loadDuplicateHsimd(f);
 }
-#endif
-#endif //GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
-#else  //GMX_SIMD_HAVE_DOUBLE
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
+#        endif
+#    endif // GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#else      // GMX_SIMD_HAVE_DOUBLE
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE 0
 #endif
 
 #if GMX_DOUBLE
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_DOUBLE
 #else
-#define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
+#    define GMX_SIMD_HAVE_4NSIMD_UTIL_REAL GMX_SIMD_HAVE_4NSIMD_UTIL_FLOAT
 #endif
 
 #if GMX_SIMD_HAVE_4NSIMD_UTIL_REAL
-#if GMX_DOUBLE
+#    if GMX_DOUBLE
 using Simd4NReal = Simd4NDouble;
-#define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_DOUBLE_WIDTH
-#else
+#        define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_DOUBLE_WIDTH
+#    else
 using Simd4NReal = Simd4NFloat;
-#define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_FLOAT_WIDTH
-#endif
+#        define GMX_SIMD4N_REAL_WIDTH GMX_SIMD4N_FLOAT_WIDTH
+#    endif
 #endif
 
 //! \}  end of name-group proxy objects
 
-}      // namespace gmx
+} // namespace gmx
 
 // \}          end of module_simd
 
@@ -755,9 +761,9 @@ using Simd4NReal = Simd4NFloat;
  *
  * \param[in] ptr  A pointer to a float
  */
-static inline bool isSimdAligned(const float *ptr)
+static inline bool isSimdAligned(const float* ptr)
 {
-    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_FLOAT_WIDTH*sizeof(float)) == 0;
+    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_FLOAT_WIDTH * sizeof(float)) == 0;
 }
 
 #endif // GMX_SIMD_HAVE_FLOAT
@@ -768,18 +774,18 @@ static inline bool isSimdAligned(const float *ptr)
  *
  * \param[in] ptr  A pointer to a double
  */
-static inline bool isSimdAligned(const double *ptr)
+static inline bool isSimdAligned(const double* ptr)
 {
-    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_DOUBLE_WIDTH*sizeof(double)) == 0;
+    return reinterpret_cast<std::size_t>(ptr) % (GMX_SIMD_DOUBLE_WIDTH * sizeof(double)) == 0;
 }
 
 #endif // GMX_SIMD_HAVE_DOUBLE
 
 
 #if GMX_SIMD_HAVE_REAL
-#if GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH
-#error "GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH: increase GMX_REAL_MAX_SIMD_WIDTH in real.h"
-#endif
+#    if GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH
+#        error "GMX_SIMD_REAL_WIDTH > GMX_REAL_MAX_SIMD_WIDTH: increase GMX_REAL_MAX_SIMD_WIDTH in real.h"
+#    endif
 #endif
 
 
@@ -801,8 +807,8 @@ static inline bool isSimdAligned(const double *ptr)
    If there's ever other kinds of SIMD code that might have the same
    problem, we might want to add other variables here.
  */
-#    define GMX_SIMD_HAVE_FLOAT         1
-#    define GMX_SIMD_HAVE_DOUBLE        1
+#    define GMX_SIMD_HAVE_FLOAT 1
+#    define GMX_SIMD_HAVE_DOUBLE 1
 
 #endif // end of hack
 

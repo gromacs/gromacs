@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,29 +49,30 @@ struct t_commrec;
 struct t_grpopts;
 struct t_mdatoms;
 
-void init_ekindata(FILE *log, const gmx_mtop_t *mtop,
-                   const t_grpopts *opts,
-                   gmx_ekindata_t *ekind);
+void init_ekindata(FILE* log, const gmx_mtop_t* mtop, const t_grpopts* opts, gmx_ekindata_t* ekind, real cos_accel);
 /* Allocate memory and set the grpnr array. */
 
-void done_ekindata(gmx_ekindata_t *ekind);
+void done_ekindata(gmx_ekindata_t* ekind);
 /* Free the memory */
 
-void accumulate_u(const t_commrec *cr, const t_grpopts *opts,
-                  gmx_ekindata_t *ekind);
+void accumulate_u(const t_commrec* cr, const t_grpopts* opts, gmx_ekindata_t* ekind);
 
 /* Communicate subsystem - group velocities and subsystem ekin respectively
  * and sum them up. Return them in grps.
  */
 
-real sum_ekin(const t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
+real sum_ekin(const t_grpopts* opts, gmx_ekindata_t* ekind, real* dekindlambda, gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
 
-void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
-                     const t_grpopts *opts, const rvec v[], const t_mdatoms *md, real lambda);
+void update_ekindata(int              start,
+                     int              homenr,
+                     gmx_ekindata_t*  ekind,
+                     const t_grpopts* opts,
+                     const rvec       v[],
+                     const t_mdatoms* md,
+                     real             lambda);
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */

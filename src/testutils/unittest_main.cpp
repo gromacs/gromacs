@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010-2017, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,41 +48,40 @@
 
 #ifndef TEST_DATA_PATH
 //! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
+#    define TEST_DATA_PATH 0
 #endif
 
 #ifndef TEST_TEMP_PATH
 //! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
+#    define TEST_TEMP_PATH 0
 #endif
 
 #ifndef TEST_USES_MPI
 //! Whether the test expects/supports running with multiple MPI ranks.
-#define TEST_USES_MPI false
+#    define TEST_USES_MPI false
 #endif
 
 #ifndef TEST_USES_HARDWARE_DETECTION
 //! Whether the test expects/supports running with knowledge of the hardware.
-#define TEST_USES_HARDWARE_DETECTION false
+#    define TEST_USES_HARDWARE_DETECTION false
 namespace gmx
 {
 namespace test
 {
 //! Implement a stub definition for tests that don't ask for a real one.
-void callAddGlobalTestEnvironment() {};
-}
-}
+void callAddGlobalTestEnvironment(){};
+} // namespace test
+} // namespace gmx
 #endif
 
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH,
-                               TEST_USES_MPI, TEST_USES_HARDWARE_DETECTION,
-                               &argc, &argv);
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, TEST_USES_MPI,
+                               TEST_USES_HARDWARE_DETECTION, &argc, &argv);
     int errcode = RUN_ALL_TESTS();
     ::gmx::test::finalizeTestUtils();
     return errcode;

@@ -51,20 +51,15 @@ namespace test
 
 class SwapTestFixture : public MdrunTestFixture
 {
-    protected:
-        SwapTestFixture();
-        ~SwapTestFixture() override;
+protected:
+    SwapTestFixture();
+    ~SwapTestFixture() override;
 };
 
 
-SwapTestFixture::SwapTestFixture()
-{
-}
+SwapTestFixture::SwapTestFixture() {}
 
-SwapTestFixture::~SwapTestFixture()
-{
-}
-
+SwapTestFixture::~SwapTestFixture() {}
 
 
 //! Test fixture for mdrun with "Computational Electrophysiology" settings,
@@ -132,7 +127,6 @@ TEST_F(CompelTest, SwapCanRun)
     runner_.nsteps_ = 2;
     ASSERT_EQ(0, runner_.callMdrun(secondCaller));
 }
-
 
 
 /*! \todo Add other tests for the compel module, e.g.

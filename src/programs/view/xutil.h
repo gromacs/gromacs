@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,57 +47,62 @@
 #include "Xstuff.h"
 #include "x11.h"
 
-#define OFFS_X          4
-#define OFFS_Y          4
+#define OFFS_X 4
+#define OFFS_Y 4
 
-typedef struct {
-    Window         self, Parent;
-    unsigned long  color;
-    char          *text;
-    bool           bFocus;
-    int            x, y, width, height, bwidth;
-    Cursor         cursor;
+typedef struct
+{
+    Window        self, Parent;
+    unsigned long color;
+    char*         text;
+    bool          bFocus;
+    int           x, y, width, height, bwidth;
+    Cursor        cursor;
 } t_windata;
 
-extern int CheckWin(Window win, const char *file, int line);
+extern int CheckWin(Window win, const char* file, int line);
 
 #define CheckWindow(win) CheckWin(win, __FILE__, __LINE__)
 
-extern void LightBorder(Display *disp, Window win, unsigned long color);
+extern void LightBorder(Display* disp, Window win, unsigned long color);
 
-extern void SpecialTextInRect(t_x11 *x11, XFontStruct *font, Drawable win,
-                              const char *s, int x, int y, int width, int height,
-                              eXPos eX, eYPos eY);
+extern void SpecialTextInRect(t_x11*       x11,
+                              XFontStruct* font,
+                              Drawable     win,
+                              const char*  s,
+                              int          x,
+                              int          y,
+                              int          width,
+                              int          height,
+                              eXPos        eX,
+                              eYPos        eY);
 
-extern void TextInRect(t_x11 *x11, Drawable win,
-                       const char *s, int x, int y, int width, int height,
-                       eXPos eX, eYPos eY);
+extern void
+TextInRect(t_x11* x11, Drawable win, const char* s, int x, int y, int width, int height, eXPos eX, eYPos eY);
 
-extern void TextInWin(t_x11 *x11, t_windata *win, const char *s, eXPos eX, eYPos eY);
+extern void TextInWin(t_x11* x11, t_windata* win, const char* s, eXPos eX, eYPos eY);
 
-extern void InitWin(t_windata *win, int x0, int y0, int w, int h, int bw, const char *text);
+extern void InitWin(t_windata* win, int x0, int y0, int w, int h, int bw, const char* text);
 
-extern void FreeWin(Display *disp, t_windata *win);
+extern void FreeWin(Display* disp, t_windata* win);
 
-extern void ExposeWin(Display *disp, Window win);
+extern void ExposeWin(Display* disp, Window win);
 
-extern void RectWin(Display *disp, GC gc, t_windata *win, unsigned long color);
+extern void RectWin(Display* disp, GC gc, t_windata* win, unsigned long color);
 
-extern void XDrawRoundRect(Display *disp, Window win, GC gc,
-                           int x, int y, int w, int h);
+extern void XDrawRoundRect(Display* disp, Window win, GC gc, int x, int y, int w, int h);
 
-extern void RoundRectWin(Display *disp, GC gc, t_windata *win,
-                         int offsx, int offsy, unsigned long color);
+extern void RoundRectWin(Display* disp, GC gc, t_windata* win, int offsx, int offsy, unsigned long color);
 
-extern void PushMouse(Display *disp, Window dest, int x, int y);
+extern void PushMouse(Display* disp, Window dest, int x, int y);
 
-extern void PopMouse(Display *disp);
+extern void PopMouse(Display* disp);
 
-extern bool HelpPressed(XEvent *event);
+extern bool HelpPressed(XEvent* event);
 
-extern bool GrabOK(FILE *out, int err);
+extern bool GrabOK(FILE* out, int err);
 /* Return true if grab succeeded, prints a message to out
  * and returns false otherwise.
  */
 
-#endif  /* _xutil_h */
+#endif /* _xutil_h */

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,55 +54,70 @@ struct t_resinfo;
 
 
 /*! \internal \brief Struct containing properties of a residue in a protein backbone. */
-struct t_bb {
+struct t_bb
+{
     //! Protein backbone phi angle.
-    real     phi;
+    real phi;
     //! Protein backbone psi angle.
-    real     psi;
+    real psi;
     //! RMS distance of phi and psi angles from ideal helix
-    real     pprms2;
+    real pprms2;
     //! Estimated J-coupling value
-    real     jcaha;
+    real jcaha;
     //! Value of 3 turn helix?
-    real     d3;
+    real d3;
     //! Value of 4 turn helix?
-    real     d4;
+    real d4;
     //! Value of 5 turn?
-    real     d5;
+    real d5;
     //! Average of RMS for analysis.
-    real     rmsa;
+    real rmsa;
     //! If the structure is helical.
     gmx_bool bHelix;
     //! Number of elliptical elements
-    int      nhx;
+    int nhx;
     //! Average RMS Deviation when atoms of this residue are fitted to ideal helix
-    int      nrms;
+    int nrms;
     //! Residue index for output, relative to gmx_helix -r0 value
-    int      resno;
+    int resno;
     //! Index for previous carbon.
-    int      Cprev;
+    int Cprev;
     //! Index for backbone nitrogen.
-    int      N;
+    int N;
     //! Index for backbone NH hydrogen.
-    int      H;
+    int H;
     //! Index for alpha carbon.
-    int      CA;
+    int CA;
     //! Index for carbonyl carbon.
-    int      C;
+    int C;
     //! Index for carbonyl oxygen.
-    int      O;
+    int O;
     //! Index for next backbone nitrogen.
-    int      Nnext;
+    int Nnext;
     //! Name for this residue.
-    char     label[32];
+    char label[32];
 };
 
-enum {
-    efhRAD,  efhTWIST, efhRISE, efhLEN,
-    efhDIP,  efhRMS,   efhRMSA, efhCD222,
-    efhPPRMS, efhCPHI,  efhPHI,  efhPSI,
-    efhHB3,  efhHB4,   efhHB5,  efhJCA,
-    efhAHX,  efhNR
+enum
+{
+    efhRAD,
+    efhTWIST,
+    efhRISE,
+    efhLEN,
+    efhDIP,
+    efhRMS,
+    efhRMSA,
+    efhCD222,
+    efhPPRMS,
+    efhCPHI,
+    efhPHI,
+    efhPSI,
+    efhHB3,
+    efhHB4,
+    efhHB5,
+    efhJCA,
+    efhAHX,
+    efhNR
 };
 
 extern real ahx_len(int gnx, const int index[], rvec x[]);
@@ -110,13 +125,13 @@ extern real ahx_len(int gnx, const int index[], rvec x[]);
 
 extern real ellipticity(int nres, t_bb bb[]);
 
-extern real radius(FILE *fp, int nca, const int ca_index[], rvec x[]);
+extern real radius(FILE* fp, int nca, const int ca_index[], rvec x[]);
 /* Assume we have calphas */
 
 extern real twist(int nca, const int caindex[], rvec x[]);
 /* Calculate the twist of the helix */
 
-extern real pprms(FILE *fp, int nbb, t_bb bb[]);
+extern real pprms(FILE* fp, int nbb, t_bb bb[]);
 /* Calculate the average RMS from canonical phi/psi values
  * and the distance per residue
  */
@@ -129,13 +144,10 @@ extern real dip(int nbb, const int bbind[], const rvec x[], const t_atom atom[])
 extern real rise(int gnx, const int index[], rvec x[]);
 /* Assume we have a list of Calpha atoms only! */
 
-extern void av_hblen(FILE *fp3, FILE *fp3a,
-                     FILE *fp4, FILE *fp4a,
-                     FILE *fp5, FILE *fp5a,
-                     real t, int nres, t_bb bb[]);
+extern void
+av_hblen(FILE* fp3, FILE* fp3a, FILE* fp4, FILE* fp4a, FILE* fp5, FILE* fp5a, real t, int nres, t_bb bb[]);
 
-extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
-                      real t, int nres, t_bb bb[]);
+extern void av_phipsi(FILE* fphi, FILE* fpsi, FILE* fphi2, FILE* fpsi2, real t, int nres, t_bb bb[]);
 
 /*! \brief Allocate and fill an array of information about residues in a protein backbone.
  *
@@ -148,17 +160,28 @@ extern void av_phipsi(FILE *fphi, FILE *fpsi, FILE *fphi2, FILE *fpsi2,
  *
  * In the output array, the first residue will be numbered starting
  * from res0. */
-extern t_bb *mkbbind(const char *fn, int *nres, int *nbb, int res0,
-                     int *nall, int **index,
-                     char ***atomname, t_atom atom[],
-                     t_resinfo *resinfo);
+extern t_bb* mkbbind(const char* fn,
+                     int*        nres,
+                     int*        nbb,
+                     int         res0,
+                     int*        nall,
+                     int**       index,
+                     char***     atomname,
+                     t_atom      atom[],
+                     t_resinfo*  resinfo);
 
-extern void do_start_end(int nres, t_bb bb[], int *nbb,
-                         int bbindex[], int *nca, int caindex[],
-                         gmx_bool bRange, int rStart, int rEnd);
+extern void do_start_end(int      nres,
+                         t_bb     bb[],
+                         int*     nbb,
+                         int      bbindex[],
+                         int*     nca,
+                         int      caindex[],
+                         gmx_bool bRange,
+                         int      rStart,
+                         int      rEnd);
 
 extern void calc_hxprops(int nres, t_bb bb[], const rvec x[]);
 
-extern void pr_bb(FILE *fp, int nres, t_bb bb[]);
+extern void pr_bb(FILE* fp, int nres, t_bb bb[]);
 
 #endif

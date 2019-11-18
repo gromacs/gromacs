@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,57 +66,52 @@ class IOptionManager;
  */
 class OptionManagerContainer
 {
-    public:
-        OptionManagerContainer()
-        {
-        }
+public:
+    OptionManagerContainer() {}
 
-        //! Returns `true` if there are no managers.
-        bool empty() const { return list_.empty(); }
+    //! Returns `true` if there are no managers.
+    bool empty() const { return list_.empty(); }
 
-        //! Adds a manager to the container.
-        void add(IOptionManager *manager)
+    //! Adds a manager to the container.
+    void add(IOptionManager* manager) { list_.push_back(manager); }
+    /*! \brief
+     * Retrieves a manager of a certain type.
+     *
+     * \tparam  ManagerType  Type of manager to retrieve
+     *     (should derive from IOptionManager).
+     * \returns The manager, or `NULL` if there is none.
+     *
+     * This method is used in AbstractOption::createStorage() to retrieve
+     * a manager of a certain type for options that use a manager.
+     *
+     * The return value is `NULL` if there is no manager of the given type.
+     * The caller needs to handle this (either by asserting, or by handling
+     * the manager as optional).
+     */
+    template<class ManagerType>
+    ManagerType* get() const
+    {
+        ManagerType* result = nullptr;
+        for (ListType::const_iterator i = list_.begin(); i != list_.end(); ++i)
         {
-            list_.push_back(manager);
-        }
-        /*! \brief
-         * Retrieves a manager of a certain type.
-         *
-         * \tparam  ManagerType  Type of manager to retrieve
-         *     (should derive from IOptionManager).
-         * \returns The manager, or `NULL` if there is none.
-         *
-         * This method is used in AbstractOption::createStorage() to retrieve
-         * a manager of a certain type for options that use a manager.
-         *
-         * The return value is `NULL` if there is no manager of the given type.
-         * The caller needs to handle this (either by asserting, or by handling
-         * the manager as optional).
-         */
-        template <class ManagerType>
-        ManagerType *get() const
-        {
-            ManagerType *result = nullptr;
-            for (ListType::const_iterator i = list_.begin(); i != list_.end(); ++i)
+            ManagerType* curr = dynamic_cast<ManagerType*>(*i);
+            if (curr != nullptr)
             {
-                ManagerType *curr = dynamic_cast<ManagerType *>(*i);
-                if (curr != nullptr)
-                {
-                    GMX_RELEASE_ASSERT(result == nullptr,
-                                       "More than one applicable option manager is set");
-                    result = curr;
-                }
+                GMX_RELEASE_ASSERT(result == nullptr,
+                                   "More than one applicable option manager is set");
+                result = curr;
             }
-            return result;
         }
+        return result;
+    }
 
-    private:
-        //! Shorthand for the internal container type.
-        typedef std::vector<IOptionManager *> ListType;
+private:
+    //! Shorthand for the internal container type.
+    typedef std::vector<IOptionManager*> ListType;
 
-        ListType  list_;
+    ListType list_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionManagerContainer);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionManagerContainer);
 };
 
 } // namespace gmx

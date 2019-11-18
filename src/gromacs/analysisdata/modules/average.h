@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -79,71 +79,69 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
-                                  public AnalysisDataModuleSerial
+class AnalysisDataAverageModule : public AbstractAnalysisArrayData, public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataAverageModule();
-        ~AnalysisDataAverageModule() override;
+public:
+    AnalysisDataAverageModule();
+    ~AnalysisDataAverageModule() override;
 
-        using AbstractAnalysisArrayData::setXAxis;
-        using AbstractAnalysisArrayData::setXAxisValue;
+    using AbstractAnalysisArrayData::setXAxis;
+    using AbstractAnalysisArrayData::setXAxisValue;
 
-        /*! \brief
-         * Sets the averaging to happen over entire data sets.
-         *
-         * If \p bDataSets is false (the default), the module averages each
-         * column separately.  The output will have a column for each data set,
-         * and a row for each column.
-         *
-         * If \p bDataSets is true, the module averages all values within
-         * a single data set into a single average/standard deviation.
-         * The output will have only one column, with one row for each data
-         * set.
-         */
-        void setAverageDataSets(bool bDataSets);
+    /*! \brief
+     * Sets the averaging to happen over entire data sets.
+     *
+     * If \p bDataSets is false (the default), the module averages each
+     * column separately.  The output will have a column for each data set,
+     * and a row for each column.
+     *
+     * If \p bDataSets is true, the module averages all values within
+     * a single data set into a single average/standard deviation.
+     * The output will have only one column, with one row for each data
+     * set.
+     */
+    void setAverageDataSets(bool bDataSets);
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        void frameStarted(const AnalysisDataFrameHeader &header) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    void frameStarted(const AnalysisDataFrameHeader& header) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void dataFinished() override;
 
-        /*! \brief
-         * Convenience access to the average of a data column.
-         *
-         * Note that the interpretation of the parameters follows their naming:
-         * with \c setAverageDataSets(false), \p dataSet corresponds to a
-         * column in the output, but with \c setAverageDataSets(false) it
-         * corresponds to an output row.  In both cases, it selects the data
-         * set; with \c setAverageDataSets(false), \p column should always be
-         * zero as there is only one value per data set.
-         */
-        real average(int dataSet, int column) const;
-        /*! \brief
-         * Convenience access to the standard deviation of a data column.
-         *
-         * See average() for the interpretation of the parameters.
-         */
-        real standardDeviation(int dataSet, int column) const;
-        /*! \brief
-         * Access the number of samples for a data column.
-         *
-         * See average() for the interpretation of the parameters.
-         */
-        int sampleCount(int dataSet, int column) const;
+    /*! \brief
+     * Convenience access to the average of a data column.
+     *
+     * Note that the interpretation of the parameters follows their naming:
+     * with \c setAverageDataSets(false), \p dataSet corresponds to a
+     * column in the output, but with \c setAverageDataSets(false) it
+     * corresponds to an output row.  In both cases, it selects the data
+     * set; with \c setAverageDataSets(false), \p column should always be
+     * zero as there is only one value per data set.
+     */
+    real average(int dataSet, int column) const;
+    /*! \brief
+     * Convenience access to the standard deviation of a data column.
+     *
+     * See average() for the interpretation of the parameters.
+     */
+    real standardDeviation(int dataSet, int column) const;
+    /*! \brief
+     * Access the number of samples for a data column.
+     *
+     * See average() for the interpretation of the parameters.
+     */
+    int sampleCount(int dataSet, int column) const;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
-typedef std::shared_ptr<AnalysisDataAverageModule>
-    AnalysisDataAverageModulePointer;
+typedef std::shared_ptr<AnalysisDataAverageModule> AnalysisDataAverageModulePointer;
 
 /*! \brief
  * Data module for averaging of columns for each frame.
@@ -161,35 +159,33 @@ typedef std::shared_ptr<AnalysisDataAverageModule>
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
-                                       public AnalysisDataModuleSerial
+class AnalysisDataFrameAverageModule : public AbstractAnalysisData, public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataFrameAverageModule();
-        ~AnalysisDataFrameAverageModule() override;
+public:
+    AnalysisDataFrameAverageModule();
+    ~AnalysisDataFrameAverageModule() override;
 
-        int frameCount() const override;
+    int frameCount() const override;
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        void frameStarted(const AnalysisDataFrameHeader &header) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    void frameStarted(const AnalysisDataFrameHeader& header) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void dataFinished() override;
 
-    private:
-        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-        bool requestStorageInternal(int nframes) override;
+private:
+    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+    bool                 requestStorageInternal(int nframes) override;
 
-        class Impl;
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.
-typedef std::shared_ptr<AnalysisDataFrameAverageModule>
-    AnalysisDataFrameAverageModulePointer;
+typedef std::shared_ptr<AnalysisDataFrameAverageModule> AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx
 

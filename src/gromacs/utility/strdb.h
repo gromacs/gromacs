@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
  * Return FALSE when eof.
  */
-gmx_bool get_a_line(FILE *fp, char line[], int n);
+gmx_bool get_a_line(FILE* fp, char line[], int n);
 
 /*! \brief
  * Read a header between '[' and ']' from line to header.
@@ -69,13 +69,13 @@ gmx_bool get_header(char line[], char header[]);
  * First line in the file needs to specify the number of strings following.
  * Returns the number of strings.
  */
-int get_lines(const char *db, char ***strings);
+int get_lines(const char* db, char*** strings);
 
 /*! \brief
  * Searches an array of strings for key, return the index if found.
  *
  * Returns -1 if not found.
  */
-int search_str(int nstr, char **str, char *key);
+int search_str(int nstr, char** str, char* key);
 
 #endif

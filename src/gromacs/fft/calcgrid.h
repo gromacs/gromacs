@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,9 +42,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/real.h"
 
-real calcFftGrid(FILE *fp,
-                 const matrix box, real gridSpacing, int minGridPointsPerDim,
-                 int *nx, int *ny, int *nz);
+real calcFftGrid(FILE* fp, const matrix box, real gridSpacing, int minGridPointsPerDim, int* nx, int* ny, int* nz);
 /* Sets the number of grid points for each zero n* to the first reasonable
  * number which gives a spacing equal to or smaller than gridSpacing
  * and is >= minGridPointsPerDim.

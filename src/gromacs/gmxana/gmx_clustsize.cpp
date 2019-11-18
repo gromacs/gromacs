@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2007, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,45 +64,57 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-static void clust_size(const char *ndx, const char *trx, const char *xpm,
-                       const char *xpmw, const char *ncl, const char *acl,
-                       const char *mcl, const char *histo, const char *tempf,
-                       const char *mcn, gmx_bool bMol, gmx_bool bPBC, const char *tpr,
-                       real cut, int nskip, int nlevels,
-                       t_rgb rmid, t_rgb rhi, int ndf,
-                       const gmx_output_env_t *oenv)
+static void clust_size(const char*             ndx,
+                       const char*             trx,
+                       const char*             xpm,
+                       const char*             xpmw,
+                       const char*             ncl,
+                       const char*             acl,
+                       const char*             mcl,
+                       const char*             histo,
+                       const char*             tempf,
+                       const char*             mcn,
+                       gmx_bool                bMol,
+                       gmx_bool                bPBC,
+                       const char*             tpr,
+                       real                    cut,
+                       int                     nskip,
+                       int                     nlevels,
+                       t_rgb                   rmid,
+                       t_rgb                   rhi,
+                       int                     ndf,
+                       const gmx_output_env_t* oenv)
 {
-    FILE                 *fp, *gp, *hp, *tp;
-    int                  *index = nullptr;
-    int                   nindex, natoms;
-    t_trxstatus          *status;
-    rvec                 *x = nullptr, *v = nullptr, dx;
-    t_pbc                 pbc;
-    gmx_bool              bSame, bTPRwarn = TRUE;
+    FILE *       fp, *gp, *hp, *tp;
+    int*         index = nullptr;
+    int          nindex, natoms;
+    t_trxstatus* status;
+    rvec *       x = nullptr, *v = nullptr, dx;
+    t_pbc        pbc;
+    gmx_bool     bSame, bTPRwarn = TRUE;
     /* Topology stuff */
-    t_trxframe            fr;
-    t_tpxheader           tpxh;
-    gmx_mtop_t           *mtop = nullptr;
-    int                   ePBC = -1;
-    int                   ii, jj;
-    real                  temp, tfac;
+    t_trxframe    fr;
+    TpxFileHeader tpxh;
+    gmx_mtop_t*   mtop = nullptr;
+    int           ePBC = -1;
+    int           ii, jj;
+    real          temp, tfac;
     /* Cluster size distribution (matrix) */
-    real                **cs_dist = nullptr;
-    real                  tf, dx2, cut2, *t_x = nullptr, *t_y, cmid, cmax, cav, ekin;
-    int                   i, j, k, ai, aj, ci, cj, nframe, nclust, n_x, max_size = 0;
-    int                  *clust_index, *clust_size, max_clust_size, max_clust_ind, nav, nhisto;
-    t_rgb                 rlo          = { 1.0, 1.0, 1.0 };
-    int                   frameCounter = 0;
-    real                  frameTime;
+    real** cs_dist = nullptr;
+    real   tf, dx2, cut2, *t_x = nullptr, *t_y, cmid, cmax, cav, ekin;
+    int    i, j, k, ai, aj, ci, cj, nframe, nclust, n_x, max_size = 0;
+    int *  clust_index, *clust_size, max_clust_size, max_clust_ind, nav, nhisto;
+    t_rgb  rlo          = { 1.0, 1.0, 1.0 };
+    int    frameCounter = 0;
+    real   frameTime;
 
     clear_trxframe(&fr, TRUE);
     auto timeLabel = output_env_get_time_label(oenv);
-    tf     = output_env_get_time_factor(oenv);
-    fp     = xvgropen(ncl, "Number of clusters", timeLabel, "N", oenv);
-    gp     = xvgropen(acl, "Average cluster size", timeLabel, "#molecules", oenv);
-    hp     = xvgropen(mcl, "Max cluster size", timeLabel, "#molecules", oenv);
-    tp     = xvgropen(tempf, "Temperature of largest cluster", timeLabel, "T (K)",
-                      oenv);
+    tf             = output_env_get_time_factor(oenv);
+    fp             = xvgropen(ncl, "Number of clusters", timeLabel, "N", oenv);
+    gp             = xvgropen(acl, "Average cluster size", timeLabel, "#molecules", oenv);
+    hp             = xvgropen(mcl, "Max cluster size", timeLabel, "#molecules", oenv);
+    tp             = xvgropen(tempf, "Temperature of largest cluster", timeLabel, "T (K)", oenv);
 
     if (!read_first_frame(oenv, &status, trx, &fr, TRX_NEED_X | TRX_READ_V))
     {
@@ -115,11 +127,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     if (tpr)
     {
         mtop = new gmx_mtop_t;
-        read_tpxheader(tpr, &tpxh, TRUE);
+        tpxh = readTpxHeader(tpr, true);
         if (tpxh.natoms != natoms)
         {
-            gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!",
-                      tpxh.natoms, natoms);
+            gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!", tpxh.natoms, natoms);
         }
         ePBC = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, mtop);
     }
@@ -129,7 +140,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     else
     {
-        tfac = ndf/(3.0*natoms);
+        tfac = ndf / (3.0 * natoms);
     }
 
     gmx::RangePartitioning mols;
@@ -137,8 +148,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     {
         if (ndx)
         {
-            printf("Using molecules rather than atoms. Not reading index file %s\n",
-                   ndx);
+            printf("Using molecules rather than atoms. Not reading index file %s\n", ndx);
         }
         GMX_RELEASE_ASSERT(mtop != nullptr, "Trying to access mtop->mols from NULL mtop pointer");
         mols = gmx_mtop_molecules(*mtop);
@@ -153,20 +163,20 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     else
     {
-        char *gname;
+        char* gname;
         rd_index(ndx, 1, &nindex, &index, &gname);
         sfree(gname);
     }
 
     snew(clust_index, nindex);
     snew(clust_size, nindex);
-    cut2   = cut*cut;
+    cut2   = cut * cut;
     nframe = 0;
     n_x    = 0;
     snew(t_y, nindex);
     for (i = 0; (i < nindex); i++)
     {
-        t_y[i] = i+1;
+        t_y[i] = i + 1;
     }
     max_clust_size = 1;
     max_clust_ind  = -1;
@@ -188,7 +198,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 /* Cluster index is indexed with atom index number */
                 clust_index[i] = i;
                 /* Cluster size is indexed with cluster number */
-                clust_size[i]  = 1;
+                clust_size[i] = 1;
             }
 
             /* Loop over atoms */
@@ -198,7 +208,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 ci = clust_index[i];
 
                 /* Loop over atoms (only half a matrix) */
-                for (j = i+1; (j < nindex); j++)
+                for (j = i + 1; (j < nindex); j++)
                 {
                     cj = clust_index[j];
 
@@ -210,7 +220,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                         /* Compute distance */
                         if (bMol)
                         {
-                            GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
+                            GMX_RELEASE_ASSERT(mols.numBlocks() > 0,
+                                               "Cannot access index[] from empty mols");
                             bSame = FALSE;
                             for (ii = mols.block(ai).begin(); !bSame && ii < mols.block(ai).end(); ii++)
                             {
@@ -280,9 +291,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             {
                 frameTime = ++frameCounter;
             }
-            t_x[n_x-1] = frameTime*tf;
+            t_x[n_x - 1] = frameTime * tf;
             srenew(cs_dist, n_x);
-            snew(cs_dist[n_x-1], nindex);
+            snew(cs_dist[n_x - 1], nindex);
             nclust = 0;
             cav    = 0;
             nav    = 0;
@@ -297,8 +308,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                 if (ci > 0)
                 {
                     nclust++;
-                    cs_dist[n_x-1][ci-1] += 1.0;
-                    max_size              = std::max(max_size, ci);
+                    cs_dist[n_x - 1][ci - 1] += 1.0;
+                    max_size = std::max(max_size, ci);
                     if (ci > 1)
                     {
                         cav += ci;
@@ -309,7 +320,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             fprintf(fp, "%14.6e  %10d\n", frameTime, nclust);
             if (nav > 0)
             {
-                fprintf(gp, "%14.6e  %10.3f\n", frameTime, cav/nav);
+                fprintf(gp, "%14.6e  %10.3f\n", frameTime, cav / nav);
             }
             fprintf(hp, "%14.6e  %10d\n", frameTime, max_clust_size);
         }
@@ -335,19 +346,18 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
                     {
                         if (clust_index[i] == max_clust_ind)
                         {
-                            ai      = index[i];
-                            real            m  = mtopGetAtomMass(mtop, ai, &molb);
-                            ekin   += 0.5*m*iprod(v[ai], v[ai]);
+                            ai     = index[i];
+                            real m = mtopGetAtomMass(mtop, ai, &molb);
+                            ekin += 0.5 * m * iprod(v[ai], v[ai]);
                         }
                     }
-                    temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
+                    temp = (ekin * 2.0) / (3.0 * tfac * max_clust_size * BOLTZ);
                     fprintf(tp, "%10.3f  %10.3f\n", frameTime, temp);
                 }
             }
         }
         nframe++;
-    }
-    while (read_next_frame(oenv, status, &fr));
+    } while (read_next_frame(oenv, status, &fr));
     close_trx(status);
     done_frame(&fr);
     xvgrclose(fp);
@@ -365,15 +375,16 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
             {
                 if (bMol)
                 {
-                    GMX_RELEASE_ASSERT(mols.numBlocks() > 0, "Cannot access index[] from empty mols");
+                    GMX_RELEASE_ASSERT(mols.numBlocks() > 0,
+                                       "Cannot access index[] from empty mols");
                     for (int j : mols.block(i))
                     {
-                        fprintf(fp, "%d\n", j+1);
+                        fprintf(fp, "%d\n", j + 1);
                     }
                 }
                 else
                 {
-                    fprintf(fp, "%d\n", index[i]+1);
+                    fprintf(fp, "%d\n", index[i] + 1);
                 }
             }
         }
@@ -391,10 +402,10 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
         {
             nelem += cs_dist[i][j];
         }
-        fprintf(fp, "%5d  %8.3f\n", j+1, nelem/n_x);
-        nhisto += static_cast<int>((j+1)*nelem/n_x);
+        fprintf(fp, "%5d  %8.3f\n", j + 1, nelem / n_x);
+        nhisto += static_cast<int>((j + 1) * nelem / n_x);
     }
-    fprintf(fp, "%5d  %8.3f\n", j+1, 0.0);
+    fprintf(fp, "%5d  %8.3f\n", j + 1, 0.0);
     xvgrclose(fp);
 
     fprintf(stderr, "Total number of atoms in clusters =  %d\n", nhisto);
@@ -418,9 +429,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     cmid = 1;
     fp   = gmx_ffopen(xpm, "w");
-    write_xpm3(fp, 0, "Cluster size distribution", "# clusters", timeLabel, "Size",
-               n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
-               rlo, rmid, rhi, &nlevels);
+    write_xpm3(fp, 0, "Cluster size distribution", "# clusters", timeLabel, "Size", n_x, max_size,
+               t_x, t_y, cs_dist, 0, cmid, cmax, rlo, rmid, rhi, &nlevels);
     gmx_ffclose(fp);
     cmid = 100.0;
     cmax = 0.0;
@@ -428,7 +438,7 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     {
         for (j = 0; (j < max_size); j++)
         {
-            cs_dist[i][j] *= (j+1);
+            cs_dist[i][j] *= (j + 1);
             if ((cs_dist[i][j] > 0) && (cs_dist[i][j] < cmid))
             {
                 cmid = cs_dist[i][j];
@@ -438,9 +448,8 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     }
     fprintf(stderr, "cmid: %g, cmax: %g, max_size: %d\n", cmid, cmax, max_size);
     fp = gmx_ffopen(xpmw, "w");
-    write_xpm3(fp, 0, "Weighted cluster size distribution", "Fraction", timeLabel,
-               "Size", n_x, max_size, t_x, t_y, cs_dist, 0, cmid, cmax,
-               rlo, rmid, rhi, &nlevels);
+    write_xpm3(fp, 0, "Weighted cluster size distribution", "Fraction", timeLabel, "Size", n_x,
+               max_size, t_x, t_y, cs_dist, 0, cmid, cmax, rlo, rmid, rhi, &nlevels);
     gmx_ffclose(fp);
     delete mtop;
     sfree(t_x);
@@ -455,9 +464,9 @@ static void clust_size(const char *ndx, const char *trx, const char *xpm,
     sfree(index);
 }
 
-int gmx_clustsize(int argc, char *argv[])
+int gmx_clustsize(int argc, char* argv[])
 {
-    const char       *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes the size distributions of molecular/atomic clusters in",
         "the gas phase. The output is given in the form of an [REF].xpm[ref] file.",
         "The total number of clusters is written to an [REF].xvg[ref] file.[PAR]",
@@ -476,64 +485,79 @@ int gmx_clustsize(int argc, char *argv[])
         "atom numbers of the largest cluster."
     };
 
-    real              cutoff   = 0.35;
-    int               nskip    = 0;
-    int               nlevels  = 20;
-    int               ndf      = -1;
-    gmx_bool          bMol     = FALSE;
-    gmx_bool          bPBC     = TRUE;
-    rvec              rlo      = { 1.0, 1.0, 0.0 };
-    rvec              rhi      = { 0.0, 0.0, 1.0 };
+    real     cutoff  = 0.35;
+    int      nskip   = 0;
+    int      nlevels = 20;
+    int      ndf     = -1;
+    gmx_bool bMol    = FALSE;
+    gmx_bool bPBC    = TRUE;
+    rvec     rlo     = { 1.0, 1.0, 0.0 };
+    rvec     rhi     = { 0.0, 0.0, 1.0 };
 
-    gmx_output_env_t *oenv;
+    gmx_output_env_t* oenv;
 
-    t_pargs           pa[] = {
-        { "-cut",      FALSE, etREAL, {&cutoff},
+    t_pargs pa[] = {
+        { "-cut",
+          FALSE,
+          etREAL,
+          { &cutoff },
           "Largest distance (nm) to be considered in a cluster" },
-        { "-mol",      FALSE, etBOOL, {&bMol},
+        { "-mol",
+          FALSE,
+          etBOOL,
+          { &bMol },
           "Cluster molecules rather than atoms (needs [REF].tpr[ref] file)" },
-        { "-pbc",      FALSE, etBOOL, {&bPBC},
-          "Use periodic boundary conditions" },
-        { "-nskip",    FALSE, etINT,  {&nskip},
-          "Number of frames to skip between writing" },
-        { "-nlevels",  FALSE, etINT,  {&nlevels},
+        { "-pbc", FALSE, etBOOL, { &bPBC }, "Use periodic boundary conditions" },
+        { "-nskip", FALSE, etINT, { &nskip }, "Number of frames to skip between writing" },
+        { "-nlevels",
+          FALSE,
+          etINT,
+          { &nlevels },
           "Number of levels of grey in [REF].xpm[ref] output" },
-        { "-ndf",      FALSE, etINT,  {&ndf},
-          "Number of degrees of freedom of the entire system for temperature calculation. If not set, the number of atoms times three is used." },
-        { "-rgblo",    FALSE, etRVEC, {rlo},
+        { "-ndf",
+          FALSE,
+          etINT,
+          { &ndf },
+          "Number of degrees of freedom of the entire system for temperature calculation. "
+          "If not set, the number of atoms times three is used." },
+        { "-rgblo",
+          FALSE,
+          etRVEC,
+          { rlo },
           "RGB values for the color of the lowest occupied cluster size" },
-        { "-rgbhi",    FALSE, etRVEC, {rhi},
+        { "-rgbhi",
+          FALSE,
+          etRVEC,
+          { rhi },
           "RGB values for the color of the highest occupied cluster size" }
     };
 #define NPA asize(pa)
-    const char       *fnNDX, *fnTPR;
-    t_rgb             rgblo, rgbhi;
+    const char *fnNDX, *fnTPR;
+    t_rgb       rgblo, rgbhi;
 
-    t_filenm          fnm[] = {
-        { efTRX, "-f",  nullptr,         ffREAD  },
-        { efTPR, nullptr,  nullptr,         ffOPTRD },
-        { efNDX, nullptr,  nullptr,         ffOPTRD },
-        { efXPM, "-o", "csize",       ffWRITE },
-        { efXPM, "-ow", "csizew",      ffWRITE },
-        { efXVG, "-nc", "nclust",      ffWRITE },
-        { efXVG, "-mc", "maxclust",    ffWRITE },
-        { efXVG, "-ac", "avclust",     ffWRITE },
-        { efXVG, "-hc", "histo-clust", ffWRITE },
-        { efXVG, "-temp", "temp",     ffOPTWR },
+    t_filenm fnm[] = {
+        { efTRX, "-f", nullptr, ffREAD },         { efTPR, nullptr, nullptr, ffOPTRD },
+        { efNDX, nullptr, nullptr, ffOPTRD },     { efXPM, "-o", "csize", ffWRITE },
+        { efXPM, "-ow", "csizew", ffWRITE },      { efXVG, "-nc", "nclust", ffWRITE },
+        { efXVG, "-mc", "maxclust", ffWRITE },    { efXVG, "-ac", "avclust", ffWRITE },
+        { efXVG, "-hc", "histo-clust", ffWRITE }, { efXVG, "-temp", "temp", ffOPTWR },
         { efNDX, "-mcn", "maxclust", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
-    if (!parse_common_args(&argc, argv,
-                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
-                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT, NFILE, fnm,
+                           NPA, pa, asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
 
     fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
-    rgblo.r = rlo[XX]; rgblo.g = rlo[YY]; rgblo.b = rlo[ZZ];
-    rgbhi.r = rhi[XX]; rgbhi.g = rhi[YY]; rgbhi.b = rhi[ZZ];
+    rgblo.r = rlo[XX];
+    rgblo.g = rlo[YY];
+    rgblo.b = rlo[ZZ];
+    rgbhi.r = rhi[XX];
+    rgbhi.g = rhi[YY];
+    rgbhi.b = rhi[ZZ];
 
     fnTPR = ftp2fn_null(efTPR, NFILE, fnm);
     if (bMol && !fnTPR)
@@ -541,13 +565,10 @@ int gmx_clustsize(int argc, char *argv[])
         gmx_fatal(FARGS, "You need a tpr file for the -mol option");
     }
 
-    clust_size(fnNDX, ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm),
-               opt2fn("-ow", NFILE, fnm),
-               opt2fn("-nc", NFILE, fnm), opt2fn("-ac", NFILE, fnm),
-               opt2fn("-mc", NFILE, fnm), opt2fn("-hc", NFILE, fnm),
-               opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
-               bMol, bPBC, fnTPR,
-               cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
+    clust_size(fnNDX, ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm), opt2fn("-ow", NFILE, fnm),
+               opt2fn("-nc", NFILE, fnm), opt2fn("-ac", NFILE, fnm), opt2fn("-mc", NFILE, fnm),
+               opt2fn("-hc", NFILE, fnm), opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
+               bMol, bPBC, fnTPR, cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
 
     output_env_done(oenv);
 

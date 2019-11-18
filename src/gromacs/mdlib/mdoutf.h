@@ -46,7 +46,6 @@
 class energyhistory_t;
 struct gmx_mtop_t;
 struct gmx_output_env_t;
-struct MdrunOptions;
 struct ObservablesHistory;
 struct t_commrec;
 struct t_filenm;
@@ -54,32 +53,37 @@ struct t_inputrec;
 
 namespace gmx
 {
+enum class StartingBehavior;
 class IMDOutputProvider;
-}
+struct MdModulesNotifier;
+struct MdrunOptions;
+} // namespace gmx
 
-typedef struct gmx_mdoutf *gmx_mdoutf_t;
+typedef struct gmx_mdoutf* gmx_mdoutf_t;
 
 /*! \brief Allocate and initialize object to manager trajectory writing output
  *
  * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
-gmx_mdoutf_t init_mdoutf(FILE                   *fplog,
-                         int                     nfile,
-                         const t_filenm          fnm[],
-                         const MdrunOptions     &mdrunOptions,
-                         const t_commrec        *cr,
-                         gmx::IMDOutputProvider *outputProvider,
-                         const t_inputrec       *ir,
-                         gmx_mtop_t             *mtop,
-                         const gmx_output_env_t *oenv,
-                         gmx_wallcycle_t         wcycle);
+gmx_mdoutf_t init_mdoutf(FILE*                         fplog,
+                         int                           nfile,
+                         const t_filenm                fnm[],
+                         const gmx::MdrunOptions&      mdrunOptions,
+                         const t_commrec*              cr,
+                         gmx::IMDOutputProvider*       outputProvider,
+                         const gmx::MdModulesNotifier& mdModulesNotifier,
+                         const t_inputrec*             ir,
+                         gmx_mtop_t*                   mtop,
+                         const gmx_output_env_t*       oenv,
+                         gmx_wallcycle_t               wcycle,
+                         gmx::StartingBehavior         startingBehavior);
 
 /*! \brief Getter for file pointer */
 ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
 
 /*! \brief Getter for file pointer */
-FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
+FILE* mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
 
 /*! \brief Getter for wallcycle timer */
 gmx_wallcycle_t mdoutf_get_wcycle(gmx_mdoutf_t of);
@@ -100,14 +104,29 @@ void done_mdoutf(gmx_mdoutf_t of);
  * determined by the mdof_flags defined below. Data is collected to
  * the master node only when necessary. Without domain decomposition
  * only data from state_local is used and state_global is ignored.
+ *
+ * \param[in] fplog              File handler to log file.
+ * \param[in] cr                 Communication record.
+ * \param[in] of                 File handler to trajectory file.
+ * \param[in] mdof_flags         Flags indicating what data is written.
+ * \param[in] natoms             The total number of atoms in the system.
+ * \param[in] step               The current time step.
+ * \param[in] t                  The current time.
+ * \param[in] state_local        Pointer to the local state object.
+ * \param[in] state_global       Pointer to the global state object.
+ * \param[in] observablesHistory Pointer to the ObservableHistory object.
+ * \param[in] f_local            The local forces.
  */
-void mdoutf_write_to_trajectory_files(FILE *fplog, const t_commrec *cr,
-                                      gmx_mdoutf_t of,
-                                      int mdof_flags,
-                                      gmx_mtop_t *top_global,
-                                      int64_t step, double t,
-                                      t_state *state_local, t_state *state_global,
-                                      ObservablesHistory *observablesHistory,
+void mdoutf_write_to_trajectory_files(FILE*                    fplog,
+                                      const t_commrec*         cr,
+                                      gmx_mdoutf_t             of,
+                                      int                      mdof_flags,
+                                      int                      natoms,
+                                      int64_t                  step,
+                                      double                   t,
+                                      t_state*                 state_local,
+                                      t_state*                 state_global,
+                                      ObservablesHistory*      observablesHistory,
                                       gmx::ArrayRef<gmx::RVec> f_local);
 
 /*! \brief Get the output interval of box size of uncompressed TNG output.
@@ -130,15 +149,15 @@ int mdoutf_get_tng_compressed_box_output_interval(gmx_mdoutf_t of);
  */
 int mdoutf_get_tng_compressed_lambda_output_interval(gmx_mdoutf_t of);
 
-#define MDOF_X                 (1<<0)
-#define MDOF_V                 (1<<1)
-#define MDOF_F                 (1<<2)
-#define MDOF_X_COMPRESSED      (1<<3)
-#define MDOF_CPT               (1<<4)
-#define MDOF_IMD               (1<<5)
-#define MDOF_BOX               (1<<6)
-#define MDOF_LAMBDA            (1<<7)
-#define MDOF_BOX_COMPRESSED    (1<<8)
-#define MDOF_LAMBDA_COMPRESSED (1<<9)
+#define MDOF_X (1u << 0u)
+#define MDOF_V (1u << 1u)
+#define MDOF_F (1u << 2u)
+#define MDOF_X_COMPRESSED (1u << 3u)
+#define MDOF_CPT (1u << 4u)
+#define MDOF_IMD (1u << 5u)
+#define MDOF_BOX (1u << 6u)
+#define MDOF_LAMBDA (1u << 7u)
+#define MDOF_BOX_COMPRESSED (1u << 8u)
+#define MDOF_LAMBDA_COMPRESSED (1u << 9u)
 
 #endif

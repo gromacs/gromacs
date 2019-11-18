@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,10 +52,20 @@ struct gmx_output_env_t;
 /*! \brief
  * Enum to select fitting functions
  */
-enum {
-    effnNONE, effnEXP1, effnEXP2, effnEXPEXP,
-    effnEXP5, effnEXP7, effnEXP9,
-    effnVAC,  effnERF,  effnERREST, effnPRES, effnNR
+enum
+{
+    effnNONE,
+    effnEXP1,
+    effnEXP2,
+    effnEXPEXP,
+    effnEXP5,
+    effnEXP7,
+    effnEXP9,
+    effnVAC,
+    effnERF,
+    effnERREST,
+    effnPRES,
+    effnNR
 };
 
 /*! \brief
@@ -63,14 +73,14 @@ enum {
  * This is exported for now in order to use when
  * calling parse_common_args.
  */
-extern const char *s_ffn[effnNR+2];
+extern const char* s_ffn[effnNR + 2];
 
 /*! \brief
  * Returns  description corresponding to the enum above, or NULL if out of range
  * \param[in] effn Index
  * \return Description or NULL
  */
-const char *effnDescription(int effn);
+const char* effnDescription(int effn);
 
 /*! \brief
  * Returns  number of function parameters associated with a fitting function.
@@ -84,7 +94,7 @@ int effnNparams(int effn);
  * \param[in] sffn Two dimensional string array coming from parse_common_args
  * \return the ffn enum
  */
-int sffn2effn(const char **sffn);
+int sffn2effn(const char** sffn);
 
 /*! \brief
  * Returns the value of fit function eFitFn at x
@@ -122,10 +132,19 @@ double fit_function(int eFitFn, const double parm[], double x);
  * \param[in] fn_fitted If not NULL file to print the data and fitted curve to
  * \return integral.
  */
-real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
-              real begintimefit, real endtimefit, const gmx_output_env_t *oenv,
-              gmx_bool bVerbose, int eFitFn, double fitparms[], int fix,
-              const char *fn_fitted);
+real do_lmfit(int                     ndata,
+              const real              c1[],
+              real                    sig[],
+              real                    dt,
+              const real*             x0,
+              real                    begintimefit,
+              real                    endtimefit,
+              const gmx_output_env_t* oenv,
+              gmx_bool                bVerbose,
+              int                     eFitFn,
+              double                  fitparms[],
+              int                     fix,
+              const char*             fn_fitted);
 
 /*! \brief
  * Fit an autocorrelation function to a pre-defined functional form
@@ -142,7 +161,14 @@ real do_lmfit(int ndata, const real c1[], real sig[], real dt, const real *x0,
  * \param[inout] fit The fitting parameters
  * \return the integral over the autocorrelation function?
  */
-real fit_acf(int ncorr, int fitfn, const gmx_output_env_t *oenv, gmx_bool bVerbose,
-             real tbeginfit, real tendfit, real dt, real c1[], real *fit);
+real fit_acf(int                     ncorr,
+             int                     fitfn,
+             const gmx_output_env_t* oenv,
+             gmx_bool                bVerbose,
+             real                    tbeginfit,
+             real                    tendfit,
+             real                    dt,
+             real                    c1[],
+             real*                   fit);
 
 #endif

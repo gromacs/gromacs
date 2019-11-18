@@ -38,7 +38,7 @@
 
 #include <memory>
 
-#include "gromacs/options/isectionstorage.h"
+#include "isectionstorage.h"
 
 namespace gmx
 {
@@ -48,13 +48,13 @@ namespace
 
 class OptionSectionStorage : public IOptionSectionStorage
 {
-    public:
-        void initStorage() override {}
-        void startSection() override {}
-        void finishSection() override {}
+public:
+    void initStorage() override {}
+    void startSection() override {}
+    void finishSection() override {}
 };
 
-}   // namespace
+} // namespace
 
 std::unique_ptr<IOptionSectionStorage> OptionSection::createStorage() const
 {

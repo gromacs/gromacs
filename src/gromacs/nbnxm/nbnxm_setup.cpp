@@ -49,36 +49,51 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/nbnxm_geometry.h"
-#include "gromacs/nbnxm/nbnxm_simd.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+#include "atomdata.h"
+#include "gpu_types.h"
 #include "grid.h"
-#include "internal.h"
+#include "nbnxm_geometry.h"
+#include "nbnxm_simd.h"
+#include "pairlist.h"
+#include "pairlistset.h"
+#include "pairlistsets.h"
+#include "pairsearch.h"
 
 namespace Nbnxm
 {
+
+/*! \brief Resources that can be used to execute non-bonded kernels on */
+enum class NonbondedResource : int
+{
+    Cpu,
+    Gpu,
+    EmulateGpu
+};
 
 /*! \brief Returns whether CPU SIMD support exists for the given inputrec
  *
  * If the return value is FALSE and fplog/cr != NULL, prints a fallback
  * message to fplog/stderr.
  */
-static gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
-                                     const t_inputrec    *ir)
+static gmx_bool nbnxn_simd_supported(const gmx::MDLogger& mdlog, const t_inputrec* ir)
 {
     if (ir->vdwtype == evdwPME && ir->ljpme_combination_rule == eljpmeLB)
     {
         /* LJ PME with LB combination rule does 7 mesh operations.
          * This so slow that we don't compile SIMD non-bonded kernels
          * for that. */
-        GMX_LOG(mdlog.warning).asParagraph().appendText("LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling back to plain C kernels");
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendText(
+                        "LJ-PME with Lorentz-Berthelot is not supported with SIMD kernels, falling "
+                        "back to plain C kernels");
         return FALSE;
     }
 
@@ -86,21 +101,23 @@ static gmx_bool nbnxn_simd_supported(const gmx::MDLogger &mdlog,
 }
 
 /*! \brief Returns the most suitable CPU kernel type and Ewald handling */
-static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
-                                  int                            *kernel_type,
-                                  int                            *ewald_excl,
-                                  const gmx_hw_info_t gmx_unused &hardwareInfo)
+static KernelSetup pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused* ir,
+                                         const gmx_hw_info_t gmx_unused& hardwareInfo)
 {
-    *kernel_type = nbnxnk4x4_PlainC;
-    *ewald_excl  = ewaldexclTable;
+    KernelSetup kernelSetup;
 
-#if GMX_SIMD
+    if (!GMX_SIMD)
+    {
+        kernelSetup.kernelType         = KernelType::Cpu4x4_PlainC;
+        kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
+    }
+    else
     {
 #ifdef GMX_NBNXN_SIMD_4XN
-        *kernel_type = nbnxnk4xN_SIMD_4xN;
+        kernelSetup.kernelType = KernelType::Cpu4xN_Simd_4xN;
 #endif
 #ifdef GMX_NBNXN_SIMD_2XNN
-        *kernel_type = nbnxnk4xN_SIMD_2xNN;
+        kernelSetup.kernelType = KernelType::Cpu4xN_Simd_2xNN;
 #endif
 
 #if defined GMX_NBNXN_SIMD_2XNN && defined GMX_NBNXN_SIMD_4XN
@@ -120,40 +137,42 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
          * use of HT, use 4x8 to avoid a potential performance hit.
          * On Intel Haswell 4x8 is always faster.
          */
-        *kernel_type = nbnxnk4xN_SIMD_4xN;
+        kernelSetup.kernelType = KernelType::Cpu4xN_Simd_4xN;
 
-#if !GMX_SIMD_HAVE_FMA
-        if (EEL_PME_EWALD(ir->coulombtype) ||
-            EVDW_PME(ir->vdwtype))
+        if (!GMX_SIMD_HAVE_FMA && (EEL_PME_EWALD(ir->coulombtype) || EVDW_PME(ir->vdwtype)))
         {
             /* We have Ewald kernels without FMA (Intel Sandy/Ivy Bridge).
              * There are enough instructions to make 2x(4+4) efficient.
              */
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
+            kernelSetup.kernelType = KernelType::Cpu4xN_Simd_2xNN;
         }
-#endif
-        if (hardwareInfo.haveAmdZenCpu)
+
+        if (hardwareInfo.haveAmdZen1Cpu)
         {
             /* One 256-bit FMA per cycle makes 2xNN faster */
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
+            kernelSetup.kernelType = KernelType::Cpu4xN_Simd_2xNN;
         }
-#endif      /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
+#endif /* GMX_NBNXN_SIMD_2XNN && GMX_NBNXN_SIMD_4XN */
 
 
         if (getenv("GMX_NBNXN_SIMD_4XN") != nullptr)
         {
 #ifdef GMX_NBNXN_SIMD_4XN
-            *kernel_type = nbnxnk4xN_SIMD_4xN;
+            kernelSetup.kernelType = KernelType::Cpu4xN_Simd_4xN;
 #else
-            gmx_fatal(FARGS, "SIMD 4xN kernels requested, but GROMACS has been compiled without support for these kernels");
+            gmx_fatal(FARGS,
+                      "SIMD 4xN kernels requested, but GROMACS has been compiled without support "
+                      "for these kernels");
 #endif
         }
         if (getenv("GMX_NBNXN_SIMD_2XNN") != nullptr)
         {
 #ifdef GMX_NBNXN_SIMD_2XNN
-            *kernel_type = nbnxnk4xN_SIMD_2xNN;
+            kernelSetup.kernelType = KernelType::Cpu4xN_Simd_2xNN;
 #else
-            gmx_fatal(FARGS, "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without support for these kernels");
+            gmx_fatal(FARGS,
+                      "SIMD 2x(N+N) kernels requested, but GROMACS has been compiled without "
+                      "support for these kernels");
 #endif
         }
 
@@ -163,189 +182,226 @@ static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused    *ir,
          * will probably always be faster for a SIMD width of 8 or more.
          * With FMA analytical is sometimes faster for a width if 4 as well.
          * In single precision, this is faster on Bulldozer.
-         */
-#if GMX_SIMD_REAL_WIDTH >= 8 || \
-        (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)
-        /* On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
+         * On AMD Zen, tabulated Ewald kernels are faster on all 4 combinations
          * of single or double precision and 128 or 256-bit AVX2.
          */
-        if (!hardwareInfo.haveAmdZenCpu)
-        {
-            *ewald_excl = ewaldexclAnalytical;
-        }
+        if (
+#if GMX_SIMD
+                (GMX_SIMD_REAL_WIDTH >= 8 || (GMX_SIMD_REAL_WIDTH >= 4 && GMX_SIMD_HAVE_FMA && !GMX_DOUBLE)) &&
 #endif
+                !hardwareInfo.haveAmdZen1Cpu)
+        {
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
+        }
+        else
+        {
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
+        }
         if (getenv("GMX_NBNXN_EWALD_TABLE") != nullptr)
         {
-            *ewald_excl = ewaldexclTable;
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Table;
         }
         if (getenv("GMX_NBNXN_EWALD_ANALYTICAL") != nullptr)
         {
-            *ewald_excl = ewaldexclAnalytical;
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
         }
-
     }
-#endif  // GMX_SIMD
+
+    return kernelSetup;
 }
 
-const char *lookup_kernel_name(int kernel_type)
+const char* lookup_kernel_name(const KernelType kernelType)
 {
-    const char *returnvalue = nullptr;
-    switch (kernel_type)
+    const char* returnvalue = nullptr;
+    switch (kernelType)
     {
-        case nbnxnkNotSet:
-            returnvalue = "not set";
-            break;
-        case nbnxnk4x4_PlainC:
-            returnvalue = "plain C";
-            break;
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
+        case KernelType::NotSet: returnvalue = "not set"; break;
+        case KernelType::Cpu4x4_PlainC: returnvalue = "plain C"; break;
+        case KernelType::Cpu4xN_Simd_4xN:
+        case KernelType::Cpu4xN_Simd_2xNN:
 #if GMX_SIMD
             returnvalue = "SIMD";
 #else  // GMX_SIMD
             returnvalue = "not available";
 #endif // GMX_SIMD
             break;
-        case nbnxnk8x8x8_GPU: returnvalue    = "GPU"; break;
-        case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
+        case KernelType::Gpu8x8x8: returnvalue = "GPU"; break;
+        case KernelType::Cpu8x8x8_PlainC: returnvalue = "plain C"; break;
 
-        case nbnxnkNR:
-        default:
-            gmx_fatal(FARGS, "Illegal kernel type selected");
+        default: gmx_fatal(FARGS, "Illegal kernel type selected");
     }
     return returnvalue;
 };
 
 /*! \brief Returns the most suitable kernel type and Ewald handling */
-static void pick_nbnxn_kernel(const gmx::MDLogger &mdlog,
-                              gmx_bool             use_simd_kernels,
-                              const gmx_hw_info_t &hardwareInfo,
-                              gmx_bool             bUseGPU,
-                              EmulateGpuNonbonded  emulateGpu,
-                              const t_inputrec    *ir,
-                              int                 *kernel_type,
-                              int                 *ewald_excl,
-                              gmx_bool             bDoNonbonded)
+static KernelSetup pick_nbnxn_kernel(const gmx::MDLogger&     mdlog,
+                                     gmx_bool                 use_simd_kernels,
+                                     const gmx_hw_info_t&     hardwareInfo,
+                                     const NonbondedResource& nonbondedResource,
+                                     const t_inputrec*        ir,
+                                     gmx_bool                 bDoNonbonded)
 {
-    GMX_RELEASE_ASSERT(kernel_type, "Need a valid kernel_type pointer");
+    KernelSetup kernelSetup;
 
-    *kernel_type = nbnxnkNotSet;
-    *ewald_excl  = ewaldexclTable;
-
-    if (emulateGpu == EmulateGpuNonbonded::Yes)
+    if (nonbondedResource == NonbondedResource::EmulateGpu)
     {
-        *kernel_type = nbnxnk8x8x8_PlainC;
+        kernelSetup.kernelType         = KernelType::Cpu8x8x8_PlainC;
+        kernelSetup.ewaldExclusionType = EwaldExclusionType::DecidedByGpuModule;
 
         if (bDoNonbonded)
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendText("Emulating a GPU run on the CPU (slow)");
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText("Emulating a GPU run on the CPU (slow)");
         }
     }
-    else if (bUseGPU)
+    else if (nonbondedResource == NonbondedResource::Gpu)
     {
-        *kernel_type = nbnxnk8x8x8_GPU;
+        kernelSetup.kernelType         = KernelType::Gpu8x8x8;
+        kernelSetup.ewaldExclusionType = EwaldExclusionType::DecidedByGpuModule;
     }
-
-    if (*kernel_type == nbnxnkNotSet)
+    else
     {
-        if (use_simd_kernels &&
-            nbnxn_simd_supported(mdlog, ir))
+        if (use_simd_kernels && nbnxn_simd_supported(mdlog, ir))
         {
-            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl, hardwareInfo);
+            kernelSetup = pick_nbnxn_kernel_cpu(ir, hardwareInfo);
         }
         else
         {
-            *kernel_type = nbnxnk4x4_PlainC;
+            kernelSetup.kernelType         = KernelType::Cpu4x4_PlainC;
+            kernelSetup.ewaldExclusionType = EwaldExclusionType::Analytical;
         }
     }
 
     if (bDoNonbonded)
     {
-        GMX_LOG(mdlog.info).asParagraph().appendTextFormatted(
-                "Using %s %dx%d nonbonded short-range kernels",
-                lookup_kernel_name(*kernel_type),
-                nbnxn_kernel_to_cluster_i_size(*kernel_type),
-                nbnxn_kernel_to_cluster_j_size(*kernel_type));
+        GMX_LOG(mdlog.info)
+                .asParagraph()
+                .appendTextFormatted("Using %s %dx%d nonbonded short-range kernels",
+                                     lookup_kernel_name(kernelSetup.kernelType),
+                                     IClusterSizePerKernelType[kernelSetup.kernelType],
+                                     JClusterSizePerKernelType[kernelSetup.kernelType]);
 
-        if (nbnxnk4x4_PlainC == *kernel_type ||
-            nbnxnk8x8x8_PlainC == *kernel_type)
+        if (KernelType::Cpu4x4_PlainC == kernelSetup.kernelType
+            || KernelType::Cpu8x8x8_PlainC == kernelSetup.kernelType)
         {
-            GMX_LOG(mdlog.warning).asParagraph().appendTextFormatted(
-                    "WARNING: Using the slow %s kernels. This should\n"
-                    "not happen during routine usage on supported platforms.",
-                    lookup_kernel_name(*kernel_type));
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendTextFormatted(
+                            "WARNING: Using the slow %s kernels. This should\n"
+                            "not happen during routine usage on supported platforms.",
+                            lookup_kernel_name(kernelSetup.kernelType));
         }
+    }
+
+    GMX_RELEASE_ASSERT(kernelSetup.kernelType != KernelType::NotSet
+                               && kernelSetup.ewaldExclusionType != EwaldExclusionType::NotSet,
+                       "All kernel setup parameters should be set here");
+
+    return kernelSetup;
+}
+
+} // namespace Nbnxm
+
+PairlistSets::PairlistSets(const PairlistParams& pairlistParams,
+                           const bool            haveMultipleDomains,
+                           const int             minimumIlistCountForGpuBalancing) :
+    params_(pairlistParams),
+    minimumIlistCountForGpuBalancing_(minimumIlistCountForGpuBalancing)
+{
+    localSet_ = std::make_unique<PairlistSet>(gmx::InteractionLocality::Local, params_);
+
+    if (haveMultipleDomains)
+    {
+        nonlocalSet_ = std::make_unique<PairlistSet>(gmx::InteractionLocality::NonLocal, params_);
     }
 }
 
-void init_nb_verlet(const gmx::MDLogger     &mdlog,
-                    nonbonded_verlet_t     **nb_verlet,
-                    gmx_bool                 bFEP_NonBonded,
-                    const t_inputrec        *ir,
-                    const t_forcerec        *fr,
-                    const t_commrec         *cr,
-                    const gmx_hw_info_t     &hardwareInfo,
-                    const gmx_device_info_t *deviceInfo,
-                    const gmx_mtop_t        *mtop,
-                    matrix                   box)
+namespace Nbnxm
 {
-    nonbonded_verlet_t *nbv;
-    char               *env;
 
-    nbv = new nonbonded_verlet_t();
+/*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
+static int getMinimumIlistCountForGpuBalancing(gmx_nbnxn_gpu_t* nbnxmGpu)
+{
+    int minimumIlistCount;
 
-    nbv->emulateGpu = ((getenv("GMX_EMULATE_GPU") != nullptr) ? EmulateGpuNonbonded::Yes : EmulateGpuNonbonded::No);
-    nbv->bUseGPU    = deviceInfo != nullptr;
-
-    GMX_RELEASE_ASSERT(!(nbv->emulateGpu == EmulateGpuNonbonded::Yes && nbv->bUseGPU), "When GPU emulation is active, there cannot be a GPU assignment");
-
-    nbv->nbs             = nullptr;
-    nbv->min_ci_balanced = 0;
-
-    nbv->ngrp = (DOMAINDECOMP(cr) ? 2 : 1);
-    for (int i = 0; i < nbv->ngrp; i++)
+    if (const char* env = getenv("GMX_NB_MIN_CI"))
     {
-        nbv->grp[i].nbl_lists.nnbl = 0;
-        nbv->grp[i].kernel_type    = nbnxnkNotSet;
+        char* end;
 
-        if (i == 0) /* local */
+        minimumIlistCount = strtol(env, &end, 10);
+        if (!end || (*end != 0) || minimumIlistCount < 0)
         {
-            pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
-                              nbv->bUseGPU, nbv->emulateGpu, ir,
-                              &nbv->grp[i].kernel_type,
-                              &nbv->grp[i].ewald_excl,
-                              fr->bNonbonded);
+            gmx_fatal(FARGS,
+                      "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
         }
-        else /* non-local */
+
+        if (debug)
         {
-            /* Use the same kernel for local and non-local interactions */
-            nbv->grp[i].kernel_type = nbv->grp[0].kernel_type;
-            nbv->grp[i].ewald_excl  = nbv->grp[0].ewald_excl;
+            fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
+                    minimumIlistCount);
+        }
+    }
+    else
+    {
+        minimumIlistCount = gpu_min_ci_balanced(nbnxmGpu);
+        if (debug)
+        {
+            fprintf(debug,
+                    "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU "
+                    "multi-processors)\n",
+                    minimumIlistCount);
         }
     }
 
-    nbv->listParams = std::make_unique<NbnxnListParameters>(ir->rlist);
-    setupDynamicPairlistPruning(mdlog, ir, mtop, box, nbv->grp[0].kernel_type, fr->ic,
-                                nbv->listParams.get());
+    return minimumIlistCount;
+}
 
-    nbv->nbs = std::make_unique<nbnxn_search>(DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
-                                              DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr,
-                                              bFEP_NonBonded,
-                                              gmx_omp_nthreads_get(emntPairsearch));
+std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlog,
+                                                   gmx_bool                 bFEP_NonBonded,
+                                                   const t_inputrec*        ir,
+                                                   const t_forcerec*        fr,
+                                                   const t_commrec*         cr,
+                                                   const gmx_hw_info_t&     hardwareInfo,
+                                                   const gmx_device_info_t* deviceInfo,
+                                                   const gmx_mtop_t*        mtop,
+                                                   matrix                   box,
+                                                   gmx_wallcycle*           wcycle)
+{
+    const bool emulateGpu = (getenv("GMX_EMULATE_GPU") != nullptr);
+    const bool useGpu     = deviceInfo != nullptr;
 
-    for (int i = 0; i < nbv->ngrp; i++)
+    GMX_RELEASE_ASSERT(!(emulateGpu && useGpu),
+                       "When GPU emulation is active, there cannot be a GPU assignment");
+
+    NonbondedResource nonbondedResource;
+    if (useGpu)
     {
-        nbnxn_init_pairlist_set(&nbv->grp[i].nbl_lists,
-                                nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type),
-                                /* 8x8x8 "non-simple" lists are ATM always combined */
-                                !nbnxn_kernel_pairlist_simple(nbv->grp[i].kernel_type));
+        nonbondedResource = NonbondedResource::Gpu;
+    }
+    else if (emulateGpu)
+    {
+        nonbondedResource = NonbondedResource::EmulateGpu;
+    }
+    else
+    {
+        nonbondedResource = NonbondedResource::Cpu;
     }
 
-    int      enbnxninitcombrule;
-    if (fr->ic->vdwtype == evdwCUT &&
-        (fr->ic->vdw_modifier == eintmodNONE ||
-         fr->ic->vdw_modifier == eintmodPOTSHIFT) &&
-        getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
+    Nbnxm::KernelSetup kernelSetup = pick_nbnxn_kernel(mdlog, fr->use_simd_kernels, hardwareInfo,
+                                                       nonbondedResource, ir, fr->bNonbonded);
+
+    const bool haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
+
+    PairlistParams pairlistParams(kernelSetup.kernelType, bFEP_NonBonded, ir->rlist,
+                                  havePPDomainDecomposition(cr));
+
+    setupDynamicPairlistPruning(mdlog, ir, mtop, box, fr->ic, &pairlistParams);
+
+    int enbnxninitcombrule;
+    if (fr->ic->vdwtype == evdwCUT
+        && (fr->ic->vdw_modifier == eintmodNONE || fr->ic->vdw_modifier == eintmodPOTSHIFT)
+        && getenv("GMX_NO_LJ_COMB_RULE") == nullptr)
     {
         /* Plain LJ cut-off: we can optimize with combination rules */
         enbnxninitcombrule = enbnxninitcombruleDETECT;
@@ -368,7 +424,10 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
         enbnxninitcombrule = enbnxninitcombruleNONE;
     }
 
-    nbv->nbat = new nbnxn_atomdata_t(nbv->bUseGPU ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+    auto pinPolicy = (useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
+
+    auto nbat = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+
     int mimimumNumEnergyGroupNonbonded = ir->opts.ngener;
     if (ir->opts.ngener - ir->nwall == 1)
     {
@@ -378,56 +437,54 @@ void init_nb_verlet(const gmx::MDLogger     &mdlog,
          */
         mimimumNumEnergyGroupNonbonded = 1;
     }
-    bool bSimpleList = nbnxn_kernel_pairlist_simple(nbv->grp[0].kernel_type);
-    nbnxn_atomdata_init(mdlog,
-                        nbv->nbat,
-                        nbv->grp[0].kernel_type,
-                        enbnxninitcombrule,
-                        fr->ntype, fr->nbfp,
-                        mimimumNumEnergyGroupNonbonded,
-                        bSimpleList ? gmx_omp_nthreads_get(emntNonbonded) : 1);
+    nbnxn_atomdata_init(mdlog, nbat.get(), kernelSetup.kernelType, enbnxninitcombrule, fr->ntype,
+                        fr->nbfp, mimimumNumEnergyGroupNonbonded,
+                        (useGpu || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 
-    if (nbv->bUseGPU)
+    gmx_nbnxn_gpu_t* gpu_nbv                          = nullptr;
+    int              minimumIlistCountForGpuBalancing = 0;
+    if (useGpu)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        gpu_init(&nbv->gpu_nbv,
-                 deviceInfo,
-                 fr->ic,
-                 nbv->listParams.get(),
-                 nbv->nbat,
-                 cr->nodeid,
-                 (nbv->ngrp > 1));
+        gpu_nbv = gpu_init(deviceInfo, fr->ic, pairlistParams, nbat.get(), cr->nodeid, haveMultipleDomains);
 
-        if ((env = getenv("GMX_NB_MIN_CI")) != nullptr)
-        {
-            char *end;
-
-            nbv->min_ci_balanced = strtol(env, &end, 10);
-            if (!end || (*end != 0) || nbv->min_ci_balanced < 0)
-            {
-                gmx_fatal(FARGS, "Invalid value passed in GMX_NB_MIN_CI=%s, non-negative integer required", env);
-            }
-
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (passed as env. var.)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-        else
-        {
-            nbv->min_ci_balanced = gpu_min_ci_balanced(nbv->gpu_nbv);
-            if (debug)
-            {
-                fprintf(debug, "Neighbor-list balancing parameter: %d (auto-adjusted to the number of GPU multi-processors)\n",
-                        nbv->min_ci_balanced);
-            }
-        }
-
+        minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }
 
-    *nb_verlet = nbv;
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, haveMultipleDomains,
+                                                       minimumIlistCountForGpuBalancing);
+
+    auto pairSearch = std::make_unique<PairSearch>(
+            ir->ePBC, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+            DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr, pairlistParams.pairlistType,
+            bFEP_NonBonded, gmx_omp_nthreads_get(emntPairsearch), pinPolicy);
+
+    return std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
+                                                std::move(nbat), kernelSetup, gpu_nbv, wcycle);
 }
 
 } // namespace Nbnxm
+
+nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlistSets,
+                                       std::unique_ptr<PairSearch>       pairSearch,
+                                       std::unique_ptr<nbnxn_atomdata_t> nbat_in,
+                                       const Nbnxm::KernelSetup&         kernelSetup,
+                                       gmx_nbnxn_gpu_t*                  gpu_nbv_ptr,
+                                       gmx_wallcycle*                    wcycle) :
+    pairlistSets_(std::move(pairlistSets)),
+    pairSearch_(std::move(pairSearch)),
+    nbat(std::move(nbat_in)),
+    kernelSetup_(kernelSetup),
+    wcycle_(wcycle),
+    gpu_nbv(gpu_nbv_ptr)
+{
+    GMX_RELEASE_ASSERT(pairlistSets_, "Need valid pairlistSets");
+    GMX_RELEASE_ASSERT(pairSearch_, "Need valid search object");
+    GMX_RELEASE_ASSERT(nbat, "Need valid atomdata object");
+}
+
+nonbonded_verlet_t::~nonbonded_verlet_t()
+{
+    Nbnxm::gpu_free(gpu_nbv);
+}

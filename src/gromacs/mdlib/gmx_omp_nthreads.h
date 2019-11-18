@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,8 +52,16 @@ typedef enum module_nth
 {
     /* Default is meant to be used in OMP regions outside the named
      * algorithmic modules listed below. */
-    emntDefault, emntDomdec, emntPairsearch, emntNonbonded,
-    emntBonded, emntPME,  emntUpdate, emntVSITE, emntLINCS, emntSETTLE,
+    emntDefault,
+    emntDomdec,
+    emntPairsearch,
+    emntNonbonded,
+    emntBonded,
+    emntPME,
+    emntUpdate,
+    emntVSITE,
+    emntLINCS,
+    emntSETTLE,
     emntNR
 } module_nth_t;
 
@@ -63,13 +71,13 @@ typedef enum module_nth
  * It is compatible with tMPI, thread-safety is ensured (for the features
  * available with tMPI).
  * This function should caled only once during the initialization of mdrun. */
-void gmx_omp_nthreads_init(const gmx::MDLogger &fplog, t_commrec *cr,
-                           int nthreads_hw_avail,
-                           int numRanksOnThisNode,
-                           int omp_nthreads_req,
-                           int omp_nthreads_pme_req,
-                           gmx_bool bCurrNodePMEOnly,
-                           gmx_bool bFullOmpSupport);
+void gmx_omp_nthreads_init(const gmx::MDLogger& fplog,
+                           t_commrec*           cr,
+                           int                  nthreads_hw_avail,
+                           int                  numRanksOnThisNode,
+                           int                  omp_nthreads_req,
+                           int                  omp_nthreads_pme_req,
+                           gmx_bool             bCurrNodePMEOnly);
 
 /*! \brief
  * Returns the number of threads to be used in the given module \p mod. */
@@ -117,7 +125,6 @@ void gmx_omp_nthreads_set(int mod, int nthreads);
 /*! \brief
  * Read the OMP_NUM_THREADS env. var. and check against the value set on the
  * command line. */
-void gmx_omp_nthreads_read_env(const gmx::MDLogger &mdlog,
-                               int                 *nthreads_omp);
+void gmx_omp_nthreads_read_env(const gmx::MDLogger& mdlog, int* nthreads_omp);
 
 #endif

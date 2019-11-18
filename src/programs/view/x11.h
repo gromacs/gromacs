@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,47 +46,47 @@
 extern unsigned long BLACK, BLUE, GREEN, CYAN, RED, BROWN, GREY, DARKGREY;
 
 /* These colours will be mapped to white on a monochrome screen */
-extern unsigned long LIGHTBLUE, LIGHTGREY, LIGHTGREEN, LIGHTCYAN,
-                     LIGHTRED, VIOLET, YELLOW, WHITE;
+extern unsigned long LIGHTBLUE, LIGHTGREY, LIGHTGREEN, LIGHTCYAN, LIGHTRED, VIOLET, YELLOW, WHITE;
 
-#define CBARGS (struct t_x11 *x11, XEvent *event, Window w, void *data)
+#define CBARGS (struct t_x11 * x11, XEvent * event, Window w, void* data)
 /* Callback function. Return false to continue, true to exit */
 
-typedef struct t_x11 {
-    Display            *disp;
-    XFontStruct        *font;
-    GC                  gc;
-    Window              root;
-    char               *dispname;
-    FILE               *console;
-    int                 screen, depth;
-    Colormap            cmap;
-    unsigned long       fg, bg;
-    char               *title;
-    struct t_wlist     *wlist;
-    void        (*GetNamedColor)(struct t_x11 *x11, const char *name, unsigned long *col);
-    void        (*MainLoop)(struct t_x11 *x11);
-    void        (*RegisterCallback)(struct t_x11 *x11, Window w, Window Parent,
-                                    bool cb CBARGS, void *data);
-    void        (*UnRegisterCallback)(struct t_x11 *x11, Window w);
-    void        (*SetInputMask)(struct t_x11 *x11, Window w, unsigned long mask);
-    unsigned long       (*GetInputMask)(struct t_x11 *x11, Window w);
-    void        (*CleanUp)(struct t_x11 *x11);
-    void        (*Flush)(struct t_x11 *x11);
+typedef struct t_x11
+{
+    Display*        disp;
+    XFontStruct*    font;
+    GC              gc;
+    Window          root;
+    char*           dispname;
+    FILE*           console;
+    int             screen, depth;
+    Colormap        cmap;
+    unsigned long   fg, bg;
+    char*           title;
+    struct t_wlist* wlist;
+    void (*GetNamedColor)(struct t_x11* x11, const char* name, unsigned long* col);
+    void (*MainLoop)(struct t_x11* x11);
+    void (*RegisterCallback)(struct t_x11* x11, Window w, Window Parent, bool cb CBARGS, void* data);
+    void (*UnRegisterCallback)(struct t_x11* x11, Window w);
+    void (*SetInputMask)(struct t_x11* x11, Window w, unsigned long mask);
+    unsigned long (*GetInputMask)(struct t_x11* x11, Window w);
+    void (*CleanUp)(struct t_x11* x11);
+    void (*Flush)(struct t_x11* x11);
 } t_x11;
 
 typedef bool CallBack CBARGS;
 
-typedef struct t_wlist {
-    Window                 w;      /* The window itself			*/
-    Window                 Parent; /* It's parent window			*/
-    CallBack              *cb;     /* Call back function			*/
-    unsigned long          mask;   /* Input mask				*/
-    void                  *data;   /* User data struct			*/
-    struct t_wlist        *next;
+typedef struct t_wlist
+{
+    Window          w;      /* The window itself			*/
+    Window          Parent; /* It's parent window			*/
+    CallBack*       cb;     /* Call back function			*/
+    unsigned long   mask;   /* Input mask				*/
+    void*           data;   /* User data struct			*/
+    struct t_wlist* next;
 } t_wlist;
 
-t_x11 *GetX11(int *argc, char *argv[]);
+t_x11* GetX11(int* argc, char* argv[]);
 /* x11 is a struct / function-set that manages a number of windows.
  * more or (presumably) less like Xt does, but since x11 uses only
  * Xlib calls, it is *PORTABLE* software.
@@ -129,6 +129,6 @@ t_x11 *GetX11(int *argc, char *argv[]);
  *    memory allocated by x11 before.
  */
 
-extern void GetNamedColor(t_x11 *x11, const char *name, unsigned long *col);
+extern void GetNamedColor(t_x11* x11, const char* name, unsigned long* col);
 
-#endif  /* _x11_h */
+#endif /* _x11_h */

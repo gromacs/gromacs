@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2010,2014,2015, by the GROMACS development team, led by
+ * Copyright (c) 2010,2014,2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,7 +37,10 @@
 #ifndef GMX_FILEIO_WRITEPS_H
 #define GMX_FILEIO_WRITEPS_H
 
-#include <stdio.h>
+#include <cstdio>
+
+#include <string>
+#include <vector>
 
 #include "gromacs/fileio/rgb.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -46,78 +49,97 @@
 /* TODO: These two enums are used also in xutil.h in src/programs/view/.
  * The Y position enum doesn't seem to be actually used in this header...
  */
-typedef enum {
-    eXCenter, eXLeft, eXRight
+typedef enum
+{
+    eXCenter,
+    eXLeft,
+    eXRight
 } eXPos;
 
-typedef enum {
-    eYCenter, eYTop,  eYBottom
+typedef enum
+{
+    eYCenter,
+    eYTop,
+    eYBottom
 } eYPos;
 
-enum {
-    efontTIMES, efontTIMESITALIC, efontTIMESBOLD, efontTIMESBOLDITALIC,
-    efontHELV,  efontHELVITALIC,  efontHELVBOLD,  efontHELVBOLDITALIC,
-    efontCOUR,  efontCOURITALIC,  efontCOURBOLD,  efontCOURBOLDITALIC,
+enum
+{
+    efontTIMES,
+    efontTIMESITALIC,
+    efontTIMESBOLD,
+    efontTIMESBOLDITALIC,
+    efontHELV,
+    efontHELVITALIC,
+    efontHELVBOLD,
+    efontHELVBOLDITALIC,
+    efontCOUR,
+    efontCOURITALIC,
+    efontCOURBOLD,
+    efontCOURBOLDITALIC,
     efontNR
 };
 
 
-typedef struct t_int_psdata *t_psdata;
-/* Only use t_psdata - it is a pointer to an abstract datatype
- * that maintains the state of the postscript currently written.
- */
+struct t_psdata
+{
+    FILE*              fp     = nullptr;
+    int                maxrgb = 0;
+    std::vector<t_rgb> rgb;
+    real               gen_ybox = 0;
+    int                ostack   = 0;
+};
 
-extern const char *fontnm[efontNR];
 
-t_psdata ps_open(const char *fn, real x1, real y1, real x2, real y2);
+extern const char* fontnm[efontNR];
 
-void ps_linewidth(t_psdata ps, int lw);
-void ps_color(t_psdata ps, real r, real g, real b);
-void ps_rgb(t_psdata ps, t_rgb *rgb);
+t_psdata ps_open(const char* fn, real x1, real y1, real x2, real y2);
 
-void ps_rgb_box(t_psdata ps, t_rgb *rgb);
-void ps_rgb_nbox(t_psdata ps, t_rgb *rgb, real n);
-void ps_init_rgb_box(t_psdata ps, real xbox, real ybox);
-void ps_init_rgb_nbox(t_psdata ps, real xbox, real ybox);
+void ps_linewidth(t_psdata* ps, int lw);
+void ps_color(t_psdata* ps, real r, real g, real b);
+void ps_rgb(t_psdata* ps, const t_rgb* rgb);
 
-void ps_lineto(t_psdata ps, real x, real y);
-void ps_linerel(t_psdata ps, real dx, real dy);
+void ps_rgb_box(t_psdata* ps, t_rgb* rgb);
+void ps_rgb_nbox(t_psdata* ps, t_rgb* rgb, real n);
+void ps_init_rgb_box(t_psdata* ps, real xbox, real ybox);
+void ps_init_rgb_nbox(t_psdata* ps, real xbox, real ybox);
 
-void ps_moveto(t_psdata ps, real x, real y);
-void ps_moverel(t_psdata ps, real dx, real dy);
+void ps_lineto(t_psdata* ps, real x, real y);
+void ps_linerel(t_psdata* ps, real dx, real dy);
 
-void ps_line(t_psdata ps, real x1, real y1, real x2, real y2);
+void ps_moveto(t_psdata* ps, real x, real y);
+void ps_moverel(t_psdata* ps, real dx, real dy);
 
-void ps_box(t_psdata ps, real x1, real y1, real x2, real y2);
-void ps_fillbox(t_psdata ps, real x1, real y1, real x2, real y2);
+void ps_line(t_psdata* ps, real x1, real y1, real x2, real y2);
 
-void ps_arc(t_psdata ps, real x1, real y1, real rad, real a0, real a1);
-void ps_fillarc(t_psdata ps, real x1, real y1, real rad, real a0, real a1);
-void ps_arcslice(t_psdata ps, real xc, real yc,
-                 real rad1, real rad2, real a0, real a1);
-void ps_fillarcslice(t_psdata ps, real xc, real yc,
-                     real rad1, real rad2, real a0, real a1);
+void ps_box(t_psdata* ps, real x1, real y1, real x2, real y2);
+void ps_fillbox(t_psdata* ps, real x1, real y1, real x2, real y2);
 
-void ps_circle(t_psdata ps, real x1, real y1, real rad);
+void ps_arc(t_psdata* ps, real x1, real y1, real rad, real a0, real a1);
+void ps_fillarc(t_psdata* ps, real x1, real y1, real rad, real a0, real a1);
+void ps_arcslice(t_psdata* ps, real xc, real yc, real rad1, real rad2, real a0, real a1);
+void ps_fillarcslice(t_psdata* ps, real xc, real yc, real rad1, real rad2, real a0, real a1);
 
-void ps_font(t_psdata ps, int font, real size);
-void ps_strfont(t_psdata ps, char *font, real size);
+void ps_circle(t_psdata* ps, real x1, real y1, real rad);
 
-void ps_text(t_psdata ps, real x1, real y1, const char *str);
-void ps_ctext(t_psdata ps, real x1, real y1, const char *str, int expos);
+void ps_font(t_psdata* ps, int font, real size);
+void ps_strfont(t_psdata* ps, char* font, real size);
 
-void ps_close(t_psdata ps);
+void ps_text(t_psdata* ps, real x1, real y1, const std::string& str);
+void ps_ctext(t_psdata* ps, real x1, real y1, const std::string& str, int expos);
 
-void ps_flip(t_psdata ps, gmx_bool bPlus);
+void ps_close(t_psdata* ps);
+
+void ps_flip(t_psdata* ps, gmx_bool bPlus);
 /* Rotate over 90 (bPlus) or -90 (!bPlus) degrees */
 
-void ps_rotate(t_psdata ps, real angle);
+void ps_rotate(t_psdata* ps, real angle);
 
-void ps_translate(t_psdata ps, real x, real y);
+void ps_translate(t_psdata* ps, real x, real y);
 
-void ps_setorigin(t_psdata ps);
-void ps_unsetorigin(t_psdata ps);
+void ps_setorigin(t_psdata* ps);
+void ps_unsetorigin(t_psdata* ps);
 
-void ps_comment(t_psdata ps, const char *s);
+void ps_comment(t_psdata* ps, const char* s);
 
 #endif

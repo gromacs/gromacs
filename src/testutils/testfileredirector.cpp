@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,21 +62,16 @@ namespace test
  * TestFileInputRedirector
  */
 
-TestFileInputRedirector::TestFileInputRedirector()
-{
-}
+TestFileInputRedirector::TestFileInputRedirector() {}
 
-TestFileInputRedirector::~TestFileInputRedirector()
-{
-}
+TestFileInputRedirector::~TestFileInputRedirector() {}
 
-void TestFileInputRedirector::addExistingFile(const char *filename)
+void TestFileInputRedirector::addExistingFile(const char* filename)
 {
     existingFiles_.insert(filename);
 }
 
-bool TestFileInputRedirector::fileExists(const char            *filename,
-                                         File::NotFoundHandler  onNotFound) const
+bool TestFileInputRedirector::fileExists(const char* filename, File::NotFoundHandler onNotFound) const
 {
     if (existingFiles_.count(filename) == 0)
     {
@@ -93,28 +88,23 @@ bool TestFileInputRedirector::fileExists(const char            *filename,
 
 class TestFileOutputRedirector::Impl
 {
-    public:
-        typedef std::shared_ptr<StringOutputStream> StringStreamPointer;
-        typedef std::pair<std::string, StringStreamPointer> FileListEntry;
+public:
+    typedef std::shared_ptr<StringOutputStream>         StringStreamPointer;
+    typedef std::pair<std::string, StringStreamPointer> FileListEntry;
 
-        StringStreamPointer         stdoutStream_;
-        std::vector<FileListEntry>  fileList_;
+    StringStreamPointer        stdoutStream_;
+    std::vector<FileListEntry> fileList_;
 };
 
 /********************************************************************
  * TestFileOutputRedirector
  */
 
-TestFileOutputRedirector::TestFileOutputRedirector()
-    : impl_(new Impl)
-{
-}
+TestFileOutputRedirector::TestFileOutputRedirector() : impl_(new Impl) {}
 
-TestFileOutputRedirector::~TestFileOutputRedirector()
-{
-}
+TestFileOutputRedirector::~TestFileOutputRedirector() {}
 
-TextOutputStream &TestFileOutputRedirector::standardOutput()
+TextOutputStream& TestFileOutputRedirector::standardOutput()
 {
     if (!impl_->stdoutStream_)
     {
@@ -124,15 +114,14 @@ TextOutputStream &TestFileOutputRedirector::standardOutput()
     return *impl_->stdoutStream_;
 }
 
-TextOutputStreamPointer
-TestFileOutputRedirector::openTextOutputFile(const char *filename)
+TextOutputStreamPointer TestFileOutputRedirector::openTextOutputFile(const char* filename)
 {
     Impl::StringStreamPointer stream(new StringOutputStream);
     impl_->fileList_.emplace_back(filename, stream);
     return stream;
 }
 
-void TestFileOutputRedirector::checkRedirectedFiles(TestReferenceChecker *checker)
+void TestFileOutputRedirector::checkRedirectedFiles(TestReferenceChecker* checker)
 {
     std::vector<Impl::FileListEntry>::const_iterator i;
     for (i = impl_->fileList_.begin(); i != impl_->fileList_.end(); ++i)

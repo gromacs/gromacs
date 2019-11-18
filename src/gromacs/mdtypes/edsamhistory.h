@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,15 +56,14 @@
  */
 typedef struct edsamhistory_t
 {
-    gmx_bool      bFromCpt;     // Did we start from a checkpoint file?
-    int           nED;          // No. of ED/Flooding data sets, if <1 no ED
-    int          *nref;         // No. of atoms in i'th reference structure
-    int          *nav;          // Same for average structure
-    rvec        **old_sref;     // Positions of the reference atoms at the last time step (with correct PBC representation)
-    rvec        **old_sref_p;   // Pointer to these positions
-    rvec        **old_sav;      // Same for the average positions
-    rvec        **old_sav_p;    // Pointer to these positions
-}
-edsamhistory_t;
+    gmx_bool bFromCpt; // Did we start from a checkpoint file?
+    int      nED;      // No. of ED/Flooding data sets, if <1 no ED
+    int*     nref;     // No. of atoms in i'th reference structure
+    int*     nav;      // Same for average structure
+    rvec**   old_sref; // Positions of the reference atoms at the last time step (with correct PBC representation)
+    rvec**   old_sref_p; // Pointer to these positions
+    rvec**   old_sav;    // Same for the average positions
+    rvec**   old_sav_p;  // Pointer to these positions
+} edsamhistory_t;
 
 #endif

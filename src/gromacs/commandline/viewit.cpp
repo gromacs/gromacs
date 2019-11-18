@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,15 +48,9 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 
-static const int   can_view_ftp[] = {
-    0,
-    efEPS,           efXPM,         efXVG,          efPDB
-};
+static const int can_view_ftp[] = { 0, efEPS, efXPM, efXVG, efPDB };
 #define NVIEW asize(can_view_ftp)
-static const char* view_program[] = {
-    nullptr,
-    "ghostview",    "display",      nullptr,           "xterm -e rasmol"
-};
+static const char* view_program[] = { nullptr, "ghostview", "display", nullptr, "xterm -e rasmol" };
 
 static int can_view(int ftp)
 {
@@ -73,10 +67,10 @@ static int can_view(int ftp)
     return 0;
 }
 
-void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
+void do_view(const gmx_output_env_t* oenv, const char* fn, const char* opts)
 {
     char        buf[STRLEN], env[STRLEN];
-    const char *cmd;
+    const char* cmd;
     int         ftp, n;
 
     if (output_env_get_view(oenv) && fn)
@@ -93,9 +87,9 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
             switch (ftp)
             {
                 case efXVG:
-                    if (!(cmd = getenv(env)) )
+                    if (!(cmd = getenv(env)))
                     {
-                        if (getenv("GMX_USE_XMGR") )
+                        if (getenv("GMX_USE_XMGR"))
                         {
                             cmd = "xmgr";
                         }
@@ -106,9 +100,9 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
                     }
                     break;
                 default:
-                    if ( (n = can_view(ftp)) )
+                    if ((n = can_view(ftp)))
                     {
-                        if (!(cmd = getenv(env)) )
+                        if (!(cmd = getenv(env)))
                         {
                             cmd = view_program[n];
                         }
@@ -119,11 +113,11 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
                         return;
                     }
             }
-            if (strlen(cmd) )
+            if (strlen(cmd))
             {
                 sprintf(buf, "%s %s %s &", cmd, opts ? opts : "", fn);
                 fprintf(stderr, "Executing '%s'\n", buf);
-                if (0 != system(buf) )
+                if (0 != system(buf))
                 {
                     gmx_fatal(FARGS, "Failed executing command: %s", buf);
                 }
@@ -132,14 +126,13 @@ void do_view(const gmx_output_env_t *oenv, const char *fn, const char *opts)
     }
 }
 
-void view_all(const gmx_output_env_t *oenv, int nf, t_filenm fnm[])
+void view_all(const gmx_output_env_t* oenv, int nf, t_filenm fnm[])
 {
     int i;
 
     for (i = 0; i < nf; i++)
     {
-        if (can_view(fnm[i].ftp) && is_output(&(fnm[i])) &&
-            ( !is_optional(&(fnm[i])) || is_set(&(fnm[i])) ) )
+        if (can_view(fnm[i].ftp) && is_output(&(fnm[i])) && (!is_optional(&(fnm[i])) || is_set(&(fnm[i]))))
         {
             do_view(oenv, fnm[i].filenames[0].c_str(), nullptr);
         }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,44 +66,42 @@ class AnalysisDataBinAverageModule;
  * \inpublicapi
  * \ingroup module_analysisdata
  */
-class AnalysisDataDisplacementModule : public AbstractAnalysisData,
-                                       public AnalysisDataModuleSerial
+class AnalysisDataDisplacementModule : public AbstractAnalysisData, public AnalysisDataModuleSerial
 {
-    public:
-        AnalysisDataDisplacementModule();
-        ~AnalysisDataDisplacementModule() override;
+public:
+    AnalysisDataDisplacementModule();
+    ~AnalysisDataDisplacementModule() override;
 
-        /*! \brief
-         * Sets the largest displacement time to be calculated.
-         */
-        void setMaxTime(real tmax);
-        /*! \brief
-         * Sets an histogram module that will receive a MSD histogram.
-         *
-         * If this function is not called, no histogram is calculated.
-         */
-        void setMSDHistogram(const std::shared_ptr<AnalysisDataBinAverageModule> &histm);
+    /*! \brief
+     * Sets the largest displacement time to be calculated.
+     */
+    void setMaxTime(real tmax);
+    /*! \brief
+     * Sets an histogram module that will receive a MSD histogram.
+     *
+     * If this function is not called, no histogram is calculated.
+     */
+    void setMSDHistogram(const std::shared_ptr<AnalysisDataBinAverageModule>& histm);
 
-        int flags() const override;
+    int flags() const override;
 
-        void dataStarted(AbstractAnalysisData *data) override;
-        void frameStarted(const AnalysisDataFrameHeader &header) override;
-        void pointsAdded(const AnalysisDataPointSetRef &points) override;
-        void frameFinished(const AnalysisDataFrameHeader &header) override;
-        void dataFinished() override;
+    void dataStarted(AbstractAnalysisData* data) override;
+    void frameStarted(const AnalysisDataFrameHeader& header) override;
+    void pointsAdded(const AnalysisDataPointSetRef& points) override;
+    void frameFinished(const AnalysisDataFrameHeader& header) override;
+    void dataFinished() override;
 
-    private:
-        AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
-        bool requestStorageInternal(int nframes) override;
+private:
+    AnalysisDataFrameRef tryGetDataFrameInternal(int index) const override;
+    bool                 requestStorageInternal(int nframes) override;
 
-        class Impl;
+    class Impl;
 
-        PrivateImplPointer<Impl> _impl;
+    PrivateImplPointer<Impl> _impl;
 };
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.
-typedef std::shared_ptr<AnalysisDataDisplacementModule>
-    AnalysisDataDisplacementModulePointer;
+typedef std::shared_ptr<AnalysisDataDisplacementModule> AnalysisDataDisplacementModulePointer;
 
 } // namespace gmx
 

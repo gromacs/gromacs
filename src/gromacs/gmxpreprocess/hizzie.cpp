@@ -56,7 +56,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static int in_strings(char *key, int nstr, const char **str)
+static int in_strings(char* key, int nstr, const char** str)
 {
     int j;
 
@@ -73,32 +73,31 @@ static int in_strings(char *key, int nstr, const char **str)
 
 static bool hbond(rvec x[], int i, int j, real distance)
 {
-    real   tol = distance*distance;
-    rvec   tmp;
+    real tol = distance * distance;
+    rvec tmp;
 
     rvec_sub(x[i], x[j], tmp);
 
     return (iprod(tmp, tmp) < tol);
 }
 
-static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
-                      const bool donor[], const bool accept[], real dist)
+static void chk_allhb(t_atoms* pdba, rvec x[], t_blocka* hb, const bool donor[], const bool accept[], real dist)
 {
     int i, j, k, ii, natom;
 
     natom = pdba->nr;
-    snew(hb->index, natom+1);
-    snew(hb->a, 6*natom);
+    snew(hb->index, natom + 1);
+    snew(hb->a, 6 * natom);
     hb->nr  = natom;
-    hb->nra = 6*natom;
+    hb->nra = 6 * natom;
 
-    k               = ii = 0;
+    k = ii          = 0;
     hb->index[ii++] = 0;
     for (i = 0; (i < natom); i++)
     {
         if (donor[i])
         {
-            for (j = i+1; (j < natom); j++)
+            for (j = i + 1; (j < natom); j++)
             {
                 if ((accept[j]) && (hbond(x, i, j, dist)))
                 {
@@ -108,7 +107,7 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
         }
         else if (accept[i])
         {
-            for (j = i+1; (j < natom); j++)
+            for (j = i + 1; (j < natom); j++)
             {
                 if ((donor[j]) && (hbond(x, i, j, dist)))
                 {
@@ -121,14 +120,12 @@ static void chk_allhb(t_atoms *pdba, rvec x[], t_blocka *hb,
     hb->nra = k;
 }
 
-static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
-                       const bool ad[], bool hbond[], rvec xh,
-                       real angle, real dist)
+static bool chk_hbonds(int i, t_atoms* pdba, rvec x[], const bool ad[], bool hbond[], rvec xh, real angle, real dist)
 {
-    bool     bHB;
-    int      j, aj, ri, natom;
-    real     d2, dist2, a;
-    rvec     nh, oh;
+    bool bHB;
+    int  j, aj, ri, natom;
+    real d2, dist2, a;
+    rvec nh, oh;
 
     natom = pdba->nr;
     bHB   = FALSE;
@@ -140,15 +137,14 @@ static bool chk_hbonds(int i, t_atoms *pdba, rvec x[],
         if ((ad[j]) && (j != i))
         {
             /* Check whether the other atom is on the same ring as well */
-            if ((pdba->atom[j].resind != ri) ||
-                ((strcmp(*pdba->atomname[j], "ND1") != 0) &&
-                 (strcmp(*pdba->atomname[j], "NE2") != 0)))
+            if ((pdba->atom[j].resind != ri)
+                || ((strcmp(*pdba->atomname[j], "ND1") != 0) && (strcmp(*pdba->atomname[j], "NE2") != 0)))
             {
-                aj  = j;
-                d2  = distance2(x[i], x[j]);
+                aj = j;
+                d2 = distance2(x[i], x[j]);
                 rvec_sub(x[i], xh, nh);
                 rvec_sub(x[aj], xh, oh);
-                a  = RAD2DEG * acos(cos_angle(nh, oh));
+                a = RAD2DEG * acos(cos_angle(nh, oh));
                 if ((d2 < dist2) && (a > angle))
                 {
                     hbond[i] = TRUE;
@@ -169,37 +165,33 @@ static void calc_ringh(rvec xattach, rvec xb, rvec xc, rvec xh)
     rvec_sub(xattach, xb, tab);
     rvec_sub(xattach, xc, tac);
     rvec_add(tab, tac, xh);
-    n = 0.1/norm(xh);
+    n = 0.1 / norm(xh);
     svmul(n, xh, xh);
     rvec_inc(xh, xattach);
 }
 
-void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real dist)
+void set_histp(t_atoms* pdba, rvec* x, t_symtab* symtab, real angle, real dist)
 {
-    static const char *prot_acc[] = {
-        "O", "OD1", "OD2", "OE1", "OE2", "OG", "OG1", "OH", "OW"
-    };
+    static const char* prot_acc[] = { "O", "OD1", "OD2", "OE1", "OE2", "OG", "OG1", "OH", "OW" };
 #define NPA asize(prot_acc)
-    static const char *prot_don[] = {
-        "N", "NH1", "NH2", "NE", "ND1", "ND2", "NE2", "NZ", "OG", "OG1", "OH", "NE1", "OW"
-    };
+    static const char* prot_don[] = { "N",  "NH1", "NH2", "NE", "ND1", "ND2", "NE2",
+                                      "NZ", "OG",  "OG1", "OH", "NE1", "OW" };
 #define NPD asize(prot_don)
 
-    bool     *donor, *acceptor;
-    bool     *hbond;
+    bool *    donor, *acceptor;
+    bool*     hbond;
     bool      bHDd, bHEd;
     rvec      xh1, xh2;
     int       natom;
     int       i, j, nd, na, hisind, type = -1;
     int       nd1, ne2, cg, cd2, ce1;
-    t_blocka *hb;
-    char     *atomnm;
+    t_blocka* hb;
+    char*     atomnm;
 
     natom = pdba->nr;
 
     i = 0;
-    while (i < natom &&
-           gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name, "HIS") != 0)
+    while (i < natom && gmx_strcasecmp(*pdba->resinfo[pdba->atom[i].resind].name, "HIS") != 0)
     {
         i++;
     }
@@ -262,7 +254,7 @@ void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real dist)
                     }
                     else if (strcmp(atomnm, "CG") == 0)
                     {
-                        cg  = i;
+                        cg = i;
                     }
                     else if (strcmp(atomnm, "CE1") == 0)
                     {
@@ -280,8 +272,7 @@ void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real dist)
                     i++;
                 }
 
-                if (!((cg == -1 ) || (cd2 == -1) || (ce1 == -1) ||
-                      (nd1 == -1) || (ne2 == -1)))
+                if (!((cg == -1) || (cd2 == -1) || (ce1 == -1) || (nd1 == -1) || (ne2 == -1)))
                 {
                     calc_ringh(x[nd1], x[cg], x[ce1], xh1);
                     calc_ringh(x[ne2], x[ce1], x[cd2], xh2);
@@ -306,13 +297,11 @@ void set_histp(t_atoms *pdba, rvec *x, t_symtab *symtab, real angle, real dist)
                     {
                         type = ehisB;
                     }
-                    fprintf(stderr, "Will use %s for residue %d\n",
-                            hh[type], pdba->resinfo[hisind].nr);
+                    fprintf(stderr, "Will use %s for residue %d\n", hh[type], pdba->resinfo[hisind].nr);
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "Incomplete ring in HIS%d",
-                              pdba->resinfo[hisind].nr);
+                    gmx_fatal(FARGS, "Incomplete ring in HIS%d", pdba->resinfo[hisind].nr);
                 }
 
                 pdba->resinfo[hisind].rtp = put_symtab(symtab, hh[type]);

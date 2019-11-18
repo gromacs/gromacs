@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <string>
 #include <vector>
 
+#include "gromacs/compat/string_view.h"
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -62,61 +63,60 @@
  */
 struct t_filenm
 {
-    int                      ftp;       //!< File type, see enum in filetypes.h
-    const char       *       opt;       //!< Command line option, can be nullptr in which case the commandline module, including all opt2??? functions below, will use the default option for the file type
-    const char       *       fn;        //!< File name (as set in source code), can be nullptr in which case the commandline module will use the default file name for the file type
+    int                      ftp; //!< File type, see enum in filetypes.h
+    const char*              opt; //!< Command line option, can be nullptr in which case the commandline module, including all opt2??? functions below, will use the default option for the file type
+    const char*              fn; //!< File name (as set in source code), can be nullptr in which case the commandline module will use the default file name for the file type
     unsigned long            flag;      //!< Flag for all kinds of info (see defs)
     std::vector<std::string> filenames; //!< File names
 };
 
 //! Whether a file name option is set.
-#define ffSET   1<<0
+#define ffSET 1 << 0
 //! Whether a file name option specifies an input file.
-#define ffREAD  1<<1
+#define ffREAD 1 << 1
 //! Whether a file name option specifies an output file.
-#define ffWRITE 1<<2
+#define ffWRITE 1 << 2
 //! Whether a file name option specifies an optional file.
-#define ffOPT   1<<3
+#define ffOPT 1 << 3
 //! Whether a file name option specifies a library file.
-#define ffLIB   1<<4
+#define ffLIB 1 << 4
 //! Whether a file name option accepts multiple file names.
-#define ffMULT  1<<5
+#define ffMULT 1 << 5
 //! Whether an input file name option accepts non-existent files.
-#define ffALLOW_MISSING 1<<6
+#define ffALLOW_MISSING 1 << 6
 //! Convenience flag for an input/output file.
-#define ffRW    (ffREAD | ffWRITE)
+#define ffRW (ffREAD | ffWRITE)
 //! Convenience flag for an optional input file.
 #define ffOPTRD (ffREAD | ffOPT)
 //! Convenience flag for an optional output file.
-#define ffOPTWR (ffWRITE| ffOPT)
+#define ffOPTWR (ffWRITE | ffOPT)
 //! Convenience flag for an optional input/output file.
-#define ffOPTRW (ffRW   | ffOPT)
+#define ffOPTRW (ffRW | ffOPT)
 //! Convenience flag for a library input file.
 #define ffLIBRD (ffREAD | ffLIB)
 //! Convenience flag for an optional library input file.
 #define ffLIBOPTRD (ffOPTRD | ffLIB)
 //! Convenience flag for an input file that accepts multiple files.
-#define ffRDMULT   (ffREAD  | ffMULT)
+#define ffRDMULT (ffREAD | ffMULT)
 //! Convenience flag for an optional input file that accepts multiple files.
-#define ffOPTRDMULT   (ffRDMULT | ffOPT)
+#define ffOPTRDMULT (ffRDMULT | ffOPT)
 //! Convenience flag for an output file that accepts multiple files.
-#define ffWRMULT   (ffWRITE  | ffMULT)
+#define ffWRMULT (ffWRITE | ffMULT)
 //! Convenience flag for an optional output file that accepts multiple files.
-#define ffOPTWRMULT   (ffWRMULT | ffOPT)
+#define ffOPTWRMULT (ffWRMULT | ffOPT)
 
 /*! \brief
  * Returns the filename belonging to cmd-line option opt, or NULL when
  * no such option.
  */
-const char *opt2fn(const char *opt, int nfile, const t_filenm fnm[]);
+const char* opt2fn(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the filenames belonging to cmd-line option opt.
  *
  * An assertion will fail when the option does not exist.
  */
-gmx::ArrayRef<const std::string>
-opt2fns(const char *opt, int nfile, const t_filenm fnm[]);
+gmx::ArrayRef<const std::string> opt2fns(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the filenames belonging to cmd-line option opt when set,
@@ -124,22 +124,20 @@ opt2fns(const char *opt, int nfile, const t_filenm fnm[]);
  *
  * An assertion will fail when the option does not exist.
  */
-gmx::ArrayRef<const std::string>
-opt2fnsIfOptionSet(const char *opt, int nfile, const t_filenm fnm[]);
+gmx::ArrayRef<const std::string> opt2fnsIfOptionSet(const char* opt, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the filename.
 #define opt2FILE(opt, nfile, fnm, mode) gmx_ffopen(opt2fn(opt, nfile, fnm), mode)
 
 //! Returns the first file name with type ftp, or NULL when none found.
-const char *ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
+const char* ftp2fn(int ftp, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the filenames for the first option with type ftp.
  *
  * An assertion will fail when when none found.
  */
-gmx::ArrayRef<const std::string>
-ftp2fns(int ftp, int nfile, const t_filenm fnm[]);
+gmx::ArrayRef<const std::string> ftp2fns(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns a file pointer from the file type.
 #define ftp2FILE(ftp, nfile, fnm, mode) gmx_ffopen(ftp2fn(ftp, nfile, fnm), mode)
@@ -148,7 +146,7 @@ ftp2fns(int ftp, int nfile, const t_filenm fnm[]);
 gmx_bool ftp2bSet(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns TRUE when this option has been found on the cmd-line.
-gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[]);
+gmx_bool opt2bSet(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the file name belonging top cmd-line option opt, or NULL when
@@ -156,29 +154,37 @@ gmx_bool opt2bSet(const char *opt, int nfile, const t_filenm fnm[]);
  *
  * Also return NULL when opt is optional and option is not set.
  */
-const char *opt2fn_null(const char *opt, int nfile, const t_filenm fnm[]);
+const char* opt2fn_null(const char* opt, int nfile, const t_filenm fnm[]);
 
 /*! \brief
  * Returns the first file name with type ftp, or NULL when none found.
  *
  * Also return NULL when ftp is optional and option is not set.
  */
-const char *ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
+const char* ftp2fn_null(int ftp, int nfile, const t_filenm fnm[]);
 
 //! Returns whether or not this filenm is optional.
-gmx_bool is_optional(const t_filenm *fnm);
+gmx_bool is_optional(const t_filenm* fnm);
 
 //! Returns whether or not this filenm is output.
-gmx_bool is_output(const t_filenm *fnm);
+gmx_bool is_output(const t_filenm* fnm);
 
 //! Returns whether or not this filenm is set.
-gmx_bool is_set(const t_filenm *fnm);
+gmx_bool is_set(const t_filenm* fnm);
+
+/*! \brief Return whether \c filename might have been produced by mdrun -noappend.
+ *
+ * If so, it must match "prefix.partNNNN.extension", for four decimal
+ * digits N and non-empty prefix and extension. */
+bool hasSuffixFromNoAppend(gmx::compat::string_view filename);
 
 /*! \brief
  * When we do checkpointing, this routine is called to check for previous
  * output files and append a '.partNNNN' suffix before the (output) file extensions.
+ * If there was already a '.partNNNN' suffix before the file extension, that
+ * is removed before the new suffix is added.
  */
-int add_suffix_to_output_names(t_filenm *fnm, int nfile, const char *suffix);
+int add_suffix_to_output_names(t_filenm* fnm, int nfile, const char* suffix);
 
 //! \}
 

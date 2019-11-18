@@ -111,7 +111,7 @@ please make sure that you have checked all the points on this list:
   :doc:`coding style <style>` and :ref:`code formatting <code-formatting>`
   guidelines. This will make the code review go more smoothly on both sides. There are a number of
   tools already included with |Gromacs| to facilitate this, please have
-  a look at :ref:`the respective part of the documentation <gmx-uncrustify>`.
+  a look at :ref:`the respective part of the documentation <gmx-codeformatting>`.
 
 * *Code documentation*: To ensure proper code documentation, please follow the
   instructions provided for the use of :doc:`doxygen <doxygen>`. In addition to this,
@@ -142,8 +142,11 @@ Alternatives
 https://github.com/gromacs/gromacs. You may wish to fork the project
 under your own GitHub account and make your feature available that
 way. This should help you to generate a following of users that would
-help make the case for contributing the feature to the core. This process
-would then still need to follow the remaining criteria outlined here.
+help make the case for contributing the feature to the core. This
+process would then still need to follow the remaining criteria
+outlined here.  If you fork |Gromacs|, please set the CMake variable
+``GMX_VERSION_STRING_OF_FORK`` to an appropriate descriptive string
+- see cmake/gmxVersionInfo.cmake for details.
 
 There is a project underway to develop a stable API for |Gromacs|,
 which promises to be a great tool for permitting innovation while

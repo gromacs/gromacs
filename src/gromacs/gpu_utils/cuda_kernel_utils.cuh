@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,10 +63,8 @@ __device__ __forceinline__ T LDG(const T* ptr)
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
  */
-template <typename T>
-static __forceinline__ __device__
-T fetchFromTexture(const cudaTextureObject_t texObj,
-                   int                       index)
+template<typename T>
+static __forceinline__ __device__ T fetchFromTexture(const cudaTextureObject_t texObj, int index)
 {
     assert(index >= 0);
     assert(!c_disableCudaTextures);
@@ -84,11 +82,10 @@ T fetchFromTexture(const cudaTextureObject_t texObj,
  * \param[in] index     Non-negative element index
  * \returns             The value from the table at \p index
  */
-template <typename T>
-static __forceinline__ __device__
-T fetchFromParamLookupTable(const T                  *d_ptr,
-                            const cudaTextureObject_t texObj,
-                            int                       index)
+template<typename T>
+static __forceinline__ __device__ T fetchFromParamLookupTable(const T*                  d_ptr,
+                                                              const cudaTextureObject_t texObj,
+                                                              int                       index)
 {
     assert(index >= 0);
     T result;

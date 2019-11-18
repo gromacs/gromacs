@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,28 +55,20 @@ struct gmx_ana_index_t;
 typedef struct gmx_sel_mempool_t gmx_sel_mempool_t;
 
 /** Create an empty memory pool. */
-gmx_sel_mempool_t *
-_gmx_sel_mempool_create();
+gmx_sel_mempool_t* _gmx_sel_mempool_create();
 /** Destroy a memory pool. */
-void
-_gmx_sel_mempool_destroy(gmx_sel_mempool_t *mp);
+void _gmx_sel_mempool_destroy(gmx_sel_mempool_t* mp);
 
 /** Allocate memory from a memory pool. */
-void *
-_gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, size_t size);
+void* _gmx_sel_mempool_alloc(gmx_sel_mempool_t* mp, size_t size);
 /** Release memory allocated from a memory pool. */
-void
-_gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr);
+void _gmx_sel_mempool_free(gmx_sel_mempool_t* mp, void* ptr);
 /** Set the size of a memory pool. */
-void
-_gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size);
+void _gmx_sel_mempool_reserve(gmx_sel_mempool_t* mp, size_t size);
 
 /** Convenience function for allocating an index group from a memory pool. */
-void
-_gmx_sel_mempool_alloc_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g,
-                             int isize);
+void _gmx_sel_mempool_alloc_group(gmx_sel_mempool_t* mp, struct gmx_ana_index_t* g, int isize);
 /** Convenience function for freeing an index group from a memory pool. */
-void
-_gmx_sel_mempool_free_group(gmx_sel_mempool_t *mp, struct gmx_ana_index_t *g);
+void _gmx_sel_mempool_free_group(gmx_sel_mempool_t* mp, struct gmx_ana_index_t* g);
 
 #endif

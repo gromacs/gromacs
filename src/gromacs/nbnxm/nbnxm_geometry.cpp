@@ -38,57 +38,33 @@
 #include "nbnxm_geometry.h"
 
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/nbnxm/pairlist.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/real.h"
 
-int nbnxn_kernel_to_cluster_i_size(int nb_kernel_type)
+#include "pairlist.h"
+
+/* Clusters at the cut-off only increase rlist by 60% of their size */
+static constexpr real c_nbnxnRlistIncreaseOutsideFactor = 0.6;
+
+real nbnxn_get_rlist_effective_inc(const int jClusterSize, const real atomDensity)
 {
-    switch (nb_kernel_type)
-    {
-        case nbnxnk4x4_PlainC:
-        case nbnxnk4xN_SIMD_4xN:
-        case nbnxnk4xN_SIMD_2xNN:
-            return c_nbnxnCpuIClusterSize;
-        case nbnxnk8x8x8_GPU:
-        case nbnxnk8x8x8_PlainC:
-            /* The cluster size for super/sub lists is only set here.
-             * Any value should work for the pair-search and atomdata code.
-             * The kernels, of course, might require a particular value.
-             */
-            return c_nbnxnGpuClusterSize;
-        default:
-            gmx_incons("unknown kernel type");
-    }
+    /* We should get this from the setup, but currently it's the same for
+     * all setups, including GPUs.
+     */
+    const real iClusterSize = c_nbnxnCpuIClusterSize;
+
+    const real iVolumeIncrease = (iClusterSize - 1) / atomDensity;
+    const real jVolumeIncrease = (jClusterSize - 1) / atomDensity;
+
+    return c_nbnxnRlistIncreaseOutsideFactor * std::cbrt(iVolumeIncrease + jVolumeIncrease);
 }
 
-int nbnxn_kernel_to_cluster_j_size(int nb_kernel_type)
+real nbnxn_get_rlist_effective_inc(const int clusterSize, const gmx::RVec& averageClusterBoundingBox)
 {
-    int nbnxn_simd_width = 0;
-    int cj_size          = 0;
+    /* The average length of the diagonal of a sub cell */
+    const real diagonal = std::sqrt(norm2(averageClusterBoundingBox));
 
-#if GMX_SIMD
-    nbnxn_simd_width = GMX_SIMD_REAL_WIDTH;
-#endif
+    const real volumeRatio = (clusterSize - 1.0_real) / clusterSize;
 
-    switch (nb_kernel_type)
-    {
-        case nbnxnk4x4_PlainC:
-            cj_size = c_nbnxnCpuIClusterSize;
-            break;
-        case nbnxnk4xN_SIMD_4xN:
-            cj_size = nbnxn_simd_width;
-            break;
-        case nbnxnk4xN_SIMD_2xNN:
-            cj_size = nbnxn_simd_width/2;
-            break;
-        case nbnxnk8x8x8_GPU:
-        case nbnxnk8x8x8_PlainC:
-            cj_size = nbnxn_kernel_to_cluster_i_size(nb_kernel_type);
-            break;
-        default:
-            gmx_incons("unknown kernel type");
-    }
-
-    return cj_size;
+    return c_nbnxnRlistIncreaseOutsideFactor * gmx::square(volumeRatio) * 0.5_real * diagonal;
 }

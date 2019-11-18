@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,41 +53,40 @@
 
 struct t_atoms;
 
-typedef struct t_trxframe      // NOLINT (clang-analyzer-optin.performance.Padding)
+typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
 {
-    int             not_ok;    /* integrity flags                  */
-    gmx_bool        bDouble;   /* Double precision?                */
-    int             natoms;    /* number of atoms (atoms, x, v, f, index) */
-    gmx_bool        bStep;
-    int64_t         step;      /* MD step number                   */
-    gmx_bool        bTime;
-    real            time;      /* time of the frame                */
-    gmx_bool        bLambda;
-    gmx_bool        bFepState; /* does it contain fep_state?       */
-    real            lambda;    /* free energy perturbation lambda  */
-    int             fep_state; /* which fep state are we in? */
-    gmx_bool        bAtoms;
-    t_atoms        *atoms;     /* atoms struct (natoms)            */
-    gmx_bool        bPrec;
-    real            prec;      /* precision of x, fraction of 1 nm */
-    gmx_bool        bX;
-    rvec           *x;         /* coordinates (natoms)             */
-    gmx_bool        bV;
-    rvec           *v;         /* velocities (natoms)              */
-    gmx_bool        bF;
-    rvec           *f;         /* forces (natoms)                  */
-    gmx_bool        bBox;
-    matrix          box;       /* the 3 box vectors                */
-    gmx_bool        bPBC;
-    int             ePBC;      /* the type of pbc                  */
-    gmx_bool        bIndex;
-    int            *index;     /* atom indices of contained coordinates */
+    int      not_ok;  /* integrity flags                  */
+    gmx_bool bDouble; /* Double precision?                */
+    int      natoms;  /* number of atoms (atoms, x, v, f, index) */
+    gmx_bool bStep;
+    int64_t  step; /* MD step number                   */
+    gmx_bool bTime;
+    real     time; /* time of the frame                */
+    gmx_bool bLambda;
+    gmx_bool bFepState; /* does it contain fep_state?       */
+    real     lambda;    /* free energy perturbation lambda  */
+    int      fep_state; /* which fep state are we in? */
+    gmx_bool bAtoms;
+    t_atoms* atoms; /* atoms struct (natoms)            */
+    gmx_bool bPrec;
+    real     prec; /* precision of x, fraction of 1 nm */
+    gmx_bool bX;
+    rvec*    x; /* coordinates (natoms)             */
+    gmx_bool bV;
+    rvec*    v; /* velocities (natoms)              */
+    gmx_bool bF;
+    rvec*    f; /* forces (natoms)                  */
+    gmx_bool bBox;
+    matrix   box; /* the 3 box vectors                */
+    gmx_bool bPBC;
+    int      ePBC; /* the type of pbc                  */
+    gmx_bool bIndex;
+    int*     index; /* atom indices of contained coordinates */
 } t_trxframe;
 
-void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2,
-                gmx_bool bRMSD, real ftol, real abstol);
+void comp_frame(FILE* fp, t_trxframe* fr1, t_trxframe* fr2, gmx_bool bRMSD, real ftol, real abstol);
 
-void done_frame(t_trxframe *frame);
+void done_frame(t_trxframe* frame);
 
 namespace gmx
 {
@@ -95,7 +94,7 @@ namespace gmx
 /*!\brief A 3x3 matrix data type useful for simulation boxes
  *
  * \todo Implement a full replacement for C-style real[DIM][DIM] */
-using BoxMatrix = std::array <std::array<real, DIM>, DIM>;
+using BoxMatrix = std::array<std::array<real, DIM>, DIM>;
 
 /*! \internal
  * \brief Contains a valid trajectory frame.
@@ -112,37 +111,38 @@ using BoxMatrix = std::array <std::array<real, DIM>, DIM>;
  * a field may or may not have content. */
 class TrajectoryFrame
 {
-    public:
-        /*! \brief Constructor
-         *
-         * \throws APIError If \c frame lacks either step or time.
-         */
-        explicit TrajectoryFrame(const t_trxframe &frame);
-        /*! \brief Return a string that helps users identify this frame, containing time and step number.
-         *
-         * \throws std::bad_alloc  when out of memory */
-        std::string frameName() const;
-        //! Step number read from the trajectory file frame.
-        std::int64_t step() const;
-        //! Time read from the trajectory file frame.
-        double time() const;
-        //! The PBC characteristics of the box.
-        int pbc() const;
-        //! Get a view of position coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> x() const;
-        //! Get a view of velocity coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> v() const;
-        //! Get a view of force coordinates of the frame (which could be empty).
-        ArrayRef<const RVec> f() const;
-        //! Return whether the frame has a box.
-        bool hasBox() const;
-        //! Return a handle to the frame's box, which is all zero if the frame has no box.
-        const BoxMatrix &box() const;
-    private:
-        //! Handle to trajectory data
-        const t_trxframe &frame_;
-        //! Box matrix data from the frame_.
-        BoxMatrix         box_;
+public:
+    /*! \brief Constructor
+     *
+     * \throws APIError If \c frame lacks either step or time.
+     */
+    explicit TrajectoryFrame(const t_trxframe& frame);
+    /*! \brief Return a string that helps users identify this frame, containing time and step number.
+     *
+     * \throws std::bad_alloc  when out of memory */
+    std::string frameName() const;
+    //! Step number read from the trajectory file frame.
+    std::int64_t step() const;
+    //! Time read from the trajectory file frame.
+    double time() const;
+    //! The PBC characteristics of the box.
+    int pbc() const;
+    //! Get a view of position coordinates of the frame (which could be empty).
+    ArrayRef<const RVec> x() const;
+    //! Get a view of velocity coordinates of the frame (which could be empty).
+    ArrayRef<const RVec> v() const;
+    //! Get a view of force coordinates of the frame (which could be empty).
+    ArrayRef<const RVec> f() const;
+    //! Return whether the frame has a box.
+    bool hasBox() const;
+    //! Return a handle to the frame's box, which is all zero if the frame has no box.
+    const BoxMatrix& box() const;
+
+private:
+    //! Handle to trajectory data
+    const t_trxframe& frame_;
+    //! Box matrix data from the frame_.
+    BoxMatrix box_;
 };
 
 } // namespace gmx

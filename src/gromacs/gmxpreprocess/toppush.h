@@ -38,97 +38,115 @@
 #ifndef GMX_GMXPREPROCESS_TOPPUSH_H
 #define GMX_GMXPREPROCESS_TOPPUSH_H
 
+#include <vector>
+
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
 enum class Directive : int;
-struct gpp_atomtype;
-struct gpp_bond_atomtype;
+class PreprocessingAtomTypes;
+class PreprocessingBondAtomType;
 struct t_atoms;
 struct t_block;
-struct t_molinfo;
+struct MoleculeInformation;
 struct t_nbparam;
-struct t_param;
-struct t_params;
+class InteractionOfType;
+struct InteractionsOfType;
 struct PreprocessResidue;
 struct warninp;
 
 namespace gmx
 {
-struct ExclusionBlocks;
+struct ExclusionBlock;
 } // namespace gmx
 
-void generate_nbparams(int comb, int funct, t_params plist[],
-                       gpp_atomtype *atype,
-                       warninp *wi);
+void generate_nbparams(int comb, int funct, InteractionsOfType* plist, PreprocessingAtomTypes* atype, warninp* wi);
 
-void push_at (struct t_symtab *symtab, gpp_atomtype *at,
-              gpp_bond_atomtype *bat, char *line, int nb_funct,
-              t_nbparam ***nbparam, t_nbparam ***pair,
-              warninp *wi);
+void push_at(struct t_symtab*           symtab,
+             PreprocessingAtomTypes*    at,
+             PreprocessingBondAtomType* bat,
+             char*                      line,
+             int                        nb_funct,
+             t_nbparam***               nbparam,
+             t_nbparam***               pair,
+             warninp*                   wi);
 
-void push_bt(Directive d, t_params bt[], int nral,
-             gpp_atomtype *at, gpp_bond_atomtype *bat, char *line,
-             warninp *wi);
+void push_bt(Directive                         d,
+             gmx::ArrayRef<InteractionsOfType> bt,
+             int                               nral,
+             PreprocessingAtomTypes*           at,
+             PreprocessingBondAtomType*        bat,
+             char*                             line,
+             warninp*                          wi);
 
-void push_dihedraltype(Directive d, t_params bt[],
-                       gpp_bond_atomtype *bat, char *line,
-                       warninp *wi);
+void push_dihedraltype(Directive                         d,
+                       gmx::ArrayRef<InteractionsOfType> bt,
+                       PreprocessingBondAtomType*        bat,
+                       char*                             line,
+                       warninp*                          wi);
 
-void push_cmaptype(Directive d, t_params bt[], int nral, gpp_atomtype *at,
-                   gpp_bond_atomtype *bat, char *line,
-                   warninp *wi);
+void push_cmaptype(Directive                         d,
+                   gmx::ArrayRef<InteractionsOfType> bt,
+                   int                               nral,
+                   PreprocessingAtomTypes*           at,
+                   PreprocessingBondAtomType*        bat,
+                   char*                             line,
+                   warninp*                          wi);
 
-void push_nbt(Directive d, t_nbparam **nbt, gpp_atomtype *atype,
-              char *plines, int nb_funct,
-              warninp *wi);
+void push_nbt(Directive d, t_nbparam** nbt, PreprocessingAtomTypes* atype, char* plines, int nb_funct, warninp* wi);
 
-void push_atom(struct t_symtab *symtab,
-               t_block         *cgs,
-               t_atoms         *at,
-               gpp_atomtype    *atype,
-               char            *line,
-               int             *lastcg,
-               warninp         *wi);
+void push_atom(struct t_symtab* symtab, t_atoms* at, PreprocessingAtomTypes* atype, char* line, warninp* wi);
 
-void push_bond(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype *atype, char *line,
-               bool bBonded, bool bGenPairs, real fudgeQQ,
-               bool bZero, bool *bWarn_copy_A_B,
-               warninp *wi);
+void push_bond(Directive                         d,
+               gmx::ArrayRef<InteractionsOfType> bondtype,
+               gmx::ArrayRef<InteractionsOfType> bond,
+               t_atoms*                          at,
+               PreprocessingAtomTypes*           atype,
+               char*                             line,
+               bool                              bBonded,
+               bool                              bGenPairs,
+               real                              fudgeQQ,
+               bool                              bZero,
+               bool*                             bWarn_copy_A_B,
+               warninp*                          wi);
 
-void push_cmap(Directive d, t_params bondtype[], t_params bond[],
-               t_atoms *at, gpp_atomtype *atype, char *line,
-               warninp *wi);
+void push_cmap(Directive                         d,
+               gmx::ArrayRef<InteractionsOfType> bondtype,
+               gmx::ArrayRef<InteractionsOfType> bond,
+               t_atoms*                          at,
+               PreprocessingAtomTypes*           atype,
+               char*                             line,
+               warninp*                          wi);
 
-void push_vsitesn(Directive d, t_params bond[],
-                  t_atoms *at, char *line,
-                  warninp *wi);
+void push_vsitesn(Directive d, gmx::ArrayRef<InteractionsOfType> bond, t_atoms* at, char* line, warninp* wi);
 
-void push_mol(int nrmols, t_molinfo mols[], char *pline,
-              int *whichmol, int *nrcopies,
-              warninp *wi);
+void push_mol(gmx::ArrayRef<MoleculeInformation> mols, char* pline, int* whichmol, int* nrcopies, warninp* wi);
 
-void push_molt(struct t_symtab *symtab, int *nmol, t_molinfo **mol, char *line,
-               warninp *wi);
+void push_molt(struct t_symtab* symtab, std::vector<MoleculeInformation>* mol, char* line, warninp* wi);
 
-void push_excl(char *line, gmx::ExclusionBlocks *b2, warninp *wi);
+void push_excl(char* line, gmx::ArrayRef<gmx::ExclusionBlock> b2, warninp* wi);
 
-int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr);
+int copy_nbparams(t_nbparam** param, int ftype, InteractionsOfType* plist, int nr);
 
-void free_nbparam(t_nbparam **param, int nr);
+void free_nbparam(t_nbparam** param, int nr);
 
-int add_atomtype_decoupled(struct t_symtab *symtab, gpp_atomtype *at,
-                           t_nbparam ***nbparam, t_nbparam ***pair);
+int add_atomtype_decoupled(struct t_symtab*        symtab,
+                           PreprocessingAtomTypes* at,
+                           t_nbparam***            nbparam,
+                           t_nbparam***            pair);
 /* Add an atom type with all parameters set to zero (no interactions).
  * Returns the atom type number.
  */
 
-void convert_moltype_couple(t_molinfo *mol, int atomtype_decouple,
-                            real fudgeQQ,
-                            int couple_lam0, int couple_lam1,
-                            bool bCoupleIntra,
-                            int nb_funct, t_params *nbp,
-                            warninp *wi);
+void convert_moltype_couple(MoleculeInformation* mol,
+                            int                  atomtype_decouple,
+                            real                 fudgeQQ,
+                            int                  couple_lam0,
+                            int                  couple_lam1,
+                            bool                 bCoupleIntra,
+                            int                  nb_funct,
+                            InteractionsOfType*  nbp,
+                            warninp*             wi);
 /* Setup mol such that the B-state has no interaction with the rest
  * of the system, but full interaction with itself.
  */

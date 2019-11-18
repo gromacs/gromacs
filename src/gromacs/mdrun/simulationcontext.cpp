@@ -37,36 +37,32 @@
 
 #include "simulationcontext.h"
 
+#include "config.h"
+
 #include <cassert>
 
-#include <memory>
-
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/domdec/domdec.h"
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/hardware/hw_info.h"
+#include "gromacs/mdrunutility/multisim.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "runner.h"
 
 namespace gmx
 {
 //! \cond libapi
-SimulationContext::SimulationContext(t_commrec* communicationRecord) :
-    communicationRecord_(communicationRecord)
+SimulationContext::SimulationContext(MPI_Comm                          communicator,
+                                     const ArrayRef<const std::string> multiSimDirectoryNames) :
+    communicator_(communicator)
 {
-    // SimulationContext receives a valid, initialized communications record.
-    // \todo Initialization of the communications record is an implementation detail
-    // dependent on the build configuration of the GROMACS installation and on
-    // the run time computing context, not the client code that owns this Context.
-    GMX_RELEASE_ASSERT(communicationRecord_, "SimulationContext constructor needs initialized communicationRecord");
+    GMX_RELEASE_ASSERT((GMX_LIB_MPI && (communicator != MPI_COMM_NULL))
+                               || (!GMX_LIB_MPI && (communicator == MPI_COMM_NULL)),
+                       "With real MPI, a non-null communicator is required. "
+                       "Without it, the communicator must be null.");
+    if (!multiSimDirectoryNames.empty())
+    {
+        multiSimulation_ = std::make_unique<gmx_multisim_t>(communicator, multiSimDirectoryNames);
+    }
 }
 
-SimulationContext
-createSimulationContext(t_commrec* simulationCommunicator)
-{
-    auto context = SimulationContext(simulationCommunicator);
-    return context;
-}
 //! \endcond
 } // end namespace gmx

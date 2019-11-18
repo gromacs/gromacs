@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,27 +45,29 @@
 
 struct gmx_output_env_t
 {
-    explicit gmx_output_env_t(const gmx::IProgramContext &context)
-        : programContext(context),
-          time_unit(time_ps),
-          view(FALSE),
-          xvg_format(exvgNONE),
-          verbosity(0),
-          trajectory_io_verbosity(0) {}
+    explicit gmx_output_env_t(const gmx::IProgramContext& context) :
+        programContext(context),
+        time_unit(time_ps),
+        view(FALSE),
+        xvg_format(exvgNONE),
+        verbosity(0),
+        trajectory_io_verbosity(0)
+    {
+    }
 
 
-    const gmx::IProgramContext  &programContext;
+    const gmx::IProgramContext& programContext;
 
     /* the time unit, enum defined in oenv.h */
-    time_unit_t                          time_unit;
+    time_unit_t time_unit;
     /* view of file requested */
-    gmx_bool                             view;
+    gmx_bool view;
     /* xvg output format, enum defined in oenv.h */
-    xvg_format_t                         xvg_format;
+    xvg_format_t xvg_format;
     /* The level of verbosity for this program */
-    int                                  verbosity;
+    int verbosity;
     /* The level of verbosity during trajectory I/O. Default=1, quiet=0. */
-    int                                  trajectory_io_verbosity;
+    int trajectory_io_verbosity;
 };
 
 /* The source code in this file should be thread-safe.
@@ -79,99 +81,96 @@ struct gmx_output_env_t
 
 /* read only time names */
 /* These must correspond to the time units type time_unit_t in oenv.h */
-static const real  timefactors[] =   { real(0),  real(1e3),  real(1), real(1e-3), real(1e-6), real(1e-9), real(1e-12), real(0) };
-static const real  timeinvfactors[] = { real(0), real(1e-3),  real(1),  real(1e3),  real(1e6),  real(1e9),  real(1e12), real(0) };
-static const char *time_units_str[] = {
-    nullptr, "fs", "ps", "ns", "us",
-    "\\mus", "ms", "s"
-};
-static const char *time_units_xvgr[] = {
-    nullptr, "fs", "ps", "ns",
-    "ms", "s", nullptr
-};
+static const real  timefactors[]     = { real(0),    real(1e3),  real(1),     real(1e-3),
+                                    real(1e-6), real(1e-9), real(1e-12), real(0) };
+static const real  timeinvfactors[]  = { real(0),   real(1e-3), real(1),    real(1e3),
+                                       real(1e6), real(1e9),  real(1e12), real(0) };
+static const char* time_units_str[]  = { nullptr, "fs", "ps", "ns", "us", "\\mus", "ms", "s" };
+static const char* time_units_xvgr[] = { nullptr, "fs", "ps", "ns", "ms", "s", nullptr };
 
 
 /***** OUTPUT_ENV MEMBER FUNCTIONS ******/
 
-void output_env_init(gmx_output_env_t **oenvp,
-                     const gmx::IProgramContext &context,
-                     time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
-                     int verbosity)
+void output_env_init(gmx_output_env_t**          oenvp,
+                     const gmx::IProgramContext& context,
+                     time_unit_t                 tmu,
+                     gmx_bool                    view,
+                     xvg_format_t                xvg_format,
+                     int                         verbosity)
 {
     try
     {
-        gmx_output_env_t *oenv = new gmx_output_env_t(context);
-        *oenvp            = oenv;
-        oenv->time_unit   = tmu;
-        oenv->view        = view;
-        oenv->xvg_format  = xvg_format;
-        oenv->verbosity   = verbosity;
-        const char *env = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
+        gmx_output_env_t* oenv        = new gmx_output_env_t(context);
+        *oenvp                        = oenv;
+        oenv->time_unit               = tmu;
+        oenv->view                    = view;
+        oenv->xvg_format              = xvg_format;
+        oenv->verbosity               = verbosity;
+        const char* env               = getenv("GMX_TRAJECTORY_IO_VERBOSITY");
         oenv->trajectory_io_verbosity = (env != nullptr ? strtol(env, nullptr, 10) : 1);
-
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-void output_env_init_default(gmx_output_env_t **oenvp)
+void output_env_init_default(gmx_output_env_t** oenvp)
 {
     try
     {
-        gmx_output_env_t *oenv = new gmx_output_env_t(gmx::getProgramContext());
-        *oenvp = oenv;
+        gmx_output_env_t* oenv = new gmx_output_env_t(gmx::getProgramContext());
+        *oenvp                 = oenv;
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 }
 
-void output_env_done(gmx_output_env_t *oenv)
+void output_env_done(gmx_output_env_t* oenv)
 {
     delete oenv;
 }
 
 
-int output_env_get_verbosity(const gmx_output_env_t *oenv)
+int output_env_get_verbosity(const gmx_output_env_t* oenv)
 {
     return oenv->verbosity;
 }
 
-int output_env_get_trajectory_io_verbosity(const gmx_output_env_t *oenv)
+int output_env_get_trajectory_io_verbosity(const gmx_output_env_t* oenv)
 {
     return oenv->trajectory_io_verbosity;
 }
 
-std::string output_env_get_time_unit(const gmx_output_env_t *oenv)
+std::string output_env_get_time_unit(const gmx_output_env_t* oenv)
 {
     return time_units_str[oenv->time_unit];
 }
 
-std::string output_env_get_time_label(const gmx_output_env_t *oenv)
+std::string output_env_get_time_label(const gmx_output_env_t* oenv)
 {
-    return gmx::formatString("Time (%s)", time_units_str[oenv->time_unit] ?
-                             time_units_str[oenv->time_unit] : "ps");
+    return gmx::formatString(
+            "Time (%s)", time_units_str[oenv->time_unit] ? time_units_str[oenv->time_unit] : "ps");
 }
 
-std::string output_env_get_xvgr_tlabel(const gmx_output_env_t *oenv)
+std::string output_env_get_xvgr_tlabel(const gmx_output_env_t* oenv)
 {
-    return gmx::formatString("Time (%s)", time_units_xvgr[oenv->time_unit] ?
-                             time_units_xvgr[oenv->time_unit] : "ps");
+    return gmx::formatString(
+            "Time (%s)", time_units_xvgr[oenv->time_unit] ? time_units_xvgr[oenv->time_unit] : "ps");
 }
 
-real output_env_get_time_factor(const gmx_output_env_t *oenv)
+real output_env_get_time_factor(const gmx_output_env_t* oenv)
 {
     return timefactors[oenv->time_unit];
 }
 
-real output_env_get_time_invfactor(const gmx_output_env_t *oenv)
+real output_env_get_time_invfactor(const gmx_output_env_t* oenv)
 {
     return timeinvfactors[oenv->time_unit];
 }
 
-real output_env_conv_time(const gmx_output_env_t *oenv, real time)
+real output_env_conv_time(const gmx_output_env_t* oenv, real time)
 {
-    return time*timefactors[oenv->time_unit];
+    return time * timefactors[oenv->time_unit];
 }
 
-void output_env_conv_times(const gmx_output_env_t *oenv, int n, real *time)
+void output_env_conv_times(const gmx_output_env_t* oenv, int n, real* time)
 {
     int    i;
     double fact = timefactors[oenv->time_unit];
@@ -185,31 +184,30 @@ void output_env_conv_times(const gmx_output_env_t *oenv, int n, real *time)
     }
 }
 
-gmx_bool output_env_get_view(const gmx_output_env_t *oenv)
+gmx_bool output_env_get_view(const gmx_output_env_t* oenv)
 {
     return oenv->view;
 }
 
-xvg_format_t output_env_get_xvg_format(const gmx_output_env_t *oenv)
+xvg_format_t output_env_get_xvg_format(const gmx_output_env_t* oenv)
 {
     return oenv->xvg_format;
 }
 
-const char *output_env_get_program_display_name(const gmx_output_env_t *oenv)
+const char* output_env_get_program_display_name(const gmx_output_env_t* oenv)
 {
-    const char *displayName = nullptr;
+    const char* displayName = nullptr;
 
     try
     {
         displayName = oenv->programContext.displayName();
     }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
     return displayName;
 }
 
-const gmx::IProgramContext &
-output_env_get_program_context(const gmx_output_env_t *oenv)
+const gmx::IProgramContext& output_env_get_program_context(const gmx_output_env_t* oenv)
 {
     return oenv->programContext;
 }

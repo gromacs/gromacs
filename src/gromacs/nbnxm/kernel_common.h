@@ -39,6 +39,7 @@
  * Declares the nbnxm pair interaction kernel function types and kind counts, also declares utility functions used in nbnxm_kernel.cpp.
  *
  * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
  */
 
 #ifndef GMX_NBXNM_KERNEL_COMMON_H
@@ -46,44 +47,49 @@
 
 #include "gromacs/math/vectypes.h"
 /* nbnxn_atomdata_t and nbnxn_pairlist_t could be forward declared, but that requires modifications in all SIMD kernel files */
-#include "gromacs/nbnxm/atomdata.h"
-#include "gromacs/nbnxm/pairlist.h"
 #include "gromacs/utility/real.h"
+
+#include "atomdata.h"
+#include "pairlist.h"
 
 struct interaction_const_t;
 
+// TODO: Consider using one nbk_func type now ener and noener are identical
+
 /*! \brief Pair-interaction kernel type that also calculates energies.
  */
-typedef void (nbk_func_ener)(const NbnxnPairlistCpu     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f,
-                             real                       *fshift,
-                             real                       *Vvdw,
-                             real                       *Vc);
+typedef void(nbk_func_ener)(const NbnxnPairlistCpu*    nbl,
+                            const nbnxn_atomdata_t*    nbat,
+                            const interaction_const_t* ic,
+                            const rvec*                shift_vec,
+                            nbnxn_atomdata_output_t*   out);
 
 /*! \brief Pointer to \p nbk_func_ener.
  */
-typedef nbk_func_ener *p_nbk_func_ener;
+typedef nbk_func_ener* p_nbk_func_ener;
 
 /*! \brief Pair-interaction kernel type that does not calculates energies.
  */
-typedef void (nbk_func_noener)(const NbnxnPairlistCpu     *nbl,
-                               const nbnxn_atomdata_t     *nbat,
-                               const interaction_const_t  *ic,
-                               rvec                       *shift_vec,
-                               real                       *f,
-                               real                       *fshift);
+typedef void(nbk_func_noener)(const NbnxnPairlistCpu*    nbl,
+                              const nbnxn_atomdata_t*    nbat,
+                              const interaction_const_t* ic,
+                              const rvec*                shift_vec,
+                              nbnxn_atomdata_output_t*   out);
 
 /*! \brief Pointer to \p nbk_func_noener.
  */
-typedef nbk_func_noener *p_nbk_func_noener;
+typedef nbk_func_noener* p_nbk_func_noener;
 
 /*! \brief Kinds of electrostatic treatments in SIMD Verlet kernels
  */
-enum {
-    coulktRF, coulktTAB, coulktTAB_TWIN, coulktEWALD, coulktEWALD_TWIN, coulktNR
+enum
+{
+    coulktRF,
+    coulktTAB,
+    coulktTAB_TWIN,
+    coulktEWALD,
+    coulktEWALD_TWIN,
+    coulktNR
 };
 
 /*! \brief Kinds of Van der Waals treatments in SIMD Verlet kernels
@@ -95,30 +101,35 @@ enum {
  * These two numbers differ, because currently only the reference kernels
  * support LB combination rules for the LJ-Ewald grid part.
  */
-enum {
-    vdwktLJCUT_COMBGEOM, vdwktLJCUT_COMBLB, vdwktLJCUT_COMBNONE, vdwktLJFORCESWITCH, vdwktLJPOTSWITCH, vdwktLJEWALDCOMBGEOM, vdwktLJEWALDCOMBLB, vdwktNR = vdwktLJEWALDCOMBLB, vdwktNR_ref
+enum
+{
+    vdwktLJCUT_COMBGEOM,
+    vdwktLJCUT_COMBLB,
+    vdwktLJCUT_COMBNONE,
+    vdwktLJFORCESWITCH,
+    vdwktLJPOTSWITCH,
+    vdwktLJEWALDCOMBGEOM,
+    vdwktLJEWALDCOMBLB,
+    vdwktNR = vdwktLJEWALDCOMBLB,
+    vdwktNR_ref
 };
 
 /*! \brief Clears the force buffer.
  *
  * Either the whole buffer is cleared or only the parts used
- * by the current thread when nbat->bUseBufferFlags is set.
- * In the latter case output_index is the task/thread list/buffer index.
+ * by thread/task \p outputIndex when nbat->bUseBufferFlags is set.
+ *
+ * \param[in,out] nbat         The Nbnxm atom data
+ * \param[in]     outputIndex  The index of the output object to clear
  */
-void
-clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f);
+void clearForceBuffer(nbnxn_atomdata_t* nbat, int outputIndex);
 
 /*! \brief Clears the shift forces.
  */
-void
-clear_fshift(real *fshift);
+void clear_fshift(real* fshift);
 
 /*! \brief Reduces the collected energy terms over the pair-lists/threads.
  */
-void
-reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                         nlist,
-                           real                       *Vvdw,
-                           real                       *Vc);
+void reduce_energies_over_lists(const nbnxn_atomdata_t* nbat, int nlist, real* Vvdw, real* Vc);
 
 #endif

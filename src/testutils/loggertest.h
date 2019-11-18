@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,30 +60,29 @@ namespace test
  */
 class LoggerTestHelper
 {
-    public:
-        LoggerTestHelper();
-        ~LoggerTestHelper();
+public:
+    LoggerTestHelper();
+    ~LoggerTestHelper();
 
-        //! Returns the logger to pass to code under test.
-        const MDLogger &logger();
+    //! Returns the logger to pass to code under test.
+    const MDLogger& logger();
 
-        /*! \brief
-         * Expects a log entry at a given level matching a given regex.
-         *
-         * Currently, the order of the entries is not checked, and if this
-         * method is called once for a log level, then it needs to be called
-         * for all entries produced by the test.
-         *
-         * If not called for a log level, all entries for that level are
-         * accepted.
-         */
-        void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level,
-                                      const char             *re);
+    /*! \brief
+     * Expects a log entry at a given level matching a given regex.
+     *
+     * Currently, the order of the entries is not checked, and if this
+     * method is called once for a log level, then it needs to be called
+     * for all entries produced by the test.
+     *
+     * If not called for a log level, all entries for that level are
+     * accepted.
+     */
+    void expectEntryMatchingRegex(gmx::MDLogger::LogLevel level, const char* re);
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 } // namespace test

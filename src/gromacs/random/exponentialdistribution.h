@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -98,132 +98,117 @@ namespace gmx
 template<class RealType = real>
 class ExponentialDistribution
 {
-    public:
-        /*! \brief Type of values returned */
-        typedef RealType result_type;
+public:
+    /*! \brief Type of values returned */
+    typedef RealType result_type;
 
-        /*! \brief Exponential distribution parameters */
-        class param_type
-        {
-            /*! \brief The lambda/decay parameter */
-            result_type  lambda_;
-
-            public:
-                /*! \brief Reference back to the distribution class */
-                typedef ExponentialDistribution distribution_type;
-
-                /*! \brief Construct parameter block
-                 *
-                 * \param lambda   lambda/decay parameter
-                 */
-                explicit param_type(result_type lambda = 1.0)
-                    : lambda_(lambda) {}
-
-                /*! \brief Return lambda parameter */
-                result_type lambda() const { return lambda_; }
-
-                /*! \brief True if two parameter sets will return the same exponential distribution.
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool
-                operator==(const param_type &x) const
-                {
-                    return lambda_ == x.lambda_;
-                }
-
-                /*! \brief True if two parameter sets will return different exponential distributions
-                 *
-                 * \param x  Instance to compare with.
-                 */
-                bool
-                operator!=(const param_type &x) const { return !operator==(x); }
-        };
+    /*! \brief Exponential distribution parameters */
+    class param_type
+    {
+        /*! \brief The lambda/decay parameter */
+        result_type lambda_;
 
     public:
+        /*! \brief Reference back to the distribution class */
+        typedef ExponentialDistribution distribution_type;
 
-        /*! \brief Construct new distribution with given floating-point parameter.
+        /*! \brief Construct parameter block
          *
          * \param lambda   lambda/decay parameter
-
          */
-        explicit ExponentialDistribution(result_type lambda = 1.0)
-            : param_(param_type(lambda)) {}
+        explicit param_type(result_type lambda = 1.0) : lambda_(lambda) {}
 
-        /*! \brief Construct new distribution from parameter class
+        /*! \brief Return lambda parameter */
+        result_type lambda() const { return lambda_; }
+
+        /*! \brief True if two parameter sets will return the same exponential distribution.
          *
-         * \param param  Parameter class as defined inside gmx::ExponentialDistribution.
+         * \param x  Instance to compare with.
          */
-        explicit ExponentialDistribution(const param_type &param) : param_(param) {}
+        bool operator==(const param_type& x) const { return lambda_ == x.lambda_; }
 
-        /*! \brief Flush all internal saved values  */
-        void
-        reset() {}
-
-        /*! \brief Return values from exponential distribution with internal parameters
+        /*! \brief True if two parameter sets will return different exponential distributions
          *
-         *  \tparam Rng   Random engine class
-         *
-         *  \param  g     Random engine
+         * \param x  Instance to compare with.
          */
-        template<class Rng>
-        result_type
-        operator()(Rng &g) { return (*this)(g, param_); }
+        bool operator!=(const param_type& x) const { return !operator==(x); }
+    };
 
-        /*! \brief Return value from exponential distribution with given parameters
-         *
-         *  \tparam Rng   Random engine class
-         *
-         *  \param  g     Random engine
-         *  \param  param Parameters to use
-         */
-        template<class Rng>
-        result_type
-        operator()(Rng &g, const param_type &param)
-        {
-            return -std::log(result_type(1) -
-                             generateCanonical<result_type,
-                                               std::numeric_limits<result_type>::digits>(g)) / param.lambda();
-        }
+public:
+    /*! \brief Construct new distribution with given floating-point parameter.
+     *
+     * \param lambda   lambda/decay parameter
 
-        /*! \brief Return the lambda parameter of the exponential distribution */
-        result_type
-        lambda() const { return param_.lambda(); }
+     */
+    explicit ExponentialDistribution(result_type lambda = 1.0) : param_(param_type(lambda)) {}
 
-        /*! \brief Return the full parameter class of exponential distribution */
-        param_type param() const { return param_; }
+    /*! \brief Construct new distribution from parameter class
+     *
+     * \param param  Parameter class as defined inside gmx::ExponentialDistribution.
+     */
+    explicit ExponentialDistribution(const param_type& param) : param_(param) {}
 
-        /*! \brief Smallest value that can be returned from exponential distribution */
-        result_type
-        min() const { return 0; }
+    /*! \brief Flush all internal saved values  */
+    void reset() {}
 
-        /*! \brief Largest value that can be returned from exponential distribution */
-        result_type
-        max() const { return std::numeric_limits<result_type>::infinity(); }
+    /*! \brief Return values from exponential distribution with internal parameters
+     *
+     *  \tparam Rng   Random engine class
+     *
+     *  \param  g     Random engine
+     */
+    template<class Rng>
+    result_type operator()(Rng& g)
+    {
+        return (*this)(g, param_);
+    }
 
-        /*! \brief True if two exponential distributions will produce the same values.
-         *
-         * \param  x     Instance to compare with.
-         */
-        bool
-        operator==(const ExponentialDistribution &x) const
-        { return param_ == x.param_; }
+    /*! \brief Return value from exponential distribution with given parameters
+     *
+     *  \tparam Rng   Random engine class
+     *
+     *  \param  g     Random engine
+     *  \param  param Parameters to use
+     */
+    template<class Rng>
+    result_type operator()(Rng& g, const param_type& param)
+    {
+        return -std::log(result_type(1)
+                         - generateCanonical<result_type, std::numeric_limits<result_type>::digits>(g))
+               / param.lambda();
+    }
 
-        /*! \brief True if two exponential distributions will produce different values.
-         *
-         * \param  x     Instance to compare with.
-         */
-        bool
-        operator!=(const ExponentialDistribution &x) const
-        { return !operator==(x); }
+    /*! \brief Return the lambda parameter of the exponential distribution */
+    result_type lambda() const { return param_.lambda(); }
 
-    private:
-        /*! \brief Internal value for parameters, can be overridden at generation time. */
-        param_type param_;
+    /*! \brief Return the full parameter class of exponential distribution */
+    param_type param() const { return param_; }
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(ExponentialDistribution);
+    /*! \brief Smallest value that can be returned from exponential distribution */
+    result_type min() const { return 0; }
+
+    /*! \brief Largest value that can be returned from exponential distribution */
+    result_type max() const { return std::numeric_limits<result_type>::infinity(); }
+
+    /*! \brief True if two exponential distributions will produce the same values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator==(const ExponentialDistribution& x) const { return param_ == x.param_; }
+
+    /*! \brief True if two exponential distributions will produce different values.
+     *
+     * \param  x     Instance to compare with.
+     */
+    bool operator!=(const ExponentialDistribution& x) const { return !operator==(x); }
+
+private:
+    /*! \brief Internal value for parameters, can be overridden at generation time. */
+    param_type param_;
+
+    GMX_DISALLOW_COPY_AND_ASSIGN(ExponentialDistribution);
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_MATH_RANDOM_H

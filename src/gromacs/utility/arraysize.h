@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,8 +47,8 @@
  *
  * \ingroup module_utility
  */
-template <typename T, int N>
-constexpr int asize(T(&/*unused*/)[N])
+template<typename T, int N>
+constexpr int asize(T (&/*unused*/)[N])
 {
     static_assert(N >= 0, "Do negative size arrays exist?");
     return N;

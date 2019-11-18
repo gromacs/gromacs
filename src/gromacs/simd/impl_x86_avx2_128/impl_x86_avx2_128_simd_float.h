@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,46 +45,35 @@
 namespace gmx
 {
 
-static inline float gmx_simdcall
-reduce(SimdFloat a)
+static inline float gmx_simdcall reduce(SimdFloat a)
 {
-    a.simdInternal_ = _mm_add_ps(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
-    a.simdInternal_ = _mm_add_ss(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(0, 3, 2, 1)));
-    return *reinterpret_cast<float *>(&a);
+    a.simdInternal_ =
+            _mm_add_ps(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(1, 0, 3, 2)));
+    a.simdInternal_ =
+            _mm_add_ss(a.simdInternal_, _mm_permute_ps(a.simdInternal_, _MM_SHUFFLE(0, 3, 2, 1)));
+    return *reinterpret_cast<float*>(&a);
 }
 
-static inline SimdFloat gmx_simdcall
-fma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return {
-               _mm_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-fms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return {
-               _mm_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-fnma(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnma(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return {
-               _mm_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fnmadd_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-static inline SimdFloat gmx_simdcall
-fnms(SimdFloat a, SimdFloat b, SimdFloat c)
+static inline SimdFloat gmx_simdcall fnms(SimdFloat a, SimdFloat b, SimdFloat c)
 {
-    return {
-               _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_)
-    };
+    return { _mm_fnmsub_ps(a.simdInternal_, b.simdInternal_, c.simdInternal_) };
 }
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_SIMD_IMPL_X86_AVX2_128_SIMD_FLOAT_H

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,10 +76,9 @@ namespace internal
  *
  *  \note The function/derivative are always double-valued to avoid accuracy loss.
  */
-void
-throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)>  &function,
-                                              const std::function<double(double)>  &derivative,
-                                              const std::pair<real, real>          &range);
+void throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)>& function,
+                                                   const std::function<double(double)>& derivative,
+                                                   const std::pair<real, real>&         range);
 
 /*! \brief Ensure vector of derivative values is the derivative of function vector.
  *
@@ -103,13 +102,10 @@ throwUnlessDerivativeIsConsistentWithFunction(const std::function<double(double)
  *  \note The function/derivative vectors and spacing are always double-valued
  *        to avoid accuracy loss.
  */
-void
-throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        function,
-                                              ArrayRef<const double>        derivative,
-                                              double                        inputSpacing,
-                                              const std::pair<real, real>  &range);
-
-
+void throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>       function,
+                                                   ArrayRef<const double>       derivative,
+                                                   double                       inputSpacing,
+                                                   const std::pair<real, real>& range);
 
 
 /*! \brief Find smallest quotient between analytical function and its 2nd derivative
@@ -140,12 +136,8 @@ throwUnlessDerivativeIsConsistentWithFunction(ArrayRef<const double>        func
  *
  *  \note The function is always double-valued to avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)>  &f,
-                                                  const std::pair<real, real>          &range);
-
-
-
+real findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(double)>& f,
+                                                       const std::pair<real, real>&         range);
 
 
 /*! \brief Find smallest quotient between vector of values and its 2nd derivative
@@ -174,13 +166,9 @@ findSmallestQuotientOfFunctionAndSecondDerivative(const std::function<double(dou
  *  \note The function vector and input spacing are always double-valued to
  *        avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        function,
-                                                  double                        inputSpacing,
-                                                  const std::pair<real, real>  &range);
-
-
-
+real findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>       function,
+                                                       double                       inputSpacing,
+                                                       const std::pair<real, real>& range);
 
 
 /*! \brief Find smallest quotient between analytical function and its 3rd derivative
@@ -211,11 +199,8 @@ findSmallestQuotientOfFunctionAndSecondDerivative(ArrayRef<const double>        
  *
  *  \note The function is always double-valued to avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)>  &f,
-                                                 const std::pair<real, real>          &range);
-
-
+real findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(double)>& f,
+                                                      const std::pair<real, real>&         range);
 
 
 /*! \brief Find smallest quotient between function and 2nd derivative (vectors)
@@ -244,10 +229,9 @@ findSmallestQuotientOfFunctionAndThirdDerivative(const std::function<double(doub
  *  \note The function vector and input spacing are always double-valued to
  *        avoid accuracy loss.
  */
-real
-findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        function,
-                                                 double                        inputSpacing,
-                                                 const std::pair<real, real>  &range);
+real findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>       function,
+                                                      double                       inputSpacing,
+                                                      const std::pair<real, real>& range);
 
 
 /*! \brief Calculate second derivative of vector and return vector of same length
@@ -263,9 +247,7 @@ findSmallestQuotientOfFunctionAndThirdDerivative(ArrayRef<const double>        f
  *       to be used on raw user input data for tables, where we want to avoid
  *       accuracy loss (since differentiation can be numerically fragile).
  */
-std::vector<double>
-vectorSecondDerivative(ArrayRef<const double>       f,
-                       double                       spacing);
+std::vector<double> vectorSecondDerivative(ArrayRef<const double> f, double spacing);
 
 
 /*! \brief Copy (temporary) table data into aligned multiplexed vector
@@ -290,16 +272,15 @@ vectorSecondDerivative(ArrayRef<const double>       f,
  *        in the GROMACS nonbonded kernels.
  */
 template<class T, class U>
-void
-fillMultiplexedTableData(const T           inputData,
-                         U *               multiplexedOutputData,
-                         std::size_t       valuesPerTablePoint,
-                         std::size_t       numTables,
-                         std::size_t       thisTableIndex)
+void fillMultiplexedTableData(const T     inputData,
+                              U*          multiplexedOutputData,
+                              std::size_t valuesPerTablePoint,
+                              std::size_t numTables,
+                              std::size_t thisTableIndex)
 {
     if (multiplexedOutputData->empty())
     {
-        multiplexedOutputData->resize( inputData.size() * numTables );
+        multiplexedOutputData->resize(inputData.size() * numTables);
     }
     else
     {
@@ -315,7 +296,7 @@ fillMultiplexedTableData(const T           inputData,
     for (std::size_t i = 0; i < points; i++)
     {
         std::size_t inputOffset  = valuesPerTablePoint * i;
-        std::size_t outputOffset = valuesPerTablePoint * ( numTables * i + thisTableIndex );
+        std::size_t outputOffset = valuesPerTablePoint * (numTables * i + thisTableIndex);
 
         for (std::size_t j = 0; j < valuesPerTablePoint; j++)
         {
@@ -325,8 +306,8 @@ fillMultiplexedTableData(const T           inputData,
 }
 
 
-}      // namespace internal
+} // namespace internal
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif // GMX_TABLES_SPLINEUTIL_H

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,9 +62,9 @@
 #include "gromacs/utility/smalloc.h"
 
 
-int gmx_vanhove(int argc, char *argv[])
+int gmx_vanhove(int argc, char* argv[])
 {
-    const char *desc[] = {
+    const char* desc[] = {
         "[THISMODULE] computes the Van Hove correlation function.",
         "The Van Hove G(r,t) is the probability that a particle that is at r[SUB]0[sub]",
         "at time zero can be found at position r[SUB]0[sub]+r at time t.",
@@ -96,62 +96,61 @@ int gmx_vanhove(int argc, char *argv[])
         "time can be reduced."
     };
     static int  fmmax = 0, ftmax = 0, nlev = 81, nr = 1, fshift = 0;
-    static real sbin  = 0, rmax = 2, rbin = 0.01, mmax = 0, rint = 0;
-    t_pargs     pa[]  = {
-        { "-sqrt",    FALSE, etREAL, {&sbin},
+    static real sbin = 0, rmax = 2, rbin = 0.01, mmax = 0, rint = 0;
+    t_pargs     pa[] = {
+        { "-sqrt",
+          FALSE,
+          etREAL,
+          { &sbin },
           "Use [SQRT]t[sqrt] on the matrix axis which binspacing # in [SQRT]ps[sqrt]" },
-        { "-fm",      FALSE, etINT, {&fmmax},
-          "Number of frames in the matrix, 0 is plot all" },
-        { "-rmax",    FALSE, etREAL, {&rmax},
-          "Maximum r in the matrix (nm)" },
-        { "-rbin",    FALSE, etREAL, {&rbin},
-          "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
-        { "-mmax",    FALSE, etREAL, {&mmax},
+        { "-fm", FALSE, etINT, { &fmmax }, "Number of frames in the matrix, 0 is plot all" },
+        { "-rmax", FALSE, etREAL, { &rmax }, "Maximum r in the matrix (nm)" },
+        { "-rbin", FALSE, etREAL, { &rbin }, "Binwidth in the matrix and for [TT]-or[tt] (nm)" },
+        { "-mmax",
+          FALSE,
+          etREAL,
+          { &mmax },
           "Maximum density in the matrix, 0 is calculate (1/nm)" },
-        { "-nlevels", FALSE, etINT,  {&nlev},
-          "Number of levels in the matrix" },
-        { "-nr",      FALSE, etINT, {&nr},
-          "Number of curves for the [TT]-or[tt] output" },
-        { "-fr",      FALSE, etINT, {&fshift},
-          "Frame spacing for the [TT]-or[tt] output" },
-        { "-rt",      FALSE, etREAL, {&rint},
-          "Integration limit for the [TT]-ot[tt] output (nm)" },
-        { "-ft",      FALSE, etINT, {&ftmax},
+        { "-nlevels", FALSE, etINT, { &nlev }, "Number of levels in the matrix" },
+        { "-nr", FALSE, etINT, { &nr }, "Number of curves for the [TT]-or[tt] output" },
+        { "-fr", FALSE, etINT, { &fshift }, "Frame spacing for the [TT]-or[tt] output" },
+        { "-rt", FALSE, etREAL, { &rint }, "Integration limit for the [TT]-ot[tt] output (nm)" },
+        { "-ft",
+          FALSE,
+          etINT,
+          { &ftmax },
           "Number of frames in the [TT]-ot[tt] output, 0 is plot all" }
     };
 #define NPA asize(pa)
 
     t_filenm fnm[] = {
-        { efTRX, nullptr, nullptr,  ffREAD },
-        { efTPS, nullptr, nullptr,  ffREAD },
-        { efNDX, nullptr, nullptr,  ffOPTRD },
-        { efXPM, "-om", "vanhove", ffOPTWR },
-        { efXVG, "-or", "vanhove_r", ffOPTWR },
-        { efXVG, "-ot", "vanhove_t", ffOPTWR }
+        { efTRX, nullptr, nullptr, ffREAD },    { efTPS, nullptr, nullptr, ffREAD },
+        { efNDX, nullptr, nullptr, ffOPTRD },   { efXPM, "-om", "vanhove", ffOPTWR },
+        { efXVG, "-or", "vanhove_r", ffOPTWR }, { efXVG, "-ot", "vanhove_t", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
-    gmx_output_env_t *oenv;
-    const char       *matfile, *otfile, *orfile;
+    gmx_output_env_t* oenv;
+    const char *      matfile, *otfile, *orfile;
     t_topology        top;
     int               ePBC;
     matrix            boxtop, box, *sbox, avbox, corr;
-    rvec             *xtop, *x, **sx;
+    rvec *            xtop, *x, **sx;
     int               isize, nalloc, nallocn;
-    t_trxstatus      *status;
-    int              *index;
-    char             *grpname;
+    t_trxstatus*      status;
+    int*              index;
+    char*             grpname;
     int               nfr, f, ff, i, m, mat_nx = 0, nbin = 0, bin, mbin, fbin;
-    real             *time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
+    real *            time, t, invbin = 0, rmax2 = 0, rint2 = 0, d2;
     real              invsbin = 0, matmax, normfac, dt, *tickx, *ticky;
     char              buf[STRLEN], **legend;
-    real            **mat = nullptr;
-    int              *pt  = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
-    FILE             *fp;
-    t_rgb             rlo = {1, 1, 1}, rhi = {0, 0, 0};
+    real**            mat = nullptr;
+    int * pt = nullptr, **pr = nullptr, *mcount = nullptr, *tcount = nullptr, *rcount = nullptr;
+    FILE* fp;
+    t_rgb rlo = { 1, 1, 1 }, rhi = { 0, 0, 0 };
 
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME,
-                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -159,30 +158,28 @@ int gmx_vanhove(int argc, char *argv[])
     matfile = opt2fn_null("-om", NFILE, fnm);
     if (opt2parg_bSet("-fr", NPA, pa))
     {
-        orfile  = opt2fn("-or", NFILE, fnm);
+        orfile = opt2fn("-or", NFILE, fnm);
     }
     else
     {
-        orfile  = opt2fn_null("-or", NFILE, fnm);
+        orfile = opt2fn_null("-or", NFILE, fnm);
     }
     if (opt2parg_bSet("-rt", NPA, pa))
     {
-        otfile  = opt2fn("-ot", NFILE, fnm);
+        otfile = opt2fn("-ot", NFILE, fnm);
     }
     else
     {
-        otfile  = opt2fn_null("-ot", NFILE, fnm);
+        otfile = opt2fn_null("-ot", NFILE, fnm);
     }
 
     if (!matfile && !otfile && !orfile)
     {
-        fprintf(stderr,
-                "For output set one (or more) of the output file options\n");
+        fprintf(stderr, "For output set one (or more) of the output file options\n");
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop,
-                  FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop, FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     nalloc = 0;
@@ -192,7 +189,7 @@ int gmx_vanhove(int argc, char *argv[])
     clear_mat(avbox);
 
     read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
-    nfr   = 0;
+    nfr = 0;
     do
     {
         if (nfr >= nalloc)
@@ -218,8 +215,7 @@ int gmx_vanhove(int argc, char *argv[])
         }
 
         nfr++;
-    }
-    while (read_next_x(oenv, status, &t, x, box));
+    } while (read_next_x(oenv, status, &t, x, box));
 
     /* clean up */
     sfree(x);
@@ -227,11 +223,11 @@ int gmx_vanhove(int argc, char *argv[])
 
     fprintf(stderr, "Read %d frames\n", nfr);
 
-    dt = (time[nfr-1] - time[0])/(nfr - 1);
+    dt = (time[nfr - 1] - time[0]) / (nfr - 1);
     /* Some ugly rounding to get nice nice times in the output */
-    dt = std::round(10000.0*dt)/10000.0;
+    dt = std::round(10000.0 * dt) / 10000.0;
 
-    invbin = 1.0/rbin;
+    invbin = 1.0 / rbin;
 
     if (matfile)
     {
@@ -240,24 +236,24 @@ int gmx_vanhove(int argc, char *argv[])
             fmmax = nfr - 1;
         }
         snew(mcount, fmmax);
-        nbin = gmx::roundToInt(rmax*invbin);
+        nbin = gmx::roundToInt(rmax * invbin);
         if (sbin == 0)
         {
             mat_nx = fmmax + 1;
         }
         else
         {
-            invsbin = 1.0/sbin;
-            mat_nx  = static_cast<int>(std::sqrt(fmmax*dt)*invsbin + 1);
+            invsbin = 1.0 / sbin;
+            mat_nx  = static_cast<int>(std::sqrt(fmmax * dt) * invsbin + 1);
         }
         snew(mat, mat_nx);
         for (f = 0; f < mat_nx; f++)
         {
             snew(mat[f], nbin);
         }
-        rmax2 = gmx::square(nbin*rbin);
+        rmax2 = gmx::square(nbin * rbin);
         /* Initialize time zero */
-        mat[0][0]  = nfr*isize;
+        mat[0][0] = nfr * isize;
         mcount[0] += nfr;
     }
     else
@@ -280,9 +276,9 @@ int gmx_vanhove(int argc, char *argv[])
         }
         snew(tcount, ftmax);
         snew(pt, nfr);
-        rint2 = rint*rint;
+        rint2 = rint * rint;
         /* Initialize time zero */
-        pt[0]      = nfr*isize;
+        pt[0] = nfr * isize;
         tcount[0] += nfr;
     }
     else
@@ -290,7 +286,7 @@ int gmx_vanhove(int argc, char *argv[])
         ftmax = 0;
     }
 
-    msmul(avbox, 1.0/nfr, avbox);
+    msmul(avbox, 1.0 / nfr, avbox);
     for (f = 0; f < nfr; f++)
     {
         if (f % 100 == 0)
@@ -309,13 +305,13 @@ int gmx_vanhove(int argc, char *argv[])
                 if (f > 0)
                 {
                     /* Correct for periodic jumps */
-                    for (m = DIM-1; m >= 0; m--)
+                    for (m = DIM - 1; m >= 0; m--)
                     {
-                        while (sx[f][i][m] - sx[f-1][i][m] > 0.5*avbox[m][m])
+                        while (sx[f][i][m] - sx[f - 1][i][m] > 0.5 * avbox[m][m])
                         {
                             rvec_dec(sx[f][i], avbox[m]);
                         }
-                        while (sx[f][i][m] - sx[f-1][i][m] <= -0.5*avbox[m][m])
+                        while (sx[f][i][m] - sx[f - 1][i][m] <= -0.5 * avbox[m][m])
                         {
                             rvec_inc(sx[f][i], avbox[m]);
                         }
@@ -334,14 +330,14 @@ int gmx_vanhove(int argc, char *argv[])
                 }
                 else
                 {
-                    mbin = gmx::roundToInt(std::sqrt(fbin*dt)*invsbin);
+                    mbin = gmx::roundToInt(std::sqrt(fbin * dt) * invsbin);
                 }
                 for (i = 0; i < isize; i++)
                 {
                     d2 = distance2(sx[f][i], sx[ff][i]);
                     if (mbin < mat_nx && d2 < rmax2)
                     {
-                        bin = gmx::roundToInt(std::sqrt(d2)*invbin);
+                        bin = gmx::roundToInt(std::sqrt(d2) * invbin);
                         if (bin < nbin)
                         {
                             mat[mbin][bin] += 1;
@@ -366,16 +362,16 @@ int gmx_vanhove(int argc, char *argv[])
         {
             for (fbin = 0; fbin < nr; fbin++)
             {
-                ff = f - (fbin + 1)*fshift;
+                ff = f - (fbin + 1) * fshift;
                 if (ff >= 0)
                 {
                     for (i = 0; i < isize; i++)
                     {
                         d2  = distance2(sx[f][i], sx[ff][i]);
-                        bin = gmx::roundToInt(std::sqrt(d2)*invbin);
+                        bin = gmx::roundToInt(std::sqrt(d2) * invbin);
                         if (bin >= nalloc)
                         {
-                            nallocn = 10*(bin/10) + 11;
+                            nallocn = 10 * (bin / 10) + 11;
                             for (m = 0; m < nr; m++)
                             {
                                 srenew(pr[m], nallocn);
@@ -400,7 +396,7 @@ int gmx_vanhove(int argc, char *argv[])
         matmax = 0;
         for (f = 0; f < mat_nx; f++)
         {
-            normfac = 1.0/(mcount[f]*isize*rbin);
+            normfac = 1.0 / (mcount[f] * isize * rbin);
             for (i = 0; i < nbin; i++)
             {
                 mat[f][i] *= normfac;
@@ -410,8 +406,7 @@ int gmx_vanhove(int argc, char *argv[])
                 }
             }
         }
-        fprintf(stdout, "Value at (0,0): %.3f, maximum of the rest %.3f\n",
-                mat[0][0], matmax);
+        fprintf(stdout, "Value at (0,0): %.3f, maximum of the rest %.3f\n", mat[0][0], matmax);
         if (mmax > 0)
         {
             matmax = mmax;
@@ -421,22 +416,22 @@ int gmx_vanhove(int argc, char *argv[])
         {
             if (sbin == 0)
             {
-                tickx[f] = f*dt;
+                tickx[f] = f * dt;
             }
             else
             {
-                tickx[f] = f*sbin;
+                tickx[f] = f * sbin;
             }
         }
-        snew(ticky, nbin+1);
+        snew(ticky, nbin + 1);
         for (i = 0; i <= nbin; i++)
         {
-            ticky[i] = i*rbin;
+            ticky[i] = i * rbin;
         }
         fp = gmx_ffopen(matfile, "w");
         write_xpm(fp, MAT_SPATIAL_Y, "Van Hove function", "G (1/nm)",
-                  sbin == 0 ? "time (ps)" : "sqrt(time) (ps^1/2)", "r (nm)",
-                  mat_nx, nbin, tickx, ticky, mat, 0, matmax, rlo, rhi, &nlev);
+                  sbin == 0 ? "time (ps)" : "sqrt(time) (ps^1/2)", "r (nm)", mat_nx, nbin, tickx,
+                  ticky, mat, 0, matmax, rlo, rhi, &nlev);
         gmx_ffclose(fp);
     }
 
@@ -450,16 +445,18 @@ int gmx_vanhove(int argc, char *argv[])
         snew(legend, nr);
         for (fbin = 0; fbin < nr; fbin++)
         {
-            sprintf(buf, "%g ps", (fbin + 1)*fshift*dt);
+            sprintf(buf, "%g ps", (fbin + 1) * fshift * dt);
             legend[fbin] = gmx_strdup(buf);
         }
         xvgr_legend(fp, nr, legend, oenv);
         for (i = 0; i < nalloc; i++)
         {
-            fprintf(fp, "%g", i*rbin);
+            fprintf(fp, "%g", i * rbin);
             for (fbin = 0; fbin < nr; fbin++)
             {
-                fprintf(fp, " %g", static_cast<real>(pr[fbin][i])/(rcount[fbin]*isize*rbin*(i == 0 ? 0.5 : 1.0)));
+                fprintf(fp, " %g",
+                        static_cast<real>(pr[fbin][i]
+                                          / (rcount[fbin] * isize * rbin * (i == 0 ? 0.5 : 1.0))));
             }
             fprintf(fp, "\n");
         }
@@ -476,7 +473,7 @@ int gmx_vanhove(int argc, char *argv[])
         }
         for (f = 0; f <= ftmax; f++)
         {
-            fprintf(fp, "%g %g\n", f*dt, static_cast<real>(pt[f])/(tcount[f]*isize));
+            fprintf(fp, "%g %g\n", f * dt, static_cast<real>(pt[f]) / (tcount[f] * isize));
         }
         xvgrclose(fp);
     }

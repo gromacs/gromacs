@@ -219,7 +219,7 @@ samples as prescribed by :eq:`Eq. %s <eqawhwupdate>`, entails
 a too rapid decay of the free energy update size. This motivates
 splitting the simulation into an *initial stage* where the weight
 histogram grows according to a more restrictive and robust protocol, and
-a *final stage* where the the weight histogram grows linearly at the
+a *final stage* where the weight histogram grows linearly at the
 sampling rate (:eq:`Eq. %s <eqawhwupdate>`). The AWH initial
 stage takes inspiration from the well-known Wang-Landau algorithm \ :ref:`138 <refwang2001efficient>`,
 although there are differences in the details.

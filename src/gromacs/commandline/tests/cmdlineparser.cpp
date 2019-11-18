@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,25 +64,28 @@ using gmx::test::CommandLine;
 
 class CommandLineParserTest : public ::testing::Test
 {
-    public:
-        CommandLineParserTest();
+public:
+    CommandLineParserTest();
 
-        gmx::Options            options_;
-        gmx::CommandLineParser  parser_;
-        bool                    flag_;
-        std::vector<int>        ivalues_;
-        std::vector<double>     dvalues_;
-        int                     ivalue1p_;
-        int                     ivalue12_;
-        std::string             stringValue_;
+    gmx::Options           options_;
+    gmx::CommandLineParser parser_;
+    bool                   flag_;
+    std::vector<int>       ivalues_;
+    std::vector<double>    dvalues_;
+    int                    ivalue1p_;
+    int                    ivalue12_;
+    std::string            stringValue_;
 };
 
-CommandLineParserTest::CommandLineParserTest()
-    : parser_(&options_), flag_(false), ivalue1p_(0), ivalue12_(0)
+CommandLineParserTest::CommandLineParserTest() :
+    parser_(&options_),
+    flag_(false),
+    ivalue1p_(0),
+    ivalue12_(0)
 {
     using gmx::BooleanOption;
-    using gmx::IntegerOption;
     using gmx::DoubleOption;
+    using gmx::IntegerOption;
     using gmx::StringOption;
     options_.addOption(BooleanOption("flag").store(&flag_));
     options_.addOption(IntegerOption("mvi").storeVector(&ivalues_).multiValue());
@@ -93,9 +97,7 @@ CommandLineParserTest::CommandLineParserTest()
 
 TEST_F(CommandLineParserTest, HandlesSingleValues)
 {
-    const char *const cmdline[] = {
-        "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
-    };
+    const char* const cmdline[] = { "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -111,9 +113,7 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
 
 TEST_F(CommandLineParserTest, HandlesBooleanWithoutArgument)
 {
-    const char *const cmdline[] = {
-        "test", "-flag"
-    };
+    const char* const cmdline[] = { "test", "-flag" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -125,9 +125,7 @@ TEST_F(CommandLineParserTest, HandlesBooleanWithoutArgument)
 
 TEST_F(CommandLineParserTest, HandlesBooleanAsNoWithoutArgument)
 {
-    const char *const cmdline[] = {
-        "test", "-noflag"
-    };
+    const char* const cmdline[] = { "test", "-noflag" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -139,18 +137,14 @@ TEST_F(CommandLineParserTest, HandlesBooleanAsNoWithoutArgument)
 
 TEST_F(CommandLineParserTest, ThrowsWithBooleanAsNoWithArgument)
 {
-    const char *const cmdline[] = {
-        "test", "-noflag", "no"
-    };
+    const char* const cmdline[] = { "test", "-noflag", "no" };
     CommandLine       args(cmdline);
     EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
 }
 
 TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 {
-    const char *const cmdline[] = {
-        "test", "-mvi", "1", "-2", "-mvd", "-2.7"
-    };
+    const char* const cmdline[] = { "test", "-mvi", "1", "-2", "-mvd", "-2.7" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -166,9 +160,7 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
 
 TEST_F(CommandLineParserTest, HandlesString)
 {
-    const char *const cmdline[] = {
-        "test", "-str", "text"
-    };
+    const char* const cmdline[] = { "test", "-str", "text" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -180,18 +172,14 @@ TEST_F(CommandLineParserTest, HandlesString)
 
 TEST_F(CommandLineParserTest, RejectsStringWithMultipleValues)
 {
-    const char *const cmdline[] = {
-        "test", "-str", "text", "excess text"
-    };
+    const char* const cmdline[] = { "test", "-str", "text", "excess text" };
     CommandLine       args(cmdline);
     EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
 }
 
 TEST_F(CommandLineParserTest, HandlesDoubleDashOptionPrefix)
 {
-    const char *const cmdline[] = {
-        "test", "--mvi", "1", "-2", "--mvd", "-2.7"
-    };
+    const char* const cmdline[] = { "test", "--mvi", "1", "-2", "--mvd", "-2.7" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -207,9 +195,7 @@ TEST_F(CommandLineParserTest, HandlesDoubleDashOptionPrefix)
 
 TEST_F(CommandLineParserTest, HandlesOptionsStartingWithNumbers)
 {
-    const char *const cmdline[] = {
-        "test", "--12", "1", "-1p", "-12"
-    };
+    const char* const cmdline[] = { "test", "--12", "1", "-1p", "-12" };
     CommandLine       args(cmdline);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
     ASSERT_NO_THROW_GMX(options_.finish());
@@ -222,9 +208,8 @@ TEST_F(CommandLineParserTest, HandlesOptionsStartingWithNumbers)
 
 TEST_F(CommandLineParserTest, HandlesSkipUnknown)
 {
-    const char *const cmdline[] = {
-        "test", "-unknown1", "-flag", "-unknown2", "value", "-mvi", "2", "-mvd", "2.7", "-unknown3"
-    };
+    const char* const cmdline[] = { "test", "-unknown1", "-flag", "-unknown2", "value",
+                                    "-mvi", "2",         "-mvd",  "2.7",       "-unknown3" };
     CommandLine       args(cmdline);
     parser_.skipUnknown(true);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
@@ -248,9 +233,7 @@ TEST_F(CommandLineParserTest, HandlesSkipUnknown)
 TEST_F(CommandLineParserTest, RejectsPositionalArgumentsByDefault)
 {
     // Ensures that "gmx trjconv f" gets rejected.
-    const char *const cmdline[] = {
-        "test", "module", "positional"
-    };
+    const char* const cmdline[] = { "test", "module", "positional" };
     CommandLine       args(cmdline);
     EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);
 }
@@ -258,9 +241,7 @@ TEST_F(CommandLineParserTest, RejectsPositionalArgumentsByDefault)
 TEST_F(CommandLineParserTest, CanAllowPositionalArguments)
 {
     // Ensures that "gmx help trjconv" works
-    const char *const cmdline[] = {
-        "test", "module", "positional", "-flag"
-    };
+    const char* const cmdline[] = { "test", "module", "positional", "-flag" };
     CommandLine       args(cmdline);
     parser_.allowPositionalArguments(true);
     ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
@@ -277,9 +258,7 @@ TEST_F(CommandLineParserTest, CannotHavePositionalArgumentsAfterOptions)
     // values, there's no way to check whether there's been enough
     // values provided, so we can't have positional arguments after
     // any options.
-    const char *const cmdline[] = {
-        "test", "module", "-1p", "2", "positional"
-    };
+    const char* const cmdline[] = { "test", "module", "-1p", "2", "positional" };
     CommandLine       args(cmdline);
     parser_.allowPositionalArguments(true);
     EXPECT_THROW_GMX(parser_.parse(&args.argc(), args.argv()), gmx::InvalidInputError);

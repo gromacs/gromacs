@@ -49,66 +49,57 @@ namespace gmxapi
  */
 class Status::Impl
 {
-    public:
-        /*!
-         * \brief Default construct as unsuccessful status.
-         */
-        Impl() : success_ {false}
-        {};
+public:
+    /*!
+     * \brief Default construct as unsuccessful status.
+     */
+    Impl() : success_{ false } {};
 
-        /*!
-         * \brief Construct with success for true input.
-         *
-         * \param success let Boolean true == success.
-         */
-        explicit Impl(const bool &success) :
-            success_ {success}
-        {};
+    /*!
+     * \brief Construct with success for true input.
+     *
+     * \param success let Boolean true == success.
+     */
+    explicit Impl(const bool& success) : success_{ success } {};
 
-        ~Impl() = default;
+    ~Impl() = default;
 
-        /*!
-         * \brief Query success status
-         *
-         * \return true if successful
-         */
-        bool success() const
-        {
-            return success_;
-        };
-    private:
-        bool success_;
+    /*!
+     * \brief Query success status
+     *
+     * \return true if successful
+     */
+    bool success() const { return success_; };
+
+private:
+    bool success_;
 };
 /// \endcond
 
-Status::Status() :
-    impl_ {std::make_unique<Status::Impl>()}
-{}
+Status::Status() : impl_{ std::make_unique<Status::Impl>() } {}
 
-Status::Status(const Status &status)
+Status::Status(const Status& status)
 {
     impl_ = std::make_unique<Impl>(status.success());
 }
 
-Status &Status::operator=(const Status &status)
+Status& Status::operator=(const Status& status)
 {
     this->impl_ = std::make_unique<Impl>(status.success());
     return *this;
 }
 
-Status &Status::operator=(Status &&) noexcept = default;
+Status& Status::operator=(Status&&) noexcept = default;
 
-Status &Status::operator=(bool success)
+Status& Status::operator=(bool success)
 {
     this->impl_ = std::make_unique<Impl>(success);
     return *this;
 }
 
-Status::Status(Status &&) noexcept = default;
+Status::Status(Status&&) noexcept = default;
 
-Status::Status(bool success) :
-    impl_ {std::make_unique<Status::Impl>(success)}
-{}
+Status::Status(bool success) : impl_{ std::make_unique<Status::Impl>(success) } {}
 
 bool Status::success() const
 {

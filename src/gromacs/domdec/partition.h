@@ -45,7 +45,7 @@
 #ifndef GMX_DOMDEC_PARTITION_H
 #define GMX_DOMDEC_PARTITION_H
 
-#include "gromacs/math/paddedvector.h"
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -56,6 +56,7 @@ struct gmx_localtop_t;
 struct gmx_mtop_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
+struct pull_t;
 struct t_commrec;
 struct t_forcerec;
 struct t_inputrec;
@@ -65,19 +66,16 @@ class t_state;
 namespace gmx
 {
 class Constraints;
+class ImdSession;
 class MDAtoms;
 class MDLogger;
-} // namespace
+} // namespace gmx
 
 //! Check whether the DD grid has moved too far for correctness.
-bool check_grid_jump(int64_t             step,
-                     const gmx_domdec_t *dd,
-                     real                cutoff,
-                     const gmx_ddbox_t  *ddbox,
-                     gmx_bool            bFatal);
+bool check_grid_jump(int64_t step, const gmx_domdec_t* dd, real cutoff, const gmx_ddbox_t* ddbox, gmx_bool bFatal);
 
 /*! \brief Print statistics for domain decomposition communication */
-void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog);
+void print_dd_statistics(const t_commrec* cr, const t_inputrec* ir, FILE* fplog);
 
 /*! \brief Partition the system over the nodes.
  *
@@ -85,26 +83,50 @@ void print_dd_statistics(const t_commrec *cr, const t_inputrec *ir, FILE *fplog)
  * If bMasterState==TRUE then state_global from the master node is used,
  * else state_local is redistributed between the nodes.
  * When f!=NULL, *f will be reallocated to the size of state_local.
+ *
+ * \param[in] fplog         Pointer to the log file
+ * \param[in] mdlog         MD file logger
+ * \param[in] step          Current step
+ * \param[in] cr            Communication record
+ * \param[in] bMasterState  Is it a master state
+ * \param[in] nstglobalcomm Will globals be computed on this step
+ * \param[in] state_global  Global state
+ * \param[in] top_global    Global topology
+ * \param[in] ir            Input record
+ * \param[in] imdSession    IMD handle
+ * \param[in] pull_work     Pulling data
+ * \param[in] state_local   Local state
+ * \param[in] f             Force buffer
+ * \param[in] mdatoms       MD atoms
+ * \param[in] top_local     Local topology
+ * \param[in] fr            Force record
+ * \param[in] vsite         Virtual sites
+ * \param[in] constr        Constraints
+ * \param[in] nrnb          Cycle counters
+ * \param[in] wcycle        Timers
+ * \param[in] bVerbose      Be verbose
  */
-void dd_partition_system(FILE                    *fplog,
-                         const gmx::MDLogger     &mdlog,
-                         int64_t                  step,
-                         const t_commrec         *cr,
-                         gmx_bool                 bMasterState,
-                         int                      nstglobalcomm,
-                         t_state                 *state_global,
-                         const gmx_mtop_t        &top_global,
-                         const t_inputrec        *ir,
-                         t_state                 *state_local,
-                         PaddedVector<gmx::RVec> *f,
-                         gmx::MDAtoms            *mdatoms,
-                         gmx_localtop_t          *top_local,
-                         t_forcerec              *fr,
-                         gmx_vsite_t             *vsite,
-                         gmx::Constraints        *constr,
-                         t_nrnb                  *nrnb,
-                         gmx_wallcycle           *wcycle,
-                         gmx_bool                 bVerbose);
+void dd_partition_system(FILE*                             fplog,
+                         const gmx::MDLogger&              mdlog,
+                         int64_t                           step,
+                         const t_commrec*                  cr,
+                         gmx_bool                          bMasterState,
+                         int                               nstglobalcomm,
+                         t_state*                          state_global,
+                         const gmx_mtop_t&                 top_global,
+                         const t_inputrec*                 ir,
+                         gmx::ImdSession*                  imdSession,
+                         pull_t*                           pull_work,
+                         t_state*                          state_local,
+                         gmx::PaddedHostVector<gmx::RVec>* f,
+                         gmx::MDAtoms*                     mdatoms,
+                         gmx_localtop_t*                   top_local,
+                         t_forcerec*                       fr,
+                         gmx_vsite_t*                      vsite,
+                         gmx::Constraints*                 constr,
+                         t_nrnb*                           nrnb,
+                         gmx_wallcycle*                    wcycle,
+                         gmx_bool                          bVerbose);
 
 /*! \brief Check whether bonded interactions are missing, if appropriate
  *
@@ -113,15 +135,17 @@ void dd_partition_system(FILE                    *fplog,
  * \param[in]    totalNumberOfBondedInteractions        Result of the global reduction over the number of bonds treated in each domain
  * \param[in]    top_global                             Global topology for the error message
  * \param[in]    top_local                              Local topology for the error message
- * \param[in]    state                                  Global state for the error message
+ * \param[in]    x                                      Position vector for the error message
+ * \param[in]    box                                    Box matrix for the error message
  * \param[in,out] shouldCheckNumberOfBondedInteractions Whether we should do the check. Always set to false.
  */
-void checkNumberOfBondedInteractions(const gmx::MDLogger  &mdlog,
-                                     t_commrec            *cr,
+void checkNumberOfBondedInteractions(const gmx::MDLogger&  mdlog,
+                                     t_commrec*            cr,
                                      int                   totalNumberOfBondedInteractions,
-                                     const gmx_mtop_t     *top_global,
-                                     const gmx_localtop_t *top_local,
-                                     const t_state        *state,
-                                     bool                 *shouldCheckNumberOfBondedInteractions);
+                                     const gmx_mtop_t*     top_global,
+                                     const gmx_localtop_t* top_local,
+                                     const rvec*           x,
+                                     const matrix          box,
+                                     bool*                 shouldCheckNumberOfBondedInteractions);
 
 #endif

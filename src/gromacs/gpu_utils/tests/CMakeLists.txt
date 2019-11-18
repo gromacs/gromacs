@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2017,2018, by the GROMACS development team, led by
+# Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,6 +40,7 @@
 
 # Always compiled as plain C++
 file(GLOB SOURCES_FROM_CXX
+    clfftinitializer.cpp
     hostallocator.cpp
     )
 
@@ -68,7 +69,7 @@ if(GMX_USE_CUDA)
             )
     endif()
 
-    target_link_libraries(gpu_utilstest_cuda PRIVATE ${GMX_EXTRA_LIBRARIES})
+    target_link_libraries(gpu_utilstest_cuda PRIVATE ${GMX_EXTRA_LIBRARIES} libgromacs)
 
 elseif(GMX_USE_OPENCL)
     # Do normal compilation of OpenCL files
@@ -90,8 +91,8 @@ gmx_add_unit_test(GpuUtilsUnitTests gpu_utils-test
     )
 
 if(GMX_USE_CUDA)
-    target_link_libraries(gpu_utils-test gpu_utilstest_cuda)
+    target_link_libraries(gpu_utils-test PRIVATE gpu_utilstest_cuda)
 endif()
 if(GMX_USE_OPENCL)
-    target_link_libraries(gpu_utils-test ${OpenCL_LIBRARIES})
+    target_link_libraries(gpu_utils-test PRIVATE ${OpenCL_LIBRARIES})
 endif()

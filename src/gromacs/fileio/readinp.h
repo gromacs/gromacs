@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,14 +47,14 @@
 #include "gromacs/utility/basedefinitions.h"
 
 struct warninp;
-typedef warninp *warninp_t;
+typedef warninp* warninp_t;
 
 namespace gmx
 {
 class KeyValueTreeObject;
 class TextInputStream;
 class TextOutputStream;
-}
+} // namespace gmx
 
 /* !\brief Input file structure that is populated with entries read from a file.
  *
@@ -66,8 +66,13 @@ class TextOutputStream;
 struct t_inpfile
 {
     /*!\brief Minimum allowed constructor sets all elements */
-    t_inpfile (int count, int inp_count, bool bObsolete, bool bSet, bool bHandledAsKeyValueTree,
-               std::string name, std::string value) :
+    t_inpfile(int         count,
+              int         inp_count,
+              bool        bObsolete,
+              bool        bSet,
+              bool        bHandledAsKeyValueTree,
+              std::string name,
+              std::string value) :
         count_(count),
         bObsolete_(bObsolete),
         bSet_(bSet),
@@ -77,14 +82,14 @@ struct t_inpfile
         inp_count_(inp_count)
     {
     }
-    int         count_;                  /* sort order for output  */
-    bool        bObsolete_;              /* whether it is an obsolete param value */
-    bool        bSet_;                   /* whether it it has been read out */
-    bool        bHandledAsKeyValueTree_; /* whether it it has been handled with key-value machinery */
-    std::string name_;                   /* name of the parameter */
-    std::string value_;                  /* parameter value string */
-    int         inp_count_;              /* number of einps read. Only valid for the first item
-                                                                 in the inpfile list. */
+    int  count_;                  /* sort order for output  */
+    bool bObsolete_;              /* whether it is an obsolete param value */
+    bool bSet_;                   /* whether it it has been read out */
+    bool bHandledAsKeyValueTree_; /* whether it it has been handled with key-value machinery */
+    std::string name_;            /* name of the parameter */
+    std::string value_;           /* parameter value string */
+    int         inp_count_;       /* number of einps read. Only valid for the first item
+                                                          in the inpfile list. */
 };
 
 /*! \brief Create and return a vector of t_inpfile structs
@@ -95,15 +100,14 @@ struct t_inpfile
  * \param[out] wi              Handler for context-sensitive warnings.
  * \throws     std::bad_alloc  If out of memory.
  * \throws     Anything the stream underlying \c reader can throw. */
-std::vector<t_inpfile>
-read_inpfile(gmx::TextInputStream *stream, const char *fn,
-             warninp_t wi);
+std::vector<t_inpfile> read_inpfile(gmx::TextInputStream* stream, const char* fn, warninp_t wi);
 
 gmx::KeyValueTreeObject flatKeyValueTreeFromInpFile(gmx::ArrayRef<const t_inpfile> inp);
 
 enum class WriteMdpHeader
 {
-    no, yes
+    no,
+    yes
 };
 
 /*! \brief Write "key = value" lines from \c inp to \c stream.
@@ -116,58 +120,49 @@ enum class WriteMdpHeader
  * \param[out] wi              Handler for context-sensitive warnings.
  * \throws     std::bad_alloc  If out of memory.
  * \throws     Anything the stream underlying \c writer can throw. */
-void write_inpfile(gmx::TextOutputStream *stream, const char *fn, std::vector<t_inpfile> *inp,
-                   gmx_bool bHaltOnUnknown,
-                   WriteMdpHeader writeHeader,
-                   warninp_t wi);
+void write_inpfile(gmx::TextOutputStream*  stream,
+                   const char*             fn,
+                   std::vector<t_inpfile>* inp,
+                   gmx_bool                bHaltOnUnknown,
+                   WriteMdpHeader          writeHeader,
+                   warninp_t               wi);
 /* Write inp to fn, warning (and perhaps halting) if any fields are
  * unknown. The helpful header contains irreproducible content, so
  * its writing can be suppressed to make testing more useful. */
 
-void replace_inp_entry(gmx::ArrayRef<t_inpfile> inp,
-                       const char *old_entry, const char *new_entry);
+void replace_inp_entry(gmx::ArrayRef<t_inpfile> inp, const char* old_entry, const char* new_entry);
 
-int search_einp(gmx::ArrayRef<const t_inpfile> inp, const char *name);
+int search_einp(gmx::ArrayRef<const t_inpfile> inp, const char* name);
 /* Return the index of an .mdp field with the given name within the
  * inp vector, if it exists. Return -1 if it does not exist. */
 
-void mark_einp_set(gmx::ArrayRef<t_inpfile> inp, const char *name);
+void mark_einp_set(gmx::ArrayRef<t_inpfile> inp, const char* name);
 
-int get_eint(std::vector<t_inpfile> *inp, const char *name, int def,
-             warninp_t wi);
-int get_eint(std::vector<t_inpfile> *inp, const std::string &name, int def,
-             warninp_t wi);
+int get_eint(std::vector<t_inpfile>* inp, const char* name, int def, warninp_t wi);
+int get_eint(std::vector<t_inpfile>* inp, const std::string& name, int def, warninp_t wi);
 
-int64_t get_eint64(std::vector<t_inpfile> *inp,
-                   const char *name, int64_t def,
-                   warninp_t wi);
-int64_t get_eint64(std::vector<t_inpfile> *inp,
-                   const std::string &name, int64_t def,
-                   warninp_t wi);
+int64_t get_eint64(std::vector<t_inpfile>* inp, const char* name, int64_t def, warninp_t wi);
+int64_t get_eint64(std::vector<t_inpfile>* inp, const std::string& name, int64_t def, warninp_t wi);
 
-double get_ereal(std::vector<t_inpfile> *inp, const char *name, double def,
-                 warninp_t wi);
-double get_ereal(std::vector<t_inpfile> *inp, const std::string &name, double def,
-                 warninp_t wi);
+double get_ereal(std::vector<t_inpfile>* inp, const char* name, double def, warninp_t wi);
+double get_ereal(std::vector<t_inpfile>* inp, const std::string& name, double def, warninp_t wi);
 
-const char *get_estr(std::vector<t_inpfile> *inp, const char *name, const char *def);
-const char *get_estr(std::vector<t_inpfile> *inp, const std::string &name, const char *def);
+const char* get_estr(std::vector<t_inpfile>* inp, const char* name, const char* def);
+const char* get_estr(std::vector<t_inpfile>* inp, const std::string& name, const char* def);
 
-int get_eeenum(std::vector<t_inpfile> *inp, const char *name, const char **defs,
-               warninp_t wi);
+int get_eeenum(std::vector<t_inpfile>* inp, const char* name, const char** defs, warninp_t wi);
 /* defs must be NULL terminated */
-int get_eeenum(std::vector<t_inpfile> *inp, const std::string &name, const char **defs,
-               warninp_t wi);
+int get_eeenum(std::vector<t_inpfile>* inp, const std::string& name, const char** defs, warninp_t wi);
 /* defs must be NULL terminated */
 
-int get_eenum(std::vector<t_inpfile> *inp, const char *name, const char **defs);
+int get_eenum(std::vector<t_inpfile>* inp, const char* name, const char** defs);
 /* defs must be NULL terminated */
 
 //! Replace for macro CCTYPE, prints comment string after newline
-void printStringNewline(std::vector<t_inpfile> *inp, const char *line);
+void printStringNewline(std::vector<t_inpfile>* inp, const char* line);
 //! Replace for macro CTYPE, prints comment string
-void printStringNoNewline(std::vector<t_inpfile> *inp, const char *line);
+void printStringNoNewline(std::vector<t_inpfile>* inp, const char* line);
 //! Replace for macro STYPE, checks for existing string entry and if possible replaces it
-void setStringEntry(std::vector<t_inpfile> *inp, const char *name, char *newName, const char *def);
+void setStringEntry(std::vector<t_inpfile>* inp, const char* name, char* newName, const char* def);
 
 #endif

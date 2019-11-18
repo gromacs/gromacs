@@ -51,7 +51,7 @@
 {3}
 
 #ifdef {0}
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_common.h"
+#include "kernel_common.h"
 #endif /* {0} */
 
 #ifdef CALC_ENERGIES
@@ -59,22 +59,18 @@ void
 {5}(const NbnxnPairlistCpu    gmx_unused *nbl,
 {6}const nbnxn_atomdata_t    gmx_unused *nbat,
 {6}const interaction_const_t gmx_unused *ic,
-{6}rvec                      gmx_unused *shift_vec,
-{6}real                      gmx_unused *f,
-{6}real                      gmx_unused *fshift,
-{6}real                      gmx_unused *Vvdw,
-{6}real                      gmx_unused *Vc)
+{6}const rvec                gmx_unused *shift_vec,
+{6}nbnxn_atomdata_output_t   gmx_unused *out)
 #else /* CALC_ENERGIES */
 void
 {5}(const NbnxnPairlistCpu    gmx_unused *nbl,
 {6}const nbnxn_atomdata_t    gmx_unused *nbat,
 {6}const interaction_const_t gmx_unused *ic,
-{6}rvec                      gmx_unused *shift_vec,
-{6}real                      gmx_unused *f,
-{6}real                      gmx_unused *fshift)
+{6}const rvec                gmx_unused *shift_vec,
+{6}nbnxn_atomdata_output_t   gmx_unused *out)
 #endif /* CALC_ENERGIES */
 #ifdef {0}
-#include "gromacs/nbnxm/kernels_simd_4xm/kernel_outer.h"
+#include "kernel_outer.h"
 #else /* {0} */
 {{
 /* No need to call gmx_incons() here, because the only function

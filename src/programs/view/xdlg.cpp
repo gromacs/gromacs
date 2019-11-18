@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,7 +54,7 @@
  * Helpful routines
  *
  ****************************/
-t_dlgitem *FindItem(t_dlg *dlg, t_id id)
+t_dlgitem* FindItem(t_dlg* dlg, t_id id)
 {
     int i;
 
@@ -68,7 +68,7 @@ t_dlgitem *FindItem(t_dlg *dlg, t_id id)
     return nullptr;
 }
 
-t_dlgitem *FindWin(t_dlg *dlg, Window win)
+t_dlgitem* FindWin(t_dlg* dlg, Window win)
 {
     int i;
 
@@ -87,9 +87,9 @@ t_dlgitem *FindWin(t_dlg *dlg, Window win)
  * Routines to manipulate items on a dialog box
  *
  ****************************/
-bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
+bool QueryDlgItemSize(t_dlg* dlg, t_id id, int* w, int* h)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -100,9 +100,9 @@ bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
     return false;
 }
 
-bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
+bool QueryDlgItemPos(t_dlg* dlg, t_id id, int* x0, int* y0)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -113,9 +113,9 @@ bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
     return false;
 }
 
-int QueryDlgItemX(t_dlg *dlg, t_id id)
+int QueryDlgItemX(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -124,9 +124,9 @@ int QueryDlgItemX(t_dlg *dlg, t_id id)
     return 0;
 }
 
-int QueryDlgItemY(t_dlg *dlg, t_id id)
+int QueryDlgItemY(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -135,9 +135,9 @@ int QueryDlgItemY(t_dlg *dlg, t_id id)
     return 0;
 }
 
-int QueryDlgItemW(t_dlg *dlg, t_id id)
+int QueryDlgItemW(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -146,9 +146,9 @@ int QueryDlgItemW(t_dlg *dlg, t_id id)
     return 0;
 }
 
-int QueryDlgItemH(t_dlg *dlg, t_id id)
+int QueryDlgItemH(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -157,11 +157,11 @@ int QueryDlgItemH(t_dlg *dlg, t_id id)
     return 0;
 }
 
-bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
+bool SetDlgItemSize(t_dlg* dlg, t_id id, int w, int h)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 #ifdef DEBUG
-    int        old_w, old_h;
+    int old_w, old_h;
 #endif
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
@@ -179,15 +179,13 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
             dlgitem->win.height = h;
         }
 #ifdef DEBUG
-        std::fprintf(dlg->x11->console,
-                     "Size window from: %dx%d to %dx%d\n", old_w, old_h,
+        std::fprintf(dlg->x11->console, "Size window from: %dx%d to %dx%d\n", old_w, old_h,
                      dlgitem->win.width, dlgitem->win.height);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (dlgitem->win.self)
         {
-            XResizeWindow(dlg->x11->disp, dlgitem->win.self, dlgitem->win.width,
-                          dlgitem->win.height);
+            XResizeWindow(dlg->x11->disp, dlgitem->win.self, dlgitem->win.width, dlgitem->win.height);
         }
         if ((w) && (dlgitem->type == edlgGB))
         {
@@ -196,10 +194,10 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
             t_id id  = dlgitem->ID;
             for (i = 0; (i < dlg->nitem); i++)
             {
-                t_dlgitem *child = dlg->dlgitem[i];
+                t_dlgitem* child = dlg->dlgitem[i];
                 if ((child->GroupID == gid) && (child->ID != id))
                 {
-                    SetDlgItemSize(dlg, child->ID, w-4*OFFS_X, 0);
+                    SetDlgItemSize(dlg, child->ID, w - 4 * OFFS_X, 0);
                 }
             }
         }
@@ -208,9 +206,9 @@ bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
     return false;
 }
 
-bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
+bool SetDlgItemPos(t_dlg* dlg, t_id id, int x0, int y0)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
     int        old_x, old_y;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
@@ -220,8 +218,7 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
         dlgitem->win.x = x0;
         dlgitem->win.y = y0;
 #ifdef DEBUG
-        std::fprintf(dlg->x11->console,
-                     "Move window from: %d,%d to %d,%d\n", old_x, old_y, x0, y0);
+        std::fprintf(dlg->x11->console, "Move window from: %d,%d to %d,%d\n", old_x, old_y, x0, y0);
         dlg->x11->Flush(dlg->x11);
 #endif
         if (dlgitem->win.self)
@@ -233,14 +230,14 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
             int  i, x, y;
             t_id gid = dlgitem->GroupID;
             t_id id  = dlgitem->ID;
-            x = dlgitem->win.x+2*OFFS_X-old_x;
-            y = dlgitem->win.y+2*OFFS_Y-old_y;
+            x        = dlgitem->win.x + 2 * OFFS_X - old_x;
+            y        = dlgitem->win.y + 2 * OFFS_Y - old_y;
             for (i = 0; (i < dlg->nitem); i++)
             {
-                t_dlgitem *child = dlg->dlgitem[i];
+                t_dlgitem* child = dlg->dlgitem[i];
                 if ((child->GroupID == gid) && (child->ID != id))
                 {
-                    SetDlgItemPos(dlg, child->ID, child->win.x+x, child->win.y+y);
+                    SetDlgItemPos(dlg, child->ID, child->win.x + x, child->win.y + y);
                 }
             }
         }
@@ -255,9 +252,9 @@ bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
  * after dlg is exec'ed
  *
  ****************************/
-bool IsCBChecked(t_dlg *dlg, t_id id)
+bool IsCBChecked(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -270,15 +267,14 @@ bool IsCBChecked(t_dlg *dlg, t_id id)
     return false;
 }
 
-t_id RBSelected(t_dlg *dlg, int gid)
+t_id RBSelected(t_dlg* dlg, int gid)
 {
     int i;
 
     for (i = 0; (i < dlg->nitem); i++)
     {
-        if ((dlg->dlgitem[i]->type == edlgRB) &&
-            (dlg->dlgitem[i]->u.radiobutton.bSelect) &&
-            (dlg->dlgitem[i]->GroupID == gid))
+        if ((dlg->dlgitem[i]->type == edlgRB) && (dlg->dlgitem[i]->u.radiobutton.bSelect)
+            && (dlg->dlgitem[i]->GroupID == gid))
         {
             return dlg->dlgitem[i]->ID;
         }
@@ -287,9 +283,9 @@ t_id RBSelected(t_dlg *dlg, int gid)
     return -1;
 }
 
-int EditTextLen(t_dlg *dlg, t_id id)
+int EditTextLen(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -302,9 +298,9 @@ int EditTextLen(t_dlg *dlg, t_id id)
     return 0;
 }
 
-char *EditText(t_dlg *dlg, t_id id)
+char* EditText(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
     {
@@ -324,10 +320,10 @@ char *EditText(t_dlg *dlg, t_id id)
  * return value is the ID of the button
  *
  ****************************/
-void ShowDlg(t_dlg *dlg)
+void ShowDlg(t_dlg* dlg)
 {
     int        i;
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     XMapWindow(dlg->x11->disp, dlg->win.self);
     XMapSubwindows(dlg->x11->disp, dlg->win.self);
@@ -339,11 +335,9 @@ void ShowDlg(t_dlg *dlg)
     for (i = 0; (i < dlg->nitem); i++)
     {
         dlgitem = dlg->dlgitem[i];
-        if ((dlgitem->type == edlgBN) &&
-            (dlgitem->u.button.bDefault))
+        if ((dlgitem->type == edlgBN) && (dlgitem->u.button.bDefault))
         {
-            PushMouse(dlg->x11->disp, dlgitem->win.self,
-                      dlgitem->win.width/2, dlgitem->win.height/2);
+            PushMouse(dlg->x11->disp, dlgitem->win.self, dlgitem->win.width / 2, dlgitem->win.height / 2);
             dlg->bPop = true;
             break;
         }
@@ -351,7 +345,7 @@ void ShowDlg(t_dlg *dlg)
     dlg->bGrab = false;
 }
 
-void HideDlg(t_dlg *dlg)
+void HideDlg(t_dlg* dlg)
 {
     if (dlg->bPop)
     {
@@ -362,33 +356,27 @@ void HideDlg(t_dlg *dlg)
     XUnmapWindow(dlg->x11->disp, dlg->win.self);
 }
 
-void NoHelp(t_dlg *dlg)
+void NoHelp(t_dlg* dlg)
 {
-    const char *lines[2] = {
-        "Error",
-        "No help for this item"
-    };
-    MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines,
-               MB_OK | MB_ICONSTOP | MB_APPLMODAL, nullptr, nullptr);
+    const char* lines[2] = { "Error", "No help for this item" };
+    MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines, MB_OK | MB_ICONSTOP | MB_APPLMODAL,
+               nullptr, nullptr);
 }
 
-void HelpDlg(t_dlg *dlg)
+void HelpDlg(t_dlg* dlg)
 {
-    const char *lines[] = {
-        "Place the cursor over one of the items",
-        "and press the F1 key to get more help.",
-        "First press the OK button."
-    };
-    MessageBox(dlg->x11, dlg->win.self, "Help Dialogbox",
-               3, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
+    const char* lines[] = { "Place the cursor over one of the items",
+                            "and press the F1 key to get more help.", "First press the OK button." };
+    MessageBox(dlg->x11, dlg->win.self, "Help Dialogbox", 3, lines,
+               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
 }
 
-void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
+void HelpNow(t_dlg* dlg, t_dlgitem* dlgitem)
 {
-    char     buf[80];
-    bool     bCont = true;
-    int      i, nlines = 0;
-    char   **lines = nullptr;
+    char   buf[80];
+    bool   bCont = true;
+    int    i, nlines = 0;
+    char** lines = nullptr;
 
     if (!dlgitem->help)
     {
@@ -424,13 +412,11 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
             if (bCont)
             {
                 srenew(lines, ++nlines);
-                lines[nlines-1] = gmx_strdup(buf);
+                lines[nlines - 1] = gmx_strdup(buf);
             }
         }
-    }
-    while (bCont);
-    MessageBox(dlg->x11, dlg->wDad, "Help",
-               nlines, lines,
+    } while (bCont);
+    MessageBox(dlg->x11, dlg->wDad, "Help", nlines, lines,
                MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, nullptr, nullptr);
     for (i = 0; (i < nlines); i++)
     {
@@ -439,19 +425,18 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     sfree(lines);
 }
 
-static void EnterDlg(t_dlg *dlg)
+static void EnterDlg(t_dlg* dlg)
 {
     if (dlg->flags & DLG_APPLMODAL)
     {
         dlg->bGrab = GrabOK(dlg->x11->console,
-                            XGrabPointer(dlg->x11->disp, dlg->win.self,
-                                         True, 0, GrabModeAsync, GrabModeAsync,
-                                         dlg->win.self, None, CurrentTime));
+                            XGrabPointer(dlg->x11->disp, dlg->win.self, True, 0, GrabModeAsync,
+                                         GrabModeAsync, dlg->win.self, None, CurrentTime));
     }
     dlg->x11->Flush(dlg->x11);
 }
 
-static void ExitDlg(t_dlg *dlg)
+static void ExitDlg(t_dlg* dlg)
 {
     if (dlg->bGrab)
     {
@@ -465,18 +450,17 @@ static void ExitDlg(t_dlg *dlg)
     }
 }
 
-static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool DlgCB(t_x11* x11, XEvent* event, Window w, void* data)
 {
-    t_dlg     *dlg = (t_dlg *)data;
+    t_dlg*     dlg = (t_dlg*)data;
     int        i, nWndProc;
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     if ((dlgitem = FindWin(dlg, w)) != nullptr)
     {
         nWndProc = (dlgitem->WndProc)(x11, dlgitem, event);
 #ifdef DEBUG
-        std::fprintf(x11->console,
-                     "window: %s, nWndProc: %d\n", dlgitem->win.text, nWndProc);
+        std::fprintf(x11->console, "window: %s, nWndProc: %d\n", dlgitem->win.text, nWndProc);
         x11->Flush(x11);
 #endif
         switch (nWndProc)
@@ -497,12 +481,10 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                 {
                     for (i = 0; (i < dlg->nitem); i++)
                     {
-                        if ((dlg->dlgitem[i]->type == edlgBN) &&
-                            (dlg->dlgitem[i]->u.button.bDefault))
+                        if ((dlg->dlgitem[i]->type == edlgBN) && (dlg->dlgitem[i]->u.button.bDefault))
                         {
                             PushMouse(x11->disp, dlg->dlgitem[i]->win.self,
-                                      dlg->dlgitem[i]->win.width/2,
-                                      dlg->dlgitem[i]->win.height/2);
+                                      dlg->dlgitem[i]->win.width / 2, dlg->dlgitem[i]->win.height / 2);
                             break;
                         }
                     }
@@ -527,7 +509,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
 #endif
                 if (tid != -1)
                 {
-                    t_dlgitem *dit = FindItem(dlg, tid);
+                    t_dlgitem* dit             = FindItem(dlg, tid);
                     dit->u.radiobutton.bSelect = false;
                     ExposeWin(x11->disp, dit->win.self);
                 }
@@ -557,22 +539,16 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                     dlg->cb(x11, DLG_SET, dlgitem->ID, dlgitem->u.edittext.buf, dlg->data);
                 }
                 break;
-            case HELPPRESSED:
-                HelpNow(dlg, dlgitem);
-                break;
-            case ITEMOK:
-                break;
-            default:
-                gmx_fatal(FARGS, "Invalid return code (%d) from wndproc\n", nWndProc);
+            case HELPPRESSED: HelpNow(dlg, dlgitem); break;
+            case ITEMOK: break;
+            default: gmx_fatal(FARGS, "Invalid return code (%d) from wndproc\n", nWndProc);
         }
     }
     else if (w == dlg->win.self)
     {
         switch (event->type)
         {
-            case Expose:
-                EnterDlg(dlg);
-                break;
+            case Expose: EnterDlg(dlg); break;
             case ButtonPress:
             case KeyPress:
                 if (HelpPressed(event))
@@ -584,8 +560,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                     XBell(x11->disp, 50);
                 }
                 break;
-            default:
-                break;
+            default: break;
         }
     }
     return false;
@@ -598,7 +573,7 @@ static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
  * the item itself may not be freed until the dlg is done with
  *
  ****************************/
-static void DoCreateDlg(t_dlg *dlg)
+static void DoCreateDlg(t_dlg* dlg)
 {
     XSizeHints           hints;
     XSetWindowAttributes attr;
@@ -609,18 +584,12 @@ static void DoCreateDlg(t_dlg *dlg)
     attr.override_redirect = False;
     attr.save_under        = True;
     attr.cursor            = XCreateFontCursor(dlg->x11->disp, XC_hand2);
-    Val                    = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder |
-        CWCursor;
-    dlg->win.self = XCreateWindow(dlg->x11->disp, dlg->wDad,
-                                  dlg->win.x, dlg->win.y,
-                                  dlg->win.width, dlg->win.height,
-                                  dlg->win.bwidth, CopyFromParent,
-                                  InputOutput, CopyFromParent,
-                                  Val, &attr);
-    dlg->x11->RegisterCallback(dlg->x11, dlg->win.self, dlg->wDad,
-                               DlgCB, dlg);
-    dlg->x11->SetInputMask(dlg->x11, dlg->win.self,
-                           ExposureMask | ButtonPressMask | KeyPressMask);
+    Val           = CWBackPixel | CWBorderPixel | CWOverrideRedirect | CWSaveUnder | CWCursor;
+    dlg->win.self = XCreateWindow(dlg->x11->disp, dlg->wDad, dlg->win.x, dlg->win.y, dlg->win.width,
+                                  dlg->win.height, dlg->win.bwidth, CopyFromParent, InputOutput,
+                                  CopyFromParent, Val, &attr);
+    dlg->x11->RegisterCallback(dlg->x11, dlg->win.self, dlg->wDad, DlgCB, dlg);
+    dlg->x11->SetInputMask(dlg->x11, dlg->win.self, ExposureMask | ButtonPressMask | KeyPressMask);
 
     if (!CheckWindow(dlg->win.self))
     {
@@ -629,11 +598,10 @@ static void DoCreateDlg(t_dlg *dlg)
     hints.x     = dlg->win.x;
     hints.y     = dlg->win.y;
     hints.flags = PPosition;
-    XSetStandardProperties(dlg->x11->disp, dlg->win.self, dlg->title,
-                           dlg->title, None, nullptr, 0, &hints);
+    XSetStandardProperties(dlg->x11->disp, dlg->win.self, dlg->title, dlg->title, None, nullptr, 0, &hints);
 }
 
-void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
+void AddDlgItem(t_dlg* dlg, t_dlgitem* item)
 {
 #define EnterLeaveMask (EnterWindowMask | LeaveWindowMask)
 #define UserMask (ButtonPressMask | KeyPressMask)
@@ -651,19 +619,17 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
     {
         DoCreateDlg(dlg);
     }
-    srenew(dlg->dlgitem, dlg->nitem+1);
+    srenew(dlg->dlgitem, dlg->nitem + 1);
     if (!item)
     {
         gmx_fatal(FARGS, "dlgitem not allocated");
     }
-    item->win.self =
-        XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
-                            item->win.width, item->win.height,
-                            item->win.bwidth, dlg->x11->fg, dlg->x11->bg);
+    item->win.self = XCreateSimpleWindow(dlg->x11->disp, dlg->win.self, item->win.x, item->win.y,
+                                         item->win.width, item->win.height, item->win.bwidth,
+                                         dlg->x11->fg, dlg->x11->bg);
     CheckWindow(item->win.self);
 
-    dlg->x11->RegisterCallback(dlg->x11, item->win.self, dlg->win.self,
-                               DlgCB, dlg);
+    dlg->x11->RegisterCallback(dlg->x11, item->win.self, dlg->win.self, DlgCB, dlg);
     dlg->x11->SetInputMask(dlg->x11, item->win.self, InputMask[item->type]);
 
     switch (item->type)
@@ -671,32 +637,30 @@ void AddDlgItem(t_dlg *dlg, t_dlgitem *item)
         case edlgPM:
             XSetWindowBackgroundPixmap(dlg->x11->disp, item->win.self, item->u.pixmap.pm);
             break;
-        default:
-            break;
+        default: break;
     }
     dlg->dlgitem[dlg->nitem] = item;
 
     dlg->nitem++;
 }
 
-void AddDlgItems(t_dlg *dlg, int nitem, t_dlgitem *item[])
+void AddDlgItems(t_dlg* dlg, int nitem, t_dlgitem* item[])
 {
     int i;
 
     for (i = 0; (i < nitem); i++)
     {
 #ifdef DEBUG
-        std::fprintf(dlg->x11->console,
-                     "Adding item: %d from group %d\n", item[i]->ID, item[i]->GroupID);
+        std::fprintf(dlg->x11->console, "Adding item: %d from group %d\n", item[i]->ID, item[i]->GroupID);
         dlg->x11->Flush(dlg->x11);
 #endif
         AddDlgItem(dlg, item[i]);
     }
 }
 
-void FreeDlgItem(t_dlg *dlg, t_id id)
+void FreeDlgItem(t_dlg* dlg, t_id id)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
     int        i;
 
     if ((dlgitem = FindItem(dlg, id)) != nullptr)
@@ -710,16 +674,10 @@ void FreeDlgItem(t_dlg *dlg, t_id id)
         switch (dlgitem->type)
         {
             case edlgBN:
-            case edlgRB:
-                break;
-            case edlgGB:
-                sfree(dlgitem->u.groupbox.item);
-                break;
-            case edlgCB:
-                break;
-            case edlgPM:
-                XFreePixmap(dlg->x11->disp, dlgitem->u.pixmap.pm);
-                break;
+            case edlgRB: break;
+            case edlgGB: sfree(dlgitem->u.groupbox.item); break;
+            case edlgCB: break;
+            case edlgPM: XFreePixmap(dlg->x11->disp, dlgitem->u.pixmap.pm); break;
             case edlgST:
                 for (i = 0; (i < dlgitem->u.statictext.nlines); i++)
                 {
@@ -727,16 +685,13 @@ void FreeDlgItem(t_dlg *dlg, t_id id)
                 }
                 sfree(dlgitem->u.statictext.lines);
                 break;
-            case edlgET:
-                sfree(dlgitem->u.edittext.buf);
-                break;
-            default:
-                break;
+            case edlgET: sfree(dlgitem->u.edittext.buf); break;
+            default: break;
         }
     }
 }
 
-void FreeDlg(t_dlg *dlg)
+void FreeDlg(t_dlg* dlg)
 {
     int i;
 
@@ -766,12 +721,10 @@ void FreeDlg(t_dlg *dlg)
  * Routine to create the DLG structure, returns NULL on failure
  *
  ****************************/
-t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
-                 int x0, int y0, int w, int h, int bw,
-                 DlgCallback *cb, void *data)
+t_dlg* CreateDlg(t_x11* x11, Window Parent, const char* title, int x0, int y0, int w, int h, int bw, DlgCallback* cb, void* data)
 {
-    t_dlg   *dlg;
-    int      x = 0, y = 0;
+    t_dlg* dlg;
+    int    x = 0, y = 0;
 
     snew(dlg, 1);
     dlg->x11  = x11;
@@ -801,14 +754,12 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     }
     else
     {
-        Window         root;
-        unsigned int   dum;
+        Window       root;
+        unsigned int dum;
 
-        XGetGeometry(x11->disp, Parent, &root, &x, &y,
-                     &(dlg->xmax), &(dlg->ymax), &dum, &dum);
+        XGetGeometry(x11->disp, Parent, &root, &x, &y, &(dlg->xmax), &(dlg->ymax), &dum, &dum);
 #ifdef DEBUG
-        std::fprintf(x11->console,
-                     "Daddy is %d x %d at %d, %d\n", dlg->xmax, dlg->ymax, x, y);
+        std::fprintf(x11->console, "Daddy is %d x %d at %d, %d\n", dlg->xmax, dlg->ymax, x, y);
         dlg->x11->Flush(dlg->x11);
 #endif
     }
@@ -833,14 +784,14 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     return dlg;
 }
 
-void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
+void SetDlgSize(t_dlg* dlg, int w, int h, bool bAutoPosition)
 {
     if (bAutoPosition)
     {
         int x, y;
 
-        x          = (dlg->xmax-w)/2;
-        y          = (dlg->ymax-h)/2;
+        x          = (dlg->xmax - w) / 2;
+        y          = (dlg->ymax - h) / 2;
         dlg->win.x = x;
         dlg->win.y = y;
     }
@@ -848,8 +799,8 @@ void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
     dlg->win.height = h;
 
 #ifdef DEBUG
-    std::fprintf(dlg->x11->console, "SetDlgSize: Dialog is %dx%d, at %d,%d\n",
-                 dlg->win.width, dlg->win.height, dlg->win.x, dlg->win.y);
+    std::fprintf(dlg->x11->console, "SetDlgSize: Dialog is %dx%d, at %d,%d\n", dlg->win.width,
+                 dlg->win.height, dlg->win.x, dlg->win.y);
     dlg->x11->Flush(dlg->x11);
 #endif
     if (dlg->win.self)

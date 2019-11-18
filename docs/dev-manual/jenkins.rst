@@ -87,9 +87,8 @@ CMAKE_C_COMPILER to a value other than Clang static analyzer.
 uncrustify
 ^^^^^^^^^^
 
-This build checks the source code for formatting such as consistent indentation
-and use of braces, as well as for copyright headers.  See :doc:`formatting` for
-the guidelines that are enforced.
+This build checks for source code formatting issues with uncrustify, and enforces
+the copyright style.  See :doc:`formatting` for the guidelines that are enforced.
 
 The exact build sequence is in :file:`admin/builds/uncrustify.py`, which
 essentially just runs ::
@@ -101,7 +100,23 @@ If the script completely fails (should be rare), the build fails.
 A file with issues found by the script is archived as an artifact in the build,
 and a summary is reported back to Gerrit (or the actual issues if there are
 only a few).
-See :doc:`uncrustify` for more details on uncrustify and on scripts to run it.
+See :doc:`code-formatting` for more details on code-formatting tools
+and on scripts to run them.
+
+clang-format
+^^^^^^^^^^^^
+
+This build checks and enforces code formatting, e.g.,  indentation.
+Also, a second part of the build enforces the source code formatting.
+As above, see :doc:`formatting` for the style guidelines.
+
+The build runs according to :file:`admin/builds/clang-format.py`, resulting
+in running ::
+
+ admin/clang-format.sh check --rev=HEAD^
+
+The build is marked unstable if the code formatting resulted in
+any changes to the source code.
 
 On-demand builds
 ----------------

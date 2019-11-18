@@ -194,7 +194,8 @@ version for |Gromacs| code as used as the host compiler for nvcc.
 
 To make it possible to use other accelerators, |Gromacs| also includes
 OpenCL_ support. The minimum OpenCL version required is
-|REQUIRED_OPENCL_MIN_VERSION|. The current OpenCL implementation is recommended for
+|REQUIRED_OPENCL_MIN_VERSION| and only 64-bit implementations are supported.
+The current OpenCL implementation is recommended for
 use with GCN-based AMD GPUs, and on Linux we recommend the ROCm runtime.
 Intel integrated GPUs are supported with the Neo drivers.
 OpenCL is also supported with NVIDIA GPUs, but using
@@ -203,7 +204,8 @@ recommended. Also note that there are performance limitations (inherent
 to the NVIDIA OpenCL runtime).
 It is not possible to configure both CUDA and OpenCL
 support in the same build of |Gromacs|, nor to support both
-Intel and other vendors' GPUs with OpenCL.
+Intel and other vendors' GPUs with OpenCL. A 64-bit implementation
+of OpenCL is required and therefore OpenCL is only supported on 64-bit platforms.
 
 .. _mpi-support:
 
@@ -233,6 +235,10 @@ version of either of these is likely to be the best. More specialized
 networks might depend on accelerations only available in the vendor's
 library. LAM-MPI_ might work, but since it has
 been deprecated for years, it is not supported.
+
+For example, depending on your actual MPI library, use ``cmake
+-DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpicxx -DGMX_MPI=on``.
+
 
 CMake
 ^^^^^
@@ -365,11 +371,15 @@ Other optional build components
   ``-DGMX_USE_LMFIT=none``.
 * zlib is used by TNG for compressing some kinds of trajectory data
 * Building the |Gromacs| documentation is optional, and requires
-  ImageMagick, pdflatex, bibtex, doxygen, python 2.7, sphinx
+  ImageMagick, pdflatex, bibtex, doxygen, python 3.5, sphinx
   |EXPECTED_SPHINX_VERSION|, and pygments.
 * The |Gromacs| utility programs often write data files in formats
   suitable for the Grace plotting tool, but it is straightforward to
   use these files in other plotting programs, too.
+* Set ``-DGMX_PYTHON_PACKAGE=ON`` when configuring |Gromacs| with CMake to
+  enable additional CMake targets for the gmxapi Python package and
+  sample_restraint package from the main |Gromacs| CMake build. This supports
+  additional testing and documentation generation.
 
 Doing a build of |Gromacs|
 --------------------------
@@ -539,9 +549,9 @@ lead to performance loss, e.g. on Intel Skylake-X/SP and AMD Zen.
    code will work on the  AMD Bulldozer and Piledriver processors, it is significantly less
    efficient than the ``AVX_128_FMA`` choice above - do not be fooled
    to assume that 256 is better than 128 in this case.
-6. ``AVX2_128`` AMD Zen microarchitecture processors (2017);
+6. ``AVX2_128`` AMD Zen/Zen2 and Hygon Dhyana microarchitecture processors;
    it will enable AVX2 with 3-way fused multiply-add instructions.
-   While the Zen microarchitecture does support 256-bit AVX2 instructions,
+   While these microarchitectures do support 256-bit AVX2 instructions,
    hence ``AVX2_256`` is also supported, 128-bit will generally be faster,
    in particular when the non-bonded tasks run on the CPU -- hence
    the default ``AVX2_128``. With GPU offload however ``AVX2_256``
@@ -765,8 +775,8 @@ simulation using MPI libraries (e.g. Cray).
   default to static linking, the required flags have to be specified. On
   Linux, this is usually ``CFLAGS=-static CXXFLAGS=-static``.
 
-gmxapi external API
-~~~~~~~~~~~~~~~~~~~
+gmxapi C++ API
+~~~~~~~~~~~~~~
 
 For dynamic linking builds and on non-Windows platforms, an extra library and
 headers are installed by setting ``-DGMXAPI=ON`` (default).
@@ -854,6 +864,8 @@ non-standard location. Building QM/MM-capable version requires
 double-precision version of |Gromacs| compiled with MPI support:
 
 * ``-DGMX_DOUBLE=ON -DGMX_MPI -DGMX_MIMIC=ON``
+
+.. _suffixes:
 
 Changing the names of |Gromacs| binaries and libraries
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -993,6 +1005,12 @@ change the names of directories inside the install tree. If you still
 need to do that, you might want to recompile with the new install
 location properly set, or edit the ``GMXRC`` script.
 
+|Gromacs| also installs a CMake toolchains file to help with building client
+software. For an installation at ``/your/installation/prefix/here``, toolchain
+files will be installed at
+``/your/installation/prefix/here/share/cmake/gromacs${GMX_LIBS_SUFFIX}/gromacs-toolchain${GMX_LIBS_SUFFIX}.cmake``
+where ``${GMX_LIBS_SUFFIX}`` is :ref:`as documented above <suffixes>`.
+
 Testing |Gromacs| for correctness
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1094,6 +1112,25 @@ We are still working on a set of benchmark systems for testing
 the performance of |Gromacs|. Until that is ready, we recommend that
 you try a few different parallelization options, and experiment with
 tools such as ``gmx tune_pme``.
+
+Validating |Gromacs| for source code modifications
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When building |Gromacs| from a release tarball, the build process automatically
+checks if any file contributing to the build process have been modified since they have
+been packed in the archive. This results in the marking of the version as either ``MODIFIED``
+(if the source files have been modified) or ``UNCHECKED`` (if no validation was possible, e.g.
+if no Python installation was found). The actual checking is performed by comparing a checksum
+stored in the release tarball against one generated by the ``createFileHash.py`` Python script
+during the build configuration. When running a |Gromacs| binary, the checksum is also printed
+in the log file, together with a message if there is a mismatch or no validation has been possible.
+
+This allows users to check whether the binary they are using was built from source code that is
+identical to the source code released by the |Gromacs| team. Thus unintentional modifications
+to the source code for building binaries that are used for running production simulations
+are easily detectable. Additionally, by manually setting a version tag using the
+GMX_VERSION_STRING_OF_FORK cmake option, users can mark a modified |Gromacs| release
+code with their custom version string suffix.
 
 Having difficulty?
 ^^^^^^^^^^^^^^^^^^
@@ -1256,15 +1293,15 @@ it works because we have tested it. We do test on Linux, Windows, and
 Mac with a range of compilers and libraries for a range of our
 configuration options. Every commit in our git source code repository
 is currently tested on x86 with a number of gcc versions ranging from 5.1
-through 8.1, version 19 of the Intel compiler, and Clang
-versions 3.6 through 7. For this, we use a variety of GNU/Linux
-flavors and versions as well as recent versions of Windows. Under
-Windows, we test both MSVC 2017 and version 16 of the Intel compiler.
+through 9.1, version 19 of the Intel compiler, and Clang
+versions 3.6 through 8. For this, we use a variety of GNU/Linux
+flavors and versions as well as Windows (where we test only MSVC 2017).
 Other compiler, library, and OS versions are tested less frequently.
 For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
 
 We test irregularly on ARM v7, ARM v8, Cray, Fujitsu
-PRIMEHPC, Power8, Google Native Client and other environments, and
+PRIMEHPC, Power8, Power9,
+Google Native Client and other environments, and
 with other compilers and compiler versions, too.

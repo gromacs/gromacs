@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,9 +52,9 @@
 
 #define BUFSIZE 16
 
-static t_dlgitem *newitem(void)
+static t_dlgitem* newitem(void)
 {
-    t_dlgitem *item;
+    t_dlgitem* item;
 
     snew(item, 1);
 
@@ -66,38 +66,38 @@ static t_dlgitem *newitem(void)
  * Window Procedures and helpful functions
  *
  ****************************/
-static void ShowCaret(t_x11 *x11, t_dlgitem *dlgitem)
+static void ShowCaret(t_x11* x11, t_dlgitem* dlgitem)
 {
-    t_edittext *et;
+    t_edittext* et;
 
     if (dlgitem->type == edlgET)
     {
         int x, y1, y2;
 
         et = &(dlgitem->u.edittext);
-        x  = XTextWidth(x11->font, dlgitem->win.text, std::strlen(dlgitem->win.text))+XCARET+
-            XTextWidth(x11->font, (char*) &(et->buf[et->strbegin]), et->pos);
-        y1 = (dlgitem->win.height-XTextHeight(x11->font))/2;
-        y2 = (dlgitem->win.height-y1);
+        x  = XTextWidth(x11->font, dlgitem->win.text, std::strlen(dlgitem->win.text)) + XCARET
+            + XTextWidth(x11->font, (char*)&(et->buf[et->strbegin]), et->pos);
+        y1 = (dlgitem->win.height - XTextHeight(x11->font)) / 2;
+        y2 = (dlgitem->win.height - y1);
         y1--, y2++;
-        XDrawLine(x11->disp, dlgitem->win.self, x11->gc, x-XCARET, y1, x+XCARET, y1);
+        XDrawLine(x11->disp, dlgitem->win.self, x11->gc, x - XCARET, y1, x + XCARET, y1);
         XDrawLine(x11->disp, dlgitem->win.self, x11->gc, x, y1, x, y2);
-        XDrawLine(x11->disp, dlgitem->win.self, x11->gc, x-XCARET, y2, x+XCARET, y2);
+        XDrawLine(x11->disp, dlgitem->win.self, x11->gc, x - XCARET, y2, x + XCARET, y2);
     }
 }
 
-static void HideCaret(t_x11 *x11, t_dlgitem *dlgitem)
+static void HideCaret(t_x11* x11, t_dlgitem* dlgitem)
 {
     XSetForeground(x11->disp, x11->gc, x11->bg);
     ShowCaret(x11, dlgitem);
     XSetForeground(x11->disp, x11->gc, x11->fg);
 }
 
-static int DefWndProc(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int DefWndProc(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
     XComposeStatus status;
     KeySym         keysym;
-    char           c[BUFSIZE+1];
+    char           c[BUFSIZE + 1];
 
 #ifdef DEBUG
     std::printf("DefWndProc\n");
@@ -130,15 +130,14 @@ static int DefWndProc(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             HideCaret(x11, dlgitem);
             /*    LightBorder(x11->disp,dlgitem->win.self,x11->bg); */
             break;
-        default:
-            XBell(x11->disp, 50);
+        default: XBell(x11->disp, 50);
     }
     return ITEMOK;
 }
 
-static int WndProcBN(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcBN(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_windata *win;
+    t_windata* win;
     int        x, w, th;
 
     if (dlgitem->type != edlgBN)
@@ -147,34 +146,30 @@ static int WndProcBN(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     }
     win = &(dlgitem->win);
     w   = XTextWidth(x11->font, win->text, std::strlen(win->text));
-    x   = (win->width-w)/2;
-    th  = XTextHeight(x11->font)+OFFS_Y;
+    x   = (win->width - w) / 2;
+    th  = XTextHeight(x11->font) + OFFS_Y;
     switch (event->type)
     {
         case Expose:
             RectWin(x11->disp, x11->gc, win, x11->fg);
             TextInRect(x11, win->self, win->text, 0, 0, win->width, th, eXCenter, eYCenter);
             break;
-        case ButtonPress:
-            return BNPRESSED;
-        case EnterNotify:
-            XDrawLine(x11->disp, win->self, x11->gc, x-1, th, x+w, th);
-            break;
+        case ButtonPress: return BNPRESSED;
+        case EnterNotify: XDrawLine(x11->disp, win->self, x11->gc, x - 1, th, x + w, th); break;
         case LeaveNotify:
             XSetForeground(x11->disp, x11->gc, x11->bg);
-            XDrawLine(x11->disp, win->self, x11->gc, x-1, th, x+w, th);
+            XDrawLine(x11->disp, win->self, x11->gc, x - 1, th, x + w, th);
             XSetForeground(x11->disp, x11->gc, x11->fg);
             break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
 
-static int WndProcRB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcRB(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_radiobutton *rb;
-    t_windata     *win;
+    t_radiobutton* rb;
+    t_windata*     win;
     int            x, y, rad;
 
     if (dlgitem->type != edlgRB)
@@ -184,22 +179,21 @@ static int WndProcRB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     rb  = &(dlgitem->u.radiobutton);
     win = &(dlgitem->win);
 
-    rad = win->height/3;
+    rad = win->height / 3;
     x   = rad;
-    y   = win->height/2;
+    y   = win->height / 2;
     switch (event->type)
     {
         case Expose:
-            XClearArea(x11->disp, win->self, x-rad, y-rad, x+rad, y+rad, False);
+            XClearArea(x11->disp, win->self, x - rad, y - rad, x + rad, y + rad, False);
             if (rb->bSelect)
             {
                 /* Filled */
                 XFillCircle(x11->disp, win->self, x11->gc, x, y, rad);
             }
             XDrawCircle(x11->disp, win->self, x11->gc, x, y, rad);
-            x += rad+OFFS_X;
-            TextInRect(x11, win->self, win->text, x, 0, win->width-x, win->height,
-                       eXLeft, eYCenter);
+            x += rad + OFFS_X;
+            TextInRect(x11, win->self, win->text, x, 0, win->width - x, win->height, eXLeft, eYCenter);
             break;
         case ButtonPress:
             if (!rb->bSelect)
@@ -209,17 +203,15 @@ static int WndProcRB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             XBell(x11->disp, 50);
             break;
         case EnterNotify:
-        case LeaveNotify:
-            break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        case LeaveNotify: break;
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
 
-static int WndProcGB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcGB(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_windata *win;
+    t_windata* win;
     int        x, y;
 
     if (dlgitem->type != edlgGB)
@@ -234,24 +226,22 @@ static int WndProcGB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     {
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
-            XDrawRoundRect(x11->disp, win->self, x11->gc, 0, y/2,
-                           win->width-1, win->height-y/2-1);
-            XClearArea(x11->disp, win->self, OFFS_X, 0, x+OFFS_X, y, False);
-            TextInRect(x11, win->self, win->text, 2*OFFS_X, 0, x, y, eXCenter, eYCenter);
+            XDrawRoundRect(x11->disp, win->self, x11->gc, 0, y / 2, win->width - 1,
+                           win->height - y / 2 - 1);
+            XClearArea(x11->disp, win->self, OFFS_X, 0, x + OFFS_X, y, False);
+            TextInRect(x11, win->self, win->text, 2 * OFFS_X, 0, x, y, eXCenter, eYCenter);
             break;
         case EnterNotify:
-        case LeaveNotify:
-            break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        case LeaveNotify: break;
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
 
-static int WndProcCB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcCB(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_checkbox *cb;
-    t_windata  *win;
+    t_checkbox* cb;
+    t_windata*  win;
     int         x, y, w, h;
 
     if (dlgitem->type != edlgCB)
@@ -262,9 +252,9 @@ static int WndProcCB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     win = &(dlgitem->win);
 
     x = 0;
-    y = win->height/7;
-    w = 5*y;
-    h = 5*y;
+    y = win->height / 7;
+    w = 5 * y;
+    h = 5 * y;
     switch (event->type)
     {
         case Expose:
@@ -273,29 +263,24 @@ static int WndProcCB(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             XDrawRectangle(x11->disp, win->self, x11->gc, x, y, w, h);
             if (cb->bChecked)
             {
-                XDrawLine(x11->disp, win->self, x11->gc, x, y, x+w, y+h);
-                XDrawLine(x11->disp, win->self, x11->gc, x+w, y, x, y+h);
+                XDrawLine(x11->disp, win->self, x11->gc, x, y, x + w, y + h);
+                XDrawLine(x11->disp, win->self, x11->gc, x + w, y, x, y + h);
             }
-            x = w+OFFS_X;
-            TextInRect(x11, win->self, win->text, x, 0, win->width-x, win->height,
-                       eXLeft, eYCenter);
+            x = w + OFFS_X;
+            TextInRect(x11, win->self, win->text, x, 0, win->width - x, win->height, eXLeft, eYCenter);
             break;
-        case ButtonPress:
-            cb->bChecked = !cb->bChecked;
-            return CBPRESSED;
+        case ButtonPress: cb->bChecked = !cb->bChecked; return CBPRESSED;
         case EnterNotify:
-        case LeaveNotify:
-            break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        case LeaveNotify: break;
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
 
-static int WndProcST(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcST(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_statictext *st;
-    t_windata    *win;
+    t_statictext* st;
+    t_windata*    win;
     int           i, dy;
 
     if (dlgitem->type != edlgST)
@@ -308,20 +293,19 @@ static int WndProcST(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     switch (event->type)
     {
         case Expose:
-            dy = XTextHeight(x11->font)+OFFS_Y;
+            dy = XTextHeight(x11->font) + OFFS_Y;
             for (i = 0; (i < st->nlines); i++)
             {
-                TextInRect(x11, win->self, st->lines[i],
-                           0, OFFS_Y+i*dy, win->width, dy, eXLeft, eYCenter);
+                TextInRect(x11, win->self, st->lines[i], 0, OFFS_Y + i * dy, win->width, dy, eXLeft,
+                           eYCenter);
             }
             break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
 
-static bool insert(char *s, char c, int *pos)
+static bool insert(char* s, char c, int* pos)
 {
     int i, sl;
 
@@ -329,9 +313,9 @@ static bool insert(char *s, char c, int *pos)
     {
         sl = std::strlen(s);
         /* +1 for zero termination */
-        for (i = sl+1; (i > *pos); i--)
+        for (i = sl + 1; (i > *pos); i--)
         {
-            s[i+1] = s[i];
+            s[i + 1] = s[i];
         }
         s[*pos] = c;
         (*pos)++;
@@ -340,24 +324,24 @@ static bool insert(char *s, char c, int *pos)
     return false;
 }
 
-static bool my_backspace(char *s, int *pos)
+static bool my_backspace(char* s, int* pos)
 {
     int i, sl;
 
     sl = std::strlen(s);
     if ((sl > 0) && ((*pos) > 0))
     {
-        for (i = *pos-1; (i < sl); i++)
+        for (i = *pos - 1; (i < sl); i++)
         {
-            s[i] = s[i+1];
+            s[i] = s[i + 1];
         }
-        (*pos) = std::max(0, (*pos)-1);
+        (*pos) = std::max(0, (*pos) - 1);
         return true;
     }
     return false;
 }
 
-static bool my_delete(char *s, int *pos)
+static bool my_delete(char* s, int* pos)
 {
     int i, sl;
 
@@ -366,22 +350,22 @@ static bool my_delete(char *s, int *pos)
     {
         for (i = *pos; (i < sl); i++)
         {
-            s[i] = s[i+1];
+            s[i] = s[i + 1];
         }
         return true;
     }
     return false;
 }
 
-static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
+static int WndProcET(t_x11* x11, t_dlgitem* dlgitem, XEvent* event)
 {
-    t_edittext  *et;
-    t_windata   *win;
-    KeySym       keysym;
-    char         c[BUFSIZE+1], *bp;
-    char         scrbuf[STRLEN];
-    int          i;
-    int          xp, xtitle, ewidth;
+    t_edittext* et;
+    t_windata*  win;
+    KeySym      keysym;
+    char        c[BUFSIZE + 1], *bp;
+    char        scrbuf[STRLEN];
+    int         i;
+    int         xp, xtitle, ewidth;
 
     if (dlgitem->type != edlgET)
     {
@@ -393,7 +377,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     /* Copy string part that is visible into screen buffer */
     for (i = 0; (i < et->buflen); i++)
     {
-        scrbuf[i] = et->buf[i+et->strbegin];
+        scrbuf[i] = et->buf[i + et->strbegin];
     }
     scrbuf[i] = '\0';
 
@@ -402,12 +386,10 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
         case Expose:
             XSetForeground(x11->disp, x11->gc, x11->fg);
             xtitle = XTextWidth(x11->font, win->text, std::strlen(win->text));
-            ewidth = win->width-xtitle;
-            TextInRect(x11, win->self, win->text,
-                       0, 0, xtitle-1, win->height, eXLeft, eYCenter);
-            XClearArea(x11->disp, win->self, xtitle, 0, ewidth+XCARET, win->height, False);
-            TextInRect(x11, win->self, scrbuf,
-                       xtitle+XCARET, 0, ewidth, win->height, eXLeft, eYCenter);
+            ewidth = win->width - xtitle;
+            TextInRect(x11, win->self, win->text, 0, 0, xtitle - 1, win->height, eXLeft, eYCenter);
+            XClearArea(x11->disp, win->self, xtitle, 0, ewidth + XCARET, win->height, False);
+            TextInRect(x11, win->self, scrbuf, xtitle + XCARET, 0, ewidth, win->height, eXLeft, eYCenter);
 #ifdef DEBUG
             std::printf("Expose\n");
 #endif
@@ -420,8 +402,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
             /* Calculate new position for caret */
             et->pos = std::strlen(et->buf);
             bp      = gmx_strdup(et->buf);
-            xp      = event->xbutton.x-XTextWidth(x11->font, win->text, std::strlen(win->text))-
-                XCARET;
+            xp = event->xbutton.x - XTextWidth(x11->font, win->text, std::strlen(win->text)) - XCARET;
             while ((et->pos > 0) && (XTextWidth(x11->font, bp, std::strlen(bp)) > xp))
             {
                 et->pos--;
@@ -465,8 +446,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     }
                     break;
                 case XK_KP_Enter:
-                case XK_Return:
-                    return ENTERPRESSED;
+                case XK_Return: return ENTERPRESSED;
                 case XK_Home:
                     et->pos      = 0;
                     et->strbegin = 0;
@@ -480,23 +460,22 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     else
                     {
                         et->pos      = et->buflen;
-                        et->strbegin = std::strlen(et->buf)-et->buflen;
+                        et->strbegin = std::strlen(et->buf) - et->buflen;
                     }
                     et->bChanged = true;
                     return ETCHANGED;
                 case XK_Left:
-                    et->pos      = std::max(0, et->pos-1);
+                    et->pos      = std::max(0, et->pos - 1);
                     et->strbegin = std::min(et->strbegin, et->pos);
                     et->bChanged = true;
                     return ETCHANGED;
                 case XK_Right:
-                    if ((et->pos < et->buflen) &&
-                        (et->strbegin+et->buflen > (int)strlen(et->buf)))
+                    if ((et->pos < et->buflen) && (et->strbegin + et->buflen > (int)strlen(et->buf)))
                     {
                         et->pos++;
                     }
-                    else if ((et->buflen   < (int)strlen(et->buf)) &&
-                             (et->strbegin < (int)strlen(et->buf)-et->buflen))
+                    else if ((et->buflen < (int)strlen(et->buf))
+                             && (et->strbegin < (int)strlen(et->buf) - et->buflen))
                     {
                         et->strbegin++;
                     }
@@ -527,8 +506,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                 et->bChanged = false;
             }
             break;
-        default:
-            return DefWndProc(x11, dlgitem, event);
+        default: return DefWndProc(x11, dlgitem, event);
     }
     return ITEMOK;
 }
@@ -547,25 +525,24 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
  * on the dlg box, and if wished resize them.
  *
  ****************************/
-t_dlgitem *CreateButton(t_x11 *x11,
-                        const char *szLab, bool bDef, t_id id, t_id groupid,
-                        int x0, int y0, int w, int h, int bw)
+t_dlgitem*
+CreateButton(t_x11* x11, const char* szLab, bool bDef, t_id id, t_id groupid, int x0, int y0, int w, int h, int bw)
 {
-    t_dlgitem *dlgitem;
-    char      *lab;
+    t_dlgitem* dlgitem;
+    char*      lab;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = XTextHeight(x11->font)+2*OFFS_Y;
+        h = XTextHeight(x11->font) + 2 * OFFS_Y;
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+2*OFFS_X;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab)) + 2 * OFFS_X;
     }
     if (bDef)
     {
-        snew(lab, std::strlen(szLab)+7); /* 6 for >> << and 1 for \0 */
+        snew(lab, std::strlen(szLab) + 7); /* 6 for >> << and 1 for \0 */
         std::sprintf(lab, ">> %s <<", szLab);
     }
     else
@@ -583,21 +560,19 @@ t_dlgitem *CreateButton(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateRadioButton(t_x11 *x11,
-                             const char *szLab, bool bSet, t_id id,
-                             t_id groupid,
-                             int x0, int y0, int w, int h, int bw)
+t_dlgitem*
+CreateRadioButton(t_x11* x11, const char* szLab, bool bSet, t_id id, t_id groupid, int x0, int y0, int w, int h, int bw)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = XTextHeight(x11->font)+OFFS_Y;
+        h = XTextHeight(x11->font) + OFFS_Y;
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+OFFS_X+h;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab)) + OFFS_X + h;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->ID                    = id;
@@ -609,21 +584,19 @@ t_dlgitem *CreateRadioButton(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateGroupBox(t_x11 *x11,
-                          const char *szLab, t_id id,
-                          int nitems, t_id items[],
-                          int x0, int y0, int w, int h, int bw)
+t_dlgitem*
+CreateGroupBox(t_x11* x11, const char* szLab, t_id id, int nitems, t_id items[], int x0, int y0, int w, int h, int bw)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = XTextHeight(x11->font)+OFFS_Y;
+        h = XTextHeight(x11->font) + OFFS_Y;
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+2*OFFS_X;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab)) + 2 * OFFS_X;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->GroupID           = id;
@@ -631,28 +604,33 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
     dlgitem->type              = edlgGB;
     dlgitem->u.groupbox.nitems = nitems;
     snew(dlgitem->u.groupbox.item, nitems);
-    std::memcpy((char *)dlgitem->u.groupbox.item, (char *)items,
-                nitems*sizeof(items[0]));
+    std::memcpy((char*)dlgitem->u.groupbox.item, (char*)items, nitems * sizeof(items[0]));
     dlgitem->WndProc = WndProcGB;
 
     return dlgitem;
 }
 
-t_dlgitem *CreateCheckBox(t_x11 *x11,
-                          const char *szLab, bool bCheckedInitial, t_id id,
-                          t_id groupid,
-                          int x0, int y0, int w, int h, int bw)
+t_dlgitem* CreateCheckBox(t_x11*      x11,
+                          const char* szLab,
+                          bool        bCheckedInitial,
+                          t_id        id,
+                          t_id        groupid,
+                          int         x0,
+                          int         y0,
+                          int         w,
+                          int         h,
+                          int         bw)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = XTextHeight(x11->font)+OFFS_Y;
+        h = XTextHeight(x11->font) + OFFS_Y;
     }
     if (w == 0)
     {
-        w = XTextWidth(x11->font, szLab, std::strlen(szLab))+OFFS_X+h;
+        w = XTextWidth(x11->font, szLab, std::strlen(szLab)) + OFFS_X + h;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, szLab);
     dlgitem->ID                  = id;
@@ -664,10 +642,9 @@ t_dlgitem *CreateCheckBox(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
-                        t_id /*groupid*/, int x0, int y0, int w, int h, int bw)
+t_dlgitem* CreatePixmap(Pixmap pm, t_id id, t_id /*groupid*/, int x0, int y0, int w, int h, int bw)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
 
     dlgitem = newitem();
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, nullptr);
@@ -679,18 +656,24 @@ t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
     return dlgitem;
 }
 
-t_dlgitem *CreateStaticText(t_x11 *x11,
-                            int nlines, const char * const *lines, t_id id,
-                            t_id groupid,
-                            int x0, int y0, int w, int h, int bw)
+t_dlgitem* CreateStaticText(t_x11*             x11,
+                            int                nlines,
+                            const char* const* lines,
+                            t_id               id,
+                            t_id               groupid,
+                            int                x0,
+                            int                y0,
+                            int                w,
+                            int                h,
+                            int                bw)
 {
-    t_dlgitem *dlgitem;
+    t_dlgitem* dlgitem;
     int        i;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = (XTextHeight(x11->font)+OFFS_Y)*nlines+OFFS_Y;
+        h = (XTextHeight(x11->font) + OFFS_Y) * nlines + OFFS_Y;
     }
     if (w == 0)
     {
@@ -698,7 +681,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
         {
             w = std::max(w, XTextWidth(x11->font, lines[i], std::strlen(lines[i])));
         }
-        w += 2*OFFS_X;
+        w += 2 * OFFS_X;
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, nullptr);
     dlgitem->ID                  = id;
@@ -715,28 +698,34 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreateEditText(t_x11 *x11,
-                          const char *title,
-                          int screenbuf, char *buf, t_id id, t_id groupid,
-                          int x0, int y0, int w, int h, int bw)
+t_dlgitem* CreateEditText(t_x11*      x11,
+                          const char* title,
+                          int         screenbuf,
+                          char*       buf,
+                          t_id        id,
+                          t_id        groupid,
+                          int         x0,
+                          int         y0,
+                          int         w,
+                          int         h,
+                          int         bw)
 {
-    t_dlgitem  *dlgitem;
-    t_edittext *et;
+    t_dlgitem*  dlgitem;
+    t_edittext* et;
 
     dlgitem = newitem();
     if (h == 0)
     {
-        h = XTextHeight(x11->font)+OFFS_Y;
+        h = XTextHeight(x11->font) + OFFS_Y;
     }
     if (w == 0)
     {
-        char *test;
+        char* test;
 
         snew(test, screenbuf);
         std::memset(test, 'w', screenbuf);
-        w = XTextWidth(x11->font, test, screenbuf)+
-            XTextWidth(x11->font, title, std::strlen(title))+
-            2*XCARET+2*OFFS_X;
+        w = XTextWidth(x11->font, test, screenbuf)
+            + XTextWidth(x11->font, title, std::strlen(title)) + 2 * XCARET + 2 * OFFS_X;
         sfree(test);
     }
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, title);
@@ -756,8 +745,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
 
 #define SC(src) (strlen(src) ? gmx_strdup(src) : NULL)
 
-void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
-                    char *set, char *get, char *help)
+void SetDlgitemOpts(t_dlgitem* dlgitem, bool bUseMon, char* set, char* get, char* help)
 {
     dlgitem->bUseMon = bUseMon;
     dlgitem->set     = SC(set);

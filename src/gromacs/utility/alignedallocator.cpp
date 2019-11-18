@@ -59,11 +59,11 @@
 #endif
 
 #ifdef HAVE_UNISTD_H
-#include <unistd.h>
+#    include <unistd.h>
 #endif
 
 #if GMX_NATIVE_WINDOWS
-#include <windows.h>  // only for the page size query purposes
+#    include <windows.h> // only for the page size query purposes
 #endif
 
 #include "gromacs/utility/gmxassert.h"
@@ -97,13 +97,12 @@ namespace
  *        gmx::alignedMalloc(). Just like system-provided routines, it provides
  *        memory that is aligned - but not padded.
  */
-gmx_unused void *
-alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
+gmx_unused void* alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
 {
     // The amount of extra memory (beyound what the user asked for) we need is:
     // - sizeof(void *), to store the original pointer
     // - alignment, to make sure we have an aligned pointer in the area
-    void * pMalloc = malloc(bytes + sizeof(void *) + alignment);
+    void* pMalloc = malloc(bytes + sizeof(void*) + alignment);
 
     if (pMalloc == nullptr)
     {
@@ -113,12 +112,13 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
     // Convert pMalloc to size_t (so we work with raw bytes), add the space we
     // need to save the original pointer, and (alignment-1) bytes, and then mask
     // out the lowest bits.
-    std::size_t mask     = ~static_cast<std::size_t>(alignment-1);
-    void      * pAligned = reinterpret_cast<void *>((reinterpret_cast<std::size_t>(pMalloc) + sizeof(void *) + alignment - 1) & mask);
+    std::size_t mask     = ~static_cast<std::size_t>(alignment - 1);
+    void*       pAligned = reinterpret_cast<void*>(
+            (reinterpret_cast<std::size_t>(pMalloc) + sizeof(void*) + alignment - 1) & mask);
 
     // Store original pointer. Since we allocated at least sizeof(void *) extra
     // space this is always a valid memory location.
-    reinterpret_cast<void **>(pAligned)[-1] = pMalloc;
+    reinterpret_cast<void**>(pAligned)[-1] = pMalloc;
 
     return pAligned;
 }
@@ -137,23 +137,22 @@ alignedMallocGeneric(std::size_t bytes, std::size_t alignment)
  * \note  This is an internal routine that should only be called from
  *        gmx::alignedFree().
  */
-gmx_unused void
-alignedFreeGeneric(void *p)
+gmx_unused void alignedFreeGeneric(void* p)
 {
     if (p)
     {
         // Pick up the pointer stored just below p, and use that to call free()
-        free( reinterpret_cast<void **>(p)[-1] );
+        free(reinterpret_cast<void**>(p)[-1]);
     }
 }
 
 //! Implement malloc of \c bytes of memory, aligned to \c alignment.
-void *mallocImpl(std::size_t bytes, std::size_t alignment)
+void* mallocImpl(std::size_t bytes, std::size_t alignment)
 {
-    void   *    p;
+    void* p;
 
 #if HAVE__MM_MALLOC
-    p = _mm_malloc( bytes, alignment );
+    p = _mm_malloc(bytes, alignment);
 #elif HAVE_POSIX_MEMALIGN
     if (posix_memalign(&p, alignment, bytes) != 0)
     {
@@ -171,7 +170,7 @@ void *mallocImpl(std::size_t bytes, std::size_t alignment)
 }
 
 //! Free aligned memory allocated with mallocImpl().
-void freeImpl(void *p)
+void freeImpl(void* p)
 {
     if (p)
     {
@@ -187,7 +186,7 @@ void freeImpl(void *p)
     }
 }
 
-}   // namespace
+} // namespace
 
 // === AlignedAllocationPolicy
 
@@ -209,8 +208,7 @@ std::size_t AlignedAllocationPolicy::alignment()
     return 128;
 }
 
-void *
-AlignedAllocationPolicy::malloc(std::size_t bytes)
+void* AlignedAllocationPolicy::malloc(std::size_t bytes)
 {
     // Pad memory at the end with another alignment bytes to avoid false sharing
     auto size = alignment();
@@ -219,8 +217,7 @@ AlignedAllocationPolicy::malloc(std::size_t bytes)
     return mallocImpl(bytes, size);
 }
 
-void
-AlignedAllocationPolicy::free(void *p)
+void AlignedAllocationPolicy::free(void* p)
 {
     freeImpl(p);
 }
@@ -231,7 +228,7 @@ AlignedAllocationPolicy::free(void *p)
 //! \todo Move this function into sysinfo.cpp where other OS-specific code/includes live
 static std::size_t getPageSize()
 {
-    long        pageSize;
+    long pageSize;
 #if GMX_NATIVE_WINDOWS
     SYSTEM_INFO si;
     GetNativeSystemInfo(&si);
@@ -247,7 +244,7 @@ static std::size_t getPageSize()
     pageSize = -1;
 #endif
     return ((pageSize == -1) ? 4096 // A useful guess
-            : static_cast<std::size_t>(pageSize));
+                             : static_cast<std::size_t>(pageSize));
 }
 
 /* Implements the "construct on first use" idiom to avoid the static
@@ -266,14 +263,12 @@ std::size_t PageAlignedAllocationPolicy::alignment()
     return thePageSize;
 }
 
-void *
-PageAlignedAllocationPolicy::malloc(std::size_t bytes)
+void* PageAlignedAllocationPolicy::malloc(std::size_t bytes)
 {
     return mallocImpl(bytes, alignment());
 }
 
-void
-PageAlignedAllocationPolicy::free(void *p)
+void PageAlignedAllocationPolicy::free(void* p)
 {
     freeImpl(p);
 }

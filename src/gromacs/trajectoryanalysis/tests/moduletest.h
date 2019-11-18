@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,97 +91,96 @@ class FloatingPointTolerance;
  */
 class AbstractTrajectoryAnalysisModuleTestFixture : public CommandLineTestBase
 {
-    public:
-        AbstractTrajectoryAnalysisModuleTestFixture();
-        ~AbstractTrajectoryAnalysisModuleTestFixture() override;
+public:
+    AbstractTrajectoryAnalysisModuleTestFixture();
+    ~AbstractTrajectoryAnalysisModuleTestFixture() override;
 
-        /*! \brief
-         * Sets the topology file to use for the test.
-         *
-         * \param[in] filename  Name of input topology file.
-         *
-         * \p filename is interpreted relative to the test input data
-         * directory, see getTestDataPath().
-         *
-         * Must be called at most once.  Either this method or setTrajectory()
-         * must be called before runTest().
-         */
-        void setTopology(const char *filename);
-        /*! \brief
-         * Sets the trajectory file to use for the test.
-         *
-         * \param[in] filename  Name of input trajectory file.
-         *
-         * \p filename is interpreted relative to the test input data
-         * directory, see getTestDataPath().
-         *
-         * Must be called at most once.  Either this method or setTopology()
-         * must be called before runTest().
-         */
-        void setTrajectory(const char *filename);
-        /*! \brief
-         * Includes only specified dataset for the test.
-         *
-         * \param[in] name  Name of dataset to include.
-         *
-         * If this method is not called, all datasets are tested by default.
-         * If called once, only the specified dataset is tested.
-         * If called more than once, also the additional datasets are tested.
-         *
-         * \p name should be one of the names registered for the tested module
-         * using TrajectoryAnalysisModule::registerBasicDataset() or
-         * TrajectoryAnalysisModule::registerAnalysisDataset().
-         */
-        void includeDataset(const char *name);
-        /*! \brief
-         * Excludes specified dataset from the test.
-         *
-         * \param[in] name  Name of dataset to exclude.
-         *
-         * \p name should be one of the names registered for the tested module
-         * using TrajectoryAnalysisModule::registerBasicDataset() or
-         * TrajectoryAnalysisModule::registerAnalysisDataset().
-         */
-        void excludeDataset(const char *name);
-        /*! \brief
-         * Sets a custom tolerance for checking a dataset.
-         *
-         * \param[in] name       Name of dataset to set the tolerance for.
-         * \param[in] tolerance  Tolerance used when verifying the data.
-         *
-         * \p name should be one of the names registered for the tested module
-         * using TrajectoryAnalysisModule::registerBasicDataset() or
-         * TrajectoryAnalysisModule::registerAnalysisDataset().
-         */
-        void setDatasetTolerance(const char                   *name,
-                                 const FloatingPointTolerance &tolerance);
+    /*! \brief
+     * Sets the topology file to use for the test.
+     *
+     * \param[in] filename  Name of input topology file.
+     *
+     * \p filename is interpreted relative to the test input data
+     * directory, see getTestDataPath().
+     *
+     * Must be called at most once.  Either this method or setTrajectory()
+     * must be called before runTest().
+     */
+    void setTopology(const char* filename);
+    /*! \brief
+     * Sets the trajectory file to use for the test.
+     *
+     * \param[in] filename  Name of input trajectory file.
+     *
+     * \p filename is interpreted relative to the test input data
+     * directory, see getTestDataPath().
+     *
+     * Must be called at most once.  Either this method or setTopology()
+     * must be called before runTest().
+     */
+    void setTrajectory(const char* filename);
+    /*! \brief
+     * Includes only specified dataset for the test.
+     *
+     * \param[in] name  Name of dataset to include.
+     *
+     * If this method is not called, all datasets are tested by default.
+     * If called once, only the specified dataset is tested.
+     * If called more than once, also the additional datasets are tested.
+     *
+     * \p name should be one of the names registered for the tested module
+     * using TrajectoryAnalysisModule::registerBasicDataset() or
+     * TrajectoryAnalysisModule::registerAnalysisDataset().
+     */
+    void includeDataset(const char* name);
+    /*! \brief
+     * Excludes specified dataset from the test.
+     *
+     * \param[in] name  Name of dataset to exclude.
+     *
+     * \p name should be one of the names registered for the tested module
+     * using TrajectoryAnalysisModule::registerBasicDataset() or
+     * TrajectoryAnalysisModule::registerAnalysisDataset().
+     */
+    void excludeDataset(const char* name);
+    /*! \brief
+     * Sets a custom tolerance for checking a dataset.
+     *
+     * \param[in] name       Name of dataset to set the tolerance for.
+     * \param[in] tolerance  Tolerance used when verifying the data.
+     *
+     * \p name should be one of the names registered for the tested module
+     * using TrajectoryAnalysisModule::registerBasicDataset() or
+     * TrajectoryAnalysisModule::registerAnalysisDataset().
+     */
+    void setDatasetTolerance(const char* name, const FloatingPointTolerance& tolerance);
 
-        /*! \brief
-         * Runs the analysis module with the given additional options.
-         *
-         * \param[in] args  Options to provide to the module.
-         *
-         * \p args should be formatted as command-line options, and contain the
-         * name of the module as the first argument (the latter requirement is
-         * for clarity only).  They are passed to the module in addition to
-         * those specified using other methods in this class.
-         *
-         * All other methods should be called before calling this method.
-         *
-         * Exceptions thrown by the module are caught by this method.
-         */
-        void runTest(const CommandLine &args);
+    /*! \brief
+     * Runs the analysis module with the given additional options.
+     *
+     * \param[in] args  Options to provide to the module.
+     *
+     * \p args should be formatted as command-line options, and contain the
+     * name of the module as the first argument (the latter requirement is
+     * for clarity only).  They are passed to the module in addition to
+     * those specified using other methods in this class.
+     *
+     * All other methods should be called before calling this method.
+     *
+     * Exceptions thrown by the module are caught by this method.
+     */
+    void runTest(const CommandLine& args);
 
-    protected:
-        /*! \brief
-         * Constructs the analysis module to be tested.
-         */
-        virtual TrajectoryAnalysisModulePointer createModule() = 0;
+protected:
+    /*! \brief
+     * Constructs the analysis module to be tested.
+     */
+    virtual TrajectoryAnalysisModulePointer createModule() = 0;
 
-    private:
-        class Impl;
+private:
+    class Impl;
 
-        PrivateImplPointer<Impl> impl_;
+    PrivateImplPointer<Impl> impl_;
 };
 
 /*! \internal \brief
@@ -194,15 +193,11 @@ class AbstractTrajectoryAnalysisModuleTestFixture : public CommandLineTestBase
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class ModuleInfo>
-class TrajectoryAnalysisModuleTestFixture
-    : public AbstractTrajectoryAnalysisModuleTestFixture
+template<class ModuleInfo>
+class TrajectoryAnalysisModuleTestFixture : public AbstractTrajectoryAnalysisModuleTestFixture
 {
-    protected:
-        TrajectoryAnalysisModulePointer createModule() override
-        {
-            return ModuleInfo::create();
-        }
+protected:
+    TrajectoryAnalysisModulePointer createModule() override { return ModuleInfo::create(); }
 };
 
 } // namespace test

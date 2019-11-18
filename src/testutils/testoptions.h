@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,16 +66,16 @@ namespace test
  */
 class TestOptionsProvider
 {
-    public:
-        /*! \brief
-         * Initializes the options from this provider.
-         *
-         * \param   options  The options need to be added here.
-         */
-        virtual void initOptions(IOptionsContainer *options) = 0;
+public:
+    /*! \brief
+     * Initializes the options from this provider.
+     *
+     * \param   options  The options need to be added here.
+     */
+    virtual void initOptions(IOptionsContainer* options) = 0;
 
-    protected:
-        virtual ~TestOptionsProvider() {}
+protected:
+    virtual ~TestOptionsProvider() {}
 };
 
 /*! \libinternal \brief
@@ -96,7 +96,7 @@ class TestOptionsProvider
  *
  * \ingroup module_testutils
  */
-void registerTestOptions(const char *name, TestOptionsProvider *provider);
+void registerTestOptions(const char* name, TestOptionsProvider* provider);
 /*! \libinternal \brief
  * Initializes the options from all registered test providers.
  *
@@ -106,7 +106,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  *
  * \ingroup module_testutils
  */
-void initTestOptions(IOptionsContainer *options);
+void initTestOptions(IOptionsContainer* options);
 
 // Uncrustify screws up the indentation for the example otherwise.
 /* *INDENT-OFF* */
@@ -162,22 +162,19 @@ void initTestOptions(IOptionsContainer *options);
  * \hideinitializer
  */
 /* *INDENT-ON* */
-#define GMX_TEST_OPTIONS(name, options) \
+#define GMX_TEST_OPTIONS(name, options)                                                                                \
     class name : public ::gmx::test::TestOptionsProvider /*NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)*/ \
-    { \
-        public: \
-            name() \
-            { \
-                ::gmx::test::registerTestOptions(#name, this); \
-            } \
-            virtual void initOptions(::gmx::IOptionsContainer *(options)); \
-    }; \
-    \
-    static name s_ ## name ## Instance; \
-    \
-    void name::initOptions(::gmx::IOptionsContainer *options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
+    {                                                                                                                  \
+    public:                                                                                                            \
+        name() { ::gmx::test::registerTestOptions(#name, this); }                                                      \
+        virtual void initOptions(::gmx::IOptionsContainer*(options));                                                  \
+    };                                                                                                                 \
+                                                                                                                       \
+    static name s_##name##Instance;                                                                                    \
+                                                                                                                       \
+    void name::initOptions(::gmx::IOptionsContainer* options) //NOLINT(misc-macro-parentheses,bugprone-macro-parentheses)
 
-}                                                             // namespace test
-}                                                             // namespace gmx
+} // namespace test
+} // namespace gmx
 
 #endif

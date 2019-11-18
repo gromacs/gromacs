@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,11 +77,9 @@ struct DimParams
      * \param[in] forceConstant     The harmonic force constant.
      * \param[in] beta              1/(k_B T).
      */
-    DimParams(double conversionFactor,
-              double forceConstant,
-              double beta) :
+    DimParams(double conversionFactor, double forceConstant, double beta) :
         k(forceConstant),
-        betak(beta*forceConstant),
+        betak(beta * forceConstant),
         userCoordUnitsToInternal(conversionFactor)
     {
     }
@@ -91,26 +89,20 @@ struct DimParams
      * \param[in] value               Value to convert.
      * \returns the converted value.
      */
-    double scaleInternalToUserInput(double value) const
-    {
-        return value/userCoordUnitsToInternal;
-    }
+    double scaleInternalToUserInput(double value) const { return value / userCoordUnitsToInternal; }
 
     /*! \brief Convert external, user coordinate units to internal coordinate units.
      *
      * \param[in] value               Value to convert.
      * \returns the converted value.
      */
-    double scaleUserInputToInternal(double value) const
-    {
-        return value*userCoordUnitsToInternal;
-    }
+    double scaleUserInputToInternal(double value) const { return value * userCoordUnitsToInternal; }
 
-    const double k;                        /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
-    const double betak;                    /**< Inverse variance (1/nm^2) for each coordinate dimension. */
+    const double k;     /**< Force constant (kJ/mol/nm^2) for each coordinate dimension. */
+    const double betak; /**< Inverse variance (1/nm^2) for each coordinate dimension. */
     const double userCoordUnitsToInternal; /**< Conversion factor coordinate units. */
 };
 
-}      // namespace gmx
+} // namespace gmx
 
 #endif /* GMX_AWH_DIMPARAMS_H */

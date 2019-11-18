@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -51,26 +51,19 @@
 //! Floating point exception set that we use and care about
 constexpr int c_FPexceptions = FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW;
 
-bool
-gmx_within_tol(double   f1,
-               double   f2,
-               double   tol)
+bool gmx_within_tol(double f1, double f2, double tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    return fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2));
+    return fabs(f1 - f2) <= tol * 0.5 * (fabs(f1) + fabs(f2));
 }
 
-bool
-gmx_numzero(double a)
+bool gmx_numzero(double a)
 {
-    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
+    return gmx_within_tol(a, 0.0, GMX_REAL_MIN / GMX_REAL_EPS);
 }
 
 
-gmx_bool
-check_int_multiply_for_overflow(int64_t  a,
-                                int64_t  b,
-                                int64_t *result)
+gmx_bool check_int_multiply_for_overflow(int64_t a, int64_t b, int64_t* result)
 {
     int64_t sign = 1;
     if ((0 == a) || (0 == b))
@@ -123,14 +116,14 @@ int gmx_feenableexcept()
     static fenv_t fenv;
     unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
 
-    if (fegetenv (&fenv) )
+    if (fegetenv(&fenv))
     {
         return -1;
     }
 
     // unmask
     fenv.__control &= ~new_excepts;
-    fenv.__mxcsr   &= ~(new_excepts << 7);
+    fenv.__mxcsr &= ~(new_excepts << 7);
 
     return fesetenv(&fenv);
 #else
@@ -145,14 +138,14 @@ int gmx_fedisableexcept()
 #elif (defined(__i386__) || defined(__x86_64__)) && defined(__APPLE__)
     static fenv_t fenv;
     unsigned int  new_excepts = c_FPexceptions & FE_ALL_EXCEPT;
-    if (fegetenv (&fenv) )
+    if (fegetenv(&fenv))
     {
         return -1;
     }
 
     // mask
     fenv.__control |= new_excepts;
-    fenv.__mxcsr   |= new_excepts << 7;
+    fenv.__mxcsr |= new_excepts << 7;
 
     return fesetenv(&fenv);
 #else

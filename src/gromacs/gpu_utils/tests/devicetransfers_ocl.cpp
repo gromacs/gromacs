@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,19 +60,18 @@ namespace
  *
  * \throws InternalError  If status indicates failure, supplying
  *                        descriptive text from \c message. */
-static void throwUponFailure(cl_int status, const char *message)
+void throwUponFailure(cl_int status, const char* message)
 {
     if (status != CL_SUCCESS)
     {
-        GMX_THROW(InternalError(formatString("Failure while %s, error was %s", message, ocl_get_error_string(status).c_str())));
+        GMX_THROW(InternalError(formatString("Failure while %s, error was %s", message,
+                                             ocl_get_error_string(status).c_str())));
     }
 }
 
-}   // namespace
+} // namespace
 
-void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
-                       ArrayRef<const char>  input,
-                       ArrayRef<char>        output)
+void doDeviceTransfers(const gmx_gpu_info_t& gpuInfo, ArrayRef<const char> input, ArrayRef<char> output)
 {
     GMX_RELEASE_ASSERT(input.size() == output.size(), "Input and output must have matching size");
     const auto compatibleGpus = getCompatibleGpus(gpuInfo);
@@ -81,18 +80,16 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
         std::copy(input.begin(), input.end(), output.begin());
         return;
     }
-    cl_int                status;
+    cl_int status;
 
-    const auto           *device       = getDeviceInfo(gpuInfo, compatibleGpus[0]);
+    const auto*           device       = getDeviceInfo(gpuInfo, compatibleGpus[0]);
     cl_context_properties properties[] = {
-        CL_CONTEXT_PLATFORM,
-        (cl_context_properties) device->ocl_gpu_id.ocl_platform_id,
-        0
+        CL_CONTEXT_PLATFORM, reinterpret_cast<cl_context_properties>(device->ocl_gpu_id.ocl_platform_id), 0
     };
     // Give uncrustify more space
 
     auto deviceId = device->ocl_gpu_id.ocl_device_id;
-    auto context  = clCreateContext(properties, 1, &deviceId, NULL, NULL, &status);
+    auto context  = clCreateContext(properties, 1, &deviceId, nullptr, nullptr, &status);
     throwUponFailure(status, "creating context");
     auto commandQueue = clCreateCommandQueue(context, deviceId, 0, &status);
     throwUponFailure(status, "creating command queue");
@@ -100,9 +97,11 @@ void doDeviceTransfers(const gmx_gpu_info_t &gpuInfo,
     auto devicePointer = clCreateBuffer(context, CL_MEM_READ_WRITE, input.size(), nullptr, &status);
     throwUponFailure(status, "creating buffer");
 
-    status = clEnqueueWriteBuffer(commandQueue, devicePointer, CL_TRUE, 0, input.size(), input.data(), 0, nullptr, nullptr);
+    status = clEnqueueWriteBuffer(commandQueue, devicePointer, CL_TRUE, 0, input.size(),
+                                  input.data(), 0, nullptr, nullptr);
     throwUponFailure(status, "transferring host to device");
-    status = clEnqueueReadBuffer(commandQueue, devicePointer, CL_TRUE, 0, output.size(), output.data(), 0, nullptr, nullptr);
+    status = clEnqueueReadBuffer(commandQueue, devicePointer, CL_TRUE, 0, output.size(),
+                                 output.data(), 0, nullptr, nullptr);
     throwUponFailure(status, "transferring device to host");
 
     status = clReleaseMemObject(devicePointer);

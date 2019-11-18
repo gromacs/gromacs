@@ -46,7 +46,7 @@
 #include "gromacs/math/vectypes.h" // for DIM
 
 #include "pme_gpu_constants.h"
-#include "pme_gpu_internal.h"      // for GridOrdering
+#include "pme_gpu_internal.h" // for GridOrdering
 #include "pme_gpu_types.h"
 
 /*! \brief \internal

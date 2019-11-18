@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,11 @@ struct LogEntry
  */
 class ILogTarget
 {
-    public:
-        virtual ~ILogTarget();
+public:
+    virtual ~ILogTarget();
 
-        //! Writes a log entry to this target.
-        virtual void writeEntry(const LogEntry &entry) = 0;
+    //! Writes a log entry to this target.
+    virtual void writeEntry(const LogEntry& entry) = 0;
 };
 
 /*! \libinternal \brief
@@ -80,32 +80,32 @@ class ILogTarget
  */
 class LogEntryWriter
 {
-    public:
-        //! Appends given text as a line in the log entry.
-        LogEntryWriter &appendText(const char *text)
-        {
-            entry_.text.append(text);
-            return *this;
-        }
-        //! Appends given text as a line in the log entry.
-        LogEntryWriter &appendText(const std::string &text)
-        {
-            entry_.text.append(text);
-            return *this;
-        }
-        //! Appends given text as a line in the log entry, with printf-style formatting.
-        LogEntryWriter &appendTextFormatted(gmx_fmtstr const char *fmt, ...) gmx_format(printf, 2, 3);
-        //! Writes the log entry with empty lines before and after.
-        LogEntryWriter &asParagraph()
-        {
-            entry_.asParagraph = true;
-            return *this;
-        }
+public:
+    //! Appends given text as a line in the log entry.
+    LogEntryWriter& appendText(const char* text)
+    {
+        entry_.text.append(text);
+        return *this;
+    }
+    //! Appends given text as a line in the log entry.
+    LogEntryWriter& appendText(const std::string& text)
+    {
+        entry_.text.append(text);
+        return *this;
+    }
+    //! Appends given text as a line in the log entry, with printf-style formatting.
+    LogEntryWriter& appendTextFormatted(gmx_fmtstr const char* fmt, ...) gmx_format(printf, 2, 3);
+    //! Writes the log entry with empty lines before and after.
+    LogEntryWriter& asParagraph()
+    {
+        entry_.asParagraph = true;
+        return *this;
+    }
 
-    private:
-        LogEntry    entry_;
+private:
+    LogEntry entry_;
 
-        friend class LogWriteHelper;
+    friend class LogWriteHelper;
 };
 
 /*! \internal \brief
@@ -115,35 +115,35 @@ class LogEntryWriter
  */
 class LogWriteHelper
 {
-    public:
-        //! Initializes a helper for writing to the given target.
-        explicit LogWriteHelper(ILogTarget *target) : target_(target) {}
+public:
+    //! Initializes a helper for writing to the given target.
+    explicit LogWriteHelper(ILogTarget* target) : target_(target) {}
 
-        // Should be explicit, once that works in CUDA.
-        /*! \brief
-         * Returns whether anything needs to be written.
-         *
-         * Note that the return value is unintuitively `false` when the target
-         * is active, to allow implementing ::GMX_LOG like it is now.
-         */
-        operator bool() const { return target_ == nullptr; }
+    // Should be explicit, once that works in CUDA.
+    /*! \brief
+     * Returns whether anything needs to be written.
+     *
+     * Note that the return value is unintuitively `false` when the target
+     * is active, to allow implementing ::GMX_LOG like it is now.
+     */
+    operator bool() const { return target_ == nullptr; }
 
-        /*! \brief
-         * Writes the entry from the given writer to the log target.
-         *
-         * This is implemented as an assignment operator to get proper
-         * precedence for operations for the ::GMX_LOG macro; this is a common
-         * technique for implementing macros that allow streming information to
-         * them (see, e.g., Google Test).
-         */
-        LogWriteHelper &operator=(const LogEntryWriter &entryWriter)
-        {
-            target_->writeEntry(entryWriter.entry_);
-            return *this;
-        }
+    /*! \brief
+     * Writes the entry from the given writer to the log target.
+     *
+     * This is implemented as an assignment operator to get proper
+     * precedence for operations for the ::GMX_LOG macro; this is a common
+     * technique for implementing macros that allow streming information to
+     * them (see, e.g., Google Test).
+     */
+    LogWriteHelper& operator=(const LogEntryWriter& entryWriter)
+    {
+        target_->writeEntry(entryWriter.entry_);
+        return *this;
+    }
 
-    private:
-        ILogTarget *target_;
+private:
+    ILogTarget* target_;
 };
 
 /*! \libinternal \brief
@@ -156,19 +156,19 @@ class LogWriteHelper
  */
 class LogLevelHelper
 {
-    public:
-        //! Initializes a helper for writing to the given target.
-        explicit LogLevelHelper(ILogTarget *target) : target_(target) {}
+public:
+    //! Initializes a helper for writing to the given target.
+    explicit LogLevelHelper(ILogTarget* target) : target_(target) {}
 
-        // Both of the below should be explicit, once that works in CUDA.
-        //! Returns whether the output for this log level goes anywhere.
-        operator bool() const { return target_ != nullptr; }
+    // Both of the below should be explicit, once that works in CUDA.
+    //! Returns whether the output for this log level goes anywhere.
+    operator bool() const { return target_ != nullptr; }
 
-        //! Creates a helper for ::GMX_LOG.
-        operator LogWriteHelper() const { return LogWriteHelper(target_); }
+    //! Creates a helper for ::GMX_LOG.
+    operator LogWriteHelper() const { return LogWriteHelper(target_); }
 
-    private:
-        ILogTarget *target_;
+private:
+    ILogTarget* target_;
 };
 
 /*! \libinternal \brief
@@ -187,24 +187,34 @@ class LogLevelHelper
  */
 class MDLogger
 {
-    public:
-        //! Supported logging levels.
-        enum LogLevel
-        {
-            Warning,
-            Info
-        };
-        //! Number of logging levels.
-        static const int LogLevelCount = static_cast<int>(Info) + 1;
+public:
+    //! Supported logging levels.
+    enum class LogLevel
+    {
+        Error,
+        Warning,
+        Info,
+        Debug,
+        VerboseDebug,
+        Count
+    };
+    //! Number of logging levels.
+    static const int LogLevelCount = static_cast<int>(LogLevel::Count);
 
-        MDLogger();
-        //! Creates a logger with the given targets.
-        explicit MDLogger(ILogTarget *targets[LogLevelCount]);
+    MDLogger();
+    //! Creates a logger with the given targets.
+    explicit MDLogger(ILogTarget* targets[LogLevelCount]);
 
-        //! For writing at LogLevel::Warning level.
-        LogLevelHelper warning;
-        //! For writing at LogLevel::Info level.
-        LogLevelHelper info;
+    //! For writing at LogLevel::Warning level.
+    LogLevelHelper warning;
+    //! For writing at LogLevel::Error level.
+    LogLevelHelper error;
+    //! For writing at LogLevel::Debug level.
+    LogLevelHelper debug;
+    //! For writing at LogLevel::VerboseDebug level.
+    LogLevelHelper verboseDebug;
+    //! For writing at LogLevel::Info level.
+    LogLevelHelper info;
 };
 
 /*! \brief
@@ -224,8 +234,9 @@ class MDLogger
  *
  * \ingroup module_utility
  */
-#define GMX_LOG(logger) \
-    if (::gmx::LogWriteHelper helper = ::gmx::LogWriteHelper(logger)) { } else \
+#define GMX_LOG(logger)                                                  \
+    if (::gmx::LogWriteHelper helper = ::gmx::LogWriteHelper(logger)) {} \
+    else                                                                 \
         helper = ::gmx::LogEntryWriter()
 
 } // namespace gmx

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2010-2018, The GROMACS development team.
+ * Copyright (c) 2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -77,17 +78,17 @@ namespace
  *
  * \ingroup module_options
  */
-template <typename ValueType>
-void expandVector(size_t length, std::vector<ValueType> *values)
+template<typename ValueType>
+void expandVector(size_t length, std::vector<ValueType>* values)
 {
     if (length > 0 && !values->empty() && values->size() != length)
     {
         if (values->size() != 1)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                                     "Expected 1 or %zu values, got %zu", length, values->size())));
+            GMX_THROW(gmx::InvalidInputError(
+                    gmx::formatString("Expected 1 or %zu values, got %zu", length, values->size())));
         }
-        const ValueType &value = (*values)[0];
+        const ValueType& value = (*values)[0];
         values->resize(length, value);
     }
 }
@@ -103,12 +104,11 @@ void expandVector(size_t length, std::vector<ValueType> *values)
  *
  * \ingroup module_options
  */
-std::vector<std::string>::const_iterator
-findEnumValue(const std::vector<std::string> &allowedValues,
-              const std::string              &value)
+std::vector<std::string>::const_iterator findEnumValue(const std::vector<std::string>& allowedValues,
+                                                       const std::string&              value)
 {
-    std::vector<std::string>::const_iterator  i;
-    std::vector<std::string>::const_iterator  match = allowedValues.end();
+    std::vector<std::string>::const_iterator i;
+    std::vector<std::string>::const_iterator match = allowedValues.end();
     for (i = allowedValues.begin(); i != allowedValues.end(); ++i)
     {
         // TODO: Case independence.
@@ -136,12 +136,12 @@ namespace gmx
  * BooleanOptionStorage
  */
 
-std::string BooleanOptionStorage::formatSingleValue(const bool &value) const
+std::string BooleanOptionStorage::formatSingleValue(const bool& value) const
 {
     return value ? "yes" : "no";
 }
 
-void BooleanOptionStorage::initConverter(ConverterType *converter)
+void BooleanOptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<bool>);
 }
@@ -150,14 +150,11 @@ void BooleanOptionStorage::initConverter(ConverterType *converter)
  * BooleanOptionInfo
  */
 
-BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage *option)
-    : OptionInfo(option)
-{
-}
+BooleanOptionInfo::BooleanOptionInfo(BooleanOptionStorage* option) : OptionInfo(option) {}
 
-const BooleanOptionStorage &BooleanOptionInfo::option() const
+const BooleanOptionStorage& BooleanOptionInfo::option() const
 {
-    return static_cast<const BooleanOptionStorage &>(OptionInfo::option());
+    return static_cast<const BooleanOptionStorage&>(OptionInfo::option());
 }
 
 bool BooleanOptionInfo::defaultValue() const
@@ -169,8 +166,7 @@ bool BooleanOptionInfo::defaultValue() const
  * BooleanOption
  */
 
-AbstractOptionStorage *
-BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* BooleanOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new BooleanOptionStorage(*this);
 }
@@ -180,17 +176,17 @@ BooleanOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * IntegerOptionStorage
  */
 
-std::string IntegerOptionStorage::formatSingleValue(const int &value) const
+std::string IntegerOptionStorage::formatSingleValue(const int& value) const
 {
     return toString(value);
 }
 
-void IntegerOptionStorage::initConverter(ConverterType *converter)
+void IntegerOptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<int>);
 }
 
-void IntegerOptionStorage::processSetValues(ValueList *values)
+void IntegerOptionStorage::processSetValues(ValueList* values)
 {
     if (isVector())
     {
@@ -202,17 +198,13 @@ void IntegerOptionStorage::processSetValues(ValueList *values)
  * IntegerOptionInfo
  */
 
-IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage *option)
-    : OptionInfo(option)
-{
-}
+IntegerOptionInfo::IntegerOptionInfo(IntegerOptionStorage* option) : OptionInfo(option) {}
 
 /********************************************************************
  * IntegerOption
  */
 
-AbstractOptionStorage *
-IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* IntegerOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new IntegerOptionStorage(*this);
 }
@@ -222,12 +214,12 @@ IntegerOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * Int64OptionStorage
  */
 
-std::string Int64OptionStorage::formatSingleValue(const int64_t &value) const
+std::string Int64OptionStorage::formatSingleValue(const int64_t& value) const
 {
     return toString(value);
 }
 
-void Int64OptionStorage::initConverter(ConverterType *converter)
+void Int64OptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<int64_t>);
 }
@@ -236,17 +228,13 @@ void Int64OptionStorage::initConverter(ConverterType *converter)
  * Int64OptionInfo
  */
 
-Int64OptionInfo::Int64OptionInfo(Int64OptionStorage *option)
-    : OptionInfo(option)
-{
-}
+Int64OptionInfo::Int64OptionInfo(Int64OptionStorage* option) : OptionInfo(option) {}
 
 /********************************************************************
  * Int64Option
  */
 
-AbstractOptionStorage *
-Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* Int64Option::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new Int64OptionStorage(*this);
 }
@@ -256,8 +244,11 @@ Int64Option::createStorage(const OptionManagerContainer & /*managers*/) const
  * DoubleOptionStorage
  */
 
-DoubleOptionStorage::DoubleOptionStorage(const DoubleOption &settings)
-    : MyBase(settings), info_(this), bTime_(settings.bTime_), factor_(1.0)
+DoubleOptionStorage::DoubleOptionStorage(const DoubleOption& settings) :
+    MyBase(settings),
+    info_(this),
+    bTime_(settings.bTime_),
+    factor_(1.0)
 {
 }
 
@@ -266,24 +257,24 @@ std::string DoubleOptionStorage::typeString() const
     return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
 
-std::string DoubleOptionStorage::formatSingleValue(const double &value) const
+std::string DoubleOptionStorage::formatSingleValue(const double& value) const
 {
     return toString(value / factor_);
 }
 
-void DoubleOptionStorage::initConverter(ConverterType *converter)
+void DoubleOptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<double>);
     converter->addCastConversion<float>();
 }
 
-double DoubleOptionStorage::processValue(const double &value) const
+double DoubleOptionStorage::processValue(const double& value) const
 {
     // TODO: Consider testing for overflow when scaling with factor_.
     return value * factor_;
 }
 
-void DoubleOptionStorage::processSetValues(ValueList *values)
+void DoubleOptionStorage::processSetValues(ValueList* values)
 {
     if (isVector())
     {
@@ -297,7 +288,7 @@ void DoubleOptionStorage::setScaleFactor(double factor)
     if (!hasFlag(efOption_HasDefaultValue))
     {
         double scale = factor / factor_;
-        for (double &value : values())
+        for (double& value : values())
         {
             value *= scale;
         }
@@ -309,19 +300,16 @@ void DoubleOptionStorage::setScaleFactor(double factor)
  * DoubleOptionInfo
  */
 
-DoubleOptionInfo::DoubleOptionInfo(DoubleOptionStorage *option)
-    : OptionInfo(option)
+DoubleOptionInfo::DoubleOptionInfo(DoubleOptionStorage* option) : OptionInfo(option) {}
+
+DoubleOptionStorage& DoubleOptionInfo::option()
 {
+    return static_cast<DoubleOptionStorage&>(OptionInfo::option());
 }
 
-DoubleOptionStorage &DoubleOptionInfo::option()
+const DoubleOptionStorage& DoubleOptionInfo::option() const
 {
-    return static_cast<DoubleOptionStorage &>(OptionInfo::option());
-}
-
-const DoubleOptionStorage &DoubleOptionInfo::option() const
-{
-    return static_cast<const DoubleOptionStorage &>(OptionInfo::option());
+    return static_cast<const DoubleOptionStorage&>(OptionInfo::option());
 }
 
 bool DoubleOptionInfo::isTime() const
@@ -338,8 +326,7 @@ void DoubleOptionInfo::setScaleFactor(double factor)
  * DoubleOption
  */
 
-AbstractOptionStorage *
-DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* DoubleOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new DoubleOptionStorage(*this);
 }
@@ -349,8 +336,11 @@ DoubleOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * FloatOptionStorage
  */
 
-FloatOptionStorage::FloatOptionStorage(const FloatOption &settings)
-    : MyBase(settings), info_(this), bTime_(settings.bTime_), factor_(1.0)
+FloatOptionStorage::FloatOptionStorage(const FloatOption& settings) :
+    MyBase(settings),
+    info_(this),
+    bTime_(settings.bTime_),
+    factor_(1.0)
 {
 }
 
@@ -359,24 +349,24 @@ std::string FloatOptionStorage::typeString() const
     return isVector() ? "vector" : (isTime() ? "time" : "real");
 }
 
-std::string FloatOptionStorage::formatSingleValue(const float &value) const
+std::string FloatOptionStorage::formatSingleValue(const float& value) const
 {
     return toString(value / factor_);
 }
 
-void FloatOptionStorage::initConverter(ConverterType *converter)
+void FloatOptionStorage::initConverter(ConverterType* converter)
 {
     converter->addConverter<std::string>(&fromStdString<float>);
     converter->addCastConversion<double>();
 }
 
-float FloatOptionStorage::processValue(const float &value) const
+float FloatOptionStorage::processValue(const float& value) const
 {
     // TODO: Consider testing for overflow when scaling with factor_.
     return value * factor_;
 }
 
-void FloatOptionStorage::processSetValues(ValueList *values)
+void FloatOptionStorage::processSetValues(ValueList* values)
 {
     if (isVector())
     {
@@ -390,7 +380,7 @@ void FloatOptionStorage::setScaleFactor(double factor)
     if (!hasFlag(efOption_HasDefaultValue))
     {
         float scale = factor / factor_;
-        for (float &value : values())
+        for (float& value : values())
         {
             value *= scale;
         }
@@ -402,19 +392,16 @@ void FloatOptionStorage::setScaleFactor(double factor)
  * FloatOptionInfo
  */
 
-FloatOptionInfo::FloatOptionInfo(FloatOptionStorage *option)
-    : OptionInfo(option)
+FloatOptionInfo::FloatOptionInfo(FloatOptionStorage* option) : OptionInfo(option) {}
+
+FloatOptionStorage& FloatOptionInfo::option()
 {
+    return static_cast<FloatOptionStorage&>(OptionInfo::option());
 }
 
-FloatOptionStorage &FloatOptionInfo::option()
+const FloatOptionStorage& FloatOptionInfo::option() const
 {
-    return static_cast<FloatOptionStorage &>(OptionInfo::option());
-}
-
-const FloatOptionStorage &FloatOptionInfo::option() const
-{
-    return static_cast<const FloatOptionStorage &>(OptionInfo::option());
+    return static_cast<const FloatOptionStorage&>(OptionInfo::option());
 }
 
 bool FloatOptionInfo::isTime() const
@@ -431,8 +418,7 @@ void FloatOptionInfo::setScaleFactor(double factor)
  * FloatOption
  */
 
-AbstractOptionStorage *
-FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* FloatOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new FloatOptionStorage(*this);
 }
@@ -442,8 +428,9 @@ FloatOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * StringOptionStorage
  */
 
-StringOptionStorage::StringOptionStorage(const StringOption &settings)
-    : MyBase(settings), info_(this)
+StringOptionStorage::StringOptionStorage(const StringOption& settings) :
+    MyBase(settings),
+    info_(this)
 {
     if (settings.defaultEnumIndex_ >= 0 && settings.enumValues_ == nullptr)
     {
@@ -474,7 +461,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
             {
                 GMX_THROW(APIError("Default enumeration index is out of range"));
             }
-            const std::string *defaultValue = settings.defaultValue();
+            const std::string* defaultValue = settings.defaultValue();
             if (defaultValue != nullptr && *defaultValue != allowed_[settings.defaultEnumIndex_])
             {
                 GMX_THROW(APIError("Conflicting default values"));
@@ -495,16 +482,14 @@ std::string StringOptionStorage::formatExtraDescription() const
     return result;
 }
 
-std::string StringOptionStorage::formatSingleValue(const std::string &value) const
+std::string StringOptionStorage::formatSingleValue(const std::string& value) const
 {
     return value;
 }
 
-void StringOptionStorage::initConverter(ConverterType * /*converter*/)
-{
-}
+void StringOptionStorage::initConverter(ConverterType* /*converter*/) {}
 
-std::string StringOptionStorage::processValue(const std::string &value) const
+std::string StringOptionStorage::processValue(const std::string& value) const
 {
     if (!allowed_.empty())
     {
@@ -517,14 +502,11 @@ std::string StringOptionStorage::processValue(const std::string &value) const
  * StringOptionInfo
  */
 
-StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
-    : OptionInfo(option)
-{
-}
+StringOptionInfo::StringOptionInfo(StringOptionStorage* option) : OptionInfo(option) {}
 
-const StringOptionStorage &StringOptionInfo::option() const
+const StringOptionStorage& StringOptionInfo::option() const
 {
-    return static_cast<const StringOptionStorage &>(OptionInfo::option());
+    return static_cast<const StringOptionStorage&>(OptionInfo::option());
 }
 
 bool StringOptionInfo::isEnumerated() const
@@ -532,7 +514,7 @@ bool StringOptionInfo::isEnumerated() const
     return !allowedValues().empty();
 }
 
-const std::vector<std::string> &StringOptionInfo::allowedValues() const
+const std::vector<std::string>& StringOptionInfo::allowedValues() const
 {
     return option().allowedValues();
 }
@@ -541,8 +523,7 @@ const std::vector<std::string> &StringOptionInfo::allowedValues() const
  * StringOption
  */
 
-AbstractOptionStorage *
-StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
+AbstractOptionStorage* StringOption::createStorage(const OptionManagerContainer& /*managers*/) const
 {
     return new StringOptionStorage(*this);
 }
@@ -552,11 +533,14 @@ StringOption::createStorage(const OptionManagerContainer & /*managers*/) const
  * EnumOptionStorage
  */
 
-EnumOptionStorage::EnumOptionStorage(const AbstractOption &settings,
-                                     const char *const *enumValues, int count,
-                                     int defaultValue, int defaultValueIfSet,
-                                     StorePointer store)
-    : MyBase(settings, std::move(store)), info_(this)
+EnumOptionStorage::EnumOptionStorage(const AbstractOption& settings,
+                                     const char* const*    enumValues,
+                                     int                   count,
+                                     int                   defaultValue,
+                                     int                   defaultValueIfSet,
+                                     StorePointer          store) :
+    MyBase(settings, std::move(store)),
+    info_(this)
 {
     if (enumValues == nullptr)
     {
@@ -601,7 +585,7 @@ std::string EnumOptionStorage::formatExtraDescription() const
     return result;
 }
 
-std::string EnumOptionStorage::formatSingleValue(const int &value) const
+std::string EnumOptionStorage::formatSingleValue(const int& value) const
 {
     if (value < 0 || value >= ssize(allowed_))
     {
@@ -610,35 +594,30 @@ std::string EnumOptionStorage::formatSingleValue(const int &value) const
     return allowed_[value];
 }
 
-Any EnumOptionStorage::normalizeValue(const int &value) const
+Any EnumOptionStorage::normalizeValue(const int& value) const
 {
     return Any::create<std::string>(formatSingleValue(value));
 }
 
-void EnumOptionStorage::initConverter(ConverterType *converter)
+void EnumOptionStorage::initConverter(ConverterType* converter)
 {
-    converter->addConverter<std::string>(
-            [this] (const std::string &value)
-            {
-                return findEnumValue(this->allowed_, value) - this->allowed_.begin();
-            });
+    converter->addConverter<std::string>([this](const std::string& value) {
+        return findEnumValue(this->allowed_, value) - this->allowed_.begin();
+    });
 }
 
 /********************************************************************
  * EnumOptionInfo
  */
 
-EnumOptionInfo::EnumOptionInfo(EnumOptionStorage *option)
-    : OptionInfo(option)
+EnumOptionInfo::EnumOptionInfo(EnumOptionStorage* option) : OptionInfo(option) {}
+
+const EnumOptionStorage& EnumOptionInfo::option() const
 {
+    return static_cast<const EnumOptionStorage&>(OptionInfo::option());
 }
 
-const EnumOptionStorage &EnumOptionInfo::option() const
-{
-    return static_cast<const EnumOptionStorage &>(OptionInfo::option());
-}
-
-const std::vector<std::string> &EnumOptionInfo::allowedValues() const
+const std::vector<std::string>& EnumOptionInfo::allowedValues() const
 {
     return option().allowedValues();
 }
@@ -651,14 +630,14 @@ namespace internal
 {
 
 //! \cond internal
-AbstractOptionStorage *
-createEnumOptionStorage(const AbstractOption &option,
-                        const char *const *enumValues, int count,
-                        int defaultValue, int defaultValueIfSet,
-                        std::unique_ptr<IOptionValueStore<int> > store)
+AbstractOptionStorage* createEnumOptionStorage(const AbstractOption& option,
+                                               const char* const*    enumValues,
+                                               int                   count,
+                                               int                   defaultValue,
+                                               int                   defaultValueIfSet,
+                                               std::unique_ptr<IOptionValueStore<int>> store)
 {
-    return new EnumOptionStorage(option, enumValues, count, defaultValue,
-                                 defaultValueIfSet, move(store));
+    return new EnumOptionStorage(option, enumValues, count, defaultValue, defaultValueIfSet, move(store));
 }
 //! \endcond
 

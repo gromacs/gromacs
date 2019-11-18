@@ -1,0 +1,120 @@
+GROMACS 2019.3 release notes
+----------------------------
+
+This version was released on June 14, 2019. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2019.2 version, to fix known issues. It also incorporates all
+fixes made in version 2018.7 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix missing interactions with domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When running with domain decomposition, any interactions described by
+the rarely-used topology file section
+``[ intermolecular_interactions ]`` were ignored. This did not
+affect normal non-bonded or intra-molecular interactions.
+
+:issue:`2953`
+
+Fix possible floating point exception during minimization.
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It was possible that very small forces during minimization could lead to
+a crash due to a divide by zero error. Fixed by introducing a check.
+
+:issue:`2917`
+
+Fix segmentation fault when using membrane embedding
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2947`
+
+Allow AWH with pull-geometry 'direction' to be periodic
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When applying AWH to a pull coordinate with geometry 'direction'
+with a AWH interval length of more than 95% of the box size,
+the dimension is now made periodic.
+
+:issue:`2946`
+       
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed residue and molecule indexing in selections
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2951`
+
+Fix PQR formatting
+""""""""""""""""""""
+
+The formatting was incorrect for some tools that use PQR files.
+
+:issue:`2955`
+
+Fix gmx wham with angle geometries
+""""""""""""""""""""""""""""""""""
+
+gmx wham would mix up degree and radian units leading to no overlap
+or not-a-number output. **Note**: this fix is not correct, a correct
+fix is applied in the next patch release.
+
+:issue:`2609`
+:issue:`3094`
+
+Add some information for grompp error with wrong line endings
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Give meaningful error with too large grid in hbond
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When using a grid that is too large :ref:`hbond <gmx hbond>` could try to
+allocate enough memory to cause a crash.
+
+:issue:`2962`
+
+Add some information for syntax errors with include delimiters in grompp
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2911`
+
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fixed wider reference SIMD setups
+"""""""""""""""""""""""""""""""""
+
+The reference SIMD builds could use a too small memory alignment,
+leading to mdrun exiting with an alignment error
+
+:issue:`2952`
+
+Fixed build failure with Apple Clang
+""""""""""""""""""""""""""""""""""""
+
+Builds would fail because of qsort being undefined.
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Removed non-existent mdp option awh1-dim1-period from user guide
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2940`
+
+Add checks for too many interactions during memory allocation
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`2932`
+

@@ -1,0 +1,119 @@
+GROMACS 2019.2 release notes
+----------------------------
+
+This version was released on April 16th, 2019. These release notes
+document the changes that have taken place in GROMACS since the
+previous 2019.1 version, to fix known issues. It also incorporates all
+fixes made in version 2018.6 and earlier, which you can find described
+in the :ref:`release-notes`.
+
+.. Note to developers!
+   Please use """"""" to underline the individual entries for fixed issues in the subfolders,
+   otherwise the formatting on the webpage is messed up.
+   Also, please use the syntax :issue:`number` to reference issues on redmine, without the
+   a space between the colon and number!
+
+Fixes where mdrun could behave incorrectly
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix L-BGFS minimizer
+""""""""""""""""""""""""""""""""""""""""""""""""
+
+The minimizer could fail on a number of systems.
+
+:issue:`2641`
+
+Disallow pull geometry direction-periodic with AWH
+""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This could lead to incorrect behavior or a cryptic error message.
+
+:issue:`2923`
+
+Fixed mdrun -nsteps option
+""""""""""""""""""""""""""
+
+Fixed that the, deprecated, mdrun option -nsteps only allowed extension
+of the simulation under certain conditions.
+
+:issue:`2881`
+
+Fixes for ``gmx`` tools
+^^^^^^^^^^^^^^^^^^^^^^^
+
+gmx cluster -clndx indices now correct
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The reported indices of trajectory frames in clusters were
+too small by one.
+
+:issue:`2926`
+
+gmx editconf -f in.pdb -o out.pdb again preserves chain IDs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This had been inadvertently broken and is now fixed.
+
+:issue:`2900`
+
+
+Tools again accept .tpr files as input
+"""""""""""""""""""""""""""""""""""""""
+
+The pdb2gmx, solvate, and insert-molecules tools could no longer
+accept input configurations contained in .tpr format files. This
+is now fixed.
+
+:issue:`2900`
+
+Fix segmentation fault when preparing simulated annealing inputs
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp was unable to prepare tpr files for inputs containing simulated annealing
+procedures. The code has been fixed to allow the generation of those files again.
+
+:issue:`2871`
+       
+Fixes that affect portability
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Fix error in AVX 512 detection code
+"""""""""""""""""""""""""""""""""""
+
+The CMake detection code had a typo that could lead to wrong detection results.
+
+Miscellaneous
+^^^^^^^^^^^^^
+
+Added warning with the use of GROMOS force fields
+"""""""""""""""""""""""""""""""""""""""""""""""""
+
+grompp now warns when a GROMOS force field is used. The GROMOS force fields
+have been parametrized with a physically incorrect multiple-time-stepping
+scheme for a twin-range cut-off. When used with a single-range cut-off,
+physical properties, such as the density, might be off from the intended values.
+
+:issue:`2884`
+
+Prevented internal build of FFTW with clang and AVX-512 SIMD
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Prevented the internal build of FFTW with clang from attempting to
+configure FFTW to compile with AVX-512 support. That SIMD level is not
+supported by FFTW with the clang compiler, and compilation fails.
+
+:issue:`2892`
+
+Updated performance guide for recent Intel processors with AVX512 instruction support
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Noted the tradeoffs between CPU frequency and SIMD throughput and advising users to
+prefer AVX2 over AVX512 in GPU-offload or highly parallel MPI cases.
+
+Updated release notes for 2019.1
+""""""""""""""""""""""""""""""""
+
+A :ref:`fix <release-notes-2019-1-gpu>` made to GPU kernels in 2019.1 was
+thought to resolve :issue:`2845` but further investigation suggests that
+the real cause is not yet known. 
+

@@ -64,7 +64,7 @@ Run control
       of motion.  For constant NVE simulations started from
       corresponding points in the same trajectory, the trajectories
       are analytically, but not binary, identical to the
-      :mdp-value:`integrator=md` leap-frog integrator. The the kinetic
+      :mdp-value:`integrator=md` leap-frog integrator. The kinetic
       energy, which is determined from the whole step velocities and
       is therefore slightly too high. The advantage of this integrator
       is more accurate, reversible Nose-Hoover and Parrinello-Rahman
@@ -94,8 +94,8 @@ Run control
       significant part of the simulation time. The temperature for one
       or more groups of atoms (:mdp:`tc-grps`) is set with
       :mdp:`ref-t`, the inverse friction constant for each group is
-      set with :mdp:`tau-t`.  The parameter :mdp:`tcoupl` is
-      ignored. The random generator is initialized with
+      set with :mdp:`tau-t`.  The parameters :mdp:`tcoupl` and :mdp:`nsttcouple`
+      are ignored. The random generator is initialized with
       :mdp:`ld-seed`. When used as a thermostat, an appropriate value
       for :mdp:`tau-t` is 2 ps, since this results in a friction that
       is lower than the internal friction of water, while it is high
@@ -428,29 +428,13 @@ Neighbor searching
       Generate a pair list with buffering. The buffer size is
       automatically set based on :mdp:`verlet-buffer-tolerance`,
       unless this is set to -1, in which case :mdp:`rlist` will be
-      used. This option has an explicit, exact cut-off at :mdp:`rvdw`
-      equal to :mdp:`rcoulomb`, unless PME or Ewald is used, in which
-      case :mdp:`rcoulomb` > :mdp:`rvdw` is allowed. Currently only
-      cut-off, reaction-field, PME or Ewald electrostatics and plain
-      LJ are supported. Some :ref:`gmx mdrun` functionality is not yet
-      supported with the :mdp-value:`cutoff-scheme=Verlet` scheme, but :ref:`gmx grompp`
-      checks for this. Native GPU acceleration is only supported with
-      :mdp-value:`cutoff-scheme=Verlet`. With GPU-accelerated PME or with separate PME
-      ranks, :ref:`gmx mdrun` will automatically tune the CPU/GPU load
-      balance by scaling :mdp:`rcoulomb` and the grid spacing. This
-      can be turned off with ``mdrun -notunepme``. :mdp-value:`cutoff-scheme=Verlet` is
-      faster than :mdp-value:`cutoff-scheme=group` when there is no water, or if
-      :mdp-value:`cutoff-scheme=group` would use a pair-list buffer to conserve energy.
+      used.
 
    .. mdp-value:: group
 
-      Generate a pair list for groups of atoms. These groups
-      correspond to the charge groups in the topology. This was the
-      only cut-off treatment scheme before version 4.6, and is
-      **deprecated since 5.1**. There is no explicit buffering of
-      the pair list. This enables efficient force calculations for
-      water, but energy is only conserved when a buffer is explicitly
-      added.
+      Generate a pair list for groups of atoms, corresponding
+      to the charge groups in the topology. This option is no longer
+      supported.
 
 .. mdp:: nstlist
 
@@ -458,42 +442,23 @@ Neighbor searching
 
    .. mdp-value:: >0
 
-      Frequency to update the neighbor list. When this is 0, the
-      neighbor list is made only once. With energy minimization the
-      pair list will be updated for every energy evaluation when
-      :mdp:`nstlist` is greater than 0. With :mdp-value:`cutoff-scheme=Verlet` and
+      Frequency to update the neighbor list. When dynamics and
       :mdp:`verlet-buffer-tolerance` set, :mdp:`nstlist` is actually
       a minimum value and :ref:`gmx mdrun` might increase it, unless
       it is set to 1. With parallel simulations and/or non-bonded
       force calculation on the GPU, a value of 20 or 40 often gives
-      the best performance. With :mdp-value:`cutoff-scheme=group` and non-exact
-      cut-off's, :mdp:`nstlist` will affect the accuracy of your
-      simulation and it can not be chosen freely.
+      the best performance.
 
    .. mdp-value:: 0
 
       The neighbor list is only constructed once and never
       updated. This is mainly useful for vacuum simulations in which
-      all particles see each other.
+      all particles see each other. But vacuum simulations are
+      (temporarily) not supported.
 
    .. mdp-value:: <0
 
       Unused.
-
-.. mdp:: ns-type
-
-   .. mdp-value:: grid
-
-      Make a grid in the box and only check atoms in neighboring grid
-      cells when constructing a new neighbor list every
-      :mdp:`nstlist` steps. In large systems grid search is much
-      faster than simple search.
-
-   .. mdp-value:: simple
-
-      Check every atom in the box when constructing a new neighbor
-      list every :mdp:`nstlist` steps (only with :mdp-value:`cutoff-scheme=group`
-      cut-off scheme).
 
 .. mdp:: pbc
 
@@ -533,7 +498,7 @@ Neighbor searching
 
    (0.005) [kJ mol\ :sup:`-1` ps\ :sup:`-1`]
 
-   Useful only with the :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`. This sets
+   Used when performing a simulation with dynamics. This sets
    the maximum allowed error for pair interactions per particle caused
    by the Verlet buffer, which indirectly sets :mdp:`rlist`. As both
    :mdp:`nstlist` and the Verlet buffer size are fixed (for
@@ -563,10 +528,15 @@ Neighbor searching
 .. mdp:: rlist
 
    (1) [nm]
-   Cut-off distance for the short-range neighbor list. With the
-   :mdp-value:`cutoff-scheme=Verlet` :mdp:`cutoff-scheme`, this is by default set by the
-   :mdp:`verlet-buffer-tolerance` option and the value of
-   :mdp:`rlist` is ignored.
+   Cut-off distance for the short-range neighbor list. With dynamics,
+   this is by default set by the :mdp:`verlet-buffer-tolerance` option
+   and the value of :mdp:`rlist` is ignored. Without dynamics, this
+   is by default set to the maximum cut-off plus 5% buffer, except
+   for test particle insertion, where the buffer is managed exactly
+   and automatically. For NVE simulations, where the automated
+   setting is not possible, the advised procedure is to run :ref:`gmx grompp`
+   with an NVT setup with the expected temperature and copy the resulting
+   value of :mdp:`rlist` to the NVE setup.
 
 
 Electrostatics
@@ -622,52 +592,9 @@ Electrostatics
       :mdp:`epsilon-rf`. The dielectric constant can be set to
       infinity by setting :mdp:`epsilon-rf` =0.
 
-   .. mdp-value:: Generalized-Reaction-Field
-
-      Generalized reaction field with Coulomb cut-off
-      :mdp:`rcoulomb`, where :mdp:`rlist` >= :mdp:`rcoulomb`. The
-      dielectric constant beyond the cut-off is
-      :mdp:`epsilon-rf`. The ionic strength is computed from the
-      number of charged (*i.e.* with non zero charge) charge
-      groups. The temperature for the GRF potential is set with
-      :mdp:`ref-t`.
-
-   .. mdp-value:: Reaction-Field-zero
-
-      In |Gromacs|, normal reaction-field electrostatics with
-      :mdp-value:`cutoff-scheme=group` leads to bad energy
-      conservation. :mdp-value:`coulombtype=Reaction-Field-zero` solves this by making
-      the potential zero beyond the cut-off. It can only be used with
-      an infinite dielectric constant (:mdp:`epsilon-rf` =0), because
-      only for that value the force vanishes at the
-      cut-off. :mdp:`rlist` should be 0.1 to 0.3 nm larger than
-      :mdp:`rcoulomb` to accommodate the size of charge groups
-      and diffusion between neighbor list updates. This, and the fact
-      that table lookups are used instead of analytical functions make
-      reaction-field-zero computationally more expensive than
-      normal reaction-field.
-
-   .. mdp-value:: Shift
-
-      Analogous to :mdp-value:`vdwtype=Shift` for :mdp:`vdwtype`. You
-      might want to use :mdp-value:`coulombtype=Reaction-Field-zero` instead, which has
-      a similar potential shape, but has a physical interpretation and
-      has better energies due to the exclusion correction terms.
-
-   .. mdp-value:: Encad-Shift
-
-      The Coulomb potential is decreased over the whole range, using
-      the definition from the Encad simulation package.
-
-   .. mdp-value:: Switch
-
-      Analogous to :mdp-value:`vdwtype=Switch` for
-      :mdp:`vdwtype`. Switching the Coulomb potential can lead to
-      serious artifacts, advice: use :mdp-value:`coulombtype=Reaction-Field-zero`
-      instead.
-
    .. mdp-value:: User
 
+      Currently unsupported.
       :ref:`gmx mdrun` will now expect to find a file ``table.xvg``
       with user-defined potential functions for repulsion, dispersion
       and Coulomb. When pair interactions are present, :ref:`gmx
@@ -691,14 +618,14 @@ Electrostatics
 
    .. mdp-value:: PME-Switch
 
+      Currently unsupported.
       A combination of PME and a switch function for the direct-space
       part (see above). :mdp:`rcoulomb` is allowed to be smaller than
-      :mdp:`rlist`. This is mainly useful constant energy simulations
-      (note that using PME with :mdp-value:`cutoff-scheme=Verlet`
-      will be more efficient).
+      :mdp:`rlist`.
 
    .. mdp-value:: PME-User
 
+      Currently unsupported.
       A combination of PME and user tables (see
       above). :mdp:`rcoulomb` is allowed to be smaller than
       :mdp:`rlist`. The PME mesh contribution is subtracted from the
@@ -707,17 +634,13 @@ Electrostatics
 
    .. mdp-value:: PME-User-Switch
 
+      Currently unsupported.
       A combination of PME-User and a switching function (see
       above). The switching function is applied to final
       particle-particle interaction, *i.e.* both to the user supplied
       function and the PME Mesh correction part.
 
 .. mdp:: coulomb-modifier
-
-   .. mdp-value:: Potential-shift-Verlet
-
-      Selects Potential-shift with the Verlet cutoff-scheme, as it is
-      (nearly) free; selects None with the group cutoff-scheme.
 
    .. mdp-value:: Potential-shift
 
@@ -728,9 +651,8 @@ Electrostatics
 
    .. mdp-value:: None
 
-      Use an unmodified Coulomb potential. With the group scheme this
-      means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the pair list.
+      Use an unmodified Coulomb potential. This can be useful
+      when comparing energies with those computed with other software.
 
 .. mdp:: rcoulomb-switch
 
@@ -784,10 +706,7 @@ Van der Waals
       :mdp-value:`vdwtype=Cut-off` with :mdp-value:`vdw-modifier=Force-switch`.
       The LJ (not Buckingham) potential is decreased over the whole range and
       the forces decay smoothly to zero between :mdp:`rvdw-switch` and
-      :mdp:`rvdw`. The neighbor search cut-off :mdp:`rlist` should
-      be 0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
-      size of charge groups and diffusion between neighbor list
-      updates.
+      :mdp:`rvdw`.
 
    .. mdp-value:: Switch
 
@@ -798,18 +717,11 @@ Van der Waals
       potential and force functions are continuously smooth, but be
       aware that all switch functions will give rise to a bulge
       (increase) in the force (since we are switching the
-      potential). The neighbor search cut-off :mdp:`rlist` should be
-      0.1 to 0.3 nm larger than :mdp:`rvdw` to accommodate the
-      size of charge groups and diffusion between neighbor list
-      updates.
-
-   .. mdp-value:: Encad-Shift
-
-      The LJ (not Buckingham) potential is decreased over the whole
-      range, using the definition from the Encad simulation package.
+      potential).
 
    .. mdp-value:: User
 
+      Currently unsupported.
       See user for :mdp:`coulombtype`. The function value at zero is
       not important. When you want to use LJ correction, make sure
       that :mdp:`rvdw` corresponds to the cut-off in the user-defined
@@ -817,11 +729,6 @@ Van der Waals
       for the ``f`` and ``-f'`` columns are ignored.
 
 .. mdp:: vdw-modifier
-
-   .. mdp-value:: Potential-shift-Verlet
-
-      Selects Potential-shift with the Verlet cutoff-scheme, as it is
-      (nearly) free; selects None with the group cutoff-scheme.
 
    .. mdp-value:: Potential-shift
 
@@ -832,9 +739,8 @@ Van der Waals
 
    .. mdp-value:: None
 
-      Use an unmodified Van der Waals potential. With the group scheme
-      this means no exact cut-off is used, energies and forces are
-      calculated for all pairs in the pair list.
+      Use an unmodified Van der Waals potential. This can be useful
+      when comparing energies with those computed with other software.
 
    .. mdp-value:: Force-switch
 
@@ -886,17 +792,15 @@ Tables
 
    (1) [nm]
    Extension of the non-bonded potential lookup tables beyond the
-   largest cut-off distance. The value should be large enough to
-   account for charge group sizes and the diffusion between
-   neighbor-list updates. Without user defined potential the same
-   table length is used for the lookup tables for the 1-4
-   interactions, which are always tabulated irrespective of the use of
-   tables for the non-bonded interactions. The value of
-   :mdp:`table-extension` in no way affects the values of
-   :mdp:`rlist`, :mdp:`rcoulomb`, or :mdp:`rvdw`.
+   largest cut-off distance. With actual non-bonded interactions
+   the tables are never accessed beyond the cut-off. But a longer
+   table length might be needed for the 1-4 interactions, which
+   are always tabulated irrespective of the use of tables for
+   the non-bonded interactions.
 
 .. mdp:: energygrp-table
 
+   Currently unsupported.
    When user tables are used for electrostatics and/or VdW, here one
    can give pairs of energy groups for which seperate user tables
    should be used. The two energy groups will be appended to the table
@@ -1227,8 +1131,8 @@ Pressure coupling
 
       The reference coordinates for position restraints are not
       modified. Note that with this option the virial and pressure
-      will depend on the absolute positions of the reference
-      coordinates.
+      might be ill defined, see :ref:`here <reference-manual-position-restraints>`
+      for more details.
 
    .. mdp-value:: all
 
@@ -1243,7 +1147,9 @@ Pressure coupling
       one COM is used, even when there are multiple molecules with
       position restraints. For calculating the COM of the reference
       coordinates in the starting configuration, periodic boundary
-      conditions are not taken into account.
+      conditions are not taken into account. Note that with this option
+      the virial and pressure might be ill defined, see
+      :ref:`here <reference-manual-position-restraints>` for more details.
 
 
 Simulated annealing
@@ -1402,10 +1308,11 @@ Bonds
       SHAKE is slightly slower and less stable than LINCS, but does
       work with angle constraints. The relative tolerance is set with
       :mdp:`shake-tol`, 0.0001 is a good value for "normal" MD. SHAKE
-      does not support constraints between atoms on different nodes,
-      thus it can not be used with domain decompositon when inter
-      charge-group constraints are present. SHAKE can not be used with
-      energy minimization.
+      does not support constraints between atoms on different
+      decomposition domains, so it can only be used with domain
+      decomposition when so-called update-groups are used, which is
+      usally the case when only bonds involving hydrogens are
+      constrained. SHAKE can not be used with energy minimization.
 
 .. mdp:: continuation
 
@@ -1917,7 +1824,7 @@ AWH adaptive biasing
       multidimensional and is defined by mapping each dimension to a pull coordinate index.
       This is only allowed if :mdp-value:`pull-coord1-type=external-potential` and
       :mdp:`pull-coord1-potential-provider` = ``awh`` for the concerned pull coordinate
-      indices.
+      indices. Pull geometry 'direction-periodic' is not supported by AWH.
 
 .. mdp:: awh-potential
 
@@ -2141,18 +2048,17 @@ AWH adaptive biasing
    (0.0) [nm] or [rad]
    Start value of the sampling interval along this dimension. The range of allowed
    values depends on the relevant pull geometry (see :mdp:`pull-coord1-geometry`).
-   For periodic geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
+   For dihedral geometries :mdp:`awh1-dim1-start` greater than :mdp:`awh1-dim1-end`
    is allowed. The interval will then wrap around from +period/2 to -period/2.
+   For the direction geometry, the dimension is made periodic when
+   the direction is along a box vector and covers more than 95%
+   of the box length. Note that one should not apply pressure coupling
+   along a periodic dimension.
 
 .. mdp:: awh1-dim1-end
 
    (0.0) [nm] or [rad]
    End value defining the sampling interval together with :mdp:`awh1-dim1-start`.
-
-.. mdp:: awh1-dim1-period
-
-   (0.0) [nm] or [rad]
-   The period of this reaction coordinate, use 0 when the coordinate is not periodic.
 
 .. mdp:: awh1-dim1-diffusion
 
@@ -2538,10 +2444,11 @@ Free energy calculations
 .. mdp:: sc-r-power
 
    (6)
-   the power of the radial term in the soft-core equation. Possible
-   values are 6 and 48. 6 is more standard, and is the default. When
-   48 is used, then sc-alpha should generally be much lower (between
-   0.001 and 0.003).
+   power 6 for the radial term in the soft-core equation.
+
+   (48)
+   (deprecated) power 48 for the radial term in the soft-core equation. 
+   Note that sc-alpha should generally be much lower (between 0.001 and 0.003).
 
 .. mdp:: sc-coul
 
@@ -3041,28 +2948,29 @@ Non-equilibrium MD
 Electric fields
 ^^^^^^^^^^^^^^^
 
-.. mdp:: electric-field-x ; electric-field-y ; electric-field-z
+.. mdp:: electric-field-x
+.. mdp:: electric-field-y
+.. mdp:: electric-field-z
 
    Here you can specify an electric field that optionally can be
    alternating and pulsed. The general expression for the field
    has the form of a gaussian laser pulse:
 
-   E(t) = E0 exp ( -(t-t0)\ :sup:`2`/(2 sigma\ :sup:`2`) ) cos(omega (t-t0))
+   .. math:: E(t) = E_0 \exp\left[-\frac{(t-t_0)^2}{2\sigma^2}\right]\cos\left[\omega (t-t_0)\right]
 
    For example, the four parameters for direction x are set in the
-   three fields of ``electric-field-x`` (and similar for y and z)
-   like
+   fields of :mdp:`electric-field-x` (and similar for ``electric-field-y``
+   and ``electric-field-z``) like
 
-   electric-field-x  = E0 omega t0 sigma
+   ``electric-field-x  = E0 omega t0 sigma``
 
-   In the special case that sigma = 0, the exponential term is omitted
-   and only the cosine term is used. If also omega = 0 a static
+   with units (respectively) V nm\ :sup:`-1`, ps\ :sup:`-1`, ps, ps.
+
+   In the special case that ``sigma = 0``, the exponential term is omitted
+   and only the cosine term is used. If also ``omega = 0`` a static
    electric field is applied.
 
-   More details in Carl Caleman and David van der Spoel: Picosecond
-   Melting of Ice by an Infrared Laser Pulse - A Simulation Study.
-   Angew. Chem. Intl. Ed. 47 pp. 14 17-1420 (2008)
-
+   Read more at :ref:`electric fields` and in ref. \ :ref:`146 <refCaleman2008a>`.
 
 
 Mixed quantum/classical molecular dynamics
@@ -3290,6 +3198,103 @@ Electrophysiology" simulation setups. (See the `reference manual`_ for details).
 
    (1.0) [nm] Lower extension of the split cylinder #1.
 
+Density-guided simulations
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+These options enable and control the calculation and application of additional
+forces that are derived from three-dimensional densities, e.g., from cryo
+electron-microscopy experiments. (See the `reference manual`_ for details)
+
+.. mdp:: density-guided-simulation-active
+
+   (no) Activate density-guided simulations.
+
+.. mdp:: density-guided-simulation-group
+
+   (protein) The atoms that are subject to the forces from the density-guided
+   simulation and contribute to the simulated density.
+
+.. mdp:: density-guided-simulation-similarity-measure
+
+   (inner-product) Similarity measure between the density that is calculated
+   from the atom positions and the reference density.
+
+   .. mdp-value:: inner-product
+
+      Takes the sum of the product of reference density and simulated density
+      voxel values.
+
+   .. mdp-value:: relative-entropy
+
+      Uses the negative relative entropy (or Kullback-Leibler divergence)
+      between reference density and simulated density as similarity measure.
+      Negative density values are ignored.
+
+.. mdp:: density-guided-simulation-atom-spreading-weight
+
+   (unity) Determines the multiplication factor for the Gaussian kernel when
+   spreading atoms on the grid.
+
+   .. mdp-value:: unity
+
+      Every atom in the density fitting group is assigned the same unit factor.
+
+   .. mdp-value:: mass
+
+      Atoms contribute to the simulated density proportional to their mass.
+
+   .. mdp-value:: charge
+
+      Atoms contribute to the simulated density proportional to their charge.
+
+.. mdp:: density-guided-simulation-force-constant
+
+   (1e+09) [kJ mol\ :sup:`-1`] The scaling factor for density-guided simulation
+   forces. May also be negative.
+
+.. mdp:: density-guided-simulation-gaussian-transform-spreading-width
+
+   (0.2) [nm] The Gaussian RMS width for the spread kernel for the simulated
+   density.
+
+.. mdp:: density-guided-simulation-gaussian-transform-spreading-range-in-multiples-of-width
+
+   (4) The range after which the gaussian is cut off in multiples of the Gaussian
+   RMS width described above.
+
+.. mdp:: density-guided-simulation-reference-density-filename
+
+   (reference.mrc) Reference density file name using an absolute path or a path
+   relative to the to the folder from which :ref:`gmx mdrun` is called.
+
+.. mdp:: density-guided-simulation-nst
+
+   (1) Interval in steps at which the density fitting forces are evaluated
+   and applied. The forces are scaled by this number when applied (See the
+   `reference manual`_ for details).
+
+.. mdp:: density-guided-simulation-normalize-densities
+
+   (true) Normalize the sum of density voxel values to one for the reference
+   density as well as the simulated density.
+
+.. mdp:: density-guided-simulation-adaptive-force-scaling
+
+   (false) Adapt the force constant to ensure a steady increase in similarity
+   between simulated and reference density.
+
+   .. mdp-value: false
+
+      Do not use adaptive force scaling.
+
+   .. mdp-value:: true
+
+      Use adaptive force scaling.
+
+.. mdp:: density-guided-simulation-adaptive-force-scaling-time-constant
+
+   (4) [ps] Couple force constant to increase in similarity with reference density
+   with this time constant. Larger times result in looser coupling.
 
 User defined thingies
 ^^^^^^^^^^^^^^^^^^^^^

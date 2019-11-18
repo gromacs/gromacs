@@ -1,0 +1,14 @@
+#!/bin/bash
+# Entry point script for Docker containers.
+# See README.md and the gmxapi/ci-<option> Docker images.
+
+set -ev
+
+# TODO: (#2756) Centrally manage dependencies on the GROMACS installation.
+#  The gmxapi package, virtualenv, or test  infrastructure should have an
+#  internal mechanism for tracking the correct GROMACS installation.
+source /usr/local/gromacs/bin/GMXRC
+
+mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/gmxapi/test
+mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/sample_restraint/tests
+mpiexec -n 2 `which python` -m mpi4py -m pytest $HOME/test

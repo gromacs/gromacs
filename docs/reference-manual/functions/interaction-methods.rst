@@ -170,7 +170,7 @@ However, in the general case redistribution should be done first.
 .. figure:: plots/dummies.*
    :width: 15.00000cm
 
-   The six different types of virtual site construction in . The
+   The seven different types of virtual site construction. The
    constructing atoms are shown as black circles, the virtual sites in
    gray.
 
@@ -206,6 +206,30 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In this case the virtual site is on the line through atoms :math:`i`
    and :math:`j`.
 
+-  On the line through two atoms, with a fixed distance
+   (:numref:`Fig. %s <fig-vsites>` 2fd):
+
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \frac{ \mathbf{r}_{ij} }
+                                                  { | \mathbf{r}_{ij} | }
+             :label: eqnvsite2fdatom
+
+-  In this case the virtual site is on the line through the other two
+   particles at a distance of :math:`|a|` from :math:`i`. The force on
+   particles :math:`i` and :math:`j` due to the force on the virtual site
+   can be computed as:
+
+   .. math:: \begin{array}{lcr}
+                     \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_{is} - \mathbf{p} ) \\[1ex]
+                     \mathbf{F}_j &=& \displaystyle \gamma (\mathbf{F}_{s} - \mathbf{p})      \\[1ex]
+                     \end{array}
+                     ~\mbox{ where }~
+                     \begin{array}{c}
+             \displaystyle \gamma = \frac{a}{ | \mathbf{r}_{ij} | } \\[2ex]
+             \displaystyle \mathbf{p} = \frac{ \mathbf{r}_{is} \cdot \mathbf{F}_{s} }
+                                   { \mathbf{r}_{is} \cdot \mathbf{r}_{is} } \mathbf{r}_{is}
+             \end{array}
+             :label: eqnvsite2fdforce
+
 -  As a linear combination of three atoms
    (:numref:`Fig. %s <fig-vsites>` 3):
 
@@ -218,8 +242,8 @@ can be constructed from “particles” that are simpler virtual sites.
 -  In the plane of three atoms, with a fixed distance
    (:numref:`Fig. %s <fig-vsites>` 3fd):
 
-   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  \mathbf{r}_ij + a \mathbf{r}_{jk}  }
-                                                  { | \mathbf{r}_ij + a \mathbf{r}_{jk} | }
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + b \frac{  (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk}  }
+                                                  { | (1 - a) \mathbf{r}_{ij} + a \mathbf{r}_{jk} | }
              :label: eqnvsiteplane3atom
 
 -  In this case the virtual site is in the plane of the other three
@@ -228,15 +252,15 @@ can be constructed from “particles” that are simpler virtual sites.
    virtual site can be computed as:
 
    .. math:: \begin{array}{lcr}
-                     \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_is - \mathbf{p} ) \\[1ex]
+                     \mathbf{F}_i &=& \displaystyle \mathbf{F}_{s} - \gamma ( \mathbf{F}_{is} - \mathbf{p} ) \\[1ex]
                      \mathbf{F}_j &=& \displaystyle (1-a)\gamma (\mathbf{F}_{s} - \mathbf{p})      \\[1ex]
                      \mathbf{F}_k &=& \displaystyle a \gamma (\mathbf{F}_{s} - \mathbf{p})         \\
                      \end{array}
-                     ~\mbox{~ where~ }~
+                     ~\mbox{ where }~
                      \begin{array}{c}
-             \displaystyle \gamma = \frac{b}{ | \mathbf{r}_ij + a \mathbf{r}_{jk} | } \\[2ex]
+             \displaystyle \gamma = \frac{b}{ | \mathbf{r}_{ij} + a \mathbf{r}_{jk} | } \\[2ex]
              \displaystyle \mathbf{p} = \frac{ \mathbf{r}_{is} \cdot \mathbf{F}_{s} }
-                                   { \mathbf{r}_{is} \cdot \mathbf{r}_is } \mathbf{r}_is
+                                   { \mathbf{r}_{is} \cdot \mathbf{r}_{is} } \mathbf{r}_{is}
              \end{array}
              :label: eqnvsiteplane3atomforce
 
@@ -244,18 +268,18 @@ can be constructed from “particles” that are simpler virtual sites.
    distance (:numref:`Fig. %s <fig-vsites>` 3fad):
 
    .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i +
-             d \cos \theta \frac{\mathbf{r}_ij}{ | \mathbf{r}_{ij} | } +
+             d \cos \theta \frac{\mathbf{r}_{ij}}{ | \mathbf{r}_{ij} | } +
              d \sin \theta \frac{\mathbf{r}_\perp}{ | \mathbf{r}_\perp | }
-             ~\mbox{~ where~ }~
+             ~\mbox{ where }~
              \mathbf{r}_\perp ~=~ \mathbf{r}_{jk} - 
-             \frac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
-             { \mathbf{r}_ij \cdot \mathbf{r}_{ij} }
-             \mathbf{r}_ij
+             \frac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
+             { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} }
+             \mathbf{r}_{ij}
              :label: eqnvsite2fadF
 
 -  In this case the virtual site is in the plane of the other three
    particles at a distance of :math:`|d|` from :math:`i` at an angle of
-   :math:`\alpha` with :math:`\mathbf{r}_ij`. Atom
+   :math:`\alpha` with :math:`\mathbf{r}_{ij}`. Atom
    :math:`k` defines the plane and the direction of the angle. **Note**
    that in this case :math:`b` and :math:`\alpha` must be specified,
    instead of :math:`a` and :math:`b` (see also sec. :ref:`vsitetop`).
@@ -267,40 +291,40 @@ can be constructed from “particles” that are simpler virtual sites.
    .. math:: \begin{array}{c}
                      \begin{array}{lclllll}
                      \mathbf{F}_i &=& \mathbf{F}_{s} &-& 
-                             \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &+&
+                             \dfrac{d \cos \theta}{ | \mathbf{r}_{ij} | } \mathbf{F}_1 &+&
                              \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left( 
-                             \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
-                                  { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2     +
+                             \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
+                                  { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{F}_2     +
                              \mathbf{F}_3 \right)                                \\[3ex]
                      \mathbf{F}_j &=& &&
-                             \dfrac{d \cos \theta}{ | \mathbf{r}_ij | } \mathbf{F}_1 &-&
+                             \dfrac{d \cos \theta}{ | \mathbf{r}_{ij} | } \mathbf{F}_1 &-&
                              \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \left(
                               \mathbf{F}_2 + 
-                              \dfrac{ \mathbf{r}_ij \cdot \mathbf{r}_{jk} }
-                                     { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{F}_2 +
+                              \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{r}_{jk} }
+                                     { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{F}_2 +
                              \mathbf{F}_3 \right)                                \\[3ex]
                      \mathbf{F}_k &=& && &&
                              \dfrac{d \sin \theta}{ | \mathbf{r}_\perp | } \mathbf{F}_2  \\[3ex]
                      \end{array}                                             \\[5ex]
-                     \mbox{where ~}
+                     ~\mbox{where }~
                      \mathbf{F}_1 = \mathbf{F}_{s} -
-                               \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
-                                     { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_{ij}
-                     \mbox{\,, ~}
+                               \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{F}_{s} }
+                                     { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{r}_{ij}
+                     ~\mbox{, }~
                      \mathbf{F}_2 = \mathbf{F}_1 -
                                \dfrac{ \mathbf{r}_\perp \cdot \mathbf{F}_{s} }
                                      { \mathbf{r}_\perp \cdot \mathbf{r}_\perp } \mathbf{r}_\perp
-                     \mbox{~and ~}
-                     \mathbf{F}_3 = \dfrac{ \mathbf{r}_ij \cdot \mathbf{F}_{s} }
-                                      { \mathbf{r}_ij \cdot \mathbf{r}_{ij} } \mathbf{r}_\perp
+                     ~\mbox{and }~
+                     \mathbf{F}_3 = \dfrac{ \mathbf{r}_{ij} \cdot \mathbf{F}_{s} }
+                                      { \mathbf{r}_{ij} \cdot \mathbf{r}_{ij} } \mathbf{r}_\perp
              \end{array}
              :label: eqnvsite2fadFforce
 
 -  As a non-linear combination of three atoms, out of
    plane (:numref:`Fig. %s <fig-vsites>` 3out):
 
-   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \mathbf{r}_ij + b \mathbf{r}_{ik} +
-                              c (\mathbf{r}_ij \times \mathbf{r}_{ik})
+   .. math:: \mathbf{r}_s ~=~ \mathbf{r}_i + a \mathbf{r}_{ij} + b \mathbf{r}_{ik} +
+                              c (\mathbf{r}_{ij} \times \mathbf{r}_{ik})
              :label: eqnvsitenonlin3atom
 
 -  This enables the construction of virtual sites out of the plane of

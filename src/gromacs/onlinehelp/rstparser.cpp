@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015, by the GROMACS development team, led by
+ * Copyright (c) 2015,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@ namespace
  *
  * Does not throw.
  */
-int countLeadingSpace(const std::string &text, size_t start, size_t end)
+int countLeadingSpace(const std::string& text, size_t start, size_t end)
 {
     for (size_t i = start; i < end; ++i)
     {
@@ -77,13 +77,13 @@ int countLeadingSpace(const std::string &text, size_t start, size_t end)
  *
  * Does not throw.
  */
-bool startsListItem(const std::string &text, size_t index)
+bool startsListItem(const std::string& text, size_t index)
 {
     if (text.length() <= index + 1)
     {
         return false;
     }
-    if (text[index] == '*' && std::isspace(text[index+1]))
+    if (text[index] == '*' && std::isspace(text[index + 1]))
     {
         return true;
     }
@@ -93,8 +93,7 @@ bool startsListItem(const std::string &text, size_t index)
         {
             ++index;
         }
-        if (text.length() > index + 1 && text[index] == '.'
-            && std::isspace(text[index+1]))
+        if (text.length() > index + 1 && text[index] == '.' && std::isspace(text[index + 1]))
         {
             return true;
         }
@@ -112,7 +111,7 @@ bool startsListItem(const std::string &text, size_t index)
  *
  * Does not throw.
  */
-bool startsTable(const std::string &text, size_t index)
+bool startsTable(const std::string& text, size_t index)
 {
     if (text[index] == '=')
     {
@@ -146,7 +145,7 @@ bool startsTable(const std::string &text, size_t index)
  *
  * Does not throw.
  */
-bool isTitleUnderline(const std::string &text, size_t index)
+bool isTitleUnderline(const std::string& text, size_t index)
 {
     const char firstChar = text[index];
     if (std::ispunct(firstChar))
@@ -164,16 +163,23 @@ bool isTitleUnderline(const std::string &text, size_t index)
     return false;
 }
 
-}    // namespace
+} // namespace
 
 /********************************************************************
  * RstParagraphIterator
  */
 
-RstParagraphIterator::RstParagraphIterator(const std::string &text)
-    : text_(text), begin_(0), end_(0), type_(eParagraphType_Normal),
-      breakSize_(0), firstLineIndent_(0), indent_(0),
-      nextBegin_(0), nextBreakSize_(0), literalIndent_(-1)
+RstParagraphIterator::RstParagraphIterator(const std::string& text) :
+    text_(text),
+    begin_(0),
+    end_(0),
+    type_(eParagraphType_Normal),
+    breakSize_(0),
+    firstLineIndent_(0),
+    indent_(0),
+    nextBegin_(0),
+    nextBreakSize_(0),
+    literalIndent_(-1)
 {
 }
 
@@ -309,7 +315,7 @@ bool RstParagraphIterator::nextParagraph()
     return true;
 }
 
-void RstParagraphIterator::getParagraphText(std::string *result) const
+void RstParagraphIterator::getParagraphText(std::string* result) const
 {
     result->clear();
     result->reserve(end_ - begin_);

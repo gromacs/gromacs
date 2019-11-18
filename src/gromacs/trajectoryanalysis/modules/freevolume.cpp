@@ -89,44 +89,40 @@ namespace
  */
 class FreeVolume : public TrajectoryAnalysisModule
 {
-    public:
-        FreeVolume();
-        ~FreeVolume() override {}
+public:
+    FreeVolume();
+    ~FreeVolume() override {}
 
-        void initOptions(IOptionsContainer          *options,
-                         TrajectoryAnalysisSettings *settings) override;
-        void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                          const TopologyInformation        &top) override;
-        void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                          TrajectoryAnalysisModuleData *pdata) override;
-        void finishAnalysis(int nframes) override;
-        void writeOutput() override;
+    void initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings) override;
+    void initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top) override;
+    void analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata) override;
+    void finishAnalysis(int nframes) override;
+    void writeOutput() override;
 
-    private:
-        std::string                       fnFreevol_;
-        Selection                         sel_;
-        AnalysisData                      data_;
-        AnalysisDataAverageModulePointer  adata_;
+private:
+    std::string                      fnFreevol_;
+    Selection                        sel_;
+    AnalysisData                     data_;
+    AnalysisDataAverageModulePointer adata_;
 
-        int                               nmol_;
-        double                            mtot_;
-        double                            cutoff_;
-        double                            probeRadius_;
-        gmx::DefaultRandomEngine          rng_;
-        int                               seed_, ninsert_;
-        AnalysisNeighborhood              nb_;
-        //! The van der Waals radius per atom
-        std::vector<double>               vdw_radius_;
+    int                      nmol_;
+    double                   mtot_;
+    double                   cutoff_;
+    double                   probeRadius_;
+    gmx::DefaultRandomEngine rng_;
+    int                      seed_, ninsert_;
+    AnalysisNeighborhood     nb_;
+    //! The van der Waals radius per atom
+    std::vector<double> vdw_radius_;
 
-        // Copy and assign disallowed by base.
+    // Copy and assign disallowed by base.
 };
 
 // Constructor. Here it is important to initialize the pointer to
 // subclasses that are elements of the main class. Here we have only
 // one. The type of this depends on what kind of tool you need.
 // Here we only have simple value/time kind of data.
-FreeVolume::FreeVolume()
-    : adata_(new AnalysisDataAverageModule())
+FreeVolume::FreeVolume() : adata_(new AnalysisDataAverageModule())
 {
     // We only compute two numbers per frame
     data_.setColumnCount(0, 2);
@@ -141,11 +137,9 @@ FreeVolume::FreeVolume()
 }
 
 
-void
-FreeVolume::initOptions(IOptionsContainer          *options,
-                        TrajectoryAnalysisSettings *settings)
+void FreeVolume::initOptions(IOptionsContainer* options, TrajectoryAnalysisSettings* settings)
 {
-    static const char *const desc[] = {
+    static const char* const desc[] = {
         "[THISMODULE] calculates the free volume in a box as",
         "a function of time. The free volume is",
         "plotted as a fraction of the total volume.",
@@ -179,39 +173,38 @@ FreeVolume::initOptions(IOptionsContainer          *options,
     settings->setHelpText(desc);
 
     // Add option for optional output file
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnFreevol_).defaultBasename("freevolume")
-                           .description("Computed free volume"));
+    options->addOption(FileNameOption("o")
+                               .filetype(eftPlot)
+                               .outputFile()
+                               .store(&fnFreevol_)
+                               .defaultBasename("freevolume")
+                               .description("Computed free volume"));
 
     // Add option for selecting a subset of atoms
-    options->addOption(SelectionOption("select")
-                           .store(&sel_).defaultSelectionText("all")
-                           .onlyAtoms()
-                           .description("Atoms that are considered as part of the excluded volume"));
+    options->addOption(
+            SelectionOption("select").store(&sel_).defaultSelectionText("all").onlyAtoms().description(
+                    "Atoms that are considered as part of the excluded volume"));
 
     // Add option for the probe radius and initialize it
-    options->addOption(DoubleOption("radius").store(&probeRadius_)
-                           .description("Radius of the probe to be inserted (nm, 0 yields the true free volume)"));
+    options->addOption(
+            DoubleOption("radius").store(&probeRadius_).description("Radius of the probe to be inserted (nm, 0 yields the true free volume)"));
 
     // Add option for the random number seed and initialize it to
     // generate a value automatically
-    options->addOption(IntegerOption("seed").store(&seed_)
-                           .description("Seed for random number generator (0 means generate)."));
+    options->addOption(IntegerOption("seed").store(&seed_).description(
+            "Seed for random number generator (0 means generate)."));
 
     // Add option to determine number of insertion trials per frame
-    options->addOption(IntegerOption("ninsert").store(&ninsert_)
-                           .description("Number of probe insertions per cubic nm to try for each frame in the trajectory."));
+    options->addOption(IntegerOption("ninsert").store(&ninsert_).description(
+            "Number of probe insertions per cubic nm to try for each frame in the trajectory."));
 
     // Control input settings
-    settings->setFlags(TrajectoryAnalysisSettings::efRequireTop |
-                       TrajectoryAnalysisSettings::efNoUserPBC);
+    settings->setFlags(TrajectoryAnalysisSettings::efRequireTop | TrajectoryAnalysisSettings::efNoUserPBC);
     settings->setPBC(true);
 }
 
 
-void
-FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                         const TopologyInformation        &top)
+void FreeVolume::initAnalysis(const TrajectoryAnalysisSettings& settings, const TopologyInformation& top)
 {
     // Add the module that will contain the averaging and the time series
     // for our calculation
@@ -235,7 +228,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     cutoff_               = 0;
     int            nnovdw = 0;
     AtomProperties aps;
-    auto           atoms  = top.copyAtoms();
+    auto           atoms = top.copyAtoms();
 
     // Compute total mass
     mtot_ = 0;
@@ -258,10 +251,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
         // Lookup the Van der Waals radius of this atom
         int resnr = atoms->atom[i].resind;
-        if (aps.setAtomProperty(epropVDW,
-                                *(atoms->resinfo[resnr].name),
-                                *(atoms->atomname[i]),
-                                &value))
+        if (aps.setAtomProperty(epropVDW, *(atoms->resinfo[resnr].name), *(atoms->atomname[i]), &value))
         {
             vdw_radius_.push_back(value);
             if (value > cutoff_)
@@ -275,8 +265,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
             if (nnovdw < maxnovdw)
             {
                 fprintf(stderr, "Could not determine VDW radius for %s-%s. Set to zero.\n",
-                        *(atoms->resinfo[resnr].name),
-                        *(atoms->atomname[i]));
+                        *(atoms->resinfo[resnr].name), *(atoms->atomname[i]));
             }
             vdw_radius_.push_back(0.0);
         }
@@ -310,13 +299,11 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     nb_.setCutoff(cutoff_);
 }
 
-void
-FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
-                         TrajectoryAnalysisModuleData *pdata)
+void FreeVolume::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAnalysisModuleData* pdata)
 {
-    AnalysisDataHandle                   dh   = pdata->dataHandle(data_);
-    const Selection                     &sel  = pdata->parallelSelection(sel_);
-    gmx::UniformRealDistribution<real>   dist;
+    AnalysisDataHandle                 dh  = pdata->dataHandle(data_);
+    const Selection&                   sel = pdata->parallelSelection(sel_);
+    gmx::UniformRealDistribution<real> dist;
 
     GMX_RELEASE_ASSERT(nullptr != pbc, "You have no periodic boundary conditions");
 
@@ -325,7 +312,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 
     // Compute volume and number of insertions to perform
     real V       = det(fr.box);
-    int  Ninsert = static_cast<int>(ninsert_*V);
+    int  Ninsert = static_cast<int>(ninsert_ * V);
 
     // Use neighborsearching tools!
     AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, sel);
@@ -355,9 +342,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             pbc_dx(pbc, ins, sel.position(jp).x(), dx);
 
             // See whether the distance is smaller than allowed
-            bOverlap = (norm(dx) <
-                        probeRadius_+vdw_radius_[sel.position(jp).refId()]);
-
+            bOverlap = (norm(dx) < probeRadius_ + vdw_radius_[sel.position(jp).refId()]);
         }
 
         if (!bOverlap)
@@ -370,7 +355,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     double frac = 0;
     if (Ninsert > 0)
     {
-        frac = (100.0*NinsTot)/Ninsert;
+        frac = (100.0 * NinsTot) / Ninsert;
     }
     // Add the free volume fraction to the data set in column 0
     dh.setPoint(0, frac);
@@ -382,15 +367,13 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 }
 
 
-void
-FreeVolume::finishAnalysis(int /* nframes */)
+void FreeVolume::finishAnalysis(int /* nframes */)
 {
     please_cite(stdout, "Bondi1964a");
     please_cite(stdout, "Lourenco2013a");
 }
 
-void
-FreeVolume::writeOutput()
+void FreeVolume::writeOutput()
 {
     // Final results come from statistics module in analysis framework
     double FVaver  = adata_->average(0, 0);
@@ -403,30 +386,27 @@ FreeVolume::writeOutput()
 
     printf("Number of molecules %d total mass %.2f Dalton\n", nmol_, mtot_);
     double RhoAver  = mtot_ / (Vaver * 1e-24 * AVOGADRO);
-    double RhoError = gmx::square(RhoAver / Vaver)*Verror;
-    printf("Average molar mass: %.2f Dalton\n", mtot_/nmol_);
+    double RhoError = gmx::square(RhoAver / Vaver) * Verror;
+    printf("Average molar mass: %.2f Dalton\n", mtot_ / nmol_);
 
-    double VmAver  = Vaver/nmol_;
-    double VmError = Verror/nmol_;
+    double VmAver  = Vaver / nmol_;
+    double VmError = Verror / nmol_;
     printf("Density rho: %.2f +/- %.2f nm^3\n", RhoAver, RhoError);
-    printf("Molecular volume Vm assuming homogeneity: %.4f +/- %.4f nm^3\n",
-           VmAver, VmError);
+    printf("Molecular volume Vm assuming homogeneity: %.4f +/- %.4f nm^3\n", VmAver, VmError);
 
-    double VvdWaver  = (1-FVaver/100)*VmAver;
+    double VvdWaver  = (1 - FVaver / 100) * VmAver;
     double VvdWerror = 0;
-    printf("Molecular van der Waals volume assuming homogeneity:  %.4f +/- %.4f nm^3\n",
-           VvdWaver, VvdWerror);
+    printf("Molecular van der Waals volume assuming homogeneity:  %.4f +/- %.4f nm^3\n", VvdWaver, VvdWerror);
 
-    double FFVaver  = 1-1.3*((100-FVaver)/100);
-    double FFVerror = (FVerror/FVaver)*FFVaver;
+    double FFVaver  = 1 - 1.3 * ((100 - FVaver) / 100);
+    double FFVerror = (FVerror / FVaver) * FFVaver;
     printf("Fractional free volume %.3f +/- %.3f\n", FFVaver, FFVerror);
 }
 
-}       // namespace
+} // namespace
 
 const char FreeVolumeInfo::name[]             = "freevolume";
-const char FreeVolumeInfo::shortDescription[] =
-    "Calculate free volume";
+const char FreeVolumeInfo::shortDescription[] = "Calculate free volume";
 
 TrajectoryAnalysisModulePointer FreeVolumeInfo::create()
 {

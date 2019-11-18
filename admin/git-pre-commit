@@ -2,7 +2,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
+# Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -66,11 +66,16 @@ fi
 # Redirect output to stderr.
 exec 1>&2
 
-uncrustify_mode=`git config hooks.uncrustifymode`
+uncrustify_mode=off
+clangformat_mode=`git config hooks.clangformatmode`
 copyright_mode=`git config hooks.copyrightmode`
 if [ -z "$uncrustify_mode" ]
 then
     uncrustify_mode=off
+fi
+if [ -z "$clangformat_mode" ]
+then
+    clangformat_mode=off
 fi
 if [ -z "$copyright_mode" ]
 then
@@ -78,26 +83,58 @@ then
 fi
 
 if [[ -f admin/uncrustify.sh && \
-      ( "$uncrustify_mode" != "off" || "$copyright_mode" != "off" ) ]]
+      ( "$uncrustify_mode" != "off" ) ]]
 then
-    if [ "$uncrustify_mode" != "off" ]
+    uncrustify_path=`git config hooks.uncrustifypath`
+    if [ -z "$uncrustify_path" ]
     then
-        uncrustify_path=`git config hooks.uncrustifypath`
-        if [ -z "$uncrustify_path" ]
-        then
-            echo "Please set the path to uncrustify using 'git config hooks.uncrustifypath'."
-            echo "Note that you need a custom version of uncrustify."
-            exit 1
-        fi
-        export UNCRUSTIFY="$uncrustify_path"
+        echo "Please set the path to uncrustify using 'git config hooks.uncrustifypath'."
+        echo "Note that you need a custom version of uncrustify."
+        exit 1
     fi
+    export UNCRUSTIFY="$uncrustify_path"
     admin/uncrustify.sh check-index --rev=$against \
-        --uncrustify="$uncrustify_mode" --copyright="$copyright_mode"
+        --uncrustify="$uncrustify_mode"
     stat=$?
     if [ $stat -eq 1 ] ; then
         exit 1
     elif [ $stat -ne 0 ] ; then
-        echo "Source code formatting check failed"
+        echo "Source code formatting check with uncrustify failed"
+        exit 1
+    fi
+fi
+
+if [[ -f admin/clang-format.sh && \
+      ( "$clangformat_mode" != "off" ) ]]
+then
+    clangformat_path=`git config hooks.clangformatpath`
+    if [ -z "$clangformat_path" ]
+    then
+        echo "Please set the path to clang-format using 'git config hooks.clangformatpath'."
+        exit 1
+    fi
+    export CLANG_FORMAT="$clangformat_path"
+    admin/clang-format.sh check-index --rev=$against \
+        --format="$clangformat_mode"
+    stat=$?
+    if [ $stat -eq 1 ] ; then
+        exit 1
+    elif [ $stat -ne 0 ] ; then
+        echo "Source code formatting check with clang-format failed"
+        exit 1
+    fi
+fi
+
+if [[ -f admin/copyright.sh && \
+      ( "$copyright_mode" != "off" ) ]]
+then
+    admin/copyright.sh check-index --rev=$against \
+        --copyright="$copyright_mode"
+    stat=$?
+    if [ $stat -eq 1 ] ; then
+        exit 1
+    elif [ $stat -ne 0 ] ; then
+        echo "Copyright information check failed"
         exit 1
     fi
 fi

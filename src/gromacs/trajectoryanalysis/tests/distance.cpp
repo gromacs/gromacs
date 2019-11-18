@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,27 +59,23 @@ using gmx::test::CommandLine;
  */
 
 //! Test fixture for the angle analysis module.
-typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::DistanceInfo>
-    DistanceModuleTest;
+typedef gmx::test::TrajectoryAnalysisModuleTestFixture<gmx::analysismodules::DistanceInfo> DistanceModuleTest;
 
 TEST_F(DistanceModuleTest, ComputesDistances)
 {
-    const char *const cmdline[] = {
-        "distance",
-        "-select", "atomname S1 S2",
-        "-len", "2", "-binw", "0.5"
-    };
+    const char* const cmdline[] = { "distance", "-select", "atomname S1 S2", "-len", "2",
+                                    "-binw",    "0.5" };
     setTopology("simple.gro");
     runTest(CommandLine(cmdline));
 }
 
 TEST_F(DistanceModuleTest, ComputesMultipleDistances)
 {
-    const char *const cmdline[] = {
-        "distance",
-        "-select", "atomname S1 S2",
-        "resindex 1 to 4 and atomname CB merge resindex 2 to 5 and atomname CB",
-        "-len", "2", "-binw", "0.5"
+    const char* const cmdline[] = {
+        "distance",       "-select",
+        "atomname S1 S2", "resindex 1 to 4 and atomname CB merge resindex 2 to 5 and atomname CB",
+        "-len",           "2",
+        "-binw",          "0.5"
     };
     setTopology("simple.gro");
     runTest(CommandLine(cmdline));
@@ -87,11 +83,9 @@ TEST_F(DistanceModuleTest, ComputesMultipleDistances)
 
 TEST_F(DistanceModuleTest, HandlesDynamicSelections)
 {
-    const char *const cmdline[] = {
-        "distance",
-        "-select", "atomname S1 S2 and res_cog x < 2.8",
-        "-len", "2", "-binw", "0.5"
-    };
+    const char* const cmdline[] = { "distance", "-select", "atomname S1 S2 and res_cog x < 2.8",
+                                    "-len",     "2",       "-binw",
+                                    "0.5" };
     setTopology("simple.gro");
     runTest(CommandLine(cmdline));
 }

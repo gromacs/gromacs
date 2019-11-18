@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2018, by the GROMACS development team, led by
+ * Copyright (c) 2015,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,31 +71,31 @@ typedef std::shared_ptr<IOptionsBehavior> OptionsBehaviorPointer;
  */
 class OptionsBehaviorCollection
 {
-    public:
-        /*! \brief
-         * Constructs a container for storing behaviors associated with given
-         * Options.
-         *
-         * Caller needs to ensure that provided Options remains in existence
-         * while the container exists.
-         */
-        explicit OptionsBehaviorCollection(Options *options);
-        ~OptionsBehaviorCollection();
+public:
+    /*! \brief
+     * Constructs a container for storing behaviors associated with given
+     * Options.
+     *
+     * Caller needs to ensure that provided Options remains in existence
+     * while the container exists.
+     */
+    explicit OptionsBehaviorCollection(Options* options);
+    ~OptionsBehaviorCollection();
 
-        //! Adds a behavior to the collection.
-        void addBehavior(const OptionsBehaviorPointer &behavior);
-        //! Calls IOptionsBehavior::optionsFinishing() on all behaviors.
-        void optionsFinishing();
-        //! Calls IOptionsBehavior::optionsFinished() on all behaviors.
-        void optionsFinished();
+    //! Adds a behavior to the collection.
+    void addBehavior(const OptionsBehaviorPointer& behavior);
+    //! Calls IOptionsBehavior::optionsFinishing() on all behaviors.
+    void optionsFinishing();
+    //! Calls IOptionsBehavior::optionsFinished() on all behaviors.
+    void optionsFinished();
 
-    private:
-        Options                             *options_;
-        std::vector<OptionsBehaviorPointer>  behaviors_;
+private:
+    Options*                            options_;
+    std::vector<OptionsBehaviorPointer> behaviors_;
 
-        GMX_DISALLOW_COPY_AND_ASSIGN(OptionsBehaviorCollection);
+    GMX_DISALLOW_COPY_AND_ASSIGN(OptionsBehaviorCollection);
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

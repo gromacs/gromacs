@@ -42,21 +42,26 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-struct gpp_atomtype;
+class PreprocessingAtomTypes;
 struct t_atoms;
-struct t_params;
+struct InteractionsOfType;
 struct PreprocessResidue;
 struct t_symtab;
 
 /* stuff for pdb2gmx */
 
-void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB, gpp_atomtype *atype,
-               t_atoms *at, t_symtab *symtab, std::vector<gmx::RVec> *x,
-               t_params plist[], int *dummy_type[], int *cgnr[],
-               real mHmult, bool bVSiteAromatics,
-               const char *ffdir);
+void do_vsites(gmx::ArrayRef<const PreprocessResidue> rtpFFDB,
+               PreprocessingAtomTypes*                atype,
+               t_atoms*                               at,
+               t_symtab*                              symtab,
+               std::vector<gmx::RVec>*                x,
+               gmx::ArrayRef<InteractionsOfType>      plist,
+               int*                                   dummy_type[],
+               int*                                   cgnr[],
+               real                                   mHmult,
+               bool                                   bVSiteAromatics,
+               const char*                            ffdir);
 
-void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
-               bool bDeuterate);
+void do_h_mass(InteractionsOfType* psb, int vsite_type[], t_atoms* at, real mHmult, bool bDeuterate);
 
 #endif

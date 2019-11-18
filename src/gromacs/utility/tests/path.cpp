@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,106 +47,78 @@
 
 #include <gtest/gtest.h>
 
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+
+namespace gmx
+{
+namespace test
+{
 namespace
 {
 
 TEST(PathTest, StripSourcePrefixWorks)
 {
-    EXPECT_STREQ("", gmx::Path::stripSourcePrefix(""));
-    EXPECT_STREQ("foo.cpp", gmx::Path::stripSourcePrefix("foo.cpp"));
-    EXPECT_STREQ("foo.cpp", gmx::Path::stripSourcePrefix("some/dir/foo.cpp"));
-    EXPECT_STREQ("foo.cpp", gmx::Path::stripSourcePrefix("src/some/dir/foo.cpp"));
-    EXPECT_STREQ("foo.cpp",
-                 gmx::Path::stripSourcePrefix("srcx/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp",
-                 gmx::Path::stripSourcePrefix("src/gromacs/foo.cpp"));
-    EXPECT_STREQ("src/gromacs/foo.cpp",
-                 gmx::Path::stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
+    EXPECT_STREQ("", Path::stripSourcePrefix(""));
+    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("foo.cpp"));
+    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("some/dir/foo.cpp"));
+    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("src/some/dir/foo.cpp"));
+    EXPECT_STREQ("foo.cpp", Path::stripSourcePrefix("srcx/gromacs/foo.cpp"));
+    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("src/gromacs/foo.cpp"));
+    EXPECT_STREQ("src/gromacs/foo.cpp", Path::stripSourcePrefix("some/dir/src/gromacs/foo.cpp"));
     // TODO: For in-source builds, this might not work.
-    EXPECT_EQ(gmx::Path::normalize("src/gromacs/utility/tests/path.cpp"),
-              gmx::Path::stripSourcePrefix(__FILE__))
-    << "stripSourcePrefix() does not work with compiler-produced file names. "
-    << "This only affects source paths reported in fatal error messages.";
+    EXPECT_EQ(Path::normalize("src/gromacs/utility/tests/path.cpp"), Path::stripSourcePrefix(__FILE__))
+            << "stripSourcePrefix() does not work with compiler-produced file names. "
+            << "This only affects source paths reported in fatal error messages.";
 }
 
-TEST(PathTest, ConcatenateBeforeExtensionWorks)
+TEST(PathTest, SearchOperationsWork)
 {
-    EXPECT_STREQ("md1.log", gmx::Path::concatenateBeforeExtension("md.log", "1").c_str());
-    EXPECT_STREQ("ener0", gmx::Path::concatenateBeforeExtension("ener", "0").c_str());
-    EXPECT_STREQ("simpledir/traj34.tng", gmx::Path::concatenateBeforeExtension("simpledir/traj.tng", "34").c_str());
-    EXPECT_STREQ("complex.dir/traj34.tng", gmx::Path::concatenateBeforeExtension("complex.dir/traj.tng", "34").c_str());
-    EXPECT_STREQ("complex.dir/traj34", gmx::Path::concatenateBeforeExtension("complex.dir/traj", "34").c_str());
-}
-
-TEST(PathTest, GetParentPathWorks)
-{
+    gmx::test::TestReferenceData    data;
+    gmx::test::TestReferenceChecker rootChecker(data.rootChecker());
+    for (const std::string& input :
+         { "", "md.log", "md", "/tmp/absolute.txt", "simpledir/traj.tng", "simpledir/traj",
+           "windowsdir\\traj.tng", "complex.dir/traj.tng", "complex.dir/traj",
+           "nested/dir/conf.pdb", "/tmp/absolutedir/conf.pdb" })
     {
-        auto result = gmx::Path::getParentPath("");
-        EXPECT_EQ("", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("file.txt");
-        EXPECT_EQ("", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("dir/file.txt");
-        EXPECT_EQ("dir", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("windowsdir\\file.txt");
-        EXPECT_EQ("windowsdir", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("dir/anotherdir/file.txt");
-        EXPECT_EQ("dir/anotherdir", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("dir");
-        EXPECT_EQ("", result);
-    }
-    {
-        auto result = gmx::Path::getParentPath("dir/anotherdir");
-        EXPECT_EQ("dir", result);
-    }
-}
-
-TEST(PathTest, GetParentPathAndBasenameWorks)
-{
-    {
-        auto result = gmx::Path::getParentPathAndBasename("");
-        EXPECT_EQ("", std::get<0>(result));
-        EXPECT_EQ("", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("file.txt");
-        EXPECT_EQ("", std::get<0>(result));
-        EXPECT_EQ("file.txt", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("dir/file.txt");
-        EXPECT_EQ("dir", std::get<0>(result));
-        EXPECT_EQ("file.txt", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("windowsdir\\file.txt");
-        EXPECT_EQ("windowsdir", std::get<0>(result));
-        EXPECT_EQ("file.txt", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("dir/anotherdir/file.txt");
-        EXPECT_EQ("dir/anotherdir", std::get<0>(result));
-        EXPECT_EQ("file.txt", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("dir");
-        EXPECT_EQ("", std::get<0>(result));
-        EXPECT_EQ("dir", std::get<1>(result));
-    }
-    {
-        auto result = gmx::Path::getParentPathAndBasename("dir/anotherdir");
-        EXPECT_EQ("dir", std::get<0>(result));
-        EXPECT_EQ("anotherdir", std::get<1>(result));
+        SCOPED_TRACE(std::string("for input '") + input + "'");
+        auto checker = rootChecker.checkCompound("PathToTest", input);
+        {
+            std::string result;
+            ASSERT_NO_THROW_GMX(result = Path::getParentPath(input));
+            checker.checkString(result, "getParentPath");
+        }
+        {
+            std::string result;
+            ASSERT_NO_THROW_GMX(result = Path::getFilename(input));
+            checker.checkString(result, "getFilename");
+        }
+        {
+            bool result = false;
+            ASSERT_NO_THROW_GMX(result = Path::hasExtension(input));
+            checker.checkBoolean(result, "hasExtension");
+        }
+        {
+            bool result = false;
+            ASSERT_NO_THROW_GMX(result = Path::extensionMatches(input, "pdb"));
+            checker.checkBoolean(result, "extensionMatchesPdb");
+            // The match is exclusive of the dot separator, so no
+            // input string can match.
+            ASSERT_FALSE(Path::extensionMatches(input, ".pdb"));
+        }
+        {
+            std::string result;
+            ASSERT_NO_THROW_GMX(result = Path::stripExtension(input));
+            checker.checkString(result, "stripExtension");
+        }
+        {
+            std::string result;
+            ASSERT_NO_THROW_GMX(result = Path::concatenateBeforeExtension(input, "_34"));
+            checker.checkString(result, "concatenateBeforeExtension");
+        }
     }
 }
 
 } // namespace
+} // namespace test
+} // namespace gmx

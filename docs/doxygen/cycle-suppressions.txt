@@ -1,12 +1,17 @@
 # Order (or more generally, edge selection) is significant (see gmxtree.md);
 # "moduleA -> moduleB" means that moduleA should not depend on moduleB, and is
 # a problem to be addressed at some point.
+
+# Compat wants assertions and string code from utility, and other string code
+# in utility wants to use string_view from compat. If we fix this, it might be
+# best to implement the compat namespace within the utility module.
+compat -> utility
+
 domdec -> imd
 domdec -> ewald
 domdec -> mdlib
 domdec -> pulling
 fileio -> gmxlib
-gmxlib -> listed_forces
 mdlib -> essentialdynamics
 mdlib -> imd
 mdlib -> ewald
@@ -17,3 +22,7 @@ nbnxm -> mdlib
 simd -> hardware
 gpu_utils -> hardware
 listed_forces -> mdlib
+utility -> math
+
+# modular simulator uses shellfc from mdrun, but is later included in mdrun by simulator builder
+modularsimulator -> mdrun

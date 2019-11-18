@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,138 +67,115 @@ namespace gmx
  */
 class SelectionOptionManager::Impl
 {
+public:
+    /*! \brief
+     * Request for postponed parsing of selections.
+     */
+    struct SelectionRequest
+    {
+        //! Initializes a request for the given option.
+        explicit SelectionRequest(SelectionOptionStorage* storage) : storage_(storage) {}
+
+        //! Returns name of the requested selection optin.
+        const std::string& name() const { return storage_->name(); }
+        //! Returns description for the requested selection option.
+        const std::string& description() const { return storage_->description(); }
+        /*! \brief
+         * Returns the number of selections requested in this request.
+         *
+         * -1 indicates no upper limit.
+         */
+        int count() const { return storage_->maxValueCount(); }
+
+        //! Storage object to which the selections will be added.
+        SelectionOptionStorage* storage_;
+    };
+
+    //! Collection for a list of selection requests.
+    typedef std::vector<SelectionRequest> RequestList;
+    //! Collection for list of option storage objects.
+    typedef std::vector<SelectionOptionStorage*> OptionList;
+
+    /*! \brief
+     * Helper class that clears a request list on scope exit.
+     *
+     * Methods in this class do not throw.
+     */
+    class RequestsClearer
+    {
     public:
-        /*! \brief
-         * Request for postponed parsing of selections.
-         */
-        struct SelectionRequest
-        {
-            //! Initializes a request for the given option.
-            explicit SelectionRequest(SelectionOptionStorage *storage)
-                : storage_(storage)
-            {
-            }
+        //! Constructs an object that clears given list on scope exit.
+        explicit RequestsClearer(RequestList* requests) : requests_(requests) {}
+        //! Clears the request list given to the constructor.
+        ~RequestsClearer() { requests_->clear(); }
 
-            //! Returns name of the requested selection optin.
-            const std::string &name() const
-            {
-                return storage_->name();
-            }
-            //! Returns description for the requested selection option.
-            const std::string &description() const
-            {
-                return storage_->description();
-            }
-            /*! \brief
-             * Returns the number of selections requested in this request.
-             *
-             * -1 indicates no upper limit.
-             */
-            int count() const
-            {
-                return storage_->maxValueCount();
-            }
+    private:
+        RequestList* requests_;
+    };
 
-            //! Storage object to which the selections will be added.
-            SelectionOptionStorage     *storage_;
-        };
+    /*! \brief
+     * Creates a new selection collection.
+     *
+     * \throws  std::bad_alloc if out of memory.
+     */
+    explicit Impl(SelectionCollection* collection);
 
-        //! Collection for a list of selection requests.
-        typedef std::vector<SelectionRequest> RequestList;
-        //! Collection for list of option storage objects.
-        typedef std::vector<SelectionOptionStorage *> OptionList;
+    /*! \brief
+     * Assign selections from a list to pending requests.
+     *
+     * \param[in] selections  List of selections to assign.
+     * \throws    std::bad_alloc if out of memory.
+     * \throws    InvalidInputError if the assignment cannot be done
+     *      (see parseRequestedFromFile() for documented conditions).
+     *
+     * Loops through \p selections and the pending requests lists in order,
+     * and for each requests, assigns the first yet unassigned selections
+     * from the list.
+     */
+    void placeSelectionsInRequests(const SelectionList& selections);
+    /*! \brief
+     * Adds a request for each required option that is not yet set.
+     *
+     * \throws    std::bad_alloc if out of memory.
+     */
+    void requestUnsetRequiredOptions();
 
-        /*! \brief
-         * Helper class that clears a request list on scope exit.
-         *
-         * Methods in this class do not throw.
-         */
-        class RequestsClearer
-        {
-            public:
-                //! Constructs an object that clears given list on scope exit.
-                explicit RequestsClearer(RequestList *requests)
-                    : requests_(requests)
-                {
-                }
-                //! Clears the request list given to the constructor.
-                ~RequestsClearer()
-                {
-                    requests_->clear();
-                }
-
-            private:
-                RequestList    *requests_;
-        };
-
-        /*! \brief
-         * Creates a new selection collection.
-         *
-         * \throws  std::bad_alloc if out of memory.
-         */
-        explicit Impl(SelectionCollection *collection);
-
-        /*! \brief
-         * Assign selections from a list to pending requests.
-         *
-         * \param[in] selections  List of selections to assign.
-         * \throws    std::bad_alloc if out of memory.
-         * \throws    InvalidInputError if the assignment cannot be done
-         *      (see parseRequestedFromFile() for documented conditions).
-         *
-         * Loops through \p selections and the pending requests lists in order,
-         * and for each requests, assigns the first yet unassigned selections
-         * from the list.
-         */
-        void placeSelectionsInRequests(const SelectionList &selections);
-        /*! \brief
-         * Adds a request for each required option that is not yet set.
-         *
-         * \throws    std::bad_alloc if out of memory.
-         */
-        void requestUnsetRequiredOptions();
-
-        //! Selection collection to which selections are stored.
-        SelectionCollection    &collection_;
-        //! List of selection options (storage objects) this manager manages.
-        OptionList              options_;
-        //! List of selections requested for later parsing.
-        RequestList             requests_;
+    //! Selection collection to which selections are stored.
+    SelectionCollection& collection_;
+    //! List of selection options (storage objects) this manager manages.
+    OptionList options_;
+    //! List of selections requested for later parsing.
+    RequestList requests_;
 };
 
-SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
-    : collection_(*collection)
-{
-}
+SelectionOptionManager::Impl::Impl(SelectionCollection* collection) : collection_(*collection) {}
 
-void SelectionOptionManager::Impl::placeSelectionsInRequests(
-        const SelectionList &selections)
+void SelectionOptionManager::Impl::placeSelectionsInRequests(const SelectionList& selections)
 {
     if (requests_.empty())
     {
         requestUnsetRequiredOptions();
     }
 
-    RequestsClearer               clearRequestsOnExit(&requests_);
+    RequestsClearer clearRequestsOnExit(&requests_);
 
     SelectionList::const_iterator first = selections.begin();
     SelectionList::const_iterator last  = first;
     RequestList::const_iterator   i;
     for (i = requests_.begin(); i != requests_.end(); ++i)
     {
-        const SelectionRequest &request = *i;
+        const SelectionRequest& request = *i;
         if (request.count() > 0)
         {
             int remaining = selections.end() - first;
             if (remaining < request.count())
             {
                 int assigned = first - selections.begin();
-                GMX_THROW(InvalidInputError(formatString(
-                                                    "Too few selections provided for '%s': "
-                                                    "Expected %d selections, but only %d left "
-                                                    "after assigning the first %d to other selections.",
-                                                    request.name().c_str(), request.count(),
-                                                    remaining, assigned)));
+                GMX_THROW(InvalidInputError(
+                        formatString("Too few selections provided for '%s': "
+                                     "Expected %d selections, but only %d left "
+                                     "after assigning the first %d to other selections.",
+                                     request.name().c_str(), request.count(), remaining, assigned)));
             }
             last = first + request.count();
         }
@@ -208,16 +185,16 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             ++nextRequest;
             if (nextRequest != requests_.end())
             {
-                const char *name         = request.name().c_str();
-                const char *conflictName = nextRequest->name().c_str();
-                GMX_THROW(InvalidInputError(formatString(
-                                                    "Ambiguous selections for '%s' and '%s': "
-                                                    "Any number of selections is acceptable for "
-                                                    "'%s', but you have requested subsequent "
-                                                    "selections to be assigned to '%s'. "
-                                                    "Resolution for such cases is not implemented, "
-                                                    "and may be impossible.",
-                                                    name, conflictName, name, conflictName)));
+                const char* name         = request.name().c_str();
+                const char* conflictName = nextRequest->name().c_str();
+                GMX_THROW(InvalidInputError(
+                        formatString("Ambiguous selections for '%s' and '%s': "
+                                     "Any number of selections is acceptable for "
+                                     "'%s', but you have requested subsequent "
+                                     "selections to be assigned to '%s'. "
+                                     "Resolution for such cases is not implemented, "
+                                     "and may be impossible.",
+                                     name, conflictName, name, conflictName)));
             }
             last = selections.end();
         }
@@ -230,11 +207,11 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
         int count     = selections.end() - selections.begin();
         int remaining = selections.end() - last;
         int assigned  = last - selections.begin();
-        GMX_THROW(InvalidInputError(formatString(
-                                            "Too many selections provided: "
-                                            "Expected %d selections, but %d provided. "
-                                            "Last %d selections could not be assigned to any option.",
-                                            assigned, count, remaining)));
+        GMX_THROW(InvalidInputError(
+                formatString("Too many selections provided: "
+                             "Expected %d selections, but %d provided. "
+                             "Last %d selections could not be assigned to any option.",
+                             assigned, count, remaining)));
     }
 }
 
@@ -243,7 +220,7 @@ void SelectionOptionManager::Impl::requestUnsetRequiredOptions()
     OptionList::const_iterator i;
     for (i = options_.begin(); i != options_.end(); ++i)
     {
-        SelectionOptionStorage &storage = **i;
+        SelectionOptionStorage& storage = **i;
         if (storage.isRequired() && !storage.isSet())
         {
             requests_.emplace_back(&storage);
@@ -256,48 +233,40 @@ void SelectionOptionManager::Impl::requestUnsetRequiredOptions()
  * SelectionOptionManager
  */
 
-SelectionOptionManager::SelectionOptionManager(SelectionCollection *collection)
-    : impl_(new Impl(collection))
+SelectionOptionManager::SelectionOptionManager(SelectionCollection* collection) :
+    impl_(new Impl(collection))
 {
 }
 
-SelectionOptionManager::~SelectionOptionManager()
-{
-}
+SelectionOptionManager::~SelectionOptionManager() {}
 
-void
-SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
+void SelectionOptionManager::registerOption(SelectionOptionStorage* storage)
 {
     impl_->requests_.reserve(impl_->options_.size() + 1);
     impl_->options_.push_back(storage);
 }
 
-void
-SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string      &value,
-                                           bool                    bFullValue)
+void SelectionOptionManager::convertOptionValue(SelectionOptionStorage* storage,
+                                                const std::string&      value,
+                                                bool                    bFullValue)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
     storage->addSelections(selections, bFullValue);
 }
 
-void
-SelectionOptionManager::requestOptionDelayedParsing(
-        SelectionOptionStorage *storage)
+void SelectionOptionManager::requestOptionDelayedParsing(SelectionOptionStorage* storage)
 {
     impl_->requests_.emplace_back(storage);
 }
 
-bool
-SelectionOptionManager::hasRequestedSelections() const
+bool SelectionOptionManager::hasRequestedSelections() const
 {
     return !impl_->requests_.empty();
 }
 
-void
-SelectionOptionManager::initOptions(IOptionsContainer *options)
+void SelectionOptionManager::initOptions(IOptionsContainer* options)
 {
-    bool allowOnlyAtomOutput = true;
+    bool                             allowOnlyAtomOutput = true;
     Impl::OptionList::const_iterator iter;
     for (iter = impl_->options_.begin(); iter != impl_->options_.end(); ++iter)
     {
@@ -307,51 +276,43 @@ SelectionOptionManager::initOptions(IOptionsContainer *options)
         }
     }
 
-    SelectionCollection::SelectionTypeOption typeOption
-        = allowOnlyAtomOutput
-            ? SelectionCollection::AlwaysAtomSelections
-            : SelectionCollection::IncludeSelectionTypeOption;
+    SelectionCollection::SelectionTypeOption typeOption =
+            allowOnlyAtomOutput ? SelectionCollection::AlwaysAtomSelections
+                                : SelectionCollection::IncludeSelectionTypeOption;
     impl_->collection_.initOptions(options, typeOption);
 }
 
-void
-SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
+void SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {
-    Impl::RequestsClearer             clearRequestsOnExit(&impl_->requests_);
+    Impl::RequestsClearer clearRequestsOnExit(&impl_->requests_);
 
     Impl::RequestList::const_iterator i;
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
     {
-        const Impl::SelectionRequest &request = *i;
-        std::string                   context =
-            formatString("for option '%s'\n(%s)",
-                         request.name().c_str(), request.description().c_str());
-        SelectionList selections
-            = impl_->collection_.parseFromStdin(request.count(), bInteractive,
-                                                context);
+        const Impl::SelectionRequest& request = *i;
+        std::string   context = formatString("for option '%s'\n(%s)", request.name().c_str(),
+                                           request.description().c_str());
+        SelectionList selections =
+                impl_->collection_.parseFromStdin(request.count(), bInteractive, context);
         request.storage_->addSelections(selections, true);
     }
 }
 
-void
-SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
+void SelectionOptionManager::parseRequestedFromFile(const std::string& filename)
 {
     SelectionList selections = impl_->collection_.parseFromFile(filename);
     try
     {
         impl_->placeSelectionsInRequests(selections);
     }
-    catch (GromacsException &ex)
+    catch (GromacsException& ex)
     {
-        ex.prependContext(formatString(
-                                  "Error in adding selections from file '%s'",
-                                  filename.c_str()));
+        ex.prependContext(formatString("Error in adding selections from file '%s'", filename.c_str()));
         throw;
     }
 }
 
-void
-SelectionOptionManager::parseRequestedFromString(const std::string &str)
+void SelectionOptionManager::parseRequestedFromString(const std::string& str)
 {
     SelectionList selections = impl_->collection_.parseFromString(str);
     impl_->placeSelectionsInRequests(selections);

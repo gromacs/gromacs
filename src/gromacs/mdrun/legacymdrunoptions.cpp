@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,15 +49,9 @@
 
 #include "legacymdrunoptions.h"
 
-#include "config.h"
-
 #include <cstring>
 
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/mdrun/multisim.h"
-#include "gromacs/mdrunutility/handlerestart.h"
-#include "gromacs/mdtypes/commrec.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -66,7 +60,7 @@ namespace gmx
 
 /*! \brief Return whether the command-line parameter that
  *  will trigger a multi-simulation is set */
-static bool is_multisim_option_set(int argc, const char *const argv[])
+static bool is_multisim_option_set(int argc, const char* const argv[])
 {
     for (int i = 0; i < argc; ++i)
     {
@@ -78,9 +72,9 @@ static bool is_multisim_option_set(int argc, const char *const argv[])
     return false;
 }
 
-int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<const char *> desc)
+int LegacyMdrunOptions::updateFromCommandLine(int argc, char** argv, ArrayRef<const char*> desc)
 {
-    unsigned long     PCA_Flags = PCA_CAN_SET_DEFFNM;
+    unsigned long PCA_Flags = PCA_CAN_SET_DEFFNM;
     // With -multidir, the working directory still needs to be
     // changed, so we can't check for the existence of files during
     // parsing.  It isn't useful to do any completion based on file
@@ -90,9 +84,8 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         PCA_Flags |= PCA_DISABLE_INPUT_FILE_CHECKING;
     }
 
-    if (!parse_common_args(&argc, argv, PCA_Flags,
-                           ssize(filenames), filenames.data(), asize(pa), pa,
-                           ssize(desc), desc.data(), 0, nullptr, &oenv))
+    if (!parse_common_args(&argc, argv, PCA_Flags, ssize(filenames), filenames.data(), asize(pa),
+                           pa, ssize(desc), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }
@@ -110,7 +103,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         hw_opt.gpuIdsAvailable       = gpuIdsAvailable;
         hw_opt.userGpuTaskAssignment = userGpuTaskAssignment;
 
-        const char *env = getenv("GMX_GPU_ID");
+        const char* env = getenv("GMX_GPU_ID");
         if (env != nullptr)
         {
             if (!hw_opt.gpuIdsAvailable.empty())
@@ -136,69 +129,25 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
         }
     }
 
-    hw_opt.thread_affinity = nenum(thread_aff_opt_choices);
+    hw_opt.threadAffinity = static_cast<ThreadAffinity>(nenum(thread_aff_opt_choices));
 
-    // now check for a multi-simulation
-    ArrayRef<const std::string> multidir = opt2fnsIfOptionSet("-multidir",
-                                                              ssize(filenames),
-                                                              filenames.data());
-
-    if (replExParams.exchangeInterval != 0 && multidir.size() < 2)
+    if (!opt2parg_bSet("-append", asize(pa), pa))
     {
-        gmx_fatal(FARGS, "Need at least two replicas for replica exchange (use option -multidir)");
+        mdrunOptions.appendingBehavior = AppendingBehavior::Auto;
     }
-
-    if (replExParams.numExchanges < 0)
+    else
     {
-        gmx_fatal(FARGS, "Replica exchange number of exchanges needs to be positive");
-    }
-
-    ms = init_multisystem(MPI_COMM_WORLD, multidir);
-
-    /* Prepare the intra-simulation communication */
-    // TODO consolidate this with init_commrec, after changing the
-    // relative ordering of init_commrec and init_multisystem
-#if GMX_MPI
-    if (ms != nullptr)
-    {
-        cr->nnodes = cr->nnodes / ms->nsim;
-        MPI_Comm_split(MPI_COMM_WORLD, ms->sim, cr->sim_nodeid, &cr->mpi_comm_mysim);
-        cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-        MPI_Comm_rank(cr->mpi_comm_mysim, &cr->sim_nodeid);
-        MPI_Comm_rank(cr->mpi_comm_mygroup, &cr->nodeid);
-    }
-#endif
-
-    if (!opt2bSet("-cpi",
-                  ssize(filenames), filenames.data()))
-    {
-        // If we are not starting from a checkpoint we never allow files to be appended
-        // to, since that has caused a ton of strange behaviour and bugs in the past.
-        if (opt2parg_bSet("-append", asize(pa), pa))
+        if (opt2parg_bool("-append", asize(pa), pa))
         {
-            // If the user explicitly used the -append option, explain that it is not possible.
-            gmx_fatal(FARGS, "GROMACS can only append to files when restarting from a checkpoint.");
+            mdrunOptions.appendingBehavior = AppendingBehavior::Appending;
         }
         else
         {
-            // If the user did not say anything explicit, just disable appending.
-            bTryToAppendFiles = FALSE;
+            mdrunOptions.appendingBehavior = AppendingBehavior::NoAppending;
         }
     }
 
-    ContinuationOptions &continuationOptions = mdrunOptions.continuationOptions;
-
-    continuationOptions.appendFilesOptionSet = opt2parg_bSet("-append", asize(pa), pa);
-
-    handleRestart(cr, ms, bTryToAppendFiles,
-                  ssize(filenames),
-                  filenames.data(),
-                  &continuationOptions.appendFiles,
-                  &continuationOptions.startedFromCheckpoint);
-
-    mdrunOptions.rerun            = opt2bSet("-rerun",
-                                             ssize(filenames),
-                                             filenames.data());
+    mdrunOptions.rerun            = opt2bSet("-rerun", ssize(filenames), filenames.data());
     mdrunOptions.ntompOptionIsSet = opt2parg_bSet("-ntomp", asize(pa), pa);
 
     domdecOptions.rankOrder    = static_cast<DdRankOrder>(nenum(ddrank_opt_choices));
@@ -212,12 +161,7 @@ int LegacyMdrunOptions::updateFromCommandLine(int argc, char **argv, ArrayRef<co
 
 LegacyMdrunOptions::~LegacyMdrunOptions()
 {
-    if (GMX_LIB_MPI)
-    {
-        done_commrec(cr);
-    }
     output_env_done(oenv);
-    done_multisim(ms);
 }
 
 } // namespace gmx

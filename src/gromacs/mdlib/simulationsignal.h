@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016,2018, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,14 +60,18 @@ struct gmx_multisim_t;
 struct t_commrec;
 
 //! Kinds of simulation conditions to signal about.
-enum {
-    eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
+enum
+{
+    eglsCHKPT,
+    eglsSTOPCOND,
+    eglsRESETCOUNTERS,
+    eglsNR
 };
 
 namespace gmx
 {
 
-template <typename T>
+template<typename T>
 class ArrayRef;
 
 /*!
@@ -86,15 +90,15 @@ class ArrayRef;
  * coordinate this at run time when a SimulationSignaller is made. */
 class SimulationSignal
 {
-    public:
-        //! Constructor
-        SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {}
-        //! The signal set by this rank in do_md().
-        signed char sig;
-        //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
-        signed char set;
-        //! Is the signal in one simulation independent of other simulations?
-        bool        isLocal;
+public:
+    //! Constructor
+    SimulationSignal(bool isSignalLocal = true) : sig(0), set(0), isLocal(isSignalLocal) {}
+    //! The signal set by this rank in do_md().
+    signed char sig;
+    //! The communicated signal that triggers action, which will be equal for all ranks, once communication has occured.
+    signed char set;
+    //! Is the signal in one simulation independent of other simulations?
+    bool isLocal;
 };
 
 //! Convenience typedef for the group of signals used.
@@ -112,53 +116,54 @@ typedef std::array<SimulationSignal, eglsNR> SimulationSignals;
  * communication occurs. */
 class SimulationSignaller
 {
-    public:
-        //! Constructor
-        SimulationSignaller(SimulationSignals    *signals,
-                            const t_commrec      *cr,
-                            const gmx_multisim_t *ms,
-                            bool                  doInterSim,
-                            bool                  doIntraSim);
-        /*! \brief Return a reference to an array of signal values to communicate.
-         *
-         * \return If intra-sim signalling will take place, fill and
-         * return a reference to the array of reals in which signals
-         * will be communicated with the signal values to be
-         * sent. Otherwise return a EmptyArrayRef. */
-        gmx::ArrayRef<real> getCommunicationBuffer();
-        /*! \brief Handle inter-simulation signal communication.
-         *
-         * If an inter-simulation signal should be handled, communicate between
-         * simulation-master ranks, then propagate from the masters to the
-         * rest of the ranks for each simulation. It is the responsibility of
-         * the calling code to ensure that any necessary intra-simulation
-         * signalling has already occurred, e.g. in global_stat(). */
-        void signalInterSim();
-        /*! \brief Propagate signals when appropriate.
-         *
-         * Always propagate an mdrun signal value when doing
-         * inter-simulation signalling; otherwise, propagate it only
-         * if should be propagated within this simulation,
-         * ie. locally. See documentation of SimulationSignal for
-         * details. */
-        void setSignals();
-        //! Convenience wrapper that calls signalInterSim() then setSignals().
-        void finalizeSignals();
-    private:
-        //! Source and sink for mdrun signals
-        SimulationSignals       *signals_;
-        //! Communication object.
-        const t_commrec         *cr_;
-        //! Multi-sim handler.
-        const gmx_multisim_t    *ms_;
-        //! Do inter-sim communication at this step.
-        bool                     doInterSim_;
-        //! Do intra-sim communication at this step.
-        bool                     doIntraSim_;
-        //! Buffer for MPI communication.
-        std::array<real, eglsNR> mpiBuffer_;
+public:
+    //! Constructor
+    SimulationSignaller(SimulationSignals*    signals,
+                        const t_commrec*      cr,
+                        const gmx_multisim_t* ms,
+                        bool                  doInterSim,
+                        bool                  doIntraSim);
+    /*! \brief Return a reference to an array of signal values to communicate.
+     *
+     * \return If intra-sim signalling will take place, fill and
+     * return a reference to the array of reals in which signals
+     * will be communicated with the signal values to be
+     * sent. Otherwise return a EmptyArrayRef. */
+    gmx::ArrayRef<real> getCommunicationBuffer();
+    /*! \brief Handle inter-simulation signal communication.
+     *
+     * If an inter-simulation signal should be handled, communicate between
+     * simulation-master ranks, then propagate from the masters to the
+     * rest of the ranks for each simulation. It is the responsibility of
+     * the calling code to ensure that any necessary intra-simulation
+     * signalling has already occurred, e.g. in global_stat(). */
+    void signalInterSim();
+    /*! \brief Propagate signals when appropriate.
+     *
+     * Always propagate an mdrun signal value when doing
+     * inter-simulation signalling; otherwise, propagate it only
+     * if should be propagated within this simulation,
+     * ie. locally. See documentation of SimulationSignal for
+     * details. */
+    void setSignals();
+    //! Convenience wrapper that calls signalInterSim() then setSignals().
+    void finalizeSignals();
+
+private:
+    //! Source and sink for mdrun signals
+    SimulationSignals* signals_;
+    //! Communication object.
+    const t_commrec* cr_;
+    //! Multi-sim handler.
+    const gmx_multisim_t* ms_;
+    //! Do inter-sim communication at this step.
+    bool doInterSim_;
+    //! Do intra-sim communication at this step.
+    bool doIntraSim_;
+    //! Buffer for MPI communication.
+    std::array<real, eglsNR> mpiBuffer_;
 };
 
-}  // namespace gmx
+} // namespace gmx
 
 #endif

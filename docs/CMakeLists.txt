@@ -60,18 +60,13 @@ set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 set(EXPECTED_SPHINX_VERSION 1.6.1)
 
-if (DEFINED PYTHON_EXECUTABLE)
-    # Keep quiet on subsequent runs of cmake
-    set(PythonInterp_FIND_QUIETLY ON)
+# By default, suppress output after first configuration.
+if(SPHINX_ALREADY_SEARCHED)
+    set(Sphinx_FIND_QUIETLY ON)
 endif()
-find_package(PythonInterp 2.7)
-
-
-if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
-    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
-else()
-    MESSAGE(STATUS "Can not build documentation with Python 3")
-endif()
+find_package(Sphinx ${EXPECTED_SPHINX_VERSION} COMPONENTS pygments)
+set(SPHINX_ALREADY_SEARCHED TRUE CACHE BOOL "True if a search for Sphinx has already been done")
+mark_as_advanced(SPHINX_ALREADY_SEARCHED)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -113,10 +108,7 @@ elseif (BUILD_IS_INSOURCE)
     set(MANUAL_BUILD_NOT_POSSIBLE_REASON "the build is in-source")
 else()
     include(manual/UseLATEX.cmake)
-    if(${PYTHON_VERSION_MAJOR} EQUAL 3)
-        set(MANUAL_BUILD_IS_POSSIBLE OFF)
-        set(MANUAL_BUILD_NOT_POSSIBLE_REASON "We can not build the documentation when using python3")
-    elseif(NOT SPHINX_FOUND)
+    if(NOT SPHINX_FOUND)
         set(MANUAL_BUILD_IS_POSSIBLE OFF)
         set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx has not been found and is needed to create the LaTex input files")
     elseif(NOT PDFLATEX_COMPILER)
@@ -231,6 +223,7 @@ if (SPHINX_FOUND)
         reference-manual/special/vmd-imd.rst
         reference-manual/special/membrane-embedding.rst
         reference-manual/special/mimic-qmmm.rst
+        reference-manual/special/density-guided-simulation.rst
         # Analysis chapter
         reference-manual/analysis.rst
         reference-manual/analysis/using-groups.rst
@@ -359,7 +352,7 @@ if (SPHINX_FOUND)
         dev-manual/style.rst
         dev-manual/testutils.rst
         dev-manual/tools.rst
-        dev-manual/uncrustify.rst
+        dev-manual/code-formatting.rst
         fragments/doxygen-links.rst
         how-to/index.rst
         how-to/beginners.rst
@@ -368,15 +361,28 @@ if (SPHINX_FOUND)
         how-to/visualize.rst
         install-guide/index.rst
         release-notes/index.rst
-        release-notes/highlights.rst
-        release-notes/features.rst
-        release-notes/performance.rst
-        release-notes/tools.rst
-        release-notes/bugs-fixed.rst
-        release-notes/removed-functionality.rst
-        release-notes/deprecated-functionality.rst
-        release-notes/portability.rst
-        release-notes/miscellaneous.rst
+        release-notes/2021/major/highlights.rst
+        release-notes/2021/major/features.rst
+        release-notes/2021/major/performance.rst
+        release-notes/2021/major/tools.rst
+        release-notes/2021/major/bugs-fixed.rst
+        release-notes/2021/major/removed-functionality.rst
+        release-notes/2021/major/deprecated-functionality.rst
+        release-notes/2021/major/portability.rst
+        release-notes/2021/major/miscellaneous.rst
+        release-notes/2020/major/highlights.rst
+        release-notes/2020/major/features.rst
+        release-notes/2020/major/performance.rst
+        release-notes/2020/major/tools.rst
+        release-notes/2020/major/bugs-fixed.rst
+        release-notes/2020/major/removed-functionality.rst
+        release-notes/2020/major/deprecated-functionality.rst
+        release-notes/2020/major/portability.rst
+        release-notes/2020/major/miscellaneous.rst
+        release-notes/2019/2019.5.rst
+        release-notes/2019/2019.4.rst
+        release-notes/2019/2019.3.rst
+        release-notes/2019/2019.2.rst
         release-notes/2019/2019.1.rst
         release-notes/2019/major/highlights.rst
         release-notes/2019/major/features.rst
@@ -387,6 +393,7 @@ if (SPHINX_FOUND)
         release-notes/2019/major/deprecated-functionality.rst
         release-notes/2019/major/portability.rst
         release-notes/2019/major/miscellaneous.rst
+        release-notes/2018/2018.7.rst
         release-notes/2018/2018.6.rst
         release-notes/2018/2018.5.rst
         release-notes/2018/2018.4.rst
@@ -419,7 +426,6 @@ if (SPHINX_FOUND)
         # if the documentation will be build with the full reference
         # manual or without.
         user-guide/cmdline.rst
-        user-guide/cutoff-schemes.rst
         user-guide/deprecation-policy.rst
         user-guide/environment-variables.rst
         user-guide/faq.rst
@@ -473,6 +479,15 @@ if (SPHINX_FOUND)
     endif()
 
     set(SPHINX_CONFIG_VARS_FILE ${SPHINX_INPUT_DIR}/conf-vars.py)
+    if (GMX_PYTHON_PACKAGE)
+        set(GMXAPI_PYTHON_STAGING_DIR ${CMAKE_BINARY_DIR}/python_packaging/src/gmxapi_staging)
+        # TODO: Resolve circular reference. We would like to get the CMake build-time directory for
+        # the gmxapi Python package from the _gmxapi target, as we do when building sample_restraint.
+        # Instead of the above hard-coded path, how can we do
+        # get_target_property(GMXAPI_PYTHON_STAGING_DIR _gmxapi staging_dir)
+        # in this context?
+    endif ()
+
     gmx_configure_version_file(conf-vars.py.cmakein ${SPHINX_CONFIG_VARS_FILE}
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
@@ -487,6 +502,7 @@ if (SPHINX_FOUND)
             GMX_LMFIT_REQUIRED_VERSION
             GMX_MANUAL_DOI_STRING
             GMX_SOURCE_DOI_STRING
+            GMXAPI_PYTHON_STAGING_DIR
         COMMENT "Configuring Sphinx configuration file")
     gmx_add_sphinx_input_file(${SPHINX_CONFIG_VARS_FILE})
     gmx_add_sphinx_source_files(FILES ${SPHINX_SOURCE_FILES})
@@ -502,6 +518,35 @@ if (SPHINX_FOUND)
             dev-manual/releng/jenkins-ui.rst
             )
     endif()
+
+    gmx_add_sphinx_source_files(
+            FILES
+            gmxapi/changelog.rst
+            gmxapi/index.rst
+            gmxapi/userguide/install.rst
+            gmxapi/userguide/usage.rst
+            gmxapi/userguide/userguide.rst
+            gmxapi/reference/contributing.rst
+            gmxapi/reference/datamodel.rst
+            gmxapi/reference/executionmodel.rst
+            gmxapi/reference/extending.rst
+            gmxapi/reference/projectstructure.rst
+            gmxapi/reference/reference.rst
+    )
+
+    if (GMX_PYTHON_PACKAGE)
+        gmx_add_sphinx_source_files(
+            FILES
+            gmxapi/userguide/pythonreference.rst
+            )
+    else()
+        gmx_add_sphinx_source_files(
+            FROM ${CMAKE_CURRENT_SOURCE_DIR}/gmxapi/userguide-stub
+            TO gmxapi/userguide/ 
+            FILES pythonreference.rst 
+            )
+    endif ()
+
     gmx_add_sphinx_source_files(
         FILES
         ${REFERENCEMANUAL_SPHINX_FILES_GENERAL})
@@ -569,7 +614,7 @@ if (SPHINX_FOUND)
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
         DEPENDS sphinx-image-conversion
-        DEPENDS manual 
+        DEPENDS manual
         COMMAND
             ${CMAKE_COMMAND} -E make_directory ${SPHINX_INPUT_DIR}/_static
         COMMAND
@@ -584,6 +629,9 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
+    if (GMX_PYTHON_PACKAGE)
+        add_dependencies(webpage-sphinx _gmxapi)
+    endif ()
 
     add_custom_target(man
         COMMAND
@@ -606,24 +654,27 @@ if (SPHINX_FOUND)
 
 else()
     set(MANUAL_BUILD_IS_POSSIBLE OFF)
-    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is not available")
+    set(MANUAL_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
 
     add_custom_target(webpage-sphinx
         COMMAND ${CMAKE_COMMAND} -E echo
-            "HTML pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "HTML pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(install-guide
         COMMAND ${CMAKE_COMMAND} -E echo
-            "INSTALL cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "INSTALL cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(man
         COMMAND ${CMAKE_COMMAND} -E echo
-            "man pages cannot be built because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "man pages cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
     add_custom_target(sphinx-create-texman
         COMMAND ${CMAKE_COMMAND} -E echo
-            "Cannot prepare LaTeX input files because Sphinx version ${EXPECTED_SPHINX_VERSION} is not available"
+            "Cannot prepare LaTeX input files because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available"
         VERBATIM)
+    add_custom_target(manual
+        COMMAND ${CMAKE_COMMAND} -E echo
+            "manual cannot be built because Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is not available")
 endif()
 
 if (MAN_PAGE_DIR)
@@ -646,13 +697,13 @@ set(HTML_BUILD_NOT_POSSIBLE_REASON)
 set(HTML_BUILD_WARNINGS)
 
 # Next, turn it off if any of the preconditions are unsatisified
-if (NOT PYTHON_EXECUTABLE)
+if (NOT PythonInterp_FOUND)
     set(HTML_BUILD_IS_POSSIBLE OFF)
     set(HTML_BUILD_NOT_POSSIBLE_REASON "Python is required")
 elseif (NOT SPHINX_FOUND)
     # Hardly anything gets built if Sphinx is not available, so don't bother.
     set(HTML_BUILD_IS_POSSIBLE OFF)
-    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx version ${EXPECTED_SPHINX_VERSION} is required")
+    set(HTML_BUILD_NOT_POSSIBLE_REASON "Sphinx expected minimum version ${EXPECTED_SPHINX_VERSION} is required")
 endif()
 if (NOT MANUAL_BUILD_IS_POSSIBLE)
     list(APPEND HTML_BUILD_WARNINGS

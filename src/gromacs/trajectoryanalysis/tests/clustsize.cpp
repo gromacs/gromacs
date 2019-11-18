@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,37 +68,37 @@ namespace
 
 class ClustsizeTest : public CommandLineTestBase
 {
-    public:
-        ClustsizeTest()
-        {
-            double            tolerance = 1e-4;
-            test::XvgMatch    xvg;
-            test::XvgMatch   &toler     = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
+public:
+    ClustsizeTest()
+    {
+        double         tolerance = 1e-4;
+        test::XvgMatch xvg;
+        test::XvgMatch& toler = xvg.tolerance(gmx::test::relativeToleranceAsFloatingPoint(1, tolerance));
 
-            setOutputFile("-mc", ".xvg", toler);
-            setOutputFile("-nc", ".xvg", toler);
-            setOutputFile("-ac", ".xvg", toler);
-            setOutputFile("-hc", ".xvg", toler);
-            setInputFile("-f", "clustsize.pdb");
-        }
+        setOutputFile("-mc", ".xvg", toler);
+        setOutputFile("-nc", ".xvg", toler);
+        setOutputFile("-ac", ".xvg", toler);
+        setOutputFile("-hc", ".xvg", toler);
+        setInputFile("-f", "clustsize.pdb");
+    }
 
-        void runTest(const CommandLine &args)
-        {
-            CommandLine &cmdline = commandLine();
-            cmdline.merge(args);
+    void runTest(const CommandLine& args)
+    {
+        CommandLine& cmdline = commandLine();
+        cmdline.merge(args);
 
-            gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
-            rootChecker.checkString(args.toString(), "CommandLine");
+        gmx::test::TestReferenceChecker rootChecker(this->rootChecker());
+        rootChecker.checkString(args.toString(), "CommandLine");
 
-            ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
+        ASSERT_EQ(0, gmx_clustsize(cmdline.argc(), cmdline.argv()));
 
-            checkOutputFiles();
-        }
+        checkOutputFiles();
+    }
 };
 
 TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize" };
+    const char* const command[] = { "clustsize" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-n", "clustsize.ndx");
@@ -108,7 +108,7 @@ TEST_F(ClustsizeTest, NoMolDefaultCutoff)
 
 TEST_F(ClustsizeTest, NoMolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-cut", "0.3" };
+    const char* const command[] = { "clustsize", "-cut", "0.3" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-n", "clustsize.ndx");
@@ -118,7 +118,7 @@ TEST_F(ClustsizeTest, NoMolShortCutoff)
 
 TEST_F(ClustsizeTest, MolDefaultCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol" };
+    const char* const command[] = { "clustsize", "-mol" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-s", "clustsize.tpr");
@@ -128,7 +128,7 @@ TEST_F(ClustsizeTest, MolDefaultCutoff)
 
 TEST_F(ClustsizeTest, MolShortCutoff)
 {
-    const char *const command[] = { "clustsize", "-mol", "-cut", "0.3" };
+    const char* const command[] = { "clustsize", "-mol", "-cut", "0.3" };
     CommandLine       args      = CommandLine(command);
 
     setInputFile("-s", "clustsize.tpr");
@@ -138,7 +138,7 @@ TEST_F(ClustsizeTest, MolShortCutoff)
 
 TEST_F(ClustsizeTest, MolCSize)
 {
-    const char *const command[] = { "clustsize", "-mol", "-nlevels", "6" };
+    const char* const command[] = { "clustsize", "-mol", "-nlevels", "6" };
     CommandLine       args      = CommandLine(command);
 
     setOutputFile("-o", ".xpm", ExactTextMatch());

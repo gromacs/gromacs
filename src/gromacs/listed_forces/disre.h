@@ -67,30 +67,44 @@ class t_state;
  * The implementation of distance restraints with -multidir
  * must differ according to whether REMD is active.
  */
-void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
-                 t_inputrec *ir, const t_commrec *cr,
-                 const gmx_multisim_t *ms,
-                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
+void init_disres(FILE*                 fplog,
+                 const gmx_mtop_t*     mtop,
+                 t_inputrec*           ir,
+                 const t_commrec*      cr,
+                 const gmx_multisim_t* ms,
+                 t_fcdata*             fcd,
+                 t_state*              state,
+                 gmx_bool              bIsREMD);
 
 /*! \brief
  * Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
-void calc_disres_R_6(const t_commrec *cr,
-                     const gmx_multisim_t *ms,
-                     int nfa, const t_iatom *fa,
-                     const rvec *x, const t_pbc *pbc,
-                     t_fcdata *fcd, history_t *hist);
+void calc_disres_R_6(const t_commrec*      cr,
+                     const gmx_multisim_t* ms,
+                     int                   nfa,
+                     const t_iatom*        fa,
+                     const rvec*           x,
+                     const t_pbc*          pbc,
+                     t_fcdata*             fcd,
+                     history_t*            hist);
 
 //! Calculates the distance restraint forces, return the potential.
-real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
-               const rvec x[], rvec4 f[], rvec fshift[],
-               const t_pbc *pbc, const t_graph *g,
-               real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index);
+real ta_disres(int              nfa,
+               const t_iatom    forceatoms[],
+               const t_iparams  ip[],
+               const rvec       x[],
+               rvec4            f[],
+               rvec             fshift[],
+               const t_pbc*     pbc,
+               const t_graph*   g,
+               real             lambda,
+               real*            dvdlambda,
+               const t_mdatoms* md,
+               t_fcdata*        fcd,
+               int*             global_atom_index);
 
 //! Copies the new time averages that have been calculated in calc_disres_R_6.
-void update_disres_history(const t_fcdata *fcd, history_t *hist);
+void update_disres_history(const t_fcdata* fcd, history_t* hist);
 
 #endif
