@@ -12,8 +12,7 @@ Box::Box(real l) {
     box_[ZZ*DIM + ZZ] = l;
 }
 
-Box::Box(real x, real y, real z);
-
+    Box::Box(real x, real y, real z)
 {
     box_[XX] = x;
     box_[YY*DIM + ZZ] = y;
