@@ -17,17 +17,17 @@ Topology TopologyBuilder::buildTopology(int numAtoms)
     return topology_;
 }
 
-void TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclusions)
+void TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclusions, int numAtomsInMolecule)
 {
     snew(topology_.excls.index, numAtoms_ + 1);
     snew(topology_.excls.a, numAtoms_*numAtomsInMolecule);
-    for (int index = 0; index < indices; index++)
+    for (size_t index = 0; index < indices.size(); index++)
     {
-        topology_.excls[index].index = indices[index];
+        topology_.excls.index[index] = indices[index];
     }
-    for (int exclusion = 0; exclusion < indices; exclusion++)
+    for (size_t exclusion = 0; exclusion < exclusions.size(); exclusion++)
     {
-        topology_.excls[exclusion].a = exlcusions[exclusion];
+        topology_.excls.a[exclusion] = exclusions[exclusion];
     }
 
 

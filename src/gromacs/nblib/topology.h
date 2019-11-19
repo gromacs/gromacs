@@ -56,7 +56,7 @@ public:
     void setMasses(std::vector<int> masses);
 
     //! hardcoded version to converto to t_blocka
-    void setExclusions(std::vector<int> indices, std::vector<int> exclusions);
+    void setExclusions(std::vector<int> indices, std::vector<int> exclusions, int numAtomsInMolecule);
 
     //! set exclusion rules (molecules or connectivity)
     //void setExclusions(exclusionRules);
