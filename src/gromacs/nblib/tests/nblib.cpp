@@ -75,57 +75,6 @@ TEST(NBlibTest, CoordinatesChange)
     EXPECT_NE(atom1InitialX, atom1FinalX);
 }
 
-class SimStateTester
-{
-public:
-    std::vector<gmx::RVec> coords_;
-    std::vector<gmx::RVec> vel_;
-
-    ::nblib::Box box_;
-    ::nblib::TopologyBuilder topologyBuilder_;
-
-    SimStateTester()
-        :box_(6.05449)
-    {
-        coords_ = coordinates12;
-        vel_    = velocities12;
-
-        topologyBuilder_.setAtomTypes({0});
-        topologyBuilder_.setCharges({1.});
-        topologyBuilder_.setMasses({1.});
-        topologyBuilder_.setExclusions({},{}, 1);
-        topologyBuilder_.setNonbondedParameters({0,1});
-    }
-
-    void setupSimState()
-    {
-        auto topology = topologyBuilder_.buildTopology(coordinates12.size());
-        ::nblib::SimState(coords_, box_, topology, vel_);
-    }
-};
-
-TEST(NBlibTest, BasicClientCodeArgonBox)
-{
-    SimStateTester simStateTester;
-    EXPECT_NO_THROW(simStateTester.setupSimState());
-}
-
-TEST(NBlibTest, BasicClientCodeArgonBoxCoordThrowNAN)
-{
-
-    SimStateTester simStateTester;
-    simStateTester.coords_[2][0] = NAN;
-    EXPECT_THROW(simStateTester.setupSimState(), gmx::InvalidInputError);
-}
-
-TEST(NBlibTest, BasicClientCodeArgonBoxCoordThrowINF)
-{
-
-    SimStateTester simStateTester;
-    simStateTester.coords_[2][0] = INFINITY;
-    EXPECT_THROW(simStateTester.setupSimState(), gmx::InvalidInputError);
-}
-
 }  // namespace
 }  // namespace test
 }  // namespace gmx
