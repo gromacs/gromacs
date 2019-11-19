@@ -4,9 +4,11 @@
 
 #include <vector>
 
+#include "gromacs/topology/block.h"
 
 #include "topology.h"
 
+/*
 Topology buildTopology(int numAtoms)
 {
     numAtoms_ = numAtoms;
@@ -28,3 +30,4 @@ TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclus
     }
 
 }
+*/
