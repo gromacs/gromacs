@@ -5,6 +5,8 @@
 #ifndef GROMACS_BOX_H
 #define GROMACS_BOX_H
 
+#include "gromacs/math/vectypes.h"
+
 namespace nblib {
 
 class Box {
