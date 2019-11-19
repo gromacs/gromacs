@@ -370,9 +370,7 @@ void gmx::LegacySimulator::do_md()
         integrator = std::make_unique<UpdateConstrainCuda>(
                 *ir, *top_global, stateGpu->getUpdateStream(), stateGpu->xUpdatedOnDevice());
 
-        t_pbc pbc;
-        set_pbc(&pbc, PbcType::Xyz, state->box);
-        integrator->setPbc(&pbc);
+        integrator->setPbc(PbcType::Xyz, state->box);
     }
 
     if (useGpuForPme || (useGpuForNonbonded && useGpuForBufferOps) || useGpuForUpdate)
@@ -825,9 +823,7 @@ void gmx::LegacySimulator::do_md()
                     // If update is offloaded, it should be informed about the box size change
                     if (useGpuForUpdate)
                     {
-                        t_pbc pbc;
-                        set_pbc(&pbc, PbcType::Xyz, state->box);
-                        integrator->setPbc(&pbc);
+                        integrator->setPbc(PbcType::Xyz, state->box);
                     }
                 }
             }
@@ -1455,9 +1451,7 @@ void gmx::LegacySimulator::do_md()
         if (useGpuForUpdate && (doBerendsenPressureCoupling || doParrinelloRahman))
         {
             integrator->scaleCoordinates(pressureCouplingMu);
-            t_pbc pbc;
-            set_pbc(&pbc, PbcType::Xyz, state->box);
-            integrator->setPbc(&pbc);
+            integrator->setPbc(PbcType::Xyz, state->box);
         }
 
         /* ################# END UPDATE STEP 2 ################# */

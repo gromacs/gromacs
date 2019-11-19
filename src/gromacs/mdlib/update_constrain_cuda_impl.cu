@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -219,9 +219,9 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
 }
 
-void UpdateConstrainCuda::Impl::setPbc(const t_pbc* pbc)
+void UpdateConstrainCuda::Impl::setPbc(const PbcType pbcType, const matrix box)
 {
-    setPbcAiuc(pbc->ndim_ePBC, pbc->box, &pbcAiuc_);
+    setPbcAiuc(numPbcDimensions(pbcType), box, &pbcAiuc_);
 }
 
 GpuEventSynchronizer* UpdateConstrainCuda::Impl::getCoordinatesReadySync()
@@ -269,9 +269,9 @@ void UpdateConstrainCuda::set(DeviceBuffer<float>       d_x,
     impl_->set(d_x, d_v, d_f, idef, md, numTempScaleValues);
 }
 
-void UpdateConstrainCuda::setPbc(const t_pbc* pbc)
+void UpdateConstrainCuda::setPbc(const PbcType pbcType, const matrix box)
 {
-    impl_->setPbc(pbc);
+    impl_->setPbc(pbcType, box);
 }
 
 GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
