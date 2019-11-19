@@ -9,7 +9,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/fatalerror.h"
 
-std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& masses, gmx::ThreeFry2x64<>* rng)
+static std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& masses, gmx::ThreeFry2x64<>* rng)
 {
     int                                    nrdf;
     real                                   boltz;
@@ -21,7 +21,7 @@ std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& masses, 
     boltz = BOLTZ * tempi;
     ekin  = 0.0;
     nrdf  = 0;
-    for(auto i = 0; i < masses.size(); i++) {
+    for(size_t i = 0; i < masses.size(); i++) {
         real mass  = masses[i];
         if (mass > 0)
         {
@@ -81,7 +81,7 @@ bool checkNumericValues(const std::vector<gmx::RVec> &values)
     {
         for (int m = 0; (m < DIM); m++)
         {
-            if(std::isnan(val[m]) or std::isinf(val[m])
+            if(std::isnan(val[m]) or std::isinf(val[m]))
             {
                 return false;
             }
