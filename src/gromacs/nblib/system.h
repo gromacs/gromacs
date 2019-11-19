@@ -47,10 +47,10 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "topology.h"
 #include "util.h"
 
 class Box;
-class Topology;
 
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
@@ -88,19 +88,25 @@ class NBKernelSystem
         t_blocka               excls;
 };
 
-namespace nblib {
+namespace nblib
+{
 
-    class SimState {
-    public:
-        SimState(std::vector<gmx::RVec> coord, Box box, Topology topo,
-                 std::vector<gmx::RVec> vel = {});
+//! Simulation state description that serves as a snapshot of the system
+//! being analysed. Needed to init an MD program. Allows hot-starting simulations.
+class SimState
+{
+public:
+    SimState(std::vector<gmx::RVec> coord, Box box, Topology topo,
+             std::vector<gmx::RVec> vel = {});
 
-    private:
-        std::vector<gmx::RVec> coord_;
-        Box box_;
-        Topology topo_;
-        std::vector<gmx::RVec> vel_;
+    SimState(SimState &simState);
 
-    };
+private:
+    std::vector<gmx::RVec> coord_;
+    //Box box_;
+    Topology topo_;
+    std::vector<gmx::RVec> vel_;
+
+};
 
 }
