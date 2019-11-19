@@ -6,11 +6,11 @@
 
 namespace nblib {
 
-    Box::Box(real l) {
-        box_[XX] = l;
-        box_[YY*DIM + ZZ] = l;
-        box_[ZZ*DIM + ZZ] = l;
-    }
+Box::Box(real l) {
+    box_[XX] = l;
+    box_[YY*DIM + ZZ] = l;
+    box_[ZZ*DIM + ZZ] = l;
+}
 
     Box::Box(real x, real y, real z)
 {
