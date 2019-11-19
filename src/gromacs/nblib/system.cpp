@@ -180,7 +180,15 @@ namespace nblib {
 SimState::SimState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
                    const std::vector<gmx::RVec> &vel) : box_(box), topo_(topo)
 {
+    if (!checkNumericValues(coord))
+    {
+        GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
+    }
     coord_ = coord;
+    if (!checkNumericValues(vel))
+    {
+        GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
+    }
     vel_ = vel;
 }
 

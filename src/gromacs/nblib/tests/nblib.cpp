@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/coords.h"
 #include "gromacs/nblib/setup.h"
 
 #include "testutils/refdata.h"
@@ -71,6 +73,45 @@ TEST(NBlibTest, CoordinatesChange)
     nbKernel(kernelSystem, kernelOptions, false);
     real atom1FinalX = kernelSystem.coordinates[0][0];
     EXPECT_NE(atom1InitialX, atom1FinalX);
+}
+
+TEST(NBlibTest, BasicClientCodeArgonBox)
+{
+    auto coords = coordinates12;
+    auto vel    = velocities12;
+
+    ::nblib::Box box(6.05449);
+    ::nblib::TopologyBuilder topologyBuilder;
+
+    topologyBuilder.setAtomTypes({0});
+    topologyBuilder.setCharges({1.});
+    topologyBuilder.setMasses({1.});
+    topologyBuilder.setExclusions({},{}, 1);
+    topologyBuilder.setNonbondedParameters({0,1});
+
+    auto topology = topologyBuilder.buildTopology(coordinates12.size());
+
+    EXPECT_NO_THROW(::nblib::SimState(coords, box, topology, vel));
+}
+
+TEST(NBlibTest, BasicClientCodeArgonBoxCoordThrow)
+{
+    auto coords = coordinates12;
+    coords[2][0] = NAN;
+    auto vel    = velocities12;
+
+    ::nblib::Box box(6.05449);
+    ::nblib::TopologyBuilder topologyBuilder;
+
+    topologyBuilder.setAtomTypes({0});
+    topologyBuilder.setCharges({1.});
+    topologyBuilder.setMasses({1.});
+    topologyBuilder.setExclusions({},{}, 1);
+    topologyBuilder.setNonbondedParameters({0,1});
+
+    auto topology = topologyBuilder.buildTopology(coordinates12.size());
+
+    EXPECT_THROW(::nblib::SimState(coords, box, topology, vel), gmx::InvalidInputError);
 }
 
 }  // namespace

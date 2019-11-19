@@ -11,6 +11,26 @@
 
 namespace nblib {
 
+void TopologyBuilder::setAtomTypes(std::vector<int> types)
+{
+
+}
+
+void TopologyBuilder::setCharges(std::vector<real> charges)
+{
+
+}
+
+void TopologyBuilder::setMasses(std::vector<real> masses)
+{
+
+}
+
+void TopologyBuilder::setNonbondedParameters(std::vector<int> params)
+{
+
+}
+
 Topology TopologyBuilder::buildTopology(int numAtoms)
 {
     numAtoms_ = numAtoms;
