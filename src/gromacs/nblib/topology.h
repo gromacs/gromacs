@@ -11,6 +11,8 @@
 
 struct t_blocka;
 
+namespace nblib {
+
 class Topology {
 public:
 
@@ -53,8 +55,8 @@ public:
 
     void setMasses(std::vector<int> masses);
 
-    //! hardcoded version to convert to t_blocka
-    void setExclusions(std::vector<int>, std::vector<int>);
+    //! hardcoded version to converto to t_blocka
+    void setExclusions(std::vector<int> indices, std::vector<int> exclusions);
 
     //! set exclusion rules (molecules or connectivity)
     //void setExclusions(exclusionRules);
@@ -68,4 +70,5 @@ private:
     int numAtoms_;
 };
 
+}
 #endif //GROMACS_TOPOLOGY_H

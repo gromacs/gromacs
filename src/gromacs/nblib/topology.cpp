@@ -5,20 +5,34 @@
 #include <vector>
 
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "topology.h"
 
-/*
-Topology buildTopology(int numAtoms)
+namespace nblib {
+
+Topology TopologyBuilder::buildTopology(int numAtoms)
 {
     numAtoms_ = numAtoms;
+    return topology_;
 }
-TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclusions, int numAtomsInMolecule)
+
+void TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclusions)
 {
     snew(topology_.excls.index, numAtoms_ + 1);
     snew(topology_.excls.a, numAtoms_*numAtomsInMolecule);
-    topology_.excls.index[0] = 0;
+    for (int index = 0; index < indices; index++)
+    {
+        topology_.excls[index].index = indices[index];
+    }
+    for (int exclusion = 0; exclusion < indices; exclusion++)
+    {
+        topology_.excls[exclusion].a = exlcusions[exclusion];
+    }
 
+
+    /*
+    topology_.excls.index[0] = 0;
     for (int atom = 0; atom < numAtoms_; atom++)
     {
         const int firstAtomInMolecule = atom - (atom % numAtomsInMolecule);
@@ -28,6 +42,7 @@ TopologyBuilder::setExclusions(std::vector<int> indices, std::vector<int> exclus
         }
         topology_.excls.index[atom + 1] = (atom + 1)*numAtomsInMolecule;
     }
+    */
+}
 
 }
-*/
