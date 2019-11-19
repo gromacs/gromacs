@@ -63,7 +63,6 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
-#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -1654,12 +1653,6 @@ void gmx::LegacySimulator::do_md()
     }
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
-
-    if (fr->pmePpCommGpu)
-    {
-        // destroy object since it is no longer required. (This needs to be done while the GPU context still exists.)
-        fr->pmePpCommGpu.reset();
-    }
 
     global_stat_destroy(gstat);
 }
