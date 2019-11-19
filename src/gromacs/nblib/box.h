@@ -5,6 +5,7 @@
 #ifndef GROMACS_BOX_H
 #define GROMACS_BOX_H
 
+#include <array>
 #include "gromacs/math/vectypes.h"
 
 namespace nblib {
@@ -15,10 +16,10 @@ public:
 
     Box(real x, real y, real z);
 
-    matrix getMatrix();
+    std::array<real, DIM*DIM> getMatrix();
 
 private:
-    matrix box_;
+    std::array<real, DIM*DIM> box_;
 };
 
 }
