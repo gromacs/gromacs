@@ -197,6 +197,8 @@ SimState &SimState::operator=(const SimState &simState)
     vel_   = simState.vel_;
     box_   = simState.box_;
     topo_  = simState.topo_;
+
+    return *this;
 }
 
 SimState::SimState(SimState &&simState) noexcept
@@ -212,6 +214,8 @@ SimState& SimState::operator=(nblib::SimState &&simState) noexcept
     vel_   = std::move(simState.vel_);
     box_   = simState.box_;
     topo_  = std::move(simState.topo_);
+
+    return *this;
 }
 
 } // namespace nblib
