@@ -2,11 +2,18 @@
 // Created by sebkelle on 19.11.19.
 //
 
+#include "gromacs/utility/exceptions.h"
+
 #include "box.h"
 
 namespace nblib {
 
 Box::Box(real l) {
+    if (std::isnan(l) or std::isinf(l))
+    {
+        GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
+    }
+            
     box_[XX] = l;
     box_[YY*DIM + ZZ] = l;
     box_[ZZ*DIM + ZZ] = l;
