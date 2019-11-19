@@ -47,6 +47,11 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "util.h"
+
+class Box;
+class Topology;
+
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
 class NBKernelSystem
@@ -82,3 +87,20 @@ class NBKernelSystem
         //! Information about exclusions.
         t_blocka               excls;
 };
+
+namespace nblib {
+
+    class SimState {
+    public:
+        SimState(std::vector<gmx::RVec> coord, Box box, Topology topo,
+                 std::vector<gmx::RVec> vel = {});
+
+    private:
+        std::vector<gmx::RVec> coord_;
+        Box box_;
+        Topology topo_;
+        std::vector<gmx::RVec> vel_;
+
+    };
+
+}
