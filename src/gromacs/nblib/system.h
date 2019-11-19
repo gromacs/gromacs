@@ -47,10 +47,9 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "box.h"
 #include "topology.h"
 #include "util.h"
-
-class Box;
 
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
@@ -96,14 +95,25 @@ namespace nblib
 class SimState
 {
 public:
+    // Constructor
     SimState(std::vector<gmx::RVec> coord, Box box, Topology topo,
              std::vector<gmx::RVec> vel = {});
 
-    SimState(SimState &simState);
+    // Copy Constructor
+    SimState(SimState& simState);
+
+    // Copy Assignment Operator
+    SimState& operator=(const SimState& simState);
+
+    // Move Constructor
+    SimState(SimState&& simState);
+
+    // Move Assignment Constructor
+
 
 private:
     std::vector<gmx::RVec> coord_;
-    //Box box_;
+    Box box_;
     Topology topo_;
     std::vector<gmx::RVec> vel_;
 
