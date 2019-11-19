@@ -8,7 +8,8 @@
 #include <array>
 #include "gromacs/math/vectypes.h"
 
-namespace nblib {
+namespace nblib
+{
 
 class Box {
 public:

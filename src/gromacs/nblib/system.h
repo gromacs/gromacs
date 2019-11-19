@@ -96,20 +96,20 @@ class SimState
 {
 public:
     // Constructor
-    SimState(std::vector<gmx::RVec> coord, Box box, Topology topo,
-             std::vector<gmx::RVec> vel = {});
+    SimState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
+             const std::vector<gmx::RVec> &vel = {});
 
     // Copy Constructor
-    SimState(SimState& simState);
+    SimState(const SimState& simState);
 
     // Copy Assignment Operator
     SimState& operator=(const SimState& simState);
 
     // Move Constructor
-    SimState(SimState&& simState);
+    SimState(SimState&& simState) noexcept;
 
     // Move Assignment Constructor
-
+    SimState& operator=(SimState&& simState) noexcept;
 
 private:
     std::vector<gmx::RVec> coord_;

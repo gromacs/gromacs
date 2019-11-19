@@ -175,3 +175,43 @@ NBKernelSystem::NBKernelSystem(const int multiplicationFactor)
         excls.index[atom + 1] = (atom + 1)*numAtomsInMolecule;
     }
 }
+
+namespace nblib {
+SimState::SimState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
+                   const std::vector<gmx::RVec> &vel) : box_(box), topo_(topo)
+{
+    coord_ = coord;
+    vel_ = vel;
+}
+
+SimState::SimState(const SimState &simState)
+    : box_(simState.box_), topo_(simState.topo_)
+{
+    coord_ = simState.coord_;
+    vel_   = simState.vel_;
+}
+
+SimState &SimState::operator=(const SimState &simState)
+{
+    coord_ = simState.coord_;
+    vel_   = simState.vel_;
+    box_   = simState.box_;
+    topo_  = simState.topo_;
+}
+
+SimState::SimState(SimState &&simState) noexcept
+    : box_(simState.box_), topo_(std::move(simState.topo_))
+{
+    coord_ = std::move(simState.coord_);
+    vel_   = std::move(simState.vel_);
+}
+
+SimState& SimState::operator=(nblib::SimState &&simState) noexcept
+{
+    coord_ = std::move(simState.coord_);
+    vel_   = std::move(simState.vel_);
+    box_   = simState.box_;
+    topo_  = std::move(simState.topo_);
+}
+
+} // namespace nblib
