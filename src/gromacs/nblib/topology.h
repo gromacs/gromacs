@@ -47,7 +47,7 @@ public:
 
     Topology buildTopology(int numAtoms);
 
-    void setNonbondedParameters(std::vector<int> params);
+    void setNonbondedParameters(std::vector<real> params);
 
     void setAtomTypes(std::vector<int> types);
 
