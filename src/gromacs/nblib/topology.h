@@ -5,15 +5,15 @@
 #ifndef GROMACS_TOPOLOGY_H
 #define GROMACS_TOPOLOGY_H
 
-
+namespace nblib {
 class Topology {
 public:
 
-    const std::vector<int>& getAtomTypes() const;
+    const std::vector<int> &getAtomTypes() const;
 
-    const std::vector<real>& getCharges() const;
+    const std::vector <real> &getCharges() const;
 
-    const std::vector<real>& getMasses() const;
+    const std::vector <real> &getMasses() const;
 
 private:
     Topology();
@@ -21,17 +21,17 @@ private:
     friend class TopologyBuilder;
 
     //! Storage for parameters for short range interactions.
-    std::vector<real>      nonbondedParameters;
+    std::vector <real> nonbondedParameters;
     //! Storage for atom type parameters.
-    std::vector<int>       atomTypes;
+    std::vector<int> atomTypes;
     //! Storage for atom partial charges.
-    std::vector<real>      charges;
+    std::vector <real> charges;
     //! Atom masses
-    std::vector<real>      masses;
+    std::vector <real> masses;
     //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int>       atomInfoAllVdw;
+    std::vector<int> atomInfoAllVdw;
     //! Information about exclusions.
-    t_blocka               excls;
+    t_blocka excls;
 };
 
 class TopologyBuilder {
@@ -58,5 +58,7 @@ public:
     //void setExclusions(someTupleWhatHaveYou);
 
 };
+
+}
 
 #endif //GROMACS_TOPOLOGY_H
