@@ -2,6 +2,10 @@
 // Created by sebkelle on 19.11.19.
 //
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/math/vec.h"
+#include <vector>
+
 #ifndef GROMACS_TOPOLOGY_H
 #define GROMACS_TOPOLOGY_H
 
@@ -38,7 +42,7 @@ class TopologyBuilder {
 public:
     TopologyBuilder();
 
-    Topology buildTopology();
+    Topology buildTopology(int numAtoms);
 
     void setNonbondedParameters(std::vector<int> params);
 
@@ -57,6 +61,10 @@ public:
     //! set exclusion rules based on a tuple
     //void setExclusions(someTupleWhatHaveYou);
 
+private:
+    Topology topology_;
+
+    int numAtoms_;
 };
 
 #endif //GROMACS_TOPOLOGY_H
