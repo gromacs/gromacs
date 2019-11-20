@@ -37,7 +37,7 @@ private:
 class MoleculeType
 {
 public:
-    MoleculeType(int nAtoms);
+    MoleculeType(std::string name);
 
     MoleculeType& addAtom(std::string name, std::string residueName, AtomType const& atomType);
     MoleculeType& addAtom(std::string name, AtomType const& atomType);
