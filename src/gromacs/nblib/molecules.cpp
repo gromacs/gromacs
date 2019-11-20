@@ -4,6 +4,8 @@
 
 #include "molecules.h"
 
+namespace nblib {
+
 AtomType::AtomType(std::string name, real mass, real charge, real c6, real c12)
 : name_(name),
   mass_(mass),
@@ -32,3 +34,10 @@ MoleculeType& MoleculeType::addAtom(std::string name, AtomType const &atom)
 {
     this->addAtom(name, "", atom);
 }
+
+int MoleculeType::numAtomsInMolecule()
+{
+    return atoms_.size();
+}
+
+} // namespace nblib
