@@ -7,16 +7,14 @@
 
 #include <tuple>
 #include <unordered_map>
+#include <string>
 
 #include "gromacs/math/vectypes.h"
 #include "interactions.h"
 
 class TopologyBuilder;
 
-namespace nblib
-{
-
-using AtomName = std::string;
+using MoleculeAtomName = std::string;
 using ResidueName = std::string;
 
 class AtomType {
@@ -26,6 +24,8 @@ public:
              real charge,
              real c6,
              real c12);
+
+    std::string getName() const;
 
 private:
     std::string name_;
@@ -40,7 +40,8 @@ class MoleculeType {
 public:
     MoleculeType(std::string name);
 
-    MoleculeType &addAtom(std::string name, std::string residueName, AtomType const &atomType);
+    MoleculeType& addAtom(std::string moleculeAtomName, std::string residueName, AtomType const& atom);
+    MoleculeType& addAtom(std::string moleculeAtomName, AtomType const& atom);
 
     MoleculeType &addAtom(std::string name, AtomType const &atomType);
 
@@ -54,9 +55,9 @@ private:
     std::string name_;
 
     //! one entry per atom in molecule
-    std::vector<std::tuple<AtomName, ResidueName>> atoms_;
-    //! list of distinct AtomTypes in molecule
-    std::unordered_map<AtomName, AtomType> atomsTypes_;
+    std::vector<std::tuple<MoleculeAtomName, ResidueName>> atoms_;
+    //! collection of distinct AtomTypes in molecule
+    std::unordered_map<MoleculeAtomName, AtomType> atomTypes_;
 
     std::vector<std::tuple<int, int>> exclusions;
 
