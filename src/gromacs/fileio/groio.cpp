@@ -449,13 +449,13 @@ static void write_hconf_box(FILE* out, const matrix box)
     if ((box[XX][YY] != 0.0F) || (box[XX][ZZ] != 0.0F) || (box[YY][XX] != 0.0F)
         || (box[YY][ZZ] != 0.0F) || (box[ZZ][XX] != 0.0F) || (box[ZZ][YY] != 0.0F))
     {
-        fprintf(out, "%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f%10.5f\n", box[XX][XX],
+        fprintf(out, "%10.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f %9.5f\n", box[XX][XX],
                 box[YY][YY], box[ZZ][ZZ], box[XX][YY], box[XX][ZZ], box[YY][XX], box[YY][ZZ],
                 box[ZZ][XX], box[ZZ][YY]);
     }
     else
     {
-        fprintf(out, "%10.5f%10.5f%10.5f\n", box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+        fprintf(out, "%10.5f %9.5f %9.5f\n", box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
     }
 }
 

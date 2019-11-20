@@ -1933,8 +1933,8 @@ t_blocka* makeBondedLinks(const gmx_mtop_t* mtop, cginfo_mb_t* cginfo_mb)
 
                 if (mtop->bIntermolecularInteractions)
                 {
-                    int i = ril_intermol.index[a];
-                    while (i < ril_intermol.index[a + 1])
+                    int i = ril_intermol.index[cg_gl];
+                    while (i < ril_intermol.index[cg_gl + 1])
                     {
                         int ftype = ril_intermol.il[i++];
                         int nral  = NRAL(ftype);
