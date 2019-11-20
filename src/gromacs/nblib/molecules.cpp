@@ -17,7 +17,7 @@ AtomType::AtomType(std::string name, real mass, real charge, real c6, real c12)
 std::string AtomType::getName() const { return name_; }
 
 
-MoleculeType::MoleculeType(std::string name) name_(name) {}
+MoleculeType::MoleculeType(std::string name) : name_(name) {}
 
 MoleculeType& MoleculeType::addAtom(std::string moleculeAtomName, std::string residueName, AtomType const &atom)
 {
@@ -35,7 +35,7 @@ MoleculeType& MoleculeType::addAtom(std::string name, AtomType const &atom)
     this->addAtom(name, "", atom);
 }
 
-int MoleculeType::numAtomsInMolecule()
+int MoleculeType::numAtomsInMolecule() const
 {
     return atoms_.size();
 }

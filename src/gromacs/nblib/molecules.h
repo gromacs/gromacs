@@ -14,15 +14,8 @@
 
 class TopologyBuilder;
 
-<<<<<<< HEAD
-using MoleculeAtomName = std::string;
-=======
 namespace nblib
 {
-
-using AtomName = std::string;
->>>>>>> acdb4e771a849ef2a2b6916fed28dbf5915d44b9
-using ResidueName = std::string;
 
 class AtomType {
 public:
@@ -61,9 +54,9 @@ private:
     std::string name_;
 
     //! one entry per atom in molecule
-    std::vector<std::tuple<MoleculeAtomName, ResidueName>> atoms_;
+    std::vector<std::tuple<std::string, std::string>> atoms_;
     //! collection of distinct AtomTypes in molecule
-    std::unordered_map<MoleculeAtomName, AtomType> atomTypes_;
+    std::unordered_map<std::string, AtomType> atomTypes_;
 
     std::vector<std::tuple<int, int>> exclusions;
 
