@@ -40,6 +40,8 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/coords.h"
 #include "gromacs/nblib/setup.h"
 
 #include "testutils/refdata.h"

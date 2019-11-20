@@ -23,7 +23,7 @@ public:
     const std::vector<real>& getMasses() const;
 
 private:
-    Topology();
+    Topology() = default;
 
     friend class TopologyBuilder;
 
@@ -43,17 +43,17 @@ private:
 
 class TopologyBuilder {
 public:
-    TopologyBuilder();
+    TopologyBuilder() = default;
 
     Topology buildTopology(int numAtoms);
 
-    void setNonbondedParameters(std::vector<int> params);
+    void setNonbondedParameters(std::vector<real> params);
 
     void setAtomTypes(std::vector<int> types);
 
-    void setCharges(std::vector<int> charges);
+    void setCharges(std::vector<real> charges);
 
-    void setMasses(std::vector<int> masses);
+    void setMasses(std::vector<real> masses);
 
     //! hardcoded version to converto to t_blocka
     void setExclusions(std::vector<int> indices, std::vector<int> exclusions, int numAtomsInMolecule);
