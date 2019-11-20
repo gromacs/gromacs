@@ -12,15 +12,16 @@ namespace nblib
 {
 
 class Box {
+    using data_type = std::array<std::array<real, DIM>, DIM>;
 public:
     Box(real l);
 
     Box(real x, real y, real z);
 
-    std::array<real, DIM*DIM> getMatrix();
+    data_type getMatrix();
 
 private:
-    std::array<real, DIM*DIM> box_;
+    data_type box_;
 };
 
 }
