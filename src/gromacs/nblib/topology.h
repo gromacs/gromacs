@@ -6,6 +6,8 @@
 
 #include "gromacs/math/vec.h"
 
+#include "molecules.h"
+
 #ifndef GROMACS_TOPOLOGY_H
 #define GROMACS_TOPOLOGY_H
 
@@ -23,7 +25,7 @@ public:
     const std::vector<real>& getMasses() const;
 
 private:
-    Topology() = default;
+    Topology();
 
     friend class TopologyBuilder;
 
@@ -43,31 +45,19 @@ private:
 
 class TopologyBuilder {
 public:
-    TopologyBuilder() = default;
+    TopologyBuilder();
 
-    Topology buildTopology(int numAtoms);
+    Topology buildTopology();
 
-    void setNonbondedParameters(std::vector<real> params);
-
-    void setAtomTypes(std::vector<int> types);
-
-    void setCharges(std::vector<real> charges);
-
-    void setMasses(std::vector<real> masses);
-
-    //! hardcoded version to converto to t_blocka
-    void setExclusions(std::vector<int> indices, std::vector<int> exclusions, int numAtomsInMolecule);
-
-    //! set exclusion rules (molecules or connectivity)
-    //void setExclusions(exclusionRules);
-
-    //! set exclusion rules based on a tuple
-    //void setExclusions(someTupleWhatHaveYou);
+    TopologyBuilder& add(MoleculeType, int nMolecules);
 
 private:
     Topology topology_;
 
     int numAtoms_;
+    std::vector<MoleculeType> molecules_;
+
+    std::vector<std::tuple<int, int>> exclusions_;
 };
 
 }
