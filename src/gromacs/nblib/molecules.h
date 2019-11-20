@@ -20,6 +20,8 @@ namespace nblib
 
 class AtomType {
 public:
+    AtomType();
+
     AtomType(std::string name,
              real mass,
              real charge,
