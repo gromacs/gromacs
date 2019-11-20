@@ -11,14 +11,20 @@
 
 namespace nblib {
 
-Topology TopologyBuilder::buildTopology(int numAtoms)
+Topology TopologyBuilder::buildTopology()
 {
     return topology_;
 }
 
-Topology& TopologyBuilder::add(MoleculeType, int nMolecules)
+TopologyBuilder& TopologyBuilder::add(const MoleculeType moleculeType, const int nMolecules)
 {
+    /*!
+     * 1. Push-back a tuple of molecule type and nMolecules
+     * 2. Append exclusion list into the data structure
+     */
 
+    molecules_.emplace_back(std::make_tuple(moleculeType, nMolecules));
+    numAtoms_ += nMolecules*moleculeType.numAtomsInMolecule();
 }
 
 
