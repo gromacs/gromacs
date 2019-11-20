@@ -9,7 +9,9 @@
 #include <unordered_map>
 
 #include "gromacs/math/vectypes.h"
+#include "interactions.h"
 
+class TopologyBuilder;
 
 using AtomName = std::string;
 using ResidueName = std::string;
@@ -17,17 +19,13 @@ using ResidueName = std::string;
 class AtomType
 {
 public:
-    AtomType(int identifier,
-             std::string name,
+    AtomType(std::string name,
              real mass,
              real charge,
              real c6,
              real c12);
 
-    int identifier() const;
-
 private:
-    int identifier_;
     std::string name_;
 
     real mass_;
@@ -36,19 +34,19 @@ private:
     real c12_;
 };
 
-
 class MoleculeType
 {
 public:
     MoleculeType(int nAtoms);
 
-    addAtom(std::string name, std::string residueName, AtomType const& atomType);
-    addAtom(std::string name, AtomType const& atomType);
+    MoleculeType& addAtom(std::string name, std::string residueName, AtomType const& atomType);
+    MoleculeType& addAtom(std::string name, AtomType const& atomType);
 
-    void addBond(int atom1, int atom2, BondType bondType);
+    void addHarmonicBond(int atom1, int atom2, HarmonicType harmonicType);
+
+    friend class TopologyBuilder;
 
 private:
-    int identifier_;
     std::string name_;
 
     //! one entry per atom in molecule
