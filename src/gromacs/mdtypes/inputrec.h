@@ -61,6 +61,8 @@ struct AwhParams;
 class KeyValueTreeObject;
 } // namespace gmx
 
+enum class PbcType;
+
 struct t_grpopts
 {
     //! Number of T-Coupl groups
@@ -389,7 +391,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Type of combination rule in LJ-PME
     int ljpme_combination_rule;
     //! Type of periodic boundary conditions
-    int ePBC;
+    PbcType pbcType;
     //! Periodic molecules
     bool bPeriodicMols;
     //! Continuation run: starting state is correct (ie. constrained)

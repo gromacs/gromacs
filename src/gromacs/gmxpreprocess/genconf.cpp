@@ -123,7 +123,7 @@ int gmx_genconf(int argc, char* argv[])
     rvec *            x, *xx, *v; /* coordinates? */
     real              t;
     vec4 *            xrot, *vrot;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            box, boxx; /* box length matrix */
     rvec              shift;
     int               natoms; /* number of atoms in one molecule  */
@@ -178,7 +178,7 @@ int gmx_genconf(int argc, char* argv[])
 
     gmx_mtop_t mtop;
     bool       haveTop = false;
-    readConfAndTopology(opt2fn("-f", NFILE, fnm), &haveTop, &mtop, &ePBC, &x, &v, box);
+    readConfAndTopology(opt2fn("-f", NFILE, fnm), &haveTop, &mtop, &pbcType, &x, &v, box);
     t_atoms atoms = gmx_mtop_global_atoms(&mtop);
     natoms        = atoms.nr;
     nres          = atoms.nres; /* nr of residues in one element? */
@@ -242,7 +242,7 @@ int gmx_genconf(int argc, char* argv[])
                             v[ndx + l][m] = v[l][m];
                         }
                     }
-                    if (ePBC == epbcSCREW && i % 2 == 1)
+                    if (pbcType == PbcType::Screw && i % 2 == 1)
                     {
                         /* Rotate around x axis */
                         for (m = YY; m <= ZZ; m++)
@@ -290,10 +290,10 @@ int gmx_genconf(int argc, char* argv[])
     svmul(nx, box[XX], box[XX]);
     svmul(ny, box[YY], box[YY]);
     svmul(nz, box[ZZ], box[ZZ]);
-    if (ePBC == epbcSCREW && nx % 2 == 0)
+    if (pbcType == PbcType::Screw && nx % 2 == 0)
     {
         /* With an even number of boxes in x we can forgot about the screw */
-        ePBC = epbcXYZ;
+        pbcType = PbcType::Xyz;
     }
 
     /*depending on how you look at it, this is either a nasty hack or the way it should work*/
@@ -305,7 +305,7 @@ int gmx_genconf(int argc, char* argv[])
         }
     }
 
-    write_sto_conf(opt2fn("-o", NFILE, fnm), *mtop.name, &atoms, x, v, ePBC, box);
+    write_sto_conf(opt2fn("-o", NFILE, fnm), *mtop.name, &atoms, x, v, pbcType, box);
 
     sfree(x);
     sfree(v);

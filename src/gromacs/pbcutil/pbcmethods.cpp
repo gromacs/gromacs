@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, int ePBC, rvec x[], const int index[], matrix box)
+void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, PbcType pbcType, rvec x[], const int index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -64,7 +64,7 @@ void calc_pbc_cluster(int ecenter, int nrefat, t_topology* top, int ePBC, rvec x
 
     /* Initiate the pbc structure */
     std::memset(&pbc, 0, sizeof(pbc));
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     /* Convert atom index to molecular */
     nmol   = top->mols.nr;
@@ -242,7 +242,7 @@ void put_molecule_com_in_box(int      unitcell_enum,
                              t_block* mols,
                              int      natoms,
                              t_atom   atom[],
-                             int      ePBC,
+                             PbcType  pbcType,
                              matrix   box,
                              rvec     x[])
 {
@@ -254,7 +254,7 @@ void put_molecule_com_in_box(int      unitcell_enum,
     t_pbc  pbc;
 
     calc_box_center(ecenter, box, box_center);
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
     if (mols->nr <= 0)
     {
         gmx_fatal(FARGS,
@@ -283,10 +283,10 @@ void put_molecule_com_in_box(int      unitcell_enum,
         auto newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
         switch (unitcell_enum)
         {
-            case euRect: put_atoms_in_box(ePBC, box, newComArrayRef); break;
+            case euRect: put_atoms_in_box(pbcType, box, newComArrayRef); break;
             case euTric: put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef); break;
             case euCompact:
-                put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
+                put_atoms_in_compact_unitcell(pbcType, ecenter, box, newComArrayRef);
                 break;
         }
         rvec_sub(newCom, com, shift);
@@ -307,7 +307,13 @@ void put_molecule_com_in_box(int      unitcell_enum,
     }
 }
 
-void put_residue_com_in_box(int unitcell_enum, int ecenter, int natoms, t_atom atom[], int ePBC, matrix box, rvec x[])
+void put_residue_com_in_box(int     unitcell_enum,
+                            int     ecenter,
+                            int     natoms,
+                            t_atom  atom[],
+                            PbcType pbcType,
+                            matrix  box,
+                            rvec    x[])
 {
     int              i, j, res_start, res_end;
     int              d, presnr;
@@ -335,10 +341,10 @@ void put_residue_com_in_box(int unitcell_enum, int ecenter, int natoms, t_atom a
             auto newComArrayRef = gmx::arrayRefFromArray(&newCom, 1);
             switch (unitcell_enum)
             {
-                case euRect: put_atoms_in_box(ePBC, box, newComArrayRef); break;
+                case euRect: put_atoms_in_box(pbcType, box, newComArrayRef); break;
                 case euTric: put_atoms_in_triclinic_unitcell(ecenter, box, newComArrayRef); break;
                 case euCompact:
-                    put_atoms_in_compact_unitcell(ePBC, ecenter, box, newComArrayRef);
+                    put_atoms_in_compact_unitcell(pbcType, ecenter, box, newComArrayRef);
                     break;
             }
             rvec_sub(newCom, com, shift);

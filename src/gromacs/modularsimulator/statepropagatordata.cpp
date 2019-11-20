@@ -93,7 +93,7 @@ StatePropagatorData::StatePropagatorData(int                            numAtoms
     lastStep_(-1),
     canMoleculesBeDistributedOverPBC_(canMoleculesBeDistributedOverPBC),
     systemHasPeriodicMolecules_(inputrec->bPeriodicMols),
-    pbcType_(inputrec->ePBC),
+    pbcType_(inputrec->pbcType),
     topologyHolder_(topologyHolder),
     lastPlannedStep_(inputrec->nsteps + inputrec->init_step),
     writeFinalConfiguration_(writeFinalConfiguration),

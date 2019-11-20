@@ -1062,19 +1062,19 @@ void relax_shell_flexcon(FILE*                               fplog,
         force[i]            = forceWithPadding[i].paddedArrayRef();
     }
 
-    if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr))
+    if (bDoNS && inputrec->pbcType != PbcType::No && !DOMAINDECOMP(cr))
     {
         /* This is the only time where the coordinates are used
          * before do_force is called, which normally puts all
          * charge groups in the box.
          */
         auto xRef = x.paddedArrayRef();
-        put_atoms_in_box_omp(fr->ePBC, box, xRef.subArray(0, md->homenr),
+        put_atoms_in_box_omp(fr->pbcType, box, xRef.subArray(0, md->homenr),
                              gmx_omp_nthreads_get(emntDefault));
 
         if (graph)
         {
-            mk_mshift(fplog, graph, fr->ePBC, box, xRvec);
+            mk_mshift(fplog, graph, fr->pbcType, box, xRvec);
         }
     }
 
@@ -1192,7 +1192,7 @@ void relax_shell_flexcon(FILE*                               fplog,
         if (vsite)
         {
             construct_vsites(vsite, as_rvec_array(pos[Min].data()), inputrec->delta_t, vRvec,
-                             idef->iparams, idef->il, fr->ePBC, fr->bMolPBC, cr, box);
+                             idef->iparams, idef->il, fr->pbcType, fr->bMolPBC, cr, box);
         }
 
         if (nflexcon)

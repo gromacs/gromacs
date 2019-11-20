@@ -364,9 +364,9 @@ t_grid* init_grid(FILE* fplog, t_forcerec* fr)
 
     snew(grid, 1);
 
-    grid->npbcdim = ePBC2npbcdim(fr->ePBC);
+    grid->npbcdim = numPbcDimensions(fr->pbcType);
 
-    if (fr->ePBC == epbcXY && fr->nwall == 2)
+    if (fr->pbcType == PbcType::XY && fr->nwall == 2)
     {
         grid->nboundeddim = 3;
     }

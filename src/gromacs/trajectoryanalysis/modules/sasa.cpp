@@ -205,7 +205,7 @@ void connolly_plot(const char*  fn,
                    rvec         x[],
                    t_atoms*     atoms,
                    t_symtab*    symtab,
-                   int          ePBC,
+                   PbcType      pbcType,
                    const matrix box,
                    gmx_bool     bIncludeSolute)
 {
@@ -254,7 +254,7 @@ void connolly_plot(const char*  fn,
         }
         atoms->nr   = i0 + ndots;
         atoms->nres = r0 + 1;
-        write_sto_conf(fn, title, atoms, xnew, nullptr, ePBC, const_cast<rvec*>(box));
+        write_sto_conf(fn, title, atoms, xnew, nullptr, pbcType, const_cast<rvec*>(box));
         atoms->nres = r0;
         atoms->nr   = i0;
     }
@@ -278,7 +278,7 @@ void connolly_plot(const char*  fn,
             aaa.pdbinfo[ii0].occup  = 0.0;
         }
         aaa.nr = ndots;
-        write_sto_conf(fn, title, &aaa, xnew, nullptr, ePBC, const_cast<rvec*>(box));
+        write_sto_conf(fn, title, &aaa, xnew, nullptr, pbcType, const_cast<rvec*>(box));
         do_conect(fn, ndots, xnew);
         done_atom(&aaa);
     }
@@ -549,7 +549,7 @@ void Sasa::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolo
     }
 
     please_cite(stderr, "Eisenhaber95");
-    // if ((top.ePBC() != epbcXYZ) || (TRICLINIC(fr.box)))
+    // if ((top.pbcType() != PbcType::Xyz) || (TRICLINIC(fr.box)))
     //{
     //    fprintf(stderr, "\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
     //            "Analysis based on vacuum simulations (with the possibility of evaporation)\n"
@@ -986,7 +986,7 @@ void Sasa::analyzeFrame(int frnr, const t_trxframe& fr, t_pbc* pbc, TrajectoryAn
         // one else uses the topology after initialization, it may just work
         // even with future parallelization.
         connolly_plot(fnConnolly_.c_str(), nsurfacedots, surfacedots, fr.x, atoms_.get(),
-                      &mtop_->symtab, fr.ePBC, fr.box, bIncludeSolute_);
+                      &mtop_->symtab, fr.pbcType, fr.box, bIncludeSolute_);
     }
 
     ah.startFrame(frnr, fr.time);

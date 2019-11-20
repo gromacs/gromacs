@@ -676,9 +676,10 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
                 pme_lb->elimited = epmelblimMAXSCALING;
             }
 
-            if (OK && ir.ePBC != epbcNONE)
+            if (OK && ir.pbcType != PbcType::No)
             {
-                OK = (gmx::square(pme_lb->setup[pme_lb->cur + 1].rlistOuter) <= max_cutoff2(ir.ePBC, box));
+                OK = (gmx::square(pme_lb->setup[pme_lb->cur + 1].rlistOuter)
+                      <= max_cutoff2(ir.pbcType, box));
                 if (!OK)
                 {
                     pme_lb->elimited = epmelblimBOX;

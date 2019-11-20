@@ -142,7 +142,7 @@ public:
         t_pbc pbc;
         if (bPBC)
         {
-            set_pbc(&pbc, epbcXYZ, box_);
+            set_pbc(&pbc, PbcType::Xyz, box_);
         }
         ASSERT_NO_THROW_GMX({
             gmx::SurfaceAreaCalculator calculator;

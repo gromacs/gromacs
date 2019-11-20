@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2006 - 2014, The GROMACS development team.
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1664,7 +1664,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
         {
             if (fr->bMolPBC)
             {
-                pbc_null = set_pbc_dd(&pbc, fr->ePBC, dd->numCells, TRUE, box);
+                pbc_null = set_pbc_dd(&pbc, fr->pbcType, dd->numCells, TRUE, box);
             }
             else
             {
@@ -1987,14 +1987,14 @@ static void bonded_cg_distance_mol(const gmx_moltype_t* molt,
 static void bonded_distance_intermol(const InteractionLists& ilists_intermol,
                                      gmx_bool                bBCheck,
                                      const rvec*             x,
-                                     int                     ePBC,
+                                     PbcType                 pbcType,
                                      const matrix            box,
                                      bonded_distance_t*      bd_2b,
                                      bonded_distance_t*      bd_mb)
 {
     t_pbc pbc;
 
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     for (int ftype = 0; ftype < F_NRE; ftype++)
     {
@@ -2049,7 +2049,7 @@ static bool moltypeHasVsite(const gmx_moltype_t& molt)
 //! Returns coordinates not broken over PBC for a molecule
 static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
                                         const gmx_ffparams_t* ffparams,
-                                        int                   ePBC,
+                                        PbcType               pbcType,
                                         t_graph*              graph,
                                         const matrix          box,
                                         const rvec*           x,
@@ -2057,9 +2057,9 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
 {
     int n, i;
 
-    if (ePBC != epbcNONE)
+    if (pbcType != PbcType::No)
     {
-        mk_mshift(nullptr, graph, ePBC, box, x);
+        mk_mshift(nullptr, graph, pbcType, box, x);
 
         shift_x(graph, box, x, xs);
         /* By doing an extra mk_mshift the molecules that are broken
@@ -2067,7 +2067,7 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
          * will be made whole again. Such are the healing powers
          * of GROMACS.
          */
-        mk_mshift(nullptr, graph, ePBC, box, xs);
+        mk_mshift(nullptr, graph, pbcType, box, xs);
     }
     else
     {
@@ -2095,8 +2095,8 @@ static void getWholeMoleculeCoordinates(const gmx_moltype_t*  molt,
             }
         }
 
-        construct_vsites(nullptr, xs, 0.0, nullptr, ffparams->iparams.data(), ilist, epbcNONE, TRUE,
-                         nullptr, nullptr);
+        construct_vsites(nullptr, xs, 0.0, nullptr, ffparams->iparams.data(), ilist, PbcType::No,
+                         TRUE, nullptr, nullptr);
     }
 }
 
@@ -2130,7 +2130,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
         }
         else
         {
-            if (ir->ePBC != epbcNONE)
+            if (ir->pbcType != PbcType::No)
             {
                 mk_graph_moltype(molt, &graph);
             }
@@ -2138,7 +2138,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
             snew(xs, molt.atoms.nr);
             for (int mol = 0; mol < molb.nmol; mol++)
             {
-                getWholeMoleculeCoordinates(&molt, &mtop->ffparams, ir->ePBC, &graph, box,
+                getWholeMoleculeCoordinates(&molt, &mtop->ffparams, ir->pbcType, &graph, box,
                                             x + at_offset, xs);
 
                 bonded_distance_t bd_mol_2b = { 0, -1, -1, -1 };
@@ -2155,7 +2155,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
                 at_offset += molt.atoms.nr;
             }
             sfree(xs);
-            if (ir->ePBC != epbcNONE)
+            if (ir->pbcType != PbcType::No)
             {
                 done_graph(&graph);
             }
@@ -2167,7 +2167,7 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
         GMX_RELEASE_ASSERT(mtop->intermolecular_ilist,
                            "We should have an ilist when intermolecular interactions are on");
 
-        bonded_distance_intermol(*mtop->intermolecular_ilist, bBCheck, x, ir->ePBC, box, &bd_2b, &bd_mb);
+        bonded_distance_intermol(*mtop->intermolecular_ilist, bBCheck, x, ir->pbcType, box, &bd_2b, &bd_mb);
     }
 
     *r_2b = sqrt(bd_2b.r2);

@@ -108,7 +108,7 @@ int gmx_dyecoupl(int argc, char* argv[])
     int  natoms;
 
     /*we rely on PBC autodetection (...currently)*/
-    int ePBC = -1;
+    PbcType pbcType = PbcType::Unset;
 
     real *   rvalues = nullptr, *kappa2values = nullptr, *rhist = nullptr, *khist = nullptr;
     t_pbc*   pbc = nullptr;
@@ -285,7 +285,7 @@ int gmx_dyecoupl(int argc, char* argv[])
 
                 if (bPBCdist)
                 {
-                    set_pbc(pbc, ePBC, fr.box);
+                    set_pbc(pbc, pbcType, fr.box);
                     pbc_dx(pbc, donpos, accpos, dist);
                 }
                 else

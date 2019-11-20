@@ -1535,7 +1535,7 @@ int gmx_make_ndx(int argc, char* argv[])
     int               j;
     t_atoms           atoms;
     rvec *            x, *v;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            box;
     t_blocka *        block, *block2;
     char **           gnames, **gnames2;
@@ -1564,7 +1564,7 @@ int gmx_make_ndx(int argc, char* argv[])
     {
         bool haveFullTopology = false;
         fprintf(stderr, "\nReading structure file\n");
-        readConfAndTopology(stxfile, &haveFullTopology, &mtop, &ePBC, &x, &v, box);
+        readConfAndTopology(stxfile, &haveFullTopology, &mtop, &pbcType, &x, &v, box);
         atoms = gmx_mtop_global_atoms(&mtop);
         if (atoms.pdbinfo == nullptr)
         {

@@ -173,11 +173,11 @@ static void prepareRerunState(const t_trxframe&  rerunFrame,
             /* Following is necessary because the graph may get out of sync
              * with the coordinates if we only have every N'th coordinate set
              */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
+            mk_mshift(nullptr, graph, forceRec.pbcType, globalState->box, globalState->x.rvec_array());
             shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
         }
         construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
-                         idef.iparams, idef.il, forceRec.ePBC, forceRec.bMolPBC, nullptr,
+                         idef.iparams, idef.il, forceRec.pbcType, forceRec.bMolPBC, nullptr,
                          globalState->box);
         if (graph)
         {
@@ -427,7 +427,7 @@ void gmx::LegacySimulator::do_rerun()
                       rerun_fr.natoms, top_global->natoms);
         }
 
-        if (ir->ePBC != epbcNONE)
+        if (ir->pbcType != PbcType::No)
         {
             if (!rerun_fr.bBox)
             {
@@ -437,7 +437,7 @@ void gmx::LegacySimulator::do_rerun()
                           "does not contain a box, while pbc is used",
                           rerun_fr.step, rerun_fr.time);
             }
-            if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
+            if (max_cutoff2(ir->pbcType, rerun_fr.box) < gmx::square(fr->rlist))
             {
                 gmx_fatal(FARGS,
                           "Rerun trajectory frame step %" PRId64
@@ -459,7 +459,7 @@ void gmx::LegacySimulator::do_rerun()
         rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
     }
 
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
         /* Set the shift vectors.
          * Necessary here when have a static box different from the tpr box.
@@ -601,7 +601,7 @@ void gmx::LegacySimulator::do_rerun()
             }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
                              as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
+                             fr->pbcType, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {

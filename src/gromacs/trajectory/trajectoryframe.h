@@ -53,6 +53,7 @@
 #include "gromacs/utility/real.h"
 
 struct t_atoms;
+enum class PbcType : int;
 
 typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
 {
@@ -80,7 +81,7 @@ typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bBox;
     matrix   box; /* the 3 box vectors                */
     gmx_bool bPBC;
-    int      ePBC; /* the type of pbc                  */
+    PbcType  pbcType; /* the type of pbc                  */
     gmx_bool bIndex;
     int*     index; /* atom indices of contained coordinates */
 } t_trxframe;
@@ -127,7 +128,7 @@ public:
     //! Time read from the trajectory file frame.
     double time() const;
     //! The PBC characteristics of the box.
-    int pbc() const;
+    PbcType pbc() const;
     //! Get a view of position coordinates of the frame (which could be empty).
     ArrayRef<const RVec> x() const;
     //! Get a view of velocity coordinates of the frame (which could be empty).

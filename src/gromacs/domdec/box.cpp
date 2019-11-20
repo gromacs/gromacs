@@ -309,7 +309,8 @@ void set_ddbox_cr(const t_commrec&               cr,
 {
     if (MASTER(&cr))
     {
-        low_set_ddbox(ePBC2npbcdim(ir.ePBC), inputrec2nboundeddim(&ir), dd_nc, box, true, x, nullptr, ddbox);
+        low_set_ddbox(numPbcDimensions(ir.pbcType), inputrec2nboundeddim(&ir), dd_nc, box, true, x,
+                      nullptr, ddbox);
     }
 
     gmx_bcast(sizeof(gmx_ddbox_t), ddbox, &cr);

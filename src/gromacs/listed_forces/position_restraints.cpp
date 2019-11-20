@@ -195,7 +195,7 @@ real fbposres(int                   nbonds,
               gmx::ForceWithVirial* forceWithVirial,
               const t_pbc*          pbc,
               int                   refcoord_scaling,
-              int                   ePBC,
+              PbcType               pbcType,
               const rvec            com)
 /* compute flat-bottomed positions restraints */
 {
@@ -206,8 +206,8 @@ real fbposres(int                   nbonds,
     rvec             com_sc, rdist, dx, dpdl, fm;
     gmx_bool         bInvert;
 
-    npbcdim = ePBC2npbcdim(ePBC);
-    GMX_ASSERT((ePBC == epbcNONE) == (npbcdim == 0), "");
+    npbcdim = numPbcDimensions(pbcType);
+    GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
     if (refcoord_scaling == erscCOM)
     {
         clear_rvec(com_sc);
@@ -328,7 +328,7 @@ real posres(int                   nbonds,
             real                  lambda,
             real*                 dvdlambda,
             int                   refcoord_scaling,
-            int                   ePBC,
+            PbcType               pbcType,
             const rvec            comA,
             const rvec            comB)
 {
@@ -337,8 +337,8 @@ real posres(int                   nbonds,
     real             kk, fm;
     rvec             comA_sc, comB_sc, rdist, dpdl, dx;
 
-    npbcdim = ePBC2npbcdim(ePBC);
-    GMX_ASSERT((ePBC == epbcNONE) == (npbcdim == 0), "");
+    npbcdim = numPbcDimensions(pbcType);
+    GMX_ASSERT((pbcType == PbcType::No) == (npbcdim == 0), "");
     if (refcoord_scaling == erscCOM)
     {
         clear_rvec(comA_sc);
@@ -414,8 +414,8 @@ void posres_wrapper(t_nrnb*               nrnb,
 
     dvdl = 0;
     v    = posres<true>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms, idef->iparams_posres, x,
-                     forceWithVirial, fr->ePBC == epbcNONE ? nullptr : pbc, lambda[efptRESTRAINT],
-                     &dvdl, fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+                     forceWithVirial, fr->pbcType == PbcType::No ? nullptr : pbc, lambda[efptRESTRAINT],
+                     &dvdl, fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
      * but if k changes, it is not.
@@ -447,8 +447,8 @@ void posres_wrapper_lambda(struct gmx_wallcycle* wcycle,
 
         lambda_dum = (i == 0 ? lambda[efptRESTRAINT] : fepvals->all_lambda[efptRESTRAINT][i - 1]);
         v = posres<false>(idef->il[F_POSRES].nr, idef->il[F_POSRES].iatoms, idef->iparams_posres, x,
-                          nullptr, fr->ePBC == epbcNONE ? nullptr : pbc, lambda_dum, &dvdl_dum,
-                          fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
+                          nullptr, fr->pbcType == PbcType::No ? nullptr : pbc, lambda_dum,
+                          &dvdl_dum, fr->rc_scaling, fr->pbcType, fr->posres_com, fr->posres_comB);
         enerd->enerpart_lambda[i] += v;
     }
     wallcycle_sub_stop(wcycle, ewcsRESTRAINTS);
@@ -467,8 +467,8 @@ void fbposres_wrapper(t_nrnb*               nrnb,
     real v;
 
     v = fbposres(idef->il[F_FBPOSRES].nr, idef->il[F_FBPOSRES].iatoms, idef->iparams_fbposres, x,
-                 forceWithVirial, fr->ePBC == epbcNONE ? nullptr : pbc, fr->rc_scaling, fr->ePBC,
-                 fr->posres_com);
+                 forceWithVirial, fr->pbcType == PbcType::No ? nullptr : pbc, fr->rc_scaling,
+                 fr->pbcType, fr->posres_com);
     enerd->term[F_FBPOSRES] += v;
     inc_nrnb(nrnb, eNR_FBPOSRES, gmx::exactDiv(idef->il[F_FBPOSRES].nr, 2));
 }

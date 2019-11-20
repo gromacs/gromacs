@@ -530,7 +530,7 @@ void calc_listed(const t_commrec*         cr,
              * do with checking graph!=nullptr, which should tell us if we made
              * molecules whole before calling the current function.
              */
-            GMX_RELEASE_ASSERT(fr->ePBC == epbcNONE || g != nullptr,
+            GMX_RELEASE_ASSERT(fr->pbcType == PbcType::No || g != nullptr,
                                "With orientation restraints molecules should be whole");
             enerd->term[F_ORIRESDEV] = calc_orires_dev(ms, idef->il[F_ORIRES].nr, idef->il[F_ORIRES].iatoms,
                                                        idef->iparams, md, x, pbc_null, fcd, hist);
@@ -677,7 +677,7 @@ void do_force_listed(struct gmx_wallcycle*    wcycle,
     if ((idef->il[F_POSRES].nr > 0) || (idef->il[F_FBPOSRES].nr > 0))
     {
         /* Not enough flops to bother counting */
-        set_pbc(&pbc_full, fr->ePBC, box);
+        set_pbc(&pbc_full, fr->pbcType, box);
     }
     calc_listed(cr, ms, wcycle, idef, x, hist, forceOutputs, fr, pbc, &pbc_full, graph, enerd, nrnb,
                 lambda, md, fcd, global_atom_index, stepWork);

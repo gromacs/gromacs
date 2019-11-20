@@ -2053,11 +2053,11 @@ struct pull_t* init_pull(FILE*                     fplog,
     pull->numUnregisteredExternalPotentials             = pull->numCoordinatesWithExternalPotential;
     pull->numExternalPotentialsStillToBeAppliedThisStep = 0;
 
-    pull->ePBC = ir->ePBC;
-    switch (pull->ePBC)
+    pull->pbcType = ir->pbcType;
+    switch (pull->pbcType)
     {
-        case epbcNONE: pull->npbcdim = 0; break;
-        case epbcXY: pull->npbcdim = 2; break;
+        case PbcType::No: pull->npbcdim = 0; break;
+        case PbcType::XY: pull->npbcdim = 2; break;
         default: pull->npbcdim = 3; break;
     }
 
@@ -2321,7 +2321,7 @@ void preparePrevStepPullCom(const t_inputrec* ir,
     else
     {
         t_pbc pbc;
-        set_pbc(&pbc, ir->ePBC, state->box);
+        set_pbc(&pbc, ir->pbcType, state->box);
         initPullComFromPrevStep(cr, pull_work, md, &pbc, state->x.rvec_array());
         updatePrevStepPullCom(pull_work, state);
     }

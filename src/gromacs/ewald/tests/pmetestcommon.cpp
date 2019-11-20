@@ -128,7 +128,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    const char* boxError = check_box(-1, boxTemp);
+    const char* boxError = check_box(PbcType::Unset, boxTemp);
     GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
 
     switch (mode)

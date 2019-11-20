@@ -554,14 +554,14 @@ static void write_em_traj(FILE*               fplog,
 
         if (MASTER(cr))
         {
-            if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr))
+            if (ir->pbcType != PbcType::No && !ir->bPeriodicMols && DOMAINDECOMP(cr))
             {
                 /* Make molecules whole only for confout writing */
-                do_pbc_mtop(ir->ePBC, state->s.box, top_global, state_global->x.rvec_array());
+                do_pbc_mtop(ir->pbcType, state->s.box, top_global, state_global->x.rvec_array());
             }
 
             write_sto_conf_mtop(confout, *top_global->name, top_global,
-                                state_global->x.rvec_array(), nullptr, ir->ePBC, state->s.box);
+                                state_global->x.rvec_array(), nullptr, ir->pbcType, state->s.box);
         }
     }
 }
@@ -829,7 +829,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     if (vsite)
     {
         construct_vsites(vsite, ems->s.x.rvec_array(), 1, nullptr, top->idef.iparams, top->idef.il,
-                         fr->ePBC, fr->bMolPBC, cr, ems->s.box);
+                         fr->pbcType, fr->bMolPBC, cr, ems->s.box);
     }
 
     if (DOMAINDECOMP(cr) && bNS)
@@ -901,7 +901,7 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     }
 
     clear_mat(ekin);
-    enerd->term[F_PRES] = calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
+    enerd->term[F_PRES] = calc_pres(fr->pbcType, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
     sum_dhdl(enerd, ems->s.lambda, *inputrec->fepvals);
 
@@ -1751,7 +1751,7 @@ void LegacySimulator::do_lbfgs()
     if (vsite)
     {
         construct_vsites(vsite, state_global->x.rvec_array(), 1, nullptr, top.idef.iparams,
-                         top.idef.il, fr->ePBC, fr->bMolPBC, cr, state_global->box);
+                         top.idef.il, fr->pbcType, fr->bMolPBC, cr, state_global->box);
     }
 
     /* Call the force routine and some auxiliary (neighboursearching etc.) */

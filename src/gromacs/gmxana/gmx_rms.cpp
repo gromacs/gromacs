@@ -208,7 +208,7 @@ int gmx_rms(int argc, char* argv[])
     gmx_bool   bNorm, bAv, bFreq2, bFile2, bMat, bBond, bDelta, bMirror, bMass;
     gmx_bool   bFit, bReset;
     t_topology top;
-    int        ePBC;
+    PbcType    pbcType;
     t_iatom*   iatom = nullptr;
 
     matrix box = { { 0 } };
@@ -327,7 +327,7 @@ int gmx_rms(int argc, char* argv[])
         }
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, TRUE);
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xp, nullptr, box, TRUE);
     snew(w_rls, top.atoms.nr);
     snew(w_rms, top.atoms.nr);
 
@@ -436,7 +436,7 @@ int gmx_rms(int argc, char* argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
         gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
     }
     if (bReset)

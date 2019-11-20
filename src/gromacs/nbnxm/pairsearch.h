@@ -190,13 +190,13 @@ public:
 
     /* \brief Constructor
      *
-     * \param[in] ePBC            The periodic boundary conditions
+     * \param[in] pbcType         The periodic boundary conditions
      * \param[in] numDDCells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
      * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
      * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
      * \param[in] maxNumThreads   The maximum number of threads used in the search
      */
-    PairSearch(int                       ePBC,
+    PairSearch(PbcType                   pbcType,
                bool                      doTestParticleInsertion,
                const ivec*               numDDCells,
                const gmx_domdec_zones_t* zones,

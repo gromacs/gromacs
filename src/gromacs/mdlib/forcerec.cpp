@@ -951,9 +951,9 @@ void init_forcerec(FILE*                            fp,
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
 
-    if (check_box(ir->ePBC, box))
+    if (check_box(ir->pbcType, box))
     {
-        gmx_fatal(FARGS, "%s", check_box(ir->ePBC, box));
+        gmx_fatal(FARGS, "%s", check_box(ir->pbcType, box));
     }
 
     /* Test particle insertion ? */
@@ -1051,10 +1051,10 @@ void init_forcerec(FILE*                            fp,
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;
-    fr->ePBC          = ir->ePBC;
+    fr->pbcType       = ir->pbcType;
 
     /* Determine if we will do PBC for distances in bonded interactions */
-    if (fr->ePBC == epbcNONE)
+    if (fr->pbcType == PbcType::No)
     {
         fr->bMolPBC = FALSE;
     }
@@ -1131,7 +1131,7 @@ void init_forcerec(FILE*                            fp,
         }
         else
         {
-            fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->ePBC);
+            fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->pbcType);
 
             if (useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*cr->dd))
             {

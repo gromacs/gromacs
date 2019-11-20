@@ -752,7 +752,7 @@ int gmx_disre(int argc, char* argv[])
 
     g        = nullptr;
     pbc_null = nullptr;
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
         if (ir->bPeriodicMols)
         {
@@ -812,19 +812,19 @@ int gmx_disre(int argc, char* argv[])
     auto mdAtoms = gmx::makeMDAtoms(fplog, *topInfo.mtop(), *ir, false);
     atoms2md(topInfo.mtop(), ir, -1, nullptr, ntopatoms, mdAtoms.get());
     update_mdatoms(mdAtoms->mdatoms(), ir->fepvals->init_lambda);
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ir->ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, ir->pbcType, natoms);
     }
 
     j = 0;
     do
     {
-        if (ir->ePBC != epbcNONE)
+        if (ir->pbcType != PbcType::No)
         {
             if (ir->bPeriodicMols)
             {
-                set_pbc(&pbc, ir->ePBC, box);
+                set_pbc(&pbc, ir->pbcType, box);
             }
             else
             {
@@ -885,7 +885,7 @@ int gmx_disre(int argc, char* argv[])
         j++;
     } while (read_next_x(oenv, status, &t, x, box));
     close_trx(status);
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
         gmx_rmpbc_done(gpbc);
     }
@@ -902,7 +902,7 @@ int gmx_disre(int argc, char* argv[])
         if (bPDB)
         {
             write_sto_conf(opt2fn("-q", NFILE, fnm), "Coloured by average violation in Angstrom",
-                           atoms.get(), xav, nullptr, ir->ePBC, box);
+                           atoms.get(), xav, nullptr, ir->pbcType, box);
         }
         dump_disre_matrix(opt2fn_null("-x", NFILE, fnm), &dr, fcd.disres.nres, j, &top.idef,
                           topInfo.mtop(), max_dr, nlevels, bThird);

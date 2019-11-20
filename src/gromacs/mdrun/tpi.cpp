@@ -245,7 +245,7 @@ void LegacySimulator::do_tpi()
        init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
        state_global->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);*/
     /* We never need full pbc for TPI */
-    fr->ePBC = epbcXYZ;
+    fr->pbcType = PbcType::Xyz;
     /* Determine the temperature for the Boltzmann weighting */
     temp = inputrec->opts.ref_t[0];
     if (fplog)
@@ -584,7 +584,7 @@ void LegacySimulator::do_tpi()
         bStateChanged = TRUE;
         bNS           = TRUE;
 
-        put_atoms_in_box(fr->ePBC, box, x);
+        put_atoms_in_box(fr->pbcType, box, x);
 
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
@@ -878,7 +878,7 @@ void LegacySimulator::do_tpi()
                 sprintf(str, "t%g_step%d.pdb", t, static_cast<int>(step));
                 sprintf(str2, "t: %f step %d ener: %f", t, static_cast<int>(step), epot);
                 write_sto_conf_mtop(str, str2, top_global, state_global->x.rvec_array(),
-                                    state_global->v.rvec_array(), inputrec->ePBC, state_global->box);
+                                    state_global->v.rvec_array(), inputrec->pbcType, state_global->box);
             }
 
             step++;

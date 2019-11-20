@@ -82,6 +82,7 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
+enum class PbcType : int;
 class t_state;
 
 namespace gmx
@@ -171,7 +172,7 @@ void dd_init_bondeds(FILE*                      fplog,
 bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd);
 
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
-gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, int ePBC);
+gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType);
 
 /*! \brief Change the DD non-bonded communication cut-off.
  *

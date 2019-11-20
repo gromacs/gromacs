@@ -1763,10 +1763,11 @@ static int dd_getenv(const gmx::MDLogger& mdlog, const char* env_var, int def)
 
 static void check_dd_restrictions(const gmx_domdec_t* dd, const t_inputrec* ir, const gmx::MDLogger& mdlog)
 {
-    if (ir->ePBC == epbcSCREW && (dd->numCells[XX] == 1 || dd->numCells[YY] > 1 || dd->numCells[ZZ] > 1))
+    if (ir->pbcType == PbcType::Screw
+        && (dd->numCells[XX] == 1 || dd->numCells[YY] > 1 || dd->numCells[ZZ] > 1))
     {
         gmx_fatal(FARGS, "With pbc=%s can only do domain decomposition in the x-direction",
-                  epbc_names[ir->ePBC]);
+                  c_pbcTypeNames[ir->pbcType].c_str());
     }
 
     if (ir->nstlist == 0)
@@ -1774,7 +1775,7 @@ static void check_dd_restrictions(const gmx_domdec_t* dd, const t_inputrec* ir, 
         gmx_fatal(FARGS, "Domain decomposition does not work with nstlist=0");
     }
 
-    if (ir->comm_mode == ecmANGULAR && ir->ePBC != epbcNONE)
+    if (ir->comm_mode == ecmANGULAR && ir->pbcType != PbcType::No)
     {
         GMX_LOG(mdlog.warning)
                 .appendText(
@@ -2001,10 +2002,10 @@ static void setupUpdateGroups(const gmx::MDLogger& mdlog,
 }
 
 UnitCellInfo::UnitCellInfo(const t_inputrec& ir) :
-    npbcdim(ePBC2npbcdim(ir.ePBC)),
+    npbcdim(numPbcDimensions(ir.pbcType)),
     numBoundedDimensions(inputrec2nboundeddim(&ir)),
     ddBoxIsDynamic(numBoundedDimensions < DIM || inputrecDynamicBox(&ir)),
-    haveScrewPBC(ir.ePBC == epbcSCREW)
+    haveScrewPBC(ir.pbcType == PbcType::Screw)
 {
 }
 
@@ -2056,7 +2057,7 @@ static DDSystemInfo getSystemInfo(const gmx::MDLogger&           mdlog,
     systemInfo.useUpdateGroups = false;
     if (ir.cutoff_scheme == ecutsVERLET)
     {
-        real cutoffMargin = std::sqrt(max_cutoff2(ir.ePBC, box)) - ir.rlist;
+        real cutoffMargin = std::sqrt(max_cutoff2(ir.pbcType, box)) - ir.rlist;
         setupUpdateGroups(mdlog, mtop, ir, cutoffMargin, &systemInfo);
     }
 
@@ -2730,7 +2731,7 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     }
 
     comm->maxpulse       = 1;
-    comm->bVacDLBNoLimit = (ir->ePBC == epbcNONE);
+    comm->bVacDLBNoLimit = (ir->pbcType == PbcType::No);
     for (d = 0; d < dd->ndim; d++)
     {
         if (comm->ddSettings.request1DAnd1Pulse)
@@ -2781,14 +2782,15 @@ bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd)
     return dd.comm->systemInfo.moleculesAreAlwaysWhole;
 }
 
-gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, int ePBC)
+gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType)
 {
     /* If each molecule is a single charge group
      * or we use domain decomposition for each periodic dimension,
      * we do not need to take pbc into account for the bonded interactions.
      */
-    return (ePBC != epbcNONE && dd->comm->systemInfo.haveInterDomainBondeds
-            && !(dd->numCells[XX] > 1 && dd->numCells[YY] > 1 && (dd->numCells[ZZ] > 1 || ePBC == epbcXY)));
+    return (pbcType != PbcType::No && dd->comm->systemInfo.haveInterDomainBondeds
+            && !(dd->numCells[XX] > 1 && dd->numCells[YY] > 1
+                 && (dd->numCells[ZZ] > 1 || pbcType == PbcType::XY)));
 }
 
 /*! \brief Sets grid size limits and PP-PME setup, prints settings to log */
@@ -2832,7 +2834,7 @@ static void set_ddgrid_parameters(const gmx::MDLogger& mdlog,
     logSettings(mdlog, dd, mtop, ir, dlb_scale, ddbox);
 
     real vol_frac;
-    if (ir->ePBC == epbcNONE)
+    if (ir->pbcType == PbcType::No)
     {
         vol_frac = 1 - 1 / static_cast<double>(dd->nnodes);
     }

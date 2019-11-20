@@ -2939,9 +2939,9 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
  * \param[in] tpx The file header data.
  * \param[in,out] ir Datastructure with simulation parameters.
  */
-static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir)
+static PbcType do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir)
 {
-    int      ePBC;
+    PbcType  pbcType;
     gmx_bool bPeriodicMols;
 
     /* Starting with tpx version 26, we have the inputrec
@@ -2951,7 +2951,7 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
      *
      *
      */
-    ePBC          = -1;
+    pbcType       = PbcType::Unset;
     bPeriodicMols = FALSE;
 
     do_test(serializer, tpx->bIr, ir);
@@ -2962,10 +2962,10 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
             /* Removed the pbc info from do_inputrec, since we always want it */
             if (!serializer->reading())
             {
-                ePBC          = ir->ePBC;
+                pbcType       = ir->pbcType;
                 bPeriodicMols = ir->bPeriodicMols;
             }
-            serializer->doInt(&ePBC);
+            serializer->doInt(reinterpret_cast<int*>(&pbcType));
             serializer->doBool(&bPeriodicMols);
         }
         if (tpx->fileGeneration <= tpx_generation && ir)
@@ -2973,18 +2973,18 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
             do_inputrec(serializer, ir, tpx->fileVersion);
             if (tpx->fileVersion < 53)
             {
-                ePBC          = ir->ePBC;
+                pbcType       = ir->pbcType;
                 bPeriodicMols = ir->bPeriodicMols;
             }
         }
         if (serializer->reading() && ir && tpx->fileVersion >= 53)
         {
             /* We need to do this after do_inputrec, since that initializes ir */
-            ir->ePBC          = ePBC;
+            ir->pbcType       = pbcType;
             ir->bPeriodicMols = bPeriodicMols;
         }
     }
-    return ePBC;
+    return pbcType;
 }
 
 /*! \brief
@@ -3050,13 +3050,13 @@ static void do_tpx_finalize(TpxFileHeader* tpx, t_inputrec* ir, t_state* state, 
  * \param[in,out] v Individual velocities for processing, deprecated.
  * \param[in,out] mtop Global topology.
  */
-static int do_tpx_body(gmx::ISerializer* serializer,
-                       TpxFileHeader*    tpx,
-                       t_inputrec*       ir,
-                       t_state*          state,
-                       rvec*             x,
-                       rvec*             v,
-                       gmx_mtop_t*       mtop)
+static PbcType do_tpx_body(gmx::ISerializer* serializer,
+                           TpxFileHeader*    tpx,
+                           t_inputrec*       ir,
+                           t_state*          state,
+                           rvec*             x,
+                           rvec*             v,
+                           gmx_mtop_t*       mtop)
 {
     if (state)
     {
@@ -3067,12 +3067,12 @@ static int do_tpx_body(gmx::ISerializer* serializer,
     {
         do_tpx_state_second(serializer, tpx, state, x, v);
     }
-    int ePBC = do_tpx_ir(serializer, tpx, ir);
+    PbcType pbcType = do_tpx_ir(serializer, tpx, ir);
     if (serializer->reading())
     {
         do_tpx_finalize(tpx, ir, state, mtop);
     }
-    return ePBC;
+    return pbcType;
 }
 
 /*! \brief
@@ -3083,7 +3083,7 @@ static int do_tpx_body(gmx::ISerializer* serializer,
  * \param[in,out] ir Datastructures with simulation parameters.
  * \param[in,out] mtop Global topology.
  */
-static int do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir, gmx_mtop_t* mtop)
+static PbcType do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir, gmx_mtop_t* mtop)
 {
     return do_tpx_body(serializer, tpx, ir, nullptr, nullptr, nullptr, mtop);
 }
@@ -3188,12 +3188,12 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
         partialDeserializedTpr.header = *tpx;
         doTpxBodyBuffer(serializer, partialDeserializedTpr.body);
 
-        partialDeserializedTpr.ePBC =
+        partialDeserializedTpr.pbcType =
                 completeTprDeserialization(&partialDeserializedTpr, ir, state, x, v, mtop);
     }
     else
     {
-        partialDeserializedTpr.ePBC = do_tpx_body(serializer, tpx, ir, state, x, v, mtop);
+        partialDeserializedTpr.pbcType = do_tpx_body(serializer, tpx, ir, state, x, v, mtop);
     }
     // Update header to system info for communication to nodes.
     // As we only need to communicate the inputrec and mtop to other nodes,
@@ -3263,12 +3263,12 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
     close_tpx(fio);
 }
 
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               t_state*                    state,
-                               rvec*                       x,
-                               rvec*                       v,
-                               gmx_mtop_t*                 mtop)
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   t_state*                    state,
+                                   rvec*                       x,
+                                   rvec*                       v,
+                                   gmx_mtop_t*                 mtop)
 {
     // Long-term we should move to use little endian in files to avoid extra byte swapping,
     // but since we just used the default XDR format (which is big endian) for the TPR
@@ -3281,9 +3281,9 @@ int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTp
     return do_tpx_body(&tprBodyDeserializer, &partialDeserializedTpr->header, ir, state, x, v, mtop);
 }
 
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               gmx_mtop_t*                 mtop)
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   gmx_mtop_t*                 mtop)
 {
     return completeTprDeserialization(partialDeserializedTpr, ir, nullptr, nullptr, nullptr, mtop);
 }
@@ -3301,7 +3301,7 @@ PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_stat
     return partialDeserializedTpr;
 }
 
-int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
+PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
 {
     t_fileio* fio;
     t_state   state;
@@ -3321,19 +3321,19 @@ int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, r
     {
         copy_mat(state.box, box);
     }
-    return partialDeserializedTpr.ePBC;
+    return partialDeserializedTpr.pbcType;
 }
 
-int read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top)
+PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top)
 {
     gmx_mtop_t mtop;
-    int        ePBC;
+    PbcType    pbcType;
 
-    ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
+    pbcType = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    return ePBC;
+    return pbcType;
 }
 
 gmx_bool fn2bTPX(const char* file)

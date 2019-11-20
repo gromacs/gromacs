@@ -481,7 +481,8 @@ int gmx_genion(int argc, char* argv[])
     matrix            box;
     t_atoms           atoms;
     t_pbc             pbc;
-    int *             repl, ePBC;
+    int*              repl;
+    PbcType           pbcType;
     int               nw, nsa, nsalt, iqtot;
     gmx_output_env_t* oenv  = nullptr;
     t_filenm          fnm[] = { { efTPR, nullptr, nullptr, ffREAD },
@@ -512,7 +513,7 @@ int gmx_genion(int argc, char* argv[])
     }
 
     /* Read atom positions and charges */
-    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efTPR, NFILE, fnm), &top, &pbcType, &x, nullptr, box, FALSE);
     atoms = top.atoms;
 
     /* Compute total charge */
@@ -621,7 +622,7 @@ int gmx_genion(int argc, char* argv[])
         }
 
         snew(repl, nw);
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
 
 
         if (seed == 0)
@@ -667,7 +668,7 @@ int gmx_genion(int argc, char* argv[])
 
     sfree(atoms.pdbinfo);
     atoms.pdbinfo = nullptr;
-    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, ePBC, box);
+    write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, nullptr, pbcType, box);
 
     sfree(pptr);
     sfree(paptr);

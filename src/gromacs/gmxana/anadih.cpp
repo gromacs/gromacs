@@ -887,7 +887,7 @@ void read_ang_dih(const char*             trj_fn,
 
         if (pbc)
         {
-            set_pbc(pbc, -1, box);
+            set_pbc(pbc, PbcType::Unset, box);
         }
 
         if (bAngles)

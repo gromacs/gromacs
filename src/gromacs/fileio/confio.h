@@ -48,13 +48,14 @@ struct gmx_mtop_t;
 struct t_atoms;
 struct t_symtab;
 struct t_topology;
+enum class PbcType : int;
 
 void write_sto_conf_indexed(const char*    outfile,
                             const char*    title,
                             const t_atoms* atoms,
                             const rvec     x[],
                             const rvec*    v,
-                            int            ePBC,
+                            PbcType        pbcType,
                             const matrix   box,
                             int            nindex,
                             int            index[]);
@@ -65,7 +66,7 @@ void write_sto_conf(const char*    outfile,
                     const t_atoms* atoms,
                     const rvec     x[],
                     const rvec*    v,
-                    int            ePBC,
+                    PbcType        pbcType,
                     const matrix   box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL)
  * to an STO (.gro or .pdb) file */
@@ -75,7 +76,7 @@ void write_sto_conf_mtop(const char*       outfile,
                          const gmx_mtop_t* mtop,
                          const rvec        x[],
                          const rvec*       v,
-                         int               ePBC,
+                         PbcType           pbcType,
                          const matrix      box);
 /* As write_sto_conf, but uses a gmx_mtop_t struct */
 
@@ -87,7 +88,7 @@ void write_sto_conf_mtop(const char*       outfile,
  * \param[in]     infile        Input file name
  * \param[out]    haveTopology  true when a topology was read and stored in mtop
  * \param[out]    mtop          The topology, either complete or only atom data
- * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[out]    pbcType       Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
@@ -95,7 +96,7 @@ void write_sto_conf_mtop(const char*       outfile,
 void readConfAndTopology(const char* infile,
                          bool*       haveTopology,
                          gmx_mtop_t* mtop,
-                         int*        ePBC,
+                         PbcType*    pbcType,
                          rvec**      x,
                          rvec**      v,
                          matrix      box);
@@ -108,7 +109,7 @@ void readConfAndTopology(const char* infile,
  * \param[out]    symtab        The symbol table
  * \param[out]    name          The title of the molecule, e.g. from pdb TITLE record
  * \param[out]    atoms         The global t_atoms struct
- * \param[out]    ePBC          Enum reporting the type of PBC
+ * \param[out]    pbcType       Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
@@ -117,7 +118,7 @@ void readConfAndAtoms(const char* infile,
                       t_symtab*   symtab,
                       char**      name,
                       t_atoms*    atoms,
-                      int*        ePBC,
+                      PbcType*    pbcType,
                       rvec**      x,
                       rvec**      v,
                       matrix      box);
@@ -134,7 +135,8 @@ void readConfAndAtoms(const char* infile,
  *
  * \param[in]     infile        Input file name
  * \param[out]    top           The topology, either complete or only atom data. Caller is
- * responsible for calling done_top(). \param[out]    ePBC          Enum reporting the type of PBC
+ *                              responsible for calling done_top().
+ * \param[out]    pbcType       Enum reporting the type of PBC
  * \param[in,out] x             Coordinates will be stored when *x!=NULL
  * \param[in,out] v             Velocities will be stored when *v!=NULL
  * \param[out]    box           Box dimensions
@@ -143,7 +145,7 @@ void readConfAndAtoms(const char* infile,
  */
 gmx_bool read_tps_conf(const char*        infile,
                        struct t_topology* top,
-                       int*               ePBC,
+                       PbcType*           pbcType,
                        rvec**             x,
                        rvec**             v,
                        matrix             box,

@@ -3678,7 +3678,7 @@ std::unique_ptr<gmx::EnforcedRotation> init_rot(FILE*                       fplo
          * When ir->bContinuation=TRUE this has already been done, but ok. */
         snew(x_pbc, mtop->natoms);
         copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
-        do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
+        do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, mtop, x_pbc);
         /* All molecules will be whole now, but not necessarily in the home box.
          * Additionally, if a rotation group consists of more than one molecule
          * (e.g. two strands of DNA), each one of them can end up in a different

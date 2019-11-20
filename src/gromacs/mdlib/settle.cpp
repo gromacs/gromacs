@@ -848,7 +848,7 @@ void csettle(settledata*  settled,
         }
         else
         {
-            set_pbc(&pbcNo, epbcNONE, nullptr);
+            set_pbc(&pbcNo, PbcType::No, nullptr);
             pbcNonNull = &pbcNo;
         }
 

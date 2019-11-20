@@ -539,7 +539,7 @@ pull_t* set_pull_init(t_inputrec* ir, const gmx_mtop_t* mtop, rvec* x, matrix bo
         update_mdatoms(md, lambda);
     }
 
-    set_pbc(&pbc, ir->ePBC, box);
+    set_pbc(&pbc, ir->pbcType, box);
 
     t_start = ir->init_t + ir->init_step * ir->delta_t;
 

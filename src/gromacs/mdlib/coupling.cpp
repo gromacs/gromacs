@@ -289,7 +289,7 @@ static void boxv_trotter(const t_inputrec*     ir,
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal = calc_pres(ir->ePBC, nwall, box, ekinmod, vir, localpres) + pcorr;
+    pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres) + pcorr;
 
     vol = det(box);
     GW  = (vol * (MassQ->Winv / PRESFAC)) * (DIM * pscal - trace(ir->ref_p)); /* W is in ps^2 * bar * nm^3 */
@@ -305,12 +305,12 @@ static void boxv_trotter(const t_inputrec*     ir,
  *
  */
 
-real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres)
+real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres)
 {
     int  n, m;
     real fac;
 
-    if (ePBC == epbcNONE || (ePBC == epbcXY && nwall != 2))
+    if (pbcType == PbcType::No || (pbcType == PbcType::XY && nwall != 2))
     {
         clear_mat(pres);
     }

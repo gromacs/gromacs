@@ -96,8 +96,8 @@ static void clust_size(const char*             ndx,
     /* Topology stuff */
     t_trxframe    fr;
     TpxFileHeader tpxh;
-    gmx_mtop_t*   mtop = nullptr;
-    int           ePBC = -1;
+    gmx_mtop_t*   mtop    = nullptr;
+    PbcType       pbcType = PbcType::Unset;
     int           ii, jj;
     real          temp, tfac;
     /* Cluster size distribution (matrix) */
@@ -133,7 +133,7 @@ static void clust_size(const char*             ndx,
         {
             gmx_fatal(FARGS, "tpr (%d atoms) and trajectory (%d atoms) do not match!", tpxh.natoms, natoms);
         }
-        ePBC = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, mtop);
+        pbcType = read_tpx(tpr, nullptr, nullptr, &natoms, nullptr, nullptr, mtop);
     }
     if (ndf <= -1)
     {
@@ -188,7 +188,7 @@ static void clust_size(const char*             ndx,
         {
             if (bPBC)
             {
-                set_pbc(&pbc, ePBC, fr.box);
+                set_pbc(&pbc, pbcType, fr.box);
             }
             max_clust_size = 1;
             max_clust_ind  = -1;

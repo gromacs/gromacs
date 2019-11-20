@@ -121,7 +121,7 @@ int gmx_densmap(int argc, char* argv[])
     FILE*             fp;
     t_trxstatus*      status;
     t_topology        top;
-    int               ePBC = -1;
+    PbcType           pbcType = PbcType::Unset;
     rvec *            x, xcom[2], direction, center, dx;
     matrix            box;
     real              t, m, mtot;
@@ -184,7 +184,7 @@ int gmx_densmap(int argc, char* argv[])
 
     if (ftp2bSet(efTPS, NFILE, fnm) || !ftp2bSet(efNDX, NFILE, fnm))
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, bRadial);
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x, nullptr, box, bRadial);
     }
     if (!bRadial)
     {
@@ -316,7 +316,7 @@ int gmx_densmap(int argc, char* argv[])
         }
         else
         {
-            set_pbc(&pbc, ePBC, box);
+            set_pbc(&pbc, pbcType, box);
             for (i = 0; i < 2; i++)
             {
                 if (gnx[i] == 1)

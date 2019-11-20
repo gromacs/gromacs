@@ -115,7 +115,7 @@ static void calc_mat(int        nres,
                      real       trunc,
                      real**     mdmat,
                      int**      nmat,
-                     int        ePBC,
+                     PbcType    pbcType,
                      matrix     box)
 {
     int   i, j, resi, resj;
@@ -123,7 +123,7 @@ static void calc_mat(int        nres,
     t_pbc pbc;
     rvec  ddx;
 
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
     trunc2 = gmx::square(trunc);
     for (resi = 0; (resi < nres); resi++)
     {
@@ -207,7 +207,7 @@ int gmx_mdmat(int argc, char* argv[])
 
     FILE *     out = nullptr, *fp;
     t_topology top;
-    int        ePBC;
+    PbcType    pbcType;
     t_atoms    useatoms;
     int        isize;
     int*       index;
@@ -243,7 +243,7 @@ int gmx_mdmat(int argc, char* argv[])
         fprintf(stderr, "Will calculate number of different contacts\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x, nullptr, box, FALSE);
 
     fprintf(stderr, "Select group for analysis\n");
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
@@ -313,7 +313,7 @@ int gmx_mdmat(int argc, char* argv[])
     rhi.g = 0.0;
     rhi.b = 0.0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, trxnat);
 
     if (bFrames)
     {
@@ -323,7 +323,7 @@ int gmx_mdmat(int argc, char* argv[])
     {
         gmx_rmpbc(gpbc, trxnat, box, x);
         nframes++;
-        calc_mat(nres, natoms, rndx, x, index, truncate, mdmat, nmat, ePBC, box);
+        calc_mat(nres, natoms, rndx, x, index, truncate, mdmat, nmat, pbcType, box);
         for (i = 0; (i < nres); i++)
         {
             for (j = 0; (j < natoms); j++)

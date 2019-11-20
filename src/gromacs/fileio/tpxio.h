@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
@@ -110,7 +111,7 @@ struct PartialDeserializedTprFile
     //! The file body.
     std::vector<char> body;
     //! Flag for PBC needed by legacy implementation.
-    int ePBC = -1;
+    PbcType pbcType = PbcType::Unset;
 };
 
 /*
@@ -154,17 +155,17 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
  *
  * \returns PBC flag.
  */
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               t_state*                    state,
-                               rvec*                       x,
-                               rvec*                       v,
-                               gmx_mtop_t*                 mtop);
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   t_state*                    state,
+                                   rvec*                       x,
+                                   rvec*                       v,
+                                   gmx_mtop_t*                 mtop);
 
 //! Overload for final TPR deserialization when not using state vectors.
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               gmx_mtop_t*                 mtop);
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   gmx_mtop_t*                 mtop);
 
 /*! \brief
  * Read a file to set up a simulation and close it after reading.
@@ -203,11 +204,11 @@ PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_stat
  * \param[out] x Positions to be filled from file, or nullptr.
  * \param[out] v Velocities to be filled from file, or nullptr.
  * \param[out] mtop Topology to be populated, or nullptr.
- * \returns ir->ePBC if it was read from the file.
+ * \returns ir->pbcType if it was read from the file.
  */
-int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop);
+PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop);
 
-int read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top);
+PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top);
 /* As read_tpx, but for the old t_topology struct */
 
 gmx_bool fn2bTPX(const char* file);

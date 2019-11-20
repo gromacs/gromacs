@@ -1131,7 +1131,7 @@ int Mdrunner::mdrunner()
         cr->npmenodes = 0;
         cr->duty      = (DUTY_PP | DUTY_PME);
 
-        if (inputrec->ePBC == epbcSCREW)
+        if (inputrec->pbcType == PbcType::Screw)
         {
             gmx_fatal(FARGS, "pbc=screw is only implemented with domain decomposition");
         }
@@ -1335,7 +1335,7 @@ int Mdrunner::mdrunner()
     {
         mdModulesNotifier.notify(*cr);
         mdModulesNotifier.notify(&atomSets);
-        mdModulesNotifier.notify(PeriodicBoundaryConditionType{ inputrec->ePBC });
+        mdModulesNotifier.notify(PeriodicBoundaryConditionType{ inputrec->pbcType });
         mdModulesNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         /* Initiate forcerecord */
         fr                 = new t_forcerec;
@@ -1390,12 +1390,13 @@ int Mdrunner::mdrunner()
         /* With periodic molecules the charge groups should be whole at start up
          * and the virtual sites should not be far from their proper positions.
          */
-        if (!inputrec->bContinuation && MASTER(cr) && !(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols))
+        if (!inputrec->bContinuation && MASTER(cr)
+            && !(inputrec->pbcType != PbcType::No && inputrec->bPeriodicMols))
         {
             /* Make molecules whole at start of run */
-            if (fr->ePBC != epbcNONE)
+            if (fr->pbcType != PbcType::No)
             {
-                do_pbc_first_mtop(fplog, inputrec->ePBC, box, &mtop, globalState->x.rvec_array());
+                do_pbc_first_mtop(fplog, inputrec->pbcType, box, &mtop, globalState->x.rvec_array());
             }
             if (vsite)
             {

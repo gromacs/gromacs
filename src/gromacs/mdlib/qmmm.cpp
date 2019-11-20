@@ -615,7 +615,7 @@ void update_QMMMrec(const t_commrec* cr, const t_forcerec* fr, const rvec* x, co
     /*  init_pbc(box);  needs to be called first, see pbc.h */
     ivec null_ivec;
     clear_ivec(null_ivec);
-    set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->numCells : null_ivec, FALSE, box);
+    set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : null_ivec, FALSE, box);
     /* only in standard (normal) QMMM we need the neighbouring MM
      * particles to provide a electric field of point charges for the QM
      * atoms.

@@ -84,7 +84,7 @@ int gmx_nmens(int argc, char* argv[])
 
     t_trxstatus*        out;
     t_topology          top;
-    int                 ePBC;
+    PbcType             pbcType;
     t_atoms*            atoms;
     rvec *              xtop, *xref, *xav, *xout1, *xout2;
     gmx_bool            bDMR, bDMA, bFit;
@@ -123,7 +123,7 @@ int gmx_nmens(int argc, char* argv[])
     read_eigenvectors(opt2fn("-v", NFILE, fnm), &natoms, &bFit, &xref, &bDMR, &xav, &bDMA, &nvec,
                       &eignr, &eigvec, &eigval);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bDMA);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, box, bDMA);
     atoms = &top.atoms;
 
     printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n", natoms);

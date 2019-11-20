@@ -561,19 +561,19 @@ bool AnalysisNeighborhoodSearchImpl::initGrid(const t_pbc& pbc, int posCount, co
     // or remove throughout.
     GMX_UNUSED_VALUE(bForce);
 
-    switch (pbc.ePBC)
+    switch (pbc.pbcType)
     {
-        case epbcNONE:
+        case PbcType::No:
             bGridPBC_[XX] = false;
             bGridPBC_[YY] = false;
             bGridPBC_[ZZ] = false;
             break;
-        case epbcXY:
+        case PbcType::XY:
             bGridPBC_[XX] = true;
             bGridPBC_[YY] = true;
             bGridPBC_[ZZ] = false;
             break;
-        case epbcXYZ:
+        case PbcType::Xyz:
             bGridPBC_[XX] = true;
             bGridPBC_[YY] = true;
             bGridPBC_[ZZ] = true;
@@ -867,16 +867,16 @@ void AnalysisNeighborhoodSearchImpl::init(AnalysisNeighborhood::SearchMode     m
     GMX_RELEASE_ASSERT(positions.index_ == -1,
                        "Individual indexed positions not supported as reference");
     bXY_ = bXY;
-    if (bXY_ && pbc != nullptr && pbc->ePBC != epbcNONE)
+    if (bXY_ && pbc != nullptr && pbc->pbcType != PbcType::No)
     {
-        if (pbc->ePBC != epbcXY && pbc->ePBC != epbcXYZ)
+        if (pbc->pbcType != PbcType::XY && pbc->pbcType != PbcType::Xyz)
         {
             std::string message = formatString(
                     "Computations in the XY plane are not supported with PBC type '%s'",
-                    epbc_names[pbc->ePBC]);
+                    c_pbcTypeNames[pbc->pbcType].c_str());
             GMX_THROW(NotImplementedError(message));
         }
-        if (pbc->ePBC == epbcXYZ
+        if (pbc->pbcType == PbcType::Xyz
             && (std::fabs(pbc->box[ZZ][XX]) > GMX_REAL_EPS * pbc->box[ZZ][ZZ]
                 || std::fabs(pbc->box[ZZ][YY]) > GMX_REAL_EPS * pbc->box[ZZ][ZZ]))
         {
@@ -888,7 +888,7 @@ void AnalysisNeighborhoodSearchImpl::init(AnalysisNeighborhood::SearchMode     m
         matrix box;
         copy_mat(pbc->box, box);
         clear_rvec(box[ZZ]);
-        set_pbc(&pbc_, epbcXY, box);
+        set_pbc(&pbc_, PbcType::XY, box);
     }
     else if (pbc != nullptr)
     {
@@ -896,7 +896,7 @@ void AnalysisNeighborhoodSearchImpl::init(AnalysisNeighborhood::SearchMode     m
     }
     else
     {
-        pbc_.ePBC = epbcNONE;
+        pbc_.pbcType = PbcType::No;
         clear_mat(pbc_.box);
     }
     nref_ = positions.count_;
@@ -1119,7 +1119,7 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
                     continue;
                 }
                 rvec dx;
-                if (search_.pbc_.ePBC != epbcNONE)
+                if (search_.pbc_.pbcType != PbcType::No)
                 {
                     pbc_dx(&search_.pbc_, search_.xref_[i], xtest_, dx);
                 }

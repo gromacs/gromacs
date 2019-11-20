@@ -186,7 +186,7 @@ static void do_gkr(t_gkrbin*     gb,
                    const int     mindex[],
                    rvec          x[],
                    rvec          mu[],
-                   int           ePBC,
+                   PbcType       pbcType,
                    const matrix  box,
                    const t_atom* atom,
                    const int*    nAtom)
@@ -231,7 +231,7 @@ static void do_gkr(t_gkrbin*     gb,
             }
         }
     }
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
     grp0 = 0;
     grp1 = ncos - 1;
     for (i = 0; i < ngrp[grp0]; i++)
@@ -726,7 +726,7 @@ static void compute_avercos(int n, rvec dip[], real* dd, rvec axis, gmx_bool bPa
 }
 
 static void do_dip(const t_topology*       top,
-                   int                     ePBC,
+                   PbcType                 pbcType,
                    real                    volume,
                    const char*             fn,
                    const char*             out_mtot,
@@ -1020,7 +1020,7 @@ static void do_dip(const t_topology*       top,
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natom);
 
     /* Start while loop over frames */
     t0     = t;
@@ -1214,7 +1214,7 @@ static void do_dip(const t_topology*       top,
 
         if (bGkr)
         {
-            do_gkr(gkrbin, ncos, gnx, molindex, mols->index, x, dipole, ePBC, box, atom, gkatom);
+            do_gkr(gkrbin, ncos, gnx, molindex, mols->index, x, dipole, pbcType, box, atom, gkatom);
         }
 
         if (bTotal)
@@ -1623,7 +1623,7 @@ int gmx_dipoles(int argc, char* argv[])
     int         npargs;
     t_pargs*    ppa;
     t_topology* top;
-    int         ePBC;
+    PbcType     pbcType;
     int         k, natoms;
     matrix      box;
 
@@ -1682,7 +1682,7 @@ int gmx_dipoles(int argc, char* argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms, nullptr, nullptr, top);
+    pbcType = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms, nullptr, nullptr, top);
 
     snew(gnx, ncos);
     snew(grpname, ncos);
@@ -1695,7 +1695,7 @@ int gmx_dipoles(int argc, char* argv[])
     }
     nFF[0] = nFA;
     nFF[1] = nFB;
-    do_dip(top, ePBC, det(box), ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm),
+    do_dip(top, pbcType, det(box), ftp2fn(efTRX, NFILE, fnm), opt2fn("-o", NFILE, fnm),
            opt2fn("-eps", NFILE, fnm), opt2fn("-a", NFILE, fnm), opt2fn("-d", NFILE, fnm),
            opt2fn_null("-cos", NFILE, fnm), opt2fn_null("-dip3d", NFILE, fnm),
            opt2fn_null("-adip", NFILE, fnm), bPairs, corrtype[0], opt2fn("-c", NFILE, fnm), bGkr,

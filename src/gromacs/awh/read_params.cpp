@@ -760,7 +760,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const pull_params_t* pull_params,
                                 pull_t*              pull_work,
                                 const matrix         box,
-                                int                  ePBC,
+                                PbcType              pbcType,
                                 const tensor&        compressibility,
                                 const t_grpopts*     inputrecGroupOptions,
                                 warninp_t            wi)
@@ -784,7 +784,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
     }
 
     t_pbc pbc;
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     for (int k = 0; k < awhParams->numBias; k++)
     {

@@ -733,7 +733,7 @@ void do_pairs(int                      ftype,
             }
             else
             {
-                set_pbc(&pbc_no, epbcNONE, nullptr);
+                set_pbc(&pbc_no, PbcType::No, nullptr);
                 pbc_nonnull = &pbc_no;
             }
 

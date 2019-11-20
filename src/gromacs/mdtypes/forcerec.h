@@ -45,6 +45,7 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/real.h"
 
@@ -135,7 +136,7 @@ struct t_forcerec
     struct interaction_const_t* ic = nullptr;
 
     /* PBC stuff */
-    int ePBC = 0;
+    PbcType pbcType = PbcType::Xyz;
     //! Tells whether atoms inside a molecule can be in different periodic images,
     //  i.e. whether we need to take into account PBC when computing distances inside molecules.
     //  This determines whether PBC must be considered for e.g. bonded interactions.

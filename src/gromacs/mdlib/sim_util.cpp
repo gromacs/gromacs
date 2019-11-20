@@ -149,11 +149,11 @@ static void calc_virial(int                              start,
                         const matrix                     box,
                         t_nrnb*                          nrnb,
                         const t_forcerec*                fr,
-                        int                              ePBC)
+                        PbcType                          pbcType)
 {
     /* The short-range virial from surrounding boxes */
     const rvec* fshift = as_rvec_array(forceWithShiftForces.shiftForces().data());
-    calc_vir(SHIFTS, fr->shift_vec, fshift, vir_part, ePBC == epbcSCREW, box);
+    calc_vir(SHIFTS, fr->shift_vec, fshift, vir_part, pbcType == PbcType::Screw, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
@@ -188,7 +188,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
      * which is why pull_potential is called close to other communication.
      */
     wallcycle_start(wcycle, ewcPULLPOT);
-    set_pbc(&pbc, ir->ePBC, box);
+    set_pbc(&pbc, ir->pbcType, box);
     dvdl = 0;
     enerd->term[F_COM_PULL] += pull_potential(pull_work, mdatoms, &pbc, cr, t, lambda[efptRESTRAINT],
                                               as_rvec_array(x.data()), force, &dvdl);
@@ -294,7 +294,7 @@ static void post_process_forces(const t_commrec*      cr,
              */
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr, stepWork.computeVirial, virial, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+                           &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
             forceWithVirial.addVirialContribution(virial);
         }
 
@@ -569,7 +569,7 @@ static void computeSpecialForces(FILE*                          fplog,
         if (awh)
         {
             enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec->ePBC, *mdatoms, box, forceWithVirial, t, step, wcycle, fplog);
+                    inputrec->pbcType, *mdatoms, box, forceWithVirial, t, step, wcycle, fplog);
         }
     }
 
@@ -981,7 +981,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (fr->ePBC != epbcNONE)
+    if (fr->pbcType != PbcType::No)
     {
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
@@ -995,7 +995,7 @@ void do_force(FILE*                               fplog,
         const bool calcCGCM = (fillGrid && !DOMAINDECOMP(cr));
         if (calcCGCM)
         {
-            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr),
+            put_atoms_in_box_omp(fr->pbcType, box, x.unpaddedArrayRef().subArray(0, homenr),
                                  gmx_omp_nthreads_get(emntDefault));
             inc_nrnb(nrnb, eNR_SHIFTX, homenr);
         }
@@ -1108,7 +1108,7 @@ void do_force(FILE*                               fplog,
         if (graph && stepWork.stateChanged)
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
+            mk_mshift(fplog, graph, fr->pbcType, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
 
         // TODO
@@ -1788,15 +1788,16 @@ void do_force(FILE*                               fplog,
         if (vsite && !(fr->haveDirectVirialContributions && !stepWork.computeVirial))
         {
             rvec* fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE,
-                           nullptr, nrnb, &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE, nullptr,
+                           nrnb, &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (stepWork.computeVirial)
         {
             /* Calculation of the virial must be done after vsites! */
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()),
-                        forceOut.forceWithShiftForces(), vir_force, graph, box, nrnb, fr, inputrec->ePBC);
+                        forceOut.forceWithShiftForces(), vir_force, graph, box, nrnb, fr,
+                        inputrec->pbcType);
         }
     }
 

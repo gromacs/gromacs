@@ -46,6 +46,7 @@
 struct InteractionList;
 struct gmx_moltype_t;
 struct t_idef;
+enum class PbcType : int;
 
 typedef enum
 {
@@ -103,7 +104,7 @@ void done_graph(t_graph* g);
 void p_graph(FILE* log, const char* title, t_graph* g);
 /* Print a graph to log */
 
-void mk_mshift(FILE* log, t_graph* g, int ePBC, const matrix box, const rvec x[]);
+void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
 void shift_x(const t_graph* g, const matrix box, const rvec x[], rvec x_s[]);

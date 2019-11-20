@@ -50,6 +50,7 @@ class AtomProperties;
 struct t_atoms;
 struct t_symtab;
 struct t_topology;
+enum class PbcType : int;
 
 typedef struct gmx_conect_t* gmx_conect;
 
@@ -88,9 +89,9 @@ void pdb_use_ter(gmx_bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE).
    This function is fundamentally broken as far as thread-safety is concerned.*/
 
-void gmx_write_pdb_box(FILE* out, int ePBC, const matrix box);
+void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box);
 /* write the box in the CRYST1 record,
- * with ePBC=-1 the pbc is guessed from the box
+ * with pbcType=PbcType::Unset the pbc is guessed from the box
  * This function is fundamentally broken as far as thread-safety is concerned.
  */
 
@@ -98,7 +99,7 @@ void write_pdbfile_indexed(FILE*          out,
                            const char*    title,
                            const t_atoms* atoms,
                            const rvec     x[],
-                           int            ePBC,
+                           PbcType        pbcType,
                            const matrix   box,
                            char           chain,
                            int            model_nr,
@@ -112,7 +113,7 @@ void write_pdbfile(FILE*          out,
                    const char*    title,
                    const t_atoms* atoms,
                    const rvec     x[],
-                   int            ePBC,
+                   PbcType        pbcType,
                    const matrix   box,
                    char           chain,
                    int            model_nr,
@@ -139,18 +140,24 @@ int read_pdbfile(FILE*            in,
                  struct t_atoms*  atoms,
                  struct t_symtab* symtab,
                  rvec             x[],
-                 int*             ePBC,
+                 PbcType*         pbcType,
                  matrix           box,
                  gmx_bool         bChange,
                  gmx_conect       conect);
 /* Function returns number of atoms found.
- * ePBC and gmx_conect structure may be NULL.
+ * pbcType and gmx_conect structure may be NULL.
  */
 
-void gmx_pdb_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], int* ePBC, matrix box);
+void gmx_pdb_read_conf(const char* infile,
+                       t_symtab*   symtab,
+                       char**      name,
+                       t_atoms*    atoms,
+                       rvec        x[],
+                       PbcType*    pbcType,
+                       matrix      box);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
- * ePBC may be NULL.
+ * pbcType may be NULL.
  *
  * If name is not nullptr, gmx_strdup the title string into it. */
 

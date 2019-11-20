@@ -469,7 +469,7 @@ void gmx::LegacySimulator::do_mimic()
             }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
                              as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
+                             fr->pbcType, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {

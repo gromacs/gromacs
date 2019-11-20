@@ -409,7 +409,7 @@ void Rdf::initAfterFirstFrame(const TrajectoryAnalysisSettings& settings, const 
             {
                 box[ZZ][ZZ] = 2 * std::max(box[XX][XX], box[YY][YY]);
             }
-            rmax_ = std::sqrt(0.99 * 0.99 * max_cutoff2(bXY_ ? epbcXY : epbcXYZ, box));
+            rmax_ = std::sqrt(0.99 * 0.99 * max_cutoff2(bXY_ ? PbcType::XY : PbcType::Xyz, box));
         }
         else
         {

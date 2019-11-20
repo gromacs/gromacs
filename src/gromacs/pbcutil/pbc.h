@@ -40,25 +40,30 @@
 
 #include <stdio.h>
 
+#include <string>
+
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
 struct gmx_domdec_t;
 struct gmx_mtop_t;
 
-enum
+//! Enumeration that contains all supported periodic boundary setups.
+enum class PbcType : int
 {
-    epbcXYZ,
-    epbcNONE,
-    epbcXY,
-    epbcSCREW,
-    epbcNR
+    Xyz   = 0, //!< Periodic boundaries in all dimensions.
+    No    = 1, //!< No periodic boundaries.
+    XY    = 2, //!< Only two dimensions are periodic.
+    Screw = 3, //!< Screw.
+    Unset = 4, //!< The type of PBC is not set or invalid.
+    Count = 5
 };
 
-//! Strings corresponding to epbc enum values.
-extern const char* epbc_names[epbcNR + 1];
+//! Names for all values in PBC types enumeration
+extern const gmx::EnumerationArray<PbcType, std::string> c_pbcTypeNames;
 
 /* Maximum number of combinations of single triclinic box vectors
  * required to shift atoms that are within a brick of the size of
@@ -70,16 +75,16 @@ extern const char* epbc_names[epbcNR + 1];
 typedef struct t_pbc
 {
     //! The PBC type
-    int ePBC;
+    PbcType pbcType;
     //! Number of dimensions in which PBC is exerted
     int ndim_ePBC;
     /*! \brief Determines how to compute distance vectors.
      *
      *  Indicator of how to compute distance vectors, depending
-     *  on PBC type (depends on ePBC and dimensions with(out) DD)
+     *  on PBC type (depends on pbcType and dimensions with(out) DD)
      *  and the box angles.
      */
-    int ePBCDX;
+    int pbcTypeDX;
     /*! \brief Used for selecting which dimensions to use in PBC.
      *
      *  In case of 1-D PBC this indicates which dimension is used,
@@ -131,10 +136,10 @@ struct t_graph;
 
 /*! \brief Returns the number of dimensions that use pbc
  *
- * \param[in] ePBC The periodic boundary condition type
+ * \param[in] pbcType The periodic boundary condition type
  * \return the number of dimensions that use pbc, starting at X
  */
-int ePBC2npbcdim(int ePBC);
+int numPbcDimensions(PbcType pbcType);
 
 /*! \brief Dump the contents of the pbc structure to the file
  *
@@ -145,17 +150,18 @@ void dump_pbc(FILE* fp, t_pbc* pbc);
 
 /*! \brief Check the box for consistency
  *
- * \param[in] ePBC The pbc identifier
- * \param[in] box  The box matrix
+ * When \p pbcType=PbcTypes::Unset, the type of pbc is guessed from the box matrix.
+ *
+ * \param[in] pbcType The pbc identifier
+ * \param[in] box     The box matrix
  * \return NULL if the box is supported by Gromacs.
- * Otherwise returns a string with the problem.
- * When ePBC=-1, the type of pbc is guessed from the box matrix.
+ *         Otherwise returns a string with the problem.
  */
-const char* check_box(int ePBC, const matrix box);
+const char* check_box(PbcType pbcType, const matrix box);
 
 /*! \brief Creates box matrix from edge lengths and angles.
  *
- * \param[in,out] box         The box matrix
+ * \param[in,out] box        The box matrix
  * \param[in] vec            The edge lengths
  * \param[in] angleInDegrees The angles
  */
@@ -166,24 +172,27 @@ void matrix_convert(matrix box, const rvec vec, const rvec angleInDegrees);
  * Returns the square of the maximum cut-off allowed for the box,
  * taking into account that the grid neighborsearch code and pbc_dx
  * only check combinations of single box-vector shifts.
- * \param[in] ePBC The pbc identifier
+ *
+ * \param[in] pbcType The pbc identifier
  * \param[in] box  The box matrix
  * \return the maximum cut-off.
  */
-real max_cutoff2(int ePBC, const matrix box);
+real max_cutoff2(PbcType pbcType, const matrix box);
 
-/*! \brief Guess PBC typr
+/*! \brief Guess PBC type
  *
  * Guesses the type of periodic boundary conditions using the box
+ *
  * \param[in] box  The box matrix
- * \return The pbc identifier
+ * \return The pbc type identifier
  */
-int guess_ePBC(const matrix box);
+PbcType guessPbcType(const matrix box);
 
 /*! \brief Corrects the box if necessary
  *
  * Checks for un-allowed box angles and corrects the box
- * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
+ * and the integer shift vectors in the graph (if \p graph!=NULL) if necessary.
+ *
  * \param[in] fplog File for debug output
  * \param[in] step  The MD step number
  * \param[in] box   The simulation cell
@@ -196,12 +205,13 @@ gmx_bool correct_box(FILE* fplog, int step, tensor box, struct t_graph* graph);
  *
  * pbc_dx will not use pbc and return the normal difference vector
  * when one or more of the diagonal elements of box are zero.
- * When ePBC=-1, the type of pbc is guessed from the box matrix.
+ * When \p pbcType=PbcType::Unset, the type of pbc is guessed from the box matrix.
+ *
  * \param[in,out] pbc The pbc information structure
- * \param[in] ePBC The PBC identifier
- * \param[in] box  The box tensor
+ * \param[in] pbcType The PBC identifier
+ * \param[in] box     The box tensor
  */
-void set_pbc(t_pbc* pbc, int ePBC, const matrix box);
+void set_pbc(t_pbc* pbc, PbcType pbcType, const matrix box);
 
 /*! \brief Initiate the periodic boundary condition algorithms.
  *
@@ -211,17 +221,18 @@ void set_pbc(t_pbc* pbc, int ePBC, const matrix box);
  * If domdecCells!=NULL pbc is not used for directions
  * with dd->nc[i]==1 with bSingleDir==TRUE or
  * with dd->nc[i]<=2 with bSingleDir==FALSE.
- * Note that when no PBC is required only pbc->ePBC is set,
+ * Note that when no PBC is required only pbc->pbcType is set,
  * the rest of the struct will be invalid.
- * \param[in,out] pbc The pbc information structure
- * \param[in] ePBC        The PBC identifier
+ *
+ * \param[in,out] pbc     The pbc information structure
+ * \param[in] pbcType     The PBC identifier
  * \param[in] domdecCells 3D integer vector describing the number of DD cells
  *                        or nullptr if not using DD.
  * \param[in] bSingleDir  TRUE if DD communicates only in one direction along dimensions
  * \param[in] box         The box tensor
  * \return the pbc structure when pbc operations are required, NULL otherwise.
  */
-t_pbc* set_pbc_dd(t_pbc* pbc, int ePBC, const ivec domdecCells, gmx_bool bSingleDir, const matrix box);
+t_pbc* set_pbc_dd(t_pbc* pbc, PbcType pbcType, const ivec domdecCells, gmx_bool bSingleDir, const matrix box);
 
 /*! \brief Compute distance with PBC
  *
@@ -311,23 +322,25 @@ int* compact_unitcell_edges();
  * These routines puts ONE or ALL atoms in the box, not caring
  * about charge groups!
  * Also works for triclinic cells.
- * \param[in]     ePBC   The pbc type
- * \param[in]     box    The simulation box
- * \param[in,out] x      The coordinates of the atoms
+ *
+ * \param[in]     pbcType The pbc type
+ * \param[in]     box     The simulation box
+ * \param[in,out] x       The coordinates of the atoms
  */
-void put_atoms_in_box(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x);
+void put_atoms_in_box(PbcType pbcType, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Parallellizes put_atoms_in_box()
  *
  * This wrapper function around put_atoms_in_box() with the ugly manual
  * workload splitting is needed to avoid silently introducing multithreading
  * in tools.
- * \param[in]     ePBC       The pbc type
+ *
+ * \param[in]     pbcType    The pbc type
  * \param[in]     box        The simulation box
  * \param[in,out] x          The coordinates of the atoms
  * \param[in]     nth        number of threads to be used in the given module
  */
-void put_atoms_in_box_omp(int ePBC, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth);
+void put_atoms_in_box_omp(PbcType pbcType, const matrix box, gmx::ArrayRef<gmx::RVec> x, gmx_unused int nth);
 
 /*! \brief Put atoms inside triclinic box
  *
@@ -343,31 +356,32 @@ void put_atoms_in_triclinic_unitcell(int ecenter, const matrix box, gmx::ArrayRe
  *
  * This puts ALL atoms at the closest distance for the center of the box
  * as calculated by calc_box_center.
- * When ePBC=-1, the type of pbc is guessed from the box matrix.
- * \param[in]    ePBC    The pbc type
+ * When \p pbcType=PbcType::Unset, the type of pbc is guessed from the box matrix.
+ *
+ * \param[in]    pbcType The pbc type
  * \param[in]    ecenter The pbc center type
  * \param[in]    box     The simulation box
- * \param[in,out] x       The coordinates of the atoms
+ * \param[in,out] x      The coordinates of the atoms
  */
-void put_atoms_in_compact_unitcell(int ePBC, int ecenter, const matrix box, gmx::ArrayRef<gmx::RVec> x);
+void put_atoms_in_compact_unitcell(PbcType pbcType, int ecenter, const matrix box, gmx::ArrayRef<gmx::RVec> x);
 
 /*! \brief Make all molecules whole by shifting positions
  *
  * \param[in]     fplog     Log file
- * \param[in]     ePBC      The PBC type
+ * \param[in]     pbcType   The PBC type
  * \param[in]     box       The simulation box
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
  */
-void do_pbc_first_mtop(FILE* fplog, int ePBC, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
+void do_pbc_first_mtop(FILE* fplog, PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
 
 /*! \brief Make molecules consisting of multiple charge groups whole by shifting positions
  *
- * \param[in]     ePBC      The PBC type
+ * \param[in]     pbcType   The PBC type
  * \param[in]     box       The simulation box
  * \param[in]     mtop      System topology definition
  * \param[in,out] x         The coordinates of the atoms
  */
-void do_pbc_mtop(int ePBC, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
+void do_pbc_mtop(PbcType pbcType, const matrix box, const gmx_mtop_t* mtop, rvec x[]);
 
 #endif

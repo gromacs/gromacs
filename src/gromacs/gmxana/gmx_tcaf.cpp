@@ -320,7 +320,7 @@ int gmx_tcaf(int argc, char* argv[])
     };
 
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     t_trxframe        fr;
     matrix            box;
     gmx_bool          bTop;
@@ -357,7 +357,7 @@ int gmx_tcaf(int argc, char* argv[])
         return 0;
     }
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, nullptr, nullptr, box, TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     if (bMol)

@@ -222,7 +222,7 @@ int gmx_gyrate(int argc, char* argv[])
     FILE*             out;
     t_trxstatus*      status;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     rvec *            x, *x_s;
     rvec              xcm, gvec, gvec1;
     matrix            box, trans;
@@ -283,7 +283,7 @@ int gmx_gyrate(int argc, char* argv[])
         printf("Will print radius normalised by charge\n");
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x, nullptr, box, TRUE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     if (nmol > gnx || gnx % nmol != 0)
@@ -329,7 +329,7 @@ int gmx_gyrate(int argc, char* argv[])
     }
     if (nz == 0)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     }
     do
     {

@@ -54,6 +54,7 @@ struct t_grpopts;
 struct t_inputrec;
 struct pull_params_t;
 struct pull_t;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -76,7 +77,7 @@ AwhParams* readAndCheckAwhParams(std::vector<t_inpfile>* inp, const t_inputrec* 
  * \param[in]     pull_params           Pull parameters.
  * \param[in,out] pull_work             Pull working struct to register AWH bias in.
  * \param[in]     box                   Box vectors.
- * \param[in]     ePBC                  Periodic boundary conditions enum.
+ * \param[in]     pbcType               Periodic boundary conditions enum.
  * \param[in]     compressibility       Compressibility matrix for pressure coupling, pass all 0 without pressure coupling
  * \param[in]     inputrecGroupOptions  Parameters for atom groups.
  * \param[in,out] wi                    Struct for bookeeping warnings.
@@ -87,7 +88,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const pull_params_t* pull_params,
                                 pull_t*              pull_work,
                                 const matrix         box,
-                                int                  ePBC,
+                                PbcType              pbcType,
                                 const tensor&        compressibility,
                                 const t_grpopts*     inputrecGroupOptions,
                                 warninp_t            wi);

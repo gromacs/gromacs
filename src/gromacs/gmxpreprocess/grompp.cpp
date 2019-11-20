@@ -869,7 +869,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         gmx_bool                                 bTopB,
                         const char*                              fn,
                         int                                      rc_scaling,
-                        int                                      ePBC,
+                        PbcType                                  pbcType,
                         rvec                                     com,
                         warninp*                                 wi)
 {
@@ -898,7 +898,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
         warning(wi, warn_buf);
     }
 
-    npbcdim = ePBC2npbcdim(ePBC);
+    npbcdim = numPbcDimensions(pbcType);
     GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
     clear_rvec(com);
     if (rc_scaling != erscNO)
@@ -1058,16 +1058,16 @@ static void gen_posres(gmx_mtop_t*                              mtop,
                        const char*                              fnA,
                        const char*                              fnB,
                        int                                      rc_scaling,
-                       int                                      ePBC,
+                       PbcType                                  pbcType,
                        rvec                                     com,
                        rvec                                     comB,
                        warninp*                                 wi)
 {
-    read_posres(mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
+    read_posres(mtop, mi, FALSE, fnA, rc_scaling, pbcType, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
      */
-    read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, pbcType, comB, wi);
 }
 
 static void set_wall_atomtype(PreprocessingAtomTypes* at, t_gromppopts* opts, t_inputrec* ir, warninp* wi)
@@ -1613,13 +1613,13 @@ static void set_verlet_buffer(const gmx_mtop_t* mtop, t_inputrec* ir, real buffe
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
+    if (gmx::square(ir->rlist) >= max_cutoff2(ir->pbcType, box))
     {
         gmx_fatal(FARGS,
                   "The pair-list cut-off (%g nm) is longer than half the shortest box vector or "
                   "longer than the smallest box diagonal element (%g nm). Increase the box size or "
                   "decrease nstlist or increase verlet-buffer-tolerance.",
-                  ir->rlist, std::sqrt(max_cutoff2(ir->ePBC, box)));
+                  ir->rlist, std::sqrt(max_cutoff2(ir->pbcType, box)));
     }
 }
 
@@ -1979,7 +1979,8 @@ int gmx_grompp(int argc, char* argv[])
                 fprintf(stderr, " and %s\n", fnB);
             }
         }
-        gen_posres(&sys, mi, fn, fnB, ir->refcoord_scaling, ir->ePBC, ir->posres_com, ir->posres_comB, wi);
+        gen_posres(&sys, mi, fn, fnB, ir->refcoord_scaling, ir->pbcType, ir->posres_com,
+                   ir->posres_comB, wi);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
@@ -2196,7 +2197,7 @@ int gmx_grompp(int argc, char* argv[])
                     fr_time, ir, &state, &sys, oenv);
     }
 
-    if (ir->ePBC == epbcXY && ir->nwall != 2)
+    if (ir->pbcType == PbcType::XY && ir->nwall != 2)
     {
         clear_rvec(state.box[ZZ]);
     }
@@ -2276,7 +2277,7 @@ int gmx_grompp(int argc, char* argv[])
         {
             copy_mat(ir->compress, compressibility);
         }
-        setStateDependentAwhParams(ir->awhParams, ir->pull, pull, state.box, ir->ePBC,
+        setStateDependentAwhParams(ir->awhParams, ir->pull, pull, state.box, ir->pbcType,
                                    compressibility, &ir->opts, wi);
     }
 

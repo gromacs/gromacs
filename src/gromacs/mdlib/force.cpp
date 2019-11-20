@@ -178,7 +178,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
             /* Since all atoms are in the rectangular or triclinic unit-cell,
              * only single box vector shifts (2 in x) are required.
              */
-            set_pbc_dd(&pbc, fr->ePBC, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
+            set_pbc_dd(&pbc, fr->pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, TRUE, box);
         }
 
         do_force_listed(wcycle, box, ir->fepvals, cr, ms, idef, x, hist, forceOutputs, fr, &pbc,

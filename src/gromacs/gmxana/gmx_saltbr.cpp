@@ -136,7 +136,7 @@ int gmx_saltbr(int argc, char* argv[])
     int                nset[3]  = { 0, 0, 0 };
 
     t_topology*  top;
-    int          ePBC;
+    PbcType      pbcType;
     char*        buf;
     t_trxstatus* status;
     int          i, j, k, m, nnn, teller, ncg;
@@ -156,7 +156,7 @@ int gmx_saltbr(int argc, char* argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType);
     cg  = mk_charge(&top->atoms, &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);
@@ -175,7 +175,7 @@ int gmx_saltbr(int argc, char* argv[])
         srenew(time, teller + 1);
         time[teller] = t;
 
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
 
         for (i = 0; (i < ncg); i++)
         {

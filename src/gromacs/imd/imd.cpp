@@ -523,8 +523,9 @@ void write_IMDgroup_to_file(bool              bIMD,
     if (bIMD)
     {
         IMDatoms = gmx_mtop_global_atoms(sys);
-        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms, state->x.rvec_array(),
-                               state->v.rvec_array(), ir->ePBC, state->box, ir->imd->nat, ir->imd->ind);
+        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms,
+                               state->x.rvec_array(), state->v.rvec_array(), ir->pbcType,
+                               state->box, ir->imd->nat, ir->imd->ind);
     }
 }
 

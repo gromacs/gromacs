@@ -268,7 +268,7 @@ static void write_constr_pdb(const char*       fn,
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, -1, box);
+    gmx_write_pdb_box(out, PbcType::Unset, box);
     int molb = 0;
     for (i = start; i < start + homenr; i++)
     {
@@ -425,14 +425,14 @@ bool Constraints::Impl::apply(bool               bLog,
      * Note that PBC for constraints is different from PBC for bondeds.
      * For constraints there is both forward and backward communication.
      */
-    if (ir.ePBC != epbcNONE && (cr->dd || pbcHandlingRequired_)
+    if (ir.pbcType != PbcType::No && (cr->dd || pbcHandlingRequired_)
         && !(cr->dd && cr->dd->constraint_comm == nullptr))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir.ePBC, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ir.pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -659,7 +659,7 @@ bool Constraints::Impl::apply(bool               bLog,
             {
                 t = ir.init_t;
             }
-            set_pbc(&pbc, ir.ePBC, box);
+            set_pbc(&pbc, ir.pbcType, box);
             pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
         }
         if (ed && delta_step > 0)

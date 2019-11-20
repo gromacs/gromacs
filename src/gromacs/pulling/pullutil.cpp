@@ -906,7 +906,7 @@ static bool pullGroupObeysPbcRestrictions(const pull_group_work_t& group,
 
 int pullCheckPbcWithinGroups(const pull_t& pull, const rvec* x, const t_pbc& pbc, real pbcMargin)
 {
-    if (pbc.ePBC == epbcNONE)
+    if (pbc.pbcType == PbcType::No)
     {
         return -1;
     }
@@ -948,7 +948,7 @@ bool pullCheckPbcWithinGroup(const pull_t&                  pull,
                              int                            groupNr,
                              real                           pbcMargin)
 {
-    if (pbc.ePBC == epbcNONE)
+    if (pbc.pbcType == PbcType::No)
     {
         return true;
     }

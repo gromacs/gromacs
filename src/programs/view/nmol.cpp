@@ -98,11 +98,11 @@ static bool MWCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
     return false;
 }
 
-static void set_def(t_molwin* mw, int ePBC, matrix box)
+static void set_def(t_molwin* mw, PbcType pbcType, matrix box)
 {
     mw->bShowHydrogen = true;
     mw->bond_type     = eBFat;
-    mw->ePBC          = ePBC;
+    mw->pbcType       = pbcType;
     mw->boxtype       = esbRect;
     mw->realbox       = TRICLINIC(box) ? esbTri : esbRect;
 }
@@ -115,13 +115,13 @@ t_molwin* init_mw(t_x11*        x11,
                   int           height,
                   unsigned long fg,
                   unsigned long bg,
-                  int           ePBC,
+                  PbcType       pbcType,
                   matrix        box)
 {
     t_molwin* mw;
 
     snew(mw, 1);
-    set_def(mw, ePBC, box);
+    set_def(mw, pbcType, box);
 
     InitWin(&mw->wd, x, y, width, height, 1, "Mol Window");
 

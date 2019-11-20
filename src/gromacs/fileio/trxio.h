@@ -71,8 +71,8 @@ void clear_trxframe(struct t_trxframe* fr, gmx_bool bFirst);
  *                     and all data to zero.
  */
 
-void set_trxframe_ePBC(struct t_trxframe* fr, int ePBC);
-/* Set the type of periodic boundary conditions, ePBC=-1 is not set */
+void setTrxFramePbcType(struct t_trxframe* fr, PbcType pbcType);
+/* Set the type of periodic boundary conditions, pbcType=PbcType::Unset is not set */
 
 int nframes_read(t_trxstatus* status);
 /* Returns the number of frames read from the trajectory */
@@ -243,9 +243,9 @@ gmx_bool read_next_x(const gmx_output_env_t* oenv, t_trxstatus* status, real* t,
 void rewind_trj(t_trxstatus* status);
 /* Rewind trajectory file as opened with read_first_x */
 
-struct t_topology* read_top(const char* fn, int* ePBC);
+struct t_topology* read_top(const char* fn, PbcType* pbcType);
 /* Extract a topology data structure from a topology file.
- * If ePBC!=NULL *ePBC gives the pbc type.
+ * If pbcType!=NULL *pbcType gives the pbc type.
  */
 
 #endif

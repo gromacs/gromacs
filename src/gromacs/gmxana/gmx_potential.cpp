@@ -109,7 +109,7 @@ static void calc_potential(const char*             fn,
                            double***               slField,
                            int*                    nslices,
                            const t_topology*       top,
-                           int                     ePBC,
+                           PbcType                 pbcType,
                            int                     axis,
                            int                     nr_grps,
                            double*                 slWidth,
@@ -172,7 +172,7 @@ static void calc_potential(const char*             fn,
     }
 
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
 
     /*********** Start processing trajectory ***********/
     do
@@ -485,7 +485,7 @@ int gmx_potential(int argc, char* argv[])
     char**      grpname; /* groupnames                 */
     int*        ngx;     /* sizes of groups            */
     t_topology* top;     /* topology        */
-    int         ePBC;
+    PbcType     pbcType;
     int**       index; /* indices for all groups     */
     t_filenm    fnm[] = {
         /* files for g_order       */
@@ -508,7 +508,7 @@ int gmx_potential(int argc, char* argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 
     snew(grpname, ngrps);
     snew(index, ngrps);
@@ -518,7 +518,7 @@ int gmx_potential(int argc, char* argv[])
 
 
     calc_potential(ftp2fn(efTRX, NFILE, fnm), index, ngx, &potential, &charge, &field, &nslices,
-                   top, ePBC, axis, ngrps, &slWidth, fudge_z, bSpherical, bCorrect, oenv);
+                   top, pbcType, axis, ngrps, &slWidth, fudge_z, bSpherical, bCorrect, oenv);
 
     plot_potential(potential, charge, field, opt2fn("-o", NFILE, fnm), opt2fn("-oc", NFILE, fnm),
                    opt2fn("-of", NFILE, fnm), nslices, ngrps, grpname, slWidth, oenv);

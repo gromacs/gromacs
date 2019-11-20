@@ -134,7 +134,7 @@ int gmx_vanhove(int argc, char* argv[])
     gmx_output_env_t* oenv;
     const char *      matfile, *otfile, *orfile;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            boxtop, box, *sbox, avbox, corr;
     rvec *            xtop, *x, **sx;
     int               isize, nalloc, nallocn;
@@ -180,7 +180,7 @@ int gmx_vanhove(int argc, char* argv[])
         exit(0);
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, boxtop, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, boxtop, FALSE);
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
     nalloc = 0;
@@ -295,7 +295,7 @@ int gmx_vanhove(int argc, char* argv[])
             fprintf(stderr, "\rProcessing frame %d", f);
             fflush(stderr);
         }
-        if (ePBC != epbcNONE)
+        if (pbcType != PbcType::No)
         {
             /* Scale all the configuration to the average box */
             gmx::invertBoxMatrix(sbox[f], corr);

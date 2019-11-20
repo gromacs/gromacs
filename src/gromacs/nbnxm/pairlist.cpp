@@ -3173,7 +3173,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= ePBC2npbcdim(gridSet.domainSetup().ePBC)
+        if (d >= numPbcDimensions(gridSet.domainSetup().pbcType)
             || gridSet.domainSetup().haveMultipleDomainsPerDim[d])
         {
             shp[d] = 0;

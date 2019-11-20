@@ -147,7 +147,7 @@ int gmx_polystat(int argc, char* argv[])
 
     t_topology*       top;
     gmx_output_env_t* oenv;
-    int               ePBC;
+    PbcType           pbcType;
     int               isize, *index, nmol, *molind, mol, nat_min = 0, nat_max = 0;
     char*             grpname;
     t_trxstatus*      status;
@@ -177,7 +177,7 @@ int gmx_polystat(int argc, char* argv[])
     }
 
     snew(top, 1);
-    ePBC = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms, nullptr, nullptr, top);
+    pbcType = read_tpx_top(ftp2fn(efTPR, NFILE, fnm), nullptr, box, &natoms, nullptr, nullptr, top);
 
     fprintf(stderr, "Select a group of polymer mainchain atoms:\n");
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
@@ -274,7 +274,7 @@ int gmx_polystat(int argc, char* argv[])
     sum_gyro_tot = 0;
     sum_pers_tot = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
 
     do
     {

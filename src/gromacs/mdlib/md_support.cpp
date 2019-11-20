@@ -283,7 +283,7 @@ void compute_globals(gmx_global_stat*          gstat,
          * Use the box from last timestep since we already called update().
          */
 
-        enerd->term[F_PRES] = calc_pres(fr->ePBC, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
+        enerd->term[F_PRES] = calc_pres(fr->pbcType, ir->nwall, lastbox, ekind->ekin, total_vir, pres);
     }
 
     /* ##########  Long range energy information ###### */
@@ -520,7 +520,7 @@ void set_state_entries(t_state* state, const t_inputrec* ir)
     }
 
     state->nnhpres = 0;
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
         state->flags |= (1 << estBOX);
         if (inputrecPreserveShape(ir))

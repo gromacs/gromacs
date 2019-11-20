@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -130,7 +130,7 @@ static bool HandleClient(t_x11* x11, int ID, t_gmx* gmx)
         case IDEXPORT: ShowDlg(gmx->dlgs[edExport]); break;
         case IDDOEXPORT:
             write_sto_conf(gmx->confout, *gmx->man->top.name, &(gmx->man->top.atoms), gmx->man->x,
-                           nullptr, gmx->man->molw->ePBC, gmx->man->box);
+                           nullptr, gmx->man->molw->pbcType, gmx->man->box);
             break;
         case IDQUIT: show_mb(gmx, emQuit); break;
         case IDTERM: done_gmx(x11, gmx); return true;
@@ -241,7 +241,7 @@ static void init_gmx(t_x11* x11, char* program, int nfile, t_filenm fnm[], gmx_o
     int          w0, h0;
     int          natom, natom_trx;
     t_topology   top;
-    int          ePBC;
+    PbcType      pbcType;
     matrix       box;
     t_trxframe   fr;
     t_trxstatus* status;
@@ -249,7 +249,7 @@ static void init_gmx(t_x11* x11, char* program, int nfile, t_filenm fnm[], gmx_o
     snew(gmx, 1);
     snew(gmx->wd, 1);
 
-    ePBC = read_tpx_top(ftp2fn(efTPR, nfile, fnm), nullptr, box, &natom, nullptr, nullptr, &top);
+    pbcType = read_tpx_top(ftp2fn(efTPR, nfile, fnm), nullptr, box, &natom, nullptr, nullptr, &top);
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, nfile, fnm), &fr, TRX_DONT_SKIP);
     close_trx(status);
@@ -275,7 +275,7 @@ static void init_gmx(t_x11* x11, char* program, int nfile, t_filenm fnm[], gmx_o
 
     /* The order of creating windows is important here! */
     /* Manager */
-    gmx->man  = init_man(x11, gmx->wd->self, 0, 0, 1, 1, WHITE, BLACK, ePBC, box, oenv);
+    gmx->man  = init_man(x11, gmx->wd->self, 0, 0, 1, 1, WHITE, BLACK, pbcType, box, oenv);
     gmx->logo = init_logo(x11, gmx->wd->self, false);
 
     /* Now put all windows in the proper place */

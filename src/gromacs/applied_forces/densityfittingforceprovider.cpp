@@ -96,7 +96,7 @@ public:
          basic_mdspan<const float, dynamicExtents3D> referenceDensity,
          const TranslateAndScale&                    transformationToDensityLattice,
          const LocalAtomSet&                         localAtomSet,
-         int                                         pbcType,
+         PbcType                                     pbcType,
          double                                      simulationTimeStep,
          const DensityFittingForceProviderState&     state);
     ~Impl();
@@ -121,7 +121,7 @@ private:
     DensityFittingAmplitudeLookup amplitudeLookup_;
     TranslateAndScale             transformationToDensityLattice_;
     RVec                          referenceDensityCenter_;
-    int                           pbcType_;
+    PbcType                       pbcType_;
 
     //! Optionally scale the force according to a moving average of the similarity
     compat::optional<ExponentialMovingAverage> expAverageSimilarity_;
@@ -133,7 +133,7 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
                                         basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                         const TranslateAndScale& transformationToDensityLattice,
                                         const LocalAtomSet&      localAtomSet,
-                                        int                      pbcType,
+                                        PbcType                  pbcType,
                                         double                   simulationTimeStep,
                                         const DensityFittingForceProviderState& state) :
     parameters_(parameters),
@@ -314,7 +314,7 @@ DensityFittingForceProvider::DensityFittingForceProvider(const DensityFittingPar
                                                          basic_mdspan<const float, dynamicExtents3D> referenceDensity,
                                                          const TranslateAndScale& transformationToDensityLattice,
                                                          const LocalAtomSet& localAtomSet,
-                                                         int                 pbcType,
+                                                         PbcType             pbcType,
                                                          double              simulationTimeStep,
                                                          const DensityFittingForceProviderState& state) :
     impl_(new Impl(parameters, referenceDensity, transformationToDensityLattice, localAtomSet, pbcType, simulationTimeStep, state))

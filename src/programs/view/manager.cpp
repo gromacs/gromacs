@@ -227,7 +227,7 @@ void set_file(t_x11* x11, t_manager* man, const char* trajectory, const char* st
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
     read_tpx_top(status, nullptr, man->box, &man->natom, nullptr, nullptr, &man->top);
-    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
+    man->gpbc = gmx_rmpbc_init(&man->top.idef, PbcType::Unset, man->natom);
 
     man->natom = read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x), man->box);
     man->trajfile = gmx_strdup(trajectory);
@@ -364,7 +364,7 @@ static bool step_man(t_manager* man, int* nat)
                 put_atoms_in_triclinic_unitcell(ecenterDEF, man->box, atomsArrayRef);
                 break;
             case esbTrunc:
-                put_atoms_in_compact_unitcell(man->molw->ePBC, ecenterDEF, man->box, atomsArrayRef);
+                put_atoms_in_compact_unitcell(man->molw->pbcType, ecenterDEF, man->box, atomsArrayRef);
                 break;
             case esbRect:
             case esbNone:
@@ -622,7 +622,7 @@ t_manager* init_man(t_x11*            x11,
                     int               height,
                     unsigned long     fg,
                     unsigned long     bg,
-                    int               ePBC,
+                    PbcType           pbcType,
                     matrix            box,
                     gmx_output_env_t* oenv)
 {
@@ -641,7 +641,7 @@ t_manager* init_man(t_x11*            x11,
 
     /* The order of creating windows is important for the stacking order */
     /* Mol Window */
-    man->molw = init_mw(x11, man->wd.self, 0, 0, 1, 1, WHITE, BLUE, ePBC, box);
+    man->molw = init_mw(x11, man->wd.self, 0, 0, 1, 1, WHITE, BLUE, pbcType, box);
 
     /* Title Window */
     InitWin(&(man->title), 0, 0, 1, 1, 0, nullptr);

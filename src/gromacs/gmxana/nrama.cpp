@@ -78,7 +78,7 @@ static void calc_dihs(t_xrama* xr)
     t_dih*      dd;
     gmx_rmpbc_t gpbc = nullptr;
 
-    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
+    gpbc = gmx_rmpbc_init(xr->idef, xr->pbcType, xr->natoms);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
     gmx_rmpbc_done(gpbc);
 
@@ -241,7 +241,7 @@ t_topology* init_rama(gmx_output_env_t* oenv, const char* infile, const char* to
     t_topology* top;
     real        t;
 
-    top = read_top(topfile, &xr->ePBC);
+    top = read_top(topfile, &xr->pbcType);
 
     /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
     get_dih(xr, &(top->atoms));

@@ -706,7 +706,7 @@ static int mk_grey(egCol egc[], t_graph* g, int* AtomI, int npbcdim, const matri
         {
             if (gmx_debug_at)
             {
-                set_pbc(&pbc, -1, box);
+                set_pbc(&pbc, PbcType::Unset, box);
                 pbc_dx(&pbc, x[ai], x[aj], dx);
                 fprintf(debug,
                         "mk_grey: shifts for atom %d due to atom %d\n"
@@ -740,11 +740,11 @@ static int first_colour(int fC, egCol Col, t_graph* g, const egCol egc[])
 }
 
 /* Returns the maximum length of the graph edges for coordinates x */
-static real maxEdgeLength(const t_graph g, int ePBC, const matrix box, const rvec x[])
+static real maxEdgeLength(const t_graph g, PbcType pbcType, const matrix box, const rvec x[])
 {
     t_pbc pbc;
 
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     real maxEdgeLength2 = 0;
 
@@ -762,7 +762,7 @@ static real maxEdgeLength(const t_graph g, int ePBC, const matrix box, const rve
     return std::sqrt(maxEdgeLength2);
 }
 
-void mk_mshift(FILE* log, t_graph* g, int ePBC, const matrix box, const rvec x[])
+void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const rvec x[])
 {
     static int nerror_tot = 0;
     int        npbcdim;
@@ -771,9 +771,9 @@ void mk_mshift(FILE* log, t_graph* g, int ePBC, const matrix box, const rvec x[]
     int        fW, fG;     /* First of each category	*/
     int        nerror = 0;
 
-    g->bScrewPBC = (ePBC == epbcSCREW);
+    g->bScrewPBC = (pbcType == PbcType::Screw);
 
-    if (ePBC == epbcXY)
+    if (pbcType == PbcType::XY)
     {
         npbcdim = 2;
     }
@@ -870,14 +870,14 @@ void mk_mshift(FILE* log, t_graph* g, int ePBC, const matrix box, const rvec x[]
          */
         constexpr real c_relativeDistanceThreshold = 0.25;
 
-        int numPbcDimensions = ePBC2npbcdim(ePBC);
-        GMX_RELEASE_ASSERT(numPbcDimensions > 0, "Expect PBC with graph");
+        int npbcdim = numPbcDimensions(pbcType);
+        GMX_RELEASE_ASSERT(npbcdim > 0, "Expect PBC with graph");
         real minBoxSize = norm(box[XX]);
-        for (int d = 1; d < numPbcDimensions; d++)
+        for (int d = 1; d < npbcdim; d++)
         {
             minBoxSize = std::min(minBoxSize, norm(box[d]));
         }
-        real maxDistance = maxEdgeLength(*g, ePBC, box, x);
+        real maxDistance = maxEdgeLength(*g, pbcType, box, x);
         if (maxDistance >= c_relativeDistanceThreshold * minBoxSize)
         {
             std::string mesg = gmx::formatString(

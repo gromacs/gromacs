@@ -682,7 +682,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
     }
     pme->bUseThreads = (sum_use_threads > 0);
 
-    if (ir->ePBC == epbcSCREW)
+    if (ir->pbcType == PbcType::Screw)
     {
         gmx_fatal(FARGS, "pme does not (yet) work with pbc = screw");
     }
@@ -903,7 +903,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
     // TODO: This would be better as just copying a sub-structure that contains
     // all the PME parameters and nothing else.
     t_inputrec irc;
-    irc.ePBC                   = ir->ePBC;
+    irc.pbcType                = ir->pbcType;
     irc.coulombtype            = ir->coulombtype;
     irc.vdwtype                = ir->vdwtype;
     irc.efep                   = ir->efep;

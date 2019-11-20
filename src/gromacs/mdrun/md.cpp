@@ -371,7 +371,7 @@ void gmx::LegacySimulator::do_md()
                 *ir, *top_global, stateGpu->getUpdateStream(), stateGpu->xUpdatedOnDevice());
 
         t_pbc pbc;
-        set_pbc(&pbc, epbcXYZ, state->box);
+        set_pbc(&pbc, PbcType::Xyz, state->box);
         integrator->setPbc(&pbc);
     }
 
@@ -471,7 +471,7 @@ void gmx::LegacySimulator::do_md()
         {
             /* Construct the virtual sites for the initial configuration */
             construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, nullptr, top.idef.iparams,
-                             top.idef.il, fr->ePBC, fr->bMolPBC, cr, state->box);
+                             top.idef.il, fr->pbcType, fr->bMolPBC, cr, state->box);
         }
     }
 
@@ -826,7 +826,7 @@ void gmx::LegacySimulator::do_md()
                     if (useGpuForUpdate)
                     {
                         t_pbc pbc;
-                        set_pbc(&pbc, epbcXYZ, state->box);
+                        set_pbc(&pbc, PbcType::Xyz, state->box);
                         integrator->setPbc(&pbc);
                     }
                 }
@@ -1363,7 +1363,7 @@ void gmx::LegacySimulator::do_md()
                 shift_self(graph, state->box, state->x.rvec_array());
             }
             construct_vsites(vsite, state->x.rvec_array(), ir->delta_t, state->v.rvec_array(),
-                             top.idef.iparams, top.idef.il, fr->ePBC, fr->bMolPBC, cr, state->box);
+                             top.idef.iparams, top.idef.il, fr->pbcType, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {
@@ -1456,7 +1456,7 @@ void gmx::LegacySimulator::do_md()
         {
             integrator->scaleCoordinates(pressureCouplingMu);
             t_pbc pbc;
-            set_pbc(&pbc, epbcXYZ, state->box);
+            set_pbc(&pbc, PbcType::Xyz, state->box);
             integrator->setPbc(&pbc);
         }
 

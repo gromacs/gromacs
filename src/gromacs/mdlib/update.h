@@ -50,6 +50,7 @@
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+enum class PbcType;
 struct t_extmass;
 struct t_fcdata;
 struct t_graph;
@@ -294,7 +295,7 @@ void update_annealing_target_temp(t_inputrec* ir, real t, gmx::Update* upd);
 real calc_temp(real ekin, real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres);
+real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres);
 /* Calculate the pressure tensor, returns the scalar pressure.
  * The unit of pressure is bar.
  */

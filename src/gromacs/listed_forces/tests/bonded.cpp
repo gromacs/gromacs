@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -514,24 +514,24 @@ void fillIatoms(int ftype, std::vector<t_iatom>* iatoms)
 }
 
 class ListedForcesTest :
-    public ::testing::TestWithParam<std::tuple<iListInput, std::vector<gmx::RVec>, int>>
+    public ::testing::TestWithParam<std::tuple<iListInput, std::vector<gmx::RVec>, PbcType>>
 {
 protected:
     matrix                     box_;
     t_pbc                      pbc_;
     std::vector<gmx::RVec>     x_;
-    int                        epbc_;
+    PbcType                    pbcType_;
     iListInput                 input_;
     test::TestReferenceData    refData_;
     test::TestReferenceChecker checker_;
     ListedForcesTest() : checker_(refData_.rootChecker())
     {
-        input_ = std::get<0>(GetParam());
-        x_     = std::get<1>(GetParam());
-        epbc_  = std::get<2>(GetParam());
+        input_   = std::get<0>(GetParam());
+        x_       = std::get<1>(GetParam());
+        pbcType_ = std::get<2>(GetParam());
         clear_mat(box_);
         box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
-        set_pbc(&pbc_, epbc_, box_);
+        set_pbc(&pbc_, pbcType_, box_);
         // We need quite specific tolerances here since angle functions
         // etc. are not very precise and reproducible.
         test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(
@@ -540,7 +540,7 @@ protected:
     }
     void testOneIfunc(test::TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
     {
-        SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[epbc_]);
+        SCOPED_TRACE(std::string("Testing PBC ") + c_pbcTypeNames[pbcType_]);
         std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
         std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
         t_mdatoms         mdatoms    = { 0 };
@@ -661,7 +661,7 @@ std::vector<std::vector<gmx::RVec>> c_coordinatesForTests = {
 };
 
 //! PBC values for testing
-std::vector<int> c_pbcForTests = { epbcNONE, epbcXY, epbcXYZ };
+std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
 // Those tests give errors with the intel compiler and nothing else, so we disable them only there.
 #ifndef __INTEL_COMPILER

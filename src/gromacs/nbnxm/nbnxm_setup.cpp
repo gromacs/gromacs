@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -456,7 +456,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                                                        minimumIlistCountForGpuBalancing);
 
     auto pairSearch = std::make_unique<PairSearch>(
-            ir->ePBC, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->numCells : nullptr,
+            ir->pbcType, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->numCells : nullptr,
             DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr, pairlistParams.pairlistType,
             bFEP_NonBonded, gmx_omp_nthreads_get(emntPairsearch), pinPolicy);
 

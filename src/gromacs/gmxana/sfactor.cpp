@@ -460,7 +460,7 @@ extern int do_scattering_intensity(const char*             fnTPS,
     char**            grpname;
     int**             index;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     t_trxframe        fr;
     reduced_atom_t**  red;
     structure_factor* sf;
@@ -484,7 +484,7 @@ extern int do_scattering_intensity(const char*             fnTPS,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, TRUE);
+    read_tps_conf(fnTPS, &top, &pbcType, &xtop, nullptr, box, TRUE);
     sfree(xtop);
 
     /* groups stuff... */

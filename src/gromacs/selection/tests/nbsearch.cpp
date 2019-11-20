@@ -199,7 +199,7 @@ NeighborhoodSearchTestData::NeighborhoodSearchTestData(uint64_t seed, real cutof
     refPosCount_(0)
 {
     clear_mat(box_);
-    set_pbc(&pbc_, epbcNONE, box_);
+    set_pbc(&pbc_, PbcType::No, box_);
 }
 
 gmx::RVec NeighborhoodSearchTestData::generateRandomPosition()
@@ -661,7 +661,7 @@ public:
         data_.box_[ZZ][ZZ] = 3.0;
         data_.generateRandomRefPositions(10);
         data_.generateRandomTestPositions(5);
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -685,7 +685,7 @@ public:
         data_.box_[ZZ][ZZ] = 3.0;
         data_.generateRandomRefPositions(20);
         data_.useRefPositionsAsTestPositions();
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -731,7 +731,7 @@ public:
         // test coverage.
         data_.generateRandomRefPositions(1000);
         data_.generateRandomTestPositions(100);
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -755,7 +755,7 @@ public:
         data_.box_[ZZ][ZZ] = 7.0;
         data_.generateRandomRefPositions(1000);
         data_.useRefPositionsAsTestPositions();
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -781,7 +781,7 @@ public:
         // test coverage.
         data_.generateRandomRefPositions(1000);
         data_.generateRandomTestPositions(100);
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferencesXY(&data_.pbc_);
     }
 
@@ -810,7 +810,7 @@ public:
         // test coverage.
         data_.generateRandomRefPositions(1000);
         data_.generateRandomTestPositions(100);
-        set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::Xyz, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -836,7 +836,7 @@ public:
         // test coverage.
         data_.generateRandomRefPositions(1000);
         data_.generateRandomTestPositions(100);
-        set_pbc(&data_.pbc_, epbcXY, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::XY, data_.box_);
         data_.computeReferences(&data_.pbc_);
     }
 
@@ -862,7 +862,7 @@ public:
         // test coverage.
         data_.generateRandomRefPositions(1000);
         data_.generateRandomTestPositions(100);
-        set_pbc(&data_.pbc_, epbcNONE, data_.box_);
+        set_pbc(&data_.pbc_, PbcType::No, data_.box_);
         data_.computeReferences(nullptr);
     }
 

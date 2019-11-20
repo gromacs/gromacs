@@ -64,17 +64,17 @@ struct gmx_rmpbc
 {
     const t_idef*  idef;
     int            natoms_init;
-    int            ePBC;
+    PbcType        pbcType;
     int            ngraph;
     rmpbc_graph_t* graph;
 };
 
-static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
+static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natoms)
 {
     int            i;
     rmpbc_graph_t* gr;
 
-    if (ePBC == epbcNONE || nullptr == gpbc || nullptr == gpbc->idef || gpbc->idef->ntypes <= 0)
+    if (pbcType == PbcType::No || nullptr == gpbc || nullptr == gpbc->idef || gpbc->idef->ntypes <= 0)
     {
         return nullptr;
     }
@@ -110,7 +110,7 @@ static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     return gr->gr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, int ePBC, int natoms)
+gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, PbcType pbcType, int natoms)
 {
     gmx_rmpbc_t gpbc;
 
@@ -121,7 +121,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, int ePBC, int natoms)
     /* This sets pbc when we now it,
      * otherwise we guess it from the instantaneous box in the trajectory.
      */
-    gpbc->ePBC = ePBC;
+    gpbc->pbcType = pbcType;
 
     gpbc->idef = idef;
     if (gpbc->idef->ntypes <= 0)
@@ -156,43 +156,43 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
     }
 }
 
-static int gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc, const matrix box)
+static PbcType gmx_rmpbc_ePBC(gmx_rmpbc_t gpbc, const matrix box)
 {
-    if (nullptr != gpbc && gpbc->ePBC >= 0)
+    if (nullptr != gpbc && gpbc->pbcType != PbcType::Unset)
     {
-        return gpbc->ePBC;
+        return gpbc->pbcType;
     }
     else
     {
-        return guess_ePBC(box);
+        return guessPbcType(box);
     }
 }
 
 void gmx_rmpbc(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[])
 {
-    int      ePBC;
+    PbcType  pbcType;
     t_graph* gr;
 
-    ePBC = gmx_rmpbc_ePBC(gpbc, box);
-    gr   = gmx_rmpbc_get_graph(gpbc, ePBC, natoms);
+    pbcType = gmx_rmpbc_ePBC(gpbc, box);
+    gr      = gmx_rmpbc_get_graph(gpbc, pbcType, natoms);
     if (gr != nullptr)
     {
-        mk_mshift(stdout, gr, ePBC, box, x);
+        mk_mshift(stdout, gr, pbcType, box, x);
         shift_self(gr, box, x);
     }
 }
 
 void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[], rvec x_s[])
 {
-    int      ePBC;
+    PbcType  pbcType;
     t_graph* gr;
     int      i;
 
-    ePBC = gmx_rmpbc_ePBC(gpbc, box);
-    gr   = gmx_rmpbc_get_graph(gpbc, ePBC, natoms);
+    pbcType = gmx_rmpbc_ePBC(gpbc, box);
+    gr      = gmx_rmpbc_get_graph(gpbc, pbcType, natoms);
     if (gr != nullptr)
     {
-        mk_mshift(stdout, gr, ePBC, box, x);
+        mk_mshift(stdout, gr, pbcType, box, x);
         shift_x(gr, box, x, x_s);
     }
     else
@@ -206,16 +206,16 @@ void gmx_rmpbc_copy(gmx_rmpbc_t gpbc, int natoms, const matrix box, rvec x[], rv
 
 void gmx_rmpbc_trxfr(gmx_rmpbc_t gpbc, t_trxframe* fr)
 {
-    int      ePBC;
+    PbcType  pbcType;
     t_graph* gr;
 
     if (fr->bX && fr->bBox)
     {
-        ePBC = gmx_rmpbc_ePBC(gpbc, fr->box);
-        gr   = gmx_rmpbc_get_graph(gpbc, ePBC, fr->natoms);
+        pbcType = gmx_rmpbc_ePBC(gpbc, fr->box);
+        gr      = gmx_rmpbc_get_graph(gpbc, pbcType, fr->natoms);
         if (gr != nullptr)
         {
-            mk_mshift(stdout, gr, ePBC, fr->box, fr->x);
+            mk_mshift(stdout, gr, pbcType, fr->box, fr->x);
             shift_self(gr, fr->box, fr->x);
         }
     }

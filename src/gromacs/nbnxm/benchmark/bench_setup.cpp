@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -184,13 +184,14 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
 
     PairlistParams pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
-    GridSet gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false,
+    GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false,
                     numThreads, pinPolicy);
 
     auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto pairSearch = std::make_unique<PairSearch>(
-            epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    auto pairSearch =
+            std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
+                                         pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 

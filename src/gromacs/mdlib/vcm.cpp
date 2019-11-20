@@ -64,7 +64,8 @@ t_vcm::t_vcm(const SimulationGroups& groups, const t_inputrec& ir) :
 
     if (mode == ecmANGULAR && ndim < 3)
     {
-        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s", epbc_names[ir.ePBC]);
+        gmx_fatal(FARGS, "Can not have angular comm removal with pbc=%s",
+                  c_pbcTypeNames[ir.pbcType].c_str());
     }
 
     if (mode != ecmNO)

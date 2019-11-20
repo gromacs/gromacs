@@ -71,6 +71,7 @@ static const int c_pullMaxNumLocalAtomsSingleThreaded = 1;
 #endif
 
 class PullHistory;
+enum class PbcType : int;
 
 enum
 {
@@ -227,7 +228,7 @@ struct pull_t
     gmx_bool bConstraint; /* Are there constrained coordinates? */
     gmx_bool bAngle;      /* Are there angle geometry coordinates? */
 
-    int      ePBC;      /* the boundary conditions */
+    PbcType  pbcType;   /* the boundary conditions */
     int      npbcdim;   /* do pbc in dims 0 <= dim < npbcdim */
     gmx_bool bRefAt;    /* do we need reference atoms for a group COM ? */
     int      cosdim;    /* dimension for cosine weighting, -1 if none */

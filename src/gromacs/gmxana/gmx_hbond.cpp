@@ -2848,7 +2848,7 @@ int gmx_hbond(int argc, char* argv[])
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)", top.atoms.nr, natoms);
     }
 
-    bBox  = (ir->ePBC != epbcNONE);
+    bBox  = (ir->pbcType != PbcType::No);
     grid  = init_grid(bBox, box, (rcut > r2cut) ? rcut : r2cut, ngrid);
     nabin = static_cast<int>(acut / abin);
     nrbin = static_cast<int>(rcut / rbin);

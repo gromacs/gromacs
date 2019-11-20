@@ -54,6 +54,7 @@
 #include "gromacs/math/units.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/trajectory/trajectoryframe.h"
@@ -196,7 +197,7 @@ int gmx_velacc(int argc, char* argv[])
     };
 
     t_topology top;
-    int        ePBC = -1;
+    PbcType    pbcType = PbcType::Unset;
     t_trxframe fr;
     matrix     box;
     gmx_bool   bTPS = FALSE, bTop = FALSE;
@@ -242,7 +243,7 @@ int gmx_velacc(int argc, char* argv[])
 
     if (bTPS)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, nullptr, nullptr, box, TRUE);
         get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
     }
     else

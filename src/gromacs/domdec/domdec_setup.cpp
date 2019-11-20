@@ -314,7 +314,7 @@ real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox
 /*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec& ir)
 {
-    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) && ir.ePBC == epbcXYZ
+    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) && ir.pbcType == PbcType::Xyz
             && ir.ewald_geometry == eewg3DC);
 }
 
@@ -364,8 +364,8 @@ static float comm_cost_est(real               limit,
     float temp;
 
     /* Check the DD algorithm restrictions */
-    if ((ir.ePBC == epbcXY && ir.nwall < 2 && nc[ZZ] > 1)
-        || (ir.ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
+    if ((ir.pbcType == PbcType::XY && ir.nwall < 2 && nc[ZZ] > 1)
+        || (ir.pbcType == PbcType::Screw && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
     {
         return -1;
     }
@@ -528,7 +528,7 @@ static float comm_cost_est(real               limit,
 
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
-    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.ePBC != epbcXY))
+    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.pbcType != PbcType::XY))
     {
         if ((ddbox.tric_dir[XX] && nc[XX] == 1) || (ddbox.tric_dir[YY] && nc[YY] == 1))
         {

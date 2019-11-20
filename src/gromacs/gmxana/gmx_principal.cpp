@@ -80,7 +80,7 @@ int gmx_principal(int argc, char* argv[])
     t_pargs pa[] = { { "-foo", FALSE, etBOOL, { &foo }, "Dummy option to avoid empty array" } };
     t_trxstatus* status;
     t_topology   top;
-    int          ePBC;
+    PbcType      pbcType;
     real         t;
     rvec*        x;
 
@@ -143,13 +143,13 @@ int gmx_principal(int argc, char* argv[])
     }
     sfree(legend);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, nullptr, nullptr, box, TRUE);
 
     get_index(&top.atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &gnx, &index, &grpname);
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
 
     do
     {
