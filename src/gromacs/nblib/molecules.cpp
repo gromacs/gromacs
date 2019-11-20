@@ -6,6 +6,8 @@
 
 namespace nblib {
 
+AtomType::AtomType() {}
+
 AtomType::AtomType(std::string name, real mass, real charge, real c6, real c12)
 : name_(name),
   mass_(mass),
@@ -28,11 +30,13 @@ MoleculeType& MoleculeType::addAtom(std::string moleculeAtomName, std::string re
     }
 
     atoms_.push_back(std::make_tuple(moleculeAtomName, residueName));
+
+    return *this;
 }
 
 MoleculeType& MoleculeType::addAtom(std::string name, AtomType const &atom)
 {
-    this->addAtom(name, "", atom);
+    return this->addAtom(name, "", atom);
 }
 
 int MoleculeType::numAtomsInMolecule() const
