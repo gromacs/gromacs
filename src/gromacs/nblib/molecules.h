@@ -8,6 +8,7 @@
 #include <tuple>
 #include <unordered_map>
 #include <string>
+#include <vector>
 
 #include "gromacs/math/vectypes.h"
 #include "interactions.h"
