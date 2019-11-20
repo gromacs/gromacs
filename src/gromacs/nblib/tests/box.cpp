@@ -47,6 +47,8 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+using gmx::test::defaultRealTolerance;
+
 namespace nblib
 {
 
@@ -60,6 +62,29 @@ TEST(NBlibTest, CubicBoxCannotHaveInf)
 {
     real number = INFINITY;
     EXPECT_THROW(Box box(number), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, RectangularBoxCannotHaveNaN)
+{
+    real number = NAN;
+    EXPECT_THROW(Box box(number, real(1.), real(1.)), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, RectangularBoxCannotHaveInf)
+{
+    real number = INFINITY;
+    EXPECT_THROW(Box box(number, real(1.), real(1.)), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, CubicBoxWorks)
+{
+    real length = 3;
+    Box::data_type ref = { std::array<real, DIM>{length, 0, 0}, {0, length, 0}, {0, 0, length}};
+    Box::data_type probe = Box(length).getMatrix();
+
+    for (int i = 0; i < DIM; ++i)
+        for (int j = 0; j < DIM; ++j)
+            EXPECT_REAL_EQ_TOL(ref[i][j], probe[i][j], defaultRealTolerance());
 }
 
 }  // namespace nblib
