@@ -8,7 +8,7 @@
 
 namespace nblib {
 
-Box::Box(real l)
+Box::Box(real l) : box_{0}
 {
     if (std::isnan(l) or std::isinf(l))
     {
@@ -20,7 +20,7 @@ Box::Box(real l)
     box_[ZZ][ZZ] = l;
 }
 
-Box::Box(real x, real y, real z)
+Box::Box(real x, real y, real z) : box_{0}
 {
     if (std::isnan(x) or std::isinf(x) or
         std::isnan(y) or std::isinf(y) or
