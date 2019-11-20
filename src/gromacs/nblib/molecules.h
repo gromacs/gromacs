@@ -13,11 +13,13 @@
 
 class TopologyBuilder;
 
+namespace nblib
+{
+
 using AtomName = std::string;
 using ResidueName = std::string;
 
-class AtomType
-{
+class AtomType {
 public:
     AtomType(std::string name,
              real mass,
@@ -34,15 +36,17 @@ private:
     real c12_;
 };
 
-class MoleculeType
-{
+class MoleculeType {
 public:
     MoleculeType(std::string name);
 
-    MoleculeType& addAtom(std::string name, std::string residueName, AtomType const& atomType);
-    MoleculeType& addAtom(std::string name, AtomType const& atomType);
+    MoleculeType &addAtom(std::string name, std::string residueName, AtomType const &atomType);
+
+    MoleculeType &addAtom(std::string name, AtomType const &atomType);
 
     void addHarmonicBond(int atom1, int atom2, HarmonicType harmonicType);
+
+    int numAtomsInMolecule() const;
 
     friend class TopologyBuilder;
 
@@ -56,7 +60,10 @@ private:
 
     std::vector<std::tuple<int, int>> exclusions;
 
-    std::vector<HarmonicType>         harmonicInteractions;
+    std::vector<HarmonicType> harmonicInteractions;
+
+    int numAtomsInMolecule();
 };
 
+} //namespace nblib
 #endif //GROMACS_MOLECULES_H

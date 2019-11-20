@@ -3,3 +3,13 @@
 //
 
 #include "molecules.h"
+
+namespace nblib {
+
+int MoleculeType::numAtomsInMolecule()
+{
+    return atoms_.size();
+}
+
+
+}
