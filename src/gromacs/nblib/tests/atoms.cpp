@@ -42,7 +42,7 @@
 
 #include <cmath>
 
-#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/molecules.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -52,39 +52,48 @@ using gmx::test::defaultRealTolerance;
 namespace nblib
 {
 
-TEST(NBlibTest, CubicBoxCannotHaveNaN)
+struct ArAtom
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number), gmx::InvalidInputError);
+    std::string name = "Ar";
+    real mass = 1.0;
+    real charge = 0;
+    real c6 = 1;
+    real c12 = 1;
+};
+
+TEST(NBlibTest, AtomTypeNameCanBeConstructed)
+{
+    ArAtom arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    EXPECT_EQ(argonAtom.name(), arAtom.name);
 }
 
-TEST(NBlibTest, CubicBoxCannotHaveInf)
+TEST(NBlibTest, AtomTypeMassCanBeConstructed)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number), gmx::InvalidInputError);
+    ArAtom arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    EXPECT_EQ(argonAtom.mass(), arAtom.mass);
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveNaN)
+TEST(NBlibTest, AtomTypeChargeCanBeConstructed)
 {
-    real number = NAN;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), gmx::InvalidInputError);
+    ArAtom arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    EXPECT_EQ(argonAtom.charge(), arAtom.charge);
 }
 
-TEST(NBlibTest, RectangularBoxCannotHaveInf)
+TEST(NBlibTest, AtomTypeC6CanBeConstructed)
 {
-    real number = INFINITY;
-    EXPECT_THROW(Box box(number, real(1.), real(1.)), gmx::InvalidInputError);
+    ArAtom arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    EXPECT_EQ(argonAtom.c6(), arAtom.c6);
 }
 
-TEST(NBlibTest, CubicBoxWorks)
+TEST(NBlibTest, AtomTypeC12CanBeConstructed)
 {
-    real length = 3;
-    Box::data_type ref = { std::array<real, DIM>{length, 0, 0}, {0, length, 0}, {0, 0, length}};
-    Box::data_type probe = Box(length).matrix();
-
-    for (int i = 0; i < DIM; ++i)
-        for (int j = 0; j < DIM; ++j)
-            EXPECT_REAL_EQ_TOL(ref[i][j], probe[i][j], defaultRealTolerance());
+    ArAtom arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    EXPECT_EQ(argonAtom.c12(), arAtom.c12);
 }
 
 }  // namespace nblib

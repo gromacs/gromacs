@@ -22,9 +22,14 @@ AtomType::AtomType(std::string atomName, real mass, real charge, real c6, real c
   c12_(c12)
 {}
 
-std::string AtomType::getName() const
-{
-    return name_;
-}
+std::string AtomType::name() const { return name_; }
+
+real AtomType::mass() const { return mass_; }
+
+real AtomType::charge() const { return charge_; }
+
+real AtomType::c6() const { return c6_; }
+
+real AtomType::c12() const { return c12_; }
 
 } // namespace nblib

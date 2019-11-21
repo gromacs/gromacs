@@ -53,11 +53,16 @@
 
 namespace nblib {
 
+ForceCalculator::ForceCalculator(NBKernelSystem          &system,
+                                 const NBKernelOptions   &options)
+                                 : nbKernelSystem_(system), nbKernelOptions_(options)
+{}
+
 //! Print timings outputs
-void printTimingsOutput(const NBKernelOptions &options,
-                               const NBKernelSystem  &system,
-                               const gmx::index      &numPairs,
-                               gmx_cycles_t           cycles)
+void ForceCalculator::printTimingsOutput(const NBKernelOptions &options,
+                                         const NBKernelSystem  &system,
+                                         const gmx::index      &numPairs,
+                                         gmx_cycles_t           cycles)
 {
     const gmx::EnumerationArray<BenchMarkKernels, std::string>  kernelNames   = { "auto", "no", "4xM", "2xMM" };
     const gmx::EnumerationArray<BenchMarkCombRule, std::string> combruleNames = { "geom.", "LB", "none" };
@@ -118,36 +123,34 @@ void printTimingsOutput(const NBKernelOptions &options,
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
-void setupAndRunInstance(NBKernelSystem          &system,
-                                const NBKernelOptions   &options,
-                                const bool              &printTimings)
+void ForceCalculator::compute(const bool printTimings)
 {
     // We set the interaction cut-off to the pairlist cut-off
-    interaction_const_t   ic   = setupInteractionConst(options);
+    interaction_const_t   ic   = setupInteractionConst(nbKernelOptions_);
     t_nrnb                nrnb = { 0 };
     gmx_enerdata_t        enerd(1, 0);
 
     gmx::StepWorkload     stepWork;
     stepWork.computeForces = true;
-    if (options.computeVirialAndEnergy)
+    if (nbKernelOptions_.computeVirialAndEnergy)
     {
         stepWork.computeVirial = true;
         stepWork.computeEnergy = true;
     }
 
-    std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance(options, system);
+    std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance(nbKernelOptions_, nbKernelSystem_);
     const PairlistSet                  &pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
     const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
     gmx_cycles_t                        cycles        = gmx_cycles_read();
 
     t_forcerec forceRec;
-    forceRec.ntype = system.numAtomTypes;
-    forceRec.nbfp  = system.nonbondedParameters;
+    forceRec.ntype = nbKernelSystem_.numAtomTypes;
+    forceRec.nbfp  = nbKernelSystem_.nonbondedParameters;
     snew(forceRec.shift_vec, SHIFTS);
-    calc_shifts(system.box, forceRec.shift_vec);
+    calc_shifts(nbKernelSystem_.box, forceRec.shift_vec);
 
-    std::vector<gmx::RVec> currentCoords = system.coordinates;
-    for (int iter = 0; iter < options.numIterations; iter++)
+    std::vector<gmx::RVec> currentCoords = nbKernelSystem_.coordinates;
+    for (int iter = 0; iter < nbKernelOptions_.numIterations; iter++)
     {
         // Run the kernel without force clearing
         nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
@@ -156,14 +159,14 @@ void setupAndRunInstance(NBKernelSystem          &system,
                                      &nrnb);
         // There is one output data structure per thread
         std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat.get()->out;
-        integrateCoordinates(nbvAtomsOut, options, system.box, currentCoords);
+        integrateCoordinates(nbvAtomsOut, nbKernelOptions_, nbKernelSystem_.box, currentCoords);
     }
-    system.coordinates = currentCoords;
+    nbKernelSystem_.coordinates = currentCoords;
 
     cycles = gmx_cycles_read() - cycles;
     if (printTimings)
     {
-        printTimingsOutput(options, system, numPairs, cycles);
+        printTimingsOutput(nbKernelOptions_, nbKernelSystem_, numPairs, cycles);
     }
 }
 

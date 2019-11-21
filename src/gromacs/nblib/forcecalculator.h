@@ -50,21 +50,32 @@
 
 namespace nblib {
 
-void printTimingsOutput(const NBKernelOptions &options,
-                        const NBKernelSystem  &system,
-                        const gmx::index      &numPairs,
-                        gmx_cycles_t           cycles);
+class ForceCalculator
+{
+public:
 
-//! Sets up and runs the kernel calls
-//! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-//!      that callers can manipulate directly.
-void setupAndRunInstance(NBKernelSystem          &system,
-                         const NBKernelOptions   &options,
-                         const bool              &printTimings);
+    ForceCalculator(NBKernelSystem          &system,
+                    const NBKernelOptions   &options);
 
-// void nbKernel(NBKernelSystem        &system,
-//               const NBKernelOptions &options,
-//               const bool            &printTimings);
+
+
+    //! Sets up and runs the kernel calls
+    //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
+    //!      that callers can manipulate directly.
+    void compute(const bool printTimings = false);
+
+private:
+
+    void printTimingsOutput(const NBKernelOptions &options,
+                            const NBKernelSystem  &system,
+                            const gmx::index      &numPairs,
+                            gmx_cycles_t           cycles);
+
+    NBKernelSystem nbKernelSystem_;
+    NBKernelOptions nbKernelOptions_;
+
+
+};
 
 } // namespace nblib
 
