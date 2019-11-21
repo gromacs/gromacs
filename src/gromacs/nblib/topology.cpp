@@ -15,7 +15,7 @@
 
 namespace nblib {
 
-t_blocka TopologyBuilder::fillExclusionsList()
+t_blocka TopologyBuilder::createExclusionsList()
 {
     auto &moleculesList = molecules_;
 
@@ -75,13 +75,14 @@ t_blocka TopologyBuilder::fillExclusionsList()
     return tBlockGlobal;
 }
 
-std::vector<real> TopologyBuilder::fillCharges()
+template <class Extractor>
+std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 {
     auto &moleculesList = molecules_;
 
     //! returned object
-    std::vector<real> masses;
-    masses.reserve(numAtoms_);
+    std::vector<real> ret;
+    ret.reserve(numAtoms_);
 
     for (auto &molNumberTuple : moleculesList)
     {
@@ -92,21 +93,23 @@ std::vector<real> TopologyBuilder::fillCharges()
         {
             for (auto &atomTuple : molecule.atoms_)
             {
-                std::string moleculeAtomName = std::get<0>(atomTuple);
                 std::string atomTypeName = std::get<1>(atomTuple);
 
                 AtomType &atomType = molecule.atomTypes_[atomTypeName];
-                masses.push_back(atomType.mass());
+                ret.push_back(extractor(atomType));
             }
         }
     }
 
-    return masses;
+    return ret;
 }
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls = fillExclusionsList();
+    topology_.excls = createExclusionsList();
+    topology_.masses = extractQuantity([](const AtomType &atomType){ return atomType.mass(); });
+    topology_.charges = extractQuantity([](const AtomType &atomType){ return atomType.charge(); });
+
     return topology_;
 }
 
