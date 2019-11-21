@@ -90,6 +90,8 @@ TopologyBuilder& TopologyBuilder::addMolecule(const MoleculeType molecule, const
 
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
     numAtoms_ += nMolecules*molecule.numAtomsInMolecule();
+
+    return *this;
 }
 
 const std::vector<real>& Topology::getMasses() const
