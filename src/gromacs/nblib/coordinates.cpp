@@ -3,6 +3,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
+namespace nblib {
 
 void generateCoordinates(int                     multiplicationFactor,
                         std::vector<gmx::RVec> *coordinates,
@@ -69,3 +70,5 @@ void generateCoordinates(int                     multiplicationFactor,
         }
     }
 }
+
+} // namespace nblib
