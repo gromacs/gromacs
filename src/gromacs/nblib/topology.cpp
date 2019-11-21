@@ -36,15 +36,18 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
         std::sort(std::begin(exclusionList), std::end(exclusionList), firstLowerThan);
         std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule;
 
-        //! it1 will point to start of range
-        auto it1 = std::lower_bound(std::begin(exclusionList), std::end(exclusionList), exclusionList[0], firstLowerThan);
-        auto it2 = std::upper_bound(std::begin(exclusionList), std::end(exclusionList), exclusionList[0], firstLowerThan);
+        //! initialize pair of iterators delimiting the range of exclusions for
+        //! the first atom in the list
+        auto range = std::equal_range(std::begin(exclusionList), std::end(exclusionList),
+                                  exclusionList[0], firstLowerThan);
+        auto it1 = range.first;
+        auto it2 = range.second;
 
-        //! loop over all exlusions in molecule
+        //! loop over all exclusions in molecule, linear in exclusionList.size()
         while (it1 != std::end(exclusionList))
         {
             gmx::ExclusionBlock localBlock;
-            //! loop over all exclusions for current atom (=std::get<0>(*it1))
+            //! loop over all exclusions for current atom
             for ( ; it1 != it2; ++it1)
             {
                 localBlock.atomNumber.push_back(std::get<1>(*it1));
@@ -52,11 +55,13 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
 
             exclusionBlockPerMolecule.push_back(localBlock);
 
+            //! update the upper bound of the range for the next atom
             if (it1 != end(exclusionList))
                 it2 = std::upper_bound(it1, std::end(exclusionList), *it1, firstLowerThan);
         }
 
-        for (int i = 0; i < numMols; ++i)
+        //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
+        for (size_t i = 0; i < numMols; ++i)
         {
             std::copy(std::begin(exclusionBlockPerMolecule), std::end(exclusionBlockPerMolecule),
                       std::back_inserter(exclusionBlockGlobal));
