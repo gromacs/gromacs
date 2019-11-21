@@ -32,7 +32,7 @@ public:
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
     void addExclusion(const int atomIndex, const int atomIndexToExclude);
-    void addExclusion(std::string atomName, std::string atomNameToExclude)
+    void addExclusion(std::string atomName, std::string atomNameToExclude);
 
     int numAtomsInMolecule() const;
 
@@ -49,6 +49,9 @@ private:
     std::vector<std::tuple<int, int>> exclusions_;
 
     std::vector<HarmonicType> harmonicInteractions_;
+
+    int atomNameToIndex(std::string atomName);
+
 };
 
 } //namespace nblib
