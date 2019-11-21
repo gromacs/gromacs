@@ -109,4 +109,16 @@ const std::vector<int>& Topology::getAtomTypes() const
     return atomTypes;
 }
 
+const std::vector<int>& Topology::getNonbondedParameters() const
+{
+    return nonbondedParameters;
+}
+
+const std::vector<int>& Topology::getAtomInfoAllVdw() const
+{
+   return atomInfoAllVdw;
+}
+
+
+
 }
