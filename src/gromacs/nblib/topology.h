@@ -24,6 +24,10 @@ public:
 
     const std::vector<real>& getMasses() const;
 
+    const std::vector<real>& getNonbondedParameters() const;
+
+    const std::vector<int>& getAtomInfoAllVdw() const;
+
 private:
     Topology() = default;
 

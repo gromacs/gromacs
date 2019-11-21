@@ -96,17 +96,29 @@ TopologyBuilder& TopologyBuilder::addMolecule(const MoleculeType molecule, const
 
 const std::vector<real>& Topology::getMasses() const
 {
-    return {};
+    return masses;
 }
 
 const std::vector<real>& Topology::getCharges() const
 {
-    return {};
+    return charges;
 }
 
 const std::vector<int>& Topology::getAtomTypes() const
 {
-    return {};
+    return atomTypes;
 }
+
+const std::vector<int>& Topology::getNonbondedParameters() const
+{
+    return nonbondedParameters;
+}
+
+const std::vector<int>& Topology::getAtomInfoAllVdw() const
+{
+   return atomInfoAllVdw;
+}
+
+
 
 }
