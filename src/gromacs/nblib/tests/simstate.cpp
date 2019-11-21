@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * This implements SimState tests
+ * This implements SimulationState tests
  *
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  */
@@ -47,6 +47,8 @@
 #include "gromacs/nblib/setup.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/nblib/molecules.h"
+#include "gromacs/nblib/simulationstate.h"
+
 #include "gromacs/math/vec.h"
 
 #include "testutils/testasserts.h"
@@ -58,7 +60,7 @@ namespace test
 namespace
 {
 
-class SimStateTester
+class SimulationStateTester
 {
 public:
     std::vector<gmx::RVec> coords_;
@@ -67,7 +69,7 @@ public:
     Box box_;
     TopologyBuilder topologyBuilder_;
 
-    SimStateTester() : box_(2.05449)
+    SimulationStateTester() : box_(2.05449)
     {
         constexpr int NumArgonAtoms = 3;
 
@@ -79,48 +81,48 @@ public:
         TopologyBuilder topBuilder;
         topBuilder.addMolecule(argonMolecule, NumArgonAtoms);
 
-        // Topology top = topBuilder.buildTopology();
+        Topology top = topBuilder.buildTopology();
 
-        // Box box(7.73950);
+        Box box(7.73950);
 
-        // std::vector<gmx::RVec> coords = {
-        //     { 5.158, 6.923, 3.413 },
-        //     { 2.891, 6.634, 0.759 },
-        //     { 4.356, 2.932, 1.414 },
-        // };
+        std::vector<gmx::RVec> coords = {
+            { 5.158, 6.923, 3.413 },
+            { 2.891, 6.634, 0.759 },
+            { 4.356, 2.932, 1.414 },
+        };
 
-        // SimState simState(coords, box, top);
+        SimulationState simulationState(coords, box, top);
 
-        // EXPECT_EQ(top.getMasses().size(), NumArgonAtoms);
+        EXPECT_EQ(top.getMasses().size(), NumArgonAtoms);
     }
 
-    void setupSimState()
+    void setupSimulationState()
     {
-        // auto topology = topologyBuilder_.buildTopology();
-        // SimState(coords_, box_, topology, vel_);
+        auto topology = topologyBuilder_.buildTopology();
+        SimulationState(coords_, box_, topology, vel_);
     }
 };
 
-TEST(NBlibTest, SimStateArgonBox)
+TEST(NBlibTest, SimulationStateArgonBox)
 {
-    SimStateTester simStateTester;
-    EXPECT_NO_THROW(simStateTester.setupSimState());
+    SimulationStateTester simulationStateTester;
+    EXPECT_NO_THROW(simulationStateTester.setupSimulationState());
 }
 
-// TEST(NBlibTest, SimStateArgonBoxCoordThrowNAN)
-// {
-//     SimStateTester simStateTester;
-//     simStateTester.coords_[2][0] = NAN;
-//     EXPECT_THROW(simStateTester.setupSimState(), gmx::InvalidInputError);
-// }
+TEST(NBlibTest, SimulationStateArgonBoxCoordThrowNAN)
+{
+    SimulationStateTester simulationStateTester;
+    simulationStateTester.coords_[2][0] = NAN;
+    EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
+}
 
-// TEST(NBlibTest, SimStateArgonBoxCoordThrowINF)
-// {
+TEST(NBlibTest, SimulationStateArgonBoxCoordThrowINF)
+{
 
-//     SimStateTester simStateTester;
-//     simStateTester.coords_[2][0] = INFINITY;
-//     EXPECT_THROW(simStateTester.setupSimState(), gmx::InvalidInputError);
-// }
+    SimulationStateTester simulationStateTester;
+    simulationStateTester.coords_[2][0] = INFINITY;
+    EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
+}
 
 }  // namespace
 }  // namespace test
