@@ -36,6 +36,6 @@ gmx_add_unit_test(GmxNBLibTests nblib
     atoms.cpp
     box.cpp
     #nblib.cpp
-    #simstate.cpp
+    simstate.cpp
     util.cpp
     )

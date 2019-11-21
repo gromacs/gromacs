@@ -51,6 +51,9 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+#include "gromacs/math/vec.h"
+
+
 namespace nblib {
 
 ForceCalculator::ForceCalculator(NBKernelSystem          &system,

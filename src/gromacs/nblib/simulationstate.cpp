@@ -1,0 +1,127 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2019, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/*! \internal \file
+ * \brief
+ * This file defines functions for setting up a nonbonded system
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \author Joe Jordan <ejjordan@kth.se>
+ *
+ */
+
+#include "gmxpre.h"
+
+#include "simulationstate.h"
+#include "nbkernelsystem.h"
+
+#include <vector>
+
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/dispersioncorrection.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+
+
+
+#include "coords.h"
+
+namespace
+{
+
+//! The number of atoms in a molecule
+constexpr int  numAtomsInMolecule = 1;
+//! The atom type of the atom
+constexpr int  atomType         = 0;
+//! The charge of the atom
+constexpr real atomCharge       = 0.0;
+
+}   // namespace
+
+namespace nblib {
+
+SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
+                   const std::vector<gmx::RVec> &vel) : box_(box), topo_(topo)
+{
+    if (!checkNumericValues(coord))
+    {
+        GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
+    }
+    coord_ = coord;
+    if (!checkNumericValues(vel))
+    {
+        GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
+    }
+    vel_ = vel;
+}
+
+SimulationState::SimulationState(const SimulationState &simulationState)
+    : box_(simulationState.box_), topo_(simulationState.topo_)
+{
+    coord_ = simulationState.coord_;
+    vel_   = simulationState.vel_;
+}
+
+SimulationState &SimulationState::operator=(const SimulationState &simulationState)
+{
+    coord_ = simulationState.coord_;
+    vel_   = simulationState.vel_;
+    box_   = simulationState.box_;
+    topo_  = simulationState.topo_;
+
+    return *this;
+}
+
+SimulationState::SimulationState(SimulationState &&simulationState) noexcept
+    : box_(simulationState.box_), topo_(std::move(simulationState.topo_))
+{
+    coord_ = std::move(simulationState.coord_);
+    vel_   = std::move(simulationState.vel_);
+}
+
+SimulationState& SimulationState::operator=(nblib::SimulationState &&simulationState) noexcept
+{
+    coord_ = std::move(simulationState.coord_);
+    vel_   = std::move(simulationState.vel_);
+    box_   = simulationState.box_;
+    topo_  = std::move(simulationState.topo_);
+
+    return *this;
+}
+
+} // namespace nblib
