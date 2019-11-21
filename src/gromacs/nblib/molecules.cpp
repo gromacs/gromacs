@@ -6,22 +6,28 @@
 
 namespace nblib {
 
-AtomType::AtomType() {}
+AtomType::AtomType()
+: atomName_(""),
+  mass_(0),
+  charge_(0),
+  c6_(0),
+  c12_(0)
+{}
 
-AtomType::AtomType(std::string name, real mass, real charge, real c6, real c12)
-: name_(name),
+AtomType::AtomType(std::string atomName, real mass, real charge, real c6, real c12)
+: atomName_(std::move(atomName)),
   mass_(mass),
   charge_(charge),
   c6_(c6),
   c12_(c12)
 {}
 
-std::string AtomType::getName() const { return name_; }
+std::string AtomType::getName() const { return atomName_; }
 
 
-MoleculeType::MoleculeType(std::string name) : name_(name) {}
+MoleculeType::MoleculeType(std::string moleculeName) : moleculeName_(std::move(moleculeName)) {}
 
-MoleculeType& MoleculeType::addAtom(std::string moleculeAtomName, std::string residueName, AtomType const &atom)
+MoleculeType& MoleculeType::addAtom(const std::string &moleculeAtomName, const std::string &residueName, AtomType const &atom)
 {
     // check whether we already have the atom type
     if (!atomTypes_.count(moleculeAtomName))
@@ -29,12 +35,12 @@ MoleculeType& MoleculeType::addAtom(std::string moleculeAtomName, std::string re
         atomTypes_[moleculeAtomName] = atom;
     }
 
-    atoms_.push_back(std::make_tuple(moleculeAtomName, residueName));
+    atoms_.emplace_back(std::make_tuple(moleculeAtomName, residueName));
 
     return *this;
 }
 
-MoleculeType& MoleculeType::addAtom(std::string name, AtomType const &atom)
+MoleculeType& MoleculeType::addAtom(const std::string &name, AtomType const &atom)
 {
     return this->addAtom(name, "", atom);
 }
@@ -42,6 +48,11 @@ MoleculeType& MoleculeType::addAtom(std::string name, AtomType const &atom)
 int MoleculeType::numAtomsInMolecule() const
 {
     return atoms_.size();
+}
+
+void MoleculeType::addHarmonicBond(HarmonicType harmonicBond)
+{
+    harmonicInteractions_.push_back(harmonicBond);
 }
 
 } // namespace nblib
