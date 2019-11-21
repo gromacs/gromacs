@@ -55,7 +55,7 @@ void MoleculeType::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-void addExclusion(int atomWithExclusion, int atomToExclude)
+void MoleculeType::addExclusion(int atomWithExclusion, int atomToExclude)
 {
     exclusions_.emplace_back(std::make_tuple(atomWithExclusion, atomToExclude));
 }
