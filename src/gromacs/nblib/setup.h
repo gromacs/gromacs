@@ -42,40 +42,16 @@
  *
  * \inlibraryapi
  */
-
 #ifndef GROMACS_SETUP_H
 #define GROMACS_SETUP_H
 
-#include "gromacs/utility/real.h"
-
+#include "nbkerneldef.h"
 #include "system.h"
 
-//! Enum for selecting the SIMD kernel type
-enum class BenchMarkKernels : int
-{
-    SimdAuto,
-    SimdNo,
-    Simd4XM,
-    Simd2XMM,
-    Count
-};
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/interaction_const.h"
+#include "gromacs/mdtypes/forcerec.h"
 
-//! Enum for selecting the combination rule
-enum class BenchMarkCombRule : int
-{
-    RuleGeom,
-    RuleLB,
-    RuleNone,
-    Count
-};
-
-//! Enum for selecting coulomb type
-enum class BenchMarkCoulomb : int
-{
-    Pme,
-    ReactionField,
-    Count
-};
 
 /*! \internal \brief
  * The options for the nonbonded kernel caller
@@ -122,5 +98,10 @@ struct NBKernelOptions
 void nbKernel(NBKernelSystem        &system,
               const NBKernelOptions &options,
               const bool            &printTimings);
+
+interaction_const_t setupInteractionConst(const NBKernelOptions &options);
+std::unique_ptr<nonbonded_verlet_t>
+setupNbnxmInstance(const NBKernelOptions   &options,
+                   NBKernelSystem          &system);
 
 #endif // GROMACS_SETUP_H

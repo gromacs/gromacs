@@ -39,20 +39,31 @@
  * \author Victor Holanda <victor.holanda@cscs.ch>
  */
 
-#ifndef GROMACS_INTEGRATOR_H
-#define GROMACS_INTEGRATOR_H
+#ifndef GROMACS_FORCECALCULATOR_H
+#define GROMACS_FORCECALCULATOR_H
 
-#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/timing/cyclecounter.h"
+
 
 #include "system.h"
+#include "setup.h"
+#include "nbkerneldef.h"
 
+
+void printTimingsOutput(const NBKernelOptions &options,
+                        const NBKernelSystem  &system,
+                        const gmx::index      &numPairs,
+                        gmx_cycles_t           cycles);
 
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
-static void setupAndRunInstance(NBKernelSystem          &system,
-                                const NBKernelOptions   &options,
-                                const bool              &printTimings);
+void setupAndRunInstance(NBKernelSystem          &system,
+                         const NBKernelOptions   &options,
+                         const bool              &printTimings);
 
+// void nbKernel(NBKernelSystem        &system,
+//               const NBKernelOptions &options,
+//               const bool            &printTimings);
 
-#endif //GROMACS_INTEGRATOR_H
+#endif //GROMACS_FORCECALCULATOR_H
