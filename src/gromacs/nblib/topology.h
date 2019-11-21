@@ -49,7 +49,7 @@ public:
 
     Topology buildTopology();
 
-    TopologyBuilder& add(MoleculeType moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(MoleculeType moleculeType, int nMolecules);
 
 private:
     Topology topology_;
