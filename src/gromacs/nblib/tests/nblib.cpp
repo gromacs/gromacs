@@ -83,16 +83,16 @@ TEST(NBlibTest, CoordinatesChange)
 
 TEST(NBlibTest, BasicArgonSetupTest)
 {
-    constexpr int NATOMS = 100;
+    constexpr int NArgonAtoms = 100;
 
-    AtomType arType("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
+    AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
-    MoleculeType arMoleculeType("AR");
-    arMoleculeType.addAtom(arType);
+    MoleculeType argonMolecule("AR");
+    argonMolecule.addAtom("AR", argonAtom);
 
     TopologyBuilder topBuilder();
 
-    top.add(arMoleculeType, NATOMS);
+    top.add(argonMolecule, NArgonAtoms);
     Topology top.buildTopology();
 
     Box box(7.73950);
@@ -206,8 +206,42 @@ TEST(NBlibTest, BasicArgonSetupTest)
     // EXPECT_EQ(top.getCharges().size(), NATOMS);
     // EXPECT_EQ(top.getMasses().size(), NATOMS);
 
+    // ...
 }
 
+// TEST(NBlibTest, BasicWaterSetupTest)
+// {
+//     constexpr int NWaterMolecules = 100;
+
+//     AtomType oxygenAtom("OW", 16, -0.6, 1.0, 1.0);
+//     AtomType hydrogenAtom("HW", 1, 0.3, 0, 0);
+
+//     MoleculeType waterMolecule("HOH");
+//     waterMolecule.addAtom("O", oxygenAtom);
+//     waterMolecule.addAtom("H1", hydrogenAtom);
+//     waterMolecule.addAtom("H2", hydrogenAtom);
+
+//     TopologyBuilder topBuilder();
+
+//     top.add(waterMolecule, NWaterMolecules);
+//     Topology top.buildTopology();
+
+//     Box box(3.0);
+
+//     // TODO: generate coords
+//     std::vector<gmx::RVec> coords = {
+
+//     };
+//     EXPECT_EQ(coords().size(), top.numAtoms);
+
+//     SimState simState(coord, box, topo);
+
+//     EXPECT_EQ(top.simState().size(), NWaterMolecules);
+//     // EXPECT_EQ(top.getCharges().size(), NATOMS);
+//     // EXPECT_EQ(top.getMasses().size(), NATOMS);
+
+//     // ...
+// }
 
 }  // namespace
 }  // namespace test
