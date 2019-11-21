@@ -12,8 +12,10 @@ struct HarmonicType
 {
     real equiDist;
     real forceConstant;
-    int atomI;
-    int atomJ;
+    std::string atomIDi;
+    std::string atomIDj;
+    //int atomI;
+    //int atomJ;
 };
 
 

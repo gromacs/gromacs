@@ -38,4 +38,5 @@ gmx_add_unit_test(GmxNBLibTests nblib
     #nblib.cpp
     simstate.cpp
     util.cpp
+    topology.cpp
     )

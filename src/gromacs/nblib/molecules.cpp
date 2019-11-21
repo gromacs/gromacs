@@ -47,4 +47,40 @@ void MoleculeType::addExclusion(const int atomWithExclusion, const int atomToExc
     exclusions_.emplace_back(std::make_tuple(atomWithExclusion, atomToExclude));
 }
 
+void MoleculeType::addExclusion(std::string atomWithExclusion, std::string atomToExclude)
+{
+    int indexAtomWithExclusion, indexAtomToExclude;
+
+    auto iterWithExclusion = std::find_if(atoms_.begin(), atoms_.end(),
+            [&atomWithExclusion](std::tuple<std::string, std::string> & val)
+            {
+                if (std::get<0>(val) == atomWithExclusion)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+
+    auto iterToExclude = std::find_if(atoms_.begin(), atoms_.end(),
+              [&atomToExclude](std::tuple<std::string, std::string> & val)
+              {
+                  if (std::get<0>(val) == atomToExclude)
+                  {
+                      return true;
+                  }
+                  else
+                  {
+                      return false;
+                  }
+              });
+
+    indexAtomWithExclusion = atoms_.begin() - iterWithExclusion;
+    indexAtomToExclude = atoms_.begin() - iterToExclude;
+
+    addExclusion(indexAtomWithExclusion, indexAtomToExclude);
+}
+
 } // namespace nblib
