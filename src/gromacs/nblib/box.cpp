@@ -34,7 +34,7 @@ Box::Box(real x, real y, real z) : box_{0}
     box_[ZZ][ZZ] = z;
 }
 
-Box::data_type Box::getMatrix()
+Box::data_type Box::matrix()
 {
     return box_;
 }

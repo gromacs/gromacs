@@ -19,7 +19,7 @@ public:
 
     Box(real x, real y, real z);
 
-    data_type getMatrix();
+    data_type matrix();
 
 private:
     data_type box_;
