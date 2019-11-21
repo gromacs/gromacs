@@ -32,6 +32,9 @@ public:
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
     void addExclusion(const int atomIndex, const int atomIndexToExclude);
+
+    void addExclusion(std::tuple<std::string, std::string> atom, std::tuple<std::string, std::string> atomToExclude);
+
     void addExclusion(std::string atomName, std::string atomNameToExclude);
 
     int numAtomsInMolecule() const;
@@ -50,7 +53,9 @@ private:
 
     std::vector<HarmonicType> harmonicInteractions_;
 
-    int atomNameToIndex(std::string atomName);
+    int atomNameAndResidueToIndex(std::tuple<std::string, std::string> atomResNameTuple);
+
+    void addAtomSelfExclusion(std::string atomName, std::string resName);
 
 };
 
