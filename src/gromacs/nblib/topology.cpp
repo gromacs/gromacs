@@ -18,11 +18,9 @@ namespace nblib {
 t_blocka TopologyBuilder::fillExclusionsList()
 {
     auto &moleculesList = molecules_;
-    //std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
+
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numAtoms_);
-
-    t_blocka tBlockGlobal;
 
     //! compare tuples by comparing the first element
     auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
@@ -71,6 +69,7 @@ t_blocka TopologyBuilder::fillExclusionsList()
 
     //! At the very end, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
+    t_blocka tBlockGlobal;
     gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
 
     return tBlockGlobal;
@@ -78,7 +77,31 @@ t_blocka TopologyBuilder::fillExclusionsList()
 
 std::vector<real> TopologyBuilder::fillCharges()
 {
-    return {};
+    auto &moleculesList = molecules_;
+
+    //! returned object
+    std::vector<real> masses;
+    masses.reserve(numAtoms_);
+
+    for (auto &molNumberTuple : moleculesList)
+    {
+        MoleculeType &molecule = std::get<0>(molNumberTuple);
+        size_t numMols = std::get<1>(molNumberTuple);
+
+        for (size_t i = 0; i < numMols; ++i)
+        {
+            for (auto &atomTuple : molecule.atoms_)
+            {
+                std::string moleculeAtomName = std::get<0>(atomTuple);
+                std::string atomTypeName = std::get<1>(atomTuple);
+
+                AtomType &atomType = molecule.atomTypes_[atomTypeName];
+                masses.push_back(atomType.mass());
+            }
+        }
+    }
+
+    return masses;
 }
 
 Topology TopologyBuilder::buildTopology()
