@@ -41,6 +41,9 @@
  * \author Joe Jordan <ejjordan@kth.se>
  */
 
+#ifndef GROMACS_SYSTEM_H
+#define GROMACS_SYSTEM_H
+
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -120,3 +123,5 @@ private:
 };
 
 }
+
+#endif // GROMACS_SYSTEM_H

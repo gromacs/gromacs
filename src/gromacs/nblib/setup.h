@@ -43,6 +43,9 @@
  * \inlibraryapi
  */
 
+#ifndef GROMACS_SETUP_H
+#define GROMACS_SETUP_H
+
 #include "gromacs/utility/real.h"
 
 #include "system.h"
@@ -119,3 +122,5 @@ struct NBKernelOptions
 void nbKernel(NBKernelSystem        &system,
               const NBKernelOptions &options,
               const bool            &printTimings);
+
+#endif // GROMACS_SETUP_H

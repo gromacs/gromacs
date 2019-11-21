@@ -53,7 +53,7 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
-namespace gmx
+namespace nblib
 {
 namespace test
 {
@@ -90,10 +90,10 @@ TEST(NBlibTest, BasicArgonSetupTest)
     MoleculeType argonMolecule("AR");
     argonMolecule.addAtom("AR", argonAtom);
 
-    TopologyBuilder topBuilder();
+    TopologyBuilder topBuilder;
 
-    top.add(argonMolecule, NArgonAtoms);
-    Topology top.buildTopology();
+    topBuilder.add(argonMolecule, NArgonAtoms);
+    Topology top = topBuilder.buildTopology();
 
     Box box(7.73950);
 
@@ -200,9 +200,9 @@ TEST(NBlibTest, BasicArgonSetupTest)
         { 5.468, 3.128, 5.651 },
     };
 
-    SimState simState(coord, box, topo);
+    SimState simState(coords, box, top);
 
-    EXPECT_EQ(top.simState().size(), NATOMS);
+    EXPECT_EQ(top.getMasses().size(), NArgonAtoms);
     // EXPECT_EQ(top.getCharges().size(), NATOMS);
     // EXPECT_EQ(top.getMasses().size(), NATOMS);
 
@@ -245,4 +245,4 @@ TEST(NBlibTest, BasicArgonSetupTest)
 
 }  // namespace
 }  // namespace test
-}  // namespace gmx
+}  // namespace nblib
