@@ -46,12 +46,8 @@
 
 #include "setup.h"
 
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
-#include "gromacs/compat/optional.h"
-
-
 
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                           const NBKernelOptions                      &options,

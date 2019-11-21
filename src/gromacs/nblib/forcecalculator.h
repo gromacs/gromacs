@@ -44,11 +44,9 @@
 
 #include "gromacs/timing/cyclecounter.h"
 
-
 #include "system.h"
 #include "setup.h"
 #include "nbkerneldef.h"
-
 
 void printTimingsOutput(const NBKernelOptions &options,
                         const NBKernelSystem  &system,
