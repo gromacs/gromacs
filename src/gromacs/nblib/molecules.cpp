@@ -2,6 +2,8 @@
 // Created by sebkelle on 20.11.19.
 //
 
+#include <tuple>
+
 #include "molecules.h"
 
 namespace nblib {
@@ -9,44 +11,45 @@ namespace nblib {
 
 MoleculeType::MoleculeType(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
+void MoleculeType::addAtomSelfExclusion(std::string atomName, std::string resName)
+{
+    bool found = false;
+    int atomIndex = atomNameAndResidueToIndex(std::make_tuple(atomName, resName));
+
+    for(auto &tuple : exclusions_)
+    {
+        bool found = false;
+        if(std::get<0>(tuple) == atomIndex) {
+            if(std::get<1>(tuple) == atomIndex) {
+                found = true;
+            }
+        }
+    }
+    if(!found) {
+        exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndex));
+    }
+}
+
 MoleculeType& MoleculeType::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
 {
     // check whether we already have the atom type
-    if (!atomTypes_.count(atomName))
+    if (!atomTypes_.count(atomType.name()))
     {
         atomTypes_[atomName] = atomType;
     }
 
     atoms_.emplace_back(std::make_tuple(atomName, residueName));
-
-    // bool found = false;
-    // for(auto tuple : exclusions_)
-    // {
-    //     using firstAtomIndex = std::get<0>(tuple);
-    //     using secondAtomIndex = std::get<1>(tuple);
-
-    //     bool found = false;
-    //     if(firstAtomIndex == atomIndex) {
-    //         if(secondAtomIndex == atomIndexToExclude) {
-    //             found = true;
-    //         }
-    //     }
-    // }
-    // if(!found) {
-    //     exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndex));
-    // }
+    addAtomSelfExclusion(atomName, residueName);
 
     return *this;
 }
 
 MoleculeType& MoleculeType::addAtom(const std::string &atomName, AtomType const &atomType)
 {
-    if (name_.length() > 0){
-        return this->addAtom(atomName, atomName, atomType);
-    }
-    else {
-        return this->addAtom(atomName, "", atomType);
-    }
+    addAtom(atomName, name_, atomType);
+    addAtomSelfExclusion(atomName, name_);
+
+    return *this;
 }
 
 int MoleculeType::numAtomsInMolecule() const
@@ -59,26 +62,22 @@ void MoleculeType::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-int MoleculeType::atomNameToIndex(std::string atomName)
+
+int MoleculeType::atomNameAndResidueToIndex(std::tuple<std::string, std::string> atomResNameTuple)
 {
-    auto iterAtom = std::find_if(begin(atoms_), end(atoms_),
-        [&atomName](std::tuple<std::string, std::string> & atomAndResNameList)
+    auto equal = [](auto tup1, auto tup2) { return (std::get<0>(tup1) == std::get<0>(tup2) and std::get<1>(tup1) == std::get<1>(tup2)); };
+
+    auto posIter = std::find_if(begin(atoms_), end(atoms_),
+        [&](std::tuple<std::string, std::string> & atomAndResName)
         {
-            if (std::get<0>(atomAndResNameList) == atomName)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            return equal(atomAndResName, atomResNameTuple);
         });
 
-    if(iterAtom - begin(atoms_) >= 0) {
-        return iterAtom - begin(atoms_);
+    if(posIter != end(atoms_)) {
+        return posIter - begin(atoms_);
     } else {
-        return 0;
         // TODO throw exception
+        return -1;
     }
 }
 
@@ -87,10 +86,18 @@ void MoleculeType::addExclusion(const int atomIndex, const int atomIndexToExclud
     exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
 }
 
+void MoleculeType::addExclusion(std::tuple<std::string, std::string> atom, std::tuple<std::string, std::string> atomToExclude)
+{
+    auto atomNameIndex = atomNameAndResidueToIndex(atom);
+    auto atomToExcludeIndex = atomNameAndResidueToIndex(atomToExclude);
+
+    addExclusion(atomNameIndex, atomToExcludeIndex);
+}
+
 void MoleculeType::addExclusion(std::string atomName, std::string atomNameToExclude)
 {
-    auto atomNameIndex = atomNameToIndex(atomName);
-    auto atomToExcludeIndex = atomNameToIndex(atomNameToExclude);
+    auto atomNameIndex = atomNameAndResidueToIndex(std::make_tuple(atomName, name_));
+    auto atomToExcludeIndex = atomNameAndResidueToIndex(std::make_tuple(atomNameToExclude, name_));
 
     addExclusion(atomNameIndex, atomToExcludeIndex);
 }
