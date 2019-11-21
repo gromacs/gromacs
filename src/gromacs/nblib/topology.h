@@ -57,7 +57,9 @@ private:
     int numAtoms_;
     std::vector<std::tuple<MoleculeType, int>> molecules_;
 
-    std::vector<std::tuple<int, int>> exclusions_;
+    //! Slowest function in the whole GMX codebase featuring 4-loop levels and
+    //! multiple conversions
+    t_blocka fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList);
 };
 
 }
