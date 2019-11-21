@@ -25,7 +25,7 @@ public:
     const std::vector<real>& getMasses() const;
 
 private:
-    Topology();
+    Topology() = default;
 
     friend class TopologyBuilder;
 
@@ -45,7 +45,7 @@ private:
 
 class TopologyBuilder {
 public:
-    TopologyBuilder();
+    TopologyBuilder() = default;
 
     Topology buildTopology();
 
@@ -56,6 +56,8 @@ private:
 
     int numAtoms_;
     std::vector<std::tuple<MoleculeType, int>> molecules_;
+
+    void calculateTotalNumAtoms(std::vector<std::tuple<MoleculeType, int>> moleculesList);
 
     //! Slowest function in the whole GMX codebase featuring 4-loop levels and
     //! multiple conversions

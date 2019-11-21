@@ -15,34 +15,39 @@
 
 namespace nblib {
 
-t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList)
+void TopologyBuilder::calculateTotalNumAtoms(std::vector<std::tuple<MoleculeType, int>> moleculesList)
 {
-    /*!
-     * 1. Create an empty global exclusions list
-     * 2. Iterate through the molecules list and grab its exclusions list
-     * 3. Convert that exclusions list into a gmx::ExclusionBlock
-     * 4. Merge it with the number of molecules of that type
-     * 5. Do the same for all molecule types and return the big ExclusionBlock
-     */
     size_t numMolTypes = moleculesList.size();
     size_t numAtomsTotal = 0;
     for (size_t iMolTypes = 0; iMolTypes < numMolTypes; iMolTypes++)
     {
         int numAtomsInMolecule = std::get<0>(moleculesList[iMolTypes]).numAtomsInMolecule();
-        numAtomsTotal += numAtomsInMolecule;
+        int numMoleculesOfType = std::get<1>(moleculesList[iMolTypes]);
+        numAtomsTotal += numAtomsInMolecule*numMoleculesOfType;
     }
 
-    std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
+    numAtoms_ = numAtomsTotal;
+}
+
+t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList)
+{
+
+    calculateTotalNumAtoms(moleculesList);
+    //std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
+    std::vector<gmx::ExclusionBlock> exclusionBlockGlobal(numAtoms_);
 
     t_blocka tBlockGlobal;
+    size_t globalIndex = 0;
 
     for (size_t iMolTypes = 0; iMolTypes < moleculesList.size(); iMolTypes++)
     {
-        int numMols = std::get<1>(moleculesList[iMolTypes]);
+        MoleculeType& molecule = std::get<0>(moleculesList[iMolTypes]);
+        size_t numMols = std::get<1>(moleculesList[iMolTypes]);
 
-        int numAtomsInMolecule = std::get<0>(moleculesList[iMolTypes]).numAtomsInMolecule();
+        int numAtomsInMolecule = molecule.numAtomsInMolecule();
 
-        std::vector<std::tuple<int, int>> exclusionList = std::get<0>(moleculesList[iMolTypes]).exclusions;
+        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions;
+        std::vector<gmx::ExclusionBlock> exclusionsWithinMolecule(numAtomsInMolecule);
 
         for (int iAtoms = 0; iAtoms < numAtomsInMolecule; iAtoms++)
         {
@@ -50,8 +55,10 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
              * 1. From the exclusion list, extract all exclusions for the atom marked
              *    by iAtom
              * 2. Create an ExclusionBlock object and put into array of exclusion blocks (repeat this
-             *    process numAtomsInMolecule times
-             * 3. Convert the array of exclusion blocks to a global t_blocka
+             *    process numAtomsInMolecule)
+             * 3. Duplicate this numMol times
+             * 4. Concatonate this array with the global array
+             * 5. Convert the array of exclusion blocks to a global t_blocka
              */
 
             for (size_t iPair = 0; iPair < exclusionList.size(); iPair++)
@@ -64,19 +71,27 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
                 gmx::ExclusionBlock exclusionBlock;
                 exclusionBlock.atomNumber = atomsToExclude;
 
-
+                exclusionsWithinMolecule[iPair] = exclusionBlock;
             }
-
+            for (size_t iMols = 0; iMols < numMols; iMols++ )
+            {
+                exclusionBlockGlobal[globalIndex] = exclusionsWithinMolecule[iAtoms];
+                globalIndex++;
+            }
         }
     }
-    //! At the very end, outside of these 4 for loops, convert the global exclusion block into
+
+    //! At the very end, outside of these 4 for loops, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
+
+    gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
 
     return tBlockGlobal;
 }
 
 Topology TopologyBuilder::buildTopology()
 {
+    topology_.excls = fillExclusionsList(molecules_);
     return topology_;
 }
 
@@ -91,5 +106,19 @@ TopologyBuilder& TopologyBuilder::add(const MoleculeType moleculeType, const int
     numAtoms_ += nMolecules*moleculeType.numAtomsInMolecule();
 }
 
+const std::vector<real>& Topology::getMasses() const
+{
+    return {};
+}
+
+const std::vector<real>& Topology::getCharges() const
+{
+    return {};
+}
+
+const std::vector<int>& Topology::getAtomTypes() const
+{
+    return {};
+}
 
 }
