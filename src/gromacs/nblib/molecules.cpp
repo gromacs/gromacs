@@ -7,7 +7,7 @@
 namespace nblib {
 
 
-MoleculeType::MoleculeType(std::string name) : name_(std::move(name)) {}
+MoleculeType::MoleculeType(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
 MoleculeType& MoleculeType::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
 {
