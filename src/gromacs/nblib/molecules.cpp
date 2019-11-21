@@ -47,12 +47,12 @@ void MoleculeType::addExclusion(const int atomIndex, const int atomIndexToExclud
     exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
 }
 
-void MoleculeType::addExclusion(AtomName atomName, AtomName atomNameToExclude)
+void MoleculeType::addExclusion(std::string atomName, std::string atomNameToExclude)
 {
     int indexAtomWithExclusion, indexAtomToExclude;
 
     auto iterWithExclusion = std::find_if(begin(atoms_), end(atoms_),
-            [&atomName](std::tuple<AtomName, AtomName> & exclusionTuple)
+            [&atomName](std::tuple<std::string, std::string> & exclusionTuple)
             {
                 if (std::get<0>(exclusionTuple) == atomName)
                 {

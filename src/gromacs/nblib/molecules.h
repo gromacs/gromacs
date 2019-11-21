@@ -20,8 +20,6 @@ class TopologyBuilder;
 namespace nblib
 {
 
-    using AtomName = std::string;
-
 class MoleculeType {
 public:
     MoleculeType(std::string moleculeName);
@@ -33,8 +31,8 @@ public:
     void addHarmonicBond(HarmonicType harmonicBond);
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
-    void addExclusion(int atomWithExclusion, int atomToExclude);
-    void addExclusion(std::string atomWithExclusion, std::string atomToExclude);
+    void addExclusion(const int atomIndex, const int atomIndexToExclude);
+    void addExclusion(std::string atomName, std::string atomNameToExclude)
 
     int numAtomsInMolecule() const;
 
