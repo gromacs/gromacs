@@ -61,7 +61,9 @@ private:
     int numAtoms_;
     std::vector<std::tuple<MoleculeType, int>> molecules_;
 
-    t_blocka fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList);
+    t_blocka fillExclusionsList();
+
+    std::vector<real> fillCharges();
 };
 
 } // namespace nblib
