@@ -28,11 +28,18 @@ public:
              real c6,
              real c12);
 
-    std::string getName() const;
+    std::string name() const;
+
+    real mass() const;
+
+    real charge() const;
+
+    real c6() const;
+
+    real c12() const;
 
 private:
     std::string name_;
-
     real mass_;
     real charge_;
     real c6_;
