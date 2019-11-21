@@ -7,7 +7,7 @@
 namespace nblib {
 
 AtomType::AtomType() noexcept :
-  atomName_(""),
+  name_(""),
   mass_(0),
   charge_(0),
   c6_(0),
@@ -15,7 +15,7 @@ AtomType::AtomType() noexcept :
 {}
 
 AtomType::AtomType(std::string atomName, real mass, real charge, real c6, real c12)
-: atomName_(std::move(atomName)),
+: name_(std::move(atomName)),
   mass_(mass),
   charge_(charge),
   c6_(c6),
@@ -24,7 +24,7 @@ AtomType::AtomType(std::string atomName, real mass, real charge, real c6, real c
 
 std::string AtomType::getName() const
 {
-    return atomName_;
+    return name_;
 }
 
 } // namespace nblib
