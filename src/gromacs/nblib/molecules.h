@@ -22,7 +22,7 @@ class AtomType {
 public:
     AtomType();
 
-    AtomType(std::string name,
+    AtomType(std::string atomName,
              real mass,
              real charge,
              real c6,
@@ -31,7 +31,7 @@ public:
     std::string getName() const;
 
 private:
-    std::string name_;
+    std::string atomName_;
 
     real mass_;
     real charge_;
@@ -41,20 +41,20 @@ private:
 
 class MoleculeType {
 public:
-    MoleculeType(std::string name);
+    explicit MoleculeType(std::string moleculeName);
 
-    MoleculeType &addAtom(std::string name, std::string residueName, AtomType const &atom);
+    MoleculeType &addAtom(const std::string &moleculeAtomName, const std::string &residueName, AtomType const &atom);
 
-    MoleculeType &addAtom(std::string name, AtomType const &atom);
+    MoleculeType &addAtom(const std::string &moleculeAtomName, AtomType const &atom);
 
-    void addHarmonicBond(int atom1, int atom2, HarmonicType harmonicType);
+    void addHarmonicBond(HarmonicType harmonicBond);
 
     int numAtomsInMolecule() const;
 
     friend class TopologyBuilder;
 
 private:
-    std::string name_;
+    std::string moleculeName_;
 
     //! one entry per atom in molecule
     std::vector<std::tuple<std::string, std::string>> atoms_;
@@ -63,7 +63,7 @@ private:
 
     std::vector<std::tuple<int, int>> exclusions;
 
-    std::vector<HarmonicType> harmonicInteractions;
+    std::vector<HarmonicType> harmonicInteractions_;
 };
 
 } //namespace nblib
