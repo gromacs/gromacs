@@ -31,7 +31,7 @@ public:
     std::string getName() const;
 
 private:
-    std::string atomName_;
+    std::string name_;
 
     real mass_;
     real charge_;
