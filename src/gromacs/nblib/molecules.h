@@ -20,6 +20,8 @@ class TopologyBuilder;
 namespace nblib
 {
 
+    using AtomName = std::string;
+
 class MoleculeType {
 public:
     MoleculeType(std::string moleculeName);

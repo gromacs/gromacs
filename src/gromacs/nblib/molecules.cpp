@@ -42,19 +42,19 @@ void MoleculeType::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-void MoleculeType::addExclusion(const int atomWithExclusion, const int atomToExclude)
+void MoleculeType::addExclusion(const int atomIndex, const int atomIndexToExclude)
 {
-    exclusions_.emplace_back(std::make_tuple(atomWithExclusion, atomToExclude));
+    exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
 }
 
-void MoleculeType::addExclusion(std::string atomWithExclusion, std::string atomToExclude)
+void MoleculeType::addExclusion(AtomName atomName, AtomName atomNameToExclude)
 {
     int indexAtomWithExclusion, indexAtomToExclude;
 
-    auto iterWithExclusion = std::find_if(atoms_.begin(), atoms_.end(),
-            [&atomWithExclusion](std::tuple<std::string, std::string> & val)
+    auto iterWithExclusion = std::find_if(begin(atoms_), end(atoms_),
+            [&atomName](std::tuple<AtomName, AtomName> & exclusionTuple)
             {
-                if (std::get<0>(val) == atomWithExclusion)
+                if (std::get<0>(exclusionTuple) == atomName)
                 {
                     return true;
                 }
@@ -64,10 +64,10 @@ void MoleculeType::addExclusion(std::string atomWithExclusion, std::string atomT
                 }
             });
 
-    auto iterToExclude = std::find_if(atoms_.begin(), atoms_.end(),
-              [&atomToExclude](std::tuple<std::string, std::string> & val)
+    auto iterToExclude = std::find_if(begin(atoms_), end(atoms_),
+              [&atomNameToExclude](std::tuple<std::string, std::string> & exclusionTuple)
               {
-                  if (std::get<0>(val) == atomToExclude)
+                  if (std::get<0>(exclusionTuple) == atomNameToExclude)
                   {
                       return true;
                   }
@@ -77,8 +77,8 @@ void MoleculeType::addExclusion(std::string atomWithExclusion, std::string atomT
                   }
               });
 
-    indexAtomWithExclusion = atoms_.begin() - iterWithExclusion;
-    indexAtomToExclude = atoms_.begin() - iterToExclude;
+    indexAtomWithExclusion = begin(atoms_) - iterWithExclusion;
+    indexAtomToExclude = begin(atoms_) - iterToExclude;
 
     addExclusion(indexAtomWithExclusion, indexAtomToExclude);
 }
