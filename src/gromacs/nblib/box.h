@@ -25,6 +25,6 @@ private:
     data_type box_;
 };
 
-}
+} // namespace nblib
 
 #endif //GROMACS_BOX_H

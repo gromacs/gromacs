@@ -62,5 +62,6 @@ private:
     t_blocka fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList);
 };
 
-}
+} // namespace nblib
+
 #endif //GROMACS_TOPOLOGY_H

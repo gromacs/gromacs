@@ -52,6 +52,7 @@
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/forcerec.h"
 
+namespace nblib {
 
 /*! \internal \brief
  * The options for the nonbonded kernel caller
@@ -100,8 +101,11 @@ void nbKernel(NBKernelSystem        &system,
               const bool            &printTimings);
 
 interaction_const_t setupInteractionConst(const NBKernelOptions &options);
+
 std::unique_ptr<nonbonded_verlet_t>
 setupNbnxmInstance(const NBKernelOptions   &options,
                    NBKernelSystem          &system);
+
+} // namespace nblib
 
 #endif // GROMACS_SETUP_H

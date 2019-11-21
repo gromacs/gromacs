@@ -70,6 +70,8 @@ constexpr real atomCharge       = 0.0;
 
 }   // namespace
 
+namespace nblib {
+
 //! Generates coordinates and a box for the base system scaled by \p multiplicationFactor
 //
 // The parameter \p multiplicationFactor should be a power of 2.
@@ -176,7 +178,6 @@ NBKernelSystem::NBKernelSystem(const int multiplicationFactor)
     }
 }
 
-namespace nblib {
 SimState::SimState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
                    const std::vector<gmx::RVec> &vel) : box_(box), topo_(topo)
 {

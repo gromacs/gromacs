@@ -77,6 +77,8 @@
 #include "gromacs/utility/logger.h"
 
 
+namespace nblib {
+
 /*! \brief Checks the kernel setup
  *
  * Returns an error string when the kernel is not available.
@@ -303,3 +305,5 @@ void nbKernel(NBKernelSystem        &system,
 
     // setupAndRunInstance(system, optionsList[0], printTimings);
 }
+
+} // namespace nblib

@@ -14,7 +14,7 @@ Box::Box(real l) : box_{0}
     {
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
-            
+
     box_[XX][XX] = l;
     box_[YY][YY] = l;
     box_[ZZ][ZZ] = l;
@@ -39,4 +39,4 @@ Box::data_type Box::getMatrix()
     return box_;
 }
 
-}
+} // namespace nblib

@@ -6,8 +6,8 @@
 
 namespace nblib {
 
-AtomType::AtomType()
-: atomName_(""),
+AtomType::AtomType() noexcept :
+  atomName_(""),
   mass_(0),
   charge_(0),
   c6_(0),
@@ -22,6 +22,9 @@ AtomType::AtomType(std::string atomName, real mass, real charge, real c6, real c
   c12_(c12)
 {}
 
-std::string AtomType::getName() const { return atomName_; }
+std::string AtomType::getName() const
+{
+    return atomName_;
+}
 
 } // namespace nblib

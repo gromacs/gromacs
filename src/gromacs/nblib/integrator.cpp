@@ -42,6 +42,8 @@
 #include "integrator.h"
 #include "gromacs/pbcutil/pbc.h"
 
+namespace nblib {
+
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                                  const NBKernelOptions                      &options,
                                  const matrix                               &box,
@@ -62,3 +64,5 @@ void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOu
     put_atoms_in_box(epbcXYZ, box, nextCoords);
     currentCoords = nextCoords;
 }
+
+} // namespace nblib

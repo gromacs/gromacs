@@ -9,6 +9,8 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/utility/fatalerror.h"
 
+namespace nblib {
+
 static std::vector<gmx::RVec> low_mspeed(real tempi,  std::vector<real> const& masses, gmx::ThreeFry2x64<>* rng)
 {
     int                                    nrdf;
@@ -89,3 +91,5 @@ bool checkNumericValues(const std::vector<gmx::RVec> &values)
     }
     return true;
 }
+
+} // namespace nblib

@@ -49,9 +49,13 @@
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
 
+namespace nblib {
+
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                           const NBKernelOptions                      &options,
                           const matrix                               &box,
                           std::vector<gmx::RVec>                     &currentCoords);
+
+} // namespace nblib
 
 #endif //GROMACS_INTEGRATOR_H
