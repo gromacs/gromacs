@@ -15,8 +15,9 @@
 
 namespace nblib {
 
-t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList)
+t_blocka TopologyBuilder::fillExclusionsList()
 {
+    auto &moleculesList = molecules_;
     //std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numAtoms_);
@@ -75,9 +76,14 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
     return tBlockGlobal;
 }
 
+std::vector<real> TopologyBuilder::fillCharges()
+{
+    return {};
+}
+
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls = fillExclusionsList(molecules_);
+    topology_.excls = fillExclusionsList();
     return topology_;
 }
 
@@ -109,7 +115,7 @@ const std::vector<int>& Topology::getAtomTypes() const
     return atomTypes;
 }
 
-const std::vector<int>& Topology::getNonbondedParameters() const
+const std::vector<real>& Topology::getNonbondedParameters() const
 {
     return nonbondedParameters;
 }
