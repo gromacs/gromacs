@@ -575,6 +575,11 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
     }
+
+    // \todo Check for coupled constraint block size restriction needs to be added
+    //       when update auto chooses GPU in some cases. Currently exceeding the restriction
+    //       triggers a fatal error during LINCS setup.
+
     if (!errorMessage.empty())
     {
         if (updateTarget == TaskTarget::Gpu)
