@@ -46,7 +46,7 @@
 #define GROMACS_SETUP_H
 
 #include "nbkerneldef.h"
-#include "system.h"
+#include "nbkernelsystem.h"
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/interaction_const.h"

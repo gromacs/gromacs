@@ -1,3 +1,4 @@
+
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
@@ -32,48 +33,64 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+
+/*!\file
  * \brief
- * This implements basic nblib tests
+ * This file declares functions for setting up a nonbonded system
  *
- * \author Victor Holanda <victor.holanda@cscs.ch>
+ * \author Berk Hess <hess@kth.se>
+ * \author Joe Jordan <ejjordan@kth.se>
  */
 
-#ifndef GROMACS_FORCECALCULATOR_H
-#define GROMACS_FORCECALCULATOR_H
-
-#include "gromacs/timing/cyclecounter.h"
-
 #include "nbkernelsystem.h"
-#include "setup.h"
-#include "nbkerneldef.h"
 
-namespace nblib {
+#include "coordinates.h"
 
-class ForceCalculator
+#include "gromacs/math/vec.h"
+#include "gromacs/mdlib/dispersioncorrection.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/pbcutil/ishift.h"
+#include "gromacs/pbcutil/pbc.h"
+#include "gromacs/utility/fatalerror.h"
+
+
+namespace nblib
 {
-public:
 
-    ForceCalculator(NBKernelSystem          &system,
-                    const NBKernelOptions   &options);
+NBKernelSystem::NBKernelSystem(const int multiplicationFactor)
+{
+    nonbondedParameters.resize(numAtomTypes*numAtomTypes*2, 0);
+    nonbondedParameters[0] = c6Param;
+    nonbondedParameters[1] = c12Param;
 
-    //! Sets up and runs the kernel calls
-    //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-    //!      that callers can manipulate directly.
-    void compute(const bool printTimings = false);
+    generateCoordinates(multiplicationFactor, &coordinates, box);
+    put_atoms_in_box(epbcXYZ, box, coordinates);
 
-private:
+    int numAtoms = coordinates.size();
+    // GMX_RELEASE_ASSERT(numAtoms % numAtomsInMolecule == 0, "Coordinates should match whole molecules");
 
-    void printTimingsOutput(const NBKernelOptions &options,
-                            const NBKernelSystem  &system,
-                            const gmx::index      &numPairs,
-                            gmx_cycles_t           cycles);
+    // atomTypes.resize(numAtoms);
+    // charges.resize(numAtoms);
+    // atomInfoAllVdw.resize(numAtoms);
+    // snew(excls.index, numAtoms + 1);
+    // snew(excls.a, numAtoms*numAtomsInMolecule);
+    // excls.index[0] = 0;
 
-    NBKernelSystem nbKernelSystem_;
-    NBKernelOptions nbKernelOptions_;
+    // for (int atom = 0; atom < numAtoms; atom++)
+    // {
+    //     atomTypes[atom] = atomType;
+    //     charges[atom]   = atomCharge;
+    //     SET_CGINFO_HAS_VDW(atomInfoAllVdw[atom]);
+    //     SET_CGINFO_HAS_Q(atomInfoAllVdw[atom]);
 
-};
+    //     const int firstAtomInMolecule = atom - (atom % numAtomsInMolecule);
+    //     for (int atomJ = 0; atomJ < numAtomsInMolecule; atomJ++)
+    //     {
+    //         excls.a[atom*numAtomsInMolecule + atomJ] = firstAtomInMolecule + atomJ;
+    //     }
+    //     excls.index[atom + 1] = (atom + 1)*numAtomsInMolecule;
+    // }
+}
 
 } // namespace nblib
-
-#endif //GROMACS_FORCECALCULATOR_H
