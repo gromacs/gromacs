@@ -47,6 +47,8 @@ public:
 
     MoleculeType &addAtom(const std::string &moleculeAtomName, AtomType const &atom);
 
+    void addExclusion(int atomWithExclusion, int atomToExclude);
+
     void addHarmonicBond(HarmonicType harmonicBond);
 
     int numAtomsInMolecule() const;
@@ -61,7 +63,7 @@ private:
     //! collection of distinct AtomTypes in molecule
     std::unordered_map<std::string, AtomType> atomTypes_;
 
-    std::vector<std::tuple<int, int>> exclusions;
+    std::vector<std::tuple<int, int>> exclusions_;
 
     std::vector<HarmonicType> harmonicInteractions_;
 };
