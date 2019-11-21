@@ -41,8 +41,11 @@
 
 
 #include "integrator.h"
+// #include "gromacs/compat/optional.h"
+#include "gromacs/pbcutil/pbc.h"
 
-static void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
+
+void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                                  const NBKernelOptions                      &options,
                                  const matrix                               &box,
                                  std::vector<gmx::RVec>                     &currentCoords)

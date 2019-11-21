@@ -42,13 +42,20 @@
 #ifndef GROMACS_INTEGRATOR_H
 #define GROMACS_INTEGRATOR_H
 
+#include <vector>
+
+#include "setup.h"
+
 #include "gromacs/pbcutil/pbc.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/compat/optional.h"
+
+
 
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                           const NBKernelOptions                      &options,
                           const matrix                               &box,
-                          std::vector<gmx::RVec>                     &currentCoords)
-
-
+                          std::vector<gmx::RVec>                     &currentCoords);
 
 #endif //GROMACS_INTEGRATOR_H

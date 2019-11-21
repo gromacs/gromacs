@@ -60,26 +60,26 @@ namespace test
 namespace
 {
 
-TEST(NBlibTest, BasicEndToEndTest)
-{
-    int             sizeFactor = 1;
-    NBKernelSystem  kernelSystem(sizeFactor);
-    NBKernelOptions kernelOptions;
-    kernelOptions.numIterations = 2;
-    EXPECT_NO_THROW(nbKernel(kernelSystem, kernelOptions, false));
-}
+// TEST(NBlibTest, BasicEndToEndTest)
+// {
+//     int             sizeFactor = 1;
+//     NBKernelSystem  kernelSystem(sizeFactor);
+//     NBKernelOptions kernelOptions;
+//     kernelOptions.numIterations = 2;
+//     EXPECT_NO_THROW(nbKernel(kernelSystem, kernelOptions, false));
+// }
 
-TEST(NBlibTest, CoordinatesChange)
-{
-    int             sizeFactor = 1;
-    NBKernelSystem  kernelSystem(sizeFactor);
-    real            atom1InitialX = kernelSystem.coordinates[0][0];
-    NBKernelOptions kernelOptions;
-    kernelOptions.numIterations = 2;
-    nbKernel(kernelSystem, kernelOptions, false);
-    real atom1FinalX = kernelSystem.coordinates[0][0];
-    EXPECT_NE(atom1InitialX, atom1FinalX);
-}
+// TEST(NBlibTest, CoordinatesChange)
+// {
+//     int             sizeFactor = 1;
+//     NBKernelSystem  kernelSystem(sizeFactor);
+//     real            atom1InitialX = kernelSystem.coordinates[0][0];
+//     NBKernelOptions kernelOptions;
+//     kernelOptions.numIterations = 2;
+//     nbKernel(kernelSystem, kernelOptions, false);
+//     real atom1FinalX = kernelSystem.coordinates[0][0];
+//     EXPECT_NE(atom1InitialX, atom1FinalX);
+// }
 
 TEST(NBlibTest, BasicArgonSetupTest)
 {
