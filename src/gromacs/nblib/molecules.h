@@ -22,7 +22,7 @@ namespace nblib
 
 class MoleculeType {
 public:
-    MoleculeType(std::string name);
+    MoleculeType(std::string moleculeName);
 
     MoleculeType& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
 
