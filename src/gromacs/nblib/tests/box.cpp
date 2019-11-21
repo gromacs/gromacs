@@ -80,7 +80,7 @@ TEST(NBlibTest, CubicBoxWorks)
 {
     real length = 3;
     Box::data_type ref = { std::array<real, DIM>{length, 0, 0}, {0, length, 0}, {0, 0, length}};
-    Box::data_type probe = Box(length).getMatrix();
+    Box::data_type probe = Box(length).matrix();
 
     for (int i = 0; i < DIM; ++i)
         for (int j = 0; j < DIM; ++j)
