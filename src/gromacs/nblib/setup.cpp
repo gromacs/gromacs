@@ -45,6 +45,7 @@
 #include "gmxpre.h"
 
 #include "setup.h"
+#include "integrator.h"
 
 #include "gromacs/compat/optional.h"
 #include "gromacs/ewald/ewald_utils.h"
@@ -338,57 +339,6 @@ static void printTimingsOutput(const NBKernelOptions &options,
     }
 }
 
-//! Sets up and runs the kernel calls
-//! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-//!      that callers can manipulate directly.
-static void setupAndRunInstance(NBKernelSystem          &system,
-                                const NBKernelOptions   &options,
-                                const bool              &printTimings)
-{
-    // We set the interaction cut-off to the pairlist cut-off
-    interaction_const_t   ic   = setupInteractionConst(options);
-    t_nrnb                nrnb = { 0 };
-    gmx_enerdata_t        enerd(1, 0);
-
-    gmx::StepWorkload     stepWork;
-    stepWork.computeForces = true;
-    if (options.computeVirialAndEnergy)
-    {
-        stepWork.computeVirial = true;
-        stepWork.computeEnergy = true;
-    }
-
-    std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance(options, system);
-    const PairlistSet                  &pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    gmx_cycles_t                        cycles        = gmx_cycles_read();
-
-    t_forcerec forceRec;
-    forceRec.ntype = system.numAtomTypes;
-    forceRec.nbfp  = system.nonbondedParameters;
-    snew(forceRec.shift_vec, SHIFTS);
-    calc_shifts(system.box, forceRec.shift_vec);
-
-    std::vector<gmx::RVec> currentCoords = system.coordinates;
-    for (int iter = 0; iter < options.numIterations; iter++)
-    {
-        // Run the kernel without force clearing
-        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                     ic, stepWork, enbvClearFNo, forceRec,
-                                     &enerd,
-                                     &nrnb);
-        // There is one output data structure per thread
-        std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat.get()->out;
-        integrateCoordinates(nbvAtomsOut, options, system.box, currentCoords);
-    }
-    system.coordinates = currentCoords;
-
-    cycles = gmx_cycles_read() - cycles;
-    if (printTimings)
-    {
-        printTimingsOutput(options, system, numPairs, cycles);
-    }
-}
 
 void nbKernel(NBKernelSystem        &system,
               const NBKernelOptions &options,
