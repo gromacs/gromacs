@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "gromacs/math/vec.h"
-
+#include "gromacs/topology/block.h"
 #include "molecules.h"
 
 #ifndef GROMACS_TOPOLOGY_H
