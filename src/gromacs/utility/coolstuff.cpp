@@ -1502,6 +1502,10 @@ std::string getCoolQuote()
         { "To dissimulate is to feign not to have what one has. To simulate is to feign to have "
           "what one hasn't.",
           "Jean Baudrillard" },
+        { "Install our Free Energy Patents app! There is energy all around us; and it's free! "
+          "Free energy is everywhere, and all around you, just waiting to be extracted! Over "
+          "100+ free energy patents!"
+          "Mind and Miracle Productions on Twitter, spamming a FEP thread" },
     };
 
     if (beCool())
