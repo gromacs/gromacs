@@ -39,41 +39,29 @@
  * \author Victor Holanda <victor.holanda@cscs.ch>
  */
 
-#ifndef GROMACS_FORCECALCULATOR_H
-#define GROMACS_FORCECALCULATOR_H
+#ifndef GROMACS_COORDINATES_H
+#define GROMACS_COORDINATES_H
 
-#include "gromacs/timing/cyclecounter.h"
 
-#include "nbkernelsystem.h"
 #include "setup.h"
-#include "nbkerneldef.h"
+
+#include "coords.h"
+
+#include "gromacs/math/vectypes.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/utility/smalloc.h"
+
 
 namespace nblib {
 
-class ForceCalculator
-{
-public:
-
-    ForceCalculator(NBKernelSystem          &system,
-                    const NBKernelOptions   &options);
-
-    //! Sets up and runs the kernel calls
-    //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-    //!      that callers can manipulate directly.
-    void compute(const bool printTimings = false);
-
-private:
-
-    void printTimingsOutput(const NBKernelOptions &options,
-                            const NBKernelSystem  &system,
-                            const gmx::index      &numPairs,
-                            gmx_cycles_t           cycles);
-
-    NBKernelSystem nbKernelSystem_;
-    NBKernelOptions nbKernelOptions_;
-
-};
+//! Generates coordinates and a box for the base system scaled by \p multiplicationFactor
+//
+// The parameter \p multiplicationFactor should be a power of 2.
+// A fatal error is generated when this is not the case.
+void generateCoordinates(int                     multiplicationFactor,
+                         std::vector<gmx::RVec> *coordinates,
+                         matrix                  box);
 
 } // namespace nblib
 
-#endif //GROMACS_FORCECALCULATOR_H
+#endif //GROMACS_COORDINATES_H

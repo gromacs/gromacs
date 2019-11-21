@@ -41,8 +41,8 @@
  * \author Joe Jordan <ejjordan@kth.se>
  */
 
-#ifndef GROMACS_SYSTEM_H
-#define GROMACS_SYSTEM_H
+#ifndef GROMACS_SIMULATIONSTATE_H
+#define GROMACS_SIMULATIONSTATE_H
 
 #include <vector>
 
@@ -57,64 +57,26 @@
 namespace nblib
 {
 
-
-//! Description of the system
-//! TODO Refactor system setup so that t_blocka is not a class member.
-class NBKernelSystem
-{
-    public:
-        /*! \brief Constructor
-         *
-         * Generates a system of size \p multiplicationFactor times
-         * the base size by stacking cubic boxes of 12 Argon atoms.
-         *
-         * \param[in] multiplicationFactor  Should be a power of 2, is checked
-         */
-        NBKernelSystem(int multiplicationFactor);
-
-        //! Number of different atom types in test system.
-        int                    numAtomTypes = 1;
-        //! The LJ C6 parameter
-        real                   c6Param           = 1.0;
-        //! The LJ C12 parameter
-        real                   c12Param          = 1.0;
-        //! System simulation box.
-        matrix                 box { { 0 } };
-        //! Storage for parameters for short range interactions.
-        std::vector<real>      nonbondedParameters;
-        //! Storage for atom type parameters.
-        std::vector<int>       atomTypes;
-        //! Storage for atom partial charges.
-        std::vector<real>      charges;
-        //! Atom info where all atoms are marked to have Van der Waals interactions
-        std::vector<int>       atomInfoAllVdw;
-        //! Storage for atom positions.
-        std::vector<gmx::RVec> coordinates;
-        //! Information about exclusions.
-        t_blocka               excls;
-};
-
-
 //! Simulation state description that serves as a snapshot of the system
 //! being analysed. Needed to init an MD program. Allows hot-starting simulations.
-class SimState
+class SimulationState
 {
 public:
     // Constructor
-    SimState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
+    SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
              const std::vector<gmx::RVec> &vel = {});
 
     // Copy Constructor
-    SimState(const SimState& simState);
+    SimulationState(const SimulationState& simulationState);
 
     // Copy Assignment Operator
-    SimState& operator=(const SimState& simState);
+    SimulationState& operator=(const SimulationState& simulationState);
 
     // Move Constructor
-    SimState(SimState&& simState) noexcept;
+    SimulationState(SimulationState&& simulationState) noexcept;
 
     // Move Assignment Constructor
-    SimState& operator=(SimState&& simState) noexcept;
+    SimulationState& operator=(SimulationState&& simulationState) noexcept;
 
 private:
     std::vector<gmx::RVec> coord_;
@@ -126,4 +88,4 @@ private:
 
 } // namespace nblib
 
-#endif // GROMACS_SYSTEM_H
+#endif // GROMACS_SIMULATIONSTATE_H
