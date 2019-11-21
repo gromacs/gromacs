@@ -206,15 +206,6 @@ setupNbnxmInstance(const NBKernelOptions   &options,
                                                     nullptr,
                                                     nullptr);
 
-// void nbnxn_atomdata_init(const gmx::MDLogger&    mdlog,
-//                          nbnxn_atomdata_t*       nbat,
-//                          const Nbnxm::KernelType kernelType,
-//                          int                     enbnxninitcombrule,
-//                          int                     ntype,
-//                          ArrayRef<const real>    nbfp,
-//                          int                     n_energygroups,
-//                          int                     nout)
-
     nbnxn_atomdata_init(gmx::MDLogger(),
                         nbv->nbat.get(), kernelSetup.kernelType,
                         combinationRule, system.numAtomTypes, system.nonbondedParameters,
@@ -235,18 +226,6 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 
     const real atomDensity = system.coordinates.size()/det(system.box);
 
-// void nbnxn_put_on_grid(nonbonded_verlet_t*            nb_verlet,
-//                        const matrix                   box,
-//                        int                            gridIndex,
-//                        const rvec                     lowerCorner,
-//                        const rvec                     upperCorner,
-//                        const gmx::UpdateGroupsCog*    updateGroupsCog,
-//                        gmx::Range<int>                atomRange,
-//                        real                           atomDensity,
-//                        gmx::ArrayRef<const int>       atomInfo,
-//                        gmx::ArrayRef<const gmx::RVec> x,
-//                        int                            numAtomsMoved,
-//                        const int*                     move)
     nbnxn_put_on_grid(nbv.get(),
                       system.box, 0, lowerCorner, upperCorner,
                       nullptr, {0, int(system.coordinates.size())}, atomDensity,
