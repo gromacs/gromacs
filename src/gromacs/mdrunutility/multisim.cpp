@@ -392,11 +392,11 @@ bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
         }
         else
         {
+            int rank = 0;
 #if GMX_LIB_MPI
-            int rank;
             MPI_Comm_rank(communicator, &rank);
-            return (rank == 0);
 #endif
+            return (rank == 0);
         }
     }
     else if (GMX_THREAD_MPI)
@@ -413,9 +413,6 @@ bool findIsSimulationMasterRank(const gmx_multisim_t* ms, MPI_Comm communicator)
         // No MPI means it must be the master (and only) rank.
         return true;
     }
-    // This seemingly-redundant return statement is necessary to
-    // keep icc 19 happy.
-    return true;
 }
 
 bool isMasterSim(const gmx_multisim_t* ms)

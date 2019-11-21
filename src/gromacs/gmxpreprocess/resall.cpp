@@ -66,7 +66,6 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
     FILE*   in;
     char    buf[STRLEN], name[STRLEN];
     double  m;
-    int     nratt = 0;
     t_atom* a;
 
     std::vector<std::string> files = fflib_search_file_end(ffdir, ".atp", TRUE);
@@ -92,17 +91,15 @@ PreprocessingAtomTypes read_atype(const char* ffdir, t_symtab* tab)
             {
                 a->m = m;
                 at.addType(tab, *a, name, InteractionOfType({}, {}), 0, 0);
-                fprintf(stderr, "\rAtomtype %d", ++nratt);
                 fflush(stderr);
             }
             else
             {
-                fprintf(stderr, "\nInvalid format: %s\n", buf);
+                gmx_fatal(FARGS, "Invalid atomtype format: '%s'", buf);
             }
         }
         gmx_ffclose(in);
     }
-    fprintf(stderr, "\n");
     sfree(a);
     return at;
 }
@@ -435,13 +432,7 @@ void readResidueDatabase(const std::string&              rrdb,
                                       return gmx::equalCaseInsensitive(entry.resname, res->resname);
                                   });
 
-        if (found == rtpDBEntry->end() - 1)
-        {
-            int size = rtpDBEntry->size() - 1;
-            fprintf(stderr, "\rResidue %d", size);
-            fflush(stderr);
-        }
-        else
+        if (found != rtpDBEntry->end() - 1)
         {
             if (found >= oldArrayEnd)
             {
@@ -450,7 +441,6 @@ void readResidueDatabase(const std::string&              rrdb,
             }
             if (bAllowOverrideRTP)
             {
-                fprintf(stderr, "\n");
                 fprintf(stderr,
                         "Found another rtp entry for '%s' in '%s', ignoring this entry and keeping "
                         "the one from '%s.rtp'\n",
@@ -471,7 +461,6 @@ void readResidueDatabase(const std::string&              rrdb,
     }
     gmx_ffclose(in);
 
-    fprintf(stderr, "\nSorting it all out...\n");
     std::sort(rtpDBEntry->begin(), rtpDBEntry->end(), [](const PreprocessResidue& a, const PreprocessResidue& b) {
         return std::lexicographical_compare(
                 a.resname.begin(), a.resname.end(), b.resname.begin(), b.resname.end(),

@@ -63,7 +63,6 @@
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
-#include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -800,25 +799,16 @@ void gmx::LegacySimulator::do_md()
         do_verbose = mdrunOptions.verbose
                      && (step % mdrunOptions.verboseStepPrintInterval == 0 || bFirstStep || bLastStep);
 
-        if (useGpuForUpdate && !bFirstStep)
+        if (useGpuForUpdate && !bFirstStep && bNS)
         {
-            // Copy velocities from the GPU when needed:
-            // - On search steps to keep copy on host (device buffers are reinitialized).
-            // - When needed for the output.
-            if (bNS || do_per_step(step, ir->nstvout))
-            {
-                stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
-                stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
-            }
-
+            // Copy velocities from the GPU on search steps to keep a copy on host (device buffers are reinitialized).
+            stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
+            stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
             // Copy coordinate from the GPU when needed at the search step.
             // NOTE: The cases when coordinates needed on CPU for force evaluation are handled in sim_utils.
             // NOTE: If the coordinates are to be written into output file they are also copied separately before the output.
-            if (bNS)
-            {
-                stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
-                stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
-            }
+            stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
+            stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
 
         if (bNS && !(bFirstStep && ir->bContinuation))
@@ -1117,15 +1107,23 @@ void gmx::LegacySimulator::do_md()
             }
         }
 
-        // Copy coordinate from the GPU for the output if the update is offloaded and
+        // Copy coordinate from the GPU for the output/checkpointing if the update is offloaded and
         // coordinates have not already been copied for i) search or ii) CPU force tasks.
         if (useGpuForUpdate && !bNS && !runScheduleWork->domainWork.haveCpuLocalForceWork
-            && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)))
+            && (do_per_step(step, ir->nstxout) || do_per_step(step, ir->nstxout_compressed)
+                || checkpointHandler->isCheckpointingStep()))
         {
             stateGpu->copyCoordinatesFromGpu(state->x, AtomLocality::Local);
             stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
         }
-
+        // Copy velocities if needed for the output/checkpointing.
+        // NOTE: Copy on the search steps is done at the beginning of the step.
+        if (useGpuForUpdate && !bNS
+            && (do_per_step(step, ir->nstvout) || checkpointHandler->isCheckpointingStep()))
+        {
+            stateGpu->copyVelocitiesFromGpu(state->v, AtomLocality::Local);
+            stateGpu->waitVelocitiesReadyOnHost(AtomLocality::Local);
+        }
         // Copy forces for the output if the forces were reduced on the GPU (not the case on virial steps)
         // and update is offloaded hence forces are kept on the GPU for update and have not been
         // already transferred in do_force().
@@ -1654,12 +1652,6 @@ void gmx::LegacySimulator::do_md()
     }
 
     walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
-
-    if (fr->pmePpCommGpu)
-    {
-        // destroy object since it is no longer required. (This needs to be done while the GPU context still exists.)
-        fr->pmePpCommGpu.reset();
-    }
 
     global_stat_destroy(gstat);
 }

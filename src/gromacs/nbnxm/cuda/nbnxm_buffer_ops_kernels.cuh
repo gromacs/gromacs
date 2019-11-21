@@ -52,34 +52,34 @@
  *  - rename kernel so naming matches with the other NBNXM kernels;
  *  - enable separate compilation unit
 
- * \param[in]     numColumns        extent of cell-level parallelism
- * \param[out]    xnb               position buffer in nbnxm layout
- * \param[in]     setFillerCoords   tells whether to set the coordinates of the filler particles
- * \param[in]     x                 position buffer
- * \param[in]     a                 atom index mapping stride between atoms in memory
- * \param[in]     cxy_na            array of extents
- * \param[in]     cxy_ind           array of cell indices
- * \param[in]     cellOffset        first cell
- * \param[in]     numAtomsPerCell   number of atoms per cell
+ * \param[in]     numColumns          extent of cell-level parallelism
+ * \param[out]    gm_coordinatesNbnxm coordinates buffer in nbnxm layout
+ * \param[in]     setFillerCoords     tells whether to set the coordinates of the filler particles
+ * \param[in]     gm_coordinatesRvec  coordinates buffer in rvec format
+ * \param[in]     gm_atomIndex        atom index mapping
+ * \param[in]     gm_numAtoms         array of number of atoms
+ * \param[in]     gm_cellIndex        array of cell indices
+ * \param[in]     cellOffset          first cell
+ * \param[in]     numAtomsPerCell     number of atoms per cell
  */
 __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
-                                             float* __restrict__ xnb,
+                                             float* __restrict__ gm_coordinatesNbnxm,
                                              bool setFillerCoords,
-                                             const rvec* __restrict__ x,
-                                             const int* __restrict__ a,
-                                             const int* __restrict__ cxy_na,
-                                             const int* __restrict__ cxy_ind,
+                                             const rvec* __restrict__ gm_coordinatesRvec,
+                                             const int* __restrict__ gm_atomIndex,
+                                             const int* __restrict__ gm_numAtoms,
+                                             const int* __restrict__ gm_cellIndex,
                                              int cellOffset,
                                              int numAtomsPerCell);
 
 
 __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
-                                             float* __restrict__ xnb,
+                                             float* __restrict__ gm_coordinatesNbnxm,
                                              bool setFillerCoords,
-                                             const rvec* __restrict__ x,
-                                             const int* __restrict__ a,
-                                             const int* __restrict__ cxy_na,
-                                             const int* __restrict__ cxy_ind,
+                                             const rvec* __restrict__ gm_coordinatesRvec,
+                                             const int* __restrict__ gm_atomIndex,
+                                             const int* __restrict__ gm_numAtoms,
+                                             const int* __restrict__ gm_cellIndex,
                                              int cellOffset,
                                              int numAtomsPerCell)
 {
@@ -93,13 +93,13 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
     if (cxy < numColumns)
     {
 
-        int na = cxy_na[cxy];
-        int a0 = (cellOffset + cxy_ind[cxy]) * numAtomsPerCell;
+        int na = gm_numAtoms[cxy];
+        int a0 = (cellOffset + gm_cellIndex[cxy]) * numAtomsPerCell;
         int na_round;
         if (setFillerCoords)
         {
             // TODO: This can be done more efficiently
-            na_round = (cxy_ind[cxy + 1] - cxy_ind[cxy]) * numAtomsPerCell;
+            na_round = (gm_cellIndex[cxy + 1] - gm_cellIndex[cxy]) * numAtomsPerCell;
         }
         else
         {
@@ -118,18 +118,18 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
         j0 = a0 * STRIDE_XYZQ;
 
         // destination address where x shoud be stored in nbnxm layout
-        float3* x_dest = (float3*)&xnb[j0 + 4 * i];
+        float3* gm_coordinatesDest = (float3*)&gm_coordinatesNbnxm[j0 + 4 * i];
 
         /* perform conversion of each element */
         if (i < na_round)
         {
             if (i < na)
             {
-                *x_dest = *((float3*)x[a[a0 + i]]);
+                *gm_coordinatesDest = *((float3*)gm_coordinatesRvec[gm_atomIndex[a0 + i]]);
             }
             else
             {
-                *x_dest = make_float3(farAway);
+                *gm_coordinatesDest = make_float3(farAway);
             }
         }
     }
@@ -137,28 +137,28 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
 
 /*! \brief CUDA kernel to sum up the force components
  *
- * \tparam        accumulateForce  If the initial forces in \p d_fTotal should be saved.
+ * \tparam        accumulateForce  If the initial forces in \p gm_fTotal should be saved.
  * \tparam        addPmeForce      Whether the PME force should be added to the total.
  *
- * \param[in]     d_fNB            Non-bonded forces in nbat format.
- * \param[in]     d_fPme           PME forces.
- * \param[in,out] d_fTotal         Force buffer to be reduced into.
+ * \param[in]     gm_forcesNbnxm   Non-bonded forces in nbnxm format.
+ * \param[in]     gm_forcesPme     PME forces.
+ * \param[in,out] gm_forcesTotal   Force buffer to be reduced into.
  * \param[in]     cell             Cell index mapping.
  * \param[in]     atomStart        Start atom index.
  * \param[in]     numAtoms         Number of atoms.
  */
 template<bool accumulateForce, bool addPmeForce>
-__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ d_fNB,
-                                                 const float3* __restrict__ d_fPme,
-                                                 float3* d_fTotal,
-                                                 const int* __restrict__ d_cell,
+__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ gb_forcesNbnxm,
+                                                 const float3* __restrict__ gm_forcesPme,
+                                                 float3* gm_forcesTotal,
+                                                 const int* __restrict__ gm_cell,
                                                  const int atomStart,
                                                  const int numAtoms);
 template<bool accumulateForce, bool addPmeForce>
-__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ d_fNB,
-                                                 const float3* __restrict__ d_fPme,
-                                                 float3* d_fTotal,
-                                                 const int* __restrict__ d_cell,
+__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ gb_forcesNbnxm,
+                                                 const float3* __restrict__ gm_forcesPme,
+                                                 float3* gm_forcesTotal,
+                                                 const int* __restrict__ gm_cell,
                                                  const int atomStart,
                                                  const int numAtoms)
 {
@@ -170,24 +170,24 @@ __global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ d_fN
     if (threadIndex < numAtoms)
     {
 
-        int     i     = d_cell[atomStart + threadIndex];
-        float3* fDest = (float3*)&d_fTotal[atomStart + threadIndex];
+        int     i             = gm_cell[atomStart + threadIndex];
+        float3* gm_forcesDest = (float3*)&gm_forcesTotal[atomStart + threadIndex];
         float3  temp;
 
         if (accumulateForce)
         {
-            temp = *fDest;
-            temp += d_fNB[i];
+            temp = *gm_forcesDest;
+            temp += gb_forcesNbnxm[i];
         }
         else
         {
-            temp = d_fNB[i];
+            temp = gb_forcesNbnxm[i];
         }
         if (addPmeForce)
         {
-            temp += d_fPme[atomStart + threadIndex];
+            temp += gm_forcesPme[atomStart + threadIndex];
         }
-        *fDest = temp;
+        *gm_forcesDest = temp;
     }
     return;
 }

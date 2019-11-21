@@ -16,8 +16,6 @@ Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gm
     :caption: Documentation sections
 
     userguide/userguide.rst
-    reference/reference.rst
-    changelog
 
 .. seealso::
 

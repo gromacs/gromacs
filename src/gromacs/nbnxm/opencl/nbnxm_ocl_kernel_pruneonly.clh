@@ -83,16 +83,16 @@ nbnxn_kernel_prune_rolling_opencl
     const float rlistInner_sq = nbparam->rlistInner_sq;
 
     /* thread/block/warp id-s */
-    const unsigned int tidxi = get_local_id(0);
-    const unsigned int tidxj = get_local_id(1);
-    const unsigned int tidx  = get_local_id(1) * get_local_size(0) + get_local_id(0);
+    const int tidxi = get_local_id(0);
+    const int tidxj = get_local_id(1);
+    const int tidx  = (int)(get_local_id(1) * get_local_size(0) + get_local_id(0));
 #if NTHREAD_Z == 1
-    const unsigned int tidxz = 0;
+    const int tidxz = 0;
 #else
-    const unsigned int tidxz         = get_local_id(2);
+    const int          tidxz         = get_local_id(2);
 #endif
-    const unsigned int bidx = get_group_id(0);
-    const unsigned int widx = tidx / WARP_SIZE;
+    const int bidx = get_group_id(0);
+    const int widx = tidx / WARP_SIZE;
 
 #ifdef HAVE_FRESH_LIST
     const bool haveFreshList = true;
@@ -124,16 +124,18 @@ nbnxn_kernel_prune_rolling_opencl
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint* const warp_any     = (__local uint*)(LOCAL_OFFSET);
-    const unsigned int           warpVoteSlot = NTHREAD_Z * tidxz + widx;
+    //NOLINTNEXTLINE(google-readability-casting)
+    volatile __local int* const warp_any     = (__local int*)(LOCAL_OFFSET);
+    const int                   warpVoteSlot = NTHREAD_Z * tidxz + widx;
     /* Initialise warp vote.*/
-    if (tidx == 0 || tidx == 32)
+    // if (tidx == 0 || tidx == 32)
+    if (tidx % (c_clSize * c_clSize / c_nbnxnGpuClusterpairSplit) == 0)
     {
         warp_any[warpVoteSlot] = 0;
     }
 #else
-    __local uint* const warp_any     = 0;
-    const unsigned int  warpVoteSlot = 0;
+    __local int* const warp_any      = 0;
+    const int          warpVoteSlot  = 0;
 #endif
 #undef LOCAL_OFFSET
 
@@ -155,7 +157,7 @@ nbnxn_kernel_prune_rolling_opencl
             const float4 tmp = xq[ai];
             const float4 xi  = tmp
                               + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1],
-                                         shift_vec[3 * nb_sci.shift + 2], 0.0f);
+                                         shift_vec[3 * nb_sci.shift + 2], 0.0F);
             xib[(tidxj + i) * c_clSize + tidxi] = xi;
         }
     }
@@ -185,7 +187,7 @@ nbnxn_kernel_prune_rolling_opencl
             imaskCheck = (imaskNew ^ imaskFull);
         }
 
-        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0u);
+        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imaskCheck != 0U);
 
         if (imaskCheck)
         {

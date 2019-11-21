@@ -70,10 +70,15 @@ public:
     void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
 
     /*! \brief
-     * receive coordinate data from PP rank
+     * launch receive of coordinate data from PP rank
      * \param[in] ppRank  PP rank to send data
      */
-    void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+
+    /*! \brief
+     * enqueue wait for coordinate data from PP ranks
+     */
+    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
 
 private:
     //! CUDA stream for PME operations
@@ -82,6 +87,12 @@ private:
     MPI_Comm comm_;
     //! list of PP ranks
     gmx::ArrayRef<PpRanks> ppRanks_;
+    //! vector of MPI requests
+    std::vector<MPI_Request> request_;
+    //! vector of synchronization events to receive from PP tasks
+    std::vector<GpuEventSynchronizer*> ppSync_;
+    //! counter of messages to receive
+    int recvCount_ = 0;
 };
 
 } // namespace gmx

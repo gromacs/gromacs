@@ -1594,6 +1594,12 @@ int Mdrunner::mdrunner()
                 walltime_accounting, std::move(stopHandlerBuilder_), doRerun);
         simulator->run();
 
+        if (fr->pmePpCommGpu)
+        {
+            // destroy object since it is no longer required. (This needs to be done while the GPU context still exists.)
+            fr->pmePpCommGpu.reset();
+        }
+
         if (inputrec->bPull)
         {
             finish_pull(pull_work);

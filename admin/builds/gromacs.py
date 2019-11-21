@@ -251,6 +251,10 @@ def do_build(context):
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
 
+        # run OpenCL offline compile tests on clang tidy builds
+        if (context.opts.tidy and context.opts.opencl):
+            context.build_target(target='ocl_nbnxm_kernels')
+
         if not context.opts.mdrun_only:
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))
             context.chdir(regressiontests_path)

@@ -4,11 +4,11 @@
   <Simulation Name="glycine_vacuo">
     <Minimizer Name="steep">
       <Energy Name="Potential">
-        <Real Name="Time 0.000000 Step 0 in frame 0">2188.6237281397243</Real>
-        <Real Name="Time 1.000000 Step 1 in frame 1">1675.0453966455655</Real>
-        <Real Name="Time 2.000000 Step 2 in frame 2">1195.8320906920646</Real>
-        <Real Name="Time 3.000000 Step 3 in frame 3">739.9882576159057</Real>
-        <Real Name="Time 4.000000 Step 4 in frame 4">319.37689948961605</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 0">2188.6237283779924</Real>
+        <Real Name="Time 1.000000 Step 1 in frame 1">1675.0453968909394</Real>
+        <Real Name="Time 2.000000 Step 2 in frame 2">1195.8320909425499</Real>
+        <Real Name="Time 3.000000 Step 3 in frame 3">739.9882578718873</Real>
+        <Real Name="Time 4.000000 Step 4 in frame 4">319.37689975152063</Real>
       </Energy>
     </Minimizer>
   </Simulation>

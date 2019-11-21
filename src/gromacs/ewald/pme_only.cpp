@@ -451,7 +451,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 {
                     if (pme_pp->useGpuDirectComm)
                     {
-                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesFromPpCudaDirect(sender.rankId);
+                        pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpCudaDirect(
+                                sender.rankId);
                     }
                     else
                     {
@@ -467,6 +468,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                 sender.rankId, sender.numAtoms);
                     }
                 }
+            }
+
+            if (pme_pp->useGpuDirectComm)
+            {
+                pme_pp->pmeCoordinateReceiverGpu->enqueueWaitReceiveCoordinatesFromPpCudaDirect();
             }
 
             status = pmerecvqxX;

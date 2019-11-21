@@ -51,7 +51,16 @@ if Apple itself did not ship a C library that violates the
 stack alignment with AVX instructions are enabled.
 
 :issue:`3199`
-       
+
+Fix error with intermolecular interactions and domain decomposition
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+With intermolecular interactions at distances longer than the cutoff
+and domain decomposition, mdrun could exit with an error message
+about missing interactions.
+
+:issue:`3204`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -61,3 +70,16 @@ Fixes that affect portability
 Miscellaneous
 ^^^^^^^^^^^^^
 
+Fix .gro file formatting with large boxes
+"""""""""""""""""""""""""""""""""""""""""
+
+The |Gromacs| manual says the box components in the .gro file
+format are separated by spaces. But no space was printed when
+a box component, except for the first, was 1000 nm or larger
+or an off-diagonal component was -100 nm or smaller.
+Now at least one space is always printed. Content that was written
+in a way that already had at least one space between components
+is unchanged. Existing parsers that conform to the documentation
+and expect whitespace separation will continue to work in all cases.
+
+:issue:`3176`

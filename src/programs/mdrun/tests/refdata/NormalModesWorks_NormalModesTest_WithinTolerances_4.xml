@@ -11,42 +11,42 @@
         <Sequence Name="Row0">
           <Int Name="Length">2</Int>
           <Real>7</Real>
-          <Real>284.327</Real>
+          <Real>284.239</Real>
         </Sequence>
         <Sequence Name="Row1">
           <Int Name="Length">2</Int>
           <Real>8</Real>
-          <Real>526.814</Real>
+          <Real>526.766</Real>
         </Sequence>
         <Sequence Name="Row2">
           <Int Name="Length">2</Int>
           <Real>9</Real>
-          <Real>2029.22</Real>
+          <Real>2029.03</Real>
         </Sequence>
         <Sequence Name="Row3">
           <Int Name="Length">2</Int>
           <Real>10</Real>
-          <Real>5524.43</Real>
+          <Real>5524.38</Real>
         </Sequence>
         <Sequence Name="Row4">
           <Int Name="Length">2</Int>
           <Real>11</Real>
-          <Real>8944.04</Real>
+          <Real>8944.1</Real>
         </Sequence>
         <Sequence Name="Row5">
           <Int Name="Length">2</Int>
           <Real>12</Real>
-          <Real>9695.26</Real>
+          <Real>9695.54</Real>
         </Sequence>
         <Sequence Name="Row6">
           <Int Name="Length">2</Int>
           <Real>13</Real>
-          <Real>13450.1</Real>
+          <Real>13450.3</Real>
         </Sequence>
         <Sequence Name="Row7">
           <Int Name="Length">2</Int>
           <Real>14</Real>
-          <Real>40808.3</Real>
+          <Real>40809</Real>
         </Sequence>
         <Sequence Name="Row8">
           <Int Name="Length">2</Int>
