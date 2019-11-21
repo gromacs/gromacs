@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "atoms.h"
 #include "interactions.h"
 
 class TopologyBuilder;
@@ -18,35 +19,14 @@ class TopologyBuilder;
 namespace nblib
 {
 
-class AtomType {
-public:
-    AtomType();
-
-    AtomType(std::string atomName,
-             real mass,
-             real charge,
-             real c6,
-             real c12);
-
-    std::string getName() const;
-
-private:
-    std::string atomName_;
-
-    real mass_;
-    real charge_;
-    real c6_;
-    real c12_;
-};
-
 class MoleculeType {
 public:
     explicit MoleculeType(std::string moleculeName);
 
     MoleculeType &addAtom(const std::string &moleculeAtomName, const std::string &residueName, AtomType const &atom);
-
-    MoleculeType &addAtom(const std::string &moleculeAtomName, AtomType const &atom);
-
+    
+    MoleculeType &addAtom(const std::string &moleculeAtomName, AtomType const &atom);    
+    
     void addExclusion(int atomWithExclusion, int atomToExclude);
 
     void addHarmonicBond(HarmonicType harmonicBond);
