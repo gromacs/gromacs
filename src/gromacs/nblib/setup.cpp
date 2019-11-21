@@ -338,28 +338,6 @@ static void printTimingsOutput(const NBKernelOptions &options,
     }
 }
 
-//! Integrates the coordinates
-static void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
-                                 const NBKernelOptions                      &options,
-                                 const matrix                               &box,
-                                 std::vector<gmx::RVec>                     &currentCoords)
-{
-    std::vector<gmx::RVec> nextCoords;
-    nextCoords.resize(currentCoords.size());
-    for (size_t atomI = 0; atomI < currentCoords.size(); atomI++)
-    {
-        auto force = nbvAtomsOut[0].f;
-        for (int dim = 0; dim < DIM; dim++)
-        {
-            real vel      = force[dim]*options.timestep;
-            real newCoord = currentCoords[atomI][dim] + vel*options.timestep;
-            nextCoords[atomI][dim] = newCoord;
-        }
-    }
-    put_atoms_in_box(epbcXYZ, box, nextCoords);
-    currentCoords = nextCoords;
-}
-
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
