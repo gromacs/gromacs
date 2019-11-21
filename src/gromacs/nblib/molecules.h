@@ -30,7 +30,9 @@ public:
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
-    void addExclusion(const int atomWithExclusion, const int atomToExclude);
+    // TODO: add exclusions based on the unique ID given to the atom of the molecule
+    void addExclusion(int atomWithExclusion, int atomToExclude);
+    void addExclusion(std::string atomWithExclusion, std::string atomToExclude);
 
     int numAtomsInMolecule() const;
 
