@@ -46,7 +46,7 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
 
         int numAtomsInMolecule = molecule.numAtomsInMolecule();
 
-        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions;
+        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
         std::vector<gmx::ExclusionBlock> exclusionsWithinMolecule(numAtomsInMolecule);
 
         for (int iAtoms = 0; iAtoms < numAtomsInMolecule; iAtoms++)
