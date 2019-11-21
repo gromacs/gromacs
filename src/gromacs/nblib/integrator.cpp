@@ -39,11 +39,8 @@
  * \author Victor Holanda <victor.holanda@cscs.ch>
  */
 
-
 #include "integrator.h"
-// #include "gromacs/compat/optional.h"
 #include "gromacs/pbcutil/pbc.h"
-
 
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
                                  const NBKernelOptions                      &options,
