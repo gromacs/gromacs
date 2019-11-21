@@ -45,11 +45,13 @@
 
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/setup.h"
+#include "gromacs/nblib/topology.h"
+#include "gromacs/nblib/molecules.h"
 #include "gromacs/math/vec.h"
 
 #include "testutils/testasserts.h"
 
-namespace gmx
+namespace nblib
 {
 namespace test
 {
@@ -62,56 +64,41 @@ public:
     std::vector<gmx::RVec> coords_;
     std::vector<gmx::RVec> vel_;
 
-    ::nblib::Box box_;
-    ::nblib::TopologyBuilder topologyBuilder_;
+    Box box_;
+    TopologyBuilder topologyBuilder_;
 
     SimStateTester()
-            :box_(6.05449)
+            :box_(2.05449)
     {
-        coords_ =
-        {
+            constexpr int NArgonAtoms = 3;
 
-            { 0.794,  1.439,  0.610 },
-            { 1.397,  0.673,  1.916 },
-            { 0.659,  1.080,  0.573 },
-            { 1.105,  0.090,  3.431 },
-            { 1.741,  1.291,  3.432 },
-            { 1.936,  1.441,  5.873 },
-            { 0.960,  2.246,  1.659 },
-            { 0.382,  3.023,  2.793 },
-            { 0.053,  4.857,  4.242 },
-            { 2.655,  5.057,  2.211 },
-            { 4.114,  0.737,  0.614 },
-            { 5.977,  5.104,  5.217 }
-        };
-        vel_    =
-        {
-            { 0.326183,  -0.119182,  0.0135174 },
-            { 0.355938,  0.0374831,  0.252879 },
-            { 0.383617,  0.285418,  0.426147 },
-            { -0.0766866,  0.551282,  -0.37828 },
-            { 0.0502158,  0.263403,  0.0817824 },
-            { 0.286086,  -0.0559638,  0.0653588 },
-            { 0.310655,  -0.282913,  -0.08545 },
-            { 0.154439,  -0.0347022,  0.299215 },
-            { 0.14032,  0.232671,  0.278278 },
-            { 0.391716,  -0.0599792,  0.0041444 },
-            { -0.0910481,  -0.0146716,  -0.25681 },
-            { -0.140364,  -0.371435,  -0.256161 }
-        };
+    AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
+    MoleculeType argonMolecule("AR");
+    argonMolecule.addAtom("AR", argonAtom);
 
-        topologyBuilder_.setAtomTypes({0});
-        topologyBuilder_.setCharges({1.});
-        topologyBuilder_.setMasses({1.});
-        topologyBuilder_.setExclusions({},{}, 1);
-        topologyBuilder_.setNonbondedParameters({0,1});
+    TopologyBuilder topBuilder;
+
+    topBuilder.add(argonMolecule, NArgonAtoms);
+    Topology top = topBuilder.buildTopology();
+
+    Box box(7.73950);
+
+    std::vector<gmx::RVec> coords = {
+        { 5.158, 6.923, 3.413 },
+        { 2.891, 6.634, 0.759 },
+        { 4.356, 2.932, 1.414 },
+    };
+
+    SimState simState(coords, box, top);
+
+    EXPECT_EQ(top.getMasses().size(), NArgonAtoms);
     }
 
     void setupSimState()
     {
-        auto topology = topologyBuilder_.buildTopology(coords_.size());
-        ::nblib::SimState(coords_, box_, topology, vel_);
+        auto topology = topologyBuilder_.buildTopology();
+        SimState(coords_, box_, topology, vel_);
     }
 };
 
@@ -138,4 +125,4 @@ TEST(NBlibTest, SimStateArgonBoxCoordThrowINF)
 
 }  // namespace
 }  // namespace test
-}  // namespace gmx
+}  // namespace nblib

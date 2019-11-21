@@ -60,14 +60,14 @@ namespace test
 namespace
 {
 
-// TEST(NBlibTest, BasicEndToEndTest)
-// {
-//     int             sizeFactor = 1;
-//     NBKernelSystem  kernelSystem(sizeFactor);
-//     NBKernelOptions kernelOptions;
-//     kernelOptions.numIterations = 2;
-//     EXPECT_NO_THROW(nbKernel(kernelSystem, kernelOptions, false));
-// }
+TEST(NBlibTest, BasicEndToEndTest)
+{
+    int             sizeFactor = 1;
+    NBKernelSystem  kernelSystem(sizeFactor);
+    NBKernelOptions kernelOptions;
+    kernelOptions.numIterations = 2;
+    EXPECT_NO_THROW(nbKernel(kernelSystem, kernelOptions, false));
+}
 
 // TEST(NBlibTest, CoordinatesChange)
 // {
@@ -85,7 +85,7 @@ TEST(NBlibTest, BasicArgonSetupTest)
 {
     constexpr int NArgonAtoms = 100;
 
-    AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
+    nblib::AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
     MoleculeType argonMolecule("AR");
     argonMolecule.addAtom("AR", argonAtom);

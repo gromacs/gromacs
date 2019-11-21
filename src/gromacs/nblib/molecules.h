@@ -10,9 +10,10 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
 #include "atoms.h"
 #include "interactions.h"
+
+#include "gromacs/math/vectypes.h"
 
 class TopologyBuilder;
 
@@ -21,22 +22,22 @@ namespace nblib
 
 class MoleculeType {
 public:
-    explicit MoleculeType(std::string moleculeName);
+    MoleculeType(std::string name);
 
-    MoleculeType &addAtom(const std::string &moleculeAtomName, const std::string &residueName, AtomType const &atom);
-    
-    MoleculeType &addAtom(const std::string &moleculeAtomName, AtomType const &atom);    
-    
-    void addExclusion(int atomWithExclusion, int atomToExclude);
+    MoleculeType& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
+
+    MoleculeType& addAtom(const std::string &atomName, AtomType const &atomType);
 
     void addHarmonicBond(HarmonicType harmonicBond);
+
+    void addExclusion(const int atomWithExclusion, const int atomToExclude);
 
     int numAtomsInMolecule() const;
 
     friend class TopologyBuilder;
 
 private:
-    std::string moleculeName_;
+    std::string name_;
 
     //! one entry per atom in molecule
     std::vector<std::tuple<std::string, std::string>> atoms_;

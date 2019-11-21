@@ -48,6 +48,8 @@
 #include "setup.h"
 #include "nbkerneldef.h"
 
+namespace nblib {
+
 void printTimingsOutput(const NBKernelOptions &options,
                         const NBKernelSystem  &system,
                         const gmx::index      &numPairs,
@@ -63,5 +65,7 @@ void setupAndRunInstance(NBKernelSystem          &system,
 // void nbKernel(NBKernelSystem        &system,
 //               const NBKernelOptions &options,
 //               const bool            &printTimings);
+
+} // namespace nblib
 
 #endif //GROMACS_FORCECALCULATOR_H

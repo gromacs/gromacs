@@ -54,6 +54,10 @@
 #include "topology.h"
 #include "util.h"
 
+namespace nblib
+{
+
+
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
 class NBKernelSystem
@@ -90,8 +94,6 @@ class NBKernelSystem
         t_blocka               excls;
 };
 
-namespace nblib
-{
 
 //! Simulation state description that serves as a snapshot of the system
 //! being analysed. Needed to init an MD program. Allows hot-starting simulations.
@@ -122,6 +124,6 @@ private:
 
 };
 
-}
+} // namespace nblib
 
 #endif // GROMACS_SYSTEM_H

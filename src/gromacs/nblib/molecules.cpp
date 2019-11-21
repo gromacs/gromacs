@@ -6,24 +6,30 @@
 
 namespace nblib {
 
-MoleculeType::MoleculeType(std::string moleculeName) : moleculeName_(std::move(moleculeName)) {}
 
-MoleculeType& MoleculeType::addAtom(const std::string &moleculeAtomName, const std::string &residueName, AtomType const &atom)
+MoleculeType::MoleculeType(std::string name) : name_(std::move(name)) {}
+
+MoleculeType& MoleculeType::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
 {
     // check whether we already have the atom type
-    if (!atomTypes_.count(moleculeAtomName))
+    if (!atomTypes_.count(atomName))
     {
-        atomTypes_[moleculeAtomName] = atom;
+        atomTypes_[atomName] = atomType;
     }
 
-    atoms_.emplace_back(std::make_tuple(moleculeAtomName, residueName));
+    atoms_.emplace_back(std::make_tuple(atomName, residueName));
 
     return *this;
 }
 
-MoleculeType& MoleculeType::addAtom(const std::string &name, AtomType const &atom)
+MoleculeType& MoleculeType::addAtom(const std::string &atomName, AtomType const &atomType)
 {
-    return this->addAtom(name, "", atom);
+    if (name_.length() > 0){
+        return this->addAtom(atomName, atomName, atomType);
+    }
+    else {
+        return this->addAtom(atomName, "", atomType);
+    }
 }
 
 int MoleculeType::numAtomsInMolecule() const
@@ -36,7 +42,7 @@ void MoleculeType::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-void MoleculeType::addExclusion(int atomWithExclusion, int atomToExclude)
+void MoleculeType::addExclusion(const int atomWithExclusion, const int atomToExclude)
 {
     exclusions_.emplace_back(std::make_tuple(atomWithExclusion, atomToExclude));
 }

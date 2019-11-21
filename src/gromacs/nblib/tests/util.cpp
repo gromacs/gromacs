@@ -45,7 +45,7 @@
 
 #include "testutils/testasserts.h"
 
-namespace gmx
+namespace nblib
 {
 namespace test
 {
@@ -109,7 +109,7 @@ TEST(NBlibTest, generateVelocity)
     for(size_t i = 0; i < N; i++) {
         for (int m = 0; (m < DIM); m++)
         {
-            EXPECT_REAL_EQ_TOL(out[XX][XX], expected[XX][XX], defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(out[XX][XX], expected[XX][XX], gmx::test::defaultRealTolerance());
         }
     }
 }
@@ -132,4 +132,4 @@ TEST(NBlibTest, generateVelocityCheckNumbers)
 
 }  // namespace
 }  // namespace test
-}  // namespace gmx
+}  // namespace nblib

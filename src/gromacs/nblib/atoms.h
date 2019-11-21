@@ -20,7 +20,7 @@ namespace nblib
 
 class AtomType {
 public:
-    AtomType() = default;
+    AtomType() noexcept;
 
     AtomType(std::string atomName,
              real mass,

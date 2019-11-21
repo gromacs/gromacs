@@ -51,6 +51,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
+namespace nblib {
+
 //! Print timings outputs
 void printTimingsOutput(const NBKernelOptions &options,
                                const NBKernelSystem  &system,
@@ -164,3 +166,5 @@ void setupAndRunInstance(NBKernelSystem          &system,
         printTimingsOutput(options, system, numPairs, cycles);
     }
 }
+
+} // namespace nblib
