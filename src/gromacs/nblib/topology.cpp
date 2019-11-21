@@ -15,24 +15,8 @@
 
 namespace nblib {
 
-void TopologyBuilder::calculateTotalNumAtoms(std::vector<std::tuple<MoleculeType, int>> moleculesList)
-{
-    size_t numMolTypes = moleculesList.size();
-    size_t numAtomsTotal = 0;
-    for (size_t iMolTypes = 0; iMolTypes < numMolTypes; iMolTypes++)
-    {
-        int numAtomsInMolecule = std::get<0>(moleculesList[iMolTypes]).numAtomsInMolecule();
-        int numMoleculesOfType = std::get<1>(moleculesList[iMolTypes]);
-        numAtomsTotal += numAtomsInMolecule*numMoleculesOfType;
-    }
-
-    numAtoms_ = numAtomsTotal;
-}
-
 t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType, int>> moleculesList)
 {
-
-    calculateTotalNumAtoms(moleculesList);
     //std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal(numAtoms_);
 
@@ -46,7 +30,7 @@ t_blocka TopologyBuilder::fillExclusionsList(std::vector<std::tuple<MoleculeType
 
         int numAtomsInMolecule = molecule.numAtomsInMolecule();
 
-        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions;
+        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
         std::vector<gmx::ExclusionBlock> exclusionsWithinMolecule(numAtomsInMolecule);
 
         for (int iAtoms = 0; iAtoms < numAtomsInMolecule; iAtoms++)
