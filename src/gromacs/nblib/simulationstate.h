@@ -78,13 +78,13 @@ public:
     // Move Assignment Constructor
     SimulationState& operator=(SimulationState&& simulationState) noexcept;
 
-    Topology& topology() const;
+    const Topology& topology() const;
 
-    Box& box() const;
+    const Box& box() const;
 
-    std::vector<gmx::RVec>& coordinats() const;
+    const std::vector<gmx::RVec>& coordinats() const;
 
-    std::vector<gmx::RVec>& velocities() const;
+    const std::vector<gmx::RVec>& velocities() const;
 
 
 private:

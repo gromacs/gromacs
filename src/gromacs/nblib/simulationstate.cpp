@@ -124,22 +124,22 @@ SimulationState& SimulationState::operator=(nblib::SimulationState &&simulationS
     return *this;
 }
 
-Topology& SimulationState::topology() const
+const Topology& SimulationState::topology() const
 {
     return topology_;
 }
 
-Box& SimulationState::box() const
+const Box& SimulationState::box() const
 {
     return box_;
 }
 
-std::vector<gmx::RVec>& SimulationState::coordinats() const
+const std::vector<gmx::RVec>& SimulationState::coordinats() const
 {
     return coordinates_;
 }
 
-std::vector<gmx::RVec>& SimulationState::velocities() const
+const std::vector<gmx::RVec>& SimulationState::velocities() const
 {
     return velocities_;
 }
