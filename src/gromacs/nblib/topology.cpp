@@ -106,7 +106,7 @@ std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls = createExclusionsList();
+    // topology_.excls = createExclusionsList();
     topology_.masses = extractQuantity([](const Atom &atomType){ return atomType.mass(); });
     topology_.charges = extractQuantity([](const Atom &atomType){ return atomType.charge(); });
 
