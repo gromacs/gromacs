@@ -80,11 +80,11 @@ public:
 
     const Topology& topology() const;
 
-    const Box& box() const;
+    Box& box();
 
-    const std::vector<gmx::RVec>& coordinats() const;
+    std::vector<gmx::RVec>& coordinates();
 
-    const std::vector<gmx::RVec>& velocities() const;
+    std::vector<gmx::RVec>& velocities();
 
 
 private:

@@ -129,17 +129,17 @@ const Topology& SimulationState::topology() const
     return topology_;
 }
 
-const Box& SimulationState::box() const
+Box& SimulationState::box()
 {
     return box_;
 }
 
-const std::vector<gmx::RVec>& SimulationState::coordinats() const
+std::vector<gmx::RVec>& SimulationState::coordinates()
 {
     return coordinates_;
 }
 
-const std::vector<gmx::RVec>& SimulationState::velocities() const
+std::vector<gmx::RVec>& SimulationState::velocities()
 {
     return velocities_;
 }
