@@ -63,43 +63,40 @@ namespace
 class SimulationStateTester
 {
 public:
-    std::vector<gmx::RVec> coords_;
-    std::vector<gmx::RVec> vel_;
+    std::vector<gmx::RVec> coords;
+    std::vector<gmx::RVec> vel;
 
-    Box box_;
-    TopologyBuilder topologyBuilder_;
+    Box box;
+    TopologyBuilder topologyBuilder;
 
-    SimulationStateTester() : box_(2.05449)
+    SimulationStateTester() : box(7.25449)
     {
         constexpr int NumArgonAtoms = 3;
 
         AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
-        MoleculeType argonMolecule("AR");
+        Molecule argonMolecule("AR");
         argonMolecule.addAtom("AR", argonAtom);
 
-        TopologyBuilder topBuilder;
-        topBuilder.addMolecule(argonMolecule, NumArgonAtoms);
+        topologyBuilder.addMolecule(argonMolecule, NumArgonAtoms);
 
-        Topology top = topBuilder.buildTopology();
-
-        Box box(7.73950);
-
-        std::vector<gmx::RVec> coords = {
+        coords = {
             { 5.158, 6.923, 3.413 },
             { 2.891, 6.634, 0.759 },
             { 4.356, 2.932, 1.414 },
         };
 
-        SimulationState simulationState(coords, box, top);
-
-        EXPECT_EQ(top.getMasses().size(), NumArgonAtoms);
+        vel = {
+            { 5.158, 6.923, 3.413 },
+            { 2.891, 6.634, 0.759 },
+            { 4.356, 2.932, 1.414 },
+        };
     }
 
     void setupSimulationState()
     {
-        auto topology = topologyBuilder_.buildTopology();
-        SimulationState(coords_, box_, topology, vel_);
+        Topology top = topologyBuilder.buildTopology();
+        SimulationState(coords, box, top, vel);
     }
 };
 
@@ -112,15 +109,14 @@ TEST(NBlibTest, SimulationStateArgonBox)
 TEST(NBlibTest, SimulationStateArgonBoxCoordThrowNAN)
 {
     SimulationStateTester simulationStateTester;
-    simulationStateTester.coords_[2][0] = NAN;
+    simulationStateTester.coords[2][0] = NAN;
     EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
 }
 
 TEST(NBlibTest, SimulationStateArgonBoxCoordThrowINF)
 {
-
     SimulationStateTester simulationStateTester;
-    simulationStateTester.coords_[2][0] = INFINITY;
+    simulationStateTester.coords[2][0] = INFINITY;
     EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
 }
 

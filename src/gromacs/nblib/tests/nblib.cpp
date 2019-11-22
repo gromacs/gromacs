@@ -87,7 +87,7 @@ TEST(NBlibTest, BasicArgonSetupTest)
 
     nblib::AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
-    MoleculeType argonMolecule("AR");
+    Molecule argonMolecule("AR");
     argonMolecule.addAtom("AR", argonAtom);
 
     TopologyBuilder topBuilder;
@@ -216,7 +216,7 @@ TEST(NBlibTest, BasicArgonSetupTest)
 //     AtomType oxygenAtom("OW", 16, -0.6, 1.0, 1.0);
 //     AtomType hydrogenAtom("HW", 1, 0.3, 0, 0);
 
-//     MoleculeType waterMolecule("HOH");
+//     Molecule waterMolecule("HOH");
 //     waterMolecule.addAtom("O", oxygenAtom);
 //     waterMolecule.addAtom("H1", hydrogenAtom);
 //     waterMolecule.addAtom("H2", hydrogenAtom);
