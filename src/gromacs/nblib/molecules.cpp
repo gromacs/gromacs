@@ -82,7 +82,8 @@ int Molecule::atomNameAndResidueToIndex(std::tuple<std::string, std::string> ato
 
 void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
 {
-    // The exclusions could be duplicated
+    // We do not need to add exclusion in case the atom indexes are the same
+    // because self exclusion are added by addAtom
     if(atomIndex != atomIndexToExclude){
         exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
         exclusions_.emplace_back(std::make_tuple(atomIndexToExclude, atomIndex));
