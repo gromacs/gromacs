@@ -47,7 +47,6 @@ Molecule& Molecule::addAtom(const std::string &atomName, const std::string &resi
 Molecule& Molecule::addAtom(const std::string &atomName, Atom const &atomType)
 {
     addAtom(atomName, name_, atomType);
-    addAtomSelfExclusion(atomName, name_);
 
     return *this;
 }
@@ -83,8 +82,7 @@ int Molecule::atomNameAndResidueToIndex(std::tuple<std::string, std::string> ato
 
 void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
 {
-    // TODO
-    // avoid duplicating the exclusions
+    // The exclusions could be duplicated
     if(atomIndex != atomIndexToExclude){
         exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndexToExclude));
         exclusions_.emplace_back(std::make_tuple(atomIndexToExclude, atomIndex));
