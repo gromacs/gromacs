@@ -85,7 +85,7 @@ TEST(NBlibTest, BasicArgonSetupTest)
 {
     constexpr int NArgonAtoms = 100;
 
-    nblib::AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
+    nblib::Atom argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
     Molecule argonMolecule("AR");
     argonMolecule.addAtom("AR", argonAtom);
@@ -213,8 +213,8 @@ TEST(NBlibTest, BasicArgonSetupTest)
 // {
 //     constexpr int NWaterMolecules = 100;
 
-//     AtomType oxygenAtom("OW", 16, -0.6, 1.0, 1.0);
-//     AtomType hydrogenAtom("HW", 1, 0.3, 0, 0);
+//     Atom oxygenAtom("OW", 16, -0.6, 1.0, 1.0);
+//     Atom hydrogenAtom("HW", 1, 0.3, 0, 0);
 
 //     Molecule waterMolecule("HOH");
 //     waterMolecule.addAtom("O", oxygenAtom);

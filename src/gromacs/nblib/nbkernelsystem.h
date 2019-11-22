@@ -68,7 +68,7 @@ class NBKernelSystem
         NBKernelSystem(int multiplicationFactor);
 
         //! Number of different atom types in test system.
-        int                    numAtomTypes = 1;
+        int                    numAtoms = 1;
         //! The LJ C6 parameter
         real                   c6Param           = 1.0;
         //! The LJ C12 parameter

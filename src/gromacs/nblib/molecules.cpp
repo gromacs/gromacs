@@ -30,7 +30,7 @@ void Molecule::addAtomSelfExclusion(std::string atomName, std::string resName)
     }
 }
 
-Molecule& Molecule::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
+Molecule& Molecule::addAtom(const std::string &atomName, const std::string &residueName, Atom const &atomType)
 {
     // check whether we already have the atom type
     if (!atomTypes_.count(atomType.name()))
@@ -44,7 +44,7 @@ Molecule& Molecule::addAtom(const std::string &atomName, const std::string &resi
     return *this;
 }
 
-Molecule& Molecule::addAtom(const std::string &atomName, AtomType const &atomType)
+Molecule& Molecule::addAtom(const std::string &atomName, Atom const &atomType)
 {
     addAtom(atomName, name_, atomType);
     addAtomSelfExclusion(atomName, name_);

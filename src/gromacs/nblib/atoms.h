@@ -18,11 +18,11 @@ class TopologyBuilder;
 namespace nblib
 {
 
-class AtomType {
+class Atom {
 public:
-    AtomType() noexcept;
+    Atom() noexcept;
 
-    AtomType(std::string atomName,
+    Atom(std::string atomName,
              real mass,
              real charge,
              real c6,

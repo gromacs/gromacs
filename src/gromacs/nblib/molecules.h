@@ -24,9 +24,9 @@ class Molecule {
 public:
     Molecule(std::string moleculeName);
 
-    Molecule& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
+    Molecule& addAtom(const std::string &atomName, const std::string &residueName, Atom const &atomType);
 
-    Molecule& addAtom(const std::string &atomName, AtomType const &atomType);
+    Molecule& addAtom(const std::string &atomName, Atom const &atomType);
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
@@ -46,8 +46,8 @@ private:
 
     //! one entry per atom in molecule
     std::vector<std::tuple<std::string, std::string>> atoms_;
-    //! collection of distinct AtomTypes in molecule
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    //! collection of distinct Atoms in molecule
+    std::unordered_map<std::string, Atom> atomTypes_;
 
     std::vector<std::tuple<int, int>> exclusions_;
 

@@ -61,38 +61,38 @@ struct ArAtom
     real c12 = 1;
 };
 
-TEST(NBlibTest, AtomTypeNameCanBeConstructed)
+TEST(NBlibTest, AtomNameCanBeConstructed)
 {
     ArAtom arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.name(), arAtom.name);
 }
 
-TEST(NBlibTest, AtomTypeMassCanBeConstructed)
+TEST(NBlibTest, AtomMassCanBeConstructed)
 {
     ArAtom arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.mass(), arAtom.mass);
 }
 
-TEST(NBlibTest, AtomTypeChargeCanBeConstructed)
+TEST(NBlibTest, AtomChargeCanBeConstructed)
 {
     ArAtom arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.charge(), arAtom.charge);
 }
 
-TEST(NBlibTest, AtomTypeC6CanBeConstructed)
+TEST(NBlibTest, AtomC6CanBeConstructed)
 {
     ArAtom arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.c6(), arAtom.c6);
 }
 
-TEST(NBlibTest, AtomTypeC12CanBeConstructed)
+TEST(NBlibTest, AtomC12CanBeConstructed)
 {
     ArAtom arAtom;
-    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.c12(), arAtom.c12);
 }
 

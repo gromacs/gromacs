@@ -147,7 +147,7 @@ void ForceCalculator::compute(const bool printTimings)
     gmx_cycles_t                        cycles        = gmx_cycles_read();
 
     t_forcerec forceRec;
-    forceRec.ntype = nbKernelSystem_.numAtomTypes;
+    forceRec.ntype = nbKernelSystem_.numAtoms;
     forceRec.nbfp  = nbKernelSystem_.nonbondedParameters;
     snew(forceRec.shift_vec, SHIFTS);
     calc_shifts(nbKernelSystem_.box, forceRec.shift_vec);
