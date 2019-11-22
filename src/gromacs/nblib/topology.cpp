@@ -15,14 +15,12 @@
 
 namespace nblib {
 
-t_blocka TopologyBuilder::fillExclusionsList()
+t_blocka TopologyBuilder::createExclusionsList()
 {
     auto &moleculesList = molecules_;
-    //std::array<gmx::ExclusionBlock, numAtomsTotal> exclusionBlockGlobal;
+
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numAtoms_);
-
-    t_blocka tBlockGlobal;
 
     //! compare tuples by comparing the first element
     auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
@@ -71,19 +69,47 @@ t_blocka TopologyBuilder::fillExclusionsList()
 
     //! At the very end, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
+    t_blocka tBlockGlobal;
     gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
 
     return tBlockGlobal;
 }
 
-std::vector<real> TopologyBuilder::fillCharges()
+template <class Extractor>
+std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 {
-    return {};
+    auto &moleculesList = molecules_;
+
+    //! returned object
+    std::vector<real> ret;
+    ret.reserve(numAtoms_);
+
+    for (auto &molNumberTuple : moleculesList)
+    {
+        MoleculeType &molecule = std::get<0>(molNumberTuple);
+        size_t numMols = std::get<1>(molNumberTuple);
+
+        for (size_t i = 0; i < numMols; ++i)
+        {
+            for (auto &atomTuple : molecule.atoms_)
+            {
+                std::string atomTypeName = std::get<1>(atomTuple);
+
+                AtomType &atomType = molecule.atomTypes_[atomTypeName];
+                ret.push_back(extractor(atomType));
+            }
+        }
+    }
+
+    return ret;
 }
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls = fillExclusionsList();
+    topology_.excls = createExclusionsList();
+    topology_.masses = extractQuantity([](const AtomType &atomType){ return atomType.mass(); });
+    topology_.charges = extractQuantity([](const AtomType &atomType){ return atomType.charge(); });
+
     return topology_;
 }
 

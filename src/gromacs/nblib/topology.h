@@ -61,9 +61,10 @@ private:
     int numAtoms_;
     std::vector<std::tuple<Molecule, int>> molecules_;
 
-    t_blocka fillExclusionsList();
+    t_blocka createExclusionsList();
 
-    std::vector<real> fillCharges();
+    template <class Extractor>
+    std::vector<real> extractQuantity(Extractor extractor);
 };
 
 } // namespace nblib
