@@ -52,9 +52,9 @@ TEST(NBlibTest, fillExclusions)
     //! Manually Create Molecules (Water & Argon)
 
     //! 1. Define Atom Types
-    AtomType Ow("Ow", 16, -0.6, 1., 1.);
-    AtomType Hw("Hw", 1, +0.3, 1., 1.);
-    AtomType Ar("Ar", 40, 0., 1., 1.);
+    Atom Ow("Ow", 16, -0.6, 1., 1.);
+    Atom Hw("Hw", 1, +0.3, 1., 1.);
+    Atom Ar("Ar", 40, 0., 1., 1.);
 
     //! 2. Define Molecules
 

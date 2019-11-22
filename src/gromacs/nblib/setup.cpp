@@ -210,7 +210,7 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 
     nbnxn_atomdata_init(gmx::MDLogger(),
                         nbv->nbat.get(), kernelSetup.kernelType,
-                        combinationRule, system.numAtomTypes, system.nonbondedParameters,
+                        combinationRule, system.numAtoms, system.nonbondedParameters,
                         1, numThreads);
 
     t_nrnb nrnb;

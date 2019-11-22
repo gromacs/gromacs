@@ -18,7 +18,7 @@ namespace nblib {
 class Topology {
 public:
 
-    const std::vector<int>& getAtomTypes() const;
+    const std::vector<int>& getAtoms() const;
 
     const std::vector<real>& getCharges() const;
 

@@ -60,7 +60,7 @@ namespace nblib
 
 NBKernelSystem::NBKernelSystem(const int multiplicationFactor)
 {
-    nonbondedParameters.resize(numAtomTypes*numAtomTypes*2, 0);
+    nonbondedParameters.resize(numAtoms*numAtoms*2, 0);
     nonbondedParameters[0] = c6Param;
     nonbondedParameters[1] = c12Param;
 
