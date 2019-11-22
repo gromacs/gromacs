@@ -61,7 +61,7 @@ private:
     int numAtoms_;
     std::vector<std::tuple<Molecule, int>> molecules_;
 
-    t_blocka createExclusionsList();
+    t_blocka createExclusionsList() const;
 
     template <class Extractor>
     std::vector<real> extractQuantity(Extractor extractor);
