@@ -68,19 +68,29 @@ TEST(NBlibTest, fillExclusions)
     water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
     water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
 
-    water.addExclusion("Oxygen", "Oxygen");
     water.addExclusion("Oxygen", "H1");
     water.addExclusion("Oxygen", "H2");
-    water.addExclusion("H1", "H1");
     water.addExclusion("H1", "H2");
-    water.addExclusion("H2", "H2");
 
     //! 2.2 Argon
     Molecule argon("argon");
 
     argon.addAtom("Ar", Ar);
 
-    argon.addExclusion("Ar", "Ar");
+    //! Setup Topology
+
+    TopologyBuilder topologyBuilder;
+    topologyBuilder.addMolecule(water, 1);
+    topologyBuilder.addMolecule(argon, 1);
+
+    auto topology = topologyBuilder.buildTopology();
+
+    auto exclusions = topology.getGMXexclusions();
+
+    //TODO: create a t_blocka object manually and compare
+    //      offsets are accounted for in topology
+
+
 
 }
 
