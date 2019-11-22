@@ -15,9 +15,9 @@
 
 namespace nblib {
 
-t_blocka TopologyBuilder::createExclusionsList()
+t_blocka TopologyBuilder::createExclusionsList() const
 {
-    auto &moleculesList = molecules_;
+    const auto &moleculesList = molecules_;
 
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numAtoms_);
@@ -25,9 +25,9 @@ t_blocka TopologyBuilder::createExclusionsList()
     //! compare tuples by comparing the first element
     auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
 
-    for (auto &molNumberTuple : moleculesList)
+    for (const auto &molNumberTuple : moleculesList)
     {
-        Molecule& molecule = std::get<0>(molNumberTuple);
+        const Molecule& molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
         std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
@@ -37,6 +37,7 @@ t_blocka TopologyBuilder::createExclusionsList()
 
         //! initialize pair of iterators delimiting the range of exclusions for
         //! the first atom in the list
+        GMX_ASSERT(!exclusionList.empty(), "exclusionList must not be empty\n");
         auto range = std::equal_range(std::begin(exclusionList), std::end(exclusionList),
                                   exclusionList[0], firstLowerThan);
         auto it1 = range.first;
@@ -106,7 +107,7 @@ std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    // topology_.excls = createExclusionsList();
+    topology_.excls = createExclusionsList();
     topology_.masses = extractQuantity([](const Atom &atomType){ return atomType.mass(); });
     topology_.charges = extractQuantity([](const Atom &atomType){ return atomType.charge(); });
 
