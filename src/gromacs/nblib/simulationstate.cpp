@@ -57,21 +57,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
-
-
 #include "coords.h"
-
-namespace
-{
-
-//! The number of atoms in a molecule
-constexpr int  numAtomsInMolecule = 1;
-//! The atom type of the atom
-constexpr int  atomType         = 0;
-//! The charge of the atom
-constexpr real atomCharge       = 0.0;
-
-}   // namespace
 
 namespace nblib {
 
