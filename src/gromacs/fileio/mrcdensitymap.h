@@ -87,6 +87,10 @@ private:
  * upon construction and returns coordinate transformation into the density
  * lattice as well as the density data.
  *
+ * Attempts reading with swapped endianess if header is not sane.
+ *
+ * Performs basic sanity checks on header information and data size.
+ *
  * \note File reading is completed during construction. When the constructor
  *       completes succesfully, transformation to density lattice and density
  *       data are valid, irrespective of the state of the read file.
