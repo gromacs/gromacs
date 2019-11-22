@@ -32,31 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+
 /*! \internal \file
  * \brief
- * This implements topology setup tests
+ * This implements molecule setup tests
  *
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  */
 
-#include "gromacs/nblib/topology.h"
+#include "gromacs/nblib/molecules.h"
 
 #include "testutils/testasserts.h"
+
+#include <iostream>
 
 namespace nblib {
 namespace test {
 namespace {
 
-TEST(NBlibTest, fillExclusions)
+Molecule generateWaterMolecule()
 {
-    //! Manually Create Molecules (Water & Argon)
+    //! Manually Create Molecule (Water)
 
-    //! 1. Define Atom Types
+    //! 1. Define Atom Type
     Atom Ow("Ow", 16, -0.6, 1., 1.);
     Atom Hw("Hw", 1, +0.3, 1., 1.);
     Atom Ar("Ar", 40, 0., 1., 1.);
 
-    //! 2. Define Molecules
+    //! 2. Define Molecule
 
     //! 2.1 Water
     Molecule water("water");
@@ -72,29 +75,15 @@ TEST(NBlibTest, fillExclusions)
     water.addExclusion("Oxygen", "H2");
     water.addExclusion("H1", "H2");
 
-    //! 2.2 Argon
-    Molecule argon("argon");
-
-    argon.addAtom("Ar", Ar);
-
-    //! Setup Topology
-
-    TopologyBuilder topologyBuilder;
-    topologyBuilder.addMolecule(water, 1);
-    topologyBuilder.addMolecule(argon, 1);
-
-    auto topology = topologyBuilder.buildTopology();
-
-    auto exclusions = topology.getGMXexclusions();
-
-    //TODO: create a t_blocka object manually and compare
-    //      offsets are accounted for in topology
-
-
-
+    return water;
 }
 
-
+TEST(NBlibTest, numAtomsTest)
+{
+    auto water = generateWaterMolecule();
+    auto numAtoms = water.numAtomsInMolecule();
+    EXPECT_EQ(3, numAtoms);
+}
 
 }  // namespace
 }  // namespace test
