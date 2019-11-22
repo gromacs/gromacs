@@ -35,7 +35,7 @@
 file(GLOB NBLIB_SOURCES *.cpp)
 
 install(FILES
-        setup.h
+        nbkerneloptions.h
         DESTINATION include/nblib)
 
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${NBLIB_SOURCES} PARENT_SCOPE)

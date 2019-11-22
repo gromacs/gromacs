@@ -44,7 +44,7 @@
 
 #include <vector>
 
-#include "setup.h"
+#include "nbkerneloptions.h"
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"

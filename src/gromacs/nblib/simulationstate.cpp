@@ -76,52 +76,73 @@ constexpr real atomCharge       = 0.0;
 namespace nblib {
 
 SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
-                   const std::vector<gmx::RVec> &vel) : box_(box), topo_(topo)
+                   const std::vector<gmx::RVec> &vel) : box_(box), topology_(topo)
 {
     if (!checkNumericValues(coord))
     {
         GMX_THROW(gmx::InvalidInputError("Input coordinates has at least one NaN"));
     }
-    coord_ = coord;
+    coordinates_ = coord;
     if (!checkNumericValues(vel))
     {
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
-    vel_ = vel;
+    velocities_ = vel;
 }
 
 SimulationState::SimulationState(const SimulationState &simulationState)
-    : box_(simulationState.box_), topo_(simulationState.topo_)
+    : box_(simulationState.box_), topology_(simulationState.topology_)
 {
-    coord_ = simulationState.coord_;
-    vel_   = simulationState.vel_;
+    coordinates_ = simulationState.coordinates_;
+    velocities_   = simulationState.velocities_;
 }
 
 SimulationState &SimulationState::operator=(const SimulationState &simulationState)
 {
-    coord_ = simulationState.coord_;
-    vel_   = simulationState.vel_;
+    coordinates_ = simulationState.coordinates_;
+    velocities_   = simulationState.velocities_;
     box_   = simulationState.box_;
-    topo_  = simulationState.topo_;
+    topology_  = simulationState.topology_;
 
     return *this;
 }
 
 SimulationState::SimulationState(SimulationState &&simulationState) noexcept
-    : box_(simulationState.box_), topo_(std::move(simulationState.topo_))
+    : box_(simulationState.box_), topology_(std::move(simulationState.topology_))
 {
-    coord_ = std::move(simulationState.coord_);
-    vel_   = std::move(simulationState.vel_);
+    coordinates_ = std::move(simulationState.coordinates_);
+    velocities_   = std::move(simulationState.velocities_);
 }
 
 SimulationState& SimulationState::operator=(nblib::SimulationState &&simulationState) noexcept
 {
-    coord_ = std::move(simulationState.coord_);
-    vel_   = std::move(simulationState.vel_);
+    coordinates_ = std::move(simulationState.coordinates_);
+    velocities_   = std::move(simulationState.velocities_);
     box_   = simulationState.box_;
-    topo_  = std::move(simulationState.topo_);
+    topology_  = std::move(simulationState.topology_);
 
     return *this;
 }
+
+Topology& SimulationState::topology() const
+{
+    return topology_;
+}
+
+Box& SimulationState::box() const
+{
+    return box_;
+}
+
+std::vector<gmx::RVec>& SimulationState::coordinats() const
+{
+    return coordinates_;
+}
+
+std::vector<gmx::RVec>& SimulationState::velocities() const
+{
+    return velocities_;
+}
+
 
 } // namespace nblib
