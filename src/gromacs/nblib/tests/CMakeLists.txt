@@ -32,11 +32,36 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-gmx_add_unit_test(GmxNBLibTests nblib
+#gmx_add_unit_test_library(nblib_test_infrastructure
+#    )
+
+set(testname "NbLibSetupTests")
+set(exename "nblib-setup-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # files with code for tests
     atoms.cpp
     box.cpp
-    #nblib.cpp
-    simstate.cpp
     util.cpp
     topology.cpp
+    # pseudo-library for code for mdrun
+    #$<TARGET_OBJECTS:nblib_objlib>
     )
+#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)
+
+
+set(testname "NbLibTests")
+set(exename "nblib-test")
+
+gmx_add_gtest_executable(
+    ${exename}
+    # files with code for tests
+    #nblib.cpp
+    simstate.cpp
+    # pseudo-library for code for mdrun
+    #$<TARGET_OBJECTS:nblib_objlib>
+    )
+#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)
