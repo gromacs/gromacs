@@ -28,6 +28,13 @@ public:
 
     const std::vector<int>& getAtomInfoAllVdw() const;
 
+    // TODO: This function is only needed for testing. Need
+    //       another way for testing exclusion correctness
+    const t_blocka& getGMXexclusions() const
+    {
+        return excls;
+    }
+
 private:
     Topology() = default;
 
