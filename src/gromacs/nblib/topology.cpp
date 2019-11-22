@@ -29,7 +29,7 @@ t_blocka TopologyBuilder::fillExclusionsList()
 
     for (auto &molNumberTuple : moleculesList)
     {
-        MoleculeType& molecule = std::get<0>(molNumberTuple);
+        Molecule& molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
         std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
@@ -87,7 +87,7 @@ Topology TopologyBuilder::buildTopology()
     return topology_;
 }
 
-TopologyBuilder& TopologyBuilder::addMolecule(const MoleculeType molecule, const int nMolecules)
+TopologyBuilder& TopologyBuilder::addMolecule(const Molecule molecule, const int nMolecules)
 {
     /*!
      * 1. Push-back a tuple of molecule type and nMolecules

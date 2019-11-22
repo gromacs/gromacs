@@ -59,7 +59,7 @@ TEST(NBlibTest, fillExclusions)
     //! 2. Define Molecules
 
     //! 2.1 Water
-    MoleculeType water("water");
+    Molecule water("water");
 
     water.addAtom("Oxygen", Ow);
     water.addAtom("H1", Hw);

@@ -53,13 +53,13 @@ public:
 
     Topology buildTopology();
 
-    TopologyBuilder& addMolecule(MoleculeType moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
 
 private:
     Topology topology_;
 
     int numAtoms_;
-    std::vector<std::tuple<MoleculeType, int>> molecules_;
+    std::vector<std::tuple<Molecule, int>> molecules_;
 
     t_blocka fillExclusionsList();
 

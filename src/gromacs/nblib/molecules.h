@@ -20,13 +20,13 @@ class TopologyBuilder;
 namespace nblib
 {
 
-class MoleculeType {
+class Molecule {
 public:
-    MoleculeType(std::string moleculeName);
+    Molecule(std::string moleculeName);
 
-    MoleculeType& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
+    Molecule& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
 
-    MoleculeType& addAtom(const std::string &atomName, AtomType const &atomType);
+    Molecule& addAtom(const std::string &atomName, AtomType const &atomType);
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
