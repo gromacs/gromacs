@@ -44,7 +44,7 @@
 #include "gmxpre.h"
 
 #include "gromacs/nblib/box.h"
-#include "gromacs/nblib/setup.h"
+#include "gromacs/nblib/nbkerneloptions.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/simulationstate.h"
