@@ -42,9 +42,10 @@ gmx_add_gtest_executable(
     ${exename}
     # files with code for tests
     atoms.cpp
+    molecules.cpp
     box.cpp
     util.cpp
-    topology.cpp
+    #topology.cpp
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )
