@@ -86,7 +86,7 @@ std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 
     for (auto &molNumberTuple : moleculesList)
     {
-        MoleculeType &molecule = std::get<0>(molNumberTuple);
+        Molecule &molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
         for (size_t i = 0; i < numMols; ++i)
