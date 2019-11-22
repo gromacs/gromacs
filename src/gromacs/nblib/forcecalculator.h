@@ -45,7 +45,7 @@
 #include "gromacs/timing/cyclecounter.h"
 
 #include "nbkernelsystem.h"
-#include "setup.h"
+#include "nbkerneloptions.h"
 #include "nbkerneldef.h"
 
 namespace nblib {
@@ -54,6 +54,7 @@ class ForceCalculator
 {
 public:
 
+    // TODO: Depend on simulationState
     ForceCalculator(NBKernelSystem          &system,
                     const NBKernelOptions   &options);
 

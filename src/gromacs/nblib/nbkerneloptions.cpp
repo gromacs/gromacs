@@ -44,7 +44,7 @@
 
 #include "gmxpre.h"
 
-#include "setup.h"
+#include "nbkerneloptions.h"
 // #include "integrator.h"
 // #include "forcecalculator.h"
 

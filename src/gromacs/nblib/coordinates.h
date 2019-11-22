@@ -43,7 +43,7 @@
 #define GROMACS_COORDINATES_H
 
 
-#include "setup.h"
+#include "nbkerneloptions.h"
 
 #include "coords.h"
 
