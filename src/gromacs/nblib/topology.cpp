@@ -2,8 +2,7 @@
 // Created by sebkelle on 19.11.19.
 //
 
-#include <vector>
-#include <array>
+#include <numeric>
 
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
@@ -15,6 +14,9 @@
 
 namespace nblib {
 
+TopologyBuilder::TopologyBuilder() : numAtoms_(0)
+{}
+
 t_blocka TopologyBuilder::createExclusionsList() const
 {
     const auto &moleculesList = molecules_;
@@ -25,14 +27,25 @@ t_blocka TopologyBuilder::createExclusionsList() const
     //! compare tuples by comparing the first element
     auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
 
+    size_t atomNumberOffset = 0;
     for (const auto &molNumberTuple : moleculesList)
     {
         const Molecule& molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
         std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
+
         //! sorted (by first tuple element as key) list of exclusion pairs
         std::sort(std::begin(exclusionList), std::end(exclusionList), firstLowerThan);
+
+        //! remove duplicates
+        auto unique_end = std::unique(std::begin(exclusionList), std::end(exclusionList));
+        if (unique_end != std::end(exclusionList))
+            printf("[nblib] Warning: exclusionList of molecule \"%s\" contained duplicates",
+                    molecule.name_.c_str());
+
+        exclusionList.erase(unique_end, std::end(exclusionList));
+
         std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule;
 
         //! initialize pair of iterators delimiting the range of exclusions for
@@ -63,14 +76,33 @@ t_blocka TopologyBuilder::createExclusionsList() const
         //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
         for (size_t i = 0; i < numMols; ++i)
         {
-            std::copy(std::begin(exclusionBlockPerMolecule), std::end(exclusionBlockPerMolecule),
-                      std::back_inserter(exclusionBlockGlobal));
+            auto shiftedExclusions = exclusionBlockPerMolecule;
+            //! shift atom numbers by atomNumberOffset
+            for (auto& localBlock : shiftedExclusions)
+            {
+                std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
+                               std::begin(localBlock.atomNumber),
+                               [atomNumberOffset](auto i){ return i + atomNumberOffset; });
+            }
+
+            std::copy(std::begin(shiftedExclusions), std::end(shiftedExclusions),
+                           std::back_inserter(exclusionBlockGlobal));
+
+            atomNumberOffset += molecule.numAtomsInMolecule();
         }
     }
+
+    size_t numberOfExclusions = std::accumulate(std::begin(exclusionBlockGlobal),
+                                                std::end(exclusionBlockGlobal), size_t(0),
+                                                [](size_t acc, const auto &block)
+                                                { return acc + block.atomNumber.size();});
 
     //! At the very end, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
     t_blocka tBlockGlobal;
+    snew(tBlockGlobal.index, numberOfExclusions + 1);
+    snew(tBlockGlobal.a, numberOfExclusions + 1);
+
     gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
 
     return tBlockGlobal;
