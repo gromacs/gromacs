@@ -83,3 +83,12 @@ is unchanged. Existing parsers that conform to the documentation
 and expect whitespace separation will continue to work in all cases.
 
 :issue:`3176`
+
+Fix duplicate PDB CONECT record output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PDB "CONECT" record output was duplicated in some instances. Since |Gromacs| does
+not use these anywhere, analysis was not affected. The behavior is now fixed.
+
+:issue:`3206`
+
