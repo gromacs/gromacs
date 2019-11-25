@@ -61,6 +61,17 @@ about missing interactions.
 
 :issue:`3204`
 
+Fix issues with AWH with pull-geometry 'direction' to be periodic
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed fatal error with AWH with periodic pull-geometry 'direction'
+when the distance was within 2% of half the box size.
+Changed an assertion failure when the AWH interval was larger than
+the box size to a fatal error.
+Clarified the documentation for pull geometry 'direction-periodic'.
+
+:issue:`2946`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 

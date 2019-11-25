@@ -578,8 +578,12 @@ static double get_pull_coord_period(const t_pull_coord &pullCoordParams,
             if (innerProduct >= (1 - margin)*boxLength &&
                 innerProduct <= (1 + margin)*boxLength)
             {
-                GMX_RELEASE_ASSERT(intervalLength < (1 + margin)*boxLength,
-                                   "We have checked before that interval <= period");
+                if (intervalLength > (1 + margin)*boxLength)
+                {
+                    gmx_fatal(FARGS, "The AWH interval (%f nm) for a pull coordinate is larger than the box size (%f nm)",
+                              intervalLength, boxLength);
+                }
+
                 if (intervalLength > periodicFraction*boxLength)
                 {
                     period = boxLength;

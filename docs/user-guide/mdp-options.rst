@@ -1767,10 +1767,13 @@ pull-coord2-vec, pull-coord2-k, and so on.
 
    .. mdp-value:: direction-periodic
 
-      As :mdp-value:`pull-coord1-geometry=direction`, but allows the distance to be larger
-      than half the box size. With this geometry the box should not be
+      As :mdp-value:`pull-coord1-geometry=direction`, but does not apply
+      periodic box vector corrections to keep the distance within half
+      the box length. This is (only) useful for pushing groups apart
+      by more than half the box length by continuously changing the reference
+      location using a pull rate. With this geometry the box should not be
       dynamic (*e.g.* no pressure scaling) in the pull dimensions and
-      the pull force is not added to virial.
+      the pull force is not added to the virial.
 
    .. mdp-value:: direction-relative
 
