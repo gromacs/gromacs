@@ -56,7 +56,7 @@ private:
 
 class TopologyBuilder {
 public:
-    TopologyBuilder() = default;
+    TopologyBuilder();
 
     Topology buildTopology();
 
