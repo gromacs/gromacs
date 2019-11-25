@@ -62,6 +62,7 @@ namespace nblib
 class SimulationState
 {
 public:
+
     // Constructor
     SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
              const std::vector<gmx::RVec> &vel = {});
