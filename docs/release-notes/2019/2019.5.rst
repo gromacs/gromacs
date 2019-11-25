@@ -96,6 +96,16 @@ when close to the -180 or 180 degree boundary.
 :issue:`3225`
 
 
+Remove problematic output of gmx angle tool
+"""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that the calculation of the standard deviation
+for angles caused a divide by zero error for empty populations.
+Because this standard deviation was meaningless, it has been
+removed.
+
+:issue:`3206`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

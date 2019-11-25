@@ -165,11 +165,11 @@ int gmx_g_angle(int argc, char *argv[])
                        bFrac,               /* calculate fraction too?  */
                        bTrans,              /* worry about transtions too? */
                        bCorr;               /* correlation function ? */
-    double            tfrac = 0;
-    char              title[256];
-    real            **dih = nullptr; /* mega array with all dih. angles at all times*/
-    real             *time, *trans_frac, *aver_angle;
-    t_filenm          fnm[] = {
+    double             tfrac = 0;
+    char               title[256];
+    real             **dih = nullptr; /* mega array with all dih. angles at all times*/
+    real              *time, *trans_frac, *aver_angle;
+    t_filenm           fnm[] = {
         { efTRX, "-f", nullptr,  ffREAD  },
         { efNDX, nullptr, "angle",  ffREAD  },
         { efXVG, "-od", "angdist",  ffWRITE },
@@ -181,9 +181,9 @@ int gmx_g_angle(int argc, char *argv[])
         { efTRR, "-or", nullptr,       ffOPTWR }
     };
 #define NFILE asize(fnm)
-    int               npargs;
-    t_pargs          *ppa;
-    gmx_output_env_t *oenv;
+    int                npargs;
+    t_pargs           *ppa;
+    gmx_output_env_t  *oenv;
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
@@ -412,7 +412,6 @@ int gmx_g_angle(int argc, char *argv[])
     }
 
     double aver  = 0;
-    double aver2 = 0;
     printf("Found points in the range from %d to %d (max %d)\n",
            first, last, maxangstat);
     if (bTrans || bCorr  || bALL || opt2bSet("-or", NFILE, fnm))
@@ -429,10 +428,8 @@ int gmx_g_angle(int argc, char *argv[])
             {
                 delta  = correctRadianAngleRange(dih[j][i] - b);
                 b     += delta;
-                aver2 += gmx::square(b);
             }
         }
-        aver2 /= nangles;
     }
     else
     {   /* Incorrect  for Std. Dev. */
@@ -442,24 +439,13 @@ int gmx_g_angle(int argc, char *argv[])
             delta   = correctRadianAngleRange(aver_angle[i] - b_aver);
             b_aver += delta;
             aver   += b_aver;
-            aver2  += gmx::square(b_aver);
         }
     }
     aver  /= nframes;
-    aver2 /= nframes/(RAD2DEG * RAD2DEG);
     double aversig = correctRadianAngleRange(aver);
     aversig *= RAD2DEG;
     aver    *= RAD2DEG;
     printf(" < angle >  = %g\n", aversig);
-    printf("< angle^2 > = %g\n", aver2);
-    if ((aversig = aver2-gmx::square(aver)) > 0)
-    {
-        printf("Std. Dev.   = %g\n", std::sqrt(aversig));
-    }
-    else
-    {
-        printf("Std. Dev. - can't be calculated\n");
-    }
 
     if (mult == 3)
     {
