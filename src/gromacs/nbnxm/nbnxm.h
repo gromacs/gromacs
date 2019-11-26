@@ -350,9 +350,6 @@ public:
      */
     void atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* localReductionDone);
 
-    /*! \brief Wait for non-local copy of coordinate buffer from device to host */
-    void wait_nonlocal_x_copy_D2H_done();
-
     /*! \brief return GPU pointer to f in rvec format */
     void* get_gpu_frvec();
 

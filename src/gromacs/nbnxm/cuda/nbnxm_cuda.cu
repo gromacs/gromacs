@@ -945,11 +945,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     }
 }
 
-void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t* nb)
-{
-    nb->xNonLocalCopyD2HDone->waitForEvent();
-}
-
 void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_cuda_t* nb)
 {
     cudaStream_t localStream    = nb->stream[InteractionLocality::Local];
