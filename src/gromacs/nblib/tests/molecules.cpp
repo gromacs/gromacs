@@ -40,6 +40,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  */
 
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/molecules.h"
 
 #include "testutils/testasserts.h"
@@ -55,9 +56,9 @@ Molecule generateWaterMolecule()
     //! Manually Create Molecule (Water)
 
     //! 1. Define Atom Type
-    Atom Ow("Ow", 16, -0.6, 1., 1.);
-    Atom Hw("Hw", 1, +0.3, 1., 1.);
-    Atom Ar("Ar", 40, 0., 1., 1.);
+    AtomType Ow("Ow", 16, -0.6, 1., 1.);
+    AtomType Hw("Hw", 1, +0.3, 1., 1.);
+    AtomType Ar("Ar", 40, 0., 1., 1.);
 
     //! 2. Define Molecule
 
