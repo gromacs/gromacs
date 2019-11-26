@@ -8,6 +8,7 @@
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
+#include "atomtype.h"
 #include "topology.h"
 
 #include "gromacs/topology/exclusionblocks.h"
@@ -96,7 +97,7 @@ std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
             {
                 std::string atomTypeName = std::get<1>(atomTuple);
 
-                Atom &atomType = molecule.atomTypes_[atomTypeName];
+                AtomType &atomType = molecule.atomTypes_[atomTypeName];
                 ret.push_back(extractor(atomType));
             }
         }
@@ -108,8 +109,8 @@ std::vector<real> TopologyBuilder::extractQuantity(Extractor extractor)
 Topology TopologyBuilder::buildTopology()
 {
     topology_.excls = createExclusionsList();
-    topology_.masses = extractQuantity([](const Atom &atomType){ return atomType.mass(); });
-    topology_.charges = extractQuantity([](const Atom &atomType){ return atomType.charge(); });
+    topology_.masses = extractQuantity([](const AtomType &atomType){ return atomType.mass(); });
+    topology_.charges = extractQuantity([](const AtomType &atomType){ return atomType.charge(); });
 
     return topology_;
 }
