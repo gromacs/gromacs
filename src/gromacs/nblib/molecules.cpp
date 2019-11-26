@@ -31,12 +31,12 @@ void Molecule::addAtomSelfExclusion(std::string atomName, std::string resName)
     }
 }
 
-Molecule& Molecule::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, const Charge& charge, AtomType const &atomType)
 {
-    // check whether we already have the atom type
-    if (!atomTypes_.count(atomType.name()))
+    // this check can only ensure that we don't use the same atomName twice, not that an (AtomType, charge) pair is not repeated
+    if (!atomTypes_.count(atomName))
     {
-        atomTypes_[atomName] = atomType;
+        atomTypes_[atomName] = std::make_tuple(atomType, charge);
     }
 
     atoms_.emplace_back(std::make_tuple(atomName, residueName));
@@ -45,9 +45,25 @@ Molecule& Molecule::addAtom(const std::string &atomName, const std::string &resi
     return *this;
 }
 
-Molecule& Molecule::addAtom(const std::string &atomName, AtomType const &atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const &atomType)
 {
-    addAtom(atomName, name_, atomType);
+    real charge = 0;
+    addAtom(atomName, residueName, charge, atomType);
+
+    return *this;
+}
+
+Molecule& Molecule::addAtom(const AtomName& atomName, const Charge& charge, AtomType const &atomType)
+{
+    addAtom(atomName, name_, charge, atomType);
+
+    return *this;
+}
+
+Molecule& Molecule::addAtom(const AtomName& atomName, const AtomType& atomType)
+{
+    real charge = 0;
+    addAtom(atomName, name_, charge, atomType);
 
     return *this;
 }

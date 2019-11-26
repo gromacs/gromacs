@@ -20,13 +20,21 @@ class TopologyBuilder;
 namespace nblib
 {
 
+using AtomName = std::string;
+using Charge = real;
+using ResidueName = std::string;
+
 class Molecule {
 public:
     Molecule(std::string moleculeName);
 
-    Molecule& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, const Charge& charge, AtomType const &atomType);
 
-    Molecule& addAtom(const std::string &atomName, AtomType const &atomType);
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const &atomType);
+
+    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const &atomType);
+
+    Molecule& addAtom(const AtomName& atomName, AtomType const &atomType);
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
@@ -46,8 +54,9 @@ private:
 
     //! one entry per atom in molecule
     std::vector<std::tuple<std::string, std::string>> atoms_;
+
     //! collection of distinct Atoms in molecule
-    std::unordered_map<std::string, AtomType> atomTypes_;
+    std::unordered_map<std::string, std::tuple<AtomType, real>> atomTypes_;
 
     std::vector<std::tuple<int, int>> exclusions_;
 

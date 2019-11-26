@@ -71,7 +71,9 @@ private:
     t_blocka createExclusionsList() const;
 
     template <class Extractor>
-    std::vector<real> extractQuantity(Extractor extractor);
+    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+
+    std::vector<real> extractCharge();
 };
 
 } // namespace nblib

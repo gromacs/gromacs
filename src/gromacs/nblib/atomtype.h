@@ -24,15 +24,12 @@ public:
 
     AtomType(std::string atomName,
              real mass,
-             real charge,
              real c6,
              real c12);
 
     std::string name() const;
 
     real mass() const;
-
-    real charge() const;
 
     real c6() const;
 
@@ -41,7 +38,6 @@ public:
 private:
     std::string name_;
     real mass_;
-    real charge_;
     real c6_;
     real c12_;
 };
