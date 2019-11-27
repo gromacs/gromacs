@@ -36,8 +36,10 @@
  * \brief
  * This implements basic nblib tests
  *
- * \author Joe Jordan <ejjordan@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
+ * \author Joe Jordan <ejjordan@kth.se>
+ * \author Prashanth Kanduri <kanduri@cscs.ch>
+ * \author Sebastian Keller <keller@cscs.ch>
  */
 #include "gmxpre.h"
 
