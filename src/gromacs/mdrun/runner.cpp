@@ -196,12 +196,12 @@ struct DevelopmentFeatureFlags
  *
  * \param[in]  mdlog                Logger object.
  * \param[in]  useGpuForNonbonded   True if the nonbonded task is offloaded in this run.
- * \param[in]  useGpuForPme         True if the PME task is offloaded in this run.
+ * \param[in]  pmeRunMode           The PME run mode for this run
  * \returns                         The object populated with development feature flags.
  */
 static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& mdlog,
                                                          const bool           useGpuForNonbonded,
-                                                         const bool           useGpuForPme)
+                                                         const PmeRunMode     pmeRunMode)
 {
     DevelopmentFeatureFlags devFlags;
 
@@ -266,7 +266,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 
     if (devFlags.enableGpuPmePPComm)
     {
-        if (useGpuForPme)
+        if (pmeRunMode == PmeRunMode::GPU)
         {
             GMX_LOG(mdlog.warning)
                     .asParagraph()
@@ -276,12 +276,23 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         }
         else
         {
+            std::string clarification;
+            if (pmeRunMode == PmeRunMode::Mixed)
+            {
+                clarification =
+                        "PME FFT and gather are not offloaded to the GPU (PME is running in mixed "
+                        "mode).";
+            }
+            else
+            {
+                clarification = "PME is not offloaded to the GPU.";
+            }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
-                    .appendTextFormatted(
+                    .appendText(
                             "NOTE: GMX_GPU_PME_PP_COMMS environment variable detected, but the "
-                            "'GPU PME-PP communications' feature was not enabled as PME is not "
-                            "offloaded to the GPU.");
+                            "'GPU PME-PP communications' feature was not enabled as "
+                            + clarification);
             devFlags.enableGpuPmePPComm = false;
         }
     }
@@ -889,7 +900,7 @@ int Mdrunner::mdrunner()
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
     const DevelopmentFeatureFlags devFlags =
-            manageDevelopmentFeatures(mdlog, useGpuForNonbonded, useGpuForPme);
+            manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
     // NOTE: The devFlags need decideWhetherToUseGpusForNonbonded(...) and decideWhetherToUseGpusForPme(...) for overrides,
     //       decideWhetherToUseGpuForUpdate() needs devFlags for the '-update auto' override, hence the interleaving.
