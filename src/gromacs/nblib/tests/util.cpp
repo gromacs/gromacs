@@ -41,9 +41,12 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <vector>
+#include "gmxpre.h"
 
 #include "gromacs/nblib/util.h"
+
+#include <vector>
+
 #include "gromacs/math/vectypes.h"
 
 #include "testutils/testasserts.h"

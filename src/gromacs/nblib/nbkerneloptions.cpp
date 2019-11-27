@@ -31,6 +31,10 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib kernel setup options
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -38,12 +42,9 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #include "gmxpre.h"
 
 #include "nbkerneloptions.h"
-// #include "integrator.h"
-// #include "forcecalculator.h"
 
 #include "gromacs/compat/optional.h"
 #include "gromacs/ewald/ewald_utils.h"
@@ -66,13 +67,11 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/simd/simd.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
-
 
 namespace nblib {
 

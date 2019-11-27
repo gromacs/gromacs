@@ -31,12 +31,17 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib coordinate generation
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include "coordinates.h"
 
