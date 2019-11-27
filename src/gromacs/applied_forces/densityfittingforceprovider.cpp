@@ -102,12 +102,13 @@ public:
     ~Impl();
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput);
-
-    DensityFittingForceProviderState state();
+    const DensityFittingForceProviderState& stateToCheckpoint();
 
 private:
+    DensityFittingForceProviderState state();
     const DensityFittingParameters&  parameters_;
     DensityFittingForceProviderState state_;
+    DensityFittingForceProviderState stateToCheckpoint_;
     LocalAtomSet                     localAtomSet_;
 
     GaussianSpreadKernelParameters::Shape spreadKernel_;
@@ -176,6 +177,8 @@ DensityFittingForceProvider::Impl::Impl(const DensityFittingParameters&         
 void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput& forceProviderInput,
                                                         ForceProviderOutput* forceProviderOutput)
 {
+    // TODO change if checkpointing moves to the start of the md loop
+    stateToCheckpoint_ = state();
     // do nothing but count number of steps when not in density fitting step
     if (state_.stepsSinceLastCalculation_ % parameters_.calculationIntervalInSteps_ != 0)
     {
@@ -298,6 +301,10 @@ DensityFittingForceProviderState DensityFittingForceProvider::Impl::state()
     return state_;
 }
 
+const DensityFittingForceProviderState& DensityFittingForceProvider::Impl::stateToCheckpoint()
+{
+    return stateToCheckpoint_;
+}
 /********************************************************************
  * DensityFittingForceProvider
  */
@@ -321,9 +328,9 @@ void DensityFittingForceProvider::calculateForces(const ForceProviderInput& forc
     impl_->calculateForces(forceProviderInput, forceProviderOutput);
 }
 
-DensityFittingForceProviderState DensityFittingForceProvider::state()
+const DensityFittingForceProviderState& DensityFittingForceProvider::stateToCheckpoint()
 {
-    return impl_->state();
+    return impl_->stateToCheckpoint();
 }
 
 } // namespace gmx

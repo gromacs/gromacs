@@ -127,6 +127,10 @@ public:
     const std::string mdpEnergyAndDensityfittingIntervalMismatch_ = formatString(
             "nstcalcenergy = 7\n"
             "density-guided-simulation-nst = 3\n");
+    //! Set mdp values so that we skip every other step
+    const std::string mdpSkipDensityfittingEveryOtherStep_ = formatString(
+            "nstenergy = 2\n"
+            "density-guided-simulation-nst = 2\n");
     //! The command line to call mdrun
     CommandLine commandLineForMdrun_;
 };
@@ -170,6 +174,34 @@ TEST_F(DensityFittingTest, GromppErrorWhenEnergyEvaluationFrequencyMismatch)
     EXPECT_DEATH_IF_SUPPORTED(runner_.callGrompp(),
                               ".*is not a multiple of density-guided-simulation-nst.*");
 }
+
+/* Fit a subset of three of twelve argon atoms into a reference density
+ * whose origin is offset from the simulation box origin. Stop the simulation,
+ * then restart.
+ *
+ * All density fitting mdp parameters are set to defaults
+ */
+TEST_F(DensityFittingTest, CheckpointWorks)
+{
+    runner_.useStringAsMdpFile(mdpMdDensfitYesUnsetValues + mdpSkipDensityfittingEveryOtherStep_);
+    runner_.cptFileName_ = fileManager_.getTemporaryFilePath(".cpt");
+    commandLineForMdrun_.addOption("-cpo", runner_.cptFileName_);
+
+    ASSERT_EQ(0, runner_.callGrompp());
+    ASSERT_EQ(0, runner_.callMdrun(commandLineForMdrun_));
+
+    // checkMdrun(expectedEnergyTermMagnitude);
+
+    CommandLine commandLineForRestart;
+    commandLineForRestart.addOption("-cpi", runner_.cptFileName_);
+    commandLineForRestart.addOption("-noappend");
+    runner_.nsteps_ = 4;
+    ASSERT_EQ(0, runner_.callMdrun(commandLineForRestart));
+
+    const real expectedEnergyTermMagnitude = -3378.825928;
+    checkMdrun(expectedEnergyTermMagnitude);
+}
+
 
 } // namespace test
 } // namespace gmx
