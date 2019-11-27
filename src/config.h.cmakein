@@ -168,6 +168,9 @@
 /* Use the Portable Hardware Locality package (hwloc) */
 #cmakedefine01 GMX_USE_HWLOC
 
+/* Library version found for hwloc during configuration time */
+#define GMX_HWLOC_API_VERSION @GMX_HWLOC_API_VERSION@
+
 /* Can and should use nice(3) to set priority */
 #cmakedefine01 GMX_USE_NICE
 
