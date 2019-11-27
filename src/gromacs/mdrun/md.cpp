@@ -1235,7 +1235,8 @@ void gmx::LegacySimulator::do_md()
          * energies of two subsequent steps. Therefore we need to compute the
          * half step kinetic energy also if we need energies at the next step.
          */
-        const bool needHalfStepKineticEnergy = (!EI_VV(ir->eI) && do_per_step(step + 1, nstglobalcomm));
+        const bool needHalfStepKineticEnergy =
+                (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
 
         if (useGpuForUpdate)
         {
@@ -1372,13 +1373,7 @@ void gmx::LegacySimulator::do_md()
             // and when algorithms require it.
             const bool doInterSimSignal = (simulationsShareState && do_per_step(step, nstSignalComm));
 
-            // With leap-frog we also need to compute the half-step
-            // kinetic energy at the step before we need to write
-            // the full-step kinetic energy
-            const bool needEkinAtNextStep =
-                    (!EI_VV(ir->eI) && (do_per_step(step + 1, nstglobalcomm) || step_rel + 1 == ir->nsteps));
-
-            if (bGStat || needEkinAtNextStep || doInterSimSignal)
+            if (bGStat || needHalfStepKineticEnergy || doInterSimSignal)
             {
                 // Copy coordinates when needed to stop the CM motion.
                 if (useGpuForUpdate && !EI_VV(ir->eI) && bStopCM)
