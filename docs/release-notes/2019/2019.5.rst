@@ -90,6 +90,15 @@ which was not clear for users.
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Check that libhwloc headers and runtime match
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that the libhwloc headers and library detection would
+lead to a mismatch at compile or runtime that could cause cryptic
+crashes while using mdrun.
+
+:issue:`3200`
+
 Miscellaneous
 ^^^^^^^^^^^^^
 

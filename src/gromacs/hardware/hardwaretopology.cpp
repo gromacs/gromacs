@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -161,11 +161,17 @@ parseCpuInfo(HardwareTopology::Machine *        machine,
 #endif
 
 // Preprocessor variable for if hwloc api is version 1.x.x or 2.x.x
-#if HWLOC_API_VERSION >= 0x00020000
-#    define GMX_HWLOC_API_VERSION_IS_2XX 1
-#else
-#    define GMX_HWLOC_API_VERSION_IS_2XX 0
-#endif
+#    if HWLOC_API_VERSION >= 0x00020000
+#        define GMX_HWLOC_API_VERSION_IS_2XX 1
+#        if GMX_HWLOC_API_VERSION < 0x00020000
+#            error "HWLOC library major version set during configuration is 1, but currently using version 2 headers"
+#        endif
+#    else
+#        define GMX_HWLOC_API_VERSION_IS_2XX 0
+#        if GMX_HWLOC_API_VERSION >= 0x00020000
+#            error "HWLOC library major version set during configuration is 2, but currently using version 1 headers"
+#        endif
+#    endif
 
 /*****************************************************************************
  *                                                                           *
@@ -607,9 +613,15 @@ parseHwLoc(HardwareTopology::Machine *        machine,
     }
 
     // Flags to look for io devices
-#if GMX_HWLOC_API_VERSION_IS_2XX
+#    if GMX_HWLOC_API_VERSION_IS_2XX
+    GMX_RELEASE_ASSERT(
+            (hwloc_get_api_version() >= 0x20000),
+            "Mismatch between hwloc headers and library, using v2 headers with v1 library");
     hwloc_topology_set_io_types_filter(topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
-#else
+#    else
+    GMX_RELEASE_ASSERT(
+            (hwloc_get_api_version() < 0x20000),
+            "Mismatch between hwloc headers and library, using v1 headers with v2 library");
     hwloc_topology_set_flags(topo, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
 #endif
 
