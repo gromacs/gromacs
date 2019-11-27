@@ -42,23 +42,24 @@
 #define GROMACS_BOX_H
 
 #include <array>
-#include "gromacs/math/vectypes.h"
+
+#include "gromacs/math/matrix.h"
 
 namespace nblib
 {
 
 class Box {
 public:
-    using data_type = std::array<std::array<real, DIM>, DIM>;
+    using Matrix = gmx::Matrix3x3;
 
     Box(real l);
 
     Box(real x, real y, real z);
 
-    data_type matrix();
+    Matrix matrix();
 
 private:
-    data_type box_;
+    Matrix box_;
 };
 
 } // namespace nblib
