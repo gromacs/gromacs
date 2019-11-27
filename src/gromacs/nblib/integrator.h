@@ -31,22 +31,25 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib integrator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_INTEGRATOR_H
 #define GROMACS_INTEGRATOR_H
 
 #include <vector>
 
-#include "nbkerneloptions.h"
-
 #include "gromacs/math/vectypes.h"
 #include "gromacs/nbnxm/nbnxm.h"
+
+#include "nbkerneloptions.h"
 
 namespace nblib {
 

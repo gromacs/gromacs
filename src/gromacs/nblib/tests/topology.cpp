@@ -41,6 +41,7 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include "gromacs/nblib/topology.h"
 

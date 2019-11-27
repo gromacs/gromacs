@@ -31,26 +31,29 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib Molecule
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_MOLECULES_H
 #define GROMACS_MOLECULES_H
 
+#include <string>
 #include <tuple>
 #include <unordered_map>
-#include <string>
 #include <vector>
-
-#include "interactions.h"
 
 #include "gromacs/math/vectypes.h"
 
-class AtomType;
+#include "atoms.h"
+#include "interactions.h"
+
 class TopologyBuilder;
 
 namespace nblib

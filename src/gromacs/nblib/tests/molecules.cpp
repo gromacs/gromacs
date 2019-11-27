@@ -32,7 +32,6 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
 /*! \internal \file
  * \brief
  * This implements molecule setup tests
@@ -42,13 +41,14 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/molecules.h"
 
-#include "testutils/testasserts.h"
-
 #include <iostream>
+
+#include "testutils/testasserts.h"
 
 namespace nblib {
 namespace test {
