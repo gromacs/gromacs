@@ -140,7 +140,7 @@ t_blocka TopologyBuilder::createExclusionsList() const
     //! At the very end, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
     t_blocka tBlockGlobal;
-    snew(tBlockGlobal.index, numberOfExclusions + 1);
+    snew(tBlockGlobal.index, numAtoms_ + 1);
     snew(tBlockGlobal.a, numberOfExclusions + 1);
 
     gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
