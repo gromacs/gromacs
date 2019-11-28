@@ -205,21 +205,28 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
 
 /*! \brief Select templated kernel.
  *
- * Returns pointer to a CUDA kernel based on the number of temperature coupling groups.
- * If zero is passed as an argument, it is assumed that no temperature coupling groups are used.
+ * Returns pointer to a CUDA kernel based on the number of temperature coupling groups and
+ * whether or not the temperature and(or) pressure coupling is enabled.
  *
- * \param[in]  numTempScaleValues     Number of temperature coupling groups in the system
- * \param[in]  prVelocityScalingType  Type of the Parrinello-Rahman velocity scaling
+ * \param[in]  doTemperatureScaling   If the kernel with temperature coupling velocity scaling
+ *                                    should be selected.
+ * \param[in]  numTempScaleValues     Number of temperature coupling groups in the system.
+ * \param[in]  prVelocityScalingType  Type of the Parrinello-Rahman velocity scaling.
  *
  * \retrun                         Pointer to CUDA kernel
  */
-inline auto selectLeapFrogKernelPtr(int numTempScaleValues, VelocityScalingType prVelocityScalingType)
+inline auto selectLeapFrogKernelPtr(bool                doTemperatureScaling,
+                                    int                 numTempScaleValues,
+                                    VelocityScalingType prVelocityScalingType)
 {
+    // Check input for consistency: if there is temperature coupling, at least one coupling group should be defined.
+    GMX_ASSERT(!doTemperatureScaling || (numTempScaleValues > 0),
+               "Temperature coupling was requested with no temperature coupling groups.");
     auto kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
 
     if (prVelocityScalingType == VelocityScalingType::None)
     {
-        if (numTempScaleValues == 0)
+        if (!doTemperatureScaling)
         {
             kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::None>;
         }
@@ -231,16 +238,10 @@ inline auto selectLeapFrogKernelPtr(int numTempScaleValues, VelocityScalingType 
         {
             kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, VelocityScalingType::None>;
         }
-        else
-        {
-            GMX_RELEASE_ASSERT(false,
-                               "Number of temperature coupling groups should be greater than zero "
-                               "(zero for no coupling).");
-        }
     }
     else if (prVelocityScalingType == VelocityScalingType::Diagonal)
     {
-        if (numTempScaleValues == 0)
+        if (!doTemperatureScaling)
         {
             kernelPtr = leapfrog_kernel<NumTempScaleValues::None, VelocityScalingType::Diagonal>;
         }
@@ -251,12 +252,6 @@ inline auto selectLeapFrogKernelPtr(int numTempScaleValues, VelocityScalingType 
         else if (numTempScaleValues > 1)
         {
             kernelPtr = leapfrog_kernel<NumTempScaleValues::Multiple, VelocityScalingType::Diagonal>;
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(false,
-                               "Number of temperature coupling groups should be greater than zero "
-                               "(zero for no coupling).");
         }
     }
     else
@@ -312,8 +307,7 @@ void LeapFrogCuda::integrate(const float3*                     d_x,
                                 dtPressureCouple * prVelocityScalingMatrix[YY][YY],
                                 dtPressureCouple * prVelocityScalingMatrix[ZZ][ZZ]);
         }
-        kernelPtr = selectLeapFrogKernelPtr(doTemperatureScaling ? numTempScaleValues_ : 0,
-                                            prVelocityScalingType);
+        kernelPtr = selectLeapFrogKernelPtr(doTemperatureScaling, numTempScaleValues_, prVelocityScalingType);
     }
 
     const auto kernelArgs = prepareGpuKernelArguments(
