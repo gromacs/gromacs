@@ -310,7 +310,7 @@ void LeapFrogCuda::integrate(const float3*                     d_x,
                                 dtPressureCouple * velocityScalingMatrix[YY][YY],
                                 dtPressureCouple * velocityScalingMatrix[ZZ][ZZ]);
         }
-        kernelPtr = selectLeapFrogKernelPtr(numTempScaleValues_, velocityScaling);
+        kernelPtr = selectLeapFrogKernelPtr(doTempCouple ? numTempScaleValues_ : 0, velocityScaling);
     }
 
     const auto kernelArgs = prepareGpuKernelArguments(
