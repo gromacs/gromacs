@@ -875,7 +875,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
-/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format.
+ *
+ * NOTE: When the total force device buffer is reallocated and its size increases, it is cleared in
+ *       Local stream. Hence, if accumulateForce is true, NonLocal stream should start accumulating
+ *       forces only after Local stream already done so.
+ */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
                                DeviceBuffer<float>                        totalForcesDevice,
                                gmx_nbnxn_gpu_t*                           nb,

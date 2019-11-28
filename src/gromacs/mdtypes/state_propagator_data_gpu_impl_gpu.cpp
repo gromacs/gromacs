@@ -194,7 +194,15 @@ void StatePropagatorDataGpu::Impl::reinit(int numAtomsLocal, int numAtomsAll)
     }
 
     reallocateDeviceBuffer(&d_v_, DIM * numAtomsAll_, &d_vSize_, &d_vCapacity_, deviceContext_);
+    const int d_fOldCapacity = d_fCapacity_;
     reallocateDeviceBuffer(&d_f_, DIM * numAtomsAll_, &d_fSize_, &d_fCapacity_, deviceContext_);
+    // Clearing of the forces can be done in local stream since the nonlocal stream cannot reach
+    // the force accumulation stage before syncing with the local stream. Only done in CUDA,
+    // since the force buffer ops are not implemented in OpenCL.
+    if (GMX_GPU == GMX_GPU_CUDA && d_fCapacity_ != d_fOldCapacity)
+    {
+        clearDeviceBufferAsync(&d_f_, 0, d_fCapacity_, localStream_);
+    }
 }
 
 std::tuple<int, int> StatePropagatorDataGpu::Impl::getAtomRangesFromAtomLocality(AtomLocality atomLocality)
