@@ -31,22 +31,25 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib Topology and TopologyBuilder
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
+
+#include "topology.h"
 
 #include <numeric>
 
 #include "gromacs/topology/block.h"
-#include "gromacs/utility/smalloc.h"
-
-#include "topology.h"
-
 #include "gromacs/topology/exclusionblocks.h"
-#include "gromacs/topology/block.h"
+#include "gromacs/utility/smalloc.h"
 
 namespace nblib {
 

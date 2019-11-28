@@ -31,6 +31,10 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib SimulationState
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -38,11 +42,9 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #include "gmxpre.h"
 
 #include "simulationstate.h"
-#include "nbkernelsystem.h"
 
 #include <vector>
 
@@ -55,6 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "coords.h"
+#include "nbkernelsystem.h"
 
 namespace nblib {
 

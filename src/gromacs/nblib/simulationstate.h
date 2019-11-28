@@ -31,6 +31,10 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \inlibraryapi \file
+ * \brief
+ * Implements nblib SimulationState
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -38,19 +42,18 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_SIMULATIONSTATE_H
 #define GROMACS_SIMULATIONSTATE_H
 
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/util.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "box.h"
 #include "topology.h"
-#include "util.h"
 
 namespace nblib
 {
