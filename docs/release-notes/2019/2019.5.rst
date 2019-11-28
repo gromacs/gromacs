@@ -72,6 +72,11 @@ Clarified the documentation for pull geometry 'direction-periodic'.
 
 :issue:`2946`
 
+Remove assertion failure with AWH when not using the initial stage
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3217`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
