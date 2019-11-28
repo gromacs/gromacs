@@ -31,6 +31,10 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib kernel system
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -38,10 +42,9 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include "nbkernelsystem.h"
-
-#include "coordinates.h"
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
@@ -51,6 +54,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
+#include "coordinates.h"
 
 namespace nblib
 {

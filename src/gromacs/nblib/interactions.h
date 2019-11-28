@@ -31,17 +31,23 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \file
+ * \brief
+ * Implements nblib HarmonicType
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_INTERACTIONS_H
 #define GROMACS_INTERACTIONS_H
 
 #include "gromacs/math/vectypes.h"
+
+namespace nblib
+{
 
 //! Type of interaction
 struct HarmonicType
@@ -54,5 +60,5 @@ struct HarmonicType
     //int atomJ;
 };
 
-
+} //namespace nblib
 #endif //GROMACS_INTERACTIONS_H

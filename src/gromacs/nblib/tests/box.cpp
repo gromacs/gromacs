@@ -43,9 +43,9 @@
  */
 #include "gmxpre.h"
 
-#include <cmath>
-
 #include "gromacs/nblib/box.h"
+
+#include <cmath>
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

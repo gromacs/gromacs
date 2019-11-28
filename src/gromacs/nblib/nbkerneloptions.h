@@ -31,6 +31,10 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib kernel setup options
  *
  * \author Berk Hess <hess@kth.se>
  * \author Victor Holanda <victor.holanda@cscs.ch>
@@ -38,16 +42,15 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_SETUP_H
 #define GROMACS_SETUP_H
 
+#include "gromacs/math/vectypes.h"
+#include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/mdtypes/interaction_const.h"
+
 #include "nbkerneldef.h"
 #include "nbkernelsystem.h"
-
-#include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/interaction_const.h"
-#include "gromacs/mdtypes/forcerec.h"
 
 namespace nblib {
 
@@ -89,7 +92,7 @@ struct NBKernelOptions
  * by the factor \p sizeFactor, which has to be a power of 2.
  * Timings can be printed to stdout.
  *
- * \param[in/out] system The atomic system to compute nonbonded forces for
+ * \param[in,out] system The atomic system to compute nonbonded forces for
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */
