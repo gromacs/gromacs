@@ -1,9 +1,44 @@
-//
-// Created by sebkelle on 19.11.19.
-//
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2019, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ *
+ * \author Victor Holanda <victor.holanda@cscs.ch>
+ * \author Joe Jordan <ejjordan@kth.se>
+ * \author Prashanth Kanduri <kanduri@cscs.ch>
+ * \author Sebastian Keller <keller@cscs.ch>
+ */
 
-#include <vector>
-#include <array>
+#include <numeric>
 
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/smalloc.h"
@@ -16,6 +51,9 @@
 
 namespace nblib {
 
+TopologyBuilder::TopologyBuilder() : numAtoms_(0)
+{}
+
 t_blocka TopologyBuilder::createExclusionsList() const
 {
     const auto &moleculesList = molecules_;
@@ -26,14 +64,25 @@ t_blocka TopologyBuilder::createExclusionsList() const
     //! compare tuples by comparing the first element
     auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
 
+    size_t atomNumberOffset = 0;
     for (const auto &molNumberTuple : moleculesList)
     {
         const Molecule& molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
         std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
+
         //! sorted (by first tuple element as key) list of exclusion pairs
         std::sort(std::begin(exclusionList), std::end(exclusionList), firstLowerThan);
+
+        //! remove duplicates
+        auto unique_end = std::unique(std::begin(exclusionList), std::end(exclusionList));
+        if (unique_end != std::end(exclusionList))
+            printf("[nblib] Warning: exclusionList of molecule \"%s\" contained duplicates",
+                    molecule.name_.c_str());
+
+        exclusionList.erase(unique_end, std::end(exclusionList));
+
         std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule;
 
         //! initialize pair of iterators delimiting the range of exclusions for
@@ -64,14 +113,33 @@ t_blocka TopologyBuilder::createExclusionsList() const
         //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
         for (size_t i = 0; i < numMols; ++i)
         {
-            std::copy(std::begin(exclusionBlockPerMolecule), std::end(exclusionBlockPerMolecule),
+            auto offsetExclusions = exclusionBlockPerMolecule;
+            //! shift atom numbers by atomNumberOffset
+            for (auto& localBlock : offsetExclusions)
+            {
+                std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
+                               std::begin(localBlock.atomNumber),
+                               [atomNumberOffset](auto i){ return i + atomNumberOffset; });
+            }
+
+            std::copy(std::begin(offsetExclusions), std::end(offsetExclusions),
                       std::back_inserter(exclusionBlockGlobal));
+
+            atomNumberOffset += molecule.numAtomsInMolecule();
         }
     }
+
+    size_t numberOfExclusions = std::accumulate(std::begin(exclusionBlockGlobal),
+                                                std::end(exclusionBlockGlobal), size_t(0),
+                                                [](size_t acc, const auto &block)
+                                                { return acc + block.atomNumber.size();});
 
     //! At the very end, convert the exclusionBlockGlobal into
     //! a massive t_blocka and return
     t_blocka tBlockGlobal;
+    snew(tBlockGlobal.index, numAtoms_ + 1);
+    snew(tBlockGlobal.a, numberOfExclusions + 1);
+
     gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
 
     return tBlockGlobal;

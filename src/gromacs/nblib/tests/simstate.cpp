@@ -36,7 +36,10 @@
  * \brief
  * This implements SimulationState tests
  *
+ * \author Victor Holanda <victor.holanda@cscs.ch>
+ * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
+ * \author Sebastian Keller <keller@cscs.ch>
  */
 
 #include <vector>
