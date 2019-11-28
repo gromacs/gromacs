@@ -76,17 +76,17 @@ t_blocka TopologyBuilder::createExclusionsList() const
         //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
         for (size_t i = 0; i < numMols; ++i)
         {
-            auto shiftedExclusions = exclusionBlockPerMolecule;
+            auto offsetExclusions = exclusionBlockPerMolecule;
             //! shift atom numbers by atomNumberOffset
-            for (auto& localBlock : shiftedExclusions)
+            for (auto& localBlock : offsetExclusions)
             {
                 std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
                                std::begin(localBlock.atomNumber),
                                [atomNumberOffset](auto i){ return i + atomNumberOffset; });
             }
 
-            std::copy(std::begin(shiftedExclusions), std::end(shiftedExclusions),
-                           std::back_inserter(exclusionBlockGlobal));
+            std::copy(std::begin(offsetExclusions), std::end(offsetExclusions),
+                      std::back_inserter(exclusionBlockGlobal));
 
             atomNumberOffset += molecule.numAtomsInMolecule();
         }
