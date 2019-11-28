@@ -49,19 +49,19 @@
 
 namespace nblib {
 
-Box::Box(real l) : box_{0}
+Box::Box(real l)
 {
     if (std::isnan(l) or std::isinf(l))
     {
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
 
-    box_[XX][XX] = l;
-    box_[YY][YY] = l;
-    box_[ZZ][ZZ] = l;
+    box_(XX, XX) = l;
+    box_(YY, YY) = l;
+    box_(ZZ, ZZ) = l;
 }
 
-Box::Box(real x, real y, real z) : box_{0}
+Box::Box(real x, real y, real z)
 {
     if (std::isnan(x) or std::isinf(x) or
         std::isnan(y) or std::isinf(y) or
@@ -70,12 +70,12 @@ Box::Box(real x, real y, real z) : box_{0}
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
 
-    box_[XX][XX] = x;
-    box_[YY][YY] = y;
-    box_[ZZ][ZZ] = z;
+    box_(XX, XX) = x;
+    box_(YY, YY) = y;
+    box_(ZZ, ZZ) = z;
 }
 
-Box::data_type Box::matrix()
+Box::Matrix Box::matrix()
 {
     return box_;
 }
