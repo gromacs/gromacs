@@ -32,7 +32,7 @@ the same SIMD flavor.
 Update and constraints can run on a (single) GPU
 """"""""""""""""""""""""""""""""""""""""""""""""
 
-For standard constant-NVT runs (see the user guide for more details),
+For standard simulations (see the user guide for more details),
 update and constraints can be offloaded to a GPU with CUDA. Thus all compute
 intensive parts of a simulation can be offloaded, which provides
 better performance when using a fast GPU combined with a slow CPU.

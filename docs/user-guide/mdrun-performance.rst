@@ -530,7 +530,7 @@ behavior.
     Defaults to "auto," which currently always uses the CPU.
     Setting "gpu" requires that a compatible CUDA GPU is available.
     Update and constraints on a GPU is currently not supported
-    with pressure coupling, free-energy, domain decomposition, virtual sites,
+    with free-energy, domain decomposition, virtual sites,
     Ewald surface correction, replica exchange, the pull code,
     orientation restraints and computational electrophysiology.
 
