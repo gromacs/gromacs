@@ -83,27 +83,27 @@ public:
      * Integrates the equation of motion using Leap-Frog algorithm.
      * Updates coordinates and velocities on the GPU. The current coordinates are saved for constraints.
      *
-     * \param[in,out] d_x                    Coordinates to update
-     * \param[out]    d_xp                   Place to save the values of initial coordinates coordinates to.
-     * \param[in,out] d_v                    Velocities (will be updated).
-     * \param[in]     d_f                    Forces.
-     * \param[in]     dt                     Timestep.
-     * \param[in]     doTempCouple           If the temperature coupling should be applied.
-     * \param[in]     tcstat                 Temperature coupling data.
-     * \param[in]     doPressureCouple       If the temperature coupling should be applied.
-     * \param[in]     dtPressureCouple       Period between pressure coupling steps
-     * \param[in]     velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     * \param[in,out] d_x                      Coordinates to update
+     * \param[out]    d_xp                     Place to save the values of initial coordinates coordinates to.
+     * \param[in,out] d_v                      Velocities (will be updated).
+     * \param[in]     d_f                      Forces.
+     * \param[in]     dt                       Timestep.
+     * \param[in]     doTemperatureScaling     If velocities should be scaled for temperature coupling.
+     * \param[in]     tcstat                   Temperature coupling data.
+     * \param[in]     doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
+     * \param[in]     dtPressureCouple         Period between pressure coupling steps
+     * \param[in]     prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
      */
     void integrate(const float3*                     d_x,
                    float3*                           d_xp,
                    float3*                           d_v,
                    const float3*                     d_f,
                    const real                        dt,
-                   const bool                        doTempCouple,
+                   const bool                        doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                   const bool                        doPressureCouple,
+                   const bool                        doParrinelloRahman,
                    const float                       dtPressureCouple,
-                   const matrix                      velocityScalingMatrix);
+                   const matrix                      prVelocityScalingMatrix);
 
     /*! \brief Set the integrator
      *
@@ -159,8 +159,8 @@ private:
     //! Maximum size of the temperature coupling groups array
     int numTempScaleGroupsAlloc_ = -1;
 
-    //! Vector with diagonal elements of the pressure coupling velocity rescale factors
-    float3 velocityScalingMatrixDiagonal_;
+    //! Vector with diagonal elements of the Parrinello-Rahman pressure coupling velocity rescale factors
+    float3 prVelocityScalingMatrixDiagonal_;
 };
 
 } // namespace gmx

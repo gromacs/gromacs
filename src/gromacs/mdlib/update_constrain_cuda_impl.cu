@@ -107,11 +107,11 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
                                           const bool                        updateVelocities,
                                           const bool                        computeVirial,
                                           tensor                            virial,
-                                          const bool                        doTempCouple,
+                                          const bool                        doTemperatureScaling,
                                           gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                          const bool                        doPressureCouple,
+                                          const bool                        doParrinelloRahman,
                                           const float                       dtPressureCouple,
-                                          const matrix                      velocityScalingMatrix)
+                                          const matrix                      prVelocityScalingMatrix)
 {
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
@@ -122,8 +122,8 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
 
     // The integrate should save a copy of the current coordinates in d_xp_ and write updated once
     // into d_x_. The d_xp_ is only needed by constraints.
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTempCouple, tcstat, doPressureCouple,
-                           dtPressureCouple, velocityScalingMatrix);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat,
+                           doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
@@ -247,14 +247,14 @@ void UpdateConstrainCuda::integrate(GpuEventSynchronizer*             fReadyOnDe
                                     const bool                        updateVelocities,
                                     const bool                        computeVirial,
                                     tensor                            virialScaled,
-                                    const bool                        doTempCouple,
+                                    const bool                        doTemperatureScaling,
                                     gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                    const bool                        doPressureCouple,
+                                    const bool                        doParrinelloRahman,
                                     const float                       dtPressureCouple,
-                                    const matrix                      velocityScalingMatrix)
+                                    const matrix                      prVelocityScalingMatrix)
 {
-    impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTempCouple,
-                     tcstat, doPressureCouple, dtPressureCouple, velocityScalingMatrix);
+    impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTemperatureScaling,
+                     tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
 }
 
 void UpdateConstrainCuda::scaleCoordinates(const matrix scalingMatrix)
