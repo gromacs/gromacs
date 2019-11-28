@@ -85,7 +85,9 @@ struct ScalingMatrix
 };
 
 __launch_bounds__(c_maxThreadsPerBlock) __global__
-        void scaleCoordinates_kernel(const int numAtoms, float3* __restrict__ gm_x, const ScalingMatrix scalingMatrix)
+        static void scaleCoordinates_kernel(const int numAtoms,
+                                            float3* __restrict__ gm_x,
+                                            const ScalingMatrix scalingMatrix)
 {
     int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
     if (threadIndex < numAtoms)
