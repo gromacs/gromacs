@@ -61,6 +61,22 @@ about missing interactions.
 
 :issue:`3204`
 
+Fix issues with AWH with pull-geometry 'direction' to be periodic
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Removed fatal error with AWH with periodic pull-geometry 'direction'
+when the distance was within 2% of half the box size.
+Changed an assertion failure when the AWH interval was larger than
+the box size to a fatal error.
+Clarified the documentation for pull geometry 'direction-periodic'.
+
+:issue:`2946`
+
+Remove assertion failure with AWH when not using the initial stage
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3217`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -83,3 +99,12 @@ is unchanged. Existing parsers that conform to the documentation
 and expect whitespace separation will continue to work in all cases.
 
 :issue:`3176`
+
+Fix duplicate PDB CONECT record output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+PDB "CONECT" record output was duplicated in some instances. Since |Gromacs| does
+not use these anywhere, analysis was not affected. The behavior is now fixed.
+
+:issue:`3206`
+
