@@ -1,13 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Int Name="guanidine.pdb">9</Int>
+  <Int Name="guanidinium.sdf">10</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">9</Int>
-    <String>c2</String>
+    <Int Name="Length">10</Int>
     <String>nh</String>
     <String>nh</String>
-    <String>n2</String>
+    <String>nh</String>
+    <String>cz</String>
+    <String>hn</String>
     <String>hn</String>
     <String>hn</String>
     <String>hn</String>

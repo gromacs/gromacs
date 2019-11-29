@@ -1,20 +1,24 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Int Name="1-amino-1-hydroxyguanidine-3-oep.log.pdb">12</Int>
+  <Int Name="1-1-dimethylguanidinium.sdf">16</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">12</Int>
-    <String>oh</String>
+    <Int Name="Length">16</Int>
     <String>n3</String>
     <String>nh</String>
     <String>nh</String>
-    <String>n2</String>
-    <String>c2</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>cz</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
     <String>hn</String>
     <String>hn</String>
     <String>hn</String>
-    <String>hn</String>
-    <String>ho</String>
     <String>hn</String>
   </Sequence>
 </ReferenceData>

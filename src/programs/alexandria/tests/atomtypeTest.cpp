@@ -116,6 +116,11 @@ TEST_F (AtomtypeTest, Guanidine)
     testAtype("guanidine.pdb");
 }
 
+TEST_F (AtomtypeTest, Guanidinium)
+{
+    testAtype("guanidinium.sdf");
+}
+
 TEST_F (AtomtypeTest, DimethylCarbonate)
 {
     testAtype("dimethyl-carbonate.pdb");
@@ -129,6 +134,11 @@ TEST_F (AtomtypeTest, 1EthoxyethylPhosphorylOxyethane)
 TEST_F (AtomtypeTest, 1Amino1Hydroxyguanidine)
 {
     testAtype("1-amino-1-hydroxyguanidine-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, Dimethylguanidinium)
+{
+    testAtype("1-1-dimethylguanidinium.sdf");
 }
 
 TEST_F (AtomtypeTest, Acetate)
