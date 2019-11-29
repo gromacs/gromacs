@@ -124,6 +124,18 @@ const real maxRelativeSlowdownAccepted = 1.12;
  */
 const real maxFluctuationAccepted = 1.02;
 
+//! \brief Number of nstlist long tuning intervals to skip before starting
+//         load-balancing at the beginning of the run.
+const int c_numFirstTuningIntervalSkip = 5;
+//! \brief Number of nstlist long tuning intervals to skip before starting
+//         load-balancing at the beginning of the run with separate PME ranks. */
+const int c_numFirstTuningIntervalSkipWithSepPme = 3;
+//! \brief Number of nstlist long tuning intervals to skip after switching to a new setting
+//         during balancing.
+const int c_numPostSwitchTuningIntervalSkip = 1;
+//! \brief Number of seconds to delay the tuning at startup to allow processors clocks to ramp up.
+const double c_startupTimeDelay = 5.0;
+
 /*! \brief Enumeration whose values describe the effect limiting the load balancing */
 enum epmelb
 {
@@ -168,8 +180,9 @@ struct pme_load_balancing_t
 
     int stage; /**< the current stage */
 
-    int    cycles_n; /**< step cycle counter cummulative count */
-    double cycles_c; /**< step cycle counter cummulative cycles */
+    int    cycles_n; /**< step cycle counter cumulative count */
+    double cycles_c; /**< step cycle counter cumulative cycles */
+    double startTime; /**< time stamp when the balancing was started (relative to the UNIX epoch start).*/
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -188,8 +201,7 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
                       const interaction_const_t& ic,
                       const nonbonded_verlet_t&  nbv,
                       gmx_pme_t*                 pmedata,
-                      gmx_bool                   bUseGPU,
-                      gmx_bool*                  bPrinting)
+                      gmx_bool                   bUseGPU)
 {
 
     pme_load_balancing_t* pme_lb;
@@ -277,8 +289,9 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->end         = 0;
     pme_lb->elimited    = epmelblimNO;
 
-    pme_lb->cycles_n = 0;
-    pme_lb->cycles_c = 0;
+    pme_lb->cycles_n  = 0;
+    pme_lb->cycles_c  = 0;
+    pme_lb->startTime = gmx_gettime();
 
     if (!wallcycle_have_counter())
     {
@@ -322,8 +335,6 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     }
 
     *pme_lb_p = pme_lb;
-
-    *bPrinting = pme_lb->bBalance;
 }
 
 /*! \brief Try to increase the cutoff during load balancing */
@@ -559,18 +570,19 @@ static void pme_load_balance(pme_load_balancing_t*          pme_lb,
     set = &pme_lb->setup[pme_lb->cur];
     set->count++;
 
-    if (set->count % 2 == 1)
+    /* Skip the first c_numPostSwitchTuningIntervalSkip cycles because the first step
+     * after a switch is much slower due to allocation and/or caching effects.
+     */
+    if (set->count % (c_numPostSwitchTuningIntervalSkip + 1) != 0)
     {
-        /* Skip the first cycle, because the first step after a switch
-         * is much slower due to allocation and/or caching effects.
-         */
         return;
     }
 
     sprintf(buf, "step %4s: ", gmx_step_str(step, sbuf));
     print_grid(fp_err, fp_log, buf, "timed with", set, cycles);
 
-    if (set->count <= 2)
+    GMX_RELEASE_ASSERT(set->count > c_numPostSwitchTuningIntervalSkip, "We should skip cycles");
+    if (set->count == (c_numPostSwitchTuningIntervalSkip + 1))
     {
         set->cycles = cycles;
     }
@@ -905,9 +917,14 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
 
     /* Before the first step we haven't done any steps yet.
      * Also handle cases where ir.init_step % ir.nstlist != 0.
+     * We also want to skip a number of steps and seconds while
+     * the CPU and GPU, when used, performance stabilizes.
      */
-    if (pme_lb->cycles_n < ir.nstlist)
+    if (pme_lb->cycles_n == 0 || step_rel < c_numFirstTuningIntervalSkip * ir.nstlist
+        || gmx_gettime() - pme_lb->startTime < c_startupTimeDelay)
     {
+        *bPrinting = FALSE;
+
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
@@ -930,7 +947,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          * is not over the last nstlist steps, but the nstlist steps before
          * that. So the first useful ratio is available at step_rel=3*nstlist.
          */
-        else if (step_rel >= 3 * ir.nstlist)
+        else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
         {
             if (DDMASTER(cr->dd))
             {

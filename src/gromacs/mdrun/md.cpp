@@ -433,7 +433,7 @@ void gmx::LegacySimulator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box, *fr->ic, *fr->nbv, fr->pmedata,
-                         fr->nbv->useGpu(), &bPMETunePrinting);
+                         fr->nbv->useGpu());
     }
 
     if (!ir->bContinuation)

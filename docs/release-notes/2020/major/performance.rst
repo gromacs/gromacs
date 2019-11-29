@@ -44,3 +44,10 @@ Bonded kernels on GPU have been fused
 Instead of launching one GPU kernel for each listed interaction type there is now one
 GPU kernel that handles all listed interactions. This improves the performance when
 running bonded calculations on a GPU.
+
+Delay for ramp-up added to PP-PME tuning
+""""""""""""""""""""""""""""""""""""""""
+
+Modern CPUs and GPUs can take a few seconds to ramp up their clock speeds.
+Therefore the PP-PME load balancing now starts after 5 seconds instead
+of after a few MD steps. This avoids sub-optimal performance settings.
