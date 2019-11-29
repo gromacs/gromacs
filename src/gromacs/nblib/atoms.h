@@ -45,24 +45,24 @@
 #define GROMACS_ATOMS_H
 
 #include <string>
-#include <tuple>
-#include <unordered_map>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
 
-#include "interactions.h"
-
-class TopologyBuilder;
-
 namespace nblib
 {
+
+struct AtomKindName
+{
+    std::string name_;
+    explicit AtomKindName(std::string str) : name_(str) {}
+};
 
 class Atom {
 public:
     Atom() noexcept;
 
-    Atom(std::string atomName,
+    Atom(AtomKindName atomName,
              real mass,
              real charge,
              real c6,

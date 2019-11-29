@@ -55,8 +55,8 @@ Atom::Atom() noexcept :
   c12_(0)
 {}
 
-Atom::Atom(std::string atomName, real mass, real charge, real c6, real c12)
-: name_(std::move(atomName)),
+Atom::Atom(AtomKindName atomName, real mass, real charge, real c6, real c12)
+: name_(atomName.name_),
   mass_(mass),
   charge_(charge),
   c6_(c6),
