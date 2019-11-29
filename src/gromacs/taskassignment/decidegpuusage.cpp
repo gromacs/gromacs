@@ -488,8 +488,7 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
-                                    const bool        isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
                                     const bool        useGpuForPme,
                                     const bool        useGpuForNonbonded,
                                     const TaskTarget  updateTarget,
@@ -602,8 +601,7 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
         return false;
     }
 
-    return ((forceGpuUpdateDefaultOn && updateTarget == TaskTarget::Auto)
-            || (updateTarget == TaskTarget::Gpu));
+    return true;
 }
 
 } // namespace gmx
