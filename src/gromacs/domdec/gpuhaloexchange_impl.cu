@@ -58,6 +58,7 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "domdec_internal.h"
 
@@ -321,6 +322,8 @@ void GpuHaloExchange::Impl::communicateHaloData(float3*               d_ptr,
                      recvRank, 0, &remoteCoordinatesReadyOnDeviceEvent, sizeof(GpuEventSynchronizer*),
                      MPI_BYTE, sendRank, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
         remoteCoordinatesReadyOnDeviceEvent->enqueueWaitEvent(nonLocalStream_);
+#else
+        GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
     }
     else
