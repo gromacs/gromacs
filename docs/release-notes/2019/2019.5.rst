@@ -80,6 +80,13 @@ Remove assertion failure with AWH when not using the initial stage
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Make histogram output clearer
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Output gave number of events included in histogram bar as *a.u.*,
+which was not clear for users.
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

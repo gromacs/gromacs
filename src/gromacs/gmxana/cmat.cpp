@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -228,7 +228,7 @@ void low_rmsd_dist(const char *fn, real maxrms, int nn, real **mat,
         }
     }
 
-    fp = xvgropen(fn, "RMS Distribution", "RMS (nm)", "a.u.", oenv);
+    fp = xvgropen(fn, "RMS Distribution", "RMS (nm)", "counts", oenv);
     for (i = 0; (i < 101); i++)
     {
         fprintf(fp, "%10g  %10d\n", i/fac, histo[i]);
