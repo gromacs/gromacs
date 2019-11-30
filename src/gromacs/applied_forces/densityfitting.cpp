@@ -379,12 +379,15 @@ public:
      * \param[in] checkpointWriting enables writing to the Key-Value-Tree
      *                              that is used for storing the checkpoint
      *                              information
+     *
+     * \note The provided state to checkpoint has to change if checkpointing
+     *       is moved before the force provider call in the MD-loop.
      */
     void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting)
     {
         if (densityFittingOptions_.active())
         {
-            const DensityFittingForceProviderState& state = forceProvider_->state();
+            const DensityFittingForceProviderState& state = forceProvider_->stateToCheckpoint();
             checkpointWriting.builder_.addValue<std::int64_t>(
                     DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation",
                     state.stepsSinceLastCalculation_);

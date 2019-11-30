@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Energy Name="Potential">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-3379.9202</Real>
+    <Real Name="Time 0.002000 Step 2 in frame 1">-3390.9541</Real>
+  </Energy>
+  <Energy Name="Density fitting">
+    <Real Name="Time 0.000000 Step 0 in frame 0">-3378.9026</Real>
+    <Real Name="Time 0.002000 Step 2 in frame 1">-3389.9324</Real>
+  </Energy>
+</ReferenceData>

@@ -176,8 +176,6 @@ Closely related formats like `ccp4` and `map` might work.
 
 Be aware that different visualization software handles map formats differently.
 During simulations, reference densities are interpreted as visualised by `VMD`.
-If the reference map shows unexpected behaviour, swapping endianess with a map
-conversion tool like `em2em` might help.
 
 Output
 ^^^^^^

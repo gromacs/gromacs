@@ -39,8 +39,6 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/utility/gmxassert.h"
-
 namespace gmx
 {
 
@@ -51,7 +49,7 @@ template<typename T>
 class CharBuffer
 {
 public:
-    static const size_t ValueSize = sizeof(T);
+    static constexpr size_t ValueSize = sizeof(T);
 
     explicit CharBuffer(T value) { u.v = value; }
     explicit CharBuffer(const char buffer[]) { std::copy(buffer, buffer + ValueSize, u.c); }
@@ -70,6 +68,26 @@ private:
     } u;
 };
 
+//! Return \c value with the byte order swapped.
+template<typename T>
+T swapEndian(const T& value)
+{
+    union {
+        T                           value_;
+        std::array<char, sizeof(T)> valueAsCharArray_;
+    } endianessSwappedValue;
+
+    endianessSwappedValue.value_ = value;
+    int hiByte                   = sizeof(T) - 1;
+    for (int loByte = 0; hiByte > loByte; loByte++, hiByte--)
+    {
+        std::swap(endianessSwappedValue.valueAsCharArray_[loByte],
+                  endianessSwappedValue.valueAsCharArray_[hiByte]);
+    }
+
+    return endianessSwappedValue.value_;
+}
+
 } // namespace
 
 /********************************************************************
@@ -79,10 +97,18 @@ private:
 class InMemorySerializer::Impl
 {
 public:
+    Impl(EndianSwapBehavior endianSwapBehavior) : endianSwapBehavior_(endianSwapBehavior) {}
     template<typename T>
     void doValue(T value)
     {
-        CharBuffer<T>(value).appendTo(&buffer_);
+        if (endianSwapBehavior_ == EndianSwapBehavior::DoSwap)
+        {
+            CharBuffer<T>(swapEndian(value)).appendTo(&buffer_);
+        }
+        else
+        {
+            CharBuffer<T>(value).appendTo(&buffer_);
+        }
     }
     void doString(const std::string& value)
     {
@@ -90,12 +116,16 @@ public:
         buffer_.insert(buffer_.end(), value.begin(), value.end());
     }
 
-    std::vector<char> buffer_;
+    std::vector<char>  buffer_;
+    EndianSwapBehavior endianSwapBehavior_;
 };
 
-InMemorySerializer::InMemorySerializer() : impl_(new Impl) {}
+InMemorySerializer::InMemorySerializer(EndianSwapBehavior endianSwapBehavior) :
+    impl_(new Impl(endianSwapBehavior))
+{
+}
 
-InMemorySerializer::~InMemorySerializer() {}
+InMemorySerializer::~InMemorySerializer() = default;
 
 std::vector<char> InMemorySerializer::finishAndGetBuffer()
 {
@@ -180,17 +210,25 @@ void InMemorySerializer::doString(std::string* value)
 class InMemoryDeserializer::Impl
 {
 public:
-    explicit Impl(ArrayRef<const char> buffer, bool sourceIsDouble) :
+    explicit Impl(ArrayRef<const char> buffer, bool sourceIsDouble, EndianSwapBehavior endianSwapBehavior) :
         buffer_(buffer),
         sourceIsDouble_(sourceIsDouble),
-        pos_(0)
+        pos_(0),
+        endianSwapBehavior_(endianSwapBehavior)
     {
     }
 
     template<typename T>
     void doValue(T* value)
     {
-        *value = CharBuffer<T>(&buffer_[pos_]).value();
+        if (endianSwapBehavior_ == EndianSwapBehavior::DoSwap)
+        {
+            *value = swapEndian(CharBuffer<T>(&buffer_[pos_]).value());
+        }
+        else
+        {
+            *value = CharBuffer<T>(&buffer_[pos_]).value();
+        }
         pos_ += CharBuffer<T>::ValueSize;
     }
     void doString(std::string* value)
@@ -204,14 +242,17 @@ public:
     ArrayRef<const char> buffer_;
     bool                 sourceIsDouble_;
     size_t               pos_;
+    EndianSwapBehavior   endianSwapBehavior_;
 };
 
-InMemoryDeserializer::InMemoryDeserializer(ArrayRef<const char> buffer, bool sourceIsDouble) :
-    impl_(new Impl(buffer, sourceIsDouble))
+InMemoryDeserializer::InMemoryDeserializer(ArrayRef<const char> buffer,
+                                           bool                 sourceIsDouble,
+                                           EndianSwapBehavior   endianSwapBehavior) :
+    impl_(new Impl(buffer, sourceIsDouble, endianSwapBehavior))
 {
 }
 
-InMemoryDeserializer::~InMemoryDeserializer() {}
+InMemoryDeserializer::~InMemoryDeserializer() = default;
 
 bool InMemoryDeserializer::sourceIsDouble() const
 {

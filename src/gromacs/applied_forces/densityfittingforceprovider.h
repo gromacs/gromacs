@@ -93,8 +93,11 @@ public:
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
 
-    //! Return the state of the forceprovider.
-    DensityFittingForceProviderState state();
+    /*! \brief Return the state of the forceprovider to be checkpointed
+     * TODO update this routine if checkpointing is moved to the beginning of
+     *      the md loop
+     */
+    const DensityFittingForceProviderState& stateToCheckpoint();
 
 private:
     class Impl;

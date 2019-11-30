@@ -549,39 +549,82 @@ LincsCuda::~LincsCuda()
 
 /*! \brief Helper function to go through constraints recursively.
  *
- *  For each constraint, counts the number of coupled constraints and stores the value in spaceNeeded array.
+ *  For each constraint, counts the number of coupled constraints and stores the value in numCoupledConstraints array.
  *  This information is used to split the array of constraints between thread blocks on a GPU so there is no
- *  coupling between constraints from different thread blocks. After the 'spaceNeeded' array is filled, the
- *  value spaceNeeded[c] should be equal to the number of constraints that are coupled to 'c' and located
+ *  coupling between constraints from different thread blocks. After the 'numCoupledConstraints' array is filled, the
+ *  value numCoupledConstraints[c] should be equal to the number of constraints that are coupled to 'c' and located
  *  after it in the constraints array.
  *
- * \param[in]     a                  Atom index.
- * \param[in,out] spaceNeeded        Indicates if the constraint was already counted and stores
- *                                   the number of constraints (i) connected to it and (ii) located
- *                                   after it in memory. This array is filled by this recursive function.
- *                                   For a set of coupled constraints, only for the first one in this list
- *                                   the number of consecutive coupled constraints is needed: if there is
- *                                   not enough space for this set of constraints in the thread block,
- *                                   the group has to be moved to the next one.
- * \param[in]     atomAdjacencyList  Stores information about connections between atoms.
+ * \param[in]     a                   Atom index.
+ * \param[in,out] numCoupledConstraints  Indicates if the constraint was already counted and stores
+ *                                    the number of constraints (i) connected to it and (ii) located
+ *                                    after it in memory. This array is filled by this recursive function.
+ *                                    For a set of coupled constraints, only for the first one in this list
+ *                                    the number of consecutive coupled constraints is needed: if there is
+ *                                    not enough space for this set of constraints in the thread block,
+ *                                    the group has to be moved to the next one.
+ * \param[in]     atomsAdjacencyList  Stores information about connections between atoms.
  */
-inline int countCoupled(int                                                  a,
-                        std::vector<int>*                                    spaceNeeded,
-                        std::vector<std::vector<std::tuple<int, int, int>>>* atomsAdjacencyList)
+inline int countCoupled(int           a,
+                        ArrayRef<int> numCoupledConstraints,
+                        ArrayRef<const std::vector<std::tuple<int, int, int>>> atomsAdjacencyList)
 
 {
-    int c2, a2, sign;
     int counted = 0;
-    for (unsigned i = 0; i < atomsAdjacencyList->at(a).size(); i++)
+    for (const auto& adjacentAtom : atomsAdjacencyList[a])
     {
-        std::tie(a2, c2, sign) = atomsAdjacencyList->at(a).at(i);
-        if (spaceNeeded->at(c2) == -1)
+        const int c2 = std::get<1>(adjacentAtom);
+        if (numCoupledConstraints[c2] == -1)
         {
-            spaceNeeded->at(c2) = 0; // To indicate we've been here
-            counted += 1 + countCoupled(a2, spaceNeeded, atomsAdjacencyList);
+            numCoupledConstraints[c2] = 0; // To indicate we've been here
+            counted += 1 + countCoupled(std::get<0>(adjacentAtom), numCoupledConstraints, atomsAdjacencyList);
         }
     }
     return counted;
+}
+
+/*! \brief Add constraint to \p splitMap with all constraints coupled to it.
+ *
+ *  Adds the constraint \p c from the constrain list \p iatoms to the map \p splitMap
+ *  if it was not yet added. Then goes through all the constraints coupled to \p c
+ *  and calls itself recursively. This ensures that all the coupled constraints will
+ *  be added to neighboring locations in the final data structures on the device,
+ *  hence mapping all coupled constraints to the same thread block. A value of -1 in
+ *  the \p splitMap is used to flag that constraint was not yet added to the \p splitMap.
+ *
+ * \param[in]     iatoms              The list of constraints.
+ * \param[in]     stride              Number of elements per constraint in \p iatoms.
+ * \param[in]     atomsAdjacencyList  Information about connections between atoms.
+ * \param[our]    splitMap            Map of sequential constraint indexes to indexes to be on the device
+ * \param[in]     c                   Sequential index for constraint to consider adding.
+ * \param[in,out] currentMapIndex     The rolling index for the constraints mapping.
+ */
+inline void addWithCoupled(const t_iatom*                                         iatoms,
+                           const int                                              stride,
+                           ArrayRef<const std::vector<std::tuple<int, int, int>>> atomsAdjacencyList,
+                           ArrayRef<int>                                          splitMap,
+                           const int                                              c,
+                           int*                                                   currentMapIndex)
+{
+    if (splitMap[c] == -1)
+    {
+        splitMap[c] = *currentMapIndex;
+        (*currentMapIndex)++;
+
+        // Constraints, coupled through both atoms.
+        for (int atomIndexInConstraint = 0; atomIndexInConstraint < 2; atomIndexInConstraint++)
+        {
+            const int a1 = iatoms[stride * c + 1 + atomIndexInConstraint];
+            for (const auto& adjacentAtom : atomsAdjacencyList[a1])
+            {
+                const int c2 = std::get<1>(adjacentAtom);
+                if (c2 != c)
+                {
+                    addWithCoupled(iatoms, stride, atomsAdjacencyList, splitMap, c2, currentMapIndex);
+                }
+            }
+        }
+    }
 }
 
 void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
@@ -624,46 +667,49 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
         atomsAdjacencyList.at(a2).push_back(std::make_tuple(a1, c, -1));
     }
 
-    // Compute, how many coupled constraints are in front of each constraint.
-    // Needed to introduce splits in data so that all coupled constraints will be computed in a single GPU block.
-    // The position 'c' of the vector spaceNeeded should have the number of constraints that are coupled to a constraint
-    // 'c' and are after 'c' in the vector. Only first index of the connected group of the constraints is needed later in the
-    // code, hence the spaceNeeded vector is also used to keep track if the constrain was already counted.
-    std::vector<int> spaceNeeded;
-    spaceNeeded.resize(numConstraints, -1);
-    std::fill(spaceNeeded.begin(), spaceNeeded.end(), -1);
+    // Compute, how many constraints are coupled to each constraint.
+    // Needed to introduce splits in data so that all coupled constraints will be computed in a
+    // single GPU block. The position 'c' of the vector numCoupledConstraints should have the number
+    // of constraints that are coupled to a constraint 'c' and are after 'c' in the vector. Only
+    // first index of the connected group of the constraints is needed later in the code, hence the
+    // numCoupledConstraints vector is also used to keep track if the constrain was already counted.
+    std::vector<int> numCoupledConstraints(numConstraints, -1);
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];
         int a2 = iatoms[stride * c + 2];
-        if (spaceNeeded.at(c) == -1)
+        if (numCoupledConstraints.at(c) == -1)
         {
-            spaceNeeded.at(c) = countCoupled(a1, &spaceNeeded, &atomsAdjacencyList)
-                                + countCoupled(a2, &spaceNeeded, &atomsAdjacencyList);
+            numCoupledConstraints.at(c) = countCoupled(a1, numCoupledConstraints, atomsAdjacencyList)
+                                          + countCoupled(a2, numCoupledConstraints, atomsAdjacencyList);
         }
     }
 
     // Map of splits in the constraints data. For each 'old' constraint index gives 'new' which
     // takes into account the empty spaces which might be needed in the end of each thread block.
-    std::vector<int> splitMap;
-    splitMap.resize(numConstraints, -1);
-    int currentMapIndex = 0;
+    std::vector<int> splitMap(numConstraints, -1);
+    int              currentMapIndex = 0;
     for (int c = 0; c < numConstraints; c++)
     {
         // Check if coupled constraints all fit in one block
-        GMX_RELEASE_ASSERT(
-                spaceNeeded.at(c) < c_threadsPerBlock,
-                "Maximum number of coupled constraints exceedes the size of the CUDA thread block. "
-                "Most likely, you are trying to use GPU version of LINCS with constraints on "
-                "all-bonds, "
-                "which is not supported. Try using H-bonds constraints only.");
-        if (currentMapIndex / c_threadsPerBlock != (currentMapIndex + spaceNeeded.at(c)) / c_threadsPerBlock)
+        if (numCoupledConstraints.at(c) > c_threadsPerBlock)
+        {
+            gmx_fatal(FARGS,
+                      "Maximum number of coupled constraints (%d) exceeds the size of the CUDA "
+                      "thread block (%d). Most likely, you are trying to use the GPU version of "
+                      "LINCS with constraints on all-bonds, which is not supported for large "
+                      "molecules. When compatible with the force field and integration settings, "
+                      "using constraints on H-bonds only.",
+                      numCoupledConstraints.at(c), c_threadsPerBlock);
+        }
+        if (currentMapIndex / c_threadsPerBlock
+            != (currentMapIndex + numCoupledConstraints.at(c)) / c_threadsPerBlock)
         {
             currentMapIndex = ((currentMapIndex / c_threadsPerBlock) + 1) * c_threadsPerBlock;
         }
-        splitMap.at(c) = currentMapIndex;
-        currentMapIndex++;
+        addWithCoupled(iatoms, stride, atomsAdjacencyList, splitMap, c, &currentMapIndex);
     }
+
     kernelParams_.numConstraintsThreads =
             currentMapIndex + c_threadsPerBlock - currentMapIndex % c_threadsPerBlock;
     GMX_RELEASE_ASSERT(kernelParams_.numConstraintsThreads % c_threadsPerBlock == 0,
@@ -842,7 +888,7 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
                        maxCoupledConstraints * kernelParams_.numConstraintsThreads, commandStream_,
                        GpuApiCallBehavior::Sync, nullptr);
 
-    GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of attoms should be specified.\n");
+    GMX_RELEASE_ASSERT(md.invmass != nullptr, "Masses of atoms should be specified.\n");
     copyToDeviceBuffer(&kernelParams_.d_inverseMasses, md.invmass, 0, numAtoms, commandStream_,
                        GpuApiCallBehavior::Sync, nullptr);
 }

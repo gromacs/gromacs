@@ -55,10 +55,10 @@ class UpdateConstrainCuda::Impl
 {
 };
 
-UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec& ir,
-                                         gmx_unused const gmx_mtop_t& mtop,
-                                         gmx_unused const void*       commandStream,
-                                         gmx_unused GpuEventSynchronizer* xUpdatedOnDevice) :
+UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec& /* ir   */,
+                                         const gmx_mtop_t& /* mtop */,
+                                         const void* /* commandStream */,
+                                         GpuEventSynchronizer* /* xUpdatedOnDevice */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
@@ -67,33 +67,39 @@ UpdateConstrainCuda::UpdateConstrainCuda(gmx_unused const t_inputrec& ir,
 
 UpdateConstrainCuda::~UpdateConstrainCuda() = default;
 
-void UpdateConstrainCuda::integrate(gmx_unused GpuEventSynchronizer* fReadyOnDevice,
-                                    gmx_unused const real dt,
-                                    gmx_unused const bool updateVelocities,
-                                    gmx_unused const bool computeVirial,
-                                    gmx_unused tensor     virialScaled,
-                                    gmx_unused const bool doTempCouple,
-                                    gmx_unused gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                    gmx_unused const bool                        doPressureCouple,
-                                    gmx_unused const float                       dtPressureCouple,
-                                    gmx_unused const matrix velocityScalingMatrix)
+void UpdateConstrainCuda::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
+                                    const real /* dt */,
+                                    const bool /* updateVelocities */,
+                                    const bool /* computeVirial */,
+                                    tensor /* virialScaled */,
+                                    const bool /* doTemperatureScaling */,
+                                    gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
+                                    const bool /* doParrinelloRahman */,
+                                    const float /* dtPressureCouple */,
+                                    const matrix /* prVelocityScalingMatrix*/)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::set(gmx_unused DeviceBuffer<float> d_x,
-                              gmx_unused DeviceBuffer<float> d_v,
-                              gmx_unused const DeviceBuffer<float> d_f,
-                              gmx_unused const t_idef& idef,
-                              gmx_unused const t_mdatoms& md,
-                              gmx_unused const int        numTempScaleValues)
+void UpdateConstrainCuda::scaleCoordinates(const matrix /* scalingMatrix */)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::setPbc(gmx_unused const t_pbc* pbc)
+void UpdateConstrainCuda::set(DeviceBuffer<float> /* d_x */,
+                              DeviceBuffer<float> /* d_v */,
+                              const DeviceBuffer<float> /* d_f */,
+                              const t_idef& /* idef */,
+                              const t_mdatoms& /* md */,
+                              const int /* numTempScaleValues */)
+{
+    GMX_ASSERT(false,
+               "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
+}
+
+void UpdateConstrainCuda::setPbc(const t_pbc* /* pbc */)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");

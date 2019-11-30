@@ -1031,10 +1031,11 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // Copy coordinate from the GPU if update is on the GPU and there are forces to be computed on the CPU. At search steps the
-    // current coordinates are already on the host, hence copy is not needed.
+    // Copy coordinate from the GPU if update is on the GPU and there are forces to be computed on
+    // the CPU, or for the computation of virial. At search steps the current coordinates are
+    // already on the host, hence copy is not needed.
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
-        && runScheduleWork->domainWork.haveCpuLocalForceWork)
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
@@ -1470,7 +1471,7 @@ void do_force(FILE*                               fplog,
     if (ddUsesGpuDirectCommunication && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
     {
         /* Wait for non-local coordinate data to be copied from device */
-        nbv->wait_nonlocal_x_copy_D2H_done();
+        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef), cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut, enerd,
@@ -1666,7 +1667,7 @@ void do_force(FILE*                               fplog,
                                            fr->pmePpCommGpu->getForcesReadySynchronizer())) // buffer received from other GPU
                         : nullptr; // PME reduction not active on GPU
 
-        gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
+        gmx::FixedCapacityVector<GpuEventSynchronizer*, 3> dependencyList;
 
         if (stepWork.useGpuPmeFReduction)
         {
@@ -1699,14 +1700,7 @@ void do_force(FILE*                               fplog,
             }
             if (useGpuForcesHaloExchange)
             {
-                // Add a stream synchronization to satisfy a dependency
-                // for the local buffer ops on the result of GPU halo
-                // exchange, which operates in the non-local stream and
-                // writes to to local parf og the force buffer.
-                //
-                // TODO improve this through use of an event - see Redmine #3093
-                //      push the event into the dependencyList
-                nbv->stream_local_wait_for_nonlocal();
+                dependencyList.push_back(gpuHaloExchange->getForcesReadyOnDeviceEvent());
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(AtomLocality::Local, stateGpu->getForces(), pmeForcePtr,
                                               dependencyList, stepWork.useGpuPmeFReduction,

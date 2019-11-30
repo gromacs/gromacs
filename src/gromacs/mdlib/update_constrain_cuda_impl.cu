@@ -67,17 +67,51 @@
 
 namespace gmx
 {
+/*!\brief Number of CUDA threads in a block
+ *
+ * \todo Check if using smaller block size will lead to better prformance.
+ */
+constexpr static int c_threadsPerBlock = 256;
+//! Maximum number of threads in a block (for __launch_bounds__)
+constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
+
+/*! \brief Scaling matrix struct.
+ *
+ * \todo Should be generalized.
+ */
+struct ScalingMatrix
+{
+    float xx, yy, zz, yx, zx, zy;
+};
+
+__launch_bounds__(c_maxThreadsPerBlock) __global__
+        static void scaleCoordinates_kernel(const int numAtoms,
+                                            float3* __restrict__ gm_x,
+                                            const ScalingMatrix scalingMatrix)
+{
+    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+    if (threadIndex < numAtoms)
+    {
+        float3 x = gm_x[threadIndex];
+
+        x.x = scalingMatrix.xx * x.x + scalingMatrix.yx * x.y + scalingMatrix.zx * x.z;
+        x.y = scalingMatrix.yy * x.y + scalingMatrix.zy * x.z;
+        x.z = scalingMatrix.zz * x.z;
+
+        gm_x[threadIndex] = x;
+    }
+}
 
 void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fReadyOnDevice,
                                           const real                        dt,
                                           const bool                        updateVelocities,
                                           const bool                        computeVirial,
                                           tensor                            virial,
-                                          const bool                        doTempCouple,
+                                          const bool                        doTemperatureScaling,
                                           gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                          const bool                        doPressureCouple,
+                                          const bool                        doParrinelloRahman,
                                           const float                       dtPressureCouple,
-                                          const matrix                      velocityScalingMatrix)
+                                          const matrix                      prVelocityScalingMatrix)
 {
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
@@ -88,8 +122,8 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
 
     // The integrate should save a copy of the current coordinates in d_xp_ and write updated once
     // into d_x_. The d_xp_ is only needed by constraints.
-    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTempCouple, tcstat, doPressureCouple,
-                           dtPressureCouple, velocityScalingMatrix);
+    integrator_->integrate(d_x_, d_xp_, d_v_, d_f_, dt, doTemperatureScaling, tcstat,
+                           doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
@@ -111,6 +145,25 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
     return;
 }
 
+void UpdateConstrainCuda::Impl::scaleCoordinates(const matrix scalingMatrix)
+{
+    ScalingMatrix mu;
+    mu.xx = scalingMatrix[XX][XX];
+    mu.yy = scalingMatrix[YY][YY];
+    mu.zz = scalingMatrix[ZZ][ZZ];
+    mu.yx = scalingMatrix[YY][XX];
+    mu.zx = scalingMatrix[ZZ][XX];
+    mu.zy = scalingMatrix[ZZ][YY];
+
+    const auto kernelArgs = prepareGpuKernelArguments(
+            scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, &numAtoms_, &d_x_, &mu);
+    launchGpuKernel(scaleCoordinates_kernel, coordinateScalingKernelLaunchConfig_, nullptr,
+                    "scaleCoordinates_kernel", kernelArgs);
+    // TODO: Although this only happens on the pressure coupling steps, this synchronization
+    //       can affect the perfornamce if nstpcouple is small.
+    gpuStreamSynchronize(commandStream_);
+}
+
 UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
                                 const gmx_mtop_t&     mtop,
                                 const void*           commandStream,
@@ -125,6 +178,12 @@ UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
     integrator_ = std::make_unique<LeapFrogCuda>(commandStream_);
     lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder, commandStream_);
     settleCuda_ = std::make_unique<SettleCuda>(mtop, commandStream_);
+
+    coordinateScalingKernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
+    coordinateScalingKernelLaunchConfig_.blockSize[1]     = 1;
+    coordinateScalingKernelLaunchConfig_.blockSize[2]     = 1;
+    coordinateScalingKernelLaunchConfig_.sharedMemorySize = 0;
+    coordinateScalingKernelLaunchConfig_.stream           = commandStream_;
 }
 
 UpdateConstrainCuda::Impl::~Impl() {}
@@ -155,6 +214,9 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
     integrator_->set(md, numTempScaleValues, md.cTC);
     lincsCuda_->set(idef, md);
     settleCuda_->set(idef, md);
+
+    coordinateScalingKernelLaunchConfig_.gridSize[0] =
+            (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
 }
 
 void UpdateConstrainCuda::Impl::setPbc(const t_pbc* pbc)
@@ -182,14 +244,19 @@ void UpdateConstrainCuda::integrate(GpuEventSynchronizer*             fReadyOnDe
                                     const bool                        updateVelocities,
                                     const bool                        computeVirial,
                                     tensor                            virialScaled,
-                                    const bool                        doTempCouple,
+                                    const bool                        doTemperatureScaling,
                                     gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                    const bool                        doPressureCouple,
+                                    const bool                        doParrinelloRahman,
                                     const float                       dtPressureCouple,
-                                    const matrix                      velocityScalingMatrix)
+                                    const matrix                      prVelocityScalingMatrix)
 {
-    impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTempCouple,
-                     tcstat, doPressureCouple, dtPressureCouple, velocityScalingMatrix);
+    impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTemperatureScaling,
+                     tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
+}
+
+void UpdateConstrainCuda::scaleCoordinates(const matrix scalingMatrix)
+{
+    impl_->scaleCoordinates(scalingMatrix);
 }
 
 void UpdateConstrainCuda::set(DeviceBuffer<float>       d_x,

@@ -165,8 +165,14 @@ void parseCpuInfo(HardwareTopology::Machine* machine, HardwareTopology::SupportL
 // Preprocessor variable for if hwloc api is version 1.x.x or 2.x.x
 #    if HWLOC_API_VERSION >= 0x00020000
 #        define GMX_HWLOC_API_VERSION_IS_2XX 1
+#        if GMX_HWLOC_API_VERSION < 0x00020000
+#            error "HWLOC library major version set during configuration is 1, but currently using version 2 headers"
+#        endif
 #    else
 #        define GMX_HWLOC_API_VERSION_IS_2XX 0
+#        if GMX_HWLOC_API_VERSION >= 0x00020000
+#            error "HWLOC library major version set during configuration is 2, but currently using version 1 headers"
+#        endif
 #    endif
 
 /*****************************************************************************
@@ -605,8 +611,14 @@ void parseHwLoc(HardwareTopology::Machine* machine, HardwareTopology::SupportLev
 
     // Flags to look for io devices
 #    if GMX_HWLOC_API_VERSION_IS_2XX
+    GMX_RELEASE_ASSERT(
+            (hwloc_get_api_version() >= 0x20000),
+            "Mismatch between hwloc headers and library, using v2 headers with v1 library");
     hwloc_topology_set_io_types_filter(topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT);
 #    else
+    GMX_RELEASE_ASSERT(
+            (hwloc_get_api_version() < 0x20000),
+            "Mismatch between hwloc headers and library, using v1 headers with v2 library");
     hwloc_topology_set_flags(topo, HWLOC_TOPOLOGY_FLAG_IO_DEVICES);
 #    endif
 

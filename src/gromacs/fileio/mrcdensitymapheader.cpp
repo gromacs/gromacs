@@ -50,10 +50,30 @@
 
 namespace gmx
 {
+
+namespace
+{
+
+//! Returns true if any of the argument values is smaller than zero.
+template<typename Container>
+bool anySmallerZero(Container values)
+{
+    return std::any_of(std::begin(values), std::end(values), [](auto v) { return v < 0; });
+}
+
+//! Returns true if any of the argument values is larger than a given boundary value.
+template<typename Container>
+bool anyLargerThanValue(Container values, typename Container::value_type boundaryValue)
+{
+    return std::any_of(std::begin(values), std::end(values),
+                       [boundaryValue](auto v) { return v > boundaryValue; });
+}
+
+} // namespace
+
 size_t numberOfExpectedDataItems(const MrcDensityMapHeader& header)
 {
-    if (std::any_of(std::begin(header.numColumnRowSection_), std::end(header.numColumnRowSection_),
-                    [](auto i) { return i < 0; }))
+    if (anySmallerZero(header.numColumnRowSection_))
     {
         GMX_THROW(
                 InternalError("Cannot determine data size, because the mrc "
@@ -94,5 +114,32 @@ dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader& header)
     return { header.numColumnRowSection_[ZZ], header.numColumnRowSection_[YY],
              header.numColumnRowSection_[XX] };
 };
+
+bool mrcHeaderIsSane(const MrcDensityMapHeader& header)
+{
+    // Make sure all numbers of columns, row sections, extents and cell angles
+    // are positive
+    if (anySmallerZero(header.numColumnRowSection_) || anySmallerZero(header.cellAngles_)
+        || anySmallerZero(header.extent_))
+    {
+        return false;
+    }
+
+    // The maximum integer number in an mrc header to be considered sane
+    constexpr std::int32_t c_maxIntegerNumber = 100'000;
+    if (anyLargerThanValue(header.numColumnRowSection_, c_maxIntegerNumber)
+        || anyLargerThanValue(header.extent_, c_maxIntegerNumber))
+    {
+        return false;
+    }
+
+    constexpr std::int32_t c_maxCellAngle = 360;
+    if (anyLargerThanValue(header.cellAngles_, c_maxCellAngle))
+    {
+        return false; //NOLINT(readability-simplify-boolean-expr)
+    }
+
+    return true;
+}
 
 } // namespace gmx

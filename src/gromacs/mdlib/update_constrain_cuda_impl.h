@@ -92,28 +92,37 @@ public:
      *   2. This is the temperature coupling step.
      * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
      *
-     * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in
-     *                                    the device memory.
-     * \param[in]  dt                     Timestep.
-     * \param[in]  updateVelocities       If the velocities should be constrained.
-     * \param[in]  computeVirial          If virial should be updated.
-     * \param[out] virial                 Place to save virial tensor.
-     * \param[in]  doTempCouple           If the temperature coupling should be performed.
-     * \param[in]  tcstat                 Temperature coupling data.
-     * \param[in]  doPressureCouple       If the temperature coupling should be applied.
-     * \param[in]  dtPressureCouple       Period between pressure coupling steps
-     * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     * \param[in]  fReadyOnDevice           Event synchronizer indicating that the forces are ready in
+     *                                      the device memory.
+     * \param[in]  dt                       Timestep.
+     * \param[in]  updateVelocities         If the velocities should be constrained.
+     * \param[in]  computeVirial            If virial should be updated.
+     * \param[out] virial                   Place to save virial tensor.
+     * \param[in]  doTemperatureScaling     If velocities should be scaled for temperature coupling.
+     * \param[in]  tcstat                   Temperature coupling data.
+     * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
+     * \param[in]  dtPressureCouple         Period between pressure coupling steps.
+     * \param[in]  prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix.
      */
     void integrate(GpuEventSynchronizer*             fReadyOnDevice,
                    real                              dt,
                    bool                              updateVelocities,
                    bool                              computeVirial,
                    tensor                            virial,
-                   bool                              doTempCouple,
+                   bool                              doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                   bool                              doPressureCouple,
+                   bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const matrix                      velocityScalingMatrix);
+                   const matrix                      prVelocityScalingMatrix);
+
+    /*! \brief Scale coordinates on the GPU for the pressure coupling.
+     *
+     * After pressure coupling step, the box size may change. Hence, the coordinates should be
+     * scaled so that all the particles fit in the new box.
+     *
+     * \param[in] scalingMatrix Coordinates scaling matrix.
+     */
+    void scaleCoordinates(const matrix scalingMatrix);
 
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
@@ -147,6 +156,8 @@ public:
 private:
     //! CUDA stream
     CommandStream commandStream_ = nullptr;
+    //! CUDA kernel launch config
+    KernelLaunchConfig coordinateScalingKernelLaunchConfig_;
 
     //! Periodic boundary data
     PbcAiuc pbcAiuc_;

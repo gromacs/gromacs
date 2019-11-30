@@ -875,7 +875,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
-/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format.
+ *
+ * NOTE: When the total force device buffer is reallocated and its size increases, it is cleared in
+ *       Local stream. Hence, if accumulateForce is true, NonLocal stream should start accumulating
+ *       forces only after Local stream already done so.
+ */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
                                DeviceBuffer<float>                        totalForcesDevice,
                                gmx_nbnxn_gpu_t*                           nb,
@@ -943,21 +948,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
                    "localFReductionDone has to be a valid pointer");
         nb->localFReductionDone->markEvent(stream);
     }
-}
-
-void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t* nb)
-{
-    nb->xNonLocalCopyD2HDone->waitForEvent();
-}
-
-void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_cuda_t* nb)
-{
-    cudaStream_t localStream    = nb->stream[InteractionLocality::Local];
-    cudaStream_t nonLocalStream = nb->stream[InteractionLocality::NonLocal];
-
-    GpuEventSynchronizer event;
-    event.markEvent(nonLocalStream);
-    event.enqueueWaitEvent(localStream);
 }
 
 } // namespace Nbnxm

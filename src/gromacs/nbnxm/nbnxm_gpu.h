@@ -328,17 +328,5 @@ void nbnxn_gpu_add_nbat_f_to_f(gmx::AtomLocality gmx_unused atomLocality,
 CUDA_FUNC_QUALIFIER
 void nbnxn_wait_x_on_device(gmx_nbnxn_gpu_t gmx_unused* nb) CUDA_FUNC_TERM;
 
-/*! \brief Wait for non-local copy of coordinate buffer from device to host
- * \param[in] nb                   The nonbonded data GPU structure
- */
-CUDA_FUNC_QUALIFIER
-void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_gpu_t gmx_unused* nb) CUDA_FUNC_TERM;
-
-/*! \brief Ensure local stream waits for non-local stream
- * \param[in] nb                   The nonbonded data GPU structure
- */
-CUDA_FUNC_QUALIFIER
-void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_gpu_t gmx_unused* nb) CUDA_FUNC_TERM;
-
 } // namespace Nbnxm
 #endif

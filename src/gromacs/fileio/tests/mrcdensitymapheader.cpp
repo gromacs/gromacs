@@ -140,4 +140,22 @@ TEST(MrcDensityMapHeaderTest, GetsCorrectExtents)
     EXPECT_EQ(expectedExtents[ZZ], extents.extent(ZZ));
 }
 
+TEST(MrcDensityMapHeaderTest, IsSane)
+{
+    MrcDensityMapHeader header;
+    EXPECT_TRUE(mrcHeaderIsSane(header));
+
+    header.numColumnRowSection_[YY] = -1;
+    EXPECT_FALSE(mrcHeaderIsSane(header));
+
+    header.numColumnRowSection_[YY] = 10'000'000;
+    EXPECT_FALSE(mrcHeaderIsSane(header));
+
+    header = {};
+    EXPECT_TRUE(mrcHeaderIsSane(header));
+
+    header.cellAngles_[XX] = -20;
+    EXPECT_FALSE(mrcHeaderIsSane(header));
+}
+
 } // namespace gmx

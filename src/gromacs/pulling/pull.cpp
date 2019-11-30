@@ -516,7 +516,11 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
     double md2;
-    if (pcrd->params.eGeom == epullgDIRPBC)
+    /* With AWH pulling we allow for periodic pulling with geometry=direction.
+     * TODO: Store a periodicity flag instead of checking for external pull provider.
+     */
+    if (pcrd->params.eGeom == epullgDIRPBC
+        || (pcrd->params.eGeom == epullgDIR && pcrd->params.eType == epullEXTERNAL))
     {
         md2 = -1;
     }

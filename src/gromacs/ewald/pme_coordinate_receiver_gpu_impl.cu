@@ -87,6 +87,8 @@ void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(rvec* 
 
 #if GMX_MPI
         MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
+#else
+        GMX_UNUSED_VALUE(sendBuf);
 #endif
     }
 }
@@ -101,6 +103,8 @@ void PmeCoordinateReceiverGpu::Impl::launchReceiveCoordinatesFromPpCudaDirect(in
     MPI_Irecv(&ppSync_[recvCount_], sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_,
               &request_[recvCount_]);
     recvCount_++;
+#else
+    GMX_UNUSED_VALUE(ppRank);
 #endif
 }
 

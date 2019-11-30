@@ -534,10 +534,9 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     {
         errorMessage += "Nose-Hoover temperature coupling is not supported.\n";
     }
-    if (inputrec.epc != epcNO)
+    if (!(inputrec.epc == epcNO || inputrec.epc == epcPARRINELLORAHMAN || inputrec.epc == epcBERENDSEN))
     {
-        // Coordinate D2H and H2d are missing as well as PBC reinitialization
-        errorMessage += "Pressure coupling is not supported.\n";
+        errorMessage += "Only Parrinello-Rahman and Berendsen pressure coupling are supported.\n";
     }
     if (EEL_PME_EWALD(inputrec.coulombtype) && inputrec.epsilon_surface != 0)
     {
@@ -575,6 +574,11 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
     }
+
+    // \todo Check for coupled constraint block size restriction needs to be added
+    //       when update auto chooses GPU in some cases. Currently exceeding the restriction
+    //       triggers a fatal error during LINCS setup.
+
     if (!errorMessage.empty())
     {
         if (updateTarget == TaskTarget::Gpu)

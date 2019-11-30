@@ -230,7 +230,11 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
             }
         }
     }
-
+#else
+    GMX_UNUSED_VALUE(fr);
+    GMX_UNUSED_VALUE(reinitGpuPmePpComms);
+    GMX_UNUSED_VALUE(sendCoordinatesFromGpu);
+    GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
     if (!c_useDelayedWait)
     {
@@ -420,6 +424,8 @@ static void recvFFromPme(gmx::PmePpCommGpu* pmePpCommGpu,
 #if GMX_MPI
         MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
                  MPI_STATUS_IGNORE);
+#else
+        GMX_UNUSED_VALUE(cr);
 #endif
     }
 }

@@ -138,11 +138,17 @@ public:
 
     /*! \brief Set the ranges for local and non-local atoms and reallocates buffers.
      *
+     * Reallocates coordinate, velocities and force buffers on the device.
+     *
      * \note
      * The coordinates buffer is (re)allocated, when required by PME, with a padding,
      * the size of which is set by the constructor. The padding region clearing kernel
      * is scheduled in the \p pmeStream_ (unlike the coordinates H2D) as only the PME
      * task uses this padding area.
+     *
+     * \note
+     * The force buffer is cleared if its size increases, so that previously unused
+     * memory is cleared before forces are accumulated.
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
