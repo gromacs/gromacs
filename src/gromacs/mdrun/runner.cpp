@@ -909,8 +909,7 @@ int Mdrunner::mdrunner()
     {
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
                 devFlags.forceGpuUpdateDefaultOn, useDomainDecomposition, useGpuForPme,
-                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec,
-                gmx_mtop_interaction_count(mtop, IF_VSITE) > 0, doEssentialDynamics,
+                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
                 gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

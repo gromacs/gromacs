@@ -112,6 +112,11 @@ GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
     return nullptr;
 }
 
+bool UpdateConstrainCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* mtop */)
+{
+    return false;
+}
+
 } // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

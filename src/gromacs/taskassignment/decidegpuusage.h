@@ -238,7 +238,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  updateTarget              User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  * \param[in]  inputrec                  The user input.
- * \param[in]  haveVSites                If there are virtual sites in the system.
+ * \param[in]  mtop                      The global topology.
  * \param[in]  useEssentialDynamics      If essential dynamics is active.
  * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
  * \param[in]  useReplicaExchange        If this is a REMD simulation.
@@ -254,7 +254,7 @@ bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultOn,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,
                                     const t_inputrec& inputrec,
-                                    bool              haveVSites,
+                                    const gmx_mtop_t& mtop,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
                                     bool              useReplicaExchange);

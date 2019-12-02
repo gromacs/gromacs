@@ -70,6 +70,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
 #include "gromacs/topology/ifunc.h"
+#include "gromacs/topology/topology.h"
 
 namespace gmx
 {
@@ -679,6 +680,26 @@ static std::vector<int> countNumCoupledConstraints(ArrayRef<const int> iatoms,
     }
 
     return numCoupledConstraints;
+}
+
+bool LincsCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
+{
+    for (const gmx_moltype_t& molType : mtop.moltype)
+    {
+        ArrayRef<const int> iatoms    = molType.ilist[F_CONSTR].iatoms;
+        const auto atomsAdjacencyList = constructAtomsAdjacencyList(molType.atoms.nr, iatoms);
+        // Compute, how many constraints are coupled to each constraint
+        const auto numCoupledConstraints = countNumCoupledConstraints(iatoms, atomsAdjacencyList);
+        for (const int numCoupled : numCoupledConstraints)
+        {
+            if (numCoupled > c_threadsPerBlock)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
