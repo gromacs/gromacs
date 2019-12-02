@@ -179,23 +179,22 @@ static void resizeLagrangianData(shakedata* shaked, int ncons)
     }
 }
 
-void make_shake_sblock_serial(shakedata* shaked, const t_idef* idef, const t_mdatoms& md)
+void make_shake_sblock_serial(shakedata* shaked, InteractionDefinitions* idef, const t_mdatoms& md)
 {
     int          i, j, m, ncons;
     int          bstart, bnr;
     t_blocka     sblocks;
     t_sortblock* sb;
-    t_iatom*     iatom;
     int*         inv_sblock;
 
     /* Since we are processing the local topology,
      * the F_CONSTRNC ilist has been concatenated to the F_CONSTR ilist.
      */
-    ncons = idef->il[F_CONSTR].nr / 3;
+    ncons = idef->il[F_CONSTR].size() / 3;
 
     init_blocka(&sblocks);
     sfree(sblocks.index); // To solve memory leak
-    gen_sblocks(nullptr, 0, md.homenr, idef, &sblocks, FALSE);
+    gen_sblocks(nullptr, 0, md.homenr, *idef, &sblocks, FALSE);
 
     /*
        bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -217,7 +216,7 @@ void make_shake_sblock_serial(shakedata* shaked, const t_idef* idef, const t_mda
      * sort the constraints in order of the sblock number
      * and the atom numbers, really sorting a segment of the array!
      */
-    iatom = idef->il[F_CONSTR].iatoms;
+    int* iatom = idef->il[F_CONSTR].iatoms.data();
     snew(sb, ncons);
     for (i = 0; (i < ncons); i++, iatom += 3)
     {
@@ -242,7 +241,7 @@ void make_shake_sblock_serial(shakedata* shaked, const t_idef* idef, const t_mda
         pr_sortblock(debug, "After sorting", ncons, sb);
     }
 
-    iatom = idef->il[F_CONSTR].iatoms;
+    iatom = idef->il[F_CONSTR].iatoms.data();
     for (i = 0; (i < ncons); i++, iatom += 3)
     {
         for (m = 0; (m < 3); m++)
@@ -287,10 +286,9 @@ void make_shake_sblock_serial(shakedata* shaked, const t_idef* idef, const t_mda
 }
 
 // TODO: Check if this code is useful. It might never be called.
-void make_shake_sblock_dd(shakedata* shaked, const t_ilist* ilcon, const gmx_domdec_t* dd)
+void make_shake_sblock_dd(shakedata* shaked, const InteractionList& ilcon, const gmx_domdec_t* dd)
 {
-    int      ncons, c, cg;
-    t_iatom* iatom;
+    int ncons, c, cg;
 
     if (dd->ncg_home + 1 > shaked->sblock_nalloc)
     {
@@ -298,10 +296,10 @@ void make_shake_sblock_dd(shakedata* shaked, const t_ilist* ilcon, const gmx_dom
         srenew(shaked->sblock, shaked->sblock_nalloc);
     }
 
-    ncons           = ilcon->nr / 3;
-    iatom           = ilcon->iatoms;
-    shaked->nblocks = 0;
-    cg              = 0;
+    ncons            = ilcon.size() / 3;
+    const int* iatom = ilcon.iatoms.data();
+    shaked->nblocks  = 0;
+    cg               = 0;
     for (c = 0; c < ncons; c++)
     {
         if (c == 0 || iatom[1] >= cg + 1)
@@ -538,34 +536,33 @@ static void crattle(const int  iatom[],
 }
 
 //! Applies SHAKE
-static int vec_shakef(FILE*              fplog,
-                      shakedata*         shaked,
-                      const real         invmass[],
-                      int                ncon,
-                      t_iparams          ip[],
-                      t_iatom*           iatom,
-                      real               tol,
-                      const rvec         x[],
-                      rvec               prime[],
-                      real               omega,
-                      bool               bFEP,
-                      real               lambda,
-                      real               scaled_lagrange_multiplier[],
-                      real               invdt,
-                      rvec*              v,
-                      bool               bCalcVir,
-                      tensor             vir_r_m_dr,
-                      ConstraintVariable econq)
+static int vec_shakef(FILE*                     fplog,
+                      shakedata*                shaked,
+                      const real                invmass[],
+                      int                       ncon,
+                      ArrayRef<const t_iparams> ip,
+                      const int*                iatom,
+                      real                      tol,
+                      const rvec                x[],
+                      rvec                      prime[],
+                      real                      omega,
+                      bool                      bFEP,
+                      real                      lambda,
+                      real                      scaled_lagrange_multiplier[],
+                      real                      invdt,
+                      rvec*                     v,
+                      bool                      bCalcVir,
+                      tensor                    vir_r_m_dr,
+                      ConstraintVariable        econq)
 {
-    rvec*    rij;
-    real *   half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
-    int      maxnit = 1000;
-    int      nit    = 0, ll, i, j, d, d2, type;
-    t_iatom* ia;
-    real     L1;
-    real     mm    = 0., tmp;
-    int      error = 0;
-    real     constraint_distance;
+    rvec* rij;
+    real *half_of_reduced_mass, *distance_squared_tolerance, *constraint_distance_squared;
+    int   maxnit = 1000;
+    int   nit    = 0, ll, i, j, d, d2, type;
+    real  L1;
+    real  mm    = 0., tmp;
+    int   error = 0;
+    real  constraint_distance;
 
     if (ncon > shaked->nalloc)
     {
@@ -580,8 +577,8 @@ static int vec_shakef(FILE*              fplog,
     distance_squared_tolerance  = shaked->distance_squared_tolerance;
     constraint_distance_squared = shaked->constraint_distance_squared;
 
-    L1 = 1.0 - lambda;
-    ia = iatom;
+    L1            = 1.0 - lambda;
+    const int* ia = iatom;
     for (ll = 0; (ll < ncon); ll++, ia += 3)
     {
         type = ia[0];
@@ -703,25 +700,24 @@ static int vec_shakef(FILE*              fplog,
 }
 
 //! Check that constraints are satisfied.
-static void check_cons(FILE*              log,
-                       int                nc,
-                       const rvec         x[],
-                       rvec               prime[],
-                       rvec               v[],
-                       t_iparams          ip[],
-                       t_iatom*           iatom,
-                       const real         invmass[],
-                       ConstraintVariable econq)
+static void check_cons(FILE*                     log,
+                       int                       nc,
+                       const rvec                x[],
+                       rvec                      prime[],
+                       rvec                      v[],
+                       ArrayRef<const t_iparams> ip,
+                       const int*                iatom,
+                       const real                invmass[],
+                       ConstraintVariable        econq)
 {
-    t_iatom* ia;
-    int      ai, aj;
-    int      i;
-    real     d, dp;
-    rvec     dx, dv;
+    int  ai, aj;
+    int  i;
+    real d, dp;
+    rvec dx, dv;
 
     GMX_ASSERT(v, "Input has to be non-null");
     fprintf(log, "    i     mi      j     mj      before       after   should be\n");
-    ia = iatom;
+    const int* ia = iatom;
     for (i = 0; (i < nc); i++, ia += 3)
     {
         ai = ia[1];
@@ -751,29 +747,28 @@ static void check_cons(FILE*              log,
 }
 
 //! Applies SHAKE.
-static bool bshakef(FILE*              log,
-                    shakedata*         shaked,
-                    const real         invmass[],
-                    const t_idef&      idef,
-                    const t_inputrec&  ir,
-                    const rvec         x_s[],
-                    rvec               prime[],
-                    t_nrnb*            nrnb,
-                    real               lambda,
-                    real*              dvdlambda,
-                    real               invdt,
-                    rvec*              v,
-                    bool               bCalcVir,
-                    tensor             vir_r_m_dr,
-                    bool               bDumpOnError,
-                    ConstraintVariable econq)
+static bool bshakef(FILE*                         log,
+                    shakedata*                    shaked,
+                    const real                    invmass[],
+                    const InteractionDefinitions& idef,
+                    const t_inputrec&             ir,
+                    const rvec                    x_s[],
+                    rvec                          prime[],
+                    t_nrnb*                       nrnb,
+                    real                          lambda,
+                    real*                         dvdlambda,
+                    real                          invdt,
+                    rvec*                         v,
+                    bool                          bCalcVir,
+                    tensor                        vir_r_m_dr,
+                    bool                          bDumpOnError,
+                    ConstraintVariable            econq)
 {
-    t_iatom* iatoms;
-    real *   lam, dt_2, dvdl;
-    int      i, n0, ncon, blen, type, ll;
-    int      tnit = 0, trij = 0;
+    real *lam, dt_2, dvdl;
+    int   i, n0, ncon, blen, type, ll;
+    int   tnit = 0, trij = 0;
 
-    ncon = idef.il[F_CONSTR].nr / 3;
+    ncon = idef.il[F_CONSTR].size() / 3;
 
     for (ll = 0; ll < ncon; ll++)
     {
@@ -783,8 +778,8 @@ static bool bshakef(FILE*              log,
     // TODO Rewrite this block so that it is obvious that i, iatoms
     // and lam are all iteration variables. Is this easier if the
     // sblock data structure is organized differently?
-    iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
-    lam    = shaked->scaled_lagrange_multiplier;
+    const int* iatoms = &(idef.il[F_CONSTR].iatoms[shaked->sblock[0]]);
+    lam               = shaked->scaled_lagrange_multiplier;
     for (i = 0; (i < shaked->nblocks);)
     {
         blen = (shaked->sblock[i + 1] - shaked->sblock[i]);
@@ -814,7 +809,8 @@ static bool bshakef(FILE*              log,
     {
         if (ir.efep != efepNO)
         {
-            real bondA, bondB;
+            ArrayRef<const t_iparams> iparams = idef.iparams;
+
             /* TODO This should probably use invdt, so that sd integrator scaling works properly */
             dt_2 = 1 / gmx::square(ir.delta_t);
             dvdl = 0;
@@ -826,8 +822,8 @@ static bool bshakef(FILE*              log,
                 /* The vector scaled_lagrange_multiplier[ll] contains the value -2 r_ll eta_ll
                    (eta_ll is the estimate of the Langrangian, definition on page 336 of Ryckaert et
                    al 1977), so the pre-factors are already present. */
-                bondA = idef.iparams[type].constr.dA;
-                bondB = idef.iparams[type].constr.dB;
+                const real bondA = iparams[type].constr.dA;
+                const real bondB = iparams[type].constr.dB;
                 dvdl += shaked->scaled_lagrange_multiplier[ll] * dt_2 * (bondB - bondA);
             }
             *dvdlambda += dvdl;
@@ -856,23 +852,23 @@ static bool bshakef(FILE*              log,
     return TRUE;
 }
 
-bool constrain_shake(FILE*              log,
-                     shakedata*         shaked,
-                     const real         invmass[],
-                     const t_idef&      idef,
-                     const t_inputrec&  ir,
-                     const rvec         x_s[],
-                     rvec               xprime[],
-                     rvec               vprime[],
-                     t_nrnb*            nrnb,
-                     real               lambda,
-                     real*              dvdlambda,
-                     real               invdt,
-                     rvec*              v,
-                     bool               bCalcVir,
-                     tensor             vir_r_m_dr,
-                     bool               bDumpOnError,
-                     ConstraintVariable econq)
+bool constrain_shake(FILE*                         log,
+                     shakedata*                    shaked,
+                     const real                    invmass[],
+                     const InteractionDefinitions& idef,
+                     const t_inputrec&             ir,
+                     const rvec                    x_s[],
+                     rvec                          xprime[],
+                     rvec                          vprime[],
+                     t_nrnb*                       nrnb,
+                     real                          lambda,
+                     real*                         dvdlambda,
+                     real                          invdt,
+                     rvec*                         v,
+                     bool                          bCalcVir,
+                     tensor                        vir_r_m_dr,
+                     bool                          bDumpOnError,
+                     ConstraintVariable            econq)
 {
     if (shaked->nblocks == 0)
     {

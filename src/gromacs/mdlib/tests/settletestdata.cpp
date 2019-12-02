@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,9 +138,8 @@ SettleTestData::SettleTestData(int numSettles) :
         mtop_.moltype[0].atoms.atom[i * atomsPerSettle_ + 2].m = hydrogenMass_;
     }
 
-    // Reshape some data so it can be directly used by the SETTLE constraints
-    ilist_ = { mtop_.moltype[0].ilist[F_SETTLE].size(), mtop_.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
-    idef_.il[F_SETTLE] = ilist_;
+    idef_               = std::make_unique<InteractionDefinitions>(mtop_.ffparams);
+    idef_->il[F_SETTLE] = mtop_.moltype[0].ilist[F_SETTLE];
 }
 
 SettleTestData::~SettleTestData()

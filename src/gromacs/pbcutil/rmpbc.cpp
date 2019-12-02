@@ -62,11 +62,13 @@ typedef struct
 
 struct gmx_rmpbc
 {
-    const t_idef*  idef;
-    int            natoms_init;
-    PbcType        pbcType;
-    int            ngraph;
-    rmpbc_graph_t* graph;
+    const InteractionDefinitions* interactionDefinitions;
+    const t_idef*                 idef;
+    int                           natoms_init;
+    PbcType                       pbcType;
+    int                           ePBC;
+    int                           ngraph;
+    rmpbc_graph_t*                graph;
 };
 
 static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natoms)
@@ -104,10 +106,35 @@ static t_graph* gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, PbcType pbcType, int natom
         srenew(gpbc->graph, gpbc->ngraph);
         gr         = &gpbc->graph[gpbc->ngraph - 1];
         gr->natoms = natoms;
-        gr->gr     = mk_graph(nullptr, gpbc->idef, 0, natoms, FALSE, FALSE);
+        if (gpbc->interactionDefinitions)
+        {
+            gr->gr = mk_graph(nullptr, *gpbc->interactionDefinitions, 0, natoms, FALSE, FALSE);
+        }
+        else
+        {
+            gr->gr = mk_graph(nullptr, gpbc->idef, 0, natoms, FALSE, FALSE);
+        }
     }
 
     return gr->gr;
+}
+
+gmx_rmpbc_t gmx_rmpbc_init(const InteractionDefinitions& idef, PbcType pbcType, int natoms)
+{
+    gmx_rmpbc_t gpbc;
+
+    snew(gpbc, 1);
+
+    gpbc->natoms_init = natoms;
+
+    /* This sets pbc when we now it,
+     * otherwise we guess it from the instantaneous box in the trajectory.
+     */
+    gpbc->pbcType = pbcType;
+
+    gpbc->interactionDefinitions = &idef;
+
+    return gpbc;
 }
 
 gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, PbcType pbcType, int natoms)

@@ -65,7 +65,7 @@ void applySettle(SettleTestData*    testData,
 {
     settledata* settled = settle_init(testData->mtop_);
 
-    settle_set_constraints(settled, &testData->ilist_, testData->mdatoms_);
+    settle_set_constraints(settled, testData->idef_->il[F_SETTLE], testData->mdatoms_);
 
     bool errorOccured;
     int  numThreads  = 1;

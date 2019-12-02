@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,10 +76,8 @@ public:
     gmx_mtop_t mtop_;
     //! Atoms data
     t_mdatoms mdatoms_;
-    //! Interactions list
-    t_ilist ilist_;
     //! Local topology
-    t_idef idef_;
+    std::unique_ptr<InteractionDefinitions> idef_;
 
     //! Inverse timestep
     const real reciprocalTimeStep_ = 1.0 / 0.002;

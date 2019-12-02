@@ -136,11 +136,11 @@ public:
      * stage. Copies the bonded interactions assigned to the GPU
      * to device data structures, and updates device buffers that
      * may have been updated after search. */
-    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
-                                                const t_idef&       idef,
-                                                void*               xqDevice,
-                                                DeviceBuffer<RVec>  forceDevice,
-                                                DeviceBuffer<RVec>  fshiftDevice);
+    void updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
+                                                const InteractionDefinitions& idef,
+                                                void*                         xqDevice,
+                                                DeviceBuffer<RVec>            forceDevice,
+                                                DeviceBuffer<RVec>            fshiftDevice);
 
     /*! \brief Launches bonded kernel on a GPU */
     template<bool calcVir, bool calcEner>
@@ -165,7 +165,7 @@ private:
     //! Tells whether there are any interaction in iLists.
     bool haveInteractions_;
     //! Interaction lists on the device.
-    t_ilist d_iLists_[F_NRE];
+    t_ilist d_iLists_[F_NRE] = {};
     //! Bonded parameters for device-side use.
     t_iparams* d_forceParams_ = nullptr;
     //! Position-charge vector on the device.

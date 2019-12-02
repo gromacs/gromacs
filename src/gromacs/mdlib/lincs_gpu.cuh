@@ -48,8 +48,9 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/utility/classhelpers.h"
+
+class InteractionDefinitions;
 
 namespace gmx
 {
@@ -155,7 +156,7 @@ public:
      * \param[in] idef  Local topology data to get information on constraints from.
      * \param[in] md    Atoms data to get atom masses from.
      */
-    void set(const t_idef& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported

@@ -52,8 +52,9 @@
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc.h"
-#include "gromacs/topology/idef.h"
 #include "gromacs/topology/topology.h"
+
+class InteractionDefinitions;
 
 namespace gmx
 {
@@ -246,7 +247,7 @@ public:
      * \param[in] idef    System topology
      * \param[in] md      Atoms data. Can be used to update masses if needed (not used now).
      */
-    void set(const t_idef& idef, const t_mdatoms& md);
+    void set(const InteractionDefinitions& idef, const t_mdatoms& md);
 
 private:
     //! GPU stream

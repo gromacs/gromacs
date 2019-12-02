@@ -78,13 +78,6 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallc
     allocateDeviceBuffer(&d_vTot_, F_NRE, nullptr);
     clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, stream_);
 
-    for (int fType = 0; fType < F_NRE; fType++)
-    {
-        d_iLists_[fType].nr     = 0;
-        d_iLists_[fType].iatoms = nullptr;
-        d_iLists_[fType].nalloc = 0;
-    }
-
     kernelParams_.d_forceParams = d_forceParams_;
     kernelParams_.d_xq          = d_xq_;
     kernelParams_.d_f           = d_f_;
@@ -114,21 +107,21 @@ GpuBonded::Impl::~Impl()
 }
 
 //! Return whether function type \p fType in \p idef has perturbed interactions
-static bool fTypeHasPerturbedEntries(const t_idef& idef, int fType)
+static bool fTypeHasPerturbedEntries(const InteractionDefinitions& idef, int fType)
 {
     GMX_ASSERT(idef.ilsort == ilsortNO_FE || idef.ilsort == ilsortFE_SORTED,
                "Perturbed interations should be sorted here");
 
-    const t_ilist& ilist = idef.il[fType];
+    const InteractionList& ilist = idef.il[fType];
 
-    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[fType] != ilist.nr);
+    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[fType] != ilist.size());
 }
 
 //! Converts \p src with atom indices in state order to \p dest in nbnxn order
-static void convertIlistToNbnxnOrder(const t_ilist&       src,
-                                     HostInteractionList* dest,
-                                     int                  numAtomsPerInteraction,
-                                     ArrayRef<const int>  nbnxnAtomOrder)
+static void convertIlistToNbnxnOrder(const InteractionList& src,
+                                     HostInteractionList*   dest,
+                                     int                    numAtomsPerInteraction,
+                                     ArrayRef<const int>    nbnxnAtomOrder)
 {
     GMX_ASSERT(src.size() == 0 || !nbnxnAtomOrder.empty(), "We need the nbnxn atom order");
 
@@ -175,10 +168,10 @@ static inline int roundUpToFactor(const int input, const int factor)
  * \todo Use DeviceBuffer for the d_xqPtr.
  */
 void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
-                                                             const t_idef&       idef,
-                                                             void*               d_xqPtr,
-                                                             DeviceBuffer<RVec>  d_fPtr,
-                                                             DeviceBuffer<RVec>  d_fShiftPtr)
+                                                             const InteractionDefinitions& idef,
+                                                             void*                         d_xqPtr,
+                                                             DeviceBuffer<RVec>            d_fPtr,
+                                                             DeviceBuffer<RVec> d_fShiftPtr)
 {
     // TODO wallcycle sub start
     haveInteractions_ = false;
@@ -192,7 +185,7 @@ void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>
          * But instead of doing all interactions on the CPU, we can
          * still easily handle the types that have no perturbed
          * interactions on the GPU. */
-        if (idef.il[fType].nr > 0 && !fTypeHasPerturbedEntries(idef, fType))
+        if (!idef.il[fType].empty() && !fTypeHasPerturbedEntries(idef, fType))
         {
             haveInteractions_ = true;
 
@@ -319,11 +312,11 @@ GpuBonded::GpuBonded(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallcy
 
 GpuBonded::~GpuBonded() = default;
 
-void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int> nbnxnAtomOrder,
-                                                       const t_idef&       idef,
-                                                       void*               d_xq,
-                                                       DeviceBuffer<RVec>  d_f,
-                                                       DeviceBuffer<RVec>  d_fShift)
+void GpuBonded::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>           nbnxnAtomOrder,
+                                                       const InteractionDefinitions& idef,
+                                                       void*                         d_xq,
+                                                       DeviceBuffer<RVec>            d_f,
+                                                       DeviceBuffer<RVec>            d_fShift)
 {
     impl_->updateInteractionListsAndDeviceBuffers(nbnxnAtomOrder, idef, d_xq, d_f, d_fShift);
 }

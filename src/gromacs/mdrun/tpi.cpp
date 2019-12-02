@@ -165,7 +165,7 @@ void LegacySimulator::do_tpi()
 {
     GMX_RELEASE_ASSERT(gmx_omp_nthreads_get(emntDefault) == 1, "TPI does not support OpenMP");
 
-    gmx_localtop_t              top;
+    gmx_localtop_t              top(top_global->ffparams);
     PaddedHostVector<gmx::RVec> f{};
     real                        lambda, t, temp, beta, drmax, epot;
     double                      embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;

@@ -102,7 +102,7 @@ static void reduceEwaldThreadOuput(int nthreads, ewald_corr_thread_t* ewc_t)
 
 void do_force_lowlevel(t_forcerec*                         fr,
                        const t_inputrec*                   ir,
-                       const t_idef*                       idef,
+                       const InteractionDefinitions&       idef,
                        const t_commrec*                    cr,
                        const gmx_multisim_t*               ms,
                        t_nrnb*                             nrnb,
@@ -178,7 +178,7 @@ void do_force_lowlevel(t_forcerec*                         fr,
 
         /* Check whether we need to take into account PBC in listed interactions. */
         const auto needPbcForListedForces =
-                fr->bMolPBC && stepWork.computeListedForces && haveCpuListedForces(*fr, *idef, *fcd);
+                fr->bMolPBC && stepWork.computeListedForces && haveCpuListedForces(*fr, idef, *fcd);
         if (needPbcForListedForces)
         {
             /* Since all atoms are in the rectangular or triclinic unit-cell,

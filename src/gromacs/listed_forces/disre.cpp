@@ -139,7 +139,7 @@ void init_disres(FILE*                 fplog,
     iloop     = gmx_mtop_ilistloop_init(mtop);
     while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        if (nmol > 1 && (*il)[F_DISRES].size() > 0 && ir->eDisre != edrEnsemble)
+        if (nmol > 1 && !(*il)[F_DISRES].empty() && ir->eDisre != edrEnsemble)
         {
             gmx_fatal(FARGS,
                       "NMR distance restraints with multiple copies of the same molecule are "

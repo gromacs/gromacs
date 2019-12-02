@@ -65,6 +65,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/pbc_aiuc_cuda.cuh"
+#include "gromacs/topology/forcefieldparameters.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
 
@@ -720,7 +721,7 @@ bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
     return true;
 }
 
-void LincsGpu::set(const t_idef& idef, const t_mdatoms& md)
+void LincsGpu::set(const InteractionDefinitions& idef, const t_mdatoms& md)
 {
     int numAtoms = md.nr;
     // List of constrained atoms (CPU memory)
@@ -735,10 +736,9 @@ void LincsGpu::set(const t_idef& idef, const t_mdatoms& md)
     std::vector<float> massFactorsHost;
 
     // List of constrained atoms in local topology
-    gmx::ArrayRef<const int> iatoms =
-            constArrayRefFromArray(idef.il[F_CONSTR].iatoms, idef.il[F_CONSTR].nr);
-    const int stride         = NRAL(F_CONSTR) + 1;
-    const int numConstraints = idef.il[F_CONSTR].nr / stride;
+    ArrayRef<const int> iatoms         = idef.il[F_CONSTR].iatoms;
+    const int           stride         = NRAL(F_CONSTR) + 1;
+    const int           numConstraints = idef.il[F_CONSTR].size() / stride;
 
     // Early exit if no constraints
     if (numConstraints == 0)

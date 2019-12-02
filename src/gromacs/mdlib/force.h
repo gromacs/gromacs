@@ -52,12 +52,12 @@ struct gmx_multisim_t;
 struct gmx_vsite_t;
 struct gmx_wallcycle;
 class history_t;
+class InteractionDefinitions;
 struct pull_t;
 struct t_commrec;
 struct t_fcdata;
 struct t_forcerec;
 struct t_graph;
-struct t_idef;
 struct t_inputrec;
 struct t_lambda;
 struct t_mdatoms;
@@ -117,7 +117,7 @@ void do_force(FILE*                               log,
 
 void do_force_lowlevel(t_forcerec*                         fr,
                        const t_inputrec*                   ir,
-                       const t_idef*                       idef,
+                       const InteractionDefinitions&       idef,
                        const t_commrec*                    cr,
                        const gmx_multisim_t*               ms,
                        t_nrnb*                             nrnb,

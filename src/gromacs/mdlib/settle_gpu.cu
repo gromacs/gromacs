@@ -604,12 +604,12 @@ SettleGpu::~SettleGpu()
     }
 }
 
-void SettleGpu::set(const t_idef& idef, const t_mdatoms gmx_unused& md)
+void SettleGpu::set(const InteractionDefinitions& idef, const t_mdatoms gmx_unused& md)
 {
-    const int nral1     = 1 + NRAL(F_SETTLE);
-    t_ilist   il_settle = idef.il[F_SETTLE];
-    t_iatom*  iatoms    = il_settle.iatoms;
-    numSettles_         = il_settle.nr / nral1;
+    const int              nral1     = 1 + NRAL(F_SETTLE);
+    const InteractionList& il_settle = idef.il[F_SETTLE];
+    ArrayRef<const int>    iatoms    = il_settle.iatoms;
+    numSettles_                      = il_settle.size() / nral1;
 
     reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, nullptr);
     h_atomIds_.resize(numSettles_);

@@ -133,12 +133,12 @@ public:
      * \param[in] md                  Atoms data.
      * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
      */
-    void set(DeviceBuffer<RVec>       d_x,
-             DeviceBuffer<RVec>       d_v,
-             const DeviceBuffer<RVec> d_f,
-             const t_idef&            idef,
-             const t_mdatoms&         md,
-             const int                numTempScaleValues);
+    void set(DeviceBuffer<RVec>            d_x,
+             DeviceBuffer<RVec>            d_v,
+             const DeviceBuffer<RVec>      d_f,
+             const InteractionDefinitions& idef,
+             const t_mdatoms&              md,
+             const int                     numTempScaleValues);
 
     /*! \brief
      * Update PBC data.

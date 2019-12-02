@@ -207,18 +207,12 @@ struct gmx_mtop_t //NOLINT(clang-analyzer-optin.performance.Padding)
 struct gmx_localtop_t
 {
     //! Constructor used for normal operation, manages own resources.
-    gmx_localtop_t();
-
-    ~gmx_localtop_t();
+    gmx_localtop_t(const gmx_ffparams_t& ffparams);
 
     //! The interaction function definition
-    t_idef idef;
-    //! Atomtype properties
-    t_atomtypes atomtypes;
+    InteractionDefinitions idef;
     //! The exclusions
     gmx::ListOfLists<int> excls;
-    //! Flag for domain decomposition so we don't free already freed memory.
-    bool useInDomainDecomp_ = false;
 };
 
 /* The old topology struct, completely written out, used in analysis tools */

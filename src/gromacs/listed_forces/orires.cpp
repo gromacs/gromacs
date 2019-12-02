@@ -123,7 +123,8 @@ void init_orires(FILE*                 fplog,
     int                  nmol;
     while (const InteractionLists* il = gmx_mtop_ilistloop_next(iloop, &nmol))
     {
-        if (nmol > 1 && (*il)[F_ORIRES].size() > 0)
+        const int numOrires = (*il)[F_ORIRES].size();
+        if (nmol > 1 && numOrires > 0)
         {
             gmx_fatal(FARGS,
                       "Found %d copies of a molecule with orientation restrains while the current "
@@ -132,7 +133,7 @@ void init_orires(FILE*                 fplog,
                       nmol);
         }
 
-        for (int i = 0; i < (*il)[F_ORIRES].size(); i += 3)
+        for (int i = 0; i < numOrires; i += 3)
         {
             int type = (*il)[F_ORIRES].iatoms[i];
             int ex   = mtop->ffparams.iparams[type].orires.ex;

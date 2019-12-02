@@ -1681,13 +1681,13 @@ static void assign_constraint(Lincs*                  li,
 
 /*! \brief Check if constraint with topology index constraint_index is connected
  * to other constraints, and if so add those connected constraints to our task. */
-static void check_assign_connected(Lincs*                  li,
-                                   const t_iatom*          iatom,
-                                   const t_idef&           idef,
-                                   bool                    bDynamics,
-                                   int                     a1,
-                                   int                     a2,
-                                   const ListOfLists<int>& at2con)
+static void check_assign_connected(Lincs*                        li,
+                                   gmx::ArrayRef<const int>      iatom,
+                                   const InteractionDefinitions& idef,
+                                   bool                          bDynamics,
+                                   int                           a1,
+                                   int                           a2,
+                                   const ListOfLists<int>&       at2con)
 {
     /* Currently this function only supports constraint groups
      * in which all constraints share at least one atom
@@ -1721,14 +1721,14 @@ static void check_assign_connected(Lincs*                  li,
 /*! \brief Check if constraint with topology index constraint_index is involved
  * in a constraint triangle, and if so add the other two constraints
  * in the triangle to our task. */
-static void check_assign_triangle(Lincs*                  li,
-                                  const t_iatom*          iatom,
-                                  const t_idef&           idef,
-                                  bool                    bDynamics,
-                                  int                     constraint_index,
-                                  int                     a1,
-                                  int                     a2,
-                                  const ListOfLists<int>& at2con)
+static void check_assign_triangle(Lincs*                        li,
+                                  gmx::ArrayRef<const int>      iatom,
+                                  const InteractionDefinitions& idef,
+                                  bool                          bDynamics,
+                                  int                           constraint_index,
+                                  int                           a1,
+                                  int                           a2,
+                                  const ListOfLists<int>&       at2con)
 {
     int nca, cc[32], ca[32];
     int c_triangle[2] = { -1, -1 };
@@ -1850,11 +1850,8 @@ static void set_matrix_indices(Lincs* li, const Task& li_task, const ListOfLists
     }
 }
 
-void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_commrec* cr, Lincs* li)
+void set_lincs(const InteractionDefinitions& idef, const t_mdatoms& md, bool bDynamics, const t_commrec* cr, Lincs* li)
 {
-    int      natoms;
-    t_iatom* iatom;
-
     li->nc_real = 0;
     li->nc      = 0;
     li->ncc     = 0;
@@ -1873,7 +1870,7 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
     }
 
     /* This is the local topology, so there are only F_CONSTR constraints */
-    if (idef.il[F_CONSTR].nr == 0)
+    if (idef.il[F_CONSTR].empty())
     {
         /* There are no constraints,
          * we do not need to fill any data structures.
@@ -1886,6 +1883,7 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
         fprintf(debug, "Building the LINCS connectivity\n");
     }
 
+    int natoms;
     if (DOMAINDECOMP(cr))
     {
         if (cr->dd->constraints)
@@ -1907,7 +1905,7 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
     const ListOfLists<int> at2con =
             make_at2con(natoms, idef.il, idef.iparams, flexibleConstraintTreatment(bDynamics));
 
-    const int ncon_tot = idef.il[F_CONSTR].nr / 3;
+    const int ncon_tot = idef.il[F_CONSTR].size() / 3;
 
     /* Ensure we have enough padding for aligned loads for each thread */
     const int numEntries = ncon_tot + li->ntask * simd_width;
@@ -1930,7 +1928,7 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
     li->tmp4.resize(numEntries);
     li->mlambda.resize(numEntries);
 
-    iatom = idef.il[F_CONSTR].iatoms;
+    gmx::ArrayRef<const int> iatom = idef.il[F_CONSTR].iatoms;
 
     li->blnr[0] = li->ncc;
 
@@ -1993,6 +1991,8 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
          */
         li_task->b0 = li->nc;
 
+        gmx::ArrayRef<const t_iparams> iparams = idef.iparams;
+
         while (con < ncon_tot && li->nc - li_task->b0 < ncon_target)
         {
             if (li->con_index[con] == -1)
@@ -2003,8 +2003,8 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
                 type = iatom[3 * con];
                 a1   = iatom[3 * con + 1];
                 a2   = iatom[3 * con + 2];
-                lenA = idef.iparams[type].constr.dA;
-                lenB = idef.iparams[type].constr.dB;
+                lenA = iparams[type].constr.dA;
+                lenB = iparams[type].constr.dB;
                 /* Skip the flexible constraints when not doing dynamics */
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {

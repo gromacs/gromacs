@@ -496,6 +496,17 @@ void mk_graph_moltype(const gmx_moltype_t& moltype, t_graph* g)
     mk_graph_ilist(nullptr, moltype.ilist.data(), 0, moltype.atoms.nr, FALSE, FALSE, g);
 }
 
+t_graph* mk_graph(FILE* fplog, const InteractionDefinitions& idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
+{
+    t_graph* g;
+
+    snew(g, 1);
+
+    mk_graph_ilist(fplog, idef.il.data(), at_start, at_end, bShakeOnly, bSettle, g);
+
+    return g;
+}
+
 t_graph* mk_graph(FILE* fplog, const t_idef* idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle)
 {
     t_graph* g;

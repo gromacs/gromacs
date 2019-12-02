@@ -45,6 +45,7 @@
 
 struct InteractionList;
 struct gmx_moltype_t;
+class InteractionDefinitions;
 struct t_idef;
 enum class PbcType : int;
 
@@ -84,6 +85,20 @@ struct t_graph
 };
 
 #define SHIFT_IVEC(g, i) ((g)->ishift[i])
+
+t_graph* mk_graph(FILE*                         fplog,
+                  const InteractionDefinitions& idef,
+                  int                           at_start,
+                  int                           at_end,
+                  gmx_bool                      bShakeOnly,
+                  gmx_bool                      bSettle);
+/* Build a graph from an idef description. The graph can be used
+ * to generate mol-shift indices.
+ * at_start and at_end should coincide will molecule boundaries,
+ * for the whole system this is simply 0 and natoms.
+ * If bShakeOnly, only the connections in the shake list are used.
+ * If bSettle && bShakeOnly the settles are used too.
+ */
 
 t_graph* mk_graph(FILE* fplog, const struct t_idef* idef, int at_start, int at_end, gmx_bool bShakeOnly, gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 #ifndef GMX_MDLIB_TESTS_CONSTRTESTDATA_H
 #define GMX_MDLIB_TESTS_CONSTRTESTDATA_H
 
+#include <memory>
 #include <vector>
 
 #include "gromacs/gmxlib/nrnb.h"
@@ -94,7 +95,7 @@ public:
     //! Input record (info that usually in .mdp file)
     t_inputrec ir_;
     //! Local topology
-    t_idef idef_;
+    std::unique_ptr<InteractionDefinitions> idef_;
     //! MD atoms
     t_mdatoms md_;
     //! Multisim data
@@ -206,11 +207,6 @@ public:
      *
      */
     void reset();
-
-    /*! \brief
-     * Cleaning up the memory.
-     */
-    ~ConstraintsTestData();
 };
 
 } // namespace test

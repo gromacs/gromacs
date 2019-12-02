@@ -416,9 +416,6 @@ static void init_em(FILE*                fplog,
     auto mdatoms = mdAtoms->mdatoms();
     if (DOMAINDECOMP(cr))
     {
-        top->useInDomainDecomp_ = true;
-        dd_init_local_top(*top_global, top);
-
         dd_init_local_state(cr->dd, state_global, &ems->s);
 
         /* Distribute the charge groups over the nodes from the master node */
@@ -1042,7 +1039,7 @@ void LegacySimulator::do_cg()
 {
     const char* CG = "Polak-Ribiere Conjugate Gradients";
 
-    gmx_localtop_t    top;
+    gmx_localtop_t    top(top_global->ffparams);
     gmx_global_stat_t gstat;
     t_graph*          graph;
     double            tmp, minstep;
@@ -1641,7 +1638,7 @@ void LegacySimulator::do_lbfgs()
 {
     static const char* LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
-    gmx_localtop_t     top;
+    gmx_localtop_t     top(top_global->ffparams);
     gmx_global_stat_t  gstat;
     t_graph*           graph;
     int                ncorr, nmaxcorr, point, cp, neval, nminstep;
@@ -2359,7 +2356,7 @@ void LegacySimulator::do_lbfgs()
 void LegacySimulator::do_steep()
 {
     const char*       SD = "Steepest Descents";
-    gmx_localtop_t    top;
+    gmx_localtop_t    top(top_global->ffparams);
     gmx_global_stat_t gstat;
     t_graph*          graph;
     real              stepsize;
@@ -2594,7 +2591,7 @@ void LegacySimulator::do_nm()
 {
     const char*         NM = "Normal Mode Analysis";
     int                 nnodes;
-    gmx_localtop_t      top;
+    gmx_localtop_t      top(top_global->ffparams);
     gmx_global_stat_t   gstat;
     t_graph*            graph;
     tensor              vir, pres;

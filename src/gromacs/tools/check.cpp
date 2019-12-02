@@ -233,19 +233,21 @@ static void chk_forces(int frame, int natoms, rvec* f)
     }
 }
 
-static void chk_bonds(t_idef* idef, PbcType pbcType, rvec* x, matrix box, real tol)
+static void chk_bonds(const InteractionDefinitions* idef, PbcType pbcType, rvec* x, matrix box, real tol)
 {
     int   ftype, k, ai, aj, type;
     real  b0, blen, deviation;
     t_pbc pbc;
     rvec  dx;
 
+    gmx::ArrayRef<const t_iparams> iparams = idef->iparams;
+
     set_pbc(&pbc, pbcType, box);
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
         if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND)
         {
-            for (k = 0; (k < idef->il[ftype].nr);)
+            for (k = 0; (k < idef->il[ftype].size());)
             {
                 type = idef->il[ftype].iatoms[k++];
                 ai   = idef->il[ftype].iatoms[k++];
@@ -253,11 +255,11 @@ static void chk_bonds(t_idef* idef, PbcType pbcType, rvec* x, matrix box, real t
                 b0   = 0;
                 switch (ftype)
                 {
-                    case F_BONDS: b0 = idef->iparams[type].harmonic.rA; break;
-                    case F_G96BONDS: b0 = std::sqrt(idef->iparams[type].harmonic.rA); break;
-                    case F_MORSE: b0 = idef->iparams[type].morse.b0A; break;
-                    case F_CUBICBONDS: b0 = idef->iparams[type].cubic.b0; break;
-                    case F_CONSTR: b0 = idef->iparams[type].constr.dA; break;
+                    case F_BONDS: b0 = iparams[type].harmonic.rA; break;
+                    case F_G96BONDS: b0 = std::sqrt(iparams[type].harmonic.rA); break;
+                    case F_MORSE: b0 = iparams[type].morse.b0A; break;
+                    case F_CUBICBONDS: b0 = iparams[type].cubic.b0; break;
+                    case F_CONSTR: b0 = iparams[type].constr.dA; break;
                     default: break;
                 }
                 if (b0 != 0)
@@ -278,22 +280,23 @@ static void chk_bonds(t_idef* idef, PbcType pbcType, rvec* x, matrix box, real t
 
 static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tpr, real tol)
 {
-    t_trxframe     fr;
-    t_count        count;
-    t_fr_time      first, last;
-    int            j = -1, new_natoms, natoms;
-    real           old_t1, old_t2;
-    gmx_bool       bShowTimestep = TRUE, newline = FALSE;
-    t_trxstatus*   status;
-    gmx_mtop_t     mtop;
-    gmx_localtop_t top;
-    t_state        state;
-    t_inputrec     ir;
+    t_trxframe   fr;
+    t_count      count;
+    t_fr_time    first, last;
+    int          j = -1, new_natoms, natoms;
+    real         old_t1, old_t2;
+    gmx_bool     bShowTimestep = TRUE, newline = FALSE;
+    t_trxstatus* status;
+    gmx_mtop_t   mtop;
+    t_state      state;
+    t_inputrec   ir;
 
+    std::unique_ptr<gmx_localtop_t> top;
     if (tpr)
     {
         read_tpx_state(tpr, &ir, &state, &mtop);
-        gmx_mtop_generate_local_top(mtop, &top, ir.efep != efepNO);
+        top = std::make_unique<gmx_localtop_t>(mtop.ffparams);
+        gmx_mtop_generate_local_top(mtop, top.get(), ir.efep != efepNO);
     }
     new_natoms = -1;
     natoms     = -1;
@@ -359,7 +362,7 @@ static void chk_trj(const gmx_output_env_t* oenv, const char* fn, const char* tp
         natoms = new_natoms;
         if (tpr)
         {
-            chk_bonds(&top.idef, ir.pbcType, fr.x, fr.box, tol);
+            chk_bonds(&top->idef, ir.pbcType, fr.x, fr.box, tol);
         }
         if (fr.bX)
         {

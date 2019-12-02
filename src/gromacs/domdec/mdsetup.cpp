@@ -119,7 +119,7 @@ void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
     {
         GMX_ASSERT(graph != nullptr, "We use a graph with PBC (no periodic mols) and without DD");
 
-        *graph = mk_graph(nullptr, &(top->idef), 0, top_global.natoms, FALSE, FALSE);
+        *graph = mk_graph(nullptr, top->idef, 0, top_global.natoms, FALSE, FALSE);
     }
     else if (graph != nullptr)
     {
@@ -150,6 +150,6 @@ void mdAlgorithmsSetupAtomData(const t_commrec*  cr,
 
     if (constr)
     {
-        constr->setConstraints(*top, *mdatoms);
+        constr->setConstraints(top, *mdatoms);
     }
 }

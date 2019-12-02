@@ -188,12 +188,12 @@ UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
 
 UpdateConstrainGpu::Impl::~Impl() {}
 
-void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>       d_x,
-                                   DeviceBuffer<RVec>       d_v,
-                                   const DeviceBuffer<RVec> d_f,
-                                   const t_idef&            idef,
-                                   const t_mdatoms&         md,
-                                   const int                numTempScaleValues)
+void UpdateConstrainGpu::Impl::set(DeviceBuffer<RVec>            d_x,
+                                   DeviceBuffer<RVec>            d_v,
+                                   const DeviceBuffer<RVec>      d_f,
+                                   const InteractionDefinitions& idef,
+                                   const t_mdatoms&              md,
+                                   const int                     numTempScaleValues)
 {
     GMX_ASSERT(d_x != nullptr, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
@@ -259,12 +259,12 @@ void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)
     impl_->scaleCoordinates(scalingMatrix);
 }
 
-void UpdateConstrainGpu::set(DeviceBuffer<RVec>       d_x,
-                             DeviceBuffer<RVec>       d_v,
-                             const DeviceBuffer<RVec> d_f,
-                             const t_idef&            idef,
-                             const t_mdatoms&         md,
-                             const int                numTempScaleValues)
+void UpdateConstrainGpu::set(DeviceBuffer<RVec>            d_x,
+                             DeviceBuffer<RVec>            d_v,
+                             const DeviceBuffer<RVec>      d_f,
+                             const InteractionDefinitions& idef,
+                             const t_mdatoms&              md,
+                             const int                     numTempScaleValues)
 {
     impl_->set(d_x, d_v, d_f, idef, md, numTempScaleValues);
 }

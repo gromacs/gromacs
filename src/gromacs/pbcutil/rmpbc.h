@@ -39,12 +39,15 @@
 
 #include "gromacs/math/vectypes.h"
 
+class InteractionDefinitions;
 struct t_atoms;
 struct t_idef;
 struct t_trxframe;
 enum class PbcType : int;
 
 typedef struct gmx_rmpbc* gmx_rmpbc_t;
+
+gmx_rmpbc_t gmx_rmpbc_init(const InteractionDefinitions& idef, PbcType pbcType, int natoms);
 
 gmx_rmpbc_t gmx_rmpbc_init(const t_idef* idef, PbcType pbcType, int natoms);
 

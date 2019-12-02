@@ -2108,7 +2108,7 @@ static void do_ilists(gmx::ISerializer* serializer, InteractionLists* ilists, in
         else
         {
             do_ilist(serializer, &ilist);
-            if (file_version < 78 && j == F_SETTLE && ilist.size() > 0)
+            if (file_version < 78 && j == F_SETTLE && !ilist.empty())
             {
                 add_settle_atoms(&ilist);
             }
@@ -2509,7 +2509,7 @@ static void set_disres_npair(gmx_mtop_t* mtop)
     {
         const InteractionList& il = (*ilist)[F_DISRES];
 
-        if (il.size() > 0)
+        if (!il.empty())
         {
             gmx::ArrayRef<const int> a     = il.iatoms;
             int                      npair = 0;
@@ -3034,7 +3034,7 @@ static void do_tpx_finalize(TpxFileHeader* tpx, t_inputrec* ir, t_state* state, 
         {
             if (tpx->fileVersion < 57)
             {
-                if (mtop->moltype[0].ilist[F_DISRES].size() > 0)
+                if (!mtop->moltype[0].ilist[F_DISRES].empty())
                 {
                     ir->eDisre = edrSimple;
                 }

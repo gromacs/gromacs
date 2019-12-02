@@ -1446,7 +1446,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
                                    gmx::ArrayRef<const t_iparams> iparams,
                                    real                           massFactorThreshold)
 {
-    if (molt.ilist[F_CONSTR].size() == 0 && molt.ilist[F_CONSTRNC].size() == 0)
+    if (molt.ilist[F_CONSTR].empty() && molt.ilist[F_CONSTRNC].empty())
     {
         return false;
     }

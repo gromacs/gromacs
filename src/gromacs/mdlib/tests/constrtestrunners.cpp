@@ -89,9 +89,9 @@ namespace test
 void applyShake(ConstraintsTestData* testData, t_pbc gmx_unused pbc)
 {
     shakedata* shaked = shake_init();
-    make_shake_sblock_serial(shaked, &testData->idef_, testData->md_);
+    make_shake_sblock_serial(shaked, testData->idef_.get(), testData->md_);
     bool success = constrain_shake(
-            nullptr, shaked, testData->invmass_.data(), testData->idef_, testData->ir_,
+            nullptr, shaked, testData->invmass_.data(), *testData->idef_, testData->ir_,
             as_rvec_array(testData->x_.data()), as_rvec_array(testData->xPrime_.data()),
             as_rvec_array(testData->xPrime2_.data()), &testData->nrnb_, testData->md_.lambda,
             &testData->dHdLambda_, testData->invdt_, as_rvec_array(testData->v_.data()),
@@ -126,7 +126,7 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     // Initialize LINCS
     lincsd = init_lincs(nullptr, testData->mtop_, testData->nflexcon_, at2con_mt, false,
                         testData->ir_.nLincsIter, testData->ir_.nProjOrder);
-    set_lincs(testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &testData->cr_, lincsd);
+    set_lincs(*testData->idef_, testData->md_, EI_DYNAMICS(testData->ir_.eI), &testData->cr_, lincsd);
 
     // Evaluate constraints
     bool success = constrain_lincs(

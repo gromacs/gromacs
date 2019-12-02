@@ -308,7 +308,7 @@ static void post_process_forces(const t_commrec*      cr,
              */
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr, stepWork.computeVirial, virial, nrnb,
-                           &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
+                           top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
             forceWithVirial.addVirialContribution(virial);
         }
 
@@ -785,13 +785,13 @@ static ForceOutputs setupForceOutputs(t_forcerec*                         fr,
 
 /*! \brief Set up flags that have the lifetime of the domain indicating what type of work is there to compute.
  */
-static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&         inputrec,
-                                                          const t_forcerec&         fr,
-                                                          const pull_t*             pull_work,
-                                                          const gmx_edsam*          ed,
-                                                          const t_idef&             idef,
-                                                          const t_fcdata&           fcd,
-                                                          const t_mdatoms&          mdatoms,
+static DomainLifetimeWorkload setupDomainLifetimeWorkload(const t_inputrec&             inputrec,
+                                                          const t_forcerec&             fr,
+                                                          const pull_t*                 pull_work,
+                                                          const gmx_edsam*              ed,
+                                                          const InteractionDefinitions& idef,
+                                                          const t_fcdata&               fcd,
+                                                          const t_mdatoms&              mdatoms,
                                                           const SimulationWorkload& simulationWork,
                                                           const StepWorkload&       stepWork)
 {
@@ -1535,7 +1535,7 @@ void do_force(FILE*                               fplog,
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, &(top->idef), cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut, enerd,
+    do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut, enerd,
                       fcd, box, lambda.data(), graph, fr->mu_tot, stepWork, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
@@ -1810,8 +1810,8 @@ void do_force(FILE*                               fplog,
         if (vsite && !(fr->haveDirectVirialContributions && !stepWork.computeVirial))
         {
             rvec* fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE, nullptr,
-                           nrnb, &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE,
+                           nullptr, nrnb, top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (stepWork.computeVirial)

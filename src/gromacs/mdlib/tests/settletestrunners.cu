@@ -88,7 +88,7 @@ void applySettleGpu(SettleTestData*  testData,
 
     auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, nullptr);
 
-    settleGpu->set(testData->idef_, testData->mdatoms_);
+    settleGpu->set(*testData->idef_, testData->mdatoms_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
