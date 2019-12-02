@@ -1706,9 +1706,16 @@ void do_force(FILE*                               fplog,
             //   These should be unified.
             if (haveLocalForceContribInCpuBuffer && !useGpuForcesHaloExchange)
             {
-                stateGpu->copyForcesToGpu(forceWithShift, AtomLocality::Local);
+                // Note: AtomLocality::All is used for the non-DD case because, as in this
+                // case copyForcesToGpu() uses a separate stream, it allows overlap of
+                // CPU force H2D with GPU force tasks on all streams including those in the
+                // local stream which would otherwise be implicit dependencies for the
+                // transfer and would not overlap.
+                auto locality = havePPDomainDecomposition(cr) ? AtomLocality::Local : AtomLocality::All;
+
+                stateGpu->copyForcesToGpu(forceWithShift, locality);
                 dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(
-                        AtomLocality::Local, useGpuFBufOps == BufferOpsUseGpu::True));
+                        locality, useGpuFBufOps == BufferOpsUseGpu::True));
             }
             if (useGpuForcesHaloExchange)
             {
