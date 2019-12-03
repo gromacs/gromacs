@@ -1184,8 +1184,8 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     const int order = pmeGpu->common->pme_order;
     GMX_ASSERT(order == c_pmeGpuOrder, "Only PME order 4 is implemented");
     const bool writeGlobal            = pmeGpu->settings.copyAllOutputs;
-    const int  useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
-    const int  recalculateSplines     = pmeGpu->settings.recalculateSplines;
+    const bool useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
+    const bool recalculateSplines     = pmeGpu->settings.recalculateSplines;
 #if GMX_GPU == GMX_GPU_OPENCL
     GMX_ASSERT(!useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
     GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
@@ -1454,8 +1454,8 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
     /* Set if we have unit tests */
     const bool   readGlobal             = pmeGpu->settings.copyAllOutputs;
     const size_t blockSize              = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
-    const int    useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
-    const int    recalculateSplines     = pmeGpu->settings.recalculateSplines;
+    const bool   useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
+    const bool   recalculateSplines     = pmeGpu->settings.recalculateSplines;
 #if GMX_GPU == GMX_GPU_OPENCL
     GMX_ASSERT(!useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
     GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
