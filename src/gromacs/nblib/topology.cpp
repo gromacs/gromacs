@@ -168,36 +168,8 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
             {
                 std::string atomTypeName = std::get<1>(atomTuple);
 
-                AtomType &atomType = std::get<0>(molecule.atomTypes_[atomTypeName]);
-                ret.push_back(extractor(atomType));
-            }
-        }
-    }
-
-    return ret;
-}
-
-std::vector<real> TopologyBuilder::extractCharge()
-{
-    auto &moleculesList = molecules_;
-
-    //! returned object
-    std::vector<real> ret;
-    ret.reserve(numAtoms_);
-
-    for (auto &molNumberTuple : moleculesList)
-    {
-        Molecule &molecule = std::get<0>(molNumberTuple);
-        size_t numMols = std::get<1>(molNumberTuple);
-
-        for (size_t i = 0; i < numMols; ++i)
-        {
-            for (auto &atomTuple : molecule.atoms_)
-            {
-                std::string atomTypeName = std::get<1>(atomTuple);
-
-                real charge = std::get<1>(molecule.atomTypes_[atomTypeName]);
-                ret.push_back(charge);
+                const auto &atcTup = molecule.atomTypes_[atomTypeName];
+                ret.push_back(extractor(atcTup));
             }
         }
     }
@@ -208,8 +180,8 @@ std::vector<real> TopologyBuilder::extractCharge()
 Topology TopologyBuilder::buildTopology()
 {
     topology_.excls = createExclusionsList();
-    topology_.masses = extractAtomTypeQuantity([](const AtomType &atomType){ return atomType.mass(); });
-    topology_.charges = extractCharge();
+    topology_.masses = extractAtomTypeQuantity([](const auto &atcTup){ return std::get<0>(atcTup).mass(); });
+    topology_.charges = extractAtomTypeQuantity([](const auto &atcTup){ return std::get<1>(atcTup); });
 
     return topology_;
 }
