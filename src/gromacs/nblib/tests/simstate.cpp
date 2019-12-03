@@ -41,19 +41,16 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include <vector>
 
-#include "gmxpre.h"
-
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/box.h"
-#include "gromacs/nblib/nbkerneloptions.h"
-#include "gromacs/nblib/topology.h"
 #include "gromacs/nblib/molecules.h"
+#include "gromacs/nblib/nbkerneloptions.h"
 #include "gromacs/nblib/simulationstate.h"
-
-#include "gromacs/math/vec.h"
+#include "gromacs/nblib/topology.h"
 
 #include "testutils/testasserts.h"
 

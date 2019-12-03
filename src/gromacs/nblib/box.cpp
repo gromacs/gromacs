@@ -31,32 +31,37 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib simulation box
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
-#include "gromacs/utility/exceptions.h"
+#include "gmxpre.h"
 
 #include "box.h"
 
+#include "gromacs/utility/exceptions.h"
+
 namespace nblib {
 
-Box::Box(real l) : box_{0}
+Box::Box(real l)
 {
     if (std::isnan(l) or std::isinf(l))
     {
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
 
-    box_[XX][XX] = l;
-    box_[YY][YY] = l;
-    box_[ZZ][ZZ] = l;
+    box_(XX, XX) = l;
+    box_(YY, YY) = l;
+    box_(ZZ, ZZ) = l;
 }
 
-Box::Box(real x, real y, real z) : box_{0}
+Box::Box(real x, real y, real z)
 {
     if (std::isnan(x) or std::isinf(x) or
         std::isnan(y) or std::isinf(y) or
@@ -65,12 +70,12 @@ Box::Box(real x, real y, real z) : box_{0}
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
 
-    box_[XX][XX] = x;
-    box_[YY][YY] = y;
-    box_[ZZ][ZZ] = z;
+    box_(XX, XX) = x;
+    box_(YY, YY) = y;
+    box_(ZZ, ZZ) = z;
 }
 
-Box::data_type Box::matrix()
+Box::Matrix Box::matrix()
 {
     return box_;
 }

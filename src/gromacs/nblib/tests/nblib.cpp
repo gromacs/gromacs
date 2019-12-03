@@ -45,12 +45,11 @@
 
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/coords.h"
-#include "gromacs/nblib/nbkerneloptions.h"
 #include "gromacs/nblib/interactions.h"
-#include "gromacs/nblib/topology.h"
 #include "gromacs/nblib/molecules.h"
+#include "gromacs/nblib/nbkerneloptions.h"
 #include "gromacs/nblib/nbkernelsystem.h"
-#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/topology.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"

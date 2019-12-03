@@ -31,21 +31,24 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib ForceCalculator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-
 #ifndef GROMACS_FORCECALCULATOR_H
 #define GROMACS_FORCECALCULATOR_H
 
 #include "gromacs/timing/cyclecounter.h"
 
-#include "nbkernelsystem.h"
-#include "nbkerneloptions.h"
 #include "nbkerneldef.h"
+#include "nbkerneloptions.h"
+#include "nbkernelsystem.h"
 
 namespace nblib {
 

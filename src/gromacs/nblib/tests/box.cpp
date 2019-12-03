@@ -43,9 +43,9 @@
  */
 #include "gmxpre.h"
 
-#include <cmath>
-
 #include "gromacs/nblib/box.h"
+
+#include <cmath>
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -82,12 +82,12 @@ TEST(NBlibTest, RectangularBoxCannotHaveInf)
 TEST(NBlibTest, CubicBoxWorks)
 {
     real length = 3;
-    Box::data_type ref = { std::array<real, DIM>{length, 0, 0}, {0, length, 0}, {0, 0, length}};
-    Box::data_type probe = Box(length).matrix();
+    Box::Matrix ref = {{length, 0, 0, 0, length, 0, 0, 0, length}};
+    Box::Matrix probe = Box(length).matrix();
 
     for (int i = 0; i < DIM; ++i)
         for (int j = 0; j < DIM; ++j)
-            EXPECT_REAL_EQ_TOL(ref[i][j], probe[i][j], defaultRealTolerance());
+            EXPECT_REAL_EQ_TOL(ref(i, j), probe(i, j), defaultRealTolerance());
 }
 
 }  // namespace nblib

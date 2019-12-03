@@ -31,17 +31,22 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
+ */
+/*! \internal \file
+ * \brief
+ * Implements nblib ForceCalculator
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
+#include "gmxpre.h"
 
 #include "forcecalculator.h"
-#include "integrator.h"
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/pairlistset.h"
@@ -50,7 +55,7 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 
-#include "gromacs/math/vec.h"
+#include "integrator.h"
 
 
 namespace nblib {
