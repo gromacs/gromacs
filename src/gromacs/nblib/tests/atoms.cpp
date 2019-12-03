@@ -45,7 +45,7 @@
 
 #include <cmath>
 
-#include "gromacs/nblib/molecules.h"
+#include "gromacs/nblib/atomtype.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -67,35 +67,35 @@ struct ArAtom
 TEST(NBlibTest, AtomNameCanBeConstructed)
 {
     ArAtom arAtom;
-    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.name(), arAtom.name);
 }
 
 TEST(NBlibTest, AtomMassCanBeConstructed)
 {
     ArAtom arAtom;
-    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.mass(), arAtom.mass);
 }
 
 TEST(NBlibTest, AtomChargeCanBeConstructed)
 {
     ArAtom arAtom;
-    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.charge(), arAtom.charge);
 }
 
 TEST(NBlibTest, AtomC6CanBeConstructed)
 {
     ArAtom arAtom;
-    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.c6(), arAtom.c6);
 }
 
 TEST(NBlibTest, AtomC12CanBeConstructed)
 {
     ArAtom arAtom;
-    Atom argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.charge, arAtom.c6, arAtom.c12);
     EXPECT_EQ(argonAtom.c12(), arAtom.c12);
 }
 

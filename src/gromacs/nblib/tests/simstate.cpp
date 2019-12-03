@@ -45,7 +45,7 @@
 
 #include <vector>
 
-#include "gromacs/math/vec.h"
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/box.h"
 #include "gromacs/nblib/molecules.h"
 #include "gromacs/nblib/nbkerneloptions.h"
@@ -74,7 +74,7 @@ public:
     {
         constexpr int NumArgonAtoms = 3;
 
-        Atom argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
+        AtomType argonAtom("AR", 39.94800, 0.0, 0.0062647225, 9.847044e-06);
 
         Molecule argonMolecule("AR");
         argonMolecule.addAtom("AR", argonAtom);
