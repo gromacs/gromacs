@@ -896,8 +896,7 @@ int Mdrunner::mdrunner()
     try
     {
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                useDomainDecomposition, useGpuForPme, useGpuForNonbonded,
-                devFlags.enableGpuPmePPComm, devFlags.enableGpuHaloExchange, updateTarget,
+                useDomainDecomposition, useGpuForPme, useGpuForNonbonded, updateTarget,
                 gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
                 gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0);
     }
