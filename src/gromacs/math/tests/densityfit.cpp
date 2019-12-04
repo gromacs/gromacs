@@ -210,7 +210,7 @@ TEST(DensitySimilarityTest, CrossCorrelationIsOne)
     std::iota(begin(comparedDensity), end(comparedDensity), -10000);
 
     const real             expectedSimilarity = 1;
-    FloatingPointTolerance tolerance(relativeToleranceAsUlp(1.0, 10'000));
+    FloatingPointTolerance tolerance(relativeToleranceAsUlp(1.0, 100'000));
     EXPECT_REAL_EQ_TOL(expectedSimilarity, measure.similarity(comparedDensity.asConstView()), tolerance);
 }
 
@@ -230,7 +230,7 @@ TEST(DensitySimilarityTest, CrossCorrelationIsMinusOneWhenAntiCorrelated)
     std::iota(begin(comparedDensity), end(comparedDensity), -10000);
 
     const real             expectedSimilarity = -1;
-    FloatingPointTolerance tolerance(relativeToleranceAsUlp(-1.0, 10'000));
+    FloatingPointTolerance tolerance(relativeToleranceAsUlp(-1.0, 100'000));
     EXPECT_REAL_EQ_TOL(expectedSimilarity, measure.similarity(comparedDensity.asConstView()), tolerance);
 }
 
