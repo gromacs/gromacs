@@ -58,34 +58,44 @@
 namespace nblib
 {
 
-//! Simulation state description that serves as a snapshot of the system
-//! being analysed. Needed to init an MD program. Allows hot-starting simulations.
+/*! \libinternal
+ * \ingroup nblib
+ * \brief Simulation State
+ *
+ * Simulation state description that serves as a snapshot of the system
+ * being analysed. Needed to init an MD program. Allows hot-starting simulations.
+ */
+
 class SimulationState
 {
 public:
 
-    // Constructor
+    //! Constructor
     SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
              const std::vector<gmx::RVec> &vel = {});
 
-    // Copy Constructor
+    //! Copy Constructor
     SimulationState(const SimulationState& simulationState);
 
-    // Copy Assignment Operator
+    //! Copy Assignment Operator
     SimulationState& operator=(const SimulationState& simulationState);
 
-    // Move Constructor
+    //! Move Constructor
     SimulationState(SimulationState&& simulationState) noexcept;
 
-    // Move Assignment Constructor
+    //! Move Assignment Constructor
     SimulationState& operator=(SimulationState&& simulationState) noexcept;
 
+    //! Returns topology of the current state
     const Topology& topology() const;
 
+    //! Returns the box
     Box& box();
 
+    //! Returns a vector of particle coordinates
     std::vector<gmx::RVec>& coordinates();
 
+    //! Returns a vector of particle velocities
     std::vector<gmx::RVec>& velocities();
 
 
