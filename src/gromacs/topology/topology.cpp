@@ -389,9 +389,9 @@ static void cmp_iparm(FILE*            fp,
     if (bDiff)
     {
         fprintf(fp, "%s1: ", s);
-        pr_iparams(fp, ft, &ip1);
+        pr_iparams(fp, ft, ip1);
         fprintf(fp, "%s2: ", s);
-        pr_iparams(fp, ft, &ip2);
+        pr_iparams(fp, ft, ip2);
     }
 }
 
@@ -423,7 +423,7 @@ static void cmp_iparm_AB(FILE* fp, const char* s, t_functype ft, const t_iparams
     if (bDiff)
     {
         fprintf(fp, "%s: ", s);
-        pr_iparams(fp, ft, &ip1);
+        pr_iparams(fp, ft, ip1);
     }
 }
 
