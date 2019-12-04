@@ -44,6 +44,7 @@
 #include "gmxpre.h"
 
 #include "topology.h"
+#include "util.h"
 
 #include <array>
 #include <vector>
@@ -53,6 +54,61 @@
 #include "gromacs/utility/smalloc.h"
 
 namespace nblib {
+
+namespace detail {
+
+std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>> &tupleList);
+std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
+
+
+//! Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
+std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>> &tupleList)
+{
+    std::vector<gmx::ExclusionBlock> ret;
+
+    //! initialize pair of iterators delimiting the range of exclusions for
+    //! the first atom in the list
+    GMX_ASSERT(!tupleList.empty(), "tupleList must not be empty\n");
+    auto range = std::equal_range(std::begin(tupleList), std::end(tupleList),
+                                  tupleList[0]);
+    auto it1 = range.first;
+    auto it2 = range.second;
+
+    //! loop over all exclusions in molecule, linear in tupleList.size()
+    while (it1 != std::end(tupleList))
+    {
+        gmx::ExclusionBlock localBlock;
+        //! loop over all exclusions for current atom
+        for ( ; it1 != it2; ++it1)
+        {
+            localBlock.atomNumber.push_back(std::get<1>(*it1));
+        }
+
+        ret.push_back(localBlock);
+
+        //! update the upper bound of the range for the next atom
+        if (it1 != end(tupleList))
+            it2 = std::upper_bound(it1, std::end(tupleList), *it1);
+    }
+
+    return ret;
+}
+
+//! add offset to all indices in inBlock
+std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset)
+{
+    //! shift atom numbers by offset
+    for (auto& localBlock : inBlock)
+    {
+        std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
+                       std::begin(localBlock.atomNumber),
+                       [offset](auto i){ return i + offset; });
+    }
+
+    return inBlock;
+}
+
+} // namespace detail
 
 TopologyBuilder::TopologyBuilder() : numAtoms_(0)
 {}
@@ -64,66 +120,18 @@ t_blocka TopologyBuilder::createExclusionsList() const
     std::vector<gmx::ExclusionBlock> exclusionBlockGlobal;
     exclusionBlockGlobal.reserve(numAtoms_);
 
-    //! compare tuples by comparing the first element
-    auto firstLowerThan = [](auto tup1, auto tup2) { return std::get<0>(tup1) < std::get<0>(tup2); };
-
     size_t atomNumberOffset = 0;
     for (const auto &molNumberTuple : moleculesList)
     {
         const Molecule& molecule = std::get<0>(molNumberTuple);
         size_t numMols = std::get<1>(molNumberTuple);
 
-        std::vector<std::tuple<int, int>> exclusionList = molecule.exclusions_;
-
-        //! sorted (by first tuple element as key) list of exclusion pairs
-        std::sort(std::begin(exclusionList), std::end(exclusionList), firstLowerThan);
-
-        //! remove duplicates
-        auto unique_end = std::unique(std::begin(exclusionList), std::end(exclusionList));
-        if (unique_end != std::end(exclusionList))
-            printf("[nblib] Warning: exclusionList of molecule \"%s\" contained duplicates",
-                    molecule.name_.c_str());
-
-        exclusionList.erase(unique_end, std::end(exclusionList));
-
-        std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule;
-
-        //! initialize pair of iterators delimiting the range of exclusions for
-        //! the first atom in the list
-        GMX_ASSERT(!exclusionList.empty(), "exclusionList must not be empty\n");
-        auto range = std::equal_range(std::begin(exclusionList), std::end(exclusionList),
-                                  exclusionList[0], firstLowerThan);
-        auto it1 = range.first;
-        auto it2 = range.second;
-
-        //! loop over all exclusions in molecule, linear in exclusionList.size()
-        while (it1 != std::end(exclusionList))
-        {
-            gmx::ExclusionBlock localBlock;
-            //! loop over all exclusions for current atom
-            for ( ; it1 != it2; ++it1)
-            {
-                localBlock.atomNumber.push_back(std::get<1>(*it1));
-            }
-
-            exclusionBlockPerMolecule.push_back(localBlock);
-
-            //! update the upper bound of the range for the next atom
-            if (it1 != end(exclusionList))
-                it2 = std::upper_bound(it1, std::end(exclusionList), *it1, firstLowerThan);
-        }
+        std::vector<gmx::ExclusionBlock> exclusionBlockPerMolecule = detail::toGmxExclusionBlock(molecule.getExclusions());
 
         //! duplicate the exclusionBlockPerMolecule for the number of Molecules of (numMols)
         for (size_t i = 0; i < numMols; ++i)
         {
-            auto offsetExclusions = exclusionBlockPerMolecule;
-            //! shift atom numbers by atomNumberOffset
-            for (auto& localBlock : offsetExclusions)
-            {
-                std::transform(std::begin(localBlock.atomNumber), std::end(localBlock.atomNumber),
-                               std::begin(localBlock.atomNumber),
-                               [atomNumberOffset](auto i){ return i + atomNumberOffset; });
-            }
+            auto offsetExclusions = detail::offsetGmxBlock(exclusionBlockPerMolecule, atomNumberOffset);
 
             std::copy(std::begin(offsetExclusions), std::end(offsetExclusions),
                       std::back_inserter(exclusionBlockGlobal));
@@ -164,12 +172,9 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 
         for (size_t i = 0; i < numMols; ++i)
         {
-            for (auto &atomTuple : molecule.atoms_)
+            for (auto &atomData : molecule.atoms_)
             {
-                std::string atomTypeName = std::get<1>(atomTuple);
-
-                const auto &atcTup = molecule.atomTypes_[atomTypeName];
-                ret.push_back(extractor(atcTup));
+                ret.push_back(extractor(atomData, molecule.atomTypes_));
             }
         }
     }
@@ -180,13 +185,13 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 Topology TopologyBuilder::buildTopology()
 {
     topology_.excls = createExclusionsList();
-    topology_.masses = extractAtomTypeQuantity([](const auto &atcTup){ return std::get<0>(atcTup).mass(); });
-    topology_.charges = extractAtomTypeQuantity([](const auto &atcTup){ return std::get<1>(atcTup); });
+    topology_.masses = extractAtomTypeQuantity([](const auto &data, auto& map){ return map[data.atomTypeName_].mass(); });
+    topology_.charges = extractAtomTypeQuantity([](const auto &data, auto& map){ ignore_unused(map); return data.charge_; });
 
     return topology_;
 }
 
-TopologyBuilder& TopologyBuilder::addMolecule(const Molecule molecule, const int nMolecules)
+TopologyBuilder& TopologyBuilder::addMolecule(const Molecule &molecule, const int nMolecules)
 {
     /*!
      * 1. Push-back a tuple of molecule type and nMolecules

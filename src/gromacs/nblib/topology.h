@@ -116,8 +116,7 @@ public:
      */
     Topology buildTopology();
 
-    //! Adds a molecules of a certain type into the topology
-    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(const Molecule &moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
@@ -135,8 +134,6 @@ private:
     //! Helper function to extract quantities like mass, charge, etc from the system
     template <class Extractor>
     std::vector<real> extractAtomTypeQuantity(Extractor extractor);
-
-    std::vector<real> extractCharge();
 };
 
 } // namespace nblib

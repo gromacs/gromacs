@@ -102,6 +102,68 @@ TEST(NBlibTest, CanGetNumAtomsInMolecule)
     EXPECT_EQ(3, numAtoms);
 }
 
+TEST(NBlibTest, CanConstructExclusionListFromNames)
+{
+    //! Manually Create Molecule (Water)
+
+    //! 1. Define Atom Type
+    AtomType Ow("Ow", 16, 1., 1.);
+    AtomType Hw("Hw", 1, 1., 1.);
+
+    //! 2. Define Molecule
+    Molecule water("water");
+
+    water.addAtom("Oxygen", Charge(-0.6), Ow);
+    water.addAtom("H1", Charge(+0.3), Hw);
+    water.addAtom("H2", Charge(+0.3), Hw);
+
+    water.addExclusion("H1", "Oxygen");
+    water.addExclusion("H1", "H2");
+    water.addExclusion("H2", "Oxygen");
+
+    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
+
+    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
+                                                 {1,0}, {1,1}, {1,2},
+                                                 {2,0}, {2,1}, {2,2}};
+
+    ASSERT_EQ(exclusions.size(), 9);
+    for (std::size_t i = 0; i < exclusions.size(); ++i)
+        EXPECT_EQ(exclusions[i], reference[i]);
+
+}
+
+TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
+{
+    //! Manually Create Molecule (Water)
+
+    //! 1. Define Atom Type
+    AtomType Ow("Ow", 16, 1., 1.);
+    AtomType Hw("Hw", 1, 1., 1.);
+
+    //! 2. Define Molecule
+    Molecule water("water");
+
+    water.addAtom("Oxygen", Charge(-0.6), Ow);
+    water.addAtom("H1", Charge(+0.3), Hw);
+    water.addAtom("H2", Charge(+0.3), Hw);
+
+    water.addExclusion("H1", "Oxygen");
+    water.addExclusion("H1", "H2");
+    water.addExclusion(2, 0);
+
+    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
+
+    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
+                                                 {1,0}, {1,1}, {1,2},
+                                                 {2,0}, {2,1}, {2,2}};
+
+    ASSERT_EQ(exclusions.size(), 9);
+    for (std::size_t i = 0; i < exclusions.size(); ++i)
+        EXPECT_EQ(exclusions[i], reference[i]);
+
+}
+
 }  // namespace
 }  // namespace test
 }  // namespace nblib
