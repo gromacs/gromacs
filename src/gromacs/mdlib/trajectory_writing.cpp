@@ -159,6 +159,9 @@ void do_md_trajectory_writing(FILE*                    fplog,
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
+        // Note that part of the following code is duplicated in StatePropagatorData::trajectoryWriterTeardown.
+        // This duplication is needed while both legacy and modular code paths are in use.
+        // TODO: Remove duplication asap, make sure to keep in sync in the meantime.
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step, t,
                                          state, state_global, observablesHistory, f);
         if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MASTER(cr) && !bRerunMD)

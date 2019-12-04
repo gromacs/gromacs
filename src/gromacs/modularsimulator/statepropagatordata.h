@@ -47,6 +47,7 @@
 #include "gromacs/math/vectypes.h"
 
 #include "modularsimulatorinterfaces.h"
+#include "topologyholder.h"
 
 struct gmx_mdoutf;
 struct t_commrec;
@@ -100,7 +101,8 @@ class StatePropagatorData final :
     public ISimulatorElement,
     public ITrajectoryWriterClient,
     public ITrajectorySignallerClient,
-    public ICheckpointHelperClient
+    public ICheckpointHelperClient,
+    public ILastStepSignallerClient
 {
 public:
     //! Constructor
@@ -114,6 +116,10 @@ public:
                         int                            nstxout_compressed,
                         bool                           useGPU,
                         FreeEnergyPerturbationElement* freeEnergyPerturbationElement,
+                        const TopologyHolder*          topologyHolder,
+                        bool                           canMoleculesBeDistributedOverPBC,
+                        bool                           writeFinalConfiguration,
+                        std::string                    finalConfigurationFilename,
                         const t_inputrec*              inputrec,
                         const t_mdatoms*               mdatoms);
 
@@ -240,6 +246,9 @@ private:
     //! ICheckpointHelperClient implementation
     void writeCheckpoint(t_state* localState, t_state* globalState) override;
 
+    //! ILastStepSignallerClient implementation (used for final output only)
+    SignallerCallbackPtr registerLastStepCallback() override;
+
     //! Callback writing the state to file
     void write(gmx_mdoutf* outf, Step step, Time time);
 
@@ -253,6 +262,26 @@ private:
     //! Pointer to the free energy perturbation element (for trajectory writing only)
     FreeEnergyPerturbationElement* freeEnergyPerturbationElement_;
 
+    //! Whether planned total number of steps was reached (used for final output only)
+    bool isRegularSimulationEnd_;
+    //! The signalled last step (used for final output only)
+    Step lastStep_;
+
+    //! Whether system can have molecules distributed over PBC boundaries (used for final output only)
+    const bool canMoleculesBeDistributedOverPBC_;
+    //! Whether system has molecules self-interacting through PBC (used for final output only)
+    const bool systemHasPeriodicMolecules_;
+    //! The PBC type (used for final output only)
+    const int pbcType_;
+    //! Pointer to the topology (used for final output only)
+    const TopologyHolder* topologyHolder_;
+    //! The (planned) last step - determines whether final configuration is written (used for final output only)
+    const Step lastPlannedStep_;
+    //! Whether final configuration was chosen in mdrun options (used for final output only)
+    const bool writeFinalConfiguration_;
+    //! The filename of the final configuration file (used for final output only)
+    const std::string finalConfigurationFilename_;
+
     // Access to ISimulator data
     //! Handles logging.
     FILE* fplog_;
@@ -263,8 +292,8 @@ private:
 
     //! No trajectory writer setup needed
     void trajectoryWriterSetup(gmx_mdoutf gmx_unused* outf) override {}
-    //! No trajectory writer teardown needed
-    void trajectoryWriterTeardown(gmx_mdoutf gmx_unused* outf) override {}
+    //! Trajectory writer teardown - write final coordinates
+    void trajectoryWriterTeardown(gmx_mdoutf* outf) override;
 };
 
 } // namespace gmx

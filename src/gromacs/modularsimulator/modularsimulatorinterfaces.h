@@ -296,8 +296,6 @@ typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;
  * callback called by the TrajectoryElement when trajectory writing happens.
  *
  * Setup and teardown methods allow clients to perform tasks with a valid output pointer.
- * These functions have a standard implementation to allow clients not to implement
- * them if no setup / teardown is needed.
  */
 class ITrajectoryWriterClient
 {

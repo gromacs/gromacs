@@ -355,6 +355,9 @@ void ModularSimulator::constructElementsAndSignallers()
     /*
      * Build data structures
      */
+    topologyHolder_ =
+            std::make_unique<TopologyHolder>(*top_global, cr, inputrec, fr, mdAtoms, constr, vsite);
+
     std::unique_ptr<FreeEnergyPerturbationElement> freeEnergyPerturbationElement    = nullptr;
     FreeEnergyPerturbationElement*                 freeEnergyPerturbationElementPtr = nullptr;
     if (inputrec->efep != efepNO)
@@ -367,7 +370,8 @@ void ModularSimulator::constructElementsAndSignallers()
     auto statePropagatorData = std::make_unique<StatePropagatorData>(
             top_global->natoms, fplog, cr, state_global, inputrec->nstxout, inputrec->nstvout,
             inputrec->nstfout, inputrec->nstxout_compressed, fr->nbv->useGpu(),
-            freeEnergyPerturbationElementPtr, inputrec, mdAtoms->mdatoms());
+            freeEnergyPerturbationElementPtr, topologyHolder_.get(), fr->bMolPBC,
+            mdrunOptions.writeConfout, opt2fn("-c", nfile, fnm), inputrec, mdAtoms->mdatoms());
     auto statePropagatorDataPtr = compat::make_not_null(statePropagatorData.get());
 
     auto energyElement = std::make_unique<EnergyElement>(
@@ -375,9 +379,6 @@ void ModularSimulator::constructElementsAndSignallers()
             enerd, ekind, constr, fplog, fcd, mdModulesNotifier, MASTER(cr), observablesHistory,
             startingBehavior);
     auto energyElementPtr = compat::make_not_null(energyElement.get());
-
-    topologyHolder_ =
-            std::make_unique<TopologyHolder>(*top_global, cr, inputrec, fr, mdAtoms, constr, vsite);
 
     /*
      * Build stop handler
@@ -403,6 +404,7 @@ void ModularSimulator::constructElementsAndSignallers()
      */
     trajectoryElementBuilder.registerWriterClient(statePropagatorDataPtr);
     trajectoryElementBuilder.registerSignallerClient(statePropagatorDataPtr);
+    lastStepSignallerBuilder.registerSignallerClient(statePropagatorDataPtr);
 
     trajectoryElementBuilder.registerWriterClient(energyElementPtr);
     trajectoryElementBuilder.registerSignallerClient(energyElementPtr);
