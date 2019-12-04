@@ -244,7 +244,6 @@ struct t_ilist
     int size() const { return nr; }
 
     int      nr;
-    int      nr_nonperturbed;
     t_iatom* iatoms;
     int      nalloc;
 };
@@ -345,7 +344,9 @@ typedef struct t_idef
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
     t_ilist il[F_NRE];
-    int     ilsort;
+    /* The number of non-perturbed interactions at the start of each entry in il */
+    int numNonperturbedInteractions[F_NRE];
+    int ilsort;
 } t_idef;
 
 /*

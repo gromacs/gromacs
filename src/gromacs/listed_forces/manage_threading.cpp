@@ -196,7 +196,7 @@ static bool ftypeHasPerturbedEntries(const t_idef& idef, int ftype)
 
     const t_ilist& ilist = idef.il[ftype];
 
-    return (idef.ilsort != ilsortNO_FE && ilist.nr_nonperturbed != ilist.nr);
+    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[ftype] != ilist.nr);
 }
 
 //! Divides bonded interactions over threads and GPU

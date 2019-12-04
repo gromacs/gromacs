@@ -80,6 +80,8 @@
 namespace
 {
 
+using gmx::ArrayRef;
+
 /*! \brief Return true if ftype is an explicit pair-listed LJ or
  * COULOMB interaction type: bonded LJ (usually 1-4), or special
  * listed non-bonded for FEP. */
@@ -298,6 +300,8 @@ BondedKernelFlavor selectBondedKernelFlavor(const gmx::StepWorkload& stepWork,
 real calc_one_bond(int                      thread,
                    int                      ftype,
                    const t_idef*            idef,
+                   ArrayRef<const int>      iatoms,
+                   const int                numNonperturbedInteractions,
                    const WorkDivision&      workDivision,
                    const rvec               x[],
                    rvec4                    f[],
@@ -318,7 +322,7 @@ real calc_one_bond(int                      thread,
                "The topology should be marked either as no FE or sorted on FE");
 
     const bool havePerturbedInteractions =
-            (idef->ilsort == ilsortFE_SORTED && idef->il[ftype].nr_nonperturbed < idef->il[ftype].nr);
+            (idef->ilsort == ilsortFE_SORTED && numNonperturbedInteractions < iatoms.ssize());
     BondedKernelFlavor flavor =
             selectBondedKernelFlavor(stepWork, fr->use_simd_kernels, havePerturbedInteractions);
     int efptFTYPE;
@@ -331,11 +335,10 @@ real calc_one_bond(int                      thread,
         efptFTYPE = efptBONDED;
     }
 
-    const int      nat1   = interaction_function[ftype].nratoms + 1;
-    const int      nbonds = idef->il[ftype].nr / nat1;
-    const t_iatom* iatoms = idef->il[ftype].iatoms;
+    const int nat1   = interaction_function[ftype].nratoms + 1;
+    const int nbonds = iatoms.ssize() / nat1;
 
-    GMX_ASSERT(fr->gpuBonded != nullptr || workDivision.end(ftype) == idef->il[ftype].nr,
+    GMX_ASSERT(fr->gpuBonded != nullptr || workDivision.end(ftype) == iatoms.ssize(),
                "The thread division should match the topology");
 
     const int nb0 = workDivision.bound(ftype, thread);
@@ -350,13 +353,13 @@ real calc_one_bond(int                      thread,
                nice to account to its own subtimer, but first
                wallcycle needs to be extended to support calling from
                multiple threads. */
-            v = cmap_dihs(nbn, iatoms + nb0, idef->iparams, idef->cmap_grid, x, f, fshift, pbc, g,
-                          lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd, global_atom_index);
+            v = cmap_dihs(nbn, iatoms.data() + nb0, idef->iparams, idef->cmap_grid, x, f, fshift,
+                          pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd, global_atom_index);
         }
         else
         {
-            v = calculateSimpleBond(ftype, nbn, iatoms + nb0, idef->iparams, x, f, fshift, pbc, g,
-                                    lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
+            v = calculateSimpleBond(ftype, nbn, iatoms.data() + nb0, idef->iparams, x, f, fshift,
+                                    pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
                                     global_atom_index, flavor);
         }
     }
@@ -365,8 +368,8 @@ real calc_one_bond(int                      thread,
         /* TODO The execution time for pairs might be nice to account
            to its own subtimer, but first wallcycle needs to be
            extended to support calling from multiple threads. */
-        do_pairs(ftype, nbn, iatoms + nb0, idef->iparams, x, f, fshift, pbc, g, lambda, dvdl, md,
-                 fr, havePerturbedInteractions, stepWork, grpp, global_atom_index);
+        do_pairs(ftype, nbn, iatoms.data() + nb0, idef->iparams, x, f, fshift, pbc, g, lambda, dvdl,
+                 md, fr, havePerturbedInteractions, stepWork, grpp, global_atom_index);
     }
 
     if (thread == 0)
@@ -435,11 +438,14 @@ static void calcBondedForces(const t_idef*            idef,
             /* Loop over all bonded force types to calculate the bonded forces */
             for (ftype = 0; (ftype < F_NRE); ftype++)
             {
-                if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
+                const t_ilist& ilist = idef->il[ftype];
+                if (ilist.nr > 0 && ftype_is_bonded_potential(ftype))
                 {
-                    v = calc_one_bond(thread, ftype, idef, fr->bondedThreading->workDivision, x, ft,
-                                      fshift, fr, pbc_null, g, grpp, nrnb, lambda, dvdlt, md, fcd,
-                                      stepWork, global_atom_index);
+                    ArrayRef<const int> iatoms = gmx::constArrayRefFromArray(ilist.iatoms, ilist.nr);
+                    v                          = calc_one_bond(
+                            thread, ftype, idef, iatoms, idef->numNonperturbedInteractions[ftype],
+                            fr->bondedThreading->workDivision, x, ft, fshift, fr, pbc_null, g, grpp,
+                            nrnb, lambda, dvdlt, md, fcd, stepWork, global_atom_index);
                     epot[ftype] += v;
                 }
             }
@@ -615,21 +621,22 @@ void calc_listed_lambda(const t_idef*         idef,
         if (ftype_is_bonded_potential(ftype))
         {
             const t_ilist& ilist = idef->il[ftype];
-            /* Create a temporary t_ilist with only perturbed interactions */
-            t_ilist& ilist_fe        = idef_fe.il[ftype];
-            ilist_fe.iatoms          = ilist.iatoms + ilist.nr_nonperturbed;
-            ilist_fe.nr_nonperturbed = 0;
-            ilist_fe.nr              = ilist.nr - ilist.nr_nonperturbed;
+            /* Create a temporary iatom list with only perturbed interactions */
+            const int           numNonperturbed = idef->numNonperturbedInteractions[ftype];
+            ArrayRef<const int> iatoms = gmx::constArrayRefFromArray(ilist.iatoms + numNonperturbed,
+                                                                     ilist.nr - numNonperturbed);
+            t_ilist&            ilist_fe = idef_fe.il[ftype];
             /* Set the work range of thread 0 to the perturbed bondeds */
             workDivision.setBound(ftype, 0, 0);
-            workDivision.setBound(ftype, 1, ilist_fe.nr);
+            workDivision.setBound(ftype, 1, iatoms.ssize());
 
             if (ilist_fe.nr > 0)
             {
                 gmx::StepWorkload tempFlags;
                 tempFlags.computeEnergy = true;
-                v = calc_one_bond(0, ftype, &idef_fe, workDivision, x, f, fshift, fr, pbc_null, g,
-                                  grpp, nrnb, lambda, dvdl_dum, md, fcd, tempFlags, global_atom_index);
+                v = calc_one_bond(0, ftype, idef, iatoms, iatoms.ssize(), workDivision, x, f,
+                                  fshift, fr, pbc_null, g, grpp, nrnb, lambda, dvdl_dum, md, fcd,
+                                  tempFlags, global_atom_index);
                 epot[ftype] += v;
             }
         }
