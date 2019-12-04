@@ -103,8 +103,16 @@ private:
     t_blocka excls;
 };
 
-class TopologyBuilder
-{
+/*! \libinternal
+ * \ingroup nblib
+ * \brief Topology Builder
+ *
+ * A helper class to assist building of topologies. They also ensure that
+ * topologies only exist in a valid state within the scope of the
+ * simulation program.
+ */
+
+class TopologyBuilder {
 public:
     //! Constructor
     TopologyBuilder();
@@ -117,20 +125,25 @@ public:
      */
     Topology buildTopology();
 
-    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
+    //! Adds a molecules of a certain type into the topology
+    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
     Topology topology_;
 
-    int                                    numAtoms_;
+    //! Total number of atoms in the system
+    int numAtoms_;
+
+    //! List of molecule types and number of molecules
     std::vector<std::tuple<Molecule, int>> molecules_;
 
     //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
     t_blocka createExclusionsList() const;
 
-    template<class Extractor>
-    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+    //! Helper function to extract quantities like mass, charge, etc from the system
+    template <class Extractor>
+    std::vector<real> extractQuantity(Extractor extractor);
 };
 
 } // namespace nblib
