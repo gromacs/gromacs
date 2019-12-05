@@ -489,7 +489,9 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithDD,
+                                    const bool        isDomainDecomposition,
+                                    const bool        useUpdateGroups,
                                     const bool        useGpuForPme,
                                     const bool        useGpuForNonbonded,
                                     const TaskTarget  updateTarget,
@@ -507,11 +509,20 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
         return false;
     }
 
+    const bool hasAnyConstraints = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
+
     std::string errorMessage;
 
-    if (isDomainDecomposition)
+    if (isDomainDecomposition && hasAnyConstraints && !useUpdateGroups)
     {
-        errorMessage += "Domain decomposition is not supported.\n";
+        errorMessage +=
+                "Domain decomposition is only supported with constraints when update groups are "
+                "used. This means constraining all bonds is not supported, except for small "
+                "molecules, and box sizes close to half the pair-list cutoff are not supported.\n ";
+    }
+    if (inputrec.eConstrAlg == econtSHAKE && hasAnyConstraints && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
+    {
+        errorMessage += "SHAKE constraints are not supported.\n";
     }
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
@@ -604,6 +615,11 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
             GMX_THROW(InconsistentInputError((prefix + errorMessage).c_str()));
         }
         return false;
+    }
+
+    if (isDomainDecomposition)
+    {
+        return forceGpuUpdateDefaultWithDD;
     }
 
     return true;

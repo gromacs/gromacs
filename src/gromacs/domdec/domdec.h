@@ -147,6 +147,9 @@ int dd_pme_maxshift_y(const gmx_domdec_t* dd);
 /*! \brief Return whether constraints, not including settles, cross domain boundaries */
 bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 
+/*! \brief Return whether update groups are used */
+bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
+
 /*! \brief Return whether the DD has a single dimension with a single pulse
  *
  * The GPU halo exchange code requires a 1D single-pulse DD, and its

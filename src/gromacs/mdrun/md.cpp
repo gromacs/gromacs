@@ -334,8 +334,13 @@ void gmx::LegacySimulator::do_md()
 
     if (useGpuForUpdate)
     {
-        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr),
-                           "Domain decomposition is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr) || ddUsesUpdateGroups(*cr->dd) || constr == nullptr
+                                   || constr->numConstraintsTotal() == 0,
+                           "Constraints in domain decomposition are only supported with update "
+                           "groups if using GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->eConstrAlg != econtSHAKE || constr == nullptr
+                                   || constr->numConstraintsTotal() == 0,
+                           "SHAKE is not supported with GPU update.");
         GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuBufferOps),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");

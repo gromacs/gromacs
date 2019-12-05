@@ -1032,6 +1032,11 @@ bool ddHaveSplitConstraints(const gmx_domdec_t& dd)
     return dd.comm->systemInfo.haveSplitConstraints;
 }
 
+bool ddUsesUpdateGroups(const gmx_domdec_t& dd)
+{
+    return dd.comm->systemInfo.useUpdateGroups;
+}
+
 void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)
 {
     /* Note that the cycles value can be incorrect, either 0 or some

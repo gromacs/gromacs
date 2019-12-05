@@ -231,23 +231,27 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
- * \param[in]  isDomainDecomposition     Whether there more than one domain.
- * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
- * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
- * \param[in]  updateTarget              User choice for running simulation on GPU.
- * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
- * \param[in]  inputrec                  The user input.
- * \param[in]  mtop                      The global topology.
- * \param[in]  useEssentialDynamics      If essential dynamics is active.
- * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
- * \param[in]  useReplicaExchange        If this is a REMD simulation.
- * \param[in]  doRerun                   It this is a rerun.
+ * \param[in]  forceGpuUpdateDefaultWithDD  If update should run on GPU with DD by default.
+ * \param[in]  isDomainDecomposition        Whether there more than one domain.
+ * \param[in]  useUpdateGroups              If the constraints can be split across domains.
+ * \param[in]  useGpuForPme                 Whether GPUs will be used for PME interactions.
+ * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  updateTarget                 User choice for running simulation on GPU.
+ * \param[in]  gpusWereDetected             Whether compatible GPUs were detected on any node.
+ * \param[in]  inputrec                     The user input.
+ * \param[in]  mtop                         The global topology.
+ * \param[in]  useEssentialDynamics         If essential dynamics is active.
+ * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
+ * \param[in]  useReplicaExchange           If this is a REMD simulation.
+ * \param[in]  doRerun                      It this is a rerun.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultWithDD,
+                                    bool              isDomainDecomposition,
+                                    bool              useUpdateGroups,
                                     bool              useGpuForPme,
                                     bool              useGpuForNonbonded,
                                     TaskTarget        updateTarget,

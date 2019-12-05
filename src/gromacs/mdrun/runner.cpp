@@ -99,6 +99,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -175,6 +176,8 @@ struct DevelopmentFeatureFlags
     //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
     bool enableGpuBufferOps = false;
+    //! If true, forces 'mdrun -update auto' default to 'gpu' when running with DD
+    bool forceGpuUpdateDefaultWithDD = false;
     //! True if the GPU halo exchange development feature is enabled
     bool enableGpuHaloExchange = false;
     //! True if the PME PP direct communication GPU development feature is enabled
@@ -209,6 +212,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 #pragma GCC diagnostic ignored "-Wunused-result"
     devFlags.enableGpuBufferOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr)
                                   && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
+    devFlags.forceGpuUpdateDefaultWithDD = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
     devFlags.enableGpuHaloExchange =
             (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm =
@@ -222,6 +226,15 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                 .appendTextFormatted(
                         "NOTE: This run uses the 'GPU buffer ops' feature, enabled by the "
                         "GMX_USE_GPU_BUFFER_OPS environment variable.");
+    }
+
+    if (devFlags.forceGpuUpdateDefaultWithDD)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "NOTE: This run will default to '-update gpu' as requested by the "
+                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
     if (devFlags.enableGpuHaloExchange)
@@ -890,19 +903,6 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
-    // NOTE: The devFlags need decideWhetherToUseGpusForNonbonded(...) and decideWhetherToUseGpusForPme(...) for overrides,
-    //       decideWhetherToUseGpuForUpdate() needs devFlags for the '-update auto' override, hence the interleaving.
-    // NOTE: When the simulationWork is constructed, the useGpuForUpdate overrides the devFlags.enableGpuBufferOps.
-    try
-    {
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                useDomainDecomposition, useGpuForPme, useGpuForNonbonded, updateTarget,
-                gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
-                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0, doRerun);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
-
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
     // There is nothing unique about restraints at this point as far as the
@@ -1177,6 +1177,22 @@ int Mdrunner::mdrunner()
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
     }
+
+    // The GPU update is decided here because we need to know whether the constraints or
+    // SETTLEs can span accross the domain borders (i.e. whether or not update groups are
+    // defined). This is only known after DD is initialized, hence decision on using GPU
+    // update is done so late.
+    try
+    {
+        const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
+
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
+                devFlags.forceGpuUpdateDefaultWithDD, useDomainDecomposition, useUpdateGroups,
+                useGpuForPme, useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop,
+                doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                replExParams.exchangeInterval > 0, doRerun);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
     if (PAR(cr))
     {
