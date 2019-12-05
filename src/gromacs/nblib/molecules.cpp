@@ -53,42 +53,41 @@ namespace nblib {
 
 Molecule::Molecule(std::string moleculeName) : name_(std::move(moleculeName)) {}
 
-void Molecule::addAtomSelfExclusion(std::string atomName, std::string resName)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, const Charge& charge, AtomType const &atomType)
 {
-    bool found = false;
-    int atomIndex = atomNameAndResidueToIndex(std::make_tuple(atomName, resName));
-
-    for(auto &tuple : exclusions_)
-    {
-        bool found = false;
-        if(std::get<0>(tuple) == atomIndex) {
-            if(std::get<1>(tuple) == atomIndex) {
-                found = true;
-            }
-        }
-    }
-    if(!found) {
-        exclusions_.emplace_back(std::make_tuple(atomIndex, atomIndex));
-    }
-}
-
-Molecule& Molecule::addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType)
-{
-    // check whether we already have the atom type
     if (!atomTypes_.count(atomType.name()))
     {
-        atomTypes_[atomName] = atomType;
+        atomTypes_[atomType.name()] = atomType;
     }
 
-    atoms_.emplace_back(std::make_tuple(atomName, residueName));
-    addAtomSelfExclusion(atomName, residueName);
+    atoms_.emplace_back(AtomData{atomName, residueName, atomType.name(), charge});
+
+    //! Add self exclusion. We just added the atom, so we know its index and that the exclusion doesn't exist yet
+    std::size_t id = atoms_.size()-1;
+    exclusions_.emplace_back(std::make_tuple(id, id));
 
     return *this;
 }
 
-Molecule& Molecule::addAtom(const std::string &atomName, AtomType const &atomType)
+Molecule& Molecule::addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const &atomType)
 {
-    addAtom(atomName, name_, atomType);
+    real charge = 0;
+    addAtom(atomName, residueName, charge, atomType);
+
+    return *this;
+}
+
+Molecule& Molecule::addAtom(const AtomName& atomName, const Charge& charge, AtomType const &atomType)
+{
+    addAtom(atomName, name_, charge, atomType);
+
+    return *this;
+}
+
+Molecule& Molecule::addAtom(const AtomName& atomName, const AtomType& atomType)
+{
+    real charge = 0;
+    addAtom(atomName, name_, charge, atomType);
 
     return *this;
 }
@@ -103,25 +102,6 @@ void Molecule::addHarmonicBond(HarmonicType harmonicBond)
     harmonicInteractions_.push_back(harmonicBond);
 }
 
-
-int Molecule::atomNameAndResidueToIndex(std::tuple<std::string, std::string> atomResNameTuple)
-{
-    auto equal = [](auto tup1, auto tup2) { return (std::get<0>(tup1) == std::get<0>(tup2) and std::get<1>(tup1) == std::get<1>(tup2)); };
-
-    auto posIter = std::find_if(begin(atoms_), end(atoms_),
-        [&](std::tuple<std::string, std::string> & atomAndResName)
-        {
-            return equal(atomAndResName, atomResNameTuple);
-        });
-
-    if(posIter != end(atoms_)) {
-        return posIter - begin(atoms_);
-    } else {
-        // TODO throw exception
-        return -1;
-    }
-}
-
 void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
 {
     // We do not need to add exclusion in case the atom indexes are the same
@@ -134,18 +114,88 @@ void Molecule::addExclusion(const int atomIndex, const int atomIndexToExclude)
 
 void Molecule::addExclusion(std::tuple<std::string, std::string> atom, std::tuple<std::string, std::string> atomToExclude)
 {
-    auto atomNameIndex = atomNameAndResidueToIndex(atom);
-    auto atomToExcludeIndex = atomNameAndResidueToIndex(atomToExclude);
-
-    addExclusion(atomNameIndex, atomToExcludeIndex);
+    //! duplication for the swapped pair happens in getExclusions()
+    exclusionsByName_.emplace_back(std::make_tuple(std::get<0>(atom), std::get<1>(atom),
+                                                   std::get<0>(atomToExclude), std::get<1>(atomToExclude)));
 }
 
-void Molecule::addExclusion(std::string atomName, std::string atomNameToExclude)
+void Molecule::addExclusion(const std::string &atomName, const std::string &atomNameToExclude)
 {
-    auto atomNameIndex = atomNameAndResidueToIndex(std::make_tuple(atomName, name_));
-    auto atomToExcludeIndex = atomNameAndResidueToIndex(std::make_tuple(atomNameToExclude, name_));
+    addExclusion(std::make_tuple(atomName, name_), std::make_tuple(atomNameToExclude, name_));
+}
 
-    addExclusion(atomNameIndex, atomToExcludeIndex);
+std::vector<std::tuple<int, int>> Molecule::getExclusions() const
+{
+    //! tuples of (atomName, residueName, index)
+    std::vector<std::tuple<std::string, std::string, int>> indexKey;
+    indexKey.reserve(numAtomsInMolecule());
+
+    for (int i = 0; i < numAtomsInMolecule(); ++i)
+    {
+       indexKey.emplace_back(std::make_tuple(atoms_[i].atomName_, atoms_[i].residueName_, i));
+    }
+
+    std::sort(std::begin(indexKey), std::end(indexKey));
+
+    std::vector<std::tuple<int, int>> ret = exclusions_;
+    ret.reserve(exclusions_.size() + exclusionsByName_.size());
+
+    //! normal operator<, except ignore third element
+    auto sortKey = [](const auto &tup1, const auto &tup2)
+            {
+                if (std::get<0>(tup1) < std::get<0>(tup2))
+                    return true;
+                else
+                    return std::get<1>(tup1) < std::get<1>(tup2);
+            };
+
+    //! convert exclusions given by names to indices and append
+    for (auto& tup : exclusionsByName_)
+    {
+        const std::string &atomName1 = std::get<0>(tup);
+        const std::string &residueName1 = std::get<1>(tup);
+        const std::string &atomName2 = std::get<2>(tup);
+        const std::string &residueName2 = std::get<3>(tup);
+
+        //! look up first index (binary search)
+        auto it1 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
+                                    std::make_tuple(atomName1, residueName2, 0),
+                                    sortKey);
+
+        //! make sure we have the (atomName,residueName) combo
+        if (it1 == std::end(indexKey) or std::get<0>(*it1) != atomName1
+                                      or std::get<1>(*it1) != residueName1)
+        { throw std::runtime_error((std::string("Atom ") += atomName1 + std::string(" in residue ") +=
+                                    residueName1 + std::string(" not found in list of atoms\n")).c_str()); }
+
+        int firstIndex = std::get<2>(*it1);
+
+        //! look up second index (binary search)
+        auto it2 = std::lower_bound(std::begin(indexKey), std::end(indexKey),
+                                    std::make_tuple(atomName2, residueName2, 0),
+                                    sortKey);
+
+        //! make sure we have the (atomName,residueName) combo
+        if (it2 == std::end(indexKey) or std::get<0>(*it2) != atomName2
+            or std::get<1>(*it2) != residueName2)
+        { throw std::runtime_error((std::string("Atom ") += atomName2 + std::string(" in residue ") +=
+                                    residueName2 + std::string(" not found in list of atoms\n")).c_str()); }
+
+        int secondIndex = std::get<2>(*it2);
+
+        ret.emplace_back(std::make_tuple(firstIndex, secondIndex));
+        ret.emplace_back(std::make_tuple(secondIndex, firstIndex));
+    }
+
+    std::sort(std::begin(ret), std::end(ret));
+
+    auto uniqueEnd = std::unique(std::begin(ret), std::end(ret));
+    if (uniqueEnd != std::end(ret)) {
+        printf("[nblib] Warning: exclusionList for molecule %s contained duplicates", name_.c_str());
+    }
+
+    ret.erase(uniqueEnd, std::end(ret));
+    return ret;
 }
 
 } // namespace nblib

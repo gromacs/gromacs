@@ -54,39 +54,114 @@ namespace nblib {
 namespace test {
 namespace {
 
-Molecule generateWaterMolecule()
+TEST(NBlibTest, CanConstructMoleculeWithoutChargeOrResidueName)
+{
+    AtomType Ar("Ar", 40, 1., 1.);
+    Molecule argon("Ar");
+    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Ar));
+}
+
+TEST(NBlibTest, CanConstructMoleculeWithChargeWithoutResidueName)
+{
+    AtomType Ar("Ar", 40, 1., 1.);
+    Molecule argon("Ar");
+    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Charge(0), Ar));
+}
+
+TEST(NBlibTest, CanConstructMoleculeWithoutChargeWithResidueName)
+{
+    AtomType Ar("Ar", 40, 1., 1.);
+    Molecule argon("Ar");
+    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Ar));
+}
+
+TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
+{
+    AtomType Ar("Ar", 40, 1., 1.);
+    Molecule argon("Ar");
+    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"),  ResidueName("ar2"), Charge(0), Ar));
+}
+
+TEST(NBlibTest, CanGetNumAtomsInMolecule)
 {
     //! Manually Create Molecule (Water)
 
     //! 1. Define Atom Type
-    AtomType Ow("Ow", 16, -0.6, 1., 1.);
-    AtomType Hw("Hw", 1, +0.3, 1., 1.);
-    AtomType Ar("Ar", 40, 0., 1., 1.);
+    AtomType Ow("Ow", 16, 1., 1.);
+    AtomType Hw("Hw", 1, 1., 1.);
 
     //! 2. Define Molecule
-
-    //! 2.1 Water
     Molecule water("water");
 
-    water.addAtom("Oxygen", Ow);
-    water.addAtom("H1", Hw);
+    water.addAtom("Oxygen", Charge(-0.6), Ow);
+    water.addAtom("H1", Charge(+0.3), Hw);
     water.addAtom("H2", Hw);
 
-    water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
-    water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
+    auto numAtoms = water.numAtomsInMolecule();
 
-    water.addExclusion("Oxygen", "H1");
-    water.addExclusion("Oxygen", "H2");
-    water.addExclusion("H1", "H2");
-
-    return water;
+    EXPECT_EQ(3, numAtoms);
 }
 
-TEST(NBlibTest, numAtomsTest)
+TEST(NBlibTest, CanConstructExclusionListFromNames)
 {
-    auto water = generateWaterMolecule();
-    auto numAtoms = water.numAtomsInMolecule();
-    EXPECT_EQ(3, numAtoms);
+    //! Manually Create Molecule (Water)
+
+    //! 1. Define Atom Type
+    AtomType Ow("Ow", 16, 1., 1.);
+    AtomType Hw("Hw", 1, 1., 1.);
+
+    //! 2. Define Molecule
+    Molecule water("water");
+
+    water.addAtom("Oxygen", Charge(-0.6), Ow);
+    water.addAtom("H1", Charge(+0.3), Hw);
+    water.addAtom("H2", Charge(+0.3), Hw);
+
+    water.addExclusion("H1", "Oxygen");
+    water.addExclusion("H1", "H2");
+    water.addExclusion("H2", "Oxygen");
+
+    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
+
+    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
+                                                 {1,0}, {1,1}, {1,2},
+                                                 {2,0}, {2,1}, {2,2}};
+
+    ASSERT_EQ(exclusions.size(), 9);
+    for (std::size_t i = 0; i < exclusions.size(); ++i)
+        EXPECT_EQ(exclusions[i], reference[i]);
+
+}
+
+TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
+{
+    //! Manually Create Molecule (Water)
+
+    //! 1. Define Atom Type
+    AtomType Ow("Ow", 16, 1., 1.);
+    AtomType Hw("Hw", 1, 1., 1.);
+
+    //! 2. Define Molecule
+    Molecule water("water");
+
+    water.addAtom("Oxygen", Charge(-0.6), Ow);
+    water.addAtom("H1", Charge(+0.3), Hw);
+    water.addAtom("H2", Charge(+0.3), Hw);
+
+    water.addExclusion("H1", "Oxygen");
+    water.addExclusion("H1", "H2");
+    water.addExclusion(2, 0);
+
+    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
+
+    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
+                                                 {1,0}, {1,1}, {1,2},
+                                                 {2,0}, {2,1}, {2,2}};
+
+    ASSERT_EQ(exclusions.size(), 9);
+    for (std::size_t i = 0; i < exclusions.size(); ++i)
+        EXPECT_EQ(exclusions[i], reference[i]);
+
 }
 
 }  // namespace

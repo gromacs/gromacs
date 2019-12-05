@@ -53,6 +53,9 @@ std::vector<gmx::RVec> generateVelocity(real Temperature, unsigned int seed, std
 
 bool checkNumericValues(const std::vector<gmx::RVec> &values);
 
+template <class T>
+inline void ignore_unused(T& x) { static_cast<void>(x); }
+
 } // namespace nblib
 
 #endif //GROMACS_UTIL_H

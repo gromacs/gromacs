@@ -59,13 +59,21 @@ class TopologyBuilder;
 namespace nblib
 {
 
+using AtomName = std::string;
+using Charge = real;
+using ResidueName = std::string;
+
 class Molecule {
 public:
     Molecule(std::string moleculeName);
 
-    Molecule& addAtom(const std::string &atomName, const std::string &residueName, AtomType const &atomType);
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, const Charge& charge, AtomType const &atomType);
 
-    Molecule& addAtom(const std::string &atomName, AtomType const &atomType);
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const &atomType);
+
+    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const &atomType);
+
+    Molecule& addAtom(const AtomName& atomName, AtomType const &atomType);
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
@@ -74,28 +82,39 @@ public:
 
     void addExclusion(std::tuple<std::string, std::string> atom, std::tuple<std::string, std::string> atomToExclude);
 
-    void addExclusion(std::string atomName, std::string atomNameToExclude);
+    void addExclusion(const std::string &atomName, const std::string &atomNameToExclude);
 
     int numAtomsInMolecule() const;
+
+    //! convert exclusions given by name to indices and unify with exclusions given by indices
+    //! returns a sorted vector containing no duplicates of atoms to exclude by indices
+    std::vector<std::tuple<int, int>> getExclusions() const;
 
     friend class TopologyBuilder;
 
 private:
     std::string name_;
 
+    struct AtomData {
+        std::string atomName_;
+        std::string residueName_;
+        std::string atomTypeName_;
+        real charge_;
+    };
+
     //! one entry per atom in molecule
-    std::vector<std::tuple<std::string, std::string>> atoms_;
+    std::vector<AtomData> atoms_;
+
     //! collection of distinct Atoms in molecule
     std::unordered_map<std::string, AtomType> atomTypes_;
 
     std::vector<std::tuple<int, int>> exclusions_;
 
+    //! we cannot efficiently compute indices during the build-phase
+    //! so we delay the conversion until TopologyBuilder requests it
+    std::vector<std::tuple<std::string, std::string, std::string, std::string>> exclusionsByName_;
+
     std::vector<HarmonicType> harmonicInteractions_;
-
-    int atomNameAndResidueToIndex(std::tuple<std::string, std::string> atomResNameTuple);
-
-    void addAtomSelfExclusion(std::string atomName, std::string resName);
-
 };
 
 } //namespace nblib

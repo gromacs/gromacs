@@ -100,7 +100,7 @@ public:
 
     Topology buildTopology();
 
-    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(const Molecule &moleculeType, int nMolecules);
 
 private:
     Topology topology_;
@@ -111,7 +111,7 @@ private:
     t_blocka createExclusionsList() const;
 
     template <class Extractor>
-    std::vector<real> extractQuantity(Extractor extractor);
+    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
 };
 
 } // namespace nblib
