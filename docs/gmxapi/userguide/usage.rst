@@ -44,6 +44,39 @@ a *gmxapi* script.
     to locate executables, including the :command:`gmx` wrapper binary.
     Relates to `#2961 <https://redmine.gromacs.org/issues/2961>`__.
 
+.. _parallelism:
+
+Notes on parallelism and MPI
+============================
+
+When launching a *gmxapi* script in an MPI environment,
+such as with :command:`mpiexec` or :command:`srun`,
+you must help *gmxapi* detect the MPI environment by ensuring that :py:mod:`mpi4py`
+is loaded.
+Refer to :ref:`mpi_requirements` for more on installing :py:mod:`mpi4py`.
+
+Assuming you use :command:`mpiexec` to launch MPI jobs in your environment,
+run a *gmxapi* script on two ranks with something like the following.
+Note that it can be helpful to provide :command:`mpiexec` with the full path to
+the intended Python interpreter since new process environments are being created.
+
+::
+
+    mpiexec -n 2 `which python` -m mpi4py myscript.py
+
+*gmxapi* 0.1 has limited parallelism, but future versions will include seamless
+acceleration as integration improves with the GROMACS library and computing
+environment runtime resources.
+Currently, *gmxapi* and the GROMACS library do not have an effective way to
+share an MPI environment.
+Therefore, if you intend to run more than one simulation at a time, in parallel,
+in a *gmxapi* script, you should build GROMACS with *thread-MPI* instead of a
+standard MPI library.
+I.e. configure GROMACS with the CMake flag ``-DGMX_THREAD_MPI=ON``.
+Then, launch your *gmxapi* script with one MPI rank per node, and *gmxapi* will
+assign each (non-MPI) simulation to its own node, while keeping the full MPI
+environment available for use via :py:mod:`mpi4py`.
+
 Running simple simulations
 ==========================
 
@@ -84,6 +117,8 @@ of ranks to allow one rank per simulation.
 For *gmxapi* 0.1, we recommend configuring the GROMACS build with
 ``GMX_THREAD_MPI=ON`` and allowing one rank per node in order to allow each
 simulation ensemble member to run on a separate node.
+
+.. seealso:: :ref:`parallelism`
 
 .. _commandline:
 
