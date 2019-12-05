@@ -1,0 +1,40 @@
+.build-template:
+  # Dockerfiles are from dockerhub, user eriklindahl
+  # image in admin/dockerimages/ci-docs-py27
+  image: biophysics/gcc-gromacs
+  stage: build
+  variables:
+    CMAKE_COMPILER_SCRIPT: ""
+    CMAKE_EXTRA_OPTIONS: ""
+    CMAKE_SIMD_OPTIONS: ""
+    CMAKE_MPI_OPTIONS: ""
+    CMAKE_PRECISION_OPTIONS: ""
+
+  script:
+    - echo $BUILD_DIR
+    - echo $CMAKE_COMPILER_SCRIPT
+    - echo $CMAKE_EXTRA_OPTIONS
+    - echo $CMAKE_SIMD_OPTIONS
+    - echo $CMAKE_MPI_OPTIONS
+    - echo $CMAKE_PRECISION_OPTIONS
+    - echo $INSTALL_DIR
+    - mkdir -p $BUILD_DIR
+    - cd $BUILD_DIR
+    - cmake ..
+        -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        $CMAKE_COMPILER_SCRIPT
+        $CMAKE_EXTRA_OPTIONS
+        $CMAKE_SIMD_OPTIONS
+        $CMAKE_MPI_OPTIONS
+        $CMAKE_PRECISION_OPTIONS
+        -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
+    - cmake --build . -- -j$KUBERNETES_CPU_REQUEST
+    - cmake --build . --target tests -- -j$KUBERNETES_CPU_REQUEST
+    - cmake --build . --target install
+    - cd ..
+    - tar czf gmx-build.tar.gz $BUILD_DIR/
+    - tar czf gmx-install.tar.gz $INSTALL_DIR/
+  artifacts:
+    paths:
+      - gmx-build.tar.gz
+      - gmx-install.tar.gz

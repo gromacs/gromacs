@@ -1,0 +1,261 @@
+include:
+    - local: '/admin/ci-templates/.include-template.yml'
+
+.build-extends-template:
+    extends:
+        - .build-template
+        - .build-cache-template
+        - .variables-template
+        - .tags-template
+
+.test-extends-template:
+    extends:
+        - .test-base-template
+        - .test-cache-template
+        - .test-script-template
+        - .variables-template
+        - .tags-template
+
+before_script:
+  - mkdir -p ccache
+  - export CCACHE_BASEDIR=${PWD}
+  - export CCACHE_DIR=${PWD}/ccache
+
+# CI is organized into stages so that if early stages fail
+# the later ones are not run.
+stages:
+  # Preparation for building and testing (getting regressiontest repo right now)
+  - pre-build
+  # Build GROMACS in multiple configurations
+  - build
+  # Test each configuration, perhaps in multiple ways
+  - test
+  # Linting, docs, static analysis, coverage, code analysis...
+  - post-test
+
+.build-gcc:
+    extends:
+        - .build-extends-template
+        - .build-gcc-template
+
+.test-gcc:
+    extends:
+        - .test-extends-template
+        - .test-gcc-template
+
+.build-gcc-mpi:
+    extends:
+        - .build-gcc
+        - .build-mpi-template
+
+.build-clang:
+    extends:
+        - .build-extends-template
+        - .clang-before-script-template
+        - .build-clang-template
+
+.test-clang:
+    extends:
+        - .test-extends-template
+        - .clang-before-script-template
+        - .test-clang-template
+
+.build-docs:
+    extends:
+        - .build-extends-template
+        - .build-docs-template
+        - .build-clang-template
+
+.build-cuda-gcc:
+    extends:
+        - .build-gcc
+        - .build-cuda-template
+
+prepare-regressiontests:
+    extends: .regressiontests-template
+
+
+build-gcc-7:
+    extends: .build-gcc
+
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+
+test-gcc-7:
+    extends: .test-gcc
+
+    dependencies: 
+        - build-gcc-7
+        - prepare-regressiontests
+
+##build-gcc-7-mpi:
+##    extends: .build-gcc-mpi
+##
+##    variables:
+##        COMPILER_MAJOR_VERSION: 7
+##
+build-gcc-7-double:
+    extends: .build-gcc
+
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+        CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
+
+test-gcc-7-double:
+    allow_failure: true
+    extends: .test-gcc
+
+    dependencies:
+        - build-gcc-7-double
+        - prepare-regressiontests
+
+
+build-gcc-8:
+    extends: .build-gcc
+
+    variables:
+        COMPILER_MAJOR_VERSION: 8
+
+test-gcc-8:
+    extends: .test-gcc
+
+    dependencies:
+        - build-gcc-8
+        - prepare-regressiontests
+
+build-gcc-7-simd-sse41:
+    extends: .build-gcc
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+        CMAKE_SIMD_OPTIONS: "-DGMX_SIMD=SSE4.1"
+
+test-gcc-7-simd-sse41:
+    extends: .test-gcc
+
+    dependencies:
+        - build-gcc-7-simd-sse41
+        - prepare-regressiontests
+
+##build-gcc-8-cuda-10:
+##    extends: .build-cuda-gcc
+##
+##    variables:
+##        COMPILER_MAJOR_VERSION: 8
+##        CUDA_BASE_VERSION: "10.1"
+
+build-clang-7:
+    extends: .build-clang
+
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+
+test-clang-7:
+    extends: .test-clang
+
+    dependencies: 
+        - build-clang-7
+        - prepare-regressiontests
+
+# For version of clang before 7, we need to always provide the full version
+# Use something like this instead in the download script:
+# APT_COMPILER_VERSION=$(($COMPILER_MAJOR_VERSION < 7 ? "${COMPILER_MAJOR_VERSION}.0" : $COMPILER_MAJOR_VERSION))
+build-clang-6:
+    extends: .build-clang
+
+    variables:
+        COMPILER_MAJOR_VERSION: "6.0"
+
+test-clang-6:
+    extends: .test-clang
+
+    dependencies:
+        - build-clang-6
+        - prepare-regressiontests
+
+# TODO turn on openmp when updating master head
+# TODO needs to be set to not allow failure
+build-clang-tidy:
+  allow_failure: true
+  extends: .build-clang
+  stage: post-test
+  dependencies: []
+  variables:
+    BUILD_DIR: build-clang-tidy
+    COMPILER_MAJOR_VERSION: 7
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DCMAKE_BUILD_TYPE=Reference -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_OPENMP=off
+
+build-docs:
+  extends: .build-docs
+  variables:
+    BUILD_DIR: build-docs
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DCMAKE_BUILD_TYPE=Debug -DGMX_SIMD=None -DGMX_GPU=off
+
+run-check-source:
+  extends: .build-docs
+  stage: test
+  dependencies:
+    - build-docs
+  variables:
+    BUILD_DIR: build-docs
+  script:
+    - cd $BUILD_DIR
+    - cmake --build . --target check-source
+  artifacts:
+    name: docs-artifacts-$CI_COMMIT_REF_SLUG
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR/docs/doxygen/doxygen-xml.log
+      - $BUILD_DIR/docs/doxygen/check-source.log
+
+# The manual build is built separately so that errors in converting
+# Sphinx to LaTeX and compiling can always be found in the
+# all-output.txt file, while avoiding many thousands of lines of spam
+# from pdflatex for normal builds. This does reduce the available
+# parallel utilization, and so increases the build time.
+#
+# TODO why are the doxygen and sphinx log files disappearing
+# TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
+webpage:
+  extends: .build-docs
+  stage: post-test
+  dependencies:
+    - build-docs
+    - check-source
+  variables:
+    BUILD_DIR: build-docs
+  before_script:
+    - apt-get -yqq install moreutils
+  script:
+    - cd $BUILD_DIR
+    - set -o pipefail && cmake --build . --target manual 2>&1 > docs/manual/all-output.txt | ts "%Y/%m/%d %H:%M:%S"
+    - set -o pipefail && cmake --build . --target webpage | ts "%Y/%m/%d %H:%M:%S"
+  artifacts:
+    name: docs-artifacts-$CI_COMMIT_REF_SLUG
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR/docs/html
+      - $BUILD_DIR/docs/manual/gromacs.log
+      - $BUILD_DIR/docs/manual/all-output.txt
+      - $BUILD_DIR/docs/doxygen/doxygen-user.log
+      - $BUILD_DIR/docs/doxygen/doxygen-lib.log
+      - $BUILD_DIR/docs/doxygen/doxygen-full.log
+      - $BUILD_DIR/docs/sphinx-html.log
+
+# TODO do this only in release pipeline
+#linkchecker:
+#    extends: .build-docs
+#    stage: post-test
+#    when: manual
+#    dependencies:
+#        - webpage
+#    variables:
+#        BUILD_DIR: build-docs
+#    script:
+#        - cd $BUILD_DIR
+#        - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml
+#  artifacts:
+#    reports:
+#      junit: $BUILD_DIR/docs/linkchecker-out.xml
+

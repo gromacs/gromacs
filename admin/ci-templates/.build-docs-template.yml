@@ -1,0 +1,26 @@
+.build-docs-template:
+  # Built by admin/dockerfiles/ci-docs
+  # TODO this should be organized more like the current documentation.py script
+  image: gromacs/gromacs:ci-docs
+  variables:
+    KUBERNETES_CPU_REQUEST: 4
+    CMAKE_COMPILER_SCRIPT: ""
+    CMAKE_EXTRA_OPTIONS: ""
+
+  script:
+    - echo $BUILD_DIR
+    - echo $CMAKE_COMPILER_SCRIPT
+    - echo $CMAKE_EXTRA_OPTIONS
+    - mkdir -p $BUILD_DIR
+    - cd $BUILD_DIR
+    - cmake ..
+        $CMAKE_COMPILER_SCRIPT
+        $CMAKE_EXTRA_OPTIONS
+    - cmake --build . --target gmx -- -j$KUBERNETES_CPU_REQUEST
+    - cd ..
+  artifacts:
+    name: docs-artifacts-$CI_COMMIT_REF_SLUG
+    when: always
+    expire_in: 1 week
+    paths:
+      - $BUILD_DIR

@@ -1,0 +1,16 @@
+.regressiontests-template:
+  # TODO Where is this Dockerfile? Combine it with ci-basic-dependencies
+  # image in admin/dockerimages/ci-docs-py27
+  image: biophysics/gcc-gromacs
+  stage: pre-build
+
+  script:
+    - git clone https://gerrit.gromacs.org/regressiontests.git
+    - cd regressiontests
+    - git checkout master
+    - cd ..
+    - tar czf gmx-regressiontests.tar.gz regressiontests
+  artifacts:
+    paths:
+      - gmx-regressiontests.tar.gz
+      - gmx-install.tar.gz

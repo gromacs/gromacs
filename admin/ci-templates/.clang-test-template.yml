@@ -1,0 +1,6 @@
+.test-clang-template:
+   variables:
+     COMPILER_MAJOR_VERSION: 7
+     BUILD_DIR: build-clang-$COMPILER_MAJOR_VERSION
+   dependencies:
+     - build-clang

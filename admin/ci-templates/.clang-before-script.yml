@@ -1,0 +1,17 @@
+.clang-before-script-template:
+  before_script:
+      - time apt-get -qq update
+      - DEBIAN_FRONTEND=noninteractive apt-get -y -q=2 --no-install-suggests --no-install-recommends install
+          apt-utils wget software-properties-common gpg-agent
+      - wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add -
+      - apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-$COMPILER_MAJOR_VERSION main"
+      - time apt-get -qq update
+      - time apt-get -qqy --no-install-suggests --no-install-recommends install
+          build-essential cmake git ninja-build ccache
+          clang++-$COMPILER_MAJOR_VERSION clang-tools-$COMPILER_MAJOR_VERSION
+          clang-tidy-$COMPILER_MAJOR_VERSION
+          libfftw3-dev libhwloc-dev liblapack-dev
+      - mkdir -p ccache
+      - export CCACHE_BASEDIR=${PWD}
+      - export CCACHE_DIR=${PWD}/ccache
+

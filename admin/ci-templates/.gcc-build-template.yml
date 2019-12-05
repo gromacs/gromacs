@@ -1,0 +1,16 @@
+.build-gcc-template:
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    BUILD_DIR: build-gcc-$COMPILER_MAJOR_VERSION
+    CMAKE_COMPILER_SCRIPT: -DCMAKE_C_COMPILER=gcc-$COMPILER_MAJOR_VERSION -DCMAKE_CXX_COMPILER=g++-$COMPILER_MAJOR_VERSION
+    EXTRA_INSTALLS: ""
+
+  before_script:
+      - time apt-get -qq update
+      - time apt-get -qqy --no-install-suggests --no-install-recommends install
+          build-essential cmake gcc-$COMPILER_MAJOR_VERSION g++-$COMPILER_MAJOR_VERSION 
+          $EXTRA_INSTALLS
+      - mkdir -p ccache
+      - export CCACHE_BASEDIR=${PWD}
+      - export CCACHE_DIR=${PWD}/ccache
+
