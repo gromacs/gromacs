@@ -41,8 +41,8 @@ def add_float(a: float, b: float) -> float:
 
 
 @gmx.function_wrapper(output={'data': bool})
-def less_than(lhs: float, rhs: float) -> bool:
-    return lhs < rhs
+def less_than(lhs: float, rhs: float, output=None):
+    output.data = lhs < rhs
 
 
 def test_subgraph_function():
