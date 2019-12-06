@@ -87,6 +87,15 @@ Output gave number of events included in histogram bar as *a.u.*,
 which was not clear for users.
 
 
+Fix dihedral angle calculation near 180 degree boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The analysis tools could incorrectly calculate properties of torsion angles and their averages
+when close to the -180 or 180 degree boundary.
+
+:issue:`3225`
+
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
