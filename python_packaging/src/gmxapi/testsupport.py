@@ -34,27 +34,46 @@
 
 """Reusable definitions for test modules.
 
-Define the ``withmpi_only`` test decorator.
+Provides utilities and pytest fixtures for gmxapi and GROMACS tests.
+
+To load these facilities in a pytest environment, set a `pytest_plugins`
+variable in a conftest.py
+(Reference https://docs.pytest.org/en/latest/writing_plugins.html#requiring-loading-plugins-in-a-test-module-or-conftest-file)
+
+    pytest_plugins = "gmxapi.testsupport"
+
+.. seealso:: https://docs.pytest.org/en/latest/plugins.html#findpluginname
 
 .. todo:: Consider moving this to a separate optional package.
 """
 
 import pytest
 
-mpi_requirement = 'Test requires mpi4py managing 2 MPI ranks.'
+mpi_status = 'Test requires mpi4py managing 2 MPI ranks.'
+skip_mpi = False
 try:
     from mpi4py import MPI
 
     if not MPI.Is_initialized():
         skip_mpi = True
-        reason = mpi_requirement + ' MPI is not initialized'
+        mpi_status += ' MPI is not initialized'
     elif MPI.COMM_WORLD.Get_size() < 2:
         skip_mpi = True
-        reason = mpi_requirement + ' MPI context is too small.'
-    else:
-        skip_mpi = False
-        reason = ''
-    withmpi_only = pytest.mark.skipif(skip_mpi, reason=reason)
+        mpi_status += ' MPI context is too small.'
 except ImportError:
-    withmpi_only = pytest.mark.skip(
-        reason=mpi_requirement + ' mpi4py is not available.')
+    skip_mpi = True
+    mpi_status += ' mpi4py is not available.'
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "withmpi_only: test requires mpi4py managing 2 MPI ranks.")
+
+
+def pytest_runtest_setup(item):
+    # Handle the withmpi_only marker.
+    for _ in item.iter_markers(name='withmpi_only'):
+        if skip_mpi:
+            pytest.skip(mpi_status)
+        # The API uses iteration because markers may be duplicated, but we only
+        # care about whether 'withmpi_only' occurs at all.
+        break

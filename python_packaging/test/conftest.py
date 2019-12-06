@@ -44,6 +44,7 @@ from contextlib import contextmanager
 
 import pytest
 
+pytest_plugins = ('gmxapi.testsupport',)
 
 def pytest_addoption(parser):
     """Add a command-line user option for the pytest invocation."""

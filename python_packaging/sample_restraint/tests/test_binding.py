@@ -14,7 +14,6 @@ from gmxapi.simulation.context import Context
 from gmxapi.simulation.workflow import WorkElement, from_tpr
 from gmxapi import version as gmx_version
 import pytest
-from gmxapi.testsupport import withmpi_only
 
 logging.getLogger().setLevel(logging.DEBUG)
 # create console handler
@@ -73,7 +72,7 @@ def test_ensemble_potential_nompi(spc_water_box):
         session.run()
 
 
-@withmpi_only
+@pytest.mark.withmpi_only
 @pytest.mark.usefixtures("cleandir")
 def test_ensemble_potential_withmpi(spc_water_box):
     tpr_filename = spc_water_box
