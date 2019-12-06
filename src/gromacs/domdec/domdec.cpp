@@ -2949,17 +2949,13 @@ static bool canMake1DAnd1PulseDomainDecomposition(const DDSettings&             
     return canMakeDDWith1DAnd1Pulse;
 }
 
-bool is1DAnd1PulseDD(const gmx_domdec_t& dd)
+bool is1D(const gmx_domdec_t& dd)
 {
     const int maxDimensionSize = std::max(dd.numCells[XX], std::max(dd.numCells[YY], dd.numCells[ZZ]));
     const int  productOfDimensionSizes      = dd.numCells[XX] * dd.numCells[YY] * dd.numCells[ZZ];
     const bool decompositionHasOneDimension = (maxDimensionSize == productOfDimensionSizes);
 
-    const bool hasMax1Pulse =
-            ((isDlbDisabled(dd.comm) && dd.comm->cellsize_limit >= dd.comm->systemInfo.cutoff)
-             || (!isDlbDisabled(dd.comm) && dd.comm->maxpulse == 1));
-
-    return decompositionHasOneDimension && hasMax1Pulse;
+    return decompositionHasOneDimension;
 }
 
 namespace gmx
@@ -3215,4 +3211,61 @@ gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const g
     }
 
     return bCutoffAllowed;
+}
+
+void constructGpuHaloExchange(const gmx::MDLogger& mdlog, const t_commrec& cr, void* streamLocal, void* streamNonLocal)
+{
+
+    int gpuHaloExchangeSize = 0;
+    int pulseStart          = 0;
+    if (cr.dd->gpuHaloExchange.empty())
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "NOTE: Activating the 'GPU halo exchange' feature, enabled "
+                        "by the "
+                        "GMX_GPU_DD_COMMS environment variable.");
+    }
+    else
+    {
+        gpuHaloExchangeSize = static_cast<int>(cr.dd->gpuHaloExchange.size());
+        pulseStart          = gpuHaloExchangeSize - 1;
+    }
+    if (cr.dd->comm->cd[0].numPulses() > gpuHaloExchangeSize)
+    {
+        for (int pulse = pulseStart; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+        {
+            cr.dd->gpuHaloExchange.push_back(std::make_unique<gmx::GpuHaloExchange>(
+                    cr.dd, cr.mpi_comm_mysim, streamLocal, streamNonLocal, pulse));
+        }
+    }
+}
+
+void reinitGpuHaloExchange(const t_commrec&              cr,
+                           const DeviceBuffer<gmx::RVec> d_coordinatesBuffer,
+                           const DeviceBuffer<gmx::RVec> d_forcesBuffer)
+{
+    for (int pulse = 0; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+    {
+        cr.dd->gpuHaloExchange[pulse]->reinitHalo(d_coordinatesBuffer, d_forcesBuffer);
+    }
+}
+
+void communicateGpuHaloCoordinates(const t_commrec&      cr,
+                                   const matrix          box,
+                                   GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
+{
+    for (int pulse = 0; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
+    {
+        cr.dd->gpuHaloExchange[pulse]->communicateHaloCoordinates(box, coordinatesReadyOnDeviceEvent);
+    }
+}
+
+void communicateGpuHaloForces(const t_commrec& cr, bool accumulateForces)
+{
+    for (int pulse = cr.dd->comm->cd[0].numPulses() - 1; pulse >= 0; pulse--)
+    {
+        cr.dd->gpuHaloExchange[pulse]->communicateHaloForces(accumulateForces);
+    }
 }

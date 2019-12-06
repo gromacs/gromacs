@@ -82,8 +82,9 @@ public:
      * \param [in]    mpi_comm_mysim           communicator used for simulation
      * \param [in]    streamLocal              local NB CUDA stream.
      * \param [in]    streamNonLocal           non-local NB CUDA stream.
+     * \param [in]    pulse                    the communication pulse for this instance
      */
-    GpuHaloExchange(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* streamLocal, void* streamNonLocal);
+    GpuHaloExchange(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* streamLocal, void* streamNonLocal, int pulse);
     ~GpuHaloExchange();
 
     /*! \brief

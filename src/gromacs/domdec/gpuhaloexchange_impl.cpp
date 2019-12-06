@@ -63,7 +63,8 @@ class GpuHaloExchange::Impl
 GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* /* dd */,
                                  MPI_Comm /* mpi_comm_mysim */,
                                  void* /*streamLocal */,
-                                 void* /*streamNonLocal */) :
+                                 void* /*streamNonLocal */,
+                                 int /*pulse */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,

@@ -58,6 +58,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/domdec/domdec_network.h"
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/domdec/gpuhaloexchange.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
@@ -843,6 +844,18 @@ void gmx::LegacySimulator::do_md()
                                     fr, vsite, constr, nrnb, wcycle, do_verbose && !bPMETunePrinting);
                 shouldCheckNumberOfBondedInteractions = true;
                 upd.setNumAtoms(state->natoms);
+
+                // Allocate or re-size GPU halo exchange object, if necessary
+                if (havePPDomainDecomposition(cr) && simulationWork.useGpuHaloExchange
+                    && useGpuForNonbonded && is1D(*cr->dd))
+                {
+                    // TODO remove need to pass local stream into GPU halo exchange - Redmine #3093
+                    void* streamLocal =
+                            Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::Local);
+                    void* streamNonLocal = Nbnxm::gpu_get_command_stream(
+                            fr->nbv->gpu_nbv, InteractionLocality::NonLocal);
+                    constructGpuHaloExchange(mdlog, *cr, streamLocal, streamNonLocal);
+                }
             }
         }
 
