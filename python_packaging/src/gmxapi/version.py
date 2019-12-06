@@ -44,7 +44,7 @@ Attributes:
 """
 import warnings
 
-__version__ = "0.1.0-dev3"
+__version__ = "0.1.0"
 
 # TODO: (pending infrastructure and further discussion) Configure with CMake.
 # __version__ = "@PROJECT_VERSION@"
@@ -59,7 +59,7 @@ minor = 1
 patch = 0
 
 # Note: this is not automatically updated. See RELEASE.txt and https://github.com/kassonlab/gmxapi/issues/152
-release = False
+release = True
 
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
 _named_features_0_0 = ['fr1', 'fr3', 'fr7', 'fr15']

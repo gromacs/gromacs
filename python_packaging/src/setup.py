@@ -165,7 +165,7 @@ setup(
     name='gmxapi',
 
     # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
-    version='0.1.0b2',
+    version='0.1.0',
     python_requires='>=3.5, <3.9',
     setup_requires=['cmake>=3.9.6',
                     'setuptools>=28',
