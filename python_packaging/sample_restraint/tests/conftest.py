@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,153 +37,10 @@
 import json
 import logging
 import os
-import shutil
-import tempfile
-import warnings
-from contextlib import contextmanager
 
 import pytest
 
 pytest_plugins = ('gmxapi.testsupport',)
-
-def pytest_addoption(parser):
-    """Add a command-line user option for the pytest invocation."""
-    parser.addoption(
-        '--rm',
-        action='store',
-        default='always',
-        choices=['always', 'never', 'success'],
-        help='Remove temporary directories "always", "never", or on "success".'
-    )
-
-
-@pytest.fixture(scope='session')
-def remove_tempdir(request):
-    """pytest fixture to get access to the --rm CLI option."""
-    return request.config.getoption('--rm')
-
-
-@contextmanager
-def scoped_chdir(dir):
-    oldpath = os.getcwd()
-    os.chdir(dir)
-    try:
-        yield dir
-        # If the `with` block using scoped_chdir produces an exception, it will
-        # be raised at this point in this function. We want the exception to
-        # propagate out of the `with` block, but first we want to restore the
-        # original working directory, so we skip `except` but provide a `finally`.
-    finally:
-        os.chdir(oldpath)
-
-
-@contextmanager
-def _cleandir(remove_tempdir):
-    """Context manager for a clean temporary working directory.
-
-    Arguments:
-        remove_tempdir (str): whether to remove temporary directory "always",
-                              "never", or on "success"
-
-    The context manager will issue a warning for each temporary directory that
-    is not removed.
-    """
-
-    newpath = tempfile.mkdtemp()
-
-    def remove():
-        shutil.rmtree(newpath)
-
-    def warn():
-        warnings.warn('Temporary directory not removed: {}'.format(newpath))
-
-    if remove_tempdir == 'always':
-        callback = remove
-    else:
-        callback = warn
-    try:
-        with scoped_chdir(newpath):
-            yield newpath
-        # If we get to this line, the `with` block using _cleandir did not throw.
-        # Clean up the temporary directory unless the user specified `--rm never`.
-        # I.e. If the user specified `--rm success`, then we need to toggle from `warn` to `remove`.
-        if remove_tempdir != 'never':
-            callback = remove
-    finally:
-        callback()
-
-
-@pytest.fixture
-def cleandir(remove_tempdir):
-    """Provide a clean temporary working directory for a test.
-
-    Example usage:
-
-        import os
-        import pytest
-
-        @pytest.mark.usefixtures("cleandir")
-        def test_cwd_starts_empty():
-            assert os.listdir(os.getcwd()) == []
-            with open("myfile", "w") as f:
-                f.write("hello")
-
-        def test_cwd_also_starts_empty(cleandir):
-            assert os.listdir(os.getcwd()) == []
-            assert os.path.abspath(os.getcwd()) == os.path.abspath(cleandir)
-            with open("myfile", "w") as f:
-                f.write("hello")
-
-        @pytest.mark.usefixtures("cleandir")
-        class TestDirectoryInit(object):
-            def test_cwd_starts_empty(self):
-                assert os.listdir(os.getcwd()) == []
-                with open("myfile", "w") as f:
-                    f.write("hello")
-
-            def test_cwd_also_starts_empty(self):
-                assert os.listdir(os.getcwd()) == []
-                with open("myfile", "w") as f:
-                    f.write("hello")
-
-    Ref: https://docs.pytest.org/en/latest/fixture.html#using-fixtures-from-classes-modules-or-projects
-    """
-    with _cleandir(remove_tempdir) as newdir:
-        yield newdir
-
-
-@pytest.fixture(scope='session')
-def gmxcli():
-    # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
-    #  We should be able to get the GMXRC contents and related hints from a gmxapi
-    #  package resource or from module attributes of a ``gromacs`` stub package.
-    allowed_command_names = ['gmx', 'gmx_mpi']
-    command = None
-    for command_name in allowed_command_names:
-        if command is not None:
-            break
-        command = shutil.which(command_name)
-        if command is None:
-            gmxbindir = os.getenv('GMXBIN')
-            if gmxbindir is None:
-                gromacsdir = os.getenv('GROMACS_DIR')
-                if gromacsdir is not None and gromacsdir != '':
-                    gmxbindir = os.path.join(gromacsdir, 'bin')
-            if gmxbindir is None:
-                gmxapidir = os.getenv('gmxapi_DIR')
-                if gmxapidir is not None and gmxapidir != '':
-                    gmxbindir = os.path.join(gmxapidir, 'bin')
-            if gmxbindir is not None:
-                gmxbindir = os.path.abspath(gmxbindir)
-                command = shutil.which(command_name, path=gmxbindir)
-    if command is None:
-        message = "Tests need 'gmx' command line tool, but could not find it on the path."
-        raise RuntimeError(message)
-    try:
-        assert os.access(command, os.X_OK)
-    except Exception as E:
-        raise RuntimeError('"{}" is not an executable gmx wrapper program'.format(command)) from E
-    yield command
 
 
 @pytest.fixture(scope='class')
@@ -193,6 +50,8 @@ def spc_water_box(gmxcli, remove_tempdir):
     Prepare the MD input in a freshly created working directory.
     """
     import gmxapi as gmx
+    # TODO: Remove this import when the the spc_water_box fixture is migrated to gmxapi.testsupport
+    from gmxapi.testsupport import _cleandir
 
     # TODO: (#2896) Fetch MD input from package / library data.
     # Example:
