@@ -1589,7 +1589,7 @@ int Mdrunner::mdrunner()
                                                       : GpuApiCallBehavior::Sync;
 
             stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                    pmeStream, localStream, nonLocalStream, deviceContext, transferKind, paddingSize);
+                    pmeStream, localStream, nonLocalStream, deviceContext, transferKind, paddingSize, wcycle);
             fr->stateGpu = stateGpu.get();
         }
 

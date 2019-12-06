@@ -59,7 +59,8 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */
                                                const void* /* nonLocalStream  */,
                                                const void* /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
-                                               int /* paddingSize     */) :
+                                               int /* paddingSize     */,
+                                               gmx_wallcycle* /*   wcycle */) :
     impl_(nullptr)
 {
 }
@@ -67,7 +68,8 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */
 StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */,
                                                const void* /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
-                                               int /* paddingSize     */) :
+                                               int /* paddingSize     */,
+                                               gmx_wallcycle* /*   wcycle */) :
     impl_(nullptr)
 {
 }

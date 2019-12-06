@@ -58,6 +58,8 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+struct gmx_wallcycle;
+
 namespace gmx
 {
 
@@ -108,13 +110,15 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const void*        pmeStream,
          const void*        localStream,
          const void*        nonLocalStream,
          const void*        deviceContext,
          GpuApiCallBehavior transferKind,
-         int                paddingSize);
+         int                paddingSize,
+         gmx_wallcycle*     wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
      *
@@ -130,8 +134,13 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
-    Impl(const void* pmeStream, const void* deviceContext, GpuApiCallBehavior transferKind, int paddingSize);
+    Impl(const void*        pmeStream,
+         const void*        deviceContext,
+         GpuApiCallBehavior transferKind,
+         int                paddingSize,
+         gmx_wallcycle*     wcycle);
 
     ~Impl();
 
@@ -405,6 +414,9 @@ private:
     int d_fSize_ = -1;
     //! Allocation size for the force buffer
     int d_fCapacity_ = -1;
+
+    //! \brief Pointer to wallcycle structure.
+    gmx_wallcycle* wcycle_;
 
     /*! \brief Performs the copy of data from host to device buffer.
      *

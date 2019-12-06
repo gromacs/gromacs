@@ -166,7 +166,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
             pme_gpu_get_device_stream(&pme), pme_gpu_get_device_context(&pme),
-            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme));
+            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
 }
 
 //! PME initialization with atom data

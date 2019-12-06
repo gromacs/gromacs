@@ -643,7 +643,7 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
         stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize);
+                commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize, wcycle);
     }
 
 
