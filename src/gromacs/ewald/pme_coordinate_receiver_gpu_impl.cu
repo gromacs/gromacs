@@ -72,7 +72,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayR
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;
 
-void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(rvec* d_x)
+void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> d_x)
 {
 
     int ind_start = 0;
@@ -134,7 +134,7 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void*                  pmeStr
 
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec* d_x)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> d_x)
 {
     impl_->sendCoordinateBufferAddressToPpRanks(d_x);
 }

@@ -66,7 +66,7 @@ public:
      * send coordinates buffer address to PP rank
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
+    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x);
 
 
     /*! \brief

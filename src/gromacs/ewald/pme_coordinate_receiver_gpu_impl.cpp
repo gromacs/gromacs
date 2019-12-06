@@ -60,9 +60,9 @@ class PmeCoordinateReceiverGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void gmx_unused* pmeStream,
-                                                   MPI_Comm gmx_unused    comm,
-                                                   gmx::ArrayRef<PpRanks> gmx_unused ppRanks) :
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void* /* pmeStream */,
+                                                   MPI_Comm /* comm */,
+                                                   gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
@@ -73,14 +73,14 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void gmx_unused* pmeStream,
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(rvec gmx_unused* d_x)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> /* d_x */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
 
-void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaDirect(int gmx_unused ppRank)
+void PmeCoordinateReceiverGpu::launchReceiveCoordinatesFromPpCudaDirect(int /* ppRank */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
