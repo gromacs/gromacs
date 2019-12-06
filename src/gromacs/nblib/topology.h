@@ -53,11 +53,23 @@
 
 struct t_blocka;
 
-namespace nblib {
+namespace gmx
+{
+struct ExclusionBlock;
+}
 
-class Topology {
+namespace nblib
+{
+
+namespace detail
+{
+std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
+std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
+} // namespace detail
+
+class Topology
+{
 public:
-
     const std::vector<int>& getAtoms() const;
 
     const std::vector<real>& getCharges() const;
@@ -70,10 +82,7 @@ public:
 
     // TODO: This function is only needed for testing. Need
     //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const
-    {
-        return excls;
-    }
+    const t_blocka& getGMXexclusions() const { return excls; }
 
 private:
     Topology() = default;
@@ -81,29 +90,21 @@ private:
     friend class TopologyBuilder;
 
     //! Storage for parameters for short range interactions.
-    std::vector<real>      nonbondedParameters;
+    std::vector<real> nonbondedParameters;
     //! Storage for atom type parameters.
-    std::vector<int>       atomTypes;
+    std::vector<int> atomTypes;
     //! Storage for atom partial charges.
-    std::vector<real>      charges;
+    std::vector<real> charges;
     //! Atom masses
-    std::vector<real>      masses;
+    std::vector<real> masses;
     //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int>       atomInfoAllVdw;
+    std::vector<int> atomInfoAllVdw;
     //! Information about exclusions.
-    t_blocka               excls;
+    t_blocka excls;
 };
 
-/*! \libinternal
- * \ingroup nblib
- * \brief Topology Builder
- *
- * A helper class to assist building of topologies. They also ensure that
- * topologies only exist in a valid state within the scope of the
- * simulation program.
- */
-
-class TopologyBuilder {
+class TopologyBuilder
+{
 public:
     //! Constructor
     TopologyBuilder();
@@ -116,26 +117,22 @@ public:
      */
     Topology buildTopology();
 
-    TopologyBuilder& addMolecule(const Molecule &moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
     Topology topology_;
 
-    //! Total number of atoms in the system
-    int numAtoms_;
-
-    //! List of molecule types and number of molecules
+    int                                    numAtoms_;
     std::vector<std::tuple<Molecule, int>> molecules_;
 
     //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
     t_blocka createExclusionsList() const;
 
-    //! Helper function to extract quantities like mass, charge, etc from the system
-    template <class Extractor>
+    template<class Extractor>
     std::vector<real> extractAtomTypeQuantity(Extractor extractor);
 };
 
 } // namespace nblib
 
-#endif //GROMACS_TOPOLOGY_H
+#endif // GROMACS_TOPOLOGY_H

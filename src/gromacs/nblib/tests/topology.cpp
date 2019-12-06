@@ -122,22 +122,47 @@ TEST(NBlibTest, TopologyHasExclusions)
     t_blocka                         testBlocka     = watersTopology.getGMXexclusions();
     std::vector<gmx::ExclusionBlock> testExclusionBlocks;
 
-    //! This PROBABLY needs to be resize, but it might need to be reserve
-    testExclusionBlocks.resize(waters.numAtoms);
-
     //! Setting t_blocka.nr is needed for conversion to ExclusionBlock
     testBlocka.nr = waters.numAtoms;
+    testExclusionBlocks.resize(waters.numAtoms);
     blockaToExclusionBlocks(&testBlocka, testExclusionBlocks);
 
-    //! Todo Make sure this is the correct format and that this test passes, then remove this comment
     std::vector<std::vector<int>> refExclusionBlocks = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
     for (size_t atom = 0; atom < refExclusionBlocks.size(); atom++)
     {
         for (size_t exclusion = 0; exclusion < refExclusionBlocks[atom].size(); exclusion++)
         {
-            //! Uncomment this once TopologyBuilder.getGMXexclusions() works correctly
-            // EXPECT_EQ(refExclusionBlocks[atom][exclusion], testExclusionBlocks[atom].atomNumber[exclusion]);
+            EXPECT_EQ(refExclusionBlocks[atom][exclusion], testExclusionBlocks[atom].atomNumber[exclusion]);
+        }
+    }
+}
+
+TEST(NBlibTest, toGmxExclusionBlockWorks)
+{
+    std::vector<std::tuple<int, int>> testInput{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
+
+    std::vector<gmx::ExclusionBlock> reference;
+
+    gmx::ExclusionBlock localBlock;
+    localBlock.atomNumber.push_back(0);
+    localBlock.atomNumber.push_back(1);
+    localBlock.atomNumber.push_back(2);
+
+    reference.push_back(localBlock);
+    reference.push_back(localBlock);
+    reference.push_back(localBlock);
+
+    std::vector<gmx::ExclusionBlock> probe = detail::toGmxExclusionBlock(testInput);
+
+    ASSERT_EQ(reference.size(), probe.size());
+    for (size_t i = 0; i < reference.size(); ++i)
+    {
+        ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
+        for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
+        {
+            EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
         }
     }
 }
