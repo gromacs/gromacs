@@ -51,7 +51,7 @@ gmx_add_gtest_executable(
     molecules.cpp
     box.cpp
     util.cpp
-    #topology.cpp
+    topology.cpp
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )

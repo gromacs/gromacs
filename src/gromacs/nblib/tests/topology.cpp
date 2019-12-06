@@ -43,63 +43,130 @@
  */
 #include "gmxpre.h"
 
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/topology.h"
+#include "gromacs/topology/block.h"
+#include "gromacs/topology/exclusionblocks.h"
 
 #include "testutils/testasserts.h"
 
-namespace nblib {
-namespace test {
-namespace {
-
-TEST(NBlibTest, fillExclusions)
+namespace nblib
 {
-    //! Manually Create Molecules (Water & Argon)
+namespace test
+{
+namespace
+{
 
-    //! 1. Define Atom Types
-    Atom Ow("Ow", 16, -0.6, 1., 1.);
-    Atom Hw("Hw", 1, +0.3, 1., 1.);
-    Atom Ar("Ar", 40, 0., 1., 1.);
+class TwoWaterMolecules
+{
+public:
+    Topology buildTopology()
+    {
+        //! Manually Create Molecule (Water)
 
-    //! 2. Define Molecules
+        //! Define Atom Type
+        AtomType Ow("Ow", 16, 1., 1.);
+        AtomType Hw("Hw", 1, 1., 1.);
 
-    //! 2.1 Water
-    Molecule water("water");
+        //! Define Molecule
+        Molecule water("water");
 
-    water.addAtom("Oxygen", Ow);
-    water.addAtom("H1", Hw);
-    water.addAtom("H2", Hw);
+        //! Add the atoms
+        water.addAtom("Oxygen", Charge(-0.6), Ow);
+        water.addAtom("H1", Charge(+0.3), Hw);
+        water.addAtom("H2", Charge(+0.3), Hw);
 
-    water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
-    water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
+        //! Add the exclusions
+        water.addExclusion("Oxygen", "H1");
+        water.addExclusion("Oxygen", "H2");
+        water.addExclusion("H1", "H2");
 
-    water.addExclusion("Oxygen", "H1");
-    water.addExclusion("Oxygen", "H2");
-    water.addExclusion("H1", "H2");
+        // Todo: Add bonds functionality so this can be used/tested
+        // water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
+        // water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
 
-    //! 2.2 Argon
-    Molecule argon("argon");
+        //! Build the topology
+        TopologyBuilder topologyBuilder;
 
-    argon.addAtom("Ar", Ar);
+        //! Add some molecules to the topology
+        topologyBuilder.addMolecule(water, 2);
+        Topology topology = topologyBuilder.buildTopology();
+        return topology;
+    }
 
-    //! Setup Topology
+    int numAtoms = 6;
+};
 
-    TopologyBuilder topologyBuilder;
-    topologyBuilder.addMolecule(water, 1);
-    topologyBuilder.addMolecule(argon, 1);
-
-    auto topology = topologyBuilder.buildTopology();
-
-    auto exclusions = topology.getGMXexclusions();
-
-    //TODO: create a t_blocka object manually and compare
-    //      offsets are accounted for in topology
-
-
-
+TEST(NBlibTest, TopologyHasCharges)
+{
+    TwoWaterMolecules waters;
+    Topology          watersTopology = waters.buildTopology();
+    std::vector<real> test           = watersTopology.getCharges();
+    std::vector<real> ref            = { -0.6, 0.3, 0.3, -0.6, 0.3, 0.3 };
+    EXPECT_EQ(ref, test);
 }
 
+TEST(NBlibTest, TopologyHasMasses)
+{
+    TwoWaterMolecules waters;
+    Topology          watersTopology = waters.buildTopology();
+    std::vector<real> test           = watersTopology.getMasses();
+    std::vector<real> ref            = { 16., 1., 1., 16., 1., 1. };
+    EXPECT_EQ(ref, test);
+}
 
+TEST(NBlibTest, TopologyHasExclusions)
+{
+    TwoWaterMolecules                waters;
+    Topology                         watersTopology = waters.buildTopology();
+    t_blocka                         testBlocka     = watersTopology.getGMXexclusions();
+    std::vector<gmx::ExclusionBlock> testExclusionBlocks;
 
-}  // namespace
-}  // namespace test
-}  // namespace nblib
+    //! Setting t_blocka.nr is needed for conversion to ExclusionBlock
+    testBlocka.nr = waters.numAtoms;
+    testExclusionBlocks.resize(waters.numAtoms);
+    blockaToExclusionBlocks(&testBlocka, testExclusionBlocks);
+
+    std::vector<std::vector<int>> refExclusionBlocks = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
+                                                         { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
+    for (size_t atom = 0; atom < refExclusionBlocks.size(); atom++)
+    {
+        for (size_t exclusion = 0; exclusion < refExclusionBlocks[atom].size(); exclusion++)
+        {
+            EXPECT_EQ(refExclusionBlocks[atom][exclusion], testExclusionBlocks[atom].atomNumber[exclusion]);
+        }
+    }
+}
+
+TEST(NBlibTest, toGmxExclusionBlockWorks)
+{
+    std::vector<std::tuple<int, int>> testInput{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
+
+    std::vector<gmx::ExclusionBlock> reference;
+
+    gmx::ExclusionBlock localBlock;
+    localBlock.atomNumber.push_back(0);
+    localBlock.atomNumber.push_back(1);
+    localBlock.atomNumber.push_back(2);
+
+    reference.push_back(localBlock);
+    reference.push_back(localBlock);
+    reference.push_back(localBlock);
+
+    std::vector<gmx::ExclusionBlock> probe = detail::toGmxExclusionBlock(testInput);
+
+    ASSERT_EQ(reference.size(), probe.size());
+    for (size_t i = 0; i < reference.size(); ++i)
+    {
+        ASSERT_EQ(reference[i].atomNumber.size(), probe[i].atomNumber.size());
+        for (size_t j = 0; j < reference[i].atomNumber.size(); ++j)
+        {
+            EXPECT_EQ(reference[i].atomNumber[j], probe[i].atomNumber[j]);
+        }
+    }
+}
+
+} // namespace
+} // namespace test
+} // namespace nblib
