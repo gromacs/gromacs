@@ -2496,7 +2496,8 @@ void get_ir(const char*     mdparin,
             }
             if (ir->eI == eiMD && (opts->couple_lam0 == ecouplamNONE || opts->couple_lam1 == ecouplamNONE))
             {
-                warning(wi,
+                warning_note(
+                        wi,
                         "For proper sampling of the (nearly) decoupled state, stochastic dynamics "
                         "should be used");
             }
