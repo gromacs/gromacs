@@ -57,9 +57,13 @@ struct nbnxn_atomdata_t;
 class PairlistSet;
 enum class PairlistType;
 class PairSearch;
-struct t_blocka;
 struct t_nrnb;
 
+namespace gmx
+{
+template<typename>
+class ListOfLists;
+}
 
 class PairlistSets
 {
@@ -69,12 +73,12 @@ public:
                  int                   minimumIlistCountForGpuBalancing);
 
     //! Construct the pairlist set for the given locality
-    void construct(gmx::InteractionLocality iLocality,
-                   PairSearch*              pairSearch,
-                   nbnxn_atomdata_t*        nbat,
-                   const t_blocka*          excl,
-                   int64_t                  step,
-                   t_nrnb*                  nrnb);
+    void construct(gmx::InteractionLocality     iLocality,
+                   PairSearch*                  pairSearch,
+                   nbnxn_atomdata_t*            nbat,
+                   const gmx::ListOfLists<int>& exclusions,
+                   int64_t                      step,
+                   t_nrnb*                      nrnb);
 
     //! Dispatches the dynamic pruning kernel for the given locality
     void dispatchPruneKernel(gmx::InteractionLocality iLocality,

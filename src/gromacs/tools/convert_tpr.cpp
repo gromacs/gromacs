@@ -129,39 +129,33 @@ static void reduce_block(const gmx_bool bKeep[], t_block* block, const char* nam
     block->nr    = newi;
 }
 
-static void reduce_blocka(const int invindex[], const gmx_bool bKeep[], t_blocka* block, const char* name)
+static gmx::ListOfLists<int>
+reduce_blocka(const int invindex[], const gmx_bool bKeep[], const t_blocka& block, const char* name)
 {
-    int *index, *a;
-    int  i, j, k, newi, newj;
+    gmx::ListOfLists<int> lists;
 
-    snew(index, block->nr);
-    snew(a, block->nra);
-
-    newi = newj = 0;
-    for (i = 0; (i < block->nr); i++)
+    std::vector<int> exclusionsForAtom;
+    for (int i = 0; i < block.nr; i++)
     {
-        for (j = block->index[i]; (j < block->index[i + 1]); j++)
+        if (bKeep[i])
         {
-            k = block->a[j];
-            if (bKeep[k])
+            exclusionsForAtom.clear();
+            for (int j = block.index[i]; j < block.index[i + 1]; j++)
             {
-                a[newj] = invindex[k];
-                newj++;
+                const int k = block.a[j];
+                if (bKeep[k])
+                {
+                    exclusionsForAtom.push_back(invindex[k]);
+                }
             }
-        }
-        if (newj > index[newi])
-        {
-            newi++;
-            index[newi] = newj;
+            lists.pushBack(exclusionsForAtom);
         }
     }
 
-    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n", name,
-            block->nr, newi, block->nra, newj);
-    block->index = index;
-    block->a     = a;
-    block->nr    = newi;
-    block->nra   = newj;
+    fprintf(stderr, "Reduced block %8s from %6d to %6zu index-, %6d to %6d a-entries\n", name,
+            block.nr, lists.size(), block.nra, lists.numElements());
+
+    return lists;
 }
 
 static void reduce_rvec(int gnx, const int index[], rvec vv[])
@@ -271,7 +265,7 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
     invindex = invind(gnx, top.atoms.nr, index);
 
     reduce_block(bKeep, &(top.mols), "mols");
-    reduce_blocka(invindex, bKeep, &(top.excls), "excls");
+    gmx::ListOfLists<int> excls = reduce_blocka(invindex, bKeep, top.excls, "excls");
     reduce_rvec(gnx, index, x);
     reduce_rvec(gnx, index, v);
     reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname, &(top.atoms.nres), top.atoms.resinfo);
@@ -297,7 +291,7 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
         }
     }
     mtop->moltype[0].atoms = top.atoms;
-    mtop->moltype[0].excls = top.excls;
+    mtop->moltype[0].excls = excls;
 
     mtop->molblock.resize(1);
     mtop->molblock[0].type = 0;

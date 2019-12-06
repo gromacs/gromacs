@@ -223,7 +223,7 @@ static std::unique_ptr<nonbonded_verlet_t> setupNbnxmForBenchInstance(const Kern
                       { 0, int(system.coordinates.size()) }, atomDensity, atomInfo,
                       system.coordinates, 0, nullptr);
 
-    nbv->constructPairlist(gmx::InteractionLocality::Local, &system.excls, 0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system.excls, 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms

@@ -167,10 +167,8 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     charges.resize(numAtoms);
     atomInfoAllVdw.resize(numAtoms);
     atomInfoOxygenVdw.resize(numAtoms);
-    snew(excls.index, numAtoms + 1);
-    snew(excls.a, numAtoms * numAtomsInMolecule);
-    excls.index[0] = 0;
 
+    std::vector<int> exclusionsForAtom;
     for (int a = 0; a < numAtoms; a++)
     {
         if (a % numAtomsInMolecule == 0)
@@ -191,12 +189,13 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
         SET_CGINFO_HAS_Q(atomInfoAllVdw[a]);
         SET_CGINFO_HAS_Q(atomInfoOxygenVdw[a]);
 
+        exclusionsForAtom.clear();
         const int firstAtomInMolecule = a - (a % numAtomsInMolecule);
         for (int aj = 0; aj < numAtomsInMolecule; aj++)
         {
-            excls.a[a * numAtomsInMolecule + aj] = firstAtomInMolecule + aj;
+            exclusionsForAtom.push_back(firstAtomInMolecule + aj);
         }
-        excls.index[a + 1] = (a + 1) * numAtomsInMolecule;
+        excls.pushBack(exclusionsForAtom);
     }
 
     forceRec.ntype = numAtomTypes;

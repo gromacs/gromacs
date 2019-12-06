@@ -2125,19 +2125,25 @@ static void do_block(gmx::ISerializer* serializer, t_block* block)
     serializer->doIntArray(block->index, block->nr + 1);
 }
 
-static void do_blocka(gmx::ISerializer* serializer, t_blocka* block)
+static void doListOfLists(gmx::ISerializer* serializer, gmx::ListOfLists<int>* listOfLists)
 {
-    serializer->doInt(&block->nr);
-    serializer->doInt(&block->nra);
+    int numLists = listOfLists->ssize();
+    serializer->doInt(&numLists);
+    int numElements = listOfLists->elementsView().ssize();
+    serializer->doInt(&numElements);
     if (serializer->reading())
     {
-        block->nalloc_index = block->nr + 1;
-        snew(block->index, block->nalloc_index);
-        block->nalloc_a = block->nra;
-        snew(block->a, block->nalloc_a);
+        std::vector<int> listRanges(numLists + 1);
+        serializer->doIntArray(listRanges.data(), numLists + 1);
+        std::vector<int> elements(numElements);
+        serializer->doIntArray(elements.data(), numElements);
+        *listOfLists = gmx::ListOfLists<int>(std::move(listRanges), std::move(elements));
     }
-    serializer->doIntArray(block->index, block->nr + 1);
-    serializer->doIntArray(block->a, block->nra);
+    else
+    {
+        serializer->doIntArray(const_cast<int*>(listOfLists->listRangesView().data()), numLists + 1);
+        serializer->doIntArray(const_cast<int*>(listOfLists->elementsView().data()), numElements);
+    }
 }
 
 /* This is a primitive routine to make it possible to translate atomic numbers
@@ -2450,7 +2456,7 @@ static void do_moltype(gmx::ISerializer* serializer, gmx_moltype_t* molt, t_symt
     sfree(cgs.index);
 
     /* This used to be in the atoms struct */
-    do_blocka(serializer, &molt->excls);
+    doListOfLists(serializer, &molt->excls);
 }
 
 static void do_molblock(gmx::ISerializer* serializer, gmx_molblock_t* molb, int numAtomsPerMolecule)

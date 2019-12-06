@@ -386,7 +386,7 @@ void Rdf::initAnalysis(const TrajectoryAnalysisSettings& settings, const Topolog
             }
         }
         localTop_ = top.expandedTopology();
-        if (localTop_->excls.nr == 0)
+        if (localTop_->excls.empty())
         {
             GMX_THROW(InconsistentInputError(
                     "-excl is set, but the file provided to -s does not define exclusions"));

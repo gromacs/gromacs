@@ -62,10 +62,10 @@
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/mutex.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -137,7 +137,7 @@ public:
      */
     void                  init(AnalysisNeighborhood::SearchMode     mode,
                                bool                                 bXY,
-                               const t_blocka*                      excls,
+                               const ListOfLists<int>*              excls,
                                const t_pbc*                         pbc,
                                const AnalysisNeighborhoodPositions& positions);
     PairSearchImplPointer getPairSearch();
@@ -280,7 +280,7 @@ private:
     //! Reference position indices (NULL if no indices).
     const int* refIndices_;
     //! Exclusions.
-    const t_blocka* excls_;
+    const ListOfLists<int>* excls_;
     //! PBC data.
     t_pbc pbc_;
 
@@ -337,8 +337,6 @@ public:
         testPositions_    = nullptr;
         testExclusionIds_ = nullptr;
         testIndices_      = nullptr;
-        nexcl_            = 0;
-        excl_             = nullptr;
         clear_rvec(xtest_);
         clear_rvec(testcell_);
         clear_ivec(currCell_);
@@ -376,10 +374,8 @@ private:
     const int* testExclusionIds_;
     //! Reference to the test position indices.
     const int* testIndices_;
-    //! Number of excluded reference positions for current test particle.
-    int nexcl_;
     //! Exclusions for current test particle.
-    const int* excl_;
+    ArrayRef<const int> excl_;
     //! Index of the currently active test position in \p testPositions_.
     int testIndex_;
     //! Stores test position during a pair loop.
@@ -862,7 +858,7 @@ int AnalysisNeighborhoodSearchImpl::shiftCell(const ivec cell, rvec shift) const
 
 void AnalysisNeighborhoodSearchImpl::init(AnalysisNeighborhood::SearchMode     mode,
                                           bool                                 bXY,
-                                          const t_blocka*                      excls,
+                                          const ListOfLists<int>*              excls,
                                           const t_pbc*                         pbc,
                                           const AnalysisNeighborhoodPositions& positions)
 {
@@ -988,16 +984,13 @@ void AnalysisNeighborhoodPairSearchImpl::reset(int testIndex)
         if (search_.excls_ != nullptr)
         {
             const int exclIndex = testExclusionIds_[index];
-            if (exclIndex < search_.excls_->nr)
+            if (exclIndex < search_.excls_->ssize())
             {
-                const int startIndex = search_.excls_->index[exclIndex];
-                nexcl_               = search_.excls_->index[exclIndex + 1] - startIndex;
-                excl_                = &search_.excls_->a[startIndex];
+                excl_ = (*search_.excls_)[exclIndex];
             }
             else
             {
-                nexcl_ = 0;
-                excl_  = nullptr;
+                excl_ = ArrayRef<const int>();
             }
         }
     }
@@ -1014,15 +1007,16 @@ void AnalysisNeighborhoodPairSearchImpl::nextTestPosition()
 
 bool AnalysisNeighborhoodPairSearchImpl::isExcluded(int j)
 {
-    if (exclind_ < nexcl_)
+    const int nexcl = excl_.ssize();
+    if (exclind_ < nexcl)
     {
         const int index = (search_.refIndices_ != nullptr ? search_.refIndices_[j] : j);
         const int refId = search_.refExclusionIds_[index];
-        while (exclind_ < nexcl_ && excl_[exclind_] < refId)
+        while (exclind_ < nexcl && excl_[exclind_] < refId)
         {
             ++exclind_;
         }
-        if (exclind_ < nexcl_ && refId == excl_[exclind_])
+        if (exclind_ < nexcl && refId == excl_[exclind_])
         {
             ++exclind_;
             return true;
@@ -1258,12 +1252,12 @@ public:
 
     SearchImplPointer getSearch();
 
-    Mutex           createSearchMutex_;
-    SearchList      searchList_;
-    real            cutoff_;
-    const t_blocka* excls_;
-    SearchMode      mode_;
-    bool            bXY_;
+    Mutex                   createSearchMutex_;
+    SearchList              searchList_;
+    real                    cutoff_;
+    const ListOfLists<int>* excls_;
+    SearchMode              mode_;
+    bool                    bXY_;
 };
 
 AnalysisNeighborhood::Impl::SearchImplPointer AnalysisNeighborhood::Impl::getSearch()
@@ -1304,7 +1298,7 @@ void AnalysisNeighborhood::setXYMode(bool bXY)
     impl_->bXY_ = bXY;
 }
 
-void AnalysisNeighborhood::setTopologyExclusions(const t_blocka* excls)
+void AnalysisNeighborhood::setTopologyExclusions(const ListOfLists<int>* excls)
 {
     GMX_RELEASE_ASSERT(impl_->searchList_.empty(),
                        "Changing the exclusions after initSearch() not currently supported");

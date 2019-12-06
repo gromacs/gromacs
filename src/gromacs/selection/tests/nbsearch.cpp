@@ -64,6 +64,7 @@
 #include "gromacs/random/threefry.h"
 #include "gromacs/random/uniformrealdistribution.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -309,13 +310,13 @@ void NeighborhoodSearchTestData::computeReferencesInternal(t_pbc* pbc, bool bXY)
 class ExclusionsHelper
 {
 public:
-    static void markExcludedPairs(RefPairList* refPairs, int testIndex, const t_blocka* excls);
+    static void markExcludedPairs(RefPairList* refPairs, int testIndex, const gmx::ListOfLists<int>* excls);
 
     ExclusionsHelper(int refPosCount, int testPosCount);
 
     void generateExclusions();
 
-    const t_blocka* exclusions() const { return &excls_; }
+    const gmx::ListOfLists<int>* exclusions() const { return &excls_; }
 
     gmx::ArrayRef<const int> refPosIds() const
     {
@@ -327,21 +328,18 @@ public:
     }
 
 private:
-    int              refPosCount_;
-    int              testPosCount_;
-    std::vector<int> exclusionIds_;
-    std::vector<int> exclsIndex_;
-    std::vector<int> exclsAtoms_;
-    t_blocka         excls_;
+    int                   refPosCount_;
+    int                   testPosCount_;
+    std::vector<int>      exclusionIds_;
+    gmx::ListOfLists<int> excls_;
 };
 
 // static
-void ExclusionsHelper::markExcludedPairs(RefPairList* refPairs, int testIndex, const t_blocka* excls)
+void ExclusionsHelper::markExcludedPairs(RefPairList* refPairs, int testIndex, const gmx::ListOfLists<int>* excls)
 {
     int count = 0;
-    for (int i = excls->index[testIndex]; i < excls->index[testIndex + 1]; ++i)
+    for (const int excludedIndex : (*excls)[testIndex])
     {
-        const int                           excludedIndex = excls->a[i];
         NeighborhoodSearchTestData::RefPair searchPair(excludedIndex, 0.0);
         RefPairList::iterator               excludedRefPair =
                 std::lower_bound(refPairs->begin(), refPairs->end(), searchPair);
@@ -364,13 +362,6 @@ ExclusionsHelper::ExclusionsHelper(int refPosCount, int testPosCount) :
     exclusionIds_.resize(std::max(refPosCount, testPosCount), 1);
     exclusionIds_[0] = 0;
     std::partial_sum(exclusionIds_.begin(), exclusionIds_.end(), exclusionIds_.begin());
-
-    excls_.nr           = 0;
-    excls_.index        = nullptr;
-    excls_.nra          = 0;
-    excls_.a            = nullptr;
-    excls_.nalloc_index = 0;
-    excls_.nalloc_a     = 0;
 }
 
 void ExclusionsHelper::generateExclusions()
@@ -379,21 +370,16 @@ void ExclusionsHelper::generateExclusions()
     // particles would be higher, or where the exclusions would not be random,
     // to make a higher percentage of the exclusions to actually be within the
     // cutoff.
-    exclsIndex_.reserve(testPosCount_ + 1);
-    exclsAtoms_.reserve(testPosCount_ * 20);
-    exclsIndex_.push_back(0);
+    std::vector<int> exclusionsForAtom;
     for (int i = 0; i < testPosCount_; ++i)
     {
+        exclusionsForAtom.clear();
         for (int j = 0; j < 20; ++j)
         {
-            exclsAtoms_.push_back(i + j * 3);
+            exclusionsForAtom.push_back(i + j * 3);
         }
-        exclsIndex_.push_back(exclsAtoms_.size());
+        excls_.pushBack(exclusionsForAtom);
     }
-    excls_.nr    = exclsIndex_.size();
-    excls_.index = exclsIndex_.data();
-    excls_.nra   = exclsAtoms_.size();
-    excls_.a     = exclsAtoms_.data();
 }
 
 /********************************************************************
@@ -414,7 +400,7 @@ public:
     void testPairSearchFull(gmx::AnalysisNeighborhoodSearch*          search,
                             const NeighborhoodSearchTestData&         data,
                             const gmx::AnalysisNeighborhoodPositions& pos,
-                            const t_blocka*                           excls,
+                            const gmx::ListOfLists<int>*              excls,
                             const gmx::ArrayRef<const int>&           refIndices,
                             const gmx::ArrayRef<const int>&           testIndices,
                             bool                                      selfPairs);
@@ -522,7 +508,7 @@ void NeighborhoodSearchTest::testPairSearchIndexed(gmx::AnalysisNeighborhood*   
 void NeighborhoodSearchTest::testPairSearchFull(gmx::AnalysisNeighborhoodSearch*          search,
                                                 const NeighborhoodSearchTestData&         data,
                                                 const gmx::AnalysisNeighborhoodPositions& pos,
-                                                const t_blocka*                           excls,
+                                                const gmx::ListOfLists<int>*              excls,
                                                 const gmx::ArrayRef<const int>& refIndices,
                                                 const gmx::ArrayRef<const int>& testIndices,
                                                 bool                            selfPairs)

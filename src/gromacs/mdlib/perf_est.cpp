@@ -233,7 +233,7 @@ void count_bonded_distances(const gmx_mtop_t& mtop, const t_inputrec& ir, double
         }
         if (bExcl)
         {
-            ndtot_c += molb.nmol * (molt->excls.nra - molt->atoms.nr) / 2.;
+            ndtot_c += molb.nmol * (molt->excls.numElements() - molt->atoms.nr) / 2.;
         }
     }
 

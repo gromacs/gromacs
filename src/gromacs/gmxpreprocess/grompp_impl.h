@@ -47,6 +47,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/real.h"
 
 /*! \libinternal \brief
@@ -176,7 +177,7 @@ struct MoleculeInformation
     //! Molecules separated in datastructure.
     t_block mols;
     //! Exclusions in the molecule.
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
     //! Interactions of a defined type.
     std::array<InteractionsOfType, F_NRE> interactions;
 

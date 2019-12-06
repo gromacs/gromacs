@@ -234,7 +234,7 @@ void InteractionOfType::setForceParameter(int pos, real value)
 void MoleculeInformation::initMolInfo()
 {
     init_block(&mols);
-    init_blocka(&excls);
+    excls.clear();
     init_t_atoms(&atoms, 0, FALSE);
 }
 

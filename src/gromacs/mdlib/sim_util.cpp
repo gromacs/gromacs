@@ -1143,7 +1143,7 @@ void do_force(FILE*                               fplog,
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-        nbv->constructPairlist(InteractionLocality::Local, &top->excls, step, nrnb);
+        nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 
         nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::Local);
 
@@ -1242,7 +1242,7 @@ void do_force(FILE*                               fplog,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-            nbv->constructPairlist(InteractionLocality::NonLocal, &top->excls, step, nrnb);
+            nbv->constructPairlist(InteractionLocality::NonLocal, top->excls, step, nrnb);
 
             nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::NonLocal);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);

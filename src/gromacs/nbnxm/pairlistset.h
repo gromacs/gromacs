@@ -62,8 +62,13 @@ struct nbnxn_atomdata_t;
 struct PairlistParams;
 struct PairsearchWork;
 struct SearchCycleCounting;
-struct t_blocka;
 struct t_nrnb;
+
+namespace gmx
+{
+template<typename>
+class ListOfLists;
+}
 
 namespace Nbnxm
 {
@@ -85,7 +90,7 @@ public:
     void constructPairlists(const Nbnxm::GridSet&         gridSet,
                             gmx::ArrayRef<PairsearchWork> searchWork,
                             nbnxn_atomdata_t*             nbat,
-                            const t_blocka*               excl,
+                            const gmx::ListOfLists<int>&  exclusions,
                             int                           minimumIlistCountForGpuBalancing,
                             t_nrnb*                       nrnb,
                             SearchCycleCounting*          searchCycleCounting);

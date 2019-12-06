@@ -212,7 +212,7 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
     {
         const gmx_molblock_t& molb = mtop->molblock[mb];
         const gmx_moltype_t&  molt = mtop->moltype[molb.type];
-        const t_blocka&       excl = molt.excls;
+        const auto&           excl = molt.excls;
 
         /* Check if the cginfo is identical for all molecules in this block.
          * If so, we only need an array of the size of one molecule.
@@ -285,9 +285,9 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
 
                 bool haveExclusions = false;
                 /* Loop over all the exclusions of atom ai */
-                for (int j = excl.index[a]; j < excl.index[a + 1]; j++)
+                for (const int j : excl[a])
                 {
-                    if (excl.a[j] != a)
+                    if (j != a)
                     {
                         haveExclusions = true;
                         break;

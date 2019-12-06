@@ -44,6 +44,8 @@ struct t_blocka;
 
 namespace gmx
 {
+template<typename>
+class ListOfLists;
 
 /*! \libinternal \brief
  * Describes exclusions for a single atom.
@@ -61,7 +63,7 @@ struct ExclusionBlock
  * Requires that \c b2 and \c excl describe the same number of
  * particles, if \c b2 describes a non-zero number.
  */
-void mergeExclusions(t_blocka* excl, gmx::ArrayRef<ExclusionBlock> b2);
+void mergeExclusions(ListOfLists<int>* excl, gmx::ArrayRef<ExclusionBlock> b2);
 
 /*! \brief
  * Convert the exclusions.

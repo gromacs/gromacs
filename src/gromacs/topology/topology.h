@@ -48,6 +48,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
 
 enum class SimulationAtomGroupType : int
@@ -83,10 +84,10 @@ struct gmx_moltype_t
     /*! \brief Default copy constructor */
     gmx_moltype_t(const gmx_moltype_t&) = default;
 
-    char**           name;  /**< Name of the molecule type            */
-    t_atoms          atoms; /**< The atoms in this molecule           */
-    InteractionLists ilist; /**< Interaction list with local indices  */
-    t_blocka         excls; /**< The exclusions                       */
+    char**                name;  /**< Name of the molecule type            */
+    t_atoms               atoms; /**< The atoms in this molecule           */
+    InteractionLists      ilist; /**< Interaction list with local indices  */
+    gmx::ListOfLists<int> excls; /**< The exclusions                       */
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
@@ -214,7 +215,7 @@ struct gmx_localtop_t
     //! Atomtype properties
     t_atomtypes atomtypes;
     //! The exclusions
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
     //! Flag for domain decomposition so we don't free already freed memory.
     bool useInDomainDecomp_ = false;
 };

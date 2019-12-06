@@ -76,7 +76,7 @@ void init_top(t_topology* top)
 }
 
 
-gmx_moltype_t::gmx_moltype_t() : name(nullptr), excls()
+gmx_moltype_t::gmx_moltype_t() : name(nullptr)
 {
     init_t_atoms(&atoms, 0, FALSE);
 }
@@ -84,7 +84,6 @@ gmx_moltype_t::gmx_moltype_t() : name(nullptr), excls()
 gmx_moltype_t::~gmx_moltype_t()
 {
     done_atom(&atoms);
-    done_blocka(&excls);
 }
 
 gmx_mtop_t::gmx_mtop_t()
@@ -136,7 +135,6 @@ void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
 
 gmx_localtop_t::gmx_localtop_t()
 {
-    init_blocka_null(&excls);
     init_idef(&idef);
     init_atomtypes(&atomtypes);
 }
@@ -146,7 +144,6 @@ gmx_localtop_t::~gmx_localtop_t()
     if (!useInDomainDecomp_)
     {
         done_idef(&idef);
-        done_blocka(&excls);
         done_atomtypes(&atomtypes);
     }
 }
@@ -287,7 +284,7 @@ static void pr_moltype(FILE*                 fp,
     pr_indent(fp, indent);
     fprintf(fp, "name=\"%s\"\n", *(molt->name));
     pr_atoms(fp, indent, "atoms", &(molt->atoms), bShowNumbers);
-    pr_blocka(fp, indent, "excls", &molt->excls, bShowNumbers);
+    pr_listoflists(fp, indent, "excls", &molt->excls, bShowNumbers);
     for (j = 0; (j < F_NRE); j++)
     {
         pr_ilist(fp, indent, interaction_function[j].longname, ffparams->functype.data(),
@@ -457,15 +454,18 @@ static void cmp_cmap(FILE* fp, const gmx_cmap_t* cmap1, const gmx_cmap_t* cmap2,
     }
 }
 
-static void cmp_blocka(FILE* fp, const t_blocka* b1, const t_blocka* b2, const char* s)
+static void cmp_listoflists(FILE*                        fp,
+                            const gmx::ListOfLists<int>& list1,
+                            const gmx::ListOfLists<int>& list2,
+                            const char*                  s)
 {
     char buf[32];
 
     fprintf(fp, "comparing blocka %s\n", s);
-    sprintf(buf, "%s.nr", s);
-    cmp_int(fp, buf, -1, b1->nr, b2->nr);
-    sprintf(buf, "%s.nra", s);
-    cmp_int(fp, buf, -1, b1->nra, b2->nra);
+    sprintf(buf, "%s.numLists", s);
+    cmp_int(fp, buf, -1, list1.ssize(), list2.ssize());
+    sprintf(buf, "%s.numElements", s);
+    cmp_int(fp, buf, -1, list1.numElements(), list2.numElements());
 }
 
 static void compareFfparams(FILE*                 fp,
@@ -534,7 +534,7 @@ static void compareMoltypes(FILE*                              fp,
         compareAtoms(fp, &mt1[i].atoms, &mt2[i].atoms, relativeTolerance, absoluteTolerance);
         compareInteractionLists(fp, &mt1[i].ilist, &mt2[i].ilist);
         std::string buf = gmx::formatString("excls[%d]", i);
-        cmp_blocka(fp, &mt1[i].excls, &mt2[i].excls, buf.c_str());
+        cmp_listoflists(fp, mt1[i].excls, mt2[i].excls, buf.c_str());
     }
 }
 
@@ -674,8 +674,8 @@ int getGroupType(const SimulationGroups& group, SimulationAtomGroupType type, in
 
 void copy_moltype(const gmx_moltype_t* src, gmx_moltype_t* dst)
 {
-    dst->name = src->name;
-    copy_blocka(&src->excls, &dst->excls);
+    dst->name          = src->name;
+    dst->excls         = src->excls;
     t_atoms* atomsCopy = copy_t_atoms(&src->atoms);
     dst->atoms         = *atomsCopy;
     sfree(atomsCopy);

@@ -133,7 +133,6 @@ struct interaction_const_t;
 struct nonbonded_verlet_t;
 class PairSearch;
 class PairlistSets;
-struct t_blocka;
 struct t_commrec;
 struct t_lambda;
 struct t_mdatoms;
@@ -153,6 +152,8 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class ForceWithShiftForces;
+template<typename>
+class ListOfLists;
 class MDLogger;
 class UpdateGroupsCog;
 } // namespace gmx
@@ -251,7 +252,10 @@ public:
     gmx::ArrayRef<const int> getGridIndices() const;
 
     //! Constructs the pairlist for the given locality
-    void constructPairlist(gmx::InteractionLocality iLocality, const t_blocka* excl, int64_t step, t_nrnb* nrnb);
+    void constructPairlist(gmx::InteractionLocality     iLocality,
+                           const gmx::ListOfLists<int>& exclusions,
+                           int64_t                      step,
+                           t_nrnb*                      nrnb);
 
     //! Updates all the atom properties in Nbnxm
     void setAtomProperties(const t_mdatoms& mdatoms, gmx::ArrayRef<const int> atomInfo);

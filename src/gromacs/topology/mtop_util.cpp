@@ -650,39 +650,41 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
-static void blockacat(t_blocka* dest, const t_blocka* src, int copies, int dnum, int snum)
+static void blockacat(t_blocka* dest, const gmx::ListOfLists<int>& src, int copies, int dnum, int snum)
 {
-    int i, j, l, size;
+    int j, l;
     int destnr  = dest->nr;
     int destnra = dest->nra;
 
-    if (src->nr)
+    if (!src.empty())
     {
-        size = (dest->nr + copies * src->nr + 1);
+        size_t size = (dest->nr + copies * src.size() + 1);
         srenew(dest->index, size);
     }
-    if (src->nra)
+    gmx::ArrayRef<const int> srcElements = src.elementsView();
+    if (!srcElements.empty())
     {
-        size = (dest->nra + copies * src->nra);
+        size_t size = (dest->nra + copies * srcElements.size());
         srenew(dest->a, size);
     }
 
+    gmx::ArrayRef<const int> srcListRanges = src.listRangesView();
     for (l = destnr, j = 0; (j < copies); j++)
     {
-        for (i = 0; (i < src->nr); i++)
+        for (gmx::index i = 0; i < src.ssize(); i++)
         {
-            dest->index[l++] = dest->nra + src->index[i];
+            dest->index[l++] = dest->nra + srcListRanges[i];
         }
-        dest->nra += src->nra;
+        dest->nra += src.ssize();
     }
     for (l = destnra, j = 0; (j < copies); j++)
     {
-        for (i = 0; (i < src->nra); i++)
+        for (const int srcElement : srcElements)
         {
-            dest->a[l++] = dnum + src->a[i];
+            dest->a[l++] = dnum + srcElement;
         }
         dnum += snum;
-        dest->nr += src->nr;
+        dest->nr += src.ssize();
     }
     dest->index[dest->nr] = dest->nra;
     dest->nalloc_index    = dest->nr;
@@ -941,6 +943,31 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t& mtop, t_atomtypes* atomtypes
  * \param[in] mtop  Reference to input mtop.
  * \param[in] excls Pointer to final excls data structure.
  */
+static void copyExclsFromMtop(const gmx_mtop_t& mtop, gmx::ListOfLists<int>* excls)
+{
+    excls->clear();
+    int atomIndex = 0;
+    for (const gmx_molblock_t& molb : mtop.molblock)
+    {
+        const gmx_moltype_t& molt = mtop.moltype[molb.type];
+
+        for (int mol = 0; mol < molb.nmol; mol++)
+        {
+            excls->appendListOfLists(molt.excls, atomIndex);
+
+            atomIndex += molt.atoms.nr;
+        }
+    }
+}
+
+/*! \brief Copy excls from mtop.
+ *
+ * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
+ * Used to initialize legacy t_topology.
+ *
+ * \param[in] mtop  Reference to input mtop.
+ * \param[in] excls Pointer to final excls data structure.
+ */
 static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
 {
     init_blocka(excls);
@@ -952,7 +979,7 @@ static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
         int srcnr  = molt.atoms.nr;
         int destnr = natoms;
 
-        blockacat(excls, &molt.excls, molb.nmol, destnr, srcnr);
+        blockacat(excls, molt.excls, molb.nmol, destnr, srcnr);
 
         natoms += molb.nmol * srcnr;
     }
@@ -966,21 +993,21 @@ static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
  * \param[inout]    excls   existing exclusions in local topology
  * \param[in]       ids     list of global IDs of atoms
  */
-static void addMimicExclusions(t_blocka* excls, const gmx::ArrayRef<const int> ids)
+static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef<const int> ids)
 {
     t_blocka inter_excl{};
     init_blocka(&inter_excl);
     size_t n_q = ids.size();
 
-    inter_excl.nr  = excls->nr;
+    inter_excl.nr  = excls->ssize();
     inter_excl.nra = n_q * n_q;
 
     size_t total_nra = n_q * n_q;
 
-    snew(inter_excl.index, excls->nr + 1);
+    snew(inter_excl.index, excls->ssize() + 1);
     snew(inter_excl.a, total_nra);
 
-    for (int i = 0; i < excls->nr; ++i)
+    for (int i = 0; i < inter_excl.nr; ++i)
     {
         inter_excl.index[i] = 0;
     }
@@ -1012,7 +1039,7 @@ static void addMimicExclusions(t_blocka* excls, const gmx::ArrayRef<const int> i
 
     inter_excl.index[inter_excl.nr] = n_q * n_q;
 
-    std::vector<gmx::ExclusionBlock> qmexcl2(excls->nr);
+    std::vector<gmx::ExclusionBlock> qmexcl2(excls->size());
     gmx::blockaToExclusionBlocks(&inter_excl, qmexcl2);
 
     // Merge the created exclusion list with the existing one
