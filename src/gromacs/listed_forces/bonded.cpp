@@ -892,6 +892,14 @@ real thole_pol(int             nbonds,
     return V;
 }
 
+// Avoid gcc 386 -O3 code generation bug in this function (see Redmine
+// #3205 for more information)
+#if defined(__GNUC__) && defined(__i386__) && defined(__OPTIMIZE__)
+#    pragma GCC push_options
+#    pragma GCC optimize("O2")
+#    define avoid_gcc_i386_o3_code_generation_bug
+#endif
+
 template<BondedKernelFlavor flavor>
 std::enable_if_t<flavor != BondedKernelFlavor::ForcesSimdWhenAvailable || !GMX_SIMD_HAVE_REAL, real>
 angles(int             nbonds,
@@ -979,6 +987,11 @@ angles(int             nbonds,
 
     return vtot;
 }
+
+#ifdef avoid_gcc_i386_o3_code_generation_bug
+#    pragma GCC pop_options
+#    undef avoid_gcc_i386_o3_code_generation_bug
+#endif
 
 #if GMX_SIMD_HAVE_REAL
 
