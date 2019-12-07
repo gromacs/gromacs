@@ -382,7 +382,13 @@ typedef struct t_idef
  *      The state of the sorting of il, values are provided above.
  */
 
-void pr_iparams(FILE* fp, t_functype ftype, const t_iparams* iparams);
+namespace gmx
+{
+class TextWriter;
+} // namespace gmx
+
+void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const t_iparams& iparams);
+void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams);
 void pr_ilist(FILE*                  fp,
               int                    indent,
               const char*            title,

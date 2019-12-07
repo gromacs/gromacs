@@ -88,19 +88,12 @@
 #include "pme_internal.h"
 #include "pme_solve.h"
 
-
 /*! \brief
- *  CUDA only.
- *  Controls if we should use order (i.e. 4) threads per atom for the GPU
- *  or order*order (i.e. 16) threads per atom.
+ * CUDA only
+ * Atom limit above which it is advantageous to turn on the
+ * recalcuating of the splines in the gather and using less threads per atom in the spline and spread
  */
-constexpr bool c_useOrderThreadsPerAtom = false;
-/*! \brief
- * CUDA only.
- * Controls if we should recalculate the splines in the gather or
- * save the values in the spread and reload in the gather.
- */
-constexpr bool c_recalculateSplines = false;
+constexpr int c_pmeGpuPerformanceAtomLimit = 23000;
 
 /*! \internal \brief
  * Wrapper for getting a pointer to the plain C++ part of the GPU kernel parameters structure.
@@ -130,7 +123,7 @@ int pme_gpu_get_atom_data_alignment(const PmeGpu* /*unused*/)
 
 int pme_gpu_get_atoms_per_warp(const PmeGpu* pmeGpu)
 {
-    if (c_useOrderThreadsPerAtom)
+    if (pmeGpu->settings.useOrderThreadsPerAtom)
     {
         return pmeGpu->programHandle_->impl_->warpSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom;
     }
@@ -826,6 +819,26 @@ static void pme_gpu_copy_common_data_from(const gmx_pme_t* pme)
 }
 
 /*! \libinternal \brief
+ * uses heuristics to select the best performing PME gather and scatter kernels
+ *
+ * \param[in,out] pmeGpu         The PME GPU structure.
+ */
+static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeGpu)
+{
+    if (pmeGpu->kernelParams->atoms.nAtoms > c_pmeGpuPerformanceAtomLimit && (GMX_GPU == GMX_GPU_CUDA))
+    {
+        pmeGpu->settings.useOrderThreadsPerAtom = true;
+        pmeGpu->settings.recalculateSplines     = true;
+    }
+    else
+    {
+        pmeGpu->settings.useOrderThreadsPerAtom = false;
+        pmeGpu->settings.recalculateSplines     = false;
+    }
+}
+
+
+/*! \libinternal \brief
  * Initializes the PME GPU data at the beginning of the run.
  * TODO: this should become PmeGpu::PmeGpu()
  *
@@ -974,6 +987,7 @@ void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGpuProg
      * update for mixed mode on grid switch. TODO: use shared recipbox field.
      */
     std::memset(pme->gpu->common->previousBox, 0, sizeof(pme->gpu->common->previousBox));
+    pme_gpu_select_best_performing_pme_spreadgather_kernels(pme->gpu);
 }
 
 void pme_gpu_destroy(PmeGpu* pmeGpu)
@@ -1169,13 +1183,15 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
 
     const int order = pmeGpu->common->pme_order;
     GMX_ASSERT(order == c_pmeGpuOrder, "Only PME order 4 is implemented");
-    const bool writeGlobal = pmeGpu->settings.copyAllOutputs;
+    const bool writeGlobal            = pmeGpu->settings.copyAllOutputs;
+    const bool useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
+    const bool recalculateSplines     = pmeGpu->settings.recalculateSplines;
 #if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(!c_useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
-    GMX_ASSERT(!c_recalculateSplines, "Recalculating splines not supported in OpenCL");
+    GMX_ASSERT(!useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
+    GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
 #endif
-    const int atomsPerBlock = c_useOrderThreadsPerAtom ? blockSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
-                                                       : blockSize / c_pmeSpreadGatherThreadsPerAtom;
+    const int atomsPerBlock = useOrderThreadsPerAtom ? blockSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
+                                                     : blockSize / c_pmeSpreadGatherThreadsPerAtom;
 
     // TODO: pick smaller block size in runtime if needed
     // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
@@ -1202,7 +1218,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
 
     KernelLaunchConfig config;
     config.blockSize[0] = order;
-    config.blockSize[1] = c_useOrderThreadsPerAtom ? 1 : order;
+    config.blockSize[1] = useOrderThreadsPerAtom ? 1 : order;
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
@@ -1215,21 +1231,21 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
         if (spreadCharges)
         {
             timingId  = gtPME_SPLINEANDSPREAD;
-            kernelPtr = selectSplineAndSpreadKernelPtr(pmeGpu, c_useOrderThreadsPerAtom,
-                                                       writeGlobal || (!c_recalculateSplines));
+            kernelPtr = selectSplineAndSpreadKernelPtr(pmeGpu, useOrderThreadsPerAtom,
+                                                       writeGlobal || (!recalculateSplines));
         }
         else
         {
             timingId  = gtPME_SPLINE;
-            kernelPtr = selectSplineKernelPtr(pmeGpu, c_useOrderThreadsPerAtom,
-                                              writeGlobal || (!c_recalculateSplines));
+            kernelPtr = selectSplineKernelPtr(pmeGpu, useOrderThreadsPerAtom,
+                                              writeGlobal || (!recalculateSplines));
         }
     }
     else
     {
         timingId  = gtPME_SPREAD;
-        kernelPtr = selectSpreadKernelPtr(pmeGpu, c_useOrderThreadsPerAtom,
-                                          writeGlobal || (!c_recalculateSplines));
+        kernelPtr = selectSpreadKernelPtr(pmeGpu, useOrderThreadsPerAtom,
+                                          writeGlobal || (!recalculateSplines));
     }
 
 
@@ -1436,14 +1452,16 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
     }
 
     /* Set if we have unit tests */
-    const bool   readGlobal = pmeGpu->settings.copyAllOutputs;
-    const size_t blockSize  = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
+    const bool   readGlobal             = pmeGpu->settings.copyAllOutputs;
+    const size_t blockSize              = pmeGpu->programHandle_->impl_->gatherWorkGroupSize;
+    const bool   useOrderThreadsPerAtom = pmeGpu->settings.useOrderThreadsPerAtom;
+    const bool   recalculateSplines     = pmeGpu->settings.recalculateSplines;
 #if GMX_GPU == GMX_GPU_OPENCL
-    GMX_ASSERT(!c_useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
-    GMX_ASSERT(!c_recalculateSplines, "Recalculating splines not supported in OpenCL");
+    GMX_ASSERT(!useOrderThreadsPerAtom, "Only 16 threads per atom supported in OpenCL");
+    GMX_ASSERT(!recalculateSplines, "Recalculating splines not supported in OpenCL");
 #endif
-    const int atomsPerBlock = c_useOrderThreadsPerAtom ? blockSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
-                                                       : blockSize / c_pmeSpreadGatherThreadsPerAtom;
+    const int atomsPerBlock = useOrderThreadsPerAtom ? blockSize / c_pmeSpreadGatherThreadsPerAtom4ThPerAtom
+                                                     : blockSize / c_pmeSpreadGatherThreadsPerAtom;
 
     GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock),
                "inconsistent atom data padding vs. gathering block size");
@@ -1456,7 +1474,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
 
     KernelLaunchConfig config;
     config.blockSize[0] = order;
-    config.blockSize[1] = c_useOrderThreadsPerAtom ? 1 : order;
+    config.blockSize[1] = useOrderThreadsPerAtom ? 1 : order;
     config.blockSize[2] = atomsPerBlock;
     config.gridSize[0]  = dimGrid.first;
     config.gridSize[1]  = dimGrid.second;
@@ -1466,7 +1484,7 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
 
     int                                timingId  = gtPME_GATHER;
     PmeGpuProgramImpl::PmeKernelHandle kernelPtr = selectGatherKernelPtr(
-            pmeGpu, c_useOrderThreadsPerAtom, readGlobal || (!c_recalculateSplines), forceTreatment);
+            pmeGpu, useOrderThreadsPerAtom, readGlobal || (!recalculateSplines), forceTreatment);
     // TODO design kernel selection getters and make PmeGpu a friend of PmeGpuProgramImpl
 
     pme_gpu_start_timing(pmeGpu, timingId);

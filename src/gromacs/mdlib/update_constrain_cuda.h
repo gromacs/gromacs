@@ -154,6 +154,14 @@ public:
      */
     GpuEventSynchronizer* getCoordinatesReadySync();
 
+    /*! \brief
+     * Returns whether the maximum number of coupled constraints is supported
+     * by the CUDA LINCS code.
+     *
+     * \param[in] mtop The molecular topology
+     */
+    static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
+
 private:
     class Impl;
     gmx::PrivateImplPointer<Impl> impl_;

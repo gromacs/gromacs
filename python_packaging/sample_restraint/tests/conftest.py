@@ -39,12 +39,81 @@ import logging
 import os
 import shutil
 import tempfile
+import warnings
+from contextlib import contextmanager
 
 import pytest
 
 
-@pytest.fixture()
-def cleandir():
+def pytest_addoption(parser):
+    """Add a command-line user option for the pytest invocation."""
+    parser.addoption(
+        '--rm',
+        action='store',
+        default='always',
+        choices=['always', 'never', 'success'],
+        help='Remove temporary directories "always", "never", or on "success".'
+    )
+
+
+@pytest.fixture(scope='session')
+def remove_tempdir(request):
+    """pytest fixture to get access to the --rm CLI option."""
+    return request.config.getoption('--rm')
+
+
+@contextmanager
+def scoped_chdir(dir):
+    oldpath = os.getcwd()
+    os.chdir(dir)
+    try:
+        yield dir
+        # If the `with` block using scoped_chdir produces an exception, it will
+        # be raised at this point in this function. We want the exception to
+        # propagate out of the `with` block, but first we want to restore the
+        # original working directory, so we skip `except` but provide a `finally`.
+    finally:
+        os.chdir(oldpath)
+
+
+@contextmanager
+def _cleandir(remove_tempdir):
+    """Context manager for a clean temporary working directory.
+
+    Arguments:
+        remove_tempdir (str): whether to remove temporary directory "always",
+                              "never", or on "success"
+
+    The context manager will issue a warning for each temporary directory that
+    is not removed.
+    """
+
+    newpath = tempfile.mkdtemp()
+
+    def remove():
+        shutil.rmtree(newpath)
+
+    def warn():
+        warnings.warn('Temporary directory not removed: {}'.format(newpath))
+
+    if remove_tempdir == 'always':
+        callback = remove
+    else:
+        callback = warn
+    try:
+        with scoped_chdir(newpath):
+            yield newpath
+        # If we get to this line, the `with` block using _cleandir did not throw.
+        # Clean up the temporary directory unless the user specified `--rm never`.
+        # I.e. If the user specified `--rm success`, then we need to toggle from `warn` to `remove`.
+        if remove_tempdir != 'never':
+            callback = remove
+    finally:
+        callback()
+
+
+@pytest.fixture
+def cleandir(remove_tempdir):
     """Provide a clean temporary working directory for a test.
 
     Example usage:
@@ -78,13 +147,8 @@ def cleandir():
 
     Ref: https://docs.pytest.org/en/latest/fixture.html#using-fixtures-from-classes-modules-or-projects
     """
-    oldpath = os.getcwd()
-    newpath = tempfile.mkdtemp()
-    os.chdir(newpath)
-    yield newpath
-    os.chdir(oldpath)
-    # TODO: Allow override to prevent removal of the temporary directory
-    shutil.rmtree(newpath)
+    with _cleandir(remove_tempdir) as newdir:
+        yield newdir
 
 
 @pytest.fixture(scope='session')
@@ -92,23 +156,25 @@ def gmxcli():
     # TODO: (#2896) Find a more canonical way to identify the GROMACS commandline wrapper binary.
     #  We should be able to get the GMXRC contents and related hints from a gmxapi
     #  package resource or from module attributes of a ``gromacs`` stub package.
-    command = shutil.which('gmx')
-    if command is None:
-        gmxbindir = os.getenv('GMXBIN')
-        if gmxbindir is None:
-            gromacsdir = os.getenv('GROMACS_DIR')
-            if gromacsdir is not None and gromacsdir != '':
-                gmxbindir = os.path.join(gromacsdir, 'bin')
-        if gmxbindir is None:
-            gmxapidir = os.getenv('gmxapi_DIR')
-            if gmxapidir is not None and gmxapidir != '':
-                gmxbindir = os.path.join(gmxapidir, 'bin')
-        if gmxbindir is not None:
-            gmxbindir = os.path.abspath(gmxbindir)
-            command = shutil.which('gmx', path=gmxbindir)
-        else:
-            message = "Tests need 'gmx' command line tool, but could not find it on the path."
-            raise RuntimeError(message)
+    allowed_command_names = ['gmx', 'gmx_mpi']
+    command = None
+    for command_name in allowed_command_names:
+        if command is not None:
+            break
+        command = shutil.which(command_name)
+        if command is None:
+            gmxbindir = os.getenv('GMXBIN')
+            if gmxbindir is None:
+                gromacsdir = os.getenv('GROMACS_DIR')
+                if gromacsdir is not None and gromacsdir != '':
+                    gmxbindir = os.path.join(gromacsdir, 'bin')
+            if gmxbindir is None:
+                gmxapidir = os.getenv('gmxapi_DIR')
+                if gmxapidir is not None and gmxapidir != '':
+                    gmxbindir = os.path.join(gmxapidir, 'bin')
+            if gmxbindir is not None:
+                gmxbindir = os.path.abspath(gmxbindir)
+                command = shutil.which(command_name, path=gmxbindir)
     if command is None:
         message = "Tests need 'gmx' command line tool, but could not find it on the path."
         raise RuntimeError(message)
@@ -120,7 +186,7 @@ def gmxcli():
 
 
 @pytest.fixture(scope='class')
-def spc_water_box(gmxcli):
+def spc_water_box(gmxcli, remove_tempdir):
     """Provide a TPR input file for a simple simulation.
 
     Prepare the MD input in a freshly created working directory.
@@ -135,80 +201,80 @@ def spc_water_box(gmxcli):
     #     # Ref https://setuptools.readthedocs.io/en/latest/setuptools.html#including-data-files
     #     from gmx.data import tprfilename
 
-    tempdir = tempfile.mkdtemp()
+    with _cleandir(remove_tempdir) as tempdir:
 
-    testdir = os.path.dirname(__file__)
-    with open(os.path.join(testdir, 'testdata.json'), 'r') as fh:
-        testdata = json.load(fh)
+        testdir = os.path.dirname(__file__)
+        with open(os.path.join(testdir, 'testdata.json'), 'r') as fh:
+            testdata = json.load(fh)
 
-    # TODO: (#2756) Don't rely on so many automagical behaviors (as described in comments below)
+        # TODO: (#2756) Don't rely on so many automagical behaviors (as described in comments below)
 
-    structurefile = os.path.join(tempdir, 'structure.gro')
-    # We let `gmx solvate` use the default solvent. Otherwise, we would do
-    #     gro_input = testdata['solvent_structure']
-    #     with open(structurefile, 'w') as fh:
-    #         fh.write('\n'.join(gro_input))
-    #         fh.write('\n')
+        structurefile = os.path.join(tempdir, 'structure.gro')
+        # We let `gmx solvate` use the default solvent. Otherwise, we would do
+        #     gro_input = testdata['solvent_structure']
+        #     with open(structurefile, 'w') as fh:
+        #         fh.write('\n'.join(gro_input))
+        #         fh.write('\n')
 
-    topfile = os.path.join(tempdir, 'topology.top')
-    top_input = testdata['solvent_topology']
-    # `gmx solvate` will append a line to the provided file with the molecule count,
-    # so we strip the last line from the input topology.
-    with open(topfile, 'w') as fh:
-        fh.write('\n'.join(top_input[:-1]))
-        fh.write('\n')
+        topfile = os.path.join(tempdir, 'topology.top')
+        top_input = testdata['solvent_topology']
+        # `gmx solvate` will append a line to the provided file with the molecule count,
+        # so we strip the last line from the input topology.
+        with open(topfile, 'w') as fh:
+            fh.write('\n'.join(top_input[:-1]))
+            fh.write('\n')
 
-    solvate = gmx.commandline_operation(gmxcli,
-                                        arguments=['solvate', '-box', '5', '5', '5'],
-                                        # We use the default solvent instead of specifying one.
-                                        # input_files={'-cs': structurefile},
-                                        output_files={'-p': topfile,
-                                                      '-o': structurefile,
-                                                      }
-                                        )
-    if solvate.output.returncode.result() != 0:
-        logging.debug(solvate.output.erroroutput.result())
-        raise RuntimeError('solvate failed in spc_water_box testing fixture.')
+        assert os.path.exists(topfile)
+        solvate = gmx.commandline_operation(gmxcli,
+                                            arguments=['solvate', '-box', '5', '5', '5'],
+                                            # We use the default solvent instead of specifying one.
+                                            # input_files={'-cs': structurefile},
+                                            output_files={'-p': topfile,
+                                                          '-o': structurefile,
+                                                          }
+                                            )
+        assert os.path.exists(topfile)
 
-    mdp_input = [('integrator', 'md'),
-                 ('cutoff-scheme', 'Verlet'),
-                 ('nsteps', 2),
-                 ('nstxout', 1),
-                 ('nstvout', 1),
-                 ('nstfout', 1),
-                 ('tcoupl', 'v-rescale'),
-                 ('tc-grps', 'System'),
-                 ('tau-t', 1),
-                 ('ref-t', 298)]
-    mdp_input = '\n'.join([' = '.join([str(item) for item in kvpair]) for kvpair in mdp_input])
-    mdpfile = os.path.join(tempdir, 'md.mdp')
-    with open(mdpfile, 'w') as fh:
-        fh.write(mdp_input)
-        fh.write('\n')
-    tprfile = os.path.join(tempdir, 'topol.tpr')
-    # We don't use mdout_mdp, but if we don't specify it to grompp,
-    # it will be created in the current working directory.
-    mdout_mdp = os.path.join(tempdir, 'mdout.mdp')
+        if solvate.output.returncode.result() != 0:
+            logging.debug(solvate.output.erroroutput.result())
+            raise RuntimeError('solvate failed in spc_water_box testing fixture.')
 
-    grompp = gmx.commandline_operation(gmxcli, 'grompp',
-                                       input_files={
-                                           '-f': mdpfile,
-                                           '-p': solvate.output.file['-p'],
-                                           '-c': solvate.output.file['-o'],
-                                           '-po': mdout_mdp,
-                                       },
-                                       output_files={'-o': tprfile})
-    tprfilename = grompp.output.file['-o'].result()
-    if grompp.output.returncode.result() != 0:
-        logging.debug(grompp.output.erroroutput.result())
-        raise RuntimeError('grompp failed in spc_water_box testing fixture.')
+        # Choose an exactly representable dt of 2^-9 ps (approximately 0.002)
+        dt = 2.**-9.
+        mdp_input = [('integrator', 'md'),
+                     ('dt', dt),
+                     ('cutoff-scheme', 'Verlet'),
+                     ('nsteps', 2),
+                     ('nstxout', 1),
+                     ('nstvout', 1),
+                     ('nstfout', 1),
+                     ('tcoupl', 'v-rescale'),
+                     ('tc-grps', 'System'),
+                     ('tau-t', 1),
+                     ('ref-t', 298)]
+        mdp_input = '\n'.join([' = '.join([str(item) for item in kvpair]) for kvpair in mdp_input])
+        mdpfile = os.path.join(tempdir, 'md.mdp')
+        with open(mdpfile, 'w') as fh:
+            fh.write(mdp_input)
+            fh.write('\n')
+        tprfile = os.path.join(tempdir, 'topol.tpr')
+        # We don't use mdout_mdp, but if we don't specify it to grompp,
+        # it will be created in the current working directory.
+        mdout_mdp = os.path.join(tempdir, 'mdout.mdp')
 
-    # TODO: more inspection of grompp errors...
-    assert os.path.exists(tprfilename)
-    yield tprfilename
+        grompp = gmx.commandline_operation(gmxcli, 'grompp',
+                                           input_files={
+                                               '-f': mdpfile,
+                                               '-p': solvate.output.file['-p'],
+                                               '-c': solvate.output.file['-o'],
+                                               '-po': mdout_mdp,
+                                           },
+                                           output_files={'-o': tprfile})
+        tprfilename = grompp.output.file['-o'].result()
+        if grompp.output.returncode.result() != 0:
+            logging.debug(grompp.output.erroroutput.result())
+            raise RuntimeError('grompp failed in spc_water_box testing fixture.')
 
-    # Clean up.
-    # Note: these lines are not executed (and tempdir is not removed) if there
-    # are exceptions before `yield`
-    # TODO: Allow override to prevent removal of the temporary directory
-    shutil.rmtree(tempdir)
+        # TODO: more inspection of grompp errors...
+        assert os.path.exists(tprfilename)
+        yield tprfilename

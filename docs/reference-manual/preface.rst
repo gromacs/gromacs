@@ -51,14 +51,7 @@ Citation information
 
 .. TODO needs link to ref list
 
-When citing this document in any scientific publication
-please refer to it as:
-
-.. parsed-literal::
-
-    M.J. Abraham, D. van der Spoel, E. Lindahl, B. Hess, and the GROMACS development team,
-    |Gromacs| User Manual version |version|,
-    `http://www.gromacs.org <http://www.gromacs.org>`__ 
+|GMX_MANUAL_DOI_STRING|
 
 However, we prefer that you cite (some of) the |Gromacs|
 papers:

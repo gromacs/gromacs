@@ -111,6 +111,18 @@ struct PmeGpuSettings
     GpuApiCallBehavior transferKind;
     /*! \brief Various flags for the current PME computation, corresponding to the GMX_PME_ flags in pme.h. */
     int currentFlags;
+    /*! \brief
+     *  Currently only supported by CUDA.
+     *  Controls if we should use order (i.e. 4) threads per atom for the GPU
+     *  or order*order (i.e. 16) threads per atom.
+     */
+    bool useOrderThreadsPerAtom;
+    /*! \brief
+     * Currently only supported by CUDA.
+     * Controls if we should recalculate the splines in the gather or
+     * save the values in the spread and reload in the gather.
+     */
+    bool recalculateSplines;
 };
 
 // TODO There's little value in computing the Coulomb and LJ virial

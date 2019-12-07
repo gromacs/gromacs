@@ -333,7 +333,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
     // Avoid all ranks spamming the error stream
     //
     // TODO improve this so that unique errors on different ranks
-    // are all reported.
+    // are all reported on one rank.
     if (countOfExceptionsOnThisRank > 0 && physicalNodeComm.rank_ == 0)
     {
         try
@@ -343,16 +343,21 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
                 std::rethrow_exception(exceptionPtr);
             }
         }
-        catch (const std::exception& ex)
-        {
-            printFatalErrorMessage(stderr, ex);
-        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
+    // TODO This implements a global barrier so that MPI runtimes can
+    // organize an orderly shutdown if one of the ranks has had to
+    // issue a fatal error above. When we have MPI-aware error
+    // handling and reporting, this should be improved (perhaps
+    // centralized there).
+    simulationBarrier(cr);
+    multiSimBarrier(ms);
+    simulationBarrier(cr);
     if (countOfExceptionsOverAllRanks > 0)
     {
         gmx_fatal(FARGS,
-                  "Exiting because task assignment failed. If there is no descriptive "
-                  "error message above this, please report this failure as a bug.");
+                  "Exiting because task assignment failed. If there is no descriptive error "
+                  "message in the terminal output, please report this failure as a bug.");
     }
 
     // TODO There is no check that mdrun -nb gpu or -pme gpu or

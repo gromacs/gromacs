@@ -279,4 +279,9 @@ GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
     return impl_->getCoordinatesReadySync();
 }
 
+bool UpdateConstrainCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
+{
+    return LincsCuda::isNumCoupledConstraintsSupported(mtop);
+}
+
 } // namespace gmx
