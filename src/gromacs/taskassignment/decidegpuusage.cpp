@@ -497,7 +497,8 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
                                     const gmx_mtop_t& mtop,
                                     const bool        useEssentialDynamics,
                                     const bool        doOrientationRestraints,
-                                    const bool        useReplicaExchange)
+                                    const bool        useReplicaExchange,
+                                    const bool        doRerun)
 {
 
     if (updateTarget == TaskTarget::Cpu)
@@ -574,6 +575,10 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
     if (inputrec.eSwapCoords != eswapNO)
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
+    }
+    if (doRerun)
+    {
+        errorMessage += "Re-run is not supported.\n";
     }
 
     // TODO: F_CONSTRNC is only unsupported, because isNumCoupledConstraintsSupported()

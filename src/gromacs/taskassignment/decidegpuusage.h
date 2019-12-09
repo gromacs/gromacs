@@ -241,6 +241,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  useEssentialDynamics      If essential dynamics is active.
  * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
  * \param[in]  useReplicaExchange        If this is a REMD simulation.
+ * \param[in]  doRerun                   It this is a rerun.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
@@ -255,7 +256,8 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
                                     const gmx_mtop_t& mtop,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
-                                    bool              useReplicaExchange);
+                                    bool              useReplicaExchange,
+                                    bool              doRerun);
 
 
 } // namespace gmx

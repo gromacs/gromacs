@@ -898,7 +898,7 @@ int Mdrunner::mdrunner()
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
                 useDomainDecomposition, useGpuForPme, useGpuForNonbonded, updateTarget,
                 gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
-                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0);
+                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0, doRerun);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
