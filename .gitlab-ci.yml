@@ -37,6 +37,10 @@ stages:
   - build
   # Test each configuration, perhaps in multiple ways
   - test
+  # Generate documentation files
+  - documentation
+  # Check documentation from source code for errors
+  - source-check
   # Linting, docs, static analysis, coverage, code analysis...
   - post-test
 
@@ -204,7 +208,7 @@ test-clang-6:
 build-clang-tidy:
   allow_failure: true
   extends: .build-clang
-  stage: post-test
+  stage: source-check
   dependencies: []
   variables:
     BUILD_DIR: build-clang-tidy
@@ -213,7 +217,7 @@ build-clang-tidy:
 
 build-docs:
   extends: .build-docs
-  stage: post-test
+  stage: documentation
   variables:
     BUILD_DIR: build-docs
     COMPILER_MAJOR_VERSION: 7
@@ -221,11 +225,12 @@ build-docs:
 
 run-check-source:
   extends: .build-docs
-  stage: post-test
+  stage: source-check
   dependencies:
     - build-docs
   variables:
     BUILD_DIR: build-docs
+    COMPILER_MAJOR_VERSION: 7
   script:
     - cd $BUILD_DIR
     - cmake --build . --target check-source
