@@ -187,10 +187,10 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls  = createExclusionsList();
-    topology_.masses = extractAtomTypeQuantity(
+    topology_.excls_  = createExclusionsList();
+    topology_.masses_ = extractAtomTypeQuantity(
             [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
-    topology_.charges = extractAtomTypeQuantity([](const auto& data, auto& map) {
+    topology_.charges_ = extractAtomTypeQuantity([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
@@ -213,27 +213,27 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
 
 const std::vector<real>& Topology::getMasses() const
 {
-    return masses;
+    return masses_;
 }
 
 const std::vector<real>& Topology::getCharges() const
 {
-    return charges;
+    return charges_;
 }
 
 const std::vector<int>& Topology::getAtoms() const
 {
-    return atomTypes;
+    return atomTypes_;
 }
 
 const std::vector<real>& Topology::getNonbondedParameters() const
 {
-    return nonbondedParameters;
+    return nonbondedParameters_;
 }
 
 const std::vector<int>& Topology::getAtomInfoAllVdw() const
 {
-    return atomInfoAllVdw;
+    return atomInfoAllVdw_;
 }
 
 
