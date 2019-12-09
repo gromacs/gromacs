@@ -67,13 +67,24 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
 } // namespace detail
 
+/*! \libinternal
+ * \ingroup nblib
+ * \brief System Topology
+ *
+ * Contains all topology information meant to be used by the simulation
+ * engine internally. Private constructor ensures that a Topology object
+ * exists in a scope in a valid state after it has been built using a
+ * Topology Builder.
+ */
 class Topology
 {
 public:
     const std::vector<int>& getAtoms() const;
 
+    //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
 
+    //! Returns a vector of atomic masses
     const std::vector<real>& getMasses() const;
 
     const std::vector<real>& getNonbondedParameters() const;
@@ -82,7 +93,7 @@ public:
 
     // TODO: This function is only needed for testing. Need
     //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const { return excls; }
+    const t_blocka& getGMXexclusions() const { return excls_; }
 
 private:
     Topology() = default;
@@ -90,17 +101,17 @@ private:
     friend class TopologyBuilder;
 
     //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters;
+    std::vector<real> nonbondedParameters_;
     //! Storage for atom type parameters.
-    std::vector<int> atomTypes;
+    std::vector<int> atomTypes_;
     //! Storage for atom partial charges.
-    std::vector<real> charges;
+    std::vector<real> charges_;
     //! Atom masses
-    std::vector<real> masses;
+    std::vector<real> masses_;
     //! Atom info where all atoms are marked to have Van der Waals interactions
-    std::vector<int> atomInfoAllVdw;
+    std::vector<int> atomInfoAllVdw_;
     //! Information about exclusions.
-    t_blocka excls;
+    t_blocka excls_;
 };
 
 /*! \libinternal
@@ -111,7 +122,6 @@ private:
  * topologies only exist in a valid state within the scope of the
  * simulation program.
  */
-
 class TopologyBuilder {
 public:
     //! Constructor
@@ -126,7 +136,7 @@ public:
     Topology buildTopology();
 
     //! Adds a molecules of a certain type into the topology
-    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
@@ -143,7 +153,7 @@ private:
 
     //! Helper function to extract quantities like mass, charge, etc from the system
     template <class Extractor>
-    std::vector<real> extractQuantity(Extractor extractor);
+    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
 };
 
 } // namespace nblib
