@@ -188,11 +188,6 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
 
     state_.stepsSinceLastCalculation_ = 1;
 
-    // do nothing if there are no density fitting atoms on this node
-    if (localAtomSet_.numAtomsLocal() == 0)
-    {
-        return;
-    }
     transformedCoordinates_.resize(localAtomSet_.numAtomsLocal());
     // pick and copy atom coordinates
     std::transform(std::cbegin(localAtomSet_.localIndex()), std::cend(localAtomSet_.localIndex()),
@@ -223,7 +218,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     if (parameters_.normalizeDensities_)
     {
         real sum = std::accumulate(std::begin(amplitudes), std::end(amplitudes), 0.);
-        if (PAR(&forceProviderInput.cr_))
+        if (havePPDomainDecomposition(&forceProviderInput.cr_))
         {
             gmx_sum(1, &sum, &forceProviderInput.cr_);
         }
@@ -242,7 +237,7 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
     }
 
     // communicate grid
-    if (PAR(&forceProviderInput.cr_))
+    if (havePPDomainDecomposition(&forceProviderInput.cr_))
     {
         // \todo update to real once GaussTransform class returns real
         gmx_sumf(gaussTransform_.view().mapping().required_span_size(),
@@ -272,10 +267,13 @@ void DensityFittingForceProvider::Impl::calculateForces(const ForceProviderInput
         ++densityForceIterator;
     }
 
-    // calculate corresponding potential energy
     const float similarity = measure_.similarity(gaussTransform_.constView());
-    const real energy = -similarity * parameters_.forceConstant_ * state_.adaptiveForceConstantScale_;
-    forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
+    if (MASTER(&(forceProviderInput.cr_)))
+    {
+        // calculate corresponding potential energy
+        const real energy = -similarity * parameters_.forceConstant_ * state_.adaptiveForceConstantScale_;
+        forceProviderOutput->enerd_.term[F_DENSITYFITTING] += energy;
+    }
 
     if (expAverageSimilarity_.has_value())
     {
