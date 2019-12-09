@@ -221,7 +221,7 @@ webpage:
   stage: post-test
   dependencies:
     - build-docs
-    - check-source
+    - run-check-source
   variables:
     BUILD_DIR: build-docs
   before_script:
