@@ -122,7 +122,6 @@ private:
  * topologies only exist in a valid state within the scope of the
  * simulation program.
  */
-
 class TopologyBuilder {
 public:
     //! Constructor
