@@ -137,7 +137,7 @@ public:
     Topology buildTopology();
 
     //! Adds a molecules of a certain type into the topology
-    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
