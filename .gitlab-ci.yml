@@ -16,6 +16,13 @@ include:
         - .variables-template
         - .tags-template
 
+.regressiontests-extends-template:
+    extends:
+        - .build-cache-template
+        - .variables-template
+        - .tags-template
+        - .regressiontests-template
+
 before_script:
   - mkdir -p ccache
   - export CCACHE_BASEDIR=${PWD}
@@ -64,6 +71,7 @@ stages:
     extends:
         - .build-extends-template
         - .build-docs-template
+        - .clang-before-script-template
         - .build-clang-template
 
 .build-cuda-gcc:
@@ -72,7 +80,7 @@ stages:
         - .build-cuda-template
 
 prepare-regressiontests:
-    extends: .regressiontests-template
+    extends: .regressiontests-extends-template 
 
 
 build-gcc-7:
