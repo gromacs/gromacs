@@ -10,7 +10,7 @@
           build-essential cmake git ninja-build ccache
           clang++-$COMPILER_MAJOR_VERSION clang-tools-$COMPILER_MAJOR_VERSION
           clang-tidy-$COMPILER_MAJOR_VERSION
-          libfftw3-dev libhwloc-dev liblapack-dev
+          libfftw3-dev libhwloc-dev liblapack-dev moreutils
       - mkdir -p ccache
       - export CCACHE_BASEDIR=${PWD}
       - export CCACHE_DIR=${PWD}/ccache

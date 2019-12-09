@@ -84,6 +84,9 @@ build-gcc-7:
 test-gcc-7:
     extends: .test-gcc
 
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+
     dependencies: 
         - build-gcc-7
         - prepare-regressiontests
@@ -105,6 +108,9 @@ test-gcc-7-double:
     allow_failure: true
     extends: .test-gcc
 
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+
     dependencies:
         - build-gcc-7-double
         - prepare-regressiontests
@@ -119,6 +125,10 @@ build-gcc-8:
 test-gcc-8:
     extends: .test-gcc
 
+    variables:
+        COMPILER_MAJOR_VERSION: 8
+
+
     dependencies:
         - build-gcc-8
         - prepare-regressiontests
@@ -131,6 +141,9 @@ build-gcc-7-simd-sse41:
 
 test-gcc-7-simd-sse41:
     extends: .test-gcc
+
+    variables:
+        COMPILER_MAJOR_VERSION: 7
 
     dependencies:
         - build-gcc-7-simd-sse41
@@ -152,6 +165,9 @@ build-clang-7:
 test-clang-7:
     extends: .test-clang
 
+    variables:
+        COMPILER_MAJOR_VERSION: 7
+
     dependencies: 
         - build-clang-7
         - prepare-regressiontests
@@ -167,6 +183,9 @@ build-clang-6:
 
 test-clang-6:
     extends: .test-clang
+
+    variables:
+        COMPILER_MAJOR_VERSION: "6.0"
 
     dependencies:
         - build-clang-6
@@ -188,6 +207,7 @@ build-docs:
   extends: .build-docs
   variables:
     BUILD_DIR: build-docs
+    COMPILER_MAJOR_VERSION: 7
     CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DCMAKE_BUILD_TYPE=Debug -DGMX_SIMD=None -DGMX_GPU=off
 
 run-check-source:
@@ -224,8 +244,7 @@ webpage:
     - run-check-source
   variables:
     BUILD_DIR: build-docs
-  before_script:
-    - apt-get -yqq install moreutils
+    COMPILER_MAJOR_VERSION: 7
   script:
     - cd $BUILD_DIR
     - set -o pipefail && cmake --build . --target manual 2>&1 > docs/manual/all-output.txt | ts "%Y/%m/%d %H:%M:%S"

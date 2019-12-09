@@ -28,8 +28,8 @@
         $CMAKE_MPI_OPTIONS
         $CMAKE_PRECISION_OPTIONS
         -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
-    - cmake --build . -- -j$KUBERNETES_CPU_REQUEST
-    - cmake --build . --target tests -- -j$KUBERNETES_CPU_REQUEST
+    - cmake --build . -- -j4
+    - cmake --build . --target tests -- -j4
     - cmake --build . --target install
     - cd ..
     - tar czf gmx-build.tar.gz $BUILD_DIR/
