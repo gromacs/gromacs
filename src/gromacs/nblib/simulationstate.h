@@ -65,6 +65,7 @@ namespace nblib
  * Simulation state description that serves as a snapshot of the system
  * being analysed. Needed to init an MD program. Allows hot-starting simulations.
  */
+
 class SimulationState
 {
 public:

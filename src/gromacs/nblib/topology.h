@@ -122,6 +122,7 @@ private:
  * topologies only exist in a valid state within the scope of the
  * simulation program.
  */
+
 class TopologyBuilder {
 public:
     //! Constructor
@@ -136,7 +137,7 @@ public:
     Topology buildTopology();
 
     //! Adds a molecules of a certain type into the topology
-    TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
+    TopologyBuilder& addMolecule(Molecule moleculeType, int nMolecules);
 
 private:
     //! Internally stored topology
