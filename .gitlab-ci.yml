@@ -213,6 +213,7 @@ build-clang-tidy:
 
 build-docs:
   extends: .build-docs
+  stage: post-test
   variables:
     BUILD_DIR: build-docs
     COMPILER_MAJOR_VERSION: 7
@@ -220,7 +221,7 @@ build-docs:
 
 run-check-source:
   extends: .build-docs
-  stage: test
+  stage: post-test
   dependencies:
     - build-docs
   variables:
