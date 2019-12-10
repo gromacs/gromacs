@@ -136,9 +136,10 @@ gmx_add_gtest_executable(
     )
 target_link_libraries(${exename} PRIVATE mdrun_test_infrastructure)
 
-# These tests are extremely slow without optimization, so only run them for
-# build types like Release or RelWithDebInfo
-if (CMAKE_BUILD_TYPE MATCHES "Rel")
+# These tests are extremely slow without optimization or OpenMP, so only run them for
+# build types like Release or RelWithDebInfo and if the build has been configured
+# with OpenMP enabled.
+if (CMAKE_BUILD_TYPE MATCHES "Rel" AND GMX_OPENMP)
     set(testname "MdrunMpiCoordinationTestsOneRank")
     gmx_register_gtest_test(${testname} ${exename} MPI_RANKS 1 SLOW_TEST)
     set(testname "MdrunMpiCoordinationTestsTwoRanks")
