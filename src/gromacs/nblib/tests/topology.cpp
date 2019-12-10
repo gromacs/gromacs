@@ -65,16 +65,16 @@ public:
         //! Manually Create Molecule (Water)
 
         //! Define Atom Type
-        AtomType Ow("Ow", 16, 1., 1.);
-        AtomType Hw("Hw", 1, 1., 1.);
+        AtomType Ow(AtomName("Ow"), Mass(16), C6(1.), C12(1.));
+        AtomType Hw(AtomName("Hw"), Mass(1), C6(1.), C12(1.));
 
         //! Define Molecule
         Molecule water("water");
 
         //! Add the atoms
-        water.addAtom("Oxygen", Charge(-0.6), Ow);
-        water.addAtom("H1", Charge(+0.3), Hw);
-        water.addAtom("H2", Charge(+0.3), Hw);
+        water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
+        water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
+        water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
 
         //! Add the exclusions
         water.addExclusion("Oxygen", "H1");
