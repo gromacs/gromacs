@@ -69,28 +69,24 @@
               "of atoms in the tpr file (%d)",                                                   \
               (i), (n))
 
-static gmx_bool* bKeepIt(int gnx, int natoms, int index[])
+static std::vector<bool> bKeepIt(int gnx, int natoms, int index[])
 {
-    gmx_bool* b;
-    int       i;
+    std::vector<bool> b(natoms);
 
-    snew(b, natoms);
-    for (i = 0; (i < gnx); i++)
+    for (int i = 0; (i < gnx); i++)
     {
         RANGECHK(index[i], natoms);
-        b[index[i]] = TRUE;
+        b[index[i]] = true;
     }
 
     return b;
 }
 
-static int* invind(int gnx, int natoms, int index[])
+static std::vector<int> invind(int gnx, int natoms, int index[])
 {
-    int* inv;
-    int  i;
+    std::vector<int> inv(natoms);
 
-    snew(inv, natoms);
-    for (i = 0; (i < gnx); i++)
+    for (int i = 0; (i < gnx); i++)
     {
         RANGECHK(index[i], natoms);
         inv[index[i]] = i;
@@ -99,61 +95,32 @@ static int* invind(int gnx, int natoms, int index[])
     return inv;
 }
 
-static void reduce_block(const gmx_bool bKeep[], t_block* block, const char* name)
-{
-    int* index;
-    int  i, j, newi, newj;
-
-    snew(index, block->nr);
-
-    newi = newj = 0;
-    for (i = 0; (i < block->nr); i++)
-    {
-        for (j = block->index[i]; (j < block->index[i + 1]); j++)
-        {
-            if (bKeep[j])
-            {
-                newj++;
-            }
-        }
-        if (newj > index[newi])
-        {
-            newi++;
-            index[newi] = newj;
-        }
-    }
-
-    fprintf(stderr, "Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n", name,
-            block->nr, newi, block->index[block->nr], newj);
-    block->index = index;
-    block->nr    = newi;
-}
-
-static gmx::ListOfLists<int>
-reduce_blocka(const int invindex[], const gmx_bool bKeep[], const t_blocka& block, const char* name)
+static gmx::ListOfLists<int> reduce_listoflists(gmx::ArrayRef<const int>     invindex,
+                                                const std::vector<bool>&     bKeep,
+                                                const gmx::ListOfLists<int>& src,
+                                                const char*                  name)
 {
     gmx::ListOfLists<int> lists;
 
     std::vector<int> exclusionsForAtom;
-    for (int i = 0; i < block.nr; i++)
+    for (gmx::index i = 0; i < src.ssize(); i++)
     {
         if (bKeep[i])
         {
             exclusionsForAtom.clear();
-            for (int j = block.index[i]; j < block.index[i + 1]; j++)
+            for (const int j : src[i])
             {
-                const int k = block.a[j];
-                if (bKeep[k])
+                if (bKeep[j])
                 {
-                    exclusionsForAtom.push_back(invindex[k]);
+                    exclusionsForAtom.push_back(invindex[j]);
                 }
             }
             lists.pushBack(exclusionsForAtom);
         }
     }
 
-    fprintf(stderr, "Reduced block %8s from %6d to %6zu index-, %6d to %6d a-entries\n", name,
-            block.nr, lists.size(), block.nra, lists.numElements());
+    fprintf(stderr, "Reduced block %8s from %6zu to %6zu index-, %6d to %6d a-entries\n", name,
+            src.size(), lists.size(), src.numElements(), lists.numElements());
 
     return lists;
 }
@@ -214,7 +181,11 @@ static void reduce_atom(int gnx, const int index[], t_atom atom[], char*** atomn
     sfree(rinfo);
 }
 
-static void reduce_ilist(const int invindex[], const gmx_bool bKeep[], t_ilist* il, int nratoms, const char* name)
+static void reduce_ilist(gmx::ArrayRef<const int> invindex,
+                         const std::vector<bool>& bKeep,
+                         t_ilist*                 il,
+                         int                      nratoms,
+                         const char*              name)
 {
     t_iatom* ia;
     int      i, j, newnr;
@@ -255,33 +226,30 @@ static void reduce_ilist(const int invindex[], const gmx_bool bKeep[], t_ilist* 
 
 static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], rvec v[])
 {
-    t_topology top;
-    gmx_bool*  bKeep;
-    int*       invindex;
-    int        i;
+    gmx_localtop_t top;
+    gmx_mtop_generate_local_top(*mtop, &top, false);
+    t_atoms atoms = gmx_mtop_global_atoms(mtop);
 
-    top      = gmx_mtop_t_to_t_topology(mtop, false);
-    bKeep    = bKeepIt(gnx, top.atoms.nr, index);
-    invindex = invind(gnx, top.atoms.nr, index);
+    const std::vector<bool> bKeep    = bKeepIt(gnx, atoms.nr, index);
+    const std::vector<int>  invindex = invind(gnx, atoms.nr, index);
 
-    reduce_block(bKeep, &(top.mols), "mols");
-    gmx::ListOfLists<int> excls = reduce_blocka(invindex, bKeep, top.excls, "excls");
     reduce_rvec(gnx, index, x);
     reduce_rvec(gnx, index, v);
-    reduce_atom(gnx, index, top.atoms.atom, top.atoms.atomname, &(top.atoms.nres), top.atoms.resinfo);
+    reduce_atom(gnx, index, atoms.atom, atoms.atomname, &(atoms.nres), atoms.resinfo);
 
-    for (i = 0; (i < F_NRE); i++)
+    for (int i = 0; (i < F_NRE); i++)
     {
         reduce_ilist(invindex, bKeep, &(top.idef.il[i]), interaction_function[i].nratoms,
                      interaction_function[i].name);
     }
 
-    top.atoms.nr = gnx;
+    atoms.nr = gnx;
 
     mtop->moltype.resize(1);
     mtop->moltype[0].name  = mtop->name;
-    mtop->moltype[0].atoms = top.atoms;
-    for (i = 0; i < F_NRE; i++)
+    mtop->moltype[0].atoms = atoms;
+    mtop->moltype[0].excls = reduce_listoflists(invindex, bKeep, top.excls, "excls");
+    for (int i = 0; i < F_NRE; i++)
     {
         InteractionList& ilist = mtop->moltype[0].ilist[i];
         ilist.iatoms.resize(top.idef.il[i].nr);
@@ -290,14 +258,12 @@ static void reduce_topology_x(int gnx, int index[], gmx_mtop_t* mtop, rvec x[], 
             ilist.iatoms[j] = top.idef.il[i].iatoms[j];
         }
     }
-    mtop->moltype[0].atoms = top.atoms;
-    mtop->moltype[0].excls = excls;
 
     mtop->molblock.resize(1);
     mtop->molblock[0].type = 0;
     mtop->molblock[0].nmol = 1;
 
-    mtop->natoms = top.atoms.nr;
+    mtop->natoms = atoms.nr;
 }
 
 static void zeroq(const int index[], gmx_mtop_t* mtop)

@@ -650,47 +650,6 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
-static void blockacat(t_blocka* dest, const gmx::ListOfLists<int>& src, int copies, int dnum, int snum)
-{
-    int j, l;
-    int destnr  = dest->nr;
-    int destnra = dest->nra;
-
-    if (!src.empty())
-    {
-        size_t size = (dest->nr + copies * src.size() + 1);
-        srenew(dest->index, size);
-    }
-    gmx::ArrayRef<const int> srcElements = src.elementsView();
-    if (!srcElements.empty())
-    {
-        size_t size = (dest->nra + copies * srcElements.size());
-        srenew(dest->a, size);
-    }
-
-    gmx::ArrayRef<const int> srcListRanges = src.listRangesView();
-    for (l = destnr, j = 0; (j < copies); j++)
-    {
-        for (gmx::index i = 0; i < src.ssize(); i++)
-        {
-            dest->index[l++] = dest->nra + srcListRanges[i];
-        }
-        dest->nra += src.ssize();
-    }
-    for (l = destnra, j = 0; (j < copies); j++)
-    {
-        for (const int srcElement : srcElements)
-        {
-            dest->a[l++] = dnum + srcElement;
-        }
-        dnum += snum;
-        dest->nr += src.ssize();
-    }
-    dest->index[dest->nr] = dest->nra;
-    dest->nalloc_index    = dest->nr;
-    dest->nalloc_a        = dest->nra;
-}
-
 static void ilistcat(int ftype, t_ilist* dest, const InteractionList& src, int copies, int dnum, int snum)
 {
     int nral, c, i, a;
@@ -935,17 +894,14 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t& mtop, t_atomtypes* atomtypes
     }
 }
 
-/*! \brief Copy excls from mtop.
- *
- * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
- * Used to initialize legacy topology types.
+/*! \brief Generate a single list of lists of exclusions for the whole system
  *
  * \param[in] mtop  Reference to input mtop.
- * \param[in] excls Pointer to final excls data structure.
  */
-static void copyExclsFromMtop(const gmx_mtop_t& mtop, gmx::ListOfLists<int>* excls)
+static gmx::ListOfLists<int> globalExclusionLists(const gmx_mtop_t& mtop)
 {
-    excls->clear();
+    gmx::ListOfLists<int> excls;
+
     int atomIndex = 0;
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
@@ -953,36 +909,13 @@ static void copyExclsFromMtop(const gmx_mtop_t& mtop, gmx::ListOfLists<int>* exc
 
         for (int mol = 0; mol < molb.nmol; mol++)
         {
-            excls->appendListOfLists(molt.excls, atomIndex);
+            excls.appendListOfLists(molt.excls, atomIndex);
 
             atomIndex += molt.atoms.nr;
         }
     }
-}
 
-/*! \brief Copy excls from mtop.
- *
- * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
- * Used to initialize legacy t_topology.
- *
- * \param[in] mtop  Reference to input mtop.
- * \param[in] excls Pointer to final excls data structure.
- */
-static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
-{
-    init_blocka(excls);
-    int natoms = 0;
-    for (const gmx_molblock_t& molb : mtop.molblock)
-    {
-        const gmx_moltype_t& molt = mtop.moltype[molb.type];
-
-        int srcnr  = molt.atoms.nr;
-        int destnr = natoms;
-
-        blockacat(excls, molt.excls, molb.nmol, destnr, srcnr);
-
-        natoms += molb.nmol * srcnr;
-    }
+    return excls;
 }
 
 /*! \brief Updates inter-molecular exclusion lists
@@ -1053,7 +986,7 @@ static void gen_local_top(const gmx_mtop_t& mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyExclsFromMtop(mtop, &top->excls);
+    top->excls = globalExclusionLists(mtop);
     if (!mtop.intermolecularExclusionGroup.empty())
     {
         addMimicExclusions(&top->excls, mtop.intermolecularExclusionGroup);
@@ -1127,7 +1060,6 @@ static void gen_t_topology(const gmx_mtop_t& mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyExclsFromMtop(mtop, &top->excls);
 
     top->name                        = mtop.name;
     top->atoms                       = gmx_mtop_global_atoms(&mtop);

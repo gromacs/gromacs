@@ -229,8 +229,8 @@ typedef struct t_topology
     t_atomtypes atomtypes;                   /* Atomtype properties                  */
     t_block     mols;                        /* The molecules                        */
     gmx_bool    bIntermolecularInteractions; /* Inter.mol. int. ?   */
-    t_blocka    excls;                       /* The exclusions                       */
-    t_symtab    symtab;                      /* The symbol table                     */
+    /* Note that the exclusions are not stored in t_topology */
+    t_symtab symtab; /* The symbol table                     */
 } t_topology;
 
 void init_top(t_topology* top);

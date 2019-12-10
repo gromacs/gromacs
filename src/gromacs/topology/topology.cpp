@@ -71,7 +71,6 @@ void init_top(t_topology* top)
     init_atom(&(top->atoms));
     init_atomtypes(&(top->atomtypes));
     init_block(&top->mols);
-    init_blocka(&top->excls);
     open_symtab(&top->symtab);
 }
 
@@ -111,7 +110,6 @@ void done_top(t_topology* top)
 
     done_symtab(&(top->symtab));
     done_block(&(top->mols));
-    done_blocka(&(top->excls));
 }
 
 void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
@@ -122,7 +120,6 @@ void done_top_mtop(t_topology* top, gmx_mtop_t* mtop)
         {
             done_idef(&top->idef);
             done_atom(&top->atoms);
-            done_blocka(&top->excls);
             done_block(&top->mols);
             done_symtab(&top->symtab);
             open_symtab(&mtop->symtab);
@@ -362,7 +359,6 @@ void pr_top(FILE* fp, int indent, const char* title, const t_topology* top, gmx_
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
         pr_str(fp, indent, "bIntermolecularInteractions",
                gmx::boolToString(top->bIntermolecularInteractions));
-        pr_blocka(fp, indent, "excls", &top->excls, bShowNumbers);
         pr_idef(fp, indent, "idef", &top->idef, bShowNumbers, bShowParameters);
     }
 }
