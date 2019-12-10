@@ -54,32 +54,60 @@ namespace nblib {
 namespace test {
 namespace {
 
+struct ArAtom
+{
+    AtomName name = "Ar";
+    Mass     mass = 1.0;
+    C6       c6   = 1;
+    C12      c12  = 1;
+};
+
+struct OwAtom
+{
+    AtomName name = "Ow";
+    Mass     mass = 16;
+    C6       c6   = 1.;
+    C12      c12  = 1.;
+};
+
+struct HwAtom
+{
+    AtomName name = "Hw";
+    Mass     mass = 1;
+    C6       c6   = 1.;
+    C12      c12  = 1.;
+};
+
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeOrResidueName)
 {
-    AtomType Ar("Ar", 40, 1., 1.);
+    ArAtom   arAtom;
+    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule argon("Ar");
     EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithoutResidueName)
 {
-    AtomType Ar("Ar", 40, 1., 1.);
+    ArAtom   arAtom;
+    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule argon("Ar");
     EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), Charge(0), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeWithResidueName)
 {
-    AtomType Ar("Ar", 40, 1., 1.);
+    ArAtom   arAtom;
+    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule argon("Ar");
     EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Ar));
 }
 
 TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
 {
-    AtomType Ar("Ar", 40, 1., 1.);
+    ArAtom   arAtom;
+    AtomType Ar(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
     Molecule argon("Ar");
-    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"),  ResidueName("ar2"), Charge(0), Ar));
+    EXPECT_NO_THROW(argon.addAtom(AtomName("Ar"), ResidueName("ar2"), Charge(0), Ar));
 }
 
 TEST(NBlibTest, CanGetNumAtomsInMolecule)
@@ -87,15 +115,17 @@ TEST(NBlibTest, CanGetNumAtomsInMolecule)
     //! Manually Create Molecule (Water)
 
     //! 1. Define Atom Type
-    AtomType Ow("Ow", 16, 1., 1.);
-    AtomType Hw("Hw", 1, 1., 1.);
+    OwAtom   owAtom;
+    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
+    HwAtom   hwAtom;
+    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! 2. Define Molecule
     Molecule water("water");
 
-    water.addAtom("Oxygen", Charge(-0.6), Ow);
-    water.addAtom("H1", Charge(+0.3), Hw);
-    water.addAtom("H2", Hw);
+    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
+    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
+    water.addAtom(AtomName("H2"), Hw);
 
     auto numAtoms = water.numAtomsInMolecule();
 
@@ -107,15 +137,17 @@ TEST(NBlibTest, CanConstructExclusionListFromNames)
     //! Manually Create Molecule (Water)
 
     //! 1. Define Atom Type
-    AtomType Ow("Ow", 16, 1., 1.);
-    AtomType Hw("Hw", 1, 1., 1.);
+    OwAtom   owAtom;
+    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
+    HwAtom   hwAtom;
+    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! 2. Define Molecule
     Molecule water("water");
 
-    water.addAtom("Oxygen", Charge(-0.6), Ow);
-    water.addAtom("H1", Charge(+0.3), Hw);
-    water.addAtom("H2", Charge(+0.3), Hw);
+    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
+    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
+    water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
 
     water.addExclusion("H1", "Oxygen");
     water.addExclusion("H1", "H2");
@@ -138,15 +170,17 @@ TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
     //! Manually Create Molecule (Water)
 
     //! 1. Define Atom Type
-    AtomType Ow("Ow", 16, 1., 1.);
-    AtomType Hw("Hw", 1, 1., 1.);
+    OwAtom   owAtom;
+    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
+    HwAtom   hwAtom;
+    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
 
     //! 2. Define Molecule
     Molecule water("water");
 
-    water.addAtom("Oxygen", Charge(-0.6), Ow);
-    water.addAtom("H1", Charge(+0.3), Hw);
-    water.addAtom("H2", Charge(+0.3), Hw);
+    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
+    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
+    water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
 
     water.addExclusion("H1", "Oxygen");
     water.addExclusion("H1", "H2");

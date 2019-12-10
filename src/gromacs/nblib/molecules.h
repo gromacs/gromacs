@@ -59,31 +59,56 @@ class TopologyBuilder;
 namespace nblib
 {
 
-using AtomName = std::string;
-using Charge = real;
+using AtomName    = std::string;
+using Charge      = real;
 using ResidueName = std::string;
 
-class Molecule {
+class Molecule
+{
 public:
+    //! Constructor
     Molecule(std::string moleculeName);
 
-    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, const Charge& charge, AtomType const &atomType);
+    //! Add an atom to the molecule with full specification of parameters
+    Molecule& addAtom(const AtomName&    atomName,
+                      const ResidueName& residueName,
+                      const Charge&      charge,
+                      AtomType const&    atomType);
 
-    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const &atomType);
+    //! Force explicit use of correct types
+    template<typename T, typename U, typename V>
+    Molecule& addAtom(const T& atomName, const U& residueName, const V& charge, AtomType const& atomType) = delete;
 
-    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const &atomType);
+    //! Add an atom to the molecule with implicit charge of 0
+    Molecule& addAtom(const AtomName& atomName, const ResidueName& residueName, AtomType const& atomType);
 
-    Molecule& addAtom(const AtomName& atomName, AtomType const &atomType);
+    //! Add an atom to the molecule with residueName set using atomName
+    Molecule& addAtom(const AtomName& atomName, const Charge& charge, AtomType const& atomType);
+
+    //! Force explicit use of correct types, covers both implicit charge and residueName
+    template<typename T, typename U>
+    Molecule& addAtom(const T& atomName, const U& charge, AtomType const& atomType) = delete;
+
+    //! Add an atom to the molecule with residueName set using atomName with implicit charge of 0
+    Molecule& addAtom(const AtomName& atomName, AtomType const& atomType);
+
+    //! Force explicit use of correct types
+    template<typename T>
+    Molecule& addAtom(const T& atomName, AtomType const& atomType) = delete;
 
     void addHarmonicBond(HarmonicType harmonicBond);
 
     // TODO: add exclusions based on the unique ID given to the atom of the molecule
     void addExclusion(const int atomIndex, const int atomIndexToExclude);
 
-    void addExclusion(std::tuple<std::string, std::string> atom, std::tuple<std::string, std::string> atomToExclude);
+    //! Specify an exclusion with atom and residue names that have been added to molecule
+    void addExclusion(std::tuple<std::string, std::string> atom,
+                      std::tuple<std::string, std::string> atomToExclude);
 
-    void addExclusion(const std::string &atomName, const std::string &atomNameToExclude);
+    //! Specify an exclusion with atoms names that have been added to molecule
+    void addExclusion(const std::string& atomName, const std::string& atomNameToExclude);
 
+    //! The number of molecules
     int numAtomsInMolecule() const;
 
     //! convert exclusions given by name to indices and unify with exclusions given by indices
@@ -93,13 +118,15 @@ public:
     friend class TopologyBuilder;
 
 private:
+    //! Name of the molecule
     std::string name_;
 
-    struct AtomData {
+    struct AtomData
+    {
         std::string atomName_;
         std::string residueName_;
         std::string atomTypeName_;
-        real charge_;
+        real        charge_;
     };
 
     //! one entry per atom in molecule
@@ -108,6 +135,7 @@ private:
     //! collection of distinct Atoms in molecule
     std::unordered_map<std::string, AtomType> atomTypes_;
 
+    //! Used for calculated exclusions based on atom indices in molecule
     std::vector<std::tuple<int, int>> exclusions_;
 
     //! we cannot efficiently compute indices during the build-phase
