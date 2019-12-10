@@ -43,15 +43,19 @@ stages:
   - source-check
   # Linting, docs, static analysis, coverage, code analysis...
   - post-test
+  # Release work for packaging code and verifying webpage
+  - release
 
 .build-gcc:
     extends:
         - .build-extends-template
+        - .gcc-before-script-template
         - .build-gcc-template
 
 .test-gcc:
     extends:
         - .test-extends-template
+        - .gcc-before-script-template
         - .test-gcc-template
 
 .build-gcc-mpi:
@@ -71,10 +75,17 @@ stages:
         - .clang-before-script-template
         - .test-clang-template
 
-.build-docs:
+.build-docs-binary:
     extends:
         - .build-extends-template
-        - .build-docs-template
+        - .build-docs-binary-template
+        - .clang-before-script-template
+        - .build-clang-template
+
+.build-docs-webpage:
+    extends:
+        - .build-extends-template
+        - .build-docs-webpage-template
         - .clang-before-script-template
         - .build-clang-template
 
@@ -117,7 +128,6 @@ build-gcc-7-double:
         CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
 
 test-gcc-7-double:
-    allow_failure: true
     extends: .test-gcc
 
     variables:
@@ -184,6 +194,22 @@ test-clang-7:
         - build-clang-7
         - prepare-regressiontests
 
+build-clang-8:
+    extends: .build-clang
+
+    variables:
+        COMPILER_MAJOR_VERSION: 8
+
+test-clang-8:
+    extends: .test-clang
+
+    variables:
+        COMPILER_MAJOR_VERSION: 8
+
+    dependencies: 
+        - build-clang-8
+        - prepare-regressiontests
+
 # For version of clang before 7, we need to always provide the full version
 # Use something like this instead in the download script:
 # APT_COMPILER_VERSION=$(($COMPILER_MAJOR_VERSION < 7 ? "${COMPILER_MAJOR_VERSION}.0" : $COMPILER_MAJOR_VERSION))
@@ -204,36 +230,82 @@ test-clang-6:
         - prepare-regressiontests
 
 # TODO turn on openmp when updating master head
-# TODO needs to be set to not allow failure
 build-clang-tidy:
-  allow_failure: true
   extends: .build-clang
   stage: source-check
-  dependencies: []
+  needs:
+    - job: prepare-regressiontests
   variables:
     BUILD_DIR: build-clang-tidy
     COMPILER_MAJOR_VERSION: 7
-    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DCMAKE_BUILD_TYPE=Reference -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_OPENMP=off
+    CMAKE_BUILD_TYPE_OPTIONS: -DCMAKE_BUILD_TYPE=Debug
+    CMAKE_EXTRA_OPTIONS: -DCLANG_TIDY=clang-tidy-$COMPILER_MAJOR_VERSION -DGMX_CLANG_TIDY=ON -DGMX_COMPILER_WARNINGS=ON -DGMX_OPENMP=off
+
+run-clang-format:
+  extends: .build-clang
+  stage: source-check
+  when: always
+  needs:
+    - job: prepare-regressiontests
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+  script:
+    - export CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION
+    - admin/clang-format.sh check --rev=HEAD^ --warnings=clang-format.log
+    - grep -iq "needs formatting" clang-format.log | tee formatting.txt || true
+    - if [ -s formatting.txt ] ; then echo "clang-format.sh found issues"; exit 1; fi
+  artifacts:
+    when: on_failure
+    paths:
+      - clang-format.log
+      - formatting.txt
+
+update-with-clang-format:
+  extends: .build-clang
+  stage: source-check
+  when: manual
+  allow_failure: true
+  dependencies: []
+  variables:
+      COMPILER_MAJOR_VERSION: 7
+  script:
+    - export CLANG_FORMAT=clang-format-$COMPILER_MAJOR_VERSION
+    - admin/clang-format.sh update --rev=HEAD^ --warnings=clang-format.log
+    - grep -iq "clang-format performed" clang-format.log | tee formatting.txt || true
+    - if [ -s formatting.txt ] ; then echo "clang-format.sh updated files"; exit 1; fi
+  artifacts:
+    when: always
+    paths:
+      - clang-format.log
+      - formatting.txt
 
 build-docs:
-  extends: .build-docs
+  when: always
+  extends: .build-docs-binary
   stage: documentation
+  needs:
+    - job: prepare-regressiontests
   variables:
     BUILD_DIR: build-docs
     COMPILER_MAJOR_VERSION: 7
-    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DCMAKE_BUILD_TYPE=Debug -DGMX_SIMD=None -DGMX_GPU=off
+    CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on -DGMX_SIMD=None -DGMX_GPU=off
 
 run-check-source:
-  extends: .build-docs
+  when: always
+  extends: .build-docs-binary
   stage: source-check
-  dependencies:
-    - build-docs
+  needs:
+    - job: build-docs
+      artifacts: true
   variables:
     BUILD_DIR: build-docs
     COMPILER_MAJOR_VERSION: 7
   script:
     - cd $BUILD_DIR
     - cmake --build . --target check-source
+    - grep -qi "error" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee doxygenError.txt || true
+    - grep -qi "warning" docs/doxygen/doxygen*log docs/doxygen/check-source.log | tee -a doxygenError.txt || true
+    - if [ -s doxygenError.txt ] ; then echo "Found errors while running doxygen"; exit 1; fi
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG
     when: always
@@ -251,11 +323,14 @@ run-check-source:
 # TODO why are the doxygen and sphinx log files disappearing
 # TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
 webpage:
-  extends: .build-docs
+  extends: .build-docs-webpage
+  when: always
   stage: post-test
-  dependencies:
-    - build-docs
-    - run-check-source
+  needs:
+    - job: build-docs
+      artifacts: true
+    - job: run-check-source
+      artifacts: true
   variables:
     BUILD_DIR: build-docs
     COMPILER_MAJOR_VERSION: 7
@@ -263,6 +338,10 @@ webpage:
     - cd $BUILD_DIR
     - set -o pipefail && cmake --build . --target manual 2>&1 > docs/manual/all-output.txt | ts "%Y/%m/%d %H:%M:%S"
     - set -o pipefail && cmake --build . --target webpage | ts "%Y/%m/%d %H:%M:%S"
+    - grep -qi "error" docs/sphinx-*.log | tee sphinxDiagnostics.txt || true
+    - grep -qi "warning" docs/sphinx-*.log | tee -a sphinxDiagnostics.txt || true
+    - if [ -s sphinxDiagnostics.txt ] ; then echo "Found errors during Sphinx documentation build"; cat sphinxDiagnostics.txt; exit 1; fi
+    - cd ..
   artifacts:
     name: docs-artifacts-$CI_COMMIT_REF_SLUG
     when: always
@@ -276,19 +355,19 @@ webpage:
       - $BUILD_DIR/docs/doxygen/doxygen-full.log
       - $BUILD_DIR/docs/sphinx-html.log
 
-# TODO do this only in release pipeline
-#linkchecker:
-#    extends: .build-docs
-#    stage: post-test
-#    when: manual
-#    dependencies:
-#        - webpage
-#    variables:
-#        BUILD_DIR: build-docs
-#    script:
-#        - cd $BUILD_DIR
-#        - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml
-#  artifacts:
-#    reports:
-#      junit: $BUILD_DIR/docs/linkchecker-out.xml
+linkchecker:
+  extends: .build-docs-webpage
+  stage: release
+  when: manual
+  needs:
+    - job: webpage
+      artifacts: true
+  variables:
+      BUILD_DIR: build-docs
+  script:
+      - cd $BUILD_DIR
+      - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
+  artifacts:
+    reports:
+      junit: $BUILD_DIR/linkchecker-out.xml
 

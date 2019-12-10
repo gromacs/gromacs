@@ -1,0 +1,16 @@
+.gcc-before-script-template:
+  variables:
+    COMPILER_MAJOR_VERSION: 7
+    EXTRA_INSTALLS: ""
+
+  before_script:
+      - time apt-get -qq update
+      - time apt-get -qqy --no-install-suggests --no-install-recommends install
+          build-essential cmake git ninja-build ccache
+          gcc-$COMPILER_MAJOR_VERSION g++-$COMPILER_MAJOR_VERSION
+          libfftw3-dev libhwloc-dev liblapack-dev moreutils grep
+          $EXTRA_INSTALLS
+      - mkdir -p ccache
+      - export CCACHE_BASEDIR=${PWD}
+      - export CCACHE_DIR=${PWD}/ccache
+

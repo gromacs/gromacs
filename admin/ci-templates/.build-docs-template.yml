@@ -1,4 +1,4 @@
-.build-docs-template:
+.build-docs-binary-template:
   # Built by admin/dockerfiles/ci-docs
   # TODO this should be organized more like the current documentation.py script
   image: gromacs/gromacs:ci-docs
@@ -6,6 +6,7 @@
     KUBERNETES_CPU_REQUEST: 4
     CMAKE_COMPILER_SCRIPT: ""
     CMAKE_EXTRA_OPTIONS: ""
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
 
   script:
     - echo $BUILD_DIR
@@ -16,6 +17,7 @@
     - cmake ..
         $CMAKE_COMPILER_SCRIPT
         $CMAKE_EXTRA_OPTIONS
+        $CMAKE_BUILD_TYPE_OPTIONS
     - cmake --build . --target gmx -- -j$KUBERNETES_CPU_REQUEST
     - cd ..
   artifacts:
@@ -24,3 +26,13 @@
     expire_in: 1 week
     paths:
       - $BUILD_DIR
+
+.build-docs-webpage-template:
+  # Built by admin/dockerfiles/ci-docs
+  # TODO this should be organized more like the current documentation.py script
+  image: gromacs/gromacs:ci-docs
+  variables:
+    KUBERNETES_CPU_REQUEST: 4
+    CMAKE_COMPILER_SCRIPT: ""
+    CMAKE_EXTRA_OPTIONS: ""
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"

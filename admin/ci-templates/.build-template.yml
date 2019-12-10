@@ -9,6 +9,8 @@
     CMAKE_SIMD_OPTIONS: ""
     CMAKE_MPI_OPTIONS: ""
     CMAKE_PRECISION_OPTIONS: ""
+    CMAKE_BUILD_TYPE_OPTIONS: "-DCMAKE_BUILD_TYPE=Debug"
+    CMAKE_GPU_OPTIONS: "-DGMX_GPU=OFF"
 
   script:
     - echo $BUILD_DIR
@@ -17,6 +19,7 @@
     - echo $CMAKE_SIMD_OPTIONS
     - echo $CMAKE_MPI_OPTIONS
     - echo $CMAKE_PRECISION_OPTIONS
+    - echo $CMAKE_BUILD_TYPE_OPTIONS
     - echo $INSTALL_DIR
     - mkdir -p $BUILD_DIR
     - cd $BUILD_DIR
@@ -27,14 +30,24 @@
         $CMAKE_SIMD_OPTIONS
         $CMAKE_MPI_OPTIONS
         $CMAKE_PRECISION_OPTIONS
+        $CMAKE_BUILD_TYPE_OPTIONS
+        $CMAKE_GPU_OPTIONS
         -DCMAKE_INSTALL_PREFIX=../$INSTALL_DIR -DGMX_COMPILER_WARNINGS=ON
-    - cmake --build . -- -j4
-    - cmake --build . --target tests -- -j4
-    - cmake --build . --target install
+        2>&1 | tee cmakeLog.log
+    - grep -qi "warning" cmakeLog.log | tee cmakeErrors.log || true
+    - cmake --build . -- -j4 2>&1 | tee buildLogFile.log
+    - grep -qi "warning" buildLogFile.log | tee buildErrors.log || true
+    - cmake --build . --target tests -- -j4 2>&1 | tee testBuildLogFile.log
+    - grep -qi "warning" testBuildLogFile.log | tee -a buildErrors.log || true
+    - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
+    - if [ -s cmakeErrors.log  ] ; then echo "Found CMake warning while processing build"; exit 1; fi
+    - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; exit 1; fi
     - cd ..
     - tar czf gmx-build.tar.gz $BUILD_DIR/
     - tar czf gmx-install.tar.gz $INSTALL_DIR/
   artifacts:
+    when: always
     paths:
       - gmx-build.tar.gz
       - gmx-install.tar.gz
+      - $BUILD_DIR/*log
