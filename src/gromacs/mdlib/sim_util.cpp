@@ -1054,12 +1054,14 @@ void do_force(FILE*                               fplog,
     const bool haveHostPmePpComms =
             !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
     const bool haveHostHaloExchangeComms = havePPDomainDecomposition(cr) && !ddUsesGpuDirectCommunication;
+
+    bool gmx_used_in_debug haveCopiedXFromGpu = false;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
         && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
             || haveHostPmePpComms || haveHostHaloExchangeComms))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
-        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        haveCopiedXFromGpu = true;
     }
 
     const auto localXReadyOnDevice = (stateGpu != nullptr)
@@ -1078,6 +1080,16 @@ void do_force(FILE*                               fplog,
         bool reinitGpuPmePpComms = simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
         bool sendCoordinatesFromGpu =
                 simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
+
+        if (simulationWork.useGpuUpdate && !sendCoordinatesFromGpu)
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "GPU update and separate PME ranks are only supported with GPU "
+                               "direct communication!");
+            // TODO: when this code-path becomes supported add:
+            // stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
                                  lambda[efptVDW], (stepWork.computeVirial || stepWork.computeEnergy),
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
@@ -1197,6 +1209,13 @@ void do_force(FILE*                               fplog,
         }
         else
         {
+            if (simulationWork.useGpuUpdate)
+            {
+                GMX_ASSERT(stateGpu, "need a valid stateGpu object");
+                GMX_ASSERT(haveCopiedXFromGpu,
+                           "a wait should only be triggered if copy has been scheduled");
+                stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            }
             nbv->convertCoordinates(AtomLocality::Local, false, x.unpaddedArrayRef());
         }
     }
@@ -1279,6 +1298,10 @@ void do_force(FILE*                               fplog,
             }
             else
             {
+                // Note: GPU update + DD without direct communication is not supported,
+                // a waitCoordinatesReadyOnHost() should be issued if it will be.
+                GMX_ASSERT(!simulationWork.useGpuUpdate,
+                           "GPU update is not supported with halo exchange");
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
 
@@ -1389,6 +1412,14 @@ void do_force(FILE*                               fplog,
     {
         wallcycle_start(wcycle, ewcPPDURINGPME);
         dd_force_flop_start(cr->dd, nrnb);
+    }
+
+    // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
+    // this wait ensures that the D2H transfer is complete.
+    if ((simulationWork.useGpuUpdate)
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial))
+    {
+        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
     }
 
     if (inputrec->bRot)
