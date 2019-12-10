@@ -53,7 +53,6 @@
 
 struct gmx_mtop_t;
 struct gmx_multisim_t;
-struct t_blocka;
 struct t_commrec;
 struct t_idef;
 struct t_inputrec;
@@ -65,9 +64,10 @@ namespace gmx
 {
 
 enum class ConstraintVariable : int;
-
-/* Abstract type for LINCS that is defined only in the file that uses it */
 class Lincs;
+template<typename>
+class ListOfLists;
+
 
 /*! \brief Return the data for determining constraint RMS relative deviations. */
 ArrayRef<real> lincs_rmsdData(Lincs* lincsd);
@@ -76,13 +76,13 @@ ArrayRef<real> lincs_rmsdData(Lincs* lincsd);
 real lincs_rmsd(const Lincs* lincsd);
 
 /*! \brief Initializes and returns the lincs data struct. */
-Lincs* init_lincs(FILE*                    fplog,
-                  const gmx_mtop_t&        mtop,
-                  int                      nflexcon_global,
-                  ArrayRef<const t_blocka> at2con,
-                  bool                     bPLINCS,
-                  int                      nIter,
-                  int                      nProjOrder);
+Lincs* init_lincs(FILE*                            fplog,
+                  const gmx_mtop_t&                mtop,
+                  int                              nflexcon_global,
+                  ArrayRef<const ListOfLists<int>> atomsToConstraintsPerMolType,
+                  bool                             bPLINCS,
+                  int                              nIter,
+                  int                              nProjOrder);
 
 /*! \brief Destructs the lincs object when it is not nullptr. */
 void done_lincs(Lincs* li);

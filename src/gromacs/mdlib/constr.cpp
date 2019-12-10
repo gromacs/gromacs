@@ -72,7 +72,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
@@ -80,6 +79,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
@@ -132,7 +132,7 @@ public:
     //! The number of flexible constraints.
     int nflexcon = 0;
     //! A list of atoms to constraints for each moleculetype.
-    std::vector<t_blocka> at2con_mt;
+    std::vector<ListOfLists<int>> at2con_mt;
     //! A list of atoms to settles for each moleculetype
     std::vector<std::vector<int>> at2settle_mt;
     //! LINCS data.
@@ -743,14 +743,17 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
  * \param[in]  numAtoms  The number of atoms to construct the list for
  * \param[in]  ilists    The interaction lists, size F_NRE
  * \param[in]  iparams   Interaction parameters, can be null when
- * flexibleConstraintTreatment=Include \param[in]  flexibleConstraintTreatment  The flexible
- * constraint treatment, see enum above \returns a block struct with all constraints for each atom
+ *                       \p flexibleConstraintTreatment==Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment,
+ *                                          see enum above
+ *
+ * \returns a block struct with all constraints for each atom
  */
 template<typename T>
-static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
-                                           const T*                    ilists,
-                                           const t_iparams*            iparams,
-                                           FlexibleConstraintTreatment flexibleConstraintTreatment)
+static ListOfLists<int> makeAtomsToConstraintsList(int                         numAtoms,
+                                                   const T*                    ilists,
+                                                   const t_iparams*            iparams,
+                                                   FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || iparams != nullptr,
                "With flexible constraint detection we need valid iparams");
@@ -775,19 +778,13 @@ static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
         }
     }
 
-    t_blocka at2con;
-    at2con.nr           = numAtoms;
-    at2con.nalloc_index = at2con.nr + 1;
-    snew(at2con.index, at2con.nalloc_index);
-    at2con.index[0] = 0;
+    std::vector<int> listRanges(numAtoms + 1);
     for (int a = 0; a < numAtoms; a++)
     {
-        at2con.index[a + 1] = at2con.index[a] + count[a];
-        count[a]            = 0;
+        listRanges[a + 1] = listRanges[a] + count[a];
+        count[a]          = 0;
     }
-    at2con.nra      = at2con.index[at2con.nr];
-    at2con.nalloc_a = at2con.nra;
-    snew(at2con.a, at2con.nalloc_a);
+    std::vector<int> elements(listRanges[numAtoms]);
 
     /* The F_CONSTRNC constraints have constraint numbers
      * that continue after the last F_CONSTR constraint.
@@ -804,28 +801,28 @@ static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
             {
                 for (int j = 1; j < 3; j++)
                 {
-                    int a                                  = ilist.iatoms[i + j];
-                    at2con.a[at2con.index[a] + count[a]++] = numConstraints;
+                    const int a                          = ilist.iatoms[i + j];
+                    elements[listRanges[a] + count[a]++] = numConstraints;
                 }
             }
             numConstraints++;
         }
     }
 
-    return at2con;
+    return ListOfLists<int>(std::move(listRanges), std::move(elements));
 }
 
-t_blocka make_at2con(int                         numAtoms,
-                     const t_ilist*              ilist,
-                     const t_iparams*            iparams,
-                     FlexibleConstraintTreatment flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(int                         numAtoms,
+                             const t_ilist*              ilist,
+                             const t_iparams*            iparams,
+                             FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(numAtoms, ilist, iparams, flexibleConstraintTreatment);
 }
 
-t_blocka make_at2con(const gmx_moltype_t&           moltype,
-                     gmx::ArrayRef<const t_iparams> iparams,
-                     FlexibleConstraintTreatment    flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
+                             gmx::ArrayRef<const t_iparams> iparams,
+                             FlexibleConstraintTreatment    flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.data(), iparams.data(),
                                       flexibleConstraintTreatment);
@@ -924,10 +921,10 @@ void Constraints::setConstraints(const gmx_localtop_t& top, const t_mdatoms& md)
  * indices to constraint indices.
  *
  * Note that flexible constraints are only enabled with a dynamical integrator. */
-static std::vector<t_blocka> makeAtomToConstraintMappings(const gmx_mtop_t& mtop,
-                                                          FlexibleConstraintTreatment flexibleConstraintTreatment)
+static std::vector<ListOfLists<int>> makeAtomToConstraintMappings(const gmx_mtop_t& mtop,
+                                                                  FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
-    std::vector<t_blocka> mapping;
+    std::vector<ListOfLists<int>> mapping;
     mapping.reserve(mtop.moltype.size());
     for (const gmx_moltype_t& moltype : mtop.moltype)
     {
@@ -1094,10 +1091,6 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
 
 Constraints::Impl::~Impl()
 {
-    for (auto blocka : at2con_mt)
-    {
-        done_blocka(&blocka);
-    }
     if (bSettleErrorHasOccurred != nullptr)
     {
         sfree(bSettleErrorHasOccurred);
@@ -1118,7 +1111,7 @@ void Constraints::saveEdsamPointer(gmx_edsam* ed)
     impl_->ed = ed;
 }
 
-ArrayRef<const t_blocka> Constraints::atom2constraints_moltype() const
+ArrayRef<const ListOfLists<int>> Constraints::atom2constraints_moltype() const
 {
     return impl_->at2con_mt;
 }

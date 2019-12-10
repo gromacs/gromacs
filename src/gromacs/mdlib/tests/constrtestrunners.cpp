@@ -67,10 +67,10 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
 
 #include "testutils/testasserts.h"
@@ -115,7 +115,7 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     gmx_omp_nthreads_set(emntLINCS, 1);
 
     // Make blocka structure for faster LINCS setup
-    std::vector<t_blocka> at2con_mt;
+    std::vector<ListOfLists<int>> at2con_mt;
     at2con_mt.reserve(testData->mtop_.moltype.size());
     for (const gmx_moltype_t& moltype : testData->mtop_.moltype)
     {
@@ -138,11 +138,6 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
             &testData->nrnb_, maxwarn, &warncount_lincs);
     EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
     EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
-    for (auto& moltype : at2con_mt)
-    {
-        sfree(moltype.index);
-        sfree(moltype.a);
-    }
     done_lincs(lincsd);
 }
 

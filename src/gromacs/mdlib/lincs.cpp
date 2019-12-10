@@ -73,7 +73,6 @@
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/simd_math.h"
 #include "gromacs/simd/vector_operations.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
@@ -83,6 +82,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
 
 using namespace gmx; // TODO: Remove when this file is moved into gmx namespace
@@ -1342,33 +1342,29 @@ static void set_lincs_matrix(Lincs* li, real* invmass, real lambda)
 }
 
 //! Finds all triangles of atoms that share constraints to a central atom.
-static int count_triangle_constraints(const InteractionLists& ilist, const t_blocka& at2con)
+static int count_triangle_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
 {
-    int ncon1, ncon_tot;
-    int c0, n1, c1, ac1, n2, c2;
-    int ncon_triangle;
-
-    ncon1    = ilist[F_CONSTR].size() / 3;
-    ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
+    const int ncon1    = ilist[F_CONSTR].size() / 3;
+    const int ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
 
     gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
     gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
 
-    ncon_triangle = 0;
-    for (c0 = 0; c0 < ncon_tot; c0++)
+    int ncon_triangle = 0;
+    for (int c0 = 0; c0 < ncon_tot; c0++)
     {
         bool       bTriangle = FALSE;
         const int* iap       = constr_iatomptr(ia1, ia2, c0);
         const int  a00       = iap[1];
         const int  a01       = iap[2];
-        for (n1 = at2con.index[a01]; n1 < at2con.index[a01 + 1]; n1++)
+        for (const int c1 : at2con[a01])
         {
-            c1 = at2con.a[n1];
             if (c1 != c0)
             {
                 const int* iap = constr_iatomptr(ia1, ia2, c1);
                 const int  a10 = iap[1];
                 const int  a11 = iap[2];
+                int        ac1;
                 if (a10 == a01)
                 {
                     ac1 = a11;
@@ -1377,9 +1373,8 @@ static int count_triangle_constraints(const InteractionLists& ilist, const t_blo
                 {
                     ac1 = a10;
                 }
-                for (n2 = at2con.index[ac1]; n2 < at2con.index[ac1 + 1]; n2++)
+                for (const int c2 : at2con[ac1])
                 {
-                    c2 = at2con.a[n2];
                     if (c2 != c0 && c2 != c1)
                     {
                         const int* iap = constr_iatomptr(ia1, ia2, c2);
@@ -1403,40 +1398,36 @@ static int count_triangle_constraints(const InteractionLists& ilist, const t_blo
 }
 
 //! Finds sequences of sequential constraints.
-static bool more_than_two_sequential_constraints(const InteractionLists& ilist, const t_blocka& at2con)
+static bool more_than_two_sequential_constraints(const InteractionLists& ilist, const ListOfLists<int>& at2con)
 {
-    int  ncon1, ncon_tot, c;
-    bool bMoreThanTwoSequentialConstraints;
-
-    ncon1    = ilist[F_CONSTR].size() / 3;
-    ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
+    const int ncon1    = ilist[F_CONSTR].size() / 3;
+    const int ncon_tot = ncon1 + ilist[F_CONSTRNC].size() / 3;
 
     gmx::ArrayRef<const int> ia1 = ilist[F_CONSTR].iatoms;
     gmx::ArrayRef<const int> ia2 = ilist[F_CONSTRNC].iatoms;
 
-    bMoreThanTwoSequentialConstraints = FALSE;
-    for (c = 0; c < ncon_tot && !bMoreThanTwoSequentialConstraints; c++)
+    for (int c = 0; c < ncon_tot; c++)
     {
         const int* iap = constr_iatomptr(ia1, ia2, c);
         const int  a1  = iap[1];
         const int  a2  = iap[2];
         /* Check if this constraint has constraints connected at both atoms */
-        if (at2con.index[a1 + 1] - at2con.index[a1] > 1 && at2con.index[a2 + 1] - at2con.index[a2] > 1)
+        if (at2con[a1].ssize() > 1 && at2con[a2].ssize() > 1)
         {
-            bMoreThanTwoSequentialConstraints = TRUE;
+            return true;
         }
     }
 
-    return bMoreThanTwoSequentialConstraints;
+    return false;
 }
 
-Lincs* init_lincs(FILE*                    fplog,
-                  const gmx_mtop_t&        mtop,
-                  int                      nflexcon_global,
-                  ArrayRef<const t_blocka> at2con,
-                  bool                     bPLINCS,
-                  int                      nIter,
-                  int                      nProjOrder)
+Lincs* init_lincs(FILE*                            fplog,
+                  const gmx_mtop_t&                mtop,
+                  int                              nflexcon_global,
+                  ArrayRef<const ListOfLists<int>> atomToConstraintsPerMolType,
+                  bool                             bPLINCS,
+                  int                              nIter,
+                  int                              nProjOrder)
 {
     // TODO this should become a unique_ptr
     Lincs* li;
@@ -1458,9 +1449,10 @@ Lincs* init_lincs(FILE*                    fplog,
     li->max_connect = 0;
     for (size_t mt = 0; mt < mtop.moltype.size(); mt++)
     {
+        const auto& at2con = atomToConstraintsPerMolType[mt];
         for (int a = 0; a < mtop.moltype[mt].atoms.nr; a++)
         {
-            li->max_connect = std::max(li->max_connect, at2con[mt].index[a + 1] - at2con[mt].index[a]);
+            li->max_connect = std::max(li->max_connect, int(at2con[a].ssize()));
         }
     }
 
@@ -1468,11 +1460,12 @@ Lincs* init_lincs(FILE*                    fplog,
     bMoreThanTwoSeq  = FALSE;
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
-        const gmx_moltype_t& molt = mtop.moltype[molb.type];
+        const gmx_moltype_t& molt   = mtop.moltype[molb.type];
+        const auto&          at2con = atomToConstraintsPerMolType[molb.type];
 
-        li->ncg_triangle += molb.nmol * count_triangle_constraints(molt.ilist, at2con[molb.type]);
+        li->ncg_triangle += molb.nmol * count_triangle_constraints(molt.ilist, at2con);
 
-        if (!bMoreThanTwoSeq && more_than_two_sequential_constraints(molt.ilist, at2con[molb.type]))
+        if (!bMoreThanTwoSeq && more_than_two_sequential_constraints(molt.ilist, at2con))
         {
             bMoreThanTwoSeq = TRUE;
         }
@@ -1645,7 +1638,13 @@ static void lincs_thread_setup(Lincs* li, int natoms)
 }
 
 //! Assign a constraint.
-static void assign_constraint(Lincs* li, int constraint_index, int a1, int a2, real lenA, real lenB, const t_blocka* at2con)
+static void assign_constraint(Lincs*                  li,
+                              int                     constraint_index,
+                              int                     a1,
+                              int                     a2,
+                              real                    lenA,
+                              real                    lenB,
+                              const ListOfLists<int>& at2con)
 {
     int con;
 
@@ -1664,8 +1663,7 @@ static void assign_constraint(Lincs* li, int constraint_index, int a1, int a2, r
     /* Make space in the constraint connection matrix for constraints
      * connected to both end of the current constraint.
      */
-    li->ncc += at2con->index[a1 + 1] - at2con->index[a1] - 1 + at2con->index[a2 + 1]
-               - at2con->index[a2] - 1;
+    li->ncc += at2con[a1].ssize() - 1 + at2con[a2].ssize() - 1;
 
     li->blnr[con + 1] = li->ncc;
 
@@ -1675,13 +1673,13 @@ static void assign_constraint(Lincs* li, int constraint_index, int a1, int a2, r
 
 /*! \brief Check if constraint with topology index constraint_index is connected
  * to other constraints, and if so add those connected constraints to our task. */
-static void check_assign_connected(Lincs*          li,
-                                   const t_iatom*  iatom,
-                                   const t_idef&   idef,
-                                   bool            bDynamics,
-                                   int             a1,
-                                   int             a2,
-                                   const t_blocka* at2con)
+static void check_assign_connected(Lincs*                  li,
+                                   const t_iatom*          iatom,
+                                   const t_idef&           idef,
+                                   bool                    bDynamics,
+                                   int                     a1,
+                                   int                     a2,
+                                   const ListOfLists<int>& at2con)
 {
     /* Currently this function only supports constraint groups
      * in which all constraints share at least one atom
@@ -1690,28 +1688,18 @@ static void check_assign_connected(Lincs*          li,
      * connected constraints. We need to assign those
      * to the same task.
      */
-    int end;
-
-    for (end = 0; end < 2; end++)
+    for (int end = 0; end < 2; end++)
     {
-        int a, k;
+        const int a = (end == 0 ? a1 : a2);
 
-        a = (end == 0 ? a1 : a2);
-
-        for (k = at2con->index[a]; k < at2con->index[a + 1]; k++)
+        for (const int cc : at2con[a])
         {
-            int cc;
-
-            cc = at2con->a[k];
             /* Check if constraint cc has not yet been assigned */
             if (li->con_index[cc] == -1)
             {
-                int  type;
-                real lenA, lenB;
-
-                type = iatom[cc * 3];
-                lenA = idef.iparams[type].constr.dA;
-                lenB = idef.iparams[type].constr.dB;
+                const int  type = iatom[cc * 3];
+                const real lenA = idef.iparams[type].constr.dA;
+                const real lenB = idef.iparams[type].constr.dB;
 
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {
@@ -1725,24 +1713,21 @@ static void check_assign_connected(Lincs*          li,
 /*! \brief Check if constraint with topology index constraint_index is involved
  * in a constraint triangle, and if so add the other two constraints
  * in the triangle to our task. */
-static void check_assign_triangle(Lincs*          li,
-                                  const t_iatom*  iatom,
-                                  const t_idef&   idef,
-                                  bool            bDynamics,
-                                  int             constraint_index,
-                                  int             a1,
-                                  int             a2,
-                                  const t_blocka* at2con)
+static void check_assign_triangle(Lincs*                  li,
+                                  const t_iatom*          iatom,
+                                  const t_idef&           idef,
+                                  bool                    bDynamics,
+                                  int                     constraint_index,
+                                  int                     a1,
+                                  int                     a2,
+                                  const ListOfLists<int>& at2con)
 {
-    int nca, cc[32], ca[32], k;
+    int nca, cc[32], ca[32];
     int c_triangle[2] = { -1, -1 };
 
     nca = 0;
-    for (k = at2con->index[a1]; k < at2con->index[a1 + 1]; k++)
+    for (const int c : at2con[a1])
     {
-        int c;
-
-        c = at2con->a[k];
         if (c != constraint_index)
         {
             int aa1, aa2;
@@ -1764,11 +1749,8 @@ static void check_assign_triangle(Lincs*          li,
         }
     }
 
-    for (k = at2con->index[a2]; k < at2con->index[a2 + 1]; k++)
+    for (const int c : at2con[a2])
     {
-        int c;
-
-        c = at2con->a[k];
         if (c != constraint_index)
         {
             int aa1, aa2, i;
@@ -1827,7 +1809,7 @@ static void check_assign_triangle(Lincs*          li,
 }
 
 //! Sets matrix indices.
-static void set_matrix_indices(Lincs* li, const Task& li_task, const t_blocka* at2con, bool bSortMatrix)
+static void set_matrix_indices(Lincs* li, const Task& li_task, const ListOfLists<int>& at2con, bool bSortMatrix)
 {
     for (int b = li_task.b0; b < li_task.b1; b++)
     {
@@ -1835,17 +1817,17 @@ static void set_matrix_indices(Lincs* li, const Task& li_task, const t_blocka* a
         const int a2 = li->atoms[b].index2;
 
         int i = li->blnr[b];
-        for (int k = at2con->index[a1]; k < at2con->index[a1 + 1]; k++)
+        for (const int constraint : at2con[a1])
         {
-            int concon = li->con_index[at2con->a[k]];
+            const int concon = li->con_index[constraint];
             if (concon != b)
             {
                 li->blbnb[i++] = concon;
             }
         }
-        for (int k = at2con->index[a2]; k < at2con->index[a2 + 1]; k++)
+        for (const int constraint : at2con[a2])
         {
-            int concon = li->con_index[at2con->a[k]];
+            const int concon = li->con_index[constraint];
             if (concon != b)
             {
                 li->blbnb[i++] = concon;
@@ -1863,7 +1845,6 @@ static void set_matrix_indices(Lincs* li, const Task& li_task, const t_blocka* a
 void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_commrec* cr, Lincs* li)
 {
     int      natoms;
-    t_blocka at2con;
     t_iatom* iatom;
 
     li->nc_real = 0;
@@ -1915,7 +1896,8 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
         natoms = md.homenr;
     }
 
-    at2con = make_at2con(natoms, idef.il, idef.iparams, flexibleConstraintTreatment(bDynamics));
+    const ListOfLists<int> at2con =
+            make_at2con(natoms, idef.il, idef.iparams, flexibleConstraintTreatment(bDynamics));
 
     const int ncon_tot = idef.il[F_CONSTR].nr / 3;
 
@@ -2018,21 +2000,21 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
                 /* Skip the flexible constraints when not doing dynamics */
                 if (bDynamics || lenA != 0 || lenB != 0)
                 {
-                    assign_constraint(li, con, a1, a2, lenA, lenB, &at2con);
+                    assign_constraint(li, con, a1, a2, lenA, lenB, at2con);
 
                     if (li->ntask > 1 && !li->bTaskDep)
                     {
                         /* We can generate independent tasks. Check if we
                          * need to assign connected constraints to our task.
                          */
-                        check_assign_connected(li, iatom, idef, bDynamics, a1, a2, &at2con);
+                        check_assign_connected(li, iatom, idef, bDynamics, a1, a2, at2con);
                     }
                     if (li->ntask > 1 && li->ncg_triangle > 0)
                     {
                         /* Ensure constraints in one triangle are assigned
                          * to the same task.
                          */
-                        check_assign_triangle(li, iatom, idef, bDynamics, con, a1, a2, &at2con);
+                        check_assign_triangle(li, iatom, idef, bDynamics, con, a1, a2, at2con);
                     }
                 }
             }
@@ -2096,12 +2078,10 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
                 li_task.tri_bits.resize(li_task.b1 - li_task.b0);
             }
 
-            set_matrix_indices(li, li_task, &at2con, bSortMatrix);
+            set_matrix_indices(li, li_task, at2con, bSortMatrix);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-
-    done_blocka(&at2con);
 
     if (cr->dd == nullptr)
     {

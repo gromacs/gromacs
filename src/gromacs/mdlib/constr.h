@@ -63,7 +63,6 @@ struct gmx_mtop_t;
 struct gmx_multisim_t;
 struct gmx_wallcycle;
 struct pull_t;
-struct t_blocka;
 struct t_commrec;
 struct t_ilist;
 struct t_inputrec;
@@ -76,6 +75,8 @@ namespace gmx
 {
 template<typename T>
 class ArrayRefWithPadding;
+template<typename>
+class ListOfLists;
 
 //! Describes supported flavours of constrained updates.
 enum class ConstraintVariable : int
@@ -183,7 +184,7 @@ public:
     //! Links the essentialdynamics and constraint code.
     void saveEdsamPointer(gmx_edsam* ed);
     //! Getter for use by domain decomposition.
-    ArrayRef<const t_blocka> atom2constraints_moltype() const;
+    ArrayRef<const ListOfLists<int>> atom2constraints_moltype() const;
     //! Getter for use by domain decomposition.
     ArrayRef<const std::vector<int>> atom2settle_moltype() const;
 
@@ -234,40 +235,43 @@ enum class FlexibleConstraintTreatment
 /*! \brief Returns the flexible constraint treatment depending on whether the integrator is dynamic */
 FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegrator);
 
-/*! \brief Returns a block struct to go from atoms to constraints
+/*! \brief Returns a ListOfLists object to go from atoms to constraints
  *
- * The block struct will contain constraint indices with lower indices
+ * The object will contain constraint indices with lower indices
  * directly matching the order in F_CONSTR and higher indices matching
  * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
  *
  * \param[in]  moltype   The molecule data
  * \param[in]  iparams   Interaction parameters, can be null when
- * flexibleConstraintTreatment=Include \param[in]  flexibleConstraintTreatment  The flexible
- * constraint treatment, see enum above \returns a block struct with all constraints for each atom
- */
-t_blocka make_at2con(const gmx_moltype_t&           moltype,
-                     gmx::ArrayRef<const t_iparams> iparams,
-                     FlexibleConstraintTreatment    flexibleConstraintTreatment);
-
-/*! \brief Returns a block struct to go from atoms to constraints
+ *                       \p flexibleConstraintTreatment==Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment,
+ *                                          see enum above
  *
- * The block struct will contain constraint indices with lower indices
+ * \returns a ListOfLists object with all constraints for each atom
+ */
+ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
+                             gmx::ArrayRef<const t_iparams> iparams,
+                             FlexibleConstraintTreatment    flexibleConstraintTreatment);
+
+/*! \brief Returns a ListOfLists object to go from atoms to constraints
+ *
+ * The object will contain constraint indices with lower indices
  * directly matching the order in F_CONSTR and higher indices matching
  * the order in F_CONSTRNC offset by the number of constraints in F_CONSTR.
  *
  * \param[in]  numAtoms  The number of atoms to construct the list for
  * \param[in]  ilist     Interaction list, size F_NRE
  * \param[in]  iparams   Interaction parameters, can be null when
- * flexibleConstraintTreatment=Include \param[in]  flexibleConstraintTreatment  The flexible
- * constraint treatment, see enum above \returns a block struct with all constraints for each atom
+ *                       \p flexibleConstraintTreatment==Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment,
+ *                                          see enum above
+ *
+ * \returns a ListOfLists object with all constraints for each atom
  */
-t_blocka make_at2con(int                         numAtoms,
-                     const t_ilist*              ilist,
-                     const t_iparams*            iparams,
-                     FlexibleConstraintTreatment flexibleConstraintTreatment);
-
-/*! \brief Returns an array of atom to constraints lists for the moltypes */
-const t_blocka* atom2constraints_moltype(const Constraints* constr);
+ListOfLists<int> make_at2con(int                         numAtoms,
+                             const t_ilist*              ilist,
+                             const t_iparams*            iparams,
+                             FlexibleConstraintTreatment flexibleConstraintTreatment);
 
 //! Return the number of flexible constraints in the \c ilist and \c iparams.
 int countFlexibleConstraints(const t_ilist* ilist, const t_iparams* iparams);

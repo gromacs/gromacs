@@ -67,10 +67,12 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
-#include "gromacs/utility/smalloc.h"
+#include "gromacs/utility/listoflists.h"
 
 #include "domdec_internal.h"
 #include "domdec_specatomcomm.h"
+
+using gmx::ListOfLists;
 
 /*! \brief Struct used during constraint setup with domain decomposition */
 struct gmx_domdec_constraints_t
@@ -141,7 +143,7 @@ static void walk_out(int                       con,
                      int                       nrec,
                      gmx::ArrayRef<const int>  ia1,
                      gmx::ArrayRef<const int>  ia2,
-                     const t_blocka*           at2con,
+                     const ListOfLists<int>&   at2con,
                      const gmx_ga2la_t&        ga2la,
                      gmx_bool                  bHomeConnect,
                      gmx_domdec_constraints_t* dc,
@@ -149,9 +151,6 @@ static void walk_out(int                       con,
                      t_ilist*                  il_local,
                      std::vector<int>*         ireq)
 {
-    int            a1_gl, a2_gl, i, coni, b;
-    const t_iatom* iap;
-
     if (!dc->gc_req[con_offset + con])
     {
         /* Add this non-home constraint to the list */
@@ -163,10 +162,10 @@ static void walk_out(int                       con,
             il_local->nalloc = over_alloc_dd(il_local->nr + 3);
             srenew(il_local->iatoms, il_local->nalloc);
         }
-        iap                              = constr_iatomptr(ia1, ia2, con);
+        const int* iap                   = constr_iatomptr(ia1, ia2, con);
         il_local->iatoms[il_local->nr++] = iap[0];
-        a1_gl                            = offset + iap[1];
-        a2_gl                            = offset + iap[2];
+        const int a1_gl                  = offset + iap[1];
+        const int a2_gl                  = offset + iap[2];
         /* The following indexing code can probably be optizimed */
         if (const int* a_loc = ga2la.findHome(a1_gl))
         {
@@ -200,13 +199,14 @@ static void walk_out(int                       con,
 
     if (nrec > 0)
     {
-        for (i = at2con->index[a]; i < at2con->index[a + 1]; i++)
+        /* Loop over the constraint connected to atom a */
+        for (const int coni : at2con[a])
         {
-            coni = at2con->a[i];
             if (coni != con)
             {
                 /* Walk further */
-                iap = constr_iatomptr(ia1, ia2, coni);
+                const int* iap = constr_iatomptr(ia1, ia2, coni);
+                int        b;
                 if (a == iap[1])
                 {
                     b = iap[2];
@@ -306,17 +306,14 @@ static void atoms_to_settles(gmx_domdec_t*                         dd,
 }
 
 /*! \brief Looks up constraint for the local atoms */
-static void atoms_to_constraints(gmx_domdec_t*                 dd,
-                                 const gmx_mtop_t*             mtop,
-                                 const int*                    cginfo,
-                                 gmx::ArrayRef<const t_blocka> at2con_mt,
-                                 int                           nrec,
-                                 t_ilist*                      ilc_local,
-                                 std::vector<int>*             ireq)
+static void atoms_to_constraints(gmx_domdec_t*                         dd,
+                                 const gmx_mtop_t*                     mtop,
+                                 const int*                            cginfo,
+                                 gmx::ArrayRef<const ListOfLists<int>> at2con_mt,
+                                 int                                   nrec,
+                                 t_ilist*                              ilc_local,
+                                 std::vector<int>*                     ireq)
 {
-    const t_blocka* at2con;
-    int             b_lo, offset, b_mol, i, con, con_offset;
-
     gmx_domdec_constraints_t* dc  = dd->constraints;
     gmx_domdec_specat_comm_t* dcc = dd->constraint_comm;
 
@@ -344,15 +341,16 @@ static void atoms_to_constraints(gmx_domdec_t*                 dd,
              * This is only required for the global index to make sure
              * that we use each constraint only once.
              */
-            con_offset = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
+            const int con_offset = dc->molb_con_offset[mb] + molnr * dc->molb_ncon_mol[mb];
 
             /* The global atom number offset for this molecule */
-            offset = a_gl - a_mol;
-            at2con = &at2con_mt[molb.type];
-            for (i = at2con->index[a_mol]; i < at2con->index[a_mol + 1]; i++)
+            const int offset = a_gl - a_mol;
+            /* Loop over the constraints connected to atom a_mol in the molecule */
+            const auto& at2con = at2con_mt[molb.type];
+            for (const int con : at2con[a_mol])
             {
-                con            = at2con->a[i];
                 const int* iap = constr_iatomptr(ia1, ia2, con);
+                int        b_mol;
                 if (a_mol == iap[1])
                 {
                     b_mol = iap[2];
@@ -373,7 +371,7 @@ static void atoms_to_constraints(gmx_domdec_t*                 dd,
                             ilc_local->nalloc = over_alloc_dd(ilc_local->nr + 3);
                             srenew(ilc_local->iatoms, ilc_local->nalloc);
                         }
-                        b_lo                               = *a_loc;
+                        const int b_lo                     = *a_loc;
                         ilc_local->iatoms[ilc_local->nr++] = iap[0];
                         ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? a : b_lo);
                         ilc_local->iatoms[ilc_local->nr++] = (a_gl == iap[1] ? b_lo : a);
@@ -416,13 +414,11 @@ int dd_make_local_constraints(gmx_domdec_t*            dd,
                               int                      nrec,
                               t_ilist*                 il_local)
 {
-    gmx_domdec_constraints_t*     dc;
-    t_ilist *                     ilc_local, *ils_local;
-    std::vector<int>*             ireq;
-    gmx::ArrayRef<const t_blocka> at2con_mt;
-    gmx::HashedMap<int>*          ga2la_specat;
-    int                           at_end, i, j;
-    t_iatom*                      iap;
+    gmx_domdec_constraints_t* dc;
+    t_ilist *                 ilc_local, *ils_local;
+    gmx::HashedMap<int>*      ga2la_specat;
+    int                       at_end, i, j;
+    t_iatom*                  iap;
 
     // This code should not be called unless this condition is true,
     // because that's the only time init_domdec_constraints is
@@ -446,6 +442,8 @@ int dd_make_local_constraints(gmx_domdec_t*            dd,
 
     dc->ncon      = 0;
     ilc_local->nr = 0;
+    gmx::ArrayRef<const ListOfLists<int>> at2con_mt;
+    std::vector<int>*                     ireq = nullptr;
     if (dd->constraint_comm)
     {
         // TODO Perhaps gmx_domdec_constraints_t should keep a valid constr?
@@ -453,12 +451,6 @@ int dd_make_local_constraints(gmx_domdec_t*            dd,
         at2con_mt = constr->atom2constraints_moltype();
         ireq      = &dc->requestedGlobalAtomIndices[0];
         ireq->clear();
-    }
-    else
-    {
-        // Currently unreachable
-        at2con_mt = {};
-        ireq      = nullptr;
     }
 
     gmx::ArrayRef<const std::vector<int>> at2settle_mt;
