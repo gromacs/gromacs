@@ -1,6 +1,5 @@
-.clang-before-script-template:
+.documentation-before-script-template:
   variables:
-    COMPILER_MAJOR_VERSION: 7
     EXTRA_INSTALLS: ""
 
   before_script:

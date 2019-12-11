@@ -4,11 +4,9 @@
     EXTRA_INSTALLS: ""
 
   before_script:
+      - echo $EXTRA_INSTALLS
       - time apt-get -qq update
       - time apt-get -qqy --no-install-suggests --no-install-recommends install
-          build-essential cmake git ninja-build ccache
-          gcc-$COMPILER_MAJOR_VERSION g++-$COMPILER_MAJOR_VERSION
-          libfftw3-dev libhwloc-dev liblapack-dev moreutils grep
           $EXTRA_INSTALLS
       - mkdir -p ccache
       - export CCACHE_BASEDIR=${PWD}

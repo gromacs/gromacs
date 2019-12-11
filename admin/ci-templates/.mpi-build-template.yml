@@ -1,5 +1,0 @@
-.build-mpi-template:
-  variables:
-    CMAKE_MPI_OPTIONS: "-DGMX_MPI=ON"
-    BUILD_DIR: mpi-$BUILD_DIR
-    EXTRA_INSTALLS: libopenmpi-dev

@@ -1,0 +1,14 @@
+.build-cache-template:
+    cache:
+      key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+      paths:
+        - ccache/
+        - $BUILD_DIR/CMakeCache.txt
+
+.release-build-cache-template:
+    cache:
+      key: "$CI_JOB_STAGE-$CI_COMMIT_REF_SLUG"
+      paths:
+        - ccache/
+        - release-builds/CMakeCache.txt
+

@@ -7,5 +7,5 @@ then
 fi
 
 docker login
-docker build $1 --target $1 -t gromacs/gromacs:$1
-docker push gromacs/gromacs:$1
+docker build $1 --target $1 -t gromacs/continuous-integration:$1
+docker push gromacs/continuous-integration:$1

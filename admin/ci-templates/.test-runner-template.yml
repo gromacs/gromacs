@@ -3,6 +3,6 @@
        BUILD_DIR: build
    image: biophysics/gcc-gromacs
    stage: test
-   dependencies:
-     - build
+   retry:
+    max: 2
 

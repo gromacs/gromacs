@@ -1,4 +1,4 @@
-.test-cache-template:
+.pull-cache-template:
     cache:
      # Read but don't update the cache
      policy: pull
