@@ -252,7 +252,18 @@ public:
     //! Returns the index position of the atoms on the search grid
     gmx::ArrayRef<const int> getGridIndices() const;
 
-    //! Constructs the pairlist for the given locality
+    /*! \brief Constructs the pairlist for the given locality
+     *
+     * When there are no non-self exclusions, \p exclusions can be empty.
+     * Otherwise the number of lists in \p exclusions should match the number
+     * of atoms when not using DD, or the total number of atoms in the i-zones
+     * when using DD.
+     *
+     * \param[in] iLocality   The interaction locality: local or non-local
+     * \param[in] exclusions  Lists of exclusions for every atom.
+     * \param[in] step        Used to set the list creation step
+     * \param[in,out] nrnb    Flop accounting struct, can be nullptr
+     */
     void constructPairlist(gmx::InteractionLocality     iLocality,
                            const gmx::ListOfLists<int>& exclusions,
                            int64_t                      step,

@@ -3539,9 +3539,12 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                         }
                     }
 
-                    /* Set the exclusions for this ci list */
-                    setExclusionsForIEntry(gridSet, nbl, excludeSubDiagonal, na_cj_2log,
-                                           *getOpenIEntry(nbl), exclusions);
+                    if (!exclusions.empty())
+                    {
+                        /* Set the exclusions for this ci list */
+                        setExclusionsForIEntry(gridSet, nbl, excludeSubDiagonal, na_cj_2log,
+                                               *getOpenIEntry(nbl), exclusions);
+                    }
 
                     if (haveFep)
                     {
@@ -4201,8 +4204,20 @@ void PairlistSets::construct(const InteractionLocality iLocality,
                              const int64_t             step,
                              t_nrnb*                   nrnb)
 {
-    pairlistSet(iLocality).constructPairlists(pairSearch->gridSet(), pairSearch->work(), nbat,
-                                              exclusions, minimumIlistCountForGpuBalancing_, nrnb,
+    const auto& gridSet = pairSearch->gridSet();
+    const auto* ddZones = gridSet.domainSetup().zones;
+
+    /* The Nbnxm code can also work with more exclusions than those in i-zones only
+     * when using DD, but the equality check can catch more issues.
+     */
+    GMX_RELEASE_ASSERT(
+            exclusions.empty() || (!ddZones && exclusions.ssize() == gridSet.numRealAtomsTotal())
+                    || (ddZones && exclusions.ssize() == ddZones->cg_range[ddZones->iZones.size()]),
+            "exclusions should either be empty or the number of lists should match the number of "
+            "local i-atoms");
+
+    pairlistSet(iLocality).constructPairlists(gridSet, pairSearch->work(), nbat, exclusions,
+                                              minimumIlistCountForGpuBalancing_, nrnb,
                                               &pairSearch->cycleCounting_);
 
     if (iLocality == InteractionLocality::Local)
