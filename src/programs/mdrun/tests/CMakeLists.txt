@@ -57,6 +57,7 @@ gmx_add_gtest_executable(
     helpwriting.cpp
     initialconstraints.cpp
     interactiveMD.cpp
+    outputfiles.cpp
     pmetest.cpp
     simulator.cpp
     swapcoords.cpp
