@@ -25,11 +25,11 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
 .. note:: Regarding multiple GROMACS installations:
     Many GROMACS users switch between multiple GROMACS installations on the same
     computer using an HPC module system and/or a GMXRC configuration script.
-    For the equivalent sort of environment switching with the ``gmxapi`` Python package,
+    For the equivalent sort of environment switching with the :py:mod:`gmxapi` Python package,
     we recommend installing it in a different
     `Python virtual environment <https://www.google.com/search?q=python+virtual+environment>`_
     for each GROMACS installation.
-    Once built, a particular copy of the ``gmxapi`` Python package always refers to the
+    Once built, a particular copy of the :py:mod:`gmxapi` Python package always refers to the
     same GROMACS installation.
 
 .. contents:: Contents
@@ -38,19 +38,19 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
 
 .. note::
 
-    The following documentation contains frequent references to the ``pip`` tool
+    The following documentation contains frequent references to the :command:`pip` tool
     for installing Python packages. In some cases, an unprivileged user should
-    use the ``--user`` command line flag to tell ``pip`` to install packages
+    use the ``--user`` command line flag to tell :py:mod:`pip` to install packages
     into the user site-packages directory rather than the default site-packages
     directory for the Python installation. This flag is not appropriate when
-    running ``pip`` in a virtual environment (as recommended) and is omitted in
+    running :command:`pip` in a virtual environment (as recommended) and is omitted in
     this documentation. If you need the ``--user`` flag, you should modify the
-    example commands to look something like ``pip install --upgrade somepackage --user``
+    example commands to look something like :command:`pip install --upgrade somepackage --user`
 
 .. note::
 
-    These instructions use the executable names ``python`` and ``pip``
-    instead of ``python3`` or ``pip3``. Some Python installations require the ``3``
+    These instructions use the executable names :command:`python` and :command:`pip`
+    instead of :command:`python3` or :command:`pip3`. Some Python installations require the ``3``
     suffix, but it is usually not necessary if you have already activated a Python
     virtual environment (recommended).
 
@@ -58,7 +58,7 @@ Command line examples assume the `bash <https://www.gnu.org/software/bash/>`_ sh
 Requirements
 ============
 
-``gmxapi`` comes in three parts:
+*gmxapi* comes in three parts:
 
 * GROMACS gmxapi library for C++.
 * This Python package, supporting Python 3.5 and higher
@@ -71,7 +71,7 @@ gmxapi can be built for Python 3.5 and higher.
 
 You will need a C++ 14 compatible compiler and a reasonably up-to-date version
 of CMake.
-Full gmxapi functionality may also require an MPI compiler (e.g. ``mpicc``).
+Full gmxapi functionality may also require an MPI compiler (e.g. :command:`mpicc`).
 
 The Python package requires a GROMACS installation.
 Build and install
@@ -98,7 +98,7 @@ installation or install the additional development packages.
 On a Linux system, this may require installing packages such as ``python-dev``
 and/or ``python3-dev``.
 If you are building Python, either from scratch or with a tool like
-``pyenv install`` (see
+:command:`pyenv install` (see
 `wiki entry <https://github.com/pyenv/pyenv/wiki#how-to-build-cpython-with---enable-shared>`_
 ),
 be sure to enable installation of the Python C library with the
@@ -108,36 +108,36 @@ sufficient build environment while only requiring installation into a user
 home directory. (Some examples below.)
 
 If you are using an HPC system with software available through modules you may
-be able to just ``module load`` a different Python installation and find one
+be able to just :command:`module load` a different Python installation and find one
 that works.
 
 Python environment requirements
 -------------------------------
 
 gmxapi requires Python 3.5 or higher. Check your version with
-``python3 --version`` or ``python --version``.
+:command:`python3 --version` or :command:`python --version`.
 
 ..  note::
 
     The following documentation assumes you do not need to use a trailing '3' to
     access a Python 3 interpreter on your system.
-    The default Python interpreter on your system may use ``python3`` and ``pip3``
-    instead of ``python`` and ``pip``. You can check the version with
-    ``python3 --version`` or ``python --version`` and ``pip --version``.
+    The default Python interpreter on your system may use :command:`python3` and :command:`pip3`
+    instead of :command:`python` and :command:`pip`. You can check the version with
+    :command:`python3 --version` or :command:`python --version` and :command:`pip --version`.
 
-To build and install, you also need the packages ``cmake``,
-``setuptools``, ``networkx``, and ``scikit-build``.
+To build and install, you also need the packages :py:mod:`cmake`,
+:py:mod:`setuptools`, :py:mod:`networkx`, and :py:mod:`scikit-build`.
 
-For full functionality, you should also have ``mpi4py`` and ``numpy``.
-These requirements and version numbers are listed in ``requirements.txt``.
+For full functionality, you should also have :py:mod:`mpi4py` and :py:mod:`numpy`.
+These requirements and version numbers are listed in :file:`requirements.txt`.
 
 The easiest way to make sure you have the requirements installed, first update
-``pip``, then use the ``requirements.txt`` file provided with the repository.
+:py:mod:`pip`, then use the :file:`requirements.txt` file provided with the repository.
 File paths in this section are relative to the root directory of your local copy
 of the GROMACS source.
 
-Confirm that ``pip`` is available, install ``pip`` if it is missing, or get
-instructions on how to install ``pip``::
+Confirm that :py:mod:`pip` is available, install :py:mod:`pip` if it is missing, or get
+instructions on how to install :py:mod:`pip`::
 
     python -m ensurepip --default-pip
 
@@ -151,13 +151,13 @@ Install or upgrade required components::
 
 If you are building from source code in a local copy of the GROMACS source
 repository, some helpful files allow you to preinstall the Python requirements
-before installing the ``gmxapi`` package.
+before installing the :py:mod:`gmxapi` package.
 
     pip install -r python_packaging/src/requirements.txt
 
 If building documentation or running tests,
-``pip install -r python_packaging/requirements-docs.txt`` or
-``pip install -r python_packaging/requirements-test.txt``,
+:command:`pip install -r python_packaging/requirements-docs.txt` or
+:command:`pip install -r python_packaging/requirements-test.txt`,
 respectively, or see below.
 
 Documentation build requirements
@@ -171,14 +171,14 @@ Testing requirements
 --------------------
 
 Testing is performed with `pytest <https://docs.pytest.org/en/latest/>`_.
-Tests also require ``numpy``.
-You can probably install both with ``pip``::
+Tests also require :py:mod:`numpy`.
+You can probably install both with :command:`pip`::
 
     pip install pytest numpy
 
 To test the full functionality also requires an MPI parallel environment.
-You will need the ``mpi4py`` Python package and an MPI launcher
-(such as ``mpiexec``, ``mpirun``, a launcher provided by your HPC queuing system,
+You will need the :py:mod:`mpi4py` Python package and an MPI launcher
+(such as :command:`mpiexec`, :command:`mpirun`, a launcher provided by your HPC queuing system,
 or whatever is provided by your favorite MPI package for your operating system).
 
 .. _mpi_requirements:
@@ -186,29 +186,31 @@ or whatever is provided by your favorite MPI package for your operating system).
 MPI requirements
 ----------------
 
-For the ensemble simulations features, you will need an MPI installation. On an HPC system, this means you will
-probably have to use ``module load`` to load a compatible set of MPI tools and compilers. Check your HPC
-documentation or try ``module avail`` to look for an ``openmpi``, ``mpich``, or ``mvapich`` module and matching compiler
-module. This may be as simple as
-::
+For the ensemble simulations features, you will need an MPI installation.
+On an HPC system, this means you will probably have to use :command:`module load`
+to load a compatible set of MPI tools and compilers.
+Check your HPC documentation or try :command:`module avail` to look for an
+``openmpi``, ``mpich``, or ``mvapich`` module and matching compiler module.
+This may be as simple as::
 
     module load gcc
     module load mpicc
 
-Note that the compilers loaded might not be the first compilers discovered automatically by the build tools we will use
-below, so you may have to specify compilers on the command line for consistency. It may be necessary to require that
-GROMACS, gmxapi, and the sample code are built with the same compiler(s).
+Note that the compilers loaded might not be the first compilers discovered
+automatically by the build tools we will use below,
+so you may have to specify compilers on the command line for consistency.
+It may be necessary to require that GROMACS, gmxapi,
+and the sample code are built with the same compiler(s).
 
-Note that strange errors have been known to occur when ``mpi4py`` is built with
+Note that strange errors have been known to occur when :py:mod:`mpi4py` is built with
 different a different tool set than has been used to build Python and gmxapi.
 If the default compilers on your system are not sufficient for GROMACS or gmxapi,
-you may need to build, e.g., OpenMPI or MPICH, and/or build ``mpi4py`` with a
+you may need to build, e.g., OpenMPI or MPICH, and/or build :py:mod:`mpi4py` with a
 specific MPI compiler wrapper. This can complicate building in environments such
 as Conda.
 
 Set the MPICC environment variable to the MPI compiler wrapper and forcibly
-reinstall ``mpi4py``.
-::
+reinstall :py:mod:`mpi4py`::
 
     export MPICC=`which mpicc`
     pip install --no-cache-dir --upgrade --no-binary \":all:\" --force-reinstall mpi4py
@@ -259,8 +261,8 @@ When building GROMACS from source, be sure to configure cmake with the flag
 
 Set the environment variables for the GROMACS installation so that the gmxapi
 headers and library can be found when building the Python package.
-If you installed to a ``gromacs-gmxapi`` directory in your home directory as
-above and you use the ``bash`` shell, do::
+If you installed to a :file:`gromacs-gmxapi` directory in your home directory as
+above and you use the :command:`bash` shell, do::
 
     source $HOME/gromacs-gmxapi/bin/GMXRC
 
@@ -275,11 +277,11 @@ necessary prerequisites (e.g. if you are not an administrator of the system you 
 
 Create a Python 3 virtual environment.
 
-For Python 3, use the ``venv`` module.
+For Python 3, use the :py:mod:`venv` module.
 Depending on your computing environment, the Python 3 interpreter may be accessed
-with the command ``python`` or ``python3``. Use ``python --version`` and
-``python3 --version`` to figure out which you need to use. The following assumes
-the Python 3 interpreter is accessed with ``python3``.
+with the command :command:`python` or :command:`python3`. Use :command:`python --version` and
+:command:`python3 --version` to figure out which you need to use. The following assumes
+the Python 3 interpreter is accessed with :command:`python3`.
 
 ..  note::
 
@@ -307,7 +309,7 @@ the remaining examples assume the virtualenv is still active.
 Install dependencies
 ^^^^^^^^^^^^^^^^^^^^
 
-It is always a good idea to update ``pip`` and ``setuptools`` before installing
+It is always a good idea to update :py:mod:`pip` and :py:mod:`setuptools` before installing
 new Python packages::
 
     pip install --upgrade pip setuptools
@@ -319,7 +321,7 @@ they are installed and up to date before proceeding.
 
     pip install --upgrade cmake scikit-build
 
-For MPI, we use mpi4py.
+For MPI, we use :py:mod:`mpi4py`.
 Make sure it is using the same MPI installation that we are building
 GROMACS against and building with compatible compilers.
 
@@ -335,14 +337,14 @@ Fetch and install the latest version of gmxapi from the Python Packaging Index::
 
     pip install gmxapi
 
-If ``pip`` does not find your GROMACS installation, use one of the following
+If :command:`pip` does not find your GROMACS installation, use one of the following
 environment variables to provide a hint.
 
 gmxapi_DIR
 ~~~~~~~~~~
 
-If you have a single GROMACS installation at ``/path/to/gromacs``, it is usually
-sufficient to provide this location to ``pip`` through the ``gmxapi_DIR``
+If you have a single GROMACS installation at :file:`/path/to/gromacs`, it is usually
+sufficient to provide this location to :command:`pip` through the :envvar:`gmxapi_DIR`
 environment variable.
 
 Example::
@@ -353,7 +355,7 @@ GMXTOOLCHAINDIR
 ~~~~~~~~~~~~~~~
 
 If you have multiple builds of GROMACS distinguished by suffixes
-(e.g. *_d*, *_mpi*, etcetera), or if you need to provide extra hints to ``pip``
+(e.g. *_d*, *_mpi*, etcetera), or if you need to provide extra hints to :command:`pip`
 about the software tools that were used to build GROMACS, you can specify a
 directory in which the installer can find a CMake "tool chain".
 
@@ -368,10 +370,10 @@ instructions for more information.) ``${SUFFIX}`` may simply be empty, or ``''``
 Install from source
 -------------------
 
-You can also install the ``gmxapi`` Python package from within a local copy of
+You can also install the :py:mod:`gmxapi` Python package from within a local copy of
 the GROMACS source repository. Assuming you have already obtained the GROMACS
 source code and you are in the root directory of the source tree, you will find
-the ``gmxapi`` Python package sources in the ``python_packaging/src`` directory.
+the :py:mod`gmxapi` Python package sources in the :file:`python_packaging/src` directory.
 
 ::
 
@@ -389,10 +391,10 @@ For example, the last line of the previous example could be replaced with::
 
     pip install --no-cache-dir --no-deps --no-index --no-build-isolation .
 
-Refer to ``pip`` documentation for descriptions of these options.
+Refer to :py:mod:`pip` documentation for descriptions of these options.
 
 If you have built or downloaded a source distribution archive, you can provide
-the archive file to ``pip`` instead of the ``.`` argument::
+the archive file to :command:`pip` instead of the ``.`` argument::
 
     pip install gmxapi-0.1.0.tar.gz
 
@@ -504,11 +506,11 @@ Otherwise, you will need to specify the ``--user`` flag to ``pip``.
 Two of the easiest problems to run into are incompatible compilers and
 incompatible Python. Try to make sure that you use the same C and C++
 compilers for GROMACS, for the Python package, and for the sample
-plugin. These compilers should also correspond to the ``mpicc`` compiler
-wrapper used to compile ``mpi4py``. In order to build the Python
+plugin. These compilers should also correspond to the :command:`mpicc` compiler
+wrapper used to compile :py:mod:`mpi4py`. In order to build the Python
 package, you will need the Python headers or development installation,
 which might not already be installed on the machine you are using. (If
-not, then you will get an error about missing ``Python.h`` at some
+not, then you will get an error about missing :file:`Python.h` at some
 point.) If you have multiple Python installations (or modules available
 on an HPC system), you could try one of the other Python installations,
 or you or a system administrator could install an appropriate Python dev
@@ -525,8 +527,8 @@ installation. For instance,
 
 Pip and related Python package management tools can be a little too
 flexible and ambiguous sometimes. If things get really messed up, try
-explicitly uninstalling the ``gmxapi`` module and its dependencies, then do
-it again and repeat until ``pip`` can no longer find any version of any
+explicitly uninstalling the :py:mod:`gmxapi` module and its dependencies, then do
+it again and repeat until :command:`pip` can no longer find any version of any
 of the packages.
 
 ::
@@ -536,18 +538,18 @@ of the packages.
     # ...
 
 Successfully running the test suite is not essential to having a working
-``gmxapi`` package. We are working to make the testing more robust, but
+:py:mod:`gmxapi` package. We are working to make the testing more robust, but
 right now the test suite is a bit delicate and may not work right, even
-though you have a successfully built ``gmxapi`` package. If you want to
+though you have a successfully built the :py:mod:`gmxapi` package. If you want to
 troubleshoot, though, the main problems seem to be that automatic
 installation of required python packages may not work (requiring manual
-installations, such as with ``pip install somepackage``) and ambiguities
+installations, such as with :command:`pip install somepackage`) and ambiguities
 between python versions. 
 
 If you are working in a development branch of the repository, note that
 the upstream branch may be reset to ``master`` after a new release is
 tagged. In general, but particularly on the ``devel`` branch, when you
-do a ``git pull``, you should use the ``--rebase`` flag.
+do a :command:`git pull`, you should use the ``--rebase`` flag.
 
 If you fetch this repository and then see a git status like this::
 
@@ -556,11 +558,11 @@ If you fetch this repository and then see a git status like this::
     Your branch and 'origin/devel' have diverged,
     and have 31 and 29 different commits each, respectively.
 
-then ``gmxapi`` has probably entered a new development cycle. You can
-do ``git pull --rebase`` to update to the latest development branch.
+then :py:mod:`gmxapi` has probably entered a new development cycle. You can
+do :command:`git pull --rebase` to update to the latest development branch.
 
-If you do a ``git pull`` while in ``devel`` and get a bunch of unexpected
-merge conflicts, do ``git merge --abort; git pull --rebase`` and you should
+If you do a :command:`git pull` while in ``devel`` and get a bunch of unexpected
+merge conflicts, do :command:`git merge --abort; git pull --rebase` and you should
 be back on track.
 
 If you are developing code for gmxapi, this should be an indication to
