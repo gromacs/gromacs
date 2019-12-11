@@ -358,24 +358,30 @@ Output control
    (0) [steps]
    number of steps that elapse between writing coordinates to the output
    trajectory file (:ref:`trr`), the last coordinates are always written
+   unless 0, which means coordinates are not written into the trajectory
+   file.
 
 .. mdp:: nstvout
 
    (0) [steps]
    number of steps that elapse between writing velocities to the output
    trajectory file (:ref:`trr`), the last velocities are always written
+   unless 0, which means velocities are not written into the trajectory
+   file.
 
 .. mdp:: nstfout
 
    (0) [steps]
    number of steps that elapse between writing forces to the output
-   trajectory file (:ref:`trr`), the last forces are always written.
+   trajectory file (:ref:`trr`), the last forces are always written,
+   unless 0, which means forces are not written into the trajectory
+   file.
 
 .. mdp:: nstlog
 
    (1000) [steps]
    number of steps that elapse between writing energies to the log
-   file, the last energies are always written
+   file, the last energies are always written.
 
 .. mdp:: nstcalcenergy
 
@@ -400,7 +406,8 @@ Output control
 
    (0) [steps]
    number of steps that elapse between writing position coordinates
-   using lossy compression (:ref:`xtc` file)
+   using lossy compression (:ref:`xtc` file), 0 for not writing
+   compressed coordinates output.
 
 .. mdp:: compressed-x-precision
 
