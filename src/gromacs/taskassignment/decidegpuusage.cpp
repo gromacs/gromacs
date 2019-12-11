@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -553,10 +554,9 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
     {
         errorMessage += "Essential dynamics is not supported.\n";
     }
-    if (inputrec.bPull || inputrec.pull)
+    if (inputrec.bPull && pull_have_constraint(inputrec.pull))
     {
-        // Pull potentials are actually supported, but constraint pulling is not
-        errorMessage += "Pulling is not supported.\n";
+        errorMessage += "Constraints pulling is not supported.\n";
     }
     if (doOrientationRestraints)
     {

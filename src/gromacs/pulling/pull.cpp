@@ -2351,3 +2351,19 @@ gmx_bool pull_have_constraint(const struct pull_t* pull)
 {
     return pull->bConstraint;
 }
+
+bool pull_have_constraint(const pull_params_t* pullParameters)
+{
+    if (pullParameters == nullptr)
+    {
+        return false;
+    }
+    for (int c = 0; c < pullParameters->ncoord; c++)
+    {
+        if (pullParameters->coord[c].eType == epullCONSTRAINT)
+        {
+            return true;
+        }
+    }
+    return false;
+}

@@ -351,7 +351,7 @@ void gmx::LegacySimulator::do_md()
                            "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(!ir->bPull && !ir->pull,
+        GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(ir->pull),
                            "Pulling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(fcd->orires.nr == 0,
                            "Orientation restraints are not supported with the GPU update.\n");
