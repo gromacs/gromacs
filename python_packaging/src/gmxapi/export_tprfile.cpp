@@ -154,15 +154,15 @@ void detail::export_tprfile(pybind11::module& module)
                    return gmxapicompat::copy_tprfile(input, outFile);
                },
                py::arg("source"), py::arg("destination"),
-               "Copy a TPR file from `source` to `destination`.");
+               "Copy a TPR file from ``source`` to ``destination``.");
 
-    module.def(
-            "rewrite_tprfile",
-            [](std::string input, std::string output, double end_time) {
-                return gmxapicompat::rewrite_tprfile(input, output, end_time);
-            },
-            py::arg("source"), py::arg("destination"), py::arg("end_time"),
-            "Copy a TPR file from `source` to `destination`, replacing `nsteps` with `end_time`.");
+    module.def("rewrite_tprfile",
+               [](std::string input, std::string output, double end_time) {
+                   return gmxapicompat::rewrite_tprfile(input, output, end_time);
+               },
+               py::arg("source"), py::arg("destination"), py::arg("end_time"),
+               "Copy a TPR file from ``source`` to ``destination``, replacing `nsteps` with "
+               "``end_time``.");
 }
 
 } // end namespace gmxpy

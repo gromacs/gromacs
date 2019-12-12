@@ -2618,7 +2618,7 @@ def function_wrapper(output: dict = None):
     New function accepts the same arguments, with additional arguments required by
     the API.
 
-    The new function returns an object with an `output` attribute containing the named outputs.
+    The new function returns an object with an ``output`` attribute containing the named outputs.
 
     Example:
 
@@ -2631,9 +2631,12 @@ def function_wrapper(output: dict = None):
         >>> assert operation1.output.spam.result() == 'spam spam'
         >>> assert operation1.output.foo.result() == 'spam spam spam spam'
 
-    If 'output' is provided to the wrapper, a data structure will be passed to
+    Arguments:
+        output (dict): output names and types
+
+    If ``output`` is provided to the wrapper, a data structure will be passed to
     the wrapped functions with the named attributes so that the function can easily
-    publish multiple named results. Otherwise, the `output` of the generated operation
+    publish multiple named results. Otherwise, the ``output`` of the generated operation
     will just capture the return value of the wrapped function.
 
     .. todo:: gmxapi typing stub file(s).

@@ -452,7 +452,7 @@ search neighbors corresponding to that image of :math:`i`. As
 :numref:`Fig. %s <fig-grid>` shows, some grid cells may be searched
 more than once for different images of :math:`i`. This is not a problem,
 since, due to the minimum image convention, at most one image will “see”
-the :math:`j`-particle. For every particle, fewer than 125 (5:math:`^3`)
+the :math:`j`-particle. For every particle, fewer than 125 (5\ :math:`^3`)
 neighboring cells are searched. Therefore, the algorithm scales linearly
 with the number of particles. Although the prefactor is large, the
 scaling behavior makes the algorithm far superior over the standard

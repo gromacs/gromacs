@@ -165,4 +165,4 @@ Several documentation and output improvements
 * Docs for mdp options relating to bonds improved.
 * Fixed various typos.
 * Removed a leftover mention of the twin-range scheme.
-* `gmx trjconv -ndec`` docs improved.
+* ``gmx trjconv -ndec`` docs improved.

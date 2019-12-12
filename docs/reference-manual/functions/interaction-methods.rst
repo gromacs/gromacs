@@ -33,7 +33,7 @@ force field, which is implemented by keeping a separate list of 1-4 and
 normal Lennard-Jones parameters. In other force fields, such as
 OPLS \ :ref:`103 <refJorgensen88>`, the standard Lennard-Jones
 parameters are reduced by a factor of two, but in that case also the
-dispersion (r:math:`^{-6}`) and the Coulomb interaction are scaled.
+dispersion (r\ :math:`^{-6}`) and the Coulomb interaction are scaled.
 |Gromacs| can use either of these methods.
 
 Charge Groups

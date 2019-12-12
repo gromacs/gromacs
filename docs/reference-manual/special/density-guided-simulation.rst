@@ -45,13 +45,13 @@ density.
 Usage
 ^^^^^
 
-Density-guided simulations are controlled by setting `.mdp` options and
-providing a reference density map as a file additional to the `.tpr`.
+Density-guided simulations are controlled by setting ``.mdp`` options and
+providing a reference density map as a file additional to the ``.tpr``.
 
 All options that are related to density-guided simulations are prefixed with
-`density-guided-simulation`.
+``density-guided-simulation``.
 
-Setting `density-guided-simulation-active = yes` will trigger density-guided
+Setting ``density-guided-simulation-active = yes`` will trigger density-guided
 simulations with default parameters that will cause atoms to move into the
 reference density.
 
@@ -172,10 +172,10 @@ The reference density map format
 
 Reference input for the densities are given in mrc format according to the
 "EMDB Map Distribution Format Description Version 1.01 (c) emdatabank.org 2014".
-Closely related formats like `ccp4` and `map` might work.
+Closely related formats like ``ccp4`` and ``map`` might work.
 
 Be aware that different visualization software handles map formats differently.
-During simulations, reference densities are interpreted as visualised by `VMD`.
+During simulations, reference densities are interpreted as visualised by ``VMD``.
 
 Output
 ^^^^^^

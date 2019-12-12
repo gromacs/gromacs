@@ -129,7 +129,7 @@ def api_is_at_least(major_version, minor_version=0, patch_version=0):
         return False
 
 
-def has_feature(name='', enable_exception=False):
+def has_feature(name='', enable_exception=False) -> bool:
     """Query whether a named feature is available in the installed package.
 
     Between updates to the API specification, new features or experimental aspects
@@ -138,7 +138,7 @@ def has_feature(name='', enable_exception=False):
     development branches. Users should refer to the documentation for the package
     modules and API level.
 
-    The primary use case is, in conjunction with api_is_at_least(), to allow
+    The primary use case is, in conjunction with `api_is_at_least()`, to allow
     client code to robustly identify expected behavior and API support through
     conditional execution and branching. Note that behavior is strongly
     specified by the API major version number. Features that have become part of
@@ -147,19 +147,19 @@ def has_feature(name='', enable_exception=False):
     names will produce a DeprecationWarning for at least one major version, and
     client code should be updated to avoid logic errors in future versions.
 
-    For convenience, setting *enable_exception=True* causes the function to
+    For convenience, setting ``enable_exception = True`` causes the function to
     instead raise a gmxapi.exceptions.FeatureNotAvailableError for unrecognized feature names.
     This allows extension code to cleanly produce a gmxapi exception instead of
     first performing a boolean check. Also, some code may be unexecutable for
     more than one reason, and sometimes it is cleaner to catch all
-    gmxapi.exceptions.Error exceptions for a code block, rather than to
+    `gmxapi.exceptions.Error` exceptions for a code block, rather than to
     construct complex conditionals.
 
     Returns:
         True if named feature is recognized by the installed package, else False.
 
     Raises:
-        gmxapi.exceptions.FeatureNotAvailableError if `enable_exception == True` and feature is not found.
+        gmxapi.exceptions.FeatureNotAvailableError: If ``enable_exception == True`` and feature is not found.
 
     """
     # First, issue a warning if the feature name is subject to removal because

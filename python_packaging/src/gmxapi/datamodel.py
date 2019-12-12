@@ -90,16 +90,16 @@ def ndarray(data=None, shape=None, dtype=None):
     ..  versionadded:: 0.1
         *shape* and *dtype* parameters
 
-    If `data` is provided, `shape` and `dtype` are optional. If `data` is not
-    provided, both `shape` and `dtype` are required.
+    If ``data`` is provided, ``shape`` and ``dtype`` are optional. If ``data`` is not
+    provided, both ``shape`` and ``dtype`` are required.
 
-    If `data` is provided and shape is provided, `data` must be compatible with
-    or convertible to `shape`. See Broadcast Rules in `datamodel` documentation.
+    If ``data`` is provided and shape is provided, ``data`` must be compatible with
+    or convertible to ``shape``. See Broadcast Rules in `datamodel` documentation.
 
-    If `data` is provided and `dtype` is not provided, data type is inferred
-    as the narrowest scalar type necessary to hold any element in `data`.
-    `dtype`, whether inferred or explicit, must be compatible with all elements
-    of `data`.
+    If ``data`` is provided and ``dtype`` is not provided, data type is inferred
+    as the narrowest scalar type necessary to hold any element in ``data``.
+    ``dtype``, whether inferred or explicit, must be compatible with all elements
+    of ``data``.
 
     The returned object implements the gmxapi N-dimensional Array Interface.
     """

@@ -910,7 +910,7 @@ The table contains colums indicating the number of ranks and threads that
 executed the respective part of the run, wall-time and cycle
 count aggregates (across all threads and ranks) averaged over the entire run.
 The last column also shows what precentage of the total runtime each row represents.
-Note that the :ref:`gmx mdrun` timer resetting functionalities (`-resethway` and `-resetstep`)
+Note that the :ref:`gmx mdrun` timer resetting functionalities (``-resethway`` and ``-resetstep``)
 reset the performance counters and therefore are useful to avoid startup overhead and
 performance instability (e.g. due to load balancing) at the beginning of the run.
 
@@ -1236,7 +1236,7 @@ Currently supported hardware architectures are:
 Make sure that you have the latest drivers installed. For AMD GPUs,
 the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
-and unsupported `fglrx` proprietary driver and runtime is not recommended (but
+and unsupported ``fglrx`` proprietary driver and runtime is not recommended (but
 for certain older hardware that may be the only way to obtain support).
 In addition Mesa version 17.0 or newer with LLVM 4.0 or newer is also supported.
 For NVIDIA GPUs, using the proprietary driver is

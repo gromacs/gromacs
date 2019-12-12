@@ -898,9 +898,9 @@ Ewald
    .. mdp-value:: 3dc
 
       The reciprocal sum is still performed in 3D, but a force and
-      potential correction applied in the `z` dimension to produce a
+      potential correction applied in the ``z`` dimension to produce a
       pseudo-2D summation. If your system has a slab geometry in the
-      `x-y` plane you can try to increase the `z`-dimension of the box
+      ``x-y`` plane you can try to increase the ``z``-dimension of the box
       (a box height of 3 times the slab height is usually ok) and use
       this option.
 
@@ -1094,14 +1094,14 @@ Pressure coupling
    .. mdp-value:: surface-tension
 
       Surface tension coupling for surfaces parallel to the
-      xy-plane. Uses normal pressure coupling for the `z`-direction,
-      while the surface tension is coupled to the `x/y` dimensions of
+      xy-plane. Uses normal pressure coupling for the ``z``-direction,
+      while the surface tension is coupled to the ``x/y`` dimensions of
       the box. The first :mdp:`ref-p` value is the reference surface
       tension times the number of surfaces ``bar nm``, the second
-      value is the reference `z`-pressure ``bar``. The two
+      value is the reference ``z``-pressure ``bar``. The two
       :mdp:`compressibility` values are the compressibility in the
-      `x/y` and `z` direction respectively. The value for the
-      `z`-compressibility should be reasonably accurate since it
+      ``x/y`` and ``z`` direction respectively. The value for the
+      ``z``-compressibility should be reasonably accurate since it
       influences the convergence of the surface-tension, it can also
       be set to zero to have a box with constant height.
 
@@ -2253,7 +2253,7 @@ NMR refinement
 
    (1000) [kJ mol\ :sup:`-1` nm\ :sup:`-2`]
    force constant for distance restraints, which is multiplied by a
-   (possibly) different factor for each restraint given in the `fac`
+   (possibly) different factor for each restraint given in the ``fac``
    column of the interaction in the topology file.
 
 .. mdp:: disre-tau
@@ -2924,8 +2924,8 @@ Non-equilibrium MD
 .. mdp:: freezedim
 
    dimensions for which groups in :mdp:`freezegrps` should be frozen,
-   specify `Y` or `N` for X, Y and Z and for each group (*e.g.* ``Y Y
-   N N N N`` means that particles in the first group can move only in
+   specify ``Y`` or ``N`` for X, Y and Z and for each group (*e.g.*
+   ``Y Y N N N N`` means that particles in the first group can move only in
    Z direction. The particles in the second group can move in any
    direction).
 
@@ -3043,7 +3043,7 @@ Mixed quantum/classical molecular dynamics
 .. mdp:: QMcharge
 
    (0) [integer]
-   The total charge in `e` of the :mdp:`QMMM-grps`. In case there are
+   The total charge in ``e`` of the :mdp:`QMMM-grps`. In case there are
    more than one :mdp:`QMMM-grps`, the total charge of each ONIOM
    layer needs to be specified separately.
 
