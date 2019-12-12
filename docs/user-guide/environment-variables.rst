@@ -157,6 +157,15 @@ Performance and Run Control
 ``GMX_DISABLE_CUDA_TIMING``
         Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
+``GMX_GPU_DD_COMMS``
+        perform domain decomposition halo exchange communication operations (on coordinate and force buffers)
+        directly on GPU memory spaces, without the staging of data through CPU memory, where possible.
+
+``GMX_GPU_PME_PP_COMMS``
+        when the simulation uses a separate PME rank, perform communication operations between PP and PME rank
+        (for coordinate and force buffers) directly on GPU memory spaces, without the staging of data through CPU
+        memory, where possible. 
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
