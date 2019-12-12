@@ -87,7 +87,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
                 }
                 else
                 {
-                    if (d < ddbox->npbcdim && dd->nc[d] > 1)
+                    if (d < ddbox->npbcdim && dd->numCells[d] > 1)
                     {
                         tric[d][i] = box[i][d] / box[i][i];
                     }

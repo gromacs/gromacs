@@ -431,7 +431,7 @@ bool Constraints::Impl::apply(bool               bLog,
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir.ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ir.ePBC, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {

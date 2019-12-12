@@ -456,7 +456,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                                                        minimumIlistCountForGpuBalancing);
 
     auto pairSearch = std::make_unique<PairSearch>(
-            ir->ePBC, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->nc : nullptr,
+            ir->ePBC, EI_TPI(ir->eI), DOMAINDECOMP(cr) ? &cr->dd->numCells : nullptr,
             DOMAINDECOMP(cr) ? domdec_zones(cr->dd) : nullptr, pairlistParams.pairlistType,
             bFEP_NonBonded, gmx_omp_nthreads_get(emntPairsearch), pinPolicy);
 

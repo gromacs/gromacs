@@ -76,7 +76,7 @@ void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f,
     for (int d = dd->ndim - 1; d >= 0; d--)
     {
         dim = dd->dim[d];
-        if (dd->nc[dim] > 2)
+        if (dd->numCells[dim] > 2)
         {
             /* Pulse the grid forward and backward */
             spas = spac->spas[d];
@@ -89,7 +89,8 @@ void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f,
                               vbuf + spas[0].a.size(), spas[1].a.size());
             for (dir = 0; dir < 2; dir++)
             {
-                bPBC = ((dir == 0 && dd->ci[dim] == 0) || (dir == 1 && dd->ci[dim] == dd->nc[dim] - 1));
+                bPBC   = ((dir == 0 && dd->ci[dim] == 0)
+                        || (dir == 1 && dd->ci[dim] == dd->numCells[dim] - 1));
                 bScrew = (bPBC && dd->unitCellInfo.haveScrewPBC && dim == XX);
 
                 spas = &spac->spas[d][dir];
@@ -145,7 +146,7 @@ void dd_move_f_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, rvec* f,
                        spas->a.size());
             /* Sum the buffer into the required forces */
             if (dd->unitCellInfo.haveScrewPBC && dim == XX
-                && (dd->ci[dim] == 0 || dd->ci[dim] == dd->nc[dim] - 1))
+                && (dd->ci[dim] == 0 || dd->ci[dim] == dd->numCells[dim] - 1))
             {
                 int i = 0;
                 for (int a : spas->a)
@@ -187,7 +188,7 @@ void dd_move_x_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, const ma
     for (d = 0; d < dd->ndim; d++)
     {
         dim = dd->dim[d];
-        if (dd->nc[dim] > 2)
+        if (dd->numCells[dim] > 2)
         {
             /* Pulse the grid forward and backward */
             rvec* vbuf = as_rvec_array(spac->vbuf.data());
@@ -199,7 +200,7 @@ void dd_move_x_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, const ma
                     bScrew = (dd->unitCellInfo.haveScrewPBC && dim == XX);
                     copy_rvec(box[dim], shift);
                 }
-                else if (dir == 1 && dd->ci[dim] == dd->nc[dim] - 1)
+                else if (dir == 1 && dd->ci[dim] == dd->numCells[dim] - 1)
                 {
                     bPBC   = TRUE;
                     bScrew = (dd->unitCellInfo.haveScrewPBC && dim == XX);
@@ -295,7 +296,7 @@ void dd_move_x_specat(gmx_domdec_t* dd, gmx_domdec_specat_comm_t* spac, const ma
             {
                 rvec* x = (v == 0 ? x0 : x1);
                 if (dd->unitCellInfo.haveScrewPBC && dim == XX
-                    && (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX] - 1))
+                    && (dd->ci[XX] == 0 || dd->ci[XX] == dd->numCells[XX] - 1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
                      * is handled in the constraint or viste routines.
@@ -379,7 +380,7 @@ int setup_specat_communication(gmx_domdec_t*             dd,
         /* Pulse the grid forward and backward */
         dim  = dd->dim[d];
         bPBC = (dim < dd->unitCellInfo.npbcdim);
-        if (dd->nc[dim] == 2)
+        if (dd->numCells[dim] == 2)
         {
             /* Only 2 cells, so we only need to communicate once */
             ndir = 1;
@@ -390,8 +391,8 @@ int setup_specat_communication(gmx_domdec_t*             dd,
         }
         for (int dir = 0; dir < ndir; dir++)
         {
-            if (!bPBC && dd->nc[dim] > 2
-                && ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) || (dir == 1 && dd->ci[dim] == 0)))
+            if (!bPBC && dd->numCells[dim] > 2
+                && ((dir == 0 && dd->ci[dim] == dd->numCells[dim] - 1) || (dir == 1 && dd->ci[dim] == 0)))
             {
                 /* No pbc: the fist/last cell should not request atoms */
                 nsend_ptr = nsend_zero;
@@ -423,7 +424,7 @@ int setup_specat_communication(gmx_domdec_t*             dd,
     for (int d = 0; d < dd->ndim; d++)
     {
         /* Pulse the grid forward and backward */
-        if (dd->dim[d] >= dd->unitCellInfo.npbcdim || dd->nc[dd->dim[d]] > 2)
+        if (dd->dim[d] >= dd->unitCellInfo.npbcdim || dd->numCells[dd->dim[d]] > 2)
         {
             ndir = 2;
         }

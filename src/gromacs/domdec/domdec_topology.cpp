@@ -1640,9 +1640,10 @@ void dd_make_local_top(gmx_domdec_t*       dd,
             /* Only need to check for dimensions where the part of the box
              * that is not communicated is smaller than the cut-off.
              */
-            if (d < npbcdim && dd->nc[d] > 1 && (dd->nc[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
+            if (d < npbcdim && dd->numCells[d] > 1
+                && (dd->numCells[d] - npulse[d]) * cellsize_min[d] < 2 * rc)
             {
-                if (dd->nc[d] == 2)
+                if (dd->numCells[d] == 2)
                 {
                     rcheck[d] = TRUE;
                     bRCheckMB = TRUE;
@@ -1663,7 +1664,7 @@ void dd_make_local_top(gmx_domdec_t*       dd,
         {
             if (fr->bMolPBC)
             {
-                pbc_null = set_pbc_dd(&pbc, fr->ePBC, dd->nc, TRUE, box);
+                pbc_null = set_pbc_dd(&pbc, fr->ePBC, dd->numCells, TRUE, box);
             }
             else
             {

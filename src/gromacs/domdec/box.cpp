@@ -288,8 +288,8 @@ void set_ddbox(const gmx_domdec_t&            dd,
         gmx::ArrayRef<const gmx::RVec> xRef = constArrayRefFromArray(
                 x.data(), masterRankHasTheSystemState ? x.size() : dd.comm->atomRanges.numHomeAtoms());
 
-        low_set_ddbox(dd.unitCellInfo.npbcdim, dd.unitCellInfo.numBoundedDimensions, &dd.nc, box,
-                      calculateUnboundedSize, xRef,
+        low_set_ddbox(dd.unitCellInfo.npbcdim, dd.unitCellInfo.numBoundedDimensions, &dd.numCells,
+                      box, calculateUnboundedSize, xRef,
                       needToReduceCoordinateData ? &dd.mpi_comm_all : nullptr, ddbox);
     }
 

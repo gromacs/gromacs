@@ -179,7 +179,7 @@ void get_nsgrid_boundaries(int           nboundeddim,
                 bdens0     = (*gr0)[d];
             }
             /* Check for a DD cell not at a higher edge */
-            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->nc[d] - 1)
+            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->numCells[d] - 1)
             {
                 grid_x1[d] = (*gr1)[d];
                 bdens1     = (*gr1)[d];
@@ -238,7 +238,7 @@ static void set_grid_sizes(matrix              box,
         grid->cell_offset[i] = izones_x0[i];
         size                 = izones_size[i];
 
-        bDD = (dd != nullptr) && (dd->nc[i] > 1);
+        bDD = (dd != nullptr) && (dd->numCells[i] > 1);
         if (!bDD)
         {
             bDDRect = FALSE;

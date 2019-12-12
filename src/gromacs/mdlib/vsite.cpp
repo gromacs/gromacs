@@ -641,7 +641,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
          */
         ivec null_ivec;
         clear_ivec(null_ivec);
-        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : null_ivec, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->numCells : null_ivec, FALSE, box);
     }
     else
     {
@@ -1748,7 +1748,7 @@ void spread_vsite_f(const gmx_vsite_t* vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {

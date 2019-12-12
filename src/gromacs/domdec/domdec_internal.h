@@ -778,7 +778,7 @@ static inline int dd_index(const ivec numDomains, const ivec domainCoordinates)
 /*! Returns the size of the buffer to hold fractional cell boundaries for DD dimension index dimIndex */
 static inline int ddCellFractionBufferSize(const gmx_domdec_t* dd, int dimIndex)
 {
-    return dd->nc[dd->dim[dimIndex]] + 1 + dimIndex * 2 + 1 + dimIndex;
+    return dd->numCells[dd->dim[dimIndex]] + 1 + dimIndex * 2 + 1 + dimIndex;
 }
 
 /*! \brief Maximum number of ranks for using send/recv for state scattering and gathering
