@@ -149,8 +149,8 @@ cmake_args = [cmake_platform_hints, cmake_gmxapi_hint]
 setup(
     name='gmxapi',
 
-    # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
-    version='0.1.0.1',
+    # TODO: single-source version information (currently repeated in gmxapi/version.py)
+    version='0.2.0b1',
     python_requires='>=3.5, <3.9',
     setup_requires=['cmake>=3.12',
                     'setuptools>=28',

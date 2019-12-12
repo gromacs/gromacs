@@ -33,33 +33,53 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 """
-Provide version and release information.
+gmxapi version and release information.
 
-Attributes:
-    major (int): gmxapi major version number.
-    minor (int): gmxapi minor version number.
-    patch (int): gmxapi patch level number.
-    release (bool): True if imported gmx module is an officially tagged release, else False.
+The ``gmxapi.__version__`` attribute contains a :pep:`version string <440>`.
+The more general way to access the package version is with the
+:py:mod:`pkg_resources <https://setuptools.readthedocs.io/en/latest/pkg_resources.html>` module::
 
+    pkg_resources.get_distribution('gmxapi').version
+
+`gmxapi.version` module functions `api_is_at_least()` and `has_feature()`
+support additional convenience and introspection.
+
+.. versionchanged:: 0.2
+
+    This module no longer provides public data attributes.
+    Instead, use the module functions or
+    :py:mod:`packaging.version <https://packaging.pypa.io/en/latest/version/>`.
+
+.. seealso::
+
+    Consider https://packaging.pypa.io/en/latest/version/ for programmatic
+    handling of the version string. For example::
+
+        from packaging.version import parse
+        gmxapi_version = pkg_resources.get_distribution('gmxapi').version
+        if parse(gmxapi_version).is_prerelease:
+            print('The early bird gets the worm.')
+
+.. todo:: Use pkg_resources.get_distribution('gmxapi').version and
+          "development installations" instead of relying on or publicizing
+          a __version__ attribute.
 """
 import warnings
 
-__version__ = "0.1.0"
+from .exceptions import FeatureNotAvailableError
 
-# TODO: (pending infrastructure and further discussion) Configure with CMake.
-# __version__ = "@PROJECT_VERSION@"
-# major = @PROJECT_VERSION_MAJOR@
-# minor = @PROJECT_VERSION_MINOR@
-# patch = @PROJECT_VERSION_PATCH@
+# TODO: Version management policy and procedures.
+_major = 0
+_minor = 2
+_micro = 0
+_suffix = 'b1'
 
-from gmxapi.exceptions import FeatureNotAvailableError
-
-major = 0
-minor = 1
-patch = 0
-
-# Note: this is not automatically updated. See RELEASE.txt and https://github.com/kassonlab/gmxapi/issues/152
-release = True
+# Reference https://www.python.org/dev/peps/pep-0440/
+# and https://packaging.pypa.io/en/latest/version/
+__version__ = '{major}.{minor}.{micro}{suffix}'.format(major=_major,
+                                                       minor=_minor,
+                                                       micro=_micro,
+                                                       suffix=_suffix)
 
 # Features added since the initial gmxapi prototype, targeted for version 0.1.
 _named_features_0_0 = ['fr1', 'fr3', 'fr7', 'fr15']
@@ -119,11 +139,11 @@ def api_is_at_least(major_version, minor_version=0, patch_version=0):
     """
     if not isinstance(major_version, int) or not isinstance(minor_version, int) or not isinstance(patch_version, int):
         raise TypeError('Version levels must be provided as integers.')
-    if major > major_version:
+    if _major > major_version:
         return True
-    elif major == major_version and minor >= minor_version:
+    elif _major == major_version and _minor >= minor_version:
         return True
-    elif major == major_version and minor == minor_version and patch >= patch_version:
+    elif _major == major_version and _minor == minor_version and _micro >= patch_version:
         return True
     else:
         return False
