@@ -1958,8 +1958,7 @@ void get_ir(const char*     mdparin,
 
     /* Neighbor searching */
     printStringNewline(&inp, "NEIGHBORSEARCHING PARAMETERS");
-    printStringNoNewline(
-            &inp, "cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)");
+    printStringNoNewline(&inp, "cut-off scheme (Verlet: particle based cut-offs)");
     ir->cutoff_scheme = get_eeenum(&inp, "cutoff-scheme", ecutscheme_names, wi);
     printStringNoNewline(&inp, "nblist update frequency");
     ir->nstlist = get_eint(&inp, "nstlist", 10, wi);

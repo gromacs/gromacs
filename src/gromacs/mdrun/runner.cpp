@@ -175,8 +175,6 @@ struct DevelopmentFeatureFlags
     //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
     bool enableGpuBufferOps = false;
-    //! If true, forces 'mdrun -update auto' default to 'gpu'
-    bool forceGpuUpdateDefaultOn = false;
     //! True if the GPU halo exchange development feature is enabled
     bool enableGpuHaloExchange = false;
     //! True if the PME PP direct communication GPU development feature is enabled
@@ -211,7 +209,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 #pragma GCC diagnostic ignored "-Wunused-result"
     devFlags.enableGpuBufferOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr)
                                   && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
-    devFlags.forceGpuUpdateDefaultOn = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
     devFlags.enableGpuHaloExchange =
             (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm =
@@ -253,15 +250,6 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                             "are not offloaded.");
             devFlags.enableGpuHaloExchange = false;
         }
-    }
-
-    if (devFlags.forceGpuUpdateDefaultOn)
-    {
-        GMX_LOG(mdlog.warning)
-                .asParagraph()
-                .appendTextFormatted(
-                        "NOTE: This run will default to '-update gpu' as requested by the "
-                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
     if (devFlags.enableGpuPmePPComm)
@@ -908,9 +896,8 @@ int Mdrunner::mdrunner()
     try
     {
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                devFlags.forceGpuUpdateDefaultOn, useDomainDecomposition, useGpuForPme,
-                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec,
-                gmx_mtop_interaction_count(mtop, IF_VSITE) > 0, doEssentialDynamics,
+                useDomainDecomposition, useGpuForPme, useGpuForNonbonded, updateTarget,
+                gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
                 gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR

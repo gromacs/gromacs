@@ -57,11 +57,13 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
+#include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
 #include "gromacs/taskassignment/taskassignment.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/exceptions.h"
@@ -486,14 +488,13 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
-                                    const bool        isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
                                     const bool        useGpuForPme,
                                     const bool        useGpuForNonbonded,
                                     const TaskTarget  updateTarget,
                                     const bool        gpusWereDetected,
                                     const t_inputrec& inputrec,
-                                    const bool        haveVSites,
+                                    const gmx_mtop_t& mtop,
                                     const bool        useEssentialDynamics,
                                     const bool        doOrientationRestraints,
                                     const bool        useReplicaExchange)
@@ -543,7 +544,7 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
         // The graph is needed, but not supported
         errorMessage += "Ewald surface correction is not supported.\n";
     }
-    if (haveVSites)
+    if (gmx_mtop_interaction_count(mtop, IF_VSITE) > 0)
     {
         errorMessage += "Virtual sites are not supported.\n";
     }
@@ -575,9 +576,18 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
         errorMessage += "Swapping the coordinates is not supported.\n";
     }
 
-    // \todo Check for coupled constraint block size restriction needs to be added
-    //       when update auto chooses GPU in some cases. Currently exceeding the restriction
-    //       triggers a fatal error during LINCS setup.
+    // TODO: F_CONSTRNC is only unsupported, because isNumCoupledConstraintsSupported()
+    // does not support it, the actual CUDA LINCS code does support it
+    if (gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0)
+    {
+        errorMessage += "Non-connecting constraints are not supported";
+    }
+    if (!UpdateConstrainCuda::isNumCoupledConstraintsSupported(mtop))
+    {
+        errorMessage +=
+                "The number of coupled constraints is higher than supported in the CUDA LINCS "
+                "code.\n";
+    }
 
     if (!errorMessage.empty())
     {
@@ -591,8 +601,7 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultOn,
         return false;
     }
 
-    return ((forceGpuUpdateDefaultOn && updateTarget == TaskTarget::Auto)
-            || (updateTarget == TaskTarget::Gpu));
+    return true;
 }
 
 } // namespace gmx

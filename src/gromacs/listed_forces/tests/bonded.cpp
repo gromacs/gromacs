@@ -59,6 +59,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -115,6 +117,8 @@ public:
     bool fep = false;
     //! Interaction parameters
     t_iparams iparams = { { 0 } };
+
+    friend std::ostream& operator<<(std::ostream& out, const iListInput& input);
 
     //! Constructor
     iListInput() {}
@@ -470,6 +474,26 @@ public:
     }
 };
 
+//! Prints the interaction and parameters to a stream
+std::ostream& operator<<(std::ostream& out, const iListInput& input)
+{
+    using std::endl;
+    out << "Function type " << input.ftype << " called " << interaction_function[input.ftype].name
+        << " ie. labelled '" << interaction_function[input.ftype].longname << "' in an energy file"
+        << endl;
+
+    // Organize to print the legacy C union t_iparams, whose
+    // relevant contents vary with ftype.
+    StringOutputStream stream;
+    {
+        TextWriter writer(&stream);
+        printInteractionParameters(&writer, input.ftype, input.iparams);
+    }
+    out << "Function parameters " << stream.toString();
+    out << "Parameters trigger FEP? " << (input.fep ? "true" : "false") << endl;
+    return out;
+}
+
 /*! \brief Utility to fill iatoms struct
  *
  * \param[in]  ftype  Function type
@@ -530,7 +554,7 @@ protected:
                 BondedKernelFlavor::ForcesAndVirialAndEnergy);
         // Internal consistency test of both test input
         // and bonded functions.
-        EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0)));
+        EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
         checkOutput(checker, output);
     }
     void testIfunc()

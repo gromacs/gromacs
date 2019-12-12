@@ -231,14 +231,13 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
- * \param[in]  forceGpuUpdateDefaultOn   If the update should be offloaded by default.
  * \param[in]  isDomainDecomposition     Whether there more than one domain.
  * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  updateTarget              User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
  * \param[in]  inputrec                  The user input.
- * \param[in]  haveVSites                If there are virtual sites in the system.
+ * \param[in]  mtop                      The global topology.
  * \param[in]  useEssentialDynamics      If essential dynamics is active.
  * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
  * \param[in]  useReplicaExchange        If this is a REMD simulation.
@@ -247,14 +246,13 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultOn,
-                                    bool              isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
                                     bool              useGpuForPme,
                                     bool              useGpuForNonbonded,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,
                                     const t_inputrec& inputrec,
-                                    bool              haveVSites,
+                                    const gmx_mtop_t& mtop,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
                                     bool              useReplicaExchange);

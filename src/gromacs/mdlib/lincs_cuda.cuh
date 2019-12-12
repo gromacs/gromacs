@@ -113,7 +113,7 @@ public:
      * Applies LINCS to coordinates and velocities, stored on GPU.
      * The results are not automatically copied back to the CPU memory.
      * Method uses this class data structures which should be updated
-     * when needed using set() and setPbc() method.
+     * when needed using set() method.
      *
      * \param[in]     d_x               Coordinates before timestep (in GPU memory)
      * \param[in,out] d_xp              Coordinates after timestep (in GPU memory). The
@@ -156,6 +156,14 @@ public:
      * \param[in] md    Atoms data to get atom masses from.
      */
     void set(const t_idef& idef, const t_mdatoms& md);
+
+    /*! \brief
+     * Returns whether the maximum number of coupled constraints is supported
+     * by the CUDA LINCS code.
+     *
+     * \param[in] mtop The molecular topology
+     */
+    static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
     //! CUDA stream

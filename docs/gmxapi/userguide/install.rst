@@ -264,6 +264,8 @@ above and you use the ``bash`` shell, do::
 
     source $HOME/gromacs-gmxapi/bin/GMXRC
 
+.. _gmxapi venv:
+
 Set up a Python virtual environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
