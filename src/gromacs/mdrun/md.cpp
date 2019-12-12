@@ -317,18 +317,11 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
-    /*****************************************************************************************/
-    // TODO: The following block of code should be refactored, once:
-    //       1. We have the useGpuForBufferOps variable set and available here and in do_force(...)
-    //       2. The proper GPU syncronization is introduced, so that the H2D and D2H data copies can be performed in the separate
-    //          stream owned by the StatePropagatorDataGpu
     const auto& simulationWork     = runScheduleWork->simulationWork;
     const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
-    // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
-    const bool useGpuForBufferOps = simulationWork.useGpuBufferOps;
-    const bool useGpuForUpdate    = simulationWork.useGpuUpdate;
-
+    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
@@ -357,7 +350,7 @@ void gmx::LegacySimulator::do_md()
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(ir->pull),
-                           "Pulling is not supported with the GPU update.\n");
+                           "Constraints pulling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(fcd->orires.nr == 0,
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ir->efep == efepNO,
@@ -394,7 +387,6 @@ void gmx::LegacySimulator::do_md()
     {
         changePinningPolicy(&state->v, PinningPolicy::PinnedIfSupported);
     }
-    /*****************************************************************************************/
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
