@@ -62,7 +62,7 @@ class PmeCoordinateReceiverGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void* /* pmeStream */,
+PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(const void* /* pmeStream */,
                                                    MPI_Comm /* comm */,
                                                    gmx::ArrayRef<PpRanks> /* ppRanks */) :
     impl_(nullptr)
