@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,12 +35,8 @@
 """Test gmxapi functionality described in roadmap.rst."""
 
 import gmxapi as gmx
-import pytest
-from gmxapi.version import has_feature
 
 
-@pytest.mark.skipif(not has_feature('fr1'),
-                    reason="Feature level not met.")
 def test_fr1():
     """FR1: Wrap importable Python code.
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,12 +40,8 @@ import stat
 import tempfile
 
 import gmxapi as gmx
-import pytest
-from gmxapi.version import has_feature
 
 
-@pytest.mark.skipif(not has_feature('fr3'),
-                    reason="Feature level not met.")
 def test_fr3():
     """FR3: Output proxy can be used as input."""
     with tempfile.TemporaryDirectory() as directory:

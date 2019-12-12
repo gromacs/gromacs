@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -39,7 +39,6 @@ import logging
 import pytest
 
 import gmxapi as gmx
-from gmxapi.version import has_feature
 
 # Configure the `logging` module before proceeding any further.
 gmx.logger.setLevel(logging.WARNING)
@@ -58,8 +57,6 @@ else:
 formatter = logging.Formatter(rank_tag + '%(name)s:%(levelname)s: %(message)s')
 
 @pytest.mark.usefixtures('cleandir')
-@pytest.mark.skipif(not has_feature('fr15'),
-                   reason="Feature level not met.")
 def test_fr15(spc_water_box, caplog):
     """FR15: Simulation input modification.
 
