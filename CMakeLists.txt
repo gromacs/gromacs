@@ -141,7 +141,10 @@ if(CMAKE_HOST_UNIX)
     execute_process(COMMAND hostname
                     OUTPUT_VARIABLE TMP_HOSTNAME
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
+    # Only check for host name if not running in a CI environment, as the cache might
+    # be reused there between different machines in different stages
+    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}"
+            AND NOT DEFINED ENV{CI_JOB_ID})
         message(WARNING "
             The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
             is being reused! This could lead to inconsistencies; therefore, it is
