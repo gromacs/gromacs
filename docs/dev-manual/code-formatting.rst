@@ -5,7 +5,9 @@ Automatic source code formatting
 
 .. highlight:: bash
 
-The source code can be automatically formatted using clang-format or uncrustify.
+The source code can be automatically formatted using clang-format
+(GROMACS 2020 and later)
+or uncrustify (GROMACS 2019 and earlier).
 Both are formatting tools that apply the guidelines in :doc:`formatting`.
 Additionally, other Python scripts are used for a few other automatic
 formatting/checking tasks.  The overview tools page contains a list of these
@@ -135,7 +137,7 @@ This file is also used as a loadable Python module for kernel generators, and
 provides the functionality to generate conformant copyright headers for such
 scripts.
 
-The script is similar to uncrustify in that there is rarely need to run it
+You should rarely need to run this
 directly, but instead the bash scripts below use it internally.  You can run
 the script with ``--help`` option if you want to see what all options it provides
 if you need to do some maintenance on the copyright headers themselves.
@@ -228,7 +230,7 @@ are reported.  This behavior can be changed by
    to check the HEAD commit.
 2. Specifying an action:
 
-   - ``check-*``:   reports the files that uncrustify changes
+   - ``check-*``:   reports the files that clang-format changes
    - ``diff-*``:    prints the actual diff of what would change
    - ``update-*``:  applies the changes to the repository
    - ``*-workdir``: operates on the working directory (files on disk)
@@ -250,26 +252,18 @@ If you want to run ``uncrustify.sh``, ``copyright.sh`` and/or
 configure a pre-commit hook using ``admin/git-pre-commit``:
 
 1. Copy the ``git-pre-commit`` script to .git/hooks/pre-commit.
-2. Specify the path to uncrustify for the hook if you have not already done
+
+2. Specify the paths to ``uncrustify`` and ``clang-format`` for the hook if you have not already done
    so::
 
      git config hooks.uncrustifypath /path/to/uncrustify
-
-3. Set the operation mode for the hook::
-
-     git config hooks.uncrustifymode check
-     git config hooks.copyrightmode  update
-
-For ``clang-format``, follow these steps instead:
-
-1. Specify the path to ``clang-format`` for the hook if you have not already done
-   so::
-
      git config hooks.clangformatpath /path/to/clang-format
 
-2. Set the operation mode for the hook::
+3. Set the operation modes for the hook::
 
+     git config hooks.uncrustifymode check
      git config hooks.clangformatmode check
+     git config hooks.copyrightmode  update
 
 With this configuration, all source files modified in the commit are run
 through the respective code formatting tool and checked for correct copyright headers.
@@ -318,7 +312,7 @@ that various git commands accept, i.e., ``src/*.cpp`` matches all ``.cpp`` files
 recursively under ``src/``).  The patterns can be specified with
 ``--pattern=<pattern>``, and multiple ``--pattern`` arguments can be given.
 
-As with ``uncrustify.sh``, ``-f``/``--force`` is necessary if the working tree and
+``-f``/``--force`` is necessary if the working tree and
 the git index do not match.
 
 

@@ -128,7 +128,7 @@ clang-format
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
-  ``uncrustify.sh`` automatically before every commit to check for formatting
+  ``uncrustify.sh`` and ``clang-format.sh`` automatically before every commit to check for formatting
   issues.  See :doc:`code-formatting` for details.
 
 ``docs/doxygen/includesorter.py``
@@ -139,7 +139,7 @@ clang-format
 
 include directive checker
   In its present form, the above include sorter script cannot be conveniently
-  applied in ``uncrustify.sh``.  To check for issues, it is instead integrated into
+  applied in the formatting script.  To check for issues, it is instead integrated into
   a ``check-source`` build target.  When this target is built, it also checks for
   include formatting issues.  Internally, it uses the sorter script.  This check
   is run in Jenkins as part of the Documentation job.

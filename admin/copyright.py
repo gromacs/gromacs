@@ -38,7 +38,7 @@
 It is used internally by several bash scripts to do copyright-relates tasks,
 but can also be invoked directly for some rare use cases.
 
-See docs/dev-manual/uncrustify.rst for more details.
+See docs/dev-manual/code-formatting.rst for more details.
 """
 
 import datetime
