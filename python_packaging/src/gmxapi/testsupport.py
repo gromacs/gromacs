@@ -54,6 +54,8 @@ import shutil
 import tempfile
 import warnings
 from contextlib import contextmanager
+from enum import Enum
+from typing import Union
 
 import pytest
 
@@ -98,10 +100,18 @@ def pytest_addoption(parser):
     )
 
 
+class RmOption(Enum):
+    """Enumerate allowable values of the --rm option."""
+    always = 'always'
+    never = 'never'
+    success = 'success'
+
+
 @pytest.fixture(scope='session')
-def remove_tempdir(request):
+def remove_tempdir(request) -> RmOption:
     """pytest fixture to get access to the --rm CLI option."""
-    return request.config.getoption('--rm')
+    arg = request.config.getoption('--rm')
+    return RmOption(arg)
 
 
 @contextmanager
@@ -119,16 +129,21 @@ def scoped_chdir(dir):
 
 
 @contextmanager
-def _cleandir(remove_tempdir):
+def _cleandir(remove_tempdir: Union[str, RmOption]):
     """Context manager for a clean temporary working directory.
 
     Arguments:
-        remove_tempdir (str): whether to remove temporary directory "always",
-                              "never", or on "success"
+        remove_tempdir (RmOption): whether to remove temporary directory "always",
+                                   "never", or on "success"
+
+    Raises:
+        ValueError: if remove_tempdir value is not valid.
 
     The context manager will issue a warning for each temporary directory that
     is not removed.
     """
+    if not isinstance(remove_tempdir, RmOption):
+        remove_tempdir = RmOption(remove_tempdir)
 
     newpath = tempfile.mkdtemp()
 
@@ -138,24 +153,26 @@ def _cleandir(remove_tempdir):
     def warn():
         warnings.warn('Temporary directory not removed: {}'.format(newpath))
 
-    if remove_tempdir == 'always':
+    # Initialize callback function reference
+    if remove_tempdir == RmOption.always:
         callback = remove
     else:
         callback = warn
+
     try:
         with scoped_chdir(newpath):
             yield newpath
         # If we get to this line, the `with` block using _cleandir did not throw.
         # Clean up the temporary directory unless the user specified `--rm never`.
         # I.e. If the user specified `--rm success`, then we need to toggle from `warn` to `remove`.
-        if remove_tempdir != 'never':
+        if remove_tempdir != RmOption.never:
             callback = remove
     finally:
         callback()
 
 
 @pytest.fixture
-def cleandir(remove_tempdir):
+def cleandir(remove_tempdir: RmOption):
     """Provide a clean temporary working directory for a test.
 
     Example usage:
