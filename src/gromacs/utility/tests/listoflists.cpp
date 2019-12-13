@@ -46,6 +46,7 @@
 #include <gtest/gtest.h>
 
 #include "testutils/testasserts.h"
+#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -53,16 +54,18 @@ namespace gmx
 namespace
 {
 
-//! Compares two lists element by element
-void compareLists(ArrayRef<const char> a, const std::vector<char>& b)
+//! Compares all element between two lists of lists
+template<typename T>
+void compareLists(const ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
 {
-    EXPECT_EQ(a.size(), b.size());
-    if (a.size() == b.size())
+    using ::testing::Eq;
+    using ::testing::Pointwise;
+
+    ASSERT_EQ(list.size(), v.size());
+    for (std::size_t i = 0; i < list.size(); i++)
     {
-        for (size_t i = 0; i < b.size(); i++)
-        {
-            EXPECT_EQ(a[i], b[i]);
-        }
+        ASSERT_EQ(list[i].size(), v[i].size());
+        EXPECT_THAT(list[i], Pointwise(Eq(), v[i]));
     }
 }
 
@@ -75,17 +78,33 @@ TEST(ListOfLists, EmptyListOfListsWorks)
     EXPECT_EQ(list.numElements(), 0);
 }
 
-TEST(ListOfLists, AppendWorks)
+//! Checks whether append works and stores the data correctly
+template<typename T>
+void checkAppend(const std::vector<std::vector<T>> inputLists)
 {
-    ListOfLists<char> list;
+    ListOfLists<T> list;
 
-    std::vector<char> v1 = { 5, 3 };
-    std::vector<char> v2 = { -1, 7, 4 };
-    list.pushBack(v1);
-    list.pushBack(v2);
+    for (const auto& inputList : inputLists)
+    {
+        list.pushBack(inputList);
+    }
     EXPECT_EQ(list.size(), 2);
-    compareLists(list[0], v1);
-    compareLists(list[1], v2);
+    compareLists(list, inputLists);
+}
+
+TEST(ListOfLists, AppendPodWorks)
+{
+    const std::vector<std::vector<char>> v = { { 5, 3 }, { char(-1), 7, 4 } };
+
+    checkAppend(v);
+}
+
+TEST(ListOfLists, AppendNonpodWorks)
+{
+    const std::vector<std::vector<std::string>> v = { { "Will", "this" },
+                                                      { "test", "work", "", "?" } };
+
+    checkAppend(v);
 }
 
 TEST(ListOfLists, EmptyListWorks)
@@ -122,13 +141,14 @@ TEST(ListOfLists, OutOfRangeAccessThrows)
 
 TEST(ListOfLists, ExtractsAndRestores)
 {
-    ListOfLists<char> list1;
+    const std::vector<std::vector<char>> v({ { 5, 3 }, {}, { char(-1), 4 } });
 
-    std::vector<char> v1 = { 5, 3 };
-    std::vector<char> v3 = { -1, 4 };
-    list1.pushBack(v1);
-    list1.pushBack({});
-    list1.pushBack(v3);
+    ListOfLists<char> list1;
+    for (const auto& vlist : v)
+    {
+        list1.pushBack(vlist);
+    }
+
     auto             listRanges = list1.listRangesView();
     auto             elements   = list1.elementsView();
     std::vector<int> listRangesVector;
@@ -136,30 +156,44 @@ TEST(ListOfLists, ExtractsAndRestores)
     std::vector<char> elementsVector;
     elementsVector.insert(elementsVector.begin(), elements.begin(), elements.end());
     ListOfLists<char> list2(std::move(listRangesVector), std::move(elementsVector));
-    compareLists(list2[0], v1);
-    EXPECT_EQ(list2[1].empty(), true);
-    compareLists(list2[2], v3);
+    compareLists(list2, v);
 }
 
-// Test that we can extract raw data from one object and use it correctly generate a new object
-TEST(ListOfLists, AppendsListOfLists)
+TEST(ListOfLists, AppendsListOfListsWithOffset)
 {
+    std::vector<std::vector<char>> v = { { 5, 3 }, { 2, char(-1) }, { 4 } };
+
     ListOfLists<char> list1;
     ListOfLists<char> list2;
 
-    std::vector<char> v1 = { 5, 3 };
-    list1.pushBack(v1);
-    std::vector<char> v2 = { 2, -1 };
-    std::vector<char> v3 = { 4 };
-    list2.pushBack(v2);
-    list2.pushBack(v3);
+    list1.pushBack(v[0]);
+    list2.pushBack(v[1]);
+    list2.pushBack(v[2]);
     const char offset = 2;
     list1.appendListOfLists(list2, offset);
-    EXPECT_EQ(list1.size(), 3);
-    auto a = list1[1];
-    EXPECT_EQ(a.size(), 2);
-    EXPECT_EQ(a[0], v2[0] + offset);
-    EXPECT_EQ(a[1], v2[1] + offset);
+    for (std::size_t i = 1; i < v.size(); i++)
+    {
+        for (auto& elem : v[i])
+        {
+            elem += offset;
+        }
+    }
+    compareLists(list1, v);
+}
+
+TEST(ListOfLists, AppendsListOfListsNonpod)
+{
+    std::vector<std::vector<std::string>> v({ { "a", "bc" }, { "d" }, {}, { "efg", "h" } });
+
+    ListOfLists<std::string> list1;
+    ListOfLists<std::string> list2;
+
+    list1.pushBack(v[0]);
+    list1.pushBack(v[1]);
+    list2.pushBack(v[2]);
+    list2.pushBack(v[3]);
+    list1.appendListOfLists(list2);
+    compareLists(list1, v);
 }
 
 } // namespace

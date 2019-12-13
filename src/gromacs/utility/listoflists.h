@@ -157,9 +157,17 @@ public:
         elements_.insert(elements_.end(), listOfLists.elements_.begin(), listOfLists.elements_.end());
     }
 
-    //! Appends a ListOfLists at the end and increments the appended elements by \p offset
-    std::enable_if_t<std::is_arithmetic<T>::value, void> appendListOfLists(const ListOfLists& listOfLists,
-                                                                           const T offset)
+    /*! \brief Appends a ListOfLists at the end and increments the appended elements by \p offset
+     *
+     * \tparam U  Type which should be the same as \p T
+     *
+     * Note that we can not rely on SFINAE for this void function without additional templating.
+     * So to enable compilation of ListOfLists for all types, we use a second template parameter
+     * which can be automatically deduced from \p listOfLists.
+     */
+    template<typename U>
+    std::enable_if_t<std::is_same<U, T>::value && std::is_arithmetic<T>::value, void>
+    appendListOfLists(const ListOfLists<U>& listOfLists, const T offset)
     {
         const std::size_t oldNumElements = elements_.size();
         appendListOfLists(listOfLists);
