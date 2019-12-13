@@ -55,11 +55,37 @@ Note that Jenkins now only allows formatting using ``clang-format``.
 Setting up clang-format
 -----------------------
 
-You only need a recent (at least version 7) install of the
-`clang-tools <https://clang.llvm.org/docs/ClangTools.html>`__ to use the script.
-Jenkins currently uses clang-format-7 to perform the task, with the style
-encoded in the ``.clang-format`` configuration file in the top of the source
-directory.
+|Gromacs| formatting is enforced with clang-format 7.0.1.
+:command:`clang-format` is one of the core *clang* tools.
+It may be included in a *clang* or *llvm* package from your favorite packaging
+system or you may find a standalone *clang-format* package,
+but you should confirm that the provided command is version 7.0.1 or
+7.1.0. Example::
+
+    $ clang-format --version
+    clang-format version 7.1.0 (tags/RELEASE_710/final)
+
+If you use a different version of clang-format,
+you will likely get different formatting results than
+the |Gromacs| continuous integration testing system,
+and the commits that you push will fail the automated tests.
+
+.. note::
+
+    Refer to `LLVM <http://releases.llvm.org/download.html#7.1.0>`__ for
+    source and binary downloads.
+    If downloading sources, note that you will need to download both the
+    *LLVM source code* and the *Clang source code*.
+    As per the clang
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/7.x/clang/INSTALL.txt>`__,
+    place the expanded clang source into a :file:`tools/clang` subdirectory within
+    the expanded llvm archive, then run CMake against the llvm source directory.
+
+.. todo::
+
+    Consider referencing or providing binary packages and/or checking/managing
+    the executable from an :file:`admin/` script.
+    Reference: https://github.com/mongodb/mongo/blob/master/buildscripts/clang_format.py
 
 In order to use the installed version of clang-format for ``clang-format.sh``
 and for the pre-commit hook, you also need to run this in each of your |Gromacs| repositories::
@@ -70,6 +96,13 @@ Alternatively, if you just want to use ``clang-format.sh``, you can set the
 ``CLANG_FORMAT`` environment variable to ``/path/to/clang-format``.
 
 As above, see the sections below for using the pre-commit hook or git filters.
+
+clang-format discovers which formatting rules to apply from the
+:file:`.clang-format` configuration file(s) in project directories,
+which will be automatically updated (if necessary) when you :command:`git pull`
+from the |Gromacs| repository.
+For more about the tool and the :file:`.clang-format` configuration file,
+visit https://releases.llvm.org/7.0.1/tools/clang/docs/ClangFormat.html
 
 What is automatically formatted?
 --------------------------------
