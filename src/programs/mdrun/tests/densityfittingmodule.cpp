@@ -76,7 +76,7 @@ public:
     {
         runner_.useTopGroAndNdxFromDatabase("argon12");
         runner_.edrFileName_ = fileManager_.getTemporaryFilePath(".edr");
-    };
+    }
 
     //! Check the output of mdrun
     void checkMdrun(real energyTermMagnitude)
