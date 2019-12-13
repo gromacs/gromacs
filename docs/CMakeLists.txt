@@ -547,6 +547,9 @@ if (SPHINX_FOUND)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
     add_custom_target(sphinx-input)
     add_dependencies(sphinx-input sphinx-input-rst sphinx-image-conversion)
+    if (GMX_PYTHON_PACKAGE)
+        add_dependencies(sphinx-input _gmxapi)
+    endif()
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
@@ -613,9 +616,6 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
-    if (GMX_PYTHON_PACKAGE)
-        add_dependencies(webpage-sphinx _gmxapi)
-    endif ()
 
     add_custom_target(man
         COMMAND
