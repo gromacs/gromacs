@@ -126,10 +126,16 @@ and expect whitespace separation will continue to work in all cases.
 :issue:`3176`
 
 Fix duplicate PDB CONECT record output
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""
 
 PDB "CONECT" record output was duplicated in some instances. Since |Gromacs| does
 not use these anywhere, analysis was not affected. The behavior is now fixed.
 
 :issue:`3206`
 
+Fix performance issue with bonded interactions in wrong GPU stream
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This could lead to a significant loss in performance.
+
+:issue:`3241`

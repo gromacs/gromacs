@@ -3087,7 +3087,8 @@ void init_forcerec(FILE                             *fp,
 
         if (useGpuForBonded)
         {
-            auto stream = DOMAINDECOMP(cr) ?
+            // TODO use havePPDomainDecomposition here to simplify the code.
+            auto stream = (DOMAINDECOMP(cr) && (cr->nnodes - cr->npmenodes > 1)) ?
                 nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintNonlocal) :
                 nbnxn_gpu_get_command_stream(fr->nbv->gpu_nbv, eintLocal);
             // TODO the heap allocation is only needed while
