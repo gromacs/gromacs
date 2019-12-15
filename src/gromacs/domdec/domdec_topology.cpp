@@ -993,15 +993,6 @@ static real dd_dist2(t_pbc* pbc_null, const rvec* x, const int i, int j)
     return norm2(dx);
 }
 
-/*! \brief Append ListOfLists exclusion objects 1 to nsrc in \p src to \p *dest */
-static void combineExclusions(ListOfLists<int>* dest, gmx::ArrayRef<const thread_work_t> src)
-{
-    for (gmx::index s = 1; s < src.ssize(); s++)
-    {
-        dest->appendListOfLists(src[s].excl);
-    }
-}
-
 /*! \brief Append t_idef structures 1 to nsrc in src to *dest */
 static void combine_idef(t_idef* dest, gmx::ArrayRef<const thread_work_t> src)
 {
@@ -1580,11 +1571,10 @@ static int make_local_bondeds_excls(gmx_domdec_t*       dd,
 
         if (izone < nzone_excl)
         {
-            if (rt->th_work.size() > 1)
+            for (std::size_t th = 1; th < rt->th_work.size(); th++)
             {
-                combineExclusions(lexcls, rt->th_work);
+                lexcls->appendListOfLists(rt->th_work[th].excl);
             }
-
             for (const thread_work_t& th_work : rt->th_work)
             {
                 *excl_count += th_work.excl_count;

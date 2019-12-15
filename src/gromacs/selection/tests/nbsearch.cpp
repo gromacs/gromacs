@@ -370,15 +370,14 @@ void ExclusionsHelper::generateExclusions()
     // particles would be higher, or where the exclusions would not be random,
     // to make a higher percentage of the exclusions to actually be within the
     // cutoff.
-    std::vector<int> exclusionsForAtom;
     for (int i = 0; i < testPosCount_; ++i)
     {
-        exclusionsForAtom.clear();
+        excls_.pushBackListOfSize(20);
+        gmx::ArrayRef<int> exclusionsForAtom = excls_.back();
         for (int j = 0; j < 20; ++j)
         {
-            exclusionsForAtom.push_back(i + j * 3);
+            exclusionsForAtom[j] = i + j * 3;
         }
-        excls_.pushBack(exclusionsForAtom);
     }
 }
 

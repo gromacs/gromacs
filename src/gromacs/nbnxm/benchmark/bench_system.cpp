@@ -45,6 +45,7 @@
 
 #include "bench_system.h"
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/math/vec.h"
@@ -168,7 +169,6 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     atomInfoAllVdw.resize(numAtoms);
     atomInfoOxygenVdw.resize(numAtoms);
 
-    std::vector<int> exclusionsForAtom;
     for (int a = 0; a < numAtoms; a++)
     {
         if (a % numAtomsInMolecule == 0)
@@ -189,13 +189,10 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
         SET_CGINFO_HAS_Q(atomInfoAllVdw[a]);
         SET_CGINFO_HAS_Q(atomInfoOxygenVdw[a]);
 
-        exclusionsForAtom.clear();
-        const int firstAtomInMolecule = a - (a % numAtomsInMolecule);
-        for (int aj = 0; aj < numAtomsInMolecule; aj++)
-        {
-            exclusionsForAtom.push_back(firstAtomInMolecule + aj);
-        }
-        excls.pushBack(exclusionsForAtom);
+        excls.pushBackListOfSize(numAtomsInMolecule);
+        gmx::ArrayRef<int> exclusionsForAtom   = excls.back();
+        const int          firstAtomInMolecule = a - (a % numAtomsInMolecule);
+        std::iota(exclusionsForAtom.begin(), exclusionsForAtom.end(), firstAtomInMolecule);
     }
 
     forceRec.ntype = numAtomTypes;

@@ -43,6 +43,7 @@
 
 #include "gromacs/topology/exclusionblocks.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/block.h"
@@ -149,11 +150,8 @@ public:
         for (index i = 0; i < ssize(b_); i++)
         {
             gmx::ArrayRef<const int> jList = list_[i];
-            EXPECT_EQ(b_[i].nra(), jList.ssize()) << "Block size mismatch at " << i << ".";
-            for (int j = 0; j < b_[i].nra(); j++)
-            {
-                EXPECT_EQ(b_[i].atomNumber[j], jList[j]) << "Block mismatch at " << i << " , " << j << ".";
-            }
+            ASSERT_EQ(b_[i].nra(), jList.ssize()) << "Block size mismatch at " << i << ".";
+            EXPECT_THAT(b_[i].atomNumber, ::testing::Pointwise(::testing::Eq(), jList));
         }
     }
 

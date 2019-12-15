@@ -67,11 +67,18 @@ namespace gmx
  * lists concatenated. List i is stored in entries listRanges_[i] to
  * listRanges_[i+1] in elements_.
  *
+ * \note This class is currently limited to arithmetic types, mainly because
+ * this should only be used for performance critical applications.
+ * When performance is not critical, a std::vector of std::vector can be used.
+ *
  * \tparam T value type
  */
+
 template<typename T>
 class ListOfLists
 {
+    static_assert(std::is_arithmetic<T>::value, "This class is limited to arithmetic types");
+
 public:
     //! Constructs an empty list of lists
     ListOfLists() = default;
@@ -122,6 +129,16 @@ public:
         listRanges_.push_back(int(elements_.size()));
     }
 
+    //! Appends a new list with \p numElements elements
+    void pushBackListOfSize(int numElements)
+    {
+        // With arithmetic types enforced, this assertion is always true
+        static_assert(std::is_default_constructible<T>::value,
+                      "pushBackListOfSize should only be called with default constructable types");
+        elements_.resize(elements_.size() + numElements);
+        listRanges_.push_back(int(elements_.size()));
+    }
+
     //! Returns an ArrayRef to the elements of the list with the given index
     ArrayRef<const T> operator[](std::size_t listIndex) const
     {
@@ -136,6 +153,29 @@ public:
                                  elements_.data() + listRanges_.at(listIndex + 1));
     }
 
+    /*! \brief Returns a reference to the first list
+     *
+     * \returns a reference to the first list
+     */
+    ArrayRef<T> front()
+    {
+        GMX_ASSERT(size() > 0, "Must contain a list if front() is called");
+        auto beginPtr = elements_.data();
+        auto endPtr   = beginPtr + listRanges_[1];
+        return { beginPtr, endPtr };
+    }
+    /*! \brief Returns a reference to the final list
+     *
+     * \returns a reference to the final list
+     */
+    ArrayRef<T> back()
+    {
+        GMX_ASSERT(size() > 0, "Must contain a list if bank() is called");
+        auto endIndex   = *(listRanges_.end() - 1);
+        auto beginIndex = *(listRanges_.end() - 2);
+        return { elements_.data() + beginIndex, elements_.data() + endIndex };
+    }
+
     //! Clears the list
     void clear()
     {
@@ -143,37 +183,24 @@ public:
         elements_.clear();
     }
 
-    //! Appends a ListOfLists at the end
-    void appendListOfLists(const ListOfLists& listOfLists)
+    //! Appends a ListOfLists at the end and increments the appended elements by \p offset
+    void appendListOfLists(const ListOfLists& listOfLists, const T offset = 0)
     {
-        const std::size_t oldNumLists = size();
         listRanges_.insert(listRanges_.end(), listOfLists.listRanges_.begin() + 1,
                            listOfLists.listRanges_.end());
         const int oldNumElements = elements_.size();
-        for (std::size_t i = oldNumLists + 1; i < listRanges_.size(); i++)
+        for (std::size_t i = listRanges_.size() - listOfLists.size(); i < listRanges_.size(); i++)
         {
             listRanges_[i] += oldNumElements;
         }
         elements_.insert(elements_.end(), listOfLists.elements_.begin(), listOfLists.elements_.end());
-    }
 
-    /*! \brief Appends a ListOfLists at the end and increments the appended elements by \p offset
-     *
-     * \tparam U  Type which should be the same as \p T
-     *
-     * Note that we can not rely on SFINAE for this void function without additional templating.
-     * So to enable compilation of ListOfLists for all types, we use a second template parameter
-     * which can be automatically deduced from \p listOfLists.
-     */
-    template<typename U>
-    std::enable_if_t<std::is_same<U, T>::value && std::is_arithmetic<T>::value, void>
-    appendListOfLists(const ListOfLists<U>& listOfLists, const T offset)
-    {
-        const std::size_t oldNumElements = elements_.size();
-        appendListOfLists(listOfLists);
-        for (std::size_t i = oldNumElements; i < elements_.size(); i++)
+        if (offset != 0)
         {
-            elements_[i] += offset;
+            for (std::size_t i = elements_.size() - listOfLists.elements_.size(); i < elements_.size(); i++)
+            {
+                elements_[i] += offset;
+            }
         }
     }
 

@@ -180,7 +180,6 @@ static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
 
     excls->clear();
 
-    std::vector<int> exclusionsForAtom;
     for (i = 0; (i < nnb->nr); i++)
     {
         /* calculate the total number of exclusions for atom i */
@@ -232,12 +231,12 @@ static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
         prints("after rm-double", j_index, s);
 
         /* put the sorted exclusions in the target list */
-        exclusionsForAtom.clear();
+        excls->pushBackListOfSize(nr_of_sortables);
+        gmx::ArrayRef<int> exclusionsForAtom = excls->back();
         for (nrs = 0; (nrs < nr_of_sortables); nrs++)
         {
-            exclusionsForAtom.push_back(s[nrs].aj);
+            exclusionsForAtom[nrs] = s[nrs].aj;
         }
-        excls->pushBack(exclusionsForAtom);
 
         /* cleanup temporary space */
         sfree(s);

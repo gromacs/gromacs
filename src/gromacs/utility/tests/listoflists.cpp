@@ -43,10 +43,10 @@
 
 #include "gromacs/utility/listoflists.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "testutils/testasserts.h"
-#include "testutils/testmatchers.h"
 
 namespace gmx
 {
@@ -54,13 +54,13 @@ namespace gmx
 namespace
 {
 
+using ::testing::Eq;
+using ::testing::Pointwise;
+
 //! Compares all element between two lists of lists
 template<typename T>
 void compareLists(const ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
 {
-    using ::testing::Eq;
-    using ::testing::Pointwise;
-
     ASSERT_EQ(list.size(), v.size());
     for (std::size_t i = 0; i < list.size(); i++)
     {
@@ -92,17 +92,9 @@ void checkAppend(const std::vector<std::vector<T>> inputLists)
     compareLists(list, inputLists);
 }
 
-TEST(ListOfLists, AppendPodWorks)
+TEST(ListOfLists, AppendWorks)
 {
     const std::vector<std::vector<char>> v = { { 5, 3 }, { char(-1), 7, 4 } };
-
-    checkAppend(v);
-}
-
-TEST(ListOfLists, AppendNonpodWorks)
-{
-    const std::vector<std::vector<std::string>> v = { { "Will", "this" },
-                                                      { "test", "work", "", "?" } };
 
     checkAppend(v);
 }
@@ -117,6 +109,17 @@ TEST(ListOfLists, EmptyListWorks)
     EXPECT_EQ(list.size(), 2);
     auto a = list[1];
     EXPECT_EQ(a.empty(), true);
+}
+
+TEST(ListOfLists, AppendAccessWorks)
+{
+    const std::vector<std::vector<char>> v = { { 5, 3 }, { char(-1), 4 } };
+
+    ListOfLists<char> list;
+    list.pushBack(v[0]);
+    list.pushBackListOfSize(v[1].size());
+    std::copy(v[1].begin(), v[1].end(), list.back().begin());
+    compareLists(list, v);
 }
 
 TEST(ListOfLists, ClearWorks)
@@ -137,6 +140,42 @@ TEST(ListOfLists, OutOfRangeAccessThrows)
 
     std::vector<char> v = { 5, 3 };
     EXPECT_THROW(list.at(1), std::out_of_range);
+}
+
+TEST(ListOfLists, FrontAndBackWork)
+{
+    ListOfLists<char> list1;
+    std::vector<char> v1{ { 3, 4 } };
+    list1.pushBack(v1);
+    EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
+    EXPECT_THAT(list1.back(), Pointwise(Eq(), v1));
+
+    std::vector<char> v2{ { 12, 63, 1 } };
+    list1.pushBack(v2);
+    EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
+    EXPECT_THAT(list1.back(), Pointwise(Eq(), v2));
+
+    list1.pushBack({});
+    EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
+    EXPECT_THAT(list1.back(), Pointwise(Eq(), std::vector<char>{}));
+
+    std::vector<char> v3{ { 99, 0, char(-1) } };
+    list1.pushBack(v3);
+    EXPECT_THAT(list1.front(), Pointwise(Eq(), v1));
+    EXPECT_THAT(list1.back(), Pointwise(Eq(), v3));
+
+    ListOfLists<char> list2;
+    list2.pushBack(v2);
+    EXPECT_THAT(list2.front(), Pointwise(Eq(), v2));
+    EXPECT_THAT(list2.back(), Pointwise(Eq(), v2));
+
+    list2.appendListOfLists(list1);
+    EXPECT_THAT(list2.front(), Pointwise(Eq(), v2));
+    EXPECT_THAT(list2.back(), Pointwise(Eq(), v3));
+    EXPECT_EQ(list2.back().size(), v3.size());
+
+    list2.pushBackListOfSize(1);
+    EXPECT_EQ(list2.back().size(), 1);
 }
 
 TEST(ListOfLists, ExtractsAndRestores)
@@ -178,21 +217,6 @@ TEST(ListOfLists, AppendsListOfListsWithOffset)
             elem += offset;
         }
     }
-    compareLists(list1, v);
-}
-
-TEST(ListOfLists, AppendsListOfListsNonpod)
-{
-    std::vector<std::vector<std::string>> v({ { "a", "bc" }, { "d" }, {}, { "efg", "h" } });
-
-    ListOfLists<std::string> list1;
-    ListOfLists<std::string> list2;
-
-    list1.pushBack(v[0]);
-    list1.pushBack(v[1]);
-    list2.pushBack(v[2]);
-    list2.pushBack(v[3]);
-    list1.appendListOfLists(list2);
     compareLists(list1, v);
 }
 
