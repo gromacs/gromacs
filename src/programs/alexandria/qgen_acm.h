@@ -117,20 +117,22 @@ class QgenAcm
         std::vector<std::vector<int>>                      row_;       
         std::vector<std::vector<double>>                   q_, zeta_, qsave_, zetasave_, Jcc_;
 
-        double calcJ(rvec                    xI, 
-                     rvec                    xJ,
-                     double                  zetaI,
-                     double                  zetaJ,
-                     int                     rowI,
-                     int                     rowJ);
+        double calcJ(rvec   xI, 
+                     rvec   xJ,
+                     double zetaI,
+                     double zetaJ,
+                     int    rowI,
+                     int    rowJ,
+                     double epsilonr);
 
         void copyChargesToAtoms(t_atoms *atoms);
         
-        void calcJcc(t_atoms *atoms);
+        void calcJcc(t_atoms *atoms, double epsilonr);
         
         void calcJcs(t_atoms *atoms,
                      int      top_ndx,
-                     int      eem_ndx);
+                     int      eem_ndx,
+                     double   epsilonr);
 
         void solveQEem(FILE *fp);
         
@@ -138,7 +140,7 @@ class QgenAcm
 
         double calcSij(int i, int j);
 
-        void calcRhs(t_atoms *atoms);
+        void calcRhs(t_atoms *atoms, double epsilonr);
 };
 }
 #endif

@@ -401,12 +401,13 @@ double QgenAcm::calcSij(int i, int j)
     return Sij;
 }
 
-double QgenAcm::calcJ(rvec                    xI,
-                      rvec                    xJ,
-                      double                  zetaI,
-                      double                  zetaJ,
-                      int                     rowI,
-                      int                     rowJ)
+double QgenAcm::calcJ(rvec    xI,
+                      rvec    xJ,
+                      double  zetaI,
+                      double  zetaJ,
+                      int     rowI,
+                      int     rowJ,
+                      double  epsilonr)
 {
     rvec   dx;
     double r    = 0;
@@ -439,10 +440,10 @@ double QgenAcm::calcJ(rvec                    xI,
     {
         gmx_fatal(FARGS, "Unsupported model %d in calc_jcc", iModel);
     }
-    return (ONE_4PI_EPS0*eTot)/ELECTRONVOLT;
+    return (ONE_4PI_EPS0*eTot)/(epsilonr*ELECTRONVOLT);
 }
 
-void QgenAcm::calcJcc(t_atoms *atoms)
+void QgenAcm::calcJcc(t_atoms *atoms, double epsilonr)
 {
     auto Jcc = 0.0;
     auto i   = 0;
@@ -463,7 +464,8 @@ void QgenAcm::calcJcc(t_atoms *atoms)
                                     zeta_[i][0],
                                     zeta_[j][0],
                                     row_[i][0],
-                                    row_[j][0]);
+                                    row_[j][0],
+                                    epsilonr);
                         if (iChargeModel_ == eqdYang)
                         {
                             Jcc *= calcSij(i, j);
@@ -499,7 +501,8 @@ void QgenAcm::calcJcc(t_atoms *atoms)
 
 void QgenAcm::calcJcs(t_atoms *atoms,
                       int      core_ndx_gromacs,
-                      int      core_ndx_eem)
+                      int      core_ndx_eem,
+                      double   epsilonr)
 {
     Jcs_ = 0;
     if (atoms->atom[core_ndx_gromacs].ptype == eptAtom)
@@ -517,7 +520,8 @@ void QgenAcm::calcJcs(t_atoms *atoms,
                                             zeta_[core_ndx_eem][0],
                                             zeta_[i][1],
                                             row_[core_ndx_eem][0],
-                                            row_[i][1]));                    
+                                            row_[i][1],
+                                            epsilonr));  
                     if (debug)
                     {
                         fprintf(debug, "core_ndx: %d shell_ndx: %d shell_charge: %0.1f\n", 
@@ -542,7 +546,7 @@ void QgenAcm::calcJcs(t_atoms *atoms,
     }
 }
 
-void QgenAcm::calcRhs(t_atoms *atoms)
+void QgenAcm::calcRhs(t_atoms *atoms, double epsilonr)
 {
     auto   qcore     = 0.0;
     auto   qshell    = 0.0;
@@ -553,7 +557,7 @@ void QgenAcm::calcRhs(t_atoms *atoms)
         rhs_[i]  -= chi0_[i];
         if (bHaveShell_)
         {
-            calcJcs(atoms, coreIndex_[i], i);
+            calcJcs(atoms, coreIndex_[i], i, epsilonr);
             rhs_[i]   -= hardnessFactor_*j00_[i]*q_[i][1];
             rhs_[i]   -= Jcs_;
             qshell    += q_[i][1];
@@ -691,8 +695,8 @@ int QgenAcm::generateCharges(FILE                      *fp,
     {
         updateInfo(pd);
         updatePositions(x, atoms);
-        calcJcc(atoms);
-        calcRhs(atoms);
+        calcJcc(atoms, pd->getEpsilonR());
+        calcRhs(atoms, pd->getEpsilonR());
         solveQEem(fp);
         copyChargesToAtoms(atoms);
         if (fp)
