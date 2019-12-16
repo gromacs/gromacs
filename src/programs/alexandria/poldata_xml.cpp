@@ -85,6 +85,7 @@ enum {
     exmlCOMB_RULE          = 6,
     exmlNEXCL              = 7,
     exmlVERSION            = 8,
+    exmlEPSILONR           = 9,
     exmlPOLTYPES           = 10,
     exmlPOLTYPE            = 11,
     exmlPTYPE              = 12,
@@ -176,6 +177,7 @@ std::map<const std::string, int> xmlxxx =
     { "polarizability_unit",    exmlPOLAR_UNIT       },
     { "combination_rule",       exmlCOMB_RULE        },
     { "nexclusions",            exmlNEXCL            },
+    { "epsilonr",               exmlEPSILONR         },
     { "poltypes",               exmlPOLTYPES         },
     { "poltype",                exmlPOLTYPE          },
     { "ptype",                  exmlPTYPE            },
@@ -388,6 +390,10 @@ static void processAttr(FILE *fp, xmlAttrPtr attr, int elem,
             if (NNobligatory(xbuf, exmlNEXCL))
             {
                 pd.setNexcl(atoi(xbuf[exmlNEXCL].c_str()));
+            }
+            if (NN(xbuf[exmlEPSILONR]))
+            {
+                pd.setEpsilonR(atof(xbuf[exmlEPSILONR].c_str()));
             }
             break;
         case exmlBSATOMS:
@@ -754,7 +760,9 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     }
     nexcl = pd->getNexcl();
     add_xml_int(child, exml_names(exmlNEXCL), nexcl);
-
+    double epsilonr = pd->getEpsilonR();
+    add_xml_double(child, exml_names(exmlEPSILONR), epsilonr);
+    
     for (auto aType = pd->getAtypeBegin();
          aType != pd->getAtypeEnd(); aType++)
     {

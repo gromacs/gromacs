@@ -95,6 +95,12 @@ class Poldata
         void setCombinationRule(const std::string &func);
 
         /*! \brief
+         * Set relative dielectric constant
+         *
+         */
+        void setEpsilonR(double epsilonR) { gtEpsilonR_ = epsilonR; }
+
+        /*! \brief
          * Set the number of exclusion
          */
         void setNexcl(int nexcl) { nexcl_ = nexcl; }
@@ -217,6 +223,11 @@ class Poldata
          * Return the combination rule.
          */
         int  getCombRule() const { return gtCombRule_; }
+
+        /*! \brief
+         * Return the relative dielectric constant
+         */
+        double getEpsilonR() const { return gtEpsilonR_; }
 
         std::string  getGeometry(std::string gtBrule);
 
@@ -736,6 +747,7 @@ class Poldata
         int                                   nexcl_;
         std::string                           gtVdwFunction_, gtCombinationRule_;
         int                                   gtVdwFtype_, gtCombRule_;
+        double                                gtEpsilonR_ = 1.0;
         std::vector<ListedForces>             forces_;
         std::vector<Miller>                   miller_;
         std::string                           millerTauUnit_, millerAhpUnit_;
