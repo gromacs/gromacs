@@ -859,12 +859,12 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         config.stream           = stream;
 
         auto       kernelFn      = nbnxn_gpu_x_to_nbat_x_kernel;
-        float*     xqPtr         = &(adat->xq->x);
+        float4*    d_xq          = adat->xq;
         const int* d_atomIndices = nb->atomIndices;
         const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
         const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
         const auto kernelArgs    = prepareGpuKernelArguments(
-                kernelFn, config, &numColumns, &xqPtr, &setFillerCoords, &d_x, &d_atomIndices,
+                kernelFn, config, &numColumns, &d_xq, &setFillerCoords, &d_x, &d_atomIndices,
                 &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }

@@ -52,84 +52,68 @@
  *  - rename kernel so naming matches with the other NBNXM kernels;
  *  - enable separate compilation unit
 
- * \param[in]     numColumns          extent of cell-level parallelism
- * \param[out]    gm_coordinatesNbnxm coordinates buffer in nbnxm layout
- * \param[in]     setFillerCoords     tells whether to set the coordinates of the filler particles
- * \param[in]     gm_coordinatesRvec  coordinates buffer in rvec format
- * \param[in]     gm_atomIndex        atom index mapping
- * \param[in]     gm_numAtoms         array of number of atoms
- * \param[in]     gm_cellIndex        array of cell indices
- * \param[in]     cellOffset          first cell
- * \param[in]     numAtomsPerCell     number of atoms per cell
+ * \param[in]     numColumns          Extent of cell-level parallelism.
+ * \param[out]    gm_xq               Coordinates buffer in nbnxm layout.
+ * \param[in]     setFillerCoords     Whether to set the coordinates of the filler particles.
+ * \param[in]     gm_x                Coordinates buffer.
+ * \param[in]     gm_atomIndex        Atom index mapping.
+ * \param[in]     gm_numAtoms         Array of number of atoms.
+ * \param[in]     gm_cellIndex        Array of cell indices.
+ * \param[in]     cellOffset          Airst cell.
+ * \param[in]     numAtomsPerCell     Number of atoms per cell.
  */
-__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
-                                             float* __restrict__ gm_coordinatesNbnxm,
-                                             bool setFillerCoords,
-                                             const rvec* __restrict__ gm_coordinatesRvec,
-                                             const int* __restrict__ gm_atomIndex,
-                                             const int* __restrict__ gm_numAtoms,
-                                             const int* __restrict__ gm_cellIndex,
-                                             int cellOffset,
-                                             int numAtomsPerCell);
-
-
-__global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
-                                             float* __restrict__ gm_coordinatesNbnxm,
-                                             bool setFillerCoords,
-                                             const rvec* __restrict__ gm_coordinatesRvec,
-                                             const int* __restrict__ gm_atomIndex,
-                                             const int* __restrict__ gm_numAtoms,
-                                             const int* __restrict__ gm_cellIndex,
-                                             int cellOffset,
-                                             int numAtomsPerCell)
+static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
+                                                    float4* __restrict__ gm_xq,
+                                                    bool setFillerCoords,
+                                                    const float3* __restrict__ gm_x,
+                                                    const int* __restrict__ gm_atomIndex,
+                                                    const int* __restrict__ gm_numAtoms,
+                                                    const int* __restrict__ gm_cellIndex,
+                                                    int cellOffset,
+                                                    int numAtomsPerCell)
 {
 
 
     const float farAway = -1000000.0f;
 
-    /* map cell-level parallelism to y component of CUDA block index */
+    // Map cell-level parallelism to y component of CUDA block index.
     int cxy = blockIdx.y;
 
     if (cxy < numColumns)
     {
 
-        int na = gm_numAtoms[cxy];
-        int a0 = (cellOffset + gm_cellIndex[cxy]) * numAtomsPerCell;
-        int na_round;
+        const int numAtoms = gm_numAtoms[cxy];
+        const int offset   = (cellOffset + gm_cellIndex[cxy]) * numAtomsPerCell;
+        int       numAtomsRounded;
         if (setFillerCoords)
         {
             // TODO: This can be done more efficiently
-            na_round = (gm_cellIndex[cxy + 1] - gm_cellIndex[cxy]) * numAtomsPerCell;
+            numAtomsRounded = (gm_cellIndex[cxy + 1] - gm_cellIndex[cxy]) * numAtomsPerCell;
         }
         else
         {
-            /* We fill only the real particle locations.
-             * We assume the filling entries at the end have been
-             * properly set before during pair-list generation.
-             */
-            na_round = na;
+            // We fill only the real particle locations.
+            // We assume the filling entries at the end have been
+            // properly set before during pair-list generation.
+            numAtomsRounded = numAtoms;
         }
 
-        /* map parallelism within a cell to x component of CUDA block index linearized
-         * with threads within a block */
-        int i, j0;
-        i = blockIdx.x * blockDim.x + threadIdx.x;
+        const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
-        j0 = a0 * STRIDE_XYZQ;
+        // Destination address where x should be stored in nbnxm layout. We use this cast here to
+        // save only x, y and z components, not touching the w (q) component, which is pre-defined.
+        float3* gm_xqDest = (float3*)&gm_xq[threadIndex + offset];
 
-        // destination address where x shoud be stored in nbnxm layout
-        float3* gm_coordinatesDest = (float3*)&gm_coordinatesNbnxm[j0 + 4 * i];
-
-        /* perform conversion of each element */
-        if (i < na_round)
+        // Perform layout conversion of each element.
+        if (threadIndex < numAtomsRounded)
         {
-            if (i < na)
+            if (threadIndex < numAtoms)
             {
-                *gm_coordinatesDest = *((float3*)gm_coordinatesRvec[gm_atomIndex[a0 + i]]);
+                *gm_xqDest = gm_x[gm_atomIndex[threadIndex + offset]];
             }
             else
             {
-                *gm_coordinatesDest = make_float3(farAway);
+                *gm_xqDest = make_float3(farAway);
             }
         }
     }
@@ -140,54 +124,47 @@ __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
  * \tparam        accumulateForce  If the initial forces in \p gm_fTotal should be saved.
  * \tparam        addPmeForce      Whether the PME force should be added to the total.
  *
- * \param[in]     gm_forcesNbnxm   Non-bonded forces in nbnxm format.
- * \param[in]     gm_forcesPme     PME forces.
- * \param[in,out] gm_forcesTotal   Force buffer to be reduced into.
- * \param[in]     cell             Cell index mapping.
- * \param[in]     atomStart        Start atom index.
- * \param[in]     numAtoms         Number of atoms.
+ * \param[in]     gm_fNB     Non-bonded forces in nbnxm format.
+ * \param[in]     gm_fPme    PME forces.
+ * \param[in,out] gm_fTotal  Force buffer to be reduced into.
+ * \param[in]     cell       Cell index mapping.
+ * \param[in]     atomStart  Start atom index.
+ * \param[in]     numAtoms   Number of atoms.
  */
 template<bool accumulateForce, bool addPmeForce>
-__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ gb_forcesNbnxm,
-                                                 const float3* __restrict__ gm_forcesPme,
-                                                 float3* gm_forcesTotal,
-                                                 const int* __restrict__ gm_cell,
-                                                 const int atomStart,
-                                                 const int numAtoms);
-template<bool accumulateForce, bool addPmeForce>
-__global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ gb_forcesNbnxm,
-                                                 const float3* __restrict__ gm_forcesPme,
-                                                 float3* gm_forcesTotal,
-                                                 const int* __restrict__ gm_cell,
-                                                 const int atomStart,
-                                                 const int numAtoms)
+static __global__ void nbnxn_gpu_add_nbat_f_to_f_kernel(const float3* __restrict__ gm_fNB,
+                                                        const float3* __restrict__ gm_fPme,
+                                                        float3* gm_fTotal,
+                                                        const int* __restrict__ gm_cell,
+                                                        const int atomStart,
+                                                        const int numAtoms)
 {
 
     /* map particle-level parallelism to 1D CUDA thread and block index */
-    int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
+    const int threadIndex = blockIdx.x * blockDim.x + threadIdx.x;
 
     /* perform addition for each particle*/
     if (threadIndex < numAtoms)
     {
 
-        int     i             = gm_cell[atomStart + threadIndex];
-        float3* gm_forcesDest = (float3*)&gm_forcesTotal[atomStart + threadIndex];
-        float3  temp;
+        const int i        = gm_cell[atomStart + threadIndex];
+        float3*   gm_fDest = &gm_fTotal[atomStart + threadIndex];
+        float3    temp;
 
         if (accumulateForce)
         {
-            temp = *gm_forcesDest;
-            temp += gb_forcesNbnxm[i];
+            temp = *gm_fDest;
+            temp += gm_fNB[i];
         }
         else
         {
-            temp = gb_forcesNbnxm[i];
+            temp = gm_fNB[i];
         }
         if (addPmeForce)
         {
-            temp += gm_forcesPme[atomStart + threadIndex];
+            temp += gm_fPme[atomStart + threadIndex];
         }
-        *gm_forcesDest = temp;
+        *gm_fDest = temp;
     }
     return;
 }
