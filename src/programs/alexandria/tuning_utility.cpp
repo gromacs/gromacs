@@ -328,7 +328,7 @@ void print_electric_props(FILE                           *fp,
             mol.Qgresp_.updateZeta(mol.atoms_, pd);
             mol.Qgresp_.updateAtomCharges(mol.atoms_);
             mol.Qgresp_.updateAtomCoords(mol.x());                
-            mol.Qgresp_.calcPot();
+            mol.Qgresp_.calcPot(pd->getEpsilonR());
             real rrms = 0, wtot = 0, cosangle = 0;
             bool espZero = false;
             for (size_t i = 0; i < mol.Qgresp_.nEsp(); i++)

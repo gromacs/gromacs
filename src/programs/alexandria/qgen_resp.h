@@ -173,7 +173,11 @@ class QgenResp
 
         void calcRho();
 
-        void calcPot();
+        /*! \brief Compute the electrostatic potential based on charges.
+         *
+         * \param[in] epsilonr  Relative dielectric constant
+         */
+        void calcPot(double epsilonr);
 
         void calcVShell();
 
@@ -201,8 +205,9 @@ class QgenResp
          *
          * Optimizes the charges using matrix inversion. No restraints are
          * taken into account, except total charge and charge symmetries.
+         * \param[in] epsilonr Relative dielectric constant.
          */
-        void optimizeCharges();
+        void optimizeCharges(double epsilonr);
 
         // Make sure the total charge is correct and that symmetry is obeyed
         void regularizeCharges();

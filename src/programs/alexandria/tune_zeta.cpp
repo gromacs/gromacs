@@ -305,7 +305,7 @@ double OptZeta::calcDeviation()
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
             mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
-            mymol.Qgresp_.optimizeCharges();
+            mymol.Qgresp_.optimizeCharges(poldata()->getEpsilonR());
             if (nullptr != mymol.shellfc_)
             {
                 if (bFitAlpha_)
@@ -355,7 +355,7 @@ double OptZeta::calcDeviation()
                 nChargeResidual++;
                 increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
             }
-            mymol.Qgresp_.calcPot();
+            mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
             real cosangle = 0;
             increaseEnergy(ermsESP,
                            convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), eg2cHartree_e));

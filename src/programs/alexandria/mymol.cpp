@@ -1350,8 +1350,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             iter             = 0;
 
             initQgresp(pd, lot, watoms, maxESP);
-            Qgresp_.optimizeCharges();
-            Qgresp_.calcPot();
+            Qgresp_.optimizeCharges(pd->getEpsilonR());
+            Qgresp_.calcPot(pd->getEpsilonR());
             EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
             if (debug)
             {
@@ -1369,8 +1369,8 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     computeForces(nullptr, cr);
                     Qgresp_.updateAtomCoords(state_->x);
                 }
-                Qgresp_.optimizeCharges();
-                Qgresp_.calcPot();
+                Qgresp_.optimizeCharges(pd->getEpsilonR());
+                Qgresp_.calcPot(pd->getEpsilonR());
                 real cosangle = 0;
                 EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
                 if (debug)
@@ -1921,7 +1921,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                 gentop_version, getEemtypeName(iChargeModel));
         if (nullptr != potfn)
         {
-            Qgresp_.calcPot();
+            Qgresp_.calcPot(pd->getEpsilonR());
             Qgresp_.writeCube(potfn, buf);
         }
         if (nullptr != hisfn)

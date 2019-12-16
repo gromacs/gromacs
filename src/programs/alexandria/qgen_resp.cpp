@@ -879,11 +879,11 @@ real QgenResp::getRms(real *wtot, real *rrms, real *cosangle)
 
 
 static double calcJ(ChargeModel iChargeModel,
-                    rvec                    espx,
-                    rvec                    rax,
-                    double                  zeta,
-                    int                     watoms,
-                    int                     row)
+                    rvec        espx,
+                    rvec        rax,
+                    double      zeta,
+                    int         watoms,
+                    int         row)
 {
     rvec   dx;
     double r    = 0;
@@ -914,12 +914,13 @@ static double calcJ(ChargeModel iChargeModel,
     return (ONE_4PI_EPS0*eTot);
 }
 
-void QgenResp::calcPot()
+void QgenResp::calcPot(double epsilonr)
 {
     for (auto &ep : ep_)
     {
         ep.setVCalc(0);
     }
+    double scale_factor = 1.0/std::sqrt(epsilonr);
     auto nthreads = gmx_omp_get_max_threads();
     {
         auto thread_id = gmx_omp_get_thread_num();
@@ -944,7 +945,7 @@ void QgenResp::calcPot()
                         auto q = ra.q();
                         //}
                         auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
-                        vv += (q*epot);
+                        vv += (scale_factor*q*epot);
                     }
                 }
             }
@@ -953,7 +954,7 @@ void QgenResp::calcPot()
     }
 }
 
-void QgenResp::optimizeCharges()
+void QgenResp::optimizeCharges(double epsilonr)
 {
     /*
        Increase number of rows for the symmetric atoms. E.g.
@@ -966,7 +967,7 @@ void QgenResp::optimizeCharges()
     int                   ncolumn  = fitQ_;
     MatrixWrapper         lhs(ncolumn, nrow);
     std::vector<double>   rhs;
-
+    double                scale_factor = 1.0/std::sqrt(epsilonr);
     if (nEsp() < nRespAtom())
     {
         printf("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.\n", nEsp(), nRespAtom());
@@ -991,7 +992,7 @@ void QgenResp::optimizeCharges()
                 for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
-                    value += pot;
+                    value += scale_factor*pot;
                 }
                 lhs.set(i, j, value);
             }
@@ -1008,7 +1009,7 @@ void QgenResp::optimizeCharges()
                 {
                     auto pot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
                     auto q   = k->q();
-                    rhs[j]  -= (q*pot);
+                    rhs[j]  -= (scale_factor*q*pot);
                 }
             }
         }

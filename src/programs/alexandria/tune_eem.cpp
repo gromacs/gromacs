@@ -433,7 +433,7 @@ double OptACM::calcDeviation()
                     mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
                 }
                 mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
-                mymol.Qgresp_.calcPot();
+                mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
                 auto myRms = 
                     convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), 
                                 eg2cHartree_e);
