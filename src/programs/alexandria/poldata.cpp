@@ -790,6 +790,7 @@ CommunicationStatus Poldata::Send(const t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &gtCombinationRule_);
         gmx_send_int(cr, dest, gtVdwFtype_);
         gmx_send_int(cr, dest, gtCombRule_);
+        gmx_send_double(cr, dest, gtEpsilonR_);
         gmx_send_str(cr, dest, &millerTauUnit_);
         gmx_send_str(cr, dest, &millerAhpUnit_);
         gmx_send_str(cr, dest, &millerRef_);
@@ -882,6 +883,7 @@ CommunicationStatus Poldata::Receive(const t_commrec *cr, int src)
         gmx_recv_str(cr, src, &gtCombinationRule_);
         gtVdwFtype_           = gmx_recv_int(cr, src);
         gtCombRule_           = gmx_recv_int(cr, src);
+        gtEpsilonR_           = gmx_recv_double(cr, src);
         gmx_recv_str(cr, src, &millerTauUnit_);
         gmx_recv_str(cr, src, &millerAhpUnit_);
         gmx_recv_str(cr, src, &millerRef_);

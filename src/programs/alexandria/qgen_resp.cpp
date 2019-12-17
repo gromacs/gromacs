@@ -920,7 +920,7 @@ void QgenResp::calcPot(double epsilonr)
     {
         ep.setVCalc(0);
     }
-    double scale_factor = 1.0/std::sqrt(epsilonr);
+    double scale_factor = 1.0/epsilonr;
     auto nthreads = gmx_omp_get_max_threads();
     {
         auto thread_id = gmx_omp_get_thread_num();
