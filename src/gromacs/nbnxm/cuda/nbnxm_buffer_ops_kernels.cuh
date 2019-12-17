@@ -48,23 +48,22 @@
 /*! \brief CUDA kernel for transforming position coordinates from rvec to nbnxm layout.
  *
  * TODO:
- *  - improve/simplify/document use of cxy_na and na_round
  *  - rename kernel so naming matches with the other NBNXM kernels;
  *  - enable separate compilation unit
 
  * \param[in]     numColumns          Extent of cell-level parallelism.
  * \param[out]    gm_xq               Coordinates buffer in nbnxm layout.
- * \param[in]     setFillerCoords     Whether to set the coordinates of the filler particles.
+ * \tparam        setFillerCoords     Whether to set the coordinates of the filler particles.
  * \param[in]     gm_x                Coordinates buffer.
  * \param[in]     gm_atomIndex        Atom index mapping.
  * \param[in]     gm_numAtoms         Array of number of atoms.
  * \param[in]     gm_cellIndex        Array of cell indices.
- * \param[in]     cellOffset          Airst cell.
+ * \param[in]     cellOffset          First cell.
  * \param[in]     numAtomsPerCell     Number of atoms per cell.
  */
+template<bool setFillerCoords>
 static __global__ void nbnxn_gpu_x_to_nbat_x_kernel(int numColumns,
                                                     float4* __restrict__ gm_xq,
-                                                    bool setFillerCoords,
                                                     const float3* __restrict__ gm_x,
                                                     const int* __restrict__ gm_atomIndex,
                                                     const int* __restrict__ gm_numAtoms,
