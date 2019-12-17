@@ -49,6 +49,7 @@
 
 #include <numeric>
 
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/smalloc.h"
@@ -159,13 +160,13 @@ t_blocka TopologyBuilder::createExclusionsList() const
     return tBlockGlobal;
 }
 
-template<class Extractor>
-std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
+template<typename T, class Extractor>
+std::vector<T> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 {
     auto& moleculesList = molecules_;
 
     //! returned object
-    std::vector<real> ret;
+    std::vector<T> ret;
     ret.reserve(numAtoms_);
 
     for (auto& molNumberTuple : moleculesList)
@@ -187,13 +188,30 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
+    topology_.numAtoms_ = numAtoms_;
+
     topology_.excls_  = createExclusionsList();
-    topology_.masses_ = extractAtomTypeQuantity(
+    topology_.masses_ = extractAtomTypeQuantity<real>(
             [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
-    topology_.charges_ = extractAtomTypeQuantity([](const auto& data, auto& map) {
+    topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
+
+    std::vector<real> c6 = extractAtomTypeQuantity<real>(
+            [](const auto& data, auto& map) { return map[data.atomTypeName_].c6(); });
+    std::vector<real> c12 = extractAtomTypeQuantity<real>(
+            [](const auto& data, auto& map) { return map[data.atomTypeName_].c12(); });
+    topology_.nonbondedParameters_ = std::move(c6) + std::move(c12);
+
+    topology_.atomTypes_ = extractAtomTypeQuantity<std::string>(
+            [](const auto& data, auto& map) { return map[data.atomTypeName_].name(); });
+
+    topology_.atomInfoAllVdw_.resize(numAtoms_);
+    for (int atomI = 0; atomI < numAtoms_; atomI++)
+    {
+        SET_CGINFO_HAS_VDW(topology_.atomInfoAllVdw_[atomI]);
+    }
 
     return topology_;
 }
@@ -211,6 +229,11 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
     return *this;
 }
 
+const int& Topology::numAtoms() const
+{
+    return numAtoms_;
+}
+
 const std::vector<real>& Topology::getMasses() const
 {
     return masses_;
@@ -221,12 +244,12 @@ const std::vector<real>& Topology::getCharges() const
     return charges_;
 }
 
-const std::vector<int>& Topology::getAtoms() const
+const std::vector<std::string>& Topology::getAtomTypes() const
 {
     return atomTypes_;
 }
 
-const std::vector<real>& Topology::getNonbondedParameters() const
+const std::vector<std::tuple<real, real>>& Topology::getNonbondedParameters() const
 {
     return nonbondedParameters_;
 }
