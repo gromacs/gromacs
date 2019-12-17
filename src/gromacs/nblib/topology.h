@@ -79,7 +79,11 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    const std::vector<int>& getAtoms() const;
+    //! Returns the total number of atoms in the system
+    const int& numAtoms() const;
+
+    //! Returns a vector of atom names
+    const std::vector<std::string>& getAtomTypes() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
@@ -87,7 +91,8 @@ public:
     //! Returns a vector of atomic masses
     const std::vector<real>& getMasses() const;
 
-    const std::vector<real>& getNonbondedParameters() const;
+    //! Returns full list of nonbondedParameters
+    const std::vector<std::tuple<real, real>>& getNonbondedParameters() const;
 
     const std::vector<int>& getAtomInfoAllVdw() const;
 
@@ -100,10 +105,12 @@ private:
 
     friend class TopologyBuilder;
 
+    //! Total number of atoms in the system
+    int numAtoms_;
     //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
+    std::vector<std::tuple<real, real>> nonbondedParameters_;
     //! Storage for atom type parameters.
-    std::vector<int> atomTypes_;
+    std::vector<std::string> atomTypes_;
     //! Storage for atom partial charges.
     std::vector<real> charges_;
     //! Atom masses
@@ -122,7 +129,8 @@ private:
  * topologies only exist in a valid state within the scope of the
  * simulation program.
  */
-class TopologyBuilder {
+class TopologyBuilder
+{
 public:
     //! Constructor
     TopologyBuilder();
@@ -152,8 +160,8 @@ private:
     t_blocka createExclusionsList() const;
 
     //! Helper function to extract quantities like mass, charge, etc from the system
-    template <class Extractor>
-    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+    template<typename T, class Extractor>
+    std::vector<T> extractAtomTypeQuantity(Extractor extractor);
 };
 
 } // namespace nblib
