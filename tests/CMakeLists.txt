@@ -116,6 +116,12 @@ if(REGRESSIONTEST_PATH)
         message(WARNING
             "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
     endif()
+    if(GMX_OPENMP)
+        set(GMX_REGRESSIONTEST_OMP_THREADS 2 CACHE STRING
+            "Number of OpenMP threads to use with the regression tests")
+        mark_as_advanced(GMX_REGRESSIONTEST_OMP_THREADS)
+        list(APPEND ARGS -ntomp ${GMX_REGRESSIONTEST_OMP_THREADS})
+    endif()
     if(GMX_LIB_MPI)
         set(GMX_TEST_NUMBER_PROCS 8 CACHE STRING "Number of processors used for testing")
         mark_as_advanced(GMX_TEST_NUMBER_PROCS)
@@ -138,6 +144,14 @@ if(REGRESSIONTEST_PATH)
     mark_as_advanced(REGRESSIONTEST_EXTRA_ARGS)
     list(APPEND ARGS ${REGRESSIONTEST_EXTRA_ARGS})
 
+    if(DEFINED ENV{CI_JOB_ID})
+        if(GMX_THREAD_MPI)
+            set(GMX_REGRESSIONTEST_THREAD_MPI_THREADS 2 CACHE STRING
+            "Number of thread MPI threads to use for testing")
+            mark_as_advanced(GMX_REGRESSIONTEST_THREAD_MPI_THREADS)
+            list(APPEND ARGS -nt ${GMX_REGRESSIONTEST_THREAD_MPI_THREADS})
+        endif()
+    endif()
     list(APPEND ARGS -noverbose -nosuffix)
 
     if(GMX_NATIVE_WINDOWS)
