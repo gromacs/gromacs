@@ -141,7 +141,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         for (int cgloIteration = 0; cgloIteration < (stopCM ? 2 : 1); cgloIteration++)
         {
             unsigned int cglo_flags_iteration = cglo_flags;
-            if (doStopCM_ && cgloIteration == 0)
+            if (stopCM && cgloIteration == 0)
             {
                 cglo_flags_iteration |= CGLO_STOPCM;
                 cglo_flags_iteration &= ~CGLO_TEMPERATURE;
