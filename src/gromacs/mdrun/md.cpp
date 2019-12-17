@@ -1424,6 +1424,9 @@ void gmx::LegacySimulator::do_md()
                     if (useGpuForUpdate)
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                        // Here we block until the H2D copy completes because event sync with the
+                        // force kernels that use the coordinates on the next steps is not implemented
+                        // (not because of a race on state->x being modified on the CPU while H2D is in progress).
                         stateGpu->waitCoordinatesCopiedToDevice(AtomLocality::Local);
                     }
                 }
