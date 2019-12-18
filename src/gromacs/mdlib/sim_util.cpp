@@ -1081,7 +1081,7 @@ void do_force(FILE*                               fplog,
         bool sendCoordinatesFromGpu =
                 simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
 
-        if (simulationWork.useGpuUpdate && !sendCoordinatesFromGpu)
+        if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate && !sendCoordinatesFromGpu)
         {
             GMX_RELEASE_ASSERT(false,
                                "GPU update and separate PME ranks are only supported with GPU "
