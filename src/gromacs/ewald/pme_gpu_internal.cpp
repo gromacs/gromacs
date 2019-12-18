@@ -66,13 +66,17 @@
 #include "gromacs/utility/logger.h"
 #include "gromacs/utility/stringutil.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
 #    include "gromacs/gpu_utils/pmalloc_cuda.h"
-
-#    include "pme.cuh"
 #elif GMX_GPU == GMX_GPU_OPENCL
 #    include "gromacs/gpu_utils/gmxopencl.h"
 #endif
+
+#if GMX_GPU == GMX_GPU_ROCM
+#include "pme.hip.h"
+#elif GMX_GPU == GMX_GPU_CUDA
+#include "pme.cuh"
+#endif 
 
 #include "gromacs/ewald/pme.h"
 
@@ -406,7 +410,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 
     const int newFractShiftsSize = cellCount * (nx + ny + nz);
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
     initParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable, kernelParamsPtr->fractShiftsTableTexture,
                          pmeGpu->common->fsh.data(), newFractShiftsSize);
 
@@ -431,7 +435,7 @@ void pme_gpu_realloc_and_copy_fract_shifts(PmeGpu* pmeGpu)
 void pme_gpu_free_fract_shifts(const PmeGpu* pmeGpu)
 {
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
     destroyParamLookupTable(kernelParamsPtr->grid.d_fractShiftsTable,
                             kernelParamsPtr->fractShiftsTableTexture);
     destroyParamLookupTable(kernelParamsPtr->grid.d_gridlineIndicesTable,
@@ -510,10 +514,10 @@ void pme_gpu_sync_spread_grid(const PmeGpu* pmeGpu)
 
 void pme_gpu_init_internal(PmeGpu* pmeGpu)
 {
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
     // Prepare to use the device that this PME task was assigned earlier.
     // Other entities, such as CUDA timing events, are known to implicitly use the device context.
-    CU_RET_ERR(cudaSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
+    CU_RET_ERR(hipSetDevice(pmeGpu->deviceInfo->id), "Switching to PME CUDA device");
 #endif
 
     /* Allocate the target-specific structures */
@@ -530,7 +534,7 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
     pmeGpu->archSpecific->context = pmeGpu->programHandle_->impl_->context;
 
     // timing enabling - TODO put this in gpu_utils (even though generally this is just option handling?) and reuse in NB
-    if (GMX_GPU == GMX_GPU_CUDA)
+    if (GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA)
     {
         /* WARNING: CUDA timings are incorrect with multiple streams.
          *          This is the main reason why they are disabled by default.
@@ -543,7 +547,7 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
         pmeGpu->archSpecific->useTiming = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
     }
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
     pmeGpu->maxGridWidthX = pmeGpu->deviceInfo->prop.maxGridSize[0];
 #elif GMX_GPU == GMX_GPU_OPENCL
     pmeGpu->maxGridWidthX = INT32_MAX / 2;
@@ -554,7 +558,16 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
      * - default high priority with CUDA
      * - no priorities implemented yet with OpenCL; see #2532
      */
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM 
+    hipError_t stat;
+    int         highest_priority, lowest_priority;
+    stat = hipDeviceGetStreamPriorityRange(&lowest_priority, &highest_priority);
+    CU_RET_ERR(stat, "PME hipDeviceGetStreamPriorityRange failed");
+    stat = hipStreamCreateWithPriority(&pmeGpu->archSpecific->pmeStream,
+                                        hipStreamDefault, // hipStreamNonBlocking,
+                                        highest_priority);
+    CU_RET_ERR(stat, "hipStreamCreateWithPriority on the PME stream failed");
+#elif GMX_GPU == GMX_GPU_CUDA
     cudaError_t stat;
     int         highest_priority, lowest_priority;
     stat = cudaDeviceGetStreamPriorityRange(&lowest_priority, &highest_priority);
@@ -579,7 +592,11 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
 
 void pme_gpu_destroy_specific(const PmeGpu* pmeGpu)
 {
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM
+    /* Destroy the CUDA stream */
+    hipError_t stat = hipStreamDestroy(pmeGpu->archSpecific->pmeStream);
+    CU_RET_ERR(stat, "PME hipStreamDestroy error");
+#elif GMX_GPU == GMX_GPU_CUDA
     /* Destroy the CUDA stream */
     cudaError_t stat = cudaStreamDestroy(pmeGpu->archSpecific->pmeStream);
     CU_RET_ERR(stat, "PME cudaStreamDestroy error");
@@ -1181,7 +1198,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     // (e.g. on 660 Ti where 50% occupancy is ~25% faster than 100% occupancy with RNAse (~17.8k atoms))
     // If doing so, change atomsPerBlock in the kernels as well.
     // TODO: test varying block sizes on modern arch-s as well
-    // TODO: also consider using cudaFuncSetCacheConfig() for preferring shared memory on older architectures
+    // TODO: also consider using hipFuncSetCacheConfig() for preferring shared memory on older architectures
     //(for spline data mostly)
     GMX_ASSERT(!c_usePadding || !(c_pmeAtomDataAlignment % atomsPerBlock),
                "inconsistent atom data padding vs. spreading block size");
@@ -1189,9 +1206,9 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     // Ensure that coordinates are ready on the device before launching spread;
     // only needed with CUDA on PP+PME ranks, not on separate PME ranks, in unit tests
     // nor in OpenCL as these cases use a single stream (hence xReadyOnDevice == nullptr).
-    GMX_ASSERT(xReadyOnDevice != nullptr || (GMX_GPU != GMX_GPU_CUDA)
+    GMX_ASSERT(xReadyOnDevice != nullptr || (GMX_GPU != GMX_GPU_ROCM && GMX_GPU != GMX_GPU_CUDA)
                        || pmeGpu->common->isRankPmeOnly || pme_gpu_is_testing(pmeGpu),
-               "Need a valid coordinate synchronizer on PP+PME ranks with CUDA.");
+               "Need a valid coordinate synchronizer on PP+PME ranks with ROCM/CUDA.");
     if (xReadyOnDevice)
     {
         xReadyOnDevice->enqueueWaitEvent(pmeGpu->archSpecific->pmeStream);
@@ -1312,8 +1329,8 @@ void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrd
     const int warpSize  = pmeGpu->programHandle_->impl_->warpSize;
     const int blockSize = (cellsPerBlock + warpSize - 1) / warpSize * warpSize;
 
-    static_assert(GMX_GPU != GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
-                  "The CUDA solve energy kernels needs at least 4 warps. "
+    static_assert(GMX_GPU != GMX_GPU_ROCM && GMX_GPU != GMX_GPU_CUDA || c_solveMaxWarpsPerBlock / 2 >= 4,
+                  "The ROCM/CUDA solve energy kernels needs at least 4 warps. "
                   "Here we launch at least half of the max warps.");
 
     KernelLaunchConfig config;
@@ -1529,7 +1546,7 @@ void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
 template<typename T>
 static bool checkDeviceBuffer(gmx_unused DeviceBuffer<T> buffer, gmx_unused int requiredSize)
 {
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
     GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
     return buffer != nullptr;
 #elif GMX_GPU == GMX_GPU_OPENCL

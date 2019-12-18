@@ -84,7 +84,11 @@
 #include "gromacs/utility/sysinfo.h"
 #include "gromacs/utility/textwriter.h"
 
-#include "cuda_version_information.h"
+#if GMX_GPU == GMX_GPU_ROCM
+    #include "hip_version_information.h"
+#elif GMX_GPU == GMX_GPU_CUDA
+    #include "cuda_version_information.h"
+#endif
 
 namespace
 {

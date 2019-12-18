@@ -46,7 +46,7 @@
 
 #include "gromacs/mdlib/update_constrain_cuda.h"
 
-#if GMX_GPU != GMX_GPU_CUDA
+#if GMX_GPU != GMX_GPU_CUDA || GMX_GPU_ROCM
 
 namespace gmx
 {

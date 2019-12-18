@@ -116,7 +116,7 @@ public:
 
 private:
     //! CUDA stream used for the communication operations in this class
-    cudaStream_t pmePpCommStream_ = nullptr;
+    hipStream_t pmePpCommStream_ = nullptr;
     //! Remote location of PME coordinate data buffer
     void* remotePmeXBuffer_ = nullptr;
     //! Remote location of PME force data buffer

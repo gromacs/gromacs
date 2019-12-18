@@ -53,7 +53,28 @@ gmx_add_libgromacs_sources(
     pme_coordinate_receiver_gpu_impl.cpp
     pme_force_sender_gpu_impl.cpp
     )
-if (GMX_USE_CUDA)
+if (GMX_USE_HIP)
+    gmx_add_libgromacs_sources(
+        # ROCM-specific sources
+        pme_gather.hip.cpp
+        pme_gpu_3dfft.hip.cpp
+        pme_solve.hip.cpp
+        pme_spread.hip.cpp
+        pme_gpu_program_impl.hip.cpp
+        pme_pp_comm_gpu_impl.hip.cpp
+        pme_force_sender_gpu_impl.hip.cpp
+        pme_coordinate_receiver_gpu_impl.hip.cpp
+        # GPU-specific sources
+        pme_gpu.cpp
+        pme_gpu_internal.cpp
+        pme_gpu_timings.cpp
+        )
+    gmx_add_hip_sources(
+        pme_gpu_internal.cpp
+        pme_gpu_program.cpp
+        pme_gpu_timings.cpp
+        )
+elseif (GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         # CUDA-specific sources
         pme_gather.cu

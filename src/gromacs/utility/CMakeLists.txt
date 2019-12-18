@@ -33,8 +33,14 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 file(GLOB UTILITY_SOURCES *.cpp)
+list(REMOVE_ITEM UTILITY_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/hip_version_information.hip.cpp)
+
 if (GMX_GPU AND NOT GMX_USE_OPENCL)
-    gmx_add_libgromacs_sources(cuda_version_information.cu)
+    if (GMX_GPU_USE_AMD)
+        gmx_add_libgromacs_sources(hip_version_information.hip.cpp)
+    elseif (GMX_GPU_USE_NVIDIA)
+        gmx_add_libgromacs_sources(cuda_version_information.cu)
+    endif()
 endif()
 set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
 

@@ -66,7 +66,7 @@
  * true:  The atom data GPU buffers are padded with zeroes so that the possible number of atoms
  *        fitting in is divisible by c_pmeAtomDataAlignment.
  *        The atom index checks are not performed. There should be a performance win, but how big is it, remains to be seen.
- *        Additional cudaMemsetAsync calls are done occasionally (only charges/coordinates; spline data is always recalculated now).
+ *        Additional hipMemsetAsync calls are done occasionally (only charges/coordinates; spline data is always recalculated now).
  * \todo Estimate performance differences
  */
 constexpr bool c_usePadding = true;
@@ -169,7 +169,7 @@ constexpr int c_solveMaxWarpsPerBlock = 8;
 constexpr int c_gatherMaxWarpsPerBlock = 4;
 
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
 
 /* All the guys below are dependent on warp_size and should ideally be removed from the host-side code,
  * as we have to do that for OpenCL already.

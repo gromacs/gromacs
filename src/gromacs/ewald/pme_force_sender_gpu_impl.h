@@ -78,7 +78,7 @@ public:
 
 private:
     //! CUDA stream for PME operations
-    cudaStream_t pmeStream_ = nullptr;
+    hipStream_t pmeStream_ = nullptr;
     //! Event triggered when to allow remote PP stream to syn with pme stream
     GpuEventSynchronizer pmeSync_;
     //! communicator for simulation

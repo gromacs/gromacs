@@ -47,7 +47,13 @@
 
 #include <vector>
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM
+#    include <hipfft.h>
+#    include <rocfft.h>
+
+#    include "gromacs/gpu_utils/gputraits.hip.h"
+
+#elif GMX_GPU == GMX_GPU_CUDA
 #    include <cufft.h>
 
 #    include "gromacs/gpu_utils/gputraits.cuh"

@@ -595,7 +595,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_update_input_box(PmeGpu*      GPU_FUNC_ARGUMENT(
  * If forces were computed, they will have arrived at the external host buffer provided to gather.
  * If virial/energy were computed, they will have arrived into the internal staging buffer
  * (even though that should have already happened before even launching the gather).
- * Finally, cudaEvent_t based GPU timers get updated if enabled. They also need stream synchronization for correctness.
+ * Finally, hipEvent_t based GPU timers get updated if enabled. They also need stream synchronization for correctness.
  * Additionally, device-side buffers are cleared asynchronously for the next computation.
  *
  * \param[in] pmeGpu         The PME GPU structure.

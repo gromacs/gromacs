@@ -49,6 +49,13 @@ if(GMX_USE_OPENCL)
         ocl_caching.cpp
         oclutils.cpp
         )
+elseif(GMX_USE_HIP)
+    gmx_add_libgromacs_sources(
+        cudautils.hip.cpp
+        gpu_utils.hip.cpp
+        pinning.hip.cpp
+        pmalloc_cuda.hip.cpp
+        )
 elseif(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
         cudautils.cu

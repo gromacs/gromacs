@@ -52,7 +52,7 @@
 #include "pme_gpu_constants.h"
 
 //! A macro for inline GPU functions.
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
 #    define INLINE_EVERYWHERE __host__ __device__ __forceinline__
 #else
 #    define INLINE_EVERYWHERE inline
@@ -105,7 +105,7 @@ int INLINE_EVERYWHERE getSplineParamIndex(int paramIndexBase, int dimIndex, int 
     return (paramIndexBase + (splineIndex * DIM + dimIndex) * atomsPerWarp);
 }
 
-#if GMX_GPU == GMX_GPU_CUDA
+#if GMX_GPU == GMX_GPU_ROCM || GMX_GPU == GMX_GPU_CUDA
 // CUDA device code helpers below
 
 /*! \internal \brief

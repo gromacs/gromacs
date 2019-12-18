@@ -45,6 +45,9 @@
 #include "config.h"
 
 #include "gromacs/nbnxm/nbnxm.h"
+#if GMX_GPU == GMX_GPU_ROCM
+#    include "cuda/nbnxm_hip_types.h"
+#endif
 
 #if GMX_GPU == GMX_GPU_CUDA
 #    include "cuda/nbnxm_cuda_types.h"

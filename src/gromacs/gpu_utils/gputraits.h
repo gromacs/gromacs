@@ -44,8 +44,11 @@
  */
 
 #include "config.h"
+#if GMX_GPU == GMX_GPU_ROCM
 
-#if GMX_GPU == GMX_GPU_CUDA
+#    include "gromacs/gpu_utils/gputraits.hip.h"
+
+#elif GMX_GPU == GMX_GPU_CUDA
 
 #    include "gromacs/gpu_utils/gputraits.cuh"
 

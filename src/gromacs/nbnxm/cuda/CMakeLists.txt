@@ -31,8 +31,21 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+if(GMX_USE_HIP)
+    set(NBNXM_HIP_KERNEL_SOURCES
+            nbnxm_cuda_kernel_F_noprune.hip.cpp
+            nbnxm_cuda_kernel_F_prune.hip.cpp
+            nbnxm_cuda_kernel_VF_noprune.hip.cpp
+            nbnxm_cuda_kernel_VF_prune.hip.cpp
+            nbnxm_cuda_kernel_pruneonly.hip.cpp)
 
-if(GMX_USE_CUDA)
+    file(GLOB NBNXM_HIP_SOURCES
+         nbnxm_cuda.hip.cpp
+         nbnxm_cuda_data_mgmt.hip.cpp
+         nbnxm_cuda_jit_support.hip.cpp
+         ${NBNXM_HIP_KERNEL_SOURCES})
+    set(NBNXM_SOURCES ${NBNXM_SOURCES} ${NBNXM_HIP_SOURCES} PARENT_SCOPE)
+elseif(GMX_USE_CUDA)
     if(NOT GMX_CUDA_NB_SINGLE_COMPILATION_UNIT)
         set(NBNXM_CUDA_KERNEL_SOURCES
                 nbnxm_cuda_kernel_F_noprune.cu

@@ -50,6 +50,11 @@ struct gmx_nbnxn_ocl_t;
 using gmx_nbnxn_gpu_t = gmx_nbnxn_ocl_t;
 #    endif
 
+#if GMX_GPU == GMX_GPU_ROCM
+struct gmx_nbnxn_cuda_t;
+typedef struct gmx_nbnxn_cuda_t gmx_nbnxn_gpu_t;
+#endif
+
 #    if GMX_GPU == GMX_GPU_CUDA
 struct gmx_nbnxn_cuda_t;
 using gmx_nbnxn_gpu_t = gmx_nbnxn_cuda_t;

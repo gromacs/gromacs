@@ -67,6 +67,12 @@
 /** HWLOC version information */
 #define HWLOC_VERSION "@HWLOC_VERSION@"
 
+/** HIP compiler version information */
+#define HIP_COMPILER_INFO "@HIP_COMPILER_INFO@"
+
+/** HIP compiler flags (device flags, plus host flags if propagated)*/
+#define HIP_DEVICE_COMPILER_FLAGS "@HIP_DEVICE_COMPILER_FLAGS@"
+
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
 

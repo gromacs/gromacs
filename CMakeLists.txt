@@ -206,10 +206,16 @@ set(REQUIRED_OPENCL_MIN_VERSION_MINOR 2)
 set(REQUIRED_OPENCL_MIN_VERSION ${REQUIRED_OPENCL_MIN_VERSION_MAJOR}.${REQUIRED_OPENCL_MIN_VERSION_MINOR})
 
 if(NOT GMX_USE_OPENCL)
-    # CUDA detection is done only if GMX_USE_OPENCL is OFF.
+    # ROCM/CUDA detection is done only if GMX_USE_OPENCL is OFF.
     include(gmxManageGPU)
-    set(GMX_USE_CUDA ${GMX_GPU})
-    if(GMX_GPU)
+    if(GMX_GPU_USE_AMD) 
+       set(GMX_USE_HIP ${GMX_GPU})
+    elseif(GMX_GPU_USE_NVIDIA)
+       set(GMX_USE_CUDA ${GMX_GPU})
+    endif()
+    if(GMX_GPU AND GMX_GPU_USE_AMD)
+        set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_ROCM")
+    elseif(GMX_GPU AND GMX_GPU_USE_NVIDIA)
         set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_CUDA")
     else()
         set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
@@ -899,9 +905,12 @@ endif()
 
 gmx_cpack_write_config()
 
-# Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
+# Issue a warning if CUDA/ROCM GPUs were detected, but CUDA/ROCM API was not found.
 # Don't bother the user after the first configure pass.
-if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
+if (GMX_GPU_USE_AMD AND (ROCM_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
+    message(WARNING "${ROCM_NOTFOUND_MESSAGE}")
+endif()
+if (GMX_GPU_USE_NVIDIA AND (CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
 endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
@@ -919,3 +928,4 @@ ADD_CUSTOM_TARGET(uninstall
 ###########################
 set_directory_properties(PROPERTIES
             ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
+
