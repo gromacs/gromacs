@@ -47,13 +47,11 @@
 
 #include <vector>
 
-#include "gromacs/math/vectypes.h"
-#include "gromacs/nblib/util.h"
-#include "gromacs/topology/block.h"
-#include "gromacs/utility/smalloc.h"
-
 #include "box.h"
 #include "topology.h"
+
+struct t_blocka;
+struct RVec;
 
 namespace nblib
 {

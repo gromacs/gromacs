@@ -46,19 +46,23 @@
 #include "forcecalculator.h"
 
 #include "gromacs/gmxlib/nrnb.h"
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/simulation_workload.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/utility/smalloc.h"
 
 #include "integrator.h"
 
 
-namespace nblib {
+namespace nblib
+{
 
 ForceCalculator::ForceCalculator(NBKernelSystem          &system,
                                  const NBKernelOptions   &options)

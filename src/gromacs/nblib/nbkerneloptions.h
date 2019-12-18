@@ -45,14 +45,18 @@
 #ifndef GROMACS_SETUP_H
 #define GROMACS_SETUP_H
 
+#include <memory>
+
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/mdtypes/interaction_const.h"
 
 #include "nbkerneldef.h"
 #include "nbkernelsystem.h"
 
-namespace nblib {
+struct interaction_const_t;
+struct nonbonded_verlet_t;
+
+namespace nblib
+{
 
 /*! \internal \brief
  * The options for the nonbonded kernel caller
@@ -60,29 +64,29 @@ namespace nblib {
 struct NBKernelOptions
 {
     //! Whether to use a GPU, currently GPUs are not supported
-    bool              useGpu                 = false;
+    bool useGpu = false;
     //! The number of OpenMP threads to use
-    int               numThreads             = 1;
+    int numThreads = 1;
     //! The SIMD type for the kernel
-    BenchMarkKernels  nbnxmSimd  = BenchMarkKernels::SimdAuto;
+    BenchMarkKernels nbnxmSimd = BenchMarkKernels::SimdAuto;
     //! The LJ combination rule
     BenchMarkCombRule ljCombinationRule = BenchMarkCombRule::RuleGeom;
     //! Use i-cluster half-LJ optimization for clusters with <= half LJ
-    bool              useHalfLJOptimization  = false;
+    bool useHalfLJOptimization = false;
     //! The pairlist and interaction cut-off
-    real              pairlistCutoff         = 1.0;
+    real pairlistCutoff = 1.0;
     //! Whether to compute energies (shift forces for virial are always computed on CPU)
-    bool              computeVirialAndEnergy = false;
+    bool computeVirialAndEnergy = false;
     //! The Coulomb interaction function
-    BenchMarkCoulomb  coulombType = BenchMarkCoulomb::Pme;
+    BenchMarkCoulomb coulombType = BenchMarkCoulomb::Pme;
     //! Whether to use tabulated PME grid correction instead of analytical, not applicable with simd=no
-    bool              useTabulatedEwaldCorr  = false;
+    bool useTabulatedEwaldCorr = false;
     //! The number of iterations for each kernel
-    int               numIterations          = 100;
+    int numIterations = 100;
     //! Print cycles/pair instead of pairs/cycle
-    bool              cyclesPerPair          = false;
+    bool cyclesPerPair = false;
     //! The time step
-    real              timestep = 0.001;
+    real timestep = 0.001;
 };
 
 /*! \brief
@@ -96,15 +100,12 @@ struct NBKernelOptions
  * \param[in] options How the benchmark will be run.
  * \param[in] printTimings Whether to print cycle counters
  */
-void nbKernel(NBKernelSystem        &system,
-              const NBKernelOptions &options,
-              const bool            &printTimings);
+void nbKernel(NBKernelSystem& system, const NBKernelOptions& options, const bool& printTimings);
 
-interaction_const_t setupInteractionConst(const NBKernelOptions &options);
+interaction_const_t setupInteractionConst(const NBKernelOptions& options);
 
-std::unique_ptr<nonbonded_verlet_t>
-setupNbnxmInstance(const NBKernelOptions   &options,
-                   NBKernelSystem          &system);
+std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const NBKernelOptions& options,
+                                                       NBKernelSystem&        system);
 
 } // namespace nblib
 
