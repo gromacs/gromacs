@@ -49,45 +49,42 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
-#include "gromacs/utility/smalloc.h"
+
+#include "box.h"
 
 namespace nblib
 {
+
+class SimulationState;
 
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
 class NBKernelSystem
 {
-    public:
-        /*! \brief Constructor
-         *
-         * Generates a system of size \p multiplicationFactor times
-         * the base size by stacking cubic boxes of 12 Argon atoms.
-         *
-         * \param[in] multiplicationFactor  Should be a power of 2, is checked
-         */
-        NBKernelSystem(int multiplicationFactor);
+public:
+    //! \brief Constructor
+    NBKernelSystem(SimulationState simState);
 
-        //! Number of different atom types in test system.
-        int                    numAtoms = 1;
-        //! The LJ C6 parameter
-        real                   c6Param           = 1.0;
-        //! The LJ C12 parameter
-        real                   c12Param          = 1.0;
-        //! System simulation box.
-        matrix                 box { { 0 } };
-        //! Storage for parameters for short range interactions.
-        std::vector<real>      nonbondedParameters;
-        //! Storage for atom type parameters.
-        std::vector<int>       atomTypes;
-        //! Storage for atom partial charges.
-        std::vector<real>      charges;
-        //! Atom info where all atoms are marked to have Van der Waals interactions
-        std::vector<int>       atomInfoAllVdw;
-        //! Storage for atom positions.
-        std::vector<gmx::RVec> coordinates;
-        //! Information about exclusions.
-        t_blocka               excls;
+    //! Number of different atom types in test system.
+    int numAtoms;
+    //! System simulation box.
+    matrix box;
+    //! Storage for parameters for short range interactions.
+    std::vector<real> nonbondedParameters;
+    //! Storage for atom type parameters.
+    std::vector<int> atomTypes;
+    //! Storage for atom partial charges.
+    std::vector<real> charges;
+    //! Storage for atom masses.
+    std::vector<real> masses;
+    //! Atom info where all atoms are marked to have Van der Waals interactions
+    std::vector<int> atomInfoAllVdw;
+    //! Storage for atom positions.
+    std::vector<gmx::RVec> coordinates;
+    //! Storage for atom velocities.
+    std::vector<gmx::RVec> velocities;
+    //! Information about exclusions.
+    t_blocka excls;
 };
 
 } // namespace nblib

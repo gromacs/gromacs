@@ -59,8 +59,10 @@
 
 #include "coords.h"
 #include "nbkernelsystem.h"
+#include "util.h"
 
-namespace nblib {
+namespace nblib
+{
 
 SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
                    const std::vector<gmx::RVec> &vel) : box_(box), topology_(topo)
