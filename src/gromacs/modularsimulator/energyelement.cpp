@@ -160,7 +160,7 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf* outf)
     pull_t* pull_work = nullptr;
     energyOutput_ = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf), top_global_, inputrec_,
                                                    pull_work, mdoutf_get_fp_dhdl(outf), false,
-                                                   mdModulesNotifier_);
+                                                   startingBehavior_, mdModulesNotifier_);
 
     if (!isMasterRank_)
     {

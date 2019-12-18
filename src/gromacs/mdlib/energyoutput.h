@@ -72,6 +72,7 @@ namespace gmx
 class Awh;
 class Constraints;
 struct MdModulesNotifier;
+enum class StartingBehavior;
 } // namespace gmx
 
 //! \brief Printed names for intergroup energies
@@ -117,6 +118,7 @@ public:
      * \param[in] pull_work  Pulling simulations data
      * \param[in] fp_dhdl    FEP file.
      * \param[in] isRerun    Is this is a rerun instead of the simulations.
+     * \param[in] startingBehavior  Run starting behavior.
      * \param[in] mdModulesNotifier Notifications to MD modules.
      */
     EnergyOutput(ener_file*               fp_ene,
@@ -125,6 +127,7 @@ public:
                  const pull_t*            pull_work,
                  FILE*                    fp_dhdl,
                  bool                     isRerun,
+                 StartingBehavior         startingBehavior,
                  const MdModulesNotifier& mdModulesNotifier);
 
     ~EnergyOutput();

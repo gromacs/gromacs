@@ -67,6 +67,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/mdebin_bar.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -124,6 +125,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
                            const pull_t*            pull_work,
                            FILE*                    fp_dhdl,
                            bool                     isRerun,
+                           const StartingBehavior   startingBehavior,
                            const MdModulesNotifier& mdModulesNotifier)
 {
     const char*        ener_nm[F_NRE];
@@ -530,7 +532,8 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         sfree(grpnms);
     }
 
-    if (fp_ene)
+    /* Note that fp_ene should be valid on the master rank and null otherwise */
+    if (fp_ene != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
         do_enxnms(fp_ene, &ebin_->nener, &ebin_->enm);
     }

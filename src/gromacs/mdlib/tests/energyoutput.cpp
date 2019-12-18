@@ -59,6 +59,7 @@
 
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/makeconstraints.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -633,7 +634,8 @@ TEST_P(EnergyOutputTest, CheckOutput)
 
     MdModulesNotifier             mdModulesNotifier;
     std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(
-            energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun, mdModulesNotifier);
+            energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun,
+            StartingBehavior::NewSimulation, mdModulesNotifier);
 
     // Add synthetic data for a single step
     double testValue = 10.0;
