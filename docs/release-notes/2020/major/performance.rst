@@ -19,14 +19,14 @@ the PME-mesh calculation now always takes the most CPU time.
 Proper dihedrals of Fourier type and improper dihedrals of preriodic type are SIMD accelerated
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Avoid configuring the own-FFTW with AVX512 enabled when GROMACS does not use AVX512
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+Avoid configuring the own-FFTW with AVX512 enabled when |Gromacs| does not use AVX512
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-Previously if GROMACS was configured to use any AVX flavor, the internally built FFTW
+Previously if |Gromacs| was configured to use any AVX flavor, the internally built FFTW
 would be configured to also contain AVX512 kernels. This could cause performance loss
 if the (often noisy) FFTW auto-tuner picks an AVX512 kernel in a run that otherwise 
 only uses AVX/AVX2 which could run at higher CPU clocks without AVX512 clock speed limitation.
-Now AVX512 is only used for the internal FFTW if GROMACS is also configured with
+Now AVX512 is only used for the internal FFTW if |Gromacs| is also configured with
 the same SIMD flavor.
 
 Update and constraints can run on a GPU
@@ -45,18 +45,16 @@ When running on multiple GPUs with CUDA, communication operations can
 now be performed directly between GPU memory spaces (automatically
 routed, including via NVLink where available). This behaviour is not
 yet enabled by default: the new codepaths have been verified by the
-standard Gromacs regression tests, but (at the time of release) still
+standard |Gromacs| regression tests, but (at the time of release) still
 lack substantial "real-world" testing. They can be enabled by setting
 the following environment variables to any non-NULL value in your
 shell: GMX_GPU_DD_COMMS (for halo exchange communications between PP
 tasks); GMX_GPU_PME_PP_COMMS (for communications between PME and PP
-tasks); and GMX_USE_GPU_BUFFER_OPS (for GPU enablement of internal
-data format transformation operations, required by the GPU direct
-communications). GMX_FORCE_UPDATE_DEFAULT_GPU should also be set in
+tasks); GMX_FORCE_UPDATE_DEFAULT_GPU can also be set in
 order to combine with the new GPU update feature (above). The
 combination of these will (for many common simulations) keep data
 resident on the GPU across most timesteps, avoiding expensive data
-transfers. Note that these currently require Gromacs to be built
+transfers. Note that these currently require |Gromacs| to be built
 with its internal thread-MPI library rather than any external MPI
 library, and are limited to a single compute node. We stress that
 users should carefully verify results against the default path, and

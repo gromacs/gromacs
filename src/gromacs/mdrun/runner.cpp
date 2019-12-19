@@ -224,7 +224,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         GMX_LOG(mdlog.warning)
                 .asParagraph()
                 .appendTextFormatted(
-                        "NOTE: This run uses the 'GPU buffer ops' feature, enabled by the "
+                        "This run uses the 'GPU buffer ops' feature, enabled by the "
                         "GMX_USE_GPU_BUFFER_OPS environment variable.");
     }
 
@@ -233,7 +233,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         GMX_LOG(mdlog.warning)
                 .asParagraph()
                 .appendTextFormatted(
-                        "NOTE: This run will default to '-update gpu' as requested by the "
+                        "This run will default to '-update gpu' as requested by the "
                         "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
     }
 
@@ -243,14 +243,17 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         {
             if (!devFlags.enableGpuBufferOps)
             {
-                gmx_fatal(FARGS,
-                          "Cannot enable GPU halo exchange without GPU buffer operations, set "
-                          "GMX_USE_GPU_BUFFER_OPS=1\n");
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "Enabling GPU buffer operations required by GMX_GPU_DD_COMMS "
+                                "(equivalent with GMX_USE_GPU_BUFFER_OPS=1).");
+                devFlags.enableGpuBufferOps = true;
             }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the "
+                            "This run uses the 'GPU halo exchange' feature, enabled by the "
                             "GMX_GPU_DD_COMMS environment variable.");
         }
         else
@@ -258,7 +261,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
+                            "GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
                             "halo exchange' feature will not be enabled as nonbonded interactions "
                             "are not offloaded.");
             devFlags.enableGpuHaloExchange = false;
@@ -272,7 +275,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: This run uses the 'GPU PME-PP communications' feature, enabled "
+                            "This run uses the 'GPU PME-PP communications' feature, enabled "
                             "by the GMX_GPU_PME_PP_COMMS environment variable.");
         }
         else
@@ -291,7 +294,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendText(
-                            "NOTE: GMX_GPU_PME_PP_COMMS environment variable detected, but the "
+                            "GMX_GPU_PME_PP_COMMS environment variable detected, but the "
                             "'GPU PME-PP communications' feature was not enabled as "
                             + clarification);
             devFlags.enableGpuPmePPComm = false;
