@@ -41,7 +41,7 @@ Functionality deprecated in GROMACS 2019
 
 Generation of virtual sites to replace aromatic rings in standard residues
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-These are thought to produce artefacts under some circumstances
+:issue:`3254` These are thought to produce artefacts under some circumstances
 (unpublished results), were never well tested, are not widely used,
 and we need to simplify pdb2gmx.
 
@@ -54,7 +54,7 @@ to do communication between PP ranks less often should choose their
 
 Benchmarking options only available with ``gmx benchmark``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-Options such as ``-confout``, ``-resethway``, ``-resetstep`` are not
+:issue:`3255` Options such as ``-confout``, ``-resethway``, ``-resetstep`` are not
 intended for use by regular mdrun users, so making them only available
 with a dedicated tool is more clear. Also, this permits us to customize
 defaults for e.g. writing files at the end of a simulation part in ways
@@ -63,7 +63,7 @@ will no longer be required.
 
 ``gmx mdrun -nsteps``
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-The number of simulation steps described by the .tpr file can be
+:issue:`3256` The number of simulation steps described by the .tpr file can be
 changed with ``gmx convert-tpr``, or altered in .mdp file before the
 call to ``gmx grompp``. The convenience of this mdrun option was
 outweighted by the doubtful quality of its implementation, no clear
