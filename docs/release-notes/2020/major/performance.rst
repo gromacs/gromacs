@@ -29,14 +29,40 @@ only uses AVX/AVX2 which could run at higher CPU clocks without AVX512 clock spe
 Now AVX512 is only used for the internal FFTW if GROMACS is also configured with
 the same SIMD flavor.
 
-Update and constraints can run on a (single) GPU
-""""""""""""""""""""""""""""""""""""""""""""""""
+Update and constraints can run on a GPU
+"""""""""""""""""""""""""""""""""""""""
 
 For standard simulations (see the user guide for more details),
 update and constraints can be offloaded to a GPU with CUDA. Thus all compute
 intensive parts of a simulation can be offloaded, which provides
 better performance when using a fast GPU combined with a slow CPU.
-Note that this does not work with domain decomposition yet.
+For use with domain decomposition, please see below.
+
+GPU Direct Communications
+"""""""""""""""""""""""""
+
+When running on multiple GPUs with CUDA, communication operations can
+now be performed directly between GPU memory spaces (automatically
+routed, including via NVLink where available). This behaviour is not
+yet enabled by default: the new codepaths have been verified by the
+standard Gromacs regression tests, but (at the time of release) still
+lack substantial "real-world" testing. They can be enabled by setting
+the following environment variables to any non-NULL value in your
+shell: GMX_GPU_DD_COMMS (for halo exchange communications between PP
+tasks); GMX_GPU_PME_PP_COMMS (for communications between PME and PP
+tasks); and GMX_USE_GPU_BUFFER_OPS (for GPU enablement of internal
+data format transformation operations, required by the GPU direct
+communications). GMX_FORCE_UPDATE_DEFAULT_GPU should also be set in
+order to combine with the new GPU update feature (above). The
+combination of these will (for many common simulations) keep data
+resident on the GPU across most timesteps, avoiding expensive data
+transfers. Note that these currently require Gromacs to be built
+with its internal thread-MPI library rather than any external MPI
+library, and are limited to a single compute node. We stress that
+users should carefully verify results against the default path, and
+any reported issues will be gratefully received to help us mature the
+software.
+
 
 Bonded kernels on GPU have been fused
 """""""""""""""""""""""""""""""""""""
