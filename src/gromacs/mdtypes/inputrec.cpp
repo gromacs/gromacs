@@ -1575,3 +1575,15 @@ bool haveEwaldSurfaceContribution(const t_inputrec& ir)
 {
     return EEL_PME_EWALD(ir.coulombtype) && (ir.ewald_geometry == eewg3DC || ir.epsilon_surface != 0);
 }
+
+bool haveFreeEnergyType(const t_inputrec& ir, const int fepType)
+{
+    for (int i = 0; i < ir.fepvals->n_lambda; i++)
+    {
+        if (ir.fepvals->all_lambda[fepType][i] > 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}

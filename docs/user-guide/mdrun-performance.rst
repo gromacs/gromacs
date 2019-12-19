@@ -531,9 +531,10 @@ behavior.
     Setting "gpu" requires that a compatible CUDA GPU is available,
     the simulation uses a single rank.
     Update and constraints on a GPU is currently not supported
-    with domain decomposition, free-energy, virtual sites,
-    Ewald surface correction, replica exchange, constraint pulling,
-    orientation restraints and computational electrophysiology.
+    with mass and constraints free-energy perturbation, domain
+    decomposition, virtual sites, Ewald surface correction,
+    replica exchange, constraint pulling, orientation restraints
+    and computational electrophysiology.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that

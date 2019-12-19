@@ -630,10 +630,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         // The graph is needed, but not supported
         errorMessage += "Orientation restraints are not supported.\n";
     }
-    if (inputrec.efep != efepNO)
+    if (inputrec.efep != efepNO
+        && (haveFreeEnergyType(inputrec, efptBONDED) || haveFreeEnergyType(inputrec, efptMASS)))
     {
-        // Actually all free-energy options except for mass and constraint perturbation are supported
-        errorMessage += "Free energy perturbations are not supported.\n";
+        errorMessage += "Free energy perturbation for mass and constraints are not supported.\n";
     }
     const auto particleTypes = gmx_mtop_particletype_count(mtop);
     if (particleTypes[eptShell] > 0)
