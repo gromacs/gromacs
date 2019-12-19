@@ -749,7 +749,7 @@ void gmx::LegacySimulator::do_md()
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal, cr, (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
                            fplog, mdlog, *ir, fr, state->box, state->x, wcycle, step, step_rel,
-                           &bPMETunePrinting);
+                           &bPMETunePrinting, simulationWork.useGpuPmePpCommunication);
         }
 
         wallcycle_start(wcycle, ewcSTEP);

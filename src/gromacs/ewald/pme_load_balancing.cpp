@@ -899,7 +899,8 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
                     gmx_wallcycle_t                wcycle,
                     int64_t                        step,
                     int64_t                        step_rel,
-                    gmx_bool*                      bPrinting)
+                    gmx_bool*                      bPrinting,
+                    bool                           useGpuPmePpCommunication)
 {
     int    n_prev;
     double cycles_prev;
@@ -951,8 +952,13 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
         {
             if (DDMASTER(cr->dd))
             {
-                /* If PME rank load is too high, start tuning */
-                pme_lb->bBalance = (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
+                /* If PME rank load is too high, start tuning. If
+                   PME-PP direct GPU communication is active,
+                   unconditionally start tuning since ratio will be
+                   unreliable due to CPU-GPU asynchronicity in codepath */
+                pme_lb->bBalance = useGpuPmePpCommunication
+                                           ? true
+                                           : (dd_pme_f_ratio(cr->dd) >= loadBalanceTriggerFactor);
             }
             dd_bcast(cr->dd, sizeof(gmx_bool), &pme_lb->bBalance);
         }
