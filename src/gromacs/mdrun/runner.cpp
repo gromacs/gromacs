@@ -234,7 +234,8 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
                 .asParagraph()
                 .appendTextFormatted(
                         "This run will default to '-update gpu' as requested by the "
-                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable.");
+                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable. GPU update with domain "
+                        "decomposition lacks substantial testing and should be used with caution.");
     }
 
     if (devFlags.enableGpuHaloExchange)

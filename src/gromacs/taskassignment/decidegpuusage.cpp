@@ -513,12 +513,20 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithD
 
     std::string errorMessage;
 
-    if (isDomainDecomposition && hasAnyConstraints && !useUpdateGroups)
+    if (isDomainDecomposition)
     {
-        errorMessage +=
-                "Domain decomposition is only supported with constraints when update groups are "
-                "used. This means constraining all bonds is not supported, except for small "
-                "molecules, and box sizes close to half the pair-list cutoff are not supported.\n ";
+        if (!forceGpuUpdateDefaultWithDD)
+        {
+            errorMessage += "Domain decomposition is not supported.\n ";
+        }
+        else if (hasAnyConstraints && !useUpdateGroups)
+        {
+            errorMessage +=
+                    "Domain decomposition is only supported with constraints when update groups "
+                    "are used. This means constraining all bonds is not supported, except for "
+                    "small molecules, and box sizes close to half the pair-list cutoff are not "
+                    "supported.\n ";
+        }
     }
     if (inputrec.eConstrAlg == econtSHAKE && hasAnyConstraints && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
     {
