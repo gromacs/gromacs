@@ -33,7 +33,9 @@
     - echo $REL_OPTION
     - if [[ -d $BUILD_DIR ]] ; then
       echo "Cleaning up build directory" ;
+      mv $BUILD_DIR/CMakeCache.txt . ;
       rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
+      mv CMakeCache.txt $BUILD_DIR ;
       else
       echo "Preparing new build directory" ;
       mkdir $BUILD_DIR ;
@@ -174,7 +176,9 @@
     - cd ..
     - if [[ -d $RELEASE_BUILD_DIR ]] ; then
       echo "Cleaning up build directory" ;
+      mv $RELEASE_BUILD_DIR/CMakeCache.txt . ;
       rm -rf $RELEASE_BUILD_DIR && mkdir $RELEASE_BUILD_DIR ;
+      mv CMakeCache.txt $RELEASE_BUILD_DIR ;
       else
       echo "Preparing new build directory" ;
       mkdir $RELEASE_BUILD_DIR ;
