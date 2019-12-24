@@ -1247,19 +1247,26 @@ void print_top_header(FILE                    *fp,
                     continue;
                 }
                 std::string shellName = atype->getType() + std::string("_s");
+                auto polar            = getEemtypePolarizable(iChargeModel);
                 if (getEemtypeSlater(iChargeModel))
                 {
                     fprintf(fp, "%-7s  2  %d  %g\n", atype->getType().c_str(),
                             eem->getRow(0), eem->getZeta(0));
-                    fprintf(fp, "%-7s  2  %d  %g\n", shellName.c_str(),
-                            eem->getRow(1), eem->getZeta(1));
+                    if (polar)
+                    {
+                        fprintf(fp, "%-7s  2  %d  %g\n", shellName.c_str(),
+                                eem->getRow(1), eem->getZeta(1));
+                    }
                 }
                 else if (getEemtypeGaussian(iChargeModel))
                 {
                     fprintf(fp, "%-7s  1  %g\n", atype->getType().c_str(),
                             eem->getZeta(0));
-                    fprintf(fp, "%-7s  1  %g\n", shellName.c_str(),
-                            eem->getZeta(1));
+                    if (polar)
+                    {
+                        fprintf(fp, "%-7s  1  %g\n", shellName.c_str(),
+                                eem->getZeta(1));
+                    }
                 }
                 else
                 {
