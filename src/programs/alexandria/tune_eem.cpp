@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2019
+ * Copyright (C) 2014-2020
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
