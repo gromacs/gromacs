@@ -50,7 +50,10 @@ if(GMX_INSTALL_LEGACY_API)
   install(FILES
           arrayref.h
           baseversion.h
+          classhelpers.h
           enumerationhelpers.h
+          exceptions.h
+          listoflists.h
           programcontext.h
           range.h
           smalloc.h
