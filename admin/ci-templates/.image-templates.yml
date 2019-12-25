@@ -11,7 +11,7 @@
   image: gromacs/continuous-integration:ci-gcc-8
 
 .clang6-template:
-  image: gromacs/continuous-integration:ci-clang-6
+  image: gromacs/continuous-integration:ci-clang-6.0
 
 .clang7-template:
   image: gromacs/continuous-integration:ci-clang-7

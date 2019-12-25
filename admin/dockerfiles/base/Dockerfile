@@ -4,30 +4,25 @@
 # Some optional GROMACS dependencies are obtained from the
 # distribution, e.g.  fftw3, hwloc, blas and lapack so that the build
 # is as fast as possible.
-FROM ubuntu:18.04 as ci-basic-dependencies
+FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND=noninteractive
 WORKDIR /tmp
 RUN \
   apt-get update && \
-  apt-get install -y \
+  apt-get -y -q=2 --no-install-suggests --no-install-recommends install \
+    build-essential \
+    ccache \
     cmake \
     git \
-    ninja-build \
-    ccache \
-    build-essential \
-    wget \
-    moreutils \
-    rsync \
     libfftw3-dev \
     libhwloc-dev \
     liblapack-dev \
+    moreutils \
+    ninja-build \
+    python3-pip \
+    rsync \
+    wget \
     xsltproc \
-    python3-pip
-
-# Make an image that has the dependencies for building GROMACS with gcc-5.
-FROM ci-basic-dependencies as ci-gcc-5
-WORKDIR /tmp
-RUN apt-get -qqy --no-install-suggests --no-install-recommends install \
-  gcc-5 \
-  g++-5 && \
-  rm -rf /var/lib/apt/lists/*
+    && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /var/cache/apt/archives/*
