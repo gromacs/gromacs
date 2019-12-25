@@ -54,12 +54,13 @@ enum ChargeModel {
     eqdESP_ps   = 2,
     eqdESP_pp   = 3,
     eqdACM_g    = 4,
-    eqdACM_pg   = 5,
-    eqdACM_ps   = 6,
-    eqdYang     = 7,
-    eqdBultinck = 8,
-    eqdRappe    = 9,
-    eqdNR       = 10
+    eqdACM_s    = 5,
+    eqdACM_pg   = 6,
+    eqdACM_ps   = 7,
+    eqdYang     = 8,
+    eqdBultinck = 9,
+    eqdRappe    = 10,
+    eqdNR       = 11
 };
 
 /*! \brief
@@ -76,21 +77,22 @@ enum ChargeGenerationAlgorithm {
 
 static bool gmx_unused getEemtypePolarizable(ChargeModel eem)
 {
-    return (eem == eqdACM_pg ||
+    return (eem == eqdACM_pg || eem == eqdACM_ps ||
             eem == eqdESP_pp || eem == eqdESP_pg || eem == eqdESP_ps);
 }
 
 static bool gmx_unused getEemtypeDistributed(ChargeModel eem)
 {
-    return (eem == eqdACM_g  || eem == eqdACM_pg || eem == eqdACM_ps ||
+    return (eem == eqdACM_g  || eem == eqdACM_s  || 
+            eem == eqdACM_pg || eem == eqdACM_ps ||
             eem == eqdESP_pg || eem == eqdESP_ps ||
             eem == eqdYang   || eem == eqdRappe);
 }
 
 static bool gmx_unused getEemtypeSlater(ChargeModel eem)
 {
-    return (eem == eqdACM_ps || eem == eqdESP_ps ||
-            eem == eqdYang   || eem == eqdRappe);
+    return (eem == eqdACM_s || eem == eqdACM_ps || eem == eqdESP_ps ||
+            eem == eqdYang  || eem == eqdRappe);
 }
 
 static bool gmx_unused getEemtypeGaussian(ChargeModel eem)

@@ -45,6 +45,7 @@ std::map<ChargeModel, const std::string> cmNames =
      { eqdESP_pg,   "ESP-pg"   },
      { eqdESP_ps,   "ESP-ps"   },
      { eqdACM_g,    "ACM-g"    },
+     { eqdACM_s,    "ACM-s"    },
      { eqdACM_pg,   "ACM-pg"   },
      { eqdACM_ps,   "ACM-ps"   },
      { eqdYang,     "Yang"     },

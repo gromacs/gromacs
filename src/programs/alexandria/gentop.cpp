@@ -75,7 +75,9 @@ int alex_gentop(int argc, char *argv[])
         "The supported force field for this tool are Alexandria with two",
         "different flavors (specify with the -ff flag): [BR]",
         "ACM-g  : Alexandria Charge Model with Gaussian charges, and[BR]",
-        "ACM-pg : Alexandria Charge Model with Polarrizable Gaussian charges.[PAR]",
+        "ACM-s  : Alexandria Charge Model with Slater charges, and[BR]",
+        "ACM-pg : Alexandria Charge Model with Polarizable Gaussian charges.[PAR]",
+        "ACM-ps : Alexandria Charge Model with Polarizable Slater charges.[PAR]",
         "A few other choices are available for historical reasons and for",
         "development:[PAR]",
         "ESP-p  : ElectroStatic Potential with point charges[PAR]",
@@ -151,7 +153,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = true;
 
-    static const char               *ff[ ]          = {nullptr, "ACM-g", "ACM-pg", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
+    static const char               *ff[ ]          = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
     static const char               *lot            = "AFF/ACM";
 
@@ -191,7 +193,7 @@ int alex_gentop(int argc, char *argv[])
         { "-watoms", FALSE, etREAL, {&watoms},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use 0. For point+smeared charges 1 is recommended." },
         { "-ff",     FALSE, etENUM, {ff},
-          "Force field model. Note that only ACM-g and ACM-pg will yield complete topologies but see help text ([TT]-h[tt])." },
+          "Force field model. Note that only ACM-xx will yield complete topologies but see help text ([TT]-h[tt])." },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
