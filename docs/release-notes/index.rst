@@ -23,6 +23,8 @@ can be found at https://redmine.gromacs.org at that issue number.
 |Gromacs| 2021 series
 ---------------------
 
+.. todolist::
+
 Major release
 ^^^^^^^^^^^^^
 
