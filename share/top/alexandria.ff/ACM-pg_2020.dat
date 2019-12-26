@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <atomtypes chargemodel="ACM-pg" version="2019" function="BHAM" combination_rule="Geometric" nexclusions="2">
+  <atomtypes chargemodel="ACM-pg" version="2019" function="BHAM" combination_rule="Geometric" nexclusions="2" epsilonr="1">
     <atomtype elem="H" description="hydrogen on aliphatic C with 1 electron-withdrawal group" atype="h1" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.471350e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 2 electron-withdrawal groups" atype="h2" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.293170e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
     <atomtype elem="H" description="hydrogen on aliphatic C with 3 electron-withdrawal groups" atype="h3" ptype="p_ha" btype="b_h1" ztype="z_h1" vdwparams="2.114990e-01 6.568880e-02 1.300000e+01" ref_enthalpy="222.2325"/>
@@ -151,13 +151,13 @@
     <gt_bond atom1="b_c1" atom2="b_s" bondorder="1" refValue="169.47" sigma="1.72" ntrain="7" params="450  19"/>
     <gt_bond atom1="b_c1" atom2="b_s" bondorder="2" refValue="158.07" sigma="1.25" ntrain="2" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_c2" bondorder="1" refValue="144.5" sigma="3.62" ntrain="168" params="450  19"/>
-    <gt_bond atom1="b_c2" atom2="b_c2" bondorder="2" refValue="134.42" sigma="3.02" ntrain="586" params="450  19"/>
+    <gt_bond atom1="b_c2" atom2="b_c2" bondorder="2" refValue="134.42" sigma="3.02" ntrain="587" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_c3" bondorder="1" refValue="150.43" sigma="1.56" ntrain="637" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_ca" bondorder="1" refValue="140.49" sigma="3.76" ntrain="188" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_ca" bondorder="2" refValue="139.06" sigma="2.11" ntrain="75" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_cl" bondorder="1" refValue="172.86" sigma="1.89" ntrain="39" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_f" bondorder="1" refValue="132.79" sigma="1.96" ntrain="48" params="450  19"/>
-    <gt_bond atom1="b_c2" atom2="b_h1" bondorder="1" refValue="108.19" sigma="1.14" ntrain="120" params="450  19"/>
+    <gt_bond atom1="b_c2" atom2="b_h1" bondorder="1" refValue="108.17" sigma="1.14" ntrain="123" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_h2" bondorder="1" refValue="107.67" sigma="0.68" ntrain="88" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_ha" bondorder="1" refValue="108.32" sigma="0.8" ntrain="982" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_i" bondorder="1" refValue="211.02" sigma="0.5" ntrain="1" params="450  19"/>
@@ -167,11 +167,11 @@
     <gt_bond atom1="b_c2" atom2="b_n2" bondorder="2" refValue="126.75" sigma="1.57" ntrain="25" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_n3" bondorder="1" refValue="137.15" sigma="4.68" ntrain="36" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_na" bondorder="2" refValue="130.66" sigma="2.38" ntrain="38" params="450  19"/>
-    <gt_bond atom1="b_c2" atom2="b_na" bondorder="1" refValue="136.74" sigma="2.54" ntrain="50" params="450  19"/>
+    <gt_bond atom1="b_c2" atom2="b_na" bondorder="1" refValue="136.65" sigma="2.6" ntrain="54" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_nh" bondorder="1" refValue="136.46" sigma="2.98" ntrain="28" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_nh" bondorder="2" refValue="136.26" sigma="3.05" ntrain="21" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_no" bondorder="1" refValue="145.04" sigma="4.06" ntrain="5" params="450  19"/>
-    <gt_bond atom1="b_c2" atom2="b_o" bondorder="2" refValue="128.76" sigma="0.5" ntrain="1" params="450  19"/>
+    <gt_bond atom1="b_c2" atom2="b_o" bondorder="1" refValue="128.76" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_oh" bondorder="1" refValue="135.86" sigma="1.12" ntrain="2" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_os" bondorder="1" refValue="136.72" sigma="2.06" ntrain="120" params="450  19"/>
     <gt_bond atom1="b_c2" atom2="b_p" bondorder="2" refValue="170.84" sigma="2.97" ntrain="5" params="450  19"/>
@@ -204,8 +204,8 @@
     <gt_bond atom1="b_c3" atom2="b_p4" bondorder="1" refValue="181.02" sigma="2.26" ntrain="14" params="450  19"/>
     <gt_bond atom1="b_c3" atom2="b_s" bondorder="1" refValue="183.92" sigma="1.95" ntrain="100" params="450  19"/>
     <gt_bond atom1="b_c3" atom2="b_s4" bondorder="1" refValue="183.54" sigma="3.52" ntrain="40" params="450  19"/>
-    <gt_bond atom1="b_ca" atom2="b_ca" bondorder="1" refValue="139.56" sigma="1.88" ntrain="1393" params="450  19"/>
-    <gt_bond atom1="b_ca" atom2="b_ca" bondorder="2" refValue="139.19" sigma="1.67" ntrain="1370" params="450  19"/>
+    <gt_bond atom1="b_ca" atom2="b_ca" bondorder="1" refValue="139.56" sigma="1.89" ntrain="1392" params="450  19"/>
+    <gt_bond atom1="b_ca" atom2="b_ca" bondorder="2" refValue="139.19" sigma="1.67" ntrain="1371" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_cl" bondorder="1" refValue="174.07" sigma="1.38" ntrain="202" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_f" bondorder="1" refValue="133.78" sigma="1.25" ntrain="84" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_h2" bondorder="1" refValue="108.36" sigma="0.68" ntrain="67" params="450  19"/>
@@ -215,8 +215,8 @@
     <gt_bond atom1="b_ca" atom2="b_n1" bondorder="1" refValue="138.41" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_n2" bondorder="1" refValue="139.61" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_n3" bondorder="1" refValue="139.97" sigma="1.51" ntrain="7" params="450  19"/>
-    <gt_bond atom1="b_ca" atom2="b_na" bondorder="2" refValue="133.06" sigma="1.8" ntrain="55" params="450  19"/>
-    <gt_bond atom1="b_ca" atom2="b_na" bondorder="1" refValue="134.39" sigma="2.63" ntrain="63" params="450  19"/>
+    <gt_bond atom1="b_ca" atom2="b_na" bondorder="2" refValue="133.06" sigma="1.82" ntrain="53" params="450  19"/>
+    <gt_bond atom1="b_ca" atom2="b_na" bondorder="1" refValue="134.35" sigma="2.61" ntrain="65" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_nh" bondorder="1" refValue="139.29" sigma="1.56" ntrain="23" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_no" bondorder="1" refValue="147.79" sigma="1.04" ntrain="25" params="450  19"/>
     <gt_bond atom1="b_ca" atom2="b_oh" bondorder="1" refValue="136.65" sigma="1.27" ntrain="58" params="450  19"/>
@@ -261,7 +261,7 @@
     <gt_bond atom1="b_hp" atom2="b_n1" bondorder="1" refValue="104.02" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_hp" atom2="b_n2" bondorder="1" refValue="102.19" sigma="1.65" ntrain="27" params="450  19"/>
     <gt_bond atom1="b_hp" atom2="b_n3" bondorder="1" refValue="101.75" sigma="1.24" ntrain="48" params="450  19"/>
-    <gt_bond atom1="b_hp" atom2="b_na" bondorder="1" refValue="100.97" sigma="1.13" ntrain="43" params="450  19"/>
+    <gt_bond atom1="b_hp" atom2="b_na" bondorder="1" refValue="100.97" sigma="1.12" ntrain="45" params="450  19"/>
     <gt_bond atom1="b_hp" atom2="b_nh" bondorder="1" refValue="101" sigma="0.92" ntrain="314" params="450  19"/>
     <gt_bond atom1="b_hp" atom2="b_no" bondorder="1" refValue="104.1" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_hp" atom2="b_o" bondorder="1" refValue="97.04" sigma="0.99" ntrain="2" params="450  19"/>
@@ -292,8 +292,8 @@
     <gt_bond atom1="b_n2" atom2="b_na" bondorder="1" refValue="138.06" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_n2" atom2="b_nh" bondorder="1" refValue="133.69" sigma="9.66" ntrain="3" params="450  19"/>
     <gt_bond atom1="b_n2" atom2="b_no" bondorder="1" refValue="158.29" sigma="20.98" ntrain="3" params="450  19"/>
-    <gt_bond atom1="b_n2" atom2="b_o" bondorder="2" refValue="118.96" sigma="3.69" ntrain="5" params="450  19"/>
-    <gt_bond atom1="b_n2" atom2="b_o" bondorder="1" refValue="116.93" sigma="4.04" ntrain="10" params="450  19"/>
+    <gt_bond atom1="b_n2" atom2="b_o" bondorder="2" refValue="120.47" sigma="1.7" ntrain="4" params="450  19"/>
+    <gt_bond atom1="b_n2" atom2="b_o" bondorder="1" refValue="116.57" sigma="4.06" ntrain="11" params="450  19"/>
     <gt_bond atom1="b_n2" atom2="b_oh" bondorder="1" refValue="141.55" sigma="1.92" ntrain="3" params="450  19"/>
     <gt_bond atom1="b_n2" atom2="b_os" bondorder="1" refValue="139.94" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_n2" atom2="b_p2" bondorder="1" refValue="154.72" sigma="0.5" ntrain="1" params="450  19"/>
@@ -309,8 +309,8 @@
     <gt_bond atom1="b_n3" atom2="b_os" bondorder="1" refValue="143.61" sigma="0.5" ntrain="1" params="450  19"/>
     <gt_bond atom1="b_n3" atom2="b_p4" bondorder="1" refValue="167.63" sigma="1.69" ntrain="7" params="450  19"/>
     <gt_bond atom1="b_n3" atom2="b_s" bondorder="1" refValue="180.33" sigma="4.16" ntrain="3" params="450  19"/>
-    <gt_bond atom1="b_na" atom2="b_na" bondorder="2" refValue="128.64" sigma="1.94" ntrain="3" params="450  19"/>
-    <gt_bond atom1="b_na" atom2="b_na" bondorder="1" refValue="134.38" sigma="2.49" ntrain="12" params="450  19"/>
+    <gt_bond atom1="b_na" atom2="b_na" bondorder="2" refValue="129.69" sigma="2.7" ntrain="4" params="450  19"/>
+    <gt_bond atom1="b_na" atom2="b_na" bondorder="1" refValue="134.52" sigma="2.52" ntrain="11" params="450  19"/>
     <gt_bond atom1="b_na" atom2="b_o" bondorder="1" refValue="127.35" sigma="0.5" ntrain="2" params="450  19"/>
     <gt_bond atom1="b_na" atom2="b_os" bondorder="1" refValue="139.64" sigma="0.66" ntrain="2" params="450  19"/>
     <gt_bond atom1="b_na" atom2="b_s" bondorder="1" refValue="167.29" sigma="4.09" ntrain="3" params="450  19"/>
@@ -484,14 +484,14 @@
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_ca" refValue="124.18" sigma="8.64" ntrain="300" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_cl" refValue="123.54" sigma="2.8" ntrain="42" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_f" refValue="122.42" sigma="3" ntrain="45" params="300  30000"/>
-    <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_h1" refValue="125.24" sigma="7.26" ntrain="64" params="300  30000"/>
+    <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_h1" refValue="125.41" sigma="7.23" ntrain="66" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_h2" refValue="129.74" sigma="3.77" ntrain="67" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_ha" refValue="120.6" sigma="3.82" ntrain="1067" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_i" refValue="123.89" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_n" refValue="121.03" sigma="1.44" ntrain="2" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_n2" refValue="125.46" sigma="6" ntrain="3" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_n3" refValue="103.27" sigma="17.7" ntrain="13" params="300  30000"/>
-    <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_na" refValue="111.24" sigma="5.5" ntrain="41" params="300  30000"/>
+    <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_na" refValue="111.02" sigma="5.48" ntrain="43" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_nh" refValue="119.13" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_no" refValue="127.5" sigma="4.4" ntrain="4" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_c2" atom3="b_os" refValue="114.27" sigma="5.97" ntrain="113" params="300  30000"/>
@@ -546,10 +546,10 @@
     <gt_angle atom1="b_c2" atom2="b_n3" atom3="b_o" refValue="129.5" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_n3" atom3="b_oh" refValue="112.81" sigma="3.64" ntrain="3" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_n3" atom3="b_s" refValue="110.87" sigma="0.5" ntrain="2" params="300  30000"/>
-    <gt_angle atom1="b_c2" atom2="b_na" atom3="b_c2" refValue="108.61" sigma="5.41" ntrain="28" params="300  30000"/>
+    <gt_angle atom1="b_c2" atom2="b_na" atom3="b_c2" refValue="108.7" sigma="5.25" ntrain="30" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_na" atom3="b_c3" refValue="125.68" sigma="2.82" ntrain="14" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_na" atom3="b_ca" refValue="108.05" sigma="2.64" ntrain="4" params="300  30000"/>
-    <gt_angle atom1="b_c2" atom2="b_na" atom3="b_hp" refValue="124.03" sigma="4.99" ntrain="20" params="300  30000"/>
+    <gt_angle atom1="b_c2" atom2="b_na" atom3="b_hp" refValue="124.19" sigma="4.62" ntrain="24" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_na" atom3="b_n2" refValue="127.84" sigma="6.5" ntrain="2" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_na" atom3="b_na" refValue="107.67" sigma="4.81" ntrain="17" params="300  30000"/>
     <gt_angle atom1="b_c2" atom2="b_na" atom3="b_os" refValue="105.27" sigma="0.51" ntrain="2" params="300  30000"/>
@@ -851,7 +851,7 @@
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_n1" refValue="111.31" sigma="0.5" ntrain="2" params="300  30000"/>
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_n2" refValue="121" sigma="3.88" ntrain="33" params="300  30000"/>
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_n3" refValue="122.66" sigma="6.5" ntrain="23" params="300  30000"/>
-    <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_na" refValue="122.66" sigma="3.39" ntrain="7" params="300  30000"/>
+    <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_na" refValue="123.31" sigma="3.24" ntrain="11" params="300  30000"/>
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_nh" refValue="113.86" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_no" refValue="110.54" sigma="1.71" ntrain="2" params="300  30000"/>
     <gt_angle atom1="b_h1" atom2="b_c2" atom3="b_o" refValue="125.36" sigma="0.5" ntrain="1" params="300  30000"/>
@@ -986,7 +986,7 @@
     <gt_angle atom1="b_n3" atom2="b_p4" atom3="b_o" refValue="114.74" sigma="4.82" ntrain="7" params="300  30000"/>
     <gt_angle atom1="b_na" atom2="b_c" atom3="b_o" refValue="125.6" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_na" atom2="b_c" atom3="b_s" refValue="117.16" sigma="9.78" ntrain="2" params="300  30000"/>
-    <gt_angle atom1="b_na" atom2="b_c2" atom3="b_na" refValue="112.87" sigma="5.05" ntrain="15" params="300  30000"/>
+    <gt_angle atom1="b_na" atom2="b_c2" atom3="b_na" refValue="112.51" sigma="5.12" ntrain="16" params="300  30000"/>
     <gt_angle atom1="b_na" atom2="b_c2" atom3="b_nh" refValue="117.74" sigma="3.32" ntrain="15" params="300  30000"/>
     <gt_angle atom1="b_na" atom2="b_c2" atom3="b_no" refValue="125.71" sigma="0.5" ntrain="1" params="300  30000"/>
     <gt_angle atom1="b_na" atom2="b_c2" atom3="b_os" refValue="114.19" sigma="0.96" ntrain="4" params="300  30000"/>
@@ -1397,10 +1397,10 @@
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_n3" atom4="b_c3" refValue="167.49" sigma="43.8" ntrain="11" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_n3" atom4="b_hp" refValue="180" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_n3" atom4="b_s" refValue="179.99" sigma="80.04" ntrain="2" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_c2" refValue="79.23" sigma="145.12" ntrain="25" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_c2" refValue="73.36" sigma="141.2" ntrain="27" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_c3" refValue="180.24" sigma="3.04" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_ca" refValue="120" sigma="85.35" ntrain="3" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_hp" refValue="160.36" sigma="57.2" ntrain="9" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_hp" refValue="163.93" sigma="52.34" ntrain="11" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_na" refValue="51.42" sigma="126.47" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_os" refValue="0" sigma="0.5" ntrain="2" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_s" refValue="0" sigma="0.5" ntrain="2" params="10 -1 1 0"/>
@@ -1531,10 +1531,10 @@
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c1" atom4="b_n1" refValue="201.44" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_c3" refValue="180.28" sigma="1.33" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_cl" refValue="179.62" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_h1" refValue="230.72" sigma="81.6" ntrain="7" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_h1" refValue="212.27" sigma="69.64" ntrain="11" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_h2" refValue="180.01" sigma="0.65" ntrain="35" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_n2" refValue="98.58" sigma="139.07" ntrain="3" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_na" refValue="119.96" sigma="170.07" ntrain="18" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_na" refValue="107.96" sigma="165.35" ntrain="20" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_nh" refValue="171.3" sigma="52.43" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_no" refValue="180.19" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_os" refValue="0" sigma="0.5" ntrain="4" params="10 -1 1 0"/>
@@ -2101,10 +2101,10 @@
     <gt_dihedral atom1="b_h1" atom2="b_c1" atom3="b_n2" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c1" atom3="b_n2" atom4="b_s" refValue="180" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c1" atom4="b_o" refValue="192.82" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_h1" refValue="138.26" sigma="160.48" ntrain="13" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_h1" refValue="128.39" sigma="158.72" ntrain="14" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_ha" refValue="112.91" sigma="118.24" ntrain="51" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_n3" refValue="180.03" sigma="2.47" ntrain="10" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_na" refValue="180.6" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_na" refValue="180.2" sigma="0.78" ntrain="3" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c2" atom4="b_os" refValue="203.73" sigma="59.67" ntrain="8" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c3" atom4="b_h1" refValue="239.99" sigma="126.21" ntrain="3" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_c3" atom4="b_ha" refValue="185.56" sigma="104.85" ntrain="25" params="10 -1 1 0"/>
@@ -2124,7 +2124,7 @@
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_n3" atom4="b_o" refValue="180" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_n3" atom4="b_oh" refValue="359.99" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_n3" atom4="b_s" refValue="180" sigma="103.44" ntrain="2" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_na" atom4="b_hp" refValue="358.59" sigma="1.76" ntrain="3" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_na" atom4="b_hp" refValue="153.68" sigma="177.95" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_nh" atom4="b_hp" refValue="98.59" sigma="72.29" ntrain="2" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_no" atom4="b_o" refValue="90" sigma="90.49" ntrain="4" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_h1" atom2="b_c2" atom3="b_oh" atom4="b_hp" refValue="235.79" sigma="74.16" ntrain="3" params="10 -1 1 0"/>
@@ -2358,7 +2358,7 @@
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c" atom4="b_s" refValue="269.99" sigma="90.49" ntrain="2" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c1" atom4="b_n1" refValue="15.46" sigma="22.37" ntrain="3" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c2" atom4="b_n2" refValue="149.35" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c2" atom4="b_na" refValue="159.58" sigma="56.93" ntrain="9" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c2" atom4="b_na" refValue="163.29" sigma="52.14" ntrain="11" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c2" atom4="b_nh" refValue="226.9" sigma="122.47" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_c3" atom4="b_p4" refValue="203.89" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_hp" atom2="b_na" atom3="b_na" atom4="b_na" refValue="180" sigma="0.5" ntrain="2" params="10 -1 1 0"/>
@@ -2453,7 +2453,7 @@
     <gt_dihedral atom1="b_n3" atom2="b_c3" atom3="b_c3" atom4="b_oh" refValue="180.44" sigma="2.36" ntrain="7" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_n3" atom2="b_c3" atom3="b_c3" atom4="b_os" refValue="187.5" sigma="114.29" ntrain="15" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_n3" atom2="b_ca" atom3="b_ca" atom4="b_s" refValue="179.99" sigma="176.56" ntrain="2" params="10 -1 1 0"/>
-    <gt_dihedral atom1="b_na" atom2="b_c2" atom3="b_c2" atom4="b_na" refValue="89.98" sigma="145.56" ntrain="10" params="10 -1 1 0"/>
+    <gt_dihedral atom1="b_na" atom2="b_c2" atom3="b_c2" atom4="b_na" refValue="81.8" sigma="141.2" ntrain="11" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_na" atom2="b_c2" atom3="b_c2" atom4="b_no" refValue="179.76" sigma="0.5" ntrain="1" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_na" atom2="b_c2" atom3="b_c2" atom4="b_os" refValue="0" sigma="0.5" ntrain="4" params="10 -1 1 0"/>
     <gt_dihedral atom1="b_na" atom2="b_c2" atom3="b_c2" atom4="b_s" refValue="143.86" sigma="176.7" ntrain="5" params="10 -1 1 0"/>
@@ -2530,47 +2530,47 @@
     <gt_dihedral atom1="b_br" atom2="b_ca" atom3="b_na" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_br" atom2="b_h1" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_br" atom2="b_o" atom3="b_oh" atom4="b_c" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_br" atom3="b_ca" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_br" atom3="b_o" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c" atom3="b_c3" atom4="b_n" refValue="2.5" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c" atom3="b_c3" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c" atom3="b_hp" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c" atom3="b_o" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c1" atom3="b_c3" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c1" atom3="b_o" atom4="b_os" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c2" atom4="b_o" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c2" atom4="b_o" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c2" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c3" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_c3" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_h1" atom4="b_o" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_h1" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_ha" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_ha" atom4="b_c2" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_c3" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_oh" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_os" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_o" atom4="b_os" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_oh" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_os" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c2" atom3="b_os" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c1" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c1" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c2" atom4="b_o" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c3" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_c3" atom4="b_o" refValue="-0.01" sigma="0.52" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_ca" atom4="b_o" refValue="0.22" sigma="0.89" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_cl" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_h1" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_hp" atom4="b_n" refValue="4.5" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_n" atom4="b_o" refValue="0.03" sigma="0.63" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_c3" refValue="-0.03" sigma="0.65" ntrain="13" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_h1" refValue="-0.01" sigma="0.67" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_n" refValue="-0.01" sigma="0.7" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_n" refValue="-0.01" sigma="0.65" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_o" refValue="0.23" sigma="1.22" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_oh" refValue="0.23" sigma="0.88" ntrain="6" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_os" refValue="0.36" sigma="1.22" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_oh" refValue="0.35" sigma="0.97" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_o" atom4="b_os" refValue="0.25" sigma="1.13" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_oh" atom4="b_o" refValue="-0.46" sigma="0.89" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_os" atom4="b_o" refValue="-0.13" sigma="0.7" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_s" atom4="b_f" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_s" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_c3" atom3="b_s" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_c3" atom4="b_n" refValue="-2.18" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="-0.25" sigma="1.42" ntrain="31" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="-0.25" sigma="1.4" ntrain="32" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_ca" atom4="b_o" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_ca" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_ca" atom3="b_h1" atom4="b_o" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
@@ -2584,21 +2584,25 @@
     <gt_dihedral atom1="b_c" atom2="b_cl" atom3="b_cl" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_f" atom3="b_o" atom4="b_f" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_c2" atom4="b_o" refValue="-0.1" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_c2" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_c3" atom4="b_o" refValue="-0.23" sigma="0.78" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_ca" atom4="b_o" refValue="-0.98" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_h1" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_h1" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_n" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_c2" refValue="-1.71" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_c3" refValue="0.05" sigma="0.58" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_c3" refValue="0.08" sigma="0.58" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_n" refValue="0.15" sigma="0.76" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_oh" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_o" atom4="b_os" refValue="0.25" sigma="0.75" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_os" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_h1" atom3="b_s" atom4="b_os" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_ha" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="8" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_ha" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="10" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_hp" atom3="b_c3" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_hp" atom3="b_hp" atom4="b_n" refValue="0.08" sigma="2.55" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_c3" atom4="b_o" refValue="-0.32" sigma="0.82" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_ca" atom4="b_o" refValue="-0.45" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_h1" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_n" atom4="b_o" refValue="0.22" sigma="0.89" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_n" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2610,33 +2614,31 @@
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_oh" atom4="b_o" refValue="0.04" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_n" atom3="b_s" atom4="b_c3" refValue="-0.71" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c" atom4="b_c3" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c" atom4="b_h1" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c" atom4="b_os" refValue="-1.08" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c1" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_oh" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_os" refValue="0.04" sigma="0.59" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_oh" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c2" atom4="b_os" refValue="0.04" sigma="0.6" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_c3" refValue="0.18" sigma="1.12" ntrain="12" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_cl" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_h1" refValue="0.18" sigma="0.76" ntrain="7" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_n" refValue="-0.01" sigma="0.91" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_n" refValue="-0.03" sigma="1.04" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_o" refValue="0.61" sigma="0.99" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_oh" refValue="-0.06" sigma="1.48" ntrain="11" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_os" refValue="-0.25" sigma="0.98" ntrain="9" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_oh" refValue="-0.07" sigma="1.53" ntrain="10" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_c3" atom4="b_os" refValue="-0.22" sigma="0.96" ntrain="10" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_c3" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_h1" refValue="0" sigma="0.5" ntrain="6" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_n" refValue="0.62" sigma="0.6" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_n" refValue="0.73" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_oh" refValue="0.05" sigma="0.69" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_ca" atom4="b_os" refValue="-0.06" sigma="1.33" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_f" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_c2" refValue="0.33" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_c2" refValue="0.16" sigma="0.66" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_f" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_h1" atom4="b_os" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_n" atom4="b_c3" refValue="0.39" sigma="0.94" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_n" atom4="b_h1" refValue="-0.03" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_n" atom4="b_n" refValue="-0.88" sigma="1.12" ntrain="3" params="0.5"/>
@@ -2644,77 +2646,75 @@
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_n2" atom4="b_h1" refValue="-2.19" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_o" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_o" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_oh" atom4="b_c3" refValue="0.53" sigma="1.01" ntrain="9" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_oh" atom4="b_c3" refValue="0.52" sigma="0.99" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_os" atom4="b_c2" refValue="-0.07" sigma="0.55" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_os" atom4="b_c3" refValue="-0.12" sigma="1.15" ntrain="23" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_os" atom4="b_c3" refValue="-0.13" sigma="1.18" ntrain="21" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_os" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_os" atom4="b_os" refValue="0.02" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_p" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_o" atom3="b_s" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_c3" atom4="b_o" refValue="0.47" sigma="0.89" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_c3" atom4="b_o" refValue="0.34" sigma="0.89" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_ca" atom4="b_o" refValue="-0.05" sigma="1.31" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_c3" refValue="-0.27" sigma="1.24" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_c3" refValue="-0.32" sigma="1.2" ntrain="9" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_f" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_oh" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_c1" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_c2" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_c3" atom4="b_o" refValue="-0.3" sigma="1.25" ntrain="12" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_oh" atom3="b_o" atom4="b_oh" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_c2" atom4="b_o" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_c3" atom4="b_o" refValue="-0.28" sigma="1.23" ntrain="13" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_ca" atom4="b_o" refValue="0.23" sigma="1.03" ntrain="6" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_c3" refValue="-0.08" sigma="0.75" ntrain="15" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_c3" refValue="-0.1" sigma="0.77" ntrain="13" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_ca" refValue="0.01" sigma="0.53" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_h1" refValue="0.02" sigma="0.58" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_n" refValue="-0.33" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_os" refValue="0.06" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_os" atom4="b_o" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_o" atom4="b_os" refValue="0.02" sigma="0.53" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_os" atom3="b_os" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_p3" atom3="b_c3" atom4="b_o" refValue="-2.19" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_c3" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_c3" atom4="b_h1" refValue="0.41" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_n" atom4="b_c3" refValue="0.09" sigma="1.38" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_n2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_o" atom4="b_c3" refValue="0.72" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_o" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c" atom2="b_s" atom3="b_s" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_c2" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_c2" atom3="b_s" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_c3" atom3="b_c3" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_c3" atom3="b_ha" atom4="b_c2" refValue="-0.12" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c1" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c1" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_ca" atom3="b_na" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_h1" atom3="b_s" atom4="b_c2" refValue="2.53" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_ha" atom3="b_c2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c1" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="-0.02" sigma="0.53" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c1" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="-0.02" sigma="0.54" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_os" atom3="b_h1" atom4="b_c2" refValue="1.24" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c1" atom2="b_s" atom3="b_h1" atom4="b_c2" refValue="-2.55" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_br" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_br" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c" atom3="b_c2" atom4="b_c3" refValue="0.09" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c" atom3="b_c2" atom4="b_ha" refValue="0.11" sigma="0.99" ntrain="20" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c" atom3="b_c2" atom4="b_ha" refValue="0.19" sigma="1.13" ntrain="12" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c1" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c1" atom3="b_c2" atom4="b_ha" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c1" atom3="b_ha" atom4="b_ha" refValue="-0.03" sigma="0.54" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c1" atom3="b_ha" atom4="b_ha" refValue="-0.02" sigma="0.54" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_br" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c" atom4="b_c3" refValue="0.01" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c" atom4="b_ha" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c" atom4="b_c3" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c" atom4="b_ha" refValue="0" sigma="0.5" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c1" atom4="b_ha" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_c2" refValue="-0.94" sigma="1.5" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_c3" refValue="0.04" sigma="1.26" ntrain="11" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_ca" refValue="0.03" sigma="0.72" ntrain="49" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_cl" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_f" refValue="-0.25" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_ha" refValue="2.26" sigma="19.97" ntrain="80" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_cl" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_f" refValue="-0.25" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_ha" refValue="2.55" sigma="21.15" ntrain="71" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_p2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c2" atom4="b_s" refValue="-0.01" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_c2" refValue="0.39" sigma="1.5" ntrain="5" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_c3" refValue="-0.02" sigma="1.19" ntrain="41" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_cl" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_c3" refValue="0" sigma="1.2" ntrain="42" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_f" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_ha" refValue="0.02" sigma="0.98" ntrain="72" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_ha" refValue="0.02" sigma="0.98" ntrain="73" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_n3" refValue="-0.22" sigma="1.26" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_c3" atom4="b_os" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2724,22 +2724,25 @@
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ca" atom4="b_ca" refValue="-0.09" sigma="0.67" ntrain="8" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ca" atom4="b_ha" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ca" atom4="b_os" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_cl" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_cl" atom4="b_c3" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_cl" atom4="b_cl" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_c2" refValue="0.21" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_c3" refValue="-0.07" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_f" refValue="-0.03" sigma="0.58" ntrain="7" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_h1" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_f" refValue="0.05" sigma="0.74" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_f" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h1" atom4="b_cl" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h1" atom4="b_f" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h1" atom4="b_i" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h1" atom4="b_n3" refValue="0.23" sigma="0.68" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h1" atom4="b_os" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h2" atom4="b_na" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h2" atom4="b_os" refValue="-0.06" sigma="0.61" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h2" atom4="b_os" refValue="-0.03" sigma="0.61" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_h2" atom4="b_s" refValue="-0.02" sigma="0.56" ntrain="6" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_c2" refValue="2.75" sigma="21.83" ntrain="67" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_c3" refValue="-0.05" sigma="1.25" ntrain="32" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_ca" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.62" ntrain="78" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_c2" refValue="2.43" sigma="20.55" ntrain="76" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_c3" refValue="-0.05" sigma="1.28" ntrain="30" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_ca" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.62" ntrain="75" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_p" refValue="-1.46" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_ha" atom4="b_p2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_hp" atom4="b_na" refValue="0.08" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2752,17 +2755,17 @@
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_n3" refValue="-2.18" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_na" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_no" atom4="b_na" refValue="0.03" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_os" atom4="b_c3" refValue="0.13" sigma="0.63" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_os" atom4="b_c3" refValue="0.09" sigma="0.62" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_os" atom4="b_ca" refValue="0.34" sigma="0.84" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_os" atom4="b_h1" refValue="0.01" sigma="0.51" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_os" atom4="b_h2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_s" atom4="b_c3" refValue="0.54" sigma="0.54" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c2" atom3="b_s" atom4="b_h2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c" atom4="b_c2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c1" atom4="b_c3" refValue="0.06" sigma="0.69" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c1" atom4="b_ha" refValue="-0.14" sigma="0.67" ntrain="5" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_c3" refValue="0.01" sigma="1.22" ntrain="38" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_ha" refValue="-0.11" sigma="1.01" ntrain="57" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_c3" refValue="0.03" sigma="1.21" ntrain="37" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_ha" refValue="-0.1" sigma="1.01" ntrain="56" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_n3" refValue="0.22" sigma="1.12" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c2" atom4="b_s" refValue="-0.14" sigma="0.64" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_c3" atom4="b_c2" refValue="0.08" sigma="1.16" ntrain="24" params="0.5"/>
@@ -2770,8 +2773,8 @@
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ca" atom4="b_ca" refValue="-0.45" sigma="0.91" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_f" atom4="b_c2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_h1" atom4="b_n2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ha" atom4="b_c2" refValue="-0.14" sigma="1.16" ntrain="88" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ha" atom4="b_ha" refValue="175.86" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ha" atom4="b_c2" refValue="-0.14" sigma="1.15" ntrain="89" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ha" atom4="b_ha" refValue="4.13" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_ha" atom4="b_p" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_hp" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_c3" atom3="b_n2" atom4="b_h1" refValue="1.43" sigma="0.85" ntrain="2" params="0.5"/>
@@ -2785,10 +2788,10 @@
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_c3" atom4="b_ca" refValue="0.05" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_c3" atom4="b_ha" refValue="0.4" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ca" atom4="b_c2" refValue="0.07" sigma="0.62" ntrain="8" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="-0.56" sigma="1.35" ntrain="6" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="-0.48" sigma="1.31" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_cl" atom4="b_ca" refValue="0" sigma="1.06" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_f" atom4="b_ca" refValue="-0.52" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ha" atom4="b_c2" refValue="0.11" sigma="0.92" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ha" atom4="b_c2" refValue="0.13" sigma="0.95" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ha" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ha" atom4="b_ca" refValue="0.22" sigma="1.15" ntrain="27" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ca" atom3="b_ha" atom4="b_p" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2802,9 +2805,9 @@
     <gt_dihedral atom1="b_c2" atom2="b_cl" atom3="b_s" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_br" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_cl" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_f" atom4="b_c2" refValue="-0.16" sigma="0.74" ntrain="6" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_f" atom4="b_c2" refValue="-0.08" sigma="0.68" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_f" atom3="b_os" atom4="b_c2" refValue="2.98" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_br" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_c2" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2814,14 +2817,13 @@
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_c2" atom4="b_s" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_c3" atom4="b_n2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_ca" atom4="b_n3" refValue="0.06" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_f" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_h1" atom4="b_n2" refValue="-0.07" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_n2" atom4="b_c2" refValue="2.67" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_n2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_n2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_n3" atom4="b_n3" refValue="-0.2" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_na" atom4="b_c2" refValue="0.41" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_na" atom4="b_na" refValue="-0.23" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_na" atom4="b_na" refValue="-0.11" sigma="0.61" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_os" atom4="b_c2" refValue="-0.12" sigma="0.79" ntrain="10" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h1" atom3="b_s" atom4="b_h1" refValue="-0.02" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_c2" atom4="b_na" refValue="0" sigma="0.5" ntrain="6" params="0.5"/>
@@ -2829,23 +2831,23 @@
     <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_na" atom4="b_c2" refValue="-0.05" sigma="0.64" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_na" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_na" atom4="b_s" refValue="0.13" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_s" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_h2" atom3="b_s" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c" atom4="b_c2" refValue="0" sigma="0.51" ntrain="12" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c1" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c1" atom4="b_c3" refValue="0.19" sigma="0.69" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c1" atom4="b_ha" refValue="0.04" sigma="0.59" ntrain="7" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_c3" refValue="-0.02" sigma="1.22" ntrain="77" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_ha" refValue="-0.01" sigma="0.58" ntrain="41" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_c3" refValue="-0.02" sigma="1.21" ntrain="78" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_ha" refValue="0" sigma="0.57" ntrain="39" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_p2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c2" atom4="b_p3" refValue="1.17" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_c3" atom4="b_p2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ca" atom4="b_ca" refValue="0.01" sigma="1.02" ntrain="13" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="-0.02" sigma="0.71" ntrain="62" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ha" atom4="b_c2" refValue="-0.02" sigma="0.7" ntrain="67" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_ha" atom4="b_ha" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_p" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_ha" atom3="b_p" atom4="b_ca" refValue="0.44" sigma="0.94" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_hp" atom3="b_c" atom4="b_n" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_hp" atom3="b_c2" atom4="b_na" refValue="2.63" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_hp" atom3="b_c2" atom4="b_na" refValue="0.87" sigma="1.74" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_hp" atom3="b_c3" atom4="b_na" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_hp" atom3="b_hp" atom4="b_nh" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_n" atom3="b_h2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2865,6 +2867,7 @@
     <gt_dihedral atom1="b_c2" atom2="b_n3" atom3="b_n3" atom4="b_h1" refValue="0.18" sigma="0.54" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_n3" atom3="b_n3" atom4="b_n2" refValue="-2.64" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_n3" atom3="b_nh" atom4="b_n2" refValue="1.25" sigma="1.51" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c2" atom4="b_h2" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_c3" atom4="b_na" refValue="0.49" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_na" atom3="b_h1" atom4="b_h1" refValue="0.08" sigma="0.58" ntrain="2" params="0.5"/>
@@ -2895,10 +2898,10 @@
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c2" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c2" atom4="b_ca" refValue="0" sigma="0.5" ntrain="43" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c2" atom4="b_h1" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c2" atom4="b_h2" refValue="0" sigma="0.5" ntrain="6" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c3" atom4="b_c2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c2" atom4="b_h2" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_c3" atom4="b_c2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_ca" atom4="b_c2" refValue="0.28" sigma="0.9" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_h2" atom4="b_c2" refValue="0" sigma="0.52" ntrain="8" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_h2" atom4="b_c2" refValue="0" sigma="0.5" ntrain="8" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_na" atom4="b_c3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_os" atom3="b_na" atom4="b_h2" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_p" atom3="b_ca" atom4="b_s" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2914,7 +2917,7 @@
     <gt_dihedral atom1="b_c2" atom2="b_p3" atom3="b_nh" atom4="b_n2" refValue="4.09" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_c2" atom4="b_c3" refValue="-0.16" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_c2" atom4="b_ca" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_c2" atom4="b_h2" refValue="0" sigma="0.52" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_c2" atom4="b_h2" refValue="-0.01" sigma="0.52" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_c3" atom4="b_c2" refValue="-0.25" sigma="1.4" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_ca" atom4="b_h2" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c2" atom2="b_s" atom3="b_cl" atom4="b_na" refValue="-0.16" sigma="0.5" ntrain="1" params="0.5"/>
@@ -2934,16 +2937,16 @@
     <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_c" atom4="b_n" refValue="-2.86" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_c2" atom4="b_ca" refValue="0.5" sigma="1.37" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_c3" atom4="b_n3" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="0" sigma="1.12" ntrain="81" params="0.5"/>
+    <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="0" sigma="1.13" ntrain="80" params="0.5"/>
     <gt_dihedral atom1="b_c3" atom2="b_ca" atom3="b_na" atom4="b_ca" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c3" atom2="b_hp" atom3="b_c" atom4="b_n" refValue="0.86" sigma="4.21" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_c3" atom2="b_na" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_c3" atom2="b_o" atom3="b_o" atom4="b_no" refValue="-0.13" sigma="1.63" ntrain="8" params="0.5"/>
+    <gt_dihedral atom1="b_c3" atom2="b_o" atom3="b_o" atom4="b_no" refValue="-0.15" sigma="1.71" ntrain="7" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_br" atom3="b_ca" atom4="b_ca" refValue="-0.03" sigma="0.56" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_c" atom3="b_ca" atom4="b_ca" refValue="0.25" sigma="1.34" ntrain="40" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_c1" atom3="b_ca" atom4="b_ca" refValue="0.06" sigma="0.56" ntrain="2" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_c" atom3="b_ca" atom4="b_ca" refValue="0.23" sigma="1.36" ntrain="39" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_c1" atom3="b_ca" atom4="b_ca" refValue="0.04" sigma="0.56" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_c" atom4="b_ha" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ca" atom4="b_ca" refValue="-0.07" sigma="1.42" ntrain="24" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ca" atom4="b_ca" refValue="-0.08" sigma="1.44" ntrain="23" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ca" atom4="b_cl" refValue="0" sigma="0.5" ntrain="49" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ca" atom4="b_f" refValue="0.54" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ca" atom4="b_ha" refValue="-0.04" sigma="0.85" ntrain="70" params="0.5"/>
@@ -2951,7 +2954,7 @@
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_ha" atom4="b_ca" refValue="-0.02" sigma="0.89" ntrain="23" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c2" atom3="b_hp" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c3" atom3="b_c2" atom4="b_ca" refValue="0.37" sigma="0.87" ntrain="4" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_c3" atom3="b_ca" atom4="b_ca" refValue="0" sigma="1.2" ntrain="107" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_c3" atom3="b_ca" atom4="b_ca" refValue="0" sigma="1.19" ntrain="108" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_c3" atom3="b_ca" atom4="b_na" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_c2" atom4="b_cl" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_c2" atom4="b_ha" refValue="-0.01" sigma="0.53" ntrain="11" params="0.5"/>
@@ -2959,7 +2962,7 @@
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.78" ntrain="109" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_cl" refValue="0.01" sigma="0.58" ntrain="95" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_f" refValue="-0.05" sigma="0.71" ntrain="31" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="0" sigma="0.66" ntrain="780" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_ha" refValue="0" sigma="0.67" ntrain="798" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_i" refValue="0" sigma="0.5" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_n1" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_na" refValue="0" sigma="0.5" ntrain="8" params="0.5"/>
@@ -2969,38 +2972,39 @@
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_os" refValue="0.12" sigma="0.75" ntrain="11" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_p" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_s" refValue="0.78" sigma="1.6" ntrain="3" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_s4" refValue="-0.19" sigma="1.07" ntrain="3" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ca" atom4="b_s4" refValue="0.61" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_cl" atom4="b_na" refValue="-0.07" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_h2" atom4="b_na" refValue="0" sigma="0.55" ntrain="17" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ha" atom4="b_ca" refValue="0" sigma="0.75" ntrain="924" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_h2" atom4="b_na" refValue="0" sigma="0.55" ntrain="14" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_ha" atom4="b_ca" refValue="0" sigma="0.74" ntrain="906" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_i" atom4="b_ca" refValue="0" sigma="0.5" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_n2" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_n3" atom4="b_ca" refValue="0.42" sigma="1.88" ntrain="5" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_na" atom4="b_h2" refValue="-0.02" sigma="0.55" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_na" atom4="b_h2" refValue="-0.01" sigma="0.54" ntrain="9" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_nh" atom4="b_ca" refValue="-0.19" sigma="2.11" ntrain="18" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_o" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_p3" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_s" atom4="b_ca" refValue="0.31" sigma="1.92" ntrain="7" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_s4" atom4="b_ca" refValue="0.54" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_ca" atom3="b_s4" atom4="b_ca" refValue="0.18" sigma="0.99" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_cl" atom3="b_ca" atom4="b_ca" refValue="-0.05" sigma="0.72" ntrain="46" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_f" atom3="b_ca" atom4="b_ca" refValue="0.03" sigma="0.68" ntrain="44" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_h2" atom3="b_ca" atom4="b_na" refValue="-0.01" sigma="0.59" ntrain="6" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_h2" atom3="b_ca" atom4="b_na" refValue="-0.01" sigma="0.58" ntrain="7" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_h2" atom3="b_na" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_n" atom3="b_ca" atom4="b_ca" refValue="0.12" sigma="1.43" ntrain="4" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_c3" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_ca" atom4="b_ca" refValue="0.1" sigma="0.79" ntrain="18" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_ca" atom4="b_cl" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_ca" atom4="b_f" refValue="0" sigma="0.5" ntrain="5" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_ca" atom4="b_h2" refValue="0" sigma="0.52" ntrain="19" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_h2" atom4="b_ca" refValue="-0.06" sigma="0.74" ntrain="15" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_h2" atom4="b_na" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_ca" atom4="b_h2" refValue="0" sigma="0.52" ntrain="21" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_h2" atom4="b_ca" refValue="-0.07" sigma="0.76" ntrain="13" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_na" atom3="b_na" atom4="b_h2" refValue="-0.13" sigma="0.53" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_nh" atom3="b_ca" atom4="b_na" refValue="0.87" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_no" atom3="b_ca" atom4="b_ca" refValue="-0.01" sigma="0.63" ntrain="15" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_o" atom3="b_o" atom4="b_no" refValue="0.01" sigma="1.13" ntrain="6" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_oh" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.62" ntrain="34" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_os" atom3="b_ca" atom4="b_ca" refValue="0.21" sigma="1.66" ntrain="43" params="0.5"/>
+    <gt_dihedral atom1="b_ca" atom2="b_os" atom3="b_ca" atom4="b_ca" refValue="0.1" sigma="1.68" ntrain="43" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_p" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_ca" atom2="b_p3" atom3="b_ca" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_ca" atom2="b_s4" atom3="b_c2" atom4="b_ca" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_cl" atom2="b_o" atom3="b_o" atom4="b_no" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_f" atom2="b_o" atom3="b_o" atom4="b_no" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_hp" atom2="b_c" atom3="b_c" atom4="b_n" refValue="-0.58" sigma="1.08" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_hp" atom2="b_c" atom3="b_c3" atom4="b_n" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
@@ -3027,7 +3031,7 @@
     <gt_dihedral atom1="b_n3" atom2="b_o" atom3="b_c2" atom4="b_oh" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_n3" atom2="b_o" atom3="b_o" atom4="b_no" refValue="-1.81" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_na" atom2="b_ca" atom3="b_ca" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
-    <gt_dihedral atom1="b_no" atom2="b_c3" atom3="b_o" atom4="b_o" refValue="-0.79" sigma="0.5" ntrain="1" params="0.5"/>
+    <gt_dihedral atom1="b_no" atom2="b_c3" atom3="b_o" atom4="b_o" refValue="-0.39" sigma="0.89" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_ca" atom3="b_o" atom4="b_o" refValue="0" sigma="0.91" ntrain="9" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_n2" atom3="b_o" atom4="b_o" refValue="-0.81" sigma="1.31" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_n3" atom3="b_o" atom4="b_o" refValue="-0.07" sigma="1.71" ntrain="2" params="0.5"/>
@@ -3035,7 +3039,6 @@
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_c2" atom4="b_o" refValue="-0.03" sigma="0.56" ntrain="3" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_c3" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_ca" atom4="b_o" refValue="-0.08" sigma="0.95" ntrain="10" params="0.5"/>
-    <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_cl" atom4="b_o" refValue="0" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_n2" atom4="b_o" refValue="3.01" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_nh" atom4="b_o" refValue="1.53" sigma="0.5" ntrain="1" params="0.5"/>
     <gt_dihedral atom1="b_no" atom2="b_o" atom3="b_no" atom4="b_o" refValue="0" sigma="0.5" ntrain="2" params="0.5"/>
@@ -3094,38 +3097,38 @@
     <sym_charge central="Si" attached="H" numattach="3"/>
   </symmetric_charges>
   <eemprops reference="Ghahremanpour2019a">
-    <eemprop name="z_h1" jaa="13.6955" jaa_sigma="0.392919" chi="2.2388" chi_sigma="0.0559784" zeta="14.5823 14.5823 " zeta_sigma="1.02101 1.02101 " charge="0  -1" row="1 1"/>
-    <eemprop name="z_h4" jaa="13.5508" jaa_sigma="0.555721" chi="2.66253" chi_sigma="0.081064" zeta="11.1117 11.1117 " zeta_sigma="0.495954 0.495954 " charge="0  -1" row="1 1"/>
-    <eemprop name="z_ha" jaa="12.0497" jaa_sigma="1.87707" chi="2.54939" chi_sigma="0.0554377" zeta="17.6941 17.6941 " zeta_sigma="1.11495 1.11495 " charge="0  -1" row="1 1"/>
-    <eemprop name="z_hc" jaa="20.4213" jaa_sigma="0.764557" chi="2.3" chi_sigma="0" zeta="13.8625 13.8625 " zeta_sigma="0.411103 0.411103 " charge="0  -1" row="1 1"/>
-    <eemprop name="z_hp" jaa="8.2827" jaa_sigma="0.919443" chi="2.67344" chi_sigma="0.150917" zeta="19.1975 19.1975 " zeta_sigma="0.998675 0.998675 " charge="0  -1" row="1 1"/>
+    <eemprop name="z_h1" jaa="12.4748" jaa_sigma="0.0246497" chi="2.49849" chi_sigma="0.032881" zeta="14.5823 14.5823 " zeta_sigma="1.02101 1.02101 " charge="0  -1" row="1 1"/>
+    <eemprop name="z_h4" jaa="13.4368" jaa_sigma="0.0826888" chi="2.79899" chi_sigma="0.00568459" zeta="11.1117 11.1117 " zeta_sigma="0.495954 0.495954 " charge="0  -1" row="1 1"/>
+    <eemprop name="z_ha" jaa="11.215" jaa_sigma="0.119674" chi="2.74997" chi_sigma="0.00519513" zeta="17.6941 17.6941 " zeta_sigma="1.11495 1.11495 " charge="0  -1" row="1 1"/>
+    <eemprop name="z_hc" jaa="11.338" jaa_sigma="0.0110837" chi="2.82409" chi_sigma="0.0416268" zeta="13.8625 13.8625 " zeta_sigma="0.411103 0.411103 " charge="0  -1" row="1 1"/>
+    <eemprop name="z_hp" jaa="8.51541" jaa_sigma="0.0353415" chi="2.75066" chi_sigma="0.00171737" zeta="19.1975 19.1975 " zeta_sigma="0.998675 0.998675 " charge="0  -1" row="1 1"/>
     <eemprop name="z_hw" jaa="11.2944" jaa_sigma="0.753083" chi="2.42498" chi_sigma="0.323272" zeta="20.0013 20.0013 " zeta_sigma="0.81622 0.81622 " charge="0  -1" row="1 1"/>
-    <eemprop name="z_c1" jaa="12.3218" jaa_sigma="0.685661" chi="4.01925" chi_sigma="0.152954" zeta="10.4478 10.4478 " zeta_sigma="0.427707 0.427707 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_ca" jaa="5.87243" jaa_sigma="0.756762" chi="3.36025" chi_sigma="0.265472" zeta="8.74318 8.74318 " zeta_sigma="0.573254 0.573254 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_cz" jaa="9.75055" jaa_sigma="0.182651" chi="3.91361" chi_sigma="0.170483" zeta="10.9727 10.9727 " zeta_sigma="1.24965 1.24965 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_c2" jaa="6.33315" jaa_sigma="0.511468" chi="3.36445" chi_sigma="0.213012" zeta="11.7915 11.7915 " zeta_sigma="0.509363 0.509363 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_c3" jaa="9.80278" jaa_sigma="0.391243" chi="3.235" chi_sigma="0.387824" zeta="5.35758 5.35758 " zeta_sigma="0.289383 0.289383 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_cu" jaa="10.358" jaa_sigma="0.349177" chi="3.30659" chi_sigma="0.408536" zeta="8.39715 8.39715 " zeta_sigma="0.339375 0.339375 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_n" jaa="16.1203" jaa_sigma="1.53322" chi="4.69139" chi_sigma="0.187545" zeta="12.5989 12.5989 " zeta_sigma="0.927274 0.927274 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_n1" jaa="12.1575" jaa_sigma="0.902273" chi="6.67954" chi_sigma="0.138732" zeta="10.1041 10.1041 " zeta_sigma="0.304608 0.304608 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_n3" jaa="7.69219" jaa_sigma="0.277471" chi="4.27711" chi_sigma="0.273567" zeta="10.4868 10.4868 " zeta_sigma="0.554536 0.554536 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_n4" jaa="7.69219" jaa_sigma="0.277471" chi="4.27711" chi_sigma="0.273567" zeta="10.4868 10.4868 " zeta_sigma="0.554536 0.554536 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_nb" jaa="7.80156" jaa_sigma="0.284113" chi="5.3091" chi_sigma="0.271283" zeta="8.4274 8.4274 " zeta_sigma="0.343674 0.343674 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_n2" jaa="10.7146" jaa_sigma="0.266339" chi="5.8698" chi_sigma="0.146115" zeta="10.9507 10.9507 " zeta_sigma="0.91312 0.91312 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_nh" jaa="11.8178" jaa_sigma="0.561686" chi="6.2374" chi_sigma="0.294459" zeta="11.1172 11.1172 " zeta_sigma="0.530691 0.530691 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_no" jaa="6.89029" jaa_sigma="0.584443" chi="2.2103" chi_sigma="0.505374" zeta="8.92758 8.92758 " zeta_sigma="0.553978 0.553978 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_oh" jaa="10.5442" jaa_sigma="0.199354" chi="5.36733" chi_sigma="0.217389" zeta="12.6457 12.6457 " zeta_sigma="0.56578 0.56578 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_c1" jaa="11.339" jaa_sigma="0.106416" chi="4.18977" chi_sigma="0.00550306" zeta="10.4478 10.4478 " zeta_sigma="0.427707 0.427707 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_ca" jaa="5.60338" jaa_sigma="0.00467696" chi="3.54051" chi_sigma="0.00969282" zeta="8.74318 8.74318 " zeta_sigma="0.573254 0.573254 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_cz" jaa="4.8003" jaa_sigma="0.709845" chi="2.39315" chi_sigma="0.591912" zeta="5.84047 5.84047 " zeta_sigma="2.43887 2.43887 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_c2" jaa="6.36512" jaa_sigma="0.00340374" chi="3.48403" chi_sigma="0.0118714" zeta="11.7915 11.7915 " zeta_sigma="0.509363 0.509363 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_c3" jaa="12.4798" jaa_sigma="0.174313" chi="3.27698" chi_sigma="0.223098" zeta="5.35758 5.35758 " zeta_sigma="0.289383 0.289383 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_cu" jaa="9.93566" jaa_sigma="0.0309204" chi="3.34961" chi_sigma="0.0344504" zeta="8.39715 8.39715 " zeta_sigma="0.339375 0.339375 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n" jaa="13.6314" jaa_sigma="0.320168" chi="5.507" chi_sigma="0.0801736" zeta="12.5989 12.5989 " zeta_sigma="0.927274 0.927274 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n1" jaa="13.8077" jaa_sigma="0.168274" chi="7.18954" chi_sigma="0.0417376" zeta="10.1041 10.1041 " zeta_sigma="0.304608 0.304608 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n3" jaa="7.32135" jaa_sigma="0.0287428" chi="4.09577" chi_sigma="0.00933657" zeta="10.4868 10.4868 " zeta_sigma="0.554536 0.554536 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n4" jaa="12.9344" jaa_sigma="1.38197" chi="7.74164" chi_sigma="0.967836" zeta="25.6748 25.6748 " zeta_sigma="3.94435 3.94435 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_nb" jaa="7.59277" jaa_sigma="0.0124604" chi="5.53175" chi_sigma="0.00894153" zeta="8.4274 8.4274 " zeta_sigma="0.343674 0.343674 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_n2" jaa="8.56732" jaa_sigma="0.222351" chi="5.18691" chi_sigma="0.0747927" zeta="10.9507 10.9507 " zeta_sigma="0.91312 0.91312 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_nh" jaa="11.3608" jaa_sigma="0.00915361" chi="6.61653" chi_sigma="0.0319125" zeta="11.1172 11.1172 " zeta_sigma="0.530691 0.530691 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_no" jaa="7.3722" jaa_sigma="0.00995659" chi="2.22453" chi_sigma="0.00287057" zeta="8.92758 8.92758 " zeta_sigma="0.553978 0.553978 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_oh" jaa="10.4235" jaa_sigma="0.0162074" chi="5.52044" chi_sigma="0.00576359" zeta="12.6457 12.6457 " zeta_sigma="0.56578 0.56578 " charge="0  -2" row="1 2"/>
     <eemprop name="z_ow" jaa="11.3302" jaa_sigma="0.235126" chi="5.95423" chi_sigma="0.251577" zeta="19.8248 19.8248 " zeta_sigma="1.03761 1.03761 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_o" jaa="10.4694" jaa_sigma="0.323132" chi="6.16472" chi_sigma="0.254349" zeta="14.516 14.516 " zeta_sigma="0.904592 0.904592 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_om" jaa="10.4694" jaa_sigma="0.323132" chi="6.16472" chi_sigma="0.254349" zeta="14.516 14.516 " zeta_sigma="0.904592 0.904592 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_os" jaa="11.2985" jaa_sigma="0.181205" chi="4.9957" chi_sigma="0.0998943" zeta="10.685 10.685 " zeta_sigma="0.558307 0.558307 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_f" jaa="15.1718" jaa_sigma="0.344213" chi="4.91637" chi_sigma="0.224783" zeta="12.4245 12.4245 " zeta_sigma="0.330791 0.330791 " charge="0  -2" row="1 2"/>
-    <eemprop name="z_p4" jaa="6.81261" jaa_sigma="0.223356" chi="3.848" chi_sigma="0.226379" zeta="7.99952 7.99952 " zeta_sigma="0.24637 0.24637 " charge="0  -2" row="1 3"/>
-    <eemprop name="z_p2" jaa="6.04259" jaa_sigma="0.409433" chi="3.60502" chi_sigma="0.268726" zeta="8.21415 8.21415 " zeta_sigma="0.348907 0.348907 " charge="0  -2" row="1 3"/>
-    <eemprop name="z_s4" jaa="5.31141" jaa_sigma="0.679151" chi="3.60027" chi_sigma="0.333459" zeta="8.69047 8.69047 " zeta_sigma="0.358971 0.358971 " charge="0  -2" row="1 3"/>
-    <eemprop name="z_s" jaa="6.09325" jaa_sigma="0.185822" chi="3.8393" chi_sigma="0.2332" zeta="6.51137 6.51137 " zeta_sigma="0.315946 0.315946 " charge="0  -2" row="1 3"/>
-    <eemprop name="z_cl" jaa="7.32746" jaa_sigma="0.398083" chi="3.99066" chi_sigma="0.2638" zeta="6.73522 6.73522 " zeta_sigma="0.236928 0.236928 " charge="0  -2" row="1 3"/>
-    <eemprop name="z_br" jaa="9.51979" jaa_sigma="0.843256" chi="4.31854" chi_sigma="0.138452" zeta="10.5279 10.5279 " zeta_sigma="0.388586 0.388586 " charge="0  -2" row="1 4"/>
-    <eemprop name="z_i" jaa="6.83674" jaa_sigma="0.479613" chi="3.66892" chi_sigma="0.279121" zeta="12.5757 12.5757 " zeta_sigma="1.25551 1.25551 " charge="0  -2" row="1 5"/>
+    <eemprop name="z_o" jaa="9.79061" jaa_sigma="0.0785007" chi="5.91102" chi_sigma="0.0447477" zeta="14.516 14.516 " zeta_sigma="0.904592 0.904592 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_om" jaa="11.0812" jaa_sigma="0.742183" chi="9.62981" chi_sigma="0.633442" zeta="7.36375 7.36375 " zeta_sigma="0.846627 0.846627 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_os" jaa="11.3586" jaa_sigma="0.0103827" chi="5.18332" chi_sigma="0.0422105" zeta="10.685 10.685 " zeta_sigma="0.558307 0.558307 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_f" jaa="13.5016" jaa_sigma="0.0947252" chi="4.90021" chi_sigma="0.0137557" zeta="12.4245 12.4245 " zeta_sigma="0.330791 0.330791 " charge="0  -2" row="1 2"/>
+    <eemprop name="z_p4" jaa="6.11424" jaa_sigma="0.064457" chi="3.70214" chi_sigma="0.00409248" zeta="7.99952 7.99952 " zeta_sigma="0.24637 0.24637 " charge="0  -2" row="1 3"/>
+    <eemprop name="z_p2" jaa="6.48112" jaa_sigma="0.0266992" chi="3.73136" chi_sigma="0.00358558" zeta="8.21415 8.21415 " zeta_sigma="0.348907 0.348907 " charge="0  -2" row="1 3"/>
+    <eemprop name="z_s4" jaa="5.61257" jaa_sigma="0.204716" chi="4.78373" chi_sigma="0.214716" zeta="17.6881 17.6881 " zeta_sigma="1.88779 1.88779 " charge="0  -2" row="1 3"/>
+    <eemprop name="z_s" jaa="5.37774" jaa_sigma="0.0500261" chi="3.83732" chi_sigma="0.0155642" zeta="6.51137 6.51137 " zeta_sigma="0.315946 0.315946 " charge="0  -2" row="1 3"/>
+    <eemprop name="z_cl" jaa="7.4161" jaa_sigma="0.0225338" chi="4.15809" chi_sigma="0.00951595" zeta="6.73522 6.73522 " zeta_sigma="0.236928 0.236928 " charge="0  -2" row="1 3"/>
+    <eemprop name="z_br" jaa="8.52024" jaa_sigma="0.0684947" chi="4.35002" chi_sigma="0.0121427" zeta="10.5279 10.5279 " zeta_sigma="0.388586 0.388586 " charge="0  -2" row="1 4"/>
+    <eemprop name="z_i" jaa="6.31546" jaa_sigma="0.0360092" chi="3.88852" chi_sigma="0.0230712" zeta="12.5757 12.5757 " zeta_sigma="1.25551 1.25551 " charge="0  -2" row="1 5"/>
   </eemprops>
 </gentop>
