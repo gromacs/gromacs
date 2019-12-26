@@ -606,6 +606,10 @@ if (SPHINX_FOUND)
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
+    set(SPHINX_CONFIG_OVERRIDES "")
+    if (GMX_DEVELOPER_BUILD)
+        set(SPHINX_CONFIG_OVERRIDES "-D todo_include_todos=1")
+    endif()
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
@@ -618,6 +622,7 @@ if (SPHINX_FOUND)
             -q -b html
             -w sphinx-html.log
             -d "${SPHINX_CACHE_DIR}"
+            ${SPHINX_CONFIG_OVERRIDES}
             "${SPHINX_INPUT_DIR}"
             "${HTML_OUTPUT_DIR}"
         WORKING_DIRECTORY
