@@ -997,9 +997,11 @@ An additional set of subcounters can offer more fine-grained inspection of perfo
 Subcounters are geared toward developers and have to be enabled during compilation. See
 :doc:`/dev-manual/build-system` for more information.
 
-.. TODO In future patch:
-   - red flags in log files, how to interpret wallcycle output
-   - hints to devs how to extend wallcycles
+..  todo::
+
+    In future patch:
+    - red flags in log files, how to interpret wallcycle output
+    - hints to devs how to extend wallcycles
 
 .. _gmx-mdrun-on-gpu:
 
@@ -1054,7 +1056,7 @@ compatibility (please see the :ref:`section below <gmx-pme-gpu-limitations>`).
 GPU computation of short range nonbonded interactions
 .....................................................
 
-.. TODO make this more elaborate and include figures
+.. todo:: make this more elaborate and include figures
 
 Using the GPU for the short-ranged nonbonded interactions provides
 the majority of the available speed-up compared to run using only the CPU.
@@ -1066,7 +1068,7 @@ this problem and thus reduce the calculation time.
 GPU accelerated calculation of PME
 ..................................
 
-.. TODO again, extend this and add some actual useful information concerning performance etc...
+.. todo:: again, extend this and add some actual useful information concerning performance etc...
 
 |Gromacs| now allows the offloading of the PME calculation
 to the GPU, to further reduce the load on the CPU and improve usage overlap between
@@ -1100,7 +1102,7 @@ Known limitations
 GPU accelerated calculation of bonded interactions (CUDA only)
 ..............................................................
 
-.. TODO again, extend this and add some actual useful information concerning performance etc...
+.. todo:: again, extend this and add some actual useful information concerning performance etc...
 
 |Gromacs| now allows the offloading of the bonded part of the PP
 workload to a CUDA-compatible GPU. This is treated as part of the PP
@@ -1171,9 +1173,9 @@ Performance considerations for GPU tasks
 #) The only way to know for sure what alternative is best for
    your machine is to test and check performance.
 
-.. TODO: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
+.. todo:: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
 
-.. TODO someone who knows about the mixed mode should comment further.
+.. todo:: someone who knows about the mixed mode should comment further.
 
 Reducing overheads in GPU accelerated runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1224,7 +1226,7 @@ Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
 involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
 in particular without HyperThreading and with few CPU cores.
 
-.. TODO In future patch: any tips not covered above
+.. todo:: In future patch: any tips not covered above
 
 Running the OpenCL version of mdrun
 -----------------------------------

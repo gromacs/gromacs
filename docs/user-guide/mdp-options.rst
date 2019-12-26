@@ -2,8 +2,9 @@
    See the "run control" section for a working example of the
    syntax to use when making .mdp entries, with and without detailed
    documentation for values those entries might take. Everything can
-   be cross-referenced, see the examples there. TODO Make more
-   cross-references.
+   be cross-referenced, see the examples there.
+
+.. todo:: Make more cross-references.
 
 Molecular dynamics parameters (.mdp options)
 ============================================

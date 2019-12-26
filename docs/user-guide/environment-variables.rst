@@ -4,7 +4,7 @@
 .. Another useful one-liner to find undocumentedvariables:
 ..  ( export INPUT_FILE=docs/user-guide/environment-variables.rst; GIT_PAGER="cat ";   for ss in `for s in $(git grep getenv |  sed 's/.*getenv("\(.*\)".*/\1/' | sort -u  | grep '^[A-Z]'); do [ $(grep $s $INPUT_FILE -c) -eq 0 ] && echo $s; done `; do git grep $ss ; done )
 
-.. TODO: still undocumented GMX_QM_GAUSSIAN_NCPUS
+.. todo:: still undocumented GMX_QM_GAUSSIAN_NCPUS
 
 Environment Variables
 =====================

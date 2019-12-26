@@ -62,7 +62,7 @@ Redmine
 Build system
 ------------
 
-.. TODO: details, ASAN, others?
+.. todo:: details, ASAN, others?
 
 CMake
   Main tool used in the build system.

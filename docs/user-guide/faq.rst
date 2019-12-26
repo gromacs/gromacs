@@ -111,7 +111,9 @@ Questions regarding simulation methodology
 
     You can choose different values for :mdp:`tinit` and :mdp:`init-step`.
 
-    .. TODO make links work :ref:`Continuing simulations <gmx-cont-simulation>`.
+    .. todo:: Add "Continuing simulations" content (label: gmx-cont-simulation) and link.
+
+        e.g. ``:ref:`Continuing simulations <gmx-cont-simulation>`.``
 
 #.  Why can't I do conjugate gradient minimization with constraints?
 
@@ -132,16 +134,24 @@ Questions regarding simulation methodology
     You can either prepare a new :ref:`mdp` file, or extend the simulation time
     in the original :ref:`tpr` file using :ref:`convert-tpr <gmx convert-tpr>`.
 
-    .. TODO #.  How do I complete a crashed simulation?
+    .. todo:: #.  How do I complete a crashed simulation?
 
-    .. This can be easily achieved using the checkpoint reading
-       :ref:`available <gmx-cont-crash>` in |Gromacs| versions newer than 4.
+       Need gmx-cont-crash doc target.
 
-    .. TODO #.  How can I do a simulation at constant pH?
+       .. code-block:: none
 
-    .. This is a rather large topic, and you should at least read the short
-       :ref:`Constant pH How-To <gmx-howto-cph>` and all of the literature
-       included there to get an overview over the topic.
+           This can be easily achieved using the checkpoint reading
+           :ref:`available <gmx-cont-crash>` in |Gromacs| versions newer than 4.
+
+    .. todo:: #.  How can I do a simulation at constant pH?
+
+       Need gmx-howto-cph doc target.
+
+        .. code-block:: none
+
+           This is a rather large topic, and you should at least read the short
+           :ref:`Constant pH How-To <gmx-howto-cph>` and all of the literature
+           included there to get an overview over the topic.
 
 #.  How should I compute a single-point energy?
 
@@ -176,9 +186,13 @@ Parameterization and Force Fields
 Analysis and Visualization
 --------------------------
 
-    .. TODO #.  How do I visualize a trajectory?
+.. todo:: #.  How do I visualize a trajectory?
 
-    .. Use one of the number of different programs that can visualize
+   gmx-howto-visualize doc target:
+
+   .. code-block:: none
+
+       Use one of the number of different programs that can visualize
        coordinate :ref:`files and trajectories <gmx-howto-visualize>`.
 
 #.  Why am I seeing bonds being created when I watch the trajectory?

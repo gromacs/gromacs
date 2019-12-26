@@ -111,10 +111,14 @@ This section provides a (currently incomplete) list of cache variables that
 developers or advanced users can set to affect what CMake generates and/or what
 will get built.
 
-.. TODO: Figure out where to document basic variables intended for user
+.. todo::
+
+   Figure out where to document basic variables intended for user
    consumption, and how does it relate to documentation here.
 
-.. TODO: Document the remaining variables below, and identify any variables
+.. todo::
+
+   Document the remaining variables below, and identify any variables
    missing from the list.
 
 Compiler flags
@@ -170,7 +174,7 @@ Variables affecting compilation/linking
    Defaults to ``OFF``, and there should not be any need to change this in a
    manual build.
 
-   .. TODO: This could likely be replaced by a (yet another) build type.
+   .. todo:: This could likely be replaced by a (yet another) build type.
 
 .. cmake:: GMX_BUILD_MDRUN_ONLY
 
@@ -388,7 +392,7 @@ Variables affecting special targets
    If ``OFF`` (the default), all detection is skipped and the manual cannot be
    built.
 
-   .. TODO: Consider if this is really necessary, or if we could just use
+   .. todo:: Consider if this is really necessary, or if we could just use
       GMX_DEVELOPER_BUILD.
 
 .. cmake:: GMX_BUILD_TARBALL
@@ -442,7 +446,9 @@ Variables affecting special targets
 External libraries
 ------------------
 
-.. TODO: List external libraries used (either from src/external/, or from the
+.. todo::
+
+   List external libraries used (either from src/external/, or from the
    system), whether they are required or optional, what functionality they
    provide for Gromacs, and how to control their use.
 

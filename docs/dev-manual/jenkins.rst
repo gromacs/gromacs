@@ -15,7 +15,7 @@ Separate page documents how to interact with the Jenkins UI for these builds:
 :doc:`releng/jenkins-howto` has information on how to do common things with
 Jenkins builds.
 
-.. TODO: Add a link to a wiki page about general Jenkins documentation, once
+.. todo:: Add a link to a wiki page about general Jenkins documentation, once
    there is more of that.
 
 Pre-submit verification

@@ -49,7 +49,7 @@ minor release number as your |Gromacs| installation.
 Citation information
 --------------------
 
-.. TODO needs link to ref list
+.. todo:: needs link to ref list
 
 |GMX_MANUAL_DOI_STRING|
 
