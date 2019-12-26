@@ -236,7 +236,7 @@ different a different tool set than has been used to build Python and gmxapi.
 If the default compilers on your system are not sufficient for GROMACS or gmxapi,
 you may need to build, e.g., OpenMPI or MPICH, and/or build :py:mod:`mpi4py` with a
 specific MPI compiler wrapper. This can complicate building in environments such
-as Conda.
+as Conda_.
 
 Set the MPICC environment variable to the MPI compiler wrapper and forcibly
 reinstall :py:mod:`mpi4py`::
@@ -298,7 +298,7 @@ If not installing in a virtual environment, you may not be able to install
 necessary prerequisites (e.g. if you are not an administrator of the system you are on).
 
 The following instructions use the :py:mod:`venv` module.
-Alternative virtual environments, such as `Conda <https://docs.conda.io/en/latest/>`,
+Alternative virtual environments, such as Conda_,
 should work fine, but are beyond the scope of this document.
 (We welcome contributed recipes!)
 
@@ -539,7 +539,7 @@ This could be because
   like ``bin`` and ``share``.
 
 If you are not a system administrator you are encouraged to install in a Python
-virtual environment, created with virtualenv or Conda.
+virtual environment, created with virtualenv or Conda_.
 Otherwise, you will need to specify the ``--user`` flag to ``pip``.
 
 Two of the easiest problems to run into are incompatible compilers and
@@ -606,3 +606,5 @@ be back on track.
 
 If you are developing code for gmxapi, this should be an indication to
 rebase your feature branches for the new development cycle.
+
+.. _Conda: https://docs.conda.io/en/latest/
