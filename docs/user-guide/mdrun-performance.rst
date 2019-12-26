@@ -1244,7 +1244,8 @@ required as the open source nouveau driver (available in Mesa) does not
 provide the OpenCL support.
 For Intel integrated GPUs, the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is
 recommended.
-TODO: add more Intel driver recommendations
+.. seealso:: :issue:`3268` add more Intel driver recommendations
+
 The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 
