@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -53,7 +53,7 @@ void generate_index(std::vector<MolProp> *mp)
     for (auto mpi = mp->begin(); mpi < mp->end(); ++mpi)
     {
         // We have to set some kind of index here to distinguish
-        // the compounds. 
+        // the compounds.
         // TODO: implement alexandria ID here.
         mpi->SetIndex(index++);
     }
@@ -97,7 +97,7 @@ void generate_formula(std::vector<MolProp> &mp,
     }
 }
 
-int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp, 
+int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
                         char                             *doubles,
                         bool                              bForceMerge)
 {
@@ -232,7 +232,7 @@ int merge_xml(gmx::ArrayRef<const std::string> filens,
     }
     MolSelect gms;
     MolPropSort(mpout, MPSA_MOLNAME, nullptr, gms);
-    int nwarn = MergeDoubleMolprops(mpout, doubles, bForceMerge);
+    int       nwarn = MergeDoubleMolprops(mpout, doubles, bForceMerge);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout->size());
     if (outf)
@@ -510,3 +510,27 @@ void find_calculations(std::vector<alexandria::MolProp> &mp,
 }
 
 } // namespace alexandria
+
+void splitLot(const char  *lot,
+              std::string *method,
+              std::string *basis)
+{
+    method->clear();
+    basis->clear();
+    if (nullptr != lot && strlen(lot) > 0)
+    {
+        std::vector<std::string> ll = split(lot, '/');
+        if (ll.size() == 2)
+        {
+            method->assign(ll[0]);
+            basis->assign(ll[1]);
+        }
+    }
+}
+
+std::string makeLot(const std::string &method,
+                    const std::string &basis)
+{
+    std::string s = method + "/" + basis;
+    return s;
+}

@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #include "gmxpre.h"
 
 #include <stdio.h>
@@ -136,7 +136,7 @@ static void gmx_molprop_csv(const char *fn,
         {
             std::string ref, mylot;
             if (mpi->getPropRef(mpo[k], iqmExp,
-                                nullptr, nullptr, nullptr, &d, &err, &T, 
+                                "", "", "", nullptr, &d, &err, &T,
                                 &ref, &mylot, vec,
                                 quadrupole))
             {
@@ -148,8 +148,8 @@ static void gmx_molprop_csv(const char *fn,
             }
             for (auto j = qmc[k].beginCalc(); j < qmc[k].endCalc(); j++)
             {
-                if (mpi->getProp(mpo[k], iqmQM, j->lot(), nullptr, j->type(),
-                                 &T, &d, nullptr))
+                if (mpi->getProp(mpo[k], iqmQM, j->method(), j->basis(),
+                                 nullptr, j->type(), &T, &d, nullptr))
                 {
                     fprintf(fp, ",\"%.4f\"", d);
                 }

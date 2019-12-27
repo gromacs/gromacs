@@ -34,6 +34,7 @@
 
 #include <cstdlib>
 #include <cstring>
+
 #include <map>
 
 #include <libxml/parser.h>
@@ -688,11 +689,11 @@ void readPoldata(const std::string &fileName,
     fn2 = gmx::findLibraryFile(fn, true, false);
     if (fn2.empty())
     {
-        fn = "alexandria.ff/" + fn;
+        fn  = "alexandria.ff/" + fn;
         fn2 = gmx::findLibraryFile(fn, true, false);
         if (fn2.empty())
         {
-            fn = "top/" + fn;
+            fn  = "top/" + fn;
             fn2 = gmx::findLibraryFile(fn, true, false);
         }
     }
@@ -762,7 +763,7 @@ static void addXmlPoldata(xmlNodePtr parent, const Poldata *pd)
     add_xml_int(child, exml_names(exmlNEXCL), nexcl);
     double epsilonr = pd->getEpsilonR();
     add_xml_double(child, exml_names(exmlEPSILONR), epsilonr);
-    
+
     for (auto aType = pd->getAtypeBegin();
          aType != pd->getAtypeEnd(); aType++)
     {

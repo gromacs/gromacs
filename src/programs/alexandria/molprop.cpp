@@ -789,7 +789,7 @@ Experiment::Experiment(const std::string &program,
                        const std::string &reference,
                        const std::string &conformation,
                        const std::string &datafile,
-                       jobType jtype)
+                       jobType            jtype)
     :
       dataSource_(dsTheory),
       reference_(reference),
@@ -1088,13 +1088,13 @@ CommunicationStatus Experiment::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &basisset_);
         gmx_recv_str(cr, src, &datafile_);
         gmx_recv_str(cr, src, &jobtype);
-        jobtype_   = string2jobType(jobtype);
-        Npolar     = gmx_recv_int(cr, src);
-        Ndipole    = gmx_recv_int(cr, src);
-        Nquadrupole= gmx_recv_int(cr, src);
-        Nenergy    = gmx_recv_int(cr, src);
-        Npotential = gmx_recv_int(cr, src);
-        Natom      = gmx_recv_int(cr, src);
+        jobtype_    = string2jobType(jobtype);
+        Npolar      = gmx_recv_int(cr, src);
+        Ndipole     = gmx_recv_int(cr, src);
+        Nquadrupole = gmx_recv_int(cr, src);
+        Nenergy     = gmx_recv_int(cr, src);
+        Npotential  = gmx_recv_int(cr, src);
+        Natom       = gmx_recv_int(cr, src);
 
         //! Receive Polarizabilities
         for (int n = 0; (CS_OK == cs) && (n < Npolar); n++)
@@ -1656,19 +1656,26 @@ bool bCheckTemperature(double Tref, double T)
     return (Tref < 0) || (fabs(T - Tref) < 0.05);
 }
 
-static bool stringEqual(const std::string& a, const std::string& b)
+static bool stringEqual(const std::string &a, const std::string &b)
 {
     unsigned int sz = a.size();
     if (b.size() != sz)
+    {
         return false;
+    }
     for (unsigned int i = 0; i < sz; ++i)
+    {
         if (tolower(a[i]) != tolower(b[i]))
+        {
             return false;
+        }
+    }
     return true;
 }
 
 bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
-                         const std::string &lot,
+                         const std::string &method,
+                         const std::string &basis,
                          const std::string &conf,
                          const std::string &type,
                          double *value, double *error, double *T,
@@ -1682,7 +1689,7 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
     {
         for (auto ei = BeginExperiment(); !done && (ei < EndExperiment()); ++ei)
         {
-            if ((conf.size() == 0) || 
+            if ((conf.size() == 0) ||
                 stringEqual(ei->getConformation(), conf))
             {
                 if (ei->getVal(type, mpo, value, error, T, vec, quad_polar) &&
@@ -1726,17 +1733,15 @@ bool MolProp::getPropRef(MolPropObservable mpo, iqmType iQM,
             {
                 continue;
             }
-            char buf[256];
-            snprintf(buf, sizeof(buf), "%s/%s",
-                     ci->getMethod().c_str(), ci->getBasisset().c_str());
-            if (((lot.size() == 0)  || stringEqual(lot, buf)) &&
-                ((conf.size() == 0) || stringEqual(ci->getConformation(), conf)))
+            if (((method.size() == 0 || method == ci->getMethod()) &&
+                 (basis.size() == 0  || basis == ci->getBasisset())) &&
+                (conf.size() == 0    || conf == ci->getConformation()))
             {
                 if  (ci->getVal(type.c_str(), mpo, value, error, T, vec, quad_polar) &&
                      bCheckTemperature(Told, *T))
                 {
                     ref->assign(ci->getReference());
-                    mylot->assign(lot);
+                    mylot->assign(method + "/" + basis);
                     done = true;
                     break;
                 }
@@ -1779,7 +1784,8 @@ int MolProp::NOptSP()
 }
 
 bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
-                      const std::string &lot,
+                      const std::string &method,
+                      const std::string &basis,
                       const std::string &conf,
                       const std::string &type,
                       double *value, double *error, double *T)
@@ -1790,7 +1796,8 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
     bool        bReturn;
     std::string myref, mylot;
 
-    bReturn = getPropRef(mpo, iQM, lot, conf, type, value, &myerror, T,
+    bReturn = getPropRef(mpo, iQM, method, basis,
+                         conf, type, value, &myerror, T,
                          &myref, &mylot, vec, quad);
     if (nullptr != error)
     {
@@ -1800,95 +1807,88 @@ bool MolProp::getProp(MolPropObservable mpo, iqmType iQM,
 }
 
 
-ExperimentIterator MolProp::getLotPropType(const char       *lot,
-                                           MolPropObservable mpo,
-                                           const char       *type)
+ExperimentIterator MolProp::getCalcPropType(const std::string &method,
+                                            const std::string &basis,
+                                            std::string       *mylot,
+                                            MolPropObservable  mpo,
+                                            const char        *type)
 {
     ExperimentIterator       ci;
 
-    std::vector<std::string> ll = split(lot, '/');
-    if ((ll[0].length() > 0) && (ll[1].length() > 0))
+    for (ci = BeginExperiment(); (ci < EndExperiment()); ci++)
     {
-        for (ci = BeginExperiment(); (ci < EndExperiment()); ci++)
+        if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
+            (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
         {
-            if ((strcasecmp(ci->getMethod().c_str(), ll[0].c_str()) == 0) &&
-                (strcasecmp(ci->getBasisset().c_str(), ll[1].c_str()) == 0))
+            bool done = false;
+            switch (mpo)
             {
-                bool done = false;
-                switch (mpo)
-                {
-                    case MPO_POTENTIAL:
-                        done = ci->NPotential() > 0;
-                        break;
-                    case MPO_DIPOLE:
-                        for (auto mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
-                        {
-                            done =  ((nullptr == type) ||
-                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
-                        }
-                        break;
-                    case MPO_QUADRUPOLE:
-                        for (auto mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
-                        {
-                            done =  ((nullptr == type) ||
-                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
-                        }
-                        break;
-                    case MPO_POLARIZABILITY:
-                        for (auto mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
-                        {
-                            done =  ((nullptr == type) ||
-                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
-                        }
-                        break;
-                    case MPO_ENERGY:
-                    case MPO_ENTROPY:
-                        for (auto mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
-                        {
-                            done =  ((nullptr == type) ||
-                                     (strcasecmp(type, mdp->getType().c_str()) == 0));
-                        }
-                        break;
-                    default:
-                        break;
-                }
-                if (done)
-                {
+                case MPO_POTENTIAL:
+                    done = ci->NPotential() > 0;
                     break;
-                }
+                case MPO_DIPOLE:
+                    for (auto mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
+                    {
+                        done =  ((nullptr == type) ||
+                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_QUADRUPOLE:
+                    for (auto mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
+                    {
+                        done =  ((nullptr == type) ||
+                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_POLARIZABILITY:
+                    for (auto mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
+                    {
+                        done =  ((nullptr == type) ||
+                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_ENERGY:
+                case MPO_ENTROPY:
+                    for (auto mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
+                    {
+                        done =  ((nullptr == type) ||
+                                 (strcasecmp(type, mdp->getType().c_str()) == 0));
+                    }
+                    break;
+                default:
+                    break;
             }
-        }
-        return ci;
-    }
-    else
-    {
-        return EndExperiment();
-    }
-}
-
-ExperimentIterator MolProp::getLot(const char *lot)
-{
-    ExperimentIterator       ci;
-
-    std::vector<std::string> ll = split(lot, '/');
-    if (ll.size() == 2 && (ll[0].length() > 0) && (ll[1].length() > 0))
-    {
-        bool done = false;
-        for (ci = BeginExperiment(); (!done) && (ci < EndExperiment()); ci++)
-        {
-            done = ((strcasecmp(ci->getMethod().c_str(), ll[0].c_str()) == 0) &&
-                    (strcasecmp(ci->getBasisset().c_str(), ll[1].c_str()) == 0));
             if (done)
             {
+                if (nullptr != mylot)
+                {
+                    mylot->assign(ci->getMethod() + "/" + ci->getBasisset());
+                }
                 break;
             }
         }
-        return ci;
     }
-    else
+    return ci;
+}
+
+ExperimentIterator MolProp::getCalc(const std::string &method,
+                                    const std::string &basis,
+                                    std::string       *mylot)
+{
+    ExperimentIterator ci;
+    for (ci = BeginExperiment(); (ci < EndExperiment()); ci++)
     {
-        return EndExperiment();
+        if ((method.size() == 0 || strcasecmp(method.c_str(), ci->getMethod().c_str()) == 0) &&
+            (basis.size() == 0  || strcasecmp(basis.c_str(), ci->getBasisset().c_str()) == 0))
+        {
+            if (nullptr != mylot)
+            {
+                mylot->assign(ci->getMethod() + "/" + ci->getBasisset());
+            }
+            break;
+        }
     }
+    return ci;
 }
 
 CommunicationStatus MolProp::Send(t_commrec *cr, int dest)

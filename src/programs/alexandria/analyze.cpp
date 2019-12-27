@@ -264,12 +264,6 @@ static void write_corr_xvg(FILE                             *fplog,
     i = 0;
     for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q, ++i)
     {
-        char LevelOfTheory[256];
-        snprintf(LevelOfTheory, sizeof(LevelOfTheory), "%s/%s", q->method().c_str(), q->basis().c_str());
-        if (debug)
-        {
-            fprintf(debug, "QM: %s LoT: %s\n", q->lot().c_str(), LevelOfTheory);
-        }
         int nout = 0;
         fprintf(fp, "@type xydy\n");
         for (auto &mpi : mp)
@@ -278,7 +272,8 @@ static void write_corr_xvg(FILE                             *fplog,
             exp_error = 0;
             bExp      = mpi.getProp(mpo,
                                     iqmExp,
-                                    "",
+                                    q->method(),
+                                    q->basis(),
                                     "",
                                     exp_type,
                                     &exp_val,
@@ -292,7 +287,8 @@ static void write_corr_xvg(FILE                             *fplog,
                 qm_error = 0;
                 bQM      = mpi.getProp(mpo,
                                        iqmQM,
-                                       LevelOfTheory,
+                                       q->method(),
+                                       q->basis(),
                                        "",
                                        q->type().c_str(),
                                        &qm_val,
@@ -347,7 +343,6 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
                                        gmx_bool                           bCalcPol,
                                        MolPropObservable                  mpo,
                                        char                              *exp_type,
-                                       char                              *lot,
                                        real                               rtoler,
                                        real                               atoler,
                                        real                               outlier,
@@ -437,13 +432,15 @@ static void alexandria_molprop_analyze(FILE                              *fplog,
         if (nullptr != selout)
         {
             gp = fopen(selout, "w");
+            std::string method, basis;
             for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
             {
                 iupac = mpi->getIupac().c_str();
                 if ((nullptr != iupac) && (strlen(iupac) > 0))
                 {
                     std::string myref, mylot;
-                    if (mpi->getPropRef(mpo, iqmBoth, lot, "", "",
+                    if (mpi->getPropRef(mpo, iqmBoth,
+                                        method, basis, "", "",
                                         &value, &error, &T, &myref, &mylot,
                                         vec, quadrupole))
                     {
@@ -647,7 +644,6 @@ int alex_analyze(int argc, char *argv[])
                                bCalcPol,
                                mpo,
                                exp_type,
-                               lot,
                                rtoler,
                                atoler,
                                outlier,

@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -34,8 +34,8 @@
 
 #include "gmxpre.h"
 
-#include <string>
 #include <map>
+#include <string>
 
 #include "gromacs/utility/basedefinitions.h"
 
@@ -70,8 +70,8 @@ enum ChargeModel {
  * \ingroup module_alexandria
  */
 enum ChargeGenerationAlgorithm {
-    eqgNONE, 
-    eqgACM, 
+    eqgNONE,
+    eqgACM,
     eqgESP
 };
 
@@ -83,7 +83,7 @@ static bool gmx_unused getEemtypePolarizable(ChargeModel eem)
 
 static bool gmx_unused getEemtypeDistributed(ChargeModel eem)
 {
-    return (eem == eqdACM_g  || eem == eqdACM_s  || 
+    return (eem == eqdACM_g  || eem == eqdACM_s  ||
             eem == eqdACM_pg || eem == eqdACM_ps ||
             eem == eqdESP_pg || eem == eqdESP_ps ||
             eem == eqdYang   || eem == eqdRappe);

@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2019 
+ * Copyright (C) 2019
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,16 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
+
 #include "gmxpre.h"
 
 #include "readpsi4.h"
@@ -40,10 +40,10 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/real.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
 #include "molprop.h"
@@ -58,18 +58,18 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
 {
     try
     {
-        gmx::TextReader tr(datafile);
-        std::string program("psi4");
-        std::string method, basisset, reference, conformation;
-        jobType     jobtype = JOB_UNKNOWN;
-        std::string line;
-        bool        inputSection = false;
-        bool        finalGeometry = false;
-        int         nLongLines   = 0;
-        int         charge       = -6;
-        int         multiplicity = 0;
-        double      energy       = 0;
-        rvec        mu           = { 0, 0, 0 };
+        gmx::TextReader       tr(datafile);
+        std::string           program("psi4");
+        std::string           method, basisset, reference, conformation;
+        jobType               jobtype = JOB_UNKNOWN;
+        std::string           line;
+        bool                  inputSection  = false;
+        bool                  finalGeometry = false;
+        int                   nLongLines    = 0;
+        int                   charge        = -6;
+        int                   multiplicity  = 0;
+        double                energy        = 0;
+        rvec                  mu            = { 0, 0, 0 };
         std::vector<CalcAtom> ca;
         while (tr.readLine(&line))
         {
@@ -154,7 +154,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 {
                     bool cont = true;
                     do
-                    { 
+                    {
                         if (tr.readLine(&line))
                         {
                             auto words = gmx::splitString(line);
@@ -221,7 +221,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 {
                     energy = convert2gmx(my_atof(words[6].c_str(), "energy"),
                                          eg2cHartree);
-                }            
+                }
             }
             else if (jobtype == JOB_OPT &&
                      line.find("Final energy is") != std::string::npos)
@@ -231,7 +231,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
                 {
                     energy = convert2gmx(my_atof(words[3].c_str(), "energy"),
                                          eg2cHartree);
-                }            
+                }
             }
             else if (jobtype == JOB_OPT &&
                      line.find("Dipole Moment: [D]") != std::string::npos)
@@ -251,7 +251,7 @@ bool readPsi4(const std::string &datafile, MolProp *mp)
         }
         Experiment e(program, method, basisset, reference, conformation,
                      datafile, jobtype);
-        for(auto &myatom : ca)
+        for (auto &myatom : ca)
         {
             e.AddAtom(myatom);
         }

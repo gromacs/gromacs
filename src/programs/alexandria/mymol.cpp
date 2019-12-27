@@ -74,6 +74,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringcompare.h"
 
+#include "molprop_util.h"
 #include "mymol_low.h"
 
 namespace alexandria
@@ -583,15 +584,17 @@ void MyMol::MakeAngles(bool bPairs,
     }
 }
 
-immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
-                               const char               *lot)
+immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
+                               const std::string &method,
+                               const std::string &basis,
+                               std::string       *mylot)
 {
     int                 myunit;
     double              xx, yy, zz;
     int                 natom = 0;
     immStatus           imm   = immOK;
 
-    ExperimentIterator  ci = molProp()->getLot(lot);
+    ExperimentIterator  ci = molProp()->getCalc(method, basis, mylot);
     if (ci < molProp()->EndExperiment())
     {
         t_param nb;
@@ -619,7 +622,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
             for (auto qi = cai->BeginQ(); (qi < cai->EndQ()); qi++)
             {
                 // TODO Clean up this mess.
-                if (qi->getType().compare("ESP") == 0) 
+                if (qi->getType().compare("ESP") == 0)
                 {
                     myunit = string2unit((char *)qi->getUnit().c_str());
                     q      = convert2gmx(qi->getQ(), myunit);
@@ -668,8 +671,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t            ap,
     }
     if (nullptr != debug)
     {
-        fprintf(debug, "Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
-                molProp()->getMolname().c_str(), lot, natom);
+        fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %d\n",
+                molProp()->getMolname().c_str(),
+                method.c_str(), basis.c_str(), natom);
     }
 
     return imm;
@@ -701,8 +705,8 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
 {
     /* Here, we add zeta for the core. addShells will
        take care of the zeta for the shells later. */
-    auto zeta = 0.0;
-    auto row  = 0;
+    auto zeta     = 0.0;
+    auto row      = 0;
     auto eqdModel = pd->getChargeModel();
     for (auto i = 0; i < atoms_->nr; i++)
     {
@@ -719,21 +723,23 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     return immOK;
 }
 
-immStatus MyMol::GenerateTopology(gmx_atomprop_t  ap,
-                                  const Poldata  *pd,
-                                  const char     *lot,
-                                  bool            bUseVsites,
-                                  bool            bPairs,
-                                  bool            bDih,
-                                  bool            bBASTAT,
-                                  const char     *tabfn)
+immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
+                                  const Poldata     *pd,
+                                  const std::string &method,
+                                  const std::string &basis,
+                                  std::string       *mylot,
+                                  bool               bUseVsites,
+                                  bool               bPairs,
+                                  bool               bDih,
+                                  bool               bBASTAT,
+                                  const char        *tabfn)
 {
     int         ftb;
     t_param     b;
     immStatus   imm = immOK;
     std::string btype1, btype2;
     ChargeModel iChargeModel = pd->getChargeModel();
-                                  
+
     if (nullptr != debug)
     {
         fprintf(debug, "Generating topology for %s\n", molProp()->getMolname().c_str());
@@ -748,7 +754,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t  ap,
     {
         snew(atoms_, 1);
         state_change_natoms(state_, molProp()->NAtom());
-        imm = GenerateAtoms(ap, lot);
+        imm = GenerateAtoms(ap, method, basis, mylot);
     }
     if (immOK == imm)
     {
@@ -1116,7 +1122,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
                                  t_commrec                 *cr,
                                  const char                *tabfn,
                                  gmx_hw_info_t             *hwinfo,
-                                 ChargeModel    ieqd)
+                                 ChargeModel                ieqd)
 {
     GMX_RELEASE_ASSERT(nullptr != mtop_, "mtop_ == nullptr. You forgot to call GenerateTopology");
 
@@ -1237,12 +1243,14 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
 }
 
 void MyMol::initQgresp(const Poldata             *pd,
-                       const char                *lot,
+                       const std::string         &method,
+                       const std::string         &basis,
+                       std::string               *mylot,
                        real                       watoms,
                        int                        maxESP)
 {
     auto iChargeModel = pd->getChargeModel();
-                       
+
     Qgresp_.setChargeModel(iChargeModel);
     Qgresp_.setAtomWeight(watoms);
     Qgresp_.setAtomInfo(atoms_, pd, state_->x, molProp()->getCharge());
@@ -1250,7 +1258,8 @@ void MyMol::initQgresp(const Poldata             *pd,
     Qgresp_.setMolecularCharge(molProp()->getCharge());
     Qgresp_.summary(debug);
 
-    auto ci = molProp()->getLotPropType(lot, MPO_POTENTIAL, nullptr);
+    auto ci = molProp()->getCalcPropType(method, basis, mylot,
+                                         MPO_POTENTIAL, nullptr);
     if (ci != molProp()->EndExperiment())
     {
         int mod  = 100/maxESP;
@@ -1290,7 +1299,9 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  gmx_atomprop_t             ap,
                                  real                       watoms,
                                  real                       hfac,
-                                 const char                *lot,
+                                 const std::string         &method,
+                                 const std::string         &basis,
+                                 std::string               *mylot,
                                  bool                       bSymmetricCharges,
                                  const char                *symm_string,
                                  t_commrec                 *cr,
@@ -1303,11 +1314,11 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                                  const char                *ESPcorr)
 {
     std::vector<double> qq;
-    immStatus           imm         = immOK;
-    bool                converged   = false;
-    int                 iter        = 0;
+    immStatus           imm          = immOK;
+    bool                converged    = false;
+    int                 iter         = 0;
     auto                iChargeModel = pd->getChargeModel();
-                                 
+
     GenerateGromacs(mdlog, cr, tabfn, hwinfo, iChargeModel);
     if (bSymmetricCharges)
     {
@@ -1349,7 +1360,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             EspRms_          = 0;
             iter             = 0;
 
-            initQgresp(pd, lot, watoms, maxESP);
+            initQgresp(pd, method, basis, mylot, watoms, maxESP);
             Qgresp_.optimizeCharges(pd->getEpsilonR());
             Qgresp_.calcPot(pd->getEpsilonR());
             EspRms_ = chi2[cur] = Qgresp_.getRms(&wtot, &rrms, &cosangle);
@@ -1649,18 +1660,19 @@ void MyMol::PrintConformation(const char *fn)
     write_sto_conf(fn, title, atoms_, as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
 }
 
-void MyMol::PrintTopology(const char     *fn,
-                          bool            bVerbose,
-                          const Poldata  *pd,
-                          gmx_atomprop_t  aps,
-                          t_commrec      *cr,
-                          double          efield,
-                          const char     *lot)
+void MyMol::PrintTopology(const char        *fn,
+                          bool               bVerbose,
+                          const Poldata     *pd,
+                          gmx_atomprop_t     aps,
+                          t_commrec         *cr,
+                          double             efield,
+                          const std::string &method,
+                          const std::string &basis)
 {
     FILE  *fp   = gmx_ffopen(fn, "w");
     bool   bITP = (fn2ftp(fn) == efITP);
 
-    PrintTopology(fp, bVerbose, pd, aps, bITP, cr, efield, lot);
+    PrintTopology(fp, bVerbose, pd, aps, bITP, cr, efield, method, basis);
 
     fclose(fp);
 }
@@ -1706,7 +1718,8 @@ void MyMol::PrintTopology(FILE                   *fp,
                           bool                    bITP,
                           t_commrec              *cr,
                           double                  efield,
-                          const char             *lot)
+                          const std::string      &method,
+                          const std::string      &basis)
 {
     char                     buf[256];
     t_mols                   printmol;
@@ -1714,9 +1727,10 @@ void MyMol::PrintTopology(FILE                   *fp,
     rvec                     vec, mu;
     tensor                   myQ;
     double                   value = 0, error = 0, T = -1;
-    std::string              myref, mylot;
+    std::string              myref;
     auto                     iChargeModel = pd->getChargeModel();
-                          
+    std::string              mylot        = makeLot(method, basis);
+
     if (fp == nullptr)
     {
         return;
@@ -1755,7 +1769,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, qm_conf,
+    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
                               qm_type, &value, &error,
                               &T, &myref, &mylot, vec, myQ))
     {
@@ -1766,14 +1780,15 @@ void MyMol::PrintTopology(FILE                   *fp,
         }
         snprintf(buf, sizeof(buf), "%s Dipole Moment (Debye):\n"
                  "; ( %.2f %6.2f %6.2f ) Total= %.2f\n",
-                 lot,
+                 mylot.c_str(),
                  mu_qm_[qtElec][XX], mu_qm_[qtElec][YY], mu_qm_[qtElec][ZZ],
                  norm(mu_qm_[qtElec]));
         commercials.push_back(buf);
     }
     else
     {
-        printf("WARNING: QM dipole of type %s not found for lot %s\n", qm_type, lot);
+        printf("WARNING: QM dipole of type %s not found for lot %s\n",
+               qm_type, mylot.c_str());
     }
 
     add_tensor(&commercials,
@@ -1781,20 +1796,20 @@ void MyMol::PrintTopology(FILE                   *fp,
                QQM(qtCalc));
 
     T = -1;
-    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, lot, qm_conf,
+    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
                               qm_type, &value, &error,
                               &T, &myref, &mylot, vec, myQ))
     {
         set_QQM(qtElec, myQ);
         rotate_tensor(Q_qm_[qtElec], Q_qm_[qtCalc]);
-        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", lot);
+        snprintf(buf, sizeof(buf), "%s Traceless Quadrupole Moments (Buckingham)", mylot.c_str());
         add_tensor(&commercials, buf, Q_qm_[qtElec]);
     }
     else
     {
-        printf("WARNING: QM quadrupole of type %s not found for lot %s\n", qm_type, lot);
+        printf("WARNING: QM quadrupole of type %s not found for lot %s\n",
+               qm_type, mylot.c_str());
     }
-
 
     snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Additive Law): %.2f +/- %.2f (A^3)\n", polarizability_, sig_pol_);
     commercials.push_back(buf);
@@ -1811,17 +1826,17 @@ void MyMol::PrintTopology(FILE                   *fp,
         commercials.push_back(buf);
 
         T = -1;
-        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, lot, "",
+        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
                                   (char *)"electronic", &isoPol_elec_, &error,
                                   &T, &myref, &mylot, vec, alpha_elec_))
         {
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
-            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", lot);
+            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
             add_tensor(&commercials, buf, alpha_elec_);
 
-            snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", lot, isoPol_elec_);
+            snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
             commercials.push_back(buf);
-            snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", lot, anisoPol_elec_);
+            snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
             commercials.push_back(buf);
         }
     }
@@ -1855,7 +1870,7 @@ void MyMol::PrintTopology(FILE                   *fp,
 immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg, bool bUsePDBcharge)
 {
     real qtot, mtot;
-    if ((cgnr_ = generate_charge_groups(ecg, atoms_, plist_, bUsePDBcharge, 
+    if ((cgnr_ = generate_charge_groups(ecg, atoms_, plist_, bUsePDBcharge,
                                         &qtot, &mtot)) == nullptr)
     {
         return immChargeGeneration;
@@ -1881,7 +1896,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
                          const gmx_output_env_t *oenv)
 {
     ChargeModel iChargeModel = pd->getChargeModel();
-                         
+
     if ((nullptr  != potfn) || (nullptr != hisfn) || (nullptr != rhofn) ||
         ((nullptr != difffn) && (nullptr != reffn)))
     {
@@ -1972,12 +1987,13 @@ void MyMol::setQandMoments(qType qt, int natom, real q[])
     }
 }
 
-immStatus MyMol::getExpProps(gmx_bool       bQM,
-                             gmx_bool       bZero,
-                             gmx_bool       bZPE, 
-                             gmx_bool       bDHform,
-                             const char    *lot,
-                             const Poldata *pd)
+immStatus MyMol::getExpProps(gmx_bool           bQM,
+                             gmx_bool           bZero,
+                             gmx_bool           bZPE,
+                             gmx_bool           bDHform,
+                             const std::string &method,
+                             const std::string &basis,
+                             const Poldata     *pd)
 {
     int          ia    = 0;
     int          natom = 0;
@@ -2005,7 +2021,7 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     }
     real q[natom];
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "",
+                              method, basis, "",
                               (char *)"ESP charges",
                               &value, &error, &T,
                               &myref, &mylot, q, quadrupole))
@@ -2015,7 +2031,7 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "",
+                              method, basis, "",
                               (char *)"Mulliken charges",
                               &value, &error, &T,
                               &myref, &mylot, q, quadrupole))
@@ -2028,7 +2044,7 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "",
+                              method, basis, "",
                               (char *)"Hirshfeld charges",
                               &value, &error, &T,
                               &myref, &mylot, q, quadrupole))
@@ -2042,7 +2058,7 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     }
     T = -1;
     if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
-                              (char *)mylot.c_str(), "",
+                              method, basis, "",
                               (char *)"CM5 charges",
                               &value, &error, &T,
                               &myref, &mylot, q, quadrupole))
@@ -2058,7 +2074,8 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     immStatus imm = immOK;
     if (bDHform &&
         molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
-                           lot, "", (char *)"DeltaHform", &value, &error, &T))
+                           method, basis, "",
+                           (char *)"DeltaHform", &value, &error, &T))
     {
         Hform_ = value;
         Emol_  = value;
@@ -2084,7 +2101,8 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
         if (bZPE)
         {
 
-            if (molProp()->getProp(MPO_ENERGY, iqmBoth, lot, "",
+            if (molProp()->getProp(MPO_ENERGY, iqmBoth,
+                                   method, basis, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
                 Emol_ -= ZPE;
@@ -2104,7 +2122,8 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     if (imm == immOK)
     {
         T = -1;
-        if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, lot, "",
+        if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
+                                  method, basis, "",
                                   (char *)"electronic",
                                   &value, &error, &T, &myref, &mylot,
                                   vec, quadrupole))
@@ -2143,7 +2162,8 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
     {
         T = -1;
         if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
-                                  lot, "", (char *)"electronic",
+                                  method, basis, "",
+                                  (char *)"electronic",
                                   &value, &error, &T, &myref, &mylot,
                                   vec, quadrupole))
         {
@@ -2155,7 +2175,8 @@ immStatus MyMol::getExpProps(gmx_bool       bQM,
         }
         T = -1;
         if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
-                                  lot, "", (char *)"electronic",
+                                  method, basis, "",
+                                  (char *)"electronic",
                                   &isoPol_elec_, &error, &T,
                                   &myref, &mylot, vec, polar))
         {
@@ -2378,7 +2399,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                             std::vector<double> old;
                             for (auto parm : parameters)
                             {
-                                old.push_back(gmx::doubleFromString(parm.c_str())); 
+                                old.push_back(gmx::doubleFromString(parm.c_str()));
                             }
                             auto newparam = &mtop_->ffparams.iparams[tp];
                             newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
@@ -2387,12 +2408,12 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                             newparam->rbdihs.rbcA[3] = -2.0*old[2];
                             newparam->rbdihs.rbcA[4] = -4.0*old[3];
                             newparam->rbdihs.rbcA[5] = 0.0;
-                            for(int k = 0; k < NR_RBDIHS; k++)
+                            for (int k = 0; k < NR_RBDIHS; k++)
                             {
-                                ltop_->idef.iparams[tp].rbdihs.rbcA[k] = 
-                                    ltop_->idef.iparams[tp].rbdihs.rbcB[k] = 
-                                    newparam->rbdihs.rbcB[k] = 
-                                    newparam->rbdihs.rbcA[k];
+                                ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
+                                    ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
+                                        newparam->rbdihs.rbcB[k]           =
+                                            newparam->rbdihs.rbcA[k];
                             }
                             break;
                         }

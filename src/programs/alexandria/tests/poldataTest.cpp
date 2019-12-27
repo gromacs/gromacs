@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,18 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <map>
- 
 #include <math.h>
+
+#include <map>
 
 #include <gtest/gtest.h>
 
@@ -59,7 +59,7 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         gmx::test::TestReferenceChecker checker_;
         static std::vector<std::string> atomNames;
         static std::string              atomName;
-        
+
         PoldataTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -69,8 +69,8 @@ class PoldataTest : public gmx::test::CommandLineTestBase
         // Static initiation, only run once every test.
         static void SetUpTestCase()
         {
-            Poldata *mypd = getPoldata("ACM-g");
-            auto atomName = mypd->findAtype("ha")->getType();
+            Poldata *mypd     = getPoldata("ACM-g");
+            auto     atomName = mypd->findAtype("ha")->getType();
             for (auto iter = mypd->getAtypeBegin(); iter != mypd->getAtypeEnd(); iter++)
             {
                 atomNames.push_back(iter->getType());
@@ -107,7 +107,7 @@ TEST_F(PoldataTest, addAtype){
     const std::string        ptype        = "p_U";
     const std::string        ztype        = "z_U";
     const std::string        btype        = "b_U";
-          std::string        vdwparams    = "10.0 11.1 12.2";
+    std::string              vdwparams    = "10.0 11.1 12.2";
     const std::string        ref_enthalpy = "1000";
     bool                     fixVdw       = true;
     alexandria::Poldata     *pd           = getPoldata("ACM-g");
@@ -188,8 +188,8 @@ TEST_F (PoldataTest, chi)
 
 TEST_F (PoldataTest, row){
     std::vector<int> rows;
-    std::string atoms[] = { "ha", "s", "br" };
-    std::string models[] = { "ESP-ps", "ACM-g", "Rappe" };
+    std::string      atoms[]  = { "ha", "s", "br" };
+    std::string      models[] = { "ESP-ps", "ACM-g", "Rappe" };
 
     for (auto &atom : atoms)
     {
@@ -206,13 +206,13 @@ TEST_F (PoldataTest, row){
 TEST_F (PoldataTest, zeta)
 {
     std::vector<double>                  zetas;
-    std::vector<ChargeModel> eqd = { eqdACM_pg, eqdESP_ps };
+    std::vector<ChargeModel>             eqd = { eqdACM_pg, eqdESP_ps };
 
     for (auto model : eqd)
-    {        
+    {
         auto pd       = getPoldata(model);
         auto atomName = pd->findAtype("ha")->getType();
-        for(int i=0; i < pd->getNzeta(atomName); i++)
+        for (int i = 0; i < pd->getNzeta(atomName); i++)
         {
             zetas.push_back(pd->getZeta(atomName, i));
         }
@@ -226,7 +226,7 @@ TEST_F (PoldataTest, chargeModel)
 
     std::vector<std::string> forces;
     for (auto model : eqd)
-    {        
+    {
         auto mypd = getPoldata(model);
         forces.push_back(getEemtypeName(mypd->getChargeModel()));
     }
@@ -236,7 +236,7 @@ TEST_F (PoldataTest, chargeModel)
 
 TEST_F (PoldataTest, lenghtUnit)
 {
-    auto fs = getPoldata("ACM-g")->findForces(alexandria::eitBONDS);
+    auto        fs     = getPoldata("ACM-g")->findForces(alexandria::eitBONDS);
     std::string length =  fs->unit();
     checker_.checkString(length, "lenghtUnit");
 }

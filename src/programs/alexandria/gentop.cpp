@@ -47,6 +47,7 @@
 #include "alex_modules.h"
 #include "babel_io.h"
 #include "fill_inputrec.h"
+#include "molprop_util.h"
 #include "molprop_xml.h"
 #include "mymol.h"
 #include "poldata_xml.h"
@@ -124,7 +125,7 @@ int alex_gentop(int argc, char *argv[])
     };
 
     const  int                       NFILE          = asize(fnm);
-    
+
     static int                       maxpot         = 100;
     static int                       nsymm          = 0;
     static int                       qcycle         = 1000;
@@ -140,7 +141,6 @@ int alex_gentop(int argc, char *argv[])
     static char                     *dbname         = (char *)"";
     static char                     *symm_string    = (char *)"";
     static char                     *conf           = (char *)"minimum";
-    static char                     *basis          = (char *)"";
     static char                     *jobtype        = (char *)"unknown";
     static gmx_bool                  bQsym          = false;
     static gmx_bool                  bITP           = false;
@@ -153,9 +153,9 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = true;
 
-    static const char               *ff[ ]          = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
+    static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
-    static const char               *lot            = "AFF/ACM";
+    static const char               *lot            = nullptr;
 
     t_pargs                          pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
@@ -178,8 +178,6 @@ int alex_gentop(int argc, char *argv[])
           "IUPAC Name of your molecule" },
         { "-conf",  FALSE, etSTR, {&conf},
           "Conformation of the molecule" },
-        { "-basis",  FALSE, etSTR, {&basis},
-          "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
         { "-maxpot", FALSE, etINT, {&maxpot},
           "Fraction of potential points to read from the gaussian file (percent). If 100 all points are registered, else a selection of points evenly spread over the range of values is taken" },
         { "-nsymm", FALSE, etINT, {&nsymm},
@@ -203,7 +201,7 @@ int alex_gentop(int argc, char *argv[])
         { "-hfac",    FALSE, etREAL, {&hfac},
           "HIDDENFudge factor for AXx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
         { "-qsymm",  FALSE, etBOOL, {&bQsym},
-          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },                             
+          "Symmetrize the charges on symmetric groups, e.g. CH3, NH2." },
         { "-symm",   FALSE, etSTR, {&symm_string},
           "Use the order given here for symmetrizing, e.g. when specifying [TT]-symm '0 1 0'[tt] for a water molecule (H-O-H) the hydrogens will have obtain the same charge. For simple groups, like methyl (or water) this is done automatically, but higher symmetry is not detected by the program. The numbers should correspond to atom numbers minus 1, and point to either the atom itself or to a previous atom." },
         { "-cgsort", FALSE, etSTR, {cgopt},
@@ -228,27 +226,29 @@ int alex_gentop(int argc, char *argv[])
     const char               *tabfn    = opt2fn_null("-table", NFILE, fnm);
     eChargeGroup              ecg      = (eChargeGroup) get_option(cgopt);
     gmx::MDLogger             mdlog {};
-    ChargeModel   iModel;
-    
+    ChargeModel               iModel;
+    std::string               method, basis;
+    splitLot(lot, &method, &basis);
+
     /* Check the options */
     bITP = opt2bSet("-oi", NFILE, fnm);
     if ((qtol < 0) || (qtol > 1))
     {
         gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
     }
-    
+
     const char *gentop_fnm = opt2fn_null("-d", NFILE, fnm);
     if (opt2parg_bSet("-ff", asize(pa), pa) && nullptr == gentop_fnm)
     {
-        iModel = name2eemtype(ff[0]);
-        gentop_fnm = gmx::formatString("%s_2019.dat", ff[0]).c_str();
+        iModel     = name2eemtype(ff[0]);
+        gentop_fnm = gmx::formatString("%s_2020.dat", ff[0]).c_str();
     }
     if (nullptr == gentop_fnm)
     {
         fprintf(stderr, "Please specify either a force field file name or use the -ff flag");
         return 0;
     }
-    
+
     /* Read standard atom properties */
     aps = gmx_atomprop_init();
     try
@@ -259,7 +259,7 @@ int alex_gentop(int argc, char *argv[])
     iModel = pd.getChargeModel();
     printf("Using force field file %s and charge distribution model %s\n",
            gentop_fnm, getEemtypeName(iModel));
-    
+
     if (pd.getNexcl() != nexcl)
     {
         printf("Exclusion number changed from %d to %d.\n", pd.getNexcl(), nexcl);
@@ -315,7 +315,7 @@ int alex_gentop(int argc, char *argv[])
                               molnm,
                               iupac,
                               conf,
-                              basis,
+                              basis.c_str(),
                               maxpot,
                               nsymm,
                               jobtype,
@@ -337,9 +337,12 @@ int alex_gentop(int argc, char *argv[])
     mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);
     mymol.setInputrec(inputrec);
+    std::string mylot;
     imm = mymol.GenerateTopology(aps,
                                  &pd,
-                                 lot,
+                                 method,
+                                 basis,
+                                 &mylot,
                                  bGenVSites,
                                  bPairs,
                                  bDihedral,
@@ -354,7 +357,9 @@ int alex_gentop(int argc, char *argv[])
                                        aps,
                                        watoms,
                                        hfac,
-                                       lot,
+                                       method,
+                                       basis,
+                                       &mylot,
                                        bQsym,
                                        symm_string,
                                        cr,
@@ -389,6 +394,7 @@ int alex_gentop(int argc, char *argv[])
 
     if (immOK == imm)
     {
+        splitLot(mylot.c_str(), &method, &basis);
         mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
         mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) : ftp2fn(efTOP, NFILE, fnm),
                             bVerbose,
@@ -396,11 +402,12 @@ int alex_gentop(int argc, char *argv[])
                             aps,
                             cr,
                             efield,
-                            lot);
+                            method,
+                            basis);
     }
     else
     {
-        gmx_fatal(FARGS,"Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
+        gmx_fatal(FARGS, "Alexandria gentop ended prematurely due to \"%s\"\n", alexandria::immsg(imm));
     }
     return 0;
 }

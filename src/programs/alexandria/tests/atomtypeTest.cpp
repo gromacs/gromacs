@@ -29,9 +29,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <map>
-
 #include <math.h>
+
+#include <map>
 
 #include <gtest/gtest.h>
 
@@ -63,7 +63,7 @@ namespace
 
 enum informat{
     einfLOG = 0,
-    einfPDB = 1, 
+    einfPDB = 1,
     einfNR
 };
 
@@ -71,27 +71,27 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
 {
     protected:
         void testAtype(const char *molname)
-        {                       
+        {
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
-            int         maxpot   = 100; 
-            int         nsymm    = 0;
-            const char *conf     = (char *)"minimum";
-            const char *basis    = (char *)"";
-            const char *jobtype  = (char *)"Opt";
-            
-            std::string           dataName;
-            alexandria::MolProp   molprop;
+            int                             maxpot   = 100;
+            int                             nsymm    = 0;
+            const char                     *conf     = (char *)"minimum";
+            const char                     *basis    = (char *)"";
+            const char                     *jobtype  = (char *)"Opt";
+
+            std::string                     dataName;
+            alexandria::MolProp             molprop;
 
             dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-            
-            bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname, 
+
+            bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
                                     conf, basis, maxpot, nsymm, jobtype, 0.0);
             EXPECT_TRUE(readOK);
             if (readOK)
             {
                 std::vector<std::string> atypes;
-                auto exper = molprop.BeginExperiment();
-                for(auto ca = exper->BeginAtom(); ca < exper->EndAtom(); ++ca)
+                auto                     exper = molprop.BeginExperiment();
+                for (auto ca = exper->BeginAtom(); ca < exper->EndAtom(); ++ca)
                 {
                     atypes.push_back(ca->getObtype());
                 }

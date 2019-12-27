@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #ifndef MOLPROP_UTIL_H
 #define MOLPROP_UTIL_H
 
@@ -139,7 +139,7 @@ void generate_formula(std::vector<MolProp> &mp,
                       gmx_atomprop_t        ap);
 
 void generate_index(std::vector<MolProp> *mp);
-                    
+
 int merge_xml(gmx::ArrayRef<const std::string>  infiles,
               std::vector<alexandria::MolProp> *mp,
               char *outf, char *sorted, char *doubles,
@@ -180,9 +180,28 @@ void MolPropSort(std::vector<MolProp> *mp,
  * \return the number of remaining molprops
  * \ingroup module_alexandria
  */
-int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp, 
+int MergeDoubleMolprops(std::vector<alexandria::MolProp> *mp,
                         char                             *doubles,
                         bool                              bForceMerge);
+
 } // namespace alexandria
 
+/*! \brief Utility to split a user-provided lot
+ *
+ * \param[in]  lot    Level of theory
+ * \param[out] method QM method
+ * \param[out] basis  QM basis set
+ */
+void splitLot(const char  *lot,
+              std::string *method,
+              std::string *basis);
+
+/*! \brief Utility to generate a lot
+ *
+ * \param[out] method QM method
+ * \param[out] basis  QM basis set
+ * \return  Level of theory
+ */
+std::string makeLot(const std::string &method,
+                    const std::string &basis);
 #endif

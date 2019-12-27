@@ -167,11 +167,14 @@ class MyMol
          * Generate Atoms based on quantum calculation with specified level of theory
          *
          * \param[in] ap      Gromacs atom properties
-         * \param[in] lot     Level of theory used for QM calculations
-         * \param[in] iChargeModel The model for charge distributions
+         * \param[in] method  Method used for QM calculations
+         * \param[in] basis   Basis set used for QM calculations
+         * \param[out] mylot  Level of theory used
          */
-        immStatus GenerateAtoms(gmx_atomprop_t            ap,
-                                const char               *lot);
+        immStatus GenerateAtoms(gmx_atomprop_t     ap,
+                                const std::string &method,
+                                const std::string &basis,
+                                std::string       *mylot);
 
         /*! \brief
          * Generate angles, dihedrals, exclusions etc.
@@ -255,7 +258,7 @@ class MyMol
          * \param[in] q      The charges
          */
         void setQandMoments(qType qt, int natom, real q[]);
-        
+
 
     public:
         double                         chieq_         = 0;
@@ -298,7 +301,7 @@ class MyMol
          * Return QM dipole corresponding to charge type qt
          */
         const rvec &muQM(qType qt) const { return mu_qm_[qt]; }
-        
+
         rvec &muQM(qType qt) { return mu_qm_[qt]; }
 
         /*! \brief
@@ -367,20 +370,23 @@ class MyMol
          *
          * \param[in] ap          Gromacs atom properties
          * \param[in] pd          Data structure containing atomic properties
-         * \param[in] lot         The level of theory used for QM calculation
+         * \param[in] method      Method used for QM calculation
+         * \param[in] basis       Basis set used for QM calculation
          * \param[in] nexcl       Number of Exclusions
          * \param[in] bUseVsites  Add virtual sites to the topology structure
          * \param[in] bPairs      Add pairs to the topology structure
          * \param[in] bDih        Add dihedrals to the topology structure
          */
-        immStatus GenerateTopology(gmx_atomprop_t            ap,
-                                   const Poldata            *pd,
-                                   const char               *lot,
-                                   bool                      bUseVsites,
-                                   bool                      bPairs,
-                                   bool                      bDih,
-                                   bool                      bBASTAT,
-                                   const char               *tabfn);
+        immStatus GenerateTopology(gmx_atomprop_t     ap,
+                                   const Poldata     *pd,
+                                   const std::string &method,
+                                   const std::string &basis,
+                                   std::string       *mylot,
+                                   bool               bUseVsites,
+                                   bool               bPairs,
+                                   bool               bDih,
+                                   bool               bBASTAT,
+                                   const char        *tabfn);
 
         /*! \brief
          *  Computes isotropic polarizability at the presence of external
@@ -397,40 +403,45 @@ class MyMol
          * Generate atomic partial charges
          *
          * \param[in] pd                             Data structure containing atomic properties
+         * \param[in] fplog                          Logger
          * \param[in] ap                             Gromacs atom properties
-         * \param[in] iModel                         The distrbution model of charge (e.x. point charge, gaussian, and slater models)
          * \param[in] watoms
          * \param[in] hfac
-         * \param[in] lot                            The level of theory used for QM calculation
+         * \param[in] method                         Method used for QM calculation
+         * \param[in] basis                          Basis set used for QM calculation
          * \param[in] bSymmetricCharges              Consider molecular symmetry to calculate partial charge
          * \param[in] symm_string                    The type of molecular symmetry
          * \param[in] cr
          * \param[in] tabfn
          */
-        immStatus GenerateCharges(const Poldata             *pd,
-                                  const gmx::MDLogger       &fplog,
-                                  gmx_atomprop_t             ap,
-                                  real                       watoms,
-                                  real                       hfac,
-                                  const char                *lot,
-                                  bool                       bSymmetricCharges,
-                                  const char                *symm_string,
-                                  t_commrec                 *cr,
-                                  const char                *tabfn,
-                                  gmx_hw_info_t             *hwinfo,
-                                  int                        qcycle,
-                                  int                        maxESP,
-                                  real                       qtol,
-                                  const gmx_output_env_t    *oenv,
-                                  const char                *ESPcorr);
+        immStatus GenerateCharges(const Poldata          *pd,
+                                  const gmx::MDLogger    &fplog,
+                                  gmx_atomprop_t          ap,
+                                  real                    watoms,
+                                  real                    hfac,
+                                  const std::string      &method,
+                                  const std::string      &basis,
+                                  std::string            *mylot,
+                                  bool                    bSymmetricCharges,
+                                  const char             *symm_string,
+                                  t_commrec              *cr,
+                                  const char             *tabfn,
+                                  gmx_hw_info_t          *hwinfo,
+                                  int                     qcycle,
+                                  int                     maxESP,
+                                  real                    qtol,
+                                  const gmx_output_env_t *oenv,
+                                  const char             *ESPcorr);
         /*! \brief
          * Init the Qgresp class
          *
-         */                          
-        void initQgresp(const Poldata             *pd,
-                        const char                *lot,
-                        real                       watoms,
-                        int                        maxESP);
+         */
+        void initQgresp(const Poldata     *pd,
+                        const std::string &method,
+                        const std::string &basis,
+                        std::string       *mylot,
+                        real               watoms,
+                        int                maxESP);
 
         /*! \brief
          * Return the root-mean square deviation of
@@ -444,15 +455,17 @@ class MyMol
          *
          * \param[in] bQM
          * \param[in] bZero
-         * \param[in] lot      The level of theory used for QM calculation
+         * \param[in] method   Method used for QM calculation
+         * \param[in] basis    Basis set used for QM calculation
          * \param[in] gap      Gaussian atom property
          */
-        immStatus getExpProps(gmx_bool       bQM,
-                              gmx_bool       bZero,
-                              gmx_bool       bZPE,
-                              gmx_bool       bDHform,
-                              const char    *lot,
-                              const Poldata *pd);
+        immStatus getExpProps(gmx_bool           bQM,
+                              gmx_bool           bZero,
+                              gmx_bool           bZPE,
+                              gmx_bool           bDHform,
+                              const std::string &method,
+                              const std::string &basis,
+                              const Poldata     *pd);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -463,13 +476,14 @@ class MyMol
          * \param[in] pd        Data structure containing atomic properties
          * \param[in] aps       Gromacs atom properties
          */
-        void PrintTopology(const char     *fn,
-                           bool            bVerbose,
-                           const Poldata  *pd,
-                           gmx_atomprop_t  aps,
-                           t_commrec      *cr,
-                           double          efield,
-                           const char     *lot);
+        void PrintTopology(const char        *fn,
+                           bool               bVerbose,
+                           const Poldata     *pd,
+                           gmx_atomprop_t     aps,
+                           t_commrec         *cr,
+                           double             efield,
+                           const std::string &method,
+                           const std::string &basis);
 
         /*! \brief
          * Print the topology that was generated previously in GROMACS format.
@@ -487,7 +501,8 @@ class MyMol
                            bool                     bITP,
                            t_commrec               *cr,
                            double                   efield,
-                           const char              *lot);
+                           const std::string       &method,
+                           const std::string       &basis);
 
         /*! \brief
          *  Compute or derive global info about the molecule
@@ -514,7 +529,7 @@ class MyMol
          * \param[out] anisoPol  Anisotropic polarizability
          */
         void CalcAnisoPolarizability(tensor polar, double *anisoPol);
-        
+
 
         /*! \brief
          * Relax the shells (if any) or compute the forces in the molecule
@@ -598,7 +613,7 @@ class MyMol
                                   t_commrec                *cr,
                                   const char               *tabfn,
                                   gmx_hw_info_t            *hwinfo,
-                                  ChargeModel   iModel);
+                                  ChargeModel               iModel);
 
         /*! \brief
          * Generate cube

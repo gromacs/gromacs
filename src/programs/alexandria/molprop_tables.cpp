@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -87,14 +87,14 @@ static void stats_header(LongTable         &lt,
         else
         {
             std::string hline("Method ");
-            char koko[STRLEN];
+            char        koko[STRLEN];
             for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
                 snprintf(koko, STRLEN, " & %s", q->method().c_str());
                 hline.append(koko);
             }
             lt.addHeadLine(hline);
-            
+
             hline.assign(" ");
             for (auto q = qmc.beginCalc(); q < qmc.endCalc(); ++q)
             {
@@ -163,13 +163,13 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                     double exp_err = 0;
                     double Texp    = -1;
                     bool   bQM     = false;
-                    bool   bExp    = mpi.getProp(mpo, iqmExp, "", "",
+                    bool   bExp    = mpi.getProp(mpo, iqmExp, "", "", "",
                                                  exp_type, &exp_val, &exp_err, &Texp);
                     if (bExp)
                     {
                         double qm_err = 0;
                         double Tqm    = -1;
-                        bQM    = mpi.getProp(mpo, iqmQM, q->lot(), "",
+                        bQM    = mpi.getProp(mpo, iqmQM, q->method(), q->basis(), "",
                                              q->type(), &qm_val, &qm_err, &Tqm);
                         //printf("Texp %g Tqm %g bQM = %s\n", Texp, Tqm, bQM ? "true" : "false");
                         if (bQM)
@@ -229,10 +229,11 @@ void alexandria_molprop_stats_table(FILE                 *fp,
             {
                 double exp_err, qm_err;
                 double Texp = -1;
-                bool   bExp = mpi->getProp(mpo, iqmExp, "", "", exp_type,
+                bool   bExp = mpi->getProp(mpo, iqmExp, "", "", "", exp_type,
                                            &exp_val, &exp_err, &Texp);
                 double Tqm  = Texp;
-                bool   bQM  = mpi->getProp(mpo, iqmQM, q->lot(), "", q->type(),
+                bool   bQM  = mpi->getProp(mpo, iqmQM, q->method(), q->basis(),
+                                           "", q->type(),
                                            &qm_val, &qm_err, &Tqm);
                 if (bExp && bQM)
                 {
@@ -373,9 +374,9 @@ static void composition_header(LongTable             &lt,
     lt.printHeader();
 }
 
-void alexandria_molprop_composition_table(FILE                 *fp, 
+void alexandria_molprop_composition_table(FILE                 *fp,
                                           std::vector<MolProp>  mp,
-                                          const MolSelect      &gms, 
+                                          const MolSelect      &gms,
                                           iMolSelect            ims)
 {
     std::vector<MolProp>::iterator             mpi;
@@ -572,7 +573,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                         std::string pt;
                         if (pd->atypeToPtype(ani->getAtom(), pt))
                         {
-                            if(pt == pType->getType())
+                            if (pt == pType->getType())
                             {
                                 bFound = true;
                             }
@@ -580,12 +581,14 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                     }
                     if (bFound)
                     {
-                        double val, T = -1;
-                        if (mpi.getProp(mpo, iqmExp, lot, "", exp_type, &val, nullptr, &T))
+                        std::string method, basis;
+                        splitLot(lot, &method, &basis);
+                        double      val, T = -1;
+                        if (mpi.getProp(mpo, iqmExp, method, basis, "", exp_type, &val, nullptr, &T))
                         {
                             nexp++;
                         }
-                        else if (mpi.getProp(mpo, iqmQM, lot, "", (char *)"electronic", &val, nullptr, &T))
+                        else if (mpi.getProp(mpo, iqmQM, method, basis, "", (char *)"electronic", &val, nullptr, &T))
                         {
                             nqm++;
                         }
@@ -604,7 +607,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
             {
                 bos_pol = 0;
             }
-            
+
             size_t      pos   = pType->getType().find("p_");
             std::string ptype = pType->getType();
             if (pos != std::string::npos)
@@ -626,10 +629,10 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
     fflush(fp);
 }
 
-static void alexandria_molprop_atomtype_dip_table(FILE          *fp,
+static void alexandria_molprop_atomtype_dip_table(FILE                       *fp,
                                                   const std::vector<Poldata> &pd)
 {
-    int         cur = 0;
+    int         cur        = 0;
     std::string gt_type[2] = { "", "" };
 
 #define prev (1-cur)
@@ -644,14 +647,14 @@ static void alexandria_molprop_atomtype_dip_table(FILE          *fp,
     lt.addHeadLine(longbuf);
     lt.printHeader();
 
-    for(auto ipd : pd)
+    for (auto ipd : pd)
     {
         for (auto aType = ipd.getAtypeBegin(); aType != ipd.getAtypeEnd(); aType++)
         {
             gt_type[cur] = aType->getType();
             if (((0 == gt_type[prev].size()) || (gt_type[cur] != gt_type[prev])))
             {
-                longbuf = gmx::formatString("%s & %s", getEemtypeName(ipd.getChargeModel()), 
+                longbuf = gmx::formatString("%s & %s", getEemtypeName(ipd.getChargeModel()),
                                             gt_type[cur].c_str());
                 if (ipd.haveEemSupport(gt_type[cur], false))
                 {
@@ -659,11 +662,11 @@ static void alexandria_molprop_atomtype_dip_table(FILE          *fp,
                     longbuf.append(gmx::formatString(" & %.3f", ipd.getChi0(gt_type[cur])));
                     int nzeta = ipd.getNzeta(gt_type[cur]);
                     int i     = 0;
-                    for( ; i < nzeta; i++)
+                    for (; i < nzeta; i++)
                     {
                         longbuf.append(gmx::formatString(" & %.3f", ipd.getZeta(gt_type[cur], i+1)));
                     }
-                    for( ; i < 2; i++)
+                    for (; i < 2; i++)
                     {
                         longbuf.append(" &");
                     }
@@ -926,7 +929,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
                     std::string ref, mylot;
                     double      T = ed[nexp].temp_;
                     if ((q->type().compare(exp_type) == 0) &&
-                        mpi.getPropRef(mpo, iqmQM, q->lot(), "",
+                        mpi.getPropRef(mpo, iqmQM, q->method(), q->basis(), "",
                                        q->type(), &calc_val, &calc_err, &T,
                                        &ref, &mylot, rvec, quadrupole))
                     {

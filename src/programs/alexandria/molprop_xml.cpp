@@ -32,10 +32,10 @@
 
 #include "molprop_xml.h"
 
-#include <map>
-
 #include <stdlib.h>
 #include <string.h>
+
+#include <map>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
@@ -185,78 +185,78 @@ enum {
 
 //static const char *exml_names[exmlNR] = {
 std::map<const std::string, int> xmlxxx =
-    {
-     { "molecules",        exmlMOLECULES     },
-     { "molecule",         exmlMOLECULE      },
-     { "formula",          exmlFORMULA       },
-     { "molname",          exmlMOLNAME       },
-     { "mass",             exmlMASS          },
-     { "molinfo",          exmlMOLINFO       },
-     { "iupac",            exmlIUPAC         },
-     { "cas",              exmlCAS           },
-     { "cid",              exmlCID           },
-     { "inchi",            exmlINCHI         },
-     { "multiplicity",     exmlMULTIPLICITY  },
-     { "charge",           exmlCHARGE        },
-     { "category",         exmlCATEGORY      },
-     { "catname",          exmlCATNAME       },
-     { "experiment",       exmlEXPERIMENT    },
-     { "polarizability",   exmlPOLARIZABILITY},
-     { "energy",           exmlENERGY        },
-     { "dipole",           exmlDIPOLE        },
-     { "quadrupole",       exmlQUADRUPOLE    },
-     { "potential",        exmlPOTENTIAL     },
-     { "name",             exmlNAME          },
-     { "average",          exmlAVERAGE       },
-     { "error",            exmlERROR         },
-     { "temperature",      exmlTEMPERATURE   },
-     { "phase",            exmlPHASE         },
-     { "method",           exmlMETHOD        },
-     { "reference",        exmlREFERENCE     },
-     { "type",             exmlTYPE          },
-     { "source",           exmlSOURCE        },
-     { "bond",             exmlBOND          },
-     { "ai",               exmlAI            },
-     { "aj",               exmlAJ            },
-     { "bondorder",        exmlBONDORDER     },
-     { "composition",      exmlCOMPOSITION   },
-     { "compname",         exmlCOMPNAME      },
-     { "catom",            exmlCATOM         },
-     { "cname",            exmlC_NAME        },
-     { "cnumber",          exmlC_NUMBER      },
-     { "datasource",       exmlDATASOURCE    },
-     { "program",          exmlPROGRAM       },
-     { "basisset",         exmlBASISSET      },
-     { "jobtype",          exmlJOBTYPE       },
-     { "conformation",     exmlCONFORMATION  },
-     { "datafile",         exmlDATAFILE      },
-     { "unit",             exmlUNIT          },
-     { "atom",             exmlATOM          },
-     { "atomid",           exmlATOMID        },
-     { "obtype",           exmlOBTYPE        },
-     { "coord_unit",       exmlX_UNIT        },
-     { "potential_unit",   exmlV_UNIT        },
-     { "espid",            exmlESPID         },
-     { "x",                exmlX             },
-     { "y",                exmlY             },
-     { "z",                exmlZ             },
-     { "V",                exmlV             },
-     { "xx",               exmlXX            },
-     { "yy",               exmlYY            },
-     { "zz",               exmlZZ            },
-     { "xy",               exmlXY            },
-     { "xz",               exmlXZ            },
-     { "yz",               exmlYZ            },
-     { "q",                exmlQ             }
-    };
-    
+{
+    { "molecules",        exmlMOLECULES     },
+    { "molecule",         exmlMOLECULE      },
+    { "formula",          exmlFORMULA       },
+    { "molname",          exmlMOLNAME       },
+    { "mass",             exmlMASS          },
+    { "molinfo",          exmlMOLINFO       },
+    { "iupac",            exmlIUPAC         },
+    { "cas",              exmlCAS           },
+    { "cid",              exmlCID           },
+    { "inchi",            exmlINCHI         },
+    { "multiplicity",     exmlMULTIPLICITY  },
+    { "charge",           exmlCHARGE        },
+    { "category",         exmlCATEGORY      },
+    { "catname",          exmlCATNAME       },
+    { "experiment",       exmlEXPERIMENT    },
+    { "polarizability",   exmlPOLARIZABILITY},
+    { "energy",           exmlENERGY        },
+    { "dipole",           exmlDIPOLE        },
+    { "quadrupole",       exmlQUADRUPOLE    },
+    { "potential",        exmlPOTENTIAL     },
+    { "name",             exmlNAME          },
+    { "average",          exmlAVERAGE       },
+    { "error",            exmlERROR         },
+    { "temperature",      exmlTEMPERATURE   },
+    { "phase",            exmlPHASE         },
+    { "method",           exmlMETHOD        },
+    { "reference",        exmlREFERENCE     },
+    { "type",             exmlTYPE          },
+    { "source",           exmlSOURCE        },
+    { "bond",             exmlBOND          },
+    { "ai",               exmlAI            },
+    { "aj",               exmlAJ            },
+    { "bondorder",        exmlBONDORDER     },
+    { "composition",      exmlCOMPOSITION   },
+    { "compname",         exmlCOMPNAME      },
+    { "catom",            exmlCATOM         },
+    { "cname",            exmlC_NAME        },
+    { "cnumber",          exmlC_NUMBER      },
+    { "datasource",       exmlDATASOURCE    },
+    { "program",          exmlPROGRAM       },
+    { "basisset",         exmlBASISSET      },
+    { "jobtype",          exmlJOBTYPE       },
+    { "conformation",     exmlCONFORMATION  },
+    { "datafile",         exmlDATAFILE      },
+    { "unit",             exmlUNIT          },
+    { "atom",             exmlATOM          },
+    { "atomid",           exmlATOMID        },
+    { "obtype",           exmlOBTYPE        },
+    { "coord_unit",       exmlX_UNIT        },
+    { "potential_unit",   exmlV_UNIT        },
+    { "espid",            exmlESPID         },
+    { "x",                exmlX             },
+    { "y",                exmlY             },
+    { "z",                exmlZ             },
+    { "V",                exmlV             },
+    { "xx",               exmlXX            },
+    { "yy",               exmlYY            },
+    { "zz",               exmlZZ            },
+    { "xy",               exmlXY            },
+    { "xz",               exmlXZ            },
+    { "yz",               exmlYZ            },
+    { "q",                exmlQ             }
+};
+
 std::map<int, const std::string> rmap = {};
 
 static const char *exml_names(int xml)
 {
     if (rmap.empty())
     {
-        for(auto iter=xmlxxx.begin(); iter != xmlxxx.end(); ++iter)
+        for (auto iter = xmlxxx.begin(); iter != xmlxxx.end(); ++iter)
         {
             rmap.insert({iter->second, iter->first});
         }
@@ -316,7 +316,7 @@ static void get_attributes(FILE *fp, gmx_bool bZero, int indent, xmlAttrPtr attr
         char *attrname = (char *)attr->name;
         char *attrval  = (char *)attr->children->content;
 
-        auto iter = xmlxxx.find(attrname);
+        auto  iter = xmlxxx.find(attrname);
         if (iter != xmlxxx.end())
         {
             if (attrval != nullptr)
@@ -614,7 +614,7 @@ static void mp_process_tree(FILE *fp, xmlNodePtr tree,
                                         (nullptr != tc->children) &&
                                         (nullptr != tc->children->content))
                                     {
-                                        node = iter->second;
+                                        node       = iter->second;
                                         xbuf[node] = strdup((char *)tc->children->content);
                                     }
 
@@ -733,7 +733,7 @@ void MolPropRead(const char *fn, std::vector<alexandria::MolProp> *mpt)
 
     mp_process_tree(nullptr, doc->children, 0,
                     mpt, &bExperiment);
-    
+
     xmlFreeDoc(doc);
 }
 

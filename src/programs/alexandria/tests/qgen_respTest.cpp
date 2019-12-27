@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2018 
+ * Copyright (C) 2014-2018
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -98,11 +98,13 @@ class RespTest : public gmx::test::CommandLineTestBase
         void testResp(ChargeModel qdist)
         {
             //Generate charges and topology
-            const char   *lot        = "B3LYP/Gen";
+            std::string   method("B3LYP");
+            std::string   basis("Gen");
             t_inputrec    inputrec;
             fill_inputrec(&inputrec);
             mp_.SetForceField("gaff");
-            auto imm = mp_.GenerateTopology(aps_, getPoldata(qdist), lot,
+            auto imm = mp_.GenerateTopology(aps_, getPoldata(qdist), method,
+                                            basis, nullptr,
                                             false, false, false,  false,
                                             nullptr);
             if (immOK != imm)
@@ -114,11 +116,11 @@ class RespTest : public gmx::test::CommandLineTestBase
                     mp_.molProp()->getMolname().c_str());
 
             //Needed for GenerateCharges
-            real           hfac        = 0;
-            real           watoms      = 0;
-            char          *symm_string = (char *)"";
-            t_commrec     *cr          = init_commrec();
-            auto pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
+            real           hfac                  = 0;
+            real           watoms                = 0;
+            char          *symm_string           = (char *)"";
+            t_commrec     *cr                    = init_commrec();
+            auto           pnc                   = gmx::PhysicalNodeCommunicator(MPI_COMM_WORLD, 0);
             gmx::MDLogger  mdlog {};
             auto           hwinfo      = gmx_detect_hardware(mdlog, pnc);
             int            qcycle      = 1;
@@ -128,11 +130,12 @@ class RespTest : public gmx::test::CommandLineTestBase
             if (getEemtypeSlater(qdist))
             {
                 inputrec.coulombtype = eelUSER;
-                tabFile = fileManager().getInputFilePath("table.xvg");
+                tabFile              = fileManager().getInputFilePath("table.xvg");
             }
             mp_.setInputrec(&inputrec);
             mp_.GenerateCharges(getPoldata(qdist), mdlog, aps_, watoms,
-                                hfac, lot, false, symm_string, cr, 
+                                hfac, method, basis, nullptr,
+                                false, symm_string, cr,
                                 tabFile.empty() ? nullptr : tabFile.c_str(),
                                 hwinfo, qcycle, maxpot, qtol, nullptr, nullptr);
 

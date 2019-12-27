@@ -76,13 +76,13 @@
 #include <openbabel/elements.h>
 #include <openbabel/forcefield.h>
 #include <openbabel/generic.h>
-#include <openbabel/math/vector3.h>
 #include <openbabel/mol.h>
 #include <openbabel/obconversion.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obmolecformat.h>
 #include <openbabel/residue.h>
 #include <openbabel/typer.h>
+#include <openbabel/math/vector3.h>
 
 #ifdef KOKO
 #ifndef HAVE_SYS_TIME_H
@@ -92,9 +92,9 @@
 #endif
 
 
-static inline double A2PM(double a) {return a*1.0e+2;} /* Angstrom to pm */
+static inline double A2PM(double a) {return a*1.0e+2; }                /* Angstrom to pm */
 
-static inline double NM_cubed_to_A_cubed(double a) {return a*1.0e+3;} /* nm^3 to A^3 */
+static inline double NM_cubed_to_A_cubed(double a) {return a*1.0e+3; } /* nm^3 to A^3 */
 
 enum einformat{
     einfGaussian    = 0,
@@ -150,7 +150,7 @@ static void merge_electrostatic_potential(alexandria::MolProp                   
     }
 }
 
-static OpenBabel::OBConversion *readBabel(const       char *g09, 
+static OpenBabel::OBConversion *readBabel(const       char *g09,
                                           OpenBabel::OBMol *mol,
                                           einformat        *inputformat)
 {
@@ -174,12 +174,12 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
     OpenBabel::OBConversion *conv       = new OpenBabel::OBConversion(&g09f, &std::cout); // Read from g09f
     auto                     babelfiles = BabelFiles();
     auto                     informat   = babelfiles.findBabelFile(g09)->informat().c_str();
-    
+
     if (strcmp (informat, "g03") == 0 || strcmp (informat, "g09") == 0)
     {
         *inputformat = einfGaussian;
     }
-    
+
     if (conv->SetInFormat(informat, isGzip))
     {
         bool read_ok = false;
@@ -187,11 +187,11 @@ static OpenBabel::OBConversion *readBabel(const       char *g09,
         {
             read_ok = conv->Read(mol, &g09f);
         }
-        catch (const std::exception& ex)
-        {        
+        catch (const std::exception &ex)
+        {
             gmx::printFatalErrorMessage(stderr, ex);
         }
-        
+
         if (read_ok)
         {
             g09f.close();
@@ -228,10 +228,10 @@ bool readBabel(const char          *g09,
     const char                *reference   = "Ghahremanpour2016a";
     const char                *mymol       = "AMM";
     const char                *myprogram   = "Alexandria-2018";
-    const char                *mymethod    = "AFF";
-    const char                *mybasis     = "ACM";
-   
-    
+    const char                *mymethod    = "";
+    const char                *mybasis     = "";
+
+
     /* Variables to read a Gaussian log file */
     char                      *QM_charge_model  = nullptr;
     char                      *g09ptr;
@@ -247,8 +247,8 @@ bool readBabel(const char          *g09,
     OpenBabel::OBFreeGrid     *esp;
     std::vector<alexandria::ElectrostaticPotential> espv;
 
-    alexandria::jobType        jobtype = alexandria::string2jobType(jobType);    
-    OpenBabel::OBConversion    *conv   = readBabel(g09, &mol, &inputformat);
+    alexandria::jobType         jobtype = alexandria::string2jobType(jobType);
+    OpenBabel::OBConversion    *conv    = readBabel(g09, &mol, &inputformat);
     if (nullptr == conv)
     {
         fprintf(stderr, "Failed reading %s\n", g09);
@@ -284,7 +284,7 @@ bool readBabel(const char          *g09,
             if (j == excluded_categories.size())
             {
                 std::string dup = category;
-                std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_';}, ' ');
+                std::replace_if(dup.begin(), dup.end(), [](const char c) {return c == '_'; }, ' ');
                 mpt->AddCategory(dup);
             }
         }
@@ -320,7 +320,7 @@ bool readBabel(const char          *g09,
     }
 
     // Method
-    std::string method(mymethod);
+    std::string method;
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (nullptr != OBpd)
     {
@@ -345,7 +345,7 @@ bool readBabel(const char          *g09,
     mpt->SetMass(mol.GetMolWt());
     mpt->SetMultiplicity(mol.GetTotalSpinMultiplicity());
     mpt->SetFormula(mol.GetFormula());
-    
+
     if (inputformat == einfGaussian)
     {
         mpt->SetCharge(mol.GetTotalCharge());
@@ -470,7 +470,7 @@ bool readBabel(const char          *g09,
 
     // Atoms
     std::string forcefield = "gaff";
-    auto *ff = OpenBabel::OBForceField::FindForceField(forcefield);
+    auto       *ff         = OpenBabel::OBForceField::FindForceField(forcefield);
     if (ff && (ff->Setup(mol)))
     {
         ff->GetAtomTypes(mol);
@@ -487,15 +487,15 @@ bool readBabel(const char          *g09,
             {
                 fprintf(debug, "atom %d gafftype %s OBtype %s\n", atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
-            
+
             alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
-            
+
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
             ca.SetResidue(atom->GetResidue()->GetName());
 
             if (inputformat == einfGaussian)
-            {   
+            {
                 std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};
                 for (const auto &cs : QM_charge_models)
                 {
@@ -504,7 +504,7 @@ bool readBabel(const char          *g09,
                     {
                         QM_charge_model    = strdup(OBpd->GetValue().c_str());
                         OBpc               = (OpenBabel::OBPcharge *) mol.GetData(QM_charge_model);
-                        auto PartialCharge = OBpc->GetPartialCharge();
+                        auto                     PartialCharge = OBpc->GetPartialCharge();
                         alexandria::AtomicCharge aq(QM_charge_model, "e", 0.0, PartialCharge[atom->GetIdx()-1]);
                         ca.AddCharge(aq);
                     }
@@ -529,7 +529,7 @@ bool readBabel(const char          *g09,
     }
 
     // Bonds
-    OBbi = mol.BeginBonds();    
+    OBbi = mol.BeginBonds();
     if (OBbi != mol.EndBonds())
     {
         for (OBb = mol.BeginBond(OBbi); (nullptr != OBb); OBb = mol.NextBond(OBbi))
@@ -554,10 +554,10 @@ bool readBabel(const char          *g09,
         alexandria::MolecularDipole   dp("electronic",
                                          unit2string(eg2cDebye),
                                          0.0,
-                                         v3.GetX(), 
-                                         v3.GetY(), 
+                                         v3.GetX(),
+                                         v3.GetY(),
                                          v3.GetZ(),
-                                         v3.length(), 
+                                         v3.length(),
                                          0.0);
         mpt->LastExperiment()->AddDipole(dp);
     }
@@ -635,10 +635,10 @@ bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
     auto ei  = mmm->BeginExperiment();
     mol.ReserveAtoms(ei->NAtom());
     int  idx = 0;
-    for(auto ca = ei->BeginAtom(); ca < ei->EndAtom(); ca++)
+    for (auto ca = ei->BeginAtom(); ca < ei->EndAtom(); ca++)
     {
-        int atomicNum = OpenBabel::OBElements::GetAtomicNum(ca->getName().c_str());
-        auto atom = mol.NewAtom(idx++);
+        int  atomicNum = OpenBabel::OBElements::GetAtomicNum(ca->getName().c_str());
+        auto atom      = mol.NewAtom(idx++);
         atom->SetVector(ca->getX(), ca->getY(), ca->getZ());
         atom->SetAtomicNum(atomicNum);
     }
@@ -647,9 +647,10 @@ bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
     mol.EndModify();
     mmm->SetFormula(mol.GetFormula());
     mmm->SetMass(mol.GetMolWt());
-    const char *ff = "gaff";
-    auto pFF = OpenBabel::OBForceField::FindForceField(ff);
-    if (!pFF) {
+    const char *ff  = "gaff";
+    auto        pFF = OpenBabel::OBForceField::FindForceField(ff);
+    if (!pFF)
+    {
         fprintf(stderr, "could not find forcefield %s\n", ff);
         return false;
     }
@@ -658,13 +659,14 @@ bool SetMolpropAtomTypes(alexandria::MolProp *mmm)
         pFF->SetLogFile(&std::cout);
         pFF->SetLogLevel(OBFF_LOGLVL_HIGH);
     }
-    if (!pFF->Setup(mol)) {
+    if (!pFF->Setup(mol))
+    {
         fprintf(stderr, "could not setup force field %s.\n", ff);
         return false;
     }
     pFF->GetAtomTypes(mol);
     auto ca = ei->BeginAtom();
-    for(OpenBabel::OBMolAtomIter a(mol); a; ++a, ++ca)
+    for (OpenBabel::OBMolAtomIter a(mol); a; ++a, ++ca)
     {
         auto type = static_cast<OpenBabel::OBPairData*>(a->GetData("FFAtomType"));
         ca->setObtype(type->GetValue());

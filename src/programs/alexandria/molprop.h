@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,17 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
- 
- 
+
+
 #ifndef MOLPROP_H
 #define MOLPROP_H
 
@@ -175,8 +175,8 @@ class AtomNum
          */
         AtomNum(const std::string &catom, int cnumber)
         {
-            SetAtom(catom); 
-            SetNumber(cnumber); 
+            SetAtom(catom);
+            SetNumber(cnumber);
         }
 
         /*! \brief
@@ -260,11 +260,11 @@ class MolecularComposition
          * \param[in] compname  Name of the composition type
          */
         MolecularComposition(const std::string &compname)
-        { 
+        {
             compname_ = compname;
         }
 
-        /*! \brief 
+        /*! \brief
          * Return the composition name
          */
         const std::string &getCompName() const { return compname_; }
@@ -273,8 +273,8 @@ class MolecularComposition
          * Set the composition name
          */
         void SetCompName(const std::string &compname)
-        { 
-            compname_ = compname; 
+        {
+            compname_ = compname;
         }
 
         /*! \brief
@@ -289,14 +289,14 @@ class MolecularComposition
          */
         void AddAtom(AtomNum an);
 
-        /*! \brief 
+        /*! \brief
          * Remove the atom with name catom from the composition
          *
          * \param[in] catom Atom name
          */
         void DeleteAtom(const std::string &catom);
 
-        /*! \brief 
+        /*! \brief
          * Replace the oldatom by newatom
          *
          * \param[in] oldatom   Name of the old atom
@@ -309,7 +309,7 @@ class MolecularComposition
          * Return iterator to begin looping over AtomNum
          */
         AtomNumIterator BeginAtomNum() { return atomnum_.begin(); }
-        
+
         /*! \brief
          * Return iterator to end looping over AtomNum
          */
@@ -325,14 +325,14 @@ class MolecularComposition
         /*! \brief
          * Return the number of atoms of a certain type
          *
-         *\param[in] atom Atom name
+         **\param[in] atom Atom name
          */
         int CountAtoms(const char *atom);
 
         /*! \brief
          * Return the number of atoms of a certain type
          *
-         *\param[in] atom Atom name
+         **\param[in] atom Atom name
          */
         int CountAtoms(const std::string &atom);
 
@@ -409,18 +409,18 @@ class GenericProperty
          * Return the property type
          */
         const std::string &getType() const { return type_; }
-        
+
         /*! \brief
          * Return the unit of the property
          */
         const std::string &getUnit() const { return unit_; }
-        
+
         /*! \brief
          * Return the temperature
          */
         double getTemperature() const { return T_; }
 
-        /*! \brief 
+        /*! \brief
          * Return the phase
          */
         ePhase getPhase() const { return eP_; }
@@ -428,28 +428,28 @@ class GenericProperty
         /*! \brief
          * Set the type of the property
          *
-         *\param[in] type  Type of property
+         **\param[in] type  Type of property
          */
         void SetType(const std::string &type);
 
         /*! \brief
          * Set the unit of the property
          *
-         *\param[in] unit Unit of the property
+         **\param[in] unit Unit of the property
          */
         void SetUnit(const std::string &unit);
 
         /*! \brief
          * Set the temperature of the property
          *
-         *\param[in] T Temperature
+         **\param[in] T Temperature
          */
         void setTemperature(double T) { T_ = T; }
 
         /*! \brief
          * Set the phase of the property
          *
-         *\param[in] ep Phase of the property
+         **\param[in] ep Phase of the property
          */
         void setPhase(ePhase ep) { eP_ = ep; }
 
@@ -496,16 +496,16 @@ class MolecularQuadrupole : public GenericProperty
                             const std::string &unit,
                             double T,
                             double xx, double yy, double zz,
-                            double xy, double xz, double yz) : 
-                            GenericProperty(type, unit, T, epGAS) 
-                            { Set(xx, yy, zz, xy, xz, yz); };
+                            double xy, double xz, double yz) :
+            GenericProperty(type, unit, T, epGAS)
+        { Set(xx, yy, zz, xy, xz, yz); };
 
         //! Set all the elements of the qudrupole tensor
-        void Set(double xx, double yy, double zz, double xy, double xz, double yz) 
+        void Set(double xx, double yy, double zz, double xy, double xz, double yz)
         { xx_ = xx; yy_ = yy; zz_ = zz; xy_ = xy; xz_ = xz; yz_ = yz; };
 
         //! get all the elements of the qudrupole tensor
-        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz) 
+        void get(double *xx, double *yy, double *zz, double *xy, double *xz, double *yz)
         { *xx = xx_; *yy = yy_; *zz = zz_; *xy = xy_; *xz = xz_; *yz = yz_; };
 
         //! Return the XX component of the quadrupole tensor
@@ -546,7 +546,7 @@ class MolecularQuadrupole : public GenericProperty
 };
 //! Iterates over MolecularQuadrupole items
 using MolecularQuadrupoleIterator      = typename std::vector<MolecularQuadrupole>::iterator;
- using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
+using MolecularQuadrupoleConstIterator = typename std::vector<MolecularQuadrupole>::const_iterator;
 
 /*! \brief
  * Contains the elements of the molecular polarizability tensor
@@ -572,9 +572,9 @@ class MolecularPolarizability : public GenericProperty
                                 double T,
                                 double xx, double yy, double zz,
                                 double xy, double xz, double yz,
-                                double average, double error) 
-                                : GenericProperty(type, unit, T, epGAS) 
-                                { Set(xx, yy, zz, xy, xz, yz, average, error); };
+                                double average, double error)
+            : GenericProperty(type, unit, T, epGAS)
+        { Set(xx, yy, zz, xy, xz, yz, average, error); };
 
         //! Set all the elements of the polarizability tensor
         void Set(double xx, double yy, double zz,
@@ -657,10 +657,10 @@ class MolecularEnergy : public GenericProperty
 
         //! Constructor storing all properties related to this energy term
         MolecularEnergy(const std::string &type,
-                        const std::string &unit, 
-                        double T, ePhase ep, double value, double error) 
-                        : GenericProperty(type, unit, T, ep) 
-                        { Set(value, error); };
+                        const std::string &unit,
+                        double T, ePhase ep, double value, double error)
+            : GenericProperty(type, unit, T, ep)
+        { Set(value, error); };
 
         //! Set the value and error for the energy
         void Set(double value, double error) { _value = value; error_ = error; };
@@ -721,12 +721,12 @@ class MolecularDipole : public GenericProperty
         MolecularDipole(const std::string &type,
                         const std::string &unit,
                         double T,
-                        double x, double y, double z, double aver, double error) 
-                        : GenericProperty(type, unit, T, epGAS) 
-                        { Set(x, y, z, aver, error); }
+                        double x, double y, double z, double aver, double error)
+            : GenericProperty(type, unit, T, epGAS)
+        { Set(x, y, z, aver, error); }
 
         //! Set all properties related to this dipole
-        void Set(double x, double y, double z, double aver, double error) 
+        void Set(double x, double y, double z, double aver, double error)
         { _x = x; _y = y; _z = z; _aver = aver; error_ = error; };
 
         //! Return all properties of this dipole
@@ -791,20 +791,20 @@ class ElectrostaticPotential
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         ElectrostaticPotential(const std::string &xyz_unit,
-                               const std::string &V_unit, 
-                               int espid, double x, double y, double z, double V) 
-                               { Set(xyz_unit, V_unit, espid, x, y, z, V); };
+                               const std::string &V_unit,
+                               int espid, double x, double y, double z, double V)
+        { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
         //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
-        ElectrostaticPotential(const char *xyz_unit, const char *V_unit, 
-                               int espid, double x, double y, double z, double V) 
-                               { Set(xyz_unit, V_unit, espid, x, y, z, V); };
+        ElectrostaticPotential(const char *xyz_unit, const char *V_unit,
+                               int espid, double x, double y, double z, double V)
+        { Set(xyz_unit, V_unit, espid, x, y, z, V); };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         void Set(const std::string &xyz_unit,
-                 const std::string &V_unit, 
-                 int espid, double x, double y, double z, double V) 
-                 { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
+                 const std::string &V_unit,
+                 int espid, double x, double y, double z, double V)
+        { xyzUnit_ = xyz_unit; vUnit_ = V_unit; espID_ = espid; x_ = x; y_ = y; z_ = z; V_ = V; };
 
         //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
         void Set(const char *xyz_unit, const char *V_unit, int espid, double x, double y, double z, double V)
@@ -944,7 +944,7 @@ class AtomicCharge : public GenericProperty
         AtomicCharge(const std::string &type,
                      const std::string &unit,
                      double             T,
-                     double             q) 
+                     double             q)
             : GenericProperty(type, unit, T, epGAS) { SetQ(q); };
 
         //! Set the charge to q
@@ -1036,15 +1036,15 @@ class CalcAtom
 
         //! Return the unit of the coordinates of the atom
         const std::string &getUnit() const { return unit_; }
-        
-        //! Return the name of residue 
+
+        //! Return the name of residue
         const std::string &ResidueName() const { return residueName_; }
 
         //! Set the unit of the coordinates of the atom
         void SetUnit(const std::string &unit);
-        
-         //! Set the residue name for the atom
-        void SetResidue(const std::string &residueName) {residueName_ = residueName;}
+
+        //! Set the residue name for the atom
+        void SetResidue(const std::string &residueName) {residueName_ = residueName; }
 
         //! Set the coordinates of the atom
         void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
@@ -1102,20 +1102,20 @@ class Experiment
         Experiment() { }
 
         //! Constructor initiating an Experiment with reference and conformation
-        Experiment(const std::string &reference, 
+        Experiment(const std::string &reference,
                    const std::string &conformation) :
             dataSource_(dsExperiment), reference_(reference),
             conformation_(conformation), jobtype_(JOB_UNKNOWN)
         {}
 
         //! Constructor initiating a Calculation
-        Experiment(const std::string &program, 
+        Experiment(const std::string &program,
                    const std::string &method,
                    const std::string &basisset,
                    const std::string &reference,
                    const std::string &conformation,
                    const std::string &datafile,
-                   jobType jtype);
+                   jobType            jtype);
 
         //! Return the type of data
         DataSource dataSource() const { return dataSource_; }
@@ -1232,10 +1232,10 @@ class Experiment
          * \param[out] quadrupole The quadrupole tensor
          * \return true on success
          */
-        bool getVal(const std::string &type, 
+        bool getVal(const std::string &type,
                     MolPropObservable  mpo,
                     double            *value,
-                    double            *error, 
+                    double            *error,
                     double            *T,
                     rvec               vec,
                     tensor             quadrupole);
@@ -1284,7 +1284,7 @@ class Experiment
         std::vector<gmx::RVec>               coordinates_;
 };
 //! Iterates over Experiment items
-using  ExperimentIterator = typename std::vector<Experiment>::iterator;
+using  ExperimentIterator      = typename std::vector<Experiment>::iterator;
 using  ExperimentConstIterator = typename std::vector<Experiment>::const_iterator;
 
 /*! \brief
@@ -1415,7 +1415,8 @@ class MolProp
 
         //! Convenience function
         bool getPropRef(MolPropObservable mpo, iqmType iQM,
-                        const std::string &lot,
+                        const std::string &method,
+                        const std::string &basis,
                         const std::string &conf,
                         const std::string &type,
                         double *value, double *error, double *T,
@@ -1424,14 +1425,15 @@ class MolProp
 
         //! And another one
         bool getProp(MolPropObservable mpo, iqmType iQM,
-                     const std::string &lot,
+                     const std::string &method,
+                     const std::string &basis,
                      const std::string &conf,
                      const std::string &type,
                      double *value, double *error, double *T);
 
         //! Returns true if the HF energy of the optimized geometry exists and returns the HF
         bool getOptHF(double *value);
-        
+
         //! Returns the number of Opt and SP experiments for a molecule in allmols.dat
         int NOptSP();
 
@@ -1538,14 +1540,38 @@ class MolProp
             }
         }
 
-        //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndExperiment in case it is not found
-        ExperimentIterator getLot(const char *lot);
+        /*! \brief Return a calculation iterator
+         *
+         * Return iterator corresponding to the level of theory
+         * as determined by method and basis or EndExperiment in
+         * case it is not found. If either method or basis are empty
+         * any calculation may be taken.
+         * \param[in]  method  The QM method
+         * \param[in]  basis   The QM basis set
+         * \param[out] mylot   The level of theory found
+         */
+        ExperimentIterator getCalc(const std::string &method,
+                                   const std::string &basis,
+                                   std::string       *mylot);
 
-        //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
-        //! The operator should hold the requested observable of the type (can be nullptr)
-        ExperimentIterator getLotPropType(const char       *lot,
-                                          MolPropObservable mpo,
-                                          const char       *type);
+        /*! \brief Return a calculation iterator
+         *
+         * Return iterator corresponding to the level of theory
+         * as determined by method and basis or EndExperiment in
+         * case it is not found. If either method or basis are empty
+         * any calculation may be taken. The calculation should
+         * hold the requested observable of the type (can be nullptr)
+         * \param[in]  method  The QM method
+         * \param[in]  basis   The QM basis set
+         * \param[out] mylot   The level of theory found
+         * \param[in]  mpo     The observable type
+         * \param[in]  type    The observable subtype
+         */
+        ExperimentIterator getCalcPropType(const std::string &method,
+                                           const std::string &basis,
+                                           std::string       *mylot,
+                                           MolPropObservable  mpo,
+                                           const char        *type);
         /*! \brief
          * Sends this object over an MPI connection
          *

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,15 +43,15 @@
 
 #include <map>
 
+#include "gmxapi/context.h"
+#include "gmxapi/md.h"
+#include "gmxapi/status.h"
+#include "gmxapi/md/mdmodule.h"
+#include "gmxapi/session/resources.h"
+
 #include "gromacs/mdrun/logging.h"
 #include "gromacs/mdrun/runner.h"
 #include "gromacs/mdrun/simulationcontext.h"
-
-#include "gmxapi/context.h"
-#include "gmxapi/md.h"
-#include "gmxapi/md/mdmodule.h"
-#include "gmxapi/session/resources.h"
-#include "gmxapi/status.h"
 
 namespace gmxapi
 {

@@ -29,9 +29,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include <map>
-
 #include <math.h>
+
+#include <map>
 
 #include <gtest/gtest.h>
 
@@ -63,7 +63,7 @@ namespace
 
 enum informat{
     einfLOG = 0,
-    einfPDB = 1, 
+    einfPDB = 1,
     einfNR
 };
 
@@ -88,43 +88,41 @@ class AcmTest : public gmx::test::CommandLineTestBase
         }
 
         void testAcm(ChargeModel model, informat inputformat)
-        {                       
-            int        maxpot    = 100; 
-            int        nsymm     = 0;
-            const char *lot      = nullptr;
-            const char *dihopt[] = { nullptr, "No", "Single", "All", nullptr };            
-            const char *molnm    = (char *)"1-butanol";
-            const char *iupac    = (char *)"1-butanol";
-            const char *conf     = (char *)"minimum";
-            const char *basis    = (char *)"";
-            const char *jobtype  = (char *)"Opt";
-            
-            std::string           dataName;
+        {
+            int                   maxpot    = 100;
+            int                   nsymm     = 0;
+            const char           *dihopt[]  = { nullptr, "No", "Single", "All", nullptr };
+            const char           *molnm     = (char *)"1-butanol";
+            const char           *iupac     = (char *)"1-butanol";
+            const char           *conf      = (char *)"minimum";
+            const char           *jobtype   = (char *)"Opt";
+
+            std::string           dataName, method, basis;
             alexandria::MolProp   molprop;
             std::vector<MolProp>  vmp;
 
             if (inputformat == einfLOG)
             {
-                lot      = "B3LYP/Gen";
+                method.assign("B3LYP");
+                basis.assign("GEN");
                 dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             }
             else
             {
-                lot      = "AFF/ACM";
                 dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol.pdb");
             }
-            
-            readBabel(dataName.c_str(), 
-                      &molprop, 
-                      molnm, 
-                      iupac, 
-                      conf, 
-                      basis,
-                      maxpot, 
-                      nsymm, 
+
+            readBabel(dataName.c_str(),
+                      &molprop,
+                      molnm,
+                      iupac,
+                      conf,
+                      basis.c_str(),
+                      maxpot,
+                      nsymm,
                       jobtype,
                       0.0);
-            
+
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
             fprintf(stderr, "Read babel for %s\n", dataName.c_str());
@@ -137,15 +135,15 @@ class AcmTest : public gmx::test::CommandLineTestBase
 
             // Get poldata
             auto pd  = getPoldata(model);
-            auto imm = mp_.GenerateTopology(aps_, pd, lot, false, false, 
-                                            edih, false, nullptr);
+            auto imm = mp_.GenerateTopology(aps_, pd, method, basis, nullptr,
+                                            false, false, edih, false, nullptr);
             if (immOK != imm)
             {
                 fprintf(stderr, "Error generating topology: %s\n", immsg(imm));
                 return;
             }
             fprintf(stderr, "Generated topology for %s\n", dataName.c_str());
-            
+
             // Needed for GenerateCharges
             real           hfac                  = 0;
             real           watoms                = 0;
@@ -158,12 +156,12 @@ class AcmTest : public gmx::test::CommandLineTestBase
             real           qtol                  = 1e-3;
 
             mp_.GenerateCharges(pd, mdlog, aps_,
-                                watoms, hfac, lot,
+                                watoms, hfac, method, basis, nullptr,
                                 true, symm_string, cr,
                                 nullptr, hwinfo, qcycle,
                                 maxpot, qtol, nullptr, nullptr);
             fprintf(stderr, "Generated charges for %s\n", dataName.c_str());
-            
+
             std::vector<double> qtotValues;
             for (int atom = 0; atom < mp_.atoms_->nr; atom++)
             {

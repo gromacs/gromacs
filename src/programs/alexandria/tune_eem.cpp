@@ -59,6 +59,7 @@
 #include "gentop_core.h"
 #include "gmx_simple_comm.h"
 #include "molgen.h"
+#include "molprop_util.h"
 #include "mymol_low.h"
 #include "optparam.h"
 #include "poldata.h"
@@ -106,15 +107,15 @@ class OptACM : public MolGen, Bayes
         bool fullTensor() const { return bFullTensor_; }
 
         bool fitZeta() const { return bFitZeta_; }
-       
+
         bool sameZeta() const { return bSameZeta_; }
-        
+
         bool fitChi() const { return bFitChi_; }
 
         bool useCM5() const {return bUseCM5_; }
 
         bool penalize() const {return penalty_ > 0; }
-        
+
         void add_pargs(std::vector<t_pargs> *pargs)
         {
             t_pargs pa[] =
@@ -141,7 +142,7 @@ class OptACM : public MolGen, Bayes
             addOptions(pargs, etuneEEM);
             Bayes::add_pargs(pargs);
         }
-        
+
         void optionsFinished()
         {
             MolGen::optionsFinished();
@@ -157,11 +158,11 @@ class OptACM : public MolGen, Bayes
                 return (0.5 * gmx::square(x-min));
             }
             else if (x > max)
-            { 
+            {
                 return (0.5 * gmx::square(x-max));
             }
             else
-            { 
+            {
                 return 0;
             }
         }
@@ -206,6 +207,8 @@ class OptACM : public MolGen, Bayes
 
 void OptACM::initChargeGeneration()
 {
+    std::string method, basis;
+    splitLot(lot(), &method, &basis);
     for (auto &mymol : mymols())
     {
         if (mymol.eSupp_ != eSupportNo)
@@ -213,12 +216,12 @@ void OptACM::initChargeGeneration()
             // If using ESP for fitting we need to be able to compute the
             // electrostatic potential, however we always want to report it
             // so have to initialize the data anyway.
-            mymol.initQgresp(poldata(), 
-                             lot(),
-                             watoms(), 
+            mymol.initQgresp(poldata(),
+                             method, basis, nullptr,
+                             watoms(),
                              maxPot());
             // ACM is needed always as well in this program
-            mymol.Qgacm_.setInfo(poldata(), 
+            mymol.Qgacm_.setInfo(poldata(),
                                  mymol.atoms_,
                                  hfac(),
                                  mymol.molProp()->getCharge());
@@ -232,7 +235,7 @@ static void dumpQ(FILE *fp, const std::string &molname,
     if (fp)
     {
         fprintf(fp, "%s q:", molname.c_str());
-        for(int i = 0; i < atoms->nr; i++)
+        for (int i = 0; i < atoms->nr; i++)
         {
             fprintf(fp, " %.3f", atoms->atom[i].q);
         }
@@ -257,7 +260,7 @@ double OptACM::calcDeviation()
             if (!ai->isConst())
             {
                 auto name = ai->name();
-                
+
                 if (bFitChi_)
                 {
                     auto J00  = param[n++];
@@ -327,9 +330,9 @@ double OptACM::calcDeviation()
                 // shell optimization.
                 for (int i = 0; i < mymol.mtop_->natoms; i++)
                 {
-                    mymol.mtop_->moltype[0].atoms.atom[i].q =
+                    mymol.mtop_->moltype[0].atoms.atom[i].q      =
                         mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                        mymol.atoms_->atom[i].q;
+                            mymol.atoms_->atom[i].q;
                 }
 
                 if (nullptr != mymol.shellfc_)
@@ -368,7 +371,7 @@ double OptACM::calcDeviation()
             {
                 mymol.mtop_->moltype[0].atoms.atom[i].q      =
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                    mymol.atoms_->atom[i].q;
+                        mymol.atoms_->atom[i].q;
             }
             if (debug)
             {
@@ -379,7 +382,7 @@ double OptACM::calcDeviation()
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
                 double ChargeResidual  = 0;
                 bool   isPolarizable   = (nullptr != mymol.shellfc_);
-                double qtot = 0;
+                double qtot            = 0;
                 int    i, j;
                 for (j = i = 0; j < mymol.atoms_->nr; j++)
                 {
@@ -434,14 +437,14 @@ double OptACM::calcDeviation()
                 }
                 mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
                 mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
-                auto myRms = 
-                    convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle), 
+                auto myRms =
+                    convert2gmx(mymol.Qgresp_.getRms(&wtot, &rrms, &cosangle),
                                 eg2cHartree_e);
                 increaseEnergy(ermsESP, gmx::square(myRms));
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                            mymol.molProp()->getMolname().c_str(), 
+                            mymol.molProp()->getMolname().c_str(),
                             myRms, cosangle);
                 }
             }
@@ -494,16 +497,16 @@ void OptACM::polData2TuneACM(real factor)
         if (!ai->isConst())
         {
             auto ei   = poldata()->ztype2Eem(ai->name());
-            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(), 
-                               gmx::formatString("Cannot find eemprops for %s", 
-                               ai->name().c_str()).c_str());
+            GMX_RELEASE_ASSERT(ei != poldata()->EndEemprops(),
+                               gmx::formatString("Cannot find eemprops for %s",
+                                                 ai->name().c_str()).c_str());
             ai->setEemProps(ei);
             if (bFitChi_)
             {
                 auto J00  = ei->getJ0();
                 Bayes::addParam(J00, factor);
                 Bayes::addParamName(gmx::formatString("%s-Eta", ai->name().c_str()));
-                
+
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     auto Chi0 = ei->getChi0();
@@ -550,7 +553,7 @@ void OptACM::polData2TuneACM(real factor)
         Bayes::addParam(hfac(), factor);
         Bayes::addParamName(gmx::formatString("hfac"));
     }
-    
+
 }
 
 void OptACM::toPolData(const std::vector<bool> &changed)
@@ -586,9 +589,9 @@ void OptACM::toPolData(const std::vector<bool> &changed)
                 std::string zstr, z_sig;
                 std::string qstr   = ei->getQstr();
                 std::string rowstr = ei->getRowstr();
-                auto   nZeta  = ei->getNzeta();
-                double zeta   = 0;
-                double sigma  = 0;
+                auto        nZeta  = ei->getNzeta();
+                double      zeta   = 0;
+                double      sigma  = 0;
                 if (distributed)
                 {
                     if (bSameZeta_ && nZeta == 2)
@@ -665,7 +668,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
             penalty += penalty_;
         }
     }
-    
+
     if (ai->name() == "z_c3" && (ai_chi < 5 or ai_chi > 8))
     {
         penalty += (ai_atn * penalty_);
@@ -673,7 +676,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 
     if (ai->name() == "z_h1" && ai_chi > 2.5)
     {
-       penalty += (6 * penalty_);
+        penalty += (6 * penalty_);
     }
 
     auto *ic = indexCount();
@@ -687,7 +690,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 
             if (ai_atn != aj_atn)
             {
-                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0                
+                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
                 auto aj_chi = ej->getChi0();
                 auto aj_J0  = ej->getJ0();
                 if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
@@ -711,7 +714,7 @@ bool OptACM::optRun(FILE                   *fp,
     bool bMinimum = false;
 
     auto func = [&] (const double v[]) {
-                    return Bayes::objFunction(v);
+            return Bayes::objFunction(v);
         };
 
     if (MASTER(commrec()))
@@ -727,8 +730,8 @@ bool OptACM::optRun(FILE                   *fp,
         double chi2;
         Bayes::setFunc(func, &chi2);
         Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
-        param_type param = Bayes::getParam();
-        double chi2_min  = Bayes::objFunction(param.data());
+        param_type param     = Bayes::getParam();
+        double     chi2_min  = Bayes::objFunction(param.data());
         chi2             = chi2_min;
 
         for (auto n = 0; n < nrun; n++)
@@ -848,25 +851,25 @@ int alex_tune_eem(int argc, char *argv[])
         { efTEX, "-latex",     "eemprop",       ffWRITE }
     };
 
-    const int NFILE         = asize(fnm);
+    const int                   NFILE         = asize(fnm);
 
-    int       nrun          = 1;
-    int       reinit        = 0;
-    real      th_toler      = 170;
-    real      ph_toler      = 5;
-    real      dip_toler     = 0.5;
-    real      quad_toler    = 5;
-    real      alpha_toler   = 3;
-    real      isopol_toler  = 2;
-    real      factor        = 0.8;
-    real      efield        = 10;
-    char     *opt_elem      = nullptr;
-    bool      bRandom       = false;
-    bool      bcompress     = false;
-    bool      bPrintTable   = false;
-    bool      bZero         = true;
-    bool      bOptimize     = true;
-    bool      bForceOutput  = true;
+    int                         nrun          = 1;
+    int                         reinit        = 0;
+    real                        th_toler      = 170;
+    real                        ph_toler      = 5;
+    real                        dip_toler     = 0.5;
+    real                        quad_toler    = 5;
+    real                        alpha_toler   = 3;
+    real                        isopol_toler  = 2;
+    real                        factor        = 0.8;
+    real                        efield        = 10;
+    char                       *opt_elem      = nullptr;
+    bool                        bRandom       = false;
+    bool                        bcompress     = false;
+    bool                        bPrintTable   = false;
+    bool                        bZero         = true;
+    bool                        bOptimize     = true;
+    bool                        bForceOutput  = true;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -903,7 +906,7 @@ int alex_tune_eem(int argc, char *argv[])
           "Do parameter optimization when true, or a single calculation otherwise." },
         { "-force_output", FALSE, etBOOL, {&bForceOutput},
           "Write output even if no new minimum is found" }
-          
+
     };
 
     FILE                       *fp;
@@ -969,22 +972,22 @@ int alex_tune_eem(int argc, char *argv[])
         {
             opt.InitOpt(factor);
         }
-        
+
         bMinimum = opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
                               fp,
                               nrun,
                               oenv,
                               opt2fn("-conv", NFILE, fnm),
-                              opt2fn("-epot", NFILE, fnm));                   
+                              opt2fn("-epot", NFILE, fnm));
     }
 
     if (MASTER(opt.commrec()))
     {
         if (bMinimum || bForceOutput)
         {
-            auto iModel = opt.poldata()->getChargeModel();
-            bool bPolar = getEemtypePolarizable(iModel);
-            
+            auto  iModel = opt.poldata()->getChargeModel();
+            bool  bPolar = getEemtypePolarizable(iModel);
+
             auto *ic = opt.indexCount();
             print_electric_props(fp,
                                  opt.mymols(),
@@ -998,7 +1001,7 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.hwinfo(),
                                  opt.qcycle(),
                                  opt.maxPot(),
-                                 opt.qtol(),                          
+                                 opt.qtol(),
                                  opt2fn("-qhisto",    NFILE, fnm),
                                  opt2fn("-dipcorr",   NFILE, fnm),
                                  opt2fn("-mucorr",    NFILE, fnm),

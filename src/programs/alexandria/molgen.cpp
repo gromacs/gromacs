@@ -129,19 +129,19 @@ static void make_index_count(IndexCount                *ic,
         std::vector<std::string> opt_elems = gmx::splitString(opt_elem);
         for (auto eep = pd.BeginEemprops(); eep != pd.EndEemprops(); ++eep)
         {
-            auto bConst = true;
+            auto bConst   = true;
             auto name     = eep->getName();
             auto opt_elem = std::find_if(opt_elems.begin(), opt_elems.end(),
                                          [name](const std::string a)
                                          {
                                              return a == name;
                                          });
-            
+
             if (opt_elems.end() != opt_elem)
             {
                 bConst = false;
             }
-            
+
             ic->addName(eep->getName(), bConst);
         }
     }
@@ -338,7 +338,7 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
         { "-qm",     FALSE, etBOOL, {&bQM_},
           "[HIDDEN]Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" }
     };
-    t_pargs pa_zeta[] = 
+    t_pargs pa_zeta[] =
     {
         { "-watoms", FALSE, etREAL, {&watoms_},
           "Weight for the atoms when fitting the charges to the electrostatic potential. The potential on atoms is usually two orders of magnitude larger than on other points (and negative). For point charges or single smeared charges use zero. For point+smeared charges 1 is recommended." },
@@ -544,7 +544,7 @@ void MolGen::Read(FILE            *fp,
     }
     if (bCheckSupport && MASTER(cr_))
     {
-        /* Make a index of eemprop types to be either optimized or 
+        /* Make a index of eemprop types to be either optimized or
          * being kept constant.
          * TODO: This should probably only be done for tune_eem
          */
@@ -554,9 +554,11 @@ void MolGen::Read(FILE            *fp,
                          bFitZeta);
     }
     /* Generate topology for Molecules and distribute them among the nodes */
-    int ntopol    = 0;
+    std::string      method, basis;
+    splitLot(lot_, &method, &basis);
+    int              ntopol    = 0;
     std::vector<int> nmolpar;
-    int nlocaltop = 0;
+    int              nlocaltop = 0;
     if (MASTER(cr_))
     {
         for (auto mpi = mp.begin(); mpi < mp.end(); ++mpi)
@@ -573,7 +575,9 @@ void MolGen::Read(FILE            *fp,
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
                                              &pd_,
-                                             lot_,
+                                             method,
+                                             basis,
+                                             nullptr,
                                              bGenVsite_,
                                              bPairs,
                                              bDihedral,
@@ -590,7 +594,9 @@ void MolGen::Read(FILE            *fp,
                                                 atomprop_,
                                                 watoms_,
                                                 hfac_,
-                                                lot_,
+                                                method,
+                                                basis,
+                                                nullptr,
                                                 qsymm_,
                                                 nullptr,
                                                 cr_,
@@ -610,7 +616,7 @@ void MolGen::Read(FILE            *fp,
                 if (immOK == imm)
                 {
                     imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
-                                            lot_, &pd_);
+                                            method, basis, &pd_);
                 }
                 if (immOK == imm)
                 {
@@ -645,7 +651,7 @@ void MolGen::Read(FILE            *fp,
                     else
                     {
                         mymol.eSupp_ = eSupportLocal;
-                        nlocaltop += 1;
+                        nlocaltop   += 1;
                     }
                     if (immOK == imm)
                     {
@@ -674,11 +680,11 @@ void MolGen::Read(FILE            *fp,
             gmx_send_int(cr_, i, 0);
         }
         nmolpar.push_back(nlocaltop);
-        for(int i = 1; i < cr_->nnodes; i++)
+        for (int i = 1; i < cr_->nnodes; i++)
         {
             nmolpar.push_back(gmx_recv_int(cr_, i));
         }
-        for(int i = 0; i < cr_->nnodes; i++)
+        for (int i = 0; i < cr_->nnodes; i++)
         {
             fprintf(fp, "Node %d has %d compounds\n", i, nmolpar[i]);
         }
@@ -710,7 +716,9 @@ void MolGen::Read(FILE            *fp,
             mymol.setInputrec(inputrec_);
             imm = mymol.GenerateTopology(atomprop_,
                                          &pd_,
-                                         lot_,
+                                         method,
+                                         basis,
+                                         nullptr,
                                          bGenVsite_,
                                          bPairs,
                                          bDihedral,
@@ -724,7 +732,9 @@ void MolGen::Read(FILE            *fp,
                                             atomprop_,
                                             watoms_,
                                             hfac_,
-                                            lot_,
+                                            method,
+                                            basis,
+                                            nullptr,
                                             qsymm_,
                                             nullptr,
                                             cr_,
@@ -744,7 +754,7 @@ void MolGen::Read(FILE            *fp,
             if (immOK == imm)
             {
                 imm = mymol.getExpProps(bQM_, bZero, bZPE, bDHform,
-                                        lot_, &pd_);
+                                        method, basis, &pd_);
             }
             mymol.eSupp_ = eSupportLocal;
             imm_count[imm]++;

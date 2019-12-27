@@ -1,11 +1,11 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
- *             Paul J. van Maaren, 
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
- 
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
@@ -180,11 +180,11 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     b->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s bond-%s-%s-%d %g\n", 
+        fprintf(fplog, "%s bond-%s-%s-%d %g\n",
                 molname,
-                a1.c_str(), 
-                a2.c_str(), 
-                order, 
+                a1.c_str(),
+                a2.c_str(),
+                order,
                 blen);
     }
 }
@@ -249,7 +249,7 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 
 static void lo_add_dih(FILE *fplog, const char *molname,
                        std::vector<t_dih> &dih,
-                       const std::string a1, const std::string a2, 
+                       const std::string a1, const std::string a2,
                        const std::string a3, const std::string a4,
                        double angle, double spacing, InteractionType iType)
 
@@ -258,7 +258,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
     GMX_RELEASE_ASSERT(a3.size() > 0, "atom name a3 is empty");
     GMX_RELEASE_ASSERT(a4.size() > 0, "atom name a3 is empty");
-    
+
     if (angle < 0)
     {
         angle += 360;
@@ -322,7 +322,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
 }
 
 static void add_dih(FILE *fplog, const char *molname, t_bonds *b,
-                    const std::string a1, const std::string a2, 
+                    const std::string a1, const std::string a2,
                     const std::string a3, const std::string a4,
                     double angle, double spacing, InteractionType iType)
 {
@@ -430,15 +430,15 @@ static void round_numbers(real *av, real *sig)
     *sig = ((int)(*sig*100+50))/100.0;
 }
 
-static void update_pd(FILE          *fp,      
-                      const t_bonds *b,        
+static void update_pd(FILE          *fp,
+                      const t_bonds *b,
                       Poldata       *pd,
-                      real           Dm,       
+                      real           Dm,
                       real           beta,
-                      real           kt, 
+                      real           kt,
                       real           klin,
                       real           kp,
-                      real           kimp, 
+                      real           kimp,
                       real           kub,
                       real           bond_tol,
                       real           angle_tol)
@@ -482,11 +482,11 @@ static void update_pd(FILE          *fp,
         round_numbers(&av, &sig);
         atoms = {i.a1, i.a2, i.a3};
         if (angle->fType() == F_ANGLES)
-        {   
+        {
             sprintf(pbuf, "%g", kt);
         }
         else
-        {   
+        {
             sprintf(pbuf, "%g  %g", kt, kub);
         }
         angle->addForce(atoms, pbuf, false, av, sig, N);
@@ -517,27 +517,27 @@ static void update_pd(FILE          *fp,
         bool support = true;
         switch (proper_dihedral->fType())
         {
-        case F_FOURDIHS:
+            case F_FOURDIHS:
             {
                 sprintf(pbuf, "%g -1 1 0", kp);
             }
             break;
-        case F_PDIHS:
+            case F_PDIHS:
             {
                 sprintf(pbuf, "%g 3", kp);
             }
             break;
-        default:
-            fprintf(fp, "Unsupported dihedral type %s\n",
-                    interaction_function[proper_dihedral->fType()].name);
-            support = false;
+            default:
+                fprintf(fp, "Unsupported dihedral type %s\n",
+                        interaction_function[proper_dihedral->fType()].name);
+                support = false;
         }
         if (support)
         {
             round_numbers(&av, &sig);
             atoms = {i.a1, i.a2, i.a3, i.a4};
             proper_dihedral->addForce(atoms, pbuf, false, av, sig, N);
-            
+
             fprintf(fp, "dihedral-%s-%s-%s-%s angle %g sigma %g (deg)\n",
                     i.a1.c_str(), i.a2.c_str(), i.a3.c_str(), i.a4.c_str(), av, sig);
         }
@@ -574,7 +574,7 @@ int alex_bastat(int argc, char *argv[])
     };
 
     const int                        NFILE       = asize(fnm);
-    
+
     static int                       compress    = 0;
     static int                       maxwarn     = 0;
     static real                      Dm          = 0;
@@ -612,7 +612,7 @@ int alex_bastat(int argc, char *argv[])
         { "-bond_tol",   FALSE, etREAL, {&bond_tol},
           "Tolerance for bond length" },
         { "-angle_tol",   FALSE, etREAL, {&angle_tol},
-          "Tolerance for harmonic and linear angles" },  
+          "Tolerance for harmonic and linear angles" },
         { "-dih",   FALSE, etBOOL, {&bDih},
           "Generate proper dihedral terms" },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -624,7 +624,7 @@ int alex_bastat(int argc, char *argv[])
     };
 
     FILE                            *fp;
-    ChargeModel          iModel;
+    ChargeModel                      iModel;
     time_t                           my_t;
     t_bonds                         *bonds = new(t_bonds);
     rvec                             dx, dx2, r_ij, r_kj, r_kl, mm, nn;
@@ -640,20 +640,21 @@ int alex_bastat(int argc, char *argv[])
     MolSelect                        gms;
     std::vector<alexandria::MolProp> mp;
     std::string                      cai, caj, cak, cal;
-    
-    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, 
-                           asize(pa), pa, asize(desc), desc, 
+    std::string                      method, basis;
+    splitLot(lot, &method, &basis);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc,
                            0, nullptr, &oenv))
     {
         return 0;
     }
-    
+
     fp                 = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-    
+
     time(&my_t);
     fprintf(fp, "# This file was created %s", ctime(&my_t));
     fprintf(fp, "# The Alexandria Chemistry Toolkit.\n#\n");
-    
+
     gms.read(opt2fn("-sel", NFILE, fnm));
     printf("There are %d molecules.\n", (gms.count(imsTrain) + gms.count(imsTest)));
     fprintf(fp, "# There are %d molecules.\n#\n", (gms.count(imsTrain) + gms.count(imsTest)));
@@ -674,7 +675,7 @@ int alex_bastat(int argc, char *argv[])
 
     /* Read Molprops */
     auto nwarn = merge_xml(opt2fns("-f", NFILE, fnm), &mp, nullptr, nullptr, nullptr, aps, pd, true);
-    
+
     if (nwarn > maxwarn)
     {
         printf("Too many warnings (%d). Terminating.\n", nwarn);
@@ -693,16 +694,18 @@ int alex_bastat(int argc, char *argv[])
                 printf("Empty molname for molecule with formula %s\n",
                        mmi.molProp()->formula().c_str());
                 continue;
-            }      
-                  
-            auto imm = mmi.GenerateTopology(aps, 
-                                            &pd, 
-                                            lot, 
-                                            false, 
-                                            false, 
-                                            bDih, 
-                                            true, 
-                                            nullptr);
+            }
+            std::string mylot;
+            auto        imm = mmi.GenerateTopology(aps,
+                                                   &pd,
+                                                   method,
+                                                   basis,
+                                                   &mylot,
+                                                   false,
+                                                   false,
+                                                   bDih,
+                                                   true,
+                                                   nullptr);
             if (immOK != imm)
             {
                 if (nullptr != debug)
@@ -713,9 +716,9 @@ int alex_bastat(int argc, char *argv[])
                 }
                 continue;
             }
-            
+
 #define ATP(ii) (*mmi.atoms_->atomtype[ii])
-            
+
             for (i = 0; i < mmi.atoms_->nr; i++)
             {
                 std::string btpi;
@@ -803,7 +806,7 @@ int alex_bastat(int argc, char *argv[])
                             pd.atypeToBtype(*mmi.atoms_->atomtype[ak], cak))
                         {
                             add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds,
-                                      cai, caj, cak, refValue, aspacing, 
+                                      cai, caj, cak, refValue, aspacing,
                                       (linear) ? eitLINEAR_ANGLES : eitANGLES);
 
                             if (nullptr != debug)
@@ -865,7 +868,7 @@ int alex_bastat(int argc, char *argv[])
         dump_histo(bonds, bspacing, aspacing, oenv);
     }
     update_pd(fp, bonds, &pd,
-              Dm, beta, kt, klin, kp, kimp, kub, 
+              Dm, beta, kt, klin, kp, kimp, kub,
               bond_tol, angle_tol);
     pd.setChargeModel(iModel);
     writePoldata(opt2fn("-o", NFILE, fnm), &pd, compress);
