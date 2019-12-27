@@ -21,6 +21,12 @@ Free-energy soft-core power 48
 """"""""""""""""""""""""""""""
 :issue:`3253` Free-energy soft-core power 48 is almost never used and is therefore deprecated.
 
+Support for Armv7
+"""""""""""""""""
+:issue:`2990` There are several issues with current code for the architecture, and we don't
+have the resources for support and fix issues related to it. As the architecture has no
+large HPC impact it is thus deprecated.
+
 Functionality deprecated in |Gromacs| 2019
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
