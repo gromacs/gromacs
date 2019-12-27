@@ -227,7 +227,7 @@ void low_rmsd_dist(const char* fn, real maxrms, int nn, real** mat, const gmx_ou
         }
     }
 
-    fp = xvgropen(fn, "RMS Distribution", "RMS (nm)", "a.u.", oenv);
+    fp = xvgropen(fn, "RMS Distribution", "RMS (nm)", "counts", oenv);
     for (i = 0; (i < 101); i++)
     {
         fprintf(fp, "%10g  %10d\n", i / fac, histo[i]);
