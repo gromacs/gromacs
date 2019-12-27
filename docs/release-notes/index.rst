@@ -23,6 +23,14 @@ can be found at https://redmine.gromacs.org at that issue number.
 |Gromacs| 2020 series
 ---------------------
 
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2020/2020.1
+
 Major release
 ^^^^^^^^^^^^^
 
