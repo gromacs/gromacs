@@ -49,10 +49,8 @@
 # directory with some artifacts.
 
 import os
-import sys
 
 from skbuild import setup
-import cmake
 
 usage = """
 The `gmxapi` package requires an existing GROMACS installation, version 2020 or higher.
@@ -142,32 +140,19 @@ if gmxapi_DIR != os.path.commonpath([gmxapi_DIR, gmx_toolchain]):
         gmxapi_DIR
     ))
 
-cmake_platform_hints = ['-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)]
-
-# TODO: Use package-specific hinting variable.
-# We want to be sure that we find a <package>-config.cmake associated with the
-# toolchains file, but we want to preempt most of the normal CMake
-# [search procedure](https://cmake.org/cmake/help/latest/command/find_package.html#id5),
-# which could lead to hard-to-diagnose build problems.
+cmake_platform_hints = '-DCMAKE_TOOLCHAIN_FILE={}'.format(gmx_toolchain)
 # Note that <package>_ROOT is not standard until CMake 3.12
 # Reference https://cmake.org/cmake/help/latest/policy/CMP0074.html#policy:CMP0074
-_cmake_major, _cmake_minor = cmake.__version__.split('.')[0:2]
-if int(_cmake_major) >= 3 and int(_cmake_minor) >= 12:
-    cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'
-else:
-    cmake_gmxapi_hint = '-DCMAKE_PREFIX_PATH={}'
-cmake_gmxapi_hint = cmake_gmxapi_hint.format(gmxapi_DIR)
-
-cmake_args = list(cmake_platform_hints)
-cmake_args.append(cmake_gmxapi_hint)
+cmake_gmxapi_hint = '-Dgmxapi_ROOT={}'.format(gmxapi_DIR)
+cmake_args = [cmake_platform_hints, cmake_gmxapi_hint]
 
 setup(
     name='gmxapi',
 
     # TODO: (pending infrastructure and further discussion) Replace with CMake variables from GMXAPI version.
-    version='0.1.0',
+    version='0.1.0.1',
     python_requires='>=3.5, <3.9',
-    setup_requires=['cmake>=3.9.6',
+    setup_requires=['cmake>=3.12',
                     'setuptools>=28',
                     'scikit-build>=0.7'],
 

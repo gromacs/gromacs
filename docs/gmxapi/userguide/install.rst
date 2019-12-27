@@ -66,7 +66,7 @@ Set up a Python virtual environment
     . $HOME/myvenv/bin/activate
     python -m ensurepip --default-pip
     pip install --upgrade pip setuptools
-    pip install --upgrade scikit-build
+    pip install --upgrade cmake scikit-build
 
 .. seealso:: :ref:`gmxapi venv`
 
