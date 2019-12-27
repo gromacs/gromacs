@@ -232,7 +232,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
- * \param[in]  forceGpuUpdateDefaultWithDD  If update should run on GPU with DD by default.
+ * \param[in]  forceGpuUpdateDefault        If update should run on GPU by default.
  * \param[in]  isDomainDecomposition        Whether there more than one domain.
  * \param[in]  useUpdateGroups              If the constraints can be split across domains.
  * \param[in]  useGpuForPme                 Whether GPUs will be used for PME interactions.
@@ -250,7 +250,7 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefaultWithDD,
+bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefault,
                                     bool              isDomainDecomposition,
                                     bool              useUpdateGroups,
                                     bool              useGpuForPme,

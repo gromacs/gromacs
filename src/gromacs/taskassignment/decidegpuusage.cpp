@@ -489,7 +489,7 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithDD,
+bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
                                     const bool        isDomainDecomposition,
                                     const bool        useUpdateGroups,
                                     const bool        useGpuForPme,
@@ -504,7 +504,8 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithD
                                     const bool        doRerun)
 {
 
-    if (updateTarget == TaskTarget::Cpu)
+    // '-update cpu' overrides the environment variable, '-update auto' does not
+    if (updateTarget == TaskTarget::Cpu || (updateTarget == TaskTarget::Auto && !forceGpuUpdateDefault))
     {
         return false;
     }
@@ -515,7 +516,7 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithD
 
     if (isDomainDecomposition)
     {
-        if (!forceGpuUpdateDefaultWithDD)
+        if (!forceGpuUpdateDefault)
         {
             errorMessage += "Domain decomposition is not supported.\n ";
         }
@@ -627,10 +628,12 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefaultWithD
 
     if (isDomainDecomposition)
     {
-        return forceGpuUpdateDefaultWithDD;
+        return forceGpuUpdateDefault;
     }
-
-    return true;
+    else
+    {
+        return (updateTarget == TaskTarget::Gpu || forceGpuUpdateDefault);
+    }
 }
 
 } // namespace gmx

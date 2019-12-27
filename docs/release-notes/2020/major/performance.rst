@@ -36,6 +36,8 @@ For standard simulations (see the user guide for more details),
 update and constraints can be offloaded to a GPU with CUDA. Thus all compute
 intensive parts of a simulation can be offloaded, which provides
 better performance when using a fast GPU combined with a slow CPU.
+By default, update will run on the CPU, to use GPU in single rank simulations,
+one can use new '-update gpu' command line option.
 For use with domain decomposition, please see below.
 
 GPU Direct Communications
