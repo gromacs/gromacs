@@ -528,11 +528,17 @@ behavior.
     Used to set where to execute update and constraints, when present.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which currently always uses the CPU.
-    Setting "gpu" requires that a compatible CUDA GPU is available.
+    Setting "gpu" requires that a compatible CUDA GPU is available,
+    the simulation is run as a single thread-MPI thread
+    and that the |Gromacs| binary is not compiled with real MPI.
     Update and constraints on a GPU is currently not supported
     with free-energy, domain decomposition, virtual sites,
     Ewald surface correction, replica exchange, the pull code,
     orientation restraints and computational electrophysiology.
+    It is possible to extend the ``-update`` functionality by
+    setting the ``GMX_FORCE_UPDATE_DEFAULT_GPU`` flag to change
+    the default path to use the GPU update if the simulation is
+    compatible.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
@@ -660,7 +666,7 @@ component of the forces are calculated on CPU(s).
 
 ::
 
-    gmx mdrun -ntmpi 1 -nb gpu -pme gpu -bonded gpu
+    gmx mdrun -ntmpi 1 -nb gpu -pme gpu -bonded gpu -update gpu
 
 Starts :ref:`mdrun <gmx mdrun>` using a single thread-MPI rank that
 will use all available CPU cores. All interaction types that can run
@@ -1012,7 +1018,9 @@ Types of GPU tasks
 ^^^^^^^^^^^^^^^^^^
 
 To better understand the later sections on different GPU use cases for
-calculation of :ref:`short range<gmx-gpu-pp>` and :ref:`PME <gmx-gpu-pme>`,
+calculation of :ref:`short range<gmx-gpu-pp>`, :ref:`PME<gmx-gpu-pme>`,
+:ref:`bonded interactions<gmx-gpu-bonded>` and
+:ref:`update and constraints <gmx-gpu-update>`
 we first introduce the concept of different GPU tasks. When thinking about
 running a simulation, several different kinds of interactions between the atoms
 have to be calculated (for more information please refer to the reference manual).
@@ -1097,6 +1105,8 @@ Known limitations
 
 - LJ PME is not supported on GPUs.
 
+.. _gmx-gpu-bonded:
+
 GPU accelerated calculation of bonded interactions (CUDA only)
 ..............................................................
 
@@ -1109,6 +1119,24 @@ a GPU. It is an advantage usually only when the CPU is relatively weak
 compared with the GPU, perhaps because its workload is too large for
 the available cores. This would likely be the case for free-energy
 calculations.
+
+.. _gmx-gpu-update:
+
+GPU accelerated calculation of constraints and coordinate update (CUDA only)
+............................................................................
+
+.. TODO again, extend this and add some actual useful information concerning performance etc...
+
+|Gromacs| makes it possible to also perform the coordinate update and (if requested)
+constraint calculation on a CUDA-compatible GPU. This allows to having all (compatible)
+parts of a simulation step on the GPU, so that no unnecessary transfers are needed between
+GPU and CPU. This currently only works with single domain cases, and needs to be explicitly
+requested by the user. It is possible to change the default behaviour by setting the
+``GMX_FORCE_UPDATE_DEFAULT_GPU`` environment variable to a non-zero value. In this
+case simulations will try to run all parts by default on the GPU, and will only fall
+back to the CPU based calculation if the simulation is not compatible.
+
+Using this pathway is usually advantageous if a strong GPU is used with a weak CPU.
 
 Assigning tasks to GPUs
 .......................
