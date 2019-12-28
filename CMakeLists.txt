@@ -690,8 +690,8 @@ endif()
 include(gmxManageSimd)
 gmx_manage_simd()
 
-include(gmxManageCycleCounters)
-gmx_manage_cycle_counters()
+set(GMX_CYCLECOUNTERS ON CACHE BOOL "Use CPU cycle counters timing")
+mark_as_advanced(GMX_CYCLECOUNTERS)
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")

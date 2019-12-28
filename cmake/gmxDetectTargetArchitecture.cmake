@@ -48,10 +48,6 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_MIC ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestMIC.cpp")
     endif()
-    if (NOT DEFINED GMX_TARGET_ARMV7)
-        try_compile(GMX_TARGET_ARMV7 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestARMv7.cpp")
-    endif()
     if (NOT DEFINED GMX_TARGET_FUJITSU_SPARC64)
         try_compile(GMX_TARGET_FUJITSU_SPARC64 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestFujitsuSparc64.cpp")
