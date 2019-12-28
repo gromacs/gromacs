@@ -1438,7 +1438,7 @@ void init_forcerec(FILE*                            fp,
 
         if (useGpuForBonded)
         {
-            auto stream = DOMAINDECOMP(cr)
+            auto stream = havePPDomainDecomposition(cr)
                                   ? Nbnxm::gpu_get_command_stream(
                                             fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal)
                                   : Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv,
