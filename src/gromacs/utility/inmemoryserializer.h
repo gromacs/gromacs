@@ -43,6 +43,8 @@
 #ifndef GMX_UTILITY_INMEMORYSERIALIZER_H
 #define GMX_UTILITY_INMEMORYSERIALIZER_H
 
+#include <cstddef>
+
 #include <vector>
 
 #include "gromacs/utility/arrayref.h"
@@ -52,12 +54,18 @@
 namespace gmx
 {
 
-//! Specify endian swapping behvaior
+//! Specify endian swapping behavoir.
+//
+// The host-dependent choices avoid the calling file having to
+// depend on config.h.
+//
 enum class EndianSwapBehavior : int
 {
-    DoSwap,    //!< Swap the bytes
-    DoNotSwap, //!< Do not swap the bytes
-    Count      //!< Number of possible behaviors
+    DoNotSwap,                //!< Don't touch anything
+    Swap,                     //!< User-enforced swapping
+    SwapIfHostIsBigEndian,    //!< Only swap if machine we execute on is big-endian
+    SwapIfHostIsLittleEndian, //!< Only swap if machine we execute on is little-endian
+    Count                     //!< Number of possible behaviors
 };
 
 class InMemorySerializer : public ISerializer
@@ -83,6 +91,7 @@ public:
     void doIvec(ivec* value) override;
     void doRvec(rvec* value) override;
     void doString(std::string* value) override;
+    void doOpaque(char* data, std::size_t size) override;
 
 private:
     class Impl;
@@ -116,6 +125,7 @@ public:
     void doIvec(ivec* value) override;
     void doRvec(rvec* value) override;
     void doString(std::string* value) override;
+    void doOpaque(char* data, std::size_t size) override;
 
 private:
     class Impl;

@@ -37,6 +37,8 @@
 #ifndef GMX_FILEIO_GMXFIO_XDR_H
 #define GMX_FILEIO_GMXFIO_XDR_H
 
+#include <cstddef>
+
 #include <string>
 
 #include "gromacs/fileio/xdrf.h"
@@ -75,6 +77,12 @@ gmx_bool gmx_fio_doe_ushort(struct t_fileio* fio,
 gmx_bool gmx_fio_doe_rvec(struct t_fileio* fio, rvec* item, const char* desc, const char* srcfile, int line);
 gmx_bool gmx_fio_doe_ivec(struct t_fileio* fio, ivec* item, const char* desc, const char* srcfile, int line);
 gmx_bool gmx_fio_doe_string(struct t_fileio* fio, char* item, const char* desc, const char* srcfile, int line);
+gmx_bool gmx_fio_doe_opaque(struct t_fileio* fio,
+                            char*            item,
+                            std::size_t      size,
+                            const char*      desc,
+                            const char*      srcfile,
+                            int              line);
 
 /* array reading & writing */
 gmx_bool gmx_fio_ndoe_real(struct t_fileio* fio, real* item, int n, const char* desc, const char* srcfile, int line);
@@ -125,6 +133,8 @@ gmx_bool gmx_fio_ndoe_string(struct t_fileio* fio, char* item[], int n, const ch
 #define gmx_fio_do_rvec(fio, item) gmx_fio_doe_rvec(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_ivec(fio, item) gmx_fio_doe_ivec(fio, &(item), (#item), __FILE__, __LINE__)
 #define gmx_fio_do_string(fio, item) gmx_fio_doe_string(fio, item, (#item), __FILE__, __LINE__)
+#define gmx_fio_do_opaque(fio, item, size) \
+    gmx_fio_doe_opaque(fio, item, size, (#item), __FILE__, __LINE__)
 
 
 #define gmx_fio_ndo_real(fio, item, n) gmx_fio_ndoe_real(fio, item, n, (#item), __FILE__, __LINE__)
@@ -188,6 +198,8 @@ public:
     void doRvec(rvec* value) override;
     //! Handle I/O if string.
     void doString(std::string* value) override;
+    //! Handle opaque data.
+    void doOpaque(char* data, std::size_t size) override;
     //! Special case for handling I/O of a vector of characters.
     void doCharArray(char* values, int elements) override;
     //! Special case for handling I/O of a vector of unsigned characters.

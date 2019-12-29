@@ -3123,7 +3123,7 @@ static TpxFileHeader populateTpxHeader(const t_state& state, const t_inputrec* i
 }
 
 /*! \brief
- * Process the body of a TPR file as char buffer.
+ * Process the body of a TPR file as an opaque data buffer.
  *
  * Reads/writes the information in \p buffer from/to the \p serializer
  * provided to the function. Does not interact with the actual
@@ -3137,7 +3137,7 @@ static TpxFileHeader populateTpxHeader(const t_state& state, const t_inputrec* i
  */
 static void doTpxBodyBuffer(gmx::ISerializer* serializer, gmx::ArrayRef<char> buffer)
 {
-    serializer->doCharArray(buffer.data(), buffer.size());
+    serializer->doOpaque(buffer.data(), buffer.size());
 }
 
 /*! \brief
@@ -3193,7 +3193,12 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
     // we prepare a new char buffer with the information we have already read
     // in on master.
     partialDeserializedTpr.header = populateTpxHeader(*state, ir, mtop);
-    gmx::InMemorySerializer tprBodySerializer;
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
+    gmx::InMemorySerializer tprBodySerializer(gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
     do_tpx_body(&tprBodySerializer, &partialDeserializedTpr.header, ir, mtop);
     partialDeserializedTpr.body = tprBodySerializer.finishAndGetBuffer();
 
@@ -3230,8 +3235,12 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
     t_fileio* fio;
 
     TpxFileHeader tpx = populateTpxHeader(*state, ir, mtop);
-
-    gmx::InMemorySerializer tprBodySerializer;
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
+    gmx::InMemorySerializer tprBodySerializer(gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
 
     do_tpx_body(&tprBodySerializer, &tpx, const_cast<t_inputrec*>(ir), const_cast<t_state*>(state),
                 nullptr, nullptr, const_cast<gmx_mtop_t*>(mtop));
@@ -3254,8 +3263,14 @@ int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTp
                                rvec*                       v,
                                gmx_mtop_t*                 mtop)
 {
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
     gmx::InMemoryDeserializer tprBodyDeserializer(partialDeserializedTpr->body,
-                                                  partialDeserializedTpr->header.isDouble);
+                                                  partialDeserializedTpr->header.isDouble,
+                                                  gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
     return do_tpx_body(&tprBodyDeserializer, &partialDeserializedTpr->header, ir, state, x, v, mtop);
 }
 

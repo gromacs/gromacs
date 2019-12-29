@@ -36,6 +36,8 @@
 
 #include "inmemoryserializer.h"
 
+#include "config.h"
+
 #include <algorithm>
 #include <vector>
 
@@ -88,6 +90,27 @@ T swapEndian(const T& value)
     return endianessSwappedValue.value_;
 }
 
+//! \brief Change the host-dependent endian settings to either Swap or DoNotSwap.
+//
+// \param endianSwapBehavior input swap behavior, might depend on host.
+//
+// \return Host-independent setting, either Swap or DoNotSwap.
+EndianSwapBehavior setEndianSwapBehaviorFromHost(EndianSwapBehavior endianSwapBehavior)
+{
+    if (endianSwapBehavior == EndianSwapBehavior::SwapIfHostIsBigEndian)
+    {
+        return GMX_INTEGER_BIG_ENDIAN ? EndianSwapBehavior::Swap : EndianSwapBehavior::DoNotSwap;
+    }
+    else if (endianSwapBehavior == EndianSwapBehavior::SwapIfHostIsLittleEndian)
+    {
+        return GMX_INTEGER_BIG_ENDIAN ? EndianSwapBehavior::DoNotSwap : EndianSwapBehavior::Swap;
+    }
+    else
+    {
+        return endianSwapBehavior;
+    }
+}
+
 } // namespace
 
 /********************************************************************
@@ -97,11 +120,15 @@ T swapEndian(const T& value)
 class InMemorySerializer::Impl
 {
 public:
-    Impl(EndianSwapBehavior endianSwapBehavior) : endianSwapBehavior_(endianSwapBehavior) {}
+    Impl(EndianSwapBehavior endianSwapBehavior) :
+        endianSwapBehavior_(setEndianSwapBehaviorFromHost(endianSwapBehavior))
+    {
+    }
+
     template<typename T>
     void doValue(T value)
     {
-        if (endianSwapBehavior_ == EndianSwapBehavior::DoSwap)
+        if (endianSwapBehavior_ == EndianSwapBehavior::Swap)
         {
             CharBuffer<T>(swapEndian(value)).appendTo(&buffer_);
         }
@@ -114,6 +141,10 @@ public:
     {
         doValue<uint64_t>(value.size());
         buffer_.insert(buffer_.end(), value.begin(), value.end());
+    }
+    void doOpaque(const char* data, std::size_t size)
+    {
+        buffer_.insert(buffer_.end(), data, data + size);
     }
 
     std::vector<char>  buffer_;
@@ -203,6 +234,11 @@ void InMemorySerializer::doString(std::string* value)
     impl_->doString(*value);
 }
 
+void InMemorySerializer::doOpaque(char* data, std::size_t size)
+{
+    impl_->doOpaque(data, size);
+}
+
 /********************************************************************
  * InMemoryDeserializer
  */
@@ -214,14 +250,14 @@ public:
         buffer_(buffer),
         sourceIsDouble_(sourceIsDouble),
         pos_(0),
-        endianSwapBehavior_(endianSwapBehavior)
+        endianSwapBehavior_(setEndianSwapBehaviorFromHost(endianSwapBehavior))
     {
     }
 
     template<typename T>
     void doValue(T* value)
     {
-        if (endianSwapBehavior_ == EndianSwapBehavior::DoSwap)
+        if (endianSwapBehavior_ == EndianSwapBehavior::Swap)
         {
             *value = swapEndian(CharBuffer<T>(&buffer_[pos_]).value());
         }
@@ -236,6 +272,11 @@ public:
         uint64_t size;
         doValue<uint64_t>(&size);
         *value = std::string(&buffer_[pos_], size);
+        pos_ += size;
+    }
+    void doOpaque(char* data, std::size_t size)
+    {
+        std::copy(&buffer_[pos_], &buffer_[pos_ + size], data);
         pos_ += size;
     }
 
@@ -339,6 +380,11 @@ void InMemoryDeserializer::doIvec(ivec* value)
 void InMemoryDeserializer::doString(std::string* value)
 {
     impl_->doString(value);
+}
+
+void InMemoryDeserializer::doOpaque(char* data, std::size_t size)
+{
+    impl_->doOpaque(data, size);
 }
 
 } // namespace gmx

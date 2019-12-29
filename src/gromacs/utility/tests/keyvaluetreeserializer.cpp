@@ -36,6 +36,8 @@
 
 #include "gromacs/utility/keyvaluetreeserializer.h"
 
+#include <cstddef>
+
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/inmemoryserializer.h"
@@ -73,6 +75,7 @@ public:
     void doFloat(float* value) override { checker_.checkFloat(*value, nullptr); }
     void doDouble(double* value) override { checker_.checkDouble(*value, nullptr); }
     void doString(std::string* value) override { checker_.checkString(*value, nullptr); }
+    void doOpaque(char* /* value */, std::size_t /* size */) override { raiseAssert(); }
     void doReal(real* /* value */) override { raiseAssert(); }
     void doIvec(ivec* /* value */) override { raiseAssert(); }
     void doRvec(rvec* /* value */) override { raiseAssert(); }

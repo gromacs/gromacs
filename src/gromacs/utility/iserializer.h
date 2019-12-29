@@ -46,6 +46,8 @@
 #ifndef GMX_UTILITY_ISERIALIZER_H
 #define GMX_UTILITY_ISERIALIZER_H
 
+#include <cstddef>
+
 #include <string>
 
 #include "gromacs/math/vectypes.h"
@@ -72,19 +74,20 @@ public:
     virtual bool reading() const = 0;
     //! \brief Serialize values of different types.
     ///@{
-    virtual void doBool(bool* value)             = 0;
-    virtual void doUChar(unsigned char* value)   = 0;
-    virtual void doChar(char* value)             = 0;
-    virtual void doUShort(unsigned short* value) = 0;
-    virtual void doInt(int* value)               = 0;
-    virtual void doInt32(int32_t* value)         = 0;
-    virtual void doInt64(int64_t* value)         = 0;
-    virtual void doFloat(float* value)           = 0;
-    virtual void doDouble(double* value)         = 0;
-    virtual void doReal(real* value)             = 0;
-    virtual void doIvec(ivec* value)             = 0;
-    virtual void doRvec(rvec* value)             = 0;
-    virtual void doString(std::string* value)    = 0;
+    virtual void doBool(bool* value)                    = 0;
+    virtual void doUChar(unsigned char* value)          = 0;
+    virtual void doChar(char* value)                    = 0;
+    virtual void doUShort(unsigned short* value)        = 0;
+    virtual void doInt(int* value)                      = 0;
+    virtual void doInt32(int32_t* value)                = 0;
+    virtual void doInt64(int64_t* value)                = 0;
+    virtual void doFloat(float* value)                  = 0;
+    virtual void doDouble(double* value)                = 0;
+    virtual void doReal(real* value)                    = 0;
+    virtual void doIvec(ivec* value)                    = 0;
+    virtual void doRvec(rvec* value)                    = 0;
+    virtual void doString(std::string* value)           = 0;
+    virtual void doOpaque(char* data, std::size_t size) = 0;
     ///@}
 
     //! \brief Serialize arrays of values of different types.

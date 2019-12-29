@@ -38,8 +38,11 @@
 
 #include "gmxfio_xdr.h"
 
+#include <cstddef>
 #include <cstdio>
 #include <cstring>
+
+#include <limits>
 
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xdrf.h"
@@ -67,12 +70,13 @@ enum
     eioNRVEC,
     eioIVEC,
     eioSTRING,
+    eioOPAQUE,
     eioNR
 };
 
-static const char* eioNames[eioNR] = { "REAL",   "FLOAT", "DOUBLE", "INT",   "INT32",
-                                       "INT64",  "UCHAR", "CHAR",   "NCHAR", "NUCHAR",
-                                       "USHORT", "RVEC",  "NRVEC",  "IVEC",  "STRING" };
+static const char* eioNames[eioNR] = { "REAL",  "FLOAT", "DOUBLE", "INT",    "INT32",  "INT64",
+                                       "UCHAR", "CHAR",  "NCHAR",  "NUCHAR", "USHORT", "RVEC",
+                                       "NRVEC", "IVEC",  "STRING", "OPAQUE" };
 
 void gmx_fio_setprecision(t_fileio* fio, gmx_bool bDouble)
 {
@@ -101,15 +105,16 @@ XDR* gmx_fio_getxdr(t_fileio* fio)
 }
 
 /* check the number of items given against the type */
-static void gmx_fio_check_nitem(int eio, int nitem, const char* file, int line)
+static void gmx_fio_check_nitem(int eio, std::size_t nitem, const char* file, int line)
 {
-    if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR) || (eio == eioNCHAR)))
+    if ((nitem != 1)
+        && !((eio == eioNRVEC) || (eio == eioNUCHAR) || (eio == eioNCHAR) || (eio == eioOPAQUE)))
     {
         gmx_fatal(FARGS,
-                  "nitem (%d) may differ from 1 only for %s, %s or %s, not   for %s"
+                  "nitem may differ from 1 only for %s, %s, %s or %s, not for %s"
                   "(%s, %d)",
-                  nitem, eioNames[eioNUCHAR], eioNames[eioNRVEC], eioNames[eioNCHAR], eioNames[eio],
-                  file, line);
+                  eioNames[eioNUCHAR], eioNames[eioNRVEC], eioNames[eioNCHAR], eioNames[eioOPAQUE],
+                  eioNames[eio], file, line);
     }
 }
 
@@ -122,14 +127,15 @@ static void gmx_fio_check_nitem(int eio, int nitem, const char* file, int line)
 
 /* This is the part that reads xdr files.  */
 
-static gmx_bool do_xdr(t_fileio* fio, void* item, int nitem, int eio, const char* desc, const char* srcfile, int line)
+static gmx_bool
+do_xdr(t_fileio* fio, void* item, std::size_t nitem, int eio, const char* desc, const char* srcfile, int line)
 {
     unsigned char  ucdum, *ucptr;
     char           cdum, *cptr;
     bool_t         res = 0;
     float          fvec[DIM];
     double         dvec[DIM];
-    int            j, m, *iptr, idum;
+    int            m, *iptr, idum;
     int32_t        s32dum;
     int64_t        s64dum;
     real*          ptr;
@@ -246,12 +252,17 @@ static gmx_bool do_xdr(t_fileio* fio, void* item, int nitem, int eio, const char
             break;
         case eioNCHAR:
             cptr = static_cast<char*>(item);
-            res  = xdr_vector(fio->xdr, cptr, nitem, static_cast<unsigned int>(sizeof(char)),
+            GMX_RELEASE_ASSERT(nitem < static_cast<std::size_t>(std::numeric_limits<int>::max()),
+                               "The XDR interface cannot handle array lengths > 2^31");
+            res = xdr_vector(fio->xdr, cptr, static_cast<int>(nitem),
+                             static_cast<unsigned int>(sizeof(char)),
                              reinterpret_cast<xdrproc_t>(xdr_char));
             break;
         case eioNUCHAR:
             ucptr = static_cast<unsigned char*>(item);
-            res   = xdr_vector(fio->xdr, reinterpret_cast<char*>(ucptr), nitem,
+            GMX_RELEASE_ASSERT(nitem < static_cast<std::size_t>(std::numeric_limits<int>::max()),
+                               "The XDR interface cannot handle array lengths > 2^31");
+            res = xdr_vector(fio->xdr, reinterpret_cast<char*>(ucptr), static_cast<int>(nitem),
                              static_cast<unsigned int>(sizeof(unsigned char)),
                              reinterpret_cast<xdrproc_t>(xdr_u_char));
             break;
@@ -311,7 +322,7 @@ static gmx_bool do_xdr(t_fileio* fio, void* item, int nitem, int eio, const char
         case eioNRVEC:
             ptr = nullptr;
             res = 1;
-            for (j = 0; (j < nitem) && res; j++)
+            for (std::size_t j = 0; j < nitem && res; j++)
             {
                 if (item)
                 {
@@ -383,6 +394,38 @@ static gmx_bool do_xdr(t_fileio* fio, void* item, int nitem, int eio, const char
             if (!item && fio->bRead)
             {
                 sfree(cptr);
+            }
+            break;
+        }
+        case eioOPAQUE:
+        {
+            if (item == nullptr && nitem > 0)
+            {
+                gmx_fatal(FARGS, "Null pointer provided for non-zero length XDR opaque data.");
+            }
+
+            if (nitem > 0)
+            {
+                // We need to support very large opaque data objects although the default
+                // XDR interface only uses integers for the size field, since gromacs-2020
+                // e.g. embeds the entire TPR body as a single such object, which would break all
+                // TPR files larger than 2GB unless we handle it as a special case.
+                // To avoid inserting extra padding, we calculate the chunk size as:
+                // - The max value of a signed integer + 1
+                // - Subtract 4 (the XDR object size) to get a size within the range of the signed int.
+                const std::size_t maxChunk =
+                        static_cast<std::size_t>(std::numeric_limits<int>::max()) + 1 - 4;
+
+                for (res = 1; res > 0 && nitem > 0;)
+                {
+                    std::size_t thisChunk = std::min(maxChunk, nitem);
+                    res = xdr_opaque(fio->xdr, reinterpret_cast<char*>(item), thisChunk);
+                    nitem -= thisChunk;
+                }
+            }
+            else
+            {
+                res = 1;
             }
             break;
         }
@@ -537,6 +580,14 @@ gmx_bool gmx_fio_doe_string(t_fileio* fio, char* item, const char* desc, const c
     return ret;
 }
 
+gmx_bool gmx_fio_doe_opaque(t_fileio* fio, char* data, std::size_t size, const char* desc, const char* srcfile, int line)
+{
+    gmx_bool ret;
+    gmx_fio_lock(fio);
+    ret = do_xdr(fio, data, size, eioOPAQUE, desc, srcfile, line);
+    gmx_fio_unlock(fio);
+    return ret;
+}
 
 /* Array reading & writing */
 
@@ -807,6 +858,11 @@ void FileIOXdrSerializer::doString(std::string* value)
     {
         *value = buf;
     }
+}
+
+void FileIOXdrSerializer::doOpaque(char* data, std::size_t size)
+{
+    gmx_fio_do_opaque(fio_, data, size);
 }
 
 } // namespace gmx
