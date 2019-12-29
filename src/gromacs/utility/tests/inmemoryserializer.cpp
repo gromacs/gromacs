@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -198,14 +198,14 @@ TEST_F(InMemorySerializerTest, Roundtrip)
 
 TEST_F(InMemorySerializerTest, RoundtripWithEndianessSwap)
 {
-    InMemorySerializer serializerWithSwap(EndianSwapBehavior::DoSwap);
+    InMemorySerializer serializerWithSwap(EndianSwapBehavior::Swap);
     SerializerValues   values = defaultValues_;
     serialize(&serializerWithSwap, &values);
 
     auto buffer = serializerWithSwap.finishAndGetBuffer();
 
     InMemoryDeserializer deserializerWithSwap(buffer, std::is_same<real, double>::value,
-                                              EndianSwapBehavior::DoSwap);
+                                              EndianSwapBehavior::Swap);
 
     SerializerValues deserialisedValues = deserialize(&deserializerWithSwap);
 
@@ -214,7 +214,7 @@ TEST_F(InMemorySerializerTest, RoundtripWithEndianessSwap)
 
 TEST_F(InMemorySerializerTest, SerializerExplicitEndianessSwap)
 {
-    InMemorySerializer serializerWithSwap(EndianSwapBehavior::DoSwap);
+    InMemorySerializer serializerWithSwap(EndianSwapBehavior::Swap);
     SerializerValues   values = defaultValues_;
     serialize(&serializerWithSwap, &values);
 
@@ -235,7 +235,7 @@ TEST_F(InMemorySerializerTest, DeserializerExplicitEndianessSwap)
     auto buffer = serializer.finishAndGetBuffer();
 
     InMemoryDeserializer deserializerWithSwap(buffer, std::is_same<real, double>::value,
-                                              EndianSwapBehavior::DoSwap);
+                                              EndianSwapBehavior::Swap);
 
     SerializerValues deserialisedValues = deserialize(&deserializerWithSwap);
     checkSerializerValuesforEquality(endianessSwappedValues_, deserialisedValues);
