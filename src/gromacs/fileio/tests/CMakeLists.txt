@@ -39,6 +39,7 @@ set(test_sources
     mrcdensitymap.cpp
     mrcdensitymapheader.cpp
     readinp.cpp
+    fileioxdrserializer.cpp
     )
 if (GMX_USE_TNG)
     list(APPEND test_sources tngio.cpp)
