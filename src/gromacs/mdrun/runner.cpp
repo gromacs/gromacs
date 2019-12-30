@@ -1194,7 +1194,7 @@ int Mdrunner::mdrunner()
                 devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, pmeRunMode,
                 domdecOptions.numPmeRanks > 0, useGpuForNonbonded, updateTarget, gpusWereDetected,
                 *inputrec, mtop, doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                replExParams.exchangeInterval > 0, doRerun);
+                replExParams.exchangeInterval > 0, doRerun, mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 

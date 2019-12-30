@@ -489,20 +489,21 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
-                                    const bool        isDomainDecomposition,
-                                    const bool        useUpdateGroups,
-                                    const PmeRunMode  pmeRunMode,
-                                    const bool        havePmeOnlyRank,
-                                    const bool        useGpuForNonbonded,
-                                    const TaskTarget  updateTarget,
-                                    const bool        gpusWereDetected,
-                                    const t_inputrec& inputrec,
-                                    const gmx_mtop_t& mtop,
-                                    const bool        useEssentialDynamics,
-                                    const bool        doOrientationRestraints,
-                                    const bool        useReplicaExchange,
-                                    const bool        doRerun)
+bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
+                                    const bool           isDomainDecomposition,
+                                    const bool           useUpdateGroups,
+                                    const PmeRunMode     pmeRunMode,
+                                    const bool           havePmeOnlyRank,
+                                    const bool           useGpuForNonbonded,
+                                    const TaskTarget     updateTarget,
+                                    const bool           gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    const bool           useEssentialDynamics,
+                                    const bool           doOrientationRestraints,
+                                    const bool           useReplicaExchange,
+                                    const bool           doRerun,
+                                    const gmx::MDLogger& mdlog)
 {
 
     // '-update cpu' overrides the environment variable, '-update auto' does not
@@ -622,7 +623,18 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
 
     if (!errorMessage.empty())
     {
-        if (updateTarget == TaskTarget::Gpu)
+        if (updateTarget != TaskTarget::Gpu && forceGpuUpdateDefault)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "Update task on the GPU was required, by the "
+                            "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable, but the following "
+                            "condition(s) were not satisfied:");
+            GMX_LOG(mdlog.warning).asParagraph().appendText(errorMessage.c_str());
+            GMX_LOG(mdlog.warning).asParagraph().appendText("Will use CPU version of update.");
+        }
+        else if (updateTarget == TaskTarget::Gpu)
         {
             std::string prefix = gmx::formatString(
                     "Update task on the GPU was required,\n"

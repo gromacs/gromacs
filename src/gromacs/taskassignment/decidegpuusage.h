@@ -53,6 +53,8 @@ enum class PmeRunMode;
 namespace gmx
 {
 
+class MDLogger;
+
 //! Record where a compute task is targetted.
 enum class TaskTarget : int
 {
@@ -247,25 +249,27 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  useReplicaExchange           If this is a REMD simulation.
  * \param[in]  doRerun                      It this is a rerun.
+ * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefault,
-                                    bool              isDomainDecomposition,
-                                    bool              useUpdateGroups,
-                                    PmeRunMode        pmeRunMode,
-                                    bool              havePmeOnlyRank,
-                                    bool              useGpuForNonbonded,
-                                    TaskTarget        updateTarget,
-                                    bool              gpusWereDetected,
-                                    const t_inputrec& inputrec,
-                                    const gmx_mtop_t& mtop,
-                                    bool              useEssentialDynamics,
-                                    bool              doOrientationRestraints,
-                                    bool              useReplicaExchange,
-                                    bool              doRerun);
+bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefault,
+                                    bool                 isDomainDecomposition,
+                                    bool                 useUpdateGroups,
+                                    PmeRunMode           pmeRunMode,
+                                    bool                 havePmeOnlyRank,
+                                    bool                 useGpuForNonbonded,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 useReplicaExchange,
+                                    bool                 doRerun,
+                                    const gmx::MDLogger& mdlog);
 
 
 } // namespace gmx
