@@ -437,7 +437,7 @@ void print_electric_props(FILE                           *fp,
                     }
                     gmx_stats_add_point(lsq_charge, qcm5[i], qCalc, 0, 0);
                     qrmsd += gmx::square(qcm5[i]-qCalc);
-                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f%8.3f%8.3f%8.3f\n",
+                    fprintf(fp, "%-2d%3d  %-5s  %8.4f  %8.4f  %8.4f  %8.4f  %8.4f %8.3f%8.3f%8.3f\n",
                             mol.atoms_->atom[j].atomnumber,
                             j+1,
                             *(mol.atoms_->atomtype[j]),
