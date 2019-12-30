@@ -1301,7 +1301,7 @@ void do_force(FILE*                               fplog,
                 // Note: GPU update + DD without direct communication is not supported,
                 // a waitCoordinatesReadyOnHost() should be issued if it will be.
                 GMX_ASSERT(!simulationWork.useGpuUpdate,
-                           "GPU update is not supported with halo exchange");
+                           "GPU update is not supported with CPU halo exchange");
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
 

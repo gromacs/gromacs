@@ -492,7 +492,8 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
 bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
                                     const bool        isDomainDecomposition,
                                     const bool        useUpdateGroups,
-                                    const bool        useGpuForPme,
+                                    const PmeRunMode  pmeRunMode,
+                                    const bool        havePmeOnlyRank,
                                     const bool        useGpuForNonbonded,
                                     const TaskTarget  updateTarget,
                                     const bool        gpusWereDetected,
@@ -536,10 +537,15 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
     // 2. Non-bonded interactions are on the GPU.
-    if (!(useGpuForPme || useGpuForNonbonded))
+    if (pmeRunMode == PmeRunMode::CPU && !useGpuForNonbonded)
     {
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
+    }
+    // Since only direct GPU communications are supported with GPU update, PME should be fully offloaded in DD and PME only cases.
+    if (pmeRunMode != PmeRunMode::GPU && (isDomainDecomposition || havePmeOnlyRank))
+    {
+        errorMessage += "PME should run on GPU.\n";
     }
     if (!gpusWereDetected)
     {

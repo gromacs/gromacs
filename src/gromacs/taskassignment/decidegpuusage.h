@@ -48,6 +48,7 @@
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct t_inputrec;
+enum class PmeRunMode;
 
 namespace gmx
 {
@@ -235,7 +236,8 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  forceGpuUpdateDefault        If update should run on GPU by default.
  * \param[in]  isDomainDecomposition        Whether there more than one domain.
  * \param[in]  useUpdateGroups              If the constraints can be split across domains.
- * \param[in]  useGpuForPme                 Whether GPUs will be used for PME interactions.
+ * \param[in]  pmeRunMode                   PME running mode: CPU, GPU or mixed.
+ * \param[in]  havePmeOnlyRank              If there is a PME-only rank in the simulation.
  * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
  * \param[in]  updateTarget                 User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected             Whether compatible GPUs were detected on any node.
@@ -253,7 +255,8 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefault,
                                     bool              isDomainDecomposition,
                                     bool              useUpdateGroups,
-                                    bool              useGpuForPme,
+                                    PmeRunMode        pmeRunMode,
+                                    bool              havePmeOnlyRank,
                                     bool              useGpuForNonbonded,
                                     TaskTarget        updateTarget,
                                     bool              gpusWereDetected,

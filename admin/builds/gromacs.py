@@ -186,6 +186,8 @@ def do_build(context):
     # GPU update flag enables GPU update+constraints as well as buffer ops (dependency)
     if context.opts.gpuupdate:
         context.env.set_env_var('GMX_FORCE_UPDATE_DEFAULT_GPU', "1")
+        context.env.set_env_var('GMX_GPU_DD_COMMS', "1")
+        context.env.set_env_var('GMX_GPU_PME_PP_COMMS', "1")
 
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 

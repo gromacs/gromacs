@@ -1191,9 +1191,10 @@ int Mdrunner::mdrunner()
         const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
 
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, useGpuForPme,
-                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
-                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0, doRerun);
+                devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, pmeRunMode,
+                domdecOptions.numPmeRanks > 0, useGpuForNonbonded, updateTarget, gpusWereDetected,
+                *inputrec, mtop, doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                replExParams.exchangeInterval > 0, doRerun);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
