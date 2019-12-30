@@ -488,12 +488,14 @@ bool readBabel(const char          *g09,
                 fprintf(debug, "atom %d gafftype %s OBtype %s\n", atom->GetIdx(), type->GetValue().c_str(), atom->GetType());
             }
 
-            alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()), type->GetValue(), atom->GetIdx());
+            alexandria::CalcAtom ca(OpenBabel::OBElements::GetSymbol(atom->GetAtomicNum()),
+                                    type->GetValue(), atom->GetIdx());
 
             ca.SetUnit(unit2string(eg2cPm));
             ca.SetCoords(A2PM(atom->x()), A2PM(atom->y()), A2PM(atom->z()));
-            ca.SetResidue(atom->GetResidue()->GetName());
-
+            auto myres = atom->GetResidue();
+            ca.SetResidue(myres->GetName(), myres->GetNum());
+            ca.SetChain(myres->GetChainNum(), myres->GetChain());
             if (inputformat == einfGaussian)
             {
                 std::vector<std::string> QM_charge_models = {"Mulliken charges", "ESP charges", "Hirshfeld charges", "CM5 charges"};

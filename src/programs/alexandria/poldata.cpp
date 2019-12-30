@@ -524,7 +524,7 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     for (auto &f : forces_)
     {
         if (f.searchForce(atoms, params, refValue,
-                          sigma, ntrain))
+                          sigma, ntrain, false))
         {
             return true;
         }
@@ -532,18 +532,18 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     return false;
 }
 
-bool Poldata::searchForce(std::vector<std::string> &atoms,
-                          std::string              &params,
-                          double                   *refValue,
-                          double                   *sigma,
-                          size_t                   *ntrain,
-                          InteractionType           iType) const
+bool Poldata::searchForceIType(std::vector<std::string> &atoms,
+                               std::string              &params,
+                               double                   *refValue,
+                               double                   *sigma,
+                               size_t                   *ntrain,
+                               InteractionType           iType) const
 {
     auto f  = findForces(iType);
     if (forcesEnd() != f)
     {
         if (f->searchForce(atoms, params, refValue,
-                           sigma, ntrain))
+                           sigma, ntrain, iType == eitIMPROPER_DIHEDRALS))
         {
             return true;
         }
@@ -551,17 +551,17 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     return false;
 }
 
-bool Poldata::searchForce(std::vector<std::string> &atoms,
-                          std::string              &params,
-                          double                   *refValue,
-                          double                   *sigma,
-                          size_t                   *ntrain,
-                          size_t                    bondOrder) const
+bool Poldata::searchForceBondOrder(std::vector<std::string> &atoms,
+                                   std::string              &params,
+                                   double                   *refValue,
+                                   double                   *sigma,
+                                   size_t                   *ntrain,
+                                   size_t                    bondOrder) const
 {
     for (auto &f : forces_)
     {
-        if (f.searchForce(atoms, params, refValue,
-                          sigma, ntrain, bondOrder))
+        if (f.searchForceBondOrder(atoms, params, refValue,
+                                   sigma, ntrain, bondOrder))
         {
             return true;
         }
@@ -569,18 +569,18 @@ bool Poldata::searchForce(std::vector<std::string> &atoms,
     return false;
 }
 
-bool Poldata::searchForce(std::vector<std::string> &atoms,
-                          std::string              &params,
-                          double                   *refValue,
-                          double                   *sigma,
-                          size_t                   *ntrain,
-                          size_t                    bondOrder,
-                          InteractionType           iType) const
+bool Poldata::searchForceBondOrderIType(std::vector<std::string> &atoms,
+                                        std::string              &params,
+                                        double                   *refValue,
+                                        double                   *sigma,
+                                        size_t                   *ntrain,
+                                        size_t                    bondOrder,
+                                        InteractionType           iType) const
 {
     auto f  = findForces(iType);
     if (forcesEnd() != f)
     {
-        if (f->searchForce(atoms, params, refValue,
+        if (f->searchForceBondOrder(atoms, params, refValue,
                            sigma, ntrain, bondOrder))
         {
             return true;

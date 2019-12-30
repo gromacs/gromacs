@@ -590,6 +590,13 @@ class ListedForces
         ListedForceIterator findForce(const std::vector<std::string> &atoms);
 
         /* \brief
+         * Find a listed force in the force_ vector, ignore order of atoms
+         *
+         * \param[in] atoms   A vector of atom bond types invloved in the listed force
+         */
+        ListedForceConstIterator findForceRandomOrder(const std::vector<std::string> &atoms) const;
+
+        /* \brief
          * Find a listed force in the force_ vector
          *
          * \param[in] atoms   A vector of atom bond types invloved in the listed force
@@ -687,17 +694,19 @@ class ListedForces
         /* \brief
          * Search a listed force in the force_ vector
          *
-         * \param[in] atoms       A vector of atom bond types invloved in the listed force
-         * \param[in] params      Listed force paramters
-         * \param[in] refvalue    The reference value such as the reference bond length
-         * \param[in] sigma       Uncertainty in the calculated reference value
-         * \param[in] ntrain      Number of molecules in the training set
+         * \param[in]  atoms       A vector of atom bond types invloved in the listed force
+         * \param[in]  params      Listed force paramters
+         * \param[out] refvalue    The reference value such as the reference bond length
+         * \param[out] sigma       Uncertainty in the calculated reference value
+         * \param[out] ntrain      Number of molecules in the training set
+         * \param[in]  randomAtomOrder If true a random order of atoms is accepted
          */
         bool searchForce(std::vector<std::string> &atoms,
                          std::string              &params,
                          double                   *refValue,
                          double                   *sigma,
-                         size_t                   *ntrain) const;
+                         size_t                   *ntrain,
+                         bool                      randomAtomOrder) const;
                          
         /* \brief
          * Search a listed force in the force_ vector
@@ -709,12 +718,12 @@ class ListedForces
          * \param[in] ntrain      Number of molecules in the training set
          * \param[in] bondOrder bond order of the covalent bond
          */
-        bool searchForce(std::vector<std::string> &atoms,
-                         std::string              &params,
-                         double                   *refValue,
-                         double                   *sigma,
-                         size_t                   *ntrain,
-                         size_t                    bondOrder) const;
+        bool searchForceBondOrder(std::vector<std::string> &atoms,
+                                  std::string              &params,
+                                  double                   *refValue,
+                                  double                   *sigma,
+                                  size_t                   *ntrain,
+                                  size_t                    bondOrder) const;
 
 
         /*! \brief

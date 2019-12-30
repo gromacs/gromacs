@@ -561,6 +561,27 @@ ListedForceIterator ListedForces::findForce(const std::vector<std::string> &atom
                         });
 }
 
+ListedForceConstIterator ListedForces::findForceRandomOrder(const std::vector<std::string> &atoms) const
+{
+    ListedForceConstIterator fb = forceBegin(), fe = forceEnd();
+    return std::find_if(fb, fe, [atoms](const ListedForce &force)
+    {
+        auto aa = split(force.condensed_atoms().c_str(), '-');
+        for(auto a : atoms)
+        {
+            for(size_t b = 0; b < aa.size(); ++b)
+            {
+                if (a == aa[b])
+                {
+                    aa.erase(aa.begin()+b);
+                    break;
+                }
+            }
+        }
+        return aa.size() == 0;
+    });
+}
+
 ListedForceConstIterator ListedForces::findForce(const std::vector<std::string> &atoms) const
 {
     auto                     catoms = condense_atoms(atoms);
@@ -672,9 +693,18 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
                                std::string              &params,
                                double                   *refValue,
                                double                   *sigma,
-                               size_t                   *ntrain) const
+                               size_t                   *ntrain,
+                               bool                      randomAtomOrder) const
 {
-    auto force = findForce(atoms);
+    ListedForceConstIterator force;
+    if (randomAtomOrder)
+    {
+        force = findForceRandomOrder(atoms);
+    }
+    else
+    {
+        force = findForce(atoms);
+    }
     if (forceEnd() != force)
     {
         *refValue  = force->refValue();
@@ -687,12 +717,12 @@ bool ListedForces::searchForce(std::vector<std::string> &atoms,
     return false;
 }
 
-bool ListedForces::searchForce(std::vector<std::string> &atoms,
-                               std::string              &params,
-                               double                   *refValue,
-                               double                   *sigma,
-                               size_t                   *ntrain,
-                               size_t                    bondOrder) const
+bool ListedForces::searchForceBondOrder(std::vector<std::string> &atoms,
+                                        std::string              &params,
+                                        double                   *refValue,
+                                        double                   *sigma,
+                                        size_t                   *ntrain,
+                                        size_t                    bondOrder) const
 {
     auto force = findForce(atoms, bondOrder);
     if (forceEnd() != force)

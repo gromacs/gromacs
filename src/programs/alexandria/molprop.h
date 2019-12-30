@@ -989,7 +989,8 @@ class CalcAtom
     private:
         std::string               name_, obType_, unit_, residueName_;
         double                    x_, y_, z_;
-        int                       atomID_;
+        int                       atomID_, residueNumber_, chainId_;
+        char                      chain_;
         std::vector<AtomicCharge> q_;
     public:
         //! Default constructor
@@ -1040,12 +1041,32 @@ class CalcAtom
         //! Return the name of residue
         const std::string &ResidueName() const { return residueName_; }
 
+        //! Return the residue number
+        int ResidueNumber() const { return residueNumber_; }
+
         //! Set the unit of the coordinates of the atom
         void SetUnit(const std::string &unit);
 
         //! Set the residue name for the atom
-        void SetResidue(const std::string &residueName) {residueName_ = residueName; }
+        void SetResidue(const std::string &residueName, int residueNumber)
+        {
+            residueName_   = residueName;
+            residueNumber_ = residueNumber;
+        }
 
+        //! Set the chain information (from pdb files)
+        void SetChain(int chainId, char chain)
+        {
+            chainId_ = chainId;
+            chain_   = chain;
+        }
+        
+        //! Return chain ID
+        int chainId() const { return chainId_; }
+        
+        //! Return chain
+        char chain() const { return chain_; }
+        
         //! Set the coordinates of the atom
         void SetCoords(double x, double y, double z) { x_ = x; y_ = y; z_ = z; }
 

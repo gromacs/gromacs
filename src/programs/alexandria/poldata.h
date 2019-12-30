@@ -545,21 +545,21 @@ class Poldata
                          double                   *sigma,
                          size_t                   *ntrain) const;
 
-        bool searchForce(std::vector<std::string> &atoms,
+        bool searchForceIType(std::vector<std::string> &atoms,
                          std::string              &params,
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain,
                          InteractionType           iType) const;
 
-        bool searchForce(std::vector<std::string> &atoms,
+        bool searchForceBondOrder(std::vector<std::string> &atoms,
                          std::string              &params,
                          double                   *refValue,
                          double                   *sigma,
                          size_t                   *ntrain,
                          size_t                    bondorder) const;
 
-        bool searchForce(std::vector<std::string> &atoms,
+        bool searchForceBondOrderIType(std::vector<std::string> &atoms,
                          std::string              &params,
                          double                   *refValue,
                          double                   *sigma,

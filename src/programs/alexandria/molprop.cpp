@@ -210,6 +210,7 @@ CommunicationStatus CalcAtom::Receive(t_commrec *cr, int src)
         gmx_recv_str(cr, src, &name_);
         gmx_recv_str(cr, src, &obType_);
         gmx_recv_str(cr, src, &residueName_);
+        residueNumber_ = gmx_recv_int(cr, src);
         atomID_ = gmx_recv_int(cr, src);
         gmx_recv_str(cr, src, &unit_);
         x_      = gmx_recv_double(cr, src);
@@ -246,6 +247,7 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr, int dest)
         gmx_send_str(cr, dest, &name_);
         gmx_send_str(cr, dest, &obType_);
         gmx_send_str(cr, dest, &residueName_);
+        gmx_send_int(cr, dest, residueNumber_);
         gmx_send_int(cr, dest, atomID_);
         gmx_send_str(cr, dest, &unit_);
         gmx_send_double(cr, dest, x_);
@@ -899,7 +901,7 @@ int Experiment::Merge(std::vector<Experiment>::iterator src)
         cai->getCoords(&x, &y, &z);
         caa.SetCoords(x, y, z);
         caa.SetUnit(cai->getUnit());
-
+        caa.SetResidue(cai->ResidueName(), cai->ResidueNumber());
         for (auto aci = cai->BeginQ(); (aci < cai->EndQ()); ++aci)
         {
             AtomicCharge aq(aci->getType(), aci->getUnit(),

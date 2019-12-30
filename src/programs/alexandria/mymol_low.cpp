@@ -372,7 +372,7 @@ immStatus updatePlist(const Poldata             *pd,
                         atomNames = {aai, aaj, aak};
                         n     = 0;
                         value = 0;
-                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain)) != 0)
+                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain, false)) != 0)
                         {
                             r13 = calc_r13(pd, aai, aaj, aak, value);
 
@@ -406,18 +406,37 @@ immStatus updatePlist(const Poldata             *pd,
             else if (eitPROPER_DIHEDRALS == iType ||
                      eitIMPROPER_DIHEDRALS == iType)
             {
+                auto ftype = fs->fType();
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], aai) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], aaj) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], aak) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[3]], aal))
+                    std::vector<std::string> atomNames;
+                    for (int j = 0; j < interaction_function[ftype].nratoms; j++)
                     {
-                        atomNames = {aai, aaj, aak, aal};
+                        std::string aaa;
+                        if (pd->atypeToBtype(*atoms->atomtype[b->a[j]], aaa))
+                        {
+                            atomNames.push_back(aaa);
+                        }
+                        else if (debug)
+                        {
+                            fprintf(debug, "Cannot find bonded type for %s\n",
+                                    *atoms->atomtype[b->a[j]]);
+                        }
+                    }
+                    if (static_cast<int>(atomNames.size()) == 
+                        interaction_function[ftype].nratoms)
+                    {
                         n     = 0;
                         value = 0;
-                        if ((fs->searchForce(atomNames, params, &value, &sigma, &ntrain)) != 0)
+                        if (fs->searchForce(atomNames, params, &value, &sigma,
+                                            &ntrain, iType == eitIMPROPER_DIHEDRALS))
                         {
+                            if (debug)
+                            {
+                                fprintf(debug, "Found angle %g for %s - %s - %s - %s\n",
+                                        value, atomNames[0].c_str(), atomNames[1].c_str(),
+                                        atomNames[2].c_str(), atomNames[3].c_str());
+                            }
                             b->c[n++] = value;
                             ptr       = gmx::splitString(params);
                             int n = 0;
@@ -439,15 +458,20 @@ immStatus updatePlist(const Poldata             *pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find dihedral information for %s - %s - %s - %s in %s\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), aal.c_str(), molname.c_str());
+                                fprintf(debug, "Could not find %s information for %d %s - %d %s - %d %s - %d %s in %s\n",
+                                        iType2string(iType),
+                                        b->a[0], atomNames[0].c_str(), 
+                                        b->a[1], atomNames[1].c_str(),
+                                        b->a[2], atomNames[2].c_str(),
+                                        b->a[3], atomNames[3].c_str(),
+                                        molname.c_str());
                             }
                             return immNotSupportedDihedral;
                         }
                     }
                     else
                     {
-                        gmx_fatal(FARGS, "Unsuppotred atom types: %d, %d, %d, %d!\n",
+                        gmx_fatal(FARGS, "Unsupported atom types: %d, %d, %d, %d!\n",
                                   b->a[0], b->a[1], b->a[2], b->a[3]);
                     }
                 }

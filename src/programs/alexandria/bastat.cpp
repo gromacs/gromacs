@@ -141,7 +141,7 @@ static void sort_bonds(t_bonds *b)
 
 static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
                      const std::string a1, const std::string a2,
-                     double blen, double spacing, int order)
+                     double blen, double spacing, int order, InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -180,8 +180,8 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
     b->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s bond-%s-%s-%d %g\n",
-                molname,
+        fprintf(fplog, "%s %s-%s-%s-%d %g\n",
+                molname, iType2string(iType),
                 a1.c_str(),
                 a2.c_str(),
                 order,
@@ -191,7 +191,7 @@ static void add_bond(FILE *fplog, const char *molname, t_bonds *bonds,
 
 static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> &angle,
                          const std::string a1, const std::string a2, const std::string a3,
-                         double refValue, double spacing)
+                         double refValue, double spacing, InteractionType iType)
 {
     GMX_RELEASE_ASSERT(a1.size() > 0, "atom name a1 is empty");
     GMX_RELEASE_ASSERT(a2.size() > 0, "atom name a2 is empty");
@@ -233,7 +233,7 @@ static void lo_add_angle(FILE *fplog, const char *molname, std::vector<t_angle> 
     a->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s angle-%s-%s-%s %g\n", molname,
+        fprintf(fplog, "%s %s-%s-%s-%s %g\n", molname, iType2string(iType),
                 a1.c_str(), a2.c_str(), a3.c_str(), refValue);
     }
 }
@@ -244,7 +244,7 @@ static void add_angle(FILE *fplog, const char *molname, t_bonds *b,
 {
     lo_add_angle(fplog, molname,
                  (eitANGLES == iType) ? b->angle : b->linangle,
-                 a1, a2, a3, refValue, spacing);
+                 a1, a2, a3, refValue, spacing, iType);
 }
 
 static void lo_add_dih(FILE *fplog, const char *molname,
@@ -316,7 +316,7 @@ static void lo_add_dih(FILE *fplog, const char *molname,
     d->histo[index]++;
     if (nullptr != fplog)
     {
-        fprintf(fplog, "%s dihedral-%s-%s-%s-%s %g\n", molname,
+        fprintf(fplog, "%s %s-%s-%s-%s-%s %g\n", molname, iType2string(iType),
                 d->a1.c_str(), d->a2.c_str(), d->a3.c_str(), d->a4.c_str(), angle);
     }
 }
@@ -770,7 +770,7 @@ int alex_bastat(int argc, char *argv[])
                                 {
                                     add_bond(fp, mmi.molProp()->getMolname().c_str(), bonds,
                                              cai, caj, 1000*norm(dx),
-                                             bspacing, xb);
+                                             bspacing, xb, fs->iType());
                                     break;
                                 }
                             }

@@ -603,7 +603,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
         init_t_atoms(atoms_, ci->NAtom(), false);
         snew(atoms_->atomtype, ci->NAtom());
         snew(atoms_->atomtypeB, ci->NAtom());
-
+        int res0 = -1;
+        int nres =  0;
         for (auto cai = ci->BeginAtom(); (cai < ci->EndAtom()); cai++)
         {
             myunit = string2unit((char *)cai->getUnit().c_str());
@@ -613,7 +614,12 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
                           cai->getUnit().c_str());
             }
             cai->getCoords(&xx, &yy, &zz);
-
+            int resnr = cai->ResidueNumber();
+            if (resnr != res0)
+            {
+                res0  = resnr;
+                nres += 1;
+            }
             state_->x[natom][XX] = convert2gmx(xx, myunit);
             state_->x[natom][YY] = convert2gmx(yy, myunit);
             state_->x[natom][ZZ] = convert2gmx(zz, myunit);
@@ -631,8 +637,10 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
             }
             atoms_->atom[natom].q      =
                 atoms_->atom[natom].qB = q;
-
-            t_atoms_set_resinfo(atoms_, natom, symtab_, ((cai->ResidueName().c_str() != nullptr) ? cai->ResidueName().c_str() : molProp()->getMolname().c_str()), 1, ' ', 1, ' ');
+            atoms_->atom[natom].resind = nres-1;
+            t_atoms_set_resinfo(atoms_, natom, symtab_, cai->ResidueName().c_str(),
+                                atoms_->atom[natom].resind+1, ' ', 
+                                cai->chainId(), cai->chain());
             atoms_->atomname[natom]        = put_symtab(symtab_, cai->getName().c_str());
             atoms_->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
 
@@ -644,9 +652,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
             atoms_->atom[natom].m      =
                 atoms_->atom[natom].mB = mass;
 
-            strcpy(atoms_->atom[natom].elem, gmx_atomprop_element(ap, atoms_->atom[natom].atomnumber));
+            strcpy(atoms_->atom[natom].elem,
+                   gmx_atomprop_element(ap, atoms_->atom[natom].atomnumber));
 
-            atoms_->atom[natom].resind = 0;
             // First set the atomtype
             atoms_->atomtype[natom]      =
                 atoms_->atomtypeB[natom] = put_symtab(symtab_, cai->getObtype().c_str());
@@ -663,7 +671,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
                                                      atoms_->atom[i].atomnumber);
         }
         atoms_->nr   = natom;
-        atoms_->nres = 1;
+        atoms_->nres = nres;
+        printf("natom %d nres %d\n", natom, nres);
     }
     else
     {
@@ -1037,9 +1046,13 @@ void MyMol::addShells(const Poldata *pd)
         newatoms->atomtypeB[renum[i]] = put_symtab(symtab_, *atoms_->atomtypeB[i]);
         copy_rvec(state_->x[i], newx[renum[i]]);
         newname[renum[i]] = *atoms_->atomtype[i];
+        int resind = atoms_->atom[i].resind;
         t_atoms_set_resinfo(newatoms, renum[i], symtab_,
-                            *atoms_->resinfo[atoms_->atom[i].resind].name,
-                            atoms_->atom[i].resind, ' ', 1, ' ');
+                            *atoms_->resinfo[resind].name,
+                            atoms_->resinfo[resind].nr,
+                            atoms_->resinfo[resind].ic, 
+                            atoms_->resinfo[resind].chainnum, 
+                            atoms_->resinfo[resind].chainid);
     }
     for (int i = 0; i < atoms_->nr; i++)
     {
@@ -2250,7 +2263,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                 }
                 double value, sigma;
                 size_t ntrain;
-                if (pd->searchForce(atoms, params, &value, &sigma, &ntrain, iType))
+                if (pd->searchForceIType(atoms, params, &value, &sigma, &ntrain, iType))
                 {
                     auto bondLength = convert2gmx(value, lu);
                     auto parameters = gmx::splitString(params);
@@ -2296,7 +2309,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                 }
                 double angle, sigma;
                 size_t ntrain;
-                if (pd->searchForce(atoms, params, &angle, &sigma, &ntrain, iType))
+                if (pd->searchForceIType(atoms, params, &angle, &sigma, &ntrain, iType))
                 {
                     auto parameters = gmx::splitString(params);
                     auto r13        = calc_r13(pd, atoms[0], atoms[1], atoms[2], angle);
@@ -2389,7 +2402,8 @@ void MyMol::UpdateIdef(const Poldata   *pd,
                 }
                 double angle, sigma;
                 size_t ntrain;
-                if (pd->searchForce(atoms, params, &angle, &sigma, &ntrain, iType))
+                if (pd->searchForceIType(atoms, params,
+                                    &angle, &sigma, &ntrain, iType))
                 {
                     auto parameters = gmx::splitString(params);
                     switch (ftype)
