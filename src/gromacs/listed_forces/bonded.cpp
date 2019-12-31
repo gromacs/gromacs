@@ -896,7 +896,7 @@ real thole_pol(int             nbonds,
 // #3205 for more information)
 #if defined(__GNUC__) && defined(__i386__) && defined(__OPTIMIZE__)
 #    pragma GCC push_options
-#    pragma GCC optimize("O2")
+#    pragma GCC optimize("O1")
 #    define avoid_gcc_i386_o3_code_generation_bug
 #endif
 
