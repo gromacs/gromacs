@@ -886,8 +886,14 @@ static char** read_topol(const char*                           infile,
                 "multiple-time-stepping scheme for a twin-range cut-off. When used with "
                 "a single-range cut-off (or a correct Trotter multiple-time-stepping scheme), "
                 "physical properties, such as the density, might differ from the intended values. "
-                "Check if molecules in your system are affected by such issues before proceeding. "
-                "Further information may be available at https://redmine.gromacs.org/issues/2884.");
+                "Since there are researchers actively working on validating GROMOS with modern "
+                "integrators we have not yet removed the GROMOS force fields, but you should be "
+                "aware of these issues and check if molecules in your system are affected before "
+                "proceeding. "
+                "Further information is available at https://redmine.gromacs.org/issues/2884 , "
+                "and a longer explanation of our decision to remove physically incorrect "
+                "algorithms "
+                "can be found at https://doi.org/10.26434/chemrxiv.11474583.v1 .");
     }
 
     cpp_done(handle);
