@@ -12,7 +12,7 @@ Two versions of |Gromacs| are under active maintenance, the 2020
 series and the 2019 series. In the latter, only highly conservative
 fixes will be made, and only to address issues that affect scientific
 correctness. Naturally, some of those releases will be made after the
-year 2019 ends, but we keep 2019 in the name so users understand how
+year 2019 ends, but we keep 2018 in the name so users understand how
 up to date their version is. Such fixes will also be incorporated into
 the 2020 release series, as appropriate. Around the time the 2021
 release is made, the 2019 series will no longer be maintained.
