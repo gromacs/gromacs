@@ -951,15 +951,6 @@ void MyMol::addShells(const Poldata *pd)
                         }
                     }
 
-                    if (nexcl_ == 0)
-                    {
-                        /*
-                           This is an ugly hack to turn off the Polarize
-                           routine. If we can make nexcl_ = 0 work, it should
-                           be implemenetd in a nice way.
-                         */
-                        pol = 1e+10;
-                    }
                     p.c[0] = convert2gmx(pol, polarUnit);
                     add_param_to_plist(plist_, F_POLARIZATION, eitPOLARIZATION, p);
                 }
@@ -998,13 +989,8 @@ void MyMol::addShells(const Poldata *pd)
     auto pw = SearchPlist(plist_, F_POLARIZATION);
     if (plist_.end() != pw)
     {
-        /*
-           Exclude the vsites and the atoms from their own shell.
-           This step will be done if the number of exclusions is
-           bigger than zero, otherwsie, the vsite or the core will
-           interact with its own shell.
-         */
-        if (nexcl_ > 0)
+        /* Exclude the vsites and the atoms from their own shell. */
+        if (nexcl_ >= 0)
         {
             for (auto j = pw->beginParam(); (j < pw->endParam()); ++j)
             {
