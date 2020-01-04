@@ -672,7 +672,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
         }
         atoms_->nr   = natom;
         atoms_->nres = nres;
-        printf("natom %d nres %d\n", natom, nres);
+        //printf("natom %d nres %d\n", natom, nres);
     }
     else
     {
