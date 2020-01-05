@@ -412,6 +412,9 @@ void print_electric_props(FILE                           *fp,
             // Atomic charges
             fprintf(fp, "Atom   Type      q_Calc     q_ESP     q_CM5     q_HPA     q_MPA       x       y       z\n");
             auto qcm5  = mol.chargeQM(qtCM5);
+            auto qESP  = mol.chargeQM(qtESP);
+            auto qHir  = mol.chargeQM(qtHirshfeld);
+            auto qMul  = mol.chargeQM(qtMulliken);
             auto x     = mol.x();
             auto qrmsd = 0.0;
             for (j = i = 0; j < mol.atoms_->nr; j++)
@@ -442,10 +445,10 @@ void print_electric_props(FILE                           *fp,
                             j+1,
                             *(mol.atoms_->atomtype[j]),
                             qCalc,
-                            mol.chargeQM(qtESP)[i],
-                            mol.chargeQM(qtCM5)[i],
-                            mol.chargeQM(qtHirshfeld)[i],
-                            mol.chargeQM(qtMulliken)[i],
+                            qESP.size() > 0 ? qESP[i] : 0.0,
+                            qcm5.size() > 0 ? qcm5[i] : 0.0,
+                            qHir.size() > 0 ? qHir[i] : 0.0,
+                            qMul.size() > 0 ? qMul[i] : 0.0,
                             x[j][XX],
                             x[j][YY],
                             x[j][ZZ]);
