@@ -60,6 +60,8 @@
 
 #include "gmxpre.h"
 
+#include "pme_only.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -97,7 +99,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_gpu_internal.h"
-#include "pme_internal.h"
+#include "pme_output.h"
 #include "pme_pp_communication.h"
 
 /*! \brief environment variable to enable GPU P2P communication */
@@ -193,7 +195,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
     for (auto& pme : *pmedata)
     {
         GMX_ASSERT(pme, "Bad PME tuning list element pointer");
-        if (pme->nkx == grid_size[XX] && pme->nky == grid_size[YY] && pme->nkz == grid_size[ZZ])
+        if (gmx_pme_grid_matches(*pme, grid_size))
         {
             /* Here we have found an existing PME data structure that suits us.
              * However, in the GPU case, we have to reinitialize it - there's only one GPU structure.

@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,15 +32,39 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
-#define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 
-#include "spline_vectors.h"
+/*! \libinternal \file
+ * \brief Defines a struct useful for transferring the PME output
+ * values
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 
-/* Calulate plain SPME B-spline interpolation */
-void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#ifndef GMX_EWALD_PME_OUTPUT_H
+#define GMX_EWALD_PME_OUTPUT_H
 
-/* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/arrayref.h"
+
+// TODO There's little value in computing the Coulomb and LJ virial
+// separately, so we should simplify that.
+// TODO The matrices might be best as a view, but not currently
+// possible. Use mdspan?
+struct PmeOutput
+{
+    //!< Host staging area for PME forces
+    gmx::ArrayRef<gmx::RVec> forces_;
+    //!< True if forces have been staged other false (when forces are reduced on the GPU).
+    bool haveForceOutput_ = false;
+    //!< Host staging area for PME coulomb energy
+    real coulombEnergy_ = 0;
+    //!< Host staging area for PME coulomb virial contributions
+    matrix coulombVirial_ = { { 0 } };
+    //!< Host staging area for PME LJ energy
+    real lennardJonesEnergy_ = 0;
+    //!< Host staging area for PME LJ virial contributions
+    matrix lennardJonesVirial_ = { { 0 } };
+};
 
 #endif

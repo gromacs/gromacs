@@ -58,6 +58,7 @@
 #include "pme_internal.h"
 #include "pme_simd.h"
 #include "pme_spline_work.h"
+#include "spline_vectors.h"
 
 /* TODO consider split of pme-spline from this file */
 

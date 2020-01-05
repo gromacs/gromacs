@@ -56,13 +56,16 @@
 
 #include "config.h"
 
+#include <vector>
+
 #include "gromacs/math/gmxcomplex.h"
+#include "gromacs/utility/alignedallocator.h"
+#include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/defaultinitializationallocator.h"
 #include "gromacs/utility/gmxmpi.h"
-#include "gromacs/utility/smalloc.h"
 
-#include "pme_gpu_types_host.h"
+#include "spline_vectors.h"
 
 //! A repeat of typedef from parallel_3dfft.h
 typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
@@ -70,6 +73,8 @@ typedef struct gmx_parallel_3dfft* gmx_parallel_3dfft_t;
 struct t_commrec;
 struct t_inputrec;
 struct PmeGpu;
+
+enum class PmeRunMode;
 
 //@{
 //! Grid indices for A state for charge and Lennard-Jones C6
@@ -96,17 +101,6 @@ static const real lb_scale_factor_symm[] = { 2.0 / 64, 12.0 / 64, 30.0 / 64, 20.
  * If needed it can be changed here.
  */
 #define PME_ORDER_MAX 12
-
-/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from
- * pme_src. This is only called when the PME cut-off/grid size changes.
- */
-void gmx_pme_reinit(struct gmx_pme_t** pmedata,
-                    const t_commrec*   cr,
-                    struct gmx_pme_t*  pme_src,
-                    const t_inputrec*  ir,
-                    const ivec         grid_size,
-                    real               ewaldcoeff_q,
-                    real               ewaldcoeff_lj);
 
 
 /* Temporary suppression until these structs become opaque and don't live in
@@ -157,9 +151,6 @@ struct AtomToThreadMap
     //! Particle indices ordered on thread index (n)
     FastVector<int> i;
 };
-
-/*! \brief Helper typedef for spline vectors */
-typedef real* splinevec[DIM];
 
 /*! \internal
  * \brief Coefficients for theta or dtheta
@@ -435,20 +426,5 @@ struct gmx_pme_t
 };
 
 //! @endcond
-
-/*! \brief
- * Finds out if PME is currently running on GPU.
- * TODO: should this be removed eventually?
- *
- * \param[in] pme  The PME structure.
- * \returns        True if PME runs on GPU currently, false otherwise.
- */
-inline bool pme_gpu_active(const gmx_pme_t* pme)
-{
-    return (pme != nullptr) && (pme->runMode != PmeRunMode::CPU);
-}
-
-/*! \brief Tell our PME-only node to switch to a new grid size */
-void gmx_pme_send_switchgrid(const t_commrec* cr, ivec grid_size, real ewaldcoeff_q, real ewaldcoeff_lj);
 
 #endif

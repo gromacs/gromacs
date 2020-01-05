@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,15 +32,48 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
-#define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
 
-#include "spline_vectors.h"
+/*! \libinternal \file
+ * \brief Defines the host-side PME GPU data structures.
+ * \todo Some renaming/refactoring, which does not impair the performance:
+ * -- bringing the function names up to guidelines
+ * -- PmeGpuSettings -> PmeGpuTasks
+ * -- refining GPU notation application (#2053)
+ * -- renaming coefficients to charges (?)
+ *
+ * \author Aleksei Iupinov <a.yupinov@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_ewald
+ */
 
-/* Calulate plain SPME B-spline interpolation */
-void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#ifndef GMX_EWALD_PME_GPU_STAGING_H
+#define GMX_EWALD_PME_GPU_STAGING_H
 
-/* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#include <vector>
+
+#include "gromacs/gpu_utils/hostallocator.h"
+#include "gromacs/math/vectypes.h"
+
+/*! \internal \brief
+ * The PME GPU intermediate buffers structure, included in the main PME GPU structure by value.
+ * Buffers are managed by the PME GPU module.
+ */
+struct PmeGpuStaging
+{
+    //! Host-side force buffer
+    gmx::PaddedHostVector<gmx::RVec> h_forces;
+
+    /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
+    float* h_virialAndEnergy;
+    /*! \brief B-spline values intermediate host-side buffer. */
+    float* h_splineModuli;
+
+    /*! \brief Pointer to the host memory with B-spline values. Only used for host-side gather, or unit tests */
+    float* h_theta;
+    /*! \brief Pointer to the host memory with B-spline derivative values. Only used for host-side gather, or unit tests */
+    float* h_dtheta;
+    /*! \brief Pointer to the host memory with ivec atom gridline indices. Only used for host-side gather, or unit tests */
+    int* h_gridlineIndices;
+};
 
 #endif

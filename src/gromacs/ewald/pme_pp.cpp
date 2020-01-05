@@ -47,6 +47,8 @@
 
 #include "gmxpre.h"
 
+#include "pme_pp.h"
+
 #include "config.h"
 
 #include <cstdio>
@@ -71,7 +73,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "pme_internal.h"
 #include "pme_pp_communication.h"
 
 /*! \brief Block to wait for communication to PME ranks to complete

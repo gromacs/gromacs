@@ -47,6 +47,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/math/vec.h"

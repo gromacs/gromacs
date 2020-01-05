@@ -50,6 +50,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme_gather.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
+#include "gromacs/ewald/pme_gpu_staging.h"
 #include "gromacs/ewald/pme_grid.h"
 #include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_redistribute.h"
@@ -104,7 +105,7 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
                               const CodePath           mode,
                               const gmx_device_info_t* gpuInfo,
-                              PmeGpuProgramHandle      pmeGpuProgram,
+                              const PmeGpuProgram*     pmeGpuProgram,
                               const Matrix3x3&         box,
                               const real               ewaldCoeff_q,
                               const real               ewaldCoeff_lj)
@@ -149,7 +150,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
 PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
                             const CodePath           mode,
                             const gmx_device_info_t* gpuInfo,
-                            PmeGpuProgramHandle      pmeGpuProgram,
+                            const PmeGpuProgram*     pmeGpuProgram,
                             const Matrix3x3&         box,
                             real                     ewaldCoeff_q,
                             real                     ewaldCoeff_lj)
@@ -505,7 +506,7 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme->gpu->staging.h_gridlineIndices, gridLineIndices.data(),
+            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices, gridLineIndices.data(),
                    atomCount * sizeof(gridLineIndices[0]));
             break;
 
@@ -622,7 +623,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
     {
         case CodePath::GPU:
             gridLineIndices = arrayRefFromArray(
-                    reinterpret_cast<IVec*>(pme->gpu->staging.h_gridlineIndices), atomCount);
+                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices), atomCount);
             break;
 
         case CodePath::CPU: gridLineIndices = atc->idx; break;

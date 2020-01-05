@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,8 @@
 #include "config.h"
 
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
+#include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/gmxassert.h"
 
 #if GMX_GPU != GMX_GPU_CUDA
 
@@ -73,7 +75,7 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void* /* pmeStream */,
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> /* d_x */)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> /* d_x */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "

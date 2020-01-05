@@ -53,6 +53,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_internal.h"
+#include "pme_output.h"
 
 #if GMX_SIMD_HAVE_REAL
 /* Turn on arbitrary width SIMD intrinsics for PME solve */

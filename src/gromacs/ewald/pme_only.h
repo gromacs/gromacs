@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,15 +32,38 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_EWALD_CALCULATE_SPLINE_MODULI_H
-#define GMX_EWALD_CALCULATE_SPLINE_MODULI_H
+/*! \libinternal \file
+ *
+ * \brief This file contains function declarations necessary for
+ * running on an MPI rank doing only PME long-ranged work.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
+ */
 
-#include "spline_vectors.h"
+#ifndef GMX_EWALD_PME_ONLY_H
+#define GMX_EWALD_PME_ONLY_H
 
-/* Calulate plain SPME B-spline interpolation */
-void make_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#include <string>
 
-/* Calculate the P3M B-spline moduli */
-void make_p3m_bspline_moduli(splinevec bsp_mod, int nx, int ny, int nz, int order);
+#include "gromacs/timing/walltime_accounting.h"
+
+struct t_commrec;
+struct t_inputrec;
+struct t_nrnb;
+struct gmx_pme_t;
+struct gmx_wallcycle;
+
+enum class PmeRunMode;
+
+/*! \brief Called on the nodes that do PME exclusively */
+int gmx_pmeonly(gmx_pme_t*                pme,
+                const t_commrec*          cr,
+                t_nrnb*                   mynrnb,
+                gmx_wallcycle*            wcycle,
+                gmx_walltime_accounting_t walltime_accounting,
+                t_inputrec*               ir,
+                PmeRunMode                runMode);
 
 #endif

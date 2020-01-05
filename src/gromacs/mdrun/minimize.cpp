@@ -61,7 +61,7 @@
 #include "gromacs/domdec/domdec_struct.h"
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
-#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/mtxio.h"
 #include "gromacs/gmxlib/network.h"

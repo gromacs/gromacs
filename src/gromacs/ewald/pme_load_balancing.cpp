@@ -80,6 +80,7 @@
 #include "gromacs/utility/strconvert.h"
 
 #include "pme_internal.h"
+#include "pme_pp.h"
 
 /*! \brief Parameters and settings for one PP-PME setup */
 struct pme_setup_t

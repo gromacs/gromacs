@@ -53,8 +53,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
 
-#include "pme_internal.h"
-
 /* There's nothing special to do here if just masses are perturbed,
  * but if either charge or type is perturbed then the implementation
  * requires that B states are defined for both charge and type, and

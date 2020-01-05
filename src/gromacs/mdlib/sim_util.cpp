@@ -53,6 +53,7 @@
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"

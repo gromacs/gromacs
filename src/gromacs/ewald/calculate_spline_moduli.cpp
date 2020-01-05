@@ -49,8 +49,6 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "pme_internal.h"
-
 static void make_dft_mod(real* mod, const double* data, int splineOrder, int ndata)
 {
     for (int i = 0; i < ndata; i++)

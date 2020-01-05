@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -231,7 +231,7 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu)
                          pmeGpu->settings.transferKind, nullptr);
 }
 
-void pme_gpu_realloc_coordinates(const PmeGpu* pmeGpu)
+void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu)
 {
     const size_t newCoordinatesSize = pmeGpu->nAtomsAlloc * DIM;
     GMX_ASSERT(newCoordinatesSize > 0, "Bad number of atoms in PME GPU");
@@ -255,7 +255,7 @@ void pme_gpu_free_coordinates(const PmeGpu* pmeGpu)
     freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates);
 }
 
-void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu* pmeGpu, const float* h_coefficients)
+void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_coefficients)
 {
     GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
     const size_t newCoefficientsSize = pmeGpu->nAtomsAlloc;
@@ -587,7 +587,7 @@ void pme_gpu_destroy_specific(const PmeGpu* pmeGpu)
 
 void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu)
 {
-    if (pme_gpu_performs_FFT(pmeGpu))
+    if (pme_gpu_settings(pmeGpu).performGPUFFT)
     {
         pmeGpu->archSpecific->fftSetup.resize(0);
         for (int i = 0; i < pmeGpu->common->ngrids; i++)
@@ -694,7 +694,7 @@ PmeOutput pme_gpu_getOutput(const gmx_pme_t& pme, const int flags)
     // on the else branch
     if (haveComputedEnergyAndVirial)
     {
-        if (pme_gpu_performs_solve(pmeGpu))
+        if (pme_gpu_settings(pmeGpu).performGPUSolve)
         {
             pme_gpu_getEnergyAndVirial(pme, &output);
         }
@@ -755,7 +755,7 @@ static void pme_gpu_reinit_grids(PmeGpu* pmeGpu)
         kernelParamsPtr->grid.complexGridSizePadded[i] = kernelParamsPtr->grid.realGridSize[i];
     }
     /* FFT: n real elements correspond to (n / 2 + 1) complex elements in minor dimension */
-    if (!pme_gpu_performs_FFT(pmeGpu))
+    if (!pme_gpu_settings(pmeGpu).performGPUFFT)
     {
         // This allows for GPU spreading grid and CPU fftgrid to have the same layout, so that we can copy the data directly
         kernelParamsPtr->grid.realGridSizePadded[ZZ] =
@@ -846,7 +846,7 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  * \param[in,out] gpuInfo        The GPU information structure.
  * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGpuProgramHandle pmeGpuProgram)
+static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
 {
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
@@ -855,7 +855,7 @@ static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGp
 
     /* These settings are set here for the whole run; dynamic ones are set in pme_gpu_reinit() */
     /* A convenience variable. */
-    pmeGpu->settings.useDecomposition = (pme->nnodes == 1);
+    pmeGpu->settings.useDecomposition = (pme->nnodes != 1);
     /* TODO: CPU gather with GPU spread is broken due to different theta/dtheta layout. */
     pmeGpu->settings.performGPUGather = true;
     // By default GPU-side reduction is off (explicitly set here for tests, otherwise reset per-step)
@@ -954,10 +954,12 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGpuProgramHandle pmeGpuProgram)
+void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
 {
-    if (!pme_gpu_active(pme))
+    GMX_ASSERT(pme != nullptr, "Need valid PME object");
+    if (pme->runMode == PmeRunMode::CPU)
     {
+        GMX_ASSERT(pme->gpu == nullptr, "Should not have PME GPU object");
         return;
     }
 
@@ -973,7 +975,7 @@ void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, PmeGpuProg
     }
     /* GPU FFT will only get used for a single rank.*/
     pme->gpu->settings.performGPUFFT =
-            (pme->gpu->common->runMode == PmeRunMode::GPU) && !pme_gpu_uses_dd(pme->gpu);
+            (pme->gpu->common->runMode == PmeRunMode::GPU) && !pme->gpu->settings.useDecomposition;
     pme->gpu->settings.performGPUSolve = (pme->gpu->common->runMode == PmeRunMode::GPU);
 
     /* Reinit active timers */
@@ -1035,6 +1037,25 @@ void pme_gpu_reinit_atoms(PmeGpu* pmeGpu, const int nAtoms, const real* charges)
         pme_gpu_realloc_spline_data(pmeGpu);
         pme_gpu_realloc_grid_indices(pmeGpu);
     }
+}
+
+/*! \internal \brief
+ * Returns raw timing event from the corresponding GpuRegionTimer (if timings are enabled).
+ * In CUDA result can be nullptr stub, per GpuRegionTimer implementation.
+ *
+ * \param[in] pmeGpu         The PME GPU data structure.
+ * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
+ */
+static CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, size_t PMEStageId)
+{
+    CommandEvent* timingEvent = nullptr;
+    if (pme_gpu_timings_enabled(pmeGpu))
+    {
+        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
+                   "Wrong PME GPU timing event index");
+        timingEvent = pmeGpu->archSpecific->timingEvents[PMEStageId].fetchNextEvent();
+    }
+    return timingEvent;
 }
 
 void pme_gpu_3dfft(const PmeGpu* pmeGpu, gmx_fft_direction dir, int grid_index)
@@ -1206,7 +1227,7 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     // only needed with CUDA on PP+PME ranks, not on separate PME ranks, in unit tests
     // nor in OpenCL as these cases use a single stream (hence xReadyOnDevice == nullptr).
     GMX_ASSERT(xReadyOnDevice != nullptr || (GMX_GPU != GMX_GPU_CUDA)
-                       || pmeGpu->common->isRankPmeOnly || pme_gpu_is_testing(pmeGpu),
+                       || pmeGpu->common->isRankPmeOnly || pme_gpu_settings(pmeGpu).copyAllOutputs,
                "Need a valid coordinate synchronizer on PP+PME ranks with CUDA.");
     if (xReadyOnDevice)
     {
@@ -1265,14 +1286,14 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
     launchGpuKernel(kernelPtr, config, timingEvent, "PME spline/spread", kernelArgs);
     pme_gpu_stop_timing(pmeGpu, timingId);
 
-    const bool copyBackGrid =
-            spreadCharges && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu));
+    const auto& settings    = pmeGpu->settings;
+    const bool copyBackGrid = spreadCharges && (!settings.performGPUFFT || settings.copyAllOutputs);
     if (copyBackGrid)
     {
         pme_gpu_copy_output_spread_grid(pmeGpu, h_grid);
     }
     const bool copyBackAtomData =
-            computeSplines && (pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_gather(pmeGpu));
+            computeSplines && (!settings.performGPUGather || settings.copyAllOutputs);
     if (copyBackAtomData)
     {
         pme_gpu_copy_output_spread_atom_data(pmeGpu);
@@ -1281,7 +1302,8 @@ void pme_gpu_spread(const PmeGpu*         pmeGpu,
 
 void pme_gpu_solve(const PmeGpu* pmeGpu, t_complex* h_grid, GridOrdering gridOrdering, bool computeEnergyAndVirial)
 {
-    const bool copyInputAndOutputGrid = pme_gpu_is_testing(pmeGpu) || !pme_gpu_performs_FFT(pmeGpu);
+    const auto& settings               = pmeGpu->settings;
+    const bool  copyInputAndOutputGrid = !settings.performGPUFFT || settings.copyAllOutputs;
 
     auto* kernelParamsPtr = pmeGpu->kernelParams.get();
 
@@ -1441,12 +1463,13 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
         pme_gpu_copy_input_forces(pmeGpu);
     }
 
-    if (!pme_gpu_performs_FFT(pmeGpu) || pme_gpu_is_testing(pmeGpu))
+    const auto& settings = pmeGpu->settings;
+    if (!settings.performGPUFFT || settings.copyAllOutputs)
     {
         pme_gpu_copy_input_gather_grid(pmeGpu, const_cast<float*>(h_grid));
     }
 
-    if (pme_gpu_is_testing(pmeGpu))
+    if (settings.copyAllOutputs)
     {
         pme_gpu_copy_input_gather_atom_data(pmeGpu);
     }

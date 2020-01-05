@@ -47,10 +47,7 @@
 
 #include "config.h"
 
-#include <assert.h>
-#include <stdio.h>
-
-#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_force_sender_gpu.h"
 #include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/utility/gmxmpi.h"
@@ -72,7 +69,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(void* pmeStream, MPI_Comm comm, gmx::ArrayR
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;
 
-void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> d_x)
+void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x)
 {
 
     int ind_start = 0;
@@ -134,7 +131,7 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(void*                  pmeStr
 
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(const DeviceBuffer<float> d_x)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x)
 {
     impl_->sendCoordinateBufferAddressToPpRanks(d_x);
 }
