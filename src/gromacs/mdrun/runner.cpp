@@ -850,9 +850,6 @@ int Mdrunner::mdrunner()
     // the inputrec read by the master rank. The ranks can now all run
     // the task-deciding functions and will agree on the result
     // without needing to communicate.
-    //
-    // TODO Should we do the communication in debug mode to support
-    // having an assertion?
     const bool useDomainDecomposition = (PAR(cr) && !(EI_TPI(inputrec->eI) || inputrec->eI == eiNM));
 
     // Note that these variables describe only their own node.
