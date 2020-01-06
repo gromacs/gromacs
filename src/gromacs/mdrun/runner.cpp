@@ -891,10 +891,8 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
-    const bool inputIsCompatibleWithModularSimulator = ModularSimulator::isInputCompatible(
+    const bool useModularSimulator = checkUseModularSimulator(
             false, inputrec, doRerun, mtop, ms, replExParams, nullptr, doEssentialDynamics, doMembed);
-    const bool useModularSimulator = inputIsCompatibleWithModularSimulator
-                                     && !(getenv("GMX_DISABLE_MODULAR_SIMULATOR") != nullptr);
 
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
@@ -1584,9 +1582,8 @@ int Mdrunner::mdrunner()
 
         // build and run simulator object based on user-input
         auto simulator = simulatorBuilder.build(
-                inputIsCompatibleWithModularSimulator, fplog, cr, ms, mdlog,
-                static_cast<int>(filenames.size()), filenames.data(), oenv, mdrunOptions,
-                startingBehavior, vsite.get(), constr.get(),
+                useModularSimulator, fplog, cr, ms, mdlog, static_cast<int>(filenames.size()),
+                filenames.data(), oenv, mdrunOptions, startingBehavior, vsite.get(), constr.get(),
                 enforcedRotation ? enforcedRotation->getLegacyEnfrot() : nullptr, deform.get(),
                 mdModules_->outputProvider(), mdModules_->notifier(), inputrec, imdSession.get(),
                 pull_work, swap, &mtop, fcd, globalState.get(), &observablesHistory, mdAtoms.get(),
