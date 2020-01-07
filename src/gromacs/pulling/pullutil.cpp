@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -517,6 +517,11 @@ static void sum_com_part_cosweight(const pull_group_work_t* pgrp,
 }
 
 /* calculates center of mass of selection index from all coordinates x */
+// Compiler segfault with 2019_update_5 and 2020_initial
+#if defined(__INTEL_COMPILER) \
+        && ((__INTEL_COMPILER == 1900 && __INTEL_COMPILER_UPDATE >= 5) || __INTEL_COMPILER >= 1910)
+#    pragma intel optimization_level 2
+#endif
 void pull_calc_coms(const t_commrec* cr,
                     pull_t*          pull,
                     const t_mdatoms* md,
