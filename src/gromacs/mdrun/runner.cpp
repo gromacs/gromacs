@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,6 +99,7 @@
 #include "gromacs/mdlib/qmmm.h"
 #include "gromacs/mdlib/sighandler.h"
 #include "gromacs/mdlib/stophandler.h"
+#include "gromacs/mdlib/updategroups.h"
 #include "gromacs/mdrun/mdmodules.h"
 #include "gromacs/mdrun/simulationcontext.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -175,6 +176,8 @@ struct DevelopmentFeatureFlags
     //! True if the Buffer ops development feature is enabled
     // TODO: when the trigger of the buffer ops offload is fully automated this should go away
     bool enableGpuBufferOps = false;
+    //! If true, forces 'mdrun -update auto' default to 'gpu'
+    bool forceGpuUpdateDefault = false;
     //! True if the GPU halo exchange development feature is enabled
     bool enableGpuHaloExchange = false;
     //! True if the PME PP direct communication GPU development feature is enabled
@@ -209,6 +212,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
 #pragma GCC diagnostic ignored "-Wunused-result"
     devFlags.enableGpuBufferOps = (getenv("GMX_USE_GPU_BUFFER_OPS") != nullptr)
                                   && (GMX_GPU == GMX_GPU_CUDA) && useGpuForNonbonded;
+    devFlags.forceGpuUpdateDefault = (getenv("GMX_FORCE_UPDATE_DEFAULT_GPU") != nullptr);
     devFlags.enableGpuHaloExchange =
             (getenv("GMX_GPU_DD_COMMS") != nullptr && GMX_THREAD_MPI && (GMX_GPU == GMX_GPU_CUDA));
     devFlags.enableGpuPmePPComm =
@@ -220,8 +224,18 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         GMX_LOG(mdlog.warning)
                 .asParagraph()
                 .appendTextFormatted(
-                        "NOTE: This run uses the 'GPU buffer ops' feature, enabled by the "
+                        "This run uses the 'GPU buffer ops' feature, enabled by the "
                         "GMX_USE_GPU_BUFFER_OPS environment variable.");
+    }
+
+    if (devFlags.forceGpuUpdateDefault)
+    {
+        GMX_LOG(mdlog.warning)
+                .asParagraph()
+                .appendTextFormatted(
+                        "This run will default to '-update gpu' as requested by the "
+                        "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable. GPU update with domain "
+                        "decomposition lacks substantial testing and should be used with caution.");
     }
 
     if (devFlags.enableGpuHaloExchange)
@@ -230,14 +244,17 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
         {
             if (!devFlags.enableGpuBufferOps)
             {
-                gmx_fatal(FARGS,
-                          "Cannot enable GPU halo exchange without GPU buffer operations, set "
-                          "GMX_USE_GPU_BUFFER_OPS=1\n");
+                GMX_LOG(mdlog.warning)
+                        .asParagraph()
+                        .appendTextFormatted(
+                                "Enabling GPU buffer operations required by GMX_GPU_DD_COMMS "
+                                "(equivalent with GMX_USE_GPU_BUFFER_OPS=1).");
+                devFlags.enableGpuBufferOps = true;
             }
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: This run uses the 'GPU halo exchange' feature, enabled by the "
+                            "This run uses the 'GPU halo exchange' feature, enabled by the "
                             "GMX_GPU_DD_COMMS environment variable.");
         }
         else
@@ -245,7 +262,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
+                            "GMX_GPU_DD_COMMS environment variable detected, but the 'GPU "
                             "halo exchange' feature will not be enabled as nonbonded interactions "
                             "are not offloaded.");
             devFlags.enableGpuHaloExchange = false;
@@ -259,7 +276,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendTextFormatted(
-                            "NOTE: This run uses the 'GPU PME-PP communications' feature, enabled "
+                            "This run uses the 'GPU PME-PP communications' feature, enabled "
                             "by the GMX_GPU_PME_PP_COMMS environment variable.");
         }
         else
@@ -278,7 +295,7 @@ static DevelopmentFeatureFlags manageDevelopmentFeatures(const gmx::MDLogger& md
             GMX_LOG(mdlog.warning)
                     .asParagraph()
                     .appendText(
-                            "NOTE: GMX_GPU_PME_PP_COMMS environment variable detected, but the "
+                            "GMX_GPU_PME_PP_COMMS environment variable detected, but the "
                             "'GPU PME-PP communications' feature was not enabled as "
                             + clarification);
             devFlags.enableGpuPmePPComm = false;
@@ -890,19 +907,6 @@ int Mdrunner::mdrunner()
     const DevelopmentFeatureFlags devFlags =
             manageDevelopmentFeatures(mdlog, useGpuForNonbonded, pmeRunMode);
 
-    // NOTE: The devFlags need decideWhetherToUseGpusForNonbonded(...) and decideWhetherToUseGpusForPme(...) for overrides,
-    //       decideWhetherToUseGpuForUpdate() needs devFlags for the '-update auto' override, hence the interleaving.
-    // NOTE: When the simulationWork is constructed, the useGpuForUpdate overrides the devFlags.enableGpuBufferOps.
-    try
-    {
-        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                useDomainDecomposition, useGpuForPme, useGpuForNonbonded, updateTarget,
-                gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
-                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0);
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-
-
     // Build restraints.
     // TODO: hide restraint implementation details from Mdrunner.
     // There is nothing unique about restraints at this point as far as the
@@ -1177,6 +1181,21 @@ int Mdrunner::mdrunner()
         ddBuilder.reset(nullptr);
         // Note that local state still does not exist yet.
     }
+
+    // The GPU update is decided here because we need to know whether the constraints or
+    // SETTLEs can span accross the domain borders (i.e. whether or not update groups are
+    // defined). This is only known after DD is initialized, hence decision on using GPU
+    // update is done so late.
+    try
+    {
+        const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
+
+        useGpuForUpdate = decideWhetherToUseGpuForUpdate(
+                devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, useGpuForPme,
+                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop, doEssentialDynamics,
+                gmx_mtop_ftype_count(mtop, F_ORIRES) > 0, replExParams.exchangeInterval > 0, doRerun);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
     if (PAR(cr))
     {
@@ -1573,7 +1592,7 @@ int Mdrunner::mdrunner()
                                                       : GpuApiCallBehavior::Sync;
 
             stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                    pmeStream, localStream, nonLocalStream, deviceContext, transferKind, paddingSize);
+                    pmeStream, localStream, nonLocalStream, deviceContext, transferKind, paddingSize, wcycle);
             fr->stateGpu = stateGpu.get();
         }
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -116,7 +116,7 @@ if(REGRESSIONTEST_PATH)
         message(WARNING
             "Please set MPIEXEC. Otherwise mpirun is assumed for running tests.")
     endif()
-    if(GMX_OPENMP)
+    if(DEFINED ENV{CI_JOB_ID} AND GMX_OPENMP)
         set(GMX_REGRESSIONTEST_OMP_THREADS 2 CACHE STRING
             "Number of OpenMP threads to use with the regression tests")
         mark_as_advanced(GMX_REGRESSIONTEST_OMP_THREADS)
@@ -144,13 +144,11 @@ if(REGRESSIONTEST_PATH)
     mark_as_advanced(REGRESSIONTEST_EXTRA_ARGS)
     list(APPEND ARGS ${REGRESSIONTEST_EXTRA_ARGS})
 
-    if(DEFINED ENV{CI_JOB_ID})
-        if(GMX_THREAD_MPI)
-            set(GMX_REGRESSIONTEST_THREAD_MPI_THREADS 2 CACHE STRING
-            "Number of thread MPI threads to use for testing")
-            mark_as_advanced(GMX_REGRESSIONTEST_THREAD_MPI_THREADS)
-            list(APPEND ARGS -nt ${GMX_REGRESSIONTEST_THREAD_MPI_THREADS})
-        endif()
+    if(DEFINED ENV{CI_JOB_ID} AND GMX_THREAD_MPI)
+        set(GMX_REGRESSIONTEST_THREAD_MPI_THREADS 2 CACHE STRING
+        "Number of thread MPI threads to use for testing")
+        mark_as_advanced(GMX_REGRESSIONTEST_THREAD_MPI_THREADS)
+        list(APPEND ARGS -nt ${GMX_REGRESSIONTEST_THREAD_MPI_THREADS})
     endif()
     list(APPEND ARGS -noverbose -nosuffix)
 

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1087,8 +1087,8 @@ void LegacySimulator::do_cg()
     gmx_mdoutf* outf =
             init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                         inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work,
-                                   nullptr, false, mdModulesNotifier);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
+                                   false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
     /* Print to log file */
     print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
@@ -1700,8 +1700,8 @@ void LegacySimulator::do_lbfgs()
     gmx_mdoutf* outf =
             init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                         inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work,
-                                   nullptr, false, mdModulesNotifier);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
+                                   false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
     start = 0;
     end   = mdatoms->homenr;
@@ -2380,8 +2380,8 @@ void LegacySimulator::do_steep()
     gmx_mdoutf* outf =
             init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                         inputrec, top_global, nullptr, wcycle, StartingBehavior::NewSimulation);
-    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work,
-                                   nullptr, false, mdModulesNotifier);
+    gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, inputrec, pull_work, nullptr,
+                                   false, StartingBehavior::NewSimulation, mdModulesNotifier);
 
     /* Print to log file  */
     print_em_start(fplog, cr, walltime_accounting, wcycle, SD);

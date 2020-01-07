@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -159,6 +159,9 @@ void do_md_trajectory_writing(FILE*                    fplog,
                 energyOutput.fillEnergyHistory(observablesHistory->energyHistory.get());
             }
         }
+        // Note that part of the following code is duplicated in StatePropagatorData::trajectoryWriterTeardown.
+        // This duplication is needed while both legacy and modular code paths are in use.
+        // TODO: Remove duplication asap, make sure to keep in sync in the meantime.
         mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global->natoms, step, t,
                                          state, state_global, observablesHistory, f);
         if (bLastStep && step_rel == ir->nsteps && bDoConfOut && MASTER(cr) && !bRerunMD)

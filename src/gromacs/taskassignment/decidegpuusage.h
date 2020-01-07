@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -84,8 +84,8 @@ class MDAtoms;
  * \param[in]  userGpuTaskAssignment       The user-specified assignment of GPU tasks to device IDs.
  * \param[in]  emulateGpuNonbonded         Whether we will emulate GPU calculation of nonbonded interactions.
  * \param[in]  buildSupportsNonbondedOnGpu Whether GROMACS was built with GPU support.
- * \param[in]  nonbondedOnGpuIsUseful    Whether computing nonbonded interactions on a GPU is useful for this calculation.
- * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
+ * \param[in]  nonbondedOnGpuIsUseful      Whether computing nonbonded interactions on a GPU is useful for this calculation.
+ * \param[in]  numRanksPerSimulation       The number of ranks in each simulation.
  *
  * \returns    Whether the simulation will run nonbonded tasks on GPUs.
  *
@@ -109,9 +109,10 @@ bool decideWhetherToUseGpusForNonbondedWithThreadMpi(TaskTarget              non
  *
  * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
  * \param[in]  pmeTarget                 The user's choice for mdrun -pme for where to assign
- * long-ranged PME nonbonded interaction tasks. \param[in]  gpuIdsToUse               The compatible
- * GPUs that the user permitted us to use. \param[in]  userGpuTaskAssignment     The user-specified
- * assignment of GPU tasks to device IDs. \param[in]  hardwareInfo              Hardware information
+ *                                       long-ranged PME nonbonded interaction tasks.
+ * \param[in]  gpuIdsToUse               The compatible GPUs that the user permitted us to use.
+ * \param[in]  userGpuTaskAssignment     The user-specified assignment of GPU tasks to device IDs.
+ * \param[in]  hardwareInfo              Hardware information
  * \param[in]  inputrec                  The user input
  * \param[in]  mtop                      Global system topology
  * \param[in]  numRanksPerSimulation     The number of ranks in each simulation.
@@ -231,22 +232,27 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
 
 /*! \brief Decide whether to use GPU for update.
  *
- * \param[in]  isDomainDecomposition     Whether there more than one domain.
- * \param[in]  useGpuForPme              Whether GPUs will be used for PME interactions.
- * \param[in]  useGpuForNonbonded        Whether GPUs will be used for nonbonded interactions.
- * \param[in]  updateTarget              User choice for running simulation on GPU.
- * \param[in]  gpusWereDetected          Whether compatible GPUs were detected on any node.
- * \param[in]  inputrec                  The user input.
- * \param[in]  mtop                      The global topology.
- * \param[in]  useEssentialDynamics      If essential dynamics is active.
- * \param[in]  doOrientationRestraints   If orientation restraints are enabled.
- * \param[in]  useReplicaExchange        If this is a REMD simulation.
+ * \param[in]  forceGpuUpdateDefault        If update should run on GPU by default.
+ * \param[in]  isDomainDecomposition        Whether there more than one domain.
+ * \param[in]  useUpdateGroups              If the constraints can be split across domains.
+ * \param[in]  useGpuForPme                 Whether GPUs will be used for PME interactions.
+ * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
+ * \param[in]  updateTarget                 User choice for running simulation on GPU.
+ * \param[in]  gpusWereDetected             Whether compatible GPUs were detected on any node.
+ * \param[in]  inputrec                     The user input.
+ * \param[in]  mtop                         The global topology.
+ * \param[in]  useEssentialDynamics         If essential dynamics is active.
+ * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
+ * \param[in]  useReplicaExchange           If this is a REMD simulation.
+ * \param[in]  doRerun                      It this is a rerun.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefault,
+                                    bool              isDomainDecomposition,
+                                    bool              useUpdateGroups,
                                     bool              useGpuForPme,
                                     bool              useGpuForNonbonded,
                                     TaskTarget        updateTarget,
@@ -255,7 +261,8 @@ bool decideWhetherToUseGpuForUpdate(bool              isDomainDecomposition,
                                     const gmx_mtop_t& mtop,
                                     bool              useEssentialDynamics,
                                     bool              doOrientationRestraints,
-                                    bool              useReplicaExchange);
+                                    bool              useReplicaExchange,
+                                    bool              doRerun);
 
 
 } // namespace gmx

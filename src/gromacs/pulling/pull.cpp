@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2350,4 +2350,20 @@ gmx_bool pull_have_potential(const struct pull_t* pull)
 gmx_bool pull_have_constraint(const struct pull_t* pull)
 {
     return pull->bConstraint;
+}
+
+bool pull_have_constraint(const pull_params_t* pullParameters)
+{
+    if (pullParameters == nullptr)
+    {
+        return false;
+    }
+    for (int c = 0; c < pullParameters->ncoord; c++)
+    {
+        if (pullParameters->coord[c].eType == epullCONSTRAINT)
+        {
+            return true;
+        }
+    }
+    return false;
 }

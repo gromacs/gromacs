@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -296,8 +296,6 @@ typedef std::unique_ptr<ITrajectoryWriterCallback> ITrajectoryWriterCallbackPtr;
  * callback called by the TrajectoryElement when trajectory writing happens.
  *
  * Setup and teardown methods allow clients to perform tasks with a valid output pointer.
- * These functions have a standard implementation to allow clients not to implement
- * them if no setup / teardown is needed.
  */
 class ITrajectoryWriterClient
 {

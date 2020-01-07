@@ -13,7 +13,7 @@ fluctuations
            :label: eqnvar0
 
 of a quantity :math:`x` are to be computed. The variance
-:math:`\sigma_x` of a series of N\ :math:`_x` values, {x:math:`_i`}, can
+:math:`\sigma_x` of a series of N\ :math:`_x` values, {:math:`x_i`}, can
 be computed from
 
 .. math:: \sigma_x~=~ \sum_{i=1}^{N_x} x_i^2 ~-~  \frac{1}{N_x}\left(\sum_{i=1}^{N_x}x_i\right)^2
@@ -37,7 +37,7 @@ Using :eq:`eqns. %s <eqnvar1>` and
 :math:`x_i` values twice, once to determine :math:`\left<x\right>` and
 again to compute :math:`\sigma_x`, whereas
 :eq:`eqn. %s <eqnvar0>` requires only one sequential scan of
-the series {x:math:`_i`}. However, one may cast
+the series {:math:`x_i`}. However, one may cast
 :eq:`eqn. %s <eqnvar1>` in another form, containing partial
 sums, which allows for a sequential update algorithm. Define the partial
 sum

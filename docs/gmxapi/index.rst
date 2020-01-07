@@ -4,9 +4,10 @@
 gmxapi Python package
 =====================
 
-*gmxapi* is a collection of external interfaces for the GROMACS molecular simulation
-and analysis library. It consists of a C++ API, a Python package, and a set of
-sample code for extending MD simulation functionality.
+This documentation is part of the `GROMACS manual <http://manual.gromacs.org/current/>`_
+and describes the *gmxapi* Python package.
+:py:mod:`gmxapi` allows molecular simulation and analysis work to
+be staged and run from Python.
 
 From version 0.1, the latest official documentation is at http://manual.gromacs.org/current/gmxapi/.
 Other releases can also be found at `GitHub <https://www.github.com/kassonlab/gmxapi>`_.

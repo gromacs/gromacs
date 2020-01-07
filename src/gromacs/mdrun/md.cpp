@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011-2019, by the GROMACS development team, led by
+ * Copyright (c) 2011-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -264,7 +264,7 @@ void gmx::LegacySimulator::do_md()
     gmx_mdoutf*       outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider,
                                    mdModulesNotifier, ir, top_global, oenv, wcycle, startingBehavior);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work,
-                                   mdoutf_get_fp_dhdl(outf), false, mdModulesNotifier);
+                                   mdoutf_get_fp_dhdl(outf), false, startingBehavior, mdModulesNotifier);
 
     gstat = global_stat_init(ir);
 
@@ -317,25 +317,23 @@ void gmx::LegacySimulator::do_md()
         upd.setNumAtoms(state->natoms);
     }
 
-    /*****************************************************************************************/
-    // TODO: The following block of code should be refactored, once:
-    //       1. We have the useGpuForBufferOps variable set and available here and in do_force(...)
-    //       2. The proper GPU syncronization is introduced, so that the H2D and D2H data copies can be performed in the separate
-    //          stream owned by the StatePropagatorDataGpu
     const auto& simulationWork     = runScheduleWork->simulationWork;
     const bool  useGpuForPme       = simulationWork.useGpuPme;
     const bool  useGpuForNonbonded = simulationWork.useGpuNonbonded;
-    // Temporary solution to make sure that the buffer ops are offloaded when update is offloaded
-    const bool useGpuForBufferOps = simulationWork.useGpuBufferOps;
-    const bool useGpuForUpdate    = simulationWork.useGpuUpdate;
-
+    const bool  useGpuForBufferOps = simulationWork.useGpuBufferOps;
+    const bool  useGpuForUpdate    = simulationWork.useGpuUpdate;
 
     StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
     if (useGpuForUpdate)
     {
-        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr),
-                           "Domain decomposition is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!DOMAINDECOMP(cr) || ddUsesUpdateGroups(*cr->dd) || constr == nullptr
+                                   || constr->numConstraintsTotal() == 0,
+                           "Constraints in domain decomposition are only supported with update "
+                           "groups if using GPU update.\n");
+        GMX_RELEASE_ASSERT(ir->eConstrAlg != econtSHAKE || constr == nullptr
+                                   || constr->numConstraintsTotal() == 0,
+                           "SHAKE is not supported with GPU update.");
         GMX_RELEASE_ASSERT(useGpuForPme || (useGpuForNonbonded && simulationWork.useGpuBufferOps),
                            "Either PME or short-ranged non-bonded interaction tasks must run on "
                            "the GPU to use GPU update.\n");
@@ -351,8 +349,8 @@ void gmx::LegacySimulator::do_md()
                            "Virtual sites are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ed == nullptr,
                            "Essential dynamics is not supported with the GPU update.\n");
-        GMX_RELEASE_ASSERT(!ir->bPull && !ir->pull,
-                           "Pulling is not supported with the GPU update.\n");
+        GMX_RELEASE_ASSERT(!ir->bPull || !pull_have_constraint(ir->pull),
+                           "Constraints pulling is not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(fcd->orires.nr == 0,
                            "Orientation restraints are not supported with the GPU update.\n");
         GMX_RELEASE_ASSERT(ir->efep == efepNO,
@@ -389,7 +387,6 @@ void gmx::LegacySimulator::do_md()
     {
         changePinningPolicy(&state->v, PinningPolicy::PinnedIfSupported);
     }
-    /*****************************************************************************************/
 
     // NOTE: The global state is no longer used at this point.
     // But state_global is still used as temporary storage space for writing
@@ -436,7 +433,7 @@ void gmx::LegacySimulator::do_md()
     if (bPMETune)
     {
         pme_loadbal_init(&pme_loadbal, cr, mdlog, *ir, state->box, *fr->ic, *fr->nbv, fr->pmedata,
-                         fr->nbv->useGpu(), &bPMETunePrinting);
+                         fr->nbv->useGpu());
     }
 
     if (!ir->bContinuation)
@@ -752,7 +749,7 @@ void gmx::LegacySimulator::do_md()
             /* PME grid + cut-off optimization with GPUs or PME nodes */
             pme_loadbal_do(pme_loadbal, cr, (mdrunOptions.verbose && MASTER(cr)) ? stderr : nullptr,
                            fplog, mdlog, *ir, fr, state->box, state->x, wcycle, step, step_rel,
-                           &bPMETunePrinting);
+                           &bPMETunePrinting, simulationWork.useGpuPmePpCommunication);
         }
 
         wallcycle_start(wcycle, ewcSTEP);
@@ -1427,6 +1424,9 @@ void gmx::LegacySimulator::do_md()
                     if (useGpuForUpdate)
                     {
                         stateGpu->copyCoordinatesToGpu(state->x, AtomLocality::Local);
+                        // Here we block until the H2D copy completes because event sync with the
+                        // force kernels that use the coordinates on the next steps is not implemented
+                        // (not because of a race on state->x being modified on the CPU while H2D is in progress).
                         stateGpu->waitCoordinatesCopiedToDevice(AtomLocality::Local);
                     }
                 }

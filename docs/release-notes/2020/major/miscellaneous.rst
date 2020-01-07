@@ -43,3 +43,14 @@ Reproducibility of computed quantities is easiest to achieve if software
 stays up to date with the standards. The values for standard units have thus
 been updated to conform with the data available
 `here <http://www.codata.org/committees-and-groups/fundamental-physical-constants>`_.
+
+Change grompp warning about decoupling without SD to a note
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The warning that grompp issues when decoupling a molecule
+without the use of the SD integrator has been changed to a note,
+since there are valid use cases for using normal MD when not
+running in the completely decoupled state.
+
+:issue:`2767`
+

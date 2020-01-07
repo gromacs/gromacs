@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,6 +60,7 @@
 #include "locality.h"
 
 class GpuEventSynchronizer;
+struct gmx_wallcycle;
 
 namespace gmx
 {
@@ -108,13 +109,15 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const void*        pmeStream,
                            const void*        localStream,
                            const void*        nonLocalStream,
                            const void*        deviceContext,
                            GpuApiCallBehavior transferKind,
-                           int                paddingSize);
+                           int                paddingSize,
+                           gmx_wallcycle*     wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
      *
@@ -130,11 +133,13 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
     StatePropagatorDataGpu(const void*        pmeStream,
                            const void*        deviceContext,
                            GpuApiCallBehavior transferKind,
-                           int                paddingSize);
+                           int                paddingSize,
+                           gmx_wallcycle*     wcycle);
 
     //! Move constructor
     StatePropagatorDataGpu(StatePropagatorDataGpu&& other) noexcept;

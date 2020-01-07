@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1005,6 +1005,11 @@ int dd_pme_maxshift_y(const gmx_domdec_t* dd)
 bool ddHaveSplitConstraints(const gmx_domdec_t& dd)
 {
     return dd.comm->systemInfo.haveSplitConstraints;
+}
+
+bool ddUsesUpdateGroups(const gmx_domdec_t& dd)
+{
+    return dd.comm->systemInfo.useUpdateGroups;
 }
 
 void dd_cycles_add(const gmx_domdec_t* dd, float cycles, int ddCycl)

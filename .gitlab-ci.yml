@@ -4,14 +4,14 @@ include:
 .configure-extends-template:
     extends:
         - .configure-build-template
-        - .build-cache-template
+        - .configure-cache-template
         - .variables-template
         - .tags-template
 
 .configure-release-extends-template:
     extends:
         - .configure-build-release-template
-        - .build-cache-template
+        - .release-configure-cache-template
         - .variables-template
         - .tags-template
 
@@ -32,6 +32,7 @@ include:
 
 .regressiontests-extends-template:
     extends:
+        - .no-cache-template
         - .variables-template
         - .tags-template
 
@@ -68,6 +69,8 @@ stages:
   - release-build
   # Tests for release code
   - release-tests
+  # Prepare for deploying artifacts
+  - release-prepare-deploy
   # Deploy stage for release builds
   - release-deploy
 
@@ -137,7 +140,10 @@ stages:
 
 .build-docs-webpage:
     extends:
-      - .build-extends-template
+      - .binary-build-template
+      - .variables-template
+      - .tags-template
+      - .no-cache-template
       - .build-docs-webpage-template
       - .documentation-before-script-template
 
@@ -175,7 +181,7 @@ prepare-release-version:
 simple-build:
     extends:
       - .simple-build-template
-      - .build-cache-template
+      - .simple-build-cache-template
       - .variables-template
       - .tags-template
       - .gcc-before-script-template
@@ -183,6 +189,7 @@ simple-build:
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
+        BUILD_DIR: simple-build
     except:
       variables:
         - $GROMACS_RELEASE
@@ -646,15 +653,18 @@ build-clang-tidy:
 
 run-clang-format:
   extends:
-    - .build-clang
+    - .binary-build-template
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .clang-before-script-template
+    - .build-clang-template
     - .clang7-template
   stage: source-check
   when: always
   needs:
     - job: simple-build
       artifacts: false 
-    - job: configure-clang-7
-      artifacts: false
   variables:
       KUBERNETES_CPU_LIMIT: 1
       KUBERNETES_CPU_REQUEST: 1
@@ -675,8 +685,50 @@ run-clang-format:
       - clang-format.log
       - formatting.txt
 
+run-copyright-check:
+  extends:
+    - .binary-build-template
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .clang-before-script-template
+    - .build-clang-template
+    - .clang7-template
+      
+  stage: source-check
+  when: always
+  needs:
+    - job: simple-build
+      artifacts: false 
+  variables:
+      KUBERNETES_CPU_LIMIT: 1
+      KUBERNETES_CPU_REQUEST: 1
+      KUBERNETES_MEMORY_LIMIT: 2Gi
+  except:
+    variables:
+      - $GROMACS_RELEASE
+  script:
+    - admin/copyright.sh check --rev=HEAD^ --warnings=copyright.log
+    - grep -iq "copyright year" copyright.log | tee years.log || true
+    - grep -iq "copyright header" copyright.log | tee headers.log || true
+    - if [[ -s years.log || -s headers.log ]] ; then
+      echo "Copyright information needs updating" ;
+      exit 1 ;
+      fi
+  artifacts:
+    when: on_failure
+    paths:
+      - copyright.log
+      - years.log
+      - headers.log
+
 run-check-source:
-  extends: .build-docs-binary
+  extends:
+    - .no-cache-template
+    - .variables-template
+    - .tags-template
+    - .build-docs-binary-template
+    - .documentation-before-script-template
   stage: source-check
   needs:
     - job: simple-build
@@ -750,15 +802,14 @@ build-docs-gmxapi:
 # TODO why are the doxygen and sphinx log files disappearing
 # TODO use a feature from gitlab runner instead of using pipefail to get timings for the job
 webpage:
-  extends: .build-docs-webpage
+  extends:
+    - .build-docs-webpage
   stage: post-test
   needs:
-    - job: simple-build
-      artifacts: false 
     - job: build-docs
       artifacts: true
     - job: run-check-source
-      artifacts: true
+      artifacts: false
   variables:
     BUILD_DIR: build-docs
   except:
@@ -771,8 +822,6 @@ webpage-gmxapi:
     - .gmxapi-extra-installs
   stage: post-test
   needs:
-    - job: simple-build
-      artifacts: false 
     - job: build-docs-gmxapi
       artifacts: true
     - job: run-check-source
@@ -786,18 +835,16 @@ webpage-gmxapi:
 
 # Jobs running in release stage
 linkchecker:
-  extends: .build-docs-webpage
+  extends:
+    - .build-docs-webpage
   stage: nightly-build
+  dependencies:
+    - webpage-gmxapi
   only:
     - schedules
     - triggers
     - merge_requests
     - external_pull_requests
-  needs:
-    - job: simple-build
-      artifacts: false 
-    - job: webpage-gmxapi
-      artifacts: true
   except:
     variables:
       - $GROMACS_RELEASE
@@ -808,7 +855,9 @@ linkchecker:
       BUILD_DIR: build-docs-gmxapi
   script:
       - cd $BUILD_DIR
-      - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
+      - linkchecker docs/html/index.html -f ../docs/linkcheckerrc -Fxml --ignore-url html-full
+        --ignore-url html-user --ignore-url html-lib --ignore-url .tar.gz --ignore-url _sources
+        -o xml 
   artifacts:
     reports:
       junit: $BUILD_DIR/linkchecker-out.xml
@@ -830,11 +879,6 @@ build-archive-nightly:
         - $GROMACS_RELEASE
     variables:
         BUILD_DIR: build-package
-    artifacts:
-        when: always
-        expire_in: 1 week
-        paths:
-          - $BUILD_DIR/gromacs-*gz
 
 webpage-nightly:
     extends:
@@ -909,19 +953,16 @@ release-verify:
         - schedules
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 webpage-configure-release:
     extends:
       - .configure-docs-release
       - .configure-gmxapi-template
-      - .release-build-cache-template
+      - .release-configure-cache-template
     only:
       refs:
         - web
@@ -929,25 +970,21 @@ webpage-configure-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
     variables:
       CMAKE_EXTRA_OPTIONS: -DGMX_BUILD_HELP=on -DGMX_BUILD_MANUAL=on
 
 configure-gcc-7-release:
     extends:
       - .configure-gcc-release
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
+        RELEASE_BUILD_DIR: release-builds-gcc
     only:
       refs:
         - web
@@ -955,24 +992,20 @@ configure-gcc-7-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-gcc-7-gmxapi-release:
     extends:
       - .configure-gcc-release
       - .configure-gmxapi-template
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
+        RELEASE_BUILD_DIR: release-builds-gcc
     only:
       refs:
         - web
@@ -980,24 +1013,20 @@ configure-gcc-7-gmxapi-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-gcc-7-double-release:
     extends:
       - .configure-gcc-release
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
         CMAKE_PRECISION_OPTIONS: -DGMX_DOUBLE=ON
+        RELEASE_BUILD_DIR: release-builds-gcc
     only:
       refs:
         - web
@@ -1005,23 +1034,19 @@ configure-gcc-7-double-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-gcc-8-release:
     extends:
       - .configure-gcc-release
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .gcc8-template
     variables:
         COMPILER_MAJOR_VERSION: 8
+        RELEASE_BUILD_DIR: release-builds-gcc
     only:
       refs:
         - web
@@ -1029,23 +1054,19 @@ configure-gcc-8-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-clang-7-release:
     extends:
       - .configure-clang-release
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .clang7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
+        RELEASE_BUILD_DIR: release-builds-clang
     only:
       refs:
         - web
@@ -1053,24 +1074,20 @@ configure-clang-7-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-clang-7-gmxapi-release:
     extends:
       - .configure-clang-release
       - .configure-gmxapi-template
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .clang7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
+        RELEASE_BUILD_DIR: release-builds-clang
     only:
       refs:
         - web
@@ -1078,23 +1095,19 @@ configure-clang-7-gmxapi-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 configure-clang-8-release:
     extends:
       - .configure-clang-release
-      - .release-build-cache-template
+      - .release-configure-cache-template
       - .clang8-template
     variables:
         COMPILER_MAJOR_VERSION: 8
+        RELEASE_BUILD_DIR: release-builds-clang
     only:
       refs:
         - web
@@ -1102,15 +1115,10 @@ configure-clang-8-release:
         - triggers
       variables:
         - $GROMACS_RELEASE
-    needs:
-      - job: package-archive-release
-        artifacts: true
-      - job: package-regressiontests-release
-        artifacts: true
-      - job: prepare-release-version
-        artifacts: true
-      - job: release-verify
-        artifacts: false
+    dependencies:
+      - package-archive-release
+      - package-regressiontests-release
+      - prepare-release-version
 
 build-gcc-7-release:
     extends:
@@ -1118,10 +1126,8 @@ build-gcc-7-release:
       - .gcc7-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-release
         artifacts: true
     only:
@@ -1139,10 +1145,8 @@ build-gcc-7-gmxapi-release:
       - .gcc7-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-gmxapi-release
         artifacts: true
     only:
@@ -1159,10 +1163,8 @@ build-gcc-7-double-release:
       - .gcc7-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-double-release
         artifacts: true
     only:
@@ -1179,10 +1181,8 @@ build-gcc-8-release:
       - .gcc8-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-8-release
         artifacts: true
     only:
@@ -1199,10 +1199,8 @@ build-clang-7-release:
       - .clang7-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-7-release
         artifacts: true
     only:
@@ -1220,10 +1218,8 @@ build-clang-7-gmxapi-release:
       - .clang7-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-7-gmxapi-release
         artifacts: true
     only:
@@ -1240,10 +1236,8 @@ build-clang-8-release:
       - .clang8-template
     stage: release-build
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-8-release
         artifacts: true
     only:
@@ -1254,14 +1248,12 @@ build-clang-8-release:
       variables:
         - $GROMACS_RELEASE
 
-webpage-build-release:
+webpage-binary-release:
     extends:
       - .build-docs-binary
       - .gmxapi-extra-installs
     stage: release-build
     needs:
-      - job: release-verify
-        artifacts: false
       - job: webpage-configure-release
         artifacts: true
     variables:
@@ -1280,10 +1272,8 @@ test-gcc-7-release:
       - .gcc7-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-release
         artifacts: true
       - job: build-gcc-7-release
@@ -1303,10 +1293,8 @@ test-gcc-7-gmxapi-release:
       - .gcc7-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-gmxapi-release
         artifacts: true
       - job: build-gcc-7-gmxapi-release
@@ -1325,10 +1313,8 @@ test-gcc-7-double-release:
       - .gcc7-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-7-double-release
         artifacts: true
       - job: build-gcc-7-double-release
@@ -1347,10 +1333,8 @@ test-gcc-8-release:
       - .gcc8-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-gcc
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-gcc-8-release
         artifacts: true
       - job: build-gcc-8-release
@@ -1369,10 +1353,8 @@ test-clang-7-release:
       - .clang7-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-7-release
         artifacts: true
       - job: build-clang-7-release
@@ -1392,10 +1374,8 @@ test-clang-7-gmxapi-release:
       - .clang7-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-7-gmxapi-release
         artifacts: true
       - job: build-clang-7-gmxapi-release
@@ -1414,10 +1394,8 @@ test-clang-8-release:
       - .clang8-template
     stage: release-tests
     variables:
-        BUILD_DIR: release-builds
+        BUILD_DIR: release-builds-clang
     needs:
-      - job: release-verify
-        artifacts: false
       - job: configure-clang-8-release
         artifacts: true
       - job: build-clang-8-release
@@ -1430,12 +1408,16 @@ test-clang-8-release:
       variables:
         - $GROMACS_RELEASE
 
-webpage-archive-release:
+webpage-build-release:
   extends:
     - .build-docs-webpage
     - .configure-gmxapi-template
 
-  stage: release-deploy
+  dependencies:
+    - webpage-binary-release
+    - webpage-configure-release
+
+  stage: release-prepare-deploy
   only:
     refs:
       - web
@@ -1445,4 +1427,31 @@ webpage-archive-release:
       - $GROMACS_RELEASE
   variables:
       BUILD_DIR: release-doc-builds
+
+webpage-archive-release:
+    extends:
+      - .build-docs-webpage
+      - .configure-gmxapi-template
+    stage: release-deploy
+    only:
+      refs:
+        - web
+        - triggers
+        - schedules
+      variables:
+        - $GROMACS_RELEASE
+    dependencies:
+      - webpage-build-release
+      - package-archive-release
+      - package-regressiontests-release
+    variables:
+        BUILD_DIR: release-doc-builds
+    script:
+        - tar czf webpage.tar.gz $BUILD_DIR/docs/html/
+    artifacts:
+      when: always
+      paths:
+        - webpage.tar.gz
+        - gromacs-*tar.gz
+        - regressiontests-*tar.gz
 

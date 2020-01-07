@@ -26,7 +26,7 @@
           cd .. ;
         fi ;
         cd regressiontests ;
-        git https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH ;
+        git fetch https://gitlab.com/gromacs/gromacs-regressiontests.git $REGTESTBRANCH ;
         git checkout -qf FETCH_HEAD ;
         git clean -ffdxq ;
         git gc ;

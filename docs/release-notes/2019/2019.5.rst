@@ -1,10 +1,10 @@
 GROMACS 2019.5 release notes
 ----------------------------
 
-This version was released on TODO, 2019. These release notes
+This version was released on December 23rd, 2019. These release notes
 document the changes that have taken place in GROMACS since the
 previous 2019.4 version, to fix known issues. It also incorporates all
-fixes made in version 2018.7 and earlier, which you can find described
+fixes made in version 2018.8 and earlier, which you can find described
 in the :ref:`release-notes`.
 
 .. Note to developers!
@@ -80,8 +80,43 @@ Remove assertion failure with AWH when not using the initial stage
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+Make histogram output clearer
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+Output gave number of events included in histogram bar as *a.u.*,
+which was not clear for users.
+
+
+Fix dihedral angle calculation near 180 degree boundary
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The analysis tools could incorrectly calculate properties of torsion angles and their averages
+when close to the -180 or 180 degree boundary.
+
+:issue:`3225`
+
+
+Remove problematic output of gmx angle tool
+"""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that the calculation of the standard deviation
+for angles caused a divide by zero error for empty populations.
+Because this standard deviation was meaningless, it has been
+removed.
+
+:issue:`3206`
+
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Check that libhwloc headers and runtime match
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+It could happen that the libhwloc headers and library detection would
+lead to a mismatch at compile or runtime that could cause cryptic
+crashes while using mdrun.
+
+:issue:`3200`
 
 Miscellaneous
 ^^^^^^^^^^^^^
@@ -101,10 +136,16 @@ and expect whitespace separation will continue to work in all cases.
 :issue:`3176`
 
 Fix duplicate PDB CONECT record output
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+""""""""""""""""""""""""""""""""""""""
 
 PDB "CONECT" record output was duplicated in some instances. Since |Gromacs| does
 not use these anywhere, analysis was not affected. The behavior is now fixed.
 
 :issue:`3206`
 
+Fix performance issue with bonded interactions in wrong GPU stream
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+This could lead to a significant loss in performance.
+
+:issue:`3241`

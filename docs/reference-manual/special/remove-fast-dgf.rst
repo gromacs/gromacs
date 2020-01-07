@@ -83,7 +83,7 @@ Construction of virtual sites
    the plane of three atoms, with fixed distance; C: in
    the plane of three atoms, with fixed angle and distance;
    D: construction for amine groups
-   (-NH:math:`_2` or -NH:math:`_3^+`),
+   (-NH\ :math:`_2` or -NH\ :math:`_3^+`),
    see text for details.
 
 The goal of defining hydrogen atoms as virtual sites is to remove all

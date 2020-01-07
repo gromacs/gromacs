@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,6 +62,7 @@
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
 #include "gromacs/mdtypes/mdrunoptions.h"
+#include "gromacs/pulling/pull.h"
 #include "gromacs/taskassignment/taskassignment.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -488,7 +489,9 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
+bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
+                                    const bool        isDomainDecomposition,
+                                    const bool        useUpdateGroups,
                                     const bool        useGpuForPme,
                                     const bool        useGpuForNonbonded,
                                     const TaskTarget  updateTarget,
@@ -497,19 +500,38 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
                                     const gmx_mtop_t& mtop,
                                     const bool        useEssentialDynamics,
                                     const bool        doOrientationRestraints,
-                                    const bool        useReplicaExchange)
+                                    const bool        useReplicaExchange,
+                                    const bool        doRerun)
 {
 
-    if (updateTarget == TaskTarget::Cpu)
+    // '-update cpu' overrides the environment variable, '-update auto' does not
+    if (updateTarget == TaskTarget::Cpu || (updateTarget == TaskTarget::Auto && !forceGpuUpdateDefault))
     {
         return false;
     }
+
+    const bool hasAnyConstraints = gmx_mtop_interaction_count(mtop, IF_CONSTRAINT) > 0;
 
     std::string errorMessage;
 
     if (isDomainDecomposition)
     {
-        errorMessage += "Domain decomposition is not supported.\n";
+        if (!forceGpuUpdateDefault)
+        {
+            errorMessage += "Domain decomposition is not supported.\n ";
+        }
+        else if (hasAnyConstraints && !useUpdateGroups)
+        {
+            errorMessage +=
+                    "Domain decomposition is only supported with constraints when update groups "
+                    "are used. This means constraining all bonds is not supported, except for "
+                    "small molecules, and box sizes close to half the pair-list cutoff are not "
+                    "supported.\n ";
+        }
+    }
+    if (inputrec.eConstrAlg == econtSHAKE && hasAnyConstraints && gmx_mtop_ftype_count(mtop, F_CONSTR) > 0)
+    {
+        errorMessage += "SHAKE constraints are not supported.\n";
     }
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
@@ -552,10 +574,9 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
     {
         errorMessage += "Essential dynamics is not supported.\n";
     }
-    if (inputrec.bPull || inputrec.pull)
+    if (inputrec.bPull && pull_have_constraint(inputrec.pull))
     {
-        // Pull potentials are actually supported, but constraint pulling is not
-        errorMessage += "Pulling is not supported.\n";
+        errorMessage += "Constraints pulling is not supported.\n";
     }
     if (doOrientationRestraints)
     {
@@ -574,6 +595,10 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
     if (inputrec.eSwapCoords != eswapNO)
     {
         errorMessage += "Swapping the coordinates is not supported.\n";
+    }
+    if (doRerun)
+    {
+        errorMessage += "Re-run is not supported.\n";
     }
 
     // TODO: F_CONSTRNC is only unsupported, because isNumCoupledConstraintsSupported()
@@ -601,7 +626,14 @@ bool decideWhetherToUseGpuForUpdate(const bool        isDomainDecomposition,
         return false;
     }
 
-    return true;
+    if (isDomainDecomposition)
+    {
+        return forceGpuUpdateDefault;
+    }
+    else
+    {
+        return (updateTarget == TaskTarget::Gpu || forceGpuUpdateDefault);
+    }
 }
 
 } // namespace gmx

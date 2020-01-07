@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -754,14 +754,14 @@ static void gmx_conect_addline(gmx_conect_t* con, char* line)
 {
     int n, ai, aj;
 
-    std::string form2  = "%%*s";
-    std::string format = form2 + "%%d";
+    std::string form2  = "%*s";
+    std::string format = form2 + "%d";
     if (sscanf(line, format.c_str(), &ai) == 1)
     {
         do
         {
             form2 += "%*s";
-            format = form2 + "%%d";
+            format = form2 + "%d";
             n      = sscanf(line, format.c_str(), &aj);
             if (n == 1)
             {

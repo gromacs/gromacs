@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005 - 2014, The GROMACS development team.
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -146,6 +146,9 @@ int dd_pme_maxshift_y(const gmx_domdec_t* dd);
 
 /*! \brief Return whether constraints, not including settles, cross domain boundaries */
 bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
+
+/*! \brief Return whether update groups are used */
+bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
 
 /*! \brief Return whether the DD has a single dimension with a single pulse
  *

@@ -157,6 +157,15 @@ Performance and Run Control
 ``GMX_DISABLE_CUDA_TIMING``
         Deprecated. Use ``GMX_DISABLE_GPU_TIMING`` instead.
 
+``GMX_GPU_DD_COMMS``
+        perform domain decomposition halo exchange communication operations (on coordinate and force buffers)
+        directly on GPU memory spaces, without the staging of data through CPU memory, where possible.
+
+``GMX_GPU_PME_PP_COMMS``
+        when the simulation uses a separate PME rank, perform communication operations between PP and PME rank
+        (for coordinate and force buffers) directly on GPU memory spaces, without the staging of data through CPU
+        memory, where possible. 
+
 ``GMX_CYCLE_ALL``
         times all code during runs.  Incompatible with threads.
 
@@ -315,7 +324,7 @@ Performance and Run Control
 
 ``GMX_PME_NUM_THREADS``
         set the number of OpenMP or PME threads; overrides the default set by
-        :ref:`gmx mdrun`; can be used instead of the `-npme` command line option,
+        :ref:`gmx mdrun`; can be used instead of the ``-npme`` command line option,
         also useful to set heterogeneous per-process/-node thread count.
 
 ``GMX_PME_P3M``
@@ -324,7 +333,7 @@ Performance and Run Control
 ``GMX_PME_THREAD_DIVISION``
         PME thread division in the format "x y z" for all three dimensions. The
         sum of the threads in each dimension must equal the total number of PME threads (set in
-        `GMX_PME_NTHREADS`).
+        :envvar:`GMX_PME_NTHREADS`).
 
 ``GMX_PMEONEDD``
         if the number of domain decomposition cells is set to 1 for both x and y,
@@ -356,7 +365,7 @@ Performance and Run Control
 ``HWLOC_XMLFILE``
         Not strictly a |Gromacs| environment variable, but on large machines
         the hwloc detection can take a few seconds if you have lots of MPI processes.
-        If you run the hwloc command `lstopo out.xml` and set this environment
+        If you run the hwloc command :command:`lstopo out.xml` and set this environment
         variable to point to the location of this file, the hwloc library will use
         the cached information instead, which can be faster.
 

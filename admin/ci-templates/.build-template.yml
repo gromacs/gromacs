@@ -27,7 +27,9 @@
     - echo $CMAKE_GMXAPI_OPTIONS
     - if [[ -d $BUILD_DIR ]] ; then
       echo "Cleaning up build directory" ;
+      mv $BUILD_DIR/CMakeCache.txt . ;
       rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
+      mv CMakeCache.txt $BUILD_DIR ;
       else
       echo "Preparing new build directory" ;
       mkdir $BUILD_DIR ;
@@ -110,7 +112,9 @@
     - echo $CMAKE_GMXAPI_OPTIONS
     - if [[ -d $RELEASE_BUILD_DIR ]] ; then
       echo "Cleaning up build directory" ;
+      mv $RELEASE_BUILD_DIR/CMakeCache.txt . ;
       rm -rf $RELEASE_BUILD_DIR && mkdir $RELEASE_BUILD_DIR ;
+      mv CMakeCache.txt $RELEASE_BUILD_DIR ;
       else
       echo "Preparing new build directory" ;
       mkdir $RELEASE_BUILD_DIR ;
@@ -158,7 +162,7 @@
   artifacts:
     when: always
     paths:
-      - $BUILD_DIR/
+      - $BUILD_DIR
       - $INSTALL_DIR/
 
 .archive-build-template:
@@ -170,6 +174,7 @@
     KUBERNETES_CPU_REQUEST: 2
     KUBERNETES_MEMORY_LIMIT: 4Gi
   script:
+    - rm -rf gromacs*tar.gz
     - cd $BUILD_DIR
     - cmake --build . --target gmx -- -j4 2>&1 | tee buildLogFile.log
     - cmake --build . --target man -- -j4 2>&1 | tee manBuildLogFile.log
@@ -222,7 +227,9 @@
     - echo $CMAKE_GMXAPI_OPTIONS
     - if [[ -d $BUILD_DIR ]] ; then
       echo "Cleaning up build directory" ;
+      mv $BUILD_DIR/CMakeCache.txt . ;
       rm -rf $BUILD_DIR && mkdir $BUILD_DIR ;
+      mv CMakeCache.txt $BUILD_DIR ;
       else
       echo "Preparing new build directory" ;
       mkdir $BUILD_DIR ;
@@ -249,7 +256,7 @@
     - grep "cannot be built" buildLogFile.log testBuildLogFile.log | tee -a buildErrors.log || true
     - cmake --build . --target install 2>&1 | tee installBuildLogFile.log
     - if [ -s buildErrors.log ] ; then echo "Found compiler warning during build"; cat buildErrors.log; exit 1; fi
-    - ctest -D ExperimentalTest --output-on-failure -j2 | tee ctestLog.log || true
+    - ctest -D ExperimentalTest --output-on-failure | tee ctestLog.log || true
     - awk '/The following tests FAILED/,/^Errors while running CTest|^$/'
          ctestLog.log | tee ctestErrors.log
     - xsltproc scripts/CTest2JUnit.xsl Testing/`head -n 1 < Testing/TAG`/Test.xml > JUnitTestResults.xml

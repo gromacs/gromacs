@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,7 +166,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
             pme_gpu_get_device_stream(&pme), pme_gpu_get_device_context(&pme),
-            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme));
+            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
 }
 
 //! PME initialization with atom data
