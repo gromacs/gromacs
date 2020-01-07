@@ -22,6 +22,11 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Add support for ICC NextGen
+"""""""""""""""""""""""""""
+
+Add support for Intel Compiler based on LLVM technology.
+To compile GROMACS with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
 
 Miscellaneous
 ^^^^^^^^^^^^^
