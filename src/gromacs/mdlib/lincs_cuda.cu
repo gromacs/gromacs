@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -548,18 +548,35 @@ LincsCuda::~LincsCuda()
     }
 }
 
-/*! \brief Constructs and returns an atom constraint adjacency list
- *
- * Each constraint will be represented as a tuple, containing index of the second
- * constrained atom, index of the constraint and a sign that indicates the order of atoms in
- * which they are listed. Sign is needed to compute the mass factors.
- */
-static std::vector<std::vector<std::tuple<int, int, int>>>
+//! Helper type for discovering coupled constraints
+struct AtomsAdjacencyListElement
+{
+    AtomsAdjacencyListElement(const int indexOfSecondConstrainedAtom,
+                              const int indexOfConstraint,
+                              const int signFactor) :
+        indexOfSecondConstrainedAtom_(indexOfSecondConstrainedAtom),
+        indexOfConstraint_(indexOfConstraint),
+        signFactor_(signFactor)
+    {
+    }
+    //! The index of the other atom constrained to this atom.
+    int indexOfSecondConstrainedAtom_;
+    //! The index of this constraint in the container of constraints.
+    int indexOfConstraint_;
+    /*! \brief A multiplicative factor that indicates the relative
+     * order of the atoms in the atom list.
+     *
+     * Used for computing the mass factor of this constraint
+     * relative to any coupled constraints. */
+    int signFactor_;
+};
+//! Constructs and returns an atom constraint adjacency list
+static std::vector<std::vector<AtomsAdjacencyListElement>>
 constructAtomsAdjacencyList(const int numAtoms, ArrayRef<const int> iatoms)
 {
     const int                                           stride         = 1 + NRAL(F_CONSTR);
     const int                                           numConstraints = iatoms.ssize() / stride;
-    std::vector<std::vector<std::tuple<int, int, int>>> atomsAdjacencyList(numAtoms);
+    std::vector<std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList(numAtoms);
     for (int c = 0; c < numConstraints; c++)
     {
         int a1 = iatoms[stride * c + 1];
@@ -568,8 +585,8 @@ constructAtomsAdjacencyList(const int numAtoms, ArrayRef<const int> iatoms)
         // Each constraint will be represented as a tuple, containing index of the second
         // constrained atom, index of the constraint and a sign that indicates the order of atoms in
         // which they are listed. Sign is needed to compute the mass factors.
-        atomsAdjacencyList[a1].push_back(std::make_tuple(a2, c, +1));
-        atomsAdjacencyList[a2].push_back(std::make_tuple(a1, c, -1));
+        atomsAdjacencyList[a1].emplace_back(a2, c, +1);
+        atomsAdjacencyList[a2].emplace_back(a1, c, -1);
     }
 
     return atomsAdjacencyList;
@@ -595,17 +612,19 @@ constructAtomsAdjacencyList(const int numAtoms, ArrayRef<const int> iatoms)
  */
 inline int countCoupled(int           a,
                         ArrayRef<int> numCoupledConstraints,
-                        ArrayRef<const std::vector<std::tuple<int, int, int>>> atomsAdjacencyList)
+                        ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
 
 {
     int counted = 0;
     for (const auto& adjacentAtom : atomsAdjacencyList[a])
     {
-        const int c2 = std::get<1>(adjacentAtom);
+        const int c2 = adjacentAtom.indexOfConstraint_;
         if (numCoupledConstraints[c2] == -1)
         {
             numCoupledConstraints[c2] = 0; // To indicate we've been here
-            counted += 1 + countCoupled(std::get<0>(adjacentAtom), numCoupledConstraints, atomsAdjacencyList);
+            counted += 1
+                       + countCoupled(adjacentAtom.indexOfSecondConstrainedAtom_,
+                                      numCoupledConstraints, atomsAdjacencyList);
         }
     }
     return counted;
@@ -629,7 +648,7 @@ inline int countCoupled(int           a,
  */
 inline void addWithCoupled(ArrayRef<const int>                                    iatoms,
                            const int                                              stride,
-                           ArrayRef<const std::vector<std::tuple<int, int, int>>> atomsAdjacencyList,
+                           ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList,
                            ArrayRef<int>                                          splitMap,
                            const int                                              c,
                            int*                                                   currentMapIndex)
@@ -645,7 +664,7 @@ inline void addWithCoupled(ArrayRef<const int>                                  
             const int a1 = iatoms[stride * c + 1 + atomIndexInConstraint];
             for (const auto& adjacentAtom : atomsAdjacencyList[a1])
             {
-                const int c2 = std::get<1>(adjacentAtom);
+                const int c2 = adjacentAtom.indexOfConstraint_;
                 if (c2 != c)
                 {
                     addWithCoupled(iatoms, stride, atomsAdjacencyList, splitMap, c2, currentMapIndex);
@@ -664,7 +683,7 @@ inline void addWithCoupled(ArrayRef<const int>                                  
  * numCoupledConstraints vector is also used to keep track if the constrain was already counted.
  */
 static std::vector<int> countNumCoupledConstraints(ArrayRef<const int> iatoms,
-                                                   ArrayRef<const std::vector<std::tuple<int, int, int>>> atomsAdjacencyList)
+                                                   ArrayRef<const std::vector<AtomsAdjacencyListElement>> atomsAdjacencyList)
 {
     const int        stride         = 1 + NRAL(F_CONSTR);
     const int        numConstraints = iatoms.ssize() / stride;
@@ -821,21 +840,17 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
         coupledConstraintsCountsHost.at(splitMap.at(c1)) = 0;
         int c1a1                                         = iatoms[stride * c1 + 1];
         int c1a2                                         = iatoms[stride * c1 + 2];
-        int c2;
-        int c2a1;
-        int c2a2;
 
-        int sign;
-
-        // Constraints, coupled trough the first atom.
-        c2a1 = c1a1;
-        for (unsigned j = 0; j < atomsAdjacencyList.at(c1a1).size(); j++)
+        // Constraints, coupled through the first atom.
+        int c2a1 = c1a1;
+        for (const auto& atomAdjacencyList : atomsAdjacencyList[c1a1])
         {
-
-            std::tie(c2a2, c2, sign) = atomsAdjacencyList.at(c1a1).at(j);
+            int c2 = atomAdjacencyList.indexOfConstraint_;
 
             if (c1 != c2)
             {
+                int c2a2  = atomAdjacencyList.indexOfSecondConstrainedAtom_;
+                int sign  = atomAdjacencyList.signFactor_;
                 int index = kernelParams_.numConstraintsThreads
                                     * coupledConstraintsCountsHost.at(splitMap.at(c1))
                             + splitMap.at(c1);
@@ -855,13 +870,14 @@ void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
 
         // Constraints, coupled through the second atom.
         c2a1 = c1a2;
-        for (unsigned j = 0; j < atomsAdjacencyList.at(c1a2).size(); j++)
+        for (const auto& atomAdjacencyList : atomsAdjacencyList[c1a2])
         {
-
-            std::tie(c2a2, c2, sign) = atomsAdjacencyList.at(c1a2).at(j);
+            int c2 = atomAdjacencyList.indexOfConstraint_;
 
             if (c1 != c2)
             {
+                int c2a2  = atomAdjacencyList.indexOfSecondConstrainedAtom_;
+                int sign  = atomAdjacencyList.signFactor_;
                 int index = kernelParams_.numConstraintsThreads
                                     * coupledConstraintsCountsHost.at(splitMap.at(c1))
                             + splitMap.at(c1);

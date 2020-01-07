@@ -48,9 +48,12 @@
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
 struct t_inputrec;
+enum class PmeRunMode;
 
 namespace gmx
 {
+
+class MDLogger;
 
 //! Record where a compute task is targetted.
 enum class TaskTarget : int
@@ -235,7 +238,8 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  forceGpuUpdateDefault        If update should run on GPU by default.
  * \param[in]  isDomainDecomposition        Whether there more than one domain.
  * \param[in]  useUpdateGroups              If the constraints can be split across domains.
- * \param[in]  useGpuForPme                 Whether GPUs will be used for PME interactions.
+ * \param[in]  pmeRunMode                   PME running mode: CPU, GPU or mixed.
+ * \param[in]  havePmeOnlyRank              If there is a PME-only rank in the simulation.
  * \param[in]  useGpuForNonbonded           Whether GPUs will be used for nonbonded interactions.
  * \param[in]  updateTarget                 User choice for running simulation on GPU.
  * \param[in]  gpusWereDetected             Whether compatible GPUs were detected on any node.
@@ -245,24 +249,27 @@ bool decideWhetherToUseGpusForBonded(bool       useGpuForNonbonded,
  * \param[in]  doOrientationRestraints      If orientation restraints are enabled.
  * \param[in]  useReplicaExchange           If this is a REMD simulation.
  * \param[in]  doRerun                      It this is a rerun.
+ * \param[in]  mdlog                        MD logger.
  *
  * \returns    Whether complete simulation can be run on GPU.
  * \throws     std::bad_alloc            If out of memory
  *             InconsistentInputError    If the user requirements are inconsistent.
  */
-bool decideWhetherToUseGpuForUpdate(bool              forceGpuUpdateDefault,
-                                    bool              isDomainDecomposition,
-                                    bool              useUpdateGroups,
-                                    bool              useGpuForPme,
-                                    bool              useGpuForNonbonded,
-                                    TaskTarget        updateTarget,
-                                    bool              gpusWereDetected,
-                                    const t_inputrec& inputrec,
-                                    const gmx_mtop_t& mtop,
-                                    bool              useEssentialDynamics,
-                                    bool              doOrientationRestraints,
-                                    bool              useReplicaExchange,
-                                    bool              doRerun);
+bool decideWhetherToUseGpuForUpdate(bool                 forceGpuUpdateDefault,
+                                    bool                 isDomainDecomposition,
+                                    bool                 useUpdateGroups,
+                                    PmeRunMode           pmeRunMode,
+                                    bool                 havePmeOnlyRank,
+                                    bool                 useGpuForNonbonded,
+                                    TaskTarget           updateTarget,
+                                    bool                 gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    bool                 useEssentialDynamics,
+                                    bool                 doOrientationRestraints,
+                                    bool                 useReplicaExchange,
+                                    bool                 doRerun,
+                                    const gmx::MDLogger& mdlog);
 
 
 } // namespace gmx

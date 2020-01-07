@@ -4,14 +4,14 @@ include:
 .configure-extends-template:
     extends:
         - .configure-build-template
-        - .configure-cache-template
+        - .no-cache-template
         - .variables-template
         - .tags-template
 
 .configure-release-extends-template:
     extends:
         - .configure-build-release-template
-        - .release-configure-cache-template
+        - .no-cache-template
         - .variables-template
         - .tags-template
 
@@ -181,7 +181,7 @@ prepare-release-version:
 simple-build:
     extends:
       - .simple-build-template
-      - .simple-build-cache-template
+      - .build-cache-template
       - .variables-template
       - .tags-template
       - .gcc-before-script-template
@@ -962,7 +962,7 @@ webpage-configure-release:
     extends:
       - .configure-docs-release
       - .configure-gmxapi-template
-      - .release-configure-cache-template
+      - .no-cache-template
     only:
       refs:
         - web
@@ -980,7 +980,7 @@ webpage-configure-release:
 configure-gcc-7-release:
     extends:
       - .configure-gcc-release
-      - .release-configure-cache-template
+      - .no-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
@@ -1001,7 +1001,7 @@ configure-gcc-7-gmxapi-release:
     extends:
       - .configure-gcc-release
       - .configure-gmxapi-template
-      - .release-configure-cache-template
+      - .no-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
@@ -1021,7 +1021,7 @@ configure-gcc-7-gmxapi-release:
 configure-gcc-7-double-release:
     extends:
       - .configure-gcc-release
-      - .release-configure-cache-template
+      - .no-cache-template
       - .gcc7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
@@ -1042,7 +1042,7 @@ configure-gcc-7-double-release:
 configure-gcc-8-release:
     extends:
       - .configure-gcc-release
-      - .release-configure-cache-template
+      - .no-cache-template
       - .gcc8-template
     variables:
         COMPILER_MAJOR_VERSION: 8
@@ -1062,7 +1062,7 @@ configure-gcc-8-release:
 configure-clang-7-release:
     extends:
       - .configure-clang-release
-      - .release-configure-cache-template
+      - .no-cache-template
       - .clang7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
@@ -1083,7 +1083,7 @@ configure-clang-7-gmxapi-release:
     extends:
       - .configure-clang-release
       - .configure-gmxapi-template
-      - .release-configure-cache-template
+      - .no-cache-template
       - .clang7-template
     variables:
         COMPILER_MAJOR_VERSION: 7
@@ -1103,7 +1103,7 @@ configure-clang-7-gmxapi-release:
 configure-clang-8-release:
     extends:
       - .configure-clang-release
-      - .release-configure-cache-template
+      - .no-cache-template
       - .clang8-template
     variables:
         COMPILER_MAJOR_VERSION: 8

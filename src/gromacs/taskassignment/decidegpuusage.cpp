@@ -489,19 +489,21 @@ bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,
     return gpusWereDetected && usingOurCpuForPmeOrEwald;
 }
 
-bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
-                                    const bool        isDomainDecomposition,
-                                    const bool        useUpdateGroups,
-                                    const bool        useGpuForPme,
-                                    const bool        useGpuForNonbonded,
-                                    const TaskTarget  updateTarget,
-                                    const bool        gpusWereDetected,
-                                    const t_inputrec& inputrec,
-                                    const gmx_mtop_t& mtop,
-                                    const bool        useEssentialDynamics,
-                                    const bool        doOrientationRestraints,
-                                    const bool        useReplicaExchange,
-                                    const bool        doRerun)
+bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
+                                    const bool           isDomainDecomposition,
+                                    const bool           useUpdateGroups,
+                                    const PmeRunMode     pmeRunMode,
+                                    const bool           havePmeOnlyRank,
+                                    const bool           useGpuForNonbonded,
+                                    const TaskTarget     updateTarget,
+                                    const bool           gpusWereDetected,
+                                    const t_inputrec&    inputrec,
+                                    const gmx_mtop_t&    mtop,
+                                    const bool           useEssentialDynamics,
+                                    const bool           doOrientationRestraints,
+                                    const bool           useReplicaExchange,
+                                    const bool           doRerun,
+                                    const gmx::MDLogger& mdlog)
 {
 
     // '-update cpu' overrides the environment variable, '-update auto' does not
@@ -536,10 +538,15 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
     // Using the GPU-version of update if:
     // 1. PME is on the GPU (there should be a copy of coordinates on GPU for PME spread), or
     // 2. Non-bonded interactions are on the GPU.
-    if (!(useGpuForPme || useGpuForNonbonded))
+    if (pmeRunMode == PmeRunMode::CPU && !useGpuForNonbonded)
     {
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
+    }
+    // Since only direct GPU communications are supported with GPU update, PME should be fully offloaded in DD and PME only cases.
+    if (pmeRunMode != PmeRunMode::GPU && (isDomainDecomposition || havePmeOnlyRank))
+    {
+        errorMessage += "PME should run on GPU.\n";
     }
     if (!gpusWereDetected)
     {
@@ -616,7 +623,18 @@ bool decideWhetherToUseGpuForUpdate(const bool        forceGpuUpdateDefault,
 
     if (!errorMessage.empty())
     {
-        if (updateTarget == TaskTarget::Gpu)
+        if (updateTarget != TaskTarget::Gpu && forceGpuUpdateDefault)
+        {
+            GMX_LOG(mdlog.warning)
+                    .asParagraph()
+                    .appendText(
+                            "Update task on the GPU was required, by the "
+                            "GMX_FORCE_UPDATE_DEFAULT_GPU environment variable, but the following "
+                            "condition(s) were not satisfied:");
+            GMX_LOG(mdlog.warning).asParagraph().appendText(errorMessage.c_str());
+            GMX_LOG(mdlog.warning).asParagraph().appendText("Will use CPU version of update.");
+        }
+        else if (updateTarget == TaskTarget::Gpu)
         {
             std::string prefix = gmx::formatString(
                     "Update task on the GPU was required,\n"

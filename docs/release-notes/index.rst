@@ -45,6 +45,14 @@ Major release
 |Gromacs| 2020 series
 ---------------------
 
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2020/2020.1
+
 Major release
 ^^^^^^^^^^^^^
 

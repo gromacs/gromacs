@@ -32,6 +32,13 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ * \brief
+ * Defines gmx::ISerializer implementation for in-memory serialization.
+ *
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \ingroup module_utility
+ */
 #include "gmxpre.h"
 
 #include "inmemoryserializer.h"
@@ -90,11 +97,11 @@ T swapEndian(const T& value)
     return endianessSwappedValue.value_;
 }
 
-//! \brief Change the host-dependent endian settings to either Swap or DoNotSwap.
-//
-// \param endianSwapBehavior input swap behavior, might depend on host.
-//
-// \return Host-independent setting, either Swap or DoNotSwap.
+/*! \brief Change the host-dependent endian settings to either Swap or DoNotSwap.
+ *
+ * \param endianSwapBehavior input swap behavior, might depend on host.
+ *
+ * \return Host-independent setting, either Swap or DoNotSwap. */
 EndianSwapBehavior setEndianSwapBehaviorFromHost(EndianSwapBehavior endianSwapBehavior)
 {
     if (endianSwapBehavior == EndianSwapBehavior::SwapIfHostIsBigEndian)

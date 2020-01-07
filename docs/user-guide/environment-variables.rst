@@ -230,6 +230,14 @@ Performance and Run Control
 ``GMX_FORCE_UPDATE``
         update forces when invoking ``mdrun -rerun``.
 
+``GMX_FORCE_UPDATE_DEFAULT_GPU``
+        Force update to run on the GPU by default, overriding the ``mdrun -update auto`` option. Works similar to setting
+        ``mdrun -update gpu``, but (1) falls back to the CPU code-path, if set with input that is not supported and
+        (2) can be used to run update on GPUs in multi-rank cases. The latter case should be
+        considered experimental since it lacks substantial testing. Also, GPU update is only supported with the GPU direct
+        communications and ``GMX_FORCE_UPDATE_DEFAULT_GPU`` variable should be set simultaneously with ``GMX_GPU_DD_COMMS``
+        and ``GMX_GPU_PME_PP_COMMS`` environment variables in multi-rank case. Does not override ``mdrun -update cpu``.
+
 ``GMX_GPU_ID``
         set in the same way as ``mdrun -gpu_id``, ``GMX_GPU_ID``
         allows the user to specify different GPU IDs for different ranks, which can be useful for selecting different
