@@ -308,7 +308,8 @@ void Bayes::MCMC()
         {
             pmean_[k]     = (sum[k]/nsum);
             sum_of_sq[k] /= nsum;
-            psigma_[k]    = sqrt(sum_of_sq[k]-gmx::square(pmean_[k]));
+            double ps2    = std::max(0.0, sum_of_sq[k]-gmx::square(pmean_[k]));
+            psigma_[k]    = sqrt(ps2);
         }
     }
     if (nullptr != fpc)
