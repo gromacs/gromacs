@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -83,7 +83,7 @@ void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(const 
         ind_end   = ind_start + receiver.numAtoms;
 
         // Data will be transferred directly from GPU.
-        void* sendBuf = reinterpret_cast<void*>(&d_x[ind_start]);
+        void* sendBuf = reinterpret_cast<void*>(&d_x[ind_start * DIM]);
 
 #if GMX_MPI
         MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
