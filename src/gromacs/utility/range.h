@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,6 +43,8 @@
 #ifndef GMX_UTILITY_RANGE_H
 #define GMX_UTILITY_RANGE_H
 
+#include <type_traits>
+
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -76,7 +78,7 @@ public:
         //! Reference
         operator T&() { return value_; }
         //! Pointer
-        int operator*() const { return value_; }
+        T operator*() const { return value_; }
         //! Inequality comparison
         bool operator!=(const iterator other) { return value_ != other.value_; }
         //! Increment operator
@@ -86,7 +88,7 @@ public:
             return *this;
         }
         //! Increment operator
-        iterator operator++(T gmx_unused dummy)
+        iterator operator++(int gmx_unused dummy)
         {
             iterator tmp(*this);
             ++value_;
