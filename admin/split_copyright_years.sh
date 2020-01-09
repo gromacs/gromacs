@@ -1,8 +1,8 @@
+#!/bin/bash
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014,2016,2018 by the GROMACS development team.
-# Copyright (c) 2019,2020, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,30 +33,16 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(template template.cpp)
-if (WIN32)
-    gmx_target_warning_suppression(template /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
-    gmx_target_warning_suppression(template /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
-endif()
-target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
+# Finds copyright statements that have more than five years, such as
+#
+#   ... Copyright (c) 2012,2013,2016,2017,2018,2019, by the GROMACS ...
+#
+# and splits them into multiple lines, like
+#
+#   ... Copyright (c) 2012,2013,2016,2017,2018, by the GROMACS development team.
+#   ... Copyright (c) 2019, by the GROMACS development team, led by
+#
+# so that the copyright checker recognizes the second line as one that can be extended.
+# This will need to be re-rerun every few years as the length of the last line grows.
 
-set(DOCUMENTATION_HTTP_URL_BASE
-    http://jenkins.gromacs.org/job/Documentation_Nightly_master/javadoc)
-if (SOURCE_IS_SOURCE_DISTRIBUTION)
-    set(DOCUMENTATION_HTTP_URL_BASE
-        http://manual.gromacs.org/documentation/${GMX_VERSION_STRING})
-endif()
-configure_file(README.cmakein README @ONLY)
-
-install(FILES CMakeLists.txt.template
-        DESTINATION ${GMX_INSTALL_GMXDATADIR}/template
-        RENAME CMakeLists.txt
-        COMPONENT development)
-
-    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/README template.cpp Makefile.pkg
-        DESTINATION ${GMX_INSTALL_GMXDATADIR}/template
-        COMPONENT development)
-
-install(FILES cmake/FindGROMACS.cmake
-        DESTINATION ${GMX_INSTALL_GMXDATADIR}/template/cmake
-        COMPONENT development)
+sed -i 's/\( \?.\) Copyright (c) \([0-9][0-9][0-9][0-9],[0-9][0-9][0-9][0-9],[0-9][0-9][0-9][0-9],[0-9][0-9][0-9][0-9],[0-9][0-9][0-9][0-9]\),\([0-9][0-9][0-9][0-9],.*,\) by the GROMACS/\1 Copyright (c) \2 by the GROMACS development team.\n\1 Copyright (c) \3 by the GROMACS/g' $(git grep -l "by the GROMACS")
