@@ -55,7 +55,7 @@ struct gmx_ffparams_t
     {
         GMX_ASSERT(iparams.size() == functype.size(), "Parameters and function types go together");
 
-        return gmx::ssize(functype);
+        return static_cast<int>(functype.size());
     }
 
     /* TODO: Consider merging functype and iparams, either by storing

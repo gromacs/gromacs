@@ -132,7 +132,7 @@ struct SimulationGroups
      */
     int numberOfGroupNumbers(SimulationAtomGroupType group) const
     {
-        return gmx::ssize(groupNumbers[group]);
+        return static_cast<int>(groupNumbers[group].size());
     }
 };
 

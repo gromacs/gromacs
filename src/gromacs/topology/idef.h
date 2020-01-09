@@ -220,7 +220,7 @@ typedef int t_functype;
 struct InteractionList
 {
     /* Returns the total number of elements in iatoms */
-    int size() const { return gmx::ssize(iatoms); }
+    int size() const { return static_cast<int>(iatoms.size()); }
 
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
