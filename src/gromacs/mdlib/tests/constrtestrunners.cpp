@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,12 +143,12 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
 
 #if GMX_GPU != GMX_GPU_CUDA
 /*! \brief
- * Stub for LINCS constraints on CUDA-enabled GPU to satisfy compiler.
+ * Stub for GPU version of LINCS constraints to satisfy compiler.
  *
  * \param[in] testData        Test data structure.
  * \param[in] pbc             Periodic boundary data.
  */
-void applyLincsCuda(ConstraintsTestData gmx_unused* testData, t_pbc gmx_unused pbc)
+void applyLincsGpu(ConstraintsTestData gmx_unused* testData, t_pbc gmx_unused pbc)
 {
     FAIL() << "Dummy LINCS CUDA function was called instead of the real one.";
 }

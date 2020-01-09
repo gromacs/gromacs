@@ -61,7 +61,7 @@
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/mdlib/leapfrog_gpu.cuh"
-#include "gromacs/mdlib/lincs_cuda.cuh"
+#include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 
@@ -127,7 +127,7 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
     // Constraints need both coordinates before (d_x_) and after (d_xp_) update. However, after constraints
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
-    lincsCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+    lincsGpu_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
     settleCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
 
     // scaledVirial -> virial (methods above returns scaled values)
@@ -176,7 +176,7 @@ UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
 
 
     integrator_ = std::make_unique<LeapFrogGpu>(commandStream_);
-    lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder, commandStream_);
+    lincsGpu_   = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, commandStream_);
     settleCuda_ = std::make_unique<SettleCuda>(mtop, commandStream_);
 
     coordinateScalingKernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
@@ -212,7 +212,7 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
 
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(md, numTempScaleValues, md.cTC);
-    lincsCuda_->set(idef, md);
+    lincsGpu_->set(idef, md);
     settleCuda_->set(idef, md);
 
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
@@ -281,7 +281,7 @@ GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
 
 bool UpdateConstrainCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 {
-    return LincsCuda::isNumCoupledConstraintsSupported(mtop);
+    return LincsGpu::isNumCoupledConstraintsSupported(mtop);
 }
 
 } // namespace gmx

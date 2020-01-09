@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/mdlib/lincs_cuda.cuh"
+#include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/unique_cptr.h"
 
@@ -63,21 +63,21 @@ namespace test
 {
 
 /*! \brief
- * Initialize and apply LINCS constraints on CUDA-enabled GPU.
+ * Initialize and apply LINCS constraints on GPU.
  *
  * \param[in] testData        Test data structure.
  * \param[in] pbc             Periodic boundary data.
  */
-void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc)
+void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
 {
-    auto lincsCuda =
-            std::make_unique<LincsCuda>(testData->ir_.nLincsIter, testData->ir_.nProjOrder, nullptr);
+    auto lincsGpu =
+            std::make_unique<LincsGpu>(testData->ir_.nLincsIter, testData->ir_.nProjOrder, nullptr);
 
     bool    updateVelocities = true;
     int     numAtoms         = testData->numAtoms_;
     float3 *d_x, *d_xp, *d_v;
 
-    lincsCuda->set(testData->idef_, testData->md_);
+    lincsGpu->set(testData->idef_, testData->md_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
@@ -94,8 +94,8 @@ void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc)
         copyToDeviceBuffer(&d_v, (float3*)(testData->v_.data()), 0, numAtoms, nullptr,
                            GpuApiCallBehavior::Sync, nullptr);
     }
-    lincsCuda->apply(d_x, d_xp, updateVelocities, d_v, testData->invdt_, testData->computeVirial_,
-                     testData->virialScaled_, pbcAiuc);
+    lincsGpu->apply(d_x, d_xp, updateVelocities, d_v, testData->invdt_, testData->computeVirial_,
+                    testData->virialScaled_, pbcAiuc);
 
     copyFromDeviceBuffer((float3*)(testData->xPrime_.data()), &d_xp, 0, numAtoms, nullptr,
                          GpuApiCallBehavior::Sync, nullptr);

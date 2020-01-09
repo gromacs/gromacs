@@ -50,7 +50,7 @@
 
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/mdlib/leapfrog_gpu.cuh"
-#include "gromacs/mdlib/lincs_cuda.cuh"
+#include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/mdtypes/inputrec.h"
@@ -199,7 +199,7 @@ private:
     //! Leap-Frog integrator
     std::unique_ptr<LeapFrogGpu> integrator_;
     //! LINCS CUDA object to use for non-water constraints
-    std::unique_ptr<LincsCuda> lincsCuda_;
+    std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE CUDA object for water constrains
     std::unique_ptr<SettleCuda> settleCuda_;
 

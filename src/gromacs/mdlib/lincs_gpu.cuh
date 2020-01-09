@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,15 +34,15 @@
  */
 /*! \libinternal \file
  *
- * \brief Declares the class for CUDA implementation of LINCS.
+ * \brief Declares the class for GPU implementation of LINCS.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_LINCS_CUDA_CUH
-#define GMX_MDLIB_LINCS_CUDA_CUH
+#ifndef GMX_MDLIB_LINCS_GPU_CUH
+#define GMX_MDLIB_LINCS_GPU_CUH
 
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
@@ -60,7 +60,7 @@ namespace gmx
  * to the GPU as a single structure.
  *
  */
-struct LincsCudaKernelParameters
+struct LincsGpuKernelParameters
 {
     //! Periodic boundary data
     PbcAiuc pbcAiuc;
@@ -93,8 +93,8 @@ struct LincsCudaKernelParameters
     float* d_massFactors;
 };
 
-/*! \internal \brief Class with interfaces and data for CUDA version of LINCS. */
-class LincsCuda
+/*! \internal \brief Class with interfaces and data for GPU version of LINCS. */
+class LincsGpu
 {
 
 public:
@@ -104,9 +104,9 @@ public:
      * \param[in] expansionOrder   Order of the matrix inversion algorithm.
      * \param[in] commandStream    Device command stream.
      */
-    LincsCuda(int numIterations, int expansionOrder, CommandStream commandStream);
+    LincsGpu(int numIterations, int expansionOrder, CommandStream commandStream);
     /*! \brief Destructor.*/
-    ~LincsCuda();
+    ~LincsGpu();
 
     /*! \brief Apply LINCS.
      *
@@ -159,18 +159,18 @@ public:
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported
-     * by the CUDA LINCS code.
+     * by the GPU LINCS code.
      *
      * \param[in] mtop The molecular topology
      */
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
-    //! CUDA stream
+    //! GPU stream
     CommandStream commandStream_;
 
-    //! Parameters and pointers, passed to the CUDA kernel
-    LincsCudaKernelParameters kernelParams_;
+    //! Parameters and pointers, passed to the GPU kernel
+    LincsGpuKernelParameters kernelParams_;
 
     //! Scaled virial tensor (6 floats: [XX, XY, XZ, YY, YZ, ZZ])
     std::vector<float> h_virialScaled_;
@@ -192,4 +192,4 @@ private:
 
 } // namespace gmx
 
-#endif // GMX_MDLIB_LINCS_CUDA_CUH
+#endif // GMX_MDLIB_LINCS_GPU_CUH

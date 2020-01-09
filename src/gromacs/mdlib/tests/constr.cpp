@@ -91,7 +91,7 @@ std::vector<std::string> getRunnersNames()
     runnersNames.emplace_back("LINCS");
     if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
     {
-        runnersNames.emplace_back("LINCS_CUDA");
+        runnersNames.emplace_back("LINCS_GPU");
     }
     return runnersNames;
 }
@@ -153,8 +153,8 @@ public:
         algorithms_["SHAKE"] = applyShake;
         // LINCS
         algorithms_["LINCS"] = applyLincs;
-        // LINCS using CUDA (will only be called if CUDA is available)
-        algorithms_["LINCS_CUDA"] = applyLincsCuda;
+        // LINCS using GPU (will only be called if GPU is available)
+        algorithms_["LINCS_GPU"] = applyLincsGpu;
     }
 
     /*! \brief

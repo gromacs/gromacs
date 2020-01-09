@@ -40,8 +40,6 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \todo Reconsider naming, i.e. "cuda" suffics should be changed to "gpu".
- *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  * \author Alan Gray <alang@nvidia.com>
  *
@@ -49,7 +47,7 @@
  */
 #include "gmxpre.h"
 
-#include "lincs_cuda.cuh"
+#include "lincs_gpu.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -106,7 +104,7 @@ constexpr static int c_maxThreadsPerBlock = c_threadsPerBlock;
  */
 template<bool updateVelocities, bool computeVirial>
 __launch_bounds__(c_maxThreadsPerBlock) __global__
-        void lincs_kernel(LincsCudaKernelParameters kernelParams,
+        void lincs_kernel(LincsGpuKernelParameters kernelParams,
                           const float3* __restrict__ gm_x,
                           float3*     gm_xp,
                           float3*     gm_v,
@@ -427,14 +425,14 @@ inline auto getLincsKernelPtr(const bool updateVelocities, const bool computeVir
     return kernelPtr;
 }
 
-void LincsCuda::apply(const float3* d_x,
-                      float3*       d_xp,
-                      const bool    updateVelocities,
-                      float3*       d_v,
-                      const real    invdt,
-                      const bool    computeVirial,
-                      tensor        virialScaled,
-                      const PbcAiuc pbcAiuc)
+void LincsGpu::apply(const float3* d_x,
+                     float3*       d_xp,
+                     const bool    updateVelocities,
+                     float3*       d_v,
+                     const real    invdt,
+                     const bool    computeVirial,
+                     tensor        virialScaled,
+                     const PbcAiuc pbcAiuc)
 {
     ensureNoPendingCudaError("In CUDA version of LINCS");
 
@@ -508,7 +506,7 @@ void LincsCuda::apply(const float3* d_x,
     return;
 }
 
-LincsCuda::LincsCuda(int numIterations, int expansionOrder, CommandStream commandStream) :
+LincsGpu::LincsGpu(int numIterations, int expansionOrder, CommandStream commandStream) :
     commandStream_(commandStream)
 {
     kernelParams_.numIterations  = numIterations;
@@ -528,7 +526,7 @@ LincsCuda::LincsCuda(int numIterations, int expansionOrder, CommandStream comman
     numAtomsAlloc_              = 0;
 }
 
-LincsCuda::~LincsCuda()
+LincsGpu::~LincsGpu()
 {
     freeDeviceBuffer(&kernelParams_.d_virialScaled);
 
@@ -702,7 +700,7 @@ static std::vector<int> countNumCoupledConstraints(ArrayRef<const int> iatoms,
     return numCoupledConstraints;
 }
 
-bool LincsCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
+bool LincsGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 {
     for (const gmx_moltype_t& molType : mtop.moltype)
     {
@@ -722,7 +720,7 @@ bool LincsCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
     return true;
 }
 
-void LincsCuda::set(const t_idef& idef, const t_mdatoms& md)
+void LincsGpu::set(const t_idef& idef, const t_mdatoms& md)
 {
     int numAtoms = md.nr;
     // List of constrained atoms (CPU memory)
