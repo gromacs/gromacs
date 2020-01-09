@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,15 +40,13 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \todo Reconsider naming towards using "gpu" suffix instead of "cuda".
- *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  */
 #include "gmxpre.h"
 
-#include "leapfrog_cuda.cuh"
+#include "leapfrog_gpu.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -262,16 +260,16 @@ inline auto selectLeapFrogKernelPtr(bool                doTemperatureScaling,
     return kernelPtr;
 }
 
-void LeapFrogCuda::integrate(const float3*                     d_x,
-                             float3*                           d_xp,
-                             float3*                           d_v,
-                             const float3*                     d_f,
-                             const real                        dt,
-                             const bool                        doTemperatureScaling,
-                             gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                             const bool                        doParrinelloRahman,
-                             const float                       dtPressureCouple,
-                             const matrix                      prVelocityScalingMatrix)
+void LeapFrogGpu::integrate(const float3*                     d_x,
+                            float3*                           d_xp,
+                            float3*                           d_v,
+                            const float3*                     d_f,
+                            const real                        dt,
+                            const bool                        doTemperatureScaling,
+                            gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                            const bool                        doParrinelloRahman,
+                            const float                       dtPressureCouple,
+                            const matrix                      prVelocityScalingMatrix)
 {
 
     ensureNoPendingCudaError("In CUDA version of Leap-Frog integrator");
@@ -318,7 +316,7 @@ void LeapFrogCuda::integrate(const float3*                     d_x,
     return;
 }
 
-LeapFrogCuda::LeapFrogCuda(CommandStream commandStream) : commandStream_(commandStream)
+LeapFrogGpu::LeapFrogGpu(CommandStream commandStream) : commandStream_(commandStream)
 {
     numAtoms_ = 0;
 
@@ -331,12 +329,12 @@ LeapFrogCuda::LeapFrogCuda(CommandStream commandStream) : commandStream_(command
     kernelLaunchConfig_.stream           = commandStream_;
 }
 
-LeapFrogCuda::~LeapFrogCuda()
+LeapFrogGpu::~LeapFrogGpu()
 {
     freeDeviceBuffer(&d_inverseMasses_);
 }
 
-void LeapFrogCuda::set(const t_mdatoms& md, const int numTempScaleValues, const unsigned short* tempScaleGroups)
+void LeapFrogGpu::set(const t_mdatoms& md, const int numTempScaleValues, const unsigned short* tempScaleGroups)
 {
     numAtoms_                       = md.nr;
     kernelLaunchConfig_.gridSize[0] = (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;

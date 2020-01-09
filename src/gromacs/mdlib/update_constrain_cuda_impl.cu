@@ -60,7 +60,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
-#include "gromacs/mdlib/leapfrog_cuda.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.cuh"
 #include "gromacs/mdlib/lincs_cuda.cuh"
 #include "gromacs/mdlib/settle_cuda.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
@@ -175,7 +175,7 @@ UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
                              : commandStream_ = nullptr;
 
 
-    integrator_ = std::make_unique<LeapFrogCuda>(commandStream_);
+    integrator_ = std::make_unique<LeapFrogGpu>(commandStream_);
     lincsCuda_  = std::make_unique<LincsCuda>(ir.nLincsIter, ir.nProjOrder, commandStream_);
     settleCuda_ = std::make_unique<SettleCuda>(mtop, commandStream_);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,15 @@
  */
 /*! \libinternal \file
  *
- * \brief Declarations for CUDA implementation of Leap-Frog.
- *
- * \todo Reconsider naming towards using "gpu" suffix instead of "cuda".
+ * \brief Declarations for GPU implementation of Leap-Frog.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_LEAPFROG_CUDA_CUH
-#define GMX_MDLIB_LEAPFROG_CUDA_CUH
+#ifndef GMX_MDLIB_LEAPFROG_GPU_CUH
+#define GMX_MDLIB_LEAPFROG_GPU_CUH
 
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -58,7 +56,7 @@
 namespace gmx
 {
 
-class LeapFrogCuda
+class LeapFrogGpu
 {
 
 public:
@@ -66,8 +64,8 @@ public:
      *
      * \param[in] commandStream  Device command stream to use.
      */
-    LeapFrogCuda(CommandStream commandStream);
-    ~LeapFrogCuda();
+    LeapFrogGpu(CommandStream commandStream);
+    ~LeapFrogGpu();
 
     /*! \brief Integrate
      *
@@ -112,9 +110,9 @@ public:
     class Impl;
 
 private:
-    //! CUDA stream
+    //! GPU stream
     CommandStream commandStream_;
-    //! CUDA kernel launch config
+    //! GPU kernel launch config
     KernelLaunchConfig kernelLaunchConfig_;
     //! Number of atoms
     int numAtoms_;

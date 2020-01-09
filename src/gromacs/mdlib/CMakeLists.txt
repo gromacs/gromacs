@@ -43,7 +43,7 @@ if(GMX_USE_CUDA)
     gmx_add_libgromacs_sources(
        lincs_cuda.cu
        settle_cuda.cu
-       leapfrog_cuda.cu
+       leapfrog_gpu.cu
        update_constrain_cuda_impl.cu
        )
 endif()
