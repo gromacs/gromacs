@@ -62,7 +62,7 @@
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/mdlib/leapfrog_gpu.cuh"
 #include "gromacs/mdlib/lincs_gpu.cuh"
-#include "gromacs/mdlib/settle_cuda.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 
 namespace gmx
@@ -128,7 +128,7 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
     // are applied, the d_x_ can be discarded. So we intentionally swap the d_x_ and d_xp_ here to avoid the
     // d_xp_ -> d_x_ copy after constraints. Note that the integrate saves them in the wrong order as well.
     lincsGpu_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
-    settleCuda_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
+    settleGpu_->apply(d_xp_, d_x_, updateVelocities, d_v_, 1.0 / dt, computeVirial, virial, pbcAiuc_);
 
     // scaledVirial -> virial (methods above returns scaled values)
     float scaleFactor = 0.5f / (dt * dt);
@@ -177,7 +177,7 @@ UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
 
     integrator_ = std::make_unique<LeapFrogGpu>(commandStream_);
     lincsGpu_   = std::make_unique<LincsGpu>(ir.nLincsIter, ir.nProjOrder, commandStream_);
-    settleCuda_ = std::make_unique<SettleCuda>(mtop, commandStream_);
+    settleGpu_  = std::make_unique<SettleGpu>(mtop, commandStream_);
 
     coordinateScalingKernelLaunchConfig_.blockSize[0]     = c_threadsPerBlock;
     coordinateScalingKernelLaunchConfig_.blockSize[1]     = 1;
@@ -213,7 +213,7 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
     // Integrator should also update something, but it does not even have a method yet
     integrator_->set(md, numTempScaleValues, md.cTC);
     lincsGpu_->set(idef, md);
-    settleCuda_->set(idef, md);
+    settleGpu_->set(idef, md);
 
     coordinateScalingKernelLaunchConfig_.gridSize[0] =
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;

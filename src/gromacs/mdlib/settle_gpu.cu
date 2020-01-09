@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,6 @@
  * using CUDA, including class initialization, data-structures management
  * and GPU kernel.
  *
- * \todo Reconsider naming to use "gpu" suffix instead of "cuda".
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
@@ -48,7 +47,7 @@
  */
 #include "gmxpre.h"
 
-#include "settle_cuda.cuh"
+#include "settle_gpu.cuh"
 
 #include <assert.h>
 #include <stdio.h>
@@ -413,14 +412,14 @@ inline auto getSettleKernelPtr(const bool updateVelocities, const bool computeVi
     return kernelPtr;
 }
 
-void SettleCuda::apply(const float3* d_x,
-                       float3*       d_xp,
-                       const bool    updateVelocities,
-                       float3*       d_v,
-                       const real    invdt,
-                       const bool    computeVirial,
-                       tensor        virialScaled,
-                       const PbcAiuc pbcAiuc)
+void SettleGpu::apply(const float3* d_x,
+                      float3*       d_xp,
+                      const bool    updateVelocities,
+                      float3*       d_v,
+                      const real    invdt,
+                      const bool    computeVirial,
+                      tensor        virialScaled,
+                      const PbcAiuc pbcAiuc)
 {
 
     ensureNoPendingCudaError("In CUDA version SETTLE");
@@ -486,7 +485,7 @@ void SettleCuda::apply(const float3* d_x,
     return;
 }
 
-SettleCuda::SettleCuda(const gmx_mtop_t& mtop, CommandStream commandStream) :
+SettleGpu::SettleGpu(const gmx_mtop_t& mtop, CommandStream commandStream) :
     commandStream_(commandStream)
 {
     static_assert(sizeof(real) == sizeof(float),
@@ -591,7 +590,7 @@ SettleCuda::SettleCuda(const gmx_mtop_t& mtop, CommandStream commandStream) :
     h_virialScaled_.resize(6);
 }
 
-SettleCuda::~SettleCuda()
+SettleGpu::~SettleGpu()
 {
     // Early exit if there is no settles
     if (numSettles_ == 0)
@@ -605,7 +604,7 @@ SettleCuda::~SettleCuda()
     }
 }
 
-void SettleCuda::set(const t_idef& idef, const t_mdatoms gmx_unused& md)
+void SettleGpu::set(const t_idef& idef, const t_mdatoms gmx_unused& md)
 {
     const int nral1     = 1 + NRAL(F_SETTLE);
     t_ilist   il_settle = idef.il[F_SETTLE];

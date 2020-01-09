@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@
 
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
-#include "gromacs/mdlib/settle_cuda.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/utility/unique_cptr.h"
 
 namespace gmx
@@ -86,9 +86,9 @@ void applySettleGpu(SettleTestData*  testData,
     // TODO: Here we should check that at least 1 suitable GPU is available
     GMX_RELEASE_ASSERT(canPerformGpuDetection(), "Can't detect CUDA-capable GPUs.");
 
-    auto settleCuda = std::make_unique<SettleCuda>(testData->mtop_, nullptr);
+    auto settleGpu = std::make_unique<SettleGpu>(testData->mtop_, nullptr);
 
-    settleCuda->set(testData->idef_, testData->mdatoms_);
+    settleGpu->set(testData->idef_, testData->mdatoms_);
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
@@ -110,8 +110,8 @@ void applySettleGpu(SettleTestData*  testData,
     {
         copyToDeviceBuffer(&d_v, (float3*)h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     }
-    settleCuda->apply(d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial,
-                      testData->virial_, pbcAiuc);
+    settleGpu->apply(d_x, d_xp, updateVelocities, d_v, testData->reciprocalTimeStep_, calcVirial,
+                     testData->virial_, pbcAiuc);
 
     copyFromDeviceBuffer((float3*)h_xp, &d_xp, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     if (updateVelocities)

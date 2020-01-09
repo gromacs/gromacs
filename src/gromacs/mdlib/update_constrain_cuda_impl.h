@@ -51,7 +51,7 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/mdlib/leapfrog_gpu.cuh"
 #include "gromacs/mdlib/lincs_gpu.cuh"
-#include "gromacs/mdlib/settle_cuda.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/mdtypes/inputrec.h"
 
@@ -201,7 +201,7 @@ private:
     //! LINCS CUDA object to use for non-water constraints
     std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE CUDA object for water constrains
-    std::unique_ptr<SettleCuda> settleCuda_;
+    std::unique_ptr<SettleGpu> settleGpu_;
 
     //! An pointer to the event to indicate when the update of coordinates is complete
     GpuEventSynchronizer* coordinatesReady_;
