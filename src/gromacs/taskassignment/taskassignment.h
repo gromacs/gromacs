@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -220,12 +220,19 @@ public:
      * and in what way.
      *
      * \param[in]  mdlog           Logging object.
-     * \param[in]  printHostName   Print the hostname in the usage information
-     * \param[in]  useGpuForBonded Whether GPU PP tasks will do bonded work on the GPU
-     * \param[in]  pmeRunMode      Describes the execution of PME tasks
+     * \param[in]  printHostName   Print the hostname in the usage information.
+     * \param[in]  useGpuForBonded Whether GPU PP tasks will do bonded work on the GPU.
+     * \param[in]  pmeRunMode      Describes the execution of PME tasks.
+     * \param[in]  useGpuForUpdate Whether the update is offloaded on the GPU.
      *
-     * \throws     std::bad_alloc if out of memory */
-    void reportGpuUsage(const MDLogger& mdlog, bool printHostName, bool useGpuForBonded, PmeRunMode pmeRunMode);
+     * \throws     std::bad_alloc if out of memory
+     */
+    void reportGpuUsage(const MDLogger& mdlog,
+                        bool            printHostName,
+                        bool            useGpuForBonded,
+                        PmeRunMode      pmeRunMode,
+                        bool            useGpuForUpdate);
+
     /*! \brief Logs to \c mdlog information that may help a user
      * learn how to let mdrun make a task assignment that runs
      * faster.

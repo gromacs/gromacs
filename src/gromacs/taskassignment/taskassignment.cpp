@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -381,10 +381,11 @@ GpuTaskAssignments::GpuTaskAssignments(const gmx_hw_info_t& hardwareInfo) :
 void GpuTaskAssignments::reportGpuUsage(const MDLogger& mdlog,
                                         bool            printHostName,
                                         bool            useGpuForBonded,
-                                        PmeRunMode      pmeRunMode)
+                                        PmeRunMode      pmeRunMode,
+                                        bool            useGpuForUpdate)
 {
     gmx::reportGpuUsage(mdlog, assignmentForAllRanksOnThisNode_, numGpuTasksOnThisNode_,
-                        numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode);
+                        numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 }
 
 gmx_device_info_t* GpuTaskAssignments::initNonbondedDevice(const t_commrec* cr) const
