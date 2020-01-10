@@ -144,7 +144,8 @@ int alex_qm2molprop(int argc, char *argv[])
                       maxpot, 
                       nsymm, 
                       jobtype,
-                      0.0);
+                      0.0,
+                      false);
             mp.push_back(std::move(mmm));
         }
         printf("Succesfully read %d molprops from %d Gaussian files.\n", 

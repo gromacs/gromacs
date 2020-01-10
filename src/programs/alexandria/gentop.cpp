@@ -152,6 +152,7 @@ int alex_gentop(int argc, char *argv[])
     static gmx_bool                  bCUBE          = false;
     static gmx_bool                  bH14           = true;
     static gmx_bool                  bVerbose       = true;
+    static gmx_bool                  addHydrogens   = false;
 
     static const char               *ff[]           = {nullptr, "ACM-g", "ACM-pg", "ACM-s", "ACM-ps", "ESP-p", "ESP-pp", "ESP-pg", "ESP-ps", "Yang", "Bultinck", "Rappe", nullptr};
     static const char               *cgopt[]        = {nullptr, "Atom", "Group", "Neutral", nullptr};
@@ -196,6 +197,8 @@ int alex_gentop(int argc, char *argv[])
           "Tolerance for assigning charge generation algorithm" },
         { "-qtot",   FALSE, etREAL, {&qtot},
           "Total charge of the molecule. If the input file is a Gaussian log file, qtot will be taken from the log file." },
+        { "-addh",   FALSE, etBOOL, {&addHydrogens},
+          "Add hydrogen atoms to the compound - useful for PDB files." },
         { "-qcycle", FALSE, etINT, {&qcycle},
           "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
         { "-hfac",    FALSE, etREAL, {&hfac},
@@ -319,7 +322,8 @@ int alex_gentop(int argc, char *argv[])
                               maxpot,
                               nsymm,
                               jobtype,
-                              qtot))
+                              qtot,
+                              addHydrogens))
                 {
                     mps.push_back(mp);
                 }

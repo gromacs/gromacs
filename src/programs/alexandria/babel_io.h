@@ -85,16 +85,19 @@ class BabelFiles
  * Read a Gaussian log file either using home grown methods or using OpenBabel
  *
  *
- * \param[in] g98        The gaussian log file, or in case OpenBabel is used anything
+ * \param[in]  g98       The gaussian log file, or in case OpenBabel is used anything
  *                       that can be read by OpenBabel
  * \param[out] mpt       Pointer to a MolProp object
- * \param[in] molnm      Molecule name to override the one from the filename [ maybe nullptr ]
- * \param[in] iupac      IUPAC name to override the one from the filename [ maybe nullptr ]
- * \param[in] conformation  Conformation the molecule is in [ maybe nullptr ]
- * \param[in] basisset   Basis set used for the calculation [ maybe nullptr ]
- * \param[in] maxpot     Maximum number of electrostatic potential data points to store
- * \param[in] nsymm      Symmetry number for this molecule. If zero it will be detected from
- *                       the input.
+ * \param[in]  molnm     Molecule name to override the one from the filename [ maybe nullptr ]
+ * \param[in]  iupac     IUPAC name to override the one from the filename [ maybe nullptr ]
+ * \param[in]  conformation Conformation the molecule is in [ maybe nullptr ]
+ * \param[in]  basisset   Basis set used for the calculation [ maybe nullptr ]
+ * \param[in]  maxpot     Maximum number of electrostatic potential data points to store
+ * \param[in]  nsymm      Symmetry number for this molecule. If zero it will be detected from
+ *                        the input.
+ * \param[in]  jobtype    Calculation type for reading QM output
+ * \param[in]  qtot       Total charge
+ * \param[in]  addHydrogens If true, hydrogens will be added
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria
  */
@@ -107,7 +110,8 @@ bool readBabel(const char          *g98,
                int                  maxpot,
                int                  nsymm,
                const char          *jobtype,
-               double               qtot);
+               double               qtot,
+               bool                 addHydrogen);
 
 /*! \brief Add atomtype to a Molprop object
  *

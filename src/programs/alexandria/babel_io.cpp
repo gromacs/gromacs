@@ -219,7 +219,8 @@ bool readBabel(const char          *g09,
                int                  maxPotential,
                int                  nsymm,
                const char          *jobType,
-               double               qtot)
+               double               qtot,
+               bool                 addHydrogen)
 {
     std::string                formula;
     std::string                attr;
@@ -468,6 +469,10 @@ bool readBabel(const char          *g09,
     alexandria::MolecularEnergy mes("HF", mpo_unit[MPO_ENERGY], 0, epGAS, convert2gmx( mol.GetEnergy(), eg2cKcal_Mole), 0);
     mpt->LastExperiment()->AddEnergy(mes);
 
+    if (addHydrogen)
+    {
+        mol.AddHydrogens();
+    }
     // Atoms
     std::string forcefield = "gaff";
     auto       *ff         = OpenBabel::OBForceField::FindForceField(forcefield);

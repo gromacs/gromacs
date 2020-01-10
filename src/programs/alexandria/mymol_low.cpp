@@ -346,8 +346,8 @@ immStatus updatePlist(const Poldata             *pd,
                         }
                         else if (!bBASTAT)
                         {
-                            fprintf(stderr, "Could not find bond information for %s - %s with bondorder of %zu in %s\n",
-                                    aai.c_str(), aaj.c_str(), bondOrder, molname.c_str());
+                            fprintf(stderr, "Could not find bond information for %s - %s (atoms %d %d) with bondorder of %zu in %s\n",
+                                    aai.c_str(), aaj.c_str(), 1+pwi->a[0], 1+pwi->a[1], bondOrder, molname.c_str());
                             return immNotSupportedBond;
                         }
                         bondOrder_index++;
@@ -391,8 +391,9 @@ immStatus updatePlist(const Poldata             *pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find angle information for %s - %s - %s in %s\n",
-                                        aai.c_str(), aaj.c_str(), aak.c_str(), molname.c_str());
+                                fprintf(debug, "Could not find angle information for %s - %s - %s (atoms %d %d %d) in %s\n",
+                                        aai.c_str(), aaj.c_str(), aak.c_str(), 
+                                        1+b->a[0], 1+b->a[1], 1+b->a[2], molname.c_str());
                             }
                             return immNotSupportedAngle;
                         }
@@ -458,12 +459,11 @@ immStatus updatePlist(const Poldata             *pd,
                         {
                             if (debug)
                             {
-                                fprintf(debug, "Could not find %s information for %d %s - %d %s - %d %s - %d %s in %s\n",
+                                fprintf(debug, "Could not find %s information for %s - %s - %s - %s (atoms %d %d %d %d) in %s\n",
                                         iType2string(iType),
-                                        b->a[0], atomNames[0].c_str(), 
-                                        b->a[1], atomNames[1].c_str(),
-                                        b->a[2], atomNames[2].c_str(),
-                                        b->a[3], atomNames[3].c_str(),
+                                        atomNames[0].c_str(), atomNames[1].c_str(),
+                                        atomNames[2].c_str(), atomNames[3].c_str(), 
+                                        1+b->a[0], 1+b->a[1], 1+b->a[2], 1+b->a[3], 
                                         molname.c_str());
                             }
                             return immNotSupportedDihedral;
