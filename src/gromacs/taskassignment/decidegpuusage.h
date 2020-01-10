@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -208,6 +208,20 @@ bool decideWhetherToUseGpusForPme(bool                    useGpuForNonbonded,
                                   int                     numRanksPerSimulation,
                                   int                     numPmeRanksPerSimulation,
                                   bool                    gpusWereDetected);
+
+/*! \brief Determine PME run mode.
+ *
+ * Given the PME task assignment in \p useGpuForPme and the user-provided
+ * FFT task target in \p pmeFftTarget, returns a PME run mode for the
+ * current run. It also checks the compatibility of the two.
+ *
+ * \note Aborts the run upon incompatible values of \p useGpuForPme and \p pmeFftTarget.
+ *
+ * \param[in]  useGpuForPme              PME task assignment, true if PME task is mapped to the GPU.
+ * \param[in]  pmeFftTarget              The user's choice for -pmefft for where to assign the FFT
+ * work of the PME task. \param[in]  inputrec                  The user input record
+ * */
+PmeRunMode determinePmeRunMode(bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec);
 
 /*! \brief Decide whether the simulation will try to run bonded tasks on GPUs.
  *

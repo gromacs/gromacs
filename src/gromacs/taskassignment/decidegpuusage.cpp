@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -426,6 +426,37 @@ bool decideWhetherToUseGpusForPme(const bool              useGpuForNonbonded,
 
     // Not enough support for PME on GPUs for anything else
     return false;
+}
+
+
+PmeRunMode determinePmeRunMode(const bool useGpuForPme, const TaskTarget& pmeFftTarget, const t_inputrec& inputrec)
+{
+    if (!EEL_PME(inputrec.coulombtype))
+    {
+        return PmeRunMode::None;
+    }
+
+    if (useGpuForPme)
+    {
+        if (pmeFftTarget == TaskTarget::Cpu)
+        {
+            return PmeRunMode::Mixed;
+        }
+        else
+        {
+            return PmeRunMode::GPU;
+        }
+    }
+    else
+    {
+        if (pmeFftTarget == TaskTarget::Gpu)
+        {
+            gmx_fatal(FARGS,
+                      "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME "
+                      "on CPU you should not be using -pmefft.");
+        }
+        return PmeRunMode::CPU;
+    }
 }
 
 bool decideWhetherToUseGpusForBonded(const bool       useGpuForNonbonded,

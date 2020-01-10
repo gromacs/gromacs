@@ -729,12 +729,11 @@ int Mdrunner::mdrunner()
         userGpuTaskAssignment = parseUserTaskAssignmentString(hw_opt.userGpuTaskAssignment);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
-    auto       nonbondedTarget = findTaskTarget(nbpu_opt);
-    auto       pmeTarget       = findTaskTarget(pme_opt);
-    auto       pmeFftTarget    = findTaskTarget(pme_fft_opt);
-    auto       bondedTarget    = findTaskTarget(bonded_opt);
-    auto       updateTarget    = findTaskTarget(update_opt);
-    PmeRunMode pmeRunMode      = PmeRunMode::None;
+    auto nonbondedTarget = findTaskTarget(nbpu_opt);
+    auto pmeTarget       = findTaskTarget(pme_opt);
+    auto pmeFftTarget    = findTaskTarget(pme_fft_opt);
+    auto bondedTarget    = findTaskTarget(bonded_opt);
+    auto updateTarget    = findTaskTarget(update_opt);
 
     FILE* fplog = nullptr;
     // If we are appending, we don't write log output because we need
@@ -884,23 +883,10 @@ int Mdrunner::mdrunner()
                 useGpuForNonbonded, useGpuForPme, bondedTarget, canUseGpuForBonded,
                 EVDW_PME(inputrec->vdwtype), EEL_PME_EWALD(inputrec->coulombtype),
                 domdecOptions.numPmeRanks, gpusWereDetected);
-
-        pmeRunMode = (useGpuForPme ? PmeRunMode::GPU : PmeRunMode::CPU);
-        if (pmeRunMode == PmeRunMode::GPU)
-        {
-            if (pmeFftTarget == TaskTarget::Cpu)
-            {
-                pmeRunMode = PmeRunMode::Mixed;
-            }
-        }
-        else if (pmeFftTarget == TaskTarget::Gpu)
-        {
-            gmx_fatal(FARGS,
-                      "Assigning FFTs to GPU requires PME to be assigned to GPU as well. With PME "
-                      "on CPU you should not be using -pmefft.");
-        }
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
+
+    const PmeRunMode pmeRunMode = determinePmeRunMode(useGpuForPme, pmeFftTarget, *inputrec);
 
     // Initialize development feature flags that enabled by environment variable
     // and report those features that are enabled.
