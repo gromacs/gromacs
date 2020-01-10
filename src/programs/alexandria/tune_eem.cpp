@@ -278,7 +278,11 @@ double OptACM::calcDeviation()
                 if (bFitZeta_)
                 {
                     auto nzeta = poldata()->getNzeta(ai->name());
-                    for (auto zz = 0; zz < (nzeta-1); zz++)
+                    if (nzeta == 2 && bSameZeta_)
+                    {
+                        nzeta = 1;
+                    }
+                    for (auto zz = 0; zz < nzeta; zz++)
                     {
                         auto zeta = param[n++];
                         bound += l2_regularizer(zeta, zetaMin(), zetaMax());
@@ -517,16 +521,23 @@ void OptACM::polData2TuneACM(real factor)
             if (bFitZeta_)
             {
                 auto nzeta = ei->getNzeta();
-                auto zeta  = ei->getZeta(nzeta-1); // We only optimize zeta for shell.
-                if (0 != zeta)
+                if (nzeta == 2 && bSameZeta_)
                 {
-                    Bayes::addParam(zeta, factor);
-                    Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
+                    nzeta = 1;
                 }
-                else
+                for(auto i = 0; i < nzeta; i++)
                 {
-                    gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
-                              ai->name().c_str(), getEemtypeName(poldata()->getChargeModel()));
+                    auto zeta  = ei->getZeta(i);
+                    if (0 != zeta)
+                    {
+                        Bayes::addParam(zeta, factor);
+                        Bayes::addParamName(gmx::formatString("%s-Zeta", ai->name().c_str()));
+                    }
+                    else
+                    {
+                        gmx_fatal(FARGS, "Zeta is zero for atom %s in model %s\n",
+                                  ai->name().c_str(), getEemtypeName(poldata()->getChargeModel()));
+                    }
                 }
             }
             if (bFitAlpha_)
@@ -594,23 +605,16 @@ void OptACM::toPolData(const std::vector<bool> &changed)
                 double      sigma  = 0;
                 if (distributed)
                 {
-                    if (bSameZeta_ && nZeta == 2)
+                    bool readOne = bSameZeta_ && (nZeta == 2);
+                    for (auto i = 0; i < nZeta; i++)
                     {
-                        // Same zeta will be used for both core and shell
-                        zeta   = param[n];
-                        sigma  = psigma[n++];
-                        zstr.assign(gmx::formatString("%g %g ", zeta, zeta));
-                        z_sig.assign(gmx::formatString("%g %g ", sigma, sigma));
-                    }
-                    else
-                    {
-                        for (auto i = 0; i < nZeta; i++)
+                        if (i == 0 || (i > 0 && !readOne))
                         {
                             zeta   = param[n];
                             sigma  = psigma[n++];
-                            zstr.assign(gmx::formatString("%g ", zeta));
-                            z_sig.assign(gmx::formatString("%g ", sigma));
                         }
+                        zstr.append(gmx::formatString("%g ", zeta));
+                        z_sig.append(gmx::formatString("%g ", sigma));
                     }
                 }
                 ei->setRowZetaQ(rowstr, zstr, qstr);
