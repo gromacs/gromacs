@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2011,2012,2014,2015,2016, by the GROMACS development team, led by
+# Copyright (c) 2009,2011,2012,2014,2015,2016,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,13 @@ MACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
   if(NOT DEFINED MPI_IN_PLACE_COMPILE_OK)
     MESSAGE(STATUS "Checking for MPI_IN_PLACE")
 
-    set(CMAKE_REQUIRED_FLAGS ${MPI_COMPILE_FLAGS})
+    if(CMAKE_VERSION VERSION_LESS 3.12)
+      foreach(_FLAG ${MPI_COMPILE_FLAGS})
+        set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${_FLAG}")
+      endforeach()
+    else()
+      list(JOIN MPI_COMPILE_FLAGS " " CMAKE_REQUIRED_FLAGS)
+    endif()
     set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
     set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
     check_cxx_source_compiles(

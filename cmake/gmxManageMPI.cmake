@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013,2014,2015,2016,2019, by the GROMACS development team, led by
+# Copyright (c) 2012,2013,2014,2015,2016,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -51,7 +51,9 @@ if(GMX_MPI)
       find_package(MPI)
       if(MPI_C_FOUND)
           set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
+          separate_arguments(MPI_COMPILE_FLAGS)
           set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
+          separate_arguments(MPI_C_LINK_FLAGS)
           include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
           list(APPEND GMX_COMMON_LIBRARIES ${MPI_C_LIBRARIES})
       endif()
