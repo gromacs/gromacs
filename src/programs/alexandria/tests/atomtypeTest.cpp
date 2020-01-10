@@ -85,7 +85,7 @@ class AtomtypeTest : public gmx::test::CommandLineTestBase
             dataName = gmx::test::TestFileManager::getInputFilePath(molname);
 
             bool readOK = readBabel(dataName.c_str(), &molprop, molname, molname,
-                                    conf, basis, maxpot, nsymm, jobtype, 0.0);
+                                    conf, basis, maxpot, nsymm, jobtype, 0.0, false);
             EXPECT_TRUE(readOK);
             if (readOK)
             {

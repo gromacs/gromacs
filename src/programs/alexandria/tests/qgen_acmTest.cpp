@@ -121,7 +121,8 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       maxpot,
                       nsymm,
                       jobtype,
-                      0.0);
+                      0.0,
+                      false);
 
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());

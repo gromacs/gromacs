@@ -81,7 +81,7 @@ class RespTest : public gmx::test::CommandLineTestBase
             //Read input file for molprop
             auto dataName = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
             readBabel(dataName.c_str(), &molprop, molnm, iupac, conf, basis,
-                      maxpot, nsymm, jobtype, 0.0);
+                      maxpot, nsymm, jobtype, 0.0, false);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
             mp_.molProp()->Merge(vmp.begin());
