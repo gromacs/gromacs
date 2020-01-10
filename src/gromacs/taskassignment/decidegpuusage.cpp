@@ -574,11 +574,19 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         errorMessage +=
                 "Either PME or short-ranged non-bonded interaction tasks must run on the GPU.\n";
     }
-    // Since only direct GPU communications are supported with GPU update, PME should be fully offloaded in DD and PME only cases.
-    if (pmeRunMode != PmeRunMode::GPU && (isDomainDecomposition || havePmeOnlyRank))
+
+    // If PME is active (i.e. not PmeRunMode::None), then GPU update requires
+    // either a single-rank run, or that PME runs fully on the GPU.
+    const bool pmeRunningOnCpu = (pmeRunMode == PmeRunMode::CPU || pmeRunMode == PmeRunMode::Mixed);
+    if (pmeRunningOnCpu && isDomainDecomposition)
     {
-        errorMessage += "PME should run on GPU.\n";
+        errorMessage += "With domain decomposition, PME must run fully on the GPU.\n";
     }
+    if (pmeRunningOnCpu && havePmeOnlyRank)
+    {
+        errorMessage += "With separate PME rank(s), PME must run fully on the GPU.\n";
+    }
+
     if (!gpusWereDetected)
     {
         errorMessage += "Compatible GPUs must have been found.\n";
