@@ -1439,7 +1439,7 @@ DEALINGS IN THE SOFTWARE.
 20. Reference implementation of std::optional
 =============================================
 
-Used with minor modifications from commit a08fda6c674ae4c9f of
+Used with minor modifications from commit 096ce6d7e45ef184d of
 https://github.com/martinmoene/optional-lite.git, which is licensed as below.
 
 Boost Software License - Version 1.0 - August 17th, 2003
