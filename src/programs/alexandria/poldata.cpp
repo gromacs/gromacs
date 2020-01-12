@@ -206,6 +206,26 @@ bool Poldata::atypeToPtype(const std::string &atype,
     return false;
 }
 
+bool Poldata::ztypeToPtype(const std::string &ztype,
+                           std::string       &ptype) const
+{
+    if (ztype.size() == 0)
+    {
+        return false;
+    }
+    auto ai = std::find_if(alexandria_.begin(), alexandria_.end(),
+                           [ztype](Ffatype const &fa)
+                           {
+                               return fa.getZtype().compare(ztype) == 0;
+                           });
+    if (ai != alexandria_.end() && ai->getPtype().size() > 0)
+    {
+        ptype = ai->getPtype();
+        return true;
+    }
+    return false;
+}
+
 bool Poldata::getAtypePol(const std::string &atype,
                           double            *polar,
                           double            *sigPol) const
@@ -214,6 +234,18 @@ bool Poldata::getAtypePol(const std::string &atype,
     if (alexandria_.end() != fa)
     {
         return getPtypePol(fa->getPtype(), polar, sigPol);
+    }
+    return false;
+}
+
+bool Poldata::getZtypePol(const std::string &ztype,
+                          double            *polar,
+                          double            *sigPol) const
+{
+    std::string ptype;
+    if (ztypeToPtype(ztype, ptype))
+    {
+        return getPtypePol(ptype, polar, sigPol);
     }
     return false;
 }
@@ -1074,6 +1106,71 @@ void Poldata::broadcast_eemprop(const t_commrec *cr)
             if (nullptr != debug)
             {
                 fprintf(debug, "Could not update Poldata::eemprop on node %d\n", cr->nodeid);
+            }
+        }
+        gmx_recv_data(cr, src);
+    }   
+}
+
+void Poldata::broadcast_ptype(const t_commrec *cr)
+{
+    size_t nptype;
+    const int src = 0;
+    if (MASTER(cr))
+    {
+        for (auto dest = 1; dest < cr->nnodes; dest++)
+        {
+            auto cs = gmx_send_data(cr, dest);
+            if (CS_OK == cs)
+            {
+                if (nullptr != debug)
+                {
+                    fprintf(debug, "Going to update Poldata::ptype on node %d\n", dest);
+                }
+                /*Send Eemprops*/
+                gmx_send_int(cr, dest, ptype_.size());
+                for (auto &ptype : ptype_)
+                {
+                    cs = ptype.Send(cr, dest);
+                }       
+            }
+            gmx_send_done(cr, dest);
+        }
+    }
+    else
+    {
+        auto cs = gmx_recv_data(cr, src);
+        if (CS_OK == cs)
+        {
+            /*Receive Eemprops*/
+            nptype = gmx_recv_int(cr, src);
+            ptype_.clear();
+            for (size_t n = 0; (CS_OK == cs) && (n < nptype); n++)
+            {
+                Ptype ptype;
+                cs = ptype.Receive(cr, src);
+                if (CS_OK == cs)
+                {
+                    ptype_.push_back(ptype);
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Poldata::ptype is updated on node %d\n", cr->nodeid);
+                    }
+                }
+                else
+                {
+                    if (nullptr != debug)
+                    {
+                        fprintf(debug, "Could not update Poldata::ptype on node %d\n", cr->nodeid);
+                    }
+                }   
+            }
+        }
+        else
+        {
+            if (nullptr != debug)
+            {
+                fprintf(debug, "Could not update Poldata::ptype on node %d\n", cr->nodeid);
             }
         }
         gmx_recv_data(cr, src);

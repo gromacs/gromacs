@@ -384,6 +384,14 @@ class Poldata
         bool atypeToPtype(const std::string &atype,
                           std::string       &ptype) const;
 
+        /*! \brief
+         * Return the poltype corresponding to ztype and true if successful
+         *
+         * \param[in]  ztype  Zeta type
+         * \param[out] ptype  Polarizability type.
+         */
+        bool ztypeToPtype(const std::string &ztype,
+                          std::string       &ptype) const;
 
         /*! \brief
          * Return the bond type corresponding to atom type and true if successful
@@ -397,10 +405,16 @@ class Poldata
 
         /* Return 1 if OK, 0 if not found */
         bool getPtypePol(const std::string &ptype,
-                         double *polarizability, double *sigPol) const;
+                         double *polarizability, 
+                         double *sigPol) const;
 
         bool getAtypePol(const std::string &atype,
-                         double *polarizability, double *sigPol) const;
+                         double *polarizability, 
+                         double *sigPol) const;
+
+        bool getZtypePol(const std::string &ztype,
+                         double *polarizability, 
+                         double *sigPol) const;
 
         void addMiller(const std::string &miller,
                        int                atomnumber,
@@ -723,6 +737,9 @@ class Poldata
 
         //! Spread eemprop from master to slave nodes
         void broadcast_eemprop(const t_commrec *cr);
+        
+        //! Spread ptype from master to slave nodes
+        void broadcast_ptype(const t_commrec *cr);
 
         CommunicationStatus Send(const t_commrec *cr, int dest);
 

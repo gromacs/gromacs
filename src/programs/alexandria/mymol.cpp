@@ -2200,295 +2200,288 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         nonbondedFromPdToMtop(mtop_, atoms_, pd, fr_);
         if (debug)
         {
-            pr_ffparams(debug, 0, "UpdateIdef Before", &mtop_->ffparams, FALSE);
-        }
-        return;
-    }
-    auto fs = pd->findForces(iType);
-    if (fs == pd->forcesEnd())
-    {
-        gmx_fatal(FARGS, "Can not find the force %s to update",
-                  iType2string(iType));
-    }
-    auto ftype = fs->fType();
-    // Make a list of bonded types that can be indexed
-    // with the atomtype. That should speed up the code
-    // below somewhat.
-    std::vector<std::string> btype(mtop_->ffparams.atnr);
-    for (int i = 0; i < mtop_->natoms; i++)
-    {
-        std::string bt;
-        if (pd->atypeToBtype(*atoms_->atomtype[i], bt))
-        {
-            btype[atoms_->atom[i].type] = bt;
-        }
-        else if (!(atoms_->atom[i].ptype == eptShell ||
-                   atoms_->atom[i].ptype == eptVSite))
-        {
-            gmx_fatal(FARGS, "Cannot find bonded type for atomtype %s",
-                      *atoms_->atomtype[i]);
+            pr_ffparams(debug, 0, "UpdateIdef Before", &mtop_->ffparams, false);
         }
     }
-    switch (iType)
+    else if (iType == eitPOLARIZATION)
     {
-        case eitBONDS:
+        auto pw = SearchPlist(plist_, iType);
+        if (plist_.end() != pw)
         {
-            auto lu = string2unit(fs->unit().c_str());
-            if (-1 == lu)
+            auto ft = pw->getFtype();
+            polarizabilityFromPdToMtop(mtop_, ltop_, atoms_, pd, ft);           
+        }
+    }
+    else
+    {
+        // Update other iTypes
+        auto fs = pd->findForces(iType);
+        if (fs == pd->forcesEnd())
+        {
+            gmx_fatal(FARGS, "Can not find the force %s to update",
+                      iType2string(iType));
+        }
+        auto ftype = fs->fType();
+        // Make a list of bonded types that can be indexed
+        // with the atomtype. That should speed up the code
+        // below somewhat.
+        std::vector<std::string> btype(mtop_->ffparams.atnr);
+        for (int i = 0; i < mtop_->natoms; i++)
+        {
+            std::string bt;
+            if (pd->atypeToBtype(*atoms_->atomtype[i], bt))
             {
-                gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
-                          fs->unit().c_str());
+                btype[atoms_->atom[i].type] = bt;
             }
-            for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
+            else if (!(atoms_->atom[i].ptype == eptShell ||
+                       atoms_->atom[i].ptype == eptVSite))
             {
-                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                std::vector<std::string> atoms;
-                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                gmx_fatal(FARGS, "Cannot find bonded type for atomtype %s",
+                          *atoms_->atomtype[i]);
+            }
+        }
+        switch (iType)
+        {
+            case eitBONDS:
+            {
+                auto lu = string2unit(fs->unit().c_str());
+                if (-1 == lu)
                 {
-                    atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
+                    gmx_fatal(FARGS, "Unknown length unit '%s' for bonds",
+                              fs->unit().c_str());
                 }
-                double value, sigma;
-                size_t ntrain;
-                if (pd->searchForceIType(atoms, params, &value, &sigma, &ntrain, iType))
+                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
                 {
-                    auto bondLength = convert2gmx(value, lu);
-                    auto parameters = gmx::splitString(params);
-                    switch (ftype)
+                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
+                    std::vector<std::string> atoms;
+                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
                     {
-                        case F_MORSE:
-                        {
-                            mtop_->ffparams.iparams[tp].morse.b0A         =
-                                mtop_->ffparams.iparams[tp].morse.b0B     =
-                                    ltop_->idef.iparams[tp].morse.b0A     =
-                                        ltop_->idef.iparams[tp].morse.b0B = bondLength;
-                            GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Morse bonds");
-                            mtop_->ffparams.iparams[tp].morse.cbA         =
-                                mtop_->ffparams.iparams[tp].morse.cbB     =
-                                    ltop_->idef.iparams[tp].morse.cbA     =
-                                        ltop_->idef.iparams[tp].morse.cbB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].morse.betaA         =
-                                mtop_->ffparams.iparams[tp].morse.betaB     =
-                                    ltop_->idef.iparams[tp].morse.betaA     =
-                                        ltop_->idef.iparams[tp].morse.betaB =
-                                            gmx::doubleFromString(parameters[1].c_str());
-                        }
-                        break;
-                        default:
-                            gmx_fatal(FARGS, "Unsupported bondtype %s in UpdateIdef",
-                                      fs->function().c_str());
+                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
                     }
-                }
-            }
-        }
-        break;
-        case eitANGLES:
-        case eitLINEAR_ANGLES:
-        {
-            for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
-            {
-                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                std::vector<std::string> atoms;
-                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
-                {
-                    atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                }
-                double angle, sigma;
-                size_t ntrain;
-                if (pd->searchForceIType(atoms, params, &angle, &sigma, &ntrain, iType))
-                {
-                    auto parameters = gmx::splitString(params);
-                    auto r13        = calc_r13(pd, atoms[0], atoms[1], atoms[2], angle);
-                    switch (ftype)
+                    double value, sigma;
+                    size_t ntrain;
+                    if (pd->searchForceIType(atoms, params, &value, &sigma, &ntrain, iType))
                     {
-                        case F_ANGLES:
+                        auto bondLength = convert2gmx(value, lu);
+                        auto parameters = gmx::splitString(params);
+                        switch (ftype)
                         {
-                            mtop_->ffparams.iparams[tp].harmonic.rA         =
-                                mtop_->ffparams.iparams[tp].harmonic.rB     =
-                                    ltop_->idef.iparams[tp].harmonic.rA     =
-                                        ltop_->idef.iparams[tp].harmonic.rB = angle;
-                            GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameters for Harmonic angles");
-                            mtop_->ffparams.iparams[tp].harmonic.krA         =
-                                mtop_->ffparams.iparams[tp].harmonic.krB     =
-                                    ltop_->idef.iparams[tp].harmonic.krA     =
-                                        ltop_->idef.iparams[tp].harmonic.krB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                        }
-                        break;
-                        case F_UREY_BRADLEY:
-                        {
-                            mtop_->ffparams.iparams[tp].u_b.thetaA         =
-                                mtop_->ffparams.iparams[tp].u_b.thetaB     =
-                                    ltop_->idef.iparams[tp].u_b.thetaA     =
-                                        ltop_->idef.iparams[tp].u_b.thetaB = angle;
-
-                            mtop_->ffparams.iparams[tp].u_b.r13A         =
-                                mtop_->ffparams.iparams[tp].u_b.r13B     =
-                                    ltop_->idef.iparams[tp].u_b.r13A     =
-                                        ltop_->idef.iparams[tp].u_b.r13B = r13;
-                            GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Urey-Bradley angles");
-
-                            mtop_->ffparams.iparams[tp].u_b.kthetaA         =
-                                mtop_->ffparams.iparams[tp].u_b.kthetaB     =
-                                    ltop_->idef.iparams[tp].u_b.kthetaA     =
-                                        ltop_->idef.iparams[tp].u_b.kthetaB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].u_b.kUBA         =
-                                mtop_->ffparams.iparams[tp].u_b.kUBB     =
-                                    ltop_->idef.iparams[tp].u_b.kUBA     =
-                                        ltop_->idef.iparams[tp].u_b.kUBB =
-                                            gmx::doubleFromString(parameters[1].c_str());
-                        }
-                        break;
-                        case F_LINEAR_ANGLES:
-                        {
-                            double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
-
-                            mtop_->ffparams.iparams[tp].linangle.aA         =
-                                mtop_->ffparams.iparams[tp].linangle.aB     =
-                                    ltop_->idef.iparams[tp].linangle.aA     =
-                                        ltop_->idef.iparams[tp].linangle.aB = relative_position;
-
-                            mtop_->ffparams.iparams[tp].linangle.r13A         =
-                                mtop_->ffparams.iparams[tp].linangle.r13B     =
-                                    ltop_->idef.iparams[tp].linangle.r13A     =
-                                        ltop_->idef.iparams[tp].linangle.r13B = r13;
-                            GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Linear angles");
-
-                            mtop_->ffparams.iparams[tp].linangle.klinA         =
-                                mtop_->ffparams.iparams[tp].linangle.klinB     =
-                                    ltop_->idef.iparams[tp].linangle.klinA     =
-                                        ltop_->idef.iparams[tp].linangle.klinB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                            mtop_->ffparams.iparams[tp].linangle.kUBA         =
-                                mtop_->ffparams.iparams[tp].linangle.kUBB     =
-                                    ltop_->idef.iparams[tp].linangle.kUBA     =
-                                        ltop_->idef.iparams[tp].linangle.kUBB =
-                                            gmx::doubleFromString(parameters[1].c_str());
-                        }
-                        break;
-                        default:
-                            gmx_fatal(FARGS, "Unsupported angletype %s in UpdateIdef",
-                                      fs->function().c_str());
-                    }
-                }
-            }
-        }
-        break;
-        case eitPROPER_DIHEDRALS:
-        case eitIMPROPER_DIHEDRALS:
-        {
-            for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
-            {
-                auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
-                std::vector<std::string> atoms;
-                for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
-                {
-                    atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
-                }
-                double angle, sigma;
-                size_t ntrain;
-                if (pd->searchForceIType(atoms, params,
-                                    &angle, &sigma, &ntrain, iType))
-                {
-                    auto parameters = gmx::splitString(params);
-                    switch (ftype)
-                    {
-                        case F_FOURDIHS:
-                        {
-                            std::vector<double> old;
-                            for (auto parm : parameters)
+                            case F_MORSE:
                             {
-                                old.push_back(gmx::doubleFromString(parm.c_str()));
-                            }
-                            auto newparam = &mtop_->ffparams.iparams[tp];
-                            newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
-                            newparam->rbdihs.rbcA[1] = 0.5*(3.0*old[2]-old[0]);
-                            newparam->rbdihs.rbcA[2] = 4.0*old[3]-old[1];
-                            newparam->rbdihs.rbcA[3] = -2.0*old[2];
-                            newparam->rbdihs.rbcA[4] = -4.0*old[3];
-                            newparam->rbdihs.rbcA[5] = 0.0;
-                            for (int k = 0; k < NR_RBDIHS; k++)
-                            {
-                                ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
-                                    ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
-                                        newparam->rbdihs.rbcB[k]           =
-                                            newparam->rbdihs.rbcA[k];
+                                mtop_->ffparams.iparams[tp].morse.b0A         =
+                                    mtop_->ffparams.iparams[tp].morse.b0B     =
+                                        ltop_->idef.iparams[tp].morse.b0A     =
+                                            ltop_->idef.iparams[tp].morse.b0B = bondLength;
+                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Morse bonds");
+                                mtop_->ffparams.iparams[tp].morse.cbA         =
+                                    mtop_->ffparams.iparams[tp].morse.cbB     =
+                                        ltop_->idef.iparams[tp].morse.cbA     =
+                                            ltop_->idef.iparams[tp].morse.cbB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                                mtop_->ffparams.iparams[tp].morse.betaA         =
+                                    mtop_->ffparams.iparams[tp].morse.betaB     =
+                                        ltop_->idef.iparams[tp].morse.betaA     =
+                                            ltop_->idef.iparams[tp].morse.betaB =
+                                    gmx::doubleFromString(parameters[1].c_str());
                             }
                             break;
+                            default:
+                                gmx_fatal(FARGS, "Unsupported bondtype %s in UpdateIdef",
+                                          fs->function().c_str());
                         }
-                        case F_PDIHS:
-                        {
-                            mtop_->ffparams.iparams[tp].pdihs.phiA         =
-                                mtop_->ffparams.iparams[tp].pdihs.phiB     =
-                                    ltop_->idef.iparams[tp].pdihs.phiA     =
-                                        ltop_->idef.iparams[tp].pdihs.phiB = angle;
-
-                            GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for proper dihedrals");
-                            mtop_->ffparams.iparams[tp].pdihs.cpA         =
-                                mtop_->ffparams.iparams[tp].pdihs.cpB     =
-                                    ltop_->idef.iparams[tp].pdihs.cpA     =
-                                        ltop_->idef.iparams[tp].pdihs.cpB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                            /* Multiplicity for Proper Dihedral must be integer
-                               This assumes that the second parameter is Multiplicity */
-                            mtop_->ffparams.iparams[tp].pdihs.mult =
-                                ltop_->idef.iparams[tp].pdihs.mult =
-                                    atoi(parameters[1].c_str());
-                        }
-                        break;
-                        case F_IDIHS:
-                        {
-                            mtop_->ffparams.iparams[tp].harmonic.rA         =
-                                mtop_->ffparams.iparams[tp].harmonic.rB     =
-                                    ltop_->idef.iparams[tp].harmonic.rA     =
-                                        ltop_->idef.iparams[tp].harmonic.rB = angle;
-
-                            GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameter for proper dihedrals");
-                            mtop_->ffparams.iparams[tp].harmonic.krA         =
-                                mtop_->ffparams.iparams[tp].harmonic.krB     =
-                                    ltop_->idef.iparams[tp].harmonic.krA     =
-                                        ltop_->idef.iparams[tp].harmonic.krB =
-                                            gmx::doubleFromString(parameters[0].c_str());
-                        }
-                        break;
-                        default:
-                            gmx_fatal(FARGS, "Unsupported dihedral type %s in UpdateIdef",
-                                      fs->function().c_str());
                     }
                 }
             }
-        }
-        break;
-        case eitLJ14:
-        case eitPOLARIZATION:
-        {
-            auto pw = SearchPlist(plist_, iType);
-            if (plist_.end() != pw)
-            {
-                auto ft = pw->getFtype();
-                for (auto i = 0; i < ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
-                {
-                    auto   tp  = ltop_->idef.il[ft].iatoms[i];
-                    auto   ai  = ltop_->idef.il[ft].iatoms[i+1];
-                    double alpha, sigma;
-                    if (pd->getAtypePol(*atoms_->atomtype[ai], &alpha, &sigma))
-                    {
-                        mtop_->ffparams.iparams[tp].polarize.alpha =
-                            ltop_->idef.iparams[tp].polarize.alpha = alpha;
-                    }
-                }
-            }
-        }
-        break;
-        case eitVDW:
-        case eitVSITE2:
-        case eitVSITE3FAD:
-        case eitVSITE3OUT:
-        case eitCONSTR:
-        case eitNR:
-        default:
             break;
+            case eitANGLES:
+            case eitLINEAR_ANGLES:
+            {
+                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
+                {
+                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
+                    std::vector<std::string> atoms;
+                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                    {
+                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
+                    }
+                    double angle, sigma;
+                    size_t ntrain;
+                    if (pd->searchForceIType(atoms, params, &angle, &sigma, &ntrain, iType))
+                    {
+                        auto parameters = gmx::splitString(params);
+                        auto r13        = calc_r13(pd, atoms[0], atoms[1], atoms[2], angle);
+                        switch (ftype)
+                        {
+                            case F_ANGLES:
+                            {
+                                mtop_->ffparams.iparams[tp].harmonic.rA         =
+                                    mtop_->ffparams.iparams[tp].harmonic.rB     =
+                                        ltop_->idef.iparams[tp].harmonic.rA     =
+                                            ltop_->idef.iparams[tp].harmonic.rB = angle;
+                                GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameters for Harmonic angles");
+                                mtop_->ffparams.iparams[tp].harmonic.krA         =
+                                    mtop_->ffparams.iparams[tp].harmonic.krB     =
+                                        ltop_->idef.iparams[tp].harmonic.krA     =
+                                            ltop_->idef.iparams[tp].harmonic.krB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                            }
+                            break;
+                            case F_UREY_BRADLEY:
+                            {
+                                mtop_->ffparams.iparams[tp].u_b.thetaA         =
+                                    mtop_->ffparams.iparams[tp].u_b.thetaB     =
+                                        ltop_->idef.iparams[tp].u_b.thetaA     =
+                                            ltop_->idef.iparams[tp].u_b.thetaB = angle;
+                                
+                                mtop_->ffparams.iparams[tp].u_b.r13A         =
+                                    mtop_->ffparams.iparams[tp].u_b.r13B     =
+                                        ltop_->idef.iparams[tp].u_b.r13A     =
+                                            ltop_->idef.iparams[tp].u_b.r13B = r13;
+                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Urey-Bradley angles");
+
+                                mtop_->ffparams.iparams[tp].u_b.kthetaA         =
+                                    mtop_->ffparams.iparams[tp].u_b.kthetaB     =
+                                        ltop_->idef.iparams[tp].u_b.kthetaA     =
+                                            ltop_->idef.iparams[tp].u_b.kthetaB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                                mtop_->ffparams.iparams[tp].u_b.kUBA         =
+                                    mtop_->ffparams.iparams[tp].u_b.kUBB     =
+                                        ltop_->idef.iparams[tp].u_b.kUBA     =
+                                            ltop_->idef.iparams[tp].u_b.kUBB =
+                                    gmx::doubleFromString(parameters[1].c_str());
+                            }
+                            break;
+                            case F_LINEAR_ANGLES:
+                            {
+                                double relative_position = calc_relposition(pd, atoms[0], atoms[1], atoms[2]);
+                                
+                                mtop_->ffparams.iparams[tp].linangle.aA         =
+                                    mtop_->ffparams.iparams[tp].linangle.aB     =
+                                        ltop_->idef.iparams[tp].linangle.aA     =
+                                            ltop_->idef.iparams[tp].linangle.aB = relative_position;
+                                
+                                mtop_->ffparams.iparams[tp].linangle.r13A         =
+                                    mtop_->ffparams.iparams[tp].linangle.r13B     =
+                                        ltop_->idef.iparams[tp].linangle.r13A     =
+                                            ltop_->idef.iparams[tp].linangle.r13B = r13;
+                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for Linear angles");
+
+                                mtop_->ffparams.iparams[tp].linangle.klinA         =
+                                    mtop_->ffparams.iparams[tp].linangle.klinB     =
+                                        ltop_->idef.iparams[tp].linangle.klinA     =
+                                            ltop_->idef.iparams[tp].linangle.klinB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                                mtop_->ffparams.iparams[tp].linangle.kUBA         =
+                                    mtop_->ffparams.iparams[tp].linangle.kUBB     =
+                                        ltop_->idef.iparams[tp].linangle.kUBA     =
+                                            ltop_->idef.iparams[tp].linangle.kUBB =
+                                    gmx::doubleFromString(parameters[1].c_str());
+                            }
+                            break;
+                            default:
+                                gmx_fatal(FARGS, "Unsupported angletype %s in UpdateIdef",
+                                          fs->function().c_str());
+                        }
+                    }
+                }
+            }
+            break;
+            case eitPROPER_DIHEDRALS:
+            case eitIMPROPER_DIHEDRALS:
+            {
+                for (auto i = 0; i < ltop_->idef.il[ftype].nr; i += interaction_function[ftype].nratoms+1)
+                {
+                    auto                     tp  = ltop_->idef.il[ftype].iatoms[i];
+                    std::vector<std::string> atoms;
+                    for (int j = 1; j < interaction_function[ftype].nratoms+1; j++)
+                    {
+                        atoms.push_back(btype[atoms_->atom[ltop_->idef.il[ftype].iatoms[i+j]].type]);
+                    }
+                    double angle, sigma;
+                    size_t ntrain;
+                    if (pd->searchForceIType(atoms, params,
+                                             &angle, &sigma, &ntrain, iType))
+                    {
+                        auto parameters = gmx::splitString(params);
+                        switch (ftype)
+                        {
+                            case F_FOURDIHS:
+                            {
+                                std::vector<double> old;
+                                for (auto parm : parameters)
+                                {
+                                    old.push_back(gmx::doubleFromString(parm.c_str()));
+                                }
+                                auto newparam = &mtop_->ffparams.iparams[tp];
+                                newparam->rbdihs.rbcA[0] = old[1]+0.5*(old[0]+old[2]);
+                                newparam->rbdihs.rbcA[1] = 0.5*(3.0*old[2]-old[0]);
+                                newparam->rbdihs.rbcA[2] = 4.0*old[3]-old[1];
+                                newparam->rbdihs.rbcA[3] = -2.0*old[2];
+                                newparam->rbdihs.rbcA[4] = -4.0*old[3];
+                                newparam->rbdihs.rbcA[5] = 0.0;
+                                for (int k = 0; k < NR_RBDIHS; k++)
+                                {
+                                    ltop_->idef.iparams[tp].rbdihs.rbcA[k]     =
+                                        ltop_->idef.iparams[tp].rbdihs.rbcB[k] =
+                                            newparam->rbdihs.rbcB[k]           =
+                                        newparam->rbdihs.rbcA[k];
+                                }
+                                break;
+                            }
+                            case F_PDIHS:
+                            {
+                                mtop_->ffparams.iparams[tp].pdihs.phiA         =
+                                    mtop_->ffparams.iparams[tp].pdihs.phiB     =
+                                        ltop_->idef.iparams[tp].pdihs.phiA     =
+                                            ltop_->idef.iparams[tp].pdihs.phiB = angle;
+                                
+                                GMX_RELEASE_ASSERT(parameters.size() == 2, "Need exactly two parameters for proper dihedrals");
+                                mtop_->ffparams.iparams[tp].pdihs.cpA         =
+                                    mtop_->ffparams.iparams[tp].pdihs.cpB     =
+                                        ltop_->idef.iparams[tp].pdihs.cpA     =
+                                            ltop_->idef.iparams[tp].pdihs.cpB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                                /* Multiplicity for Proper Dihedral must be integer
+                                   This assumes that the second parameter is Multiplicity */
+                                mtop_->ffparams.iparams[tp].pdihs.mult =
+                                    ltop_->idef.iparams[tp].pdihs.mult =
+                                    atoi(parameters[1].c_str());
+                            }
+                            break;
+                            case F_IDIHS:
+                            {
+                                mtop_->ffparams.iparams[tp].harmonic.rA         =
+                                    mtop_->ffparams.iparams[tp].harmonic.rB     =
+                                        ltop_->idef.iparams[tp].harmonic.rA     =
+                                            ltop_->idef.iparams[tp].harmonic.rB = angle;
+                                
+                                GMX_RELEASE_ASSERT(parameters.size() == 1, "Need exactly one parameter for proper dihedrals");
+                                mtop_->ffparams.iparams[tp].harmonic.krA         =
+                                    mtop_->ffparams.iparams[tp].harmonic.krB     =
+                                        ltop_->idef.iparams[tp].harmonic.krA     =
+                                            ltop_->idef.iparams[tp].harmonic.krB =
+                                    gmx::doubleFromString(parameters[0].c_str());
+                            }
+                            break;
+                            default:
+                                gmx_fatal(FARGS, "Unsupported dihedral type %s in UpdateIdef",
+                                      fs->function().c_str());
+                        }
+                    }
+                }
+            }
+            break;
+            case eitLJ14:
+            case eitPOLARIZATION:
+            case eitVDW:
+            case eitVSITE2:
+            case eitVSITE3FAD:
+            case eitVSITE3OUT:
+            case eitCONSTR:
+            case eitNR:
+            default:
+                break;
+        }
     }
 }
 

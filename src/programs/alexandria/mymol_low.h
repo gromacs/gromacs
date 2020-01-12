@@ -39,6 +39,7 @@
 #include <cstring>
 
 #include "gromacs/mdlib/mdatoms.h"
+#include "gromacs/mdlib/shellfc.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/pbcutil/pbc.h"
 
@@ -126,6 +127,13 @@ void nonbondedFromPdToMtop(gmx_mtop_t    *mtop,
                            t_atoms       *atoms,
                            const Poldata *pd,
                            t_forcerec    *fr);
+                           
+                           
+void polarizabilityFromPdToMtop(gmx_mtop_t     *mtop,
+                                gmx_localtop_t *ltop,
+                                t_atoms        *atoms,
+                                const Poldata  *pd,
+                                unsigned int    ft);
 
 void plist_to_mtop(const std::vector<PlistWrapper> &plist,
                    gmx_mtop_t                      *mtop_);

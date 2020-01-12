@@ -310,6 +310,10 @@ double OptACM::calcDeviation()
     if (PAR(commrec()) && !final())
     {
         poldata()->broadcast_eemprop(commrec());
+        if (bFitAlpha_)
+        {
+            poldata()->broadcast_ptype(commrec());
+        }
     }
     resetEnergies();
     for (auto &mymol : mymols())
@@ -542,9 +546,9 @@ void OptACM::polData2TuneACM(real factor)
             }
             if (bFitAlpha_)
             {
-                auto alpha = 0.0;
-                auto sigma = 0.0;
-                if (poldata()->getAtypePol(ai->name(), &alpha, &sigma))
+                auto alpha     = 0.0;
+                auto sigma     = 0.0;
+                if (poldata()->getZtypePol(ai->name(), &alpha, &sigma))
                 {
                     if (0 != alpha)
                     {
@@ -555,6 +559,10 @@ void OptACM::polData2TuneACM(real factor)
                     {
                         gmx_fatal(FARGS, "Polarizability is zero for atom %s\n", ai->name().c_str());
                     }
+                }
+                else
+                {
+                    gmx_fatal(FARGS, "No Ptype for zeta type %s\n", ai->name().c_str());
                 }
             }
         }
@@ -624,14 +632,14 @@ void OptACM::toPolData(const std::vector<bool> &changed)
             if (bFitAlpha_)
             {
                 std::string ptype;
-                if (pd->atypeToPtype(ai->name(), ptype))
+                if (pd->ztypeToPtype(ai->name(), ptype))
                 {
                     pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;
                 }
                 else
                 {
-                    gmx_fatal(FARGS, "No Ptype for atom type %s\n", ai->name().c_str());
+                    gmx_fatal(FARGS, "No Ptype for zeta type %s\n", ai->name().c_str());
                 }
             }
         }

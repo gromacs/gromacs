@@ -296,7 +296,11 @@ double OptZeta::calcDeviation()
     }
     if (PAR(commrec()) && !final())
     {
-        poldata()->broadcast(commrec());
+       poldata()->broadcast_eemprop(commrec());
+       if (bFitAlpha_)
+       {
+           poldata()->broadcast_ptype(commrec());
+       }
     }
     resetEnergies();
     for (auto &mymol : mymols())
