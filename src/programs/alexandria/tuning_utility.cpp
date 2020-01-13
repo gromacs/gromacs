@@ -43,6 +43,7 @@
 namespace alexandria
 {
 
+/*
 static bool check_polarizability(tensor alpha)
 {
     for (int mm = 0; mm < DIM; mm++)
@@ -53,7 +54,7 @@ static bool check_polarizability(tensor alpha)
         }
     }
     return true;
-}
+    }*/
 
 static void print_stats(FILE        *fp,
                         const char  *prop,
@@ -393,19 +394,13 @@ void print_electric_props(FILE                           *fp,
             if (bPolar)
             {
                 mol.CalcPolarizability(efield, cr, nullptr);
-                if (check_polarizability(mol.alpha_calc_))
+                print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler, isopol_toler);
+                print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler, isopol_toler);
+                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
+                gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
+                for (mm = 0; mm < DIM; mm++)
                 {
-                    print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler, isopol_toler);
-                    print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler, isopol_toler);
-                    if (std::abs(mol.isoPol_elec_ - mol.isoPol_calc_) <= isopol_toler)
-                    {
-                        gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
-                        gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
-                        for (mm = 0; mm < DIM; mm++)
-                        {
-                            gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
-                        }
-                    }
+                    gmx_stats_add_point(lsq_alpha, mol.alpha_elec_[mm][mm], mol.alpha_calc_[mm][mm], 0, 0);
                 }
             }
 
