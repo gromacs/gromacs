@@ -394,7 +394,7 @@ def main():
             contents = sys.stdin.read().splitlines()
             reporter = Reporter(sys.stderr, '<stdin>')
         else:
-            with open(filename, 'r') as inputfile:
+            with open(filename, 'r', encoding='utf-8') as inputfile:
                 contents = inputfile.read().splitlines()
             reporter = Reporter(sys.stdout, filename)
 
