@@ -59,6 +59,7 @@
 #include "gromacs/utility/real.h"
 
 #include "kernel_common.h"
+#include "nbnxm_gpu.h"
 #include "nbnxm_simd.h"
 #include "pairlistset.h"
 #include "pairlistsets.h"

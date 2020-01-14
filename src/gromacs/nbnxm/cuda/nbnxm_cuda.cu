@@ -363,7 +363,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  *  the local, this function records the event if called with the local stream as
  *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
  */
-void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_cuda_t* nb, const InteractionLocality interactionLocality)
+void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxm_gpu_t* nb, const InteractionLocality interactionLocality)
 {
     cudaStream_t stream = nb->stream[interactionLocality];
 
@@ -389,7 +389,7 @@ void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_cuda_t* nb, const Interact
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -477,7 +477,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t* nb, const nbnxn_atomdata_t* nbatom, co
    the local x+q H2D (and all preceding) tasks are complete and synchronize
    with this event in the non-local stream before launching the non-bonded kernel.
  */
-void gpu_launch_kernel(gmx_nbnxn_cuda_t* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
+void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -589,7 +589,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     return shmem;
 }
 
-void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t* nb, const InteractionLocality iloc, const int numParts)
+void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality iloc, const int numParts)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -713,7 +713,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t* nb, const InteractionLocality
     }
 }
 
-void gpu_launch_cpyback(gmx_nbnxn_cuda_t*        nb,
+void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
                         nbnxn_atomdata_t*        nbatom,
                         const gmx::StepWorkload& stepWork,
                         const AtomLocality       atomLocality)
@@ -817,7 +817,7 @@ void cuda_set_cacheconfig()
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                            bool                      setFillerCoords,
-                           gmx_nbnxn_gpu_t*          nb,
+                           gmx_nbnxm_gpu_t*          nb,
                            DeviceBuffer<float>       d_x,
                            GpuEventSynchronizer*     xReadyOnDevice,
                            const Nbnxm::AtomLocality locality,
@@ -884,7 +884,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
  */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
                                DeviceBuffer<float>                        totalForcesDevice,
-                               gmx_nbnxn_gpu_t*                           nb,
+                               gmx_nbnxm_gpu_t*                           nb,
                                void*                                      pmeForcesDevice,
                                gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                int                                        atomStart,

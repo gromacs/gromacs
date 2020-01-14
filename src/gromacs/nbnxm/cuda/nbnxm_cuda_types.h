@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -223,84 +223,94 @@ typedef struct Nbnxm::gpu_timers_t cu_timers_t;
 
 class GpuEventSynchronizer;
 
-/** \internal
+/*! \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
-struct gmx_nbnxn_cuda_t
+struct gmx_nbnxm_gpu_t
 {
-    //! CUDA device information
+    /*! \brief CUDA device information */
     const gmx_device_info_t* dev_info;
-    //! true if doing both local/non-local NB work on GPU
+    /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams;
-    //! atom data
+    /*! \brief atom data */
     cu_atomdata_t* atdat;
-    //! f buf ops cell index mapping
+    /*! \brief f buf ops cell index mapping */
     int* cell;
-    //! number of indices in cell buffer
+    /*! \brief number of indices in cell buffer */
     int ncell;
-    //! number of indices allocated in cell buffer
+    /*! \brief number of indices allocated in cell buffer */
     int ncell_alloc;
-    //! array of atom indices
+    /*! \brief array of atom indices */
     int* atomIndices;
-    //! size of atom indices
+    /*! \brief size of atom indices */
     int atomIndicesSize;
-    //! size of atom indices allocated in device buffer
+    /*! \brief size of atom indices allocated in device buffer */
     int atomIndicesSize_alloc;
-    //! x buf ops num of atoms
+    /*! \brief x buf ops num of atoms */
     int* cxy_na;
-    //! number of elements in cxy_na
+    /*! \brief number of elements in cxy_na */
     int ncxy_na;
-    //! number of elements allocated allocated in device buffer
+    /*! \brief number of elements allocated allocated in device buffer */
     int ncxy_na_alloc;
-    //! x buf ops cell index mapping
+    /*! \brief x buf ops cell index mapping */
     int* cxy_ind;
-    //! number of elements in cxy_ind
+    /*! \brief number of elements in cxy_ind */
     int ncxy_ind;
-    //! number of elements allocated allocated in device buffer
+    /*! \brief number of elements allocated allocated in device buffer */
     int ncxy_ind_alloc;
-    //! parameters required for the non-bonded calc.
+    /*! \brief parameters required for the non-bonded calc. */
     cu_nbparam_t* nbparam;
-    //! pair-list data structures (local and non-local)
+    /*! \brief pair-list data structures (local and non-local) */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t*> plist;
-    //! staging area where fshift/energies get downloaded
+    /*! \brief staging area where fshift/energies get downloaded */
     nb_staging_t nbst;
-    //! local and non-local GPU streams
+    /*! \brief local and non-local GPU streams */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream;
 
-    /** events used for synchronization */
-    cudaEvent_t nonlocal_done; /**< event triggered when the non-local non-bonded kernel
-                                  is done (and the local transfer can proceed)           */
-    cudaEvent_t misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
-                                                the local stream that need to precede the
-                                                non-local force or buffer operation calculations are
-                                                done (e.g. f buffer 0-ing, local x/q H2D, buffer op
-                                                initialization in local stream that is required also
-                                                by nonlocal stream ) */
+    /*! \brief Events used for synchronization */
+    /*! \{ */
+    /*! \brief Event triggered when the non-local non-bonded
+     * kernel is done (and the local transfer can proceed) */
+    cudaEvent_t nonlocal_done;
+    /*! \brief Event triggered when the tasks issued in the local
+     * stream that need to precede the non-local force or buffer
+     * operation calculations are done (e.g. f buffer 0-ing, local
+     * x/q H2D, buffer op initialization in local stream that is
+     * required also by nonlocal stream ) */
+    cudaEvent_t misc_ops_and_local_H2D_done;
+    /*! \} */
 
-    //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
-    //  to be executed in the current domain. As long as bonded work is not split up into
-    //  local/nonlocal, if there is bonded GPU work, both flags will be true.
+    /*! \brief True if there is work for the current domain in the
+     * respective locality.
+     *
+     * This includes local/nonlocal GPU work, either bonded or
+     * nonbonded, scheduled to be executed in the current
+     * domain. As long as bonded work is not split up into
+     * local/nonlocal, if there is bonded GPU work, both flags
+     * will be true. */
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
 
-    /*! \brief Pointer to event synchronizer triggered when the local GPU buffer ops / reduction is complete
+    /*! \brief Pointer to event synchronizer triggered when the local
+     * GPU buffer ops / reduction is complete
      *
-     * \note That the synchronizer is managed outside of this module in StatePropagatorDataGpu.
+     * \note That the synchronizer is managed outside of this module
+     * in StatePropagatorDataGpu.
      */
     GpuEventSynchronizer* localFReductionDone;
 
-    GpuEventSynchronizer* xNonLocalCopyD2HDone; /**< event triggered when
-                                                   non-local coordinate buffer has been
-                                                   copied from device to host*/
+    /*! \brief Event triggered when non-local coordinate buffer
+     * has been copied from device to host. */
+    GpuEventSynchronizer* xNonLocalCopyD2HDone;
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
-    //! True if event-based timing is enabled.
+    /*! \brief True if event-based timing is enabled. */
     bool bDoTime;
-    //! CUDA event-based timers.
+    /*! \brief CUDA event-based timers. */
     cu_timers_t* timers;
-    //! Timing data. TODO: deprecate this and query timers for accumulated data instead
+    /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
     gmx_wallclock_gpu_nbnxn_t* timings;
 };
 

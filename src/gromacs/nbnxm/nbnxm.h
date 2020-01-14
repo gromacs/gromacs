@@ -118,19 +118,17 @@
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
-
-// TODO: Remove this include
-#include "nbnxm_gpu.h"
 
 struct gmx_device_info_t;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
+struct gmx_nbnxm_gpu_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
+struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
 class PairSearch;
 class PairlistSets;
@@ -153,9 +151,13 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class ForceWithShiftForces;
+class GpuBonded;
 template<typename>
 class ListOfLists;
 class MDLogger;
+template<typename>
+class Range;
+class StepWorkload;
 class UpdateGroupsCog;
 } // namespace gmx
 
@@ -223,7 +225,7 @@ public:
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
                        const Nbnxm::KernelSetup&         kernelSetup,
-                       gmx_nbnxn_gpu_t*                  gpu_nbv,
+                       gmx_nbnxm_gpu_t*                  gpu_nbv,
                        gmx_wallcycle*                    wcycle);
 
     ~nonbonded_verlet_t();
@@ -382,19 +384,7 @@ public:
     void changePairlistRadii(real rlistOuter, real rlistInner);
 
     //! Set up internal flags that indicate what type of short-range work there is.
-    void setupGpuShortRangeWork(const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)
-    {
-        if (useGpu() && !emulateGpu())
-        {
-            Nbnxm::setupGpuShortRangeWork(gpu_nbv, gpuBonded, iLocality);
-        }
-    }
-
-    //! Returns true if there is GPU short-range work for the given atom locality.
-    bool haveGpuShortRangeWork(const gmx::AtomLocality aLocality)
-    {
-        return ((useGpu() && !emulateGpu()) && Nbnxm::haveGpuShortRangeWork(gpu_nbv, aLocality));
-    }
+    void setupGpuShortRangeWork(const gmx::GpuBonded* gpuBonded, gmx::InteractionLocality iLocality);
 
     // TODO: Make all data members private
 public:
@@ -413,7 +403,7 @@ private:
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
-    gmx_nbnxn_gpu_t* gpu_nbv;
+    gmx_nbnxm_gpu_t* gpu_nbv;
 };
 
 namespace Nbnxm

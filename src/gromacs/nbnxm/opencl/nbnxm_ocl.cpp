@@ -341,7 +341,7 @@ static inline cl_kernel selectPruneKernel(cl_kernel kernel_pruneonly[], bool fir
  *  OpenCL kernel objects are cached in nb. If the requested kernel is not
  *  found in the cache, it will be created and the cache will be updated.
  */
-static inline cl_kernel select_nbnxn_kernel(gmx_nbnxn_ocl_t* nb, int eeltype, int evdwtype, bool bDoEne, bool bDoPrune)
+static inline cl_kernel select_nbnxn_kernel(gmx_nbnxm_gpu_t* nb, int eeltype, int evdwtype, bool bDoEne, bool bDoPrune)
 {
     const char* kernel_name_to_run;
     cl_kernel*  kernel_ptr;
@@ -471,7 +471,7 @@ static void sync_ocl_event(cl_command_queue stream, cl_event* ocl_event)
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -575,7 +575,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_ocl_t* nb, const nbnxn_atomdata_t* nbatom, con
    misc_ops_done event to record the point in time when the above  operations
    are finished and synchronize with this event in the non-local stream.
  */
-void gpu_launch_kernel(gmx_nbnxn_ocl_t* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
+void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, const Nbnxm::InteractionLocality iloc)
 {
     cl_atomdata_t*   adat   = nb->atdat;
     cl_nbparam_t*    nbp    = nb->nbparam;
@@ -713,7 +713,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
  * Launch the pairlist prune only kernel for the given locality.
  * \p numParts tells in how many parts, i.e. calls the list will be pruned.
  */
-void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t* nb, const InteractionLocality iloc, const int numParts)
+void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality iloc, const int numParts)
 {
     cl_atomdata_t*   adat    = nb->atdat;
     cl_nbparam_t*    nbp     = nb->nbparam;
@@ -839,7 +839,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_gpu_t* nb, const InteractionLocality 
  * Launch asynchronously the download of nonbonded forces from the GPU
  * (and energies/shift forces if required).
  */
-void gpu_launch_cpyback(gmx_nbnxn_ocl_t*         nb,
+void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
                         struct nbnxn_atomdata_t* nbatom,
                         const gmx::StepWorkload& stepWork,
                         const AtomLocality       aloc)

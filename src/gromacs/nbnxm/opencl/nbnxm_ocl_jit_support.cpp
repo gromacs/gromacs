@@ -167,7 +167,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdw
  *
  * Does not throw
  */
-void nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t* nb)
+void nbnxn_gpu_compile_kernels(gmx_nbnxm_gpu_t* nb)
 {
     gmx_bool   bFastGen = TRUE;
     cl_program program  = nullptr;

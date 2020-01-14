@@ -49,6 +49,7 @@
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/inputrec.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
@@ -56,8 +57,6 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
-#include "atomdata.h"
-#include "gpu_types.h"
 #include "grid.h"
 #include "nbnxm_geometry.h"
 #include "nbnxm_simd.h"
@@ -321,7 +320,7 @@ namespace Nbnxm
 {
 
 /*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
-static int getMinimumIlistCountForGpuBalancing(gmx_nbnxn_gpu_t* nbnxmGpu)
+static int getMinimumIlistCountForGpuBalancing(gmx_nbnxm_gpu_t* nbnxmGpu)
 {
     int minimumIlistCount;
 
@@ -441,7 +440,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                         fr->nbfp, mimimumNumEnergyGroupNonbonded,
                         (useGpu || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 
-    gmx_nbnxn_gpu_t* gpu_nbv                          = nullptr;
+    gmx_nbnxm_gpu_t* gpu_nbv                          = nullptr;
     int              minimumIlistCountForGpuBalancing = 0;
     if (useGpu)
     {
@@ -470,7 +469,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
                                        std::unique_ptr<PairSearch>       pairSearch,
                                        std::unique_ptr<nbnxn_atomdata_t> nbat_in,
                                        const Nbnxm::KernelSetup&         kernelSetup,
-                                       gmx_nbnxn_gpu_t*                  gpu_nbv_ptr,
+                                       gmx_nbnxm_gpu_t*                  gpu_nbv_ptr,
                                        gmx_wallcycle*                    wcycle) :
     pairlistSets_(std::move(pairlistSets)),
     pairSearch_(std::move(pairSearch)),

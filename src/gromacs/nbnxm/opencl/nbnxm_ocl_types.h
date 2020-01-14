@@ -274,7 +274,7 @@ typedef struct Nbnxm::gpu_timers_t cl_timers_t;
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
  */
-struct gmx_nbnxn_ocl_t
+struct gmx_nbnxm_gpu_t
 {
     const gmx_device_info_t*          dev_info;    /**< OpenCL device information    */
     struct gmx_device_runtime_data_t* dev_rundata; /**< OpenCL runtime data (context, kernels) */

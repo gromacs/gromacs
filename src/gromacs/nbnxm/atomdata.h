@@ -33,6 +33,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \libinternal \file
+ *  \brief
+ *  Functionality for per-atom data in the nbnxm module
+ *
+ *  \author Berk Hess <hess@kth.se>
+ *  \ingroup module_nbnxm
+ *  \inlibraryapi
+ */
+
 
 #ifndef GMX_NBNXN_ATOMDATA_H
 #define GMX_NBNXN_ATOMDATA_H
@@ -47,13 +56,12 @@
 #include "gromacs/utility/bitmask.h"
 #include "gromacs/utility/real.h"
 
-#include "gpu_types.h"
-
 namespace gmx
 {
 class MDLogger;
 }
 
+struct gmx_nbnxm_gpu_t;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
 struct t_mdatoms;
@@ -67,7 +75,7 @@ class GridSet;
 enum class KernelType;
 } // namespace Nbnxm
 
-/* Convenience type for vector with aligned memory */
+//! Convenience type for vector with aligned memory
 template<typename T>
 using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
@@ -122,8 +130,9 @@ struct nbnxn_atomdata_output_t
     AlignedVector<real>   VSc;    // Temporary SIMD Coulomb group energy storage
 };
 
-/* Block size in atoms for the non-bonded thread force-buffer reduction,
- * should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
+/*! \brief Block size in atoms for the non-bonded thread force-buffer reduction.
+ *
+ * Should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
  * Should be small to reduce the reduction and zeroing cost,
  * but too small will result in overhead.
  * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
@@ -134,20 +143,24 @@ struct nbnxn_atomdata_output_t
 #    define NBNXN_BUFFERFLAG_SIZE 16
 #endif
 
-/* We store the reduction flags as gmx_bitmask_t.
+/*! \brief We store the reduction flags as gmx_bitmask_t.
  * This limits the number of flags to BITMASK_SIZE.
  */
 #define NBNXN_BUFFERFLAG_MAX_THREADS (BITMASK_SIZE)
 
-/* Flags for telling if threads write to force output buffers */
+/*! \internal
+ * \brief Flags for telling if threads write to force output buffers */
 typedef struct
 {
-    int            nflag;       /* The number of flag blocks                         */
-    gmx_bitmask_t* flag;        /* Bit i is set when thread i writes to a cell-block */
-    int            flag_nalloc; /* Allocation size of cxy_flag                       */
+    //! The number of flag blocks
+    int nflag;
+    //! Bit i is set when thread i writes to a cell-block
+    gmx_bitmask_t* flag;
+    //! Allocation size of cxy_flag
+    int flag_nalloc;
 } nbnxn_buffer_flags_t;
 
-/* LJ combination rules: geometric, Lorentz-Berthelot, none */
+/*! \brief LJ combination rules: geometric, Lorentz-Berthelot, none */
 enum
 {
     ljcrGEOM,
@@ -156,7 +169,8 @@ enum
     ljcrNR
 };
 
-/* Struct that stores atom related data for the nbnxn module
+/*! \internal
+ * \brief Struct that stores atom related data for the nbnxn module
  *
  * Note: performance would improve slightly when all std::vector containers
  *       in this struct would not initialize during resize().
@@ -195,86 +209,103 @@ struct nbnxn_atomdata_t
         gmx::HostVector<int> energrp;
     };
 
-    // Diagonal and topology exclusion helper data for all SIMD kernels
+    /*! \internal
+     * \brief Diagonal and topology exclusion helper data for all SIMD kernels. */
     struct SimdMasks
     {
         SimdMasks();
 
-        // Helper data for setting up diagonal exclusion masks in the SIMD 4xN kernels
+        //! Helper data for setting up diagonal exclusion masks in the SIMD 4xN kernels
         AlignedVector<real> diagonal_4xn_j_minus_i;
-        // Helper data for setting up diaginal exclusion masks in the SIMD 2xNN kernels
+        //! Helper data for setting up diaginal exclusion masks in the SIMD 2xNN kernels
         AlignedVector<real> diagonal_2xnn_j_minus_i;
-        // Filters for topology exclusion masks for the SIMD kernels
+        //! Filters for topology exclusion masks for the SIMD kernels
         AlignedVector<uint32_t> exclusion_filter;
-        // Filters for topology exclusion masks for double SIMD kernels without SIMD int32 logical support
+        //! Filters for topology exclusion masks for double SIMD kernels without SIMD int32 logical support
         AlignedVector<uint64_t> exclusion_filter64;
-        // Array of masks needed for exclusions
+        //! Array of masks needed for exclusions
         AlignedVector<real> interaction_array;
     };
 
-    /* Constructor
+    /*! \brief Constructor
      *
      * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
      */
     nbnxn_atomdata_t(gmx::PinningPolicy pinningPolicy);
 
-    /* Returns a const reference to the parameters */
+    //! Returns a const reference to the parameters
     const Params& params() const { return params_; }
 
-    /* Returns a non-const reference to the parameters */
+    //! Returns a non-const reference to the parameters
     Params& paramsDeprecated() { return params_; }
 
-    /* Returns the current total number of atoms stored */
+    //! Returns the current total number of atoms stored
     int numAtoms() const { return numAtoms_; }
 
-    /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
+    //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
     gmx::ArrayRef<const real> x() const { return x_; }
 
-    /* Return the coordinate buffer, and q with xFormat==nbatXYZQ */
+    //! Return the coordinate buffer, and q with xFormat==nbatXYZQ
     gmx::ArrayRef<real> x() { return x_; }
 
-    /* Resizes the coordinate buffer and sets the number of atoms */
+    //! Resizes the coordinate buffer and sets the number of atoms
     void resizeCoordinateBuffer(int numAtoms);
 
-    /* Resizes the force buffers for the current number of atoms */
+    //! Resizes the force buffers for the current number of atoms
     void resizeForceBuffers();
 
 private:
-    // The LJ and charge parameters
+    //! The LJ and charge parameters
     Params params_;
-    // The total number of atoms currently stored
+    //! The total number of atoms currently stored
     int numAtoms_;
 
 public:
-    int                        natoms_local; /* Number of local atoms                           */
-    int                        XFormat;     /* The format of x (and q), enum                      */
-    int                        FFormat;     /* The format of f, enum                              */
-    gmx_bool                   bDynamicBox; /* Do we need to update shift_vec every step?    */
-    gmx::HostVector<gmx::RVec> shift_vec;   /* Shift vectors, copied from t_forcerec              */
-    int                        xstride;     /* stride for a coordinate in x (usually 3 or 4)      */
-    int                        fstride;     /* stride for a coordinate in f (usually 3 or 4)      */
+    //! Number of local atoms
+    int natoms_local;
+    //! The format of x (and q), enum
+    int XFormat;
+    //! The format of f, enum
+    int FFormat;
+    //! Do we need to update shift_vec every step?
+    gmx_bool bDynamicBox;
+    //! Shift vectors, copied from t_forcerec
+    gmx::HostVector<gmx::RVec> shift_vec;
+    //! stride for a coordinate in x (usually 3 or 4)
+    int xstride;
+    //! stride for a coordinate in f (usually 3 or 4)
+    int fstride;
+
 private:
-    gmx::HostVector<real> x_; /* x and possibly q, size natoms*xstride              */
+    //! x and possibly q, size natoms*xstride
+    gmx::HostVector<real> x_;
 
 public:
-    // Masks for handling exclusions in the SIMD kernels
+    //! Masks for handling exclusions in the SIMD kernels
     const SimdMasks simdMasks;
 
-    /* Output data */
-    std::vector<nbnxn_atomdata_output_t> out; /* Output data structures, 1 per thread */
+    //! Output data structures, 1 per thread
+    std::vector<nbnxn_atomdata_output_t> out;
 
-    /* Reduction related data */
-    gmx_bool             bUseBufferFlags; /* Use the flags or operate on all atoms     */
-    nbnxn_buffer_flags_t buffer_flags;    /* Flags for buffer zeroing+reduc.  */
-    gmx_bool             bUseTreeReduce;  /* Use tree for force reduction */
-    tMPI_Atomic*         syncStep;        /* Synchronization step for tree reduce */
+    //! Reduction related data
+    //! \{
+    //! Use the flags or operate on all atoms
+    gmx_bool bUseBufferFlags;
+    //! Flags for buffer zeroing+reduc.
+    nbnxn_buffer_flags_t buffer_flags;
+    //! Use tree for force reduction
+    gmx_bool bUseTreeReduce;
+    //! Synchronization step for tree reduce
+    tMPI_Atomic* syncStep;
+    //! \}
 };
 
-/* Copy na rvec elements from x to xnb using nbatFormat, start dest a0,
+/*! \brief Copy na rvec elements from x to xnb using nbatFormat, start dest a0,
  * and fills up to na_round with coordinates that are far away.
  */
 void copy_rvec_to_nbat_real(const int* a, int na, int na_round, const rvec* x, int nbatFormat, real* xnb, int a0);
 
+//! Describes the combination rule in use by this force field
 enum
 {
     enbnxninitcombruleDETECT,
@@ -283,7 +314,8 @@ enum
     enbnxninitcombruleNONE
 };
 
-/* Initialize the non-bonded atom data structure.
+/*! \brief Initialize the non-bonded atom data structure.
+ *
  * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
  * to the atom data structure.
@@ -298,12 +330,13 @@ void nbnxn_atomdata_init(const gmx::MDLogger&      mdlog,
                          int                       n_energygroups,
                          int                       nout);
 
+//! Sets the atomdata after pair search
 void nbnxn_atomdata_set(nbnxn_atomdata_t*     nbat,
                         const Nbnxm::GridSet& gridSet,
                         const t_mdatoms*      mdatoms,
                         const int*            atinfo);
 
-/* Copy the shift vectors to nbat */
+//! Copy the shift vectors to nbat
 void nbnxn_atomdata_copy_shiftvec(gmx_bool dynamic_box, rvec* shift_vec, nbnxn_atomdata_t* nbat);
 
 /*! \brief Transform coordinates to xbat layout
@@ -337,7 +370,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet& gridSet,
                                     gmx::AtomLocality     locality,
                                     bool                  fillLocal,
-                                    gmx_nbnxn_gpu_t*      gpu_nbv,
+                                    gmx_nbnxm_gpu_t*      gpu_nbv,
                                     DeviceBuffer<float>   d_x,
                                     GpuEventSynchronizer* xReadyOnDevice);
 
@@ -366,14 +399,14 @@ void reduceForcesGpu(gmx::AtomLocality                          locality,
                      const Nbnxm::GridSet&                      gridSet,
                      void*                                      pmeForcesDevice,
                      gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                     gmx_nbnxn_gpu_t*                           gpu_nbv,
+                     gmx_nbnxm_gpu_t*                           gpu_nbv,
                      bool                                       useGpuFPmeReduction,
                      bool                                       accumulateForce);
 
-/* Add the fshift force stored in nbat to fshift */
+//! Add the fshift force stored in nbat to fshift
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t& nbat, gmx::ArrayRef<gmx::RVec> fshift);
 
-/* Get the atom start index and number of atoms for a given locality */
+//! Get the atom start index and number of atoms for a given locality
 void nbnxn_get_atom_range(gmx::AtomLocality     atomLocality,
                           const Nbnxm::GridSet& gridSet,
                           int*                  atomStart,
