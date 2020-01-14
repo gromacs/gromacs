@@ -1143,9 +1143,9 @@ int Mdrunner::mdrunner()
     // Produce the task assignment for this rank.
     GpuTaskAssignmentsBuilder gpuTaskAssignmentsBuilder;
     GpuTaskAssignments        gpuTaskAssignments = gpuTaskAssignmentsBuilder.build(
-            gpuIdsToUse, userGpuTaskAssignment, *hwinfo, cr, ms, physicalNodeComm, nonbondedTarget,
-            pmeTarget, bondedTarget, updateTarget, useGpuForNonbonded, useGpuForPme,
-            thisRankHasDuty(cr, DUTY_PP),
+            gpuIdsToUse, userGpuTaskAssignment, *hwinfo, communicator, physicalNodeComm,
+            nonbondedTarget, pmeTarget, bondedTarget, updateTarget, useGpuForNonbonded,
+            useGpuForPme, thisRankHasDuty(cr, DUTY_PP),
             // TODO cr->duty & DUTY_PME should imply that a PME
             // algorithm is active, but currently does not.
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));

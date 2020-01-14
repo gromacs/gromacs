@@ -53,10 +53,10 @@
 #include <vector>
 
 #include "gromacs/utility/basedefinitions.h"
+#include "gromacs/utility/gmxmpi.h"
 
 struct gmx_device_info_t;
 struct gmx_hw_info_t;
-struct gmx_multisim_t;
 struct t_commrec;
 
 enum class PmeRunMode;
@@ -143,8 +143,7 @@ public:
      * \param[in]  gpuIdsToUse            The compatible GPUs that the user permitted us to use.
      * \param[in]  userGpuTaskAssignment  The user-specified assignment of GPU tasks to device IDs.
      * \param[in]  hardwareInfo           The detected hardware
-     * \param[in]  cr                     Communication object.
-     * \param[in]  ms                     Multi-simulation handler.
+     * \param[in]  gromacsWorldComm       MPI communicator for all ranks in the current GROMACS run
      * \param[in]  physicalNodeComm       Communication object for this physical node.
      * \param[in]  nonbondedTarget        The user's choice for mdrun -nb for where to assign
      *                                    short-ranged nonbonded interaction tasks.
@@ -163,8 +162,7 @@ public:
     GpuTaskAssignments build(const std::vector<int>&         gpuIdsToUse,
                              const std::vector<int>&         userGpuTaskAssignment,
                              const gmx_hw_info_t&            hardwareInfo,
-                             const t_commrec*                cr,
-                             const gmx_multisim_t*           ms,
+                             MPI_Comm                        gromacsWorldComm,
                              const PhysicalNodeCommunicator& physicalNodeComm,
                              TaskTarget                      nonbondedTarget,
                              TaskTarget                      pmeTarget,
