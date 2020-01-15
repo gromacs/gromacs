@@ -67,6 +67,7 @@ class MdrunScheduleWorkload;
 } // namespace gmx
 
 /* Initialization function, also predicts the initial shell postions.
+ * Returns a pointer to an initialized shellfc object.
  */
 gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                   const gmx_mtop_t* mtop,
@@ -110,7 +111,7 @@ void relax_shell_flexcon(FILE*                               log,
                          const gmx_vsite_t*                  vsite,
                          const DDBalanceRegionHandler&       ddBalanceRegionHandler);
 
-/* Print some final output */
+/* Print some final output and delete shellfc */
 void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
 
 /*! \brief Count the different particle types in a system
