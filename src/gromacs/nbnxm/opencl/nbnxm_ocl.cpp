@@ -108,7 +108,7 @@ static inline void validate_global_work_size(const KernelLaunchConfig& config,
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;
 
-    assert(dinfo);
+    GMX_ASSERT(dinfo, "Need a valid device info object");
 
     size_t global_work_size[3];
     GMX_ASSERT(work_dim <= 3, "Not supporting hyper-grids just yet");
@@ -346,8 +346,10 @@ static inline cl_kernel select_nbnxn_kernel(NbnxmGpu* nb, int eeltype, int evdwt
     cl_kernel*  kernel_ptr;
     cl_int      cl_error;
 
-    assert(eeltype < eelOclNR);
-    assert(evdwtype < evdwOclNR);
+    GMX_ASSERT(eeltype < eelOclNR,
+               "The electrostatics type requested is not implemented in the OpenCL kernels.");
+    GMX_ASSERT(evdwtype < evdwOclNR,
+               "The VdW type requested is not implemented in the OpenCL kernels.");
 
     if (bDoEne)
     {
@@ -379,9 +381,9 @@ static inline cl_kernel select_nbnxn_kernel(NbnxmGpu* nb, int eeltype, int evdwt
     if (nullptr == kernel_ptr[0])
     {
         *kernel_ptr = clCreateKernel(nb->dev_rundata->program, kernel_name_to_run, &cl_error);
-        assert(cl_error == CL_SUCCESS);
+        GMX_ASSERT(cl_error == CL_SUCCESS,
+                   ("clCreateKernel failed: " + ocl_get_error_string(cl_error)).c_str());
     }
-    // TODO: handle errors
 
     return *kernel_ptr;
 }
@@ -466,7 +468,8 @@ static void sync_ocl_event(cl_command_queue stream, cl_event* ocl_event)
 
     /* Release event and reset it to 0. It is ok to release it as enqueuewaitforevents performs implicit retain for events. */
     cl_error = clReleaseEvent(*ocl_event);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS,
+               ("clReleaseEvent failed: " + ocl_get_error_string(cl_error)).c_str());
     *ocl_event = nullptr;
 }
 
@@ -540,14 +543,16 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
         {
             cl_int gmx_used_in_debug cl_error = clEnqueueMarkerWithWaitList(
                     stream, 0, nullptr, &(nb->misc_ops_and_local_H2D_done));
-            assert(CL_SUCCESS == cl_error);
+            GMX_ASSERT(cl_error == CL_SUCCESS,
+                       ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
 
             /* Based on the v1.2 section 5.13 of the OpenCL spec, a flush is needed
              * in the local stream in order to be able to sync with the above event
              * from the non-local stream.
              */
             cl_error = clFlush(stream);
-            assert(CL_SUCCESS == cl_error);
+            GMX_ASSERT(cl_error == CL_SUCCESS,
+                       ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
         }
         else
         {
@@ -897,7 +902,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     /* kick off work */
     cl_error = clFlush(stream);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 
     /* After the non-local D2H is launched the nonlocal_done event can be
        recorded which signals that the local D2H can proceed. This event is not
@@ -906,7 +911,8 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     if (iloc == InteractionLocality::NonLocal)
     {
         cl_error = clEnqueueMarkerWithWaitList(stream, 0, nullptr, &(nb->nonlocal_done));
-        assert(CL_SUCCESS == cl_error);
+        GMX_ASSERT(cl_error == CL_SUCCESS,
+                   ("clEnqueueMarkerWithWaitList failed: " + ocl_get_error_string(cl_error)).c_str());
         nb->bNonLocalStreamActive = CL_TRUE;
     }
 
@@ -959,8 +965,6 @@ int nbnxn_gpu_pick_ewald_kernel_type(const interaction_const_t& ic)
 
     /* OpenCL: By default, use analytical Ewald
      * TODO: tabulated does not work, it needs fixing, see init_nbparam() in nbnxn_ocl_data_mgmt.cpp
-     *
-     * TODO: decide if dev_info parameter should be added to recognize NVIDIA CC>=3.0 devices.
      *
      */
     /* By default use analytical Ewald. */

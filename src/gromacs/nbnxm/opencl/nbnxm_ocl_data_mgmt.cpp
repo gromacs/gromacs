@@ -491,8 +491,8 @@ static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
     cl_context            context;
     cl_int                cl_error;
 
-    assert(runtimeData != nullptr);
-    assert(devInfo != nullptr);
+    GMX_ASSERT(runtimeData, "Need a valid runtimeData object");
+    GMX_ASSERT(devInfo, "Need a valid device info object");
 
     platform_id = devInfo->ocl_gpu_id.ocl_platform_id;
     device_id   = devInfo->ocl_gpu_id.ocl_device_id;
@@ -619,7 +619,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
-    assert(ic);
+    GMX_ASSERT(ic, "Need a valid interaction constants object");
 
     auto nb = new NbnxmGpu;
     snew(nb->atdat, 1);
@@ -752,7 +752,7 @@ void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
     /* kick off buffer clearing kernel to ensure concurrency with constraints/update */
     cl_int gmx_unused cl_error;
     cl_error = clFlush(nb->stream[InteractionLocality::Local]);
-    assert(CL_SUCCESS == cl_error);
+    GMX_ASSERT(cl_error == CL_SUCCESS, ("clFlush failed: " + ocl_get_error_string(cl_error)).c_str());
 }
 
 //! This function is documented in the header file
@@ -933,7 +933,7 @@ static void free_kernel(cl_kernel* kernel_ptr)
 {
     cl_int gmx_unused cl_error;
 
-    assert(nullptr != kernel_ptr);
+    GMX_ASSERT(kernel_ptr, "Need a valid kernel pointer");
 
     if (*kernel_ptr)
     {
