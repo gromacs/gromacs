@@ -33,6 +33,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *  \brief
+ *  Utility constant and function declaration for the OpenCL non-bonded kernels.
+ *  This header should be included once at the top level, just before the
+ *  kernels are included (has to be preceded by nbnxn_ocl_types.h).
+ *
+ *  \author Szilárd Páll <pall.szilard@gmail.com>
+ *  \ingroup module_nbnxm
+ */
 
 #define GMX_DOUBLE 0
 
@@ -144,50 +153,76 @@ typedef struct
 typedef struct cl_nbparam_params
 {
 
-    int eeltype; /**< type of electrostatics, takes values from #eelCu */
-    int vdwtype; /**< type of VdW impl., takes values from #evdwCu     */
+    //! type of electrostatics, takes values from #eelCu
+    int eeltype;
+    //! type of VdW impl., takes values from #evdwCu
+    int vdwtype;
 
-    float epsfac;      /**< charge multiplication factor                      */
-    float c_rf;        /**< Reaction-field/plain cutoff electrostatics const. */
-    float two_k_rf;    /**< Reaction-field electrostatics constant            */
-    float ewald_beta;  /**< Ewald/PME parameter                               */
-    float sh_ewald;    /**< Ewald/PME correction term substracted from the direct-space potential */
-    float sh_lj_ewald; /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float ewaldcoeff_lj; /**< LJ-Ewald/PME coefficient                          */
+    //! charge multiplication factor
+    float epsfac;
+    //! Reaction-field/plain cutoff electrostatics const.
+    float c_rf;
+    //! Reaction-field electrostatics constant
+    float two_k_rf;
+    //! Ewald/PME parameter
+    float ewald_beta;
+    //! Ewald/PME correction term substracted from the direct-space potential
+    float sh_ewald;
+    //! LJ-Ewald/PME correction term added to the correction potential
+    float sh_lj_ewald;
+    //! LJ-Ewald/PME coefficient
+    float ewaldcoeff_lj;
 
-    float rcoulomb_sq; /**< Coulomb cut-off squared                           */
+    //! Coulomb cut-off squared
+    float rcoulomb_sq;
 
-    float rvdw_sq;       /**< VdW cut-off squared                               */
-    float rvdw_switch;   /**< VdW switched cut-off                              */
-    float rlistOuter_sq; /**< Full, outer pair-list cut-off squared             */
-    float rlistInner_sq; /**< Inner, dynamic pruned pair-list cut-off squared  XXX: this is only needed in the pruning kernels, but for now we also pass it to the nonbondeds */
+    //! VdW cut-off squared
+    float rvdw_sq;
+    //! VdW switched cut-off
+    float rvdw_switch;
+    //! Full, outer pair-list cut-off squared
+    float rlistOuter_sq;
+    //! Inner, dynamic pruned pair-list cut-off squared  XXX: this is only needed in the pruning kernels, but for now we also pass it to the nonbondeds
+    float rlistInner_sq;
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    //! VdW shift dispersion constants
+    shift_consts_t dispersion_shift;
+    //! VdW shift repulsion constants
+    shift_consts_t repulsion_shift;
+    //! VdW switch constants
+    switch_consts_t vdw_switch;
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    float coulomb_tab_scale; /**< table scale/spacing                        */
+    //! table scale/spacing
+    float coulomb_tab_scale;
 } cl_nbparam_params_t;
 
 typedef struct
 {
-    int sci;           /* i-super-cluster       */
-    int shift;         /* Shift vector index plus possible flags */
-    int cj4_ind_start; /* Start index into cj4  */
-    int cj4_ind_end;   /* End index into cj4    */
+    //! i-super-cluster
+    int sci;
+    //! Shift vector index plus possible flags
+    int shift;
+    //! Start index into cj4
+    int cj4_ind_start;
+    //! End index into cj4
+    int cj4_ind_end;
 } nbnxn_sci_t;
 
 typedef struct
 {
-    unsigned int imask;    /* The i-cluster interactions mask for 1 warp  */
-    int          excl_ind; /* Index into the exclusion array for 1 warp   */
+    //! The i-cluster interactions mask for 1 warp
+    unsigned int imask;
+    //! Index into the exclusion array for 1 warp
+    int excl_ind;
 } nbnxn_im_ei_t;
 
 typedef struct
 {
-    int           cj[4];   /* The 4 j-clusters                            */
-    nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
+    //! The 4 j-clusters
+    int cj[4];
+    //! The i-cluster mask data       for 2 warps
+    nbnxn_im_ei_t imei[2];
 } nbnxn_cj4_t;
 
 

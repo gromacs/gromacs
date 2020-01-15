@@ -33,7 +33,14 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ *
+ * \brief
+ * Declares the geometry-related functionality
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
 #ifndef GMX_NBNXM_NBNXM_GEOMETRY_H
 #define GMX_NBNXM_NBNXM_GEOMETRY_H
 
@@ -45,7 +52,8 @@
 #include "pairlist.h"
 
 
-/* Returns the base-2 log of n.
+/*! \copybrief Returns the base-2 log of n.
+ * *
  * Generates a fatal error when n is not an integer power of 2.
  */
 static inline int get_2log(int n)
@@ -68,13 +76,13 @@ static inline int get_2log(int n)
 namespace Nbnxm
 {
 
-/* The nbnxn i-cluster size in atoms for each nbnxn kernel type */
+/*! \brief The nbnxn i-cluster size in atoms for each nbnxn kernel type */
 static constexpr gmx::EnumerationArray<KernelType, int> IClusterSizePerKernelType = {
     { 0, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize, c_nbnxnCpuIClusterSize,
       c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
 };
 
-/* The nbnxn j-cluster size in atoms for each nbnxn kernel type */
+/*! \brief The nbnxn j-cluster size in atoms for each nbnxn kernel type */
 static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelType = {
     { 0, c_nbnxnCpuIClusterSize,
 #if GMX_SIMD
@@ -85,13 +93,14 @@ static constexpr gmx::EnumerationArray<KernelType, int> JClusterSizePerKernelTyp
       c_nbnxnGpuClusterSize, c_nbnxnGpuClusterSize }
 };
 
-/* Returns whether the pair-list corresponding to nb_kernel_type is simple */
+/*! \brief Returns whether the pair-list corresponding to nb_kernel_type is simple */
 static inline bool kernelTypeUsesSimplePairlist(const KernelType kernelType)
 {
     return (kernelType == KernelType::Cpu4x4_PlainC || kernelType == KernelType::Cpu4xN_Simd_4xN
             || kernelType == KernelType::Cpu4xN_Simd_2xNN);
 }
 
+//! Returns whether a SIMD kernel is in use
 static inline bool kernelTypeIsSimd(const KernelType kernelType)
 {
     return (kernelType == KernelType::Cpu4xN_Simd_4xN || kernelType == KernelType::Cpu4xN_Simd_2xNN);
@@ -99,7 +108,7 @@ static inline bool kernelTypeIsSimd(const KernelType kernelType)
 
 } // namespace Nbnxm
 
-/* Returns the effective list radius of the pair-list
+/*! \brief Returns the effective list radius of the pair-list
  *
  * Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.
@@ -110,7 +119,7 @@ static inline bool kernelTypeIsSimd(const KernelType kernelType)
  */
 real nbnxn_get_rlist_effective_inc(int jClusterSize, real atomDensity);
 
-/* Returns the effective list radius of the pair-list
+/*! \brief Returns the effective list radius of the pair-list
  *
  * Due to the cluster size the effective pair-list is longer than
  * that of a simple atom pair-list. This function gives the extra distance.

@@ -140,9 +140,12 @@ typedef struct nb_staging  nb_staging_t;
  */
 struct nb_staging
 {
-    float*  e_lj;   /**< LJ energy            */
-    float*  e_el;   /**< electrostatic energy */
-    float3* fshift; /**< shift forces         */
+    //! LJ energy
+    float* e_lj;
+    //! electrostatic energy
+    float* e_el;
+    //! shift forces
+    float3* fshift;
 };
 
 /** \internal
@@ -150,24 +153,37 @@ struct nb_staging
  */
 struct cu_atomdata
 {
-    int natoms;       /**< number of atoms                              */
-    int natoms_local; /**< number of local atoms                        */
-    int nalloc;       /**< allocation size for the atom data (xq, f)    */
+    //! number of atoms
+    int natoms;
+    //! number of local atoms
+    int natoms_local;
+    //! allocation size for the atom data (xq, f)
+    int nalloc;
 
-    float4* xq; /**< atom coordinates + charges, size natoms      */
-    float3* f;  /**< force output array, size natoms              */
+    //! atom coordinates + charges, size natoms
+    float4* xq;
+    //! force output array, size natoms
+    float3* f;
 
-    float* e_lj; /**< LJ energy output, size 1                     */
-    float* e_el; /**< Electrostatics energy input, size 1          */
+    //! LJ energy output, size 1
+    float* e_lj;
+    //! Electrostatics energy input, size 1
+    float* e_el;
 
-    float3* fshift; /**< shift forces                                 */
+    //! shift forces
+    float3* fshift;
 
-    int     ntypes;     /**< number of atom types                         */
-    int*    atom_types; /**< atom type indices, size natoms               */
-    float2* lj_comb;    /**< sqrt(c6),sqrt(c12) size natoms               */
+    //! number of atom types
+    int ntypes;
+    //! atom type indices, size natoms
+    int* atom_types;
+    //! sqrt(c6),sqrt(c12) size natoms
+    float2* lj_comb;
 
-    float3* shift_vec;         /**< shifts                                       */
-    bool    bShiftVecUploaded; /**< true if the shift vector has been uploaded   */
+    //! shifts
+    float3* shift_vec;
+    //! true if the shift vector has been uploaded
+    bool bShiftVecUploaded;
 };
 
 /** \internal
@@ -176,39 +192,64 @@ struct cu_atomdata
 struct cu_nbparam
 {
 
-    int eeltype; /**< type of electrostatics, takes values from #eelCu */
-    int vdwtype; /**< type of VdW impl., takes values from #evdwCu     */
+    //! type of electrostatics, takes values from #eelCu
+    int eeltype;
+    //! type of VdW impl., takes values from #evdwCu
+    int vdwtype;
 
-    float epsfac;      /**< charge multiplication factor                      */
-    float c_rf;        /**< Reaction-field/plain cutoff electrostatics const. */
-    float two_k_rf;    /**< Reaction-field electrostatics constant            */
-    float ewald_beta;  /**< Ewald/PME parameter                               */
-    float sh_ewald;    /**< Ewald/PME correction term substracted from the direct-space potential */
-    float sh_lj_ewald; /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float ewaldcoeff_lj; /**< LJ-Ewald/PME coefficient                          */
+    //! charge multiplication factor
+    float epsfac;
+    //! Reaction-field/plain cutoff electrostatics const.
+    float c_rf;
+    //! Reaction-field electrostatics constant
+    float two_k_rf;
+    //! Ewald/PME parameter
+    float ewald_beta;
+    //! Ewald/PME correction term substracted from the direct-space potential
+    float sh_ewald;
+    //! LJ-Ewald/PME correction term added to the correction potential
+    float sh_lj_ewald;
+    //! LJ-Ewald/PME coefficient
+    float ewaldcoeff_lj;
 
-    float rcoulomb_sq; /**< Coulomb cut-off squared                           */
+    //! Coulomb cut-off squared
+    float rcoulomb_sq;
 
-    float rvdw_sq;           /**< VdW cut-off squared                               */
-    float rvdw_switch;       /**< VdW switched cut-off                              */
-    float rlistOuter_sq;     /**< Full, outer pair-list cut-off squared             */
-    float rlistInner_sq;     /**< Inner, dynamic pruned pair-list cut-off squared   */
-    bool  useDynamicPruning; /**< True if we use dynamic pair-list pruning          */
+    //! VdW cut-off squared
+    float rvdw_sq;
+    //! VdW switched cut-off
+    float rvdw_switch;
+    //! Full, outer pair-list cut-off squared
+    float rlistOuter_sq;
+    //! Inner, dynamic pruned pair-list cut-off squared
+    float rlistInner_sq;
+    //! True if we use dynamic pair-list pruning
+    bool useDynamicPruning;
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    //! VdW shift dispersion constants
+    shift_consts_t dispersion_shift;
+    //! VdW shift repulsion constants
+    shift_consts_t repulsion_shift;
+    //! VdW switch constants
+    switch_consts_t vdw_switch;
 
     /* LJ non-bonded parameters - accessed through texture memory */
-    float*              nbfp; /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
-    cudaTextureObject_t nbfp_texobj; /**< texture object bound to nbfp */
-    float*              nbfp_comb; /**< nonbonded parameter table per atom type, 2*ntype elements */
-    cudaTextureObject_t nbfp_comb_texobj; /**< texture object bound to nbfp_texobj */
+    //! nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements
+    float* nbfp;
+    //! texture object bound to nbfp
+    cudaTextureObject_t nbfp_texobj;
+    //! nonbonded parameter table per atom type, 2*ntype elements
+    float* nbfp_comb;
+    //! texture object bound to nbfp_texobj
+    cudaTextureObject_t nbfp_comb_texobj;
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    float               coulomb_tab_scale;  /**< table scale/spacing                        */
-    float*              coulomb_tab;        /**< pointer to the table in the device memory  */
-    cudaTextureObject_t coulomb_tab_texobj; /**< texture object bound to coulomb_tab        */
+    //! table scale/spacing
+    float coulomb_tab_scale;
+    //! pointer to the table in the device memory
+    float* coulomb_tab;
+    //! texture object bound to coulomb_tab
+    cudaTextureObject_t coulomb_tab_texobj;
 };
 
 /** \internal

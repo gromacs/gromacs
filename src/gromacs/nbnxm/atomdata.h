@@ -107,10 +107,11 @@ static inline int atom_to_x_index(int a)
     return DIM * (a & ~(packSize - 1)) + (a & (packSize - 1));
 }
 
-// Struct that holds force and energy output buffers
+/*! \internal
+ * \brief Struct that holds force and energy output buffers */
 struct nbnxn_atomdata_output_t
 {
-    /* Constructor
+    /*! \brief Constructor
      *
      * \param[in] kernelType              Type of non-bonded kernel
      * \param[in] numEnergyGroups         The number of energy groups
@@ -119,15 +120,21 @@ struct nbnxn_atomdata_output_t
      */
     nbnxn_atomdata_output_t(Nbnxm::KernelType  kernelType,
                             int                numEnergyGroups,
-                            int                simdEnergyBUfferStride,
+                            int                simdEnergyBufferStride,
                             gmx::PinningPolicy pinningPolicy);
 
-    gmx::HostVector<real> f;      // f, size natoms*fstride
-    gmx::HostVector<real> fshift; // Shift force array, size SHIFTS*DIM
-    gmx::HostVector<real> Vvdw;   // Temporary Van der Waals group energy storage
-    gmx::HostVector<real> Vc;     // Temporary Coulomb group energy storage
-    AlignedVector<real>   VSvdw;  // Temporary SIMD Van der Waals group energy storage
-    AlignedVector<real>   VSc;    // Temporary SIMD Coulomb group energy storage
+    //! f, size natoms*fstride
+    gmx::HostVector<real> f;
+    //! Shift force array, size SHIFTS*DIM
+    gmx::HostVector<real> fshift;
+    //! Temporary Van der Waals group energy storage
+    gmx::HostVector<real> Vvdw;
+    //! Temporary Coulomb group energy storage
+    gmx::HostVector<real> Vc;
+    //! Temporary SIMD Van der Waals group energy storage
+    AlignedVector<real> VSvdw;
+    //! Temporary SIMD Coulomb group energy storage
+    AlignedVector<real> VSc;
 };
 
 /*! \brief Block size in atoms for the non-bonded thread force-buffer reduction.
@@ -177,35 +184,37 @@ enum
  */
 struct nbnxn_atomdata_t
 { //NOLINT(clang-analyzer-optin.performance.Padding)
+    /*! \internal
+     * \brief The actual atom data parameter values */
     struct Params
     {
-        /* Constructor
+        /*! \brief Constructor
          *
          * \param[in] pinningPolicy  Sets the pinning policy for all data that might be transfered to a GPU
          */
         Params(gmx::PinningPolicy pinningPolicy);
 
-        // The number of different atom types
+        //! The number of different atom types
         int numTypes;
-        // Lennard-Jone 6*C6 and 12*C12 parameters, size numTypes*2*2
+        //! Lennard-Jone 6*C6 and 12*C12 parameters, size numTypes*2*2
         gmx::HostVector<real> nbfp;
-        // Combination rule, see enum defined above
+        //! Combination rule, see enum defined above
         int comb_rule;
-        // LJ parameters per atom type, size numTypes*2
+        //! LJ parameters per atom type, size numTypes*2
         gmx::HostVector<real> nbfp_comb;
-        // As nbfp, but with a stride for the present SIMD architecture
+        //! As nbfp, but with a stride for the present SIMD architecture
         AlignedVector<real> nbfp_aligned;
-        // Atom types per atom
+        //! Atom types per atom
         gmx::HostVector<int> type;
-        // LJ parameters per atom for fast SIMD loading
+        //! LJ parameters per atom for fast SIMD loading
         gmx::HostVector<real> lj_comb;
-        // Charges per atom, not set with format nbatXYZQ
+        //! Charges per atom, not set with format nbatXYZQ
         gmx::HostVector<real> q;
-        // The number of energy groups
+        //! The number of energy groups
         int nenergrp;
-        // 2log(nenergrp)
+        //! 2log(nenergrp)
         int neg_2log;
-        // The energy groups, one int entry per cluster, only set when needed
+        //! The energy groups, one int entry per cluster, only set when needed
         gmx::HostVector<int> energrp;
     };
 

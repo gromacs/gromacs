@@ -66,9 +66,11 @@ template<typename>
 class ListOfLists;
 }
 
+//! Contains sets of pairlists \internal
 class PairlistSets
 {
 public:
+    //! Constructor
     PairlistSets(const PairlistParams& pairlistParams,
                  bool                  haveMultipleDomains,
                  int                   minimumIlistCountForGpuBalancing);

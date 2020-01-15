@@ -33,11 +33,21 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief
+ * Declares CPU reference kernels
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
+#ifndef GMX_NBNXM_KERNELS_REFERENCE_KERNEL_REF_H
+#define GMX_NBNXM_KERNELS_REFERENCE_KERNEL_REF_H
 
 #include "gromacs/nbnxm/kernel_common.h"
 
-/* Declare all the different kernel functions.
- */
+//! All the different CPU reference kernel functions.
+//! \{
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJ_F_ref;
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJFsw_F_ref;
 nbk_func_noener nbnxn_kernel_ElecRF_VdwLJPsw_F_ref;
@@ -85,15 +95,18 @@ nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJFsw_VgrpF_ref;
 nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref;
 nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref;
 nbk_func_ener nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref;
+//! \}
 
 #ifdef INCLUDE_KERNELFUNCTION_TABLES
 
-/* Declare and define the kernel function pointer lookup tables.
+/*! \brief Declare and define the kernel function pointer lookup tables.
+ *
  * The minor index of the array goes over both the LJ combination rules,
  * which is only supported by plain cut-off, and the LJ switch/PME functions.
  * For the C reference kernels, unlike the SIMD kernels, there is not much
  * advantage in using combination rules, so we (re-)use the same kernel.
  */
+//! \{
 static p_nbk_func_noener nbnxn_kernel_noener_ref[coulktNR][vdwktNR_ref] = {
     { nbnxn_kernel_ElecRF_VdwLJ_F_ref, nbnxn_kernel_ElecRF_VdwLJ_F_ref, nbnxn_kernel_ElecRF_VdwLJ_F_ref,
       nbnxn_kernel_ElecRF_VdwLJFsw_F_ref, nbnxn_kernel_ElecRF_VdwLJPsw_F_ref,
@@ -147,5 +160,8 @@ static p_nbk_func_ener nbnxn_kernel_energrp_ref[coulktNR][vdwktNR_ref] = {
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJPsw_VgrpF_ref, nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombGeom_VgrpF_ref,
       nbnxn_kernel_ElecQSTabTwinCut_VdwLJEwCombLB_VgrpF_ref }
 };
+//! \}
 
 #endif /* INCLUDE_KERNELFUNCTION_TABLES */
+
+#endif

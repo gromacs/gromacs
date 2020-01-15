@@ -34,11 +34,20 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* Stride of the packed x coordinate array */
+/*! \internal \file
+ *
+ * \brief
+ * Declares inline-friendly code for making 4xN pairlists
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
+
+//! Stride of the packed x coordinate array
 static constexpr int c_xStride4xN =
         (GMX_SIMD_REAL_WIDTH > c_nbnxnCpuIClusterSize ? GMX_SIMD_REAL_WIDTH : c_nbnxnCpuIClusterSize);
 
-/* Copies PBC shifted i-cell packed atom coordinates to working array */
+//! Copies PBC shifted i-cell packed atom coordinates to working array
 static inline void icell_set_x_simd_4xn(int  ci,
                                         real shx,
                                         real shy,
@@ -66,7 +75,7 @@ static inline void icell_set_x_simd_4xn(int  ci,
     store(x_ci_simd + 11 * GMX_SIMD_REAL_WIDTH, SimdReal(x[ia + 2 * c_xStride4xN + 3] + shz));
 }
 
-/* SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
+/*! \brief SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
  *
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.
