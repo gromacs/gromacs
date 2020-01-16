@@ -19,7 +19,7 @@ Fixes where mdrun could behave incorrectly
 Fix fatal error with mdrun -multidir with more than 1 rank per simulation
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-:issue:`3297`
+:issue:`3296`
 
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
