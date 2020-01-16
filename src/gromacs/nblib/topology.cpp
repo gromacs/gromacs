@@ -188,30 +188,26 @@ std::vector<T> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.numAtoms_ = numAtoms_;
-
-    topology_.excls_  = createExclusionsList();
-    topology_.masses_ = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
-    topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
+    topology_.excls_ = createExclusionsList();
+    topology_.masses_ = extractAtomTypeQuantity(
+            [](const auto &data, auto &map) { return map[data.atomTypeName_].mass(); });
+    topology_.charges_ = extractAtomTypeQuantity([](const auto &data, auto &map) {
         ignore_unused(map);
         return data.charge_;
     });
 
-    std::vector<real> c6 = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].c6(); });
-    std::vector<real> c12 = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].c12(); });
-    topology_.nonbondedParameters_ = std::move(c6) + std::move(c12);
-
-    topology_.atomTypes_ = extractAtomTypeQuantity<std::string>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].name(); });
-
-    topology_.atomInfoAllVdw_.resize(numAtoms_);
-    for (int atomI = 0; atomI < numAtoms_; atomI++)
+    std::unordered_map<std::string, int> nameToId;
+    for (auto &name_atomType_tuple : atomTypes_)
     {
-        SET_CGINFO_HAS_VDW(topology_.atomInfoAllVdw_[atomI]);
+        topology_.atomTypes_.push_back(name_atomType_tuple.second);
+        nameToId[name_atomType_tuple.first] = nameToId.size();
     }
+
+    //topology_.atomTypesPerAtom_ = extractAtomTypeQuantity([&nameToId](const auto& data, auto& map) {
+    //    ignore_unused(map);
+    //    return nameToId[map[data.atomTypeName_].name()];
+    //});
+
 
     return topology_;
 }
@@ -225,6 +221,9 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
 
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
     numAtoms_ += nMolecules * molecule.numAtomsInMolecule();
+
+    // Note: insert does nothing if the key already exists
+    atomTypes_.insert(molecule.atomTypes_.begin(), molecule.atomTypes_.end());
 
     return *this;
 }
@@ -244,7 +243,7 @@ const std::vector<real>& Topology::getCharges() const
     return charges_;
 }
 
-const std::vector<std::string>& Topology::getAtomTypes() const
+const std::vector<AtomType>& Topology::getAtomTypes() const
 {
     return atomTypes_;
 }

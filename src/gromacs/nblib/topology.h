@@ -79,8 +79,7 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    //! Returns the total number of atoms in the system
-    const int& numAtoms() const;
+    const std::vector<AtomType>& getAtomTypes() const;
 
     //! Returns a vector of atom names
     const std::vector<std::string>& getAtomTypes() const;
@@ -108,9 +107,11 @@ private:
     //! Total number of atoms in the system
     int numAtoms_;
     //! Storage for parameters for short range interactions.
-    std::vector<std::tuple<real, real>> nonbondedParameters_;
-    //! Storage for atom type parameters.
-    std::vector<std::string> atomTypes_;
+    std::vector<real> nonbondedParameters_;
+    //! unique collection of AtomTypes
+    std::vector<AtomType> atomTypes_;
+    //! store an ID of each atom's type
+    std::vector<int> atomTypesPerAtom_;
     //! Storage for atom partial charges.
     std::vector<real> charges_;
     //! Atom masses
@@ -160,8 +161,11 @@ private:
     t_blocka createExclusionsList() const;
 
     //! Helper function to extract quantities like mass, charge, etc from the system
-    template<typename T, class Extractor>
-    std::vector<T> extractAtomTypeQuantity(Extractor extractor);
+    template <class Extractor>
+    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+
+    //! distinct collection of AtomTypes
+    std::unordered_map<std::string, AtomType> atomTypes_;
 };
 
 } // namespace nblib
