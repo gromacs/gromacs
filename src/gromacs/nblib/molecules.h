@@ -51,10 +51,10 @@
 
 #include "gromacs/math/vectypes.h"
 
-#include "atoms.h"
+#include "atomtype.h"
 #include "interactions.h"
 
-class TopologyBuilder;
+//class AtomType;
 
 namespace nblib
 {

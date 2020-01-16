@@ -49,15 +49,22 @@
 #include "nbkerneldef.h"
 #include "nbkerneloptions.h"
 #include "nbkernelsystem.h"
+#include "simulationstate.h"
 
 namespace nblib {
+
+enum class CombinationRule : int
+{
+    Geometric = 0,
+    Count = 1
+};
 
 class ForceCalculator
 {
 public:
 
     // TODO: Depend on simulationState
-    ForceCalculator(NBKernelSystem          &system,
+    ForceCalculator(SimulationState         &system,
                     const NBKernelOptions   &options);
 
     //! Sets up and runs the kernel calls
@@ -67,13 +74,28 @@ public:
 
 private:
 
-    void printTimingsOutput(const NBKernelOptions &options,
-                            const NBKernelSystem  &system,
-                            const gmx::index      &numPairs,
-                            gmx_cycles_t           cycles);
+    void unpackTopologyToGmx();
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const NBKernelOptions   &options,
+                                                           SimulationState         &system);
 
-    NBKernelSystem nbKernelSystem_;
+    //void printTimingsOutput(const NBKernelOptions &options,
+    //                        const SimulationState &system,
+    //                        const gmx::index      &numPairs,
+    //                        gmx_cycles_t           cycles);
+
+    SimulationState system_;
     NBKernelOptions nbKernelOptions_;
+
+    //! Storage for parameters for short range interactions.
+    std::vector<real> nonbondedParameters_;
+    //! Atom masses
+    std::vector<real> masses_;
+    //! Atom info where all atoms are marked to have Van der Waals interactions
+    std::vector<int> atomInfoAllVdw_;
+    //! Legacy matrix for box
+    matrix box_;
+    //! Information about exclusions.
+    t_blocka excls_;
 
 };
 

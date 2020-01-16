@@ -51,6 +51,7 @@
 #include "gromacs/topology/block.h"
 
 #include "box.h"
+#include "topology.h"
 
 namespace nblib
 {
@@ -59,16 +60,14 @@ class SimulationState;
 
 //! Description of the system
 //! TODO Refactor system setup so that t_blocka is not a class member.
-class NBKernelSystem
+class GmxNonbondedData
 {
 public:
     //! \brief Constructor
-    NBKernelSystem(SimulationState simState);
+    GmxNonbondedData(Topology topology);
 
     //! Number of different atom types in test system.
     int numAtoms;
-    //! System simulation box.
-    matrix box;
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters;
     //! Storage for atom type parameters.
@@ -79,10 +78,6 @@ public:
     std::vector<real> masses;
     //! Atom info where all atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoAllVdw;
-    //! Storage for atom positions.
-    std::vector<gmx::RVec> coordinates;
-    //! Storage for atom velocities.
-    std::vector<gmx::RVec> velocities;
     //! Information about exclusions.
     t_blocka excls;
 };

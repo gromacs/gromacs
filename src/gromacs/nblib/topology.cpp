@@ -190,9 +190,8 @@ std::vector<T> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 Topology TopologyBuilder::buildTopology()
 {
     topology_.excls_  = createExclusionsList();
-    topology_.masses_ = extractAtomTypeQuantity(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
-    topology_.charges_ = extractAtomTypeQuantity([](const auto& data, auto& map) {
+
+    topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
