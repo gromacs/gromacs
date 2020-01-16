@@ -192,27 +192,11 @@ Topology TopologyBuilder::buildTopology()
     topology_.numAtoms_ = numAtoms_;
 
     topology_.excls_  = createExclusionsList();
-    topology_.masses_ = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
+
     topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
-
-    std::vector<real> c6 = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].c6(); });
-    std::vector<real> c12 = extractAtomTypeQuantity<real>(
-            [](const auto& data, auto& map) { return map[data.atomTypeName_].c12(); });
-    topology_.nonbondedParameters_ = std::move(c6) + std::move(c12);
-
-    // topology_.atomTypes_ = extractAtomTypeQuantity<std::string>(
-    //        [](const auto& data, auto& map) { return map[data.atomTypeName_].name(); });
-
-    topology_.atomInfoAllVdw_.resize(numAtoms_);
-    for (int atomI = 0; atomI < numAtoms_; atomI++)
-    {
-        SET_CGINFO_HAS_VDW(topology_.atomInfoAllVdw_[atomI]);
-    }
 
     std::unordered_map<std::string, int> nameToId;
     for (auto& name_atomType_tuple : atomTypes_)

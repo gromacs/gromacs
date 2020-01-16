@@ -64,9 +64,8 @@
 namespace nblib
 {
 
-NBKernelSystem::NBKernelSystem(SimulationState simState)
+GmxNonbondedData::GmxNonbondedData(Topology topology)
 {
-    const Topology& topology = simState.topology();
     numAtoms                 = topology.numAtoms();
 
     charges        = topology.getCharges();
@@ -82,16 +81,8 @@ NBKernelSystem::NBKernelSystem(SimulationState simState)
     nonbondedParameters[0] = std::get<0>(nblibNonbonded[0]);
     nonbondedParameters[1] = std::get<1>(nblibNonbonded[0]);
 
-    coordinates = simState.coordinates();
-    GMX_RELEASE_ASSERT(numAtoms == int(coordinates.size()),
-                       "Number of coordinates should match number of atoms in topology");
-    velocities = simState.velocities();
-    GMX_RELEASE_ASSERT(numAtoms == int(velocities.size()),
-                       "Number of velocities should match number of atoms in topology");
-
-    //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
-    fillLegacyMatrix(simState.box().matrix(), box);
-    put_atoms_in_box(epbcXYZ, box, coordinates);
+    //! Todo: move this to the appropriate place
+    //put_atoms_in_box(epbcXYZ, box, coordinates);
 
     atomTypes.resize(topology.numAtoms());
     //! This needs to be filled with the atomTypes that correspond to the nonbonded params

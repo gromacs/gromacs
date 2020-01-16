@@ -49,12 +49,12 @@
 #include <unordered_map>
 #include <vector>
 
-#include "interactions.h"
-
 #include "gromacs/math/vectypes.h"
 
-class AtomType;
-class TopologyBuilder;
+#include "atomtype.h"
+#include "interactions.h"
+
+//class AtomType;
 
 namespace nblib
 {
