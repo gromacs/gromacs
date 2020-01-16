@@ -44,9 +44,13 @@
  */
 #include "gmxpre.h"
 
+#include <algorithm>
+
 #include "nbkernelsystem.h"
 
+#include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/nbnxm/nbnxm.h"
@@ -54,44 +58,46 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
 
-#include "coordinates.h"
+#include "atomtype.h"
+#include "simulationstate.h"
 
 namespace nblib
 {
 
-NBKernelSystem::NBKernelSystem(const int multiplicationFactor)
+NBKernelSystem::NBKernelSystem(SimulationState simState)
 {
-    nonbondedParameters.resize(numAtoms*numAtoms*2, 0);
-    nonbondedParameters[0] = c6Param;
-    nonbondedParameters[1] = c12Param;
+    const Topology& topology = simState.topology();
+    numAtoms                 = topology.numAtoms();
 
-    generateCoordinates(multiplicationFactor, &coordinates, box);
+    charges        = topology.getCharges();
+    masses         = topology.getMasses();
+    excls          = topology.getGMXexclusions();
+    atomInfoAllVdw = topology.getAtomInfoAllVdw();
+
+    std::vector<std::tuple<real, real>> nblibNonbonded = topology.getNonbondedParameters();
+    nonbondedParameters.resize(numAtoms * numAtoms * 2, 0);
+    //! This needs to be filled with all the unique nonbonded params
+    //! Todo: Get unique mapping for nonbonded parameters so this can be correctly filled;
+    //!       currently this only works this a single nonbonded parameter
+    nonbondedParameters[0] = std::get<0>(nblibNonbonded[0]);
+    nonbondedParameters[1] = std::get<1>(nblibNonbonded[0]);
+
+    coordinates = simState.coordinates();
+    GMX_RELEASE_ASSERT(numAtoms == int(coordinates.size()),
+                       "Number of coordinates should match number of atoms in topology");
+    velocities = simState.velocities();
+    GMX_RELEASE_ASSERT(numAtoms == int(velocities.size()),
+                       "Number of velocities should match number of atoms in topology");
+
+    //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
+    fillLegacyMatrix(simState.box().matrix(), box);
     put_atoms_in_box(epbcXYZ, box, coordinates);
 
-    int numAtoms = coordinates.size();
-    // GMX_RELEASE_ASSERT(numAtoms % numAtomsInMolecule == 0, "Coordinates should match whole molecules");
-
-    // atomTypes.resize(numAtoms);
-    // charges.resize(numAtoms);
-    // atomInfoAllVdw.resize(numAtoms);
-    // snew(excls.index, numAtoms + 1);
-    // snew(excls.a, numAtoms*numAtomsInMolecule);
-    // excls.index[0] = 0;
-
-    // for (int atom = 0; atom < numAtoms; atom++)
-    // {
-    //     atomTypes[atom] = atomType;
-    //     charges[atom]   = atomCharge;
-    //     SET_CGINFO_HAS_VDW(atomInfoAllVdw[atom]);
-    //     SET_CGINFO_HAS_Q(atomInfoAllVdw[atom]);
-
-    //     const int firstAtomInMolecule = atom - (atom % numAtomsInMolecule);
-    //     for (int atomJ = 0; atomJ < numAtomsInMolecule; atomJ++)
-    //     {
-    //         excls.a[atom*numAtomsInMolecule + atomJ] = firstAtomInMolecule + atomJ;
-    //     }
-    //     excls.index[atom + 1] = (atom + 1)*numAtomsInMolecule;
-    // }
+    atomTypes.resize(topology.numAtoms());
+    //! This needs to be filled with the atomTypes that correspond to the nonbonded params
+    //! Todo: Get unique mapping for atom types so this can be correctly filled;
+    //!       currently this only works this a single atom type
+    std::fill(std::begin(atomTypes), std::end(atomTypes), 0);
 }
 
 } // namespace nblib

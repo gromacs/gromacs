@@ -66,13 +66,15 @@ namespace
 class TwoWaterMolecules
 {
 public:
+    TwoWaterMolecules() :
+        Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.)),
+        Hw(AtomName("Hw"), Mass(1), C6(0.6), C12(0.12))
+    {
+    }
+
     Topology buildTopology()
     {
         //! Manually Create Molecule (Water)
-
-        //! Define Atom Type
-        AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
-        AtomType Hw(AtomName("Hw"), Mass(1), C6(0.6), C12(0.12));
 
         //! Define Molecule
         Molecule water("water");
@@ -101,6 +103,10 @@ public:
     }
 
     int numAtoms = 6;
+
+    //! Define Atom Type
+    AtomType Ow;
+    AtomType Hw;
 };
 
 TEST(NBlibTest, TopologyHasNumAtoms)
@@ -132,11 +138,51 @@ TEST(NBlibTest, TopologyHasMasses)
 
 TEST(NBlibTest, TopologyHasAtomTypes)
 {
-    TwoWaterMolecules              waters;
-    Topology                       watersTopology = waters.buildTopology();
-    const std::vector<std::string> test           = watersTopology.getAtomTypes();
-    const std::vector<std::string> ref            = { "Ow", "Hw", "Hw", "Ow", "Hw", "Hw" };
-    EXPECT_EQ(ref, test);
+    TwoWaterMolecules           waters;
+    Topology                    watersTopology = waters.buildTopology();
+    const std::vector<AtomType> test           = watersTopology.getAtomTypes();
+    const std::vector<AtomType> ref            = { waters.Ow, waters.Hw };
+    const std::vector<AtomType> ref2           = { waters.Hw, waters.Ow };
+    EXPECT_TRUE(ref == test || ref2 == test);
+}
+
+TEST(NBlibTest, TopologyHasAtomTypeIds)
+{
+    TwoWaterMolecules waters;
+    Topology          watersTopology = waters.buildTopology();
+
+    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfallAtoms();
+    const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
+
+    std::vector<AtomType> testTypesExpanded;
+    for (int i : testIds)
+    {
+        testTypesExpanded.push_back(testTypes[i]);
+    }
+
+    const std::vector<AtomType> ref = { waters.Ow, waters.Hw, waters.Hw,
+                                        waters.Ow, waters.Hw, waters.Hw };
+
+    EXPECT_TRUE(ref == testTypesExpanded);
+}
+
+TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
+{
+    //! User error: Two different AtomTypes with the same name
+    AtomType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
+    AtomType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
+
+    Molecule ud235("UraniumDimer235");
+    ud235.addAtom(AtomName("U1"), U235);
+    ud235.addAtom(AtomName("U2"), U235);
+
+    Molecule ud238("UraniumDimer238");
+    ud238.addAtom(AtomName("U1"), U238);
+    ud238.addAtom(AtomName("U2"), U238);
+
+    TopologyBuilder topologyBuilder;
+    topologyBuilder.addMolecule(ud235, 1);
+    EXPECT_THROW(topologyBuilder.addMolecule(ud238, 1), gmx::InvalidInputError);
 }
 
 TEST(NBlibTest, TopologyHasExclusions)

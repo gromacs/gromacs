@@ -83,7 +83,10 @@ public:
     const int& numAtoms() const;
 
     //! Returns a vector of atom names
-    const std::vector<std::string>& getAtomTypes() const;
+    const std::vector<AtomType>& getAtomTypes() const;
+
+    //! Return the AtomType ID of all atoms
+    const std::vector<int>& getAtomTypeIdOfallAtoms() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
@@ -109,8 +112,10 @@ private:
     int numAtoms_;
     //! Storage for parameters for short range interactions.
     std::vector<std::tuple<real, real>> nonbondedParameters_;
-    //! Storage for atom type parameters.
-    std::vector<std::string> atomTypes_;
+    //! unique collection of AtomTypes
+    std::vector<AtomType> atomTypes_;
+    //! store an ID of each atom's type
+    std::vector<int> atomTypeIdOfAllAtoms_;
     //! Storage for atom partial charges.
     std::vector<real> charges_;
     //! Atom masses
@@ -162,6 +167,9 @@ private:
     //! Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>
     std::vector<T> extractAtomTypeQuantity(Extractor extractor);
+
+    //! distinct collection of AtomTypes
+    std::unordered_map<std::string, AtomType> atomTypes_;
 };
 
 } // namespace nblib
