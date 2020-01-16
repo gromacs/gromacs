@@ -205,6 +205,8 @@ int countOverAllRanks(MPI_Comm comm, int countOnThisRank)
         MPI_Allreduce(&countOnThisRank, &sum, 1, MPI_INT, MPI_SUM, comm);
     }
     else
+#else
+    GMX_UNUSED_VALUE(comm);
 #endif
     {
         sum = countOnThisRank;
