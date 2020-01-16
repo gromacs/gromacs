@@ -196,3 +196,11 @@ Document known issues with OpenCL on Volta and Turing
 
 Miscellaneous
 ^^^^^^^^^^^^^
+
+Fix check for modified source files in release tarballs
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""
+It could happen that modifications to the source tree were not picked
+up if they happened after the build directory had been generated.
+
+:issue:`3302`
+
