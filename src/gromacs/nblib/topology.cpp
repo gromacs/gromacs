@@ -52,6 +52,7 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/topology/exclusionblocks.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace nblib
@@ -221,6 +222,21 @@ TopologyBuilder& TopologyBuilder::addMolecule(const Molecule& molecule, const in
 
     molecules_.emplace_back(std::make_tuple(molecule, nMolecules));
     numAtoms_ += nMolecules * molecule.numAtomsInMolecule();
+
+    for (auto name_type_tuple : molecule.atomTypes_)
+    {
+        //! If we already have the atomType, we need to make
+        //! sure that the type's parameters are actually the same
+        //! otherwise we would overwrite them
+        if (atomTypes_.count(name_type_tuple.first) > 0)
+        {
+            if (!(atomTypes_[name_type_tuple.first] == name_type_tuple.second))
+            {
+                GMX_THROW(gmx::InvalidInputError(
+                        "Differing AtomTypes with identical names encountered"));
+            }
+        }
+    }
 
     // Note: insert does nothing if the key already exists
     atomTypes_.insert(molecule.atomTypes_.begin(), molecule.atomTypes_.end());
