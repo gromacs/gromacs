@@ -187,25 +187,25 @@ std::vector<real> TopologyBuilder::extractAtomTypeQuantity(Extractor extractor)
 
 Topology TopologyBuilder::buildTopology()
 {
-    topology_.excls_ = createExclusionsList();
+    topology_.excls_  = createExclusionsList();
     topology_.masses_ = extractAtomTypeQuantity(
-            [](const auto &data, auto &map) { return map[data.atomTypeName_].mass(); });
-    topology_.charges_ = extractAtomTypeQuantity([](const auto &data, auto &map) {
+            [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
+    topology_.charges_ = extractAtomTypeQuantity([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;
     });
 
     std::unordered_map<std::string, int> nameToId;
-    for (auto &name_atomType_tuple : atomTypes_)
+    for (auto& name_atomType_tuple : atomTypes_)
     {
         topology_.atomTypes_.push_back(name_atomType_tuple.second);
         nameToId[name_atomType_tuple.first] = nameToId.size();
     }
 
-    //topology_.atomTypesPerAtom_ = extractAtomTypeQuantity([&nameToId](const auto& data, auto& map) {
+    // topology_.atomTypeIdOfAllAtoms_ = extractAtomTypeQuantity([&nameToId](const auto& data, auto& map) {
     //    ignore_unused(map);
     //    return nameToId[map[data.atomTypeName_].name()];
-    //});
+    // });
 
 
     return topology_;
