@@ -111,7 +111,7 @@ private:
     //! unique collection of AtomTypes
     std::vector<AtomType> atomTypes_;
     //! store an ID of each atom's type
-    std::vector<int> atomTypesPerAtom_;
+    std::vector<int> atomTypeIdOfAllAtoms_;
     //! Storage for atom partial charges.
     std::vector<real> charges_;
     //! Atom masses
@@ -161,7 +161,7 @@ private:
     t_blocka createExclusionsList() const;
 
     //! Helper function to extract quantities like mass, charge, etc from the system
-    template <class Extractor>
+    template<class Extractor>
     std::vector<real> extractAtomTypeQuantity(Extractor extractor);
 
     //! distinct collection of AtomTypes
