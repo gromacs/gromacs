@@ -204,10 +204,11 @@ Topology TopologyBuilder::buildTopology()
         nameToId[name_atomType_tuple.first] = nameToId.size();
     }
 
-    // topology_.atomTypeIdOfAllAtoms_ = extractAtomTypeQuantity([&nameToId](const auto& data, auto& map) {
-    //    ignore_unused(map);
-    //    return nameToId[map[data.atomTypeName_].name()];
-    // });
+    topology_.atomTypeIdOfAllAtoms_ =
+            extractAtomTypeQuantity<int>([&nameToId](const auto& data, auto& map) {
+                ignore_unused(map);
+                return nameToId[data.atomTypeName_];
+            });
 
 
     return topology_;
@@ -262,6 +263,11 @@ const std::vector<real>& Topology::getCharges() const
 const std::vector<AtomType>& Topology::getAtomTypes() const
 {
     return atomTypes_;
+}
+
+const std::vector<int>& Topology::getAtomTypeIdOfallAtoms() const
+{
+    return atomTypeIdOfAllAtoms_;
 }
 
 const std::vector<std::tuple<real, real>>& Topology::getNonbondedParameters() const
