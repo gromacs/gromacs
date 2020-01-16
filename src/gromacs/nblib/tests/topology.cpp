@@ -139,6 +139,25 @@ TEST(NBlibTest, TopologyHasAtomTypes)
     EXPECT_EQ(ref, test);
 }
 
+TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
+{
+    //! User error: Two different AtomTypes with the same name
+    AtomType U235(AtomName("Uranium"), Mass(235), C6(6.), C12(12.));
+    AtomType U238(AtomName("Uranium"), Mass(238), C6(6.), C12(12.));
+
+    Molecule ud235("UraniumDimer235");
+    ud235.addAtom(AtomName("U1"), U235);
+    ud235.addAtom(AtomName("U2"), U235);
+
+    Molecule ud238("UraniumDimer238");
+    ud238.addAtom(AtomName("U1"), U238);
+    ud238.addAtom(AtomName("U2"), U238);
+
+    TopologyBuilder topologyBuilder;
+    topologyBuilder.addMolecule(ud235, 1);
+    EXPECT_THROW(topologyBuilder.addMolecule(ud238, 1), gmx::InvalidInputError);
+}
+
 TEST(NBlibTest, TopologyHasExclusions)
 {
     TwoWaterMolecules                waters;
