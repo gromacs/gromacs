@@ -11,7 +11,7 @@ Release engineering with Gitlab
 
 We are currently switching our build and testing system to use Gitlab
 and the integrated CI system, with information for the general system found
-at `https://docs.gitlab.com/ee/ci/yaml/`_. The new configuration for
+at `https://docs.gitlab.com/ee/ci/yaml/`. The new configuration for
 the builds and tests can be found in the file ``.gitlab-ci.yml``, with
 the templates for configuring is found in the files in the
 ``admin/ci-templates/`` directory. This section is going to be extended
