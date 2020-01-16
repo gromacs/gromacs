@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -256,54 +257,6 @@ static void predict_shells(FILE*       fplog,
     }
 }
 
-/*! \brief Count the different particle types in a system
- *
- * Routine prints a warning to stderr in case an unknown particle type
- * is encountered.
- * \param[in]  fplog Print what we have found if not NULL
- * \param[in]  mtop  Molecular topology.
- * \returns Array holding the number of particles of a type
- */
-std::array<int, eptNR> countPtypes(FILE* fplog, const gmx_mtop_t* mtop)
-{
-    std::array<int, eptNR> nptype = { { 0 } };
-    /* Count number of shells, and find their indices */
-    for (int i = 0; (i < eptNR); i++)
-    {
-        nptype[i] = 0;
-    }
-
-    gmx_mtop_atomloop_block_t aloopb = gmx_mtop_atomloop_block_init(mtop);
-    int                       nmol;
-    const t_atom*             atom;
-    while (gmx_mtop_atomloop_block_next(aloopb, &atom, &nmol))
-    {
-        switch (atom->ptype)
-        {
-            case eptAtom:
-            case eptVSite:
-            case eptShell: nptype[atom->ptype] += nmol; break;
-            default:
-                fprintf(stderr, "Warning unsupported particle type %d in countPtypes",
-                        static_cast<int>(atom->ptype));
-        }
-    }
-    if (fplog)
-    {
-        /* Print the number of each particle type */
-        int n = 0;
-        for (const auto& i : nptype)
-        {
-            if (i != 0)
-            {
-                fprintf(fplog, "There are: %d %ss\n", i, ptype_str[n]);
-            }
-            n++;
-        }
-    }
-    return nptype;
-}
-
 gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflexcon, int nstcalcenergy, bool usingDomainDecomposition)
 {
     gmx_shellfc_t* shfc;
@@ -318,8 +271,22 @@ gmx_shellfc_t* init_shell_flexcon(FILE* fplog, const gmx_mtop_t* mtop, int nflex
 #define NBT asize(bondtypes)
     const gmx_ffparams_t* ffparams;
 
-    std::array<int, eptNR> n = countPtypes(fplog, mtop);
-    nshell                   = n[eptShell];
+    const std::array<int, eptNR> numParticles = gmx_mtop_particletype_count(*mtop);
+    if (fplog)
+    {
+        /* Print the number of each particle type */
+        int pType = 0;
+        for (const auto& n : numParticles)
+        {
+            if (n != 0)
+            {
+                fprintf(fplog, "There are: %d %ss\n", n, ptype_str[pType]);
+            }
+            pType++;
+        }
+    }
+
+    nshell = numParticles[eptShell];
 
     if (nshell == 0 && nflexcon == 0)
     {

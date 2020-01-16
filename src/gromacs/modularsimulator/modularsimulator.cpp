@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -538,7 +538,7 @@ ModularSimulator::buildForces(SignallerBuilder<NeighborSearchSignaller>* neighbo
     const bool isVerbose    = mdrunOptions.verbose;
     const bool isDynamicBox = inputrecDynamicBox(inputrec);
     // Check for polarizable models and flexible constraints
-    if (ShellFCElement::doShellsOrFlexConstraints(&topologyHolder_->globalTopology(),
+    if (ShellFCElement::doShellsOrFlexConstraints(topologyHolder_->globalTopology(),
                                                   constr ? constr->numFlexibleConstraints() : 0))
     {
         auto shellFCElement = std::make_unique<ShellFCElement>(

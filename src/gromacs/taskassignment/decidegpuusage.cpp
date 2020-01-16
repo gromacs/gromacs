@@ -626,6 +626,11 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
         // Actually all free-energy options except for mass and constraint perturbation are supported
         errorMessage += "Free energy perturbations are not supported.\n";
     }
+    const auto particleTypes = gmx_mtop_particletype_count(mtop);
+    if (particleTypes[eptShell] > 0)
+    {
+        errorMessage += "Shells are not supported.\n";
+    }
     if (useReplicaExchange)
     {
         errorMessage += "Replica exchange simulations are not supported.\n";
