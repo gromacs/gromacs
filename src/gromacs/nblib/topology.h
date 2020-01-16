@@ -85,6 +85,9 @@ public:
     //! Returns a vector of atom names
     const std::vector<AtomType>& getAtomTypes() const;
 
+    //! Return the AtomType ID of all atoms
+    const std::vector<int>& getAtomTypeIdOfallAtoms() const;
+
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
 

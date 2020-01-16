@@ -146,6 +146,26 @@ TEST(NBlibTest, TopologyHasAtomTypes)
     EXPECT_TRUE(ref == test || ref2 == test);
 }
 
+TEST(NBlibTest, TopologyHasAtomTypeIds)
+{
+    TwoWaterMolecules waters;
+    Topology          watersTopology = waters.buildTopology();
+
+    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfallAtoms();
+    const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
+
+    std::vector<AtomType> testTypesExpanded;
+    for (int i : testIds)
+    {
+        testTypesExpanded.push_back(testTypes[i]);
+    }
+
+    const std::vector<AtomType> ref = { waters.Ow, waters.Hw, waters.Hw,
+                                        waters.Ow, waters.Hw, waters.Hw };
+
+    EXPECT_TRUE(ref == testTypesExpanded);
+}
+
 TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 {
     //! User error: Two different AtomTypes with the same name
