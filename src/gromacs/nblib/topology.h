@@ -79,7 +79,14 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
+    //! Returns the total number of atoms in the system
+    const int& numAtoms() const;
+
+    //! Returns a vector of atom names
     const std::vector<AtomType>& getAtomTypes() const;
+
+    //! Return the AtomType ID of all atoms
+    const std::vector<int>& getAtomTypeIdOfallAtoms() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
@@ -87,7 +94,8 @@ public:
     //! Returns a vector of atomic masses
     const std::vector<real>& getMasses() const;
 
-    const std::vector<real>& getNonbondedParameters() const;
+    //! Returns full list of nonbondedParameters
+    const std::vector<std::tuple<real, real>>& getNonbondedParameters() const;
 
     const std::vector<int>& getAtomInfoAllVdw() const;
 
@@ -100,8 +108,10 @@ private:
 
     friend class TopologyBuilder;
 
+    //! Total number of atoms in the system
+    int numAtoms_;
     //! Storage for parameters for short range interactions.
-    std::vector<real> nonbondedParameters_;
+    std::vector<std::tuple<real, real>> nonbondedParameters_;
     //! unique collection of AtomTypes
     std::vector<AtomType> atomTypes_;
     //! store an ID of each atom's type
@@ -155,8 +165,8 @@ private:
     t_blocka createExclusionsList() const;
 
     //! Helper function to extract quantities like mass, charge, etc from the system
-    template<class Extractor>
-    std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+    template<typename T, class Extractor>
+    std::vector<T> extractAtomTypeQuantity(Extractor extractor);
 
     //! distinct collection of AtomTypes
     std::unordered_map<std::string, AtomType> atomTypes_;
