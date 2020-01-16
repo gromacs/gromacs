@@ -57,12 +57,29 @@ AtomType::AtomType(AtomName atomName, Mass mass, C6 c6, C12 c12) :
 {
 }
 
-AtomName AtomType::name() const { return name_; }
+AtomName AtomType::name() const
+{
+    return name_;
+}
 
-Mass AtomType::mass() const { return mass_; }
+Mass AtomType::mass() const
+{
+    return mass_;
+}
 
-C6 AtomType::c6() const { return c6_; }
+C6 AtomType::c6() const
+{
+    return c6_;
+}
 
-C12 AtomType::c12() const { return c12_; }
+C12 AtomType::c12() const
+{
+    return c12_;
+}
+
+bool operator==(const AtomType& a, const AtomType& b)
+{
+    return a.name() == b.name() && a.mass() == b.mass() && a.c6() == b.c6() && a.c12() == b.c12();
+}
 
 } // namespace nblib

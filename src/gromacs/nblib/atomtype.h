@@ -98,5 +98,8 @@ private:
     C12 c12_;
 };
 
-} //namespace nblib
-#endif //GROMACS_MOLECULES_H
+//! comparison operator
+bool operator==(const AtomType& a, const AtomType& b);
+
+} // namespace nblib
+#endif // GROMACS_MOLECULES_H
