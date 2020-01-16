@@ -37,24 +37,13 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include "gromacs/utility/coolstuff.h"
+
 #include "molprop_util.h"
 #include "mymol.h"
 
 namespace alexandria
 {
-
-/*
-static bool check_polarizability(tensor alpha)
-{
-    for (int mm = 0; mm < DIM; mm++)
-    {
-        if (alpha[mm][mm] == 0)
-        {
-            return false;
-        }
-    }
-    return true;
-    }*/
 
 static void print_stats(FILE        *fp,
                         const char  *prop,
@@ -604,4 +593,52 @@ void print_electric_props(FILE                           *fp,
     gmx_stats_free(lsq_anisoPol);
     gmx_stats_free(lsq_charge);
 }
+
+void print_header(FILE                       *fp, 
+                  const std::vector<t_pargs> &pargs)
+{
+    if (!fp)
+    {
+        return;
+    }
+    time_t my_t;
+    time(&my_t);
+    fprintf(fp, "# This file was created %s", ctime(&my_t));
+    fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
+    fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+    fprintf(fp, "%-15s  %s\n", "Option", "Value");
+    for (auto &p: pargs)
+    {
+        std::string value;
+        switch(p.type)
+        {
+        case etINT:
+            value = gmx::formatString("%d", *p.u.i);
+            break;
+        case etINT64:
+            value = gmx::formatString("%lu", *p.u.is);
+            break;
+        case etREAL:
+            value = gmx::formatString("%g", *p.u.r);
+            break;
+        case etSTR:
+        case etENUM:
+            value = gmx::formatString("%s", *p.u.c);
+            break;
+        case etBOOL:
+            value = gmx::formatString("%s", *p.u.b ? "true" : "false");
+            break;
+        case etRVEC:
+            value = gmx::formatString("%g %g %g", *p.u.rv[XX],
+                                      *p.u.rv[YY], *p.u.rv[ZZ]);
+            break;
+        case etTIME:
+        case etNR:
+        default:
+            value.assign("help");
+        }
+        fprintf(fp, "%-15s  %s\n", p.option, value.c_str());
+    }
 }
+
+} // namespace alexandria

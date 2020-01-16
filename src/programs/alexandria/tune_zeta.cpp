@@ -395,7 +395,6 @@ double OptZeta::calcDeviation()
         }
     }
     sumEnergies();
-    normalizeEnergies();
     printEnergies(debug);
     return energy(ermsTOT);
 }

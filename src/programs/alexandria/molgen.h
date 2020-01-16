@@ -380,29 +380,8 @@ class MolGen
             ener_[ermsTOT] = 0;
             for (auto e = 0; e < ermsTOT; e++)
             {
-                ener_[ermsTOT] += ener_[e];
+                ener_[ermsTOT] += fc_[e]*ener_[e];
             }
-        }
-
-        //! \brief Normalize the energy by the number of molecules.
-        void normalizeEnergies()
-        {
-            if (MASTER(commrec()))
-            {
-                double normFactor = nmol_support_; // total number of molecules used in fitting
-                if (weight(ermsMU) && bQM())
-                {
-                    normFactor *= DIM; // three dipole residuals added per molecule if compared to QM dipole vector
-                }
-                if (weight(ermsQUAD))
-                {
-                    normFactor *= DIM; // three quadrupole residuals added per molecule
-                }
-                for (int rms = 0; rms < ermsTOT; rms++)
-                {
-                    ener_[ermsTOT] += (ener_[rms]/normFactor);
-                }
-            }           
         }
 
         //! \brief Print the energy components.

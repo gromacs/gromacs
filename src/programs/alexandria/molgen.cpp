@@ -414,7 +414,8 @@ void MolGen::optionsFinished()
         printf("There are %d threads/processes.\n", cr_->nnodes);
     }
     // Make sure all the nodes know about the fitting options
-    gmx_sum(ermsNR, fc_, cr_);
+    // Not needed anymore
+    // gmx_sum(ermsNR, fc_, cr_);
 }
 
 immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
@@ -567,9 +568,9 @@ void MolGen::Read(FILE            *fp,
             {
                 int               dest = (ntopol % cr_->nnodes);
                 alexandria::MyMol mymol;
-                if (fp)
+                if (debug)
                 {
-                    fprintf(fp, "%s\n", mpi->getMolname().c_str());
+                    fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
                 mymol.molProp()->Merge(mpi);
                 mymol.setInputrec(inputrec_);
@@ -684,9 +685,12 @@ void MolGen::Read(FILE            *fp,
         {
             nmolpar.push_back(gmx_recv_int(cr_, i));
         }
-        for (int i = 0; i < cr_->nnodes; i++)
+        if (fp)
         {
-            fprintf(fp, "Node %d has %d compounds\n", i, nmolpar[i]);
+            for (int i = 0; i < cr_->nnodes; i++)
+            {
+                fprintf(fp, "Node %d has %d compounds\n", i, nmolpar[i]);
+            }
         }
     }
     else

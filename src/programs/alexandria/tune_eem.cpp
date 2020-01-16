@@ -49,7 +49,6 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -90,7 +89,7 @@ class OptACM : public MolGen, Bayes
               bFullTensor_(false),
               bFitAlpha_(false),
               bFitZeta_(false),
-              bSameZeta_(false),
+              bSameZeta_(true),
               bFitChi_(true),
               bUseCM5_(false),
               penalty_(0)
@@ -744,6 +743,7 @@ bool OptACM::optRun(FILE                   *fp,
         Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         param_type param     = Bayes::getParam();
         double     chi2_min  = Bayes::objFunction(param.data());
+        fprintf(fplog, "Initial chi2 value %g\n", chi2_min);
         chi2             = chi2_min;
 
         for (auto n = 0; n < nrun; n++)
@@ -794,9 +794,12 @@ bool OptACM::optRun(FILE                   *fp,
     if (MASTER(commrec()))
     {
         param_type best = Bayes::getBestParam();
-        (void) Bayes::objFunction(best.data());
-        printEnergies(fp);
-        printEnergies(fplog);
+        if (!best.empty())
+        {
+            (void) Bayes::objFunction(best.data());
+            printEnergies(fp);
+            printEnergies(fplog);
+        }
     }
     return bMinimum;
 }
@@ -867,8 +870,6 @@ int alex_tune_eem(int argc, char *argv[])
 
     int                         nrun          = 1;
     int                         reinit        = 0;
-    real                        th_toler      = 170;
-    real                        ph_toler      = 5;
     real                        dip_toler     = 0.5;
     real                        quad_toler    = 5;
     real                        alpha_toler   = 3;
@@ -902,10 +903,6 @@ int alex_tune_eem(int argc, char *argv[])
           "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
         { "-isopol_toler", FALSE, etREAL, {&isopol_toler},
           "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
-        { "-th_toler", FALSE, etREAL, {&th_toler},
-          "Minimum angle to be considered a linear A-B-C bond" },
-        { "-ph_toler", FALSE, etREAL, {&ph_toler},
-          "Maximum angle to be considered a planar A-B-C/B-C-D torsion" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
         { "-btex", FALSE, etBOOL, {&bPrintTable},
@@ -923,7 +920,6 @@ int alex_tune_eem(int argc, char *argv[])
 
     FILE                       *fp;
     gmx_output_env_t           *oenv;
-    time_t                      my_t;
     MolSelect                   gms;
 
     std::vector<t_pargs>        pargs;
@@ -944,11 +940,7 @@ int alex_tune_eem(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-
-        time(&my_t);
-        fprintf(fp, "# This file was created %s", ctime(&my_t));
-        fprintf(fp, "# alexandria is part of GROMACS:\n#\n");
-        fprintf(fp, "# %s\n#\n", gmx::bromacs().c_str());
+        print_header(fp, pargs);
     }
     else
     {

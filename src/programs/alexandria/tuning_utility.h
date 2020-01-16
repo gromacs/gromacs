@@ -126,6 +126,14 @@ void print_electric_props(FILE                           *fp,
                           t_commrec                      *cr,
                           real                            efield);
 
+/*! \brief Print header and command line arguments
+ *
+ * \param[in] fp    File pointer, if nullptr the function returns 
+ *                  without doing anything
+ * \param[in] pargs The command line arguments
+ */
+void print_header(FILE                       *fp, 
+                  const std::vector<t_pargs> &pargs);
 
 }
 

@@ -70,6 +70,7 @@
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "regression.h"
+#include "tuning_utility.h"
 #include "tune_fc_utils.h"
 
 /*! \brief Write a csv file containing molecule names and bond energy
@@ -1340,7 +1341,6 @@ int alex_tune_fc(int argc, char *argv[])
 
     FILE                 *fplog;
     gmx_output_env_t     *oenv;
-    time_t                my_t;
     MolSelect             gms;
 
     std::vector<t_pargs>  pargs;
@@ -1362,11 +1362,7 @@ int alex_tune_fc(int argc, char *argv[])
     if (MASTER(opt.commrec()))
     {
         fplog = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-
-        time(&my_t);
-        fprintf(fplog, "# This file was created %s", ctime(&my_t));
-        fprintf(fplog, "# alexandria is part of G R O M A C S:\n#\n");
-        fprintf(fplog, "# %s\n#\n", gmx::bromacs().c_str());
+        print_header(fplog, pargs);
     }
     else
     {
