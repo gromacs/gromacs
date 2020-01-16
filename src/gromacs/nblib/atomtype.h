@@ -35,6 +35,7 @@ public:
     template<typename T, typename U, typename V, typename W>
     AtomType(T atomName, U mass, V c6, W c12) = delete;
 
+    //! comparison operator
     bool operator==(const AtomType& b);
 
     //! Get the name
