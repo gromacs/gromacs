@@ -79,7 +79,7 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 class Topology
 {
 public:
-    const std::vector<int>& getAtoms() const;
+    const std::vector<AtomType>& getAtomTypes() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
@@ -102,8 +102,10 @@ private:
 
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
-    //! Storage for atom type parameters.
-    std::vector<int> atomTypes_;
+    //! unique collection of AtomTypes
+    std::vector<AtomType> atomTypes_;
+    //! store an ID of each atom's type
+    std::vector<int> atomTypesPerAtom_;
     //! Storage for atom partial charges.
     std::vector<real> charges_;
     //! Atom masses
@@ -154,6 +156,9 @@ private:
     //! Helper function to extract quantities like mass, charge, etc from the system
     template <class Extractor>
     std::vector<real> extractAtomTypeQuantity(Extractor extractor);
+
+    //! distinct collection of AtomTypes
+    std::unordered_map<std::string, AtomType> atomTypes_;
 };
 
 } // namespace nblib
