@@ -108,7 +108,9 @@
 #include "legacysimulator.h"
 #include "shellfc.h"
 
+using gmx::ArrayRef;
 using gmx::MdrunScheduleWorkload;
+using gmx::RVec;
 
 //! Utility structure for manipulating states during EM
 typedef struct
@@ -455,8 +457,9 @@ static void init_em(FILE*                fplog,
         {
             /* Constrain the starting coordinates */
             dvdl_constr = 0;
-            constr->apply(TRUE, TRUE, -1, 0, 1.0, ems->s.x.rvec_array(), ems->s.x.rvec_array(),
-                          nullptr, ems->s.box, ems->s.lambda[efptFEP], &dvdl_constr, nullptr,
+            constr->apply(TRUE, TRUE, -1, 0, 1.0, ems->s.x.arrayRefWithPadding(),
+                          ems->s.x.arrayRefWithPadding(), ArrayRef<RVec>(), ems->s.box,
+                          ems->s.lambda[efptFEP], &dvdl_constr, gmx::ArrayRefWithPadding<RVec>(),
                           nullptr, gmx::ConstraintVariable::Positions);
         }
     }
@@ -680,9 +683,10 @@ static bool do_em_step(const t_commrec*                   cr,
     if (constr)
     {
         dvdl_constr = 0;
-        validStep = constr->apply(TRUE, TRUE, count, 0, 1.0, s1->x.rvec_array(), s2->x.rvec_array(),
-                                  nullptr, s2->box, s2->lambda[efptBONDED], &dvdl_constr, nullptr,
-                                  nullptr, gmx::ConstraintVariable::Positions);
+        validStep   = constr->apply(
+                TRUE, TRUE, count, 0, 1.0, s1->x.arrayRefWithPadding(), s2->x.arrayRefWithPadding(),
+                ArrayRef<RVec>(), s2->box, s2->lambda[efptBONDED], &dvdl_constr,
+                gmx::ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
 
         if (cr->nnodes > 1)
         {
@@ -887,11 +891,11 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     if (constr)
     {
         /* Project out the constraint components of the force */
-        dvdl_constr  = 0;
-        rvec* f_rvec = ems->f.rvec_array();
-        constr->apply(FALSE, FALSE, count, 0, 1.0, ems->s.x.rvec_array(), f_rvec, f_rvec,
-                      ems->s.box, ems->s.lambda[efptBONDED], &dvdl_constr, nullptr, &shake_vir,
-                      gmx::ConstraintVariable::ForceDispl);
+        dvdl_constr = 0;
+        auto f      = ems->f.arrayRefWithPadding();
+        constr->apply(FALSE, FALSE, count, 0, 1.0, ems->s.x.arrayRefWithPadding(), f,
+                      f.unpaddedArrayRef(), ems->s.box, ems->s.lambda[efptBONDED], &dvdl_constr,
+                      gmx::ArrayRefWithPadding<RVec>(), &shake_vir, gmx::ConstraintVariable::ForceDispl);
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);
     }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +46,7 @@
 
 #include <cstdio>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -93,28 +94,28 @@ void set_lincs(const t_idef& idef, const t_mdatoms& md, bool bDynamics, const t_
 /*! \brief Applies LINCS constraints.
  *
  * \returns true if the constraining succeeded. */
-bool constrain_lincs(bool                  computeRmsd,
-                     const t_inputrec&     ir,
-                     int64_t               step,
-                     Lincs*                lincsd,
-                     const t_mdatoms&      md,
-                     const t_commrec*      cr,
-                     const gmx_multisim_t* ms,
-                     const rvec*           x,
-                     rvec*                 xprime,
-                     rvec*                 min_proj,
-                     const matrix          box,
-                     t_pbc*                pbc,
-                     real                  lambda,
-                     real*                 dvdlambda,
-                     real                  invdt,
-                     rvec*                 v,
-                     bool                  bCalcVir,
-                     tensor                vir_r_m_dr,
-                     ConstraintVariable    econq,
-                     t_nrnb*               nrnb,
-                     int                   maxwarn,
-                     int*                  warncount);
+bool constrain_lincs(bool                            computeRmsd,
+                     const t_inputrec&               ir,
+                     int64_t                         step,
+                     Lincs*                          lincsd,
+                     const t_mdatoms&                md,
+                     const t_commrec*                cr,
+                     const gmx_multisim_t*           ms,
+                     ArrayRefWithPadding<const RVec> x,
+                     ArrayRefWithPadding<RVec>       xprime,
+                     ArrayRef<RVec>                  min_proj,
+                     const matrix                    box,
+                     t_pbc*                          pbc,
+                     real                            lambda,
+                     real*                           dvdlambda,
+                     real                            invdt,
+                     ArrayRef<RVec>                  v,
+                     bool                            bCalcVir,
+                     tensor                          vir_r_m_dr,
+                     ConstraintVariable              econq,
+                     t_nrnb*                         nrnb,
+                     int                             maxwarn,
+                     int*                            warncount);
 
 } // namespace gmx
 

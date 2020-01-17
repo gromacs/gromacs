@@ -103,11 +103,16 @@ struct gmx_domdec_constraints_t
     //! @endcond
 };
 
-void dd_move_x_constraints(gmx_domdec_t* dd, const matrix box, rvec* x0, rvec* x1, gmx_bool bX1IsCoord)
+void dd_move_x_constraints(gmx_domdec_t*            dd,
+                           const matrix             box,
+                           gmx::ArrayRef<gmx::RVec> x0,
+                           gmx::ArrayRef<gmx::RVec> x1,
+                           gmx_bool                 bX1IsCoord)
 {
     if (dd->constraint_comm)
     {
-        dd_move_x_specat(dd, dd->constraint_comm, box, x0, x1, bX1IsCoord);
+        dd_move_x_specat(dd, dd->constraint_comm, box, as_rvec_array(x0.data()),
+                         as_rvec_array(x1.data()), bX1IsCoord);
 
         ddReopenBalanceRegionCpu(dd);
     }

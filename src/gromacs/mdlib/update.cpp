@@ -1465,9 +1465,10 @@ void constrain_velocities(int64_t step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.rvec_array(), state->v.rvec_array(),
-                      state->v.rvec_array(), state->box, state->lambda[efptBONDED], dvdlambda,
-                      nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(),
+                      state->v.arrayRefWithPadding(), state->v.arrayRefWithPadding().unpaddedArrayRef(),
+                      state->box, state->lambda[efptBONDED], dvdlambda, ArrayRefWithPadding<RVec>(),
+                      bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
 
         if (bCalcVir)
         {
@@ -1498,10 +1499,10 @@ void constrain_coordinates(int64_t step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.rvec_array(), upd->xp()->rvec_array(),
-                      nullptr, state->box, state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr,
-                      ConstraintVariable::Positions);
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(),
+                      upd->xp()->arrayRefWithPadding(), ArrayRef<RVec>(), state->box,
+                      state->lambda[efptBONDED], dvdlambda, state->v.arrayRefWithPadding(),
+                      bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
 
         if (bCalcVir)
         {
@@ -1564,9 +1565,10 @@ void update_sd_second_half(int64_t step,
         wallcycle_stop(wcycle, ewcUPDATE);
 
         /* Constrain the coordinates upd->xp for half a time step */
-        constr->apply(do_log, do_ene, step, 1, 0.5, state->x.rvec_array(), upd->xp()->rvec_array(),
-                      nullptr, state->box, state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
+        constr->apply(do_log, do_ene, step, 1, 0.5, state->x.arrayRefWithPadding(),
+                      upd->xp()->arrayRefWithPadding(), ArrayRef<RVec>(), state->box,
+                      state->lambda[efptBONDED], dvdlambda, state->v.arrayRefWithPadding(), nullptr,
+                      ConstraintVariable::Positions);
     }
 }
 

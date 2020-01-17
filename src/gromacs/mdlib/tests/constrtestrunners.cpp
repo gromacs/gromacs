@@ -131,11 +131,12 @@ void applyLincs(ConstraintsTestData* testData, t_pbc pbc)
     // Evaluate constraints
     bool success = constrain_lincs(
             false, testData->ir_, 0, lincsd, testData->md_, &testData->cr_, &testData->ms_,
-            as_rvec_array(testData->x_.data()), as_rvec_array(testData->xPrime_.data()),
-            as_rvec_array(testData->xPrime2_.data()), pbc.box, &pbc, testData->md_.lambda,
-            &testData->dHdLambda_, testData->invdt_, as_rvec_array(testData->v_.data()),
-            testData->computeVirial_, testData->virialScaled_, gmx::ConstraintVariable::Positions,
-            &testData->nrnb_, maxwarn, &warncount_lincs);
+            testData->x_.arrayRefWithPadding(), testData->xPrime_.arrayRefWithPadding(),
+            testData->xPrime2_.arrayRefWithPadding().unpaddedArrayRef(), pbc.box, &pbc,
+            testData->md_.lambda, &testData->dHdLambda_, testData->invdt_,
+            testData->v_.arrayRefWithPadding().unpaddedArrayRef(), testData->computeVirial_,
+            testData->virialScaled_, gmx::ConstraintVariable::Positions, &testData->nrnb_, maxwarn,
+            &warncount_lincs);
     EXPECT_TRUE(success) << "Test failed with a false return value in LINCS.";
     EXPECT_EQ(warncount_lincs, 0) << "There were warnings in LINCS.";
     done_lincs(lincsd);

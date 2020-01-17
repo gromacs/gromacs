@@ -49,6 +49,7 @@
 
 #include <cstdio>
 
+#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/arrayref.h"
@@ -170,20 +171,20 @@ public:
      *
      * /note x is non-const, because non-local atoms need to be communicated.
      */
-    bool apply(bool               bLog,
-               bool               bEner,
-               int64_t            step,
-               int                delta_step,
-               real               step_scaling,
-               rvec*              x,
-               rvec*              xprime,
-               rvec*              min_proj,
-               const matrix       box,
-               real               lambda,
-               real*              dvdlambda,
-               rvec*              v,
-               tensor*            vir,
-               ConstraintVariable econq);
+    bool apply(bool                      bLog,
+               bool                      bEner,
+               int64_t                   step,
+               int                       delta_step,
+               real                      step_scaling,
+               ArrayRefWithPadding<RVec> x,
+               ArrayRefWithPadding<RVec> xprime,
+               ArrayRef<RVec>            min_proj,
+               const matrix              box,
+               real                      lambda,
+               real*                     dvdlambda,
+               ArrayRefWithPadding<RVec> v,
+               tensor*                   vir,
+               ConstraintVariable        econq);
     //! Links the essentialdynamics and constraint code.
     void saveEdsamPointer(gmx_edsam* ed);
     //! Getter for use by domain decomposition.

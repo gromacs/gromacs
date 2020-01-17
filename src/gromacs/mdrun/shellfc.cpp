@@ -115,8 +115,8 @@ struct gmx_shellfc_t
     /* Flexible constraint working data */
     std::vector<RVec>       acc_dir;                /* Acceleration direction for flexcon        */
     gmx::PaddedVector<RVec> x_old;                  /* Old coordinates for flexcon               */
-    std::vector<RVec>       adir_xnold;             /* Work space for init_adir                  */
-    std::vector<RVec>       adir_xnew;              /* Work space for init_adir                  */
+    gmx::PaddedVector<RVec> adir_xnold;             /* Work space for init_adir                  */
+    gmx::PaddedVector<RVec> adir_xnew;              /* Work space for init_adir                  */
     std::int64_t            numForceEvaluations;    /* Total number of force evaluations         */
     int                     numConvergedIterations; /* Total number of iterations that converged */
 };
@@ -872,8 +872,8 @@ static void init_adir(gmx_shellfc_t*            shfc,
     {
         n = end;
     }
-    shfc->adir_xnold.resize(n);
-    shfc->adir_xnew.resize(n);
+    shfc->adir_xnold.resizeWithPadding(n);
+    shfc->adir_xnew.resizeWithPadding(n);
     rvec* xnold = as_rvec_array(shfc->adir_xnold.data());
     rvec* xnew  = as_rvec_array(shfc->adir_xnew.data());
     rvec* x_old = as_rvec_array(xOld.paddedArrayRef().data());
@@ -902,10 +902,12 @@ static void init_adir(gmx_shellfc_t*            shfc,
             }
         }
     }
-    constr->apply(FALSE, FALSE, step, 0, 1.0, x, xnold, nullptr, box, lambda[efptBONDED],
-                  &(dvdlambda[efptBONDED]), nullptr, nullptr, gmx::ConstraintVariable::Positions);
-    constr->apply(FALSE, FALSE, step, 0, 1.0, x, xnew, nullptr, box, lambda[efptBONDED],
-                  &(dvdlambda[efptBONDED]), nullptr, nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, xCurrent, shfc->adir_xnold.arrayRefWithPadding(),
+                  ArrayRef<RVec>(), box, lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+                  ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, xCurrent, shfc->adir_xnew.arrayRefWithPadding(),
+                  ArrayRef<RVec>(), box, lambda[efptBONDED], &(dvdlambda[efptBONDED]),
+                  ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
 
     for (n = 0; n < end; n++)
     {
@@ -918,9 +920,9 @@ static void init_adir(gmx_shellfc_t*            shfc,
     }
 
     /* Project the acceleration on the old bond directions */
-    constr->apply(FALSE, FALSE, step, 0, 1.0, x_old, xnew, as_rvec_array(acc_dir.data()), box,
-                  lambda[efptBONDED], &(dvdlambda[efptBONDED]), nullptr, nullptr,
-                  gmx::ConstraintVariable::Deriv_FlexCon);
+    constr->apply(FALSE, FALSE, step, 0, 1.0, xOld, shfc->adir_xnew.arrayRefWithPadding(), acc_dir,
+                  box, lambda[efptBONDED], &(dvdlambda[efptBONDED]), ArrayRefWithPadding<RVec>(),
+                  nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
 void relax_shell_flexcon(FILE*                               fplog,
