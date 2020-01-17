@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -101,24 +101,23 @@ nbnxn_kernel_prune_rolling_opencl
 #endif
 
     // TODO move these consts to utils and unify their use with the nonbonded kernels
-    const int c_numClPerSupercl = NCL_PER_SUPERCL;
-    const int c_clSize          = CL_SIZE;
+    const int c_clSize = CL_SIZE;
 
     // TODO pass this value at compile-time as a macro
     const int c_nbnxnGpuClusterpairSplit = 2;
 
-    /*! i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
-    const unsigned superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
+    /*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
+    const unsigned superClInteractionMask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
 
-#define LOCAL_OFFSET (xib + c_numClPerSupercl * c_clSize)
+#define LOCAL_OFFSET (xib + c_nbnxnGpuNumClusterPerSupercluster * c_clSize)
     /* shmem buffer for i cj pre-loading */
     CjType cjs = 0;
 #if USE_CJ_PREFETCH
     cjs = (((__local int*)(LOCAL_OFFSET)) + tidxz * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize);
 #    undef LOCAL_OFFSET
 /* Offset calculated using xib because cjs depends on on tidxz! */
-#    define LOCAL_OFFSET                                      \
-        (((__local int*)(xib + c_numClPerSupercl * c_clSize)) \
+#    define LOCAL_OFFSET                                                        \
+        (((__local int*)(xib + c_nbnxnGpuNumClusterPerSupercluster * c_clSize)) \
          + (NTHREAD_Z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize))
 #endif
 #if !USE_SUBGROUP_ANY
@@ -147,10 +146,10 @@ nbnxn_kernel_prune_rolling_opencl
 
     if (tidxz == 0)
     {
-        for (int i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
+        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += CL_SIZE)
         {
             /* Pre-load i-atom x and q into shared memory */
-            const int ci = sci * c_numClPerSupercl + tidxj + i;
+            const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
             const int ai = ci * c_clSize + tidxi;
 
             /* We don't need q, but using float4 in shmem avoids bank conflicts */
@@ -194,9 +193,9 @@ nbnxn_kernel_prune_rolling_opencl
 #pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                if (imaskCheck & (superClInteractionMask << (jm * c_numClPerSupercl)))
+                if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
                 {
-                    unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
+                    unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
 
                     const int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
                     const int aj = cj * c_clSize + tidxj;
@@ -206,7 +205,7 @@ nbnxn_kernel_prune_rolling_opencl
                     const float3 xj  = (float3)(tmp.xyz);
 
 #pragma unroll 8
-                    for (int i = 0; i < c_numClPerSupercl; i++)
+                    for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                     {
                         if (imaskCheck & mask_ji)
                         {

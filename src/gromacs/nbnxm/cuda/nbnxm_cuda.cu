@@ -338,19 +338,19 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float4);
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
     if (nbp->vdwtype == evdwCuCUTCOMBGEOM || nbp->vdwtype == evdwCuCUTCOMBLB)
     {
         /* i-atom LJ combination parameters in shared memory */
-        shmem += c_numClPerSupercl * c_clSize * sizeof(float2);
+        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float2);
     }
     else
     {
         /* i-atom types in shared memory */
-        shmem += c_numClPerSupercl * c_clSize * sizeof(int);
+        shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int);
     }
 
     return shmem;
@@ -552,8 +552,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
                 "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2], config.gridSize[0],
-                config.gridSize[1], plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c,
-                config.sharedMemorySize);
+                config.gridSize[1], plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     auto*      timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
@@ -582,7 +582,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     int shmem;
 
     /* i-atom x in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float4);
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float4);
     /* cj in shared memory, for each warp separately */
     shmem += num_threads_z * c_nbnxnGpuClusterpairSplit * c_nbnxnGpuJgroupSize * sizeof(int);
 
@@ -676,8 +676,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 "\tGrid: %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n"
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2], config.gridSize[0],
-                config.gridSize[1], numSciInPart * c_numClPerSupercl, c_numClPerSupercl,
-                plist->na_c, config.sharedMemorySize);
+                config.gridSize[1], numSciInPart * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     auto*          timingEvent  = bDoTime ? timer->fetchNextEvent() : nullptr;

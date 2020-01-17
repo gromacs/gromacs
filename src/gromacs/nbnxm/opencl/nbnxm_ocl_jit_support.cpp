@@ -184,16 +184,18 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
         std::string extraDefines =
                 makeDefinesForKernelTypes(bFastGen, nb->nbparam->eeltype, nb->nbparam->vdwtype);
 
-        /* Here we pass macros and static const int variables defined
+        /* Here we pass macros and static const/constexpr int variables defined
          * in include files outside the opencl as macros, to avoid
-         * including those files in the JIT compilation that happens
-         * at runtime. This is particularly a problem for headers that
-         * depend on config.h, such as pairlist.h. */
+         * including those files in the plain-C JIT compilation that happens
+         * at runtime. */
         extraDefines += gmx::formatString(
-                " -DNBNXN_GPU_CLUSTER_SIZE=%d "
+                " -Dc_nbnxnGpuClusterSize=%d"
+                " -Dc_nbnxnMinDistanceSquared=%g"
+                " -Dc_nbnxnGpuNumClusterPerSupercluster=%d"
+                " -Dc_nbnxnGpuJgroupSize=%d"
                 "%s",
-                c_nbnxnGpuClusterSize, /* Defined in nbnxn_pairlist.h */
-                (nb->bPrefetchLjParam) ? "-DIATYPE_SHMEM" : "");
+                c_nbnxnGpuClusterSize, c_nbnxnMinDistanceSquared, c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuJgroupSize, (nb->bPrefetchLjParam) ? " -DIATYPE_SHMEM" : "");
         try
         {
             /* TODO when we have a proper MPI-aware logging module,

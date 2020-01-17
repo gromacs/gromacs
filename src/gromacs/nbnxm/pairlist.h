@@ -48,9 +48,6 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-// This file with constants is separate from this file to be able
-// to include it during OpenCL jitting without including config.h
-#include "constants.h"
 #include "pairlistparams.h"
 
 struct NbnxnPairlistCpuWork;
@@ -132,6 +129,31 @@ constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_0 = 0xf0f8fcfeU;
 constexpr unsigned int NBNXN_INTERACTION_MASK_DIAG_J8_1 = 0x0080c0e0U;
 //! \}
 //! \}
+
+/*! \brief Lower limit for square interaction distances in nonbonded kernels.
+ *
+ * For smaller values we will overflow when calculating r^-1 or r^-12, but
+ * to keep it simple we always apply the limit from the tougher r^-12 condition.
+ */
+#if GMX_DOUBLE
+// Some double precision SIMD architectures use single precision in the first
+// step, so although the double precision criterion would allow smaller rsq,
+// we need to stay in single precision with some margin for the N-R iterations.
+constexpr double c_nbnxnMinDistanceSquared = 1.0e-36;
+#else
+// The worst intermediate value we might evaluate is r^-12, which
+// means we should ensure r^2 stays above pow(GMX_FLOAT_MAX,-1.0/6.0)*1.01 (some margin)
+constexpr float c_nbnxnMinDistanceSquared = 3.82e-07F; // r > 6.2e-4
+#endif
+
+
+//! The number of clusters in a super-cluster, used for GPU
+constexpr int c_nbnxnGpuNumClusterPerSupercluster = 8;
+
+/*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
+ * of integers containing 32 bits.
+ */
+constexpr int c_nbnxnGpuJgroupSize = (32 / c_nbnxnGpuNumClusterPerSupercluster);
 
 /*! \internal
  * \brief Simple pair-list i-unit

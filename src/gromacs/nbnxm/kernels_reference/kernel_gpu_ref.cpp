@@ -52,8 +52,7 @@
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/fatalerror.h"
 
-static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
-static const int c_clSize          = c_nbnxnGpuClusterSize;
+static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
 void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                           const nbnxn_atomdata_t*    nbat,
@@ -151,14 +150,14 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
         vctot    = 0;
         Vvdwtot  = 0;
 
-        if (nbln.shift == CENTRAL && nbl->cj4[cj4_ind0].cj[0] == sci * c_numClPerSupercl)
+        if (nbln.shift == CENTRAL && nbl->cj4[cj4_ind0].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
         {
             /* we have the diagonal:
              * add the charge self interaction energy term
              */
-            for (im = 0; im < c_numClPerSupercl; im++)
+            for (im = 0; im < c_nbnxnGpuNumClusterPerSupercluster; im++)
             {
-                ci = sci * c_numClPerSupercl + im;
+                ci = sci * c_nbnxnGpuNumClusterPerSupercluster + im;
                 for (ic = 0; ic < c_clSize; ic++)
                 {
                     ia = ci * c_clSize + ic;
@@ -186,16 +185,17 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
             {
                 cj = nbl->cj4[cj4_ind].cj[jm];
 
-                for (im = 0; im < c_numClPerSupercl; im++)
+                for (im = 0; im < c_nbnxnGpuNumClusterPerSupercluster; im++)
                 {
                     /* We're only using the first imask,
                      * but here imei[1].imask is identical.
                      */
-                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm * c_numClPerSupercl + im)) & 1)
+                    if ((nbl->cj4[cj4_ind].imei[0].imask >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
+                        & 1)
                     {
                         gmx_bool within_rlist;
 
-                        ci = sci * c_numClPerSupercl + im;
+                        ci = sci * c_nbnxnGpuNumClusterPerSupercluster + im;
 
                         within_rlist = FALSE;
                         npair        = 0;
@@ -228,7 +228,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                         c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit;
                                 int_bit = static_cast<real>(
                                         (excl[jc / clusterPerSplit]->pair[(jc & (clusterPerSplit - 1)) * c_clSize + ic]
-                                         >> (jm * c_numClPerSupercl + im))
+                                         >> (jm * c_nbnxnGpuNumClusterPerSupercluster + im))
                                         & 1);
 
                                 js  = ja * nbat->xstride;
@@ -255,7 +255,7 @@ void nbnxn_kernel_gpu_ref(const NbnxnPairlistGpu*    nbl,
                                 }
 
                                 // Ensure distance do not become so small that r^-12 overflows
-                                rsq = std::max(rsq, NBNXN_MIN_RSQ);
+                                rsq = std::max(rsq, c_nbnxnMinDistanceSquared);
 
                                 rinv   = gmx::invsqrt(rsq);
                                 rinvsq = rinv * rinv;

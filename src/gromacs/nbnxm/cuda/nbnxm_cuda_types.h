@@ -72,10 +72,8 @@ const int c_cudaPruneKernelJ4Concurrency = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY
 
 /* TODO: consider moving this to kernel_utils */
 /* Convenience defines */
-/*! \brief number of clusters per supercluster. */
-static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
 /*! \brief cluster size = number of atoms per cluster. */
-static const int c_clSize = c_nbnxnGpuClusterSize;
+static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 
 /*! \brief Electrostatic CUDA kernel flavors.
  *

@@ -95,8 +95,7 @@ namespace Nbnxm
 
 /*! \brief Convenience constants */
 //@{
-static const int c_numClPerSupercl = c_nbnxnGpuNumClusterPerSupercluster;
-static const int c_clSize          = c_nbnxnGpuClusterSize;
+static constexpr int c_clSize = c_nbnxnGpuClusterSize;
 //@}
 
 
@@ -396,7 +395,7 @@ static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjPar
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
     /* i-atom x+q in shared memory */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4; /* xqib */
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float) * 4; /* xqib */
     /* cj in shared memory, for both warps separately
      * TODO: in the "nowarp kernels we load cj only once  so the factor 2 is not needed.
      */
@@ -406,12 +405,13 @@ static inline int calc_shmem_required_nonbonded(int vdwType, bool bPrefetchLjPar
         if (useLjCombRule(vdwType))
         {
             /* i-atom LJ combination parameters in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * 2 * sizeof(float); /* atib abused for ljcp, float2 */
+            shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * 2
+                     * sizeof(float); /* atib abused for ljcp, float2 */
         }
         else
         {
             /* i-atom types in shared memory */
-            shmem += c_numClPerSupercl * c_clSize * sizeof(int); /* atib */
+            shmem += c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(int); /* atib */
         }
     }
     /* force reduction buffers in shared memory */
@@ -643,7 +643,8 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
                 "Global work size : %zux%zu\n\t#Super-clusters/clusters: %d/%d (%d)\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
                 config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
-                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c);
+                plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c);
     }
 
     fillin_ocl_structures(nbp, &nbparams_params);
@@ -697,7 +698,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     int shmem;
 
     /* i-atom x in shared memory (for convenience we load all 4 components including q) */
-    shmem = c_numClPerSupercl * c_clSize * sizeof(float) * 4;
+    shmem = c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(float) * 4;
     /* cj in shared memory, for each warp separately
      * Note: only need to load once per wavefront, but to keep the code simple,
      * for now we load twice on AMD.
@@ -803,7 +804,8 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
                 "\tShMem: %zu\n",
                 config.blockSize[0], config.blockSize[1], config.blockSize[2],
                 config.blockSize[0] * config.gridSize[0], config.blockSize[1] * config.gridSize[1],
-                plist->nsci * c_numClPerSupercl, c_numClPerSupercl, plist->na_c, config.sharedMemorySize);
+                plist->nsci * c_nbnxnGpuNumClusterPerSupercluster,
+                c_nbnxnGpuNumClusterPerSupercluster, plist->na_c, config.sharedMemorySize);
     }
 
     cl_nbparam_params_t nbparams_params;

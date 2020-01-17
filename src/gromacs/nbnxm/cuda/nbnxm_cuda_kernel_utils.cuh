@@ -68,8 +68,9 @@ static const int __device__ c_clSizeSq = c_clSize * c_clSize;
 static const int __device__ c_splitClSize = c_clSize / c_nbnxnGpuClusterpairSplit;
 /*! \brief Stride in the force accumualation buffer */
 static const int __device__ c_fbufStride = c_clSizeSq;
-/*! \brief i-cluster interaction mask for a super-cluster with all c_numClPerSupercl=8 bits set */
-static const unsigned __device__ superClInteractionMask = ((1U << c_numClPerSupercl) - 1U);
+/*! \brief i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
+static const unsigned __device__ superClInteractionMask =
+        ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
 
 static const float __device__ c_oneSixth    = 0.16666667f;
 static const float __device__ c_oneTwelveth = 0.08333333f;

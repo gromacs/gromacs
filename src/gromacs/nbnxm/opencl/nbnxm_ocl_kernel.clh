@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -177,10 +177,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const int bidx  = get_group_id(0);
     const int widx  = tidx / WARP_SIZE; /* warp index */
 
-    /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL=8 bits set */
-    const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
+    /*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster=8 bits set */
+    const unsigned superClInteractionMask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
 
-#define LOCAL_OFFSET (xqib + NCL_PER_SUPERCL * CL_SIZE)
+#define LOCAL_OFFSET (xqib + c_nbnxnGpuNumClusterPerSupercluster * CL_SIZE)
     CjType cjs = 0;
 #if USE_CJ_PREFETCH
     /* shmem buffer for cj, for both warps separately */
@@ -194,11 +194,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     /* shmem buffer for i atom-type pre-loading */
     __local int* atib = (__local int*)(LOCAL_OFFSET); //NOLINT(google-readability-casting)
 #        undef LOCAL_OFFSET
-#        define LOCAL_OFFSET (atib + NCL_PER_SUPERCL * CL_SIZE)
+#        define LOCAL_OFFSET (atib + c_nbnxnGpuNumClusterPerSupercluster * CL_SIZE)
 #    else
     __local float2* ljcpib      = (__local float2*)(LOCAL_OFFSET);
 #        undef LOCAL_OFFSET
-#        define LOCAL_OFFSET (ljcpib + NCL_PER_SUPERCL * CL_SIZE)
+#        define LOCAL_OFFSET (ljcpib + c_nbnxnGpuNumClusterPerSupercluster * CL_SIZE)
 #    endif
 #endif
 
@@ -225,10 +225,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     const int         cij4_start = nb_sci.cj4_ind_start; /* first ...*/
     const int         cij4_end   = nb_sci.cj4_ind_end;   /* and last index of j clusters */
 
-    for (int i = 0; i < NCL_PER_SUPERCL; i += CL_SIZE)
+    for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i += CL_SIZE)
     {
         /* Pre-load i-atom x and q into shared memory */
-        const int ci = sci * NCL_PER_SUPERCL + tidxj + i;
+        const int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj + i;
         const int ai = ci * CL_SIZE + tidxi;
 
         float4 xqbuf = xq[ai]
@@ -254,8 +254,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
     barrier(CLK_LOCAL_MEM_FENCE);
 
-    float3 fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
-    for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    float3 fci_buf[c_nbnxnGpuNumClusterPerSupercluster]; /* i force buffer */
+    for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
     {
         fci_buf[ci_offset] = (float3)(0.0F);
     }
@@ -272,17 +272,18 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     float E_el = 0.0F;
 
 #    if defined EXCLUSION_FORCES /* Ewald or RF */
-    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci * NCL_PER_SUPERCL)
+    if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci * c_nbnxnGpuNumClusterPerSupercluster)
     {
         /* we have the diagonal: add the charge and LJ self interaction energy term */
-        for (int i = 0; i < NCL_PER_SUPERCL; i++)
+        for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
         {
 #        if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
             const float qi = xqib[i * CL_SIZE + tidxi].w;
             E_el += qi * qi;
 #        endif
 #        if defined LJ_EWALD
-            E_lj += nbfp_climg2d[atom_types[(sci * NCL_PER_SUPERCL + i) * CL_SIZE + tidxi] * (ntypes + 1) * 2];
+            E_lj += nbfp_climg2d[atom_types[(sci * c_nbnxnGpuNumClusterPerSupercluster + i) * CL_SIZE + tidxi]
+                                 * (ntypes + 1) * 2];
 #        endif /* LJ_EWALD */
         }
 
@@ -335,9 +336,9 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                if (imask & (superClInteractionMask << (jm * NCL_PER_SUPERCL)))
+                if (imask & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
                 {
-                    unsigned int mask_ji = (1U << (jm * NCL_PER_SUPERCL));
+                    unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
 
                     const int cj = loadCj(cjs, pl_cj4[j4].cj, jm, tidxi, tidxj);
                     const int aj = cj * CL_SIZE + tidxj;
@@ -357,11 +358,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #if !defined PRUNE_NBL
 #    pragma unroll 8
 #endif
-                    for (int i = 0; i < NCL_PER_SUPERCL; i++)
+                    for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                     {
                         if (imask & mask_ji)
                         {
-                            const int gmx_unused ci = sci * NCL_PER_SUPERCL + i; /* i cluster index */
+                            const int gmx_unused ci = sci * c_nbnxnGpuNumClusterPerSupercluster + i; /* i cluster index */
 
                             /* all threads load an atom from i cluster ci into shmem! */
                             const float4 xiqbuf = xqib[i * CL_SIZE + tidxi];
@@ -423,8 +424,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #    endif /* LJ_COMB_GEOM */
 #endif     /* LJ_COMB */
 
-                                // Ensure distance do not become so small that r^-12 overflows
-                                r2 = max(r2, NBNXN_MIN_RSQ);
+                                // Ensure distance do not become so small that r^-12 overflows.
+                                // Cast to float to ensure the correct built-in max() function
+                                // is called.
+                                r2 = max(r2, (float)c_nbnxnMinDistanceSquared);
 
                                 const float inv_r  = rsqrt(r2);
                                 const float inv_r2 = inv_r * inv_r;

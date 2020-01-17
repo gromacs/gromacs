@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,7 +152,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu
 
     /* shmem buffer for i x+q pre-loading */
     float4* xib = (float4*)sm_nextSlotPtr;
-    sm_nextSlotPtr += (c_numClPerSupercl * c_clSize * sizeof(*xib));
+    sm_nextSlotPtr += (c_nbnxnGpuNumClusterPerSupercluster * c_clSize * sizeof(*xib));
 
     /* shmem buffer for cj, for each warp separately */
     int* cjs = (int*)(sm_nextSlotPtr);
@@ -171,7 +171,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu
     if (tidxz == 0)
     {
         /* Pre-load i-atom x and q into shared memory */
-        int ci = sci * c_numClPerSupercl + tidxj;
+        int ci = sci * c_nbnxnGpuNumClusterPerSupercluster + tidxj;
         int ai = ci * c_clSize + tidxi;
 
         /* We don't need q, but using float4 in shmem avoids bank conflicts.
@@ -220,9 +220,9 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu
 #    pragma unroll 4
             for (int jm = 0; jm < c_nbnxnGpuJgroupSize; jm++)
             {
-                if (imaskCheck & (superClInteractionMask << (jm * c_numClPerSupercl)))
+                if (imaskCheck & (superClInteractionMask << (jm * c_nbnxnGpuNumClusterPerSupercluster)))
                 {
-                    unsigned int mask_ji = (1U << (jm * c_numClPerSupercl));
+                    unsigned int mask_ji = (1U << (jm * c_nbnxnGpuNumClusterPerSupercluster));
 
                     int cj = cjs[jm + (tidxj & 4) * c_nbnxnGpuJgroupSize / c_splitClSize];
                     int aj = cj * c_clSize + tidxj;
@@ -232,7 +232,7 @@ nbnxn_kernel_prune_cuda<false>(const cu_atomdata_t, const cu_nbparam_t, const cu
                     float3 xj  = make_float3(tmp.x, tmp.y, tmp.z);
 
 #    pragma unroll 8
-                    for (int i = 0; i < c_numClPerSupercl; i++)
+                    for (int i = 0; i < c_nbnxnGpuNumClusterPerSupercluster; i++)
                     {
                         if (imaskCheck & mask_ji)
                         {

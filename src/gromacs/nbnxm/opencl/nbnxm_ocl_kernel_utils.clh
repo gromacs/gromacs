@@ -47,13 +47,11 @@
 
 #include "gromacs/gpu_utils/device_utils.clh"
 #include "gromacs/gpu_utils/vectype_ops.clh"
-#include "gromacs/nbnxm/constants.h"
 #include "gromacs/pbcutil/ishift.h"
 
 #include "nbnxm_ocl_consts.h"
 
-#define CL_SIZE (NBNXN_GPU_CLUSTER_SIZE)
-#define NCL_PER_SUPERCL c_nbnxnGpuNumClusterPerSupercluster
+#define CL_SIZE (c_nbnxnGpuClusterSize)
 
 #define WARP_SIZE (CL_SIZE * CL_SIZE / 2) // Currently only c_nbnxnGpuClusterpairSplit=2 supported
 
@@ -233,8 +231,8 @@ typedef struct
                                                */
 } nbnxn_excl_t;
 
-/*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
-__constant unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+/*! i-cluster interaction mask for a super-cluster with all c_nbnxnGpuNumClusterPerSupercluster bits set */
+__constant unsigned supercl_interaction_mask = ((1U << c_nbnxnGpuNumClusterPerSupercluster) - 1U);
 
 gmx_opencl_inline void preloadCj4Generic(__local int*        sm_cjPreload,
                                          const __global int* gm_cj,
@@ -698,9 +696,9 @@ gmx_opencl_inline void reduce_force_i_and_shift_shfl(float3*         fci_buf,
     /* Only does reduction over 4 elements in cluster (2 per warp). Needs to be changed
      * for CL_SIZE>4.*/
     float2 fshift_buf = 0;
-    for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
     {
-        int    aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+        int    aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
         float3 fin  = fci_buf[ci_offset];
         fin.x += intel_sub_group_shuffle_down(fin.x, fin.x, CL_SIZE);
         fin.y += intel_sub_group_shuffle_up(fin.y, fin.y, CL_SIZE);
@@ -754,9 +752,9 @@ gmx_opencl_inline void reduce_force_i_and_shift_pow2(volatile __local float* f_b
                                                      __global float*         fshift)
 {
     float fshift_buf = 0;
-    for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
+    for (int ci_offset = 0; ci_offset < c_nbnxnGpuNumClusterPerSupercluster; ci_offset++)
     {
-        int aidx = (sci * NCL_PER_SUPERCL + ci_offset) * CL_SIZE + tidxi;
+        int aidx = (sci * c_nbnxnGpuNumClusterPerSupercluster + ci_offset) * CL_SIZE + tidxi;
         int tidx = tidxi + tidxj * CL_SIZE;
         /* store i forces in shmem */
         f_buf[tidx]                   = fci_buf[ci_offset].x;
