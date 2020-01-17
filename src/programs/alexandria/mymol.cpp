@@ -123,6 +123,7 @@ const char *immsg(immStatus imm)
         "Determining bond order",
         "RESP Initialization",
         "Charge generation",
+        "Shell minimization",
         "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)",
         "Not in training set",
@@ -1168,7 +1169,7 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
     return immOK;
 }
 
-void MyMol::computeForces(FILE *fplog, t_commrec *cr)
+immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
     if (mdatoms->typeA[0] == 0)
@@ -1208,20 +1209,30 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
+    immStatus imm =  immOK;
     if (nullptr != shellfc_)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
-        relax_shell_flexcon(fplog, cr, nullptr, false,
-                            nullptr, 0, inputrec_,
-                            true, force_flags, ltop_, nullptr,
-                            enerd_, fcd_, state_,
-                            f_.arrayRefWithPadding(), force_vir, mdatoms,
-                            &nrnb_, wcycle_, nullptr,
-                            &(mtop_->groups), shellfc_,
-                            fr_, t, mu_tot, vsite_->get(),
-                            DdOpenBalanceRegionBeforeForceComputation::no,
-                            DdCloseBalanceRegionAfterForceComputation::no);
+        try
+        {
+            relax_shell_flexcon(fplog, cr, nullptr, false,
+                                nullptr, 0, inputrec_,
+                                true, force_flags, ltop_, nullptr,
+                                enerd_, fcd_, state_,
+                                f_.arrayRefWithPadding(), force_vir, mdatoms,
+                                &nrnb_, wcycle_, nullptr,
+                                &(mtop_->groups), shellfc_,
+                                fr_, t, mu_tot, vsite_->get(),
+                                DdOpenBalanceRegionBeforeForceComputation::no,
+                                DdCloseBalanceRegionAfterForceComputation::no);
+        }
+        catch (gmx::SimulationInstabilityError &ex)
+        {
+            fprintf(stderr, "Something wrong minimizing shells for %s. Error code %d\n",
+                    molProp()->getMolname().c_str(), ex.errorCode());
+            imm = immShellMinimization;
+        }
         cr->nnodes = nnodes;
     }
     else
@@ -1239,6 +1250,7 @@ void MyMol::computeForces(FILE *fplog, t_commrec *cr)
                  DdOpenBalanceRegionBeforeForceComputation::no,
                  DdCloseBalanceRegionAfterForceComputation::no);
     }
+    return imm;
 }
 
 void MyMol::initQgresp(const Poldata             *pd,
@@ -1376,7 +1388,11 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                 }
                 if (nullptr != shellfc_)
                 {
-                    computeForces(nullptr, cr);
+                    auto imm = computeForces(nullptr, cr);
+                    if (imm != immOK)
+                    {
+                        return imm;
+                    }
                     Qgresp_.updateAtomCoords(state_->x);
                 }
                 Qgresp_.optimizeCharges(pd->getEpsilonR());

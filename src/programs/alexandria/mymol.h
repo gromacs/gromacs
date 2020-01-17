@@ -536,8 +536,9 @@ class MyMol
          *
          * \param[in] fplog
          * \param[in] cr
+         * \return immOK if everything went fine, an error otherwise.
          */
-        void computeForces(FILE *fplog, t_commrec *cr);
+        immStatus computeForces(FILE *fplog, t_commrec *cr);
 
         /*! \brief
          * Set the force field

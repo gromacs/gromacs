@@ -62,6 +62,7 @@ enum immStatus {
     immBondOrder,
     immRespInit,
     immChargeGeneration,
+    immShellMinimization,
     immLOT,
     immQMInconsistency,
     immTest,
