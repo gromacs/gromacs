@@ -242,7 +242,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
     bEner_[F_COM_PULL]   = ((ir->bPull && pull_have_potential(pull_work)) || ir->bRot);
 
     MdModulesEnergyOutputToDensityFittingRequestChecker mdModulesAddOutputToDensityFittingFieldRequest;
-    mdModulesNotifier.notifier_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
+    mdModulesNotifier.simulationSetupNotifications_.notify(&mdModulesAddOutputToDensityFittingFieldRequest);
 
     bEner_[F_DENSITYFITTING] = mdModulesAddOutputToDensityFittingFieldRequest.energyOutputToDensityFitting_;
 

@@ -562,7 +562,7 @@ void check_ir(const char*                   mdparin,
         // Inquire all MdModules, if their parameters match with the energy
         // calculation frequency
         gmx::EnergyCalculationFrequencyErrors energyCalculationFrequencyErrors(ir->nstcalcenergy);
-        mdModulesNotifier.notifier_.notify(&energyCalculationFrequencyErrors);
+        mdModulesNotifier.preProcessingNotifications_.notify(&energyCalculationFrequencyErrors);
 
         // Emit all errors from the energy calculation frequency checks
         for (const std::string& energyFrequencyErrorMessage :
@@ -3615,7 +3615,7 @@ void do_index(const char*                   mdparin,
 
     gmx::IndexGroupsAndNames defaultIndexGroupsAndNames(
             *defaultIndexGroups, gmx::arrayRefFromArray(gnames, defaultIndexGroups->nr));
-    notifier.notifier_.notify(defaultIndexGroupsAndNames);
+    notifier.preProcessingNotifications_.notify(defaultIndexGroupsAndNames);
 
     auto accelerations          = gmx::splitString(is->acc);
     auto accelerationGroupNames = gmx::splitString(is->accgrps);

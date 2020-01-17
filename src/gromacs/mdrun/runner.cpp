@@ -917,7 +917,7 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
-    const auto& mdModulesNotifier = mdModules_->notifier().notifier_;
+    const auto& mdModulesNotifier = mdModules_->notifier().simulationSetupNotifications_;
 
     if (inputrec->internalParameters != nullptr)
     {
@@ -1335,7 +1335,7 @@ int Mdrunner::mdrunner()
     {
         mdModulesNotifier.notify(*cr);
         mdModulesNotifier.notify(&atomSets);
-        mdModulesNotifier.notify(PeriodicBoundaryConditionType{ inputrec->pbcType });
+        mdModulesNotifier.notify(inputrec->pbcType);
         mdModulesNotifier.notify(SimulationTimeStep{ inputrec->delta_t });
         /* Initiate forcerecord */
         fr                 = new t_forcerec;

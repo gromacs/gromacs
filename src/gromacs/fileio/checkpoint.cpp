@@ -2089,7 +2089,7 @@ static void do_cpt_mdmodules(int                           fileVersion,
         gmx::MdModulesCheckpointReadingDataOnMaster mdModuleCheckpointReadingDataOnMaster = {
             mdModuleCheckpointParameterTree, fileVersion
         };
-        mdModulesNotifier.notifier_.notify(mdModuleCheckpointReadingDataOnMaster);
+        mdModulesNotifier.checkpointingNotifications_.notify(mdModuleCheckpointReadingDataOnMaster);
     }
 }
 
@@ -2377,7 +2377,7 @@ void write_checkpoint(const char*                   fn,
         gmx::KeyValueTreeBuilder          builder;
         gmx::MdModulesWriteCheckpointData mdModulesWriteCheckpoint = { builder.rootObject(),
                                                                        headerContents.file_version };
-        mdModulesNotifier.notifier_.notify(mdModulesWriteCheckpoint);
+        mdModulesNotifier.checkpointingNotifications_.notify(mdModulesWriteCheckpoint);
         auto                     tree = builder.build();
         gmx::FileIOXdrSerializer serializer(fp);
         gmx::serializeKeyValueTree(tree, &serializer);
@@ -2819,7 +2819,7 @@ void load_checkpoint(const char*                   fn,
     {
         gmx_bcast(sizeof(headerContents.step), &headerContents.step, cr);
         gmx::MdModulesCheckpointReadingBroadcast broadcastCheckPointData = { *cr, headerContents.file_version };
-        mdModulesNotifier.notifier_.notify(broadcastCheckPointData);
+        mdModulesNotifier.checkpointingNotifications_.notify(broadcastCheckPointData);
     }
     ir->bContinuation = TRUE;
     // TODO Should the following condition be <=? Currently if you
