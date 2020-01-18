@@ -986,7 +986,7 @@ static void init_adir(gmx_shellfc_t            *shfc,
                   nullptr, nullptr, gmx::ConstraintVariable::Deriv_FlexCon);
 }
 
-void relax_shell_flexcon(FILE                                     *fplog,
+real relax_shell_flexcon(FILE                                     *fplog,
                          const t_commrec                          *cr,
                          const gmx_multisim_t                     *ms,
                          gmx_bool                                  bVerbose,
@@ -1356,14 +1356,12 @@ void relax_shell_flexcon(FILE                                     *fplog,
                     "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
                     gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
         }
-        fprintf(stderr,
-                "step %s: EM did not converge in %d iterations, RMS force %6.2e\n",
-                gmx_step_str(mdstep, sbuf), number_steps, df[Min]);
     }
 
     /* Copy back the coordinates and the forces */
     std::copy(pos[Min].begin(), pos[Min].end(), makeArrayRef(state->x).data());
     std::copy(force[Min].begin(), force[Min].end(), f.unpaddedArrayRef().begin());
+    return df[Min];
 }
 
 void done_shellfc(FILE *fplog, gmx_shellfc_t *shfc, int64_t numSteps)

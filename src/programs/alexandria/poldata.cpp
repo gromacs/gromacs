@@ -1261,14 +1261,14 @@ void Poldata::checkConsistency(FILE *fp) const
         auto eem = atype2Eem(atype);
         if (eem == EndEemprops())
         {
-            fprintf(stderr, "ERROR: No eemprops for %s\n", atype.c_str());
+            fprintf(fp, "ERROR: No eemprops for %s\n", atype.c_str());
             nerror += 1;
         }
         double chi0 = getChi0(atype);
         double J00  = getJ00(atype);
         if (nullptr != fp)
         {
-            printf("chi0 %g J00 %g", chi0, J00);
+            fprintf(fp, "chi0 %g J00 %g", chi0, J00);
         }
         int nZeta = getNzeta(atype);
         for(int i = 0; i < nZeta; i++)
@@ -1278,12 +1278,12 @@ void Poldata::checkConsistency(FILE *fp) const
             double q = getQ(atype, i);
             if (nullptr != fp)
             {
-                printf(" row %d zeta %g q %g", row, zeta, q);
+                fprintf(fp, " row %d zeta %g q %g", row, zeta, q);
             }
         }
         if (nullptr != fp)
         {
-            printf("\n");
+            fprintf(fp, "\n");
         }
         // Check whether poltype is present
         double polarizability, sigPol;

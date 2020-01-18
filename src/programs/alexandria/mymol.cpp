@@ -638,9 +638,9 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
             }
             atoms_->atom[natom].q      =
                 atoms_->atom[natom].qB = q;
-            atoms_->atom[natom].resind = nres-1;
+            atoms_->atom[natom].resind = resnr;
             t_atoms_set_resinfo(atoms_, natom, symtab_, cai->ResidueName().c_str(),
-                                atoms_->atom[natom].resind+1, ' ', 
+                                atoms_->atom[natom].resind, ' ', 
                                 cai->chainId(), cai->chain());
             atoms_->atomname[natom]        = put_symtab(symtab_, cai->getName().c_str());
             atoms_->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap, cai->getName().c_str());
@@ -909,6 +909,11 @@ void MyMol::addShells(const Poldata *pd)
             nParticles++; // We add 1 shell particle per Atom and Vsite particles
         }
     }
+    if (debug)
+    {
+        fprintf(debug, "addShells: will add %d shells to %d atoms\n",
+                nParticles-atoms_->nr, atoms_->nr);
+    }
     state_change_natoms(state_, nParticles);
     inv_renum.resize(nParticles, -1);
     renum.resize(atoms_->nr, 0);
@@ -969,7 +974,11 @@ void MyMol::addShells(const Poldata *pd)
             }
         }
     }
-
+    if (debug)
+    {
+        fprintf(debug, "addShells: updated plist contains %d entries\n",
+                plist_[eitPOLARIZATION].nParam());
+    }
     t_atom *shell_atom;
     snew(shell_atom, 1);
     shell_atom->ptype = eptShell;
@@ -985,7 +994,7 @@ void MyMol::addShells(const Poldata *pd)
 
     /* Make a new exclusion array and put the shells in it. */
     snew(newexcls, newatoms->nr);
-
+    if (debug) fprintf(debug, "addShells 3\n");
     /* Add exclusion for F_POLARIZATION. */
     auto pw = SearchPlist(plist_, F_POLARIZATION);
     if (plist_.end() != pw)
@@ -1023,17 +1032,22 @@ void MyMol::addShells(const Poldata *pd)
             }
         }
     }
+    if (debug) fprintf(debug, "addShells 4\n");
 
     /* Copy the old atoms to the new structures. */
     for (int i = 0; i < atoms_->nr; i++)
     {
         newatoms->atom[renum[i]]      = atoms_->atom[i];
+        if (debug) fprintf(debug, "atomname[%d] = %lld %s\n", i, atoms_->atomname[i], *atoms_->atomname[i]);
         newatoms->atomname[renum[i]]  = put_symtab(symtab_, *atoms_->atomname[i]);
+        if (debug) fprintf(debug, "atomtype[%d] = %lld %s\n", i, atoms_->atomtype[i], *atoms_->atomtype[i]);
         newatoms->atomtype[renum[i]]  = put_symtab(symtab_, *atoms_->atomtype[i]);
+        if (debug) fprintf(debug, "atomtypeB[%d] = %lld %s\n", i, atoms_->atomtypeB[i], *atoms_->atomtypeB[i]);
         newatoms->atomtypeB[renum[i]] = put_symtab(symtab_, *atoms_->atomtypeB[i]);
         copy_rvec(state_->x[i], newx[renum[i]]);
         newname[renum[i]] = *atoms_->atomtype[i];
         int resind = atoms_->atom[i].resind;
+        if (debug) fprintf(debug, "resind %d name %s\n", resind, *atoms_->resinfo[resind].name);
         t_atoms_set_resinfo(newatoms, renum[i], symtab_,
                             *atoms_->resinfo[resind].name,
                             atoms_->resinfo[resind].nr,
@@ -1041,6 +1055,7 @@ void MyMol::addShells(const Poldata *pd)
                             atoms_->resinfo[resind].chainnum, 
                             atoms_->resinfo[resind].chainid);
     }
+    if (debug) fprintf(debug, "addShells 5\n");
     for (int i = 0; i < atoms_->nr; i++)
     {
         if (atoms_->atom[i].ptype == eptAtom ||
@@ -1086,6 +1101,7 @@ void MyMol::addShells(const Poldata *pd)
             }
         }
     }
+    if (debug) fprintf(debug, "addShells 6\n");
     /* Copy newatoms to atoms */
     copy_atoms(newatoms, atoms_);
 
@@ -1099,6 +1115,7 @@ void MyMol::addShells(const Poldata *pd)
     /* Copy exclusions, empty the original first */
     sfree(excls_);
     excls_ = newexcls;
+    if (debug) fprintf(debug, "addShells 7\n");
 
     /*Now renumber atoms in all other plist interaction types */
     for (auto i = plist_.begin(); i < plist_.end(); ++i)
@@ -1116,6 +1133,7 @@ void MyMol::addShells(const Poldata *pd)
     }
     bHaveShells_ = true;
     sfree(shell_atom);
+    if (debug) fprintf(debug, "addShells 8\n");
 }
 
 immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
@@ -1214,24 +1232,31 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         auto nnodes = cr->nnodes;
         cr->nnodes  = 1;
+        real force2 = 0;
         try
         {
-            relax_shell_flexcon(fplog, cr, nullptr, false,
-                                nullptr, 0, inputrec_,
-                                true, force_flags, ltop_, nullptr,
-                                enerd_, fcd_, state_,
-                                f_.arrayRefWithPadding(), force_vir, mdatoms,
-                                &nrnb_, wcycle_, nullptr,
-                                &(mtop_->groups), shellfc_,
-                                fr_, t, mu_tot, vsite_->get(),
-                                DdOpenBalanceRegionBeforeForceComputation::no,
-                                DdCloseBalanceRegionAfterForceComputation::no);
+            force2 = relax_shell_flexcon(nullptr, cr, nullptr, false,
+                                         nullptr, 0, inputrec_,
+                                         true, force_flags, ltop_, nullptr,
+                                         enerd_, fcd_, state_,
+                                         f_.arrayRefWithPadding(), force_vir, mdatoms,
+                                         &nrnb_, wcycle_, nullptr,
+                                         &(mtop_->groups), shellfc_,
+                                         fr_, t, mu_tot, vsite_->get(),
+                                         DdOpenBalanceRegionBeforeForceComputation::no,
+                                         DdCloseBalanceRegionAfterForceComputation::no);
         }
         catch (gmx::SimulationInstabilityError &ex)
         {
             fprintf(stderr, "Something wrong minimizing shells for %s. Error code %d\n",
                     molProp()->getMolname().c_str(), ex.errorCode());
             imm = immShellMinimization;
+        }
+        if (force2 > inputrec_->em_tol && fplog)
+        {
+            fprintf(fplog, "Shell minimization did not converge in %d step for %s. RMS Force = %g.\n",
+                    inputrec_->niter, molProp()->getMolname().c_str(),
+                    std::sqrt(force2));
         }
         cr->nnodes = nnodes;
     }
@@ -1637,9 +1662,9 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
     *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
 }
 
-void MyMol::CalcPolarizability(double     efield,
-                               t_commrec *cr,
-                               FILE      *fplog)
+double MyMol::CalcPolarizability(double     efield,
+                                 t_commrec *cr,
+                                 FILE      *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
@@ -1664,6 +1689,7 @@ void MyMol::CalcPolarizability(double     efield,
     }
     isoPol_calc_ /= DIM;
     CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
+    return isoPol_calc_;
 }
 
 void MyMol::PrintConformation(const char *fn)

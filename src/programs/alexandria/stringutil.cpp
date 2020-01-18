@@ -143,10 +143,6 @@ double my_atof(const char *str, const char *description)
         fprintf(stderr, "Could not read double precision number %s from '%s' found %f\n", description ? description : "", str, d);
         d = -1;
     }
-    else if (strcmp(ptr, str) != 0 && debug)
-    {
-        fprintf(debug, "Double precision number '%s' read as %f.\n", str, d);
-    }
     return d;
 }
 

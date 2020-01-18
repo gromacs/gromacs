@@ -206,8 +206,10 @@ class OptACM : public MolGen, Bayes
 
 void OptACM::initChargeGeneration()
 {
-    std::string method, basis;
+    std::string method, basis, conf, type, myref, mylot;
     splitLot(lot(), &method, &basis);
+    tensor           polar      = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
+    rvec             vec;
     for (auto &mymol : mymols())
     {
         if (mymol.eSupp_ != eSupportNo)
@@ -224,6 +226,15 @@ void OptACM::initChargeGeneration()
                                  mymol.atoms_,
                                  hfac(),
                                  mymol.molProp()->getCharge());
+            double ref_pol, error, T;
+            if (mymol.molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
+                                            method, basis, "",
+                                            (char *)"electronic",
+                                            &ref_pol, &error, &T,
+                                            &myref, &mylot, vec, polar))
+            {
+                mymol.isoPol_elec_ = ref_pol;
+            }
         }
     }
 }
@@ -483,6 +494,12 @@ double OptACM::calcDeviation()
                         }
                     }
                 }
+            }
+            if (weight(ermsPolar))
+            {
+                double pol   = mymol.CalcPolarizability(10, commrec(), nullptr);
+                double diff2 = gmx::square(pol - mymol.isoPol_elec_);
+                increaseEnergy(ermsPolar, diff2);
             }
         }
     }

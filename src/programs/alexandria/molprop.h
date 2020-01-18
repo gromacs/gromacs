@@ -988,9 +988,9 @@ class CalcAtom
 {
     private:
         std::string               name_, obType_, unit_, residueName_;
-        double                    x_, y_, z_;
-        int                       atomID_, residueNumber_, chainId_;
-        char                      chain_;
+        double                    x_ = 0, y_ = 0, z_ = 0;
+        int                       atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
+        char                      chain_ = ' ';
         std::vector<AtomicCharge> q_;
     public:
         //! Default constructor

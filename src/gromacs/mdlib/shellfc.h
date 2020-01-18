@@ -74,7 +74,7 @@ void make_local_shells(const t_commrec *cr,
                        gmx_shellfc_t   *shfc);
 
 /* Optimize shell positions */
-void relax_shell_flexcon(FILE                                     *log,
+real relax_shell_flexcon(FILE                                     *log,
                          const t_commrec                          *cr,
                          const gmx_multisim_t                     *ms,
                          gmx_bool                                  bVerbose,
