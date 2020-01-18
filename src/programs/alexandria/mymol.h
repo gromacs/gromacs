@@ -259,6 +259,8 @@ class MyMol
          */
         void setQandMoments(qType qt, int natom, real q[]);
 
+        double                         isoPol_elec_   = 0;
+        double                         isoPol_calc_   = 0;
 
     public:
         double                         chieq_         = 0;
@@ -266,8 +268,6 @@ class MyMol
         double                         Hform_         = 0;
         // Target molecule energy for this compound
         double                         Emol_          = 0;
-        double                         isoPol_elec_   = 0;
-        double                         isoPol_calc_   = 0;
         double                         anisoPol_elec_ = 0;
         double                         anisoPol_calc_ = 0;
         double                         mpad_          = 0; //molecular polarizability anisotropy difference (mpad)
@@ -397,6 +397,20 @@ class MyMol
          * \param[in]  cr
          */
         void CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
+      
+        /*! \brief set the electronic polarizability
+         * \param[in] isoPol The isotropic polarizability
+         */
+        void SetElectronicPolarizability(double isoPol) { isoPol_elec_ = isoPol; }
+        /*! \brief get the electronic polarizability
+         */
+        double ElectronicPolarizability() { return isoPol_elec_; }
+        /*! \brief get the calculated polarizability
+         */
+        double CalculatedPolarizability() { return isoPol_calc_; }
+        /*! \brief Return difference between calculated and electronic polarizability 
+         */
+        double PolarizabilityDeviation() const { return isoPol_calc_ - isoPol_elec_; }
 
         /*! \brief
          * Generate atomic partial charges

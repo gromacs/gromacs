@@ -116,7 +116,7 @@ void print_polarizability(FILE              *fp,
             m_sub(mol->alpha_elec_, mol->alpha_calc_, dalpha);
             delta = sqrt(gmx::square(dalpha[XX][XX])+gmx::square(dalpha[XX][YY])+gmx::square(dalpha[XX][ZZ])+
                          gmx::square(dalpha[YY][YY])+gmx::square(dalpha[YY][ZZ]));
-            diso_pol = std::abs(mol->isoPol_elec_ - mol->isoPol_calc_);
+            diso_pol = std::abs(mol->PolarizabilityDeviation());
             fprintf(fp,
                     "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                     "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n"
@@ -130,7 +130,10 @@ void print_polarizability(FILE              *fp,
                     "", "", dalpha[ZZ][ZZ]);
             fprintf(fp,
                     "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
-                    mol->molProp()->getMolname().c_str(), mol->isoPol_elec_, mol->isoPol_calc_, diso_pol, (diso_pol > isopol_toler) ? "ZZZ" : "");
+                    mol->molProp()->getMolname().c_str(), 
+                    mol->ElectronicPolarizability(),
+                    mol->CalculatedPolarizability(), 
+                    diso_pol, (diso_pol > isopol_toler) ? "ZZZ" : "");
 
         }
         else
@@ -385,7 +388,8 @@ void print_electric_props(FILE                           *fp,
                 mol.CalcPolarizability(efield, cr, nullptr);
                 print_polarizability(fp, &mol, (char *)"Electronic", alpha_toler, isopol_toler);
                 print_polarizability(fp, &mol, (char *)"Calculated", alpha_toler, isopol_toler);
-                gmx_stats_add_point(lsq_isoPol, mol.isoPol_elec_, mol.isoPol_calc_,       0, 0);
+                gmx_stats_add_point(lsq_isoPol, mol.ElectronicPolarizability(),
+                                    mol.CalculatedPolarizability(),       0, 0);
                 gmx_stats_add_point(lsq_anisoPol, mol.anisoPol_elec_, mol.anisoPol_calc_, 0, 0);
                 for (mm = 0; mm < DIM; mm++)
                 {

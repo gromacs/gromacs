@@ -233,7 +233,7 @@ void OptACM::initChargeGeneration()
                                             &ref_pol, &error, &T,
                                             &myref, &mylot, vec, polar))
             {
-                mymol.isoPol_elec_ = ref_pol;
+                mymol.SetElectronicPolarizability(ref_pol);
             }
         }
     }
@@ -498,7 +498,7 @@ double OptACM::calcDeviation()
             if (weight(ermsPolar))
             {
                 mymol.CalcPolarizability(10, commrec(), nullptr);
-                double diff2 = gmx::square(mymol.isoPol_calc_ - mymol.isoPol_elec_);
+                double diff2 = gmx::square(mymol.PolarizabilityDeviation());
                 increaseEnergy(ermsPolar, diff2);
             }
         }
