@@ -395,9 +395,8 @@ class MyMol
          * \param[in]  efield   Strenght of the external electric field
          * \param[in]  fplog
          * \param[in]  cr
-         * \returns Isotropic polarizability
          */
-        double CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
+        void CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
 
         /*! \brief
          * Generate atomic partial charges

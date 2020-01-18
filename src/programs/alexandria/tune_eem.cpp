@@ -497,8 +497,8 @@ double OptACM::calcDeviation()
             }
             if (weight(ermsPolar))
             {
-                double pol   = mymol.CalcPolarizability(10, commrec(), nullptr);
-                double diff2 = gmx::square(pol - mymol.isoPol_elec_);
+                mymol.CalcPolarizability(10, commrec(), nullptr);
+                double diff2 = gmx::square(mymol.isoPol_calc_ - mymol.isoPol_elec_);
                 increaseEnergy(ermsPolar, diff2);
             }
         }
