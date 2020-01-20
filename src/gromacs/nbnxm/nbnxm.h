@@ -286,10 +286,10 @@ public:
      * \param[in] d_x             GPU coordinates buffer in plain rvec format to be transformed.
      * \param[in] xReadyOnDevice  Event synchronizer indicating that the coordinates are ready in the device memory.
      */
-    void convertCoordinatesGpu(gmx::AtomLocality     locality,
-                               bool                  fillLocal,
-                               DeviceBuffer<float>   d_x,
-                               GpuEventSynchronizer* xReadyOnDevice);
+    void convertCoordinatesGpu(gmx::AtomLocality       locality,
+                               bool                    fillLocal,
+                               DeviceBuffer<gmx::RVec> d_x,
+                               GpuEventSynchronizer*   xReadyOnDevice);
 
     //! Init for GPU version of setup coordinates in Nbnxm
     void atomdata_init_copy_x_to_nbat_x_gpu();
@@ -349,7 +349,7 @@ public:
      * \param [in]     accumulateForce      If the total force buffer already contains data
      */
     void atomdata_add_nbat_f_to_f_gpu(gmx::AtomLocality                          locality,
-                                      DeviceBuffer<float>                        totalForcesDevice,
+                                      DeviceBuffer<gmx::RVec>                    totalForcesDevice,
                                       void*                                      forcesPmeDevice,
                                       gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                       bool useGpuFPmeReduction,

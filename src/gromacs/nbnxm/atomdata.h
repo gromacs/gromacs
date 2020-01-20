@@ -376,12 +376,12 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
  * \param[in]     d_x        Coordinates to be copied (in plain rvec format).
  * \param[in]     xReadyOnDevice   Event synchronizer indicating that the coordinates are ready in the device memory.
  */
-void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet& gridSet,
-                                    gmx::AtomLocality     locality,
-                                    bool                  fillLocal,
-                                    NbnxmGpu*             gpu_nbv,
-                                    DeviceBuffer<float>   d_x,
-                                    GpuEventSynchronizer* xReadyOnDevice);
+void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
+                                    gmx::AtomLocality       locality,
+                                    bool                    fillLocal,
+                                    NbnxmGpu*               gpu_nbv,
+                                    DeviceBuffer<gmx::RVec> d_x,
+                                    GpuEventSynchronizer*   xReadyOnDevice);
 
 /*! \brief Add the computed forces to \p f, an internal reduction might be performed as well
  *
@@ -404,7 +404,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, gmx::AtomLocality locality, const Nbnx
  * \param[in]  accumulateForce      Whether there are usefull data already in the total force buffer.
  */
 void reduceForcesGpu(gmx::AtomLocality                          locality,
-                     DeviceBuffer<float>                        totalForcesDevice,
+                     DeviceBuffer<gmx::RVec>                    totalForcesDevice,
                      const Nbnxm::GridSet&                      gridSet,
                      void*                                      pmeForcesDevice,
                      gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,

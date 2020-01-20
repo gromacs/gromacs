@@ -451,8 +451,8 @@ GPU_FUNC_QUALIFIER void pme_gpu_reinit_computation(const gmx_pme_t* GPU_FUNC_ARG
  * \param[in] pme            The PME data structure.
  * \param[in] d_x            The pointer to the positions buffer to be set
  */
-GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*    GPU_FUNC_ARGUMENT(pme),
-                                             DeviceBuffer<float> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+GPU_FUNC_QUALIFIER void pme_gpu_set_device_x(const gmx_pme_t*        GPU_FUNC_ARGUMENT(pme),
+                                             DeviceBuffer<gmx::RVec> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
 
 /*! \brief Get pointer to device copy of force data.
  * \param[in] pme            The PME data structure.

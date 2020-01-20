@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +57,7 @@
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
+#include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/utility/gmxmpi.h"
 
@@ -435,10 +436,9 @@ GpuHaloExchange::GpuHaloExchange(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void
 
 GpuHaloExchange::~GpuHaloExchange() = default;
 
-void GpuHaloExchange::reinitHalo(DeviceBuffer<float> d_coordinatesBuffer, DeviceBuffer<float> d_forcesBuffer)
+void GpuHaloExchange::reinitHalo(DeviceBuffer<RVec> d_coordinatesBuffer, DeviceBuffer<RVec> d_forcesBuffer)
 {
-    impl_->reinitHalo(reinterpret_cast<float3*>(d_coordinatesBuffer),
-                      reinterpret_cast<float3*>(d_forcesBuffer));
+    impl_->reinitHalo(asFloat3(d_coordinatesBuffer), asFloat3(d_forcesBuffer));
 }
 
 void GpuHaloExchange::communicateHaloCoordinates(const matrix          box,

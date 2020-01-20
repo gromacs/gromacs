@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,64 +32,58 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief Declaration of class which receives coordinates to GPU memory on PME task
+/*! \internal \file
+ * \brief
+ * Tests for CUDA float3 type layout.
  *
- * \author Alan Gray <alang@nvidia.com>
- * \inlibraryapi
- * \ingroup module_ewald
+ * \author Artem Zhmurov <zhmurov@gmail.com>
  */
-#ifndef GMX_PMECOORDINATERECEIVERGPU_H
-#define GMX_PMECOORDINATERECEIVERGPU_H
+#include "gmxpre.h"
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
+#include "config.h"
+
+#include <vector>
+
+#ifndef __CUDA_ARCH__
+/*! \brief Dummy definition to avoid compiler error
+ *
+ * \todo Find a better solution. Probably, move asFloat3(...) function to different header.
+ */
+#    define __CUDA_ARCH__ -1
+#    include <cuda_runtime.h>
+#    undef __CUDA_ARCH__
+#else
+#    include <cuda_runtime.h>
+#endif
+#include <gtest/gtest.h>
+
+#include "gromacs/gpu_utils/cudautils.cuh"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/classhelpers.h"
-#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/utility/real.h"
 
-struct PpRanks;
+#if GMX_GPU == GMX_GPU_CUDA
 
 namespace gmx
 {
 
-template<typename>
-class ArrayRef;
-
-class PmeCoordinateReceiverGpu
+namespace test
 {
 
-public:
-    /*! \brief Creates PME GPU coordinate receiver object
-     * \param[in] pmeStream       CUDA stream used for PME computations
-     * \param[in] comm            Communicator used for simulation
-     * \param[in] ppRanks         List of PP ranks
-     */
-    PmeCoordinateReceiverGpu(const void* pmeStream, MPI_Comm comm, gmx::ArrayRef<PpRanks> ppRanks);
-    ~PmeCoordinateReceiverGpu();
+TEST(GpuDataTypesCompatibilityTest, RVecAndFloat3)
+{
+    std::vector<RVec> dataRVec;
+    dataRVec.emplace_back(1.0, 2.0, 3.0);
+    dataRVec.emplace_back(4.0, 5.0, 6.0);
+    float3* dataFloat3 = asFloat3(dataRVec.data());
+    EXPECT_EQ(dataFloat3[0].x, dataRVec[0][XX]);
+    EXPECT_EQ(dataFloat3[0].y, dataRVec[0][YY]);
+    EXPECT_EQ(dataFloat3[0].z, dataRVec[0][ZZ]);
+    EXPECT_EQ(dataFloat3[1].x, dataRVec[1][XX]);
+    EXPECT_EQ(dataFloat3[1].y, dataRVec[1][YY]);
+    EXPECT_EQ(dataFloat3[1].z, dataRVec[1][ZZ]);
+}
 
-    /*! \brief
-     * send coordinates buffer address to PP rank
-     * \param[in] d_x   coordinates buffer in GPU memory
-     */
-    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x);
-
-
-    /*! \brief
-     * launch receive of coordinate data from PP rank
-     * \param[in] ppRank  PP rank to send data
-     */
-    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
-
-    /*! \brief
-     * enqueue wait for coordinate data from PP ranks
-     */
-    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
-
-private:
-    class Impl;
-    gmx::PrivateImplPointer<Impl> impl_;
-};
-
+} // namespace test
 } // namespace gmx
 
-#endif
+#endif // GMX_GPU == GMX_GPU_CUDA

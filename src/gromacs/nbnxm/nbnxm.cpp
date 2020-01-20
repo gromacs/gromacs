@@ -140,7 +140,7 @@ void nonbonded_verlet_t::convertCoordinates(const gmx::AtomLocality        local
 
 void nonbonded_verlet_t::convertCoordinatesGpu(const gmx::AtomLocality locality,
                                                const bool              fillLocal,
-                                               DeviceBuffer<float>     d_x,
+                                               DeviceBuffer<gmx::RVec> d_x,
                                                GpuEventSynchronizer*   xReadyOnDevice)
 {
     wallcycle_start(wcycle_, ewcNB_XF_BUF_OPS);
@@ -178,7 +178,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
 }
 
 void nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const gmx::AtomLocality locality,
-                                                      DeviceBuffer<float>     totalForcesDevice,
+                                                      DeviceBuffer<gmx::RVec> totalForcesDevice,
                                                       void*                   forcesPmeDevice,
                                                       gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                                       bool useGpuFPmeReduction,

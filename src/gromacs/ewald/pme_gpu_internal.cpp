@@ -1523,7 +1523,7 @@ void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
     }
 }
 
-void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<float> d_x)
+void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<gmx::RVec> d_x)
 {
     GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
                "PME GPU device buffer can not be set in non-GPU builds or before the GPU PME was "

@@ -69,7 +69,7 @@ PmeCoordinateReceiverGpu::Impl::Impl(const void* pmeStream, MPI_Comm comm, gmx::
 
 PmeCoordinateReceiverGpu::Impl::~Impl() = default;
 
-void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x)
+void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x)
 {
 
     int ind_start = 0;
@@ -80,7 +80,7 @@ void PmeCoordinateReceiverGpu::Impl::sendCoordinateBufferAddressToPpRanks(Device
         ind_end   = ind_start + receiver.numAtoms;
 
         // Data will be transferred directly from GPU.
-        void* sendBuf = reinterpret_cast<void*>(&d_x[ind_start * DIM]);
+        void* sendBuf = reinterpret_cast<void*>(&d_x[ind_start]);
 
 #if GMX_MPI
         MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
@@ -131,7 +131,7 @@ PmeCoordinateReceiverGpu::PmeCoordinateReceiverGpu(const void*            pmeStr
 
 PmeCoordinateReceiverGpu::~PmeCoordinateReceiverGpu() = default;
 
-void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x)
+void PmeCoordinateReceiverGpu::sendCoordinateBufferAddressToPpRanks(DeviceBuffer<RVec> d_x)
 {
     impl_->sendCoordinateBufferAddressToPpRanks(d_x);
 }

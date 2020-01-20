@@ -157,7 +157,7 @@ struct PmeGpuAtomParams
      * The coordinates themselves change and need to be copied to the GPU for every PME computation,
      * but reallocation happens only at DD.
      */
-    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<float>) d_coordinates;
+    HIDE_FROM_OPENCL_COMPILER(DeviceBuffer<gmx::RVec>) d_coordinates;
     /*! \brief Global GPU memory array handle with input atom charges.
      * The charges only need to be reallocated and copied to the GPU at DD step.
      */

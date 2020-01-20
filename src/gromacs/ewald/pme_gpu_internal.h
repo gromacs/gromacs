@@ -395,7 +395,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                GPU_FUNC_ARGUMENT(
  * \param[in] d_x            Pointer to coordinate data
  */
 GPU_FUNC_QUALIFIER void pme_gpu_set_kernelparam_coordinates(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
-                                                            DeviceBuffer<float> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
+                                                            DeviceBuffer<gmx::RVec> GPU_FUNC_ARGUMENT(d_x)) GPU_FUNC_TERM;
 
 /*! \brief Return pointer to device copy of force data.
  * \param[in] pmeGpu         The PME GPU structure.

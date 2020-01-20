@@ -215,6 +215,19 @@ static inline void rvec_inc(rvec a, const float3 b)
     rvec tmp = { b.x, b.y, b.z };
     rvec_inc(a, tmp);
 }
+/*! \brief Cast RVec buffer to float3 buffer.
+ *
+ * \param[in] in The RVec buffer to cast.
+ *
+ * \returns Buffer, casted to float3*.
+ */
+static inline __host__ __device__ float3* asFloat3(gmx::RVec* in)
+{
+    static_assert(sizeof(in[0]) == sizeof(float3),
+                  "Size of the host-side data-type is different from the size of the device-side "
+                  "counterpart.");
+    return reinterpret_cast<float3*>(in);
+}
 
 /*! \brief Wait for all taks in stream \p s to complete.
  *

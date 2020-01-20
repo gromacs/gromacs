@@ -228,7 +228,7 @@ void clearDeviceBufferAsync(DeviceBuffer<ValueType>* buffer, size_t startingOffs
     GMX_ASSERT(buffer, "needs a buffer pointer");
     const size_t    offset        = startingOffset * sizeof(ValueType);
     const size_t    bytes         = numValues * sizeof(ValueType);
-    const ValueType pattern       = 0;
+    const int       pattern       = 0;
     const cl_uint   numWaitEvents = 0;
     const cl_event* waitEvents    = nullptr;
     cl_event        commandEvent;

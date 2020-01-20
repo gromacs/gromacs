@@ -88,9 +88,9 @@ void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainGpu::set(DeviceBuffer<float> /* d_x */,
-                             DeviceBuffer<float> /* d_v */,
-                             const DeviceBuffer<float> /* d_f */,
+void UpdateConstrainGpu::set(DeviceBuffer<RVec> /* d_x */,
+                             DeviceBuffer<RVec> /* d_v */,
+                             const DeviceBuffer<RVec> /* d_f */,
                              const t_idef& /* idef */,
                              const t_mdatoms& /* md */,
                              const int /* numTempScaleValues */)

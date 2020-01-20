@@ -818,7 +818,7 @@ void cuda_set_cacheconfig()
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                            bool                      setFillerCoords,
                            NbnxmGpu*                 nb,
-                           DeviceBuffer<float>       d_x,
+                           DeviceBuffer<gmx::RVec>   d_x,
                            GpuEventSynchronizer*     xReadyOnDevice,
                            const Nbnxm::AtomLocality locality,
                            int                       gridId,
@@ -862,12 +862,13 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
                                         : nbnxn_gpu_x_to_nbat_x_kernel<false>;
         float4*    d_xq          = adat->xq;
+        float3*    d_xFloat3     = asFloat3(d_x);
         const int* d_atomIndices = nb->atomIndices;
         const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
         const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
-        const auto kernelArgs =
-                prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq, &d_x, &d_atomIndices,
-                                          &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
+        const auto kernelArgs    = prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq,
+                                                          &d_xFloat3, &d_atomIndices, &d_cxy_na,
+                                                          &d_cxy_ind, &cellOffset, &numAtomsPerCell);
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }
 
@@ -884,7 +885,7 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
  *       forces only after Local stream already done so.
  */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
-                               DeviceBuffer<float>                        totalForcesDevice,
+                               DeviceBuffer<gmx::RVec>                    totalForcesDevice,
                                NbnxmGpu*                                  nb,
                                void*                                      pmeForcesDevice,
                                gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
@@ -935,8 +936,8 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
     }
 
     const float3* d_fNB    = adat->f;
-    const float3* d_fPme   = (float3*)pmeForcesDevice;
-    float3*       d_fTotal = (float3*)totalForcesDevice;
+    const float3* d_fPme   = static_cast<float3*>(pmeForcesDevice);
+    float3*       d_fTotal = asFloat3(totalForcesDevice);
     const int*    d_cell   = nb->cell;
 
     const auto kernelArgs = prepareGpuKernelArguments(kernelFn, config, &d_fNB, &d_fPme, &d_fTotal,

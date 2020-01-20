@@ -1075,7 +1075,7 @@ void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet&   gridSet,
                                     const gmx::AtomLocality locality,
                                     bool                    fillLocal,
                                     NbnxmGpu*               gpu_nbv,
-                                    DeviceBuffer<float>     d_x,
+                                    DeviceBuffer<RVec>      d_x,
                                     GpuEventSynchronizer*   xReadyOnDevice)
 {
 
@@ -1459,7 +1459,7 @@ void reduceForces(nbnxn_atomdata_t* nbat, const gmx::AtomLocality locality, cons
 
 /* Add the force array(s) from nbnxn_atomdata_t to f */
 void reduceForcesGpu(const gmx::AtomLocality                    locality,
-                     DeviceBuffer<float>                        totalForcesDevice,
+                     DeviceBuffer<RVec>                         totalForcesDevice,
                      const Nbnxm::GridSet&                      gridSet,
                      void*                                      pmeForcesDevice,
                      gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,

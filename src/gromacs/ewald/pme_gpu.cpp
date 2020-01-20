@@ -440,7 +440,7 @@ void* pme_gpu_get_device_f(const gmx_pme_t* pme)
     return pme_gpu_get_kernelparam_forces(pme->gpu);
 }
 
-void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<float> d_x)
+void pme_gpu_set_device_x(const gmx_pme_t* pme, DeviceBuffer<gmx::RVec> d_x)
 {
     GMX_ASSERT(pme != nullptr, "Null pointer is passed as a PME to the set coordinates function.");
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
