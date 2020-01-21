@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,16 +43,20 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/molecules.h"
 
 #include <iostream>
 
+#include "gromacs/nblib/atomtype.h"
+
 #include "testutils/testasserts.h"
 
-namespace nblib {
-namespace test {
-namespace {
+namespace nblib
+{
+namespace test
+{
+namespace
+{
 
 struct ArAtom
 {
@@ -155,14 +159,12 @@ TEST(NBlibTest, CanConstructExclusionListFromNames)
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
-    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
-                                                 {1,0}, {1,1}, {1,2},
-                                                 {2,0}, {2,1}, {2,2}};
+    std::vector<std::tuple<int, int>> reference{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
 
     ASSERT_EQ(exclusions.size(), 9);
     for (std::size_t i = 0; i < exclusions.size(); ++i)
         EXPECT_EQ(exclusions[i], reference[i]);
-
 }
 
 TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
@@ -188,16 +190,14 @@ TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
-    std::vector<std::tuple<int, int>> reference{ {0,0}, {0,1}, {0,2},
-                                                 {1,0}, {1,1}, {1,2},
-                                                 {2,0}, {2,1}, {2,2}};
+    std::vector<std::tuple<int, int>> reference{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
 
     ASSERT_EQ(exclusions.size(), 9);
     for (std::size_t i = 0; i < exclusions.size(); ++i)
         EXPECT_EQ(exclusions[i], reference[i]);
-
 }
 
-}  // namespace
-}  // namespace test
-}  // namespace nblib
+} // namespace
+} // namespace test
+} // namespace nblib

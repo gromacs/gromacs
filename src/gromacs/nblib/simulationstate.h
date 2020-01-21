@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,10 +47,9 @@
 
 #include <vector>
 
-#include "box.h"
-#include "topology.h"
+#include "gromacs/nblib/box.h"
+#include "gromacs/nblib/topology.h"
 
-struct t_blocka;
 struct RVec;
 
 namespace nblib
@@ -66,10 +65,11 @@ namespace nblib
 class SimulationState
 {
 public:
-
     //! Constructor
-    SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
-             const std::vector<gmx::RVec> &vel = {});
+    SimulationState(const std::vector<gmx::RVec>& coord,
+                    Box                           box,
+                    Topology&                     topo,
+                    const std::vector<gmx::RVec>& vel = {});
 
     //! Copy Constructor
     SimulationState(const SimulationState& simulationState);
@@ -98,10 +98,9 @@ public:
 
 private:
     std::vector<gmx::RVec> coordinates_;
-    Box box_;
-    Topology topology_;
+    Box                    box_;
+    Topology               topology_;
     std::vector<gmx::RVec> velocities_;
-
 };
 
 } // namespace nblib

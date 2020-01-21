@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,14 +43,13 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
 #include "topology.h"
-#include "util.h"
 
 #include <numeric>
 
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/topology/block.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/util.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -61,11 +60,12 @@ namespace nblib
 namespace detail
 {
 
+// Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
+
+// add offset to all indices in inBlock
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
 
-
-//! Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList)
 {
     std::vector<gmx::ExclusionBlock> ret;
@@ -101,7 +101,6 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
     return ret;
 }
 
-//! add offset to all indices in inBlock
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset)
 {
     //! shift atom numbers by offset
@@ -185,8 +184,8 @@ Topology TopologyBuilder::buildTopology()
 {
     topology_.numAtoms_ = numAtoms_;
 
-    topology_.exclusions_  = createExclusionsListOfLists();
-    topology_.masses_ = extractAtomTypeQuantity<real>(
+    topology_.exclusions_ = createExclusionsListOfLists();
+    topology_.masses_     = extractAtomTypeQuantity<real>(
             [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
     topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
