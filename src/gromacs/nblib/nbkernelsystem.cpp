@@ -71,7 +71,7 @@ NBKernelSystem::NBKernelSystem(SimulationState simState)
 
     charges        = topology.getCharges();
     masses         = topology.getMasses();
-    excls          = topology.getGMXexclusions();
+    excls          = topology.getGmxExclusions();
     atomInfoAllVdw = topology.getAtomInfoAllVdw();
 
     std::vector<std::tuple<real, real>> nblibNonbonded = topology.getNonbondedParameters();
@@ -91,7 +91,7 @@ NBKernelSystem::NBKernelSystem(SimulationState simState)
 
     //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
     fillLegacyMatrix(simState.box().matrix(), box);
-    put_atoms_in_box(epbcXYZ, box, coordinates);
+    put_atoms_in_box(PbcType::Xyz, box, coordinates);
 
     atomTypes.resize(topology.numAtoms());
     //! This needs to be filled with the atomTypes that correspond to the nonbonded params

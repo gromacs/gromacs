@@ -49,6 +49,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 
 #include "box.h"
 
@@ -84,7 +85,7 @@ public:
     //! Storage for atom velocities.
     std::vector<gmx::RVec> velocities;
     //! Information about exclusions.
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
 };
 
 } // namespace nblib

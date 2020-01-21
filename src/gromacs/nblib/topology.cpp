@@ -118,7 +118,7 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 
 TopologyBuilder::TopologyBuilder() : numAtoms_(0) {}
 
-t_blocka TopologyBuilder::createExclusionsList() const
+gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
 {
     const auto& moleculesList = molecules_;
 
@@ -146,19 +146,13 @@ t_blocka TopologyBuilder::createExclusionsList() const
         }
     }
 
-    size_t numberOfExclusions = std::accumulate(
-            std::begin(exclusionBlockGlobal), std::end(exclusionBlockGlobal), size_t(0),
-            [](size_t acc, const auto& block) { return acc + block.atomNumber.size(); });
+    gmx::ListOfLists<int> exclusionsListOfListsGlobal;
+    for (const auto& block : exclusionBlockGlobal)
+    {
+        exclusionsListOfListsGlobal.pushBack(block.atomNumber);
+    }
 
-    //! At the very end, convert the exclusionBlockGlobal into
-    //! a massive t_blocka and return
-    t_blocka tBlockGlobal;
-    snew(tBlockGlobal.index, numAtoms_ + 1);
-    snew(tBlockGlobal.a, numberOfExclusions + 1);
-
-    gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
-
-    return tBlockGlobal;
+    return exclusionsListOfListsGlobal;
 }
 
 template<typename T, class Extractor>
@@ -191,7 +185,7 @@ Topology TopologyBuilder::buildTopology()
 {
     topology_.numAtoms_ = numAtoms_;
 
-    topology_.excls_  = createExclusionsList();
+    topology_.exclusions_  = createExclusionsListOfLists();
     topology_.masses_ = extractAtomTypeQuantity<real>(
             [](const auto& data, auto& map) { return map[data.atomTypeName_].mass(); });
     topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {

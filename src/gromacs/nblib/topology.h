@@ -48,6 +48,7 @@
 
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 
 #include "molecules.h"
 
@@ -97,11 +98,11 @@ public:
     //! Returns full list of nonbondedParameters
     const std::vector<std::tuple<real, real>>& getNonbondedParameters() const;
 
+    //! Returns a bit-masked vector indicating if an atom has VDW params
     const std::vector<int>& getAtomInfoAllVdw() const;
 
-    // TODO: This function is only needed for testing. Need
-    //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const { return excls_; }
+    //! Returns exclusions in proper, performant, gromacs layout
+    const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
 
 private:
     Topology() = default;
@@ -123,7 +124,7 @@ private:
     //! Atom info where all atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoAllVdw_;
     //! Information about exclusions.
-    t_blocka excls_;
+    gmx::ListOfLists<int> exclusions_;
 };
 
 /*! \libinternal
@@ -162,7 +163,7 @@ private:
     std::vector<std::tuple<Molecule, int>> molecules_;
 
     //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
-    t_blocka createExclusionsList() const;
+    gmx::ListOfLists<int> createExclusionsListOfLists() const;
 
     //! Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>
