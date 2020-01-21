@@ -70,7 +70,7 @@ GmxNonbondedData::GmxNonbondedData(Topology topology)
 
     charges        = topology.getCharges();
     masses         = topology.getMasses();
-    excls          = topology.getGMXexclusions();
+    excls          = topology.getGmxExclusions();
     atomInfoAllVdw = topology.getAtomInfoAllVdw();
 
     std::vector<std::tuple<real, real>> nblibNonbonded = topology.getNonbondedParameters();
@@ -83,6 +83,10 @@ GmxNonbondedData::GmxNonbondedData(Topology topology)
 
     //! Todo: move this to the appropriate place
     //put_atoms_in_box(epbcXYZ, box, coordinates);
+
+    //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
+    fillLegacyMatrix(simState.box().matrix(), box);
+    put_atoms_in_box(PbcType::Xyz, box, coordinates);
 
     atomTypes.resize(topology.numAtoms());
     //! This needs to be filled with the atomTypes that correspond to the nonbonded params

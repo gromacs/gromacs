@@ -49,6 +49,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 
 #include "box.h"
 #include "topology.h"
@@ -79,7 +80,7 @@ public:
     //! Atom info where all atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoAllVdw;
     //! Information about exclusions.
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
 };
 
 } // namespace nblib
