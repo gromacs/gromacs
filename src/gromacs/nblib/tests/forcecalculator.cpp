@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,8 +43,9 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/forcecalculator.h"
+
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/nbkernelsystem.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
@@ -72,12 +73,12 @@ public:
     std::vector<gmx::RVec> coordinates;
     std::vector<gmx::RVec> velocities;
 
-    Box box;
+    Box             box;
     TopologyBuilder topologyBuilder;
 
     KernelSystemTester() : box(7.25449)
     {
-     	constexpr int numWaters = 2;
+        constexpr int numWaters = 2;
 
         //! Define Atom Type
         AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
@@ -99,34 +100,26 @@ public:
         // Todo: Add bonds functionality so this can be used/tested
         // water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
         // water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
-        
+
         //! Add some molecules to the topology
         topologyBuilder.addMolecule(water, numWaters);
 
         coordinates = {
-                  { 0.569,   1.275,   1.165 },
-                  { 0.476,   1.268,   1.128 },
-                  { 0.580,   1.364,   1.209 },
-                  { 1.555,   1.511,   0.703 },
-                  { 1.498,   1.495,   0.784 },
-                  { 1.496,   1.521,   0.623 },
+            { 0.569, 1.275, 1.165 }, { 0.476, 1.268, 1.128 }, { 0.580, 1.364, 1.209 },
+            { 1.555, 1.511, 0.703 }, { 1.498, 1.495, 0.784 }, { 1.496, 1.521, 0.623 },
         };
 
         velocities = {
-               { 0.569,   1.215,   1.965 },
-               { 0.669,   1.225,   1.865 },
-               { 0.769,   1.235,   1.765 },
-               { 0.869,   1.245,   1.665 },
-               { 0.169,   0.275,   1.565 },
-               { 0.269,   2.275,   1.465 },
+            { 0.569, 1.215, 1.965 }, { 0.669, 1.225, 1.865 }, { 0.769, 1.235, 1.765 },
+            { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
 
     NBKernelSystem setupKernelSystem()
     {
-        Topology topology = topologyBuilder.buildTopology();
-        auto simState = SimulationState(coordinates, box, topology, velocities);
-        auto nbKernelSystem = NBKernelSystem(simState);
+        Topology topology       = topologyBuilder.buildTopology();
+        auto     simState       = SimulationState(coordinates, box, topology, velocities);
+        auto     nbKernelSystem = NBKernelSystem(simState);
         return nbKernelSystem;
     }
 };

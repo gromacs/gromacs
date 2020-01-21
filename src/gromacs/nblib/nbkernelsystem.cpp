@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,22 +44,21 @@
  */
 #include "gmxpre.h"
 
-#include <algorithm>
-
 #include "nbkernelsystem.h"
+
+#include <algorithm>
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "atomtype.h"
-#include "simulationstate.h"
 
 namespace nblib
 {

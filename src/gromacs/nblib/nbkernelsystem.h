@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,11 +48,9 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/box.h"
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/listoflists.h"
-
-#include "box.h"
-#include "topology.h"
 
 namespace nblib
 {
@@ -64,8 +62,7 @@ class SimulationState;
 class GmxNonbondedData
 {
 public:
-    //! \brief Constructor
-    GmxNonbondedData(Topology topology);
+    NBKernelSystem(SimulationState simState);
 
     //! Number of different atom types in test system.
     int numAtoms;
