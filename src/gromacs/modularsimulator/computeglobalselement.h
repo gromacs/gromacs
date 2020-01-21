@@ -67,8 +67,7 @@ class MDLogger;
 enum class ComputeGlobalsAlgorithm
 {
     LeapFrog,
-    VelocityVerletAtFullTimeStep,
-    VelocityVerletAfterCoordinateUpdate
+    VelocityVerlet
 };
 
 //! The function type allowing to request a check of the number of bonded interactions
@@ -160,6 +159,9 @@ private:
     Step energyReductionStep_;
     //! Next step at which virial needs to be reduced
     Step virialReductionStep_;
+
+    //! For VV only, we need to schedule twice per step. This keeps track of the scheduling stage.
+    Step vvSchedulingStep_;
 
     //! Whether center of mass motion stopping is enabled
     const bool doStopCM_;
