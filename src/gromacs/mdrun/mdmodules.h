@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,6 +143,22 @@ public:
      * Returns an object for computing forces from the modules.
      */
     ForceProviders* initForceProviders();
+
+    /*! \brief Subscribe MdModules to simulation setup notifications.
+     *
+     * Allows MdModules to subscribe to notifications that are called back
+     * during the set up of an MD simulation, after the options were
+     * assigned to the modules.
+     */
+    void subscribeToSimulationSetupNotifications();
+
+    /*! \brief Subscribe MdModules to notifications during pre-processing.
+     *
+     * Allows MdModules to subscribe to notifications that are called back
+     * during pre processing an MD simulation, after the options were
+     * assigned to the modules.
+     */
+    void subscribeToPreProcessingNotifications();
 
     /*!
      * \brief Add a module to the container.

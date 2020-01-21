@@ -910,6 +910,8 @@ int Mdrunner::mdrunner()
 
     // TODO: Error handling
     mdModules_->assignOptionsToModules(*inputrec->params, nullptr);
+    // now that the MdModules know their options, they know which callbacks to sign up to
+    mdModules_->subscribeToSimulationSetupNotifications();
     const auto& mdModulesNotifier = mdModules_->notifier().simulationSetupNotifications_;
 
     if (inputrec->internalParameters != nullptr)

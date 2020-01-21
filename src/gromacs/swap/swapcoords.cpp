@@ -126,6 +126,8 @@ class SwapCoordinates final : public IMDModule
     IMdpOptionProvider* mdpOptionProvider() override { return nullptr; }
     IMDOutputProvider*  outputProvider() override { return nullptr; }
     void                initForceProviders(ForceProviders* /* forceProviders */) override {}
+    void subscribeToSimulationSetupNotifications(MdModulesNotifier* /* notifier */) override {}
+    void subscribeToPreProcessingNotifications(MdModulesNotifier* /* notifier */) override {}
 };
 
 std::unique_ptr<IMDModule> createSwapCoordinatesModule()

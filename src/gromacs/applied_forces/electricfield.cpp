@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -170,6 +170,9 @@ public:
     //! \copydoc IForceProvider::calculateForces()
     void calculateForces(const ForceProviderInput& forceProviderInput,
                          ForceProviderOutput*      forceProviderOutput) override;
+
+    void subscribeToSimulationSetupNotifications(MdModulesNotifier* /* notifier */) override {}
+    void subscribeToPreProcessingNotifications(MdModulesNotifier* /* notifier */) override {}
 
 private:
     //! Return whether or not to apply a field

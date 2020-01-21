@@ -1856,6 +1856,11 @@ int gmx_grompp(int argc, char* argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
+    // Now that the MdModules have their options assigned from get_ir, subscribe
+    // to eventual notifications during pre-processing their data
+    mdModules.subscribeToPreProcessingNotifications();
+
+
     if (bVerbose)
     {
         GMX_LOG(logger.info)
