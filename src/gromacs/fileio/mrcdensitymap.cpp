@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -168,18 +168,30 @@ public:
     const MrcDensityMapOfFloatReader& reader() const;
 
 private:
-    std::vector<char>                buffer_;
-    InMemoryDeserializer             serializer_;
-    const MrcDensityMapOfFloatReader reader_;
+    const std::vector<char>                     buffer_;
+    std::unique_ptr<InMemoryDeserializer>       serializer_;
+    std::unique_ptr<MrcDensityMapOfFloatReader> reader_;
 };
 
 MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::string& filename) :
     buffer_(readCharBufferFromFile(filename)),
-    serializer_(buffer_, false),
-    reader_(&serializer_)
+    serializer_(std::make_unique<InMemoryDeserializer>(buffer_, false)),
+    reader_(std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get()))
 {
-    layout_right::mapping<dynamicExtents3D> map(getDynamicExtents3D(reader_.header()));
-    if (map.required_span_size() != reader_.constView().ssize())
+    if (!mrcHeaderIsSane(reader_->header()))
+    {
+        serializer_ = std::make_unique<InMemoryDeserializer>(buffer_, false, EndianSwapBehavior::Swap);
+        reader_     = std::make_unique<MrcDensityMapOfFloatReader>(serializer_.get());
+        if (!mrcHeaderIsSane(reader_->header()))
+        {
+            GMX_THROW(FileIOError(
+                    "Header of '" + filename
+                    + "' fails sanity check for little- as well as big-endian reading."));
+        }
+    }
+
+    layout_right::mapping<dynamicExtents3D> map(getDynamicExtents3D(reader_->header()));
+    if (map.required_span_size() != reader_->constView().ssize())
     {
         GMX_THROW(FileIOError("File header density extent information of " + filename
                               + "' does not match density data size"));
@@ -188,7 +200,7 @@ MrcDensityMapOfFloatFromFileReader::Impl::Impl(const std::string& filename) :
 
 const MrcDensityMapOfFloatReader& MrcDensityMapOfFloatFromFileReader::Impl::reader() const
 {
-    return reader_;
+    return *reader_;
 }
 
 /********************************************************************

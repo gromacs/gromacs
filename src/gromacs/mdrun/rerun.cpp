@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,8 +61,8 @@
 #include "gromacs/domdec/mdsetup.h"
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
-#include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_load_balancing.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
@@ -173,11 +173,11 @@ static void prepareRerunState(const t_trxframe&  rerunFrame,
             /* Following is necessary because the graph may get out of sync
              * with the coordinates if we only have every N'th coordinate set
              */
-            mk_mshift(nullptr, graph, forceRec.ePBC, globalState->box, globalState->x.rvec_array());
+            mk_mshift(nullptr, graph, forceRec.pbcType, globalState->box, globalState->x.rvec_array());
             shift_self(graph, globalState->box, as_rvec_array(globalState->x.data()));
         }
         construct_vsites(vsite, globalState->x.rvec_array(), timeStep, globalState->v.rvec_array(),
-                         idef.iparams, idef.il, forceRec.ePBC, forceRec.bMolPBC, nullptr,
+                         idef.iparams, idef.il, forceRec.pbcType, forceRec.bMolPBC, nullptr,
                          globalState->box);
         if (graph)
         {
@@ -305,7 +305,8 @@ void gmx::LegacySimulator::do_rerun()
     gmx_mdoutf* outf = init_mdoutf(fplog, nfile, fnm, mdrunOptions, cr, outputProvider, mdModulesNotifier,
                                    ir, top_global, oenv, wcycle, StartingBehavior::NewSimulation);
     gmx::EnergyOutput energyOutput(mdoutf_get_fp_ene(outf), top_global, ir, pull_work,
-                                   mdoutf_get_fp_dhdl(outf), true, mdModulesNotifier);
+                                   mdoutf_get_fp_dhdl(outf), true, StartingBehavior::NewSimulation,
+                                   mdModulesNotifier);
 
     gstat = global_stat_init(ir);
 
@@ -426,7 +427,7 @@ void gmx::LegacySimulator::do_rerun()
                       rerun_fr.natoms, top_global->natoms);
         }
 
-        if (ir->ePBC != epbcNONE)
+        if (ir->pbcType != PbcType::No)
         {
             if (!rerun_fr.bBox)
             {
@@ -436,7 +437,7 @@ void gmx::LegacySimulator::do_rerun()
                           "does not contain a box, while pbc is used",
                           rerun_fr.step, rerun_fr.time);
             }
-            if (max_cutoff2(ir->ePBC, rerun_fr.box) < gmx::square(fr->rlist))
+            if (max_cutoff2(ir->pbcType, rerun_fr.box) < gmx::square(fr->rlist))
             {
                 gmx_fatal(FARGS,
                           "Rerun trajectory frame step %" PRId64
@@ -458,7 +459,7 @@ void gmx::LegacySimulator::do_rerun()
         rerun_parallel_comm(cr, &rerun_fr, &isLastStep);
     }
 
-    if (ir->ePBC != epbcNONE)
+    if (ir->pbcType != PbcType::No)
     {
         /* Set the shift vectors.
          * Necessary here when have a static box different from the tpr box.
@@ -600,7 +601,7 @@ void gmx::LegacySimulator::do_rerun()
             }
             construct_vsites(vsite, as_rvec_array(state->x.data()), ir->delta_t,
                              as_rvec_array(state->v.data()), top.idef.iparams, top.idef.il,
-                             fr->ePBC, fr->bMolPBC, cr, state->box);
+                             fr->pbcType, fr->bMolPBC, cr, state->box);
 
             if (graph != nullptr)
             {

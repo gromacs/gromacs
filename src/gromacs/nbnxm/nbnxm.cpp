@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,10 @@
 #include "nbnxm.h"
 
 #include "gromacs/domdec/domdec_struct.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/wallcycle.h"
 
-#include "atomdata.h"
+#include "nbnxm_gpu.h"
 #include "pairlistsets.h"
 #include "pairsearch.h"
 
@@ -162,7 +163,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f(const gmx::AtomLocality  local
 
     /* Skip the reduction if there was no short-range GPU work to do
      * (either NB or both NB and bonded work). */
-    if (!pairlistIsSimple() && !haveGpuShortRangeWork(locality))
+    if (!pairlistIsSimple() && !Nbnxm::haveGpuShortRangeWork(gpu_nbv, locality))
     {
         return;
     }
@@ -190,7 +191,7 @@ void nonbonded_verlet_t::atomdata_add_nbat_f_to_f_gpu(const gmx::AtomLocality lo
 
     /* Skip the reduction if there was no short-range GPU work to do
      * (either NB or both NB and bonded work). */
-    if (!pairlistIsSimple() && !haveGpuShortRangeWork(locality))
+    if (!pairlistIsSimple() && !Nbnxm::haveGpuShortRangeWork(gpu_nbv, locality))
     {
         return;
     }
@@ -235,6 +236,15 @@ void nonbonded_verlet_t::changePairlistRadii(real rlistOuter, real rlistInner)
     pairlistSets_->changePairlistRadii(rlistOuter, rlistInner);
 }
 
+void nonbonded_verlet_t::setupGpuShortRangeWork(const gmx::GpuBonded*          gpuBonded,
+                                                const gmx::InteractionLocality iLocality)
+{
+    if (useGpu() && !emulateGpu())
+    {
+        Nbnxm::setupGpuShortRangeWork(gpu_nbv, gpuBonded, iLocality);
+    }
+}
+
 void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu()
 {
     Nbnxm::nbnxn_gpu_init_x_to_nbat_x(pairSearch_->gridSet(), gpu_nbv);
@@ -243,16 +253,6 @@ void nonbonded_verlet_t::atomdata_init_copy_x_to_nbat_x_gpu()
 void nonbonded_verlet_t::insertNonlocalGpuDependency(const gmx::InteractionLocality interactionLocality)
 {
     Nbnxm::nbnxnInsertNonlocalGpuDependency(gpu_nbv, interactionLocality);
-}
-
-void nonbonded_verlet_t::wait_nonlocal_x_copy_D2H_done()
-{
-    Nbnxm::nbnxn_wait_nonlocal_x_copy_D2H_done(gpu_nbv);
-}
-
-void nonbonded_verlet_t::stream_local_wait_for_nonlocal()
-{
-    Nbnxm::nbnxn_stream_local_wait_for_nonlocal(gpu_nbv);
 }
 
 /*! \endcond */

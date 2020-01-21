@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -80,6 +80,7 @@ struct t_commrec;
 struct t_enxframe;
 struct t_inputrec;
 struct t_mdatoms;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -153,7 +154,7 @@ public:
      * for this).
      *
      * \param[in]     mdatoms          Atom properties.
-     * \param[in]     ePBC             Type of periodic boundary conditions.
+     * \param[in]     pbcType          Type of periodic boundary conditions.
      * \param[in]     box              Box vectors.
      * \param[in,out] forceWithVirial  Force and virial buffers, should cover at least the local atoms.
      * \param[in]     t                Time.
@@ -162,7 +163,7 @@ public:
      * \param[in,out] fplog            General output file, normally md.log, can be nullptr.
      * \returns the potential energy for the bias.
      */
-    real applyBiasForcesAndUpdateBias(int                   ePBC,
+    real applyBiasForcesAndUpdateBias(PbcType               pbcType,
                                       const t_mdatoms&      mdatoms,
                                       const matrix          box,
                                       gmx::ForceWithVirial* forceWithVirial,

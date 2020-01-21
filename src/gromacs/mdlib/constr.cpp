@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,7 +73,6 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pulling/pull.h"
 #include "gromacs/timing/wallcycle.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/mtop_lookup.h"
 #include "gromacs/topology/mtop_util.h"
@@ -80,8 +80,8 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/pleasecite.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
 namespace gmx
@@ -113,26 +113,26 @@ public:
          int                   numSettles);
     ~Impl();
     void setConstraints(const gmx_localtop_t& top, const t_mdatoms& md);
-    bool apply(bool               bLog,
-               bool               bEner,
-               int64_t            step,
-               int                delta_step,
-               real               step_scaling,
-               rvec*              x,
-               rvec*              xprime,
-               rvec*              min_proj,
-               const matrix       box,
-               real               lambda,
-               real*              dvdlambda,
-               rvec*              v,
-               tensor*            vir,
-               ConstraintVariable econq);
+    bool apply(bool                      bLog,
+               bool                      bEner,
+               int64_t                   step,
+               int                       delta_step,
+               real                      step_scaling,
+               ArrayRefWithPadding<RVec> x,
+               ArrayRefWithPadding<RVec> xprime,
+               ArrayRef<RVec>            min_proj,
+               const matrix              box,
+               real                      lambda,
+               real*                     dvdlambda,
+               ArrayRefWithPadding<RVec> v,
+               tensor*                   vir,
+               ConstraintVariable        econq);
     //! The total number of constraints.
     int ncon_tot = 0;
     //! The number of flexible constraints.
     int nflexcon = 0;
     //! A list of atoms to constraints for each moleculetype.
-    std::vector<t_blocka> at2con_mt;
+    std::vector<ListOfLists<int>> at2con_mt;
     //! A list of atoms to settles for each moleculetype
     std::vector<std::vector<int>> at2settle_mt;
     //! LINCS data.
@@ -206,7 +206,7 @@ bool Constraints::havePerturbedConstraints() const
 }
 
 //! Clears constraint quantities for atoms in nonlocal region.
-static void clear_constraint_quantity_nonlocal(gmx_domdec_t* dd, rvec* q)
+static void clear_constraint_quantity_nonlocal(gmx_domdec_t* dd, ArrayRef<RVec> q)
 {
     int nonlocal_at_start, nonlocal_at_end, at;
 
@@ -231,14 +231,14 @@ void too_many_constraint_warnings(int eConstrAlg, int warncount)
 }
 
 //! Writes out coordinates.
-static void write_constr_pdb(const char*       fn,
-                             const char*       title,
-                             const gmx_mtop_t& mtop,
-                             int               start,
-                             int               homenr,
-                             const t_commrec*  cr,
-                             const rvec        x[],
-                             const matrix      box)
+static void write_constr_pdb(const char*          fn,
+                             const char*          title,
+                             const gmx_mtop_t&    mtop,
+                             int                  start,
+                             int                  homenr,
+                             const t_commrec*     cr,
+                             ArrayRef<const RVec> x,
+                             const matrix         box)
 {
     char          fname[STRLEN];
     FILE*         out;
@@ -267,7 +267,7 @@ static void write_constr_pdb(const char*       fn,
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, -1, box);
+    gmx_write_pdb_box(out, PbcType::Unset, box);
     int molb = 0;
     for (i = start; i < start + homenr; i++)
     {
@@ -293,15 +293,15 @@ static void write_constr_pdb(const char*       fn,
 }
 
 //! Writes out domain contents to help diagnose crashes.
-static void dump_confs(FILE*             log,
-                       int64_t           step,
-                       const gmx_mtop_t& mtop,
-                       int               start,
-                       int               homenr,
-                       const t_commrec*  cr,
-                       const rvec        x[],
-                       rvec              xprime[],
-                       const matrix      box)
+static void dump_confs(FILE*                log,
+                       int64_t              step,
+                       const gmx_mtop_t&    mtop,
+                       int                  start,
+                       int                  homenr,
+                       const t_commrec*     cr,
+                       ArrayRef<const RVec> x,
+                       ArrayRef<const RVec> xprime,
+                       const matrix         box)
 {
     char buf[STRLEN], buf2[22];
 
@@ -322,39 +322,39 @@ static void dump_confs(FILE*             log,
     fprintf(stderr, "Wrote pdb files with previous and current coordinates\n");
 }
 
-bool Constraints::apply(bool               bLog,
-                        bool               bEner,
-                        int64_t            step,
-                        int                delta_step,
-                        real               step_scaling,
-                        rvec*              x,
-                        rvec*              xprime,
-                        rvec*              min_proj,
-                        const matrix       box,
-                        real               lambda,
-                        real*              dvdlambda,
-                        rvec*              v,
-                        tensor*            vir,
-                        ConstraintVariable econq)
+bool Constraints::apply(bool                      bLog,
+                        bool                      bEner,
+                        int64_t                   step,
+                        int                       delta_step,
+                        real                      step_scaling,
+                        ArrayRefWithPadding<RVec> x,
+                        ArrayRefWithPadding<RVec> xprime,
+                        ArrayRef<RVec>            min_proj,
+                        const matrix              box,
+                        real                      lambda,
+                        real*                     dvdlambda,
+                        ArrayRefWithPadding<RVec> v,
+                        tensor*                   vir,
+                        ConstraintVariable        econq)
 {
-    return impl_->apply(bLog, bEner, step, delta_step, step_scaling, x, xprime, min_proj, box,
-                        lambda, dvdlambda, v, vir, econq);
+    return impl_->apply(bLog, bEner, step, delta_step, step_scaling, std::move(x), std::move(xprime),
+                        min_proj, box, lambda, dvdlambda, std::move(v), vir, econq);
 }
 
-bool Constraints::Impl::apply(bool               bLog,
-                              bool               bEner,
-                              int64_t            step,
-                              int                delta_step,
-                              real               step_scaling,
-                              rvec*              x,
-                              rvec*              xprime,
-                              rvec*              min_proj,
-                              const matrix       box,
-                              real               lambda,
-                              real*              dvdlambda,
-                              rvec*              v,
-                              tensor*            vir,
-                              ConstraintVariable econq)
+bool Constraints::Impl::apply(bool                      bLog,
+                              bool                      bEner,
+                              int64_t                   step,
+                              int                       delta_step,
+                              real                      step_scaling,
+                              ArrayRefWithPadding<RVec> x,
+                              ArrayRefWithPadding<RVec> xprime,
+                              ArrayRef<RVec>            min_proj,
+                              const matrix              box,
+                              real                      lambda,
+                              real*                     dvdlambda,
+                              ArrayRefWithPadding<RVec> v,
+                              tensor*                   vir,
+                              ConstraintVariable        econq)
 {
     bool   bOK, bDump;
     int    start, homenr;
@@ -424,14 +424,14 @@ bool Constraints::Impl::apply(bool               bLog,
      * Note that PBC for constraints is different from PBC for bondeds.
      * For constraints there is both forward and backward communication.
      */
-    if (ir.ePBC != epbcNONE && (cr->dd || pbcHandlingRequired_)
+    if (ir.pbcType != PbcType::No && (cr->dd || pbcHandlingRequired_)
         && !(cr->dd && cr->dd->constraint_comm == nullptr))
     {
         /* With pbc=screw the screw has been changed to a shift
          * by the constraint coordinate communication routine,
          * so that here we can use normal pbc.
          */
-        pbc_null = set_pbc_dd(&pbc, ir.ePBC, DOMAINDECOMP(cr) ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, ir.pbcType, DOMAINDECOMP(cr) ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {
@@ -443,23 +443,24 @@ bool Constraints::Impl::apply(bool               bLog,
      */
     if (cr->dd)
     {
-        dd_move_x_constraints(cr->dd, box, x, xprime, econq == ConstraintVariable::Positions);
+        dd_move_x_constraints(cr->dd, box, x.unpaddedArrayRef(), xprime.unpaddedArrayRef(),
+                              econq == ConstraintVariable::Positions);
 
-        if (v != nullptr)
+        if (!v.empty())
         {
             /* We need to initialize the non-local components of v.
              * We never actually use these values, but we do increment them,
              * so we should avoid uninitialized variables and overflows.
              */
-            clear_constraint_quantity_nonlocal(cr->dd, v);
+            clear_constraint_quantity_nonlocal(cr->dd, v.unpaddedArrayRef());
         }
     }
 
     if (lincsd != nullptr)
     {
         bOK = constrain_lincs(bLog || bEner, ir, step, lincsd, md, cr, ms, x, xprime, min_proj, box,
-                              pbc_null, lambda, dvdlambda, invdt, v, vir != nullptr, vir_r_m_dr,
-                              econq, nrnb, maxwarn, &warncount_lincs);
+                              pbc_null, lambda, dvdlambda, invdt, v.unpaddedArrayRef(),
+                              vir != nullptr, vir_r_m_dr, econq, nrnb, maxwarn, &warncount_lincs);
         if (!bOK && maxwarn < INT_MAX)
         {
             if (log != nullptr)
@@ -473,8 +474,11 @@ bool Constraints::Impl::apply(bool               bLog,
 
     if (shaked != nullptr)
     {
-        bOK = constrain_shake(log, shaked, md.invmass, *idef, ir, x, xprime, min_proj, nrnb, lambda,
-                              dvdlambda, invdt, v, vir != nullptr, vir_r_m_dr, maxwarn < INT_MAX, econq);
+        bOK = constrain_shake(
+                log, shaked, md.invmass, *idef, ir, as_rvec_array(x.unpaddedArrayRef().data()),
+                as_rvec_array(xprime.unpaddedArrayRef().data()), as_rvec_array(min_proj.data()),
+                nrnb, lambda, dvdlambda, invdt, as_rvec_array(v.unpaddedArrayRef().data()),
+                vir != nullptr, vir_r_m_dr, maxwarn < INT_MAX, econq);
 
         if (!bOK && maxwarn < INT_MAX)
         {
@@ -504,14 +508,14 @@ bool Constraints::Impl::apply(bool               bLog,
                             clear_mat(vir_r_m_dr_th[th]);
                         }
 
-                        csettle(settled, nth, th, pbc_null, x[0], xprime[0], invdt, v ? v[0] : nullptr,
-                                vir != nullptr, th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
+                        csettle(settled, nth, th, pbc_null, x, xprime, invdt, v, vir != nullptr,
+                                th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th],
                                 th == 0 ? &bSettleErrorHasOccurred0 : &bSettleErrorHasOccurred[th]);
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
                 }
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
-                if (v != nullptr)
+                if (!v.empty())
                 {
                     inc_nrnb(nrnb, eNR_CONSTR_V, nsettle * 3);
                 }
@@ -552,8 +556,8 @@ bool Constraints::Impl::apply(bool               bLog,
                         {
                             settle_proj(settled, econq, end_th - start_th,
                                         settle->iatoms + start_th * (1 + NRAL(F_SETTLE)), pbc_null,
-                                        x, xprime, min_proj, calcvir_atom_end,
-                                        th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
+                                        x.unpaddedArrayRef(), xprime.unpaddedArrayRef(), min_proj,
+                                        calcvir_atom_end, th == 0 ? vir_r_m_dr : vir_r_m_dr_th[th]);
                         }
                     }
                     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
@@ -643,7 +647,8 @@ bool Constraints::Impl::apply(bool               bLog,
 
     if (bDump)
     {
-        dump_confs(log, step, mtop, start, homenr, cr, x, xprime, box);
+        dump_confs(log, step, mtop, start, homenr, cr, x.unpaddedArrayRef(),
+                   xprime.unpaddedArrayRef(), box);
     }
 
     if (econq == ConstraintVariable::Positions)
@@ -658,20 +663,25 @@ bool Constraints::Impl::apply(bool               bLog,
             {
                 t = ir.init_t;
             }
-            set_pbc(&pbc, ir.ePBC, box);
-            pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t, x, xprime, v, *vir);
+            set_pbc(&pbc, ir.pbcType, box);
+            pull_constraint(pull_work, &md, &pbc, cr, ir.delta_t, t,
+                            as_rvec_array(x.unpaddedArrayRef().data()),
+                            as_rvec_array(xprime.unpaddedArrayRef().data()),
+                            as_rvec_array(v.unpaddedArrayRef().data()), *vir);
         }
         if (ed && delta_step > 0)
         {
             /* apply the essential dynamics constraints here */
-            do_edsam(&ir, step, cr, xprime, v, box, ed);
+            do_edsam(&ir, step, cr, as_rvec_array(xprime.unpaddedArrayRef().data()),
+                     as_rvec_array(v.unpaddedArrayRef().data()), box, ed);
         }
     }
     wallcycle_stop(wcycle, ewcCONSTR);
 
-    if (v != nullptr && md.cFREEZE)
+    if (!v.empty() && md.cFREEZE)
     {
         /* Set the velocities of frozen dimensions to zero */
+        ArrayRef<RVec> vRef = v.unpaddedArrayRef();
 
         int gmx_unused numThreads = gmx_omp_nthreads_get(emntUpdate);
 
@@ -684,7 +694,7 @@ bool Constraints::Impl::apply(bool               bLog,
             {
                 if (ir.opts.nFreeze[freezeGroup][d])
                 {
-                    v[i][d] = 0;
+                    vRef[i][d] = 0;
                 }
             }
         }
@@ -743,14 +753,17 @@ FlexibleConstraintTreatment flexibleConstraintTreatment(bool haveDynamicsIntegra
  * \param[in]  numAtoms  The number of atoms to construct the list for
  * \param[in]  ilists    The interaction lists, size F_NRE
  * \param[in]  iparams   Interaction parameters, can be null when
- * flexibleConstraintTreatment=Include \param[in]  flexibleConstraintTreatment  The flexible
- * constraint treatment, see enum above \returns a block struct with all constraints for each atom
+ *                       \p flexibleConstraintTreatment==Include
+ * \param[in]  flexibleConstraintTreatment  The flexible constraint treatment,
+ *                                          see enum above
+ *
+ * \returns a block struct with all constraints for each atom
  */
 template<typename T>
-static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
-                                           const T*                    ilists,
-                                           const t_iparams*            iparams,
-                                           FlexibleConstraintTreatment flexibleConstraintTreatment)
+static ListOfLists<int> makeAtomsToConstraintsList(int                         numAtoms,
+                                                   const T*                    ilists,
+                                                   const t_iparams*            iparams,
+                                                   FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     GMX_ASSERT(flexibleConstraintTreatment == FlexibleConstraintTreatment::Include || iparams != nullptr,
                "With flexible constraint detection we need valid iparams");
@@ -775,19 +788,13 @@ static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
         }
     }
 
-    t_blocka at2con;
-    at2con.nr           = numAtoms;
-    at2con.nalloc_index = at2con.nr + 1;
-    snew(at2con.index, at2con.nalloc_index);
-    at2con.index[0] = 0;
+    std::vector<int> listRanges(numAtoms + 1);
     for (int a = 0; a < numAtoms; a++)
     {
-        at2con.index[a + 1] = at2con.index[a] + count[a];
-        count[a]            = 0;
+        listRanges[a + 1] = listRanges[a] + count[a];
+        count[a]          = 0;
     }
-    at2con.nra      = at2con.index[at2con.nr];
-    at2con.nalloc_a = at2con.nra;
-    snew(at2con.a, at2con.nalloc_a);
+    std::vector<int> elements(listRanges[numAtoms]);
 
     /* The F_CONSTRNC constraints have constraint numbers
      * that continue after the last F_CONSTR constraint.
@@ -804,28 +811,28 @@ static t_blocka makeAtomsToConstraintsList(int                         numAtoms,
             {
                 for (int j = 1; j < 3; j++)
                 {
-                    int a                                  = ilist.iatoms[i + j];
-                    at2con.a[at2con.index[a] + count[a]++] = numConstraints;
+                    const int a                          = ilist.iatoms[i + j];
+                    elements[listRanges[a] + count[a]++] = numConstraints;
                 }
             }
             numConstraints++;
         }
     }
 
-    return at2con;
+    return ListOfLists<int>(std::move(listRanges), std::move(elements));
 }
 
-t_blocka make_at2con(int                         numAtoms,
-                     const t_ilist*              ilist,
-                     const t_iparams*            iparams,
-                     FlexibleConstraintTreatment flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(int                         numAtoms,
+                             const t_ilist*              ilist,
+                             const t_iparams*            iparams,
+                             FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(numAtoms, ilist, iparams, flexibleConstraintTreatment);
 }
 
-t_blocka make_at2con(const gmx_moltype_t&           moltype,
-                     gmx::ArrayRef<const t_iparams> iparams,
-                     FlexibleConstraintTreatment    flexibleConstraintTreatment)
+ListOfLists<int> make_at2con(const gmx_moltype_t&           moltype,
+                             gmx::ArrayRef<const t_iparams> iparams,
+                             FlexibleConstraintTreatment    flexibleConstraintTreatment)
 {
     return makeAtomsToConstraintsList(moltype.atoms.nr, moltype.ilist.data(), iparams.data(),
                                       flexibleConstraintTreatment);
@@ -924,10 +931,10 @@ void Constraints::setConstraints(const gmx_localtop_t& top, const t_mdatoms& md)
  * indices to constraint indices.
  *
  * Note that flexible constraints are only enabled with a dynamical integrator. */
-static std::vector<t_blocka> makeAtomToConstraintMappings(const gmx_mtop_t& mtop,
-                                                          FlexibleConstraintTreatment flexibleConstraintTreatment)
+static std::vector<ListOfLists<int>> makeAtomToConstraintMappings(const gmx_mtop_t& mtop,
+                                                                  FlexibleConstraintTreatment flexibleConstraintTreatment)
 {
-    std::vector<t_blocka> mapping;
+    std::vector<ListOfLists<int>> mapping;
     mapping.reserve(mtop.moltype.size());
     for (const gmx_moltype_t& moltype : mtop.moltype)
     {
@@ -1094,10 +1101,6 @@ Constraints::Impl::Impl(const gmx_mtop_t&     mtop_p,
 
 Constraints::Impl::~Impl()
 {
-    for (auto blocka : at2con_mt)
-    {
-        done_blocka(&blocka);
-    }
     if (bSettleErrorHasOccurred != nullptr)
     {
         sfree(bSettleErrorHasOccurred);
@@ -1118,7 +1121,7 @@ void Constraints::saveEdsamPointer(gmx_edsam* ed)
     impl_->ed = ed;
 }
 
-ArrayRef<const t_blocka> Constraints::atom2constraints_moltype() const
+ArrayRef<const ListOfLists<int>> Constraints::atom2constraints_moltype() const
 {
     return impl_->at2con_mt;
 }
@@ -1142,15 +1145,8 @@ void do_constrain_first(FILE*                     fplog,
     int64_t step;
     real    dt = ir->delta_t;
     real    dvdl_dum;
-    rvec*   savex;
 
-    auto xRvec = as_rvec_array(x.paddedArrayRef().data());
-    auto vRvec = as_rvec_array(v.paddedArrayRef().data());
-
-    /* We need to allocate one element extra, since we might use
-     * (unaligned) 4-wide SIMD loads to access rvec entries.
-     */
-    snew(savex, natoms + 1);
+    PaddedVector<RVec> savex(natoms);
 
     start = 0;
     end   = md->homenr;
@@ -1169,14 +1165,14 @@ void do_constrain_first(FILE*                     fplog,
     dvdl_dum = 0;
 
     /* constrain the current position */
-    constr->apply(TRUE, FALSE, step, 0, 1.0, xRvec, xRvec, nullptr, box, lambda, &dvdl_dum, nullptr,
-                  nullptr, gmx::ConstraintVariable::Positions);
+    constr->apply(TRUE, FALSE, step, 0, 1.0, x, x, ArrayRef<RVec>(), box, lambda, &dvdl_dum,
+                  ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Positions);
     if (EI_VV(ir->eI))
     {
         /* constrain the inital velocity, and save it */
         /* also may be useful if we need the ekin from the halfstep for velocity verlet */
-        constr->apply(TRUE, FALSE, step, 0, 1.0, xRvec, vRvec, vRvec, box, lambda, &dvdl_dum,
-                      nullptr, nullptr, gmx::ConstraintVariable::Velocities);
+        constr->apply(TRUE, FALSE, step, 0, 1.0, x, v, v.unpaddedArrayRef(), box, lambda, &dvdl_dum,
+                      ArrayRefWithPadding<RVec>(), nullptr, gmx::ConstraintVariable::Velocities);
     }
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI != eiVV)
@@ -1202,8 +1198,8 @@ void do_constrain_first(FILE*                     fplog,
             fprintf(fplog, "\nConstraining the coordinates at t0-dt (step %s)\n", gmx_step_str(step, buf));
         }
         dvdl_dum = 0;
-        constr->apply(TRUE, FALSE, step, -1, 1.0, xRvec, savex, nullptr, box, lambda, &dvdl_dum,
-                      vRvec, nullptr, gmx::ConstraintVariable::Positions);
+        constr->apply(TRUE, FALSE, step, -1, 1.0, x, savex.arrayRefWithPadding(), ArrayRef<RVec>(),
+                      box, lambda, &dvdl_dum, v, nullptr, gmx::ConstraintVariable::Positions);
 
         for (i = start; i < end; i++)
         {
@@ -1214,7 +1210,6 @@ void do_constrain_first(FILE*                     fplog,
             }
         }
     }
-    sfree(savex);
 }
 
 } // namespace gmx

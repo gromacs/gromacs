@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -570,7 +571,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
                         PmeRunMode               runMode,
                         PmeGpu*                  pmeGpu,
                         const gmx_device_info_t* gpuInfo,
-                        PmeGpuProgramHandle      pmeGpuProgram,
+                        const PmeGpuProgram*     pmeGpuProgram,
                         const gmx::MDLogger& /*mdlog*/)
 {
     int  use_threads, sum_use_threads, i;
@@ -681,7 +682,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
     }
     pme->bUseThreads = (sum_use_threads > 0);
 
-    if (ir->ePBC == epbcSCREW)
+    if (ir->pbcType == PbcType::Screw)
     {
         gmx_fatal(FARGS, "pme does not (yet) work with pbc = screw");
     }
@@ -872,21 +873,17 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
         pme->atc.emplace_back(pme->mpi_comm_d[1], pme->nthread, pme->pme_order, secondDimIndex, doSpread);
     }
 
-    if (pme_gpu_active(pme.get()))
+    // Initial check of validity of the input for running on the GPU
+    if (pme->runMode != PmeRunMode::CPU)
     {
-        if (!pme->gpu)
+        std::string errorString;
+        bool        canRunOnGpu = pme_gpu_check_restrictions(pme.get(), &errorString);
+        if (!canRunOnGpu)
         {
-            // Initial check of validity of the data
-            std::string errorString;
-            bool        canRunOnGpu = pme_gpu_check_restrictions(pme.get(), &errorString);
-            if (!canRunOnGpu)
-            {
-                GMX_THROW(gmx::NotImplementedError(errorString));
-            }
+            GMX_THROW(gmx::NotImplementedError(errorString));
         }
-
-        pme_gpu_reinit(pme.get(), gpuInfo, pmeGpuProgram);
     }
+    pme_gpu_reinit(pme.get(), gpuInfo, pmeGpuProgram);
 
     pme_init_all_work(&pme->solve_work, pme->nthread, pme->nkx);
 
@@ -906,7 +903,7 @@ void gmx_pme_reinit(struct gmx_pme_t** pmedata,
     // TODO: This would be better as just copying a sub-structure that contains
     // all the PME parameters and nothing else.
     t_inputrec irc;
-    irc.ePBC                   = ir->ePBC;
+    irc.pbcType                = ir->pbcType;
     irc.coulombtype            = ir->coulombtype;
     irc.vdwtype                = ir->vdwtype;
     irc.efep                   = ir->efep;
@@ -1714,7 +1711,7 @@ void gmx_pme_destroy(gmx_pme_t* pme)
 
     destroy_pme_spline_work(pme->spline_work);
 
-    if (pme_gpu_active(pme) && pme->gpu)
+    if (pme->gpu != nullptr)
     {
         pme_gpu_destroy(pme->gpu);
     }
@@ -1724,7 +1721,7 @@ void gmx_pme_destroy(gmx_pme_t* pme)
 
 void gmx_pme_reinit_atoms(gmx_pme_t* pme, const int numAtoms, const real* charges)
 {
-    if (pme_gpu_active(pme))
+    if (pme->gpu != nullptr)
     {
         pme_gpu_reinit_atoms(pme->gpu, numAtoms, charges);
     }
@@ -1733,4 +1730,9 @@ void gmx_pme_reinit_atoms(gmx_pme_t* pme, const int numAtoms, const real* charge
         pme->atc[0].setNumAtoms(numAtoms);
         // TODO: set the charges here as well
     }
+}
+
+bool gmx_pme_grid_matches(const gmx_pme_t& pme, const ivec grid_size)
+{
+    return (pme.nkx == grid_size[XX] && pme.nky == grid_size[YY] && pme.nkz == grid_size[ZZ]);
 }

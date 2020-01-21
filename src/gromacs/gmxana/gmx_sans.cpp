@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +48,7 @@
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/gmxana/nsfactor.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -125,8 +127,8 @@ int gmx_sans(int argc, char* argv[])
     t_topology*                          top  = nullptr;
     gmx_rmpbc_t                          gpbc = nullptr;
     gmx_bool                             bFFT = FALSE, bDEBYE = FALSE;
-    gmx_bool                             bMC  = FALSE;
-    int                                  ePBC = -1;
+    gmx_bool                             bMC     = FALSE;
+    PbcType                              pbcType = PbcType::Unset;
     matrix                               box;
     rvec*                                x;
     int                                  natoms;
@@ -218,7 +220,7 @@ int gmx_sans(int argc, char* argv[])
     snew(grpname, 1);
     snew(index, 1);
 
-    read_tps_conf(fnTPX, top, &ePBC, &x, nullptr, box, TRUE);
+    read_tps_conf(fnTPX, top, &pbcType, &x, nullptr, box, TRUE);
 
     printf("\nPlease select group for SANS spectra calculation:\n");
     get_index(&(top->atoms), ftp2fn_null(efNDX, NFILE, fnm), 1, &isize, &index, grpname);
@@ -228,7 +230,7 @@ int gmx_sans(int argc, char* argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+        gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
         gmx_rmpbc(gpbc, top->atoms.nr, box, x);
     }
 

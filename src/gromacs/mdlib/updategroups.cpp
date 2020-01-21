@@ -52,10 +52,10 @@
 #include "gromacs/math/units.h"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/topology/topology.h"
+#include "gromacs/utility/listoflists.h"
 
 namespace gmx
 {
@@ -196,15 +196,17 @@ static AtomIndexExtremes vsiteConstructRange(int a, const gmx_moltype_t& moltype
 }
 
 /*! \brief Returns the range of atoms constrained to atom \p a (including \p a itself) */
-static AtomIndexExtremes constraintAtomRange(int a, const t_blocka& at2con, const InteractionList& ilistConstraints)
+static AtomIndexExtremes constraintAtomRange(int                     a,
+                                             const ListOfLists<int>& at2con,
+                                             const InteractionList&  ilistConstraints)
 {
     AtomIndexExtremes extremes = { a, a };
 
-    for (int i = at2con.index[a]; i < at2con.index[a + 1]; i++)
+    for (const int constraint : at2con[a])
     {
         for (int j = 0; j < 2; j++)
         {
-            int atomJ        = ilistConstraints.iatoms[at2con.a[i] * 3 + 1 + j];
+            int atomJ        = ilistConstraints.iatoms[constraint * 3 + 1 + j];
             extremes.minAtom = std::min(extremes.minAtom, atomJ);
             extremes.maxAtom = std::max(extremes.maxAtom, atomJ);
         }
@@ -231,10 +233,10 @@ static std::vector<bool> buildIsParticleVsite(const gmx_moltype_t& moltype)
 }
 
 /*! \brief Returns the size of the update group starting at \p firstAtom or 0 when criteria (see updategroups.h) are not met */
-static int detectGroup(int                    firstAtom,
-                       const gmx_moltype_t&   moltype,
-                       const t_blocka&        at2con,
-                       const InteractionList& ilistConstraints)
+static int detectGroup(int                     firstAtom,
+                       const gmx_moltype_t&    moltype,
+                       const ListOfLists<int>& at2con,
+                       const InteractionList&  ilistConstraints)
 {
     /* We should be using moltype.atoms.atom[].ptype for checking whether
      * a particle is a vsite. But the test code can't fill t_atoms,
@@ -243,7 +245,7 @@ static int detectGroup(int                    firstAtom,
     std::vector<bool> isParticleVsite = buildIsParticleVsite(moltype);
 
     /* A non-vsite atom without constraints is an update group by itself */
-    if (!isParticleVsite[firstAtom] && at2con.index[firstAtom + 1] - at2con.index[firstAtom] == 0)
+    if (!isParticleVsite[firstAtom] && at2con[firstAtom].empty())
     {
         return 1;
     }
@@ -274,7 +276,7 @@ static int detectGroup(int                    firstAtom,
         }
         else
         {
-            int numConstraints = at2con.index[a + 1] - at2con.index[a];
+            const int numConstraints = at2con[a].ssize();
             if (numConstraints == 0)
             {
                 /* We can not have unconstrained atoms in an update group */
@@ -356,8 +358,8 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
     ilistsCombined[F_CONSTR].iatoms = constraintsCombined.iatoms.data();
     ilistsCombined[F_CONSTRNC].nr   = 0;
     /* We "include" flexible constraints, but none are present (checked above) */
-    t_blocka at2con = make_at2con(moltype.atoms.nr, ilistsCombined, iparams.data(),
-                                  FlexibleConstraintTreatment::Include);
+    const ListOfLists<int> at2con = make_at2con(moltype.atoms.nr, ilistsCombined, iparams.data(),
+                                                FlexibleConstraintTreatment::Include);
 
     bool satisfiesCriteria = true;
 
@@ -382,8 +384,6 @@ static RangePartitioning makeUpdateGroups(const gmx_moltype_t& moltype, gmx::Arr
         /* Make groups empty, to signal not satisfying the criteria */
         groups.clear();
     }
-
-    done_blocka(&at2con);
 
     return groups;
 }
@@ -441,19 +441,19 @@ template<int numPartnerAtoms>
 static real constraintGroupRadius(const gmx_moltype_t&                     moltype,
                                   gmx::ArrayRef<const t_iparams>           iparams,
                                   const int                                centralAtom,
-                                  const t_blocka&                          at2con,
+                                  const ListOfLists<int>&                  at2con,
                                   const std::unordered_multimap<int, int>& angleIndices,
                                   const real                               constraintLength,
                                   const real                               temperature)
 {
-    const int numConstraints = at2con.index[centralAtom + 1] - at2con.index[centralAtom];
+    const int numConstraints = at2con[centralAtom].ssize();
     GMX_RELEASE_ASSERT(numConstraints == numPartnerAtoms,
                        "We expect as many constraints as partner atoms here");
 
     std::array<int, numPartnerAtoms> partnerAtoms;
     for (int i = 0; i < numPartnerAtoms; i++)
     {
-        const int ind = at2con.a[at2con.index[centralAtom] + i] * 3;
+        const int ind = at2con[centralAtom][i] * 3;
         if (ind >= moltype.ilist[F_CONSTR].size())
         {
             /* This is a flexible constraint, we don't optimize for that */
@@ -597,7 +597,7 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
 
     const InteractionList& settles = moltype.ilist[F_SETTLE];
 
-    t_blocka at2con = make_at2con(moltype, iparams, FlexibleConstraintTreatment::Include);
+    const ListOfLists<int> at2con = make_at2con(moltype, iparams, FlexibleConstraintTreatment::Include);
 
     const auto angleIndices = getAngleIndices(moltype);
 
@@ -615,7 +615,7 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
         int maxAtom           = -1;
         for (int a : updateGroups.block(group))
         {
-            int numConstraints = at2con.index[a + 1] - at2con.index[a];
+            const int numConstraints = at2con[a].ssize();
             if (numConstraints > maxNumConstraints)
             {
                 maxNumConstraints = numConstraints;
@@ -633,9 +633,10 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
         int  constraintType       = -1;
         real maxConstraintLength  = 0;
         real sumConstraintLengths = 0;
-        for (int i = at2con.index[maxAtom]; i < at2con.index[maxAtom + 1]; i++)
+        bool isFirstConstraint    = true;
+        for (const int constraint : at2con[maxAtom])
         {
-            int conIndex = at2con.a[i] * (1 + NRAL(F_CONSTR));
+            int conIndex = constraint * (1 + NRAL(F_CONSTR));
             int iparamsIndex;
             if (conIndex < moltype.ilist[F_CONSTR].size())
             {
@@ -646,9 +647,10 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
                 iparamsIndex =
                         moltype.ilist[F_CONSTRNC].iatoms[conIndex - moltype.ilist[F_CONSTR].size()];
             }
-            if (i == at2con.index[maxAtom])
+            if (isFirstConstraint)
             {
-                constraintType = iparamsIndex;
+                constraintType    = iparamsIndex;
+                isFirstConstraint = false;
             }
             else if (iparamsIndex != constraintType)
             {
@@ -664,7 +666,7 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
             sumConstraintLengths += constraintLength;
         }
 
-        int  numConstraints = at2con.index[maxAtom + 1] - at2con.index[maxAtom];
+        int  numConstraints = at2con[maxAtom].ssize();
         real radius;
         if (numConstraints == 1)
         {
@@ -720,8 +722,6 @@ static real computeMaxUpdateGroupRadius(const gmx_moltype_t&           moltype,
         const real dCAny = std::sqrt(std::max(dCO2, dCH2));
         maxRadius        = std::max(maxRadius, dCAny);
     }
-
-    done_blocka(&at2con);
 
     return maxRadius;
 }

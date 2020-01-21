@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
                 }
                 else
                 {
-                    if (d < ddbox->npbcdim && dd->nc[d] > 1)
+                    if (d < ddbox->npbcdim && dd->numCells[d] > 1)
                     {
                         tric[d][i] = box[i][d] / box[i][i];
                     }
@@ -100,7 +100,7 @@ void write_dd_grid_pdb(const char* fn, int64_t step, gmx_domdec_t* dd, matrix bo
         }
         sprintf(fname, "%s_%s.pdb", fn, gmx_step_str(step, buf));
         out = gmx_fio_fopen(fname, "w");
-        gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
+        gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
         a = 1;
         for (i = 0; i < dd->nnodes; i++)
         {
@@ -169,7 +169,7 @@ void write_dd_pdb(const char*       fn,
     out = gmx_fio_fopen(fname, "w");
 
     fprintf(out, "TITLE     %s\n", title);
-    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? epbcSCREW : epbcXYZ, box);
+    gmx_write_pdb_box(out, dd->unitCellInfo.haveScrewPBC ? PbcType::Screw : PbcType::Xyz, box);
     int molb = 0;
     for (int i = 0; i < natoms; i++)
     {

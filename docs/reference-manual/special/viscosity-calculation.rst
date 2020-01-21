@@ -74,9 +74,9 @@ zero, the rate being:
           :label: eqnshearrate
 
 For a simulation with: :math:`\eta=10^{-3}`
-[kgm:math:`^{-1}`\ s\ :math:`^{-1}`],
-:math:`\rho=10^3`\ [kgm:math:`^{-3}`] and :math:`l_z=2\pi`\ [nm],
-:math:`\mbox{sh}_{\max}=1`\ [psnm:math:`^{-1}`] :math:`A`. This shear
+[kgm\ :math:`^{-1}`\ s\ :math:`^{-1}`],
+:math:`\rho=10^3`\ [kgm\ :math:`^{-3}`] and :math:`l_z=2\pi`\ [nm],
+:math:`\mbox{sh}_{\max}=1`\ [psnm\ :math:`^{-1}`] :math:`A`. This shear
 rate should be smaller than one over the longest correlation time in the
 system. For most liquids, this will be the rotation correlation time,
 which is around 10 ps. In this case, :math:`A` should be smaller than
@@ -100,8 +100,8 @@ where :math:`\tau` is the coupling time for the Berendsen thermostat
 and :math:`C_v` is the heat capacity. Using the values of the example
 above, :math:`\tau=10^{-13}` [s] and :math:`C_v=2 \cdot 10^3`\ [J
 kg\ :math:`^{-1}`\ K\ :math:`^{-1}`], we get:
-:math:`T_s=25`\ [Kps:math:`^{-2}`]sh\ :math:`_{\max}^2`. When we want
-the shear rate to be smaller than :math:`1/10`\ [ps:math:`^{-1}`],
+:math:`T_s=25`\ [Kps\ :math:`^{-2}`]sh\ :math:`_{\max}^2`. When we want
+the shear rate to be smaller than :math:`1/10`\ [ps\ :math:`^{-1}`],
 :math:`T_s` is smaller than 0.25[K], which is negligible.
 
 **Note** that the system has to build up the velocity profile when

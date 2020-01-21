@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -66,6 +66,8 @@ add_library(gmxapi SHARED
 gmx_target_compile_options(gmxapi)
 target_compile_definitions(gmxapi PRIVATE HAVE_CONFIG_H)
 target_include_directories(gmxapi SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
+# Should be possible to change this when resolving #3290
+target_include_directories(gmxapi SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 # Define public interface. Make sure targets linking against `gmxapi` in the build
 # system don't accidentally have the implementation headers (this directory))
@@ -91,21 +93,19 @@ install(DIRECTORY include/gmxapi
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/gmxapi/version.h
         DESTINATION include/gmxapi)
 
-# Ref. https://gitlab.kitware.com/cmake/community/wikis/doc/cmake/RPATH-handling
-# use, i.e. don't skip the full RPATH for the build tree
-set_target_properties(gmxapi PROPERTIES SKIP_BUILD_RPATH FALSE)
-
-# when building, don't use the install RPATH already
-# (but later on when installing)
-set_target_properties(gmxapi PROPERTIES BUILD_WITH_INSTALL_RPATH FALSE)
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # Instruct a linking client to use its RPATH to resolve the libgmxapi location.
+    #
+    # Explicitly specify library "install name" so that the correct loading
+    # instruction is produced in client code. Client code should be able to find the
+    # library relative to the client code RPATH. Without explicitly specifying,
+    # INSTALL_NAME_DIR is inherited from the global CMAKE_INSTALL_NAME_DIR, which is
+    # not appropriate for libgmxapi if it uses an install name relative to the
+    # executable_path or loader_path.
     set_target_properties(gmxapi PROPERTIES INSTALL_NAME_DIR "@rpath")
 endif()
 
 set_target_properties(gmxapi PROPERTIES
-                      INSTALL_RPATH_USE_LINK_PATH TRUE
                       SOVERSION ${GMXAPI_MAJOR}
                       VERSION ${GMXAPI_RELEASE}
                       )

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -521,7 +522,7 @@ int gmx_do_dssp(int argc, char* argv[])
     const char *      fnSCount, *fnArea, *fnTArea, *fnAArea;
     const char*       leg[] = { "Phobic", "Phylic" };
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     t_atoms*          atoms;
     t_matrix          mat;
     int               nres, nr0, naccr, nres_plus_separators;
@@ -561,7 +562,7 @@ int gmx_do_dssp(int argc, char* argv[])
     fnAArea    = opt2fn_null("-aa", NFILE, fnm);
     bDoAccSurf = ((fnArea != nullptr) || (fnTArea != nullptr) || (fnAArea != nullptr));
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xp, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xp, nullptr, box, FALSE);
     atoms = &(top.atoms);
     check_oo(atoms);
     bPhbres = bPhobics(atoms);
@@ -673,7 +674,7 @@ int gmx_do_dssp(int argc, char* argv[])
     accr  = nullptr;
     naccr = 0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     do
     {
         t = output_env_conv_time(oenv, t);
@@ -688,7 +689,7 @@ int gmx_do_dssp(int argc, char* argv[])
         }
         gmx_rmpbc(gpbc, natoms, box, x);
         tapein = gmx_ffopen(pdbfile, "w");
-        write_pdbfile_indexed(tapein, nullptr, atoms, x, ePBC, box, ' ', -1, gnx, index, nullptr, FALSE);
+        write_pdbfile_indexed(tapein, nullptr, atoms, x, pbcType, box, ' ', -1, gnx, index, nullptr, FALSE);
         gmx_ffclose(tapein);
         /* strip_dssp returns the number of lines found in the dssp file, i.e.
          * the number of residues plus the separator lines */

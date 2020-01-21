@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -113,7 +114,7 @@ int gmx_covar(int argc, char* argv[])
     FILE*             out = nullptr; /* initialization makes all compilers happy */
     t_trxstatus*      status;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     t_atoms*          atoms;
     rvec *            x, *xread, *xref, *xav, *xproj;
     matrix            box, zerobox;
@@ -164,7 +165,7 @@ int gmx_covar(int argc, char* argv[])
     xpmfile    = opt2fn_null("-xpm", NFILE, fnm);
     xpmafile   = opt2fn_null("-xpma", NFILE, fnm);
 
-    read_tps_conf(fitfile, &top, &ePBC, &xref, nullptr, box, TRUE);
+    read_tps_conf(fitfile, &top, &pbcType, &xref, nullptr, box, TRUE);
     atoms = &top.atoms;
 
     if (bFit)
@@ -238,7 +239,7 @@ int gmx_covar(int argc, char* argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, box, xref);
     }
     if (bFit)
@@ -293,7 +294,7 @@ int gmx_covar(int argc, char* argv[])
         }
     }
     write_sto_conf_indexed(opt2fn("-av", NFILE, fnm), "Average structure", atoms, xread, nullptr,
-                           epbcNONE, zerobox, natoms, index);
+                           PbcType::No, zerobox, natoms, index);
     sfree(xread);
 
     fprintf(stderr, "Constructing covariance matrix (%dx%d) ...\n", static_cast<int>(ndim),

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1464,9 +1465,10 @@ void constrain_velocities(int64_t step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.rvec_array(), state->v.rvec_array(),
-                      state->v.rvec_array(), state->box, state->lambda[efptBONDED], dvdlambda,
-                      nullptr, bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(),
+                      state->v.arrayRefWithPadding(), state->v.arrayRefWithPadding().unpaddedArrayRef(),
+                      state->box, state->lambda[efptBONDED], dvdlambda, ArrayRefWithPadding<RVec>(),
+                      bCalcVir ? &vir_con : nullptr, ConstraintVariable::Velocities);
 
         if (bCalcVir)
         {
@@ -1497,10 +1499,10 @@ void constrain_coordinates(int64_t step,
         clear_mat(vir_part);
 
         /* Constrain the coordinates upd->xp */
-        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.rvec_array(), upd->xp()->rvec_array(),
-                      nullptr, state->box, state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), bCalcVir ? &vir_con : nullptr,
-                      ConstraintVariable::Positions);
+        constr->apply(do_log, do_ene, step, 1, 1.0, state->x.arrayRefWithPadding(),
+                      upd->xp()->arrayRefWithPadding(), ArrayRef<RVec>(), state->box,
+                      state->lambda[efptBONDED], dvdlambda, state->v.arrayRefWithPadding(),
+                      bCalcVir ? &vir_con : nullptr, ConstraintVariable::Positions);
 
         if (bCalcVir)
         {
@@ -1563,9 +1565,10 @@ void update_sd_second_half(int64_t step,
         wallcycle_stop(wcycle, ewcUPDATE);
 
         /* Constrain the coordinates upd->xp for half a time step */
-        constr->apply(do_log, do_ene, step, 1, 0.5, state->x.rvec_array(), upd->xp()->rvec_array(),
-                      nullptr, state->box, state->lambda[efptBONDED], dvdlambda,
-                      as_rvec_array(state->v.data()), nullptr, ConstraintVariable::Positions);
+        constr->apply(do_log, do_ene, step, 1, 0.5, state->x.arrayRefWithPadding(),
+                      upd->xp()->arrayRefWithPadding(), ArrayRef<RVec>(), state->box,
+                      state->lambda[efptBONDED], dvdlambda, state->v.arrayRefWithPadding(), nullptr,
+                      ConstraintVariable::Positions);
     }
 }
 
@@ -1667,7 +1670,8 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
-                                      Update*           upd)
+                                      Update*           upd,
+                                      const bool        scaleCoordinates)
 {
     int start  = 0;
     int homenr = md->homenr;
@@ -1687,7 +1691,7 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                 berendsen_pcoupl(fplog, step, inputrec, dtpc, pressure, state->box, forceVirial,
                                  constraintVirial, pressureCouplingMu, &state->baros_integral);
                 berendsen_pscale(inputrec, pressureCouplingMu, state->box, state->box_rel, start,
-                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb);
+                                 homenr, state->x.rvec_array(), md->cFREEZE, nrnb, scaleCoordinates);
             }
             break;
         case (epcPARRINELLORAHMAN):
@@ -1708,10 +1712,13 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                 preserve_box_shape(inputrec, state->box_rel, state->box);
 
                 /* Scale the coordinates */
-                auto x = state->x.rvec_array();
-                for (int n = start; n < start + homenr; n++)
+                if (scaleCoordinates)
                 {
-                    tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                    auto x = state->x.rvec_array();
+                    for (int n = start; n < start + homenr; n++)
+                    {
+                        tmvmul_ur0(pressureCouplingMu, x[n], x[n]);
+                    }
                 }
             }
             break;

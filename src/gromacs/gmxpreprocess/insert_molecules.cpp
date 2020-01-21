@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -174,7 +175,7 @@ static void insert_mols(int                  nmol_insrt,
                         const std::set<int>& removableAtoms,
                         const t_atoms&       atoms_insrt,
                         gmx::ArrayRef<RVec>  x_insrt,
-                        int                  ePBC,
+                        PbcType              pbcType,
                         matrix               box,
                         const std::string&   posfn,
                         const rvec           deltaR,
@@ -210,7 +211,7 @@ static void insert_mols(int                  nmol_insrt,
     gmx::DefaultRandomEngine rng(seed);
 
     t_pbc pbc;
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     /* With -ip, take nmol_insrt from file posfn */
     double**   rpos              = nullptr;
@@ -369,7 +370,7 @@ private:
     gmx_mtop_t        top_;
     std::vector<RVec> x_;
     matrix            box_;
-    int               ePBC_;
+    PbcType           pbcType_;
 };
 
 void InsertMolecules::initOptions(IOptionsContainer* options, ICommandLineOptionsModuleSettings* settings)
@@ -503,7 +504,7 @@ void InsertMolecules::optionsFinished()
         bool  bTprFileWasRead;
         rvec* temporaryX = nullptr;
         fprintf(stderr, "Reading solute configuration\n");
-        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_, &ePBC_, &temporaryX,
+        readConfAndTopology(inputConfFile_.c_str(), &bTprFileWasRead, &top_, &pbcType_, &temporaryX,
                             nullptr, box_);
         x_.assign(temporaryX, temporaryX + top_.natoms);
         sfree(temporaryX);
@@ -520,7 +521,7 @@ int InsertMolecules::run()
     if (replaceSel_.isValid())
     {
         t_pbc pbc;
-        set_pbc(&pbc, ePBC_, box_);
+        set_pbc(&pbc, pbcType_, box_);
         t_trxframe* fr;
         snew(fr, 1);
         fr->natoms = x_.size();
@@ -534,10 +535,10 @@ int InsertMolecules::run()
         // individual atoms.
     }
 
-    int ePBCForOutput = ePBC_;
+    PbcType pbcTypeForOutput = pbcType_;
     if (bBox_)
     {
-        ePBCForOutput = epbcXYZ;
+        pbcTypeForOutput = PbcType::Xyz;
         clear_mat(box_);
         box_[XX][XX] = newBox_[XX];
         box_[YY][YY] = newBox_[YY];
@@ -554,11 +555,11 @@ int InsertMolecules::run()
     t_atoms           atomsInserted;
     std::vector<RVec> xInserted;
     {
-        bool   bTprFileWasRead;
-        int    ePBC_dummy;
-        matrix box_dummy;
-        rvec*  temporaryX;
-        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &ePBC_dummy,
+        bool    bTprFileWasRead;
+        PbcType pbcType_dummy;
+        matrix  box_dummy;
+        rvec*   temporaryX;
+        readConfAndTopology(insertConfFile_.c_str(), &bTprFileWasRead, &topInserted, &pbcType_dummy,
                             &temporaryX, nullptr, box_dummy);
         xInserted.assign(temporaryX, temporaryX + topInserted.natoms);
         sfree(temporaryX);
@@ -582,13 +583,13 @@ int InsertMolecules::run()
     /* add nmol_ins molecules of atoms_ins
        in random orientation at random place */
     insert_mols(nmolIns_, nmolTry_, seed_, defaultDistance_, scaleFactor_, &atoms, &top_.symtab,
-                &x_, removableAtoms, atomsInserted, xInserted, ePBCForOutput, box_, positionFile_,
-                deltaR_, enumRot_);
+                &x_, removableAtoms, atomsInserted, xInserted, pbcTypeForOutput, box_,
+                positionFile_, deltaR_, enumRot_);
 
     /* write new configuration to file confout */
     fprintf(stderr, "Writing generated configuration to %s\n", outputConfFile_.c_str());
     write_sto_conf(outputConfFile_.c_str(), *top_.name, &atoms, as_rvec_array(x_.data()), nullptr,
-                   ePBCForOutput, box_);
+                   pbcTypeForOutput, box_);
 
     /* print size of generated configuration */
     fprintf(stderr, "\nOutput configuration contains %d atoms in %d residues\n", atoms.nr, atoms.nres);

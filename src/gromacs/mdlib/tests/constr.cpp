@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@ std::vector<std::string> getRunnersNames()
     runnersNames.emplace_back("LINCS");
     if (GMX_GPU == GMX_GPU_CUDA && canComputeOnGpu())
     {
-        runnersNames.emplace_back("LINCS_CUDA");
+        runnersNames.emplace_back("LINCS_GPU");
     }
     return runnersNames;
 }
@@ -138,12 +138,12 @@ public:
 
         // Infinitely small box
         matrix boxNone = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-        set_pbc(&pbc, epbcNONE, boxNone);
+        set_pbc(&pbc, PbcType::No, boxNone);
         pbcs_["PBCNone"] = pbc;
 
         // Rectangular box
         matrix boxXyz = { { 10.0, 0.0, 0.0 }, { 0.0, 20.0, 0.0 }, { 0.0, 0.0, 15.0 } };
-        set_pbc(&pbc, epbcXYZ, boxXyz);
+        set_pbc(&pbc, PbcType::Xyz, boxXyz);
         pbcs_["PBCXYZ"] = pbc;
 
         //
@@ -153,8 +153,8 @@ public:
         algorithms_["SHAKE"] = applyShake;
         // LINCS
         algorithms_["LINCS"] = applyLincs;
-        // LINCS using CUDA (will only be called if CUDA is available)
-        algorithms_["LINCS_CUDA"] = applyLincsCuda;
+        // LINCS using GPU (will only be called if GPU is available)
+        algorithms_["LINCS_GPU"] = applyLincsGpu;
     }
 
     /*! \brief
@@ -178,7 +178,7 @@ public:
             int  j  = testData.constraints_.at(3 * c + 2);
             RVec xij0, xij1;
             real d0, d1;
-            if (pbc.ePBC == epbcXYZ)
+            if (pbc.pbcType == PbcType::Xyz)
             {
                 pbc_dx_aiuc(&pbc, testData.x_[i], testData.x_[j], xij0);
                 pbc_dx_aiuc(&pbc, testData.xPrime_[i], testData.xPrime_[j], xij1);
@@ -216,7 +216,7 @@ public:
             int  i = testData.constraints_.at(3 * c + 1);
             int  j = testData.constraints_.at(3 * c + 2);
             RVec xij0, xij1;
-            if (pbc.ePBC == epbcXYZ)
+            if (pbc.pbcType == PbcType::Xyz)
             {
                 pbc_dx_aiuc(&pbc, testData.x_[i], testData.x_[j], xij0);
                 pbc_dx_aiuc(&pbc, testData.xPrime_[i], testData.xPrime_[j], xij1);

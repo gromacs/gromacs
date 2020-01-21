@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/ewald/pme_gather.h"
 #include "gromacs/ewald/pme_gpu_internal.h"
+#include "gromacs/ewald/pme_gpu_staging.h"
 #include "gromacs/ewald/pme_grid.h"
 #include "gromacs/ewald/pme_internal.h"
 #include "gromacs/ewald/pme_redistribute.h"
@@ -104,7 +105,7 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
                               const CodePath           mode,
                               const gmx_device_info_t* gpuInfo,
-                              PmeGpuProgramHandle      pmeGpuProgram,
+                              const PmeGpuProgram*     pmeGpuProgram,
                               const Matrix3x3&         box,
                               const real               ewaldCoeff_q,
                               const real               ewaldCoeff_lj)
@@ -127,7 +128,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
             boxTemp[i][j] = box[i * DIM + j];
         }
     }
-    const char* boxError = check_box(-1, boxTemp);
+    const char* boxError = check_box(PbcType::Unset, boxTemp);
     GMX_RELEASE_ASSERT(boxError == nullptr, boxError);
 
     switch (mode)
@@ -149,7 +150,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
 PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
                             const CodePath           mode,
                             const gmx_device_info_t* gpuInfo,
-                            PmeGpuProgramHandle      pmeGpuProgram,
+                            const PmeGpuProgram*     pmeGpuProgram,
                             const Matrix3x3&         box,
                             real                     ewaldCoeff_q,
                             real                     ewaldCoeff_lj)
@@ -166,7 +167,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
             pme_gpu_get_device_stream(&pme), pme_gpu_get_device_context(&pme),
-            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme));
+            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
 }
 
 //! PME initialization with atom data
@@ -505,7 +506,7 @@ void pmeSetGridLineIndices(gmx_pme_t* pme, CodePath mode, const GridLineIndicesV
     switch (mode)
     {
         case CodePath::GPU:
-            memcpy(pme->gpu->staging.h_gridlineIndices, gridLineIndices.data(),
+            memcpy(pme_gpu_staging(pme->gpu).h_gridlineIndices, gridLineIndices.data(),
                    atomCount * sizeof(gridLineIndices[0]));
             break;
 
@@ -622,7 +623,7 @@ GridLineIndicesVector pmeGetGridlineIndices(const gmx_pme_t* pme, CodePath mode)
     {
         case CodePath::GPU:
             gridLineIndices = arrayRefFromArray(
-                    reinterpret_cast<IVec*>(pme->gpu->staging.h_gridlineIndices), atomCount);
+                    reinterpret_cast<IVec*>(pme_gpu_staging(pme->gpu).h_gridlineIndices), atomCount);
             break;
 
         case CodePath::CPU: gridLineIndices = atc->idx; break;

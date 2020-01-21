@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +46,7 @@
 struct InteractionList;
 struct gmx_moltype_t;
 struct t_idef;
+enum class PbcType : int;
 
 typedef enum
 {
@@ -102,7 +104,7 @@ void done_graph(t_graph* g);
 void p_graph(FILE* log, const char* title, t_graph* g);
 /* Print a graph to log */
 
-void mk_mshift(FILE* log, t_graph* g, int ePBC, const matrix box, const rvec x[]);
+void mk_mshift(FILE* log, t_graph* g, PbcType pbcType, const matrix box, const rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
 void shift_x(const t_graph* g, const matrix box, const rvec x[], rvec x_s[]);

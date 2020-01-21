@@ -67,7 +67,7 @@ compressed-x-grps        = System
 energygrps               = 
 
 ; NEIGHBORSEARCHING PARAMETERS
-; cut-off scheme (Verlet: particle based cut-offs, group: using charge groups)
+; cut-off scheme (Verlet: particle based cut-offs)
 cutoff-scheme            = Verlet
 ; nblist update frequency
 nstlist                  = 10

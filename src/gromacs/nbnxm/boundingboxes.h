@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,7 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \internal \file
+/*! \file
+ * \internal
  *
  * \brief Declares constants and helper functions used when handling
  * bounding boxes for clusters of particles.
@@ -57,7 +58,7 @@ static constexpr int c_numBoundingBoxBounds1D = 2;
 
 #ifndef DOXYGEN
 
-/* Bounding box calculations are (currently) always in single precision, so
+/*! \brief Bounding box calculations are (currently) always in single precision, so
  * we only need to check for single precision support here.
  * This uses less (cache-)memory and SIMD is faster, at least on x86.
  */

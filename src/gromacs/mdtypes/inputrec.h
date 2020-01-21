@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +60,8 @@ class Awh;
 struct AwhParams;
 class KeyValueTreeObject;
 } // namespace gmx
+
+enum class PbcType;
 
 struct t_grpopts
 {
@@ -388,7 +391,7 @@ struct t_inputrec // NOLINT (clang-analyzer-optin.performance.Padding)
     //! Type of combination rule in LJ-PME
     int ljpme_combination_rule;
     //! Type of periodic boundary conditions
-    int ePBC;
+    PbcType pbcType;
     //! Periodic molecules
     bool bPeriodicMols;
     //! Continuation run: starting state is correct (ie. constrained)

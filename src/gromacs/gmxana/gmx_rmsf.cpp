@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -239,7 +240,7 @@ int gmx_rmsf(int argc, char* argv[])
     real t, *w_rls;
 
     t_topology top;
-    int        ePBC;
+    PbcType    pbcType;
     t_atoms *  pdbatoms, *refatoms;
 
     matrix       box, pdbbox;
@@ -287,7 +288,7 @@ int gmx_rmsf(int argc, char* argv[])
     devfn    = opt2fn_null("-od", NFILE, fnm);
     dirfn    = opt2fn_null("-dir", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xref, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xref, nullptr, box, TRUE);
     const char* title = *top.name;
     snew(w_rls, top.atoms.nr);
 
@@ -348,7 +349,7 @@ int gmx_rmsf(int argc, char* argv[])
 
     if (bFit)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natom);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, natom);
     }
 
     /* Now read the trj again to compute fluctuations */
@@ -554,7 +555,7 @@ int gmx_rmsf(int argc, char* argv[])
         {
             rvec_inc(pdbx[index[i]], xcm);
         }
-        write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx, nullptr, ePBC,
+        write_sto_conf_indexed(opt2fn("-oq", NFILE, fnm), title, pdbatoms, pdbx, nullptr, pbcType,
                                pdbbox, isize, index);
     }
     if (opt2bSet("-ox", NFILE, fnm))
@@ -569,8 +570,8 @@ int gmx_rmsf(int argc, char* argv[])
             }
         }
         /* Write a .pdb file with B-factors and optionally anisou records */
-        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, nullptr, ePBC,
-                               pdbbox, isize, index);
+        write_sto_conf_indexed(opt2fn("-ox", NFILE, fnm), title, pdbatoms, bFactorX, nullptr,
+                               pbcType, pdbbox, isize, index);
         sfree(bFactorX);
     }
     if (bAniso)

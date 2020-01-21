@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -154,15 +154,15 @@ void detail::export_tprfile(pybind11::module& module)
                    return gmxapicompat::copy_tprfile(input, outFile);
                },
                py::arg("source"), py::arg("destination"),
-               "Copy a TPR file from `source` to `destination`.");
+               "Copy a TPR file from ``source`` to ``destination``.");
 
-    module.def(
-            "rewrite_tprfile",
-            [](std::string input, std::string output, double end_time) {
-                return gmxapicompat::rewrite_tprfile(input, output, end_time);
-            },
-            py::arg("source"), py::arg("destination"), py::arg("end_time"),
-            "Copy a TPR file from `source` to `destination`, replacing `nsteps` with `end_time`.");
+    module.def("rewrite_tprfile",
+               [](std::string input, std::string output, double end_time) {
+                   return gmxapicompat::rewrite_tprfile(input, output, end_time);
+               },
+               py::arg("source"), py::arg("destination"), py::arg("end_time"),
+               "Copy a TPR file from ``source`` to ``destination``, replacing `nsteps` with "
+               "``end_time``.");
 }
 
 } // end namespace gmxpy

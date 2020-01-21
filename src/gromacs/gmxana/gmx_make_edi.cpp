@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -900,7 +901,7 @@ int gmx_make_edi(int argc, char* argv[])
 
     /*to read topology file*/
     t_topology top;
-    int        ePBC;
+    PbcType    pbcType;
     matrix     topbox;
     rvec*      xtop;
     gmx_bool   bFit1;
@@ -998,7 +999,7 @@ int gmx_make_edi(int argc, char* argv[])
     read_eigenvectors(EigvecFile, &nav, &bFit1, &xref1, &edi_params.fitmas, &xav1,
                       &edi_params.pcamas, &nvec1, &eignr1, &eigvec1, &eigval1);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, topbox, false);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox, false);
     atoms = &top.atoms;
 
 

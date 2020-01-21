@@ -145,7 +145,10 @@ public:
      * \returns true at steps where checks should be performed.
      * \note  Only returns true at free energy update steps.
      */
-    bool isCheckCoveringStep(int64_t step) const { return step % numStepsCheckCovering_ == 0; }
+    bool isCheckCoveringStep(int64_t step) const
+    {
+        return step > 0 && (step % numStepsCheckCovering_ == 0);
+    }
 
     /*! \brief
      * Returns if to perform checks for anomalies in the histogram.

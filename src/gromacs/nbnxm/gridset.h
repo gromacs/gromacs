@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,6 +63,7 @@
 
 struct nbnxn_atomdata_t;
 enum class PairlistType;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -90,13 +91,13 @@ public:
     struct DomainSetup
     {
         //! Constructor, without DD \p numDDCells and \p ddZones should be nullptr
-        DomainSetup(int                       ePBC,
+        DomainSetup(PbcType                   pbcType,
                     bool                      doTestParticleInsertion,
                     const ivec*               numDDCells,
                     const gmx_domdec_zones_t* ddZones);
 
         //! The type of PBC
-        int ePBC;
+        PbcType pbcType;
         //! Tells whether we are doing test-particle insertion
         bool doTestParticleInsertion;
         //! Are there multiple domains?
@@ -108,7 +109,7 @@ public:
     };
 
     //! Constructs a grid set for 1 or multiple DD zones, when numDDCells!=nullptr
-    GridSet(int                       ePBC,
+    GridSet(PbcType                   pbcType,
             bool                      doTestParticleInsertion,
             const ivec*               numDDCells,
             const gmx_domdec_zones_t* ddZones,

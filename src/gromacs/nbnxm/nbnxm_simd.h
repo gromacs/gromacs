@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,15 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-
+/*! \internal \file
+ *
+ * \brief
+ * Defines constants used to know which Nbnxm kernel flavours (4xn or 2xnn)
+ * can be supported by the SIMD layer in use.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
 #ifndef GMX_NBNXM_NBNXM_SIMD_H
 #define GMX_NBNXM_NBNXM_SIMD_H
 
@@ -41,7 +49,7 @@
 #include "gromacs/utility/real.h"
 
 #if GMX_SIMD
-/* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
+/*! \brief The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
  * 16-way SIMD: 4x8 setup, works with Intel MIC in single precision
@@ -59,4 +67,4 @@
 
 #endif // GMX_SIMD
 
-#endif /* _nbnxn_simd_h */
+#endif

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2013, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,11 +98,11 @@ static bool MWCallBack(t_x11* x11, XEvent* event, Window /*w*/, void* data)
     return false;
 }
 
-static void set_def(t_molwin* mw, int ePBC, matrix box)
+static void set_def(t_molwin* mw, PbcType pbcType, matrix box)
 {
     mw->bShowHydrogen = true;
     mw->bond_type     = eBFat;
-    mw->ePBC          = ePBC;
+    mw->pbcType       = pbcType;
     mw->boxtype       = esbRect;
     mw->realbox       = TRICLINIC(box) ? esbTri : esbRect;
 }
@@ -114,13 +115,13 @@ t_molwin* init_mw(t_x11*        x11,
                   int           height,
                   unsigned long fg,
                   unsigned long bg,
-                  int           ePBC,
+                  PbcType       pbcType,
                   matrix        box)
 {
     t_molwin* mw;
 
     snew(mw, 1);
-    set_def(mw, ePBC, box);
+    set_def(mw, pbcType, box);
 
     InitWin(&mw->wd, x, y, width, height, 1, "Mol Window");
 

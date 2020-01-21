@@ -45,13 +45,13 @@ density.
 Usage
 ^^^^^
 
-Density-guided simulations are controlled by setting `.mdp` options and
-providing a reference density map as a file additional to the `.tpr`.
+Density-guided simulations are controlled by setting ``.mdp`` options and
+providing a reference density map as a file additional to the ``.tpr``.
 
 All options that are related to density-guided simulations are prefixed with
-`density-guided-simulation`.
+``density-guided-simulation``.
 
-Setting `density-guided-simulation-active = yes` will trigger density-guided
+Setting ``density-guided-simulation-active = yes`` will trigger density-guided
 simulations with default parameters that will cause atoms to move into the
 reference density.
 
@@ -172,12 +172,10 @@ The reference density map format
 
 Reference input for the densities are given in mrc format according to the
 "EMDB Map Distribution Format Description Version 1.01 (c) emdatabank.org 2014".
-Closely related formats like `ccp4` and `map` might work.
+Closely related formats like ``ccp4`` and ``map`` might work.
 
 Be aware that different visualization software handles map formats differently.
-During simulations, reference densities are interpreted as visualised by `VMD`.
-If the reference map shows unexpected behaviour, swapping endianess with a map
-conversion tool like `em2em` might help.
+During simulations, reference densities are interpreted as visualised by ``VMD``.
 
 Output
 ^^^^^^
@@ -199,8 +197,8 @@ measures with a time constant :math:`tau` that is given in ps. If the exponentia
 moving average similarity increases, the force constant is scaled down by
 dividing by :math:`1+\delta t_{\mathrm{density}}/tau`, where
 :math:`\delta t_{\mathrm{density}}` is the time between density guided simulation steps.
-Reversely, if similarity between reference and simulated density is decreasing,
-the force constant is increased by multiplying by :math:`1+\delta t_{\mathrm{density}}/tau`.
+Conversely, if similarity between reference and simulated density is decreasing,
+the force constant is increased by multiplying by :math:`1+2\delta t_{\mathrm{density}}/tau`.
 Note that adaptive force scaling does not conserve energy and will ultimately lead to very high
 forces when similarity cannot be increased further.
 

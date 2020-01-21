@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2773,7 +2774,7 @@ std::unique_ptr<gmx::EssentialDynamics> init_edsam(const gmx::MDLogger&        m
             /* Remove PBC, make molecule(s) subject to ED whole. */
             snew(x_pbc, mtop->natoms);
             copy_rvecn(globalState->x.rvec_array(), x_pbc, 0, mtop->natoms);
-            do_pbc_first_mtop(nullptr, ir->ePBC, globalState->box, mtop, x_pbc);
+            do_pbc_first_mtop(nullptr, ir->pbcType, globalState->box, mtop, x_pbc);
         }
         /* Reset pointer to first ED data set which contains the actual ED data */
         auto edi = ed->edpar.begin();

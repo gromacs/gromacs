@@ -38,6 +38,9 @@ that compilers will include such headers with e.g. -isystem, so that
 they will not generate warnings from such headers included in GROMACS
 test code.
 
+As gtest is not building libraries inside googletest/googletest/src,
+the link_directories command for that is removed.
+
 The googlemock/CMakeLists.txt no longer builds
 googletest/src/gtest-all.cc as part of the gmock target, because it is
 already built as part of the gtest target, and this leads to duplicate

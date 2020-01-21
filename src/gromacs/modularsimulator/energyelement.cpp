@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,7 +160,7 @@ void EnergyElement::trajectoryWriterSetup(gmx_mdoutf* outf)
     pull_t* pull_work = nullptr;
     energyOutput_ = std::make_unique<EnergyOutput>(mdoutf_get_fp_ene(outf), top_global_, inputrec_,
                                                    pull_work, mdoutf_get_fp_dhdl(outf), false,
-                                                   mdModulesNotifier_);
+                                                   startingBehavior_, mdModulesNotifier_);
 
     if (!isMasterRank_)
     {

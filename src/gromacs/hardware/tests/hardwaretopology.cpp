@@ -205,12 +205,18 @@ TEST(HardwareTopologyTest, NumaCacheSelfconsistency)
             }
         }
 
-        // Check cache. The hwloc cache detection is fragile and can report
-        // 0 for line size or associativity (=unknown), so we just check the size.
-        for (auto& c : hwTop.machine().caches)
-        {
-            EXPECT_GT(c.size, 0);
-        }
+        // We don't check cache fields because these tests depend both
+        // on whether hwloc can detect things correctly, and then
+        // whether GROMACS code packages the results correctly. The
+        // hwloc cache detection is fragile and can report 0 for cache
+        // size, line size or associativity (=unknown), so GROMACS
+        // doesn't test anything related to it.
+        //
+        // TODO Use proper unit tests on mock hardware to test that
+        // HardwareTopology construction is doing its job, rather than
+        // brittle tests that require that hwloc works correctly on
+        // the user's hardware even when GROMACS is barely using the
+        // values returned by hwloc.
     }
 }
 

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,10 +57,10 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
 #include "gromacs/mdtypes/forcerec.h" // only for GET_CGINFO_*
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
 
-#include "atomdata.h"
 #include "boundingboxes.h"
 #include "gridsetdata.h"
 #include "nbnxm_geometry.h"

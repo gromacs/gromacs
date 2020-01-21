@@ -3,7 +3,7 @@
 <ReferenceData>
   <FunctionType Name="POLARIZATION">
     <FEP Name="No">
-      <Real Name="Epot ">71.870154544676424</Real>
+      <Real Name="Epot ">71.870154443958413</Real>
       <Real Name="dVdlambda ">0</Real>
       <Vector Name="Central shift forces">
         <Real Name="X">0</Real>
@@ -15,21 +15,21 @@
         <Vector>
           <Real Name="X">0</Real>
           <Real Name="Y">0</Real>
-          <Real Name="Z">694.67728919542242</Real>
+          <Real Name="Z">694.67728822190975</Real>
         </Vector>
         <Vector>
           <Real Name="X">0</Real>
-          <Real Name="Y">182.35278841379841</Real>
-          <Real Name="Z">-512.32450078162401</Real>
+          <Real Name="Y">182.35278815825134</Real>
+          <Real Name="Z">-512.32450006365843</Real>
         </Vector>
         <Vector>
           <Real Name="X">0</Real>
-          <Real Name="Y">-54.995285394637648</Real>
-          <Real Name="Z">-182.35278841379841</Real>
+          <Real Name="Y">-54.995285317567891</Real>
+          <Real Name="Z">-182.35278815825134</Real>
         </Vector>
         <Vector>
           <Real Name="X">0</Real>
-          <Real Name="Y">-127.35750301916076</Real>
+          <Real Name="Y">-127.35750284068345</Real>
           <Real Name="Z">0</Real>
         </Vector>
       </Sequence>

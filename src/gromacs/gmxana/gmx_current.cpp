@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -187,7 +189,7 @@ static void remove_jump(matrix box, int natoms, rvec xp[], rvec x[])
 }
 
 static void calc_mj(t_topology top,
-                    int        ePBC,
+                    PbcType    pbcType,
                     matrix     box,
                     gmx_bool   bNoJump,
                     int        isize,
@@ -209,7 +211,7 @@ static void calc_mj(t_topology top,
 
     if (!bNoJump)
     {
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
     }
 
     clear_rvec(tmp);
@@ -353,7 +355,7 @@ static void dielectric(FILE*                   fmj,
                        gmx_bool                bNoJump,
                        gmx_bool                bACF,
                        gmx_bool                bINT,
-                       int                     ePBC,
+                       PbcType                 pbcType,
                        t_topology              top,
                        t_trxframe              fr,
                        real                    temp,
@@ -453,7 +455,7 @@ static void dielectric(FILE*                   fmj,
     clear_rvec(mjd_tmp);
     clear_rvec(mdvec);
     clear_rvec(tmp);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, fr.natoms);
 
     do
     {
@@ -517,7 +519,7 @@ static void dielectric(FILE*                   fmj,
 
         gmx_rmpbc_trxfr(gpbc, &fr);
 
-        calc_mj(top, ePBC, fr.box, bNoJump, nmols, indexm, fr.x, mtrans[nfr], mass2, qmol);
+        calc_mj(top, pbcType, fr.box, bNoJump, nmols, indexm, fr.x, mtrans[nfr], mass2, qmol);
 
         for (i = 0; i < isize; i++)
         {
@@ -855,7 +857,7 @@ int gmx_current(int argc, char* argv[])
     int               flags = 0;
     gmx_bool          bACF;
     gmx_bool          bINT;
-    int               ePBC = -1;
+    PbcType           pbcType = PbcType::Unset;
     int               nmols;
     int               i;
     real*             qmol;
@@ -941,7 +943,7 @@ int gmx_current(int argc, char* argv[])
     bACF = opt2bSet("-caf", NFILE, fnm);
     bINT = opt2bSet("-mc", NFILE, fnm);
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, nullptr, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, nullptr, nullptr, box, TRUE);
 
     indexfn = ftp2fn_null(efNDX, NFILE, fnm);
     snew(grpname, 1);
@@ -1007,7 +1009,7 @@ int gmx_current(int argc, char* argv[])
     /* System information is read and prepared, dielectric() processes the frames
      * and calculates the requested quantities */
 
-    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, ePBC, top, fr, temp, bfit, efit,
+    dielectric(fmj, fmd, outf, fcur, mcor, fmjdsp, bNoJump, bACF, bINT, pbcType, top, fr, temp, bfit, efit,
                bvit, evit, status, isize, nmols, nshift, index0, indexm, mass2, qmol, eps_rf, oenv);
 
     xvgrclose(fmj);

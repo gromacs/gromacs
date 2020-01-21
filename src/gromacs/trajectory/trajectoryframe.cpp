@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -147,9 +147,9 @@ double TrajectoryFrame::time() const
     return frame_.time;
 }
 
-int TrajectoryFrame::pbc() const
+PbcType TrajectoryFrame::pbc() const
 {
-    return frame_.ePBC;
+    return frame_.pbcType;
 }
 
 ArrayRef<const RVec> TrajectoryFrame::x() const

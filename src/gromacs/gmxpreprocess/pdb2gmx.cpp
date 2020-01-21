@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -523,7 +524,7 @@ static int read_pdball(const char*     inf,
                        char**          title,
                        t_atoms*        atoms,
                        rvec**          x,
-                       int*            ePBC,
+                       PbcType*        pbcType,
                        matrix          box,
                        bool            bRemoveH,
                        t_symtab*       symtab,
@@ -537,7 +538,7 @@ static int read_pdball(const char*     inf,
 
     /* READ IT */
     printf("Reading %s...\n", inf);
-    readConfAndAtoms(inf, symtab, title, atoms, ePBC, x, nullptr, box);
+    readConfAndAtoms(inf, symtab, title, atoms, pbcType, x, nullptr, box);
     natom = atoms->nr;
     if (atoms->pdbinfo == nullptr)
     {
@@ -585,7 +586,7 @@ static int read_pdball(const char*     inf,
     }
     if (bOutput)
     {
-        write_sto_conf(outf, *title, atoms, *x, nullptr, *ePBC, box);
+        write_sto_conf(outf, *title, atoms, *x, nullptr, *pbcType, box);
     }
 
     return natom;
@@ -1734,11 +1735,11 @@ int pdb2gmx::run()
 
     AtomProperties aps;
     char*          title = nullptr;
-    int            ePBC;
+    PbcType        pbcType;
     t_atoms        pdba_all;
     rvec*          pdbx;
     int natom = read_pdball(inputConfFile_.c_str(), bOutputSet_, outFile_.c_str(), &title, &pdba_all,
-                            &pdbx, &ePBC, box, bRemoveH_, &symtab, &rt, watres, &aps, bVerbose_);
+                            &pdbx, &pbcType, box, bRemoveH_, &symtab, &rt, watres, &aps, bVerbose_);
 
     if (natom == 0)
     {
@@ -2408,7 +2409,8 @@ int pdb2gmx::run()
     {
         make_new_box(atoms->nr, gmx::as_rvec_array(x.data()), box, box_space, false);
     }
-    write_sto_conf(outputConfFile_.c_str(), title, atoms, gmx::as_rvec_array(x.data()), nullptr, ePBC, box);
+    write_sto_conf(outputConfFile_.c_str(), title, atoms, gmx::as_rvec_array(x.data()), nullptr,
+                   pbcType, box);
 
     done_symtab(&symtab);
     done_atom(&pdba_all);

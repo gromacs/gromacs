@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2011,2012,2014,2016,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2011,2012,2014,2016,2018 by the GROMACS development team.
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -37,6 +38,9 @@ if (WIN32)
     gmx_target_warning_suppression(template /wd4244 HAS_NO_MSVC_LOSSY_CONVERSION_DOUBLE_TO_REAL)
     gmx_target_warning_suppression(template /wd4267 HAS_NO_MSVC_LOSSY_CONVERSION_SIZE_T_TO_INT)
 endif()
+# This should be removable once object libraries can directly use target_link_libraries
+# with CMake 3.12, #3290
+target_include_directories(template SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
 
 set(DOCUMENTATION_HTTP_URL_BASE

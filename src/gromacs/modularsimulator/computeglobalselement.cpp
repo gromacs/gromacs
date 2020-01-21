@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -141,7 +141,7 @@ void ComputeGlobalsElement<algorithm>::elementSetup()
         for (int cgloIteration = 0; cgloIteration < (stopCM ? 2 : 1); cgloIteration++)
         {
             unsigned int cglo_flags_iteration = cglo_flags;
-            if (doStopCM_ && cgloIteration == 0)
+            if (stopCM && cgloIteration == 0)
             {
                 cglo_flags_iteration |= CGLO_STOPCM;
                 cglo_flags_iteration &= ~CGLO_TEMPERATURE;

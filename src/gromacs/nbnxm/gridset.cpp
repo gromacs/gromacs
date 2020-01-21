@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,8 @@
 
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdlib/updategroupscog.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "atomdata.h"
 
 namespace Nbnxm
 {
@@ -78,11 +77,11 @@ static int numGrids(const GridSet::DomainSetup& domainSetup)
     return numGrids;
 }
 
-GridSet::DomainSetup::DomainSetup(const int                 ePBC,
+GridSet::DomainSetup::DomainSetup(const PbcType             pbcType,
                                   const bool                doTestParticleInsertion,
                                   const ivec*               numDDCells,
                                   const gmx_domdec_zones_t* ddZones) :
-    ePBC(ePBC),
+    pbcType(pbcType),
     doTestParticleInsertion(doTestParticleInsertion),
     haveMultipleDomains(numDDCells != nullptr),
     zones(ddZones)
@@ -93,7 +92,7 @@ GridSet::DomainSetup::DomainSetup(const int                 ePBC,
     }
 }
 
-GridSet::GridSet(const int                 ePBC,
+GridSet::GridSet(const PbcType             pbcType,
                  const bool                doTestParticleInsertion,
                  const ivec*               numDDCells,
                  const gmx_domdec_zones_t* ddZones,
@@ -101,7 +100,7 @@ GridSet::GridSet(const int                 ePBC,
                  const bool                haveFep,
                  const int                 numThreads,
                  gmx::PinningPolicy        pinningPolicy) :
-    domainSetup_(ePBC, doTestParticleInsertion, numDDCells, ddZones),
+    domainSetup_(pbcType, doTestParticleInsertion, numDDCells, ddZones),
     grids_(numGrids(domainSetup_), Grid(pairlistType, haveFep_)),
     haveFep_(haveFep),
     numRealAtomsLocal_(0),

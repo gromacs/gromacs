@@ -96,7 +96,7 @@ a few parts:
   for constructing command line argument arrays, and
   test fixtures for tests that need to test long strings for correctness
   and for tests that execute legacy code where
-  `stdin` reading etc. cannot be easily mocked.
+  ``stdin`` reading etc. cannot be easily mocked.
 
   __ doxygen-module-testutils_
 

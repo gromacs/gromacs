@@ -2,7 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2005 - 2014, The GROMACS development team.
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -81,6 +82,7 @@ struct t_inputrec;
 struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
+enum class PbcType : int;
 class t_state;
 
 namespace gmx
@@ -147,6 +149,9 @@ int dd_pme_maxshift_y(const gmx_domdec_t* dd);
 /*! \brief Return whether constraints, not including settles, cross domain boundaries */
 bool ddHaveSplitConstraints(const gmx_domdec_t& dd);
 
+/*! \brief Return whether update groups are used */
+bool ddUsesUpdateGroups(const gmx_domdec_t& dd);
+
 /*! \brief Return whether the DD has a single dimension with a single pulse
  *
  * The GPU halo exchange code requires a 1D single-pulse DD, and its
@@ -167,7 +172,7 @@ void dd_init_bondeds(FILE*                      fplog,
 bool dd_moleculesAreAlwaysWhole(const gmx_domdec_t& dd);
 
 /*! \brief Returns if we need to do pbc for calculating bonded interactions */
-gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, int ePBC);
+gmx_bool dd_bonded_molpbc(const gmx_domdec_t* dd, PbcType pbcType);
 
 /*! \brief Change the DD non-bonded communication cut-off.
  *
@@ -232,7 +237,11 @@ void dd_move_f_vsites(struct gmx_domdec_t* dd, rvec* f, rvec* fshift);
 void dd_clear_f_vsites(struct gmx_domdec_t* dd, rvec* f);
 
 /*! \brief Move x0 and also x1 if x1!=NULL. bX1IsCoord tells if to do PBC on x1 */
-void dd_move_x_constraints(struct gmx_domdec_t* dd, const matrix box, rvec* x0, rvec* x1, gmx_bool bX1IsCoord);
+void dd_move_x_constraints(struct gmx_domdec_t*     dd,
+                           const matrix             box,
+                           gmx::ArrayRef<gmx::RVec> x0,
+                           gmx::ArrayRef<gmx::RVec> x1,
+                           gmx_bool                 bX1IsCoord);
 
 /*! \brief Communicates the coordinates involved in virtual sites */
 void dd_move_x_vsites(struct gmx_domdec_t* dd, const matrix box, rvec* x);

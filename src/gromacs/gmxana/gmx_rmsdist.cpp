@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,14 +63,14 @@
 #include "gromacs/utility/strdb.h"
 
 
-static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, matrix box, real** d)
+static void calc_dist(int nind, const int index[], const rvec x[], PbcType pbcType, matrix box, real** d)
 {
     int   i, j;
     rvec  dx;
     real  temp2;
     t_pbc pbc;
 
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
     for (i = 0; (i < nind - 1); i++)
     {
         const real* xi = x[index[i]];
@@ -85,7 +86,7 @@ static void calc_dist(int nind, const int index[], const rvec x[], int ePBC, mat
 static void calc_dist_tot(int       nind,
                           const int index[],
                           rvec      x[],
-                          int       ePBC,
+                          PbcType   pbcType,
                           matrix    box,
                           real**    d,
                           real**    dtot,
@@ -100,7 +101,7 @@ static void calc_dist_tot(int       nind,
     rvec  dx;
     t_pbc pbc;
 
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
     for (i = 0; (i < nind - 1); i++)
     {
         xi = x[index[i]];
@@ -668,7 +669,7 @@ int gmx_rmsdist(int argc, char* argv[])
     real t;
 
     t_topology top;
-    int        ePBC;
+    PbcType    pbcType;
     t_atoms*   atoms;
     matrix     box;
     rvec*      x;
@@ -741,11 +742,11 @@ int gmx_rmsdist(int argc, char* argv[])
     }
 
     /* get topology and index */
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x, nullptr, box, FALSE);
 
     if (!bPBC)
     {
-        ePBC = epbcNONE;
+        pbcType = PbcType::No;
     }
     atoms = &(top.atoms);
 
@@ -783,7 +784,7 @@ int gmx_rmsdist(int argc, char* argv[])
     }
 
     /*set box type*/
-    calc_dist(isize, index, x, ePBC, box, d_r);
+    calc_dist(isize, index, x, pbcType, box, d_r);
     sfree(x);
 
     /*open output files*/
@@ -799,7 +800,7 @@ int gmx_rmsdist(int argc, char* argv[])
 
     do
     {
-        calc_dist_tot(isize, index, x, ePBC, box, d, dtot, dtot2, bNMR, dtot1_3, dtot1_6);
+        calc_dist_tot(isize, index, x, pbcType, box, d, dtot, dtot2, bNMR, dtot1_3, dtot1_6);
 
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);

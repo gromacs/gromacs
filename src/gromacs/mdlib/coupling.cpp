@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -288,7 +289,7 @@ static void boxv_trotter(const t_inputrec*     ir,
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal = calc_pres(ir->ePBC, nwall, box, ekinmod, vir, localpres) + pcorr;
+    pscal = calc_pres(ir->pbcType, nwall, box, ekinmod, vir, localpres) + pcorr;
 
     vol = det(box);
     GW  = (vol * (MassQ->Winv / PRESFAC)) * (DIM * pscal - trace(ir->ref_p)); /* W is in ps^2 * bar * nm^3 */
@@ -304,12 +305,12 @@ static void boxv_trotter(const t_inputrec*     ir,
  *
  */
 
-real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres)
+real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres)
 {
     int  n, m;
     real fac;
 
-    if (ePBC == epbcNONE || (ePBC == epbcXY && nwall != 2))
+    if (pbcType == PbcType::No || (pbcType == PbcType::XY && nwall != 2))
     {
         clear_mat(pres);
     }
@@ -708,7 +709,8 @@ void berendsen_pscale(const t_inputrec*    ir,
                       int                  nr_atoms,
                       rvec                 x[],
                       const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb)
+                      t_nrnb*              nrnb,
+                      const bool           scaleCoordinates)
 {
     ivec* nFreeze = ir->opts.nFreeze;
     int   d;
@@ -719,32 +721,35 @@ void berendsen_pscale(const t_inputrec*    ir,
 #endif
 
     /* Scale the positions */
-#pragma omp parallel for num_threads(nthreads) schedule(static)
-    for (int n = start; n < start + nr_atoms; n++)
+    if (scaleCoordinates)
     {
-        // Trivial OpenMP region that does not throw
-        int g;
+#pragma omp parallel for num_threads(nthreads) schedule(static)
+        for (int n = start; n < start + nr_atoms; n++)
+        {
+            // Trivial OpenMP region that does not throw
+            int g;
 
-        if (cFREEZE == nullptr)
-        {
-            g = 0;
-        }
-        else
-        {
-            g = cFREEZE[n];
-        }
+            if (cFREEZE == nullptr)
+            {
+                g = 0;
+            }
+            else
+            {
+                g = cFREEZE[n];
+            }
 
-        if (!nFreeze[g][XX])
-        {
-            x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
-        }
-        if (!nFreeze[g][YY])
-        {
-            x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
-        }
-        if (!nFreeze[g][ZZ])
-        {
-            x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
+            if (!nFreeze[g][XX])
+            {
+                x[n][XX] = mu[XX][XX] * x[n][XX] + mu[YY][XX] * x[n][YY] + mu[ZZ][XX] * x[n][ZZ];
+            }
+            if (!nFreeze[g][YY])
+            {
+                x[n][YY] = mu[YY][YY] * x[n][YY] + mu[ZZ][YY] * x[n][ZZ];
+            }
+            if (!nFreeze[g][ZZ])
+            {
+                x[n][ZZ] = mu[ZZ][ZZ] * x[n][ZZ];
+            }
         }
     }
     /* compute final boxlengths */

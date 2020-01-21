@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -138,7 +138,7 @@ int RunnerModule::run()
         t_trxframe& frame = common_.frame();
         if (ppbc != nullptr)
         {
-            set_pbc(ppbc, topology.ePBC(), frame.box);
+            set_pbc(ppbc, topology.pbcType(), frame.box);
         }
 
         selections_.evaluate(&frame, ppbc);

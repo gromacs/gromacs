@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +54,7 @@ struct t_grpopts;
 struct t_inputrec;
 struct pull_params_t;
 struct pull_t;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -75,7 +77,7 @@ AwhParams* readAndCheckAwhParams(std::vector<t_inpfile>* inp, const t_inputrec* 
  * \param[in]     pull_params           Pull parameters.
  * \param[in,out] pull_work             Pull working struct to register AWH bias in.
  * \param[in]     box                   Box vectors.
- * \param[in]     ePBC                  Periodic boundary conditions enum.
+ * \param[in]     pbcType               Periodic boundary conditions enum.
  * \param[in]     compressibility       Compressibility matrix for pressure coupling, pass all 0 without pressure coupling
  * \param[in]     inputrecGroupOptions  Parameters for atom groups.
  * \param[in,out] wi                    Struct for bookeeping warnings.
@@ -86,7 +88,7 @@ void setStateDependentAwhParams(AwhParams*           awhParams,
                                 const pull_params_t* pull_params,
                                 pull_t*              pull_work,
                                 const matrix         box,
-                                int                  ePBC,
+                                PbcType              pbcType,
                                 const tensor&        compressibility,
                                 const t_grpopts*     inputrecGroupOptions,
                                 warninp_t            wi);

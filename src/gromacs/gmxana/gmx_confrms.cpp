@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -525,7 +526,7 @@ int gmx_confrms(int argc, char* argv[])
     FILE*       fp;
     char *      name1, *name2;
     t_topology *top1, *top2;
-    int         ePBC1, ePBC2;
+    PbcType     pbcType1, pbcType2;
     t_atoms *   atoms1, *atoms2;
     int         warn = 0;
     int         at;
@@ -561,7 +562,7 @@ int gmx_confrms(int argc, char* argv[])
     /* reading reference structure from first structure file */
     fprintf(stderr, "\nReading first structure file\n");
     snew(top1, 1);
-    read_tps_conf(conf1file, top1, &ePBC1, &x1, &v1, box1, TRUE);
+    read_tps_conf(conf1file, top1, &pbcType1, &x1, &v1, box1, TRUE);
     atoms1 = &(top1->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n", *top1->name, atoms1->nr, atoms1->nres);
 
@@ -582,7 +583,7 @@ int gmx_confrms(int argc, char* argv[])
     /* reading second structure file */
     fprintf(stderr, "\nReading second structure file\n");
     snew(top2, 1);
-    read_tps_conf(conf2file, top2, &ePBC2, &x2, &v2, box2, TRUE);
+    read_tps_conf(conf2file, top2, &pbcType2, &x2, &v2, box2, TRUE);
     atoms2 = &(top2->atoms);
     fprintf(stderr, "%s\nContaining %d atoms in %d residues\n", *top2->name, atoms2->nr, atoms2->nres);
 
@@ -792,9 +793,9 @@ int gmx_confrms(int argc, char* argv[])
             fp = gmx_ffopen(outfile, "w");
             if (!bOne)
             {
-                write_pdbfile(fp, *top1->name, atoms1, x1, ePBC1, box1, ' ', 1, nullptr);
+                write_pdbfile(fp, *top1->name, atoms1, x1, pbcType1, box1, ' ', 1, nullptr);
             }
-            write_pdbfile(fp, *top2->name, atoms2, x2, ePBC2, box2, ' ', bOne ? -1 : 2, nullptr);
+            write_pdbfile(fp, *top2->name, atoms2, x2, pbcType2, box2, ' ', bOne ? -1 : 2, nullptr);
             gmx_ffclose(fp);
             break;
         case efGRO:
@@ -821,7 +822,7 @@ int gmx_confrms(int argc, char* argv[])
                 fprintf(stderr, "WARNING: cannot write the reference structure to %s file\n",
                         ftp2ext(fn2ftp(outfile)));
             }
-            write_sto_conf(outfile, *top2->name, atoms2, x2, v2, ePBC2, box2);
+            write_sto_conf(outfile, *top2->name, atoms2, x2, v2, pbcType2, box2);
             break;
     }
 

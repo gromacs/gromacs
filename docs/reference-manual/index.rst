@@ -6,7 +6,7 @@ Reference Manual
 
 .. highlight:: bash
 
-.. TODO this needs to be carefully checked that I didn't mess anything up too bad
+.. todo:: this needs to be carefully checked that I didn't mess anything up too bad
 
 .. ifconfig:: gmx_image_convert == 'possible'
 

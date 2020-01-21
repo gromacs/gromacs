@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,14 +125,20 @@ struct BoundingBox
         //! Returns a pointer for SIMD storing of a Corner object
         float* ptr() { return &x; }
 
-        float x;       //!< x coordinate
-        float y;       //!< y coordinate
-        float z;       //!< z coordinate
-        float padding; //!< padding, unused, but should be set to avoid operations on unitialized data
+        //! x coordinate
+        float x;
+        //! y coordinate
+        float y;
+        //! z coordinate
+        float z;
+        //! padding, unused, but should be set to avoid operations on unitialized data
+        float padding;
     };
 
-    Corner lower; //!< lower, along x and y and z, corner
-    Corner upper; //!< upper, along x and y and z, corner
+    //! lower, along x and y and z, corner
+    Corner lower;
+    //! upper, along x and y and z, corner
+    Corner upper;
 };
 
 /*! \internal
@@ -140,8 +146,10 @@ struct BoundingBox
  */
 struct BoundingBox1D
 {
-    float lower; //!< lower bound
-    float upper; //!< upper bound
+    //! lower bound
+    float lower;
+    //! upper bound
+    float upper;
 };
 
 } // namespace Nbnxm
@@ -182,14 +190,19 @@ public:
         //! Constructs the cluster/cell geometry given the type of pairlist
         Geometry(PairlistType pairlistType);
 
-        bool isSimple;             //!< Is this grid simple (CPU) or hierarchical (GPU)
-        int  numAtomsICluster;     //!< Number of atoms per cluster
-        int  numAtomsJCluster;     //!< Number of atoms for list j-clusters
-        int  numAtomsPerCell;      //!< Number of atoms per cell
-        int  numAtomsICluster2Log; //!< 2log of na_c
+        //! Is this grid simple (CPU) or hierarchical (GPU)
+        bool isSimple;
+        //! Number of atoms per cluster
+        int numAtomsICluster;
+        //! Number of atoms for list j-clusters
+        int numAtomsJCluster;
+        //! Number of atoms per cell
+        int numAtomsPerCell;
+        //! 2log of na_c
+        int numAtomsICluster2Log;
     };
 
-    // The physical dimensions of a grid
+    //! The physical dimensions of a grid \internal
     struct Dimensions
     {
         //! The lower corner of the (local) grid

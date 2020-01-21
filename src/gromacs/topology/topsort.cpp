@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -229,7 +230,7 @@ void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
                 }
             }
             /* Now we now the number of non-perturbed interactions */
-            ilist->nr_nonperturbed = ic;
+            idef->numNonperturbedInteractions[ftype] = ic;
 
             /* Copy the buffer with perturbed interactions to the ilist */
             for (a = 0; a < ib; a++)
@@ -239,8 +240,9 @@ void gmx_sort_ilist_fe(t_idef* idef, const real* qA, const real* qB)
 
             if (debug)
             {
+                const int numNonperturbed = idef->numNonperturbedInteractions[ftype];
                 fprintf(debug, "%s non-pert %d pert %d\n", interaction_function[ftype].longname,
-                        ilist->nr_nonperturbed, ilist->nr - ilist->nr_nonperturbed);
+                        numNonperturbed, ilist->nr - numNonperturbed);
             }
         }
     }
