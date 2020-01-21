@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -4091,7 +4091,8 @@ void triple_check(const char* mdparin, t_inputrec* ir, gmx_mtop_t* sys, warninp_
     {
         warning_note(wi,
                      "Removing center of mass motion in the presence of position restraints might "
-                     "cause artifacts");
+                     "cause artifacts. When you are using position restraints to equilibrate a "
+                     "macro-molecule, the artifacts are usually negligible.");
     }
 
     if (ir->cutoff_scheme == ecutsVERLET && ir->verletbuf_tol > 0 && ir->nstlist > 1
