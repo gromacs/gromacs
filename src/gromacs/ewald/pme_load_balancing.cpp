@@ -2,6 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -160,6 +161,7 @@ struct pme_load_balancing_t
     gmx_bool bTriggerOnDLB; /**< trigger balancing only on DD DLB */
     gmx_bool bBalance;      /**< are we in the balancing phase, i.e. trying different setups? */
     int      nstage;        /**< the current maximum number of stages */
+    bool     startupTimeDelayElapsed; /**< Has the c_startupTimeDelay elapsed indicating that the balancing can start. */
 
     real                     cut_spacing;        /**< the minimum cutoff / PME grid spacing ratio */
     real                     rcut_vdw;           /**< Vdw cutoff (does not change) */
@@ -180,9 +182,9 @@ struct pme_load_balancing_t
 
     int stage; /**< the current stage */
 
-    int    cycles_n; /**< step cycle counter cumulative count */
-    double cycles_c; /**< step cycle counter cumulative cycles */
-    double startTime; /**< time stamp when the balancing was started (relative to the UNIX epoch start).*/
+    int    cycles_n;  /**< step cycle counter cumulative count */
+    double cycles_c;  /**< step cycle counter cumulative cycles */
+    double startTime; /**< time stamp when the balancing was started on the master rank (relative to the UNIX epoch start).*/
 };
 
 /* TODO The code in this file should call this getter, rather than
@@ -289,9 +291,13 @@ void pme_loadbal_init(pme_load_balancing_t**     pme_lb_p,
     pme_lb->end         = 0;
     pme_lb->elimited    = epmelblimNO;
 
-    pme_lb->cycles_n  = 0;
-    pme_lb->cycles_c  = 0;
-    pme_lb->startTime = gmx_gettime();
+    pme_lb->cycles_n = 0;
+    pme_lb->cycles_c = 0;
+    // only master ranks do timing
+    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    {
+        pme_lb->startTime = gmx_gettime();
+    }
 
     if (!wallcycle_have_counter())
     {
@@ -921,11 +927,19 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
      * We also want to skip a number of steps and seconds while
      * the CPU and GPU, when used, performance stabilizes.
      */
+    if (!PAR(cr) || (DOMAINDECOMP(cr) && DDMASTER(cr->dd)))
+    {
+        pme_lb->startupTimeDelayElapsed = (gmx_gettime() - pme_lb->startTime < c_startupTimeDelay);
+    }
+    if (DOMAINDECOMP(cr))
+    {
+        dd_bcast(cr->dd, sizeof(bool), &pme_lb->startupTimeDelayElapsed);
+    }
+
     if (pme_lb->cycles_n == 0 || step_rel < c_numFirstTuningIntervalSkip * ir.nstlist
-        || gmx_gettime() - pme_lb->startTime < c_startupTimeDelay)
+        || pme_lb->startupTimeDelayElapsed)
     {
         *bPrinting = FALSE;
-
         return;
     }
     /* Sanity check, we expect nstlist cycle counts */
@@ -950,6 +964,7 @@ void pme_loadbal_do(pme_load_balancing_t*          pme_lb,
          */
         else if (step_rel >= c_numFirstTuningIntervalSkipWithSepPme * ir.nstlist)
         {
+            GMX_ASSERT(DOMAINDECOMP(cr), "Domain decomposition should be active here");
             if (DDMASTER(cr->dd))
             {
                 /* If PME rank load is too high, start tuning. If

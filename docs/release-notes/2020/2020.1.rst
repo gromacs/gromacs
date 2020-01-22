@@ -21,6 +21,14 @@ Fix fatal error with mdrun -multidir with more than 1 rank per simulation
 
 :issue:`3296`
 
+Fix deadlock in mdrun runs with multiple ranks and separate PME ranks
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When multiple PP ranks as well as separate PME ranks are used, mdrun could
+deadlock before starting the PP-PME balancing.
+
+:issue:`3335`
+
 Avoid mdrun assertion failure when running with shells and update on a GPU
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
