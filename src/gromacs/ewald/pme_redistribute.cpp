@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -371,8 +372,8 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
             if (bX)
             {
                 /* Communicate the coordinates */
-                pme_dd_sendrecv(atc, FALSE, i, pme->bufv[buf_pos], scount * sizeof(rvec),
-                                atc->xBuffer[local_pos], rcount * sizeof(rvec));
+                pme_dd_sendrecv(atc, FALSE, i, pme->bufv + buf_pos, scount * sizeof(rvec),
+                                atc->xBuffer.data() + local_pos, rcount * sizeof(rvec));
             }
             /* Communicate the coefficients */
             pme_dd_sendrecv(atc, FALSE, i, pme->bufr + buf_pos, scount * sizeof(real),
@@ -381,6 +382,7 @@ static void dd_pmeredist_pos_coeffs(gmx_pme_t*                     pme,
             local_pos += atc->slabCommSetup[i].rcount;
         }
     }
+    GMX_ASSERT(local_pos == atc->numAtoms(), "After receiving we should have numAtoms coordinates");
 }
 
 void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::RVec> f, gmx_bool bAddF)
@@ -399,8 +401,8 @@ void dd_pmeredist_f(struct gmx_pme_t* pme, PmeAtomComm* atc, gmx::ArrayRef<gmx::
         if (scount > 0 || rcount > 0)
         {
             /* Communicate the forces */
-            pme_dd_sendrecv(atc, TRUE, i, atc->f[local_pos], scount * sizeof(rvec),
-                            pme->bufv[buf_pos], rcount * sizeof(rvec));
+            pme_dd_sendrecv(atc, TRUE, i, atc->f.data() + local_pos, scount * sizeof(rvec),
+                            pme->bufv + buf_pos, rcount * sizeof(rvec));
             local_pos += scount;
         }
         atc->slabCommSetup[commnode].buf_index = buf_pos;
