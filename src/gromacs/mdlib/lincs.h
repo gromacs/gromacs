@@ -46,7 +46,6 @@
 
 #include <cstdio>
 
-#include "gromacs/math/arrayrefwithpadding.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/basedefinitions.h"
@@ -64,6 +63,8 @@ struct t_pbc;
 namespace gmx
 {
 
+template<typename>
+class ArrayRefWithPadding;
 enum class ConstraintVariable : int;
 class Lincs;
 template<typename>
