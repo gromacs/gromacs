@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -757,7 +759,10 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
 
     return cellSizeLimit;
 }
-void checkForValidRankCountRequests(const int numRanksRequested, const bool usingPme, const int numPmeRanksRequested)
+void checkForValidRankCountRequests(const int  numRanksRequested,
+                                    const bool usingPme,
+                                    const int  numPmeRanksRequested,
+                                    const bool checkForLargePrimeFactors)
 {
     int numPPRanksRequested = numRanksRequested;
     if (usingPme && numPmeRanksRequested > 0)
@@ -775,7 +780,7 @@ void checkForValidRankCountRequests(const int numRanksRequested, const bool usin
     // Once the rank count is large enough, it becomes worth
     // suggesting improvements to the user.
     const int minPPRankCountToCheckForLargePrimeFactors = 13;
-    if (numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
+    if (checkForLargePrimeFactors && numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
     {
         const int largestDivisor = largest_divisor(numPPRanksRequested);
         /* Check if the largest divisor is more than numPPRanks ^ (2/3) */

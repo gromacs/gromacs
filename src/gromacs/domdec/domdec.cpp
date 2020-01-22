@@ -1,8 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2005,2006,2007,2008,2009 by the GROMACS development team.
+ * Copyright (c) 2010,2011,2012,2013,2014 by the GROMACS development team.
+ * Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -3074,8 +3076,10 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
 
     systemInfo_ = getSystemInfo(mdlog_, cr_, options_, mtop_, ir_, box, xGlobal);
 
-    const int numRanksRequested = cr_->nnodes;
-    checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir_.coulombtype), options_.numPmeRanks);
+    const int  numRanksRequested         = cr_->nnodes;
+    const bool checkForLargePrimeFactors = (options_.numCells[0] <= 0);
+    checkForValidRankCountRequests(numRanksRequested, EEL_PME(ir_.coulombtype),
+                                   options_.numPmeRanks, checkForLargePrimeFactors);
 
     // DD grid setup uses a more different cell size limit for
     // automated setup than the one in systemInfo_. The latter is used

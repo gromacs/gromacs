@@ -30,6 +30,14 @@ when attempting to run with shells and update on a GPU.
 
 :issue:`3303`
 
+Allow large prime factors in the mdrun MPI rank count
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The domain decomposition would refuse to run with large prime factors
+in the MPI rank count even when the grid was specified by the user.
+
+:issue:`3336`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
