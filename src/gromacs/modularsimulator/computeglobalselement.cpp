@@ -67,7 +67,7 @@ ComputeGlobalsElement<algorithm>::ComputeGlobalsElement(StatePropagatorData* sta
                                                         FILE*              fplog,
                                                         const MDLogger&    mdlog,
                                                         t_commrec*         cr,
-                                                        t_inputrec*        inputrec,
+                                                        const t_inputrec*  inputrec,
                                                         const MDAtoms*     mdAtoms,
                                                         t_nrnb*            nrnb,
                                                         gmx_wallcycle*     wcycle,
