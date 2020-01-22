@@ -44,75 +44,75 @@
 
 #include "config.h"
 
-#include "gromacs/mdlib/update_constrain_cuda.h"
+#include "gromacs/mdlib/update_constrain_gpu.h"
 
 #if GMX_GPU != GMX_GPU_CUDA
 
 namespace gmx
 {
 
-class UpdateConstrainCuda::Impl
+class UpdateConstrainGpu::Impl
 {
 };
 
-UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec& /* ir   */,
-                                         const gmx_mtop_t& /* mtop */,
-                                         const void* /* commandStream */,
-                                         GpuEventSynchronizer* /* xUpdatedOnDevice */) :
+UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec& /* ir   */,
+                                       const gmx_mtop_t& /* mtop */,
+                                       const void* /* commandStream */,
+                                       GpuEventSynchronizer* /* xUpdatedOnDevice */) :
     impl_(nullptr)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-UpdateConstrainCuda::~UpdateConstrainCuda() = default;
+UpdateConstrainGpu::~UpdateConstrainGpu() = default;
 
-void UpdateConstrainCuda::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
-                                    const real /* dt */,
-                                    const bool /* updateVelocities */,
-                                    const bool /* computeVirial */,
-                                    tensor /* virialScaled */,
-                                    const bool /* doTemperatureScaling */,
-                                    gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
-                                    const bool /* doParrinelloRahman */,
-                                    const float /* dtPressureCouple */,
-                                    const matrix /* prVelocityScalingMatrix*/)
+void UpdateConstrainGpu::integrate(GpuEventSynchronizer* /* fReadyOnDevice */,
+                                   const real /* dt */,
+                                   const bool /* updateVelocities */,
+                                   const bool /* computeVirial */,
+                                   tensor /* virialScaled */,
+                                   const bool /* doTemperatureScaling */,
+                                   gmx::ArrayRef<const t_grp_tcstat> /* tcstat */,
+                                   const bool /* doParrinelloRahman */,
+                                   const float /* dtPressureCouple */,
+                                   const matrix /* prVelocityScalingMatrix*/)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::scaleCoordinates(const matrix /* scalingMatrix */)
+void UpdateConstrainGpu::scaleCoordinates(const matrix /* scalingMatrix */)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::set(DeviceBuffer<float> /* d_x */,
-                              DeviceBuffer<float> /* d_v */,
-                              const DeviceBuffer<float> /* d_f */,
-                              const t_idef& /* idef */,
-                              const t_mdatoms& /* md */,
-                              const int /* numTempScaleValues */)
+void UpdateConstrainGpu::set(DeviceBuffer<float> /* d_x */,
+                             DeviceBuffer<float> /* d_v */,
+                             const DeviceBuffer<float> /* d_f */,
+                             const t_idef& /* idef */,
+                             const t_mdatoms& /* md */,
+                             const int /* numTempScaleValues */)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-void UpdateConstrainCuda::setPbc(const PbcType /* pbcType */, const matrix /* box */)
+void UpdateConstrainGpu::setPbc(const PbcType /* pbcType */, const matrix /* box */)
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
 }
 
-GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainGpu::getCoordinatesReadySync()
 {
     GMX_ASSERT(false,
                "A CPU stub for UpdateConstrain was called instead of the correct implementation.");
     return nullptr;
 }
 
-bool UpdateConstrainCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* mtop */)
+bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& /* mtop */)
 {
     return false;
 }

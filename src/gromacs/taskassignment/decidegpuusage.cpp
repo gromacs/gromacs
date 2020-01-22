@@ -58,7 +58,7 @@
 #include "gromacs/hardware/hardwaretopology.h"
 #include "gromacs/hardware/hw_info.h"
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdlib/update_constrain_cuda.h"
+#include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/mdtypes/md_enums.h"
@@ -615,10 +615,10 @@ bool decideWhetherToUseGpuForUpdate(const bool           forceGpuUpdateDefault,
     {
         errorMessage += "Non-connecting constraints are not supported";
     }
-    if (!UpdateConstrainCuda::isNumCoupledConstraintsSupported(mtop))
+    if (!UpdateConstrainGpu::isNumCoupledConstraintsSupported(mtop))
     {
         errorMessage +=
-                "The number of coupled constraints is higher than supported in the CUDA LINCS "
+                "The number of coupled constraints is higher than supported in the GPU LINCS "
                 "code.\n";
     }
 

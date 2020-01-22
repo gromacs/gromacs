@@ -32,38 +32,34 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  *
- * \brief Declaration of high-level functions of CUDA implementation of update and constrain class.
+ * \brief Declares GPU implementation class for update and constraints.
  *
- * \todo Change "cuda" suffix to "gpu"
+ * This header file is needed to include from both the device-side
+ * kernels file, and the host-side management code.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
- * \inlibraryapi
  */
-#ifndef GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
-#define GMX_MDLIB_UPDATE_CONSTRAIN_CUDA_H
+#ifndef GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H
+#define GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H
 
-#include "gromacs/gpu_utils/devicebuffer_datatype.h"
-#include "gromacs/mdtypes/group.h"
-#include "gromacs/utility/arrayref.h"
-#include "gromacs/utility/classhelpers.h"
+#include "gmxpre.h"
 
-class GpuEventSynchronizer;
-
-struct gmx_mtop_t;
-enum class PbcType : int;
-struct t_idef;
-struct t_inputrec;
-struct t_mdatoms;
-struct t_pbc;
+#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.cuh"
+#include "gromacs/mdlib/lincs_gpu.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
+#include "gromacs/mdlib/update_constrain_gpu.h"
+#include "gromacs/mdtypes/inputrec.h"
 
 namespace gmx
 {
 
-class UpdateConstrainCuda
+/*! \internal \brief Class with interfaces and data for GPU version of Update-Constraint. */
+class UpdateConstrainGpu::Impl
 {
 
 public:
@@ -82,20 +78,22 @@ public:
      * \param[in] commandStream     GPU stream to use. Can be nullptr.
      * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
      */
-    UpdateConstrainCuda(const t_inputrec&     ir,
-                        const gmx_mtop_t&     mtop,
-                        const void*           commandStream,
-                        GpuEventSynchronizer* xUpdatedOnDevice);
+    Impl(const t_inputrec& ir, const gmx_mtop_t& mtop, const void* commandStream, GpuEventSynchronizer* xUpdatedOnDevice);
 
-    ~UpdateConstrainCuda();
+    ~Impl();
 
     /*! \brief Integrate
      *
-     * This will extract temperature scaling factors from tcstat, transform them into the plain
-     * array and call the normal integrate method.
+     * Integrates the equation of motion using Leap-Frog algorithm and applies
+     * LINCS and SETTLE constraints.
+     * If computeVirial is true, constraints virial is written at the provided pointer.
+     * doTempCouple should be true if:
+     *   1. The temperature coupling is enabled.
+     *   2. This is the temperature coupling step.
+     * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
      *
-     * \param[in]  fReadyOnDevice           Event synchronizer indicating that the forces are
-     *                                      ready in the device memory.
+     * \param[in]  fReadyOnDevice           Event synchronizer indicating that the forces are ready in
+     *                                      the device memory.
      * \param[in]  dt                       Timestep.
      * \param[in]  updateVelocities         If the velocities should be constrained.
      * \param[in]  computeVirial            If virial should be updated.
@@ -128,26 +126,26 @@ public:
 
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
-     * \param[in,out]  d_x                 Device buffer with coordinates.
-     * \param[in,out]  d_v                 Device buffer with velocities.
-     * \param[in]      d_f                 Device buffer with forces.
-     * \param[in]      idef                System topology
-     * \param[in]      md                  Atoms data.
-     * \param[in]      numTempScaleValues  Number of temperature scaling groups. Zero for no temperature scaling.
+     * \param[in,out]  d_x            Device buffer with coordinates.
+     * \param[in,out]  d_v            Device buffer with velocities.
+     * \param[in]      d_f            Device buffer with forces.
+     * \param[in] idef                System topology
+     * \param[in] md                  Atoms data.
+     * \param[in] numTempScaleValues  Number of temperature scaling groups. Set zero for no temperature coupling.
      */
-    void set(DeviceBuffer<float> d_x,
-             DeviceBuffer<float> d_v,
-             DeviceBuffer<float> d_f,
-             const t_idef&       idef,
-             const t_mdatoms&    md,
-             int                 numTempScaleValues);
+    void set(DeviceBuffer<float>       d_x,
+             DeviceBuffer<float>       d_v,
+             const DeviceBuffer<float> d_f,
+             const t_idef&             idef,
+             const t_mdatoms&          md,
+             const int                 numTempScaleValues);
 
     /*! \brief
      * Update PBC data.
      *
      * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
      *
-     * \param[in] pbcType The type of the periodic boundary (Xyz, NO, XY or Screw).
+     * \param[in] pbcType The type of the periodic boundary.
      * \param[in] box     The periodic boundary box matrix.
      */
     void setPbc(PbcType pbcType, const matrix box);
@@ -158,17 +156,57 @@ public:
 
     /*! \brief
      * Returns whether the maximum number of coupled constraints is supported
-     * by the CUDA LINCS code.
+     * by the GPU LINCS code.
      *
      * \param[in] mtop The molecular topology
      */
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
-    class Impl;
-    gmx::PrivateImplPointer<Impl> impl_;
+    //! GPU stream
+    CommandStream commandStream_ = nullptr;
+    //! GPU kernel launch config
+    KernelLaunchConfig coordinateScalingKernelLaunchConfig_;
+
+    //! Periodic boundary data
+    PbcAiuc pbcAiuc_;
+
+    //! Number of atoms
+    int numAtoms_;
+
+    //! Local copy of the pointer to the device positions buffer
+    float3* d_x_;
+    //! Local copy of the pointer to the device velocities buffer
+    float3* d_v_;
+    //! Local copy of the pointer to the device forces buffer
+    float3* d_f_;
+
+    //! Device buffer for intermediate positions (maintained internally)
+    float3* d_xp_;
+    //! Number of elements in shifted coordinates buffer
+    int numXp_ = -1;
+    //! Allocation size for the shifted coordinates buffer
+    int numXpAlloc_ = -1;
+
+
+    //! 1/mass for all atoms (GPU)
+    real* d_inverseMasses_;
+    //! Number of elements in reciprocal masses buffer
+    int numInverseMasses_ = -1;
+    //! Allocation size for the reciprocal masses buffer
+    int numInverseMassesAlloc_ = -1;
+
+    //! Leap-Frog integrator
+    std::unique_ptr<LeapFrogGpu> integrator_;
+    //! LINCS GPU object to use for non-water constraints
+    std::unique_ptr<LincsGpu> lincsGpu_;
+    //! SETTLE GPU object for water constrains
+    std::unique_ptr<SettleGpu> settleGpu_;
+
+    //! An pointer to the event to indicate when the update of coordinates is complete
+    GpuEventSynchronizer* coordinatesReady_;
 };
 
 } // namespace gmx
 
-#endif
+#endif // GMX_MDLIB_UPDATE_CONSTRAIN_GPU_IMPL_H

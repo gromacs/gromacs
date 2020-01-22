@@ -47,7 +47,7 @@
  */
 #include "gmxpre.h"
 
-#include "update_constrain_cuda_impl.h"
+#include "update_constrain_gpu_impl.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -63,7 +63,7 @@
 #include "gromacs/mdlib/leapfrog_gpu.cuh"
 #include "gromacs/mdlib/lincs_gpu.cuh"
 #include "gromacs/mdlib/settle_gpu.cuh"
-#include "gromacs/mdlib/update_constrain_cuda.h"
+#include "gromacs/mdlib/update_constrain_gpu.h"
 
 namespace gmx
 {
@@ -102,16 +102,16 @@ __launch_bounds__(c_maxThreadsPerBlock) __global__
     }
 }
 
-void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fReadyOnDevice,
-                                          const real                        dt,
-                                          const bool                        updateVelocities,
-                                          const bool                        computeVirial,
-                                          tensor                            virial,
-                                          const bool                        doTemperatureScaling,
-                                          gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                          const bool                        doParrinelloRahman,
-                                          const float                       dtPressureCouple,
-                                          const matrix                      prVelocityScalingMatrix)
+void UpdateConstrainGpu::Impl::integrate(GpuEventSynchronizer*             fReadyOnDevice,
+                                         const real                        dt,
+                                         const bool                        updateVelocities,
+                                         const bool                        computeVirial,
+                                         tensor                            virial,
+                                         const bool                        doTemperatureScaling,
+                                         gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                                         const bool                        doParrinelloRahman,
+                                         const float                       dtPressureCouple,
+                                         const matrix                      prVelocityScalingMatrix)
 {
     // Clearing virial matrix
     // TODO There is no point in having separate virial matrix for constraints
@@ -145,7 +145,7 @@ void UpdateConstrainCuda::Impl::integrate(GpuEventSynchronizer*             fRea
     return;
 }
 
-void UpdateConstrainCuda::Impl::scaleCoordinates(const matrix scalingMatrix)
+void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 {
     ScalingMatrix mu;
     mu.xx = scalingMatrix[XX][XX];
@@ -164,10 +164,10 @@ void UpdateConstrainCuda::Impl::scaleCoordinates(const matrix scalingMatrix)
     gpuStreamSynchronize(commandStream_);
 }
 
-UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
-                                const gmx_mtop_t&     mtop,
-                                const void*           commandStream,
-                                GpuEventSynchronizer* xUpdatedOnDevice) :
+UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
+                               const gmx_mtop_t&     mtop,
+                               const void*           commandStream,
+                               GpuEventSynchronizer* xUpdatedOnDevice) :
     coordinatesReady_(xUpdatedOnDevice)
 {
     GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
@@ -186,14 +186,14 @@ UpdateConstrainCuda::Impl::Impl(const t_inputrec&     ir,
     coordinateScalingKernelLaunchConfig_.stream           = commandStream_;
 }
 
-UpdateConstrainCuda::Impl::~Impl() {}
+UpdateConstrainGpu::Impl::~Impl() {}
 
-void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
-                                    DeviceBuffer<float>       d_v,
-                                    const DeviceBuffer<float> d_f,
-                                    const t_idef&             idef,
-                                    const t_mdatoms&          md,
-                                    const int                 numTempScaleValues)
+void UpdateConstrainGpu::Impl::set(DeviceBuffer<float>       d_x,
+                                   DeviceBuffer<float>       d_v,
+                                   const DeviceBuffer<float> d_f,
+                                   const t_idef&             idef,
+                                   const t_mdatoms&          md,
+                                   const int                 numTempScaleValues)
 {
     GMX_ASSERT(d_x != nullptr, "Coordinates device buffer should not be null.");
     GMX_ASSERT(d_v != nullptr, "Velocities device buffer should not be null.");
@@ -219,67 +219,67 @@ void UpdateConstrainCuda::Impl::set(DeviceBuffer<float>       d_x,
             (numAtoms_ + c_threadsPerBlock - 1) / c_threadsPerBlock;
 }
 
-void UpdateConstrainCuda::Impl::setPbc(const PbcType pbcType, const matrix box)
+void UpdateConstrainGpu::Impl::setPbc(const PbcType pbcType, const matrix box)
 {
     setPbcAiuc(numPbcDimensions(pbcType), box, &pbcAiuc_);
 }
 
-GpuEventSynchronizer* UpdateConstrainCuda::Impl::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainGpu::Impl::getCoordinatesReadySync()
 {
     return coordinatesReady_;
 }
 
-UpdateConstrainCuda::UpdateConstrainCuda(const t_inputrec&     ir,
-                                         const gmx_mtop_t&     mtop,
-                                         const void*           commandStream,
-                                         GpuEventSynchronizer* xUpdatedOnDevice) :
+UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
+                                       const gmx_mtop_t&     mtop,
+                                       const void*           commandStream,
+                                       GpuEventSynchronizer* xUpdatedOnDevice) :
     impl_(new Impl(ir, mtop, commandStream, xUpdatedOnDevice))
 {
 }
 
-UpdateConstrainCuda::~UpdateConstrainCuda() = default;
+UpdateConstrainGpu::~UpdateConstrainGpu() = default;
 
-void UpdateConstrainCuda::integrate(GpuEventSynchronizer*             fReadyOnDevice,
-                                    const real                        dt,
-                                    const bool                        updateVelocities,
-                                    const bool                        computeVirial,
-                                    tensor                            virialScaled,
-                                    const bool                        doTemperatureScaling,
-                                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                                    const bool                        doParrinelloRahman,
-                                    const float                       dtPressureCouple,
-                                    const matrix                      prVelocityScalingMatrix)
+void UpdateConstrainGpu::integrate(GpuEventSynchronizer*             fReadyOnDevice,
+                                   const real                        dt,
+                                   const bool                        updateVelocities,
+                                   const bool                        computeVirial,
+                                   tensor                            virialScaled,
+                                   const bool                        doTemperatureScaling,
+                                   gmx::ArrayRef<const t_grp_tcstat> tcstat,
+                                   const bool                        doParrinelloRahman,
+                                   const float                       dtPressureCouple,
+                                   const matrix                      prVelocityScalingMatrix)
 {
     impl_->integrate(fReadyOnDevice, dt, updateVelocities, computeVirial, virialScaled, doTemperatureScaling,
                      tcstat, doParrinelloRahman, dtPressureCouple, prVelocityScalingMatrix);
 }
 
-void UpdateConstrainCuda::scaleCoordinates(const matrix scalingMatrix)
+void UpdateConstrainGpu::scaleCoordinates(const matrix scalingMatrix)
 {
     impl_->scaleCoordinates(scalingMatrix);
 }
 
-void UpdateConstrainCuda::set(DeviceBuffer<float>       d_x,
-                              DeviceBuffer<float>       d_v,
-                              const DeviceBuffer<float> d_f,
-                              const t_idef&             idef,
-                              const t_mdatoms&          md,
-                              const int                 numTempScaleValues)
+void UpdateConstrainGpu::set(DeviceBuffer<float>       d_x,
+                             DeviceBuffer<float>       d_v,
+                             const DeviceBuffer<float> d_f,
+                             const t_idef&             idef,
+                             const t_mdatoms&          md,
+                             const int                 numTempScaleValues)
 {
     impl_->set(d_x, d_v, d_f, idef, md, numTempScaleValues);
 }
 
-void UpdateConstrainCuda::setPbc(const PbcType pbcType, const matrix box)
+void UpdateConstrainGpu::setPbc(const PbcType pbcType, const matrix box)
 {
     impl_->setPbc(pbcType, box);
 }
 
-GpuEventSynchronizer* UpdateConstrainCuda::getCoordinatesReadySync()
+GpuEventSynchronizer* UpdateConstrainGpu::getCoordinatesReadySync()
 {
     return impl_->getCoordinatesReadySync();
 }
 
-bool UpdateConstrainCuda::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
+bool UpdateConstrainGpu::isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop)
 {
     return LincsGpu::isNumCoupledConstraintsSupported(mtop);
 }

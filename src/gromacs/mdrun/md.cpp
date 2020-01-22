@@ -95,7 +95,7 @@
 #include "gromacs/mdlib/tgroup.h"
 #include "gromacs/mdlib/trajectory_writing.h"
 #include "gromacs/mdlib/update.h"
-#include "gromacs/mdlib/update_constrain_cuda.h"
+#include "gromacs/mdlib/update_constrain_gpu.h"
 #include "gromacs/mdlib/vcm.h"
 #include "gromacs/mdlib/vsite.h"
 #include "gromacs/mdrunutility/handlerestart.h"
@@ -287,7 +287,7 @@ void gmx::LegacySimulator::do_md()
 
     auto mdatoms = mdAtoms->mdatoms();
 
-    std::unique_ptr<UpdateConstrainCuda> integrator;
+    std::unique_ptr<UpdateConstrainGpu> integrator;
 
     if (DOMAINDECOMP(cr))
     {
@@ -367,7 +367,7 @@ void gmx::LegacySimulator::do_md()
         {
             GMX_LOG(mdlog.info).asParagraph().appendText("Updating coordinates on the GPU.");
         }
-        integrator = std::make_unique<UpdateConstrainCuda>(
+        integrator = std::make_unique<UpdateConstrainGpu>(
                 *ir, *top_global, stateGpu->getUpdateStream(), stateGpu->xUpdatedOnDevice());
 
         integrator->setPbc(PbcType::Xyz, state->box);
