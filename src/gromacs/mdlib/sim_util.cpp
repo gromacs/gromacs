@@ -948,14 +948,6 @@ void do_force(FILE*                               fplog,
     const bool useGpuPmeOnThisRank = simulationWork.useGpuPme && thisRankHasDuty(cr, DUTY_PME);
     const int  pmeFlags            = makePmeFlags(stepWork);
 
-    // Switches on whether to use GPU for position and force buffer operations
-    // TODO consider all possible combinations of triggers, and how to combine optimally in each case.
-    const BufferOpsUseGpu useGpuXBufOps =
-            stepWork.useGpuXBufferOps ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
-    // GPU Force buffer ops are disabled on virial steps, because the virial calc is not yet ported to GPU
-    const BufferOpsUseGpu useGpuFBufOps =
-            stepWork.useGpuFBufferOps ? BufferOpsUseGpu::True : BufferOpsUseGpu::False;
-
     /* At a search step we need to start the first balancing region
      * somewhere early inside the step after communication during domain
      * decomposition (and not during the previous step as usual).
@@ -1012,7 +1004,7 @@ void do_force(FILE*                               fplog,
     // The local coordinates can be copied right away.
     // NOTE: Consider moving this copy to right after they are updated and constrained,
     //       if the later is not offloaded.
-    if (useGpuPmeOnThisRank || useGpuXBufOps == BufferOpsUseGpu::True)
+    if (useGpuPmeOnThisRank || stepWork.useGpuXBufferOps)
     {
         if (stepWork.doNeighborSearch)
         {
@@ -1041,10 +1033,9 @@ void do_force(FILE*                               fplog,
     gmx::GpuHaloExchange* gpuHaloExchange =
             (havePPDomainDecomposition(cr) ? cr->dd->gpuHaloExchange.get() : nullptr);
     const bool ddUsesGpuDirectCommunication = (gpuHaloExchange != nullptr);
-    GMX_ASSERT(!ddUsesGpuDirectCommunication || (useGpuXBufOps == BufferOpsUseGpu::True),
+    GMX_ASSERT(!ddUsesGpuDirectCommunication || stepWork.useGpuXBufferOps,
                "Must use coordinate buffer ops with GPU halo exchange");
-    const bool useGpuForcesHaloExchange =
-            ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
+    const bool useGpuForcesHaloExchange = ddUsesGpuDirectCommunication && stepWork.useGpuFBufferOps;
 
     // Copy coordinate from the GPU if update is on the GPU and there
     // are forces to be computed on the CPU, or for the computation of
@@ -1184,12 +1175,12 @@ void do_force(FILE*                               fplog,
         wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_LOCAL);
         wallcycle_stop(wcycle, ewcNS);
 
-        if (useGpuXBufOps == BufferOpsUseGpu::True)
+        if (stepWork.useGpuXBufferOps)
         {
             nbv->atomdata_init_copy_x_to_nbat_x_gpu();
         }
         // For force buffer ops, we use the below conditon rather than
-        // useGpuFBufOps to ensure that init is performed even if this
+        // useGpuFBufferOps to ensure that init is performed even if this
         // NS step is also a virial step (on which f buf ops are deactivated).
         if (simulationWork.useGpuBufferOps && simulationWork.useGpuNonbonded && (GMX_GPU == GMX_GPU_CUDA))
         {
@@ -1199,7 +1190,7 @@ void do_force(FILE*                               fplog,
     }
     else if (!EI_TPI(inputrec->eI))
     {
-        if (useGpuXBufOps == BufferOpsUseGpu::True)
+        if (stepWork.useGpuXBufferOps)
         {
             GMX_ASSERT(stateGpu, "stateGpu should be valid when buffer ops are offloaded");
             nbv->convertCoordinatesGpu(AtomLocality::Local, false, stateGpu->getCoordinates(),
@@ -1228,7 +1219,7 @@ void do_force(FILE*                               fplog,
 
         wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
         Nbnxm::gpu_upload_shiftvec(nbv->gpu_nbv, nbv->nbat.get());
-        if (stepWork.doNeighborSearch || (useGpuXBufOps == BufferOpsUseGpu::False))
+        if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
         {
             Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::Local);
         }
@@ -1303,7 +1294,7 @@ void do_force(FILE*                               fplog,
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
 
-            if (useGpuXBufOps == BufferOpsUseGpu::True)
+            if (stepWork.useGpuXBufferOps)
             {
                 if (!useGpuPmeOnThisRank && !ddUsesGpuDirectCommunication)
                 {
@@ -1323,7 +1314,7 @@ void do_force(FILE*                               fplog,
         {
             wallcycle_start(wcycle, ewcLAUNCH_GPU);
 
-            if (stepWork.doNeighborSearch || (useGpuXBufOps == BufferOpsUseGpu::False))
+            if (stepWork.doNeighborSearch || !stepWork.useGpuXBufferOps)
             {
                 wallcycle_sub_start(wcycle, ewcsLAUNCH_GPU_NONBONDED);
                 Nbnxm::gpu_copy_xq_to_gpu(nbv->gpu_nbv, nbv->nbat.get(), AtomLocality::NonLocal);
@@ -1547,7 +1538,7 @@ void do_force(FILE*                               fplog,
                 wallcycle_stop(wcycle, ewcFORCE);
             }
 
-            if (useGpuFBufOps == BufferOpsUseGpu::True)
+            if (stepWork.useGpuFBufferOps)
             {
                 gmx::FixedCapacityVector<GpuEventSynchronizer*, 1> dependencyList;
 
@@ -1562,7 +1553,7 @@ void do_force(FILE*                               fplog,
                     stateGpu->copyForcesToGpu(forceOut.forceWithShiftForces().force(),
                                               AtomLocality::NonLocal);
                     dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(
-                            AtomLocality::NonLocal, useGpuFBufOps == BufferOpsUseGpu::True));
+                            AtomLocality::NonLocal, stepWork.useGpuFBufferOps));
                 }
 
                 nbv->atomdata_add_nbat_f_to_f_gpu(AtomLocality::NonLocal, stateGpu->getForces(),
@@ -1610,7 +1601,7 @@ void do_force(FILE*                               fplog,
             }
             else
             {
-                if (useGpuFBufOps == BufferOpsUseGpu::True)
+                if (stepWork.useGpuFBufferOps)
                 {
                     stateGpu->waitForcesReadyOnHost(AtomLocality::NonLocal);
                 }
@@ -1622,7 +1613,7 @@ void do_force(FILE*                               fplog,
     // With both nonbonded and PME offloaded a GPU on the same rank, we use
     // an alternating wait/reduction scheme.
     bool alternateGpuWait = (!c_disableAlternatingWait && useGpuPmeOnThisRank && simulationWork.useGpuNonbonded
-                             && !DOMAINDECOMP(cr) && (useGpuFBufOps == BufferOpsUseGpu::False));
+                             && !DOMAINDECOMP(cr) && !stepWork.useGpuFBufferOps);
     if (alternateGpuWait)
     {
         alternatePmeNbGpuWaitReduce(fr->nbv.get(), fr->pmedata, &forceOut, enerd, stepWork, pmeFlags, wcycle);
@@ -1716,7 +1707,7 @@ void do_force(FILE*                               fplog,
 
         gmx::ArrayRef<gmx::RVec> forceWithShift = forceOut.forceWithShiftForces().force();
 
-        if (useGpuFBufOps == BufferOpsUseGpu::True)
+        if (stepWork.useGpuFBufferOps)
         {
             // Flag to specify whether the CPU force buffer has contributions to
             // local atoms. This depends on whether there are CPU-based force tasks
@@ -1742,8 +1733,8 @@ void do_force(FILE*                               fplog,
                 auto locality = havePPDomainDecomposition(cr) ? AtomLocality::Local : AtomLocality::All;
 
                 stateGpu->copyForcesToGpu(forceWithShift, locality);
-                dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(
-                        locality, useGpuFBufOps == BufferOpsUseGpu::True));
+                dependencyList.push_back(
+                        stateGpu->getForcesReadyOnDeviceEvent(locality, stepWork.useGpuFBufferOps));
             }
             if (useGpuForcesHaloExchange)
             {

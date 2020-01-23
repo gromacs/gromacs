@@ -139,13 +139,6 @@ struct t_nrnb;
 struct t_forcerec;
 struct t_inputrec;
 
-/*! \brief Switch for whether to use GPU for buffer ops*/
-enum class BufferOpsUseGpu
-{
-    True,
-    False
-};
-
 class GpuEventSynchronizer;
 
 namespace gmx
