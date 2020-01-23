@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1504,11 +1504,11 @@ std::string getCoolQuote()
           "Jean Baudrillard" },
         { "Install our Free Energy Patents app! There is energy all around us; and it's free! "
           "Free energy is everywhere, and all around you, just waiting to be extracted! Over "
-          "100+ free energy patents!"
+          "100+ free energy patents!",
           "Mind and Miracle Productions on Twitter, spamming a FEP thread" },
         { "\"A slow sort of country!\" said the Queen. \"Now, HERE, you see, it "
           "takes all the running YOU can do, to keep in the same place. If you want "
-          "to get somewhere else, you must run at least twice as fast as that!\""
+          "to get somewhere else, you must run at least twice as fast as that!\"",
           "Lewis Carroll" },
     };
 
