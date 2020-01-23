@@ -39,6 +39,7 @@ gmx_add_unit_test_library(mdrun_test_infrastructure
     energyreader.cpp
     energycomparison.cpp
     moduletest.cpp
+    simulatorcomparison.cpp
     terminationhelper.cpp
     trajectorycomparison.cpp
     trajectoryreader.cpp

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Helper classes for tests that compare the results of equivalent
+ * Helper functions for tests that compare the results of equivalent
  * simulation runs. Currently used for the rerun and the simulator
  * tests
  *
@@ -44,121 +44,50 @@
  */
 #include "gmxpre.h"
 
-#include "testutils/mpitest.h"
-#include "testutils/setenv.h"
-#include "testutils/simulationdatabase.h"
+#include "simulatorcomparison.h"
 
-#include "energycomparison.h"
+#include "gromacs/trajectory/energyframe.h"
+
 #include "energyreader.h"
 #include "mdruncomparison.h"
 #include "moduletest.h"
-#include "trajectorycomparison.h"
 #include "trajectoryreader.h"
 
 namespace gmx
 {
 namespace test
 {
-namespace
+
+void runGrompp(SimulationRunner* runner, const std::vector<SimulationOptionTuple>& options)
 {
+    CommandLine caller;
+    caller.append("grompp");
 
-//! Run grompp and mdrun for both sets of mdp field values
-template<bool doEnvironmentVariable, bool doRerun>
-void executeSimulatorComparisonTestImpl(TestFileManager*            fileManager,
-                                        SimulationRunner*           runner,
-                                        const std::string&          simulationName,
-                                        int                         maxWarningsTolerated,
-                                        const MdpFieldValues&       mdpFieldValues,
-                                        const EnergyTermsToCompare& energyTermsToCompare,
-                                        const TrajectoryComparison& trajectoryComparison,
-                                        const std::string&          environmentVariable)
+    for (const std::tuple<std::string, std::string>& option : options)
+    {
+        caller.addOption(std::get<0>(option).c_str(), std::get<1>(option));
+    }
+
+    EXPECT_EQ(0, runner->callGrompp(caller));
+}
+
+void runMdrun(SimulationRunner* runner, const std::vector<SimulationOptionTuple>& options)
 {
-    // TODO At some point we should also test PME-only ranks.
-    int numRanksAvailable = getNumberOfTestMpiRanks();
-    if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
+    CommandLine caller;
+    caller.append("mdrun");
+
+    for (const std::tuple<std::string, std::string>& option : options)
     {
-        fprintf(stdout,
-                "Test system '%s' cannot run with %d ranks.\n"
-                "The supported numbers are: %s\n",
-                simulationName.c_str(), numRanksAvailable,
-                reportNumbersOfPpRanksSupported(simulationName).c_str());
-        return;
+        caller.addOption(std::get<0>(option).c_str(), std::get<1>(option));
     }
 
-    auto simulator1TrajectoryFileName = fileManager->getTemporaryFilePath("sim1.trr");
-    auto simulator1EdrFileName        = fileManager->getTemporaryFilePath("sim1.edr");
-    auto simulator2TrajectoryFileName = fileManager->getTemporaryFilePath("sim2.trr");
-    auto simulator2EdrFileName        = fileManager->getTemporaryFilePath("sim2.edr");
-    auto simulatorTprFileName         = fileManager->getTemporaryFilePath("sim.tpr");
+    EXPECT_EQ(0, runner->callMdrun(caller));
+}
 
-    // prepare the .tpr file
-    {
-        // TODO evolve grompp to report the number of warnings issued, so
-        // tests always expect the right number.
-        CommandLine caller;
-        caller.append("grompp");
-        caller.addOption("-maxwarn", maxWarningsTolerated);
-        runner->tprFileName_ = simulatorTprFileName;
-        runner->useTopGroAndNdxFromDatabase(simulationName);
-        runner->useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
-        EXPECT_EQ(0, runner->callGrompp(caller));
-    }
-
-    char* environmentVariableBackup = nullptr;
-    if (doEnvironmentVariable)
-    {
-        // save state of environment variable
-        environmentVariableBackup = getenv(environmentVariable.c_str());
-    }
-
-    // do the first mdrun
-    {
-        runner->fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName;
-        runner->edrFileName_                     = simulator1EdrFileName;
-        runner->tprFileName_                     = simulatorTprFileName;
-        CommandLine simulator1Caller;
-        simulator1Caller.append("mdrun");
-        if (doEnvironmentVariable)
-        {
-            // unset environment variable
-            gmxUnsetenv(environmentVariable.c_str());
-        }
-        ASSERT_EQ(0, runner->callMdrun(simulator1Caller));
-    }
-
-    // do the second mdrun
-    {
-        runner->fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName;
-        runner->edrFileName_                     = simulator2EdrFileName;
-        runner->tprFileName_                     = simulatorTprFileName;
-        CommandLine simulator2Caller;
-        simulator2Caller.append("mdrun");
-        if (doEnvironmentVariable)
-        {
-            // set environment variable
-            gmxSetenv(environmentVariable.c_str(), "ON", true);
-        }
-        if (doRerun)
-        {
-            simulator2Caller.addOption("-rerun", simulator1TrajectoryFileName);
-        }
-        ASSERT_EQ(0, runner->callMdrun(simulator2Caller));
-    }
-
-    if (doEnvironmentVariable)
-    {
-        if (environmentVariableBackup != nullptr)
-        {
-            // set environment variable
-            gmxSetenv(environmentVariable.c_str(), environmentVariableBackup, true);
-        }
-        else
-        {
-            // unset environment variable
-            gmxUnsetenv(environmentVariable.c_str());
-        }
-    }
-
+void compareEnergies(const std::string&          edr1Name,
+                     const std::string&          edr2Name,
+                     const EnergyTermsToCompare& energyTermsToCompare)
+{
     // Build the functor that will compare energy frames on the chosen
     // energy terms.
     EnergyComparison energyComparison(energyTermsToCompare);
@@ -169,30 +98,22 @@ void executeSimulatorComparisonTestImpl(TestFileManager*            fileManager,
     // names), for convenience. In the future, use a range.
     auto                                namesOfEnergiesToMatch = energyComparison.getEnergyNames();
     FramePairManager<EnergyFrameReader> energyManager(
-            openEnergyFileToReadTerms(simulator1EdrFileName, namesOfEnergiesToMatch),
-            openEnergyFileToReadTerms(simulator2EdrFileName, namesOfEnergiesToMatch));
+            openEnergyFileToReadTerms(edr1Name, namesOfEnergiesToMatch),
+            openEnergyFileToReadTerms(edr2Name, namesOfEnergiesToMatch));
     // Compare the energy frames.
     energyManager.compareAllFramePairs<EnergyFrame>(energyComparison);
+}
 
+void compareTrajectories(const std::string&          trajectory1Name,
+                         const std::string&          trajectory2Name,
+                         const TrajectoryComparison& trajectoryComparison)
+{
     // Build the manager that will present matching pairs of frames to compare
     FramePairManager<TrajectoryFrameReader> trajectoryManager(
-            std::make_unique<TrajectoryFrameReader>(simulator1TrajectoryFileName),
-            std::make_unique<TrajectoryFrameReader>(simulator2TrajectoryFileName));
+            std::make_unique<TrajectoryFrameReader>(trajectory1Name),
+            std::make_unique<TrajectoryFrameReader>(trajectory2Name));
     // Compare the trajectory frames.
     trajectoryManager.compareAllFramePairs<TrajectoryFrame>(trajectoryComparison);
-}
-} // namespace
-
-template<typename... Args>
-void executeSimulatorComparisonTest(const std::string& environmentVariable, Args&&... args)
-{
-    executeSimulatorComparisonTestImpl<true, false>(std::forward<Args>(args)..., environmentVariable);
-}
-
-template<typename... Args>
-void executeRerunTest(Args&&... args)
-{
-    executeSimulatorComparisonTestImpl<false, true>(std::forward<Args>(args)..., "");
 }
 
 } // namespace test

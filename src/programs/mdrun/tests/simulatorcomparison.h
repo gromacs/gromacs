@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,34 +48,32 @@
 
 #include <string>
 
+#include "energycomparison.h"
+#include "trajectorycomparison.h"
+
 namespace gmx
 {
 namespace test
 {
-/*!
- * \brief Run and compare a simulator run with and without an environment variable
- *
- * Run grompp, and repeat mdrun with and without the environment variable set.
- * Compare energies (via EnergyComparator) and trajectories.
- */
-template<typename... Args>
-void executeSimulatorComparisonTest(const std::string& environmentVariable, Args&&... args);
+class SimulationRunner;
 
-/*!
- * \brief Run and compare a simulator run to its rerun
- *
- * Run grompp, run mdrun and rerun the resulting trajectory.
- * Compare energies (via EnergyComparator) and trajectories.
- */
-template<typename... Args>
-void executeRerunTest(Args&&... args);
+typedef std::tuple<std::string, std::string> SimulationOptionTuple;
+
+void runGrompp(SimulationRunner*                         runner,
+               const std::vector<SimulationOptionTuple>& options = std::vector<SimulationOptionTuple>());
+
+void runMdrun(SimulationRunner*                         runner,
+              const std::vector<SimulationOptionTuple>& options = std::vector<SimulationOptionTuple>());
+
+void compareEnergies(const std::string&          edr1Name,
+                     const std::string&          edr2Name,
+                     const EnergyTermsToCompare& energyTermsToCompare);
+
+void compareTrajectories(const std::string&          trajectory1Name,
+                         const std::string&          trajectory2Name,
+                         const TrajectoryComparison& trajectoryComparison);
 
 } // namespace test
 } // namespace gmx
-
-// Including this here avoid having to put everything in the header file,
-// or to explicitly declare the templates (which would render the parameter
-// pack useless)
-#include "simulatorcomparison.cpp"
 
 #endif // GMX_PROGRAMS_MDRUN_TESTS_SIMULATORCOMPARISON_H

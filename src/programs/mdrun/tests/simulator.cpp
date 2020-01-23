@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,13 @@
 #include "config.h"
 
 #include "gromacs/topology/ifunc.h"
-#include "gromacs/trajectory/energyframe.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "testutils/mpitest.h"
+#include "testutils/setenv.h"
+#include "testutils/simulationdatabase.h"
+
+#include "moduletest.h"
 #include "simulatorcomparison.h"
 
 namespace gmx
@@ -78,13 +82,25 @@ class SimulatorComparisonTest :
 
 TEST_P(SimulatorComparisonTest, WithinTolerances)
 {
-    auto params         = GetParam();
-    auto mdpParams      = std::get<0>(params);
-    auto simulationName = std::get<0>(mdpParams);
-    auto integrator     = std::get<1>(mdpParams);
-    auto tcoupling      = std::get<2>(mdpParams);
-    auto pcoupling      = std::get<3>(mdpParams);
-    auto envVariable    = std::get<1>(params);
+    auto params              = GetParam();
+    auto mdpParams           = std::get<0>(params);
+    auto simulationName      = std::get<0>(mdpParams);
+    auto integrator          = std::get<1>(mdpParams);
+    auto tcoupling           = std::get<2>(mdpParams);
+    auto pcoupling           = std::get<3>(mdpParams);
+    auto environmentVariable = std::get<1>(params);
+
+    // TODO At some point we should also test PME-only ranks.
+    int numRanksAvailable = getNumberOfTestMpiRanks();
+    if (!isNumberOfPpRanksSupported(simulationName, numRanksAvailable))
+    {
+        fprintf(stdout,
+                "Test system '%s' cannot run with %d ranks.\n"
+                "The supported numbers are: %s\n",
+                simulationName.c_str(), numRanksAvailable,
+                reportNumbersOfPpRanksSupported(simulationName).c_str());
+        return;
+    }
 
     if (integrator == "md-vv" && pcoupling == "Parrinello-Rahman")
     {
@@ -97,7 +113,7 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
             "Comparing two simulations of '%s' "
             "with integrator '%s' and '%s' temperature coupling, "
             "switching environment variable '%s'",
-            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), envVariable.c_str()));
+            simulationName.c_str(), integrator.c_str(), tcoupling.c_str(), environmentVariable.c_str()));
 
     auto mdpFieldValues = prepareMdpFieldValues(simulationName.c_str(), integrator.c_str(),
                                                 tcoupling.c_str(), pcoupling.c_str());
@@ -139,10 +155,51 @@ TEST_P(SimulatorComparisonTest, WithinTolerances)
     // trajectory frames in the chosen way.
     TrajectoryComparison trajectoryComparison{ trajectoryMatchSettings, trajectoryTolerances };
 
-    int numWarningsToTolerate = 0;
-    executeSimulatorComparisonTest(envVariable, &fileManager_, &runner_, simulationName,
-                                   numWarningsToTolerate, mdpFieldValues, energyTermsToCompare,
-                                   trajectoryComparison);
+    // Set file names
+    auto simulator1TrajectoryFileName = fileManager_.getTemporaryFilePath("sim1.trr");
+    auto simulator1EdrFileName        = fileManager_.getTemporaryFilePath("sim1.edr");
+    auto simulator2TrajectoryFileName = fileManager_.getTemporaryFilePath("sim2.trr");
+    auto simulator2EdrFileName        = fileManager_.getTemporaryFilePath("sim2.edr");
+
+    // Run grompp
+    runner_.tprFileName_ = fileManager_.getTemporaryFilePath("sim.tpr");
+    runner_.useTopGroAndNdxFromDatabase(simulationName);
+    runner_.useStringAsMdpFile(prepareMdpFileContents(mdpFieldValues));
+    runGrompp(&runner_);
+
+    // Backup current state of environment variable and unset it
+    char* environmentVariableBackup = getenv(environmentVariable.c_str());
+    gmxUnsetenv(environmentVariable.c_str());
+
+    // Do first mdrun
+    runner_.fullPrecisionTrajectoryFileName_ = simulator1TrajectoryFileName;
+    runner_.edrFileName_                     = simulator1EdrFileName;
+    runMdrun(&runner_);
+
+    // Set environment variable
+    const int overWriteEnvironmentVariable = 1;
+    gmxSetenv(environmentVariable.c_str(), "ON", overWriteEnvironmentVariable);
+
+    // Do second mdrun
+    runner_.fullPrecisionTrajectoryFileName_ = simulator2TrajectoryFileName;
+    runner_.edrFileName_                     = simulator2EdrFileName;
+    runMdrun(&runner_);
+
+    // Reset or unset environment variable to leave further tests undisturbed
+    if (environmentVariableBackup != nullptr)
+    {
+        // set environment variable
+        gmxSetenv(environmentVariable.c_str(), environmentVariableBackup, overWriteEnvironmentVariable);
+    }
+    else
+    {
+        // unset environment variable
+        gmxUnsetenv(environmentVariable.c_str());
+    }
+
+    // Compare simulation results
+    compareEnergies(simulator1EdrFileName, simulator2EdrFileName, energyTermsToCompare);
+    compareTrajectories(simulator1TrajectoryFileName, simulator2TrajectoryFileName, trajectoryComparison);
 }
 
 // TODO: The time for OpenCL kernel compilation means these tests time
