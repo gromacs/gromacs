@@ -650,8 +650,6 @@ static void pr_awh_bias_dim(FILE* fp, int indent, gmx::AwhDimParams* awhDimParam
     PR("period", awhDimParams->period);
     PR("force-constant", awhDimParams->forceConstant);
     PR("diffusion", awhDimParams->diffusion);
-    PR("start", awhDimParams->origin);
-    PR("end", awhDimParams->end);
     PR("cover-diameter", awhDimParams->coverDiameter);
 }
 
