@@ -930,13 +930,6 @@ void do_force(FILE*                               fplog,
     interaction_const_t*         ic       = fr->ic;
     gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;
 
-    // TODO remove the code below when the legacy flags are not in use anymore
-    /* modify force flag if not doing nonbonded */
-    if (!fr->bNonbonded)
-    {
-        legacyFlags &= ~GMX_FORCE_NONBONDED;
-    }
-
     const SimulationWorkload& simulationWork = runScheduleWork->simulationWork;
 
 
