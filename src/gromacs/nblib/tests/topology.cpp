@@ -131,7 +131,8 @@ TEST(NBlibTest, TopologyHasMasses)
 {
     TwoWaterMolecules       waters;
     Topology                watersTopology = waters.buildTopology();
-    const std::vector<real> test           = watersTopology.getMasses();
+
+    const std::vector<real> test = expandQuantity(watersTopology, &AtomType::mass);
     const std::vector<real> ref            = { 16., 1., 1., 16., 1., 1. };
     EXPECT_EQ(ref, test);
 }
@@ -212,25 +213,31 @@ TEST(NBlibTest, TopologyHasNonbondedParameters)
 {
     TwoWaterMolecules                         waters;
     Topology                                  watersTopology = waters.buildTopology();
-    const std::vector<std::tuple<real, real>> test = watersTopology.getNonbondedParameters();
-    const std::vector<std::tuple<real, real>> ref  = { { 6, 12 }, { 0.6, 0.12 }, { 0.6, 0.12 },
-                                                      { 6, 12 }, { 0.6, 0.12 }, { 0.6, 0.12 } };
-    EXPECT_EQ(ref, test);
+
+    const std::vector<real> testC6 = expandQuantity(watersTopology, &AtomType::c6);
+    const std::vector<real> testC12 = expandQuantity(watersTopology, &AtomType::c12);
+
+    const std::vector<real> refC6 = {6, 0.6, 0.6, 6, 0.6, 0.6};
+    const std::vector<real> refC12 = {12, 0.12, 0.12, 12, 0.12, 0.12};
+
+    EXPECT_EQ(refC6, testC6);
+    EXPECT_EQ(refC12, testC12);
 }
 
-TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
-{
-    TwoWaterMolecules      waters;
-    Topology               watersTopology = waters.buildTopology();
-    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
-    std::vector<int>       ref;
-    ref.resize(watersTopology.numAtoms());
-    for (size_t atomI = 0; atomI < ref.size(); atomI++)
-    {
-        SET_CGINFO_HAS_VDW(ref[atomI]);
-    }
-    EXPECT_EQ(ref, test);
-}
+//! Todo: this belongs to ForceCalculator
+//TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+//{
+//    TwoWaterMolecules      waters;
+//    Topology               watersTopology = waters.buildTopology();
+//    const std::vector<int> test           = watersTopology.getAtomInfoAllVdw();
+//    std::vector<int>       ref;
+//    ref.resize(watersTopology.numAtoms());
+//    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+//    {
+//        SET_CGINFO_HAS_VDW(ref[atomI]);
+//    }
+//    EXPECT_EQ(ref, test);
+//}
 
 TEST(NBlibTest, toGmxExclusionBlockWorks)
 {
