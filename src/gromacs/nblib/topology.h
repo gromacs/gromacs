@@ -86,7 +86,7 @@ public:
     const std::vector<AtomType>& getAtomTypes() const;
 
     //! Return the AtomType ID of all atoms
-    const std::vector<int>& getAtomTypeIdOfallAtoms() const;
+    const std::vector<int>& getAtomTypeIdOfAllAtoms() const;
 
     //! Returns a vector of atom partial charges
     const std::vector<real>& getCharges() const;
@@ -170,7 +170,7 @@ inline auto expandQuantity(const Topology& topology, F atomTypeExtractor)
 
     const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
 
-    for (size_t id : topology.getAtomTypeIdOfallAtoms())
+    for (size_t id : topology.getAtomTypeIdOfAllAtoms())
     {
         ret.push_back((atomTypes[id].*atomTypeExtractor)());
     }

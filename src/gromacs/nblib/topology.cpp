@@ -260,7 +260,7 @@ const std::vector<AtomType>& Topology::getAtomTypes() const
     return atomTypes_;
 }
 
-const std::vector<int>& Topology::getAtomTypeIdOfallAtoms() const
+const std::vector<int>& Topology::getAtomTypeIdOfAllAtoms() const
 {
     return atomTypeIdOfAllAtoms_;
 }

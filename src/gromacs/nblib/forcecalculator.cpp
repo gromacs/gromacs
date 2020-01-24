@@ -205,26 +205,37 @@ void ForceCalculator::unpackTopologyToGmx()
     //! size: numAtoms
     masses_ = expandQuantity(topology, &AtomType::mass);
 
-    //! this data structure is currently used as forcerec.nbfp which is then passed to nbnxm
+    //! Note: nbnxn_atomdata_params_init is doing the combination rules
+    //!       this means that nonbondedParameters_ is of length nAtomTypes*2
     //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
     //!
-    //! size: 2*(numAtomTypes^2)
-    nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    nonbondedParameters_.reserve(2 * atomTypes.size());
     for (const AtomType& atomType1 : atomTypes)
     {
-        real c6_1 = atomType1.c6();
-        real c12_1 = atomType1.c12();
-        for (const AtomType& atomType2 : atomTypes)
-        {
-            real c6_2 = atomType2.c6();
-            real c12_2 = atomType2.c12();
-
-            real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
-            real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
-            nonbondedParameters_.push_back(c6_combo);
-            nonbondedParameters_.push_back(c12_combo);
-        }
+        real c6 = atomType1.c6();
+        real c12 = atomType1.c12();
+        nonbondedParameters_.push_back(c6);
+        nonbondedParameters_.push_back(c12);
     }
+
+    //! initial self-handling of combination rules
+    //! size: 2*(numAtomTypes^2)
+    //nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    //for (const AtomType& atomType1 : atomTypes)
+    //{
+    //    real c6_1 = atomType1.c6();
+    //    real c12_1 = atomType1.c12();
+    //    for (const AtomType& atomType2 : atomTypes)
+    //    {
+    //        real c6_2 = atomType2.c6();
+    //        real c12_2 = atomType2.c12();
+
+    //        real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
+    //        real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
+    //        nonbondedParameters_.push_back(c6_combo);
+    //        nonbondedParameters_.push_back(c12_combo);
+    //    }
+    //}
 
     atomInfoAllVdw_.resize(numAtoms);
     for (size_t atomI = 0; atomI < numAtoms; atomI++)
@@ -252,37 +263,37 @@ void ForceCalculator::compute(const bool printTimings)
     }
 
     std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance();
-    //const PairlistSet&                  pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    //const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    //gmx_cycles_t                        cycles        = gmx_cycles_read();
+    const PairlistSet&                  pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
+    const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
+    gmx_cycles_t                        cycles        = gmx_cycles_read();
 
-    //t_forcerec forceRec;
-    //forceRec.ntype = system_.topology().getAtomTypes().size();
-    //forceRec.nbfp  = nonbondedParameters_;
-    //snew(forceRec.shift_vec, SHIFTS);
-    //calc_shifts(box_, forceRec.shift_vec);
+    t_forcerec forceRec;
+    forceRec.ntype = system_.topology().getAtomTypes().size();
+    forceRec.nbfp  = nonbondedParameters_;
+    snew(forceRec.shift_vec, SHIFTS);
+    calc_shifts(box_, forceRec.shift_vec);
 
-    //put_atoms_in_box(epbcXYZ, box_, system_.coordinates());
+    put_atoms_in_box(epbcXYZ, box_, system_.coordinates());
 
-    //std::vector<gmx::RVec> currentCoords = system_.coordinates();
-    //for (int iter = 0; iter < nbKernelOptions_.numIterations; iter++)
-    //{
-    //    // Run the kernel without force clearing
-    //    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-    //                                 ic, stepWork, enbvClearFNo, forceRec,
-    //                                 &enerd,
-    //                                 &nrnb);
-    //    // There is one output data structure per thread
-    //    std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat.get()->out;
-    //    integrateCoordinates(nbvAtomsOut, nbKernelOptions_, box_, currentCoords);
-    //}
-    //system_.coordinates() = currentCoords;
+    std::vector<gmx::RVec> currentCoords = system_.coordinates();
+    for (int iter = 0; iter < options_.numIterations; iter++)
+    {
+        // Run the kernel without force clearing
+        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
+                                     ic, stepWork, enbvClearFNo, forceRec,
+                                     &enerd,
+                                     &nrnb);
+        // There is one output data structure per thread
+        std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
+        integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
+    }
+    system_.coordinates() = currentCoords;
 
-    //cycles = gmx_cycles_read() - cycles;
-    //if (printTimings)
-    //{
-    //    //printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
-    //}
+    cycles = gmx_cycles_read() - cycles;
+    if (printTimings)
+    {
+        //printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
+    }
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
@@ -322,9 +333,10 @@ ForceCalculator::setupNbnxmInstance()
                                                     kernelSetup,
                                                     nullptr,
                                                     nullptr);
+    //! Needs to be called with the number of unique AtomTypes
     nbnxn_atomdata_init(gmx::MDLogger(),
                         nbv->nbat.get(), kernelSetup.kernelType,
-                        combinationRule, system_.topology().numAtoms(), nonbondedParameters_,
+                        combinationRule, system_.topology().getAtomTypes().size(), nonbondedParameters_,
                         1, numThreads);
 
 
@@ -336,26 +348,23 @@ ForceCalculator::setupNbnxmInstance()
         box_[ZZ][ZZ]
     };
 
-    gmx::ArrayRef<const int> atomInfo;
-    atomInfo = atomInfoAllVdw_;
-
     const real atomDensity = system_.coordinates().size()/det(box_);
 
     nbnxn_put_on_grid(nbv.get(),
                       box_, 0, lowerCorner, upperCorner,
                       nullptr, {0, int(system_.coordinates().size())}, atomDensity,
-                      atomInfo, system_.coordinates(),
+                      atomInfoAllVdw_, system_.coordinates(),
                       0, nullptr);
 
-    //t_nrnb nrnb;
-    //nbv->constructPairlist(gmx::InteractionLocality::Local,
-    //                       &system.topology().getGMXexclusions(), 0, &nrnb);
+    t_nrnb nrnb;
+    nbv->constructPairlist(gmx::InteractionLocality::Local,
+                           &system_.topology().getGMXexclusions(), 0, &nrnb);
 
-    //t_mdatoms mdatoms;
+    t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    //mdatoms.typeA   = const_cast<int *>(system.topology().getAtomTypeIdOfallAtoms().data());
-    //mdatoms.chargeA = const_cast<real *>(system.topology().getCharges().data());
-    //nbv->setAtomProperties(mdatoms, atomInfo);
+    mdatoms.typeA   = const_cast<int *>(system_.topology().getAtomTypeIdOfAllAtoms().data());
+    mdatoms.chargeA = const_cast<real *>(system_.topology().getCharges().data());
+    nbv->setAtomProperties(mdatoms, atomInfoAllVdw_);
 
     return nbv;
 }

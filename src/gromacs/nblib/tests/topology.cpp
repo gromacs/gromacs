@@ -152,7 +152,7 @@ TEST(NBlibTest, TopologyHasAtomTypeIds)
     TwoWaterMolecules waters;
     Topology          watersTopology = waters.buildTopology();
 
-    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfallAtoms();
+    const std::vector<int>      testIds   = watersTopology.getAtomTypeIdOfAllAtoms();
     const std::vector<AtomType> testTypes = watersTopology.getAtomTypes();
 
     std::vector<AtomType> testTypesExpanded;
