@@ -63,7 +63,7 @@ class ForceCalculator
 public:
 
     // TODO: Depend on simulationState
-    ForceCalculator(SimulationState& system,
+    ForceCalculator(const SimulationState& system,
                     const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
@@ -74,8 +74,7 @@ public:
 private:
 
     void unpackTopologyToGmx();
-    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance(const NBKernelOptions   &options,
-                                                           SimulationState         &system);
+    std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
     //void printTimingsOutput(const NBKernelOptions &options,
     //                        const SimulationState &system,
@@ -83,7 +82,7 @@ private:
     //                        gmx_cycles_t           cycles);
 
     SimulationState system_;
-    NBKernelOptions nbKernelOptions_;
+    NBKernelOptions options_;
 
     //! Storage for parameters for short range interactions.
     std::vector<real> nonbondedParameters_;
