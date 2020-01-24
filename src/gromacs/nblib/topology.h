@@ -171,6 +171,24 @@ private:
     std::unordered_map<std::string, AtomType> atomTypes_;
 };
 
+template <class F>
+auto expandQuantity(const Topology& topology, F atomTypeExtractor)
+{
+    using ValueType = decltype((std::declval<AtomType>().*std::declval<F>())());
+
+    std::vector<ValueType> ret;
+    ret.reserve(topology.numAtoms());
+
+    const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
+
+    for (size_t id : topology.getAtomTypeIdOfallAtoms())
+    {
+        ret.push_back((atomTypes[id].*atomTypeExtractor)());
+    }
+
+    return ret;
+}
+
 } // namespace nblib
 
 #endif // GROMACS_TOPOLOGY_H
