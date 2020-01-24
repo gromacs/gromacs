@@ -45,7 +45,6 @@
 #include "gmxpre.h"
 
 #include "gromacs/nblib/atomtype.h"
-#include "gromacs/nblib/nbkernelsystem.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/block.h"

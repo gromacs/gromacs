@@ -45,7 +45,6 @@
 #include "gmxpre.h"
 
 #include "atomtype.h"
-#include "simulationstate.h"
 
 #include <vector>
 
@@ -58,7 +57,7 @@
 #include "gromacs/utility/fatalerror.h"
 
 #include "coords.h"
-#include "nbkernelsystem.h"
+#include "simulationstate.h"
 #include "util.h"
 
 namespace nblib
