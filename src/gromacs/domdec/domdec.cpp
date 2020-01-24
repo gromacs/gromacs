@@ -2736,15 +2736,8 @@ static void set_cell_limits_dlb(const gmx::MDLogger& mdlog,
     comm->bVacDLBNoLimit = (ir->pbcType == PbcType::No);
     for (d = 0; d < dd->ndim; d++)
     {
-        if (comm->ddSettings.request1DAnd1Pulse)
-        {
-            comm->cd[d].np_dlb = 1;
-        }
-        else
-        {
-            comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
-            comm->maxpulse     = std::max(comm->maxpulse, comm->cd[d].np_dlb);
-        }
+        comm->cd[d].np_dlb = std::min(npulse, dd->numCells[dd->dim[d]] - 1);
+        comm->maxpulse     = std::max(comm->maxpulse, comm->cd[d].np_dlb);
         if (comm->cd[d].np_dlb < dd->numCells[dd->dim[d]] - 1)
         {
             comm->bVacDLBNoLimit = FALSE;
@@ -2864,7 +2857,7 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
 
     ddSettings.useSendRecv2        = (dd_getenv(mdlog, "GMX_DD_USE_SENDRECV2", 0) != 0);
     ddSettings.dlb_scale_lim       = dd_getenv(mdlog, "GMX_DLB_MAX_BOX_SCALING", 10);
-    ddSettings.request1DAnd1Pulse  = bool(dd_getenv(mdlog, "GMX_DD_1D_1PULSE", 0));
+    ddSettings.request1D           = bool(dd_getenv(mdlog, "GMX_DD_1D", 0));
     ddSettings.useDDOrderZYX       = bool(dd_getenv(mdlog, "GMX_DD_ORDER_ZYX", 0));
     ddSettings.useCartesianReorder = bool(dd_getenv(mdlog, "GMX_NO_CART_REORDER", 1));
     ddSettings.eFlop               = dd_getenv(mdlog, "GMX_DLB_BASED_ON_FLOPS", 0);
@@ -2903,9 +2896,9 @@ static DDSettings getDDSettings(const gmx::MDLogger&     mdlog,
 
 gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
 
-/*! \brief Return whether the simulation described can run a 1D single-pulse DD.
+/*! \brief Return whether the simulation described can run a 1D DD.
  *
- * The GPU halo exchange code requires a 1D single-pulse DD. Such a DD
+ * The GPU halo exchange code requires 1D DD. Such a DD
  * generally requires a larger box than other possible decompositions
  * with the same rank count, so the calling code might need to decide
  * what is the most appropriate way to run the simulation based on
@@ -2920,33 +2913,33 @@ gmx_domdec_t::gmx_domdec_t(const t_inputrec& ir) : unitCellInfo(ir) {}
  * exchange code path. The number of PME ranks, if any, should be set
  * in \c options.numPmeRanks.
  */
-static bool canMake1DAnd1PulseDomainDecomposition(const DDSettings&              ddSettingsOriginal,
-                                                  const t_commrec*               cr,
-                                                  const int                      numRanksRequested,
-                                                  const DomdecOptions&           options,
-                                                  const gmx_mtop_t&              mtop,
-                                                  const t_inputrec&              ir,
-                                                  const matrix                   box,
-                                                  gmx::ArrayRef<const gmx::RVec> xGlobal)
+static bool canMake1DDomainDecomposition(const DDSettings&              ddSettingsOriginal,
+                                         const t_commrec*               cr,
+                                         const int                      numRanksRequested,
+                                         const DomdecOptions&           options,
+                                         const gmx_mtop_t&              mtop,
+                                         const t_inputrec&              ir,
+                                         const matrix                   box,
+                                         gmx::ArrayRef<const gmx::RVec> xGlobal)
 {
     // Ensure we don't write any output from this checking routine
     gmx::MDLogger dummyLogger;
 
     DDSystemInfo systemInfo = getSystemInfo(dummyLogger, cr, options, mtop, ir, box, xGlobal);
 
-    DDSettings ddSettings             = ddSettingsOriginal;
-    ddSettings.request1DAnd1Pulse     = true;
-    const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(
-            dummyLogger, ddSettings.request1DAnd1Pulse, !isDlbDisabled(ddSettings.initialDlbState),
-            options.dlbScaling, ir, systemInfo.cellsizeLimit);
+    DDSettings ddSettings = ddSettingsOriginal;
+    ddSettings.request1D  = true;
+    const real gridSetupCellsizeLimit =
+            getDDGridSetupCellSizeLimit(dummyLogger, !isDlbDisabled(ddSettings.initialDlbState),
+                                        options.dlbScaling, ir, systemInfo.cellsizeLimit);
     gmx_ddbox_t ddbox = { 0 };
     DDGridSetup ddGridSetup =
             getDDGridSetup(dummyLogger, cr, numRanksRequested, options, ddSettings, systemInfo,
                            gridSetupCellsizeLimit, mtop, ir, box, xGlobal, &ddbox);
 
-    const bool canMakeDDWith1DAnd1Pulse = (ddGridSetup.numDomains[XX] != 0);
+    const bool canMake1DDD = (ddGridSetup.numDomains[XX] != 0);
 
-    return canMakeDDWith1DAnd1Pulse;
+    return canMake1DDD;
 }
 
 bool is1D(const gmx_domdec_t& dd)
@@ -2972,7 +2965,7 @@ public:
          t_commrec*           cr,
          const DomdecOptions& options,
          const MdrunOptions&  mdrunOptions,
-         bool                 prefer1DAnd1Pulse,
+         bool                 prefer1D,
          const gmx_mtop_t&    mtop,
          const t_inputrec&    ir,
          const matrix         box,
@@ -3020,7 +3013,7 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
                                        t_commrec*           cr,
                                        const DomdecOptions& options,
                                        const MdrunOptions&  mdrunOptions,
-                                       const bool           prefer1DAnd1Pulse,
+                                       const bool           prefer1D,
                                        const gmx_mtop_t&    mtop,
                                        const t_inputrec&    ir,
                                        const matrix         box,
@@ -3035,11 +3028,10 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
 
     ddSettings_ = getDDSettings(mdlog_, options_, mdrunOptions, ir_);
 
-    if (prefer1DAnd1Pulse
-        && canMake1DAnd1PulseDomainDecomposition(ddSettings_, cr_, cr_->nnodes, options_, mtop_,
-                                                 ir_, box, xGlobal))
+    if (prefer1D
+        && canMake1DDomainDecomposition(ddSettings_, cr_, cr_->nnodes, options_, mtop_, ir_, box, xGlobal))
     {
-        ddSettings_.request1DAnd1Pulse = true;
+        ddSettings_.request1D = true;
     }
 
     if (ddSettings_.eFlop > 1)
@@ -3058,9 +3050,9 @@ DomainDecompositionBuilder::Impl::Impl(const MDLogger&      mdlog,
     // DD grid setup uses a more different cell size limit for
     // automated setup than the one in systemInfo_. The latter is used
     // in set_dd_limits() to configure DLB, for example.
-    const real gridSetupCellsizeLimit = getDDGridSetupCellSizeLimit(
-            mdlog_, ddSettings_.request1DAnd1Pulse, !isDlbDisabled(ddSettings_.initialDlbState),
-            options_.dlbScaling, ir_, systemInfo_.cellsizeLimit);
+    const real gridSetupCellsizeLimit =
+            getDDGridSetupCellSizeLimit(mdlog_, !isDlbDisabled(ddSettings_.initialDlbState),
+                                        options_.dlbScaling, ir_, systemInfo_.cellsizeLimit);
     ddGridSetup_ = getDDGridSetup(mdlog_, cr_, numRanksRequested, options_, ddSettings_, systemInfo_,
                                   gridSetupCellsizeLimit, mtop_, ir_, box, xGlobal, &ddbox_);
     checkDDGridSetup(ddGridSetup_, cr_, options_, ddSettings_, systemInfo_, gridSetupCellsizeLimit, ddbox_);
@@ -3109,12 +3101,12 @@ DomainDecompositionBuilder::DomainDecompositionBuilder(const MDLogger&      mdlo
                                                        t_commrec*           cr,
                                                        const DomdecOptions& options,
                                                        const MdrunOptions&  mdrunOptions,
-                                                       const bool           prefer1DAnd1Pulse,
+                                                       const bool           prefer1D,
                                                        const gmx_mtop_t&    mtop,
                                                        const t_inputrec&    ir,
                                                        const matrix         box,
                                                        ArrayRef<const RVec> xGlobal) :
-    impl_(new Impl(mdlog, cr, options, mdrunOptions, prefer1DAnd1Pulse, mtop, ir, box, xGlobal))
+    impl_(new Impl(mdlog, cr, options, mdrunOptions, prefer1D, mtop, ir, box, xGlobal))
 {
 }
 
@@ -3152,11 +3144,6 @@ static gmx_bool test_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<co
         }
 
         np = 1 + static_cast<int>(cutoffRequested * inv_cell_size * ddbox.skew_fac[dim]);
-
-        if (dd->comm->ddSettings.request1DAnd1Pulse && np > 1)
-        {
-            return FALSE;
-        }
 
         if (!isDlbDisabled(dd->comm) && (dim < ddbox.npbcdim) && (dd->comm->cd[d].np_dlb > 0))
         {

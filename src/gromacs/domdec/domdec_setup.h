@@ -92,7 +92,6 @@ void checkForValidRankCountRequests(int  numRanksRequested,
 
 /*! \brief Return the minimum cell size (in nm) required for DD */
 real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
-                                 bool                 request1DAnd1Pulse,
                                  bool                 bDynLoadBal,
                                  real                 dlb_scale,
                                  const t_inputrec&    ir,
