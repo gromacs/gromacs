@@ -167,22 +167,6 @@
 namespace gmx
 {
 
-/*! \brief Structure that holds boolean flags corresponding to the development
- *        features present enabled through environment variables.
- *
- */
-struct DevelopmentFeatureFlags
-{
-    //! True if the Buffer ops development feature is enabled
-    // TODO: when the trigger of the buffer ops offload is fully automated this should go away
-    bool enableGpuBufferOps = false;
-    //! If true, forces 'mdrun -update auto' default to 'gpu'
-    bool forceGpuUpdateDefault = false;
-    //! True if the GPU halo exchange development feature is enabled
-    bool enableGpuHaloExchange = false;
-    //! True if the PME PP direct communication GPU development feature is enabled
-    bool enableGpuPmePPComm = false;
-};
 
 /*! \brief Manage any development feature flag variables encountered
  *
@@ -1172,10 +1156,10 @@ int Mdrunner::mdrunner()
         const bool useUpdateGroups = cr->dd ? ddUsesUpdateGroups(*cr->dd) : false;
 
         useGpuForUpdate = decideWhetherToUseGpuForUpdate(
-                devFlags.forceGpuUpdateDefault, useDomainDecomposition, useUpdateGroups, pmeRunMode,
-                domdecOptions.numPmeRanks > 0, useGpuForNonbonded, updateTarget, gpusWereDetected,
-                *inputrec, mtop, doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
-                replExParams.exchangeInterval > 0, doRerun, mdlog);
+                useDomainDecomposition, useUpdateGroups, pmeRunMode, domdecOptions.numPmeRanks > 0,
+                useGpuForNonbonded, updateTarget, gpusWereDetected, *inputrec, mtop,
+                doEssentialDynamics, gmx_mtop_ftype_count(mtop, F_ORIRES) > 0,
+                replExParams.exchangeInterval > 0, doRerun, devFlags, mdlog);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
 
