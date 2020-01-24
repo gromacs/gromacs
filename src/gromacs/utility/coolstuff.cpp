@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1510,6 +1510,11 @@ std::string getCoolQuote()
           "takes all the running YOU can do, to keep in the same place. If you want "
           "to get somewhere else, you must run at least twice as fast as that!\""
           "Lewis Carroll" },
+        { "More than 10000000 total errors detected.  I'm not reporting any more. "
+          "Final error counts will be inaccurate.  Go fix your program!",
+          "Valgrind while memory debugging mdrun" },
+        { "If we are going to have SYCL, can we have a hammer as well?", "Joe Jordan" },
+        { "We can make it into a friend class. But I don't like having friends.", "Joe Jordan" },
     };
 
     if (beCool())
