@@ -152,7 +152,10 @@ static void update_tensor(const rvec x, real m0, tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vcm)
+void calc_vcm_grp(const t_mdatoms&               md,
+                  gmx::ArrayRef<const gmx::RVec> x,
+                  gmx::ArrayRef<const gmx::RVec> v,
+                  t_vcm*                         vcm)
 {
     if (vcm->mode == ecmNO)
     {
@@ -253,7 +256,7 @@ void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vc
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void doStopComMotionLinear(const t_mdatoms& mdatoms, rvec* v, const t_vcm& vcm)
+static void doStopComMotionLinear(const t_mdatoms& mdatoms, gmx::ArrayRef<gmx::RVec> v, const t_vcm& vcm)
 {
     const int             homenr   = mdatoms.homenr;
     const unsigned short* group_id = mdatoms.cVCM;
@@ -313,11 +316,11 @@ static void doStopComMotionLinear(const t_mdatoms& mdatoms, rvec* v, const t_vcm
  * \param[in]     vcm       VCM data
  */
 template<int numDimensions>
-static void doStopComMotionAccelerationCorrection(int                   homenr,
-                                                  const unsigned short* group_id,
-                                                  rvec* gmx_restrict x,
-                                                  rvec* gmx_restrict v,
-                                                  const t_vcm&       vcm)
+static void doStopComMotionAccelerationCorrection(int                      homenr,
+                                                  const unsigned short*    group_id,
+                                                  gmx::ArrayRef<gmx::RVec> x,
+                                                  gmx::ArrayRef<gmx::RVec> v,
+                                                  const t_vcm&             vcm)
 {
     const real xCorrectionFactor = 0.5 * vcm.timeStep;
 
@@ -348,7 +351,10 @@ static void doStopComMotionAccelerationCorrection(int                   homenr,
     }
 }
 
-static void do_stopcm_grp(const t_mdatoms& mdatoms, rvec x[], rvec v[], const t_vcm& vcm)
+static void do_stopcm_grp(const t_mdatoms&         mdatoms,
+                          gmx::ArrayRef<gmx::RVec> x,
+                          gmx::ArrayRef<gmx::RVec> v,
+                          const t_vcm&             vcm)
 {
     if (vcm.mode == ecmNO)
     {
@@ -365,7 +371,7 @@ static void do_stopcm_grp(const t_mdatoms& mdatoms, rvec x[], rvec v[], const t_
         firstprivate(homenr)
         {
             if (vcm.mode == ecmLINEAR || vcm.mode == ecmANGULAR
-                || (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x == nullptr))
+                || (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x.empty()))
             {
                 /* Subtract linear momentum for v */
                 switch (vcm.ndim)
@@ -397,7 +403,7 @@ static void do_stopcm_grp(const t_mdatoms& mdatoms, rvec x[], rvec v[], const t_
             if (vcm.mode == ecmANGULAR)
             {
                 /* Subtract angular momentum */
-                GMX_ASSERT(x, "Need x to compute angular momentum correction");
+                GMX_ASSERT(!x.empty(), "Need x to compute angular momentum correction");
 
                 int g = 0;
 #pragma omp for schedule(static)
@@ -569,7 +575,11 @@ static void process_and_check_cm_grp(FILE* fp, t_vcm* vcm, real Temp_Max)
     }
 }
 
-void process_and_stopcm_grp(FILE* fplog, t_vcm* vcm, const t_mdatoms& mdatoms, rvec x[], rvec v[])
+void process_and_stopcm_grp(FILE*                    fplog,
+                            t_vcm*                   vcm,
+                            const t_mdatoms&         mdatoms,
+                            gmx::ArrayRef<gmx::RVec> x,
+                            gmx::ArrayRef<gmx::RVec> v)
 {
     if (vcm->mode != ecmNO)
     {

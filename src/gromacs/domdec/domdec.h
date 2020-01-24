@@ -261,13 +261,13 @@ gmx::ArrayRef<const int> dd_constraints_nlocalatoms(const gmx_domdec_t* dd);
 /* In domdec_top.c */
 
 /*! \brief Print error output when interactions are missing */
-[[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&  mdlog,
-                                                t_commrec*            cr,
-                                                int                   local_count,
-                                                const gmx_mtop_t*     top_global,
-                                                const gmx_localtop_t* top_local,
-                                                const rvec*           x,
-                                                const matrix          box);
+[[noreturn]] void dd_print_missing_interactions(const gmx::MDLogger&           mdlog,
+                                                t_commrec*                     cr,
+                                                int                            local_count,
+                                                const gmx_mtop_t*              top_global,
+                                                const gmx_localtop_t*          top_local,
+                                                gmx::ArrayRef<const gmx::RVec> x,
+                                                const matrix                   box);
 
 /*! \brief Generate and store the reverse topology */
 void dd_make_reverse_top(FILE*              fplog,

@@ -205,14 +205,14 @@ void finish_update(const t_inputrec*       inputrec,
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
-void calc_ke_part(const rvec*      x,
-                  const rvec*      v,
-                  const matrix     box,
-                  const t_grpopts* opts,
-                  const t_mdatoms* md,
-                  gmx_ekindata_t*  ekind,
-                  t_nrnb*          nrnb,
-                  gmx_bool         bEkinAveVel);
+void calc_ke_part(gmx::ArrayRef<const gmx::RVec> x,
+                  gmx::ArrayRef<const gmx::RVec> v,
+                  const matrix                   box,
+                  const t_grpopts*               opts,
+                  const t_mdatoms*               md,
+                  gmx_ekindata_t*                ekind,
+                  t_nrnb*                        nrnb,
+                  gmx_bool                       bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
