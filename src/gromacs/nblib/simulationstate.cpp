@@ -44,7 +44,7 @@
  */
 #include "gmxpre.h"
 
-#include "simulationstate.h"
+#include "atomtype.h"
 
 #include <vector>
 
@@ -59,7 +59,8 @@
 #include "gromacs/utility/exceptions.h"
 
 #include "coords.h"
-#include "nbkernelsystem.h"
+#include "simulationstate.h"
+#include "util.h"
 
 namespace nblib
 {

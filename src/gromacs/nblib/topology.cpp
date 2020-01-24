@@ -246,11 +246,6 @@ const int& Topology::numAtoms() const
     return numAtoms_;
 }
 
-const std::vector<real>& Topology::getMasses() const
-{
-    return masses_;
-}
-
 const std::vector<real>& Topology::getCharges() const
 {
     return charges_;
@@ -264,16 +259,6 @@ const std::vector<AtomType>& Topology::getAtomTypes() const
 const std::vector<int>& Topology::getAtomTypeIdOfallAtoms() const
 {
     return atomTypeIdOfAllAtoms_;
-}
-
-const std::vector<std::tuple<real, real>>& Topology::getNonbondedParameters() const
-{
-    return nonbondedParameters_;
-}
-
-const std::vector<int>& Topology::getAtomInfoAllVdw() const
-{
-    return atomInfoAllVdw_;
 }
 
 

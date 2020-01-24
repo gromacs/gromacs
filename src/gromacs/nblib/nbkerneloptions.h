@@ -50,7 +50,6 @@
 #include "gromacs/math/vectypes.h"
 
 #include "nbkerneldef.h"
-#include "nbkernelsystem.h"
 
 struct interaction_const_t;
 struct nonbonded_verlet_t;

@@ -48,7 +48,6 @@
 
 #include "nbkerneldef.h"
 #include "nbkerneloptions.h"
-#include "nbkernelsystem.h"
 #include "simulationstate.h"
 
 namespace nblib {
@@ -64,8 +63,8 @@ class ForceCalculator
 public:
 
     // TODO: Depend on simulationState
-    ForceCalculator(SimulationState         &system,
-                    const NBKernelOptions   &options);
+    ForceCalculator(SimulationState& system,
+                    const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
     //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
