@@ -40,7 +40,6 @@
 
 #include "vcm.h"
 
-#include "gromacs/gmxlib/network.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/invertmatrix.h"
 #include "gromacs/math/vec.h"
@@ -154,10 +153,14 @@ static void update_tensor(const rvec x, real m0, tensor I)
 /* Center of mass code for groups */
 void calc_vcm_grp(const t_mdatoms& md, const rvec x[], const rvec v[], t_vcm* vcm)
 {
-    int nthreads = gmx_omp_nthreads_get(emntDefault);
-    if (vcm->mode != ecmNO)
+    if (vcm->mode == ecmNO)
     {
-#pragma omp parallel num_threads(nthreads)
+        return;
+    }
+    int nthreads = gmx_omp_nthreads_get(emntDefault);
+
+    {
+#pragma omp parallel num_threads(nthreads) default(none) shared(x, v, vcm, md)
         {
             int t = gmx_omp_get_thread_num();
             for (int g = 0; g < vcm->size; g++)
@@ -346,13 +349,19 @@ static void doStopComMotionAccelerationCorrection(int                   homenr,
 
 static void do_stopcm_grp(const t_mdatoms& mdatoms, rvec x[], rvec v[], const t_vcm& vcm)
 {
-    if (vcm.mode != ecmNO)
+    if (vcm.mode == ecmNO)
+    {
+        return;
+    }
     {
         const int             homenr   = mdatoms.homenr;
         const unsigned short* group_id = mdatoms.cVCM;
 
         int gmx_unused nth = gmx_omp_nthreads_get(emntDefault);
-#pragma omp parallel num_threads(nth)
+        // homenr could be shared, but gcc-8 & gcc-9 don't agree how to write that...
+        // https://www.gnu.org/software/gcc/gcc-9/porting_to.html -> OpenMP data sharing
+#pragma omp parallel num_threads(nth) default(none) shared(x, v, vcm, group_id, mdatoms) \
+        firstprivate(homenr)
         {
             if (vcm.mode == ecmLINEAR || vcm.mode == ecmANGULAR
                 || (vcm.mode == ecmLINEAR_ACCELERATION_CORRECTION && x == nullptr))
