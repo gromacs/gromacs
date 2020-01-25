@@ -209,7 +209,7 @@ void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
     {
         psigma.resize(param.size(), 0);
     }
-    Bayes::dumpParam(debug);
+    Bayes::printParameters(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
@@ -409,9 +409,6 @@ void OptZeta::optRun(FILE                   *fp,
     std::vector<double> optb, opts, optm;
     gmx_bool            bMinimum = false;
 
-    auto                func = [&] (const double v[]) {
-                                   return Bayes::objFunction(v);
-        };
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
@@ -422,12 +419,9 @@ void OptZeta::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2;
-        Bayes::setFunc(func, &chi2);
         Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         param_type param = Bayes::getParam();
-        double chi2_min  = Bayes::objFunction(param.data());
-        chi2             = chi2_min;
+        double chi2_min  = Bayes::objFunction(param);
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -435,7 +429,7 @@ void OptZeta::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            Bayes::MCMC();
+            double chi2 = Bayes::MCMC(fplog);
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
@@ -447,7 +441,7 @@ void OptZeta::optRun(FILE                   *fp,
             auto best   = Bayes::getBestParam();
             auto psigma = Bayes::getPsigma();
             auto pmean  = Bayes::getPmean();
-            auto emin   = Bayes::objFunction(best.data());
+            auto emin   = Bayes::objFunction(best);
             if (fplog)
             {
                 fprintf(fplog, "\nMinimum rmsd value during optimization: %.3f.\n", sqrt(emin));
@@ -473,9 +467,10 @@ void OptZeta::optRun(FILE                   *fp,
     if (MASTER(commrec()))
     {
         param_type best = Bayes::getBestParam();
-        (void) Bayes::objFunction(best.data());
+        double chi2 = Bayes::objFunction(best);
         printEnergies(fp);
         printEnergies(fplog);
+        fprintf(fplog, "Minimum energy chi2 %g\n", chi2);
     }
 }
 }

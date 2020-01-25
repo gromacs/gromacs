@@ -118,11 +118,17 @@ double OptParam::computeBeta(int maxiter, int iter, int ncycle)
     return 1/(BOLTZ*temp);
 }
 
-void Bayes::setFunc(func_t  func,
-                    double *minEval)
+void Bayes::printParameters(FILE *fp) const
 {
-    func_       = func;
-    minEval_    = minEval;
+    if (nullptr == fp)
+    {
+        return;
+    }
+    for(size_t i = 0; i < param_.size(); i++)
+    {
+        fprintf(fp, "  %s  %g,", paramNames_[i].c_str(), param_[i]);
+    }
+    fprintf(fp, "\n");
 }
 
 void Bayes::addParam(real val,
@@ -174,27 +180,30 @@ void Bayes::changeParam(size_t j, real rand)
     }
 }
 
-double Bayes::objFunction(const double v[])
+double Bayes::objFunction(std::vector<double> v)
 {
     auto              np = param_.size();
-    std::vector<bool> changed(np, false);
+    GMX_RELEASE_ASSERT(np == v.size(), 
+                       gmx::formatString("Vector size mismatch np=%zu, v=%zu",
+                                         np, v.size()).c_str());
+    std::vector<bool> changed;
+    changed.resize(np, false);
     for (size_t i = 0; i < np; i++)
     {
-        if (prevParam_[i] != v[i])
-        {
-            changed[i] = true;
-        }
+        changed[i] = (param_[i] != v[i]);
+        param_[i]  = v[i];
     }
     toPolData(changed);
     return calcDeviation();
 }
 
-void Bayes::MCMC()
+double Bayes::MCMC(FILE *fplog)
 {
     double                           storeParam;
     int                              nsum            = 0;
     int                              nParam          = 0; 
     double                           currEval        = 0;
+    double                           minEval         = 0;
     double                           prevEval        = 0;
     double                           deltaEval       = 0;
     double                           randProbability = 0;
@@ -221,7 +230,7 @@ void Bayes::MCMC()
             }
             xvgr_legend(fpc, paramNames.size(), paramNames.data(), oenv());   
         }
-    }   
+    } 
     if (nullptr != xvgEpot())
     {
         fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
@@ -234,11 +243,15 @@ void Bayes::MCMC()
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
 
-    prevEval  = func_(param_.data());
-    *minEval_ = prevEval;
+    prevEval = objFunction(param_);
+    minEval  = prevEval;
     if (debug)
     {
         fprintf(debug, "Initial chi2 value = %g\n", prevEval);
+    }
+    if (fplog)
+    {
+        fprintf(fplog, "minEval %g, nParam %d\n", minEval, nParam);
     }
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
@@ -248,17 +261,22 @@ void Bayes::MCMC()
         prevParam_ = param_;
         storeParam = param_[j];
         changeParam(j, uniform(gen));
-        currEval        = func_(param_.data());
+        currEval        = objFunction(param_);
         deltaEval       = currEval-prevEval;
         randProbability = uniform(gen);
         mcProbability   = exp(-beta*deltaEval);
         
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
-            if (currEval < *minEval_)
+            if (currEval < minEval)
             {
+                if (fplog)
+                {
+                    fprintf(fplog, "iter %5d. Found new minimum at %g\n",
+                            iter, currEval);
+                }
                 bestParam_ = param_;
-                *minEval_  = currEval;
+                minEval    = currEval;
                 if (debug)
                 {
                     fprintf(debug, "New minimum at %g", currEval);
@@ -320,14 +338,16 @@ void Bayes::MCMC()
     {
         xvgrclose(fpe);
     }
+    return minEval;
 }
 
-void Bayes::DRAM()
+double Bayes::DRAM(FILE *fplog)
 {
     double                           storeParam;
     int                              nsum            = 0;
     int                              nParam          = 0; 
     double                           currEval        = 0;
+    double                           minEval         = 0;
     double                           prevEval        = 0;
     double                           deltaEval       = 0;
     double                           randProbability = 0;
@@ -357,8 +377,12 @@ void Bayes::DRAM()
     pmean_.resize(nParam, 0);
     psigma_.resize(nParam, 0);
     
-    prevEval  = func_(param_.data());
-    *minEval_ = prevEval;
+    prevEval = objFunction(param_);
+    minEval  = prevEval;
+    if (fplog)
+    {
+        fprintf(fplog, "minEval %g nParam %d\n", minEval, nParam);
+    }
     for (int iter = 0; iter < nParam*maxIter(); iter++)
     {
         double beta = computeBeta(iter/nParam);
@@ -367,17 +391,17 @@ void Bayes::DRAM()
         
         storeParam = param_[j];
         changeParam(j, uniform(gen));
-        currEval        = func_(param_.data());
+        currEval        = objFunction(param_);
         deltaEval       = currEval-prevEval;
         randProbability = uniform(gen);
         mcProbability   = exp(-beta*deltaEval);
         
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
-            if (currEval < *minEval_)
+            if (currEval < minEval)
             {
                 bestParam_ = param_;
-                *minEval_  = currEval;
+                minEval    = currEval;
             }
             prevEval = currEval;
         }
@@ -428,19 +452,7 @@ void Bayes::DRAM()
     {
         xvgrclose(fpe);
     }
+    return minEval;
 }
 
-void Bayes::dumpParam(FILE *fp)
-{
-    if (nullptr != fp)
-    {
-        fprintf(fp, "Parameters:");
-        for (auto &p : param_)
-        {
-            fprintf(fp, " %.3f", p);
-        }
-        fprintf(fp, "\n");
-    }
-}
-    
 }

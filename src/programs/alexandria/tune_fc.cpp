@@ -820,7 +820,7 @@ double Optimization::calcDeviation()
     poldataUpdates_.clear();
     if (calcAll_)
     {
-        Bayes::dumpParam(debug);
+        Bayes::printParameters(debug);
     }
     for (auto &mem : MolEnergyMap_)
     {
@@ -1027,20 +1027,15 @@ bool Optimization::optRun(FILE                   *fplog,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2_min = Bayes::objFunction(Bayes::getParam().data());
-        double chi2     = chi2_min;
+        double chi2_min = Bayes::objFunction(Bayes::getParam());
         if (fplog)
         {
             fprintf(fplog, "Initial chi2 %g\n", chi2_min);
         }
         {
-            auto func = [&] (const double v[]) {
-                            return Bayes::objFunction(v);
-                        };
-            Bayes::setFunc(func, &chi2);
             Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
         }
-        Bayes::MCMC();
+        double chi2 = Bayes::MCMC(fplog);
         if (fplog)
         {
             fprintf(fplog, "Final chi2 %g\n", chi2_min);
@@ -1057,7 +1052,7 @@ bool Optimization::optRun(FILE                   *fplog,
                 auto psigma = Bayes::getPsigma();
                 auto best   = Bayes::getBestParam();
                 // This call copies data to poldata as well.
-                double chi2 = Bayes::objFunction(best.data());
+                double chi2 = Bayes::objFunction(best);
                 fprintf(fplog, "\nLowest RMSD value during optimization: %g.\n",
                         std::sqrt(chi2));
                 fprintf(fplog, "Parameters after the optimization:\n");

@@ -39,9 +39,11 @@
 
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/bonded.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/mdatoms.h"
 #include "gromacs/mdlib/shellfc.h"
@@ -69,31 +71,32 @@
 namespace alexandria
 {
 
+static void my_fclose(FILE *fp)
+{
+    int myerrno = fclose(fp);
+    if (myerrno != 0)
+    {
+        fprintf(stderr, "Error %d closing file\n", myerrno);
+    }
+}
+
 class OptACM : public MolGen, Bayes
 {
     using param_type = std::vector<double>;
 
     private:
-        bool       bFullTensor_;
-        bool       bFitAlpha_;
-        bool       bFitZeta_;
-        bool       bSameZeta_;
-        bool       bFitChi_;
-        bool       bUseCM5_;
-        real       penalty_;
+        bool       bFullTensor_                  = false;
+        bool       bFitAlpha_                    = false;
+        bool       bFitZeta_                     = false;
+        bool       bSameZeta_                    = true;
+        bool       bFitChi_                      = false;
+        bool       bUseCM5_                      = false;
+        real       penalty_                      = false;
+        gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
 
     public:
 
-        OptACM()
-            :
-              bFullTensor_(false),
-              bFitAlpha_(false),
-              bFitZeta_(false),
-              bSameZeta_(true),
-              bFitChi_(true),
-              bUseCM5_(false),
-              penalty_(0)
-        {}
+        OptACM() {}
 
         ~OptACM() {}
 
@@ -146,8 +149,26 @@ class OptACM : public MolGen, Bayes
         {
             MolGen::optionsFinished();
             setBoxConstraint(bConstrain());
+            GMX_RELEASE_ASSERT(bSameZeta_, "Optimization with different zeta is broken.");
         }
 
+        void openLogFile(const char *logfileName)
+        {
+            fplog_.reset(std::fopen(logfileName, "w"));
+        }
+        
+        FILE *logFile()
+        {
+            if (fplog_)
+            { 
+                return fplog_.get();
+            }
+            else
+            {
+                return nullptr;
+            }
+        }
+        
         double l2_regularizer (double x,
                                double min,
                                double max)
@@ -177,9 +198,9 @@ class OptACM : public MolGen, Bayes
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
-         * \param[in] List over the parameters that have changed.
+         * \param[in] changed List over the parameters that have changed.
          */
-        virtual void toPolData(const std::vector<bool> &changed);
+        virtual void toPolData(const std::vector<bool> gmx_unused &changed);
 
         void InitOpt(real factor);
 
@@ -190,14 +211,12 @@ class OptACM : public MolGen, Bayes
         /*! \brief
          * Do the actual optimization.
          * \param[in] fp     FILE pointer for logging
-         * \param[in] fplog  FILE pointer for logging
          * \param[in] oenv   Output environment for managing xvg files etc.
          * \param[in] xvgconv Output file monitoring parameters
          * \param[in] xvgepot Output file monitoring penalty function
          * \return true if better parameters were found.
          */
         bool optRun(FILE                   *fp,
-                    FILE                   *fplog,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
                     const char             *xvgconv,
@@ -239,32 +258,41 @@ void OptACM::initChargeGeneration()
     }
 }
 
-static void dumpQ(FILE *fp, const std::string &molname,
-                  t_atoms *atoms)
+static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 {
-    if (fp)
+    if (false && fp)
     {
-        fprintf(fp, "%s q:", molname.c_str());
-        for (int i = 0; i < atoms->nr; i++)
+        std::string label = mol->molProp()->getMolname() + "-" + info;
+        fprintf(fp, "%s q:", label.c_str());
+        t_mdatoms *md = mol->getMdatoms();
+        for (int i = 0; i < mol->atoms_->nr; i++)
         {
-            fprintf(fp, " %.3f", atoms->atom[i].q);
+            fprintf(fp, " %g (%g)", mol->atoms_->atom[i].q,
+                    md->chargeA[i]);
         }
         fprintf(fp, "\n");
+        fprintf(fp, "%s alpha", label.c_str());
+        int ft = F_POLARIZATION;
+        for(int i = 0; i < mol->ltop_->idef.il[ft].nr; i += interaction_function[ft].nratoms+1)
+        {
+            auto tp = mol->ltop_->idef.il[ft].iatoms[i];
+            fprintf(fp, " %g", mol->ltop_->idef.iparams[tp].polarize.alpha);
+        }
+        fprintf(fp, "\n");
+        pr_rvecs(fp, 0, label.c_str(), mol->x().rvec_array(), mol->atoms_->nr);
     }
 }
 
 double OptACM::calcDeviation()
 {
-    int                  n         = 0;
-    double               EemRms    = 0;
-    double               bound     = 0;
-    double               penalty   = 0;
-    std::vector<double>  qq;
-    const param_type    &param     = Bayes::getParam();
-
+    resetEnergies();
     if (MASTER(commrec()))
     {
-        auto *ic = indexCount();
+        const param_type &param   = Bayes::getParam();
+        double            bound   = 0;
+        double            penalty = 0;
+        int               n       = 0;
+        auto   *ic      = indexCount();
         for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
         {
             if (!ai->isConst())
@@ -305,6 +333,11 @@ double OptACM::calcDeviation()
             setHfac(param[n++]);
             bound += 100*gmx::square(hfacDiff());
         }
+        increaseEnergy(ermsBOUNDS, bound);
+        if (penalize())
+        {
+            increaseEnergy(ermsPENALTY, penalty);
+        }
     }
 
     if (PAR(commrec()))
@@ -315,22 +348,28 @@ double OptACM::calcDeviation()
         {
             setFinal();
         }
-    }
-
-    if (PAR(commrec()) && !final())
-    {
-        poldata()->broadcast_eemprop(commrec());
-        if (bFitAlpha_)
+        else
         {
-            poldata()->broadcast_ptype(commrec());
+            // Communicate the force field data.
+            poldata()->broadcast_eemprop(commrec());
+            if (bFitAlpha_)
+            {
+                poldata()->broadcast_ptype(commrec());
+            }
         }
     }
-    resetEnergies();
+    if (false && logFile())
+    {
+        fprintf(logFile(), "Parameters:");
+        printParameters(logFile());
+    }
     for (auto &mymol : mymols())
     {
         if ((mymol.eSupp_ == eSupportLocal) ||
             (final() && (mymol.eSupp_ == eSupportRemote)))
         {
+            dumpQX(logFile(), &mymol, "BEFORE");
+            std::vector<double> qq;
             auto q     = mymol.Qgacm_.q();
             auto natom = mymol.Qgacm_.natom();
 
@@ -339,7 +378,11 @@ double OptACM::calcDeviation()
             {
                 qq[i] = q[i][0];
             }
-
+            // Update the polarizabilities only once before the loop
+            if (bFitAlpha_)
+            {
+                mymol.UpdateIdef(poldata(), eitPOLARIZATION);
+            }
             bool converged = false;
             int  iter      = 0;
             do
@@ -352,16 +395,22 @@ double OptACM::calcDeviation()
                         mymol.mtop_->moltype[0].atoms.atom[i].qB =
                             mymol.atoms_->atom[i].q;
                 }
-
+                dumpQX(logFile(), &mymol, "LOOP1");
                 if (nullptr != mymol.shellfc_)
                 {
-                    if (bFitAlpha_)
+                    auto imm = mymol.computeForces(logFile(), commrec());
+                    if (immOK != imm)
                     {
-                        mymol.UpdateIdef(poldata(), eitPOLARIZATION);
+                        if (logFile())
+                        {
+                            fprintf(logFile(), "Could not compute forces for %s. Removing it from the data set.\n",
+                                    mymol.molProp()->getMolname().c_str());
+                        }
+                        mymol.eSupp_ = eSupportNo;
+                        break;
                     }
-                    mymol.computeForces(nullptr, commrec());
                 }
-
+                dumpQX(logFile(), &mymol, "LOOP2");
                 auto qgen =  mymol.Qgacm_.generateCharges(debug,
                                                           mymol.molProp()->getMolname().c_str(),
                                                           poldata(),
@@ -373,9 +422,9 @@ double OptACM::calcDeviation()
                               mymol.molProp()->getMolname().c_str(),
                               mymol.Qgacm_.message());
                 }
-                q       = mymol.Qgacm_.q();
-                EemRms  = 0;
-                for (int i = 0; i < natom + 1; i++)
+                q             = mymol.Qgacm_.q();
+                double EemRms = 0;
+                for (int i = 0; i < natom; i++)
                 {
                     EemRms   += gmx::square(qq[i] - q[i][0]);
                     qq[i]     = q[i][0];
@@ -385,16 +434,27 @@ double OptACM::calcDeviation()
                 iter++;
             }
             while ((!converged) && (iter < qcycle()));
+            if (!converged)
+            {
+                if (logFile())
+                {
+                    fprintf(logFile(), "Could not generate charges for %s. Removing compound.",
+                            mymol.molProp()->getMolname().c_str());
+                }
+                mymol.eSupp_ = eSupportNo;
+            }
+            // Check whether we have disabled this compound
+            if (mymol.eSupp_ == eSupportNo)
+            {
+                continue;
+            }
             for (int i = 0; i < mymol.mtop_->natoms; i++)
             {
                 mymol.mtop_->moltype[0].atoms.atom[i].q      =
                     mymol.mtop_->moltype[0].atoms.atom[i].qB =
-                        mymol.atoms_->atom[i].q;
+                    mymol.atoms_->atom[i].q;
             }
-            if (debug)
-            {
-                dumpQ(debug, mymol.molProp()->getMolname(), mymol.atoms_);
-            }
+            dumpQX(logFile(), &mymol, "AFTERLOOP");
             if (weight(ermsCHARGE))
             {
                 int    nChargeResidual = 0; // number of charge residuals added per molecule
@@ -453,6 +513,7 @@ double OptACM::calcDeviation()
                 {
                     mymol.Qgresp_.updateZeta(mymol.atoms_, poldata());
                 }
+                dumpQX(logFile(), &mymol, "ESP");
                 mymol.Qgresp_.updateAtomCharges(mymol.atoms_);
                 mymol.Qgresp_.calcPot(poldata()->getEpsilonR());
                 auto myRms =
@@ -499,17 +560,21 @@ double OptACM::calcDeviation()
             {
                 mymol.CalcPolarizability(10, commrec(), nullptr);
                 double diff2 = gmx::square(mymol.PolarizabilityDeviation());
+                if (false && logFile())
+                {
+                    fprintf(logFile(), "DIFF %s %g\n", 
+                            mymol.molProp()->getMolname().c_str(), diff2);
+                }
                 increaseEnergy(ermsPolar, diff2);
             }
         }
     }
-    increaseEnergy(ermsBOUNDS, bound);
-    if (penalize())
-    {
-        increaseEnergy(ermsPENALTY, penalty);
-    }
     sumEnergies();
-    printEnergies(debug);
+    if (false && logFile())
+    {
+        printParameters(logFile());
+        printEnergies(logFile());
+    }
     return energy(ermsTOT);
 }
 
@@ -591,7 +656,7 @@ void OptACM::polData2TuneACM(real factor)
 
 }
 
-void OptACM::toPolData(const std::vector<bool> &changed)
+void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
 {
     size_t   n           = 0;
     auto     pd          = poldata();
@@ -603,7 +668,7 @@ void OptACM::toPolData(const std::vector<bool> &changed)
     {
         psigma.resize(param.size(), 0);
     }
-    Bayes::dumpParam(debug);
+    Bayes::printParameters(debug);
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
         if (!ai->isConst())
@@ -612,11 +677,13 @@ void OptACM::toPolData(const std::vector<bool> &changed)
             if (bFitChi_)
             {
                 ei->setJ0(param[n]);
-                ei->setJ0_sigma(psigma[n++]);
+                ei->setJ0_sigma(psigma[n]);
+                n++;
                 if (ai->name().compare(fixchi()) != 0)
                 {
                     ei->setChi0(param[n]);
-                    ei->setChi0_sigma(psigma[n++]);
+                    ei->setChi0_sigma(psigma[n]);
+                    n++;
                 }
             }
             if (bFitZeta_)
@@ -635,7 +702,8 @@ void OptACM::toPolData(const std::vector<bool> &changed)
                         if (i == 0 || (i > 0 && !readOne))
                         {
                             zeta   = param[n];
-                            sigma  = psigma[n++];
+                            sigma  = psigma[n];
+                            n++;
                         }
                         zstr.append(gmx::formatString("%g ", zeta));
                         z_sig.append(gmx::formatString("%g ", sigma));
@@ -662,7 +730,8 @@ void OptACM::toPolData(const std::vector<bool> &changed)
     }
     if (optHfac())
     {
-        setHfac(param[n++]);
+        setHfac(param[n]);
+        n++;
     }
     GMX_RELEASE_ASSERT(n == changed.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
@@ -733,18 +802,12 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
 }
 
 bool OptACM::optRun(FILE                   *fp,
-                    FILE                   *fplog,
                     int                     nrun,
                     const gmx_output_env_t *oenv,
                     const char             *xvgconv,
                     const char             *xvgepot)
 {
     bool bMinimum = false;
-
-    auto func = [&] (const double v[]) {
-            return Bayes::objFunction(v);
-        };
-
     if (MASTER(commrec()))
     {
         if (PAR(commrec()))
@@ -755,13 +818,11 @@ bool OptACM::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        double chi2;
-        Bayes::setFunc(func, &chi2);
         Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
-        param_type param     = Bayes::getParam();
-        double     chi2_min  = Bayes::objFunction(param.data());
-        fprintf(fplog, "Initial chi2 value %g\n", chi2_min);
-        chi2             = chi2_min;
+        param_type param    = Bayes::getParam();
+        double     chi2_min = Bayes::objFunction(param);
+        fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
+        printEnergies(logFile());
 
         for (auto n = 0; n < nrun; n++)
         {
@@ -769,7 +830,7 @@ bool OptACM::optRun(FILE                   *fp,
             {
                 fprintf(fp, "\nStarting run %d out of %d\n", n, nrun);
             }
-            Bayes::MCMC();
+            double chi2 = Bayes::MCMC(logFile());
             if (chi2 < chi2_min)
             {
                 bMinimum = true;
@@ -784,16 +845,20 @@ bool OptACM::optRun(FILE                   *fp,
             auto attemptedMoves = Bayes::getAttemptedMoves();
             auto acceptedMoves  = Bayes::getAcceptedMoves();
             auto paramNames     = Bayes::getParamNames();
-            auto emin           = Bayes::objFunction(best.data());
-            if (fplog)
+            if (logFile())
             {
-                fprintf(fplog, "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(emin));
-                fprintf(fplog, "Statistics of parameters after optimization\n");
-                for (size_t k = 0; k < Bayes::nParam(); k++)
+                fprintf(logFile(), "\nMinimum RMSD value during optimization: %.3f.\n", sqrt(chi2_min));
+                fprintf(logFile(), "Statistics of parameters after optimization\n");
+                fprintf(logFile(), "#best %zu #mean %zu #sigma %zu #param %zu\n",
+                        best.size(), pmean.size(), psigma.size(), paramNames.size());
+                if (best.size() == Bayes::nParam())
                 {
-                    double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                    fprintf(fplog, "%-10s  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
-                            paramNames[k].c_str(), best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+                    for (size_t k = 0; k < Bayes::nParam(); k++)
+                    {
+                        double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
+                        fprintf(logFile(), "%-10s  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
+                                paramNames[k].c_str(), best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+                    }
                 }
             }
         }
@@ -813,14 +878,22 @@ bool OptACM::optRun(FILE                   *fp,
         param_type best = Bayes::getBestParam();
         if (!best.empty())
         {
-            (void) Bayes::objFunction(best.data());
+            // Calling objFunction will copy these parameters to
+            // poldata if all is well.
+            double chi2 = Bayes::objFunction(best);
             printEnergies(fp);
-            printEnergies(fplog);
+            printEnergies(logFile());
+            fprintf(logFile(), "Minimum energy chi2 %g\n", chi2);
+        }
+        else
+        {
+            fprintf(logFile(), "Did not find a better parameter set\n");
         }
     }
     return bMinimum;
 }
-}
+
+} // namespace alexandria
 
 int alex_tune_eem(int argc, char *argv[])
 {
@@ -935,7 +1008,6 @@ int alex_tune_eem(int argc, char *argv[])
 
     };
 
-    FILE                       *fp;
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
 
@@ -956,12 +1028,8 @@ int alex_tune_eem(int argc, char *argv[])
     opt.optionsFinished();
     if (MASTER(opt.commrec()))
     {
-        fp = gmx_ffopen(opt2fn("-g", NFILE, fnm), "w");
-        print_header(fp, pargs);
-    }
-    else
-    {
-        fp = nullptr;
+        opt.openLogFile(opt2fn("-g", NFILE, fnm));
+        print_header(opt.logFile(), pargs);
     }
     if (MASTER(opt.commrec()))
     {
@@ -970,7 +1038,7 @@ int alex_tune_eem(int argc, char *argv[])
 
     const char *tabfn = opt2fn_null("-table", NFILE, fnm);
 
-    opt.Read(fp ? fp : (debug ? debug : nullptr),
+    opt.Read(opt.logFile() ? opt.logFile() : (debug ? debug : nullptr),
              opt2fn("-f", NFILE, fnm),
              opt2fn_null("-d", NFILE, fnm),
              bZero,
@@ -995,7 +1063,6 @@ int alex_tune_eem(int argc, char *argv[])
         }
 
         bMinimum = opt.optRun(MASTER(opt.commrec()) ? stderr : nullptr,
-                              fp,
                               nrun,
                               oenv,
                               opt2fn("-conv", NFILE, fnm),
@@ -1010,7 +1077,7 @@ int alex_tune_eem(int argc, char *argv[])
             bool  bPolar = getEemtypePolarizable(iModel);
 
             auto *ic = opt.indexCount();
-            print_electric_props(fp,
+            print_electric_props(opt.logFile(),
                                  opt.mymols(),
                                  opt.poldata(),
                                  opt.mdlog(),
@@ -1057,7 +1124,6 @@ int alex_tune_eem(int argc, char *argv[])
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
         }
-        gmx_ffclose(fp);
     }
     return 0;
 }

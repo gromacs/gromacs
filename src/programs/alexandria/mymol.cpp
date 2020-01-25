@@ -49,6 +49,7 @@
 #include "gromacs/listed-forces/manage-threading.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/vecdump.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/force.h"
 #include "gromacs/mdlib/forcerec.h"
@@ -1170,16 +1171,13 @@ immStatus MyMol::GenerateGromacs(const gmx::MDLogger       &mdlog,
 immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
 {
     auto mdatoms = MDatoms_->get()->mdatoms();
-    if (mdatoms->typeA[0] == 0)
+    for (auto i = 0; i < mtop_->natoms; i++)
     {
-        for (auto i = 0; i < mtop_->natoms; i++)
+        mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
+        mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
+        if (nullptr != debug)
         {
-            mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
-            mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
-            if (nullptr != debug)
-            {
-                fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
-            }
+            fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);
         }
     }
     if (!vsite_)
@@ -1234,9 +1232,11 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
         }
         if (force2 > inputrec_->em_tol && fplog)
         {
-            fprintf(fplog, "Shell minimization did not converge in %d step for %s. RMS Force = %g.\n",
+            fprintf(fplog, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
                     inputrec_->niter, molProp()->getMolname().c_str(),
                     std::sqrt(force2));
+            pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
+            imm = immShellMinimization;
         }
         cr->nnodes = nnodes;
     }
@@ -1269,7 +1269,7 @@ void MyMol::initQgresp(const Poldata             *pd,
 
     Qgresp_.setChargeModel(iChargeModel);
     Qgresp_.setAtomWeight(watoms);
-    Qgresp_.setAtomInfo(atoms_, pd, state_->x, molProp()->getCharge());
+    Qgresp_.setAtomInfo(atoms_, pd, x(), molProp()->getCharge());
     Qgresp_.setAtomSymmetry(symmetric_charges_);
     Qgresp_.setMolecularCharge(molProp()->getCharge());
     Qgresp_.summary(debug);
@@ -1452,7 +1452,11 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
                     }
                     if (nullptr != shellfc_)
                     {
-                        computeForces(nullptr, cr);
+                        auto imm = computeForces(nullptr, cr);
+                        if (imm != immOK)
+                        {
+                            return imm;
+                        }
                     }
                     q       = Qgacm_.q();
                     EemRms_ = 0;
@@ -1642,33 +1646,74 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
     *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
 }
 
-void MyMol::CalcPolarizability(double     efield,
-                               t_commrec *cr,
-                               FILE      *fplog)
+void MyMol::backupCoordinates()
+{
+    backupCoordinates_.resize(atoms_->nr);
+    for(int i = 0; i < atoms_->nr; i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            backupCoordinates_[i][m] = state_->x[i][m];
+        }
+    }
+}
+
+void MyMol::restoreCoordinates()
+{
+    GMX_RELEASE_ASSERT(static_cast<int>(backupCoordinates_.size()) == atoms_->nr,
+                       gmx::formatString("There are %d atoms but backup array size = %zu", atoms_->nr, backupCoordinates_.size()).c_str());
+    for(int i = 0; i < atoms_->nr; i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            state_->x[i][m] = backupCoordinates_[i][m];
+        }
+    }
+}
+
+immStatus MyMol::CalcPolarizability(double     efield,
+                                    t_commrec *cr,
+                                    FILE      *fplog)
 {
     const double        POLFAC = 29.957004; /* C.m**2.V*-1 to Å**3 */
     std::vector<double> field;
-    rvec                mu_ref, mu_tot;
-
+    rvec                mu_ref;
+    immStatus           imm = immOK;
+    
     field.resize(DIM, 0);
     myforce_->setField(field);
     CalcDipole(mu_ref);
-    computeForces(fplog, cr);
-    for (auto m = 0; m < DIM; m++)
+    if (false && fplog)
     {
+        fprintf(fplog, "CalcPolarizability for %s\n", molProp()->getMolname().c_str());
+    }
+    imm          = computeForces(fplog, cr);
+    isoPol_calc_ = 0;
+    for (auto m = 0; imm == immOK && m < DIM; m++)
+    {
+        backupCoordinates();
         field[m] = efield;
         myforce_->setField(field);
-        computeForces(fplog, cr);
-        CalcDipole(mu_tot);
-        for (auto n = 0; n < DIM; n++)
+        imm = computeForces(fplog, cr);
+        field[m] = 0;
+        myforce_->setField(field);
+        if (imm == immOK)
         {
-            alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
+            rvec mu_tot;
+            CalcDipole(mu_tot);
+            for (auto n = 0; n < DIM; n++)
+            {
+                alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
+            }
+            isoPol_calc_     += alpha_calc_[m][m]/DIM;
         }
-        isoPol_calc_     += alpha_calc_[m][m];
-        field[m]          = 0.0;
+        restoreCoordinates();
     }
-    isoPol_calc_ /= DIM;
-    CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
+    if (immOK == imm)
+    {
+        CalcAnisoPolarizability(alpha_calc_, &anisoPol_calc_);
+    }
+    return imm;
 }
 
 void MyMol::PrintConformation(const char *fn)
@@ -1836,28 +1881,35 @@ void MyMol::PrintTopology(FILE                   *fp,
 
     if (efield > 0 && nullptr != cr)
     {
-        CalcPolarizability(efield, cr, debug);
-        add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
-
-        snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
-        commercials.push_back(buf);
-
-        snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
-        commercials.push_back(buf);
-
-        T = -1;
-        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
-                                  (char *)"electronic", &isoPol_elec_, &error,
-                                  &T, &myref, &mylot, vec, alpha_elec_))
+        auto imm = CalcPolarizability(efield, cr, debug);
+        if (imm == immOK)
         {
-            CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
-            snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
-            add_tensor(&commercials, buf, alpha_elec_);
+            add_tensor(&commercials, "Alexandria Polarizability components (A^3)", alpha_calc_);
+            
+            snprintf(buf, sizeof(buf), "Alexandria Isotropic Polarizability (Interactive): %.2f (A^3)\n", isoPol_calc_);
+            commercials.push_back(buf);
+            
+            snprintf(buf, sizeof(buf), "Alexandria Anisotropic Polarizability: %.2f (A^3)\n", anisoPol_calc_);
+            commercials.push_back(buf);
 
-            snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
-            commercials.push_back(buf);
-            snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
-            commercials.push_back(buf);
+            T = -1;
+            if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
+                                      (char *)"electronic", &isoPol_elec_, &error,
+                                      &T, &myref, &mylot, vec, alpha_elec_))
+            {
+                CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
+                snprintf(buf, sizeof(buf), "%s + Polarizability components (A^3)", mylot.c_str());
+                add_tensor(&commercials, buf, alpha_elec_);
+                
+                snprintf(buf, sizeof(buf), "%s Isotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), isoPol_elec_);
+                commercials.push_back(buf);
+                snprintf(buf, sizeof(buf), "%s Anisotropic Polarizability: %.2f (A^3)\n", mylot.c_str(), anisoPol_elec_);
+                commercials.push_back(buf);
+            }
+        }
+        else
+        {
+            commercials.push_back("Could not minimize shells. Cannot compute interactive polarizability.");
         }
     }
 

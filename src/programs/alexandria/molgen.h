@@ -402,7 +402,9 @@ class MolGen
             }
         }
 
-        //! \brief Read the molecular property data file to generate molecues.
+        /*! \brief Read the molecular property data file to generate molecues.
+         * TODO: update comments
+         */
         void Read(FILE            *fp,
                   const char      *fn,
                   const char      *pd_fn,

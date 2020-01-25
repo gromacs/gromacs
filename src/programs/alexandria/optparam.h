@@ -164,14 +164,10 @@ class Bayes : public OptParam
         mc_t          attemptedMoves_;
         mc_t          acceptedMoves_;
         param_name_t  paramNames_;
-        double        *minEval_;
 
     public:
 
         Bayes() {}
-
-        void setFunc(func_t func_, 
-                     double *minEval_);
 
         /*! \brief
          * Change parameter j based on a random unmber
@@ -181,12 +177,6 @@ class Bayes : public OptParam
 
         //! \brief Return the number of parameters
         size_t nParam() const { return param_.size(); }
-
-        /*! \brief
-         * Dump the current parameters to a FILE if not nullptr
-         * \param[in] fp The file pointer
-         */
-        void dumpParam(FILE *fp);
 
         /*! \brief
          * Append parameter and set it to value
@@ -248,6 +238,11 @@ class Bayes : public OptParam
         const param_name_t &getParamNames() const {return paramNames_;};
 
         /*! \brief
+         * Print the paramters to a file
+         * \param[in] fp File pointer to open file
+         */
+        void printParameters(FILE *fp) const;
+        /*! \brief
          * Return the vector of number of attempted moves for each parameter
          */
         const mc_t &getAttemptedMoves() const {return attemptedMoves_;};
@@ -259,19 +254,21 @@ class Bayes : public OptParam
 
         /*! \brief
          * Run the Markov chain Monte carlo (MCMC) simulation
-         *
+         * \param[in] fplog File pointer for logging info. May be nullptr.
+         * \return minimum energy value
          */
-        void MCMC();
+        double MCMC(FILE *fplog);
         
         /*! \brief
          * Run the Delayed Rejected Adaptive Monte-Carlo (DRAM) simulation
-         *
+         * \param[in] fplog File pointer for logging info. May be nullptr.
+         * \return minimum energy value
          */
-        void DRAM();
+        double DRAM(FILE *fplog);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
-         * \param[in] List over the parameters that have changed.
+         * \param[in] changed List over the parameters that have changed.
          */
         virtual void toPolData(const std::vector<bool> &changed) = 0;
 
@@ -283,7 +280,7 @@ class Bayes : public OptParam
          * \param[in] v Array of parameters.
          * \return Total value (chi2) corresponding to deviation
          */
-        double objFunction(const double v[]);
+        double objFunction(std::vector<double> v);
 
         /*! Return number of planned function calls 
          * Return the number of calls to the objective function

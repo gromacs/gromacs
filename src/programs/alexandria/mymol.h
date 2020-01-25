@@ -160,9 +160,14 @@ class MyMol
         t_state                  *state_;
         //! GROMACS force record
         t_forcerec               *fr_;
-
+        //! Function that returns true if a molecule is symmetric
         bool             IsSymmetric(real toler);
-
+        //! Vector to back up coordinates
+        std::vector<gmx::RVec>    backupCoordinates_;
+        //! Make a back up of coordinates
+        void backupCoordinates();
+        //! Restored backed up coordinates
+        void restoreCoordinates();
         /*! \brief
          * Generate Atoms based on quantum calculation with specified level of theory
          *
@@ -352,6 +357,10 @@ class MyMol
         const gmx::HostVector<gmx::RVec> &x() const { return state_->x; }
 
         /*! \brief
+         * \return mdatoms structure
+         */
+        t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
+        /*! \brief
          * Return my inner molprop
          */
         MolProp *molProp() const { return mp_; }
@@ -395,8 +404,9 @@ class MyMol
          * \param[in]  efield   Strenght of the external electric field
          * \param[in]  fplog
          * \param[in]  cr
+         * \returns the result of the calculation, if fine it is immOK
          */
-        void CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
+        immStatus CalcPolarizability(double efield, t_commrec *cr, FILE *fplog);
       
         /*! \brief set the electronic polarizability
          * \param[in] isoPol The isotropic polarizability

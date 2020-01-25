@@ -916,41 +916,31 @@ static double calcJ(ChargeModel iChargeModel,
 
 void QgenResp::calcPot(double epsilonr)
 {
-    for (auto &ep : ep_)
-    {
-        ep.setVCalc(0);
-    }
     double scale_factor = 1.0/epsilonr;
-    auto nthreads = gmx_omp_get_max_threads();
+    for (size_t i = 0; i < nEsp(); i++)
     {
-        auto thread_id = gmx_omp_get_thread_num();
-        auto i0        = thread_id*nEsp()/nthreads;
-        auto i1        = std::min(nEsp(), (thread_id+1)*nEsp()/nthreads);
-        for (auto i = i0; i < i1; i++)
+        double vv    = 0;
+        auto   espx  = ep_[i].esp();
+        for (auto &ra : ra_)
         {
-            double vv    = 0;
-            auto   espx  = ep_[i].esp();
-            for (auto &ra : ra_)
+            auto  atype = ra.atype();
+            auto  rat   = findRAT(atype);
+            if (rat->ptype() != eptVSite)
             {
-                auto  atype = ra.atype();
-                auto  rat   = findRAT(atype);
-                if (rat->ptype() != eptVSite)
+                auto  rax   = ra.x();
+                for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
                 {
-                    auto  rax   = ra.x();
-                    for (auto k = rat->beginRZ(); k < rat->endRZ(); ++k)
-                    {
-                        //auto q = k->q();
-                        //if (q == 0)
-                        //{
-                        auto q = ra.q();
-                        //}
-                        auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
-                        vv += (scale_factor*q*epot);
-                    }
+                    //auto q = k->q();
+                    //if (q == 0)
+                    //{
+                    auto q = ra.q();
+                    //}
+                    auto epot = calcJ(iDistributionModel_, espx, rax, k->zeta(), watoms_, k->row());
+                    vv += (scale_factor*q*epot);
                 }
             }
-            ep_[i].setVCalc(vv);
         }
+        ep_[i].setVCalc(vv);
     }
 }
 
