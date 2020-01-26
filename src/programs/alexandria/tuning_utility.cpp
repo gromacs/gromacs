@@ -620,7 +620,7 @@ void print_header(FILE                       *fp,
             value = gmx::formatString("%d", *p.u.i);
             break;
         case etINT64:
-            value = gmx::formatString("%lld", *p.u.is);
+            value = gmx::formatString("%ld", *p.u.is);
             break;
         case etREAL:
             value = gmx::formatString("%g", *p.u.r);
