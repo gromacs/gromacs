@@ -102,15 +102,18 @@ static void sample_molecules(FILE                           *fp,
                 auto  found = false;
                 auto &mol   = mols[dis(gen)];
                 auto  mci   = mol.SearchMolecularComposition(alexandria);
-                for (auto ani = mci->BeginAtomNum(); (!found) && (ani < mci->EndAtomNum()); ++ani)
+                if (mci != mol.EndMolecularComposition())
                 {
-                    if (atp->getType() == ani->getAtom())
+                    for (auto ani = mci->BeginAtomNum(); (!found) && (ani < mci->EndAtomNum()); ++ani)
                     {
-                        if (std::find(sample.begin(), sample.end(), mol) == sample.end())
+                        if (atp->getType() == ani->getAtom())
                         {
-                            sample.push_back(std::move(mol));
-                            found = true;
-                            nmol++;
+                            if (std::find(sample.begin(), sample.end(), mol) == sample.end())
+                            {
+                                sample.push_back(std::move(mol));
+                                found = true;
+                                nmol++;
+                            }
                         }
                     }
                 }
