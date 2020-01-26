@@ -61,7 +61,7 @@ namespace gmx
 class MDLogger;
 }
 
-struct gmx_nbnxm_gpu_t;
+struct NbnxmGpu;
 struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
 struct t_mdatoms;
@@ -379,7 +379,7 @@ void nbnxn_atomdata_copy_x_to_nbat_x(const Nbnxm::GridSet& gridSet,
 void nbnxn_atomdata_x_to_nbat_x_gpu(const Nbnxm::GridSet& gridSet,
                                     gmx::AtomLocality     locality,
                                     bool                  fillLocal,
-                                    gmx_nbnxm_gpu_t*      gpu_nbv,
+                                    NbnxmGpu*             gpu_nbv,
                                     DeviceBuffer<float>   d_x,
                                     GpuEventSynchronizer* xReadyOnDevice);
 
@@ -408,7 +408,7 @@ void reduceForcesGpu(gmx::AtomLocality                          locality,
                      const Nbnxm::GridSet&                      gridSet,
                      void*                                      pmeForcesDevice,
                      gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
-                     gmx_nbnxm_gpu_t*                           gpu_nbv,
+                     NbnxmGpu*                                  gpu_nbv,
                      bool                                       useGpuFPmeReduction,
                      bool                                       accumulateForce);
 

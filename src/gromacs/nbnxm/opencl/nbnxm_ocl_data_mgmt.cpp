@@ -170,7 +170,7 @@ static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, gmx_device_runtim
 
     /* An element of the fshift device buffer has the same size as one element
        of the host side fshift buffer. */
-    ad->fshift_elem_size = sizeof(*cl_nb_staging_t::fshift);
+    ad->fshift_elem_size = sizeof(*nb_staging_t::fshift);
 
     ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
                                 SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
@@ -407,8 +407,8 @@ void gpu_pme_loadbal_update_param(const nonbonded_verlet_t* nbv, const interacti
     {
         return;
     }
-    gmx_nbnxm_gpu_t* nb  = nbv->gpu_nbv;
-    cl_nbparam_t*    nbp = nb->nbparam;
+    NbnxmGpu*     nb  = nbv->gpu_nbv;
+    cl_nbparam_t* nbp = nb->nbparam;
 
     set_cutoff_parameters(nbp, ic, nbv->pairlistSets().params());
 
@@ -527,7 +527,7 @@ static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static cl_kernel nbnxn_gpu_create_kernel(gmx_nbnxm_gpu_t* nb, const char* kernel_name)
+static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
 {
     cl_kernel kernel;
     cl_int    cl_error;
@@ -544,7 +544,7 @@ static cl_kernel nbnxn_gpu_create_kernel(gmx_nbnxm_gpu_t* nb, const char* kernel
 
 /*! \brief Clears nonbonded shift force output array and energy outputs on the GPU.
  */
-static void nbnxn_ocl_clear_e_fshift(gmx_nbnxm_gpu_t* nb)
+static void nbnxn_ocl_clear_e_fshift(NbnxmGpu* nb)
 {
 
     cl_int           cl_error;
@@ -577,7 +577,7 @@ static void nbnxn_ocl_clear_e_fshift(gmx_nbnxm_gpu_t* nb)
 }
 
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
-static void nbnxn_gpu_init_kernels(gmx_nbnxm_gpu_t* nb)
+static void nbnxn_gpu_init_kernels(NbnxmGpu* nb)
 {
     /* Init to 0 main kernel arrays */
     /* They will be later on initialized in select_nbnxn_kernel */
@@ -606,7 +606,7 @@ static void nbnxn_gpu_init_kernels(gmx_nbnxm_gpu_t* nb)
  *  Initializes members of the atomdata and nbparam structs and
  *  clears e/fshift output buffers.
  */
-static void nbnxn_ocl_init_const(gmx_nbnxm_gpu_t*                nb,
+static void nbnxn_ocl_init_const(NbnxmGpu*                       nb,
                                  const interaction_const_t*      ic,
                                  const PairlistParams&           listParams,
                                  const nbnxn_atomdata_t::Params& nbatParams)
@@ -617,20 +617,19 @@ static void nbnxn_ocl_init_const(gmx_nbnxm_gpu_t*                nb,
 
 
 //! This function is documented in the header file
-gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
-                          const interaction_const_t* ic,
-                          const PairlistParams&      listParams,
-                          const nbnxn_atomdata_t*    nbat,
-                          const int                  rank,
-                          const gmx_bool             bLocalAndNonlocal)
+NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
+                   const interaction_const_t* ic,
+                   const PairlistParams&      listParams,
+                   const nbnxn_atomdata_t*    nbat,
+                   const int                  rank,
+                   const gmx_bool             bLocalAndNonlocal)
 {
-    gmx_nbnxm_gpu_t*            nb;
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
 
     assert(ic);
 
-    snew(nb, 1);
+    auto nb = new NbnxmGpu;
     snew(nb->atdat, 1);
     snew(nb->nbparam, 1);
     snew(nb->plist[InteractionLocality::Local], 1);
@@ -728,7 +727,7 @@ gmx_nbnxm_gpu_t* gpu_init(const gmx_device_info_t*   deviceInfo,
 
 /*! \brief Clears the first natoms_clear elements of the GPU nonbonded force output array.
  */
-static void nbnxn_ocl_clear_f(gmx_nbnxm_gpu_t* nb, int natoms_clear)
+static void nbnxn_ocl_clear_f(NbnxmGpu* nb, int natoms_clear)
 {
     if (natoms_clear == 0)
     {
@@ -748,7 +747,7 @@ static void nbnxn_ocl_clear_f(gmx_nbnxm_gpu_t* nb, int natoms_clear)
 }
 
 //! This function is documented in the header file
-void gpu_clear_outputs(gmx_nbnxm_gpu_t* nb, bool computeVirial)
+void gpu_clear_outputs(NbnxmGpu* nb, bool computeVirial)
 {
     nbnxn_ocl_clear_f(nb, nb->atdat->natoms);
     /* clear shift force array and energies if the outputs were
@@ -765,7 +764,7 @@ void gpu_clear_outputs(gmx_nbnxm_gpu_t* nb, bool computeVirial)
 }
 
 //! This function is documented in the header file
-void gpu_init_pairlist(gmx_nbnxm_gpu_t* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
+void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const InteractionLocality iloc)
 {
     char sbuf[STRLEN];
     // Timing accumulation should happen only if there was work to do
@@ -826,7 +825,7 @@ void gpu_init_pairlist(gmx_nbnxm_gpu_t* nb, const NbnxnPairlistGpu* h_plist, con
 }
 
 //! This function is documented in the header file
-void gpu_upload_shiftvec(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom)
+void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
 {
     cl_atomdata_t*   adat = nb->atdat;
     cl_command_queue ls   = nb->stream[InteractionLocality::Local];
@@ -841,7 +840,7 @@ void gpu_upload_shiftvec(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom)
 }
 
 //! This function is documented in the header file
-void gpu_init_atomdata(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbat)
+void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
 {
     cl_int           cl_error;
     int              nalloc, natoms;
@@ -1001,7 +1000,7 @@ static void free_gpu_device_runtime_data(gmx_device_runtime_data_t* runData)
 }
 
 //! This function is documented in the header file
-void gpu_free(gmx_nbnxm_gpu_t* nb)
+void gpu_free(NbnxmGpu* nb)
 {
     if (nb == nullptr)
     {
@@ -1093,7 +1092,7 @@ void gpu_free(gmx_nbnxm_gpu_t* nb)
     /* Free timers and timings */
     delete nb->timers;
     sfree(nb->timings);
-    sfree(nb);
+    delete nb;
 
     if (debug)
     {
@@ -1102,7 +1101,7 @@ void gpu_free(gmx_nbnxm_gpu_t* nb)
 }
 
 //! This function is documented in the header file
-gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(gmx_nbnxm_gpu_t* nb)
+gmx_wallclock_gpu_nbnxn_t* gpu_get_timings(NbnxmGpu* nb)
 {
     return (nb != nullptr && nb->bDoTime) ? nb->timings : nullptr;
 }
@@ -1117,13 +1116,13 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 }
 
 //! This function is documented in the header file
-int gpu_min_ci_balanced(gmx_nbnxm_gpu_t* nb)
+int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
     return nb != nullptr ? gpu_min_ci_balanced_factor * nb->dev_info->compute_units : 0;
 }
 
 //! This function is documented in the header file
-gmx_bool gpu_is_kernel_ewald_analytical(const gmx_nbnxm_gpu_t* nb)
+gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)
 {
     return ((nb->nbparam->eeltype == eelOclEWALD_ANA) || (nb->nbparam->eeltype == eelOclEWALD_ANA_TWIN));
 }

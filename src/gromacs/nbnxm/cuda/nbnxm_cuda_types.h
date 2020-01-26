@@ -128,7 +128,6 @@ enum evdwCu
 /*! \cond */
 typedef struct cu_atomdata cu_atomdata_t;
 typedef struct cu_nbparam  cu_nbparam_t;
-typedef struct nb_staging  nb_staging_t;
 /*! \endcond */
 
 
@@ -138,14 +137,14 @@ typedef struct nb_staging  nb_staging_t;
  *  The energies/shift forces get downloaded here first, before getting added
  *  to the CPU-side aggregate values.
  */
-struct nb_staging
+struct nb_staging_t
 {
     //! LJ energy
-    float* e_lj;
+    float* e_lj = nullptr;
     //! electrostatic energy
-    float* e_el;
+    float* e_el = nullptr;
     //! shift forces
-    float3* fshift;
+    float3* fshift = nullptr;
 };
 
 /** \internal
@@ -267,58 +266,58 @@ class GpuEventSynchronizer;
 /*! \internal
  * \brief Main data structure for CUDA nonbonded force calculations.
  */
-struct gmx_nbnxm_gpu_t
+struct NbnxmGpu
 {
     /*! \brief CUDA device information */
-    const gmx_device_info_t* dev_info;
+    const gmx_device_info_t* dev_info = nullptr;
     /*! \brief true if doing both local/non-local NB work on GPU */
-    bool bUseTwoStreams;
+    bool bUseTwoStreams = false;
     /*! \brief atom data */
-    cu_atomdata_t* atdat;
+    cu_atomdata_t* atdat = nullptr;
     /*! \brief f buf ops cell index mapping */
-    int* cell;
+    int* cell = nullptr;
     /*! \brief number of indices in cell buffer */
-    int ncell;
+    int ncell = 0;
     /*! \brief number of indices allocated in cell buffer */
-    int ncell_alloc;
+    int ncell_alloc = 0;
     /*! \brief array of atom indices */
-    int* atomIndices;
+    int* atomIndices = nullptr;
     /*! \brief size of atom indices */
-    int atomIndicesSize;
+    int atomIndicesSize = 0;
     /*! \brief size of atom indices allocated in device buffer */
-    int atomIndicesSize_alloc;
+    int atomIndicesSize_alloc = 0;
     /*! \brief x buf ops num of atoms */
-    int* cxy_na;
+    int* cxy_na = nullptr;
     /*! \brief number of elements in cxy_na */
-    int ncxy_na;
+    int ncxy_na = 0;
     /*! \brief number of elements allocated allocated in device buffer */
-    int ncxy_na_alloc;
+    int ncxy_na_alloc = 0;
     /*! \brief x buf ops cell index mapping */
-    int* cxy_ind;
+    int* cxy_ind = nullptr;
     /*! \brief number of elements in cxy_ind */
-    int ncxy_ind;
+    int ncxy_ind = 0;
     /*! \brief number of elements allocated allocated in device buffer */
-    int ncxy_ind_alloc;
+    int ncxy_ind_alloc = 0;
     /*! \brief parameters required for the non-bonded calc. */
-    cu_nbparam_t* nbparam;
+    cu_nbparam_t* nbparam = nullptr;
     /*! \brief pair-list data structures (local and non-local) */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t*> plist;
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cu_plist_t*> plist = { { nullptr } };
     /*! \brief staging area where fshift/energies get downloaded */
     nb_staging_t nbst;
     /*! \brief local and non-local GPU streams */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream;
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cudaStream_t> stream = { { nullptr } };
 
     /*! \brief Events used for synchronization */
     /*! \{ */
     /*! \brief Event triggered when the non-local non-bonded
      * kernel is done (and the local transfer can proceed) */
-    cudaEvent_t nonlocal_done;
+    cudaEvent_t nonlocal_done = nullptr;
     /*! \brief Event triggered when the tasks issued in the local
      * stream that need to precede the non-local force or buffer
      * operation calculations are done (e.g. f buffer 0-ing, local
      * x/q H2D, buffer op initialization in local stream that is
      * required also by nonlocal stream ) */
-    cudaEvent_t misc_ops_and_local_H2D_done;
+    cudaEvent_t misc_ops_and_local_H2D_done = nullptr;
     /*! \} */
 
     /*! \brief True if there is work for the current domain in the
@@ -329,7 +328,7 @@ struct gmx_nbnxm_gpu_t
      * domain. As long as bonded work is not split up into
      * local/nonlocal, if there is bonded GPU work, both flags
      * will be true. */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork = { { false } };
 
     /*! \brief Pointer to event synchronizer triggered when the local
      * GPU buffer ops / reduction is complete
@@ -337,22 +336,22 @@ struct gmx_nbnxm_gpu_t
      * \note That the synchronizer is managed outside of this module
      * in StatePropagatorDataGpu.
      */
-    GpuEventSynchronizer* localFReductionDone;
+    GpuEventSynchronizer* localFReductionDone = nullptr;
 
     /*! \brief Event triggered when non-local coordinate buffer
      * has been copied from device to host. */
-    GpuEventSynchronizer* xNonLocalCopyD2HDone;
+    GpuEventSynchronizer* xNonLocalCopyD2HDone = nullptr;
 
     /* NOTE: With current CUDA versions (<=5.0) timing doesn't work with multiple
      * concurrent streams, so we won't time if both l/nl work is done on GPUs.
      * Timer init/uninit is still done even with timing off so only the condition
      * setting bDoTime needs to be change if this CUDA "feature" gets fixed. */
     /*! \brief True if event-based timing is enabled. */
-    bool bDoTime;
+    bool bDoTime = false;
     /*! \brief CUDA event-based timers. */
-    cu_timers_t* timers;
+    cu_timers_t* timers = nullptr;
     /*! \brief Timing data. TODO: deprecate this and query timers for accumulated data instead */
-    gmx_wallclock_gpu_nbnxn_t* timings;
+    gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 };
 
 #endif /* NBNXN_CUDA_TYPES_H */

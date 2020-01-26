@@ -60,6 +60,8 @@
 
 #include "nbnxm_ocl_consts.h"
 
+struct gmx_wallclock_gpu_nbnxn_t;
+
 /* kernel does #include "gromacs/math/utilities.h" */
 /* Move the actual useful stuff here: */
 
@@ -151,15 +153,15 @@ enum ePruneKind
  *  The energies/shift forces get downloaded here first, before getting added
  *  to the CPU-side aggregate values.
  */
-typedef struct cl_nb_staging
+struct nb_staging_t
 {
     //! LJ energy
-    float* e_lj;
+    float* e_lj = nullptr;
     //! electrostatic energy
-    float* e_el;
+    float* e_el = nullptr;
     //! float3 buffer with shift forces
-    float (*fshift)[3];
-} cl_nb_staging_t;
+    float (*fshift)[3] = nullptr;
+};
 
 /*! \internal
  * \brief Nonbonded atom data - both inputs and outputs.
@@ -204,7 +206,7 @@ typedef struct cl_atomdata
     size_t shift_vec_elem_size;
 
     //! true if the shift vector has been uploaded
-    cl_bool bShiftVecUploaded;
+    bool bShiftVecUploaded;
 } cl_atomdata_t;
 
 /*! \internal
@@ -333,48 +335,48 @@ typedef struct Nbnxm::gpu_timers_t cl_timers_t;
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
  */
-struct gmx_nbnxm_gpu_t
+struct NbnxmGpu
 {
     //! OpenCL device information
-    const gmx_device_info_t* dev_info;
+    const gmx_device_info_t* dev_info = nullptr;
     //! OpenCL runtime data (context, kernels)
-    struct gmx_device_runtime_data_t* dev_rundata;
+    struct gmx_device_runtime_data_t* dev_rundata = nullptr;
 
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
     ///@{
-    cl_kernel kernel_noener_noprune_ptr[eelOclNR][evdwOclNR];
-    cl_kernel kernel_ener_noprune_ptr[eelOclNR][evdwOclNR];
-    cl_kernel kernel_noener_prune_ptr[eelOclNR][evdwOclNR];
-    cl_kernel kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
+    cl_kernel kernel_noener_noprune_ptr[eelOclNR][evdwOclNR] = { { nullptr } };
+    cl_kernel kernel_ener_noprune_ptr[eelOclNR][evdwOclNR]   = { { nullptr } };
+    cl_kernel kernel_noener_prune_ptr[eelOclNR][evdwOclNR]   = { { nullptr } };
+    cl_kernel kernel_ener_prune_ptr[eelOclNR][evdwOclNR]     = { { nullptr } };
     ///@}
     //! prune kernels, ePruneKind defined the kernel kinds
-    cl_kernel kernel_pruneonly[ePruneNR];
+    cl_kernel kernel_pruneonly[ePruneNR] = { nullptr };
 
     //! true if prefetching fg i-atom LJ parameters should be used in the kernels
-    bool bPrefetchLjParam;
+    bool bPrefetchLjParam = false;
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
-    cl_kernel kernel_memset_f;
-    cl_kernel kernel_memset_f2;
-    cl_kernel kernel_memset_f3;
-    cl_kernel kernel_zero_e_fshift;
+    cl_kernel kernel_memset_f      = nullptr;
+    cl_kernel kernel_memset_f2     = nullptr;
+    cl_kernel kernel_memset_f3     = nullptr;
+    cl_kernel kernel_zero_e_fshift = nullptr;
     ///@}
 
     //! true if doing both local/non-local NB work on GPU
-    cl_bool bUseTwoStreams;
+    bool bUseTwoStreams = false;
     //! true indicates that the nonlocal_done event was enqueued
-    cl_bool bNonLocalStreamActive;
+    bool bNonLocalStreamActive = false;
 
     //! atom data
-    cl_atomdata_t* atdat;
+    cl_atomdata_t* atdat = nullptr;
     //! parameters required for the non-bonded calc.
-    cl_nbparam_t* nbparam;
+    cl_nbparam_t* nbparam = nullptr;
     //! pair-list data structures (local and non-local)
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t*> plist;
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t*> plist = { nullptr };
     //! staging area where fshift/energies get downloaded
-    cl_nb_staging_t nbst;
+    nb_staging_t nbst;
 
     //! local and non-local GPU queues
     gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_command_queue> stream;
@@ -383,13 +385,13 @@ struct gmx_nbnxm_gpu_t
     /*! \{ */
     /*! \brief Event triggered when the non-local non-bonded
      * kernel is done (and the local transfer can proceed) */
-    cl_event nonlocal_done;
+    cl_event nonlocal_done = nullptr;
     /*! \brief Event triggered when the tasks issued in the local
      * stream that need to precede the non-local force or buffer
      * operation calculations are done (e.g. f buffer 0-ing, local
      * x/q H2D, buffer op initialization in local stream that is
      * required also by nonlocal stream ) */
-    cl_event misc_ops_and_local_H2D_done;
+    cl_event misc_ops_and_local_H2D_done = nullptr;
     /*! \} */
 
     //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
@@ -399,11 +401,11 @@ struct gmx_nbnxm_gpu_t
 
 
     //! True if event-based timing is enabled.
-    cl_bool bDoTime;
+    bool bDoTime = false;
     //! OpenCL event-based timers.
-    cl_timers_t* timers;
+    cl_timers_t* timers = nullptr;
     //! Timing data. TODO: deprecate this and query timers for accumulated data instead
-    struct gmx_wallclock_gpu_nbnxn_t* timings;
+    gmx_wallclock_gpu_nbnxn_t* timings = nullptr;
 };
 
 #endif /* NBNXN_OPENCL_TYPES_H */

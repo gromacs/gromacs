@@ -320,7 +320,7 @@ namespace Nbnxm
 {
 
 /*! \brief Gets and returns the minimum i-list count for balacing based on the GPU used or env.var. when set */
-static int getMinimumIlistCountForGpuBalancing(gmx_nbnxm_gpu_t* nbnxmGpu)
+static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 {
     int minimumIlistCount;
 
@@ -440,8 +440,8 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                         fr->nbfp, mimimumNumEnergyGroupNonbonded,
                         (useGpu || emulateGpu) ? 1 : gmx_omp_nthreads_get(emntNonbonded));
 
-    gmx_nbnxm_gpu_t* gpu_nbv                          = nullptr;
-    int              minimumIlistCountForGpuBalancing = 0;
+    NbnxmGpu* gpu_nbv                          = nullptr;
+    int       minimumIlistCountForGpuBalancing = 0;
     if (useGpu)
     {
         /* init the NxN GPU data; the last argument tells whether we'll have
@@ -469,7 +469,7 @@ nonbonded_verlet_t::nonbonded_verlet_t(std::unique_ptr<PairlistSets>     pairlis
                                        std::unique_ptr<PairSearch>       pairSearch,
                                        std::unique_ptr<nbnxn_atomdata_t> nbat_in,
                                        const Nbnxm::KernelSetup&         kernelSetup,
-                                       gmx_nbnxm_gpu_t*                  gpu_nbv_ptr,
+                                       NbnxmGpu*                         gpu_nbv_ptr,
                                        gmx_wallcycle*                    wcycle) :
     pairlistSets_(std::move(pairlistSets)),
     pairSearch_(std::move(pairSearch)),

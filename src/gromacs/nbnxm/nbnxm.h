@@ -125,7 +125,7 @@ struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
-struct gmx_nbnxm_gpu_t;
+struct NbnxmGpu;
 struct gmx_wallcycle;
 struct interaction_const_t;
 struct nbnxn_atomdata_t;
@@ -225,7 +225,7 @@ public:
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
                        const Nbnxm::KernelSetup&         kernelSetup,
-                       gmx_nbnxm_gpu_t*                  gpu_nbv,
+                       NbnxmGpu*                         gpu_nbv,
                        gmx_wallcycle*                    wcycle);
 
     ~nonbonded_verlet_t();
@@ -403,7 +403,7 @@ private:
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
-    gmx_nbnxm_gpu_t* gpu_nbv;
+    NbnxmGpu* gpu_nbv;
 };
 
 namespace Nbnxm
