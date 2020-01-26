@@ -94,7 +94,7 @@ static void dump_csv(const std::vector<std::string>        &ctest,
     int i = 0;
     for (auto &mymol : mm)
     {
-        fprintf(csv, "%s,", mymol.molProp()->getMolname().c_str());
+        fprintf(csv, "%s,", mymol.getMolname().c_str());
         for (size_t j = 0; (j < ctest.size()); j++)
         {
             fprintf(csv, "%g,", a.get(j, i));
@@ -533,7 +533,7 @@ void Optimization::checkSupport(FILE *fp)
         if (!bSupport)
         {
             fprintf(stderr, "No force field support for %s\n",
-                    mymol->molProp()->getMolname().c_str());
+                    mymol->getMolname().c_str());
             mymol =  mymols().erase(mymol);
         }
         else
@@ -708,7 +708,7 @@ void Optimization::getDissociationEnergy(FILE *fplog)
                           aai.c_str(), aaj.c_str(),
                           *mymol->atoms_->atomtype[ai],
                           *mymol->atoms_->atomtype[aj],
-                          mymol->molProp()->getIupac().c_str());
+                          mymol->getIupac().c_str());
             }
         }
         rhs.push_back(-mymol->Emol_);
@@ -836,7 +836,7 @@ double Optimization::calcDeviation()
             int      natoms = mymol.atoms_->nr;
             gmx_bool bpolar = (mymol.shellfc_ != nullptr);
             double   optHF;
-            if (mymol.molProp()->getOptHF(&optHF))
+            if (mymol.getOptHF(&optHF))
             {
                 for (const auto fc : ForceConstants_)
                 {
@@ -853,7 +853,7 @@ double Optimization::calcDeviation()
                 }
                 mymol.f_.resizeWithPadding(natoms);
                 mymol.optf_.resizeWithPadding(natoms);
-                int  molid          = mymol.molProp()->getIndex();
+                int  molid          = mymol.getIndex();
                 auto molEnergyEntry = MolEnergyMap_.find(molid);
                 if (molEnergyEntry == MolEnergyMap_.end())
                 {
@@ -865,8 +865,8 @@ double Optimization::calcDeviation()
                 }
                 molEnergyEntry->second.clear();
                 // Now loop over experiments!
-                for (auto ei = mymol.molProp()->BeginExperiment();
-                     ei < mymol.molProp()->EndExperiment(); ++ei)
+                for (auto ei = mymol.BeginExperiment();
+                     ei < mymol.EndExperiment(); ++ei)
                 {
                     auto jtype = ei->getJobtype();
                     // Exclude other experimental data points!
@@ -888,7 +888,7 @@ double Optimization::calcDeviation()
                         if (deltaEref < 0)
                         {
                             gmx_fatal(FARGS, "Energy mismatch for %s. spHF = %g (%s) optHF = %g",
-                                      mymol.molProp()->getMolname().c_str(),
+                                      mymol.getMolname().c_str(),
                                       spHF,
                                       ei->getDatafile().c_str(),
                                       optHF);
@@ -924,7 +924,7 @@ double Optimization::calcDeviation()
                                     spHF, optHF, deltaEref, deltaEalex);
                             fprintf(debug, "%s Chi2 %g Morse %g  "
                                     "%s %g Langle %g %s %g %s %g Coul %g VdW %g POL %g  Force %g\n",
-                                    mymol.molProp()->getMolname().c_str(),
+                                    mymol.getMolname().c_str(),
                                     gmx::square(deltaEalex-deltaEref),
                                     mymol.enerd_->term[F_MORSE],
                                     interaction_function[angleType].name,
@@ -945,13 +945,13 @@ double Optimization::calcDeviation()
             else
             {
                 gmx_fatal(FARGS, "There is no optimized structure for %s\n",
-                          mymol.molProp()->getMolname().c_str());
+                          mymol.getMolname().c_str());
             }
             if (debug)
             {
                 fprintf(debug, "%d: %s nOpt %d nSP %d\n",
                         commrec()->nodeid,
-                        mymol.molProp()->getMolname().c_str(),
+                        mymol.getMolname().c_str(),
                         nOpt, nSP);
             }
         }
@@ -965,7 +965,7 @@ double Optimization::calcDeviation()
         if ((mymol.eSupp_ == eSupportLocal) ||
             (calcAll_ && (mymol.eSupp_ == eSupportRemote)))
         {
-            int  molid          = mymol.molProp()->getIndex();
+            int  molid          = mymol.getIndex();
             auto molEnergyEntry = MolEnergyMap_.find(molid);
             if (molEnergyEntry != MolEnergyMap_.end())
             {
@@ -974,7 +974,7 @@ double Optimization::calcDeviation()
                 {
                     fprintf(debug, "%d: %s molid: %d nEntries: %zu\n",
                             commrec()->nodeid,
-                            mymol.molProp()->getMolname().c_str(),
+                            mymol.getMolname().c_str(),
                             molid,
                             molEnergyEntry->second.entries().size());
                 }
@@ -1085,10 +1085,10 @@ void Optimization::printMolecules(FILE *fp,
                                   bool  bMtop)
 {
     int j, k;
-    for (const auto &mi : mymols())
+    for (auto &mi : mymols())
     {
         int nSP = 0, nOpt = 0;
-        for (auto ei = mi.molProp()->BeginExperiment(); ei < mi.molProp()->EndExperiment(); ++ei)
+        for (auto ei = mi.BeginExperiment(); ei < mi.EndExperiment(); ++ei)
         {
             auto jtype = ei->getJobtype();
             if (jtype == JOB_SP)
@@ -1105,7 +1105,7 @@ void Optimization::printMolecules(FILE *fp,
             fprintf(stderr, "Number of optimized conformations is %d. Check your input.\n", nOpt);
         }
         fprintf(fp, "%s natoms: %d Opt conformations: %d SP conformations: %d\n",
-                mi.molProp()->getMolname().c_str(),
+                mi.getMolname().c_str(),
                 mi.atoms_->nr,
                 nOpt,
                 nSP);
@@ -1125,18 +1125,18 @@ void Optimization::printMolecules(FILE *fp,
 
         if (bMtop)
         {
-            pr_mtop(fp, 0, mi.molProp()->getMolname().c_str(), mi.mtop_, true, false);
+            pr_mtop(fp, 0, mi.getMolname().c_str(), mi.mtop_, true, false);
         }
     }
     if (bForce)
     {
         for (const auto &mi : mymols())
         {
-            int  molid     = mi.molProp()->getIndex();
+            int  molid     = mi.getIndex();
             auto molEnergy = MolEnergyMap_.find(molid);
             if (molEnergy != MolEnergyMap_.end())
             {
-                fprintf(fp, "%-20s", mi.molProp()->getMolname().c_str());
+                fprintf(fp, "%-20s", mi.getMolname().c_str());
                 for (k = 0; k < F_NRE; k++)
                 {
                     real term = molEnergy->second.term(k);
@@ -1188,14 +1188,14 @@ void Optimization::printResults(FILE                   *fp,
     int    nconformation = 0;
     for (auto mi = mymols().begin(); mi < mymols().end(); mi++, imol++)
     {
-        int  molid      = mi->molProp()->getIndex();
+        int  molid      = mi->getIndex();
         auto molEnergy  = MolEnergyMap_.find(molid);
         if (molEnergy != MolEnergyMap_.end())
         {
             if (nullptr != hfp)
             {
                 fprintf(hfp, "@ s%d legend \"%s\"\n", imol,
-                        mi->molProp()->getMolname().c_str());
+                        mi->getMolname().c_str());
                 fprintf(hfp, "@type xy\n");
             }
             gmx_stats_t gmol = gmx_stats_init();
@@ -1234,7 +1234,7 @@ void Optimization::printResults(FILE                   *fp,
             gmx_stats_get_corr_coeff(gmol, &Rdata);
             fprintf(fp, "%-5d %-30s %10g %10g %7.1f %7.3f %7.3f %7.3f %6.1f%% %4d\n",
                     imol,
-                    mi->molProp()->getMolname().c_str(),
+                    mi->getMolname().c_str(),
                     mi->Hform_,
                     mi->Emol_,
                     std::sqrt(molEnergy->second.force2()), rmsd,

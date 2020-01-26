@@ -130,7 +130,7 @@ void print_polarizability(FILE              *fp,
                     "", "", dalpha[ZZ][ZZ]);
             fprintf(fp,
                     "Isotropic polarizability:  %s Electronic: %6.2f  Calculated: %6.2f  Delta: %6.2f %s\n\n\n",
-                    mol->molProp()->getMolname().c_str(), 
+                    mol->getMolname().c_str(), 
                     mol->ElectronicPolarizability(),
                     mol->CalculatedPolarizability(), 
                     diso_pol, (diso_pol > isopol_toler) ? "ZZZ" : "");
@@ -310,9 +310,9 @@ void print_electric_props(FILE                           *fp,
         if (mol.eSupp_ != eSupportNo)
         {
             fprintf(fp, "Molecule %d: %s Qtot: %d, Multiplicity %d\n", n+1,
-                    mol.molProp()->getMolname().c_str(),
-                    mol.molProp()->getCharge(),
-                    mol.molProp()->getMultiplicity());
+                    mol.getMolname().c_str(),
+                    mol.getCharge(),
+                    mol.getMultiplicity());
 
             // Recalculate the atomic charges using the optmized parameters.
             mol.GenerateCharges(pd, fplog, ap, watoms, hfac, method, basis,
@@ -570,7 +570,7 @@ void print_electric_props(FILE                           *fp,
             (deviation > 2*sigma))
         {
             fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
-                    mol.molProp()->getMolname().c_str(),
+                    mol.getMolname().c_str(),
                     mol.dipQM(qtCalc), mol.dipQM(qtElec), deviation);
             nout++;
         }

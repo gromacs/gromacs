@@ -438,7 +438,7 @@ immStatus MolGen::check_data_sufficiency(alexandria::MyMol mymol,
                     if (debug)
                     {
                         fprintf(debug, "Removing %s because of lacking support for atom %s\n",
-                                mymol.molProp()->getMolname().c_str(),
+                                mymol.getMolname().c_str(),
                                 ztype.c_str());
                     }
                     imm = immInsufficientDATA;
@@ -572,7 +572,7 @@ void MolGen::Read(FILE            *fp,
                 {
                     fprintf(debug, "%s\n", mpi->getMolname().c_str());
                 }
-                mymol.molProp()->Merge(mpi);
+                mymol.Merge(mpi);
                 mymol.setInputrec(inputrec_);
                 imm = mymol.GenerateTopology(atomprop_,
                                              &pd_,
@@ -641,7 +641,7 @@ void MolGen::Read(FILE            *fp,
                         if (imm != immOK)
                         {
                             fprintf(stderr, "Molecule %s was not accepted on node %d - error %s\n",
-                                    mymol.molProp()->getMolname().c_str(), dest, alexandria::immsg(imm));
+                                    mymol.getMolname().c_str(), dest, alexandria::immsg(imm));
                         }
                         else if (nullptr != debug)
                         {
@@ -660,7 +660,7 @@ void MolGen::Read(FILE            *fp,
                         ntopol += 1;
                         if (nullptr != debug)
                         {
-                            fprintf(debug, "Added %s, ntopol = %d\n", mymol.molProp()->getMolname().c_str(), ntopol);
+                            fprintf(debug, "Added %s, ntopol = %d\n", mymol.getMolname().c_str(), ntopol);
                         }
                     }
                 }
@@ -707,14 +707,14 @@ void MolGen::Read(FILE            *fp,
             {
                 fprintf(debug, "Going to retrieve new compound\n");
             }
-            CommunicationStatus cs = mymol.molProp()->Receive(cr_, 0);
+            CommunicationStatus cs = mymol.Receive(cr_, 0);
             if (CS_OK != cs)
             {
                 imm = immCommProblem;
             }
             else if (nullptr != debug)
             {
-                fprintf(debug, "Succesfully retrieved %s\n", mymol.molProp()->getMolname().c_str());
+                fprintf(debug, "Succesfully retrieved %s\n", mymol.getMolname().c_str());
                 fflush(debug);
             }
             mymol.setInputrec(inputrec_);
@@ -769,7 +769,7 @@ void MolGen::Read(FILE            *fp,
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Added molecule %s. Hform = %g Emol = %g\n",
-                            mymol.molProp()->getMolname().c_str(),
+                            mymol.getMolname().c_str(),
                             mymol.Hform_, mymol.Emol_);
                 }
             }

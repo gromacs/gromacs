@@ -1506,6 +1506,9 @@ class MolProp
         //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
         MolecularCompositionIterator SearchMolecularComposition(const std::string &str);
 
+        //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
+        MolecularCompositionConstIterator SearchMolecularComposition(const std::string &str) const;
+
         //! Return number of atoms in the first composition if present, or 0 otherwise
         int NAtom();
 

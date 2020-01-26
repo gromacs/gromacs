@@ -74,11 +74,11 @@ const char *iMolSelectName(iMolSelect ims)
 namespace alexandria
 {
 
-static void sample_molecules(FILE                                 *fp,
-                             const std::vector<alexandria::MyMol> &mols,
-                             alexandria::Poldata                  *pd,
-                             int                                   minmol,
-                             int                                   maxatempt)
+static void sample_molecules(FILE                           *fp,
+                             std::vector<alexandria::MyMol> &mols,
+                             alexandria::Poldata            *pd,
+                             int                             minmol,
+                             int                             maxatempt)
 {
 
     int nmol      = 0;
@@ -101,7 +101,7 @@ static void sample_molecules(FILE                                 *fp,
             {
                 auto  found = false;
                 auto &mol   = mols[dis(gen)];
-                auto  mci   = mol.molProp()->SearchMolecularComposition(alexandria);
+                auto  mci   = mol.SearchMolecularComposition(alexandria);
                 for (auto ani = mci->BeginAtomNum(); (!found) && (ani < mci->EndAtomNum()); ++ani)
                 {
                     if (atp->getType() == ani->getAtom())
@@ -125,7 +125,7 @@ static void sample_molecules(FILE                                 *fp,
     }
     for (const auto &mol : sample)
     {
-        fprintf(fp, "%s|Train\n", mol.molProp()->getMolname().c_str());
+        fprintf(fp, "%s|Train\n", mol.getMolname().c_str());
     }
 }
 

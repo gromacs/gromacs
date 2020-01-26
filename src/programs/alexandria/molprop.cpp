@@ -369,9 +369,7 @@ void MolecularComposition::DeleteAtom(const std::string &catom)
 
 AtomNumIterator MolecularComposition::SearchAtom(const std::string &an)
 {
-    AtomNumIterator ani;
-
-    for (ani = BeginAtomNum(); (ani < EndAtomNum()); ani++)
+    for (auto ani = BeginAtomNum(); (ani < EndAtomNum()); ani++)
     {
         if (an.compare(ani->getAtom()) == 0)
         {
@@ -1454,6 +1452,15 @@ int MolProp::Merge(std::vector<MolProp>::iterator src)
 }
 
 MolecularCompositionIterator MolProp::SearchMolecularComposition(const std::string &str)
+{
+    return std::find_if(mol_comp_.begin(), mol_comp_.end(),
+                        [str](MolecularComposition const &mc)
+                        {
+                            return (str.compare(mc.getCompName()) == 0);
+                        });
+}
+
+MolecularCompositionConstIterator MolProp::SearchMolecularComposition(const std::string &str) const
 {
     return std::find_if(mol_comp_.begin(), mol_comp_.end(),
                         [str](MolecularComposition const &mc)

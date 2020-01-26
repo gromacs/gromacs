@@ -84,7 +84,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                       maxpot, nsymm, jobtype, 0.0, false);
             std::vector<MolProp> vmp;
             vmp.push_back(molprop);
-            mp_.molProp()->Merge(vmp.begin());
+            mp_.Merge(vmp.begin());
 
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -113,7 +113,7 @@ class RespTest : public gmx::test::CommandLineTestBase
                 return;
             }
             fprintf(stderr, "Generated topology for %s\n",
-                    mp_.molProp()->getMolname().c_str());
+                    mp_.getMolname().c_str());
 
             //Needed for GenerateCharges
             real           hfac                  = 0;

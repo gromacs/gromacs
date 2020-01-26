@@ -244,9 +244,9 @@ void OptACM::initChargeGeneration()
             mymol.Qgacm_.setInfo(poldata(),
                                  mymol.atoms_,
                                  hfac(),
-                                 mymol.molProp()->getCharge());
+                                 mymol.getCharge());
             double ref_pol, error, T;
-            if (mymol.molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
+            if (mymol.getPropRef(MPO_POLARIZABILITY, iqmQM,
                                             method, basis, "",
                                             (char *)"electronic",
                                             &ref_pol, &error, &T,
@@ -262,7 +262,7 @@ static void dumpQX(FILE *fp, MyMol *mol, const std::string &info)
 {
     if (false && fp)
     {
-        std::string label = mol->molProp()->getMolname() + "-" + info;
+        std::string label = mol->getMolname() + "-" + info;
         fprintf(fp, "%s q:", label.c_str());
         t_mdatoms *md = mol->getMdatoms();
         for (int i = 0; i < mol->atoms_->nr; i++)
@@ -404,7 +404,7 @@ double OptACM::calcDeviation()
                         if (logFile())
                         {
                             fprintf(logFile(), "Could not compute forces for %s. Removing it from the data set.\n",
-                                    mymol.molProp()->getMolname().c_str());
+                                    mymol.getMolname().c_str());
                         }
                         mymol.eSupp_ = eSupportNo;
                         break;
@@ -412,14 +412,14 @@ double OptACM::calcDeviation()
                 }
                 dumpQX(logFile(), &mymol, "LOOP2");
                 auto qgen =  mymol.Qgacm_.generateCharges(debug,
-                                                          mymol.molProp()->getMolname().c_str(),
+                                                          mymol.getMolname().c_str(),
                                                           poldata(),
                                                           mymol.atoms_,
                                                           mymol.x());
                 if (qgen != eQGEN_OK)
                 {
                     gmx_fatal(FARGS, "Could not generate charges for %s: %s",
-                              mymol.molProp()->getMolname().c_str(),
+                              mymol.getMolname().c_str(),
                               mymol.Qgacm_.message());
                 }
                 q             = mymol.Qgacm_.q();
@@ -439,7 +439,7 @@ double OptACM::calcDeviation()
                 if (logFile())
                 {
                     fprintf(logFile(), "Could not generate charges for %s. Removing compound.",
-                            mymol.molProp()->getMolname().c_str());
+                            mymol.getMolname().c_str());
                 }
                 mymol.eSupp_ = eSupportNo;
             }
@@ -496,7 +496,7 @@ double OptACM::calcDeviation()
                         }
                     }
                 }
-                ChargeResidual += gmx::square(qtot - mymol.molProp()->getCharge());
+                ChargeResidual += gmx::square(qtot - mymol.getCharge());
                 nChargeResidual++;
                 increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
             }
@@ -523,7 +523,7 @@ double OptACM::calcDeviation()
                 if (debug)
                 {
                     fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                            mymol.molProp()->getMolname().c_str(),
+                            mymol.getMolname().c_str(),
                             myRms, cosangle);
                 }
             }
@@ -563,7 +563,7 @@ double OptACM::calcDeviation()
                 if (false && logFile())
                 {
                     fprintf(logFile(), "DIFF %s %g\n", 
-                            mymol.molProp()->getMolname().c_str(), diff2);
+                            mymol.getMolname().c_str(), diff2);
                 }
                 increaseEnergy(ermsPolar, diff2);
             }

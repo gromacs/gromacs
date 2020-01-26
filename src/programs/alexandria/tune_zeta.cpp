@@ -355,7 +355,7 @@ double OptZeta::calcDeviation()
                         }
                     }
                 }
-                ChargeResidual += gmx::square(qtot - mymol.molProp()->getCharge());
+                ChargeResidual += gmx::square(qtot - mymol.getCharge());
                 nChargeResidual++;
                 increaseEnergy(ermsCHARGE, (ChargeResidual/nChargeResidual));
             }

@@ -688,11 +688,11 @@ int alex_bastat(int argc, char *argv[])
         {
             alexandria::MyMol mmi;
             int               i;
-            mmi.molProp()->Merge(mpi);
-            if (mmi.molProp()->getMolname().size() == 0)
+            mmi.Merge(mpi);
+            if (mmi.getMolname().size() == 0)
             {
                 printf("Empty molname for molecule with formula %s\n",
-                       mmi.molProp()->formula().c_str());
+                       mmi.formula().c_str());
                 continue;
             }
             std::string mylot;
@@ -711,7 +711,7 @@ int alex_bastat(int argc, char *argv[])
                 if (nullptr != debug)
                 {
                     fprintf(debug, "Could not make topology for %s, reason %s\n",
-                            mmi.molProp()->getMolname().c_str(),
+                            mmi.getMolname().c_str(),
                             immsg(imm) );
                 }
                 continue;
@@ -727,7 +727,7 @@ int alex_bastat(int argc, char *argv[])
                     if (nullptr != debug)
                     {
                         fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                *mmi.atoms_->atomtype[i], mmi.molProp()->getMolname().c_str());
+                                *mmi.atoms_->atomtype[i], mmi.getMolname().c_str());
                     }
                     break;
                 }
@@ -737,7 +737,7 @@ int alex_bastat(int argc, char *argv[])
                 if (nullptr != debug)
                 {
                     fprintf(debug, "You may need to check the number of atoms for %s\n",
-                            mmi.molProp()->getMolname().c_str());
+                            mmi.getMolname().c_str());
                 }
                 continue;
             }
@@ -756,7 +756,7 @@ int alex_bastat(int argc, char *argv[])
                         if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], cai) &&
                             pd.atypeToBtype(*mmi.atoms_->atomtype[aj], caj))
                         {
-                            for (auto bi = mmi.molProp()->BeginBond(); bi < mmi.molProp()->EndBond(); bi++)
+                            for (auto bi = mmi.BeginBond(); bi < mmi.EndBond(); bi++)
                             {
                                 auto xi = 0, xj = 0, xb = 0;
                                 bi->get(&xi, &xj, &xb);
@@ -768,7 +768,7 @@ int alex_bastat(int argc, char *argv[])
                                 }
                                 if (((xi == ai) && (xj == aj)) || ((xj == ai) && (xi == aj)))
                                 {
-                                    add_bond(fp, mmi.molProp()->getMolname().c_str(), bonds,
+                                    add_bond(fp, mmi.getMolname().c_str(), bonds,
                                              cai, caj, 1000*norm(dx),
                                              bspacing, xb, fs->iType());
                                     break;
@@ -805,20 +805,20 @@ int alex_bastat(int argc, char *argv[])
                             pd.atypeToBtype(*mmi.atoms_->atomtype[aj], caj) &&
                             pd.atypeToBtype(*mmi.atoms_->atomtype[ak], cak))
                         {
-                            add_angle(fp, mmi.molProp()->getMolname().c_str(), bonds,
+                            add_angle(fp, mmi.getMolname().c_str(), bonds,
                                       cai, caj, cak, refValue, aspacing,
                                       (linear) ? eitLINEAR_ANGLES : eitANGLES);
 
                             if (nullptr != debug)
                             {
                                 fprintf(debug, "Molname: %s  btype1: %s  btype2: %s  btype3: %s  angle: %0.2f\n",
-                                        mmi.molProp()->getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), refValue);
+                                        mmi.getMolname().c_str(), cai.c_str(), caj.c_str(), cak.c_str(), refValue);
                             }
                         }
                         else
                         {
                             fprintf(stderr, "No bond_atom type for either %s, %s or %s in molecule %s\n",
-                                    ATP(ai), ATP(aj), ATP(ak), mmi.molProp()->getMolname().c_str());
+                                    ATP(ai), ATP(aj), ATP(ak), mmi.getMolname().c_str());
                         }
                     }
                 }
@@ -842,7 +842,7 @@ int alex_bastat(int argc, char *argv[])
                             pd.atypeToBtype(*mmi.atoms_->atomtype[ak], cak) &&
                             pd.atypeToBtype(*mmi.atoms_->atomtype[al], cal))
                         {
-                            add_dih(fp, mmi.molProp()->getMolname().c_str(), bonds,
+                            add_dih(fp, mmi.getMolname().c_str(), bonds,
                                     cai, caj, cak, cal, angle, dspacing, fs->iType());
                         }
                         else

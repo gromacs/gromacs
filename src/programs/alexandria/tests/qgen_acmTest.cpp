@@ -125,7 +125,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                       false);
 
             vmp.push_back(molprop);
-            mp_.molProp()->Merge(vmp.begin());
+            mp_.Merge(vmp.begin());
             fprintf(stderr, "Read babel for %s\n", dataName.c_str());
             // Generate charges and topology
             eDih            edih       = (eDih) get_option(dihopt);

@@ -111,13 +111,9 @@ class MyForceProvider;
  * \inpublicapi
  * \ingroup module_alexandria
  */
-class MyMol
+class MyMol : public MolProp
 {
     private:
-        /*! \brief
-         * The molprop
-         */
-        MolProp         *mp_;
         /*! \brief
          * Gromacs structures
          */
@@ -253,7 +249,7 @@ class MyMol
          */
         friend bool operator==(const MyMol &mol1, const MyMol &mol2)
         {
-            return (mol1.molProp()->getMolname().c_str() == mol2.molProp()->getMolname().c_str());
+            return (mol1.getMolname().c_str() == mol2.getMolname().c_str());
         }
 
         /*! \brief Extract charges and electric moments and store them.
@@ -360,10 +356,6 @@ class MyMol
          * \return mdatoms structure
          */
         t_mdatoms *getMdatoms() { return MDatoms_->get()->mdatoms(); }
-        /*! \brief
-         * Return my inner molprop
-         */
-        MolProp *molProp() const { return mp_; }
 
         /*! \brief
          * Return mtop structure

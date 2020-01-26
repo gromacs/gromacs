@@ -336,7 +336,7 @@ int alex_gentop(int argc, char *argv[])
     }
     for (auto mpi = mps.begin(); mpi < mps.end(); mpi++)
     {
-        mymol.molProp()->Merge(mpi);
+        mymol.Merge(mpi);
     }
     mymol.SetForceField(ff[0]);
     fill_inputrec(inputrec);

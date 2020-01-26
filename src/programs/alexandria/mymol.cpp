@@ -214,7 +214,6 @@ MyMol::MyMol() : gvt_(evtALL)
     mtop_          = nullptr;
     fr_            = nullptr;
     ltop_          = nullptr;
-    mp_            = new MolProp;
     state_         = new t_state;
     state_->flags |= (1<<estX);
     state_->flags |= (1<<estV);
@@ -297,8 +296,8 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 {
     int bca = 0;
     /*First try to find the atom bound to the central atom (ca).*/
-    for (auto bi = molProp()->BeginBond();
-         bi < molProp()->EndBond(); bi++)
+    for (auto bi = BeginBond();
+         bi < EndBond(); bi++)
     {
         if ((ca == (bi->getAj() - 1) ||
              ca == (bi->getAi() - 1)))
@@ -316,8 +315,8 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
         }
     }
     /*Now try to find atoms bound to bca, except ca.*/
-    for (auto bi = molProp()->BeginBond();
-         bi < molProp()->EndBond(); bi++)
+    for (auto bi = BeginBond();
+         bi < EndBond(); bi++)
     {
         if ((ca != (bi->getAj() - 1)   &&
              ca != (bi->getAi() - 1))  &&
@@ -338,8 +337,8 @@ void MyMol::findInPlaneAtoms(int ca, std::vector<int> &atoms)
 
 void MyMol::findOutPlaneAtoms(int ca, std::vector<int> &atoms)
 {
-    for (auto bi = molProp()->BeginBond();
-         bi < molProp()->EndBond(); bi++)
+    for (auto bi = BeginBond();
+         bi < EndBond(); bi++)
     {
         if (bi->getBondOrder() == 1  &&
             (ca == (bi->getAj() - 1) ||
@@ -388,7 +387,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
     set_pbc(&pbc, epbcNONE, state_->box);
 
     bonds.resize(atoms_->nr);
-    for (auto bi = molProp()->BeginBond(); (bi < molProp()->EndBond()); bi++)
+    for (auto bi = BeginBond(); (bi < EndBond()); bi++)
     {
         // Store bonds bidirectionally to get the number correct
         bonds[bi->getAi() - 1].push_back(bi->getAj() - 1);
@@ -412,7 +411,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
                         *atoms_->atomtype[bonds[i][0]],
                         *atoms_->atomtype[i],
                         *atoms_->atomtype[bonds[i][1]],
-                        molProp()->getMolname().c_str());
+                        getMolname().c_str());
             }
             gvt_.addLinear(bonds[i][0], i, bonds[i][1]);
         }
@@ -428,7 +427,7 @@ void MyMol::MakeSpecialInteractions(const Poldata *pd,
                         *atoms_->atomtype[bonds[i][0]],
                         *atoms_->atomtype[bonds[i][1]],
                         *atoms_->atomtype[bonds[i][2]],
-                        molProp()->getMolname().c_str());
+                        getMolname().c_str());
             }
             gvt_.addPlanar(i, bonds[i][0], bonds[i][1], bonds[i][2],
                            &nbonds[0]);
@@ -596,8 +595,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
     int                 natom = 0;
     immStatus           imm   = immOK;
 
-    ExperimentIterator  ci = molProp()->getCalc(method, basis, mylot);
-    if (ci < molProp()->EndExperiment())
+    ExperimentIterator  ci = getCalc(method, basis, mylot);
+    if (ci < EndExperiment())
     {
         t_param nb;
         memset(&nb, 0, sizeof(nb));
@@ -683,7 +682,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t     ap,
     if (nullptr != debug)
     {
         fprintf(debug, "Tried to convert %s to gromacs. LOT is %s/%s. Natoms is %d\n",
-                molProp()->getMolname().c_str(),
+                getMolname().c_str(),
                 method.c_str(), basis.c_str(), natom);
     }
 
@@ -753,18 +752,18 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
 
     if (nullptr != debug)
     {
-        fprintf(debug, "Generating topology for %s\n", molProp()->getMolname().c_str());
+        fprintf(debug, "Generating topology for %s\n", getMolname().c_str());
     }
     nexcl_ = pd->getNexcl();
-    molProp()->GenerateComposition(pd);
-    if (molProp()->NAtom() <= 0)
+    GenerateComposition(pd);
+    if (NAtom() <= 0)
     {
         imm = immAtomTypes;
     }
     if (immOK == imm)
     {
         snew(atoms_, 1);
-        state_change_natoms(state_, molProp()->NAtom());
+        state_change_natoms(state_, NAtom());
         imm = GenerateAtoms(ap, method, basis, mylot);
     }
     if (immOK == imm)
@@ -790,7 +789,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
                     gmx_fatal(FARGS, "No such length unit '%s' for bonds", fs->unit().c_str());
                 }
                 memset(&b, 0, sizeof(b));
-                for (auto bi = molProp()->BeginBond(); bi < molProp()->EndBond(); bi++)
+                for (auto bi = BeginBond(); bi < EndBond(); bi++)
                 {
                     b.a[0] = bi->getAi() - 1;
                     b.a[1] = bi->getAj() - 1;
@@ -833,7 +832,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
 
         MakeSpecialInteractions(pd, bUseVsites);
 
-        imm = updatePlist(pd, plist_, atoms_, bBASTAT, molProp()->getMolname());
+        imm = updatePlist(pd, plist_, atoms_, bBASTAT, getMolname());
     }
     if (immOK == imm)
     {
@@ -856,7 +855,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
         {
             addShells(pd);
         }
-        char **molnameptr = put_symtab(symtab_, molProp()->getMolname().c_str());
+        char **molnameptr = put_symtab(symtab_, getMolname().c_str());
         mtop_ = do_init_mtop(pd, molnameptr, atoms_, plist_, inputrec_, symtab_, tabfn); // Generate mtop
         excls_to_blocka(atoms_->nr, excls_, &(mtop_->moltype[0].excls));
         if (bAddShells)
@@ -1227,13 +1226,13 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
         catch (gmx::SimulationInstabilityError &ex)
         {
             fprintf(stderr, "Something wrong minimizing shells for %s. Error code %d\n",
-                    molProp()->getMolname().c_str(), ex.errorCode());
+                    getMolname().c_str(), ex.errorCode());
             imm = immShellMinimization;
         }
         if (force2 > inputrec_->em_tol && fplog)
         {
             fprintf(fplog, "Shell minimization did not converge in %d steps for %s. RMS Force = %g.\n",
-                    inputrec_->niter, molProp()->getMolname().c_str(),
+                    inputrec_->niter, getMolname().c_str(),
                     std::sqrt(force2));
             pr_rvecs(fplog, 0, "f", f_.rvec_array(), mtop_->natoms);
             imm = immShellMinimization;
@@ -1269,14 +1268,14 @@ void MyMol::initQgresp(const Poldata             *pd,
 
     Qgresp_.setChargeModel(iChargeModel);
     Qgresp_.setAtomWeight(watoms);
-    Qgresp_.setAtomInfo(atoms_, pd, x(), molProp()->getCharge());
+    Qgresp_.setAtomInfo(atoms_, pd, x(), getCharge());
     Qgresp_.setAtomSymmetry(symmetric_charges_);
-    Qgresp_.setMolecularCharge(molProp()->getCharge());
+    Qgresp_.setMolecularCharge(getCharge());
     Qgresp_.summary(debug);
 
-    auto ci = molProp()->getCalcPropType(method, basis, mylot,
+    auto ci = getCalcPropType(method, basis, mylot,
                                          MPO_POTENTIAL, nullptr);
-    if (ci != molProp()->EndExperiment())
+    if (ci != EndExperiment())
     {
         int mod  = 100/maxESP;
         int iesp = 0;
@@ -1359,7 +1358,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             if (debug)
             {
                 fprintf(debug, "WARNING! Using zero charges for %s!\n",
-                        molProp()->getMolname().c_str());
+                        getMolname().c_str());
             }
             for (auto i = 0; i < atoms_->nr; i++)
             {
@@ -1426,7 +1425,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
         break;
         case eqgACM:
         {
-            Qgacm_.setInfo(pd, atoms_, hfac, molProp()->getCharge());
+            Qgacm_.setInfo(pd, atoms_, hfac, getCharge());
 
             auto q     = Qgacm_.q();
             auto natom = Qgacm_.natom();
@@ -1440,7 +1439,7 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             do
             {
                 if (eQGEN_OK == Qgacm_.generateCharges(debug,
-                                                       molProp()->getMolname().c_str(),
+                                                       getMolname().c_str(),
                                                        pd,
                                                        atoms_,
                                                        state_->x))
@@ -1518,8 +1517,8 @@ bool MyMol::getOptimizedGeometry(rvec *x)
 {
     bool    bopt = false;
 
-    for (auto ei = molProp()->BeginExperiment();
-         (!bopt) && (ei < molProp()->EndExperiment()); ++ei)
+    for (auto ei = BeginExperiment();
+         (!bopt) && (ei < EndExperiment()); ++ei)
     {
         if (JOB_OPT == ei->getJobtype())
         {
@@ -1685,7 +1684,7 @@ immStatus MyMol::CalcPolarizability(double     efield,
     CalcDipole(mu_ref);
     if (false && fplog)
     {
-        fprintf(fplog, "CalcPolarizability for %s\n", molProp()->getMolname().c_str());
+        fprintf(fplog, "CalcPolarizability for %s\n", getMolname().c_str());
     }
     imm          = computeForces(fplog, cr);
     isoPol_calc_ = 0;
@@ -1721,7 +1720,7 @@ void MyMol::PrintConformation(const char *fn)
     char title[STRLEN];
 
     put_in_box(atoms_->nr, state_->box, as_rvec_array(state_->x.data()), 0.3);
-    sprintf(title, "%s processed by alexandria", molProp()->getMolname().c_str());
+    sprintf(title, "%s processed by alexandria", getMolname().c_str());
     write_sto_conf(fn, title, atoms_, as_rvec_array(state_->x.data()), nullptr, epbcNONE, state_->box);
 }
 
@@ -1802,13 +1801,13 @@ void MyMol::PrintTopology(FILE                   *fp,
     }
 
     CalcQPol(pd, mu);
-    if (molProp()->getMolname().size() > 0)
+    if (getMolname().size() > 0)
     {
-        printmol.name = strdup(molProp()->getMolname().c_str());
+        printmol.name = strdup(getMolname().c_str());
     }
-    else if (molProp()->formula().size() > 0)
+    else if (formula().size() > 0)
     {
-        printmol.name = strdup(molProp()->formula().c_str());
+        printmol.name = strdup(formula().c_str());
     }
     else
     {
@@ -1817,11 +1816,11 @@ void MyMol::PrintTopology(FILE                   *fp,
 
     printmol.nr = 1;
 
-    snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", molProp()->getMass());
+    snprintf(buf, sizeof(buf), "Total Mass = %.3f (Da)", getMass());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Reference_Enthalpy = %.3f (kJ/mol)", ref_enthalpy_);
     commercials.push_back(buf);
-    snprintf(buf, sizeof(buf), "Total Charge = %d (e)", molProp()->getCharge());
+    snprintf(buf, sizeof(buf), "Total Charge = %d (e)", getCharge());
     commercials.push_back(buf);
     snprintf(buf, sizeof(buf), "Charge Type  = %s\n", getEemtypeName(iChargeModel));
     commercials.push_back(buf);
@@ -1834,7 +1833,7 @@ void MyMol::PrintTopology(FILE                   *fp,
     T = -1;
     const char *qm_type = "electronic";
     const char *qm_conf = "minimum";
-    if (molProp()->getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MPO_DIPOLE, iqmQM, method, basis, qm_conf,
                               qm_type, &value, &error,
                               &T, &myref, &mylot, vec, myQ))
     {
@@ -1861,7 +1860,7 @@ void MyMol::PrintTopology(FILE                   *fp,
                QQM(qtCalc));
 
     T = -1;
-    if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
+    if (getPropRef(MPO_QUADRUPOLE, iqmQM, method, basis, qm_conf,
                               qm_type, &value, &error,
                               &T, &myref, &mylot, vec, myQ))
     {
@@ -1893,7 +1892,7 @@ void MyMol::PrintTopology(FILE                   *fp,
             commercials.push_back(buf);
 
             T = -1;
-            if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
+            if (getPropRef(MPO_POLARIZABILITY, iqmQM, method, basis, "",
                                       (char *)"electronic", &isoPol_elec_, &error,
                                       &T, &myref, &mylot, vec, alpha_elec_))
             {
@@ -1988,7 +1987,7 @@ void MyMol::GenerateCube(const Poldata          *pd,
 
         if (nullptr != difffn)
         {
-            grref.setAtomInfo(atoms_, pd, state_->x, molProp()->getCharge());
+            grref.setAtomInfo(atoms_, pd, state_->x, getCharge());
             grref.setAtomSymmetry(symmetric_charges_);
             grref.readCube(reffn, FALSE);
             Qgresp_ = grref;
@@ -2092,7 +2091,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         }
     }
     real q[natom];
-    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+    if (getPropRef(MPO_CHARGE, iqmQM,
                               method, basis, "",
                               (char *)"ESP charges",
                               &value, &error, &T,
@@ -2102,7 +2101,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         esp_dipole_found = true;
     }
     T = -1;
-    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+    if (getPropRef(MPO_CHARGE, iqmQM,
                               method, basis, "",
                               (char *)"Mulliken charges",
                               &value, &error, &T,
@@ -2115,7 +2114,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         }
     }
     T = -1;
-    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+    if (getPropRef(MPO_CHARGE, iqmQM,
                               method, basis, "",
                               (char *)"Hirshfeld charges",
                               &value, &error, &T,
@@ -2129,7 +2128,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
 
     }
     T = -1;
-    if (molProp()->getPropRef(MPO_CHARGE, iqmQM,
+    if (getPropRef(MPO_CHARGE, iqmQM,
                               method, basis, "",
                               (char *)"CM5 charges",
                               &value, &error, &T,
@@ -2145,7 +2144,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     T = 298.15;
     immStatus imm = immOK;
     if (bDHform &&
-        molProp()->getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
+        getProp(MPO_ENERGY, (bQM ? iqmQM : iqmExp),
                            method, basis, "",
                            (char *)"DeltaHform", &value, &error, &T))
     {
@@ -2163,7 +2162,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                 else
                 {
                     fprintf(stderr, "WARNING: NO reference enthalpy for molecule %s.\n",
-                            molProp()->getMolname().c_str());
+                            getMolname().c_str());
                     Emol_ = 0;
                     imm   = immNoData;
                     break;
@@ -2173,7 +2172,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
         if (bZPE)
         {
 
-            if (molProp()->getProp(MPO_ENERGY, iqmBoth,
+            if (getProp(MPO_ENERGY, iqmBoth,
                                    method, basis, "",
                                    (char *)"ZPE", &ZPE, &error, &T))
             {
@@ -2182,7 +2181,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             else
             {
                 fprintf(stderr, "No zero-point energy for molecule %s.\n",
-                        molProp()->getMolname().c_str());
+                        getMolname().c_str());
                 imm = immNoData;
             }
         }
@@ -2194,7 +2193,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (imm == immOK)
     {
         T = -1;
-        if (molProp()->getPropRef(MPO_DIPOLE, iqmQM,
+        if (getPropRef(MPO_DIPOLE, iqmQM,
                                   method, basis, "",
                                   (char *)"electronic",
                                   &value, &error, &T, &myref, &mylot,
@@ -2209,7 +2208,7 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
                 if (debug)
                 {
                     fprintf(debug, "WARNING: Error for %s is %g, assuming it is 10%%.\n",
-                            molProp()->getMolname().c_str(), error);
+                            getMolname().c_str(), error);
                 }
                 nwarn++;
                 error = 0.1*value;
@@ -2233,11 +2232,11 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
     if (immOK == imm)
     {
         T = -1;
-        if (molProp()->getPropRef(MPO_QUADRUPOLE, iqmQM,
-                                  method, basis, "",
-                                  (char *)"electronic",
-                                  &value, &error, &T, &myref, &mylot,
-                                  vec, quadrupole))
+        if (getPropRef(MPO_QUADRUPOLE, iqmQM,
+                       method, basis, "",
+                       (char *)"electronic",
+                       &value, &error, &T, &myref, &mylot,
+                       vec, quadrupole))
         {
             set_QQM(qtElec, quadrupole);
             if (immOK == imm && esp_dipole_found && norm(mu_qm_[qtElec]) > 0)
@@ -2246,11 +2245,11 @@ immStatus MyMol::getExpProps(gmx_bool           bQM,
             }
         }
         T = -1;
-        if (molProp()->getPropRef(MPO_POLARIZABILITY, iqmQM,
-                                  method, basis, "",
-                                  (char *)"electronic",
-                                  &isoPol_elec_, &error, &T,
-                                  &myref, &mylot, vec, polar))
+        if (getPropRef(MPO_POLARIZABILITY, iqmQM,
+                       method, basis, "",
+                       (char *)"electronic",
+                       &isoPol_elec_, &error, &T,
+                       &myref, &mylot, vec, polar))
         {
             copy_mat(polar, alpha_elec_);
             CalcAnisoPolarizability(alpha_elec_, &anisoPol_elec_);
