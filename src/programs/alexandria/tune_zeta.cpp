@@ -419,7 +419,8 @@ void OptZeta::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
+        std::vector<std::string> paramClass;
+        Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         param_type param = Bayes::getParam();
         double chi2_min  = Bayes::objFunction(param);
 

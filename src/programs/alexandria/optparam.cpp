@@ -75,13 +75,15 @@ void OptParam::add_pargs(std::vector<t_pargs> *pargs)
     }
 }
 
-void OptParam::setOutputFiles(const char             *xvgconv,
-                              const char             *xvgepot,
-                              const gmx_output_env_t *oenv)
+void OptParam::setOutputFiles(const char                     *xvgconv,
+                              const std::vector<std::string> &paramClass,
+                              const char                     *xvgepot,
+                              const gmx_output_env_t         *oenv)
 {
-    xvgconv_     = xvgconv;
-    xvgepot_     = xvgepot;
-    oenv_        = oenv;
+    xvgconv_.assign(xvgconv);
+    paramClass_ = paramClass;
+    xvgepot_.assign(xvgepot);
+    oenv_       = oenv;
 }
 
 double OptParam::computeBeta(int iter)
@@ -211,30 +213,70 @@ double Bayes::MCMC(FILE *fplog)
     double                           halfIter        = maxIter()/2;   
     parm_t                           sum, sum_of_sq;
     
-    FILE                            *fpc             = nullptr;
+    std::vector<FILE *>              fpc;
+    std::vector<int>                 paramClassIndex;
     FILE                            *fpe             = nullptr;
     
     std::random_device               rd;
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> uniform(0, 1);
 
-    if (nullptr != xvgConv())
+    if (xvgConv().empty() || xvgEpot().empty())
     {
-        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
-        if (!paramNames_.empty())
+        gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
+    }
+    if (paramNames_.empty())
+    {
+        gmx_fatal(FARGS, "You forgot to add parameterNames. Back to the drawing board.");
+    }
+    // Allocate memory for parameter class index.
+    // Set to -1 to indicate not set, and to crash the program
+    // in case of bugs.
+    paramClassIndex.resize(paramNames_.size(), -1);
+    std::vector<std::string> pClass = paramClass();
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        for (size_t j = 0; j < paramNames_.size(); j++)
         {
-            std::vector<const char*> paramNames;
-            for (const auto &paramName : paramNames_)
-            {   
-                paramNames.push_back(paramName.c_str());
+            if (paramNames_[j].find(pClass[i]) != std::string::npos)
+            {
+                paramClassIndex[j] = i;
             }
-            xvgr_legend(fpc, paramNames.size(), paramNames.data(), oenv());   
         }
     } 
-    if (nullptr != xvgEpot())
+    // Now check for "unclassified parameters"
+    bool restClass = false;
+    for(size_t i = 0; i < paramClassIndex.size(); i++)
     {
-        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
+        if (paramClassIndex[i] == -1)
+        {
+            if (!restClass)
+            {
+                pClass.push_back("Other");
+                restClass = true;
+            }
+            paramClassIndex[i] = pClass.size()-1;
+        }
     }
+    for(size_t i = 0; i < pClass.size(); i++)
+    {
+        std::string fileName = pClass[i] + "-" + xvgConv();
+        fpc.push_back(xvgropen(fileName.c_str(), "Parameter convergence",
+                               "iteration", "", oenv()));
+        std::vector<const char*> paramNames;
+        for (size_t j = 0; j < paramNames_.size(); j++)
+        {
+            if (paramClassIndex[j] == static_cast<int>(i))
+            {
+                paramNames.push_back(paramNames_[j].c_str());
+            }
+        }
+        xvgr_legend(fpc[i], paramNames.size(), paramNames.data(), oenv());   
+    } 
+    // Now parameter output file.
+    fpe = xvgropen(xvgEpot().c_str(), "Parameter energy", "iteration",
+                   "\\f{12}c\\S2\\f{4}", oenv());
+
     nParam = param_.size();
     sum.resize(nParam, 0);
     sum_of_sq.resize(nParam, 0);
@@ -242,7 +284,7 @@ double Bayes::MCMC(FILE *fplog)
     psigma_.resize(nParam, 0);
     attemptedMoves_.resize(nParam, 0);
     acceptedMoves_.resize(nParam, 0);
-
+    
     prevEval = objFunction(param_);
     minEval  = prevEval;
     if (debug)
@@ -295,15 +337,19 @@ double Bayes::MCMC(FILE *fplog)
             param_[j] = storeParam;
         }
         double xiter = (1.0*iter)/nParam;
-        if (nullptr != fpc)
+
+        for(auto fp: fpc)
         {
-            fprintf(fpc, "%8f", xiter);
-            for (auto value : param_)
-            {
-                fprintf(fpc, "  %10g", value);
-            }
-            fprintf(fpc, "\n");
-            fflush(fpc);
+            fprintf(fp, "%8f", xiter);
+        }
+        for (size_t k = 0; k < param_.size(); k++)
+        {
+            fprintf(fpc[paramClassIndex[k]], "  %10g", param_[k]);
+        }
+        for(auto fp: fpc)
+        {
+            fprintf(fp, "\n");
+            fflush(fp);
         }
         if (nullptr != fpe)
         {
@@ -330,9 +376,9 @@ double Bayes::MCMC(FILE *fplog)
             psigma_[k]    = sqrt(ps2);
         }
     }
-    if (nullptr != fpc)
+    for(auto fp: fpc)
     {
-        xvgrclose(fpc);
+        xvgrclose(fp);
     }
     if (nullptr != fpe)
     {
@@ -362,14 +408,14 @@ double Bayes::DRAM(FILE *fplog)
     std::mt19937                     gen(rd());
     std::uniform_real_distribution<> uniform(0, 1);
 
-    if (nullptr != xvgConv())
+    if (xvgConv().empty() || xvgEpot().empty())
     {
-        fpc = xvgropen(xvgConv(), "Parameter convergence", "iteration", "", oenv());
+        gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
     }
-    if (nullptr != xvgEpot())
-    {
-        fpe = xvgropen(xvgEpot(), "Parameter energy", "iteration", "\\f{12}c\\S2\\f{4}", oenv());
-    }
+    fpc = xvgropen(xvgConv().c_str(), "Parameter convergence",
+                   "iteration", "", oenv());
+    fpe = xvgropen(xvgEpot().c_str(), "Parameter energy",
+                   "iteration", "\\f{12}c\\S2\\f{4}", oenv());
 
     nParam = param_.size();
     sum.resize(nParam, 0);

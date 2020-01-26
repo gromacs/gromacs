@@ -1033,7 +1033,8 @@ bool Optimization::optRun(FILE                   *fplog,
             fprintf(fplog, "Initial chi2 %g\n", chi2_min);
         }
         {
-            Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
+            std::vector<std::string> paramClass;
+            Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         }
         double chi2 = Bayes::MCMC(fplog);
         if (fplog)

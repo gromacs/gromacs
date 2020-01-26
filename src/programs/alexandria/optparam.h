@@ -60,49 +60,52 @@ namespace alexandria
 class OptParam
 {
     private:
-        int                     maxiter_;
-        const gmx_output_env_t *oenv_;
-        const char             *xvgconv_;
-        const char             *xvgepot_;
-        gmx_bool                bBoxConstraint_;
-        real                    seed_;
-        real                    step_;
-        real                    temperature_;
-        bool                    anneal_;
-        
+        //! Maximum number of iterations
+        int                      maxiter_       = 100;
+        //! Output environment structure
+        const gmx_output_env_t  *oenv_          = nullptr;
+        //! Use box constraints when optimizing
+        gmx_bool                 bBoxConstraint_ = false;
+        //! Random number seed
+        real                     seed_           = -1;
+        //! Relative step when optimizing
+        real                     step_           = 0.02;
+        //! Temperature in chi2 units
+        real                     temperature_    = 5;
+        //! Use annealing in the optimization
+        bool                     anneal_         = true;
+        //! Base name for parameter convergence file names
+        std::string              xvgconv_;
+        //! File name for parameter energy (chi2)
+        std::string              xvgepot_;
+        //! Parameter classes for printing
+        std::vector<std::string> paramClass_;     
     public:
-
-        OptParam() 
-            : 
-                maxiter_(100), 
-                oenv_(nullptr), 
-                xvgconv_(nullptr), 
-                xvgepot_(nullptr), 
-                bBoxConstraint_(false), 
-                seed_(-1), 
-                step_(0.02), 
-                temperature_(5), 
-                anneal_(true)
-            {}
-
-        ~OptParam() {};
-
         /*! \brief Add command line arguments
          *
          * \param[in] pargs Vector of pargs
          */
         void add_pargs(std::vector<t_pargs> *pargs);
 
-        /*! \brief
-         * Set the output file names
-         * \param[in] xvgconv The parameter convergence
-         * \param[in] xvgepot The chi2 value
-         * \param[in] oenv    GROMACS utility structure
+        /*! \brief Set the output file names. 
+         *
+         * The parameter values are split over
+         * a number of files in order to make it easier to visualize the
+         * results. The parameter classes should therefore match the
+         * parameter names. E.g. a class could be alpha, another zeta.
+         *
+         * \param[in] xvgconv    The parameter convergence base name
+         * \param[in] paramClass The parameter classes (e.g. zeta, alpha)
+         * \param[in] xvgepot    The filename to print the chi2 value
+         * \param[in] oenv       GROMACS utility structure
          */
-        void setOutputFiles(const char             *xvgconv,
-                            const char             *xvgepot,
-                            const gmx_output_env_t *oenv);
+        void setOutputFiles(const char                     *xvgconv,
+                            const std::vector<std::string> &paramClass,
+                            const char                     *xvgepot,
+                            const gmx_output_env_t         *oenv);
 
+        //! Return the class of parameters registered
+        const std::vector<std::string> &paramClass() { return paramClass_; }
         /*! \brief Compute and return the Boltzmann factor
          *
          * \param[in] iter  The iteration number
@@ -136,10 +139,10 @@ class OptParam
         bool boxConstraint() const { return bBoxConstraint_; }
 
         //! \brief Return xvg file for convergence information
-        const char *xvgConv() const { return xvgconv_; }
+        const std::string &xvgConv() const { return xvgconv_; }
 
         //! \brief Return xvg file for epot information
-        const char *xvgEpot() const { return xvgepot_; }
+        const std::string &xvgEpot() const { return xvgepot_; }
 
         //! \brief Return output environment
         const gmx_output_env_t *oenv() const { return oenv_; }

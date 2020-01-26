@@ -818,7 +818,21 @@ bool OptACM::optRun(FILE                   *fp,
                 gmx_send_int(commrec(), dest, niter);
             }
         }
-        Bayes::setOutputFiles(xvgconv, xvgepot, oenv);
+        std::vector<std::string> paramClass;
+        if (bFitAlpha_)
+        {
+            paramClass.push_back("alpha");
+        }
+        if (bFitZeta_)
+        {
+            paramClass.push_back("Zeta");
+        }
+        if (bFitChi_)
+        {
+            paramClass.push_back("Chi");
+            paramClass.push_back("Eta");
+        }
+        Bayes::setOutputFiles(xvgconv, paramClass, xvgepot, oenv);
         param_type param    = Bayes::getParam();
         double     chi2_min = Bayes::objFunction(param);
         fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
