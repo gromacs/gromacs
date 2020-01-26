@@ -662,7 +662,7 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
     auto     pd          = poldata();
     bool     distributed = getEemtypeDistributed(pd->getChargeModel());
     auto    *ic          = indexCount();
-    auto     param       = Bayes::getParam();
+    auto     param       = Bayes::getBestParam();
     auto     psigma      = Bayes::getPsigma();
     if (psigma.empty())
     {
