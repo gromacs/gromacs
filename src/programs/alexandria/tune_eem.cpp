@@ -853,6 +853,7 @@ bool OptACM::optRun(FILE                   *fp,
         }
         if (bMinimum)
         {
+            auto i_param        = Bayes::getInitialParam();
             auto best           = Bayes::getBestParam();
             auto pmean          = Bayes::getPmean();
             auto psigma         = Bayes::getPsigma();
@@ -870,8 +871,8 @@ bool OptACM::optRun(FILE                   *fp,
                     for (size_t k = 0; k < Bayes::nParam(); k++)
                     {
                         double acceptance_ratio = 100*(double(acceptedMoves[k])/attemptedMoves[k]);
-                        fprintf(logFile(), "%-10s  Best value:%10g  Mean value:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
-                                paramNames[k].c_str(), best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
+                        fprintf(logFile(), "%-10s  Initial:%10g  Best:%10g  Mean:%10g  Sigma:%10g  Attempted moves:%3d  Acceptance ratio:%5g\n",
+                                paramNames[k].c_str(), i_param[k], best[k], pmean[k], psigma[k], attemptedMoves[k], acceptance_ratio);
                     }
                 }
             }

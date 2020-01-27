@@ -157,6 +157,7 @@ class Bayes : public OptParam
 
     private:
         func_t        func_;
+        parm_t        initial_param_;
         parm_t        param_;
         parm_t        prevParam_;
         parm_t        psigma_;
@@ -210,6 +211,11 @@ class Bayes : public OptParam
             param_[j] = val;
         }
 
+        /*! \brief
+         * Returns the current vector of parameters.
+         */
+        const parm_t &getInitialParam() const { return initial_param_; }
+        
         /*! \brief
          * Returns the current vector of parameters.
          */
