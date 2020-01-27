@@ -141,6 +141,7 @@ void Bayes::addParam(real val,
     {
         factor = 1/factor;
     }
+    initial_param_.push_back(val);
     param_.push_back(val);
     prevParam_.push_back(val);
     lowerBound_.push_back(val/factor);
@@ -151,6 +152,7 @@ void Bayes::addParam(real val,
                      real lower,
                      real upper)
 {
+    initial_param_.push_back(val);
     param_.push_back(val);
     prevParam_.push_back(val);
     lowerBound_.push_back(lower);
