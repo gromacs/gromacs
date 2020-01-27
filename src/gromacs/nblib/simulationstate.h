@@ -71,17 +71,13 @@ public:
                     Topology&                     topo,
                     const std::vector<gmx::RVec>& vel = {});
 
-    //! Copy Constructor
-    SimulationState(const SimulationState& simulationState);
-
-    //! Copy Assignment Operator
-    SimulationState& operator=(const SimulationState& simulationState);
-
-    //! Move Constructor
-    SimulationState(SimulationState&& simulationState) noexcept;
+    //! Force generation of a move ctor such that we get a compiler error
+    //! if SimulationState gets changed in the future to require a custom
+    //! copy ctor
+    SimulationState(SimulationState&& simulationState) = default;
 
     //! Move Assignment Constructor
-    SimulationState& operator=(SimulationState&& simulationState) noexcept;
+    SimulationState& operator=(SimulationState&& simulationState) = default;
 
     //! Returns topology of the current state
     const Topology& topology() const;

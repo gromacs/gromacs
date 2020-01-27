@@ -84,42 +84,6 @@ SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
     velocities_ = vel;
 }
 
-SimulationState::SimulationState(const SimulationState& simulationState) :
-    box_(simulationState.box_),
-    topology_(simulationState.topology_)
-{
-    coordinates_ = simulationState.coordinates_;
-    velocities_  = simulationState.velocities_;
-}
-
-SimulationState& SimulationState::operator=(const SimulationState& simulationState)
-{
-    coordinates_ = simulationState.coordinates_;
-    velocities_  = simulationState.velocities_;
-    box_         = simulationState.box_;
-    topology_    = simulationState.topology_;
-
-    return *this;
-}
-
-SimulationState::SimulationState(SimulationState&& simulationState) noexcept :
-    box_(simulationState.box_),
-    topology_(std::move(simulationState.topology_))
-{
-    coordinates_ = std::move(simulationState.coordinates_);
-    velocities_  = std::move(simulationState.velocities_);
-}
-
-SimulationState& SimulationState::operator=(nblib::SimulationState&& simulationState) noexcept
-{
-    coordinates_ = std::move(simulationState.coordinates_);
-    velocities_  = std::move(simulationState.velocities_);
-    box_         = simulationState.box_;
-    topology_    = std::move(simulationState.topology_);
-
-    return *this;
-}
-
 const Topology& SimulationState::topology() const
 {
     return topology_;
