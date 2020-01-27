@@ -158,22 +158,14 @@ static void init_atomdata_first(cl_atomdata_t* ad, int ntypes, gmx_device_runtim
 
     ad->ntypes = ntypes;
 
-    /* An element of the shift_vec device buffer has the same size as one element
-       of the host side shift_vec buffer. */
-    ad->shift_vec_elem_size = sizeof(*nbnxn_atomdata_t::shift_vec.data());
-
     ad->shift_vec = clCreateBuffer(runData->context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY,
-                                   SHIFTS * ad->shift_vec_elem_size, nullptr, &cl_error);
+                                   SHIFTS * sizeof(nbnxn_atomdata_t::shift_vec[0]), nullptr, &cl_error);
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
     ad->bShiftVecUploaded = CL_FALSE;
 
-    /* An element of the fshift device buffer has the same size as one element
-       of the host side fshift buffer. */
-    ad->fshift_elem_size = sizeof(*nb_staging_t::fshift);
-
     ad->fshift = clCreateBuffer(runData->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                SHIFTS * ad->fshift_elem_size, nullptr, &cl_error);
+                                SHIFTS * sizeof(nb_staging_t::fshift[0]), nullptr, &cl_error);
     GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                        ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 
@@ -834,7 +826,7 @@ void gpu_upload_shiftvec(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom)
     if (nbatom->bDynamicBox || !adat->bShiftVecUploaded)
     {
         ocl_copy_H2D_async(adat->shift_vec, nbatom->shift_vec.data(), 0,
-                           SHIFTS * adat->shift_vec_elem_size, ls, nullptr);
+                           SHIFTS * sizeof(nbatom->shift_vec[0]), ls, nullptr);
         adat->bShiftVecUploaded = CL_TRUE;
     }
 }
@@ -874,10 +866,8 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
             freeDeviceBuffer(&d_atdat->atom_types);
         }
 
-        d_atdat->f_elem_size = sizeof(rvec);
-
         d_atdat->f = clCreateBuffer(nb->dev_rundata->context, CL_MEM_READ_WRITE | CL_MEM_HOST_READ_ONLY,
-                                    nalloc * d_atdat->f_elem_size, nullptr, &cl_error);
+                                    nalloc * DIM * sizeof(nbat->out[0].f[0]), nullptr, &cl_error);
         GMX_RELEASE_ASSERT(cl_error == CL_SUCCESS,
                            ("clCreateBuffer failed: " + ocl_get_error_string(cl_error)).c_str());
 

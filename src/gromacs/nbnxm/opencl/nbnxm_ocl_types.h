@@ -180,8 +180,6 @@ typedef struct cl_atomdata
 
     //! float3 buffer with force output array, size natoms
     cl_mem f;
-    //! Size in bytes for one element of f buffer
-    size_t f_elem_size;
 
     //! LJ energy output, size 1
     cl_mem e_lj;
@@ -190,8 +188,6 @@ typedef struct cl_atomdata
 
     //! float3 buffer with shift forces
     cl_mem fshift;
-    //! Size in bytes for one element of fshift buffer
-    size_t fshift_elem_size;
 
     //! number of atom types
     int ntypes;
@@ -202,8 +198,6 @@ typedef struct cl_atomdata
 
     //! float3 buffer with shifts values
     cl_mem shift_vec;
-    //! Size in bytes for one element of shift_vec buffer
-    size_t shift_vec_elem_size;
 
     //! true if the shift vector has been uploaded
     bool bShiftVecUploaded;

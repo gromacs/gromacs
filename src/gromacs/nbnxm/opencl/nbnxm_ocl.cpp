@@ -888,8 +888,9 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
     }
 
     /* DtoH f */
-    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * 3, adat->f,
-                       adat_begin * 3 * sizeof(float), (adat_len)*adat->f_elem_size, stream,
+    ocl_copy_D2H_async(nbatom->out[0].f.data() + adat_begin * DIM, adat->f,
+                       adat_begin * DIM * sizeof(nbatom->out[0].f[0]),
+                       adat_len * DIM * sizeof(nbatom->out[0].f[0]), stream,
                        bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
 
     /* kick off work */
@@ -913,7 +914,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
         /* DtoH fshift when virial is needed */
         if (stepWork.computeVirial)
         {
-            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0, SHIFTS * adat->fshift_elem_size,
+            ocl_copy_D2H_async(nb->nbst.fshift, adat->fshift, 0, SHIFTS * sizeof(nb->nbst.fshift[0]),
                                stream, bDoTime ? t->xf[aloc].nb_d2h.fetchNextEvent() : nullptr);
         }
 
