@@ -492,6 +492,7 @@ void MolGen::Read(FILE            *fp,
     /* Reading Force Field Data from gentop.dat */
     if (MASTER(cr_))
     {
+        GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a poldata file name");
         try
         {
             alexandria::readPoldata(pd_fn, pd_, atomprop_);

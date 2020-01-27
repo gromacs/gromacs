@@ -128,7 +128,7 @@ void Bayes::printParameters(FILE *fp) const
     }
     for(size_t i = 0; i < param_.size(); i++)
     {
-        fprintf(fp, "  %s  %g,", paramNames_[i].c_str(), param_[i]);
+        fprintf(fp, "  %s  %e,", paramNames_[i].c_str(), param_[i]);
     }
     fprintf(fp, "\n");
 }
@@ -319,15 +319,6 @@ double Bayes::MCMC(FILE *fplog)
                 }
                 bestParam_ = param_;
                 minEval    = currEval;
-                if (debug)
-                {
-                    fprintf(debug, "New minimum at %g", currEval);
-                    for(int k = 0; k < nParam; k++)
-                    {
-                        fprintf(debug, " %g", bestParam_[k]);
-                    }
-                    fprintf(debug, "\n");
-                }
             }
             prevEval = currEval;
             acceptedMoves_[j] = acceptedMoves_[j] + 1;

@@ -167,6 +167,22 @@ const std::string &Poldata::ztype2elem(const std::string &ztype) const
     gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
 }
 
+const std::string &Poldata::ztype2atype(const std::string &ztype) const
+{
+    size_t i;
+    if (ztype.size() != 0)
+    {
+        for (i = 0; i < alexandria_.size(); i++)
+        {
+            if (alexandria_[i].getZtype().compare(ztype) == 0)
+            {
+                return alexandria_[i].getType();
+            }
+        }
+    }
+    gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
+}
+
 std::vector<std::string> Poldata::ztype_names() const
 {
     std::vector<std::string> ztype_names;   
@@ -187,7 +203,7 @@ std::vector<std::string> Poldata::ztype_names() const
  */
 
 bool Poldata::atypeToPtype(const std::string &atype,
-                           std::string       &ptype) const
+                           std::string       *ptype) const
 {
     if (atype.size() == 0)
     {
@@ -200,14 +216,14 @@ bool Poldata::atypeToPtype(const std::string &atype,
                            });
     if (ai != alexandria_.end() && ai->getPtype().size() > 0)
     {
-        ptype = ai->getPtype();
+        ptype->assign(ai->getPtype());
         return true;
     }
     return false;
 }
 
 bool Poldata::ztypeToPtype(const std::string &ztype,
-                           std::string       &ptype) const
+                           std::string       *ptype) const
 {
     if (ztype.size() == 0)
     {
@@ -220,7 +236,7 @@ bool Poldata::ztypeToPtype(const std::string &ztype,
                            });
     if (ai != alexandria_.end() && ai->getPtype().size() > 0)
     {
-        ptype = ai->getPtype();
+        ptype->assign(ai->getPtype());
         return true;
     }
     return false;
@@ -243,7 +259,7 @@ bool Poldata::getZtypePol(const std::string &ztype,
                           double            *sigPol) const
 {
     std::string ptype;
-    if (ztypeToPtype(ztype, ptype))
+    if (ztypeToPtype(ztype, &ptype))
     {
         return getPtypePol(ptype, polar, sigPol);
     }
@@ -449,7 +465,7 @@ void Poldata::addForces(const ListedForces &forces)
 }
 
 bool Poldata::atypeToBtype(const std::string &atype,
-                           std::string       &btype) const
+                           std::string       *btype) const
 {
     if (atype.size() == 0)
     {
@@ -462,7 +478,7 @@ bool Poldata::atypeToBtype(const std::string &atype,
                            });
     if (ai != alexandria_.end() && ai->getBtype().size() > 0)
     {
-        btype = ai->getBtype();
+        btype->assign(ai->getBtype());
         return true;
     }
     return false;

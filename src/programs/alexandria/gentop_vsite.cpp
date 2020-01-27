@@ -647,9 +647,9 @@ void GentopVsites::gen_Vsites(const Poldata             *pd,
                 auto outplane = findOutPlane(vsite->nvsite(), i);
                 if (outplane != outplaneEnd())
                 {
-                    if (pd->atypeToBtype(*atoms->atomtype[outplane->bca1()], k) &&
-                        pd->atypeToBtype(*atoms->atomtype[outplane->ca()],   j) &&
-                        pd->atypeToBtype(*atoms->atomtype[outplane->bca2()], l))
+                    if (pd->atypeToBtype(*atoms->atomtype[outplane->bca1()], &k) &&
+                        pd->atypeToBtype(*atoms->atomtype[outplane->ca()],   &j) &&
+                        pd->atypeToBtype(*atoms->atomtype[outplane->bca2()], &l))
                     {
                         bij      = convert2gmx(vsite->distance(), lengthUnit);
                         aijk     = 

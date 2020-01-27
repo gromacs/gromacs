@@ -793,8 +793,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t     ap,
                 {
                     b.a[0] = bi->getAi() - 1;
                     b.a[1] = bi->getAj() - 1;
-                    pd->atypeToBtype(*atoms_->atomtype[b.a[0]], btype1);
-                    pd->atypeToBtype(*atoms_->atomtype[b.a[1]], btype2);
+                    pd->atypeToBtype(*atoms_->atomtype[b.a[0]], &btype1);
+                    pd->atypeToBtype(*atoms_->atomtype[b.a[1]], &btype2);
                     std::vector<std::string> atoms = {btype1, btype2};
                     if (pd->findForce(atoms, &force))
                     {
@@ -1204,6 +1204,7 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
             enerd_->grpp.ener[j][i] = 0;
         }
     }
+    restoreCoordinates();
     immStatus imm =  immOK;
     if (nullptr != shellfc_)
     {
@@ -1489,6 +1490,10 @@ immStatus MyMol::GenerateCharges(const Poldata             *pd,
             gmx_fatal(FARGS, "Not implemented");
             break;
     }
+    if (backupCoordinates_.size() == 0)
+    {
+        backupCoordinates();
+    }
     return imm;
 }
 
@@ -1647,6 +1652,7 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
 
 void MyMol::backupCoordinates()
 {
+    GMX_RELEASE_ASSERT(backupCoordinates_.size() == 0, "Can only backup coordinates once");
     backupCoordinates_.resize(atoms_->nr);
     for(int i = 0; i < atoms_->nr; i++)
     {
@@ -1659,13 +1665,14 @@ void MyMol::backupCoordinates()
 
 void MyMol::restoreCoordinates()
 {
-    GMX_RELEASE_ASSERT(static_cast<int>(backupCoordinates_.size()) == atoms_->nr,
-                       gmx::formatString("There are %d atoms but backup array size = %zu", atoms_->nr, backupCoordinates_.size()).c_str());
-    for(int i = 0; i < atoms_->nr; i++)
+    if (static_cast<int>(backupCoordinates_.size()) == atoms_->nr)
     {
-        for(int m = 0; m < DIM; m++)
+        for(int i = 0; i < atoms_->nr; i++)
         {
-            state_->x[i][m] = backupCoordinates_[i][m];
+            for(int m = 0; m < DIM; m++)
+            {
+                state_->x[i][m] = backupCoordinates_[i][m];
+            }
         }
     }
 }
@@ -1681,16 +1688,11 @@ immStatus MyMol::CalcPolarizability(double     efield,
     
     field.resize(DIM, 0);
     myforce_->setField(field);
-    CalcDipole(mu_ref);
-    if (false && fplog)
-    {
-        fprintf(fplog, "CalcPolarizability for %s\n", getMolname().c_str());
-    }
     imm          = computeForces(fplog, cr);
     isoPol_calc_ = 0;
+    CalcDipole(mu_ref);
     for (auto m = 0; imm == immOK && m < DIM; m++)
     {
-        backupCoordinates();
         field[m] = efield;
         myforce_->setField(field);
         imm = computeForces(fplog, cr);
@@ -1704,9 +1706,8 @@ immStatus MyMol::CalcPolarizability(double     efield,
             {
                 alpha_calc_[n][m] = ((mu_tot[n]-mu_ref[n])/efield)*(POLFAC);
             }
-            isoPol_calc_     += alpha_calc_[m][m]/DIM;
+            isoPol_calc_ += alpha_calc_[m][m]/DIM;
         }
-        restoreCoordinates();
     }
     if (immOK == imm)
     {
@@ -2301,7 +2302,7 @@ void MyMol::UpdateIdef(const Poldata   *pd,
         for (int i = 0; i < mtop_->natoms; i++)
         {
             std::string bt;
-            if (pd->atypeToBtype(*atoms_->atomtype[i], bt))
+            if (pd->atypeToBtype(*atoms_->atomtype[i], &bt))
             {
                 btype[atoms_->atom[i].type] = bt;
             }

@@ -252,6 +252,13 @@ class Poldata
          */
         const std::string &ztype2elem(const std::string &ztype) const;
 
+        /*! \brief
+         * Return the atom type corresponding to the zeta type
+         *
+         * \param[in] ztype  zeta Type
+         */
+        const std::string &ztype2atype(const std::string &ztype) const;
+
         std::vector<std::string> ztype_names() const;
 
         /*! \brief
@@ -382,7 +389,7 @@ class Poldata
          * \param[out] ptype  Polarizability type.
          */
         bool atypeToPtype(const std::string &atype,
-                          std::string       &ptype) const;
+                          std::string       *ptype) const;
 
         /*! \brief
          * Return the poltype corresponding to ztype and true if successful
@@ -391,7 +398,7 @@ class Poldata
          * \param[out] ptype  Polarizability type.
          */
         bool ztypeToPtype(const std::string &ztype,
-                          std::string       &ptype) const;
+                          std::string       *ptype) const;
 
         /*! \brief
          * Return the bond type corresponding to atom type and true if successful
@@ -400,7 +407,7 @@ class Poldata
          * \param[out] btype  Polarizability type.
          */
         bool atypeToBtype(const std::string &atype,
-                          std::string       &btype) const;
+                          std::string       *btype) const;
 
 
         /* Return 1 if OK, 0 if not found */

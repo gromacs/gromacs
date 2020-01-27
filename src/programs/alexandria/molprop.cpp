@@ -1524,7 +1524,7 @@ bool MolProp::GenerateComposition(const Poldata *pd)
             mci_alexandria.AddAtom(ans);
 
             std::string ptype;
-            if (pd->atypeToPtype(cai->getObtype(), ptype))
+            if (pd->atypeToPtype(cai->getObtype(), &ptype))
             {
                 std::string bos_type;
                 if (pd->ptypeToBosque(ptype, bos_type))

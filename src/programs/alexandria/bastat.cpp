@@ -722,7 +722,7 @@ int alex_bastat(int argc, char *argv[])
             for (i = 0; i < mmi.atoms_->nr; i++)
             {
                 std::string btpi;
-                if (!pd.atypeToBtype(*mmi.atoms_->atomtype[i], btpi))
+                if (!pd.atypeToBtype(*mmi.atoms_->atomtype[i], &btpi))
                 {
                     if (nullptr != debug)
                     {
@@ -753,8 +753,8 @@ int alex_bastat(int argc, char *argv[])
                         auto ai = mmi.ltop_->idef.il[funcType].iatoms[j+1];
                         auto aj = mmi.ltop_->idef.il[funcType].iatoms[j+2];
                         rvec_sub(x[ai], x[aj], dx);
-                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], cai) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], caj))
+                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], &cai) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], &caj))
                         {
                             for (auto bi = mmi.BeginBond(); bi < mmi.EndBond(); bi++)
                             {
@@ -801,9 +801,9 @@ int alex_bastat(int argc, char *argv[])
                         {
                             linear = true;
                         }
-                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], cai) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], caj) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[ak], cak))
+                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], &cai) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], &caj) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[ak], &cak))
                         {
                             add_angle(fp, mmi.getMolname().c_str(), bonds,
                                       cai, caj, cak, refValue, aspacing,
@@ -837,10 +837,10 @@ int alex_bastat(int argc, char *argv[])
                         angle    = RAD2DEG*dih_angle(x[ai], x[aj], x[ak], x[al],
                                                      &pbc, r_ij, r_kj, r_kl, mm, nn,
                                                      &t1, &t2, &t3);
-                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], cai) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], caj) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[ak], cak) &&
-                            pd.atypeToBtype(*mmi.atoms_->atomtype[al], cal))
+                        if (pd.atypeToBtype(*mmi.atoms_->atomtype[ai], &cai) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[aj], &caj) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[ak], &cak) &&
+                            pd.atypeToBtype(*mmi.atoms_->atomtype[al], &cal))
                         {
                             add_dih(fp, mmi.getMolname().c_str(), bonds,
                                     cai, caj, cak, cal, angle, dspacing, fs->iType());

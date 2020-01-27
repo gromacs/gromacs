@@ -398,7 +398,7 @@ void ForceConstants::analyzeIdef(const std::vector<MyMol> &mm,
             {
                 std::string aa;
                 int         ai = mymol.ltop_->idef.il[ftype_].iatoms[i+j];
-                if (!pd->atypeToBtype( *mymol.atoms_->atomtype[ai], aa))
+                if (!pd->atypeToBtype( *mymol.atoms_->atomtype[ai], &aa))
                 {
                     bondsFound = false;
                 }

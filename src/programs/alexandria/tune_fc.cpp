@@ -514,7 +514,7 @@ void Optimization::checkSupport(FILE *fp)
                     {
                         std::string aa;
                         int         ai = mymol->ltop_->idef.il[ft].iatoms[i+j];
-                        if (!poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aa))
+                        if (!poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], &aa))
                         {
                             bSupport = false;
                         }
@@ -682,8 +682,8 @@ void Optimization::getDissociationEnergy(FILE *fplog)
             auto                     aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
             std::string              aai, aaj;
             std::vector<std::string> atoms;
-            if (poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], aai) &&
-                poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], aaj))
+            if (poldata()->atypeToBtype(*mymol->atoms_->atomtype[ai], &aai) &&
+                poldata()->atypeToBtype(*mymol->atoms_->atomtype[aj], &aaj))
             {
                 atoms  = {aai, aaj};
                 auto f = fs->findForce(atoms);

@@ -328,8 +328,8 @@ immStatus updatePlist(const Poldata             *pd,
                 lu = string2unit(fs->unit().c_str());
                 for (auto pwi = pw.beginParam(); pwi < pw.endParam(); ++pwi)
                 {
-                    if (pd->atypeToBtype(*atoms->atomtype[pwi->a[0]], aai) &&
-                        pd->atypeToBtype(*atoms->atomtype[pwi->a[1]], aaj))
+                    if (pd->atypeToBtype(*atoms->atomtype[pwi->a[0]], &aai) &&
+                        pd->atypeToBtype(*atoms->atomtype[pwi->a[1]], &aaj))
                     {
                         atomNames = {aai, aaj};
                         auto  bondOrder = pw.bondOrder(bondOrder_index);
@@ -365,9 +365,9 @@ immStatus updatePlist(const Poldata             *pd,
             {
                 for (auto b = pw.beginParam(); b < pw.endParam(); ++b)
                 {
-                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], aai) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], aaj) &&
-                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], aak))
+                    if (pd->atypeToBtype(*atoms->atomtype[b->a[0]], &aai) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[1]], &aaj) &&
+                        pd->atypeToBtype(*atoms->atomtype[b->a[2]], &aak))
                     {
                         atomNames = {aai, aaj, aak};
                         n     = 0;
@@ -414,7 +414,7 @@ immStatus updatePlist(const Poldata             *pd,
                     for (int j = 0; j < interaction_function[ftype].nratoms; j++)
                     {
                         std::string aaa;
-                        if (pd->atypeToBtype(*atoms->atomtype[b->a[j]], aaa))
+                        if (pd->atypeToBtype(*atoms->atomtype[b->a[j]], &aaa))
                         {
                             atomNames.push_back(aaa);
                         }

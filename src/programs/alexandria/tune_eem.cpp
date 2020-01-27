@@ -40,6 +40,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/hardware/detecthardware.h"
 #include "gromacs/listed-forces/bonded.h"
@@ -192,9 +193,12 @@ class OptACM : public MolGen, Bayes
         /*! \brief
          *
          * Fill parameter vector based on Poldata.
-         * \param[in] factor Scaling factor for parameters
+         * \param[in] factor Scaling factor for parameters. The boundaries
+         *                   for allowed parameters are determined by the 
+         *                   starting value x, and they are 
+         *                   [x/factor, x*factor] assuming factor > 1.
          */
-        void polData2TuneACM(real factor);
+        void InitOpt(real factor);
 
         /*! \brief
          * Copy the optimization parameters to the poldata structure
@@ -202,10 +206,14 @@ class OptACM : public MolGen, Bayes
          */
         virtual void toPolData(const std::vector<bool> gmx_unused &changed);
 
-        void InitOpt(real factor);
-
         virtual double calcDeviation();
 
+        /*! \brief
+         * Calculate the penalty for "non-chemical" values
+         *
+         * \param[in] ai The atom type
+         * \return penalty value
+         */ 
         double calcPenalty(AtomIndexIterator ai);
 
         /*! \brief
@@ -288,54 +296,67 @@ double OptACM::calcDeviation()
     resetEnergies();
     if (MASTER(commrec()))
     {
-        const param_type &param   = Bayes::getParam();
-        double            bound   = 0;
-        double            penalty = 0;
-        int               n       = 0;
-        auto   *ic      = indexCount();
-        for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+        auto *ic = indexCount();
+        if (weight(ermsBOUNDS))
         {
-            if (!ai->isConst())
+            const param_type &param = Bayes::getParam();
+            double            bound = 0;
+            size_t            n     = 0;
+            for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
             {
-                auto name = ai->name();
-
-                if (bFitChi_)
+                if (!ai->isConst())
                 {
-                    auto J00  = param[n++];
-                    bound    += l2_regularizer(J00, J0Min(), J0Max());
-                    if (strcasecmp(name.c_str(), fixchi()) != 0)
+                    auto name = ai->name();
+                    
+                    if (bFitChi_)
                     {
-                        auto Chi0 = param[n++];
-                        bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
+                        auto J00  = param[n++];
+                        bound    += l2_regularizer(J00, J0Min(), J0Max());
+                        if (strcasecmp(name.c_str(), fixchi()) != 0)
+                        {
+                            auto Chi0 = param[n++];
+                            bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
+                        }
                     }
-                    if (penalize())
+                    if (bFitZeta_)
                     {
-                        penalty += calcPenalty(ai);
+                        auto atype = poldata()->ztype2atype(name);
+                        auto nzeta = poldata()->getNzeta(atype);
+                        if (nzeta == 2 && bSameZeta_)
+                        {
+                            nzeta = 1;
+                        }
+                        for (auto zz = 0; zz < nzeta; zz++)
+                        {
+                            auto zeta = param[n++];
+                            bound += l2_regularizer(zeta, zetaMin(), zetaMax());
+                        }
                     }
-                }
-                if (bFitZeta_)
-                {
-                    auto nzeta = poldata()->getNzeta(ai->name());
-                    if (nzeta == 2 && bSameZeta_)
+                    if (bFitAlpha_ || weight(ermsPolar))
                     {
-                        nzeta = 1;
-                    }
-                    for (auto zz = 0; zz < nzeta; zz++)
-                    {
-                        auto zeta = param[n++];
-                        bound += l2_regularizer(zeta, zetaMin(), zetaMax());
+                        n++;
                     }
                 }
             }
+            if (optHfac())
+            {
+                setHfac(param[n++]);
+                bound += 100*gmx::square(hfacDiff());
+            }
+            increaseEnergy(ermsBOUNDS, bound);
+            GMX_RELEASE_ASSERT(n == param.size(), 
+                               gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
-        if (optHfac())
-        {
-            setHfac(param[n++]);
-            bound += 100*gmx::square(hfacDiff());
-        }
-        increaseEnergy(ermsBOUNDS, bound);
         if (penalize())
         {
+            double penalty = 0;
+            for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+            {
+                if (!ai->isConst())
+                {
+                    penalty += calcPenalty(ai);
+                }
+            }
             increaseEnergy(ermsPENALTY, penalty);
         }
     }
@@ -352,7 +373,7 @@ double OptACM::calcDeviation()
         {
             // Communicate the force field data.
             poldata()->broadcast_eemprop(commrec());
-            if (bFitAlpha_)
+            if (bFitAlpha_ || weight(ermsPolar))
             {
                 poldata()->broadcast_ptype(commrec());
             }
@@ -379,7 +400,7 @@ double OptACM::calcDeviation()
                 qq[i] = q[i][0];
             }
             // Update the polarizabilities only once before the loop
-            if (bFitAlpha_)
+            if (bFitAlpha_ || weight(ermsPolar))
             {
                 mymol.UpdateIdef(poldata(), eitPOLARIZATION);
             }
@@ -578,7 +599,7 @@ double OptACM::calcDeviation()
     return energy(ermsTOT);
 }
 
-void OptACM::polData2TuneACM(real factor)
+void OptACM::InitOpt(real factor)
 {
     auto *ic = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -625,7 +646,7 @@ void OptACM::polData2TuneACM(real factor)
                     }
                 }
             }
-            if (bFitAlpha_)
+            if (bFitAlpha_ || weight(ermsPolar))
             {
                 auto alpha     = 0.0;
                 auto sigma     = 0.0;
@@ -634,7 +655,7 @@ void OptACM::polData2TuneACM(real factor)
                     if (0 != alpha)
                     {
                         Bayes::addParam(alpha, factor);
-                        Bayes::addParamName(gmx::formatString("%s-alpha", ai->name().c_str()));
+                        Bayes::addParamName(gmx::formatString("%s-Alpha", ai->name().c_str()));
                     }
                     else
                     {
@@ -705,18 +726,18 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
                             sigma  = psigma[n];
                             n++;
                         }
-                        zstr.append(gmx::formatString("%g ", zeta));
-                        z_sig.append(gmx::formatString("%g ", sigma));
+                        zstr.append(gmx::formatString("%.12f ", zeta));
+                        z_sig.append(gmx::formatString("%f ", sigma));
                     }
                 }
                 ei->setRowZetaQ(rowstr, zstr, qstr);
                 ei->setZetastr(zstr);
                 ei->setZeta_sigma(z_sig);
             }
-            if (bFitAlpha_)
+            if (bFitAlpha_ || weight(ermsPolar))
             {
                 std::string ptype;
-                if (pd->ztypeToPtype(ai->name(), ptype))
+                if (pd->ztypeToPtype(ai->name(), &ptype))
                 {
                     pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;
@@ -736,11 +757,6 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
     GMX_RELEASE_ASSERT(n == changed.size(),
                        gmx::formatString("n = %zu changed.size() = %zu",
                                          n, changed.size()).c_str());
-}
-
-void OptACM::InitOpt(real factor)
-{
-    polData2TuneACM(factor);
 }
 
 double OptACM::calcPenalty(AtomIndexIterator ai)
@@ -819,9 +835,9 @@ bool OptACM::optRun(FILE                   *fp,
             }
         }
         std::vector<std::string> paramClass;
-        if (bFitAlpha_)
+        if (bFitAlpha_ || weight(ermsPolar))
         {
-            paramClass.push_back("alpha");
+            paramClass.push_back("Alpha");
         }
         if (bFitZeta_)
         {
@@ -837,7 +853,6 @@ bool OptACM::optRun(FILE                   *fp,
         double     chi2_min = Bayes::objFunction(param);
         fprintf(logFile(), "Initial chi2 value %g\n", chi2_min);
         printEnergies(logFile());
-
         for (auto n = 0; n < nrun; n++)
         {
             if ((nullptr != fp) && (0 == n))

@@ -571,7 +571,7 @@ static void alexandria_molprop_atomtype_polar_table(FILE                       *
                     for (auto ani = mci->BeginAtomNum(); !bFound && (ani < mci->EndAtomNum()); ++ani)
                     {
                         std::string pt;
-                        if (pd->atypeToPtype(ani->getAtom(), pt))
+                        if (pd->atypeToPtype(ani->getAtom(), &pt))
                         {
                             if (pt == pType->getType())
                             {

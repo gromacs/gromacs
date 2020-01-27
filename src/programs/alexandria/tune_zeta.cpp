@@ -247,7 +247,7 @@ void OptZeta::toPolData(const std::vector<bool> gmx_unused &changed)
             if (bFitAlpha_)
             {
                 std::string ptype;
-                if (pd->atypeToPtype(ai->name(), ptype))
+                if (pd->atypeToPtype(ai->name(), &ptype))
                 {
                     pd->setPtypePolarizability(ptype, param[n], psigma[n]);
                     n++;

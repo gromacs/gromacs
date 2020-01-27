@@ -230,7 +230,7 @@ static void fill_matrices_and_dump_csv(const alexandria::Poldata        &pd,
             for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ani++)
             {
                 std::string  ptype;
-                if (pd.atypeToPtype(ani->getAtom(), ptype))
+                if (pd.atypeToPtype(ani->getAtom(), &ptype))
                 {
                     size_t i;
                     for (i = 0; i < ptypes.size(); i++)
@@ -284,7 +284,7 @@ static bool ptypes_still_have_support(const alexandria::Poldata        &pd,
             for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ++ani)
             {
                 std::string p;
-                if (pd.atypeToPtype(ani->getAtom(), p))
+                if (pd.atypeToPtype(ani->getAtom(), &p))
                 {
                     if (p == ptype.name())
                     {
@@ -400,7 +400,7 @@ static int decompose_frag(FILE                             *fplog,
             {
                 const char *atomname = ani->getAtom().c_str();
                 std::string ptype;
-                if (!pd.atypeToPtype(atomname, ptype))
+                if (!pd.atypeToPtype(atomname, &ptype))
                 {
                     if (nullptr != fplog)
                     {
@@ -452,7 +452,7 @@ static int decompose_frag(FILE                             *fplog,
                     for (auto ani = mci->BeginAtomNum(); ani < mci->EndAtomNum(); ++ani)
                     {
                         std::string p;
-                        if (pd.atypeToPtype(ani->getAtom(), p))
+                        if (pd.atypeToPtype(ani->getAtom(), &p))
                         {
                             if (p == pi->name())
                             {
