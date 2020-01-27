@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,12 +34,23 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+/*! \internal \file
+ *
+ * \brief
+ * Declares constants for the module
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
+
 #ifndef GMX_NBNXN_CONSTANTS_H
 #define GMX_NBNXN_CONSTANTS_H
 
-// Lower limit for square interaction distances in nonbonded kernels.
-// For smaller values we will overflow when calculating r^-1 or r^-12, but
-// to keep it simple we always apply the limit from the tougher r^-12 condition.
+/*! \brief Lower limit for square interaction distances in nonbonded kernels.
+ *
+ * For smaller values we will overflow when calculating r^-1 or r^-12, but
+ * to keep it simple we always apply the limit from the tougher r^-12 condition.
+ */
 #if GMX_DOUBLE
 // Some double precision SIMD architectures use single precision in the first
 // step, so although the double precision criterion would allow smaller rsq,
@@ -51,10 +63,10 @@
 #endif
 
 
-/* The number of clusters in a super-cluster, used for GPU */
+//! The number of clusters in a super-cluster, used for GPU
 #define c_nbnxnGpuNumClusterPerSupercluster 8
 
-/* With GPU kernels we group cluster pairs in 4 to optimize memory usage
+/*! \brief With GPU kernels we group cluster pairs in 4 to optimize memory usage
  * of integers containing 32 bits.
  */
 #define c_nbnxnGpuJgroupSize (32 / c_nbnxnGpuNumClusterPerSupercluster)

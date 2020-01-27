@@ -355,7 +355,7 @@ if(HWLOC_INCLUDE_DIRS)
 	        message(STATUS "Error executing hwloc-info: ${HWLOC_INFO_ERR}")
             endif()
             string(REGEX MATCH "[0-9]+.*[0-9]+" HWLOC_INFO_OUT "${HWLOC_INFO_OUT}")
-            set(HWLOC_VERSION ${HWLOC_INFO_OUT} CACHE STRING "HWLOC library version")
+            set(HWLOC_LIBRARY_VERSION ${HWLOC_INFO_OUT})
         endif()
     endif()
 
@@ -364,20 +364,37 @@ if(HWLOC_INCLUDE_DIRS)
     endif()
 
     # Parse header if cross-compiling, or if hwloc-info was not found
-    if(NOT HWLOC_VERSION)
-        # HWLOC is never installed as a framework on OS X, so this should always work.
-        file(READ "${HWLOC_INCLUDE_DIRS}/hwloc.h"
-             HEADER_CONTENTS LIMIT 16384)
-        string(REGEX REPLACE ".*#define HWLOC_API_VERSION (0[xX][0-9a-fA-F]+).*" "\\1"
-               HWLOC_API_VERSION "${HEADER_CONTENTS}")
-        string(SUBSTRING "${HWLOC_API_VERSION}" 4 2 HEX_MAJOR)
-        string(SUBSTRING "${HWLOC_API_VERSION}" 6 2 HEX_MINOR)
-        string(SUBSTRING "${HWLOC_API_VERSION}" 8 2 HEX_PATCH)
-        hex2dec(${HEX_MAJOR} DEC_MAJOR)
-        hex2dec(${HEX_MINOR} DEC_MINOR)
-        hex2dec(${HEX_PATCH} DEC_PATCH)
-        set(HWLOC_VERSION "${DEC_MAJOR}.${DEC_MINOR}.${DEC_PATCH}" CACHE STRING "HWLOC library version")
+    # Also used to check that library and header versions match
+    # HWLOC is never installed as a framework on OS X, so this should always work.
+    file(READ "${HWLOC_INCLUDE_DIRS}/hwloc.h"
+         HEADER_CONTENTS LIMIT 16384)
+    string(REGEX REPLACE ".*#define HWLOC_API_VERSION (0[xX][0-9a-fA-F]+).*" "\\1"
+           HWLOC_API_VERSION "${HEADER_CONTENTS}")
+    string(SUBSTRING "${HWLOC_API_VERSION}" 4 2 HEX_MAJOR)
+    string(SUBSTRING "${HWLOC_API_VERSION}" 6 2 HEX_MINOR)
+    string(SUBSTRING "${HWLOC_API_VERSION}" 8 2 HEX_PATCH)
+    hex2dec(${HEX_MAJOR} DEC_MAJOR)
+    hex2dec(${HEX_MINOR} DEC_MINOR)
+    hex2dec(${HEX_PATCH} DEC_PATCH)
+    set(HWLOC_HEADER_VERSION "${DEC_MAJOR}.${DEC_MINOR}.${DEC_PATCH}")
+
+    if (HWLOC_LIBRARY_VERSION AND HWLOC_HEADER_VERSION)
+        string(SUBSTRING "${HWLOC_LIBRARY_VERSION}" 0 1 LIBRARY_MAJOR)
+        string(SUBSTRING "${HWLOC_HEADER_VERSION}" 0 1 HEADER_MAJOR)
+        string(COMPARE EQUAL "${LIBRARY_MAJOR}" "${HEADER_MAJOR}" HWLOC_VERSION_CHECK)
+        if(NOT HWLOC_VERSION_CHECK)
+            message(FATAL_ERROR "Detected version mismatch between HWLOC headers and library. "
+            "Library version is ${HWLOC_LIBRARY_VERSION}, but header version is ${HWLOC_HEADER_VERSION}. "
+            "Make sure that you have the correct include and library directory set for HWLOC")
+        endif()
     endif()
+    if (HWLOC_LIBRARY_VERSION)
+        set(HWLOC_VERSION ${HWLOC_LIBRARY_VERSION} CACHE STRING "HWLOC library version")
+
+    else()
+        set(HWLOC_VERSION ${HWLOC_HEADER_VERSION} CACHE STRING "HWLOC library version")
+    endif()
+    set(GMX_HWLOC_API_VERSION ${HWLOC_API_VERSION} CACHE STRING "HWLOC API version during configuration time")
 endif()
 
 include(FindPackageHandleStandardArgs)

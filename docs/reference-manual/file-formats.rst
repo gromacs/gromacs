@@ -1,7 +1,7 @@
 File formats
 ============
 
-.. TODO in future patch: update for accuracy, organize better, improve formatting
+.. todo:: in future patch: update for accuracy, organize better, improve formatting
 
 Summary of file formats
 ^^^^^^^^^^^^^^^^^^^^^^^

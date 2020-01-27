@@ -274,7 +274,7 @@ Doxygen documentation
   See :doc:`doxygen` for details of how the Doxygen documentation is built and
   organized.
 
-.. TODO: Create a separate page (at the front of the developer guide, and/or at
+.. todo:: Create a separate page (at the front of the developer guide, and/or at
    the main index.rst) that describes the documentation from readers'
    perspective, and move relevant content there.  This should contain just an
    overview of how the documentation is organized in the source tree.

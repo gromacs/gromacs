@@ -47,7 +47,6 @@ import os
 import pytest
 
 import gmxapi as gmx
-from gmxapi.testsupport import withmpi_only
 
 # Configure the `logging` module before proceeding any further.
 gmx.logger.setLevel(logging.WARNING)
@@ -81,7 +80,7 @@ def test_run_from_tpr(spc_water_box):
     # TODO: better handling of output on unused MPI ranks.
 
 
-@withmpi_only
+@pytest.mark.withmpi_only
 @pytest.mark.usefixtures('cleandir')
 def test_run_trivial_ensemble(spc_water_box, caplog):
     from mpi4py import MPI

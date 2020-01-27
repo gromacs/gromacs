@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,7 +60,7 @@
 #include "gromacs/domdec/ga2la.h"
 #include "gromacs/domdec/localatomsetmanager.h"
 #include "gromacs/domdec/mdsetup.h"
-#include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/imd/imd.h"
@@ -209,7 +209,7 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
         if (applyPbc)
         {
             /* Take the minimum to avoid double communication */
-            numPulsesMin = std::min(numPulses, dd->nc[dim] - 1 - numPulses);
+            numPulsesMin = std::min(numPulses, dd->numCells[dim] - 1 - numPulses);
         }
         else
         {
@@ -243,7 +243,7 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
         for (int pulse = 0; pulse < numPulses; pulse++)
         {
             /* Communicate all the zone information backward */
-            bool receiveValidData = (applyPbc || dd->ci[dim] < dd->nc[dim] - 1);
+            bool receiveValidData = (applyPbc || dd->ci[dim] < dd->numCells[dim] - 1);
 
             static_assert(
                     sizeof(gmx_ddzone_t) == c_ddzoneNumReals * sizeof(real),
@@ -325,8 +325,8 @@ static void dd_move_cellx(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, rvec cell_
                  */
                 buf_s[i] = buf_r[i];
             }
-            if (((applyPbc || dd->ci[dim] + numPulses < dd->nc[dim]) && pulse == numPulses - 1)
-                || (!applyPbc && dd->ci[dim] + 1 + pulse == dd->nc[dim] - 1))
+            if (((applyPbc || dd->ci[dim] + numPulses < dd->numCells[dim]) && pulse == numPulses - 1)
+                || (!applyPbc && dd->ci[dim] + 1 + pulse == dd->numCells[dim] - 1))
             {
                 /* Store the extremes */
                 int pos = 0;
@@ -732,7 +732,7 @@ static void comm_dd_ns_cell_sizes(gmx_domdec_t* dd, gmx_ddbox_t* ddbox, rvec cel
         dim = dd->dim[dim_ind];
 
         /* Without PBC we don't have restrictions on the outer cells */
-        if (!(dim >= ddbox->npbcdim && (dd->ci[dim] == 0 || dd->ci[dim] == dd->nc[dim] - 1))
+        if (!(dim >= ddbox->npbcdim && (dd->ci[dim] == 0 || dd->ci[dim] == dd->numCells[dim] - 1))
             && isDlbOn(comm)
             && (comm->cell_x1[dim] - comm->cell_x0[dim]) * ddbox->skew_fac[dim] < comm->cellsize_min[dim])
         {
@@ -863,7 +863,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle_t wcycle)
                 load->mdf      = 0;
                 load->pme      = 0;
                 int pos        = 0;
-                for (int i = 0; i < dd->nc[dim]; i++)
+                for (int i = 0; i < dd->numCells[dim]; i++)
                 {
                     load->sum += load->load[pos++];
                     load->max = std::max(load->max, load->load[pos]);
@@ -904,7 +904,7 @@ static void get_load_distribution(gmx_domdec_t* dd, gmx_wallcycle_t wcycle)
                 }
                 if (isDlbOn(comm) && rowMaster->dlbIsLimited)
                 {
-                    load->sum_m *= dd->nc[dim];
+                    load->sum_m *= dd->numCells[dim];
                     load->flags |= (1 << d);
                 }
             }
@@ -1258,7 +1258,7 @@ static void turn_on_dlb(const gmx::MDLogger& mdlog, gmx_domdec_t* dd, int64_t st
         {
             comm->load[d].sum_m = comm->load[d].sum;
 
-            int nc = dd->nc[dd->dim[d]];
+            int nc = dd->numCells[dd->dim[d]];
             for (int i = 0; i < nc; i++)
             {
                 rowMaster->cellFrac[i] = i / static_cast<real>(nc);
@@ -3043,11 +3043,15 @@ void dd_partition_system(FILE*                        fplog,
 
     wallcycle_sub_start(wcycle, ewcsDD_SETUPCOMM);
 
+    /* Set the induces for the home atoms */
+    set_zones_ncg_home(dd);
+    make_dd_indices(dd, ncgindex_set);
+
     /* Setup up the communication and communicate the coordinates */
     setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local, f);
 
-    /* Set the indices */
-    make_dd_indices(dd, ncgindex_set);
+    /* Set the indices for the halo atoms */
+    make_dd_indices(dd, dd->ncg_home);
 
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);

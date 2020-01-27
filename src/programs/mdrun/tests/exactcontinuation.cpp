@@ -372,8 +372,17 @@ TEST_P(MdrunNoAppendContinuationIsExact, WithinTolerances)
     // with forces on CPUs, but there is no real risk of a bug with
     // those propagators that would only be caught with a tighter
     // tolerance in this particular test.
+    int ulpToleranceInMixed  = 32;
+    int ulpToleranceInDouble = 64;
+    if (integrator == "bd")
+    {
+        // Somehow, the bd integrator has never been as reproducible
+        // as the others, either in continuations or reruns.
+        ulpToleranceInMixed = 128;
+    }
     EnergyTermsToCompare energyTermsToCompare{ {
-            { interaction_function[F_EPOT].longname, relativeToleranceAsPrecisionDependentUlp(10.0, 32, 64) },
+            { interaction_function[F_EPOT].longname,
+              relativeToleranceAsPrecisionDependentUlp(10.0, ulpToleranceInMixed, ulpToleranceInDouble) },
     } };
 
     int numWarningsToTolerate = 1;

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,12 +56,12 @@
 
 #include "gromacs/domdec/domdec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/utility/alignedallocator.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/real.h"
 
-#include "atomdata.h"
 #include "gridset.h"
 #include "pairlist.h"
 
@@ -73,20 +74,22 @@ template<class T>
 using AlignedVector = std::vector<T, gmx::AlignedAllocator<T>>;
 
 
-/* Local cycle count struct for profiling */
+//! Local cycle count struct for profiling \internal
 class nbnxn_cycle_t
 {
 public:
+    //! Start counting cycles
     void start() { start_ = gmx_cycles_read(); }
-
+    //! Stop counting cycles
     void stop()
     {
         cycles_ += gmx_cycles_read() - start_;
         count_++;
     }
-
+    //! Return the number of periods of cycle counting
     int count() const { return count_; }
 
+    //! Return the average number of million cycles per counting period
     double averageMCycles() const
     {
         if (count_ > 0)
@@ -100,9 +103,12 @@ public:
     }
 
 private:
-    int          count_  = 0;
+    //! Number of counting periods
+    int count_ = 0;
+    //! Total cycles in all counting periods
     gmx_cycles_t cycles_ = 0;
-    gmx_cycles_t start_  = 0;
+    //! Cycle count at the most recent start
+    gmx_cycles_t start_ = 0;
 };
 
 //! Local cycle count enum for profiling different parts of search
@@ -138,30 +144,37 @@ struct SearchCycleCounting
 
 // TODO: Move nbnxn_search_work_t definition to its own file
 
-/* Thread-local work struct, contains working data for Grid */
+//! Thread-local work struct, contains working data for Grid \internal
 struct PairsearchWork
 {
     PairsearchWork();
 
     ~PairsearchWork();
 
-    gmx_cache_protect_t cp0; /* Buffer to avoid cache polution */
+    //! Buffer to avoid cache polution
+    gmx_cache_protect_t cp0;
 
-    std::vector<int> sortBuffer; /* Temporary buffer for sorting atoms within a grid column */
+    //! Temporary buffer for sorting atoms within a grid column
+    std::vector<int> sortBuffer;
 
-    nbnxn_buffer_flags_t buffer_flags; /* Flags for force buffer access */
+    //! Flags for force buffer access
+    nbnxn_buffer_flags_t buffer_flags;
 
-    int ndistc; /* Number of distance checks for flop counting */
+    //! Number of distance checks for flop counting
+    int ndistc;
 
 
-    std::unique_ptr<t_nblist> nbl_fep; /* Temporary FEP list for load balancing */
+    //! Temporary FEP list for load balancing
+    std::unique_ptr<t_nblist> nbl_fep;
 
-    nbnxn_cycle_t cycleCounter; /* Counter for thread-local cycles */
+    //! Counter for thread-local cycles
+    nbnxn_cycle_t cycleCounter;
 
-    gmx_cache_protect_t cp1; /* Buffer to avoid cache polution */
+    //! Buffer to avoid cache polution
+    gmx_cache_protect_t cp1;
 };
 
-/* Main pair-search struct, contains the grid(s), not the pair-list(s) */
+//! Main pair-search struct, contains the grid(s), not the pair-list(s) \internal
 class PairSearch
 {
 public:
@@ -187,21 +200,24 @@ public:
         cycleCounting_.stop(enbsCCgrid);
     }
 
-    /* \brief Constructor
+    /*! \brief Constructor
      *
-     * \param[in] ePBC            The periodic boundary conditions
-     * \param[in] numDDCells      The number of domain decomposition cells per dimension, without DD nullptr should be passed
-     * \param[in] zones           The domain decomposition zone setup, without DD nullptr should be passed
-     * \param[in] haveFep         Tells whether non-bonded interactions are perturbed
-     * \param[in] maxNumThreads   The maximum number of threads used in the search
+     * \param[in] pbcType                  The periodic boundary conditions
+     * \param[in] doTestParticleInsertion  Whether test-particle insertion is active
+     * \param[in] numDDCells               The number of domain decomposition cells per dimension, without DD nullptr should be passed
+     * \param[in] zones                    The domain decomposition zone setup, without DD nullptr should be passed
+     * \param[in] pairlistType             The type of tte pair list
+     * \param[in] haveFep                  Tells whether non-bonded interactions are perturbed
+     * \param[in] maxNumThreads            The maximum number of threads used in the search
+     * \param[in] pinningPolicy            Sets the pinning policy for all buffers used on the GPU
      */
-    PairSearch(int                       ePBC,
+    PairSearch(PbcType                   pbcType,
                bool                      doTestParticleInsertion,
                const ivec*               numDDCells,
                const gmx_domdec_zones_t* zones,
                PairlistType              pairlistType,
                bool                      haveFep,
-               int                       maxNumthreads,
+               int                       maxNumThreads,
                gmx::PinningPolicy        pinningPolicy);
 
     //! Sets the order of the local atoms to the order grid atom ordering

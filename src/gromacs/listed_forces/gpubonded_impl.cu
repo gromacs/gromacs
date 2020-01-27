@@ -120,7 +120,7 @@ static bool fTypeHasPerturbedEntries(const t_idef& idef, int fType)
 
     const t_ilist& ilist = idef.il[fType];
 
-    return (idef.ilsort != ilsortNO_FE && ilist.nr_nonperturbed != ilist.nr);
+    return (idef.ilsort != ilsortNO_FE && idef.numNonperturbedInteractions[fType] != ilist.nr);
 }
 
 //! Converts \p src with atom indices in state order to \p dest in nbnxn order

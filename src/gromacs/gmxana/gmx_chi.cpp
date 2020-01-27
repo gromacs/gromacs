@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1071,7 +1072,7 @@ static void order_params(FILE*                   log,
                          real                    bfac_init,
                          t_atoms*                atoms,
                          const rvec              x[],
-                         int                     ePBC,
+                         PbcType                 pbcType,
                          matrix                  box,
                          gmx_bool                bPhi,
                          gmx_bool                bPsi,
@@ -1181,7 +1182,7 @@ static void order_params(FILE*                   log,
         fprintf(fp,
                 "REMARK "
                 "B-factor field contains negative of dihedral order parameters\n");
-        write_pdbfile(fp, nullptr, atoms, x, ePBC, box, ' ', 0, nullptr);
+        write_pdbfile(fp, nullptr, atoms, x, pbcType, box, ' ', 0, nullptr);
         x0 = y0 = z0 = 1000.0;
         for (i = 0; (i < atoms->nr); i++)
         {
@@ -1401,7 +1402,7 @@ int gmx_chi(int argc, char* argv[])
     FILE*             log;
     int               nlist, idum, nbin;
     rvec*             x;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            box;
     char              grpname[256];
     t_dlist*          dlist;
@@ -1487,7 +1488,7 @@ int gmx_chi(int argc, char* argv[])
     /* Find the chi angles using atoms struct and a list of amino acids */
     t_topology* top;
     snew(top, 1);
-    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &ePBC, &x, nullptr, box, FALSE);
+    read_tps_conf(ftp2fn(efSTX, NFILE, fnm), top, &pbcType, &x, nullptr, box, FALSE);
     t_atoms& atoms = top->atoms;
     if (atoms.pdbinfo == nullptr)
     {
@@ -1571,7 +1572,7 @@ int gmx_chi(int argc, char* argv[])
 
     /* Order parameters */
     order_params(log, opt2fn("-o", NFILE, fnm), maxchi, nlist, dlist, ftp2fn_null(efPDB, NFILE, fnm),
-                 bfac_init, &atoms, x, ePBC, box, bPhi, bPsi, bChi, oenv);
+                 bfac_init, &atoms, x, pbcType, box, bPhi, bPsi, bChi, oenv);
 
     /* Print ramachandran maps! */
     if (bRama)

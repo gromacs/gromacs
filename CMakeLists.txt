@@ -1,7 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
+# Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -141,7 +143,10 @@ if(CMAKE_HOST_UNIX)
     execute_process(COMMAND hostname
                     OUTPUT_VARIABLE TMP_HOSTNAME
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
-    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}")
+    # Only check for host name if not running in a CI environment, as the cache might
+    # be reused there between different machines in different stages
+    if(GMX_BUILD_HOSTNAME AND NOT "${GMX_BUILD_HOSTNAME}" STREQUAL "${TMP_HOSTNAME}"
+            AND NOT DEFINED ENV{CI_JOB_ID})
         message(WARNING "
             The CMake cache, probably generated on a different host (${GMX_BUILD_HOSTNAME}),
             is being reused! This could lead to inconsistencies; therefore, it is
@@ -686,9 +691,6 @@ endif()
 # for SIMD math operations.
 include(gmxManageSimd)
 gmx_manage_simd()
-
-include(gmxManageCycleCounters)
-gmx_manage_cycle_counters()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")

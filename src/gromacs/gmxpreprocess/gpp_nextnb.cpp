@@ -172,14 +172,14 @@ void __print_nnb(t_nextnb* nnb, char* s)
 }
 #endif
 
-static void nnb2excl(t_nextnb* nnb, t_blocka* excl)
+static void nnb2excl(t_nextnb* nnb, gmx::ListOfLists<int>* excls)
 {
     int       i, j, j_index;
     int       nre, nrx, nrs, nr_of_sortables;
     sortable* s;
 
-    srenew(excl->index, nnb->nr + 1);
-    excl->index[0] = 0;
+    excls->clear();
+
     for (i = 0; (i < nnb->nr); i++)
     {
         /* calculate the total number of exclusions for atom i */
@@ -230,16 +230,13 @@ static void nnb2excl(t_nextnb* nnb, t_blocka* excl)
         nr_of_sortables = j_index;
         prints("after rm-double", j_index, s);
 
-        /* make space for arrays */
-        srenew(excl->a, excl->nra + nr_of_sortables);
-
         /* put the sorted exclusions in the target list */
+        excls->pushBackListOfSize(nr_of_sortables);
+        gmx::ArrayRef<int> exclusionsForAtom = excls->back();
         for (nrs = 0; (nrs < nr_of_sortables); nrs++)
         {
-            excl->a[excl->nra + nrs] = s[nrs].aj;
+            exclusionsForAtom[nrs] = s[nrs].aj;
         }
-        excl->nra += nr_of_sortables;
-        excl->index[i + 1] = excl->nra;
 
         /* cleanup temporary space */
         sfree(s);
@@ -432,7 +429,7 @@ static void sort_and_purge_nnb(t_nextnb* nnb)
 }
 
 
-void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, t_blocka* excl)
+void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, gmx::ListOfLists<int>* excls)
 {
     t_nextnb nnb;
     if (nrexcl < 0)
@@ -441,8 +438,7 @@ void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> pl
     }
     init_nnb(&nnb, nratoms, nrexcl);
     gen_nnb(&nnb, plist);
-    excl->nr = nratoms;
     sort_and_purge_nnb(&nnb);
-    nnb2excl(&nnb, excl);
+    nnb2excl(&nnb, excls);
     done_nnb(&nnb);
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -33,32 +33,37 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
- * \brief Sets gmx_nbnxn_gpu_t to the correct type depending on the build
  *
- * \ingroup module_nbnxm
+ * \brief This file contains function declarations necessary for
+ * running on an MPI rank doing only PME long-ranged work.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_ewald
  */
 
-#ifndef GMX_NBNXN_GPU_TYPES_H
-#define GMX_NBNXN_GPU_TYPES_H
+#ifndef GMX_EWALD_PME_ONLY_H
+#define GMX_EWALD_PME_ONLY_H
 
-#include "config.h"
+#include <string>
 
-#ifndef DOXYGEN
+#include "gromacs/timing/walltime_accounting.h"
 
-#    if GMX_GPU == GMX_GPU_OPENCL
-struct gmx_nbnxn_ocl_t;
-using gmx_nbnxn_gpu_t = gmx_nbnxn_ocl_t;
-#    endif
+struct t_commrec;
+struct t_inputrec;
+struct t_nrnb;
+struct gmx_pme_t;
+struct gmx_wallcycle;
 
-#    if GMX_GPU == GMX_GPU_CUDA
-struct gmx_nbnxn_cuda_t;
-using gmx_nbnxn_gpu_t = gmx_nbnxn_cuda_t;
-#    endif
+enum class PmeRunMode;
 
-#    if GMX_GPU == GMX_GPU_NONE
-using gmx_nbnxn_gpu_t = int;
-#    endif
-
-#endif // !DOXYGEN
+/*! \brief Called on the nodes that do PME exclusively */
+int gmx_pmeonly(gmx_pme_t*                pme,
+                const t_commrec*          cr,
+                t_nrnb*                   mynrnb,
+                gmx_wallcycle*            wcycle,
+                gmx_walltime_accounting_t walltime_accounting,
+                t_inputrec*               ir,
+                PmeRunMode                runMode);
 
 #endif

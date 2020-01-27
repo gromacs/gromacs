@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -328,7 +329,7 @@ static void pdb_legend(FILE* out, int natoms, int nres, t_atoms* atoms, rvec x[]
     }
 }
 
-static void visualize_images(const char* fn, int ePBC, matrix box)
+static void visualize_images(const char* fn, PbcType pbcType, matrix box)
 {
     t_atoms atoms;
     rvec*   img;
@@ -352,7 +353,7 @@ static void visualize_images(const char* fn, int ePBC, matrix box)
     }
     calc_triclinic_images(box, img + 1);
 
-    write_sto_conf(fn, "Images", &atoms, img, nullptr, ePBC, box);
+    write_sto_conf(fn, "Images", &atoms, img, nullptr, pbcType, box);
 
     done_atom(&atoms);
     sfree(img);
@@ -681,7 +682,7 @@ int gmx_editconf(int argc, char* argv[])
     int               isize, ssize, numAlignmentAtoms;
     int *             index, *sindex, *aindex;
     rvec *            x, *v, gc, rmin, rmax, size;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            box, rotmatrix, trans;
     rvec              princd, tmpvec;
     gmx_bool          bIndex, bSetSize, bSetAng, bDist, bSetCenter, bAlign;
@@ -768,7 +769,7 @@ int gmx_editconf(int argc, char* argv[])
     char*    name;
     t_atoms  atoms;
     open_symtab(&symtab);
-    readConfAndAtoms(infile, &symtab, &name, &atoms, &ePBC, &x, &v, box);
+    readConfAndAtoms(infile, &symtab, &name, &atoms, &pbcType, &x, &v, box);
     natom = atoms.nr;
     if (atoms.pdbinfo == nullptr)
     {
@@ -788,7 +789,7 @@ int gmx_editconf(int argc, char* argv[])
         get_pdb_atomnumber(&atoms, &aps);
     }
 
-    if (ePBC != epbcNONE)
+    if (pbcType != PbcType::No)
     {
         real vol = det(box);
         printf("Volume: %g nm^3, corresponds to roughly %d electrons\n", vol,
@@ -880,7 +881,7 @@ int gmx_editconf(int argc, char* argv[])
     }
     else if (visbox[0] == -1)
     {
-        visualize_images("images.pdb", ePBC, box);
+        visualize_images("images.pdb", pbcType, box);
     }
 
     /* remove pbc */
@@ -1071,7 +1072,7 @@ int gmx_editconf(int argc, char* argv[])
 
     if ((btype[0] != nullptr) && (bSetSize || bDist || (btype[0][0] == 't' && bSetAng)))
     {
-        ePBC = epbcXYZ;
+        pbcType = PbcType::Xyz;
         if (!(bSetSize || bDist))
         {
             for (i = 0; i < DIM; i++)
@@ -1169,12 +1170,12 @@ int gmx_editconf(int argc, char* argv[])
         printf("new box volume  :%7.2f               (nm^3)\n", det(box));
     }
 
-    if (check_box(epbcXYZ, box))
+    if (check_box(PbcType::Xyz, box))
     {
         printf("\nWARNING: %s\n"
                "See the GROMACS manual for a description of the requirements that\n"
                "must be satisfied by descriptions of simulation cells.\n",
-               check_box(epbcXYZ, box));
+               check_box(PbcType::Xyz, box));
     }
 
     if (bDist && btype[0][0] == 't')
@@ -1230,12 +1231,13 @@ int gmx_editconf(int argc, char* argv[])
         if (outftp == efPDB)
         {
             out = gmx_ffopen(outfile, "w");
-            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', 1, isize, index, conect, FALSE);
+            write_pdbfile_indexed(out, name, &atoms, x, pbcType, box, ' ', 1, isize, index, conect, FALSE);
             gmx_ffclose(out);
         }
         else
         {
-            write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box, isize, index);
+            write_sto_conf_indexed(outfile, name, &atoms, x, bHaveV ? v : nullptr, pbcType, box,
+                                   isize, index);
         }
         sfree(grpname);
         sfree(index);
@@ -1290,8 +1292,8 @@ int gmx_editconf(int argc, char* argv[])
             {
                 index[i] = i;
             }
-            write_pdbfile_indexed(out, name, &atoms, x, ePBC, box, ' ', -1, atoms.nr, index, conect,
-                                  outftp == efPQR);
+            write_pdbfile_indexed(out, name, &atoms, x, pbcType, box, ' ', -1, atoms.nr, index,
+                                  conect, outftp == efPQR);
             sfree(index);
             if (bLegend)
             {
@@ -1306,7 +1308,7 @@ int gmx_editconf(int argc, char* argv[])
         }
         else
         {
-            write_sto_conf(outfile, name, &atoms, x, bHaveV ? v : nullptr, ePBC, box);
+            write_sto_conf(outfile, name, &atoms, x, bHaveV ? v : nullptr, pbcType, box);
         }
     }
     done_atom(&atoms);

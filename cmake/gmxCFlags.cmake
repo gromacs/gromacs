@@ -1,7 +1,9 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013 by the GROMACS development team.
+# Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -412,6 +414,25 @@ GMX_TEST_CFLAG(CFLAGS_WARN "/W3;/wd161;/wd177;/wd411;/wd593;/wd981;/wd1418;/wd14
         endif()
         if(NOT GMX_OPENMP)
             GMX_TEST_CXXFLAG(CXXFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CXXFLAGS)
+        endif()
+    endif()
+
+    # Apple bastardized version of Clang
+    if(${CMAKE_C_COMPILER_ID} MATCHES "AppleClang")
+        if(${CMAKE_C_COMPILER_VERSION} VERSION_GREATER 11.0)
+            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # that checks stack alignment by default, but their own C library
+            # does not align the stack properly. Embarrassing, Apple...
+            GMX_TEST_CFLAG(CFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CFLAGS)
+        endif()
+    endif()
+
+    if(${CMAKE_CXX_COMPILER_ID} MATCHES "AppleClang")
+        if(${CMAKE_CXX_COMPILER_VERSION} VERSION_GREATER 11.0)
+            # Mac OS Catalina ships with a horribly broken compiler (version 11.0.0.11000033)
+            # that checks stack alignment by default, but their own C library
+            # does not align the stack properly. Embarrassing, Apple...
+            GMX_TEST_CXXFLAG(CXXFLAG_NO_STACK_CHECK "-fno-stack-check" GMXC_CXXFLAGS)
         endif()
     endif()
 

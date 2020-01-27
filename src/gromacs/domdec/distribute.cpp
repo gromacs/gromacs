@@ -310,7 +310,7 @@ static inline int computeAtomGroupDomainIndex(const gmx_domdec_t& dd,
         if (d < dd.unitCellInfo.npbcdim)
         {
             bool bScrew = (dd.unitCellInfo.haveScrewPBC && d == XX);
-            if (ddbox.tric_dir[d] && dd.nc[d] > 1)
+            if (ddbox.tric_dir[d] && dd.numCells[d] > 1)
             {
                 /* Use triclinic coordinates for this dimension */
                 for (int j = d + 1; j < DIM; j++)
@@ -359,13 +359,13 @@ static inline int computeAtomGroupDomainIndex(const gmx_domdec_t& dd,
         }
         /* This could be done more efficiently */
         ind[d] = 0;
-        while (ind[d] + 1 < dd.nc[d] && pos_d >= cellBoundaries[d][ind[d] + 1])
+        while (ind[d] + 1 < dd.numCells[d] && pos_d >= cellBoundaries[d][ind[d] + 1])
         {
             ind[d]++;
         }
     }
 
-    return dd_index(dd.nc, ind);
+    return dd_index(dd.numCells, ind);
 }
 
 

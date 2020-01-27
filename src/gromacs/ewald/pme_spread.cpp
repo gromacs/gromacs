@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,6 +58,7 @@
 #include "pme_internal.h"
 #include "pme_simd.h"
 #include "pme_spline_work.h"
+#include "spline_vectors.h"
 
 /* TODO consider split of pme-spline from this file */
 
@@ -849,7 +851,6 @@ void spread_on_grid(const gmx_pme_t*  pme,
                     gmx_bool          bDoSplines,
                     int               grid_index)
 {
-    int nthread, thread;
 #ifdef PME_TIME_THREADS
     gmx_cycles_t  c1, c2, c3, ct1a, ct1b, ct1c;
     static double cs1 = 0, cs2 = 0, cs3 = 0;
@@ -857,7 +858,7 @@ void spread_on_grid(const gmx_pme_t*  pme,
     static int    cnt     = 0;
 #endif
 
-    nthread = pme->nthread;
+    const int nthread = pme->nthread;
     assert(nthread > 0);
     GMX_ASSERT(grids != nullptr || !bSpread, "If there's no grid, we cannot be spreading");
 
@@ -867,7 +868,7 @@ void spread_on_grid(const gmx_pme_t*  pme,
     if (bCalcSplines)
     {
 #pragma omp parallel for num_threads(nthread) schedule(static)
-        for (thread = 0; thread < nthread; thread++)
+        for (int thread = 0; thread < nthread; thread++)
         {
             try
             {
@@ -893,7 +894,7 @@ void spread_on_grid(const gmx_pme_t*  pme,
     c2 = omp_cyc_start();
 #endif
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for (thread = 0; thread < nthread; thread++)
+    for (int thread = 0; thread < nthread; thread++)
     {
         try
         {
@@ -962,7 +963,7 @@ void spread_on_grid(const gmx_pme_t*  pme,
         c3 = omp_cyc_start();
 #endif
 #pragma omp parallel for num_threads(grids->nthread) schedule(static)
-        for (thread = 0; thread < grids->nthread; thread++)
+        for (int thread = 0; thread < grids->nthread; thread++)
         {
             try
             {
@@ -993,7 +994,7 @@ void spread_on_grid(const gmx_pme_t*  pme,
     {
         printf("idx %.2f spread %.2f red %.2f", cs1 * 1e-9, cs2 * 1e-9, cs3 * 1e-9);
 #    ifdef PME_TIME_SPREAD
-        for (thread = 0; thread < nthread; thread++)
+        for (int thread = 0; thread < nthread; thread++)
         {
             printf(" %.2f", cs1a[thread] * 1e-9);
         }

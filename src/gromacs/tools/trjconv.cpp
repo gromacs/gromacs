@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -483,10 +484,10 @@ int gmx_trjconv(int argc, char* argv[])
     real*        w_rls = nullptr;
     int          m, i, d, frame, outframe, natoms, nout, ncent, newstep = 0, model_nr;
 #define SKIP 10
-    t_topology* top   = nullptr;
-    gmx_conect  gc    = nullptr;
-    int         ePBC  = -1;
-    t_atoms *   atoms = nullptr, useatoms;
+    t_topology* top     = nullptr;
+    gmx_conect  gc      = nullptr;
+    PbcType     pbcType = PbcType::Unset;
+    t_atoms *   atoms   = nullptr, useatoms;
     matrix      top_box;
     int *       index = nullptr, *cindex = nullptr;
     char*       grpnm = nullptr;
@@ -668,7 +669,7 @@ int gmx_trjconv(int argc, char* argv[])
         if (bTPS)
         {
             snew(top, 1);
-            read_tps_conf(top_file, top, &ePBC, &xp, nullptr, top_box, bReset || bPBCcomRes);
+            read_tps_conf(top_file, top, &pbcType, &xp, nullptr, top_box, bReset || bPBCcomRes);
             std::strncpy(top_title, *top->name, 255);
             top_title[255] = '\0';
             atoms          = &top->atoms;
@@ -701,7 +702,7 @@ int gmx_trjconv(int argc, char* argv[])
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+                gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
             }
         }
 
@@ -897,7 +898,7 @@ int gmx_trjconv(int argc, char* argv[])
                 read_first_frame(oenv, &trxin, in_file, &fr, flags);
             }
 
-            set_trxframe_ePBC(&fr, ePBC);
+            setTrxFramePbcType(&fr, pbcType);
             natoms = fr.natoms;
 
             if (bSetTime)
@@ -1077,7 +1078,7 @@ int gmx_trjconv(int argc, char* argv[])
                 }
                 else if (bCluster)
                 {
-                    calc_pbc_cluster(ecenter, ifit, top, ePBC, fr.x, ind_fit, fr.box);
+                    calc_pbc_cluster(ecenter, ifit, top, pbcType, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)
@@ -1236,25 +1237,26 @@ int gmx_trjconv(int argc, char* argv[])
                             switch (unitcell_enum)
                             {
                                 case euRect:
-                                    put_atoms_in_box(ePBC, fr.box, positionsArrayRef);
+                                    put_atoms_in_box(pbcType, fr.box, positionsArrayRef);
                                     break;
                                 case euTric:
                                     put_atoms_in_triclinic_unitcell(ecenter, fr.box, positionsArrayRef);
                                     break;
                                 case euCompact:
-                                    put_atoms_in_compact_unitcell(ePBC, ecenter, fr.box, positionsArrayRef);
+                                    put_atoms_in_compact_unitcell(pbcType, ecenter, fr.box,
+                                                                  positionsArrayRef);
                                     break;
                             }
                         }
                         if (bPBCcomRes)
                         {
                             put_residue_com_in_box(unitcell_enum, ecenter, natoms, atoms->atom,
-                                                   ePBC, fr.box, fr.x);
+                                                   pbcType, fr.box, fr.x);
                         }
                         if (bPBCcomMol)
                         {
                             put_molecule_com_in_box(unitcell_enum, ecenter, &top->mols, natoms,
-                                                    atoms->atom, ePBC, fr.box, fr.x);
+                                                    atoms->atom, pbcType, fr.box, fr.x);
                         }
                         /* Copy the input trxframe struct to the output trxframe struct */
                         frout        = fr;
@@ -1388,7 +1390,7 @@ int gmx_trjconv(int argc, char* argv[])
                                             model_nr++;
                                         }
                                         write_pdbfile(out, title.c_str(), &useatoms, frout.x,
-                                                      frout.ePBC, frout.box, ' ', model_nr, gc);
+                                                      frout.pbcType, frout.box, ' ', model_nr, gc);
                                         break;
                                     case efG96:
                                         const char* outputTitle = "";

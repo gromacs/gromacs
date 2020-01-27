@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -516,7 +517,11 @@ static void get_pull_coord_dr(struct pull_t* pull, int coord_ind, const t_pbc* p
     PullCoordSpatialData& spatialData = pcrd->spatialData;
 
     double md2;
-    if (pcrd->params.eGeom == epullgDIRPBC)
+    /* With AWH pulling we allow for periodic pulling with geometry=direction.
+     * TODO: Store a periodicity flag instead of checking for external pull provider.
+     */
+    if (pcrd->params.eGeom == epullgDIRPBC
+        || (pcrd->params.eGeom == epullgDIR && pcrd->params.eType == epullEXTERNAL))
     {
         md2 = -1;
     }
@@ -2048,11 +2053,11 @@ struct pull_t* init_pull(FILE*                     fplog,
     pull->numUnregisteredExternalPotentials             = pull->numCoordinatesWithExternalPotential;
     pull->numExternalPotentialsStillToBeAppliedThisStep = 0;
 
-    pull->ePBC = ir->ePBC;
-    switch (pull->ePBC)
+    pull->pbcType = ir->pbcType;
+    switch (pull->pbcType)
     {
-        case epbcNONE: pull->npbcdim = 0; break;
-        case epbcXY: pull->npbcdim = 2; break;
+        case PbcType::No: pull->npbcdim = 0; break;
+        case PbcType::XY: pull->npbcdim = 2; break;
         default: pull->npbcdim = 3; break;
     }
 
@@ -2316,7 +2321,7 @@ void preparePrevStepPullCom(const t_inputrec* ir,
     else
     {
         t_pbc pbc;
-        set_pbc(&pbc, ir->ePBC, state->box);
+        set_pbc(&pbc, ir->pbcType, state->box);
         initPullComFromPrevStep(cr, pull_work, md, &pbc, state->x.rvec_array());
         updatePrevStepPullCom(pull_work, state);
     }
@@ -2346,4 +2351,20 @@ gmx_bool pull_have_potential(const struct pull_t* pull)
 gmx_bool pull_have_constraint(const struct pull_t* pull)
 {
     return pull->bConstraint;
+}
+
+bool pull_have_constraint(const pull_params_t* pullParameters)
+{
+    if (pullParameters == nullptr)
+    {
+        return false;
+    }
+    for (int c = 0; c < pullParameters->ncoord; c++)
+    {
+        if (pullParameters->coord[c].eType == epullCONSTRAINT)
+        {
+            return true;
+        }
+    }
+    return false;
 }

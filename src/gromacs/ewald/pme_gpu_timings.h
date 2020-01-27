@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,14 +43,9 @@
 #ifndef GMX_EWALD_PME_GPU_TIMINGS_H
 #define GMX_EWALD_PME_GPU_TIMINGS_H
 
-#include "config.h"
+#include <cstddef>
 
-#if GMX_GPU == GMX_GPU_CUDA
-#    include "gromacs/gpu_utils/gputraits.cuh"
-#elif GMX_GPU == GMX_GPU_OPENCL
-#    include "gromacs/gpu_utils/gputraits_ocl.h"
-#endif
-
+struct gmx_wallclock_gpu_pme_t;
 struct PmeGpu;
 
 /*! \libinternal \brief
@@ -62,20 +57,48 @@ struct PmeGpu;
 void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
 
 /*! \libinternal \brief
- * Returns raw timing event from the corresponding GpuRegionTimer (if timings are enabled).
- * In CUDA result can be nullptr stub, per GpuRegionTimer implementation.
- *
- * \param[in] pmeGpu         The PME GPU data structure.
- * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
- */
-CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, size_t PMEStageId);
-
-/*! \libinternal \brief
  * Stops timing the certain PME GPU stage during a single computation (if timings are enabled).
  *
  * \param[in] pmeGpu         The PME GPU data structure.
  * \param[in] PMEStageId     The PME GPU stage gtPME_ index from the enum in src/gromacs/timing/gpu_timing.h
  */
 void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId);
+
+/*! \brief
+ * Tells if CUDA-based performance tracking is enabled for PME.
+ *
+ * \param[in] pmeGpu         The PME GPU data structure.
+ * \returns                  True if timings are enabled, false otherwise.
+ */
+bool pme_gpu_timings_enabled(const PmeGpu* pmeGpu);
+
+/*! \libinternal \brief
+ * Finalizes all the active PME GPU stage timings for the current computation. Should be called at the end of every computation.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ */
+void pme_gpu_update_timings(const PmeGpu* pmeGpu);
+
+/*! \libinternal \brief
+ * Updates the internal list of active PME GPU stages (if timings are enabled).
+ *
+ * \param[in] pmeGpu         The PME GPU data structure.
+ */
+void pme_gpu_reinit_timings(const PmeGpu* pmeGpu);
+
+/*! \brief
+ * Resets the PME GPU timings. To be called at the reset MD step.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ */
+void pme_gpu_reset_timings(const PmeGpu* pmeGpu);
+
+/*! \libinternal \brief
+ * Copies the PME GPU timings to the gmx_wallclock_gpu_t structure (for log output). To be called at the run end.
+ *
+ * \param[in] pmeGpu         The PME GPU structure.
+ * \param[in] timings        The gmx_wallclock_gpu_pme_t structure.
+ */
+void pme_gpu_get_timings(const PmeGpu* pmeGpu, gmx_wallclock_gpu_pme_t* timings);
 
 #endif

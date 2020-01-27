@@ -2,7 +2,8 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2006 David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -71,17 +72,17 @@ typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(_MSC_VER)
 #    include <windows.h>
-typedef __int64                gmx_cycles_t;
+typedef __int64              gmx_cycles_t;
 
 #elif (defined(__hpux) || defined(__HP_cc)) && defined(__ia64)
 /* HP compiler on ia64 */
 #    include <machine/sys/inline.h>
-typedef unsigned long        gmx_cycles_t;
+typedef unsigned long      gmx_cycles_t;
 
 #elif (defined(__INTEL_COMPILER) || defined(__ECC)) && defined(__ia64__)
 /* Intel compiler on ia64 */
 #    include <ia64intrin.h>
-typedef unsigned long      gmx_cycles_t;
+typedef unsigned long          gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__ia64__)
 /* ia64 with GCC inline assembly */
@@ -94,11 +95,11 @@ typedef unsigned long          gmx_cycles_t;
 #elif ((defined(__hppa__) || defined(__hppa)) && defined(__hpux))
 /* HP PA-RISC, instruction when using HP compiler */
 #    include <machine/inline.h>
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long      gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__s390__)
 /* S390, taken from FFTW who got it from James Treacy */
-typedef unsigned long long gmx_cycles_t;
+typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(__GNUC__) && defined(__alpha__)
 /* gcc inline assembly on alpha CPUs */
@@ -111,7 +112,7 @@ typedef unsigned long          gmx_cycles_t;
 #elif defined(__DECC) && defined(__alpha)
 /* Digital GEM C compiler on alpha */
 #    include <c_asm.h>
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long        gmx_cycles_t;
 
 #elif (defined(__sgi) && defined(CLOCK_SGI_CYCLE))
 /* Irix compilers on SGI hardware. Get nanoseconds from struct timespec */
@@ -119,7 +120,7 @@ typedef unsigned long long   gmx_cycles_t;
 
 #elif (defined(__SVR4) && defined(__SUNPRO_CC))
 /* Solaris high-resolution timers */
-typedef hrtime_t             gmx_cycles_t;
+typedef hrtime_t           gmx_cycles_t;
 
 #elif defined(__xlC__) && defined(_AIX)
 /* AIX compilers */
@@ -130,7 +131,7 @@ typedef unsigned long long gmx_cycles_t;
 #elif ((defined(__GNUC__) || defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM)) \
        && (defined(__powerpc__) || defined(__ppc__)))
 /* PowerPC using gcc inline assembly (also works on xlc>=7.0 with -qasm=gcc) */
-typedef unsigned long long gmx_cycles_t;
+typedef unsigned long long     gmx_cycles_t;
 
 #elif (defined(__MWERKS__) && (defined(MAC) || defined(macintosh)))
 /* Metrowerks on macintosh */
@@ -138,7 +139,7 @@ typedef unsigned long long     gmx_cycles_t;
 
 #elif defined(__sun) && defined(__sparcv9)
 
-typedef unsigned long          gmx_cycles_t;
+typedef unsigned long gmx_cycles_t;
 
 #else
 /*! \brief Integer-like datatype for cycle counter values
@@ -173,13 +174,8 @@ typedef long gmx_cycles_t;
  *  the difference between two gmx_cycles_t values returned from this
  *  routine.
  */
-#if (GMX_CYCLECOUNTERS == 0)
-static __inline__ gmx_cycles_t gmx_cycles_read(void)
-{
-    return 0;
-}
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
-       && (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) \
+     && (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC))
 static __inline__ gmx_cycles_t gmx_cycles_read()
 {
     /* x86 with GCC inline assembly - pentium TSC register */
@@ -407,14 +403,9 @@ static gmx_cycles_t gmx_cycles_read(void)
  *       one when later linking to the library it might happen that the
  *       library supports cyclecounters but not the headers, or vice versa.
  */
-#if (GMX_CYCLECOUNTERS == 0)
-static __inline__ bool gmx_cycles_have_counter(void)
-{
-    return 0;
-}
-#elif ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) \
-        || defined(__PGIC__) || defined(_CRAYC))                                 \
-       && (defined(__i386__) || defined(__x86_64__)))
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) \
+      || defined(__PGIC__) || defined(_CRAYC))                                 \
+     && (defined(__i386__) || defined(__x86_64__)))
 static __inline__ bool gmx_cycles_have_counter()
 {
     /* x86 or x86-64 with GCC inline assembly - pentium TSC register */

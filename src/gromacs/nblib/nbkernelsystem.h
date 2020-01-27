@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,9 +48,9 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
+#include "gromacs/nblib/box.h"
 #include "gromacs/topology/block.h"
-
-#include "box.h"
+#include "gromacs/utility/listoflists.h"
 
 namespace nblib
 {
@@ -62,7 +62,6 @@ class SimulationState;
 class NBKernelSystem
 {
 public:
-    //! \brief Constructor
     NBKernelSystem(SimulationState simState);
 
     //! Number of different atom types in test system.
@@ -84,7 +83,7 @@ public:
     //! Storage for atom velocities.
     std::vector<gmx::RVec> velocities;
     //! Information about exclusions.
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
 };
 
 } // namespace nblib

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -125,7 +125,10 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
 {
     tensor vir_con;
 
-    rvec *x, *xprime, *min_proj, *v;
+    ArrayRefWithPadding<RVec> x;
+    ArrayRefWithPadding<RVec> xprime;
+    ArrayRef<RVec>            min_proj;
+    ArrayRefWithPadding<RVec> v;
 
     // disabled functionality
     real  lambda    = 0;
@@ -134,16 +137,14 @@ void ConstraintsElement<variable>::apply(Step step, bool calculateVirial, bool w
     switch (variable)
     {
         case ConstraintVariable::Positions:
-            x = as_rvec_array(statePropagatorData_->previousPositionsView().paddedArrayRef().data());
-            xprime   = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-            min_proj = nullptr;
-            v = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
+            x      = statePropagatorData_->previousPositionsView();
+            xprime = statePropagatorData_->positionsView();
+            v      = statePropagatorData_->velocitiesView();
             break;
         case ConstraintVariable::Velocities:
-            x      = as_rvec_array(statePropagatorData_->positionsView().paddedArrayRef().data());
-            xprime = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-            min_proj = as_rvec_array(statePropagatorData_->velocitiesView().paddedArrayRef().data());
-            v        = nullptr;
+            x        = statePropagatorData_->positionsView();
+            xprime   = statePropagatorData_->velocitiesView();
+            min_proj = statePropagatorData_->velocitiesView().unpaddedArrayRef();
             break;
         default: gmx_fatal(FARGS, "Constraint algorithm not implemented for modular simulator.");
     }

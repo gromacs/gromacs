@@ -23,6 +23,8 @@ can be found at https://redmine.gromacs.org at that issue number.
 |Gromacs| 2021 series
 ---------------------
 
+.. todolist::
+
 Major release
 ^^^^^^^^^^^^^
 
@@ -42,6 +44,14 @@ Major release
 
 |Gromacs| 2020 series
 ---------------------
+
+Patch releases
+^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   2020/2020.1
 
 Major release
 ^^^^^^^^^^^^^
@@ -69,6 +79,7 @@ Patch releases
 .. toctree::
    :maxdepth: 1
 
+   2019/2019.6
    2019/2019.5
    2019/2019.4
    2019/2019.3
@@ -91,6 +102,8 @@ Major release
    2019/major/portability
    2019/major/miscellaneous
 
+Older (unmaintained) |Gromacs| series
+-------------------------------------------------------
 
 |Gromacs| 2018 series
 ---------------------
@@ -154,8 +167,6 @@ Major release
    2016/major/removed-features
    2016/major/miscellaneous
 
-Older (unmaintained) |Gromacs| series
--------------------------------------------------------
 
 .. toctree::
    :maxdepth: 1

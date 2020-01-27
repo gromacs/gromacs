@@ -23,27 +23,39 @@
 #
 
 ARG REF=latest
-FROM gmxapi/ci-mpich:$REF as docsbuild
-
-USER root
+FROM gmxapi/gromacs-dependencies-mpich:$REF as docbuild-base
 
 RUN apt-get update && \
     apt-get -yq --no-install-suggests --no-install-recommends install \
-        plantuml && \
+        plantuml \
+        python3 \
+        python3-venv && \
     rm -rf /var/lib/apt/lists/*
 
-USER testing
+
+FROM gmxapi/ci-mpich:$REF as cibuild
 
 RUN . $VENV/bin/activate && \
     pip install -r /home/testing/gmxapi/requirements-docs.txt --no-cache-dir
 
-COPY docs/gmxapi /home/testing/gmxapi/documentation
-COPY python_packaging/documentation/conf.py /home/testing/gmxapi/documentation
-RUN cd /home/testing/gmxapi && \
+
+FROM docbuild-base as docbuild
+COPY --from=cibuild /usr/local/gromacs /usr/local/gromacs
+
+RUN groupadd -r testing && useradd -m -s /bin/bash -g testing testing
+USER testing
+ENV HOME /home/testing
+ENV VENV $HOME/venv
+
+COPY --chown=testing:testing --from=cibuild $VENV $VENV
+
+COPY --chown=testing:testing docs/gmxapi $HOME/documentation
+COPY --chown=testing:testing python_packaging/documentation/conf.py $HOME/documentation
+RUN cd $HOME && \
     . $VENV/bin/activate && \
     sphinx-build -b html documentation html
 
 
 FROM httpd
 
-COPY --from=docsbuild /home/testing/gmxapi/html/ /usr/local/apache2/htdocs/
+COPY --from=docbuild /home/testing/html/ /usr/local/apache2/htdocs/

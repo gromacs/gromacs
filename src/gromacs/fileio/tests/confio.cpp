@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/fileio/filetypes.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/atoms.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/topology/topology.h"
@@ -103,14 +104,14 @@ public:
     void writeReferenceFile()
     {
         write_sto_conf(referenceFilename_.c_str(), *refTop_->name, &refTop_->atoms,
-                       as_rvec_array(refX_.data()), nullptr, -1, refBox_);
+                       as_rvec_array(refX_.data()), nullptr, PbcType::Unset, refBox_);
     }
 
     void readReferenceFileTps()
     {
         snew(testTop_, 1);
-        int ePBC = -2;
-        read_tps_conf(referenceFilename_.c_str(), testTop_, &ePBC, &testX_, nullptr, testBox_, FALSE);
+        PbcType pbcType = PbcType::Unset;
+        read_tps_conf(referenceFilename_.c_str(), testTop_, &pbcType, &testX_, nullptr, testBox_, FALSE);
     }
 
     void testTopologies()
@@ -121,7 +122,7 @@ public:
     void writeTestFileAndTest()
     {
         write_sto_conf(testFilename_.c_str(), *testTop_->name, &testTop_->atoms, testX_, nullptr,
-                       -1, testBox_);
+                       PbcType::Unset, testBox_);
         testFilesEqual(referenceFilename_, testFilename_);
     }
 

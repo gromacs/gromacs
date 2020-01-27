@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -126,11 +126,11 @@ int gmx_helixorient(int argc, char* argv[])
     t_pbc  pbc;
     matrix A;
 
-    FILE *fpaxis, *fpcenter, *fptilt, *fprotation;
-    FILE *fpradius, *fprise, *fptwist;
-    FILE *fptheta1, *fptheta2, *fptheta3;
-    FILE* fpbending;
-    int   ePBC;
+    FILE *  fpaxis, *fpcenter, *fptilt, *fprotation;
+    FILE *  fpradius, *fprise, *fptwist;
+    FILE *  fptheta1, *fptheta2, *fptheta3;
+    FILE*   fpbending;
+    PbcType pbcType;
 
     gmx_output_env_t* oenv;
     gmx_rmpbc_t       gpbc = nullptr;
@@ -168,7 +168,7 @@ int gmx_helixorient(int argc, char* argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType);
 
     for (i = 0; i < 3; i++)
     {
@@ -249,12 +249,12 @@ int gmx_helixorient(int argc, char* argv[])
     unitaxes[1][1] = 1;
     unitaxes[2][2] = 1;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
 
     do
     {
         /* initialisation for correct distance calculations */
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
         /* make molecules whole again */
         gmx_rmpbc(gpbc, natoms, box, x);
 

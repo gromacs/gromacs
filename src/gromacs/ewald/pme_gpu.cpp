@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -60,9 +60,27 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "pme_gpu_internal.h"
+#include "pme_gpu_settings.h"
+#include "pme_gpu_timings.h"
+#include "pme_gpu_types_host.h"
 #include "pme_grid.h"
 #include "pme_internal.h"
 #include "pme_solve.h"
+
+/*! \brief
+ * Finds out if PME is currently running on GPU.
+ *
+ * \todo The GPU module should not be constructed (or at least called)
+ * when it is not active, so there should be no need to check whether
+ * it is active. An assertion that this is true makes sense.
+ *
+ * \param[in] pme  The PME structure.
+ * \returns        True if PME runs on GPU currently, false otherwise.
+ */
+static inline bool pme_gpu_active(const gmx_pme_t* pme)
+{
+    return (pme != nullptr) && (pme->runMode != PmeRunMode::CPU);
+}
 
 void pme_gpu_reset_timings(const gmx_pme_t* pme)
 {
@@ -107,7 +125,7 @@ void inline parallel_3dfft_execute_gpu_wrapper(gmx_pme_t*             pme,
                                                gmx_wallcycle_t        wcycle)
 {
     GMX_ASSERT(gridIndex == 0, "Only single grid supported");
-    if (pme_gpu_performs_FFT(pme->gpu))
+    if (pme_gpu_settings(pme->gpu).performGPUFFT)
     {
         wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
         wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
@@ -163,7 +181,7 @@ void pme_gpu_prepare_computation(gmx_pme_t*     pme,
         wallcycle_sub_stop(wcycle, ewcsLAUNCH_GPU_PME);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 
-        if (!pme_gpu_performs_solve(pmeGpu))
+        if (!pme_gpu_settings(pmeGpu).performGPUSolve)
         {
             // TODO remove code duplication and add test coverage
             matrix scaledBox;
@@ -199,15 +217,16 @@ void pme_gpu_launch_spread(gmx_pme_t* pme, GpuEventSynchronizer* xReadyOnDevice,
 
 void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle)
 {
-    PmeGpu*    pmeGpu                 = pme->gpu;
-    const bool computeEnergyAndVirial = (pmeGpu->settings.currentFlags & GMX_PME_CALC_ENER_VIR) != 0;
-    const bool performBackFFT = (pmeGpu->settings.currentFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
+    PmeGpu*     pmeGpu                 = pme->gpu;
+    const auto& settings               = pmeGpu->settings;
+    const bool  computeEnergyAndVirial = (settings.currentFlags & GMX_PME_CALC_ENER_VIR) != 0;
+    const bool  performBackFFT = (settings.currentFlags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
     const unsigned int gridIndex = 0;
     t_complex*         cfftgrid  = pme->cfftgrid[gridIndex];
 
-    if (pmeGpu->settings.currentFlags & GMX_PME_SPREAD)
+    if (settings.currentFlags & GMX_PME_SPREAD)
     {
-        if (!pme_gpu_performs_FFT(pmeGpu))
+        if (!settings.performGPUFFT)
         {
             wallcycle_start(wcycle, ewcWAIT_GPU_PME_SPREAD);
             pme_gpu_sync_spread_grid(pme->gpu);
@@ -217,15 +236,17 @@ void pme_gpu_launch_complex_transforms(gmx_pme_t* pme, gmx_wallcycle* wcycle)
 
     try
     {
-        if (pmeGpu->settings.currentFlags & GMX_PME_SOLVE)
+        if (settings.currentFlags & GMX_PME_SOLVE)
         {
             /* do R2C 3D-FFT */
             parallel_3dfft_execute_gpu_wrapper(pme, gridIndex, GMX_FFT_REAL_TO_COMPLEX, wcycle);
 
             /* solve in k-space for our local cells */
-            if (pme_gpu_performs_solve(pmeGpu))
+            if (settings.performGPUSolve)
             {
-                const auto gridOrdering = pme_gpu_uses_dd(pmeGpu) ? GridOrdering::YZX : GridOrdering::XYZ;
+                // TODO grid ordering should be set up at pme init time.
+                const auto gridOrdering =
+                        settings.useDecomposition ? GridOrdering::YZX : GridOrdering::XYZ;
                 wallcycle_start_nocount(wcycle, ewcLAUNCH_GPU);
                 wallcycle_sub_start_nocount(wcycle, ewcsLAUNCH_GPU_PME);
                 pme_gpu_solve(pmeGpu, cfftgrid, gridOrdering, computeEnergyAndVirial);
@@ -257,7 +278,7 @@ void pme_gpu_launch_gather(const gmx_pme_t* pme, gmx_wallcycle gmx_unused* wcycl
 {
     GMX_ASSERT(pme_gpu_active(pme), "This should be a GPU run of PME but it is not enabled.");
 
-    if (!pme_gpu_performs_gather(pme->gpu))
+    if (!pme_gpu_settings(pme->gpu).performGPUGather)
     {
         return;
     }

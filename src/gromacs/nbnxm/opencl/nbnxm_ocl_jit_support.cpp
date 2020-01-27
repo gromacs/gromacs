@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -166,7 +167,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdw
  *
  * Does not throw
  */
-void nbnxn_gpu_compile_kernels(gmx_nbnxn_ocl_t* nb)
+void nbnxn_gpu_compile_kernels(gmx_nbnxm_gpu_t* nb)
 {
     gmx_bool   bFastGen = TRUE;
     cl_program program  = nullptr;

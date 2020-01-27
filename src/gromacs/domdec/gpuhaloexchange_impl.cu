@@ -58,6 +58,7 @@
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
 #include "gromacs/pbcutil/ishift.h"
+#include "gromacs/utility/gmxmpi.h"
 
 #include "domdec_internal.h"
 
@@ -235,7 +236,7 @@ void GpuHaloExchange::Impl::communicateHaloCoordinates(const matrix          box
         launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply X Halo Exchange", kernelArgs);
     }
 
-    communicateHaloData(d_x_, HaloQuantity::HaloCoordinates);
+    communicateHaloData(d_x_, HaloQuantity::HaloCoordinates, coordinatesReadyOnDeviceEvent);
 
     return;
 }
@@ -246,7 +247,7 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
 {
 
     // Communicate halo data (in non-local stream)
-    communicateHaloData(d_f_, HaloQuantity::HaloForces);
+    communicateHaloData(d_f_, HaloQuantity::HaloForces, nullptr);
 
     float3* d_f = d_f_;
 
@@ -289,10 +290,13 @@ void GpuHaloExchange::Impl::communicateHaloForces(bool accumulateForces)
 
         launchGpuKernel(kernelFn, config, nullptr, "Domdec GPU Apply F Halo Exchange", kernelArgs);
     }
+    fReadyOnDevice_.markEvent(nonLocalStream_);
 }
 
 
-void GpuHaloExchange::Impl::communicateHaloData(float3* d_ptr, HaloQuantity haloQuantity)
+void GpuHaloExchange::Impl::communicateHaloData(float3*               d_ptr,
+                                                HaloQuantity          haloQuantity,
+                                                GpuEventSynchronizer* coordinatesReadyOnDeviceEvent)
 {
 
     void* sendPtr;
@@ -310,10 +314,16 @@ void GpuHaloExchange::Impl::communicateHaloData(float3* d_ptr, HaloQuantity halo
         recvRank  = recvRankX_;
 
 #if GMX_MPI
-        // Wait for signal from receiving task that it is ready, and similarly send signal to task that will push data to this task
-        char thisTaskIsReady, remoteTaskIsReady;
-        MPI_Sendrecv(&thisTaskIsReady, sizeof(char), MPI_BYTE, recvRank, 0, &remoteTaskIsReady,
-                     sizeof(char), MPI_BYTE, sendRank, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
+        // Wait for event from receiving task that remote coordinates are ready, and enqueue that event to stream used
+        // for subsequent data push. This avoids a race condition with the remote data being written in the previous timestep.
+        // Similarly send event to task that will push data to this task.
+        GpuEventSynchronizer* remoteCoordinatesReadyOnDeviceEvent;
+        MPI_Sendrecv(&coordinatesReadyOnDeviceEvent, sizeof(GpuEventSynchronizer*), MPI_BYTE,
+                     recvRank, 0, &remoteCoordinatesReadyOnDeviceEvent, sizeof(GpuEventSynchronizer*),
+                     MPI_BYTE, sendRank, 0, mpi_comm_mysim_, MPI_STATUS_IGNORE);
+        remoteCoordinatesReadyOnDeviceEvent->enqueueWaitEvent(nonLocalStream_);
+#else
+        GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
     }
     else
@@ -370,6 +380,11 @@ void GpuHaloExchange::Impl::communicateHaloDataWithCudaDirect(void* sendPtr,
     GMX_UNUSED_VALUE(sendRank);
     GMX_UNUSED_VALUE(recvRank);
 #endif
+}
+
+GpuEventSynchronizer* GpuHaloExchange::Impl::getForcesReadyOnDeviceEvent()
+{
+    return &fReadyOnDevice_;
 }
 
 /*! \brief Create Domdec GPU object */
@@ -437,4 +452,8 @@ void GpuHaloExchange::communicateHaloForces(bool accumulateForces)
     impl_->communicateHaloForces(accumulateForces);
 }
 
+GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
+{
+    return impl_->getForcesReadyOnDeviceEvent();
+}
 } // namespace gmx

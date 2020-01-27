@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 #include "gmxpre.h"
 
 #include "gromacs/utility/keyvaluetreeserializer.h"
+
+#include <cstddef>
 
 #include <gtest/gtest.h>
 
@@ -73,6 +75,7 @@ public:
     void doFloat(float* value) override { checker_.checkFloat(*value, nullptr); }
     void doDouble(double* value) override { checker_.checkDouble(*value, nullptr); }
     void doString(std::string* value) override { checker_.checkString(*value, nullptr); }
+    void doOpaque(char* /* value */, std::size_t /* size */) override { raiseAssert(); }
     void doReal(real* /* value */) override { raiseAssert(); }
     void doIvec(ivec* /* value */) override { raiseAssert(); }
     void doRvec(rvec* /* value */) override { raiseAssert(); }

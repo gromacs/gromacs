@@ -21,17 +21,15 @@ Package documentation is extracted from the ``gmxapi`` Python module and is also
 directly, using either ``pydoc`` from the command line or :py:func:`help` from within Python, such
 as during an interactive session.
 
-.. seealso:: :ref:`gmxapi_package_documentation`
-
 Refer to the Python source code itself for additional clarification.
+
+.. seealso:: :ref:`gmxapi_package_documentation`
 
 .. Configuration for doctest: automated syntax checking in documentation code snippets
 .. testsetup::
 
     import gmxapi as gmx
     from gmxapi.data import tpr_filename
-
-.. _python-procedural:
 
 gmxapi basic package
 =====================

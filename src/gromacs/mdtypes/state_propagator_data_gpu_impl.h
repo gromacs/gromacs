@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,6 +58,8 @@
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/enumerationhelpers.h"
 
+struct gmx_wallcycle;
+
 namespace gmx
 {
 
@@ -108,13 +110,15 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
     Impl(const void*        pmeStream,
          const void*        localStream,
          const void*        nonLocalStream,
          const void*        deviceContext,
          GpuApiCallBehavior transferKind,
-         int                paddingSize);
+         int                paddingSize,
+         gmx_wallcycle*     wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
      *
@@ -130,19 +134,30 @@ public:
      *  \param[in] deviceContext   Device context, nullptr allowed for non-OpenCL builds.
      *  \param[in] transferKind    H2D/D2H transfer call behavior (synchronous or not).
      *  \param[in] paddingSize     Padding size for coordinates buffer.
+     *  \param[in] wcycle          Wall cycle counter data.
      */
-    Impl(const void* pmeStream, const void* deviceContext, GpuApiCallBehavior transferKind, int paddingSize);
+    Impl(const void*        pmeStream,
+         const void*        deviceContext,
+         GpuApiCallBehavior transferKind,
+         int                paddingSize,
+         gmx_wallcycle*     wcycle);
 
     ~Impl();
 
 
     /*! \brief Set the ranges for local and non-local atoms and reallocates buffers.
      *
+     * Reallocates coordinate, velocities and force buffers on the device.
+     *
      * \note
      * The coordinates buffer is (re)allocated, when required by PME, with a padding,
      * the size of which is set by the constructor. The padding region clearing kernel
      * is scheduled in the \p pmeStream_ (unlike the coordinates H2D) as only the PME
      * task uses this padding area.
+     *
+     * \note
+     * The force buffer is cleared if its size increases, so that previously unused
+     * memory is cleared before forces are accumulated.
      *
      *  \param[in] numAtomsLocal  Number of atoms in local domain.
      *  \param[in] numAtomsAll    Total number of atoms to handle.
@@ -399,6 +414,9 @@ private:
     int d_fSize_ = -1;
     //! Allocation size for the force buffer
     int d_fCapacity_ = -1;
+
+    //! \brief Pointer to wallcycle structure.
+    gmx_wallcycle* wcycle_;
 
     /*! \brief Performs the copy of data from host to device buffer.
      *

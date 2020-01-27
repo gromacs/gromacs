@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -135,7 +136,7 @@ int gmx_saltbr(int argc, char* argv[])
     int                nset[3]  = { 0, 0, 0 };
 
     t_topology*  top;
-    int          ePBC;
+    PbcType      pbcType;
     char*        buf;
     t_trxstatus* status;
     int          i, j, k, m, nnn, teller, ncg;
@@ -155,7 +156,7 @@ int gmx_saltbr(int argc, char* argv[])
         return 0;
     }
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType);
     cg  = mk_charge(&top->atoms, &ncg);
     snew(cgdist, ncg);
     snew(nWithin, ncg);
@@ -174,7 +175,7 @@ int gmx_saltbr(int argc, char* argv[])
         srenew(time, teller + 1);
         time[teller] = t;
 
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
 
         for (i = 0; (i < ncg); i++)
         {

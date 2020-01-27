@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,7 +61,7 @@
 #include "gromacs/utility/smalloc.h"
 
 static void find_tetra_order_grid(t_topology top,
-                                  int        ePBC,
+                                  PbcType    pbcType,
                                   int        natoms,
                                   matrix     box,
                                   rvec       x[],
@@ -115,8 +115,8 @@ static void find_tetra_order_grid(t_topology top,
     snew(skmol, maxidx);
 
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc, ePBC, box);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    set_pbc(&pbc, pbcType, box);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     gmx_rmpbc(gpbc, natoms, box, x);
 
     *sgmean = 0.0;
@@ -280,7 +280,7 @@ static void calc_tetra_order_interface(const char*       fnNDX,
 {
     FILE *       fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
-    int          ePBC;
+    PbcType      pbcType;
     t_trxstatus* status;
     int          natoms;
     real         t;
@@ -300,7 +300,7 @@ static void calc_tetra_order_interface(const char*       fnNDX,
      * i.e 1D Row-major order in (t,x,y) */
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
+    read_tps_conf(fnTPS, &top, &pbcType, &xtop, nullptr, box, FALSE);
 
     *nslicex = static_cast<int>(box[XX][XX] / binw + onehalf); /*Calculate slicenr from binwidth*/
     *nslicey = static_cast<int>(box[YY][YY] / binw + onehalf);
@@ -366,7 +366,7 @@ static void calc_tetra_order_interface(const char*       fnNDX,
             }
         }
 
-        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0], &sg, &sk, *nslicex,
+        find_tetra_order_grid(top, pbcType, natoms, box, x, isize[0], index[0], &sg, &sk, *nslicex,
                               *nslicey, nslicez, sg_grid, sk_grid);
         GMX_RELEASE_ASSERT(sk_fravg != nullptr, "Trying to dereference NULL sk_fravg pointer");
         for (i = 0; i < *nslicex; i++)

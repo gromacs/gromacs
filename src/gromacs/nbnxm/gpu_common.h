@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,7 +124,7 @@ static inline InteractionLocality gpuAtomToInteractionLocality(const AtomLocalit
 
 
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-void setupGpuShortRangeWork(gmx_nbnxn_gpu_t*               nb,
+void setupGpuShortRangeWork(gmx_nbnxm_gpu_t*               nb,
                             const gmx::GpuBonded*          gpuBonded,
                             const gmx::InteractionLocality iLocality)
 {
@@ -146,13 +146,13 @@ void setupGpuShortRangeWork(gmx_nbnxn_gpu_t*               nb,
  * \param[inout]  nb        Pointer to the nonbonded GPU data structure
  * \param[in]     iLocality Interaction locality identifier
  */
-static bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t& nb, const gmx::InteractionLocality iLocality)
+static bool haveGpuShortRangeWork(const gmx_nbnxm_gpu_t& nb, const gmx::InteractionLocality iLocality)
 {
     return nb.haveWork[iLocality];
 }
 
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool haveGpuShortRangeWork(const gmx_nbnxn_gpu_t* nb, const gmx::AtomLocality aLocality)
+bool haveGpuShortRangeWork(const gmx_nbnxm_gpu_t* nb, const gmx::AtomLocality aLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -362,7 +362,7 @@ static inline void gpu_accumulate_timings(gmx_wallclock_gpu_nbnxn_t* timings,
  * \todo Move into shared source file with gmx_compile_cpp_as_cuda
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers)
-bool gpu_try_finish_task(gmx_nbnxn_gpu_t*         nb,
+bool gpu_try_finish_task(gmx_nbnxm_gpu_t*         nb,
                          const gmx::StepWorkload& stepWork,
                          const AtomLocality       aloc,
                          real*                    e_lj,
@@ -458,7 +458,7 @@ bool gpu_try_finish_task(gmx_nbnxn_gpu_t*         nb,
  * \return            The number of cycles the gpu wait took
  */
 //NOLINTNEXTLINE(misc-definitions-in-headers) TODO: move into source file
-float gpu_wait_finish_task(gmx_nbnxn_gpu_t*         nb,
+float gpu_wait_finish_task(gmx_nbnxm_gpu_t*         nb,
                            const gmx::StepWorkload& stepWork,
                            AtomLocality             aloc,
                            real*                    e_lj,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,9 +49,9 @@
 #include "gmxpre.h"
 
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
-#include "gromacs/mdlib/leapfrog_cuda.cuh"
-#include "gromacs/mdlib/lincs_cuda.cuh"
-#include "gromacs/mdlib/settle_cuda.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.cuh"
+#include "gromacs/mdlib/lincs_gpu.cuh"
+#include "gromacs/mdlib/settle_gpu.cuh"
 #include "gromacs/mdlib/update_constrain_cuda.h"
 #include "gromacs/mdtypes/inputrec.h"
 
@@ -92,25 +92,37 @@ public:
      *   2. This is the temperature coupling step.
      * Parameters virial/lambdas can be nullptr if computeVirial/doTempCouple are false.
      *
-     * \param[in]  fReadyOnDevice         Event synchronizer indicating that the forces are ready in
-     * the device memory. \param[in]  dt                     Timestep. \param[in]  updateVelocities
-     * If the velocities should be constrained. \param[in]  computeVirial          If virial should
-     * be updated. \param[out] virial                 Place to save virial tensor. \param[in]
-     * doTempCouple           If the temperature coupling should be performed. \param[in]  tcstat
-     * Temperature coupling data. \param[in]  doPressureCouple       If the temperature coupling
-     * should be applied. \param[in]  dtPressureCouple       Period between pressure coupling steps
-     * \param[in]  velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     * \param[in]  fReadyOnDevice           Event synchronizer indicating that the forces are ready in
+     *                                      the device memory.
+     * \param[in]  dt                       Timestep.
+     * \param[in]  updateVelocities         If the velocities should be constrained.
+     * \param[in]  computeVirial            If virial should be updated.
+     * \param[out] virial                   Place to save virial tensor.
+     * \param[in]  doTemperatureScaling     If velocities should be scaled for temperature coupling.
+     * \param[in]  tcstat                   Temperature coupling data.
+     * \param[in]  doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
+     * \param[in]  dtPressureCouple         Period between pressure coupling steps.
+     * \param[in]  prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix.
      */
     void integrate(GpuEventSynchronizer*             fReadyOnDevice,
                    real                              dt,
                    bool                              updateVelocities,
                    bool                              computeVirial,
                    tensor                            virial,
-                   bool                              doTempCouple,
+                   bool                              doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                   bool                              doPressureCouple,
+                   bool                              doParrinelloRahman,
                    float                             dtPressureCouple,
-                   const matrix                      velocityScalingMatrix);
+                   const matrix                      prVelocityScalingMatrix);
+
+    /*! \brief Scale coordinates on the GPU for the pressure coupling.
+     *
+     * After pressure coupling step, the box size may change. Hence, the coordinates should be
+     * scaled so that all the particles fit in the new box.
+     *
+     * \param[in] scalingMatrix Coordinates scaling matrix.
+     */
+    void scaleCoordinates(const matrix scalingMatrix);
 
     /*! \brief Set the pointers and update data-structures (e.g. after NB search step).
      *
@@ -133,17 +145,28 @@ public:
      *
      * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
      *
-     * \param[in] pbc The PBC data in t_pbc format.
+     * \param[in] pbcType The type of the periodic boundary.
+     * \param[in] box     The periodic boundary box matrix.
      */
-    void setPbc(const t_pbc* pbc);
+    void setPbc(PbcType pbcType, const matrix box);
 
     /*! \brief Return the synchronizer associated with the event indicated that the coordinates are ready on the device.
      */
     GpuEventSynchronizer* getCoordinatesReadySync();
 
+    /*! \brief
+     * Returns whether the maximum number of coupled constraints is supported
+     * by the CUDA LINCS code.
+     *
+     * \param[in] mtop The molecular topology
+     */
+    static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
+
 private:
     //! CUDA stream
     CommandStream commandStream_ = nullptr;
+    //! CUDA kernel launch config
+    KernelLaunchConfig coordinateScalingKernelLaunchConfig_;
 
     //! Periodic boundary data
     PbcAiuc pbcAiuc_;
@@ -174,11 +197,11 @@ private:
     int numInverseMassesAlloc_ = -1;
 
     //! Leap-Frog integrator
-    std::unique_ptr<LeapFrogCuda> integrator_;
+    std::unique_ptr<LeapFrogGpu> integrator_;
     //! LINCS CUDA object to use for non-water constraints
-    std::unique_ptr<LincsCuda> lincsCuda_;
+    std::unique_ptr<LincsGpu> lincsGpu_;
     //! SETTLE CUDA object for water constrains
-    std::unique_ptr<SettleCuda> settleCuda_;
+    std::unique_ptr<SettleGpu> settleGpu_;
 
     //! An pointer to the event to indicate when the update of coordinates is complete
     GpuEventSynchronizer* coordinatesReady_;

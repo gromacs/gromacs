@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -143,7 +144,7 @@ int gmx_helix(int argc, char* argv[])
     int               i, j, nall, nbb, nca, teller;
     int *             bbindex, *caindex, *allindex;
     t_topology*       top;
-    int               ePBC;
+    PbcType           pbcType;
     rvec *            x, *xref;
     real              t;
     real              rms;
@@ -166,7 +167,7 @@ int gmx_helix(int argc, char* argv[])
 
     bRange = (opt2parg_bSet("-ahxstart", asize(pa), pa) && opt2parg_bSet("-ahxend", asize(pa), pa));
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType);
 
     natoms = read_first_x(oenv, &status, opt2fn("-f", NFILE, fnm), &t, &x, box);
 
@@ -211,7 +212,7 @@ int gmx_helix(int argc, char* argv[])
         pr_bb(stdout, nres, bb);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
 
     teller = 0;
     do
@@ -237,7 +238,7 @@ int gmx_helix(int argc, char* argv[])
             if (teller == 1)
             {
                 write_sto_conf(opt2fn("-cz", NFILE, fnm), "Helix fitted to Z-Axis", &(top->atoms),
-                               x, nullptr, ePBC, box);
+                               x, nullptr, pbcType, box);
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);

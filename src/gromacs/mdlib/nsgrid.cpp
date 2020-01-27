@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -179,7 +180,7 @@ void get_nsgrid_boundaries(int           nboundeddim,
                 bdens0     = (*gr0)[d];
             }
             /* Check for a DD cell not at a higher edge */
-            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->nc[d] - 1)
+            if (dd != nullptr && gr1 != nullptr && dd->ci[d] < dd->numCells[d] - 1)
             {
                 grid_x1[d] = (*gr1)[d];
                 bdens1     = (*gr1)[d];
@@ -238,7 +239,7 @@ static void set_grid_sizes(matrix              box,
         grid->cell_offset[i] = izones_x0[i];
         size                 = izones_size[i];
 
-        bDD = (dd != nullptr) && (dd->nc[i] > 1);
+        bDD = (dd != nullptr) && (dd->numCells[i] > 1);
         if (!bDD)
         {
             bDDRect = FALSE;
@@ -363,9 +364,9 @@ t_grid* init_grid(FILE* fplog, t_forcerec* fr)
 
     snew(grid, 1);
 
-    grid->npbcdim = ePBC2npbcdim(fr->ePBC);
+    grid->npbcdim = numPbcDimensions(fr->pbcType);
 
-    if (fr->ePBC == epbcXY && fr->nwall == 2)
+    if (fr->pbcType == PbcType::XY && fr->nwall == 2)
     {
         grid->nboundeddim = 3;
     }

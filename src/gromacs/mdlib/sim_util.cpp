@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include "gromacs/domdec/partition.h"
 #include "gromacs/essentialdynamics/edsam.h"
 #include "gromacs/ewald/pme.h"
+#include "gromacs/ewald/pme_pp.h"
 #include "gromacs/ewald/pme_pp_comm_gpu.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/gmxlib/nonbonded/nb_free_energy.h"
@@ -90,6 +91,7 @@
 #include "gromacs/mdtypes/state_propagator_data_gpu.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/nbnxm/nbnxm.h"
+#include "gromacs/nbnxm/nbnxm_gpu.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/mshift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -148,11 +150,11 @@ static void calc_virial(int                              start,
                         const matrix                     box,
                         t_nrnb*                          nrnb,
                         const t_forcerec*                fr,
-                        int                              ePBC)
+                        PbcType                          pbcType)
 {
     /* The short-range virial from surrounding boxes */
     const rvec* fshift = as_rvec_array(forceWithShiftForces.shiftForces().data());
-    calc_vir(SHIFTS, fr->shift_vec, fshift, vir_part, ePBC == epbcSCREW, box);
+    calc_vir(SHIFTS, fr->shift_vec, fshift, vir_part, pbcType == PbcType::Screw, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
@@ -187,7 +189,7 @@ static void pull_potential_wrapper(const t_commrec*               cr,
      * which is why pull_potential is called close to other communication.
      */
     wallcycle_start(wcycle, ewcPULLPOT);
-    set_pbc(&pbc, ir->ePBC, box);
+    set_pbc(&pbc, ir->pbcType, box);
     dvdl = 0;
     enerd->term[F_COM_PULL] += pull_potential(pull_work, mdatoms, &pbc, cr, t, lambda[efptRESTRAINT],
                                               as_rvec_array(x.data()), force, &dvdl);
@@ -293,7 +295,7 @@ static void post_process_forces(const t_commrec*      cr,
              */
             matrix virial = { { 0 } };
             spread_vsite_f(vsite, x, fDirectVir, nullptr, stepWork.computeVirial, virial, nrnb,
-                           &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+                           &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
             forceWithVirial.addVirialContribution(virial);
         }
 
@@ -568,7 +570,7 @@ static void computeSpecialForces(FILE*                          fplog,
         if (awh)
         {
             enerd->term[F_COM_PULL] += awh->applyBiasForcesAndUpdateBias(
-                    inputrec->ePBC, *mdatoms, box, forceWithVirial, t, step, wcycle, fplog);
+                    inputrec->pbcType, *mdatoms, box, forceWithVirial, t, step, wcycle, fplog);
         }
     }
 
@@ -980,7 +982,7 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    if (fr->ePBC != epbcNONE)
+    if (fr->pbcType != PbcType::No)
     {
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
@@ -994,7 +996,7 @@ void do_force(FILE*                               fplog,
         const bool calcCGCM = (fillGrid && !DOMAINDECOMP(cr));
         if (calcCGCM)
         {
-            put_atoms_in_box_omp(fr->ePBC, box, x.unpaddedArrayRef().subArray(0, homenr),
+            put_atoms_in_box_omp(fr->pbcType, box, x.unpaddedArrayRef().subArray(0, homenr),
                                  gmx_omp_nthreads_get(emntDefault));
             inc_nrnb(nrnb, eNR_SHIFTX, homenr);
         }
@@ -1031,13 +1033,36 @@ void do_force(FILE*                               fplog,
         }
     }
 
-    // Copy coordinate from the GPU if update is on the GPU and there are forces to be computed on the CPU. At search steps the
-    // current coordinates are already on the host, hence copy is not needed.
+    // TODO Update this comment when introducing SimulationWorkload
+    //
+    // The conditions for gpuHaloExchange e.g. using GPU buffer
+    // operations were checked before construction, so here we can
+    // just use it and assert upon any conditions.
+    gmx::GpuHaloExchange* gpuHaloExchange =
+            (havePPDomainDecomposition(cr) ? cr->dd->gpuHaloExchange.get() : nullptr);
+    const bool ddUsesGpuDirectCommunication = (gpuHaloExchange != nullptr);
+    GMX_ASSERT(!ddUsesGpuDirectCommunication || (useGpuXBufOps == BufferOpsUseGpu::True),
+               "Must use coordinate buffer ops with GPU halo exchange");
+    const bool useGpuForcesHaloExchange =
+            ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
+
+    // Copy coordinate from the GPU if update is on the GPU and there
+    // are forces to be computed on the CPU, or for the computation of
+    // virial, or if host-side data will be transferred from this task
+    // to a remote task for halo exchange or PME-PP communication. At
+    // search steps the current coordinates are already on the host,
+    // hence copy is not needed.
+    const bool haveHostPmePpComms =
+            !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication;
+    const bool haveHostHaloExchangeComms = havePPDomainDecomposition(cr) && !ddUsesGpuDirectCommunication;
+
+    bool gmx_used_in_debug haveCopiedXFromGpu = false;
     if (simulationWork.useGpuUpdate && !stepWork.doNeighborSearch
-        && runScheduleWork->domainWork.haveCpuLocalForceWork)
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial
+            || haveHostPmePpComms || haveHostHaloExchangeComms))
     {
         stateGpu->copyCoordinatesFromGpu(x.unpaddedArrayRef(), AtomLocality::Local);
-        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        haveCopiedXFromGpu = true;
     }
 
     const auto localXReadyOnDevice = (stateGpu != nullptr)
@@ -1056,6 +1081,16 @@ void do_force(FILE*                               fplog,
         bool reinitGpuPmePpComms = simulationWork.useGpuPmePpCommunication && (stepWork.doNeighborSearch);
         bool sendCoordinatesFromGpu =
                 simulationWork.useGpuPmePpCommunication && !(stepWork.doNeighborSearch);
+
+        if (!stepWork.doNeighborSearch && simulationWork.useGpuUpdate && !sendCoordinatesFromGpu)
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "GPU update and separate PME ranks are only supported with GPU "
+                               "direct communication!");
+            // TODO: when this code-path becomes supported add:
+            // stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+        }
+
         gmx_pme_send_coordinates(fr, cr, box, as_rvec_array(x.unpaddedArrayRef().data()), lambda[efptCOUL],
                                  lambda[efptVDW], (stepWork.computeVirial || stepWork.computeEnergy),
                                  step, simulationWork.useGpuPmePpCommunication, reinitGpuPmePpComms,
@@ -1074,7 +1109,7 @@ void do_force(FILE*                               fplog,
         if (graph && stepWork.stateChanged)
         {
             /* Calculate intramolecular shift vectors to make molecules whole */
-            mk_mshift(fplog, graph, fr->ePBC, box, as_rvec_array(x.unpaddedArrayRef().data()));
+            mk_mshift(fplog, graph, fr->pbcType, box, as_rvec_array(x.unpaddedArrayRef().data()));
         }
 
         // TODO
@@ -1142,7 +1177,7 @@ void do_force(FILE*                               fplog,
         wallcycle_start_nocount(wcycle, ewcNS);
         wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_LOCAL);
         /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-        nbv->constructPairlist(InteractionLocality::Local, &top->excls, step, nrnb);
+        nbv->constructPairlist(InteractionLocality::Local, top->excls, step, nrnb);
 
         nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::Local);
 
@@ -1172,6 +1207,13 @@ void do_force(FILE*                               fplog,
         }
         else
         {
+            if (simulationWork.useGpuUpdate)
+            {
+                GMX_ASSERT(stateGpu, "need a valid stateGpu object");
+                GMX_ASSERT(haveCopiedXFromGpu,
+                           "a wait should only be triggered if copy has been scheduled");
+                stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+            }
             nbv->convertCoordinates(AtomLocality::Local, false, x.unpaddedArrayRef());
         }
     }
@@ -1218,19 +1260,6 @@ void do_force(FILE*                               fplog,
         launchPmeGpuFftAndGather(fr->pmedata, wcycle);
     }
 
-    // TODO Update this comment when introducing SimulationWorkload
-    //
-    // The conditions for gpuHaloExchange e.g. using GPU buffer
-    // operations were checked before construction, so here we can
-    // just use it and assert upon any conditions.
-    gmx::GpuHaloExchange* gpuHaloExchange =
-            (havePPDomainDecomposition(cr) ? cr->dd->gpuHaloExchange.get() : nullptr);
-    const bool ddUsesGpuDirectCommunication = (gpuHaloExchange != nullptr);
-    GMX_ASSERT(!ddUsesGpuDirectCommunication || (useGpuXBufOps == BufferOpsUseGpu::True),
-               "Must use coordinate buffer ops with GPU halo exchange");
-    const bool useGpuForcesHaloExchange =
-            ddUsesGpuDirectCommunication && (useGpuFBufOps == BufferOpsUseGpu::True);
-
     /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */
     if (havePPDomainDecomposition(cr))
@@ -1241,7 +1270,7 @@ void do_force(FILE*                               fplog,
             wallcycle_start_nocount(wcycle, ewcNS);
             wallcycle_sub_start(wcycle, ewcsNBS_SEARCH_NONLOCAL);
             /* Note that with a GPU the launch overhead of the list transfer is not timed separately */
-            nbv->constructPairlist(InteractionLocality::NonLocal, &top->excls, step, nrnb);
+            nbv->constructPairlist(InteractionLocality::NonLocal, top->excls, step, nrnb);
 
             nbv->setupGpuShortRangeWork(fr->gpuBonded, InteractionLocality::NonLocal);
             wallcycle_sub_stop(wcycle, ewcsNBS_SEARCH_NONLOCAL);
@@ -1267,6 +1296,10 @@ void do_force(FILE*                               fplog,
             }
             else
             {
+                // Note: GPU update + DD without direct communication is not supported,
+                // a waitCoordinatesReadyOnHost() should be issued if it will be.
+                GMX_ASSERT(!simulationWork.useGpuUpdate,
+                           "GPU update is not supported with CPU halo exchange");
                 dd_move_x(cr->dd, box, x.unpaddedArrayRef(), wcycle);
             }
 
@@ -1379,6 +1412,14 @@ void do_force(FILE*                               fplog,
         dd_force_flop_start(cr->dd, nrnb);
     }
 
+    // For the rest of the CPU tasks that depend on GPU-update produced coordinates,
+    // this wait ensures that the D2H transfer is complete.
+    if ((simulationWork.useGpuUpdate)
+        && (runScheduleWork->domainWork.haveCpuLocalForceWork || stepWork.computeVirial))
+    {
+        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::Local);
+    }
+
     if (inputrec->bRot)
     {
         wallcycle_start(wcycle, ewcROT);
@@ -1470,7 +1511,7 @@ void do_force(FILE*                               fplog,
     if (ddUsesGpuDirectCommunication && (domainWork.haveCpuBondedWork || domainWork.haveFreeEnergyWork))
     {
         /* Wait for non-local coordinate data to be copied from device */
-        nbv->wait_nonlocal_x_copy_D2H_done();
+        stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fr, inputrec, &(top->idef), cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut, enerd,
@@ -1633,9 +1674,10 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, ewcFORCE);
     }
 
-    // If on GPU PME-PP comms path, receive forces from PME before GPU buffer ops
-    // TODO refoactor this and unify with below default-path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && simulationWork.useGpuPmePpCommunication)
+    // If on GPU PME-PP comms or GPU update path, receive forces from PME before GPU buffer ops
+    // TODO refactor this and unify with below default-path call to the same function
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME)
+        && (simulationWork.useGpuPmePpCommunication || simulationWork.useGpuUpdate))
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
@@ -1666,7 +1708,7 @@ void do_force(FILE*                               fplog,
                                            fr->pmePpCommGpu->getForcesReadySynchronizer())) // buffer received from other GPU
                         : nullptr; // PME reduction not active on GPU
 
-        gmx::FixedCapacityVector<GpuEventSynchronizer*, 2> dependencyList;
+        gmx::FixedCapacityVector<GpuEventSynchronizer*, 3> dependencyList;
 
         if (stepWork.useGpuPmeFReduction)
         {
@@ -1693,20 +1735,20 @@ void do_force(FILE*                               fplog,
             //   These should be unified.
             if (haveLocalForceContribInCpuBuffer && !useGpuForcesHaloExchange)
             {
-                stateGpu->copyForcesToGpu(forceWithShift, AtomLocality::Local);
+                // Note: AtomLocality::All is used for the non-DD case because, as in this
+                // case copyForcesToGpu() uses a separate stream, it allows overlap of
+                // CPU force H2D with GPU force tasks on all streams including those in the
+                // local stream which would otherwise be implicit dependencies for the
+                // transfer and would not overlap.
+                auto locality = havePPDomainDecomposition(cr) ? AtomLocality::Local : AtomLocality::All;
+
+                stateGpu->copyForcesToGpu(forceWithShift, locality);
                 dependencyList.push_back(stateGpu->getForcesReadyOnDeviceEvent(
-                        AtomLocality::Local, useGpuFBufOps == BufferOpsUseGpu::True));
+                        locality, useGpuFBufOps == BufferOpsUseGpu::True));
             }
             if (useGpuForcesHaloExchange)
             {
-                // Add a stream synchronization to satisfy a dependency
-                // for the local buffer ops on the result of GPU halo
-                // exchange, which operates in the non-local stream and
-                // writes to to local parf og the force buffer.
-                //
-                // TODO improve this through use of an event - see Redmine #3093
-                //      push the event into the dependencyList
-                nbv->stream_local_wait_for_nonlocal();
+                dependencyList.push_back(gpuHaloExchange->getForcesReadyOnDeviceEvent());
             }
             nbv->atomdata_add_nbat_f_to_f_gpu(AtomLocality::Local, stateGpu->getForces(), pmeForcePtr,
                                               dependencyList, stepWork.useGpuPmeFReduction,
@@ -1747,20 +1789,22 @@ void do_force(FILE*                               fplog,
         if (vsite && !(fr->haveDirectVirialContributions && !stepWork.computeVirial))
         {
             rvec* fshift = as_rvec_array(forceOut.forceWithShiftForces().shiftForces().data());
-            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE,
-                           nullptr, nrnb, &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr, wcycle);
+            spread_vsite_f(vsite, as_rvec_array(x.unpaddedArrayRef().data()), f, fshift, FALSE, nullptr,
+                           nrnb, &top->idef, fr->pbcType, fr->bMolPBC, graph, box, cr, wcycle);
         }
 
         if (stepWork.computeVirial)
         {
             /* Calculation of the virial must be done after vsites! */
             calc_virial(0, mdatoms->homenr, as_rvec_array(x.unpaddedArrayRef().data()),
-                        forceOut.forceWithShiftForces(), vir_force, graph, box, nrnb, fr, inputrec->ePBC);
+                        forceOut.forceWithShiftForces(), vir_force, graph, box, nrnb, fr,
+                        inputrec->pbcType);
         }
     }
 
-    // TODO refoactor this and unify with above PME-PP GPU communication path call to the same function
-    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication)
+    // TODO refactor this and unify with above GPU PME-PP / GPU update path call to the same function
+    if (PAR(cr) && !thisRankHasDuty(cr, DUTY_PME) && !simulationWork.useGpuPmePpCommunication
+        && !simulationWork.useGpuUpdate)
     {
         /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.

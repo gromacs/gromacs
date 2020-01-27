@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,22 +44,21 @@
  */
 #include "gmxpre.h"
 
-#include <algorithm>
-
 #include "nbkernelsystem.h"
+
+#include <algorithm>
 
 #include "gromacs/math/matrix.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/fatalerror.h"
-
-#include "atomtype.h"
-#include "simulationstate.h"
 
 namespace nblib
 {
@@ -71,7 +70,7 @@ NBKernelSystem::NBKernelSystem(SimulationState simState)
 
     charges        = topology.getCharges();
     masses         = topology.getMasses();
-    excls          = topology.getGMXexclusions();
+    excls          = topology.getGmxExclusions();
     atomInfoAllVdw = topology.getAtomInfoAllVdw();
 
     std::vector<std::tuple<real, real>> nblibNonbonded = topology.getNonbondedParameters();
@@ -91,7 +90,7 @@ NBKernelSystem::NBKernelSystem(SimulationState simState)
 
     //! Todo: Refactor put_atoms_in_box so that this transformation is not needed
     fillLegacyMatrix(simState.box().matrix(), box);
-    put_atoms_in_box(epbcXYZ, box, coordinates);
+    put_atoms_in_box(PbcType::Xyz, box, coordinates);
 
     atomTypes.resize(topology.numAtoms());
     //! This needs to be filled with the atomTypes that correspond to the nonbonded params

@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013-2019, by the GROMACS development team, led by
+ * Copyright (c) 2013-2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -212,7 +212,7 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
     {
         const gmx_molblock_t& molb = mtop->molblock[mb];
         const gmx_moltype_t&  molt = mtop->moltype[molb.type];
-        const t_blocka&       excl = molt.excls;
+        const auto&           excl = molt.excls;
 
         /* Check if the cginfo is identical for all molecules in this block.
          * If so, we only need an array of the size of one molecule.
@@ -285,9 +285,9 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
 
                 bool haveExclusions = false;
                 /* Loop over all the exclusions of atom ai */
-                for (int j = excl.index[a]; j < excl.index[a + 1]; j++)
+                for (const int j : excl[a])
                 {
-                    if (excl.a[j] != a)
+                    if (j != a)
                     {
                         haveExclusions = true;
                         break;
@@ -951,9 +951,9 @@ void init_forcerec(FILE*                            fp,
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
 
-    if (check_box(ir->ePBC, box))
+    if (check_box(ir->pbcType, box))
     {
-        gmx_fatal(FARGS, "%s", check_box(ir->ePBC, box));
+        gmx_fatal(FARGS, "%s", check_box(ir->pbcType, box));
     }
 
     /* Test particle insertion ? */
@@ -1051,10 +1051,10 @@ void init_forcerec(FILE*                            fp,
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;
-    fr->ePBC          = ir->ePBC;
+    fr->pbcType       = ir->pbcType;
 
     /* Determine if we will do PBC for distances in bonded interactions */
-    if (fr->ePBC == epbcNONE)
+    if (fr->pbcType == PbcType::No)
     {
         fr->bMolPBC = FALSE;
     }
@@ -1131,7 +1131,7 @@ void init_forcerec(FILE*                            fp,
         }
         else
         {
-            fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->ePBC);
+            fr->bMolPBC = dd_bonded_molpbc(cr->dd, fr->pbcType);
 
             if (useEwaldSurfaceCorrection && !dd_moleculesAreAlwaysWhole(*cr->dd))
             {
@@ -1427,7 +1427,7 @@ void init_forcerec(FILE*                            fp,
 
         if (useGpuForBonded)
         {
-            auto stream = DOMAINDECOMP(cr)
+            auto stream = havePPDomainDecomposition(cr)
                                   ? Nbnxm::gpu_get_command_stream(
                                             fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal)
                                   : Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv,

@@ -45,6 +45,7 @@
 
 #include "integrator.h"
 
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/pbcutil/pbc.h"
 
 namespace nblib {
@@ -66,7 +67,7 @@ void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOu
             nextCoords[atomI][dim] = newCoord;
         }
     }
-    put_atoms_in_box(epbcXYZ, box, nextCoords);
+    put_atoms_in_box(PbcType::Xyz, box, nextCoords);
     currentCoords = nextCoords;
 }
 

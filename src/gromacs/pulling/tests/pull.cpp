@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,12 +70,12 @@ class PullTest : public ::testing::Test
 protected:
     PullTest() {}
 
-    void test(int epbc, matrix box)
+    void test(PbcType pbcType, matrix box)
     {
         t_pbc pbc;
 
         // PBC stuff
-        set_pbc(&pbc, epbc, box);
+        set_pbc(&pbc, pbcType, box);
 
         GMX_ASSERT(pbc.ndim_ePBC >= 1 && pbc.ndim_ePBC <= DIM,
                    "Tests only support PBC along at least x and at most x, y, and z");
@@ -161,35 +161,35 @@ TEST_F(PullTest, MaxPullDistanceXyzScrewBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 10 } };
 
-    test(epbcSCREW, box);
+    test(PbcType::Screw, box);
 }
 
 TEST_F(PullTest, MaxPullDistanceXyzCubicBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 10 } };
 
-    test(epbcXYZ, box);
+    test(PbcType::Xyz, box);
 }
 
 TEST_F(PullTest, MaxPullDistanceXyzTricBox)
 {
     matrix box = { { 10, 0, 0 }, { 3, 10, 0 }, { 3, 4, 10 } };
 
-    test(epbcXYZ, box);
+    test(PbcType::Xyz, box);
 }
 
 TEST_F(PullTest, MaxPullDistanceXyzLongBox)
 {
     matrix box = { { 10, 0, 0 }, { 0, 10, 0 }, { 0, 0, 30 } };
 
-    test(epbcXYZ, box);
+    test(PbcType::Xyz, box);
 }
 
 TEST_F(PullTest, MaxPullDistanceXySkewedBox)
 {
     matrix box = { { 10, 0, 0 }, { 5, 8, 0 }, { 0, 0, 0 } };
 
-    test(epbcXY, box);
+    test(PbcType::XY, box);
 }
 
 } // namespace

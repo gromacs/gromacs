@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -119,7 +120,11 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
     return (getThisRankDuties(cr) & duty) != 0;
 }
 
-//! True if this is a simulation with more than 1 node
+/*! \brief True if this is a simulation with more than 1 rank
+ *
+ * In particular, this is true for multi-rank runs with TPI and NM, because
+ * they use a decomposition that is not the domain decomposition used by
+ * other simulation types. */
 #define PAR(cr) ((cr)->nnodes > 1)
 
 //! True of this is the master node
@@ -134,13 +139,20 @@ inline bool thisRankHasDuty(const t_commrec* cr, int duty)
 //! The node id for the master
 #define MASTERRANK(cr) (0)
 
-/*! \brief Do we use domain decomposition
+/*! \brief Do we decompose the work of this simulation?
  *
- * Note that even with particle decomposition removed, the use of
- * non-DD parallelization in TPI, NM and multi-simulations means that
- * PAR(cr) and DOMAINDECOMP(cr) are not universally synonymous. In
- * particular, DOMAINDECOMP(cr) == true indicates that there is more
- * than one domain, not just that the dd algorithm is active. */
+ * True if this simulation uses more than one PP rank, or if this simulation
+ * uses at least one PME-only rank.
+ *
+ * PAR(cr) is true if this is true, but the converse does not apply (see docs
+ * of PAR(cr)).
+ *
+ * This is true if havePPDomainDecomposition is true, but the converse does not
+ * apply (see docs of havePpDomainDecomposition()).
+ *
+ * \todo As part of Redmine #2395, replace calls to this with
+ * havePPDomainDecomposition or a call of some other/new function, as
+ * appropriate to each case. Then eliminate this macro. */
 #define DOMAINDECOMP(cr) (((cr)->dd != nullptr) && PAR(cr))
 
 /*! \brief Returns whether we have actual domain decomposition for the particle-particle interactions

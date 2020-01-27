@@ -52,6 +52,7 @@
 #include "taskassignment.h"
 
 #include <algorithm>
+#include <exception>
 #include <string>
 #include <vector>
 
@@ -189,6 +190,31 @@ size_t countGpuTasksOnThisNode(const GpuTasksOnRanks& gpuTasksOnRanksOfThisNode)
     return numGpuTasksOnThisNode;
 }
 
+/*! \brief Return on each rank the total count over all ranks of all
+ * simulations. */
+int countOverAllRanks(const t_commrec* cr, const gmx_multisim_t* ms, const int countOnThisRank)
+{
+    int countOverAllRanksValue = countOnThisRank;
+    if (PAR(cr))
+    {
+        // Count over the ranks of this simulation.
+        gmx_sumi(1, &countOverAllRanksValue, cr);
+    }
+    if (isMultiSim(ms))
+    {
+        // Count over the ranks of all simulations.
+        gmx_sumi_sim(1, &countOverAllRanksValue, ms);
+        if (PAR(cr))
+        {
+            // Propagate the information from other simulations back
+            // to non-master ranks so they can all agree on future
+            // behavior.
+            gmx_bcast(sizeof(decltype(countOverAllRanksValue)), &countOverAllRanksValue, cr);
+        }
+    }
+    return countOverAllRanksValue;
+}
+
 } // namespace
 
 GpuTaskAssignmentsBuilder::GpuTaskAssignmentsBuilder() = default;
@@ -217,6 +243,7 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
     auto gpuTasksOnRanksOfThisNode = findAllGpuTasksOnThisNode(gpuTasksOnThisRank, physicalNodeComm);
     size_t numGpuTasksOnThisNode   = countGpuTasksOnThisNode(gpuTasksOnRanksOfThisNode);
 
+    std::exception_ptr             exceptionPtr;
     std::vector<GpuTaskAssignment> taskAssignmentOnRanksOfThisNode;
     try
     {
@@ -296,27 +323,42 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
         taskAssignmentOnRanksOfThisNode =
                 buildTaskAssignment(gpuTasksOnRanksOfThisNode, gpuIdsForTaskAssignment);
     }
-    catch (const std::exception& ex)
+    catch (...)
     {
-        // TODO This implementation is quite similar to that of
-        // processExceptionAsFatalError (which implements
-        // GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR), but it is unclear
-        // how we should involve MPI in the implementation of error
-        // handling.
-        if (physicalNodeComm.rank_ == 0)
-        {
-            printFatalErrorMessage(stderr, ex);
-        }
+        exceptionPtr = std::current_exception();
+    }
+    int countOfExceptionsOnThisRank   = int(bool(exceptionPtr));
+    int countOfExceptionsOverAllRanks = countOverAllRanks(cr, ms, countOfExceptionsOnThisRank);
 
-        gmx_exit_on_fatal_error(ExitType_Abort, 1);
+    // Avoid all ranks spamming the error stream
+    //
+    // TODO improve this so that unique errors on different ranks
+    // are all reported on one rank.
+    if (countOfExceptionsOnThisRank > 0 && physicalNodeComm.rank_ == 0)
+    {
+        try
+        {
+            if (exceptionPtr)
+            {
+                std::rethrow_exception(exceptionPtr);
+            }
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
     // TODO This implements a global barrier so that MPI runtimes can
     // organize an orderly shutdown if one of the ranks has had to
-    // issue a fatal error after an exception detected only on one
-    // rank. When we have MPI-aware error handling and reporting, this
-    // should be improved.
+    // issue a fatal error above. When we have MPI-aware error
+    // handling and reporting, this should be improved (perhaps
+    // centralized there).
+    simulationBarrier(cr);
     multiSimBarrier(ms);
     simulationBarrier(cr);
+    if (countOfExceptionsOverAllRanks > 0)
+    {
+        gmx_fatal(FARGS,
+                  "Exiting because task assignment failed. If there is no descriptive error "
+                  "message in the terminal output, please report this failure as a bug.");
+    }
 
     // TODO There is no check that mdrun -nb gpu or -pme gpu or
     // -gpu_id is actually being implemented such that nonbonded tasks

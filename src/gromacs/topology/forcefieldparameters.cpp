@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -99,7 +100,7 @@ void pr_ffparams(FILE* fp, int indent, const char* title, const gmx_ffparams_t* 
         pr_indent(fp, indent + INDENT);
         fprintf(fp, "functype[%d]=%s, ", bShowNumbers ? i : -1,
                 interaction_function[ffparams->functype[i]].name);
-        pr_iparams(fp, ffparams->functype[i], &ffparams->iparams[i]);
+        pr_iparams(fp, ffparams->functype[i], ffparams->iparams[i]);
     }
     pr_double(fp, indent, "reppow", ffparams->reppow);
     pr_real(fp, indent, "fudgeQQ", ffparams->fudgeQQ);

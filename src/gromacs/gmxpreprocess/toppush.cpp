@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2615,10 +2616,8 @@ static void convert_pairs_to_pairsQ(gmx::ArrayRef<InteractionsOfType> interactio
 
 static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, InteractionsOfType* nbp, warninp* wi)
 {
-    int       n, ntype;
-    t_atom*   atom;
-    t_blocka* excl;
-    bool      bExcl;
+    int     n, ntype;
+    t_atom* atom;
 
     n    = mol->atoms.nr;
     atom = mol->atoms.atom;
@@ -2628,20 +2627,20 @@ static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, Interact
                "Number of pairs of generated non-bonded parameters should be a perfect square");
 
     /* Add a pair interaction for all non-excluded atom pairs */
-    excl = &mol->excls;
+    const auto& excls = mol->excls;
     for (int i = 0; i < n; i++)
     {
         for (int j = i + 1; j < n; j++)
         {
-            bExcl = FALSE;
-            for (int k = excl->index[i]; k < excl->index[i + 1]; k++)
+            bool pairIsExcluded = false;
+            for (const int atomK : excls[i])
             {
-                if (excl->a[k] == j)
+                if (atomK == j)
                 {
-                    bExcl = TRUE;
+                    pairIsExcluded = true;
                 }
             }
-            if (!bExcl)
+            if (!pairIsExcluded)
             {
                 if (nb_funct != F_LJ)
                 {
@@ -2661,24 +2660,20 @@ static void generate_LJCpairsNB(MoleculeInformation* mol, int nb_funct, Interact
     }
 }
 
-static void set_excl_all(t_blocka* excl)
+static void set_excl_all(gmx::ListOfLists<int>* excl)
 {
-    int nat, i, j, k;
-
     /* Get rid of the current exclusions and exclude all atom pairs */
-    nat       = excl->nr;
-    excl->nra = nat * nat;
-    srenew(excl->a, excl->nra);
-    k = 0;
-    for (i = 0; i < nat; i++)
+    const int        numAtoms = excl->ssize();
+    std::vector<int> exclusionsForAtom(numAtoms);
+    for (int i = 0; i < numAtoms; i++)
     {
-        excl->index[i] = k;
-        for (j = 0; j < nat; j++)
-        {
-            excl->a[k++] = j;
-        }
+        exclusionsForAtom[i] = i;
     }
-    excl->index[nat] = k;
+    excl->clear();
+    for (int i = 0; i < numAtoms; i++)
+    {
+        excl->pushBack(exclusionsForAtom);
+    }
 }
 
 static void decouple_atoms(t_atoms*    atoms,

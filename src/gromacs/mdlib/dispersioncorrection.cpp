@@ -186,17 +186,14 @@ DispersionCorrection::TopologyParams::TopologyParams(const gmx_mtop_t&         m
              */
             for (const gmx_molblock_t& molb : mtop.molblock)
             {
-                const int       nmol  = molb.nmol;
-                const t_atoms*  atoms = &mtop.moltype[molb.type].atoms;
-                const t_blocka* excl  = &mtop.moltype[molb.type].excls;
+                const int      nmol  = molb.nmol;
+                const t_atoms* atoms = &mtop.moltype[molb.type].atoms;
+                const auto&    excl  = mtop.moltype[molb.type].excls;
                 for (int i = 0; (i < atoms->nr); i++)
                 {
                     const int tpi = atomtypeAOrB(atoms->atom[i], q);
-                    const int j1  = excl->index[i];
-                    const int j2  = excl->index[i + 1];
-                    for (int j = j1; j < j2; j++)
+                    for (const int k : excl[i])
                     {
-                        const int k = excl->a[j];
                         if (k > i)
                         {
                             const int tpj = atomtypeAOrB(atoms->atom[k], q);

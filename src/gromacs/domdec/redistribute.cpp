@@ -299,7 +299,7 @@ static int computeMoveFlag(const gmx_domdec_t& dd, const ivec& dev)
             flag |= DD_FLAG_BW(d);
             if (firstMoveDimValue == -1)
             {
-                if (dd.nc[dim] > 2)
+                if (dd.numCells[dim] > 2)
                 {
                     firstMoveDimValue = d * 2 + 1;
                 }
@@ -344,7 +344,7 @@ static void calc_cg_move(FILE*              fplog,
         /* Do pbc and check DD cell boundary crossings */
         for (int d = DIM - 1; d >= 0; d--)
         {
-            if (dd->nc[d] > 1)
+            if (dd->numCells[d] > 1)
             {
                 bool bScrew = (dd->unitCellInfo.haveScrewPBC && d == XX);
                 /* Determine the location of this cg in lattice coordinates */
@@ -365,7 +365,7 @@ static void calc_cg_move(FILE*              fplog,
                                       cm_new, cm_new, pos_d);
                     }
                     dev[d] = 1;
-                    if (dd->ci[d] == dd->nc[d] - 1)
+                    if (dd->ci[d] == dd->numCells[d] - 1)
                     {
                         rvec_dec(cm_new, state->box[d]);
                         if (bScrew)
@@ -468,7 +468,7 @@ static void calcGroupMove(FILE*                     fplog,
         /* Do pbc and check DD cell boundary crossings */
         for (int d = DIM - 1; d >= 0; d--)
         {
-            if (dd->nc[d] > 1)
+            if (dd->numCells[d] > 1)
             {
                 /* Determine the location of this COG in lattice coordinates */
                 real pos_d = cog[d];
@@ -488,7 +488,7 @@ static void calcGroupMove(FILE*                     fplog,
                                       cogOld, cog, pos_d);
                     }
                     dev[d] = 1;
-                    if (dd->ci[d] == dd->nc[d] - 1)
+                    if (dd->ci[d] == dd->numCells[d] - 1)
                     {
                         rvec_dec(cog, state->box[d]);
                     }
@@ -584,7 +584,7 @@ void dd_redistribute_cg(FILE*                        fplog,
         {
             cell_x0[d] = comm->cell_x0[d];
         }
-        if (d >= npbcdim && dd->ci[d] == dd->nc[d] - 1)
+        if (d >= npbcdim && dd->ci[d] == dd->numCells[d] - 1)
         {
             cell_x1[d] = GMX_FLOAT_MAX;
         }
@@ -748,7 +748,7 @@ void dd_redistribute_cg(FILE*                        fplog,
         const int dim      = dd->dim[d];
         int       ncg_recv = 0;
         int       nvr      = 0;
-        for (int dir = 0; dir < (dd->nc[dim] == 2 ? 1 : 2); dir++)
+        for (int dir = 0; dir < (dd->numCells[dim] == 2 ? 1 : 2); dir++)
         {
             const int cdd = d * 2 + dir;
             /* Communicate the cg and atom counts */
@@ -787,7 +787,7 @@ void dd_redistribute_cg(FILE*                        fplog,
             int              flag = flagBuffer.buffer[cg * DD_CGIBS + 1];
             const gmx::RVec& cog  = rvecBuffer.buffer[buf_pos];
 
-            if (dim >= npbcdim && dd->nc[dim] > 2)
+            if (dim >= npbcdim && dd->numCells[dim] > 2)
             {
                 /* No pbc in this dim and more than one domain boundary.
                  * We do a separate check if a charge group didn't move too far.
@@ -819,7 +819,7 @@ void dd_redistribute_cg(FILE*                        fplog,
                          * so we do not need to handle boundary crossings.
                          * This also means we do not have to handle PBC here.
                          */
-                        if (!((dd->ci[dim2] == dd->nc[dim2] - 1 && (flag & DD_FLAG_FW(d2)))
+                        if (!((dd->ci[dim2] == dd->numCells[dim2] - 1 && (flag & DD_FLAG_FW(d2)))
                               || (dd->ci[dim2] == 0 && (flag & DD_FLAG_BW(d2)))))
                         {
                             /* Clear the two flags for this dimension */
@@ -842,7 +842,7 @@ void dd_redistribute_cg(FILE*                        fplog,
                              * to an adjacent cell because of the
                              * staggering.
                              */
-                            if (pos_d >= cell_x1[dim2] && dd->ci[dim2] != dd->nc[dim2] - 1)
+                            if (pos_d >= cell_x1[dim2] && dd->ci[dim2] != dd->numCells[dim2] - 1)
                             {
                                 flag |= DD_FLAG_FW(d2);
                             }
@@ -861,7 +861,7 @@ void dd_redistribute_cg(FILE*                        fplog,
                     }
                     else if (flag & DD_FLAG_BW(d2))
                     {
-                        if (dd->nc[dd->dim[d2]] > 2)
+                        if (dd->numCells[dd->dim[d2]] > 2)
                         {
                             mc = d2 * 2 + 1;
                         }

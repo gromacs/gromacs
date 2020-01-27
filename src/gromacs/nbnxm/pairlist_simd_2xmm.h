@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,11 +33,22 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+/*! \internal \file
+ *
+ * \brief
+ * Declares inline-friendly code for making 2xNN pairlists
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \ingroup module_nbnxm
+ */
 
-/* Stride of the packed x coordinate array */
-static constexpr int c_xStride2xNN = c_nbnxnCpuIClusterSize;
 
-/* Copies PBC shifted i-cell packed atom coordinates to working array */
+//! Stride of the packed x coordinate array
+static constexpr int c_xStride2xNN = (GMX_SIMD_REAL_WIDTH >= 2 * c_nbnxnCpuIClusterSize)
+                                             ? GMX_SIMD_REAL_WIDTH / 2
+                                             : c_nbnxnCpuIClusterSize;
+
+//! Copies PBC shifted i-cell packed atom coordinates to working array
 static inline void icell_set_x_simd_2xnn(int  ci,
                                          real shx,
                                          real shy,
@@ -64,7 +76,7 @@ static inline void icell_set_x_simd_2xnn(int  ci,
           loadU1DualHsimd(x + ia + 2 * c_xStride2xNN + 2) + SimdReal(shz));
 }
 
-/* SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
+/*! \brief SIMD code for checking and adding cluster-pairs to the list using coordinates in packed format.
  *
  * Checks bouding box distances and possibly atom pair distances.
  * This is an accelerated version of make_cluster_list_simple.

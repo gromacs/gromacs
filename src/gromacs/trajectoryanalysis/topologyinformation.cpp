@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/mtop_util.h"
 #include "gromacs/topology/topology.h"
@@ -64,7 +65,7 @@ TopologyInformation::TopologyInformation() :
     expandedTopology_(nullptr),
     atoms_(nullptr),
     bTop_(false),
-    ePBC_(-1)
+    pbcType_(PbcType::Unset)
 {
 }
 
@@ -81,7 +82,7 @@ void TopologyInformation::fillFromInputFile(const std::string& filename)
     // TODO Once there are fewer callers of the file-reading
     // functionality, make them read directly into std::vector.
     rvec *x, *v;
-    readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(), &ePBC_, &x, &v, boxtop_);
+    readConfAndTopology(filename.c_str(), &bTop_, mtop_.get(), &pbcType_, &x, &v, boxtop_);
     xtop_.assign(x, x + mtop_->natoms);
     vtop_.assign(v, v + mtop_->natoms);
     sfree(x);
@@ -188,7 +189,7 @@ gmx_rmpbc_t gmx_rmpbc_init(const gmx::TopologyInformation& topInfo)
 {
     GMX_RELEASE_ASSERT(topInfo.hasTopology(), "Cannot remove PBC without a topology");
 
-    return gmx_rmpbc_init(&topInfo.expandedTopology()->idef, topInfo.ePBC(), topInfo.mtop()->natoms);
+    return gmx_rmpbc_init(&topInfo.expandedTopology()->idef, topInfo.pbcType(), topInfo.mtop()->natoms);
 }
 
 } // namespace gmx

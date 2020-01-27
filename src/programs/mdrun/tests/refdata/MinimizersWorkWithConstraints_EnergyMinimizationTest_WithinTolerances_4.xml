@@ -4,9 +4,9 @@
   <Simulation Name="alanine_vsite_vacuo">
     <Minimizer Name="steep">
       <Energy Name="Potential">
-        <Real Name="Time 0.000000 Step 0 in frame 0">-133.03444555671706</Real>
-        <Real Name="Time 1.000000 Step 1 in frame 1">-144.65547897475835</Real>
-        <Real Name="Time 3.000000 Step 3 in frame 2">-156.9841940951402</Real>
+        <Real Name="Time 0.000000 Step 0 in frame 0">-133.0344453241197</Real>
+        <Real Name="Time 1.000000 Step 1 in frame 1">-144.65547871521278</Real>
+        <Real Name="Time 3.000000 Step 3 in frame 2">-156.98419384827605</Real>
       </Energy>
     </Minimizer>
   </Simulation>

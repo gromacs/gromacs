@@ -1,4 +1,4 @@
-cmake>=3.9.6
+cmake>=3.12
 pip>=10.1
 networkx>=2.0
 numpy>=1

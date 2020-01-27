@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +60,8 @@
 
 #include "gmxpre.h"
 
+#include "pme_only.h"
+
 #include "config.h"
 
 #include <cassert>
@@ -96,7 +99,7 @@
 #include "gromacs/utility/smalloc.h"
 
 #include "pme_gpu_internal.h"
-#include "pme_internal.h"
+#include "pme_output.h"
 #include "pme_pp_communication.h"
 
 /*! \brief environment variable to enable GPU P2P communication */
@@ -192,7 +195,7 @@ static gmx_pme_t* gmx_pmeonly_switch(std::vector<gmx_pme_t*>* pmedata,
     for (auto& pme : *pmedata)
     {
         GMX_ASSERT(pme, "Bad PME tuning list element pointer");
-        if (pme->nkx == grid_size[XX] && pme->nky == grid_size[YY] && pme->nkz == grid_size[ZZ])
+        if (gmx_pme_grid_matches(*pme, grid_size))
         {
             /* Here we have found an existing PME data structure that suits us.
              * However, in the GPU case, we have to reinitialize it - there's only one GPU structure.
@@ -423,14 +426,10 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                                "but PME run mode is not PmeRunMode::GPU\n");
 
                     // This rank will have its data accessed directly by PP rank, so needs to send the remote addresses.
-                    rvec* d_x = nullptr;
-                    rvec* d_f = nullptr;
-#    if (GMX_GPU == GMX_GPU_CUDA) // avoid invalid cast for OpenCL
-                    d_x = reinterpret_cast<rvec*>(pme_gpu_get_device_x(pme));
-                    d_f = reinterpret_cast<rvec*>(pme_gpu_get_device_f(pme));
-#    endif
-                    pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(d_x);
-                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(d_f);
+                    pme_pp->pmeCoordinateReceiverGpu->sendCoordinateBufferAddressToPpRanks(
+                            pme_gpu_get_device_x(pme));
+                    pme_pp->pmeForceSenderGpu->sendForceBufferAddressToPpRanks(
+                            reinterpret_cast<rvec*>(pme_gpu_get_device_f(pme)));
                 }
             }
 
@@ -451,7 +450,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 {
                     if (pme_pp->useGpuDirectComm)
                     {
-                        pme_pp->pmeCoordinateReceiverGpu->receiveCoordinatesFromPpCudaDirect(sender.rankId);
+                        pme_pp->pmeCoordinateReceiverGpu->launchReceiveCoordinatesFromPpCudaDirect(
+                                sender.rankId);
                     }
                     else
                     {
@@ -469,6 +469,11 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
                 }
             }
 
+            if (pme_pp->useGpuDirectComm)
+            {
+                pme_pp->pmeCoordinateReceiverGpu->enqueueWaitReceiveCoordinatesFromPpCudaDirect();
+            }
+
             status = pmerecvqxX;
         }
 
@@ -477,6 +482,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
         messages = 0;
     } while (status == -1);
 #else
+    GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(box);
     GMX_UNUSED_VALUE(maxshift_x);
@@ -488,6 +494,8 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     GMX_UNUSED_VALUE(grid_size);
     GMX_UNUSED_VALUE(ewaldcoeff_q);
     GMX_UNUSED_VALUE(ewaldcoeff_lj);
+    GMX_UNUSED_VALUE(useGpuForPme);
+    GMX_UNUSED_VALUE(stateGpu);
 
     status = pmerecvqxX;
 #endif
@@ -500,6 +508,7 @@ static int gmx_pme_recv_coeffs_coords(struct gmx_pme_t*            pme,
     return status;
 }
 
+#if GMX_MPI
 /*! \brief Send force data to PP ranks */
 static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp* pme_pp, int* messages)
 {
@@ -514,14 +523,13 @@ static void sendFToPP(void* sendbuf, PpRanks receiver, gmx_pme_pp* pme_pp, int* 
     }
     else
     {
-#if GMX_MPI
         // Send using MPI
         MPI_Isend(sendbuf, receiver.numAtoms * sizeof(rvec), MPI_BYTE, receiver.rankId, 0,
                   pme_pp->mpi_comm_mysim, &pme_pp->req[*messages]);
         *messages = *messages + 1;
-#endif
     }
 }
+#endif
 
 /*! \brief Send the PME mesh force, virial and energy to the PP-only ranks. */
 static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
@@ -576,6 +584,7 @@ static void gmx_pme_send_force_vir_ener(const gmx_pme_t& pme,
     MPI_Waitall(messages, pme_pp->req.data(), pme_pp->stat.data());
 #else
     gmx_call("MPI not enabled");
+    GMX_UNUSED_VALUE(pme);
     GMX_UNUSED_VALUE(pme_pp);
     GMX_UNUSED_VALUE(output);
     GMX_UNUSED_VALUE(dvdlambda_q);
@@ -633,7 +642,7 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
         // TODO: Special PME-only constructor is used here. There is no mechanism to prevent from using the other constructor here.
         //       This should be made safer.
         stateGpu = std::make_unique<gmx::StatePropagatorDataGpu>(
-                commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize);
+                commandStream, deviceContext, GpuApiCallBehavior::Async, paddingSize, wcycle);
     }
 
 

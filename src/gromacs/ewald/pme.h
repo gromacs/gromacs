@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,9 +60,7 @@
 #include "gromacs/utility/real.h"
 
 struct gmx_hw_info_t;
-struct interaction_const_t;
 struct t_commrec;
-struct t_forcerec;
 struct t_inputrec;
 struct t_nrnb;
 struct PmeGpu;
@@ -76,12 +75,9 @@ struct NumPmeDomains;
 enum class GpuTaskCompletion;
 class PmeGpuProgram;
 class GpuEventSynchronizer;
-//! Convenience name.
-using PmeGpuProgramHandle = const PmeGpuProgram*;
 
 namespace gmx
 {
-class PmePpCommGpu;
 class ForceWithVirial;
 class MDLogger;
 enum class PinningPolicy : int;
@@ -115,6 +111,9 @@ enum class PmeForceOutputHandling
 /*! \brief Return the smallest allowed PME grid size for \p pmeOrder */
 int minimalPmeGridSize(int pmeOrder);
 
+//! Return whether the grid of \c pme is identical to \c grid_size.
+bool gmx_pme_grid_matches(const gmx_pme_t& pme, const ivec grid_size);
+
 /*! \brief Check restrictions on pme_order and the PME grid nkx,nky,nkz.
  *
  * With errorsAreFatal=true, an exception or fatal error is generated
@@ -140,7 +139,7 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * \returns  Pointer to newly allocated and initialized PME data.
  *
  * \todo We should evolve something like a \c GpuManager that holds \c
- * gmx_device_info_t * and \c PmeGpuProgramHandle and perhaps other
+ * gmx_device_info_t * and \c PmeGpuProgram* and perhaps other
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Redmine #2522.
  */
@@ -156,8 +155,19 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
                         PmeRunMode               runMode,
                         PmeGpu*                  pmeGpu,
                         const gmx_device_info_t* gpuInfo,
-                        PmeGpuProgramHandle      pmeGpuProgram,
+                        const PmeGpuProgram*     pmeGpuProgram,
                         const gmx::MDLogger&     mdlog);
+
+/*! \brief As gmx_pme_init, but takes most settings, except the grid/Ewald coefficients, from
+ * pme_src. This is only called when the PME cut-off/grid size changes.
+ */
+void gmx_pme_reinit(gmx_pme_t**       pmedata,
+                    const t_commrec*  cr,
+                    gmx_pme_t*        pme_src,
+                    const t_inputrec* ir,
+                    const ivec        grid_size,
+                    real              ewaldcoeff_q,
+                    real              ewaldcoeff_lj);
 
 /*! \brief Destroys the PME data structure.*/
 void gmx_pme_destroy(gmx_pme_t* pme);
@@ -213,15 +223,6 @@ int gmx_pme_do(struct gmx_pme_t*              pme,
                real*                          dvdlambda_lj,
                int                            flags);
 
-/*! \brief Called on the nodes that do PME exclusively */
-int gmx_pmeonly(struct gmx_pme_t*         pme,
-                const t_commrec*          cr,
-                t_nrnb*                   mynrnb,
-                gmx_wallcycle*            wcycle,
-                gmx_walltime_accounting_t walltime_accounting,
-                t_inputrec*               ir,
-                PmeRunMode                runMode);
-
 /*! \brief Calculate the PME grid energy V for n charges.
  *
  * The potential (found in \p pme) must have been found already with a
@@ -231,53 +232,6 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
  * energy.
  */
 void gmx_pme_calc_energy(gmx_pme_t* pme, gmx::ArrayRef<const gmx::RVec> x, gmx::ArrayRef<const real> q, real* V);
-
-/*! \brief Send the charges and maxshift to out PME-only node. */
-void gmx_pme_send_parameters(const t_commrec*           cr,
-                             const interaction_const_t* ic,
-                             gmx_bool                   bFreeEnergy_q,
-                             gmx_bool                   bFreeEnergy_lj,
-                             real*                      chargeA,
-                             real*                      chargeB,
-                             real*                      sqrt_c6A,
-                             real*                      sqrt_c6B,
-                             real*                      sigmaA,
-                             real*                      sigmaB,
-                             int                        maxshift_x,
-                             int                        maxshift_y);
-
-/*! \brief Send the coordinates to our PME-only node and request a PME calculation */
-void gmx_pme_send_coordinates(t_forcerec*           fr,
-                              const t_commrec*      cr,
-                              const matrix          box,
-                              const rvec*           x,
-                              real                  lambda_q,
-                              real                  lambda_lj,
-                              gmx_bool              bEnerVir,
-                              int64_t               step,
-                              bool                  useGpuPmePpComms,
-                              bool                  reinitGpuPmePpComms,
-                              bool                  sendCoordinatesFromGpu,
-                              GpuEventSynchronizer* coordinatesReadyOnDeviceEvent,
-                              gmx_wallcycle*        wcycle);
-
-/*! \brief Tell our PME-only node to finish */
-void gmx_pme_send_finish(const t_commrec* cr);
-
-/*! \brief Tell our PME-only node to reset all cycle and flop counters */
-void gmx_pme_send_resetcounters(const t_commrec* cr, int64_t step);
-
-/*! \brief PP nodes receive the long range forces from the PME nodes */
-void gmx_pme_receive_f(gmx::PmePpCommGpu*    pmePpCommGpu,
-                       const t_commrec*      cr,
-                       gmx::ForceWithVirial* forceWithVirial,
-                       real*                 energy_q,
-                       real*                 energy_lj,
-                       real*                 dvdlambda_q,
-                       real*                 dvdlambda_lj,
-                       bool                  useGpuPmePpComms,
-                       bool                  receivePmeForceToGpu,
-                       float*                pme_cycles);
 
 /*! \brief
  * This function updates the local atom data on GPU after DD (charges, coordinates, etc.).

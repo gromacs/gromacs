@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,9 +46,9 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#include "gpu_types.h"
+struct gmx_nbnxm_gpu_t;
 
 /*! \brief Handles any JIT compilation of nbnxn kernels for the selected device */
-OPENCL_FUNC_QUALIFIER void nbnxn_gpu_compile_kernels(gmx_nbnxn_gpu_t gmx_unused* nb) OPENCL_FUNC_TERM;
+OPENCL_FUNC_QUALIFIER void nbnxn_gpu_compile_kernels(gmx_nbnxm_gpu_t gmx_unused* nb) OPENCL_FUNC_TERM;
 
 #endif

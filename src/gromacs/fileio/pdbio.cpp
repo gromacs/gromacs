@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -112,16 +113,16 @@ static std::string xlate_atomname_gmx2pdb(std::string name)
 }
 
 
-void gmx_write_pdb_box(FILE* out, int ePBC, const matrix box)
+void gmx_write_pdb_box(FILE* out, PbcType pbcType, const matrix box)
 {
     real alpha, beta, gamma;
 
-    if (ePBC == -1)
+    if (pbcType == PbcType::Unset)
     {
-        ePBC = guess_ePBC(box);
+        pbcType = guessPbcType(box);
     }
 
-    if (ePBC == epbcNONE)
+    if (pbcType == PbcType::No)
     {
         return;
     }
@@ -151,7 +152,7 @@ void gmx_write_pdb_box(FILE* out, int ePBC, const matrix box)
         gamma = 90;
     }
     fprintf(out, "REMARK    THIS IS A SIMULATION BOX\n");
-    if (ePBC != epbcSCREW)
+    if (pbcType != PbcType::Screw)
     {
         fprintf(out, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n", 10 * norm(box[XX]),
                 10 * norm(box[YY]), 10 * norm(box[ZZ]), alpha, beta, gamma, "P 1", 1);
@@ -164,17 +165,17 @@ void gmx_write_pdb_box(FILE* out, int ePBC, const matrix box)
     }
 }
 
-static void read_cryst1(char* line, int* ePBC, matrix box)
+static void read_cryst1(char* line, PbcType* pbcType, matrix box)
 {
 #define SG_SIZE 11
-    char   sa[12], sb[12], sc[12], sg[SG_SIZE + 1], ident;
-    double fa, fb, fc, alpha, beta, gamma, cosa, cosb, cosg, sing;
-    int    syma, symb, symc;
-    int    ePBC_file;
+    char    sa[12], sb[12], sc[12], sg[SG_SIZE + 1], ident;
+    double  fa, fb, fc, alpha, beta, gamma, cosa, cosb, cosg, sing;
+    int     syma, symb, symc;
+    PbcType pbcTypeFile;
 
     sscanf(line, "%*s%s%s%s%lf%lf%lf", sa, sb, sc, &alpha, &beta, &gamma);
 
-    ePBC_file = -1;
+    pbcTypeFile = PbcType::Unset;
     if (strlen(line) >= 55)
     {
         strncpy(sg, line + 55, SG_SIZE);
@@ -186,17 +187,17 @@ static void read_cryst1(char* line, int* ePBC, matrix box)
         sscanf(sg, "%c %d %d %d", &ident, &syma, &symb, &symc);
         if (ident == 'P' && syma == 1 && symb <= 1 && symc <= 1)
         {
-            fc        = strtod(sc, nullptr) * 0.1;
-            ePBC_file = (fc > 0 ? epbcXYZ : epbcXY);
+            fc          = strtod(sc, nullptr) * 0.1;
+            pbcTypeFile = (fc > 0 ? PbcType::Xyz : PbcType::XY);
         }
         if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
         {
-            ePBC_file = epbcSCREW;
+            pbcTypeFile = PbcType::Screw;
         }
     }
-    if (ePBC)
+    if (pbcType)
     {
-        *ePBC = ePBC_file;
+        *pbcType = pbcTypeFile;
     }
 
     if (box)
@@ -204,7 +205,7 @@ static void read_cryst1(char* line, int* ePBC, matrix box)
         fa = strtod(sa, nullptr) * 0.1;
         fb = strtod(sb, nullptr) * 0.1;
         fc = strtod(sc, nullptr) * 0.1;
-        if (ePBC_file == epbcSCREW)
+        if (pbcTypeFile == PbcType::Screw)
         {
             fa *= 0.5;
         }
@@ -289,7 +290,7 @@ void write_pdbfile_indexed(FILE*          out,
                            const char*    title,
                            const t_atoms* atoms,
                            const rvec     x[],
-                           int            ePBC,
+                           PbcType        pbcType,
                            const matrix   box,
                            char           chainid,
                            int            model_nr,
@@ -308,7 +309,7 @@ void write_pdbfile_indexed(FILE*          out,
     fprintf(out, "TITLE     %s\n", (title && title[0]) ? title : gmx::bromacs().c_str());
     if (box && ((norm2(box[XX]) != 0.0F) || (norm2(box[YY]) != 0.0F) || (norm2(box[ZZ]) != 0.0F)))
     {
-        gmx_write_pdb_box(out, ePBC, box);
+        gmx_write_pdb_box(out, pbcType, box);
     }
     if (atoms->havePdbInfo)
     {
@@ -414,7 +415,7 @@ void write_pdbfile(FILE*          out,
                    const char*    title,
                    const t_atoms* atoms,
                    const rvec     x[],
-                   int            ePBC,
+                   PbcType        pbcType,
                    const matrix   box,
                    char           chainid,
                    int            model_nr,
@@ -427,7 +428,7 @@ void write_pdbfile(FILE*          out,
     {
         index[i] = i;
     }
-    write_pdbfile_indexed(out, title, atoms, x, ePBC, box, chainid, model_nr, atoms->nr, index,
+    write_pdbfile_indexed(out, title, atoms, x, pbcType, box, chainid, model_nr, atoms->nr, index,
                           conect, false);
     sfree(index);
 }
@@ -754,20 +755,18 @@ static void gmx_conect_addline(gmx_conect_t* con, char* line)
 {
     int n, ai, aj;
 
-    std::string form2  = "%%*s";
-    std::string format = form2 + "%%d";
+    std::string form2  = "%*s";
+    std::string format = form2 + "%d";
     if (sscanf(line, format.c_str(), &ai) == 1)
     {
         do
         {
             form2 += "%*s";
-            format = form2 + "%%d";
+            format = form2 + "%d";
             n      = sscanf(line, format.c_str(), &aj);
             if (n == 1)
             {
-                srenew(con->conect, ++con->nconect);
-                con->conect[con->nconect - 1].ai = ai - 1;
-                con->conect[con->nconect - 1].aj = aj - 1;
+                gmx_conect_add(con, ai - 1, aj - 1); /* to prevent duplicated records */
             }
         } while (n == 1);
     }
@@ -840,7 +839,7 @@ int read_pdbfile(FILE*      in,
                  t_atoms*   atoms,
                  t_symtab*  symtab,
                  rvec       x[],
-                 int*       ePBC,
+                 PbcType*   pbcType,
                  matrix     box,
                  gmx_bool   bChange,
                  gmx_conect conect)
@@ -854,10 +853,10 @@ int read_pdbfile(FILE*      in,
     int           natom, chainnum;
     gmx_bool      bStop = FALSE;
 
-    if (ePBC)
+    if (pbcType)
     {
         /* Only assume pbc when there is a CRYST1 entry */
-        *ePBC = epbcNONE;
+        *pbcType = PbcType::No;
     }
     if (box != nullptr)
     {
@@ -892,7 +891,7 @@ int read_pdbfile(FILE*      in,
                 }
                 break;
 
-            case epdbCRYST1: read_cryst1(line, ePBC, box); break;
+            case epdbCRYST1: read_cryst1(line, pbcType, box); break;
 
             case epdbTITLE:
             case epdbHEADER:
@@ -1010,11 +1009,11 @@ void get_pdb_coordnum(FILE* in, int* natoms)
     }
 }
 
-void gmx_pdb_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], int* ePBC, matrix box)
+void gmx_pdb_read_conf(const char* infile, t_symtab* symtab, char** name, t_atoms* atoms, rvec x[], PbcType* pbcType, matrix box)
 {
     FILE* in = gmx_fio_fopen(infile, "r");
     char  title[STRLEN];
-    read_pdbfile(in, title, nullptr, atoms, symtab, x, ePBC, box, TRUE, nullptr);
+    read_pdbfile(in, title, nullptr, atoms, symtab, x, pbcType, box, TRUE, nullptr);
     if (name != nullptr)
     {
         *name = gmx_strdup(title);

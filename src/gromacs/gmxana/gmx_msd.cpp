@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -564,7 +565,7 @@ static void printmol(t_corr*                 curr,
                      const int*              molindex,
                      const t_topology*       top,
                      rvec*                   x,
-                     int                     ePBC,
+                     PbcType                 pbcType,
                      matrix                  box,
                      const gmx_output_env_t* oenv)
 {
@@ -646,7 +647,7 @@ static void printmol(t_corr*                 curr,
         {
             pdbinfo[i].bfac *= scale;
         }
-        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, nullptr, ePBC, box);
+        write_sto_conf(fn_pdb, "molecular MSD", &top->atoms, x, nullptr, pbcType, box);
     }
 }
 
@@ -657,7 +658,7 @@ static void printmol(t_corr*                 curr,
 static int corr_loop(t_corr*                  curr,
                      const char*              fn,
                      const t_topology*        top,
-                     int                      ePBC,
+                     PbcType                  pbcType,
                      gmx_bool                 bMol,
                      int                      gnx[],
                      int*                     index[],
@@ -720,7 +721,7 @@ static int corr_loop(t_corr*                  curr,
 
     if (bMol)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
     }
 
     /* the loop over all frames */
@@ -905,7 +906,7 @@ static void do_corr(const char*             trx_file,
                     real                    t_pdb,
                     int                     nrgrp,
                     t_topology*             top,
-                    int                     ePBC,
+                    PbcType                 pbcType,
                     gmx_bool                bTen,
                     gmx_bool                bMW,
                     gmx_bool                bRmCOMM,
@@ -954,7 +955,7 @@ static void do_corr(const char*             trx_file,
     msd = std::make_unique<t_corr>(nrgrp, type, axis, dim_factor, mol_file == nullptr ? 0 : gnx[0],
                                    bTen, bMW, dt, top, beginfit, endfit);
 
-    nat_trx = corr_loop(msd.get(), trx_file, top, ePBC, mol_file ? gnx[0] != 0 : false, gnx.data(),
+    nat_trx = corr_loop(msd.get(), trx_file, top, pbcType, mol_file ? gnx[0] != 0 : false, gnx.data(),
                         index, (mol_file != nullptr) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
                         bTen, gnx_com, index_com, dt, t_pdb, pdb_file ? &x : nullptr, box, oenv);
 
@@ -986,7 +987,7 @@ static void do_corr(const char*             trx_file,
         {
             snew(top->atoms.pdbinfo, top->atoms.nr);
         }
-        printmol(msd.get(), mol_file, pdb_file, index[0], top, x, ePBC, box, oenv);
+        printmol(msd.get(), mol_file, pdb_file, index[0], top, x, pbcType, box, oenv);
         top->atoms.nr = i;
     }
 
@@ -1139,7 +1140,7 @@ int gmx_msd(int argc, char* argv[])
 #define NFILE asize(fnm)
 
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     matrix            box;
     const char *      trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
     rvec*             xdum;
@@ -1212,14 +1213,14 @@ int gmx_msd(int argc, char* argv[])
         gmx_fatal(FARGS, "Can only calculate the full tensor for 3D msd");
     }
 
-    bTop = read_tps_conf(tps_file, &top, &ePBC, &xdum, nullptr, box, bMW || bRmCOMM);
+    bTop = read_tps_conf(tps_file, &top, &pbcType, &xdum, nullptr, box, bMW || bRmCOMM);
     if (mol_file && !bTop)
     {
         gmx_fatal(FARGS, "Could not read a topology from %s. Try a tpr file instead.", tps_file);
     }
 
-    do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup, &top, ePBC, bTen, bMW,
-            bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit, oenv);
+    do_corr(trx_file, ndx_file, msd_file, mol_file, pdb_file, t_pdb, ngroup, &top, pbcType, bTen,
+            bMW, bRmCOMM, type, dim_factor, axis, dt, beginfit, endfit, oenv);
 
     done_top(&top);
     view_all(oenv, NFILE, fnm);

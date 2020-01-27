@@ -15,11 +15,15 @@ Several tools have their own individual pages and are listed below.
    testutils
    physical_validation
 
-.. TODO: Consider what is the most reasonable structure; currently, this list
+.. todo:: :issue:`3032`
+
+   Consider what is the most reasonable structure; currently, this list
    here does not make much sense in the overall organization and creates a
    confusing TOC for the developer guide.
 
-.. TODO: Add details for most of the tools, either in the form of links to wiki,
+.. todo:: :issue:`3267`
+
+   Add details for most of the tools, either in the form of links to wiki,
    or to a separate page that explains more details.
 
 Change management
@@ -58,7 +62,7 @@ Redmine
 Build system
 ------------
 
-.. TODO: details, ASAN, others?
+.. todo:: details, ASAN, others?
 
 CMake
   Main tool used in the build system.
@@ -128,7 +132,7 @@ clang-format
 
 ``admin/git-pre-commit``
   This sample git pre-commit hook can be used if one wants to apply
-  ``uncrustify.sh`` automatically before every commit to check for formatting
+  ``uncrustify.sh`` and ``clang-format.sh`` automatically before every commit to check for formatting
   issues.  See :doc:`code-formatting` for details.
 
 ``docs/doxygen/includesorter.py``
@@ -139,7 +143,7 @@ clang-format
 
 include directive checker
   In its present form, the above include sorter script cannot be conveniently
-  applied in ``uncrustify.sh``.  To check for issues, it is instead integrated into
+  applied in the formatting script.  To check for issues, it is instead integrated into
   a ``check-source`` build target.  When this target is built, it also checks for
   include formatting issues.  Internally, it uses the sorter script.  This check
   is run in Jenkins as part of the Documentation job.
