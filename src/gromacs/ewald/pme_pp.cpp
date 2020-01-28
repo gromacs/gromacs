@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,6 +47,8 @@
 
 #include "gmxpre.h"
 
+#include "pme_pp.h"
+
 #include "config.h"
 
 #include <cstdio>
@@ -70,7 +73,6 @@
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "pme_internal.h"
 #include "pme_pp_communication.h"
 
 /*! \brief Block to wait for communication to PME ranks to complete
@@ -230,7 +232,11 @@ static void gmx_pme_send_coeffs_coords(t_forcerec*      fr,
             }
         }
     }
-
+#else
+    GMX_UNUSED_VALUE(fr);
+    GMX_UNUSED_VALUE(reinitGpuPmePpComms);
+    GMX_UNUSED_VALUE(sendCoordinatesFromGpu);
+    GMX_UNUSED_VALUE(coordinatesReadyOnDeviceEvent);
 #endif
     if (!c_useDelayedWait)
     {
@@ -420,6 +426,8 @@ static void recvFFromPme(gmx::PmePpCommGpu* pmePpCommGpu,
 #if GMX_MPI
         MPI_Recv(recvptr, n * sizeof(rvec), MPI_BYTE, cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim,
                  MPI_STATUS_IGNORE);
+#else
+        GMX_UNUSED_VALUE(cr);
 #endif
     }
 }

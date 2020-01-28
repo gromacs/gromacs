@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -76,8 +76,10 @@ struct gpu_timers_t
      */
     struct XFTransfers
     {
-        GpuRegionTimer nb_h2d; /**< timer for x/q H2D transfers (l/nl, every step) */
-        GpuRegionTimer nb_d2h; /**< timer for f D2H transfer (l/nl, every step) */
+        //! timer for x/q H2D transfers (l/nl, every step)
+        GpuRegionTimer nb_h2d;
+        //! timer for f D2H transfer (l/nl, every step)
+        GpuRegionTimer nb_d2h;
     };
 
     /*! \internal
@@ -85,14 +87,20 @@ struct gpu_timers_t
      */
     struct Interaction
     {
-        GpuRegionTimer pl_h2d;       /**< timer for pair-list H2D transfers (l/nl, every PS step) */
-        bool didPairlistH2D = false; /**< true when a pair-list transfer has been done at this step */
-        GpuRegionTimer nb_k;         /**< timer for non-bonded kernels (l/nl, every step)         */
-        GpuRegionTimer prune_k; /**< timer for the 1st pass list pruning kernel (l/nl, every PS step) */
-        bool didPrune = false; /**< true when we timed pruning and the timings need to be accounted for */
-        GpuRegionTimer rollingPrune_k; /**< timer for rolling pruning kernels (l/nl, frequency depends on chunk size)  */
-        bool           didRollingPrune =
-                false; /**< true when we timed rolling pruning (at the previous step) and the timings need to be accounted for */
+        //! timer for pair-list H2D transfers (l/nl, every PS step)
+        GpuRegionTimer pl_h2d;
+        //! true when a pair-list transfer has been done at this step
+        bool didPairlistH2D = false;
+        //! timer for non-bonded kernels (l/nl, every step)
+        GpuRegionTimer nb_k;
+        //! timer for the 1st pass list pruning kernel (l/nl, every PS step)
+        GpuRegionTimer prune_k;
+        //! true when we timed pruning and the timings need to be accounted for
+        bool didPrune = false;
+        //! timer for rolling pruning kernels (l/nl, frequency depends on chunk size)
+        GpuRegionTimer rollingPrune_k;
+        //! true when we timed rolling pruning (at the previous step) and the timings need to be accounted for
+        bool didRollingPrune = false;
     };
 
     //! timer for atom data transfer (every PS step)
@@ -103,29 +111,46 @@ struct gpu_timers_t
     gmx::EnumerationArray<InteractionLocality, Nbnxm::gpu_timers_t::Interaction> interaction;
 };
 
+/*! \internal
+ * \brief GPU pair list structure */
 struct gpu_plist
 {
-    int na_c; /**< number of atoms per cluster                  */
+    //! number of atoms per cluster
+    int na_c;
 
-    int                       nsci;       /**< size of sci, # of i clusters in the list     */
-    int                       sci_nalloc; /**< allocation size of sci                       */
-    DeviceBuffer<nbnxn_sci_t> sci;        /**< list of i-cluster ("super-clusters")         */
+    //! size of sci, # of i clusters in the list
+    int nsci;
+    //! allocation size of sci
+    int sci_nalloc;
+    //! list of i-cluster ("super-clusters")
+    DeviceBuffer<nbnxn_sci_t> sci;
 
-    int                       ncj4;          /**< total # of 4*j clusters                      */
-    int                       cj4_nalloc;    /**< allocation size of cj4                       */
-    DeviceBuffer<nbnxn_cj4_t> cj4;           /**< 4*j cluster list, contains j cluster number
-                                                and index into the i cluster list            */
-    int                        nimask;       /**< # of 4*j clusters * # of warps               */
-    int                        imask_nalloc; /**< allocation size of imask                     */
-    DeviceBuffer<unsigned int> imask;        /**< imask for 2 warps for each 4*j cluster group */
-    DeviceBuffer<nbnxn_excl_t> excl;         /**< atom interaction bits                        */
-    int                        nexcl;        /**< count for excl                               */
-    int                        excl_nalloc;  /**< allocation size of excl                      */
+    //! total # of 4*j clusters
+    int ncj4;
+    //! allocation size of cj4
+    int cj4_nalloc;
+    //! 4*j cluster list, contains j cluster number and index into the i cluster list
+    DeviceBuffer<nbnxn_cj4_t> cj4;
+    //! # of 4*j clusters * # of warps
+    int nimask;
+    //! allocation size of imask
+    int imask_nalloc;
+    //! imask for 2 warps for each 4*j cluster group
+    DeviceBuffer<unsigned int> imask;
+    //! atom interaction bits
+    DeviceBuffer<nbnxn_excl_t> excl;
+    //! count for excl
+    int nexcl;
+    //! allocation size of excl
+    int excl_nalloc;
 
     /* parameter+variables for normal and rolling pruning */
-    bool haveFreshList; /**< true after search, indictes that initial pruning with outer prunning is needed */
-    int  rollingPruningNumParts; /**< the number of parts/steps over which one cyle of roling pruning takes places */
-    int  rollingPruningPart; /**< the next part to which the roling pruning needs to be applied */
+    //! true after search, indictes that initial pruning with outer prunning is needed
+    bool haveFreshList;
+    //! the number of parts/steps over which one cyle of roling pruning takes places
+    int rollingPruningNumParts;
+    //! the next part to which the roling pruning needs to be applied
+    int rollingPruningPart;
 };
 
 } // namespace Nbnxm

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -63,7 +64,8 @@
 #include "gromacs/utility/smalloc.h"
 
 
-static void periodic_dist(int ePBC, matrix box, rvec x[], int n, const int index[], real* rmin, real* rmax, int* min_ind)
+static void
+periodic_dist(PbcType pbcType, matrix box, rvec x[], int n, const int index[], real* rmin, real* rmax, int* min_ind)
 {
 #define NSHIFT_MAX 26
     int  nsz, nshift, sx, sy, sz, i, j, s;
@@ -71,18 +73,18 @@ static void periodic_dist(int ePBC, matrix box, rvec x[], int n, const int index
     rvec shift[NSHIFT_MAX], d0, d;
 
     sqr_box = std::min(norm2(box[XX]), norm2(box[YY]));
-    if (ePBC == epbcXYZ)
+    if (pbcType == PbcType::Xyz)
     {
         sqr_box = std::min(sqr_box, norm2(box[ZZ]));
         nsz     = 1;
     }
-    else if (ePBC == epbcXY)
+    else if (pbcType == PbcType::XY)
     {
         nsz = 0;
     }
     else
     {
-        gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist", epbc_names[ePBC]);
+        gmx_fatal(FARGS, "pbc = %s is not supported by g_mindist", c_pbcTypeNames[pbcType].c_str());
     }
 
     nshift = 0;
@@ -138,7 +140,7 @@ static void periodic_dist(int ePBC, matrix box, rvec x[], int n, const int index
 static void periodic_mindist_plot(const char*             trxfn,
                                   const char*             outfn,
                                   const t_topology*       top,
-                                  int                     ePBC,
+                                  PbcType                 pbcType,
                                   int                     n,
                                   int                     index[],
                                   gmx_bool                bSplit,
@@ -172,7 +174,7 @@ static void periodic_mindist_plot(const char*             trxfn,
 
     if (nullptr != top)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
     }
 
     bFirst = TRUE;
@@ -183,7 +185,7 @@ static void periodic_mindist_plot(const char*             trxfn,
             gmx_rmpbc(gpbc, natoms, box, x);
         }
 
-        periodic_dist(ePBC, box, x, n, index, &rmin, &rmax, ind_min);
+        periodic_dist(pbcType, box, x, n, index, &rmin, &rmax, ind_min);
         if (rmin < rmint)
         {
             rmint    = rmin;
@@ -216,7 +218,7 @@ static void periodic_mindist_plot(const char*             trxfn,
 
 static void calc_dist(real     rcut,
                       gmx_bool bPBC,
-                      int      ePBC,
+                      PbcType  pbcType,
                       matrix   box,
                       rvec     x[],
                       int      nx1,
@@ -253,7 +255,7 @@ static void calc_dist(real     rcut,
     /* Must init pbc every step because of pressure coupling */
     if (bPBC)
     {
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
     }
     if (index2)
     {
@@ -355,7 +357,7 @@ static void dist_plot(const char*             fn,
                       int                     nres,
                       int*                    residue,
                       gmx_bool                bPBC,
-                      int                     ePBC,
+                      PbcType                 pbcType,
                       gmx_bool                bGroup,
                       gmx_bool                bEachResEachTime,
                       gmx_bool                bPrintResName,
@@ -496,7 +498,7 @@ static void dist_plot(const char*             fn,
         {
             if (ng == 1)
             {
-                calc_dist(rcut, bPBC, ePBC, box, x0, gnx[0], gnx[0], index[0], index[0], bGroup,
+                calc_dist(rcut, bPBC, pbcType, box, x0, gnx[0], gnx[0], index[0], index[0], bGroup,
                           &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
                 fprintf(dist, "  %12e", bMin ? dmin : dmax);
                 if (num)
@@ -510,7 +512,7 @@ static void dist_plot(const char*             fn,
                 {
                     for (k = i + 1; (k < ng); k++)
                     {
-                        calc_dist(rcut, bPBC, ePBC, box, x0, gnx[i], gnx[k], index[i], index[k],
+                        calc_dist(rcut, bPBC, pbcType, box, x0, gnx[i], gnx[k], index[i], index[k],
                                   bGroup, &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
                         fprintf(dist, "  %12e", bMin ? dmin : dmax);
                         if (num)
@@ -526,7 +528,7 @@ static void dist_plot(const char*             fn,
             GMX_RELEASE_ASSERT(ng > 1, "Must have more than one group when not using -matrix");
             for (i = 1; (i < ng); i++)
             {
-                calc_dist(rcut, bPBC, ePBC, box, x0, gnx[0], gnx[i], index[0], index[i], bGroup,
+                calc_dist(rcut, bPBC, pbcType, box, x0, gnx[0], gnx[i], index[0], index[i], bGroup,
                           &dmin, &dmax, &nmin, &nmax, &min1, &min2, &max1, &max2);
                 fprintf(dist, "  %12e", bMin ? dmin : dmax);
                 if (num)
@@ -537,7 +539,7 @@ static void dist_plot(const char*             fn,
                 {
                     for (j = 0; j < nres; j++)
                     {
-                        calc_dist(rcut, bPBC, ePBC, box, x0, residue[j + 1] - residue[j], gnx[i],
+                        calc_dist(rcut, bPBC, pbcType, box, x0, residue[j + 1] - residue[j], gnx[i],
                                   &(index[0][residue[j]]), index[i], bGroup, &dmin, &dmax, &nmin,
                                   &nmax, &min1r, &min2r, &max1r, &max2r);
                         mindres[i - 1][j] = std::min(mindres[i - 1][j], dmin);
@@ -736,9 +738,9 @@ int gmx_mindist(int argc, char* argv[])
         { "-printresname", FALSE, etBOOL, { &bPrintResName }, "Write residue names" }
     };
     gmx_output_env_t* oenv;
-    t_topology*       top  = nullptr;
-    int               ePBC = -1;
-    rvec*             x    = nullptr;
+    t_topology*       top     = nullptr;
+    PbcType           pbcType = PbcType::Unset;
+    rvec*             x       = nullptr;
     matrix            box;
     gmx_bool          bTop = FALSE;
 
@@ -798,7 +800,7 @@ int gmx_mindist(int argc, char* argv[])
     if (tpsfnm || resfnm || !ndxfnm)
     {
         snew(top, 1);
-        bTop = read_tps_conf(tpsfnm, top, &ePBC, &x, nullptr, box, FALSE);
+        bTop = read_tps_conf(tpsfnm, top, &pbcType, &x, nullptr, box, FALSE);
         if (bPI && !bTop)
         {
             printf("\nWARNING: Without a run input file a trajectory with broken molecules will "
@@ -842,13 +844,13 @@ int gmx_mindist(int argc, char* argv[])
 
     if (bPI)
     {
-        periodic_mindist_plot(trxfnm, distfnm, top, ePBC, gnx[0], index[0], bSplit, oenv);
+        periodic_mindist_plot(trxfnm, distfnm, top, pbcType, gnx[0], index[0], bSplit, oenv);
     }
     else
     {
         dist_plot(trxfnm, atmfnm, distfnm, numfnm, resfnm, oxfnm, rcutoff, bMat,
                   top ? &(top->atoms) : nullptr, ng, index, gnx, grpname, bSplit, !bMax, nres,
-                  residues, bPBC, ePBC, bGroup, bEachResEachTime, bPrintResName, oenv);
+                  residues, bPBC, pbcType, bGroup, bEachResEachTime, bPrintResName, oenv);
     }
 
     do_view(oenv, distfnm, "-nxy");

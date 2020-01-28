@@ -85,8 +85,14 @@ the options for obtaining the force field parameters are:
 * search the primary literature for publications for parameters for the
   residue that are consistent with the force field that is being used.
 
-.. TODO Once you have determined the parameters and topology for your residue, see
-   :ref:`adding a residue to a force field <gmx-add-new-residue>` for instructions on how to proceed.
+..  todo:: gmx-add-new-residue doc target
+
+    Need gmx-add-new-residue doc target.
+
+    .. code-block:: none
+
+        Once you have determined the parameters and topology for your residue, see
+        :ref:`adding a residue to a force field <gmx-add-new-residue>` for instructions on how to proceed.
 
 Long bonds and/or missing atoms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

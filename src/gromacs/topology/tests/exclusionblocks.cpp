@@ -43,10 +43,12 @@
 
 #include "gromacs/topology/exclusionblocks.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include "gromacs/topology/block.h"
 #include "gromacs/utility/arrayref.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
 #include "testutils/cmdlinetest.h"
@@ -101,6 +103,21 @@ void makeTestBlockAData(t_blocka* ba)
     addGroupToBlocka(ba, indices);
 }
 
+//! Return ListOfLists filled with some datastructures
+ListOfLists<int> makeTestListOfLists()
+{
+    ListOfLists<int> list;
+
+    std::vector<int> indices = { 12, 11, 9, 6, 2 };
+    list.pushBack(indices);
+    indices = { 10, 8, 5, 1 };
+    list.pushBack(indices);
+    indices = { 7, 4, 0 };
+    list.pushBack(indices);
+
+    return list;
+}
+
 class ExclusionBlockTest : public ::testing::Test
 {
 public:
@@ -108,6 +125,7 @@ public:
     {
         const int natom = 3;
         makeTestBlockAData(&ba_);
+        list_ = makeTestListOfLists();
         b_.resize(natom);
     }
     ~ExclusionBlockTest() override { done_blocka(&ba_); }
@@ -126,8 +144,20 @@ public:
         }
     }
 
+    void compareBlocksAndList()
+    {
+        GMX_RELEASE_ASSERT(ssize(b_) == list_.ssize(), "The list counts should match");
+        for (index i = 0; i < ssize(b_); i++)
+        {
+            gmx::ArrayRef<const int> jList = list_[i];
+            ASSERT_EQ(b_[i].nra(), jList.ssize()) << "Block size mismatch at " << i << ".";
+            EXPECT_THAT(b_[i].atomNumber, ::testing::Pointwise(::testing::Eq(), jList));
+        }
+    }
+
 protected:
     t_blocka                    ba_;
+    ListOfLists<int>            list_;
     std::vector<ExclusionBlock> b_;
 };
 
@@ -148,8 +178,8 @@ TEST_F(ExclusionBlockTest, ConvertExclusionBlockToBlocka)
 
 TEST_F(ExclusionBlockTest, MergeExclusions)
 {
-    mergeExclusions(&ba_, b_);
-    compareBlocks();
+    mergeExclusions(&list_, b_);
+    compareBlocksAndList();
 }
 
 } // namespace

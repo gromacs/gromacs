@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -46,17 +46,26 @@
 #ifndef GMX_EWALD_PME_GPU_INTERNAL_H
 #define GMX_EWALD_PME_GPU_INTERNAL_H
 
-#include "gromacs/fft/fft.h"              // for the gmx_fft_direction enum
+#include "gromacs/fft/fft.h" // for the gmx_fft_direction enum
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h" // for the GPU_FUNC_ macros
 #include "gromacs/utility/arrayref.h"
 
-#include "pme_gpu_types_host.h" // for the inline functions accessing PmeGpu members
+#include "pme_gpu_types_host.h"
+#include "pme_output.h"
 
+class GpuEventSynchronizer;
+struct gmx_device_info_t;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
-struct gmx_wallclock_gpu_pme_t;
+struct gmx_wallcycle;
 class PmeAtomComm;
+enum class PmeForceOutputHandling;
+struct PmeGpu;
+class PmeGpuProgram;
+struct PmeGpuStaging;
+struct PmeGpuSettings;
 struct t_complex;
 
 namespace gmx
@@ -183,7 +192,7 @@ bool pme_gpu_stream_query(const PmeGpu* pmeGpu);
  *
  * Needs to be called on every DD step/in the beginning.
  */
-void pme_gpu_realloc_coordinates(const PmeGpu* pmeGpu);
+void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
  * Frees the coordinates on the GPU.
@@ -202,7 +211,7 @@ void pme_gpu_free_coordinates(const PmeGpu* pmeGpu);
  * Does not need to be done for every PME computation, only whenever the local charges change.
  * (So, in the beginning of the run, or on DD step).
  */
-void pme_gpu_realloc_and_copy_input_coefficients(const PmeGpu* pmeGpu, const float* h_coefficients);
+void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_coefficients);
 
 /*! \libinternal \brief
  * Frees the charges/coefficients on the GPU.
@@ -342,37 +351,6 @@ void pme_gpu_reinit_3dfft(const PmeGpu* pmeGpu);
  */
 void pme_gpu_destroy_3dfft(const PmeGpu* pmeGpu);
 
-/* Several GPU event-based timing functions that live in pme_gpu_timings.cpp */
-
-/*! \libinternal \brief
- * Finalizes all the active PME GPU stage timings for the current computation. Should be called at the end of every computation.
- *
- * \param[in] pmeGpu         The PME GPU structure.
- */
-void pme_gpu_update_timings(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
- * Updates the internal list of active PME GPU stages (if timings are enabled).
- *
- * \param[in] pmeGpu         The PME GPU data structure.
- */
-void pme_gpu_reinit_timings(const PmeGpu* pmeGpu);
-
-/*! \brief
- * Resets the PME GPU timings. To be called at the reset MD step.
- *
- * \param[in] pmeGpu         The PME GPU structure.
- */
-void pme_gpu_reset_timings(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
- * Copies the PME GPU timings to the gmx_wallclock_gpu_t structure (for log output). To be called at the run end.
- *
- * \param[in] pmeGpu         The PME GPU structure.
- * \param[in] timings        The gmx_wallclock_gpu_pme_t structure.
- */
-void pme_gpu_get_timings(const PmeGpu* pmeGpu, gmx_wallclock_gpu_pme_t* timings);
-
 /* The PME stages themselves */
 
 /*! \libinternal \brief
@@ -470,70 +448,33 @@ GPU_FUNC_QUALIFIER void* pme_gpu_get_context(const PmeGpu* GPU_FUNC_ARGUMENT(pme
 GPU_FUNC_QUALIFIER GpuEventSynchronizer* pme_gpu_get_forces_ready_synchronizer(
         const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu)) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
-/* The inlined convenience PME GPU status getters */
-
 /*! \libinternal \brief
- * Tells if PME runs on multiple GPUs with the decomposition.
+ * Returns the PME GPU settings
  *
  * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  True if PME runs on multiple GPUs, false otherwise.
+ * \returns                  The settings for PME on GPU
  */
-inline bool pme_gpu_uses_dd(const PmeGpu* pmeGpu)
+inline const PmeGpuSettings& pme_gpu_settings(const PmeGpu* pmeGpu)
 {
-    return !pmeGpu->settings.useDecomposition;
+    return pmeGpu->settings;
 }
 
 /*! \libinternal \brief
- * Tells if PME performs the gathering stage on GPU.
+ * Returns the PME GPU staging object
  *
  * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  True if the gathering is performed on GPU, false otherwise.
+ * \returns                  The staging object for PME on GPU
  */
-inline bool pme_gpu_performs_gather(const PmeGpu* pmeGpu)
+inline const PmeGpuStaging& pme_gpu_staging(const PmeGpu* pmeGpu)
 {
-    return pmeGpu->settings.performGPUGather;
+    return pmeGpu->staging;
 }
 
 /*! \libinternal \brief
- * Tells if PME performs the FFT stages on GPU.
+ * Sets whether the PME module is running in testing mode
  *
  * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  True if FFT is performed on GPU, false otherwise.
- */
-inline bool pme_gpu_performs_FFT(const PmeGpu* pmeGpu)
-{
-    return pmeGpu->settings.performGPUFFT;
-}
-
-/*! \libinternal \brief
- * Tells if PME performs the grid (un-)wrapping on GPU.
- *
- * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  True if (un-)wrapping is performed on GPU, false otherwise.
- */
-inline bool pme_gpu_performs_wrapping(const PmeGpu* pmeGpu)
-{
-    return pmeGpu->settings.useDecomposition;
-}
-
-/*! \libinternal \brief
- * Tells if PME performs the grid solving on GPU.
- *
- * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  True if solving is performed on GPU, false otherwise.
- */
-inline bool pme_gpu_performs_solve(const PmeGpu* pmeGpu)
-{
-    return pmeGpu->settings.performGPUSolve;
-}
-
-/*! \libinternal \brief
- * Enables or disables the testing mode.
- * Testing mode only implies copying all the outputs, even the intermediate ones, to the host,
- * and also makes the copies synchronous.
- *
- * \param[in] pmeGpu             The PME GPU structure.
- * \param[in] testing            Should the testing mode be enabled, or disabled.
+ * \param[in] testing        Whether testing mode is on.
  */
 inline void pme_gpu_set_testing(PmeGpu* pmeGpu, bool testing)
 {
@@ -542,17 +483,6 @@ inline void pme_gpu_set_testing(PmeGpu* pmeGpu, bool testing)
         pmeGpu->settings.copyAllOutputs = testing;
         pmeGpu->settings.transferKind = testing ? GpuApiCallBehavior::Sync : GpuApiCallBehavior::Async;
     }
-}
-
-/*! \libinternal \brief
- * Tells if PME is in the testing mode.
- *
- * \param[in] pmeGpu             The PME GPU structure.
- * \returns                      true if testing mode is enabled, false otherwise.
- */
-inline bool pme_gpu_is_testing(const PmeGpu* pmeGpu)
-{
-    return pmeGpu->settings.copyAllOutputs;
 }
 
 /* A block of C++ functions that live in pme_gpu_internal.cpp */
@@ -661,7 +591,7 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
                                        const gmx_device_info_t* GPU_FUNC_ARGUMENT(gpuInfo),
-                                       PmeGpuProgramHandle GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
+                                       const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief
  * Destroys the PME GPU data at the end of the run.

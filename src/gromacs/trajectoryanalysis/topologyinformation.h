@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +55,7 @@
 
 //! Forward declaration
 typedef struct gmx_rmpbc* gmx_rmpbc_t;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -134,8 +135,8 @@ public:
     /*! \brief Copies the fully expanded atom data arrays, which
      * might be valid but empty if no topology is available. */
     AtomsDataPtr copyAtoms() const;
-    //! Returns the ePBC field from the topology.
-    int ePBC() const { return ePBC_; }
+    //! Returns the pbcType field from the topology.
+    PbcType pbcType() const { return pbcType_; }
     /*! \brief
      * Gets the configuration positions from the topology file.
      *
@@ -186,8 +187,8 @@ private:
     std::vector<RVec> vtop_;
     //! The box loaded from the topology file.
     matrix boxtop_{};
-    //! The ePBC field loaded from the topology file.
-    int ePBC_;
+    //! The pbcType field loaded from the topology file.
+    PbcType pbcType_;
 
     // TODO This type is probably movable if we need that.
     GMX_DISALLOW_COPY_AND_ASSIGN(TopologyInformation);

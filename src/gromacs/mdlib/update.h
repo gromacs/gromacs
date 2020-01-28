@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -49,6 +50,7 @@
 class ekinstate_t;
 struct gmx_ekindata_t;
 struct gmx_enerdata_t;
+enum class PbcType;
 struct t_extmass;
 struct t_fcdata;
 struct t_graph;
@@ -134,7 +136,8 @@ void update_pcouple_after_coordinates(FILE*             fplog,
                                       matrix            pressureCouplingMu,
                                       t_state*          state,
                                       t_nrnb*           nrnb,
-                                      gmx::Update*      upd);
+                                      gmx::Update*      upd,
+                                      bool              scaleCoordinates);
 
 void update_coords(int64_t           step,
                    const t_inputrec* inputrec, /* input record and box stuff	*/
@@ -292,7 +295,7 @@ void update_annealing_target_temp(t_inputrec* ir, real t, gmx::Update* upd);
 real calc_temp(real ekin, real nrdf);
 /* Calculate the temperature */
 
-real calc_pres(int ePBC, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres);
+real calc_pres(PbcType pbcType, int nwall, const matrix box, const tensor ekin, const tensor vir, tensor pres);
 /* Calculate the pressure tensor, returns the scalar pressure.
  * The unit of pressure is bar.
  */
@@ -328,7 +331,8 @@ void berendsen_pscale(const t_inputrec*    ir,
                       int                  nr_atoms,
                       rvec                 x[],
                       const unsigned short cFREEZE[],
-                      t_nrnb*              nrnb);
+                      t_nrnb*              nrnb,
+                      bool                 scaleCoordinates);
 
 void pleaseCiteCouplingAlgorithms(FILE* fplog, const t_inputrec& ir);
 

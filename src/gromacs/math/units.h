@@ -53,28 +53,28 @@
 #define NM2A (NANO / ANGSTROM)     /* 10.0		*/
 #define RAD2DEG (180.0 / M_PI)     /* Conversion	*/
 #define DEG2RAD (M_PI / 180.0)     /* id		*/
-#define CAL2JOULE (4.184)          /* id		*/
-#define E_CHARGE (1.602176565e-19) /* Coulomb, NIST 2010 CODATA */
+#define CAL2JOULE (4.184)          /* Exact definition of the calorie */
+#define E_CHARGE (1.602176634e-19) /* Exact definition, Coulomb NIST 2018 CODATA */
 
-#define AMU (1.660538921e-27)                       /* kg, NIST 2010 CODATA  */
-#define BOLTZMANN (1.3806488e-23)                   /* (J/K, NIST 2010 CODATA */
-#define AVOGADRO (6.02214129e23)                    /* no unit, NIST 2010 CODATA */
+#define AMU (1.66053906660e-27)                     /* kg, NIST 2018 CODATA  */
+#define BOLTZMANN (1.380649e-23)                    /* (J/K, Exact definition, NIST 2018 CODATA */
+#define AVOGADRO (6.02214076e23)                    /* 1/mol, Exact definition, NIST 2018 CODATA */
 #define RGAS (BOLTZMANN * AVOGADRO)                 /* (J/(mol K))  */
 #define BOLTZ (RGAS / KILO)                         /* (kJ/(mol K)) */
 #define FARADAY (E_CHARGE * AVOGADRO)               /* (C/mol)      */
 #define ELECTRONVOLT (E_CHARGE * AVOGADRO / KILO)   /* (kJ/mol)   */
-#define PLANCK1 (6.62606957e-34)                    /* J s, NIST 2010 CODATA */
+#define PLANCK1 (6.62607015e-34)                    /* J/Hz, Exact definition, NIST 2018 CODATA */
 #define PLANCK (PLANCK1 * AVOGADRO / (PICO * KILO)) /* (kJ/mol) ps */
 
-#define EPSILON0_SI (8.854187817e-12) /* F/m,  NIST 2010 CODATA */
+#define EPSILON0_SI (8.8541878128e-12) /* F/m,  NIST 2018 CODATA */
 /* Epsilon in our MD units: (e^2 / Na (kJ nm)) == (e^2 mol/(kJ nm)) */
 #define EPSILON0 ((EPSILON0_SI * NANO * KILO) / (E_CHARGE * E_CHARGE * AVOGADRO))
 
-#define SPEED_OF_LIGHT (2.99792458E05) /* nm/ps, NIST 2010 CODATA */
-#define ATOMICMASS_keV (931494.061)    /* Atomic mass in keV, NIST 2010 CODATA   */
-#define ELECTRONMASS_keV (510.998928)  /* Electron mas in keV, NIST 2010 CODATA  */
+#define SPEED_OF_LIGHT (2.99792458e05)  /* units of nm/ps, Exact definition, NIST 2018 CODATA */
+#define ATOMICMASS_keV (931494.10242)   /* Atomic mass in keV, NIST 2018 CODATA   */
+#define ELECTRONMASS_keV (510.99895000) /* Electron mas in keV, NIST 2018 CODATA  */
 
-#define RYDBERG (1.0973731568539e-02) /* nm^-1, NIST 2010 CODATA */
+#define RYDBERG (1.0973731568160e-02) /* nm^-1, NIST 2018 CODATA */
 
 #define ONE_4PI_EPS0 (1.0 / (4.0 * M_PI * EPSILON0))
 #define FACEL (10.0 * ONE_4PI_EPS0)
@@ -97,7 +97,7 @@
 
 /* to convert AU to MD units: */
 #define HARTREE2KJ ((2.0 * RYDBERG * PLANCK * SPEED_OF_LIGHT) / AVOGADRO)
-#define BOHR2NM (0.052917721092) /* nm^-1, NIST 2010 CODATA */
+#define BOHR2NM (0.0529177210903) /* nm^-1, NIST 2018 CODATA */
 #define HARTREE_BOHR2MD (HARTREE2KJ * AVOGADRO / BOHR2NM)
 
 

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -109,7 +110,7 @@ static void mk_bonds(int                 nnm,
     std::array<real, MAXFORCEPARAM> forceParam = { 0.0 };
     if (bPBC)
     {
-        set_pbc(&pbc, -1, box);
+        set_pbc(&pbc, PbcType::Unset, box);
     }
     for (i = 0; (i < atoms->nr); i++)
     {
@@ -263,7 +264,7 @@ static void calc_angles_dihs(InteractionsOfType* ang, InteractionsOfType* dih, c
 
     if (bPBC)
     {
-        set_pbc(&pbc, epbcXYZ, box);
+        set_pbc(&pbc, PbcType::Xyz, box);
     }
     for (auto& angle : ang->interactionTypes)
     {
@@ -398,7 +399,7 @@ int gmx_x2top(int argc, char* argv[])
     int                                   bts[] = { 1, 1, 1, 2 };
     matrix                                box;    /* box length matrix */
     int                                   natoms; /* number of atoms in one molecule  */
-    int                                   epbc;
+    PbcType                               pbcType;
     bool                                  bRTP, bTOP, bOPLS;
     t_symtab                              symtab;
     real                                  qtot, mtot;
@@ -490,7 +491,7 @@ int gmx_x2top(int argc, char* argv[])
     /* Read coordinates */
     t_topology* top;
     snew(top, 1);
-    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &epbc, &x, nullptr, box, FALSE);
+    read_tps_conf(opt2fn("-f", NFILE, fnm), top, &pbcType, &x, nullptr, box, FALSE);
     t_atoms* atoms = &top->atoms;
     natoms         = atoms->nr;
     if (atoms->pdbinfo == nullptr)

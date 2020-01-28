@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "xutil.h"
 
 struct gmx_output_env_t;
+enum class PbcType : int;
 
 /* Some window sizes */
 #define EWIDTH 200
@@ -98,7 +99,7 @@ typedef struct
     t_windata wd;            /* Mol window structure			*/
     bool      bShowHydrogen; /* Show Hydrogens?			*/
     int       bond_type;     /* Show one of the above bondtypes      */
-    int       ePBC;          /* PBC type                             */
+    PbcType   pbcType;       /* PBC type                             */
     int       boxtype;       /* Rectangular, Tric, TruncOct (display)*/
     int       realbox;       /* Property of the real box             */
 } t_molwin;
@@ -178,7 +179,7 @@ extern t_manager* init_man(t_x11*            x11,
                            int               height,
                            unsigned long     fg,
                            unsigned long     bg,
-                           int               ePBC,
+                           PbcType           pbcType,
                            matrix            box,
                            gmx_output_env_t* oenv);
 /* Initiate the display manager */

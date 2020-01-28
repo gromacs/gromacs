@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,14 +34,14 @@
  */
 /*! \internal \file
  *
- * \brief Declares class for CUDA implementation of SETTLE
+ * \brief Declares class for GPU implementation of SETTLE
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  */
-#ifndef GMX_MDLIB_SETTLE_CUDA_CUH
-#define GMX_MDLIB_SETTLE_CUDA_CUH
+#ifndef GMX_MDLIB_SETTLE_GPU_CUH
+#define GMX_MDLIB_SETTLE_GPU_CUH
 
 #include "gmxpre.h"
 
@@ -185,8 +185,8 @@ gmx_unused // Temporary solution to keep clang happy
     initializeProjectionMatrix(invmO, invmH, dOH, dHH, p->invmat);
 }
 
-/*! \internal \brief Class with interfaces and data for CUDA version of SETTLE. */
-class SettleCuda
+/*! \internal \brief Class with interfaces and data for GPU version of SETTLE. */
+class SettleGpu
 {
 
 public:
@@ -201,9 +201,9 @@ public:
      *                           consistency.
      * \param[in] commandStream  Device stream to use.
      */
-    SettleCuda(const gmx_mtop_t& mtop, CommandStream commandStream);
+    SettleGpu(const gmx_mtop_t& mtop, CommandStream commandStream);
 
-    ~SettleCuda();
+    ~SettleGpu();
 
     /*! \brief Apply SETTLE.
      *
@@ -222,6 +222,7 @@ public:
      *                                  multipliers when velocities are updated)
      * \param[in]     computeVirial     If virial should be updated.
      * \param[in,out] virialScaled      Scaled virial tensor to be updated.
+     * \param[in]     pbcAiuc           PBC data.
      */
     void apply(const float3* d_x,
                float3*       d_xp,
@@ -229,7 +230,8 @@ public:
                float3*       d_v,
                const real    invdt,
                const bool    computeVirial,
-               tensor        virialScaled);
+               tensor        virialScaled,
+               const PbcAiuc pbcAiuc);
 
     /*! \brief
      * Update data-structures (e.g. after NB search step).
@@ -246,23 +248,9 @@ public:
      */
     void set(const t_idef& idef, const t_mdatoms& md);
 
-    /*! \brief
-     * Update PBC data.
-     *
-     * Converts pbc data from t_pbc into the PbcAiuc format and stores the latter.
-     *
-     * \todo PBC should not be handled by constraints.
-     *
-     * \param[in] pbc The PBC data in t_pbc format.
-     */
-    void setPbc(const t_pbc* pbc);
-
-
 private:
-    //! CUDA stream
+    //! GPU stream
     CommandStream commandStream_;
-    //! Periodic boundary data
-    PbcAiuc pbcAiuc_;
 
     //! Scaled virial tensor (9 reals, GPU)
     std::vector<float> h_virialScaled_;
@@ -287,4 +275,4 @@ private:
 
 } // namespace gmx
 
-#endif
+#endif // GMX_MDLIB_SETTLE_GPU_CUH

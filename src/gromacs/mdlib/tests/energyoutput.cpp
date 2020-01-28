@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,7 @@
 
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/makeconstraints.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/commrec.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -633,7 +634,8 @@ TEST_P(EnergyOutputTest, CheckOutput)
 
     MdModulesNotifier             mdModulesNotifier;
     std::unique_ptr<EnergyOutput> energyOutput = std::make_unique<EnergyOutput>(
-            energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun, mdModulesNotifier);
+            energyFile_, &mtop_, &inputrec_, nullptr, nullptr, parameters.isRerun,
+            StartingBehavior::NewSimulation, mdModulesNotifier);
 
     // Add synthetic data for a single step
     double testValue = 10.0;

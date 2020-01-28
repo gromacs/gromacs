@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2011,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +49,7 @@
 #include "gromacs/topology/idef.h"
 #include "gromacs/topology/symtab.h"
 #include "gromacs/utility/enumerationhelpers.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/unique_cptr.h"
 
 enum class SimulationAtomGroupType : int
@@ -83,10 +85,10 @@ struct gmx_moltype_t
     /*! \brief Default copy constructor */
     gmx_moltype_t(const gmx_moltype_t&) = default;
 
-    char**           name;  /**< Name of the molecule type            */
-    t_atoms          atoms; /**< The atoms in this molecule           */
-    InteractionLists ilist; /**< Interaction list with local indices  */
-    t_blocka         excls; /**< The exclusions                       */
+    char**                name;  /**< Name of the molecule type            */
+    t_atoms               atoms; /**< The atoms in this molecule           */
+    InteractionLists      ilist; /**< Interaction list with local indices  */
+    gmx::ListOfLists<int> excls; /**< The exclusions                       */
 };
 
 /*! \brief Block of molecules of the same type, used in gmx_mtop_t */
@@ -130,7 +132,7 @@ struct SimulationGroups
      */
     int numberOfGroupNumbers(SimulationAtomGroupType group) const
     {
-        return gmx::ssize(groupNumbers[group]);
+        return static_cast<int>(groupNumbers[group].size());
     }
 };
 
@@ -214,7 +216,7 @@ struct gmx_localtop_t
     //! Atomtype properties
     t_atomtypes atomtypes;
     //! The exclusions
-    t_blocka excls;
+    gmx::ListOfLists<int> excls;
     //! Flag for domain decomposition so we don't free already freed memory.
     bool useInDomainDecomp_ = false;
 };
@@ -228,8 +230,8 @@ typedef struct t_topology
     t_atomtypes atomtypes;                   /* Atomtype properties                  */
     t_block     mols;                        /* The molecules                        */
     gmx_bool    bIntermolecularInteractions; /* Inter.mol. int. ?   */
-    t_blocka    excls;                       /* The exclusions                       */
-    t_symtab    symtab;                      /* The symbol table                     */
+    /* Note that the exclusions are not stored in t_topology */
+    t_symtab symtab; /* The symbol table                     */
 } t_topology;
 
 void init_top(t_topology* top);

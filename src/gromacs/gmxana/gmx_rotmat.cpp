@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2009-2017, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -64,7 +64,7 @@ static void get_refx(gmx_output_env_t* oenv,
                      int*              index,
                      gmx_bool          bMW,
                      const t_topology* top,
-                     int               ePBC,
+                     PbcType           pbcType,
                      rvec*             x_ref)
 {
     int          natoms, nfr_all, nfr, i, j, a, r, c, min_fr;
@@ -97,7 +97,7 @@ static void get_refx(gmx_output_env_t* oenv,
         w_rls[a] = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
 
     do
     {
@@ -227,7 +227,7 @@ int gmx_rotmat(int argc, char* argv[])
     FILE*             out;
     t_trxstatus*      status;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     rvec *            x_ref, *x;
     matrix            box, R;
     real              t;
@@ -252,9 +252,9 @@ int gmx_rotmat(int argc, char* argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x_ref, nullptr, box, bMW);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x_ref, nullptr, box, bMW);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
 
     gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
 
@@ -264,7 +264,7 @@ int gmx_rotmat(int argc, char* argv[])
     if (reffit[0][0] != 'n')
     {
         get_refx(oenv, ftp2fn(efTRX, NFILE, fnm), reffit[0][2] == 'z' ? 3 : 2, skip, gnx, index,
-                 bMW, &top, ePBC, x_ref);
+                 bMW, &top, pbcType, x_ref);
     }
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);

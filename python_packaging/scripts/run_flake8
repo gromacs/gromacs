@@ -1,0 +1,19 @@
+#!/bin/bash -x
+
+# Note: E501 specifies a line length limit of 80 characters, but GROMACS allows more.
+#  Ref: http://manual.gromacs.org/current/dev-manual/formatting.html
+# Note: --max-complexity can be used to check McCabe complexity. Compliance
+#       could be a future goal, but is not yet a GROMACS priority.
+# W503 is ignored in observation of current PEP-8 conventions, but must be
+# explicitly disabled in at least some versions.
+# http://pycodestyle.pycqa.org/en/latest/intro.html#error-codes
+# https://www.python.org/dev/peps/pep-0008/#should-a-line-break-before-or-after-a-binary-operator
+
+# Check gmxapi package sources.
+python -m flake8 --ignore W503 --max-line-length 119 ${HOME}/gmxapi/src/gmxapi
+
+# Check gmxapi unit tests.
+python -m flake8 --ignore W503 --max-line-length 119 ${HOME}/gmxapi/src/test
+
+# Check gmxapi acceptance tests.
+python -m flake8 --ignore W503 --max-line-length 119 ${HOME}/gmxapi/test

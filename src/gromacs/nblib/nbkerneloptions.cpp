@@ -188,11 +188,11 @@ setupNbnxmInstance(const NBKernelOptions   &options,
 
     PairlistParams            pairlistParams(kernelSetup.kernelType, false, options.pairlistCutoff, false);
 
-    Nbnxm::GridSet            gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    Nbnxm::GridSet            gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto                      pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto                      pairSearch   = std::make_unique<PairSearch>(epbcXYZ, false, nullptr, nullptr,
+    auto                      pairSearch   = std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
                                                                           pairlistParams.pairlistType,
                                                                           false, numThreads, pinPolicy);
 
@@ -233,7 +233,7 @@ setupNbnxmInstance(const NBKernelOptions   &options,
                       0, nullptr);
 
     nbv->constructPairlist(gmx::InteractionLocality::Local,
-                           &system.excls, 0, &nrnb);
+                           system.excls, 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms

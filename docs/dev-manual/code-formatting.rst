@@ -5,7 +5,9 @@ Automatic source code formatting
 
 .. highlight:: bash
 
-The source code can be automatically formatted using clang-format or uncrustify.
+The source code can be automatically formatted using clang-format
+(GROMACS 2020 and later)
+or uncrustify (GROMACS 2019 and earlier).
 Both are formatting tools that apply the guidelines in :doc:`formatting`.
 Additionally, other Python scripts are used for a few other automatic
 formatting/checking tasks.  The overview tools page contains a list of these
@@ -55,11 +57,37 @@ Note that Jenkins now only allows formatting using ``clang-format``.
 Setting up clang-format
 -----------------------
 
-You only need a recent (at least version 7) install of the
-`clang-tools <https://clang.llvm.org/docs/ClangTools.html>`__ to use the script.
-Jenkins currently uses clang-format-7 to perform the task, with the style
-encoded in the ``.clang-format`` configuration file in the top of the source
-directory.
+|Gromacs| formatting is enforced with clang-format 7.0.1.
+:command:`clang-format` is one of the core *clang* tools.
+It may be included in a *clang* or *llvm* package from your favorite packaging
+system or you may find a standalone *clang-format* package,
+but you should confirm that the provided command is version 7.0.1 or
+7.1.0. Example::
+
+    $ clang-format --version
+    clang-format version 7.1.0 (tags/RELEASE_710/final)
+
+If you use a different version of clang-format,
+you will likely get different formatting results than
+the |Gromacs| continuous integration testing system,
+and the commits that you push will fail the automated tests.
+
+.. note::
+
+    Refer to `LLVM <http://releases.llvm.org/download.html#7.1.0>`__ for
+    source and binary downloads.
+    If downloading sources, note that you will need to download both the
+    *LLVM source code* and the *Clang source code*.
+    As per the clang
+    `INSTALL.txt <https://github.com/llvm/llvm-project/blob/release/7.x/clang/INSTALL.txt>`__,
+    place the expanded clang source into a :file:`tools/clang` subdirectory within
+    the expanded llvm archive, then run CMake against the llvm source directory.
+
+.. todo::
+
+    Consider referencing or providing binary packages and/or checking/managing
+    the executable from an :file:`admin/` script.
+    Reference: https://github.com/mongodb/mongo/blob/master/buildscripts/clang_format.py
 
 In order to use the installed version of clang-format for ``clang-format.sh``
 and for the pre-commit hook, you also need to run this in each of your |Gromacs| repositories::
@@ -70,6 +98,13 @@ Alternatively, if you just want to use ``clang-format.sh``, you can set the
 ``CLANG_FORMAT`` environment variable to ``/path/to/clang-format``.
 
 As above, see the sections below for using the pre-commit hook or git filters.
+
+clang-format discovers which formatting rules to apply from the
+:file:`.clang-format` configuration file(s) in project directories,
+which will be automatically updated (if necessary) when you :command:`git pull`
+from the |Gromacs| repository.
+For more about the tool and the :file:`.clang-format` configuration file,
+visit https://releases.llvm.org/7.0.1/tools/clang/docs/ClangFormat.html
 
 What is automatically formatted?
 --------------------------------
@@ -102,7 +137,7 @@ This file is also used as a loadable Python module for kernel generators, and
 provides the functionality to generate conformant copyright headers for such
 scripts.
 
-The script is similar to uncrustify in that there is rarely need to run it
+You should rarely need to run this
 directly, but instead the bash scripts below use it internally.  You can run
 the script with ``--help`` option if you want to see what all options it provides
 if you need to do some maintenance on the copyright headers themselves.
@@ -195,7 +230,7 @@ are reported.  This behavior can be changed by
    to check the HEAD commit.
 2. Specifying an action:
 
-   - ``check-*``:   reports the files that uncrustify changes
+   - ``check-*``:   reports the files that clang-format changes
    - ``diff-*``:    prints the actual diff of what would change
    - ``update-*``:  applies the changes to the repository
    - ``*-workdir``: operates on the working directory (files on disk)
@@ -217,26 +252,18 @@ If you want to run ``uncrustify.sh``, ``copyright.sh`` and/or
 configure a pre-commit hook using ``admin/git-pre-commit``:
 
 1. Copy the ``git-pre-commit`` script to .git/hooks/pre-commit.
-2. Specify the path to uncrustify for the hook if you have not already done
+
+2. Specify the paths to ``uncrustify`` and ``clang-format`` for the hook if you have not already done
    so::
 
      git config hooks.uncrustifypath /path/to/uncrustify
-
-3. Set the operation mode for the hook::
-
-     git config hooks.uncrustifymode check
-     git config hooks.copyrightmode  update
-
-For ``clang-format``, follow these steps instead:
-
-1. Specify the path to ``clang-format`` for the hook if you have not already done
-   so::
-
      git config hooks.clangformatpath /path/to/clang-format
 
-2. Set the operation mode for the hook::
+3. Set the operation modes for the hook::
 
+     git config hooks.uncrustifymode check
      git config hooks.clangformatmode check
+     git config hooks.copyrightmode  update
 
 With this configuration, all source files modified in the commit are run
 through the respective code formatting tool and checked for correct copyright headers.
@@ -285,7 +312,7 @@ that various git commands accept, i.e., ``src/*.cpp`` matches all ``.cpp`` files
 recursively under ``src/``).  The patterns can be specified with
 ``--pattern=<pattern>``, and multiple ``--pattern`` arguments can be given.
 
-As with ``uncrustify.sh``, ``-f``/``--force`` is necessary if the working tree and
+``-f``/``--force`` is necessary if the working tree and
 the git index do not match.
 
 

@@ -48,6 +48,9 @@
 namespace gmx
 {
 
+template<typename>
+class ListOfLists;
+
 /*! \brief Division of a range of indices into consecutive blocks
  *
  * A range of consecutive indices 0 to full.range.end() is divided
@@ -217,5 +220,6 @@ void stupid_fill_blocka(t_blocka* grp, int natom);
 
 void pr_block(FILE* fp, int indent, const char* title, const t_block* block, gmx_bool bShowNumbers);
 void pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, gmx_bool bShowNumbers);
+void pr_listoflists(FILE* fp, int indent, const char* title, const gmx::ListOfLists<int>* block, gmx_bool bShowNumbers);
 
 #endif

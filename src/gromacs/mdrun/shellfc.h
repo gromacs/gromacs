@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,6 +67,7 @@ class MdrunScheduleWorkload;
 } // namespace gmx
 
 /* Initialization function, also predicts the initial shell postions.
+ * Returns a pointer to an initialized shellfc object.
  */
 gmx_shellfc_t* init_shell_flexcon(FILE*             fplog,
                                   const gmx_mtop_t* mtop,
@@ -109,7 +111,7 @@ void relax_shell_flexcon(FILE*                               log,
                          const gmx_vsite_t*                  vsite,
                          const DDBalanceRegionHandler&       ddBalanceRegionHandler);
 
-/* Print some final output */
+/* Print some final output and delete shellfc */
 void done_shellfc(FILE* fplog, gmx_shellfc_t* shellfc, int64_t numSteps);
 
 /*! \brief Count the different particle types in a system

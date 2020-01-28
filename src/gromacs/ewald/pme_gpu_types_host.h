@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -56,9 +56,16 @@
 #include "gromacs/ewald/pme.h"
 #include "gromacs/ewald/pme_gpu_program.h"
 #include "gromacs/gpu_utils/clfftinitializer.h"
-#include "gromacs/gpu_utils/gpu_utils.h" // for GpuApiCallBehavior
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/math/vectypes.h"
+
+#include "pme_gpu_settings.h"
+#include "pme_gpu_staging.h"
+
+namespace gmx
+{
+class PmeDeviceBuffers;
+} // namespace gmx
 
 #if GMX_GPU != GMX_GPU_NONE
 struct PmeGpuSpecific;
@@ -81,74 +88,6 @@ typedef int PmeGpuKernelParams;
 #endif
 
 struct gmx_device_info_t;
-
-/*! \internal \brief
- * The PME GPU settings structure, included in the main PME GPU structure by value.
- */
-struct PmeGpuSettings
-{
-    /* Permanent settings set on initialization */
-    /*! \brief A boolean which tells if the solving is performed on GPU. Currently always true */
-    bool performGPUSolve;
-    /*! \brief A boolean which tells if the gathering is performed on GPU. Currently always true */
-    bool performGPUGather;
-    /*! \brief A boolean which tells if the FFT is performed on GPU. Currently true for a single MPI rank. */
-    bool performGPUFFT;
-    /*! \brief A convenience boolean which tells if PME decomposition is used. */
-    bool useDecomposition;
-    /*! \brief True if PME forces are reduced on-GPU, false if reduction is done on the CPU;
-     *  in the former case transfer does not need to happen.
-     *
-     *  Note that this flag may change per-step.
-     */
-    bool useGpuForceReduction;
-
-    /*! \brief A boolean which tells if any PME GPU stage should copy all of its outputs to the
-     * host. Only intended to be used by the test framework.
-     */
-    bool copyAllOutputs;
-    /*! \brief An enum which tells whether most PME GPU D2H/H2D data transfers should be synchronous. */
-    GpuApiCallBehavior transferKind;
-    /*! \brief Various flags for the current PME computation, corresponding to the GMX_PME_ flags in pme.h. */
-    int currentFlags;
-};
-
-// TODO There's little value in computing the Coulomb and LJ virial
-// separately, so we should simplify that.
-// TODO The matrices might be best as a view, but not currently
-// possible. Use mdspan?
-struct PmeOutput
-{
-    gmx::ArrayRef<gmx::RVec> forces_; //!< Host staging area for PME forces
-    bool                     haveForceOutput_ =
-            false; //!< True if forces have been staged other false (when forces are reduced on the GPU).
-    real   coulombEnergy_ = 0;         //!< Host staging area for PME coulomb energy
-    matrix coulombVirial_ = { { 0 } }; //!< Host staging area for PME coulomb virial contributions
-    real   lennardJonesEnergy_ = 0;    //!< Host staging area for PME LJ energy
-    matrix lennardJonesVirial_ = { { 0 } }; //!< Host staging area for PME LJ virial contributions
-};
-
-/*! \internal \brief
- * The PME GPU intermediate buffers structure, included in the main PME GPU structure by value.
- * Buffers are managed by the PME GPU module.
- */
-struct PmeGpuStaging
-{
-    //! Host-side force buffer
-    gmx::PaddedHostVector<gmx::RVec> h_forces;
-
-    /*! \brief Virial and energy intermediate host-side buffer. Size is PME_GPU_VIRIAL_AND_ENERGY_COUNT. */
-    float* h_virialAndEnergy;
-    /*! \brief B-spline values intermediate host-side buffer. */
-    float* h_splineModuli;
-
-    /*! \brief Pointer to the host memory with B-spline values. Only used for host-side gather, or unit tests */
-    float* h_theta;
-    /*! \brief Pointer to the host memory with B-spline derivative values. Only used for host-side gather, or unit tests */
-    float* h_dtheta;
-    /*! \brief Pointer to the host memory with ivec atom gridline indices. Only used for host-side gather, or unit tests */
-    int* h_gridlineIndices;
-};
 
 /*! \internal \brief
  * The PME GPU structure for all the data copied directly from the CPU PME structure.
@@ -199,7 +138,7 @@ struct PmeGpu
     std::shared_ptr<PmeShared> common; // TODO: make the CPU structure use the same type
 
     //! A handle to the program created by buildPmeGpuProgram()
-    PmeGpuProgramHandle programHandle_;
+    const PmeGpuProgram* programHandle_;
 
     //! Handle that ensures the clFFT library has been initialized once per process.
     std::unique_ptr<gmx::ClfftInitializer> initializedClfftLibrary_;

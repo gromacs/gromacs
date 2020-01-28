@@ -59,11 +59,12 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/real.h"
 
-struct t_blocka;
 struct t_pbc;
 
 namespace gmx
 {
+template<typename>
+class ListOfLists;
 
 namespace internal
 {
@@ -282,7 +283,7 @@ public:
      *
      * \see AnalysisNeighborhoodPositions::exclusionIds()
      */
-    void setTopologyExclusions(const t_blocka* excls);
+    void setTopologyExclusions(const ListOfLists<int>* excls);
     /*! \brief
      * Sets the algorithm to use for searching.
      *

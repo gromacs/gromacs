@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 
 #include "bench_system.h"
 
+#include <numeric>
 #include <vector>
 
 #include "gromacs/math/vec.h"
@@ -157,7 +158,7 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     nonbondedParameters[1] = c12Oxygen;
 
     generateCoordinates(multiplicationFactor, &coordinates, box);
-    put_atoms_in_box(epbcXYZ, box, coordinates);
+    put_atoms_in_box(PbcType::Xyz, box, coordinates);
 
     int numAtoms = coordinates.size();
     GMX_RELEASE_ASSERT(numAtoms % numAtomsInMolecule == 0,
@@ -167,9 +168,6 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
     charges.resize(numAtoms);
     atomInfoAllVdw.resize(numAtoms);
     atomInfoOxygenVdw.resize(numAtoms);
-    snew(excls.index, numAtoms + 1);
-    snew(excls.a, numAtoms * numAtomsInMolecule);
-    excls.index[0] = 0;
 
     for (int a = 0; a < numAtoms; a++)
     {
@@ -191,12 +189,10 @@ BenchmarkSystem::BenchmarkSystem(const int multiplicationFactor)
         SET_CGINFO_HAS_Q(atomInfoAllVdw[a]);
         SET_CGINFO_HAS_Q(atomInfoOxygenVdw[a]);
 
-        const int firstAtomInMolecule = a - (a % numAtomsInMolecule);
-        for (int aj = 0; aj < numAtomsInMolecule; aj++)
-        {
-            excls.a[a * numAtomsInMolecule + aj] = firstAtomInMolecule + aj;
-        }
-        excls.index[a + 1] = (a + 1) * numAtomsInMolecule;
+        excls.pushBackListOfSize(numAtomsInMolecule);
+        gmx::ArrayRef<int> exclusionsForAtom   = excls.back();
+        const int          firstAtomInMolecule = a - (a % numAtomsInMolecule);
+        std::iota(exclusionsForAtom.begin(), exclusionsForAtom.end(), firstAtomInMolecule);
     }
 
     forceRec.ntype = numAtomTypes;

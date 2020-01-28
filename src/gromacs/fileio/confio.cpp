@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -66,7 +67,7 @@ void write_sto_conf_indexed(const char*    outfile,
                             const t_atoms* atoms,
                             const rvec     x[],
                             const rvec*    v,
-                            int            ePBC,
+                            PbcType        pbcType,
                             const matrix   box,
                             int            nindex,
                             int            index[])
@@ -106,8 +107,8 @@ void write_sto_conf_indexed(const char*    outfile,
         case efENT:
         case efPQR:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile_indexed(out, title, atoms, x, ePBC, box, ' ', -1, nindex, index, nullptr,
-                                  ftp == efPQR);
+            write_pdbfile_indexed(out, title, atoms, x, pbcType, box, ' ', -1, nindex, index,
+                                  nullptr, ftp == efPQR);
             gmx_fio_fclose(out);
             break;
         case efESP:
@@ -125,7 +126,7 @@ void write_sto_conf(const char*    outfile,
                     const t_atoms* atoms,
                     const rvec     x[],
                     const rvec*    v,
-                    int            ePBC,
+                    PbcType        pbcType,
                     const matrix   box)
 {
     FILE*      out;
@@ -158,7 +159,7 @@ void write_sto_conf(const char*    outfile,
         case efBRK:
         case efENT:
             out = gmx_fio_fopen(outfile, "w");
-            write_pdbfile(out, title, atoms, x, ePBC, box, ' ', -1, nullptr);
+            write_pdbfile(out, title, atoms, x, pbcType, box, ' ', -1, nullptr);
             gmx_fio_fclose(out);
             break;
         case efESP:
@@ -176,7 +177,7 @@ void write_sto_conf_mtop(const char*       outfile,
                          const gmx_mtop_t* mtop,
                          const rvec        x[],
                          const rvec*       v,
-                         int               ePBC,
+                         PbcType           pbcType,
                          const matrix      box)
 {
     int     ftp;
@@ -197,7 +198,7 @@ void write_sto_conf_mtop(const char*       outfile,
              */
             atoms = gmx_mtop_global_atoms(mtop);
 
-            write_sto_conf(outfile, title, &atoms, x, v, ePBC, box);
+            write_sto_conf(outfile, title, &atoms, x, v, pbcType, box);
 
             done_atom(&atoms);
             break;
@@ -343,7 +344,7 @@ static void read_stx_conf(const char* infile,
                           t_atoms*    atoms,
                           rvec        x[],
                           rvec*       v,
-                          int*        ePBC,
+                          PbcType*    pbcType,
                           matrix      box)
 {
     FILE*      in;
@@ -360,9 +361,9 @@ static void read_stx_conf(const char* infile,
         gmx_mem("Uninitialized array atom");
     }
 
-    if (ePBC)
+    if (pbcType)
     {
-        *ePBC = -1;
+        *pbcType = PbcType::Unset;
     }
 
     ftp = fn2ftp(infile);
@@ -382,7 +383,7 @@ static void read_stx_conf(const char* infile,
             break;
         case efPDB:
         case efBRK:
-        case efENT: gmx_pdb_read_conf(infile, symtab, name, atoms, x, ePBC, box); break;
+        case efENT: gmx_pdb_read_conf(infile, symtab, name, atoms, x, pbcType, box); break;
         case efESP: gmx_espresso_read_conf(infile, symtab, name, atoms, x, v, box); break;
         default: gmx_incons("Not supported in read_stx_conf");
     }
@@ -392,7 +393,7 @@ void readConfAndAtoms(const char* infile,
                       t_symtab*   symtab,
                       char**      name,
                       t_atoms*    atoms,
-                      int*        ePBC,
+                      PbcType*    pbcType,
                       rvec**      x,
                       rvec**      v,
                       matrix      box)
@@ -403,7 +404,7 @@ void readConfAndAtoms(const char* infile,
     {
         bool       haveTopology;
         gmx_mtop_t mtop;
-        readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
+        readConfAndTopology(infile, &haveTopology, &mtop, pbcType, x, v, box);
         *symtab                          = mtop.symtab;
         *name                            = gmx_strdup(*mtop.name);
         *atoms                           = gmx_mtop_global_atoms(&mtop);
@@ -436,7 +437,7 @@ void readConfAndAtoms(const char* infile,
     {
         snew(*v, natoms);
     }
-    read_stx_conf(infile, symtab, name, atoms, *x, (v == nullptr) ? nullptr : *v, ePBC, box);
+    read_stx_conf(infile, symtab, name, atoms, *x, (v == nullptr) ? nullptr : *v, pbcType, box);
     if (xIsNull)
     {
         sfree(*x);
@@ -444,13 +445,19 @@ void readConfAndAtoms(const char* infile,
     }
 }
 
-void readConfAndTopology(const char* infile, bool* haveTopology, gmx_mtop_t* mtop, int* ePBC, rvec** x, rvec** v, matrix box)
+void readConfAndTopology(const char* infile,
+                         bool*       haveTopology,
+                         gmx_mtop_t* mtop,
+                         PbcType*    pbcType,
+                         rvec**      x,
+                         rvec**      v,
+                         matrix      box)
 {
     GMX_RELEASE_ASSERT(mtop != nullptr, "readConfAndTopology requires mtop!=NULL");
 
-    if (ePBC != nullptr)
+    if (pbcType != nullptr)
     {
-        *ePBC = -1;
+        *pbcType = PbcType::Unset;
     }
 
     *haveTopology = fn2bTPX(infile);
@@ -465,12 +472,12 @@ void readConfAndTopology(const char* infile, bool* haveTopology, gmx_mtop_t* mto
         {
             snew(*v, header.natoms);
         }
-        int natoms;
-        int ePBC_tmp = read_tpx(infile, nullptr, box, &natoms, (x == nullptr) ? nullptr : *x,
-                                (v == nullptr) ? nullptr : *v, mtop);
-        if (ePBC != nullptr)
+        int     natoms;
+        PbcType pbcType_tmp = read_tpx(infile, nullptr, box, &natoms, (x == nullptr) ? nullptr : *x,
+                                       (v == nullptr) ? nullptr : *v, mtop);
+        if (pbcType != nullptr)
         {
-            *ePBC = ePBC_tmp;
+            *pbcType = pbcType_tmp;
         }
     }
     else
@@ -481,19 +488,19 @@ void readConfAndTopology(const char* infile, bool* haveTopology, gmx_mtop_t* mto
 
         open_symtab(&symtab);
 
-        readConfAndAtoms(infile, &symtab, &name, &atoms, ePBC, x, v, box);
+        readConfAndAtoms(infile, &symtab, &name, &atoms, pbcType, x, v, box);
 
         convertAtomsToMtop(&symtab, put_symtab(&symtab, name), &atoms, mtop);
         sfree(name);
     }
 }
 
-gmx_bool read_tps_conf(const char* infile, t_topology* top, int* ePBC, rvec** x, rvec** v, matrix box, gmx_bool requireMasses)
+gmx_bool read_tps_conf(const char* infile, t_topology* top, PbcType* pbcType, rvec** x, rvec** v, matrix box, gmx_bool requireMasses)
 {
     bool       haveTopology;
     gmx_mtop_t mtop;
 
-    readConfAndTopology(infile, &haveTopology, &mtop, ePBC, x, v, box);
+    readConfAndTopology(infile, &haveTopology, &mtop, pbcType, x, v, box);
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
 

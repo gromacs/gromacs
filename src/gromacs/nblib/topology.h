@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
+/*! \inpublicapi \file
  * \brief
  * Implements nblib Topology and TopologyBuilder
  *
@@ -47,11 +47,8 @@
 #include <vector>
 
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/block.h"
-
-#include "molecules.h"
-
-struct t_blocka;
+#include "gromacs/nblib/molecules.h"
+#include "gromacs/utility/listoflists.h"
 
 namespace gmx
 {
@@ -67,7 +64,7 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
 } // namespace detail
 
-/*! \libinternal
+/*! \inpublicapi
  * \ingroup nblib
  * \brief System Topology
  *
@@ -97,11 +94,11 @@ public:
     //! Returns full list of nonbondedParameters
     const std::vector<std::tuple<real, real>>& getNonbondedParameters() const;
 
+    //! Returns a bit-masked vector indicating if an atom has VDW params
     const std::vector<int>& getAtomInfoAllVdw() const;
 
-    // TODO: This function is only needed for testing. Need
-    //       another way for testing exclusion correctness
-    const t_blocka& getGMXexclusions() const { return excls_; }
+    //! Returns exclusions in proper, performant, gromacs layout
+    const gmx::ListOfLists<int>& getGmxExclusions() const { return exclusions_; }
 
 private:
     Topology() = default;
@@ -123,16 +120,18 @@ private:
     //! Atom info where all atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoAllVdw_;
     //! Information about exclusions.
-    t_blocka excls_;
+    gmx::ListOfLists<int> exclusions_;
 };
 
-/*! \libinternal
+/*! \brief Topology Builder
+ *
+ * \libinternal
  * \ingroup nblib
- * \brief Topology Builder
  *
  * A helper class to assist building of topologies. They also ensure that
  * topologies only exist in a valid state within the scope of the
  * simulation program.
+ *
  */
 class TopologyBuilder
 {
@@ -140,7 +139,8 @@ public:
     //! Constructor
     TopologyBuilder();
 
-    /*! \brief Builds and Returns a valid Topology
+    /*! \brief
+     * Builds and Returns a valid Topology
      *
      * This function accounts for all the molecules added along with their
      * exclusions and returns a topology with a valid state that is usable
@@ -148,7 +148,7 @@ public:
      */
     Topology buildTopology();
 
-    //! Adds a molecules of a certain type into the topology
+    // Adds a molecules of a certain type into the topology
     TopologyBuilder& addMolecule(const Molecule& moleculeType, int nMolecules);
 
 private:
@@ -161,10 +161,10 @@ private:
     //! List of molecule types and number of molecules
     std::vector<std::tuple<Molecule, int>> molecules_;
 
-    //! Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
-    t_blocka createExclusionsList() const;
+    // Builds a GROMACS-compliant performant exclusions list aggregating exclusions from all molecules
+    gmx::ListOfLists<int> createExclusionsListOfLists() const;
 
-    //! Helper function to extract quantities like mass, charge, etc from the system
+    // Helper function to extract quantities like mass, charge, etc from the system
     template<typename T, class Extractor>
     std::vector<T> extractAtomTypeQuantity(Extractor extractor);
 

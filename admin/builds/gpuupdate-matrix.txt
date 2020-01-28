@@ -1,26 +1,19 @@
 # This matrix is intended to permit Jenkins on-demand testing
-# of code hidden behind the GMX_USE_BUFFER_OPS feature flag
-# during development. When the feature flag is removed, the
-# normal test matrices will be adapted to cover this code path.
+# of GPU update code path during development.
 #
 # Comment line(s) preceding each configuration document the main
 # intent behind that configuration, so that we can correctly judge
 # whether to preserve that during maintenance decisions.
-#
-# Both configurations currently target bs_nix1204, for better load
-# balance with pre-submit matrix, which makes heavier use of
-# bs_nix1310 agent.
 
-# Test newest gcc supported by newest CUDA at time of release
-# Test thread-MPI with CUDA
-# Test GPU update-constraints features in the above combination
+# Test GPU update-constraints features on a single PP+PME rank
 gcc-8 gpuhw=nvidia nranks=1 gpu_id=1 cuda-10.1 thread-mpi openmp cmake-3.10.0 release-with-assert simd=avx2_256 hwloc libhwloc-2.0.4 gpuupdate
 
-# Test CUDA build on a agent with no CUDA devices
-# Test without TNG support
-# Test GPU update-constraints features in the above combination
+# Test GPU update-constraints features in a CUDA build without CUDA devices
 gcc-7 gpuhw=none cuda-10.0 openmp no-tng release-with-assert gpuupdate
 
-# Test OpenCL build with gpudev features
 # Test GPU update-constraints on the OpenCL path where it is unsupported
 clang-8 openmp gpuhw=amd opencl-1.2 clFFT-2.14 simd=None gpuupdate
+
+# Test GPU update-constraints features with multiple PP ranks and one PME rank
+# Note: this should fall back correctly to the CPU codepath
+gcc-5 gpuhw=nvidia cuda-9.0 cmake-3.9.6 thread-mpi npme=1 nranks=3 release-with-assert gpuupdate

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -152,9 +153,12 @@ enum ePruneKind
  */
 typedef struct cl_nb_staging
 {
-    float* e_lj;        /**< LJ energy                       */
-    float* e_el;        /**< electrostatic energy            */
-    float (*fshift)[3]; /**< float3 buffer with shift forces */
+    //! LJ energy
+    float* e_lj;
+    //! electrostatic energy
+    float* e_el;
+    //! float3 buffer with shift forces
+    float (*fshift)[3];
 } cl_nb_staging_t;
 
 /*! \internal
@@ -162,29 +166,45 @@ typedef struct cl_nb_staging
  */
 typedef struct cl_atomdata
 {
-    int natoms;       /**< number of atoms                              */
-    int natoms_local; /**< number of local atoms                        */
-    int nalloc;       /**< allocation size for the atom data (xq, f)    */
+    //! number of atoms
+    int natoms;
+    //! number of local atoms
+    int natoms_local;
+    //! allocation size for the atom data (xq, f)
+    int nalloc;
 
-    cl_mem xq; /**< float4 buffer with atom coordinates + charges, size natoms */
+    //! float4 buffer with atom coordinates + charges, size natoms
+    cl_mem xq;
 
-    cl_mem f;           /**< float3 buffer with force output array, size natoms         */
-    size_t f_elem_size; /**< Size in bytes for one element of f buffer      */
+    //! float3 buffer with force output array, size natoms
+    cl_mem f;
+    //! Size in bytes for one element of f buffer
+    size_t f_elem_size;
 
-    cl_mem e_lj; /**< LJ energy output, size 1                       */
-    cl_mem e_el; /**< Electrostatics energy input, size 1            */
+    //! LJ energy output, size 1
+    cl_mem e_lj;
+    //! Electrostatics energy input, size 1
+    cl_mem e_el;
 
-    cl_mem fshift;           /**< float3 buffer with shift forces                */
-    size_t fshift_elem_size; /**< Size in bytes for one element of fshift buffer */
+    //! float3 buffer with shift forces
+    cl_mem fshift;
+    //! Size in bytes for one element of fshift buffer
+    size_t fshift_elem_size;
 
-    int    ntypes;     /**< number of atom types                           */
-    cl_mem atom_types; /**< int buffer with atom type indices, size natoms */
-    cl_mem lj_comb;    /**< float2 buffer with sqrt(c6),sqrt(c12), size natoms */
+    //! number of atom types
+    int ntypes;
+    //! int buffer with atom type indices, size natoms
+    cl_mem atom_types;
+    //! float2 buffer with sqrt(c6),sqrt(c12), size natoms
+    cl_mem lj_comb;
 
-    cl_mem shift_vec;           /**< float3 buffer with shifts values               */
-    size_t shift_vec_elem_size; /**< Size in bytes for one element of shift_vec buffer */
+    //! float3 buffer with shifts values
+    cl_mem shift_vec;
+    //! Size in bytes for one element of shift_vec buffer
+    size_t shift_vec_elem_size;
 
-    cl_bool bShiftVecUploaded; /**< true if the shift vector has been uploaded  */
+    //! true if the shift vector has been uploaded
+    cl_bool bShiftVecUploaded;
 } cl_atomdata_t;
 
 /*! \internal
@@ -193,36 +213,58 @@ typedef struct cl_atomdata
 typedef struct cl_nbparam
 {
 
-    int eeltype; /**< type of electrostatics, takes values from #eelOcl */
-    int vdwtype; /**< type of VdW impl., takes values from #evdwOcl     */
+    //! type of electrostatics, takes values from #eelOcl
+    int eeltype;
+    //! type of VdW impl., takes values from #evdwOcl
+    int vdwtype;
 
-    float epsfac;      /**< charge multiplication factor                      */
-    float c_rf;        /**< Reaction-field/plain cutoff electrostatics const. */
-    float two_k_rf;    /**< Reaction-field electrostatics constant            */
-    float ewald_beta;  /**< Ewald/PME parameter                               */
-    float sh_ewald;    /**< Ewald/PME correction term substracted from the direct-space potential */
-    float sh_lj_ewald; /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float ewaldcoeff_lj; /**< LJ-Ewald/PME coefficient                          */
+    //! charge multiplication factor
+    float epsfac;
+    //! Reaction-field/plain cutoff electrostatics const.
+    float c_rf;
+    //! Reaction-field electrostatics constant
+    float two_k_rf;
+    //! Ewald/PME parameter
+    float ewald_beta;
+    //! Ewald/PME correction term substracted from the direct-space potential
+    float sh_ewald;
+    //! LJ-Ewald/PME correction term added to the correction potential
+    float sh_lj_ewald;
+    //! LJ-Ewald/PME coefficient
+    float ewaldcoeff_lj;
 
-    float rcoulomb_sq; /**< Coulomb cut-off squared                           */
+    //! Coulomb cut-off squared
+    float rcoulomb_sq;
 
-    float rvdw_sq;           /**< VdW cut-off squared                               */
-    float rvdw_switch;       /**< VdW switched cut-off                              */
-    float rlistOuter_sq;     /**< Full, outer pair-list cut-off squared             */
-    float rlistInner_sq;     /**< Inner, dynamic pruned pair-list cut-off squared   */
-    bool  useDynamicPruning; /**< True if we use dynamic pair-list pruning          */
+    //! VdW cut-off squared
+    float rvdw_sq;
+    //! VdW switched cut-off
+    float rvdw_switch;
+    //! Full, outer pair-list cut-off squared
+    float rlistOuter_sq;
+    //! Inner, dynamic pruned pair-list cut-off squared
+    float rlistInner_sq;
+    //! True if we use dynamic pair-list pruning
+    bool useDynamicPruning;
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    //! VdW shift dispersion constants
+    shift_consts_t dispersion_shift;
+    //! VdW shift repulsion constants
+    shift_consts_t repulsion_shift;
+    //! VdW switch constants
+    switch_consts_t vdw_switch;
 
     /* LJ non-bonded parameters - accessed through texture memory */
-    cl_mem nbfp_climg2d; /**< nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements */
-    cl_mem nbfp_comb_climg2d; /**< nonbonded parameter table per atom type, 2*ntype elements */
+    //! nonbonded parameter table with C6/C12 pairs per atom type-pair, 2*ntype^2 elements
+    cl_mem nbfp_climg2d;
+    //! nonbonded parameter table per atom type, 2*ntype elements
+    cl_mem nbfp_comb_climg2d;
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    float  coulomb_tab_scale;   /**< table scale/spacing                        */
-    cl_mem coulomb_tab_climg2d; /**< pointer to the table in the device memory  */
+    //! table scale/spacing
+    float coulomb_tab_scale;
+    //! pointer to the table in the device memory
+    cl_mem coulomb_tab_climg2d;
 } cl_nbparam_t;
 
 /*! \internal
@@ -233,30 +275,48 @@ typedef struct cl_nbparam
 typedef struct cl_nbparam_params
 {
 
-    int eeltype; /**< type of electrostatics, takes values from #eelCu */
-    int vdwtype; /**< type of VdW impl., takes values from #evdwCu     */
+    //! type of electrostatics, takes values from #eelCu
+    int eeltype;
+    //! type of VdW impl., takes values from #evdwCu
+    int vdwtype;
 
-    float epsfac;      /**< charge multiplication factor                      */
-    float c_rf;        /**< Reaction-field/plain cutoff electrostatics const. */
-    float two_k_rf;    /**< Reaction-field electrostatics constant            */
-    float ewald_beta;  /**< Ewald/PME parameter                               */
-    float sh_ewald;    /**< Ewald/PME correction term substracted from the direct-space potential */
-    float sh_lj_ewald; /**< LJ-Ewald/PME correction term added to the correction potential        */
-    float ewaldcoeff_lj; /**< LJ-Ewald/PME coefficient                          */
+    //! charge multiplication factor
+    float epsfac;
+    //! Reaction-field/plain cutoff electrostatics const.
+    float c_rf;
+    //! Reaction-field electrostatics constant
+    float two_k_rf;
+    //! Ewald/PME parameter
+    float ewald_beta;
+    //! Ewald/PME correction term substracted from the direct-space potential
+    float sh_ewald;
+    //! LJ-Ewald/PME correction term added to the correction potential
+    float sh_lj_ewald;
+    //! LJ-Ewald/PME coefficient
+    float ewaldcoeff_lj;
 
-    float rcoulomb_sq; /**< Coulomb cut-off squared                           */
+    //! Coulomb cut-off squared
+    float rcoulomb_sq;
 
-    float rvdw_sq;       /**< VdW cut-off squared                               */
-    float rvdw_switch;   /**< VdW switched cut-off                              */
-    float rlistOuter_sq; /**< Full, outer pair-list cut-off squared             */
-    float rlistInner_sq; /**< Inner, dynamic pruned pair-list cut-off squared   */
+    //! VdW cut-off squared
+    float rvdw_sq;
+    //! VdW switched cut-off
+    float rvdw_switch;
+    //! Full, outer pair-list cut-off squared
+    float rlistOuter_sq;
+    //! Inner, dynamic pruned pair-list cut-off squared
+    float rlistInner_sq;
 
-    shift_consts_t  dispersion_shift; /**< VdW shift dispersion constants           */
-    shift_consts_t  repulsion_shift;  /**< VdW shift repulsion constants            */
-    switch_consts_t vdw_switch;       /**< VdW switch constants                     */
+    //! VdW shift dispersion constants
+    shift_consts_t dispersion_shift;
+    //! VdW shift repulsion constants
+    shift_consts_t repulsion_shift;
+    //! VdW switch constants
+    switch_consts_t vdw_switch;
 
     /* Ewald Coulomb force table data - accessed through texture memory */
-    float coulomb_tab_scale; /**< table scale/spacing                        */
+    //! table scale/spacing
+    float coulomb_tab_scale;
 } cl_nbparam_params_t;
 
 
@@ -273,10 +333,12 @@ typedef struct Nbnxm::gpu_timers_t cl_timers_t;
 /*! \internal
  * \brief Main data structure for OpenCL nonbonded force calculations.
  */
-struct gmx_nbnxn_ocl_t
+struct gmx_nbnxm_gpu_t
 {
-    const gmx_device_info_t*          dev_info;    /**< OpenCL device information    */
-    struct gmx_device_runtime_data_t* dev_rundata; /**< OpenCL runtime data (context, kernels) */
+    //! OpenCL device information
+    const gmx_device_info_t* dev_info;
+    //! OpenCL runtime data (context, kernels)
+    struct gmx_device_runtime_data_t* dev_rundata;
 
     /**< Pointers to non-bonded kernel functions
      * organized similar with nb_kfunc_xxx arrays in nbnxn_ocl.cpp */
@@ -286,9 +348,11 @@ struct gmx_nbnxn_ocl_t
     cl_kernel kernel_noener_prune_ptr[eelOclNR][evdwOclNR];
     cl_kernel kernel_ener_prune_ptr[eelOclNR][evdwOclNR];
     ///@}
-    cl_kernel kernel_pruneonly[ePruneNR]; /**< prune kernels, ePruneKind defined the kernel kinds */
+    //! prune kernels, ePruneKind defined the kernel kinds
+    cl_kernel kernel_pruneonly[ePruneNR];
 
-    bool bPrefetchLjParam; /**< true if prefetching fg i-atom LJ parameters should be used in the kernels */
+    //! true if prefetching fg i-atom LJ parameters should be used in the kernels
+    bool bPrefetchLjParam;
 
     /**< auxiliary kernels implementing memset-like functions */
     ///@{
@@ -298,23 +362,35 @@ struct gmx_nbnxn_ocl_t
     cl_kernel kernel_zero_e_fshift;
     ///@}
 
-    cl_bool bUseTwoStreams; /**< true if doing both local/non-local NB work on GPU          */
-    cl_bool bNonLocalStreamActive; /**< true indicates that the nonlocal_done event was enqueued */
+    //! true if doing both local/non-local NB work on GPU
+    cl_bool bUseTwoStreams;
+    //! true indicates that the nonlocal_done event was enqueued
+    cl_bool bNonLocalStreamActive;
 
-    cl_atomdata_t* atdat;   /**< atom data                                                  */
-    cl_nbparam_t*  nbparam; /**< parameters required for the non-bonded calc.               */
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t*> plist; /**< pair-list data structures (local and non-local)            */
-    cl_nb_staging_t nbst; /**< staging area where fshift/energies get downloaded          */
+    //! atom data
+    cl_atomdata_t* atdat;
+    //! parameters required for the non-bonded calc.
+    cl_nbparam_t* nbparam;
+    //! pair-list data structures (local and non-local)
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_plist_t*> plist;
+    //! staging area where fshift/energies get downloaded
+    cl_nb_staging_t nbst;
 
-    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_command_queue> stream; /**< local and non-local GPU queues                             */
+    //! local and non-local GPU queues
+    gmx::EnumerationArray<Nbnxm::InteractionLocality, cl_command_queue> stream;
 
-    /** events used for synchronization */
-    cl_event nonlocal_done;               /**< event triggered when the non-local non-bonded kernel
-                                             is done (and the local transfer can proceed) */
-    cl_event misc_ops_and_local_H2D_done; /**< event triggered when the tasks issued in
-                                             the local stream that need to precede the
-                                             non-local force calculations are done
-                                             (e.g. f buffer 0-ing, local x/q H2D) */
+    /*! \brief Events used for synchronization */
+    /*! \{ */
+    /*! \brief Event triggered when the non-local non-bonded
+     * kernel is done (and the local transfer can proceed) */
+    cl_event nonlocal_done;
+    /*! \brief Event triggered when the tasks issued in the local
+     * stream that need to precede the non-local force or buffer
+     * operation calculations are done (e.g. f buffer 0-ing, local
+     * x/q H2D, buffer op initialization in local stream that is
+     * required also by nonlocal stream ) */
+    cl_event misc_ops_and_local_H2D_done;
+    /*! \} */
 
     //! True if there has been local/nonlocal GPU work, either bonded or nonbonded, scheduled
     //  to be executed in the current domain. As long as bonded work is not split up into
@@ -322,9 +398,12 @@ struct gmx_nbnxn_ocl_t
     gmx::EnumerationArray<Nbnxm::InteractionLocality, bool> haveWork;
 
 
-    cl_bool      bDoTime; /**< True if event-based timing is enabled.                     */
-    cl_timers_t* timers;  /**< OpenCL event-based timers.                                 */
-    struct gmx_wallclock_gpu_nbnxn_t* timings; /**< Timing data. TODO: deprecate this and query timers for accumulated data instead */
+    //! True if event-based timing is enabled.
+    cl_bool bDoTime;
+    //! OpenCL event-based timers.
+    cl_timers_t* timers;
+    //! Timing data. TODO: deprecate this and query timers for accumulated data instead
+    struct gmx_wallclock_gpu_nbnxn_t* timings;
 };
 
 #endif /* NBNXN_OPENCL_TYPES_H */

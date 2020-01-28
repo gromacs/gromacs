@@ -20,7 +20,9 @@ For background on algorithms and implementations, see the
 
 |GMX_SOURCE_DOI_STRING|
 
-.. TODO This is going to require more organization now that
+.. todo::
+
+   This is going to require more organization now that
    we are getting more content available.
 
 .. toctree::

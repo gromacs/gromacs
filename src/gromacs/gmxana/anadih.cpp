@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -45,6 +46,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/xvgr.h"
+#include "gromacs/gmxana/angle_correction.h"
 #include "gromacs/gmxana/gstat.h"
 #include "gromacs/listed_forces/bonded.h"
 #include "gromacs/math/functions.h"
@@ -833,7 +835,7 @@ void read_ang_dih(const char*             trj_fn,
     t_trxstatus*  status;
     int           i, angind, total, teller;
     int           nangles, n_alloc;
-    real          t, fraction, pifac, aa, angle;
+    real          t, fraction, pifac, angle;
     real*         angles[2];
     matrix        box;
     rvec*         x;
@@ -885,7 +887,7 @@ void read_ang_dih(const char*             trj_fn,
 
         if (pbc)
         {
-            set_pbc(pbc, -1, box);
+            set_pbc(pbc, PbcType::Unset, box);
         }
 
         if (bAngles)
@@ -946,9 +948,16 @@ void read_ang_dih(const char*             trj_fn,
         }
 
         /* Average angles */
-        aa = 0;
+        double aa = 0;
         for (i = 0; (i < nangles); i++)
         {
+            if (!bAngles && i > 0)
+            {
+                real diffa     = angles[cur][i] - angles[cur][i - 1];
+                diffa          = correctRadianAngleRange(diffa);
+                angles[cur][i] = angles[cur][i - 1] + diffa;
+            }
+
             aa = aa + angles[cur][i];
 
             /* angle in rad / 2Pi * max determines bin. bins go from 0 to maxangstat,
@@ -960,15 +969,7 @@ void read_ang_dih(const char*             trj_fn,
             angle = angles[cur][i];
             if (!bAngles)
             {
-                while (angle < -M_PI)
-                {
-                    angle += 2 * M_PI;
-                }
-                while (angle >= M_PI)
-                {
-                    angle -= 2 * M_PI;
-                }
-
+                angle = correctRadianAngleRange(angle);
                 angle += M_PI;
             }
 
@@ -994,14 +995,22 @@ void read_ang_dih(const char*             trj_fn,
         }
 
         /* average over all angles */
-        (*aver_angle)[teller] = (aa / nangles);
+        aa                    = correctRadianAngleRange(aa / nangles);
+        (*aver_angle)[teller] = (aa);
 
         /* this copies all current dih. angles to dih[i], teller is frame */
         if (bSaveAll)
         {
             for (i = 0; i < nangles; i++)
             {
-                dih[i][teller] = angles[cur][i];
+                if (!bAngles)
+                {
+                    dih[i][teller] = correctRadianAngleRange(angles[cur][i]);
+                }
+                else
+                {
+                    dih[i][teller] = angles[cur][i];
+                }
             }
         }
 

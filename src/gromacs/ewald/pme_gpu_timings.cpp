@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,13 +50,7 @@
 #include "pme_gpu_types_host.h"
 #include "pme_gpu_types_host_impl.h"
 
-/*! \brief
- * Tells if CUDA-based performance tracking is enabled for PME.
- *
- * \param[in] pmeGpu         The PME GPU data structure.
- * \returns                  True if timings are enabled, false otherwise.
- */
-inline bool pme_gpu_timings_enabled(const PmeGpu* pmeGpu)
+bool pme_gpu_timings_enabled(const PmeGpu* pmeGpu)
 {
     return pmeGpu->archSpecific->useTiming;
 }
@@ -69,18 +63,6 @@ void pme_gpu_start_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
                    "Wrong PME GPU timing event index");
         pmeGpu->archSpecific->timingEvents[PMEStageId].openTimingRegion(pmeGpu->archSpecific->pmeStream);
     }
-}
-
-CommandEvent* pme_gpu_fetch_timing_event(const PmeGpu* pmeGpu, size_t PMEStageId)
-{
-    CommandEvent* timingEvent = nullptr;
-    if (pme_gpu_timings_enabled(pmeGpu))
-    {
-        GMX_ASSERT(PMEStageId < pmeGpu->archSpecific->timingEvents.size(),
-                   "Wrong PME GPU timing event index");
-        timingEvent = pmeGpu->archSpecific->timingEvents[PMEStageId].fetchNextEvent();
-    }
-    return timingEvent;
 }
 
 void pme_gpu_stop_timing(const PmeGpu* pmeGpu, size_t PMEStageId)
@@ -123,17 +105,18 @@ void pme_gpu_reinit_timings(const PmeGpu* pmeGpu)
     {
         pmeGpu->archSpecific->activeTimers.clear();
         pmeGpu->archSpecific->activeTimers.insert(gtPME_SPLINEANDSPREAD);
+        const auto& settings = pme_gpu_settings(pmeGpu);
         // TODO: no separate gtPME_SPLINE and gtPME_SPREAD as they are not used currently
-        if (pme_gpu_performs_FFT(pmeGpu))
+        if (settings.performGPUFFT)
         {
             pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_C2R);
             pmeGpu->archSpecific->activeTimers.insert(gtPME_FFT_R2C);
         }
-        if (pme_gpu_performs_solve(pmeGpu))
+        if (settings.performGPUSolve)
         {
             pmeGpu->archSpecific->activeTimers.insert(gtPME_SOLVE);
         }
-        if (pme_gpu_performs_gather(pmeGpu))
+        if (settings.performGPUGather)
         {
             pmeGpu->archSpecific->activeTimers.insert(gtPME_GATHER);
         }

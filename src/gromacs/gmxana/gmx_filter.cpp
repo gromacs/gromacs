@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "gromacs/math/do_fit.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/pbcutil/rmpbc.h"
 #include "gromacs/topology/index.h"
 #include "gromacs/topology/topology.h"
@@ -94,7 +95,7 @@ int gmx_filter(int argc, char* argv[])
     const char *      topfile, *lowfile, *highfile;
     gmx_bool          bTop = FALSE;
     t_topology        top;
-    int               ePBC = -1;
+    PbcType           pbcType = PbcType::Unset;
     rvec*             xtop;
     matrix            topbox, *box, boxf;
     char*             grpname;
@@ -137,10 +138,10 @@ int gmx_filter(int argc, char* argv[])
     }
     if (topfile)
     {
-        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, topbox, TRUE);
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox, TRUE);
         if (bTop)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
+            gpbc = gmx_rmpbc_init(&top.idef, pbcType, top.atoms.nr);
             gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
         }
     }

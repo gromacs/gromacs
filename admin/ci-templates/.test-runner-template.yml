@@ -1,0 +1,8 @@
+.test-base-template:
+   variables:
+       BUILD_DIR: build
+   image: biophysics/gcc-gromacs
+   stage: test
+   retry:
+    max: 2
+

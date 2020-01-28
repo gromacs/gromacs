@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -370,6 +371,7 @@ if (SPHINX_FOUND)
         release-notes/2021/major/deprecated-functionality.rst
         release-notes/2021/major/portability.rst
         release-notes/2021/major/miscellaneous.rst
+        release-notes/2020/2020.1.rst
         release-notes/2020/major/highlights.rst
         release-notes/2020/major/features.rst
         release-notes/2020/major/performance.rst
@@ -379,6 +381,7 @@ if (SPHINX_FOUND)
         release-notes/2020/major/deprecated-functionality.rst
         release-notes/2020/major/portability.rst
         release-notes/2020/major/miscellaneous.rst
+        release-notes/2019/2019.6.rst
         release-notes/2019/2019.5.rst
         release-notes/2019/2019.4.rst
         release-notes/2019/2019.3.rst
@@ -521,17 +524,10 @@ if (SPHINX_FOUND)
 
     gmx_add_sphinx_source_files(
             FILES
-            gmxapi/changelog.rst
             gmxapi/index.rst
             gmxapi/userguide/install.rst
             gmxapi/userguide/usage.rst
             gmxapi/userguide/userguide.rst
-            gmxapi/reference/contributing.rst
-            gmxapi/reference/datamodel.rst
-            gmxapi/reference/executionmodel.rst
-            gmxapi/reference/extending.rst
-            gmxapi/reference/projectstructure.rst
-            gmxapi/reference/reference.rst
     )
 
     if (GMX_PYTHON_PACKAGE)
@@ -563,6 +559,9 @@ if (SPHINX_FOUND)
     gmx_add_sphinx_image_conversion_target(sphinx-image-conversion)
     add_custom_target(sphinx-input)
     add_dependencies(sphinx-input sphinx-input-rst sphinx-image-conversion)
+    if (GMX_PYTHON_PACKAGE)
+        add_dependencies(sphinx-input _gmxapi)
+    endif()
     # Remove other rst files from the build tree, since they confuse Sphinx.
     # Skip generated files in onlinehelp/, and fragments.
     # The latter do not cause issues with obsolete files, as they
@@ -610,6 +609,10 @@ if (SPHINX_FOUND)
 
     # Sphinx cache with pickled ReST documents
     set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
+    set(SPHINX_CONFIG_OVERRIDES "")
+    if (GMX_DEVELOPER_BUILD)
+        set(SPHINX_CONFIG_OVERRIDES "-D todo_include_todos=1")
+    endif()
     add_custom_target(webpage-sphinx
         DEPENDS sphinx-programs
         DEPENDS sphinx-input
@@ -622,6 +625,7 @@ if (SPHINX_FOUND)
             -q -b html
             -w sphinx-html.log
             -d "${SPHINX_CACHE_DIR}"
+            ${SPHINX_CONFIG_OVERRIDES}
             "${SPHINX_INPUT_DIR}"
             "${HTML_OUTPUT_DIR}"
         WORKING_DIRECTORY
@@ -629,9 +633,6 @@ if (SPHINX_FOUND)
         COMMENT "Building HTML documentation with Sphinx"
         VERBATIM
         )
-    if (GMX_PYTHON_PACKAGE)
-        add_dependencies(webpage-sphinx _gmxapi)
-    endif ()
 
     add_custom_target(man
         COMMAND

@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -362,7 +363,7 @@ static inline int calc_shmem_required_nonbonded(const int               num_thre
  *  the local, this function records the event if called with the local stream as
  *  argument and inserts in the GPU stream a wait on the event on the nonlocal.
  */
-void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_cuda_t* nb, const InteractionLocality interactionLocality)
+void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxm_gpu_t* nb, const InteractionLocality interactionLocality)
 {
     cudaStream_t stream = nb->stream[interactionLocality];
 
@@ -388,7 +389,7 @@ void nbnxnInsertNonlocalGpuDependency(const gmx_nbnxn_cuda_t* nb, const Interact
 }
 
 /*! \brief Launch asynchronously the xq buffer host to device copy. */
-void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
+void gpu_copy_xq_to_gpu(gmx_nbnxm_gpu_t* nb, const nbnxn_atomdata_t* nbatom, const AtomLocality atomLocality)
 {
     GMX_ASSERT(nb, "Need a valid nbnxn_gpu object");
 
@@ -476,7 +477,7 @@ void gpu_copy_xq_to_gpu(gmx_nbnxn_cuda_t* nb, const nbnxn_atomdata_t* nbatom, co
    the local x+q H2D (and all preceding) tasks are complete and synchronize
    with this event in the non-local stream before launching the non-bonded kernel.
  */
-void gpu_launch_kernel(gmx_nbnxn_cuda_t* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
+void gpu_launch_kernel(gmx_nbnxm_gpu_t* nb, const gmx::StepWorkload& stepWork, const InteractionLocality iloc)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -588,7 +589,7 @@ static inline int calc_shmem_required_prune(const int num_threads_z)
     return shmem;
 }
 
-void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t* nb, const InteractionLocality iloc, const int numParts)
+void gpu_launch_kernel_pruneonly(gmx_nbnxm_gpu_t* nb, const InteractionLocality iloc, const int numParts)
 {
     cu_atomdata_t* adat   = nb->atdat;
     cu_nbparam_t*  nbp    = nb->nbparam;
@@ -712,7 +713,7 @@ void gpu_launch_kernel_pruneonly(gmx_nbnxn_cuda_t* nb, const InteractionLocality
     }
 }
 
-void gpu_launch_cpyback(gmx_nbnxn_cuda_t*        nb,
+void gpu_launch_cpyback(gmx_nbnxm_gpu_t*         nb,
                         nbnxn_atomdata_t*        nbatom,
                         const gmx::StepWorkload& stepWork,
                         const AtomLocality       atomLocality)
@@ -816,7 +817,7 @@ void cuda_set_cacheconfig()
 /* X buffer operations on GPU: performs conversion from rvec to nb format. */
 void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
                            bool                      setFillerCoords,
-                           gmx_nbnxn_gpu_t*          nb,
+                           gmx_nbnxm_gpu_t*          nb,
                            DeviceBuffer<float>       d_x,
                            GpuEventSynchronizer*     xReadyOnDevice,
                            const Nbnxm::AtomLocality locality,
@@ -858,14 +859,15 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
         config.sharedMemorySize = 0;
         config.stream           = stream;
 
-        auto       kernelFn      = nbnxn_gpu_x_to_nbat_x_kernel;
-        float*     xqPtr         = &(adat->xq->x);
+        auto kernelFn = setFillerCoords ? nbnxn_gpu_x_to_nbat_x_kernel<true>
+                                        : nbnxn_gpu_x_to_nbat_x_kernel<false>;
+        float4*    d_xq          = adat->xq;
         const int* d_atomIndices = nb->atomIndices;
         const int* d_cxy_na      = &nb->cxy_na[numColumnsMax * gridId];
         const int* d_cxy_ind     = &nb->cxy_ind[numColumnsMax * gridId];
-        const auto kernelArgs    = prepareGpuKernelArguments(
-                kernelFn, config, &numColumns, &xqPtr, &setFillerCoords, &d_x, &d_atomIndices,
-                &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
+        const auto kernelArgs =
+                prepareGpuKernelArguments(kernelFn, config, &numColumns, &d_xq, &d_x, &d_atomIndices,
+                                          &d_cxy_na, &d_cxy_ind, &cellOffset, &numAtomsPerCell);
         launchGpuKernel(kernelFn, config, nullptr, "XbufferOps", kernelArgs);
     }
 
@@ -875,10 +877,15 @@ void nbnxn_gpu_x_to_nbat_x(const Nbnxm::Grid&        grid,
     nbnxnInsertNonlocalGpuDependency(nb, interactionLoc);
 }
 
-/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format. */
+/* F buffer operations on GPU: performs force summations and conversion from nb to rvec format.
+ *
+ * NOTE: When the total force device buffer is reallocated and its size increases, it is cleared in
+ *       Local stream. Hence, if accumulateForce is true, NonLocal stream should start accumulating
+ *       forces only after Local stream already done so.
+ */
 void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLocality,
                                DeviceBuffer<float>                        totalForcesDevice,
-                               gmx_nbnxn_gpu_t*                           nb,
+                               gmx_nbnxm_gpu_t*                           nb,
                                void*                                      pmeForcesDevice,
                                gmx::ArrayRef<GpuEventSynchronizer* const> dependencyList,
                                int                                        atomStart,
@@ -943,21 +950,6 @@ void nbnxn_gpu_add_nbat_f_to_f(const AtomLocality                         atomLo
                    "localFReductionDone has to be a valid pointer");
         nb->localFReductionDone->markEvent(stream);
     }
-}
-
-void nbnxn_wait_nonlocal_x_copy_D2H_done(gmx_nbnxn_cuda_t* nb)
-{
-    nb->xNonLocalCopyD2HDone->waitForEvent();
-}
-
-void nbnxn_stream_local_wait_for_nonlocal(gmx_nbnxn_cuda_t* nb)
-{
-    cudaStream_t localStream    = nb->stream[InteractionLocality::Local];
-    cudaStream_t nonLocalStream = nb->stream[InteractionLocality::NonLocal];
-
-    GpuEventSynchronizer event;
-    event.markEvent(nonLocalStream);
-    event.enqueueWaitEvent(localStream);
 }
 
 } // namespace Nbnxm

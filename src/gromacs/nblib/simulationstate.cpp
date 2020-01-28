@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
 #include "simulationstate.h"
 
 #include <vector>
@@ -52,20 +51,25 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/util.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "coords.h"
 #include "nbkernelsystem.h"
-#include "util.h"
 
 namespace nblib
 {
 
-SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
-                   const std::vector<gmx::RVec> &vel) : box_(box), topology_(topo)
+SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
+                                 Box                           box,
+                                 Topology&                     topo,
+                                 const std::vector<gmx::RVec>& vel) :
+    box_(box),
+    topology_(topo)
 {
     if (!checkNumericValues(coord))
     {

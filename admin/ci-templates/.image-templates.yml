@@ -1,0 +1,42 @@
+.gcc5-template:
+  image: gromacs/continuous-integration:ci-gcc-5
+
+.gcc6-template:
+  image: gromacs/continuous-integration:ci-gcc-6
+
+.gcc7-template:
+  image: gromacs/continuous-integration:ci-gcc-7
+
+.gcc8-template:
+  image: gromacs/continuous-integration:ci-gcc-8
+
+.clang6-template:
+  image: gromacs/continuous-integration:ci-clang-6
+
+.clang7-template:
+  image: gromacs/continuous-integration:ci-clang-7
+
+.clang8-template:
+  image: gromacs/continuous-integration:ci-clang-8
+
+.gcc5-gmxapi-template:
+  image: gromacs/continuous-integration:ci-gcc-5-gmxapi
+
+.gcc6-gmxapi-template:
+  image: gromacs/continuous-integration:ci-gcc-6-gmxapi
+
+.gcc7-gmxapi-template:
+  image: gromacs/continuous-integration:ci-gcc-7-gmxapi
+
+.gcc8-gmxapi-template:
+  image: gromacs/continuous-integration:ci-gcc-8-gmxapi
+
+.clang6-gmxapi-template:
+  image: gromacs/continuous-integration:ci-clang-6-gmxapi
+
+.clang7-gmxapi-template:
+  image: gromacs/continuous-integration:ci-clang-7-gmxapi
+
+.clang8-gmxapi-template:
+  image: gromacs/continuous-integration:ci-clang-8-gmxapi
+

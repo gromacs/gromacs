@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -59,6 +59,8 @@
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/idef.h"
 #include "gromacs/utility/strconvert.h"
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -115,6 +117,8 @@ public:
     bool fep = false;
     //! Interaction parameters
     t_iparams iparams = { { 0 } };
+
+    friend std::ostream& operator<<(std::ostream& out, const iListInput& input);
 
     //! Constructor
     iListInput() {}
@@ -470,6 +474,26 @@ public:
     }
 };
 
+//! Prints the interaction and parameters to a stream
+std::ostream& operator<<(std::ostream& out, const iListInput& input)
+{
+    using std::endl;
+    out << "Function type " << input.ftype << " called " << interaction_function[input.ftype].name
+        << " ie. labelled '" << interaction_function[input.ftype].longname << "' in an energy file"
+        << endl;
+
+    // Organize to print the legacy C union t_iparams, whose
+    // relevant contents vary with ftype.
+    StringOutputStream stream;
+    {
+        TextWriter writer(&stream);
+        printInteractionParameters(&writer, input.ftype, input.iparams);
+    }
+    out << "Function parameters " << stream.toString();
+    out << "Parameters trigger FEP? " << (input.fep ? "true" : "false") << endl;
+    return out;
+}
+
 /*! \brief Utility to fill iatoms struct
  *
  * \param[in]  ftype  Function type
@@ -490,24 +514,24 @@ void fillIatoms(int ftype, std::vector<t_iatom>* iatoms)
 }
 
 class ListedForcesTest :
-    public ::testing::TestWithParam<std::tuple<iListInput, std::vector<gmx::RVec>, int>>
+    public ::testing::TestWithParam<std::tuple<iListInput, std::vector<gmx::RVec>, PbcType>>
 {
 protected:
     matrix                     box_;
     t_pbc                      pbc_;
     std::vector<gmx::RVec>     x_;
-    int                        epbc_;
+    PbcType                    pbcType_;
     iListInput                 input_;
     test::TestReferenceData    refData_;
     test::TestReferenceChecker checker_;
     ListedForcesTest() : checker_(refData_.rootChecker())
     {
-        input_ = std::get<0>(GetParam());
-        x_     = std::get<1>(GetParam());
-        epbc_  = std::get<2>(GetParam());
+        input_   = std::get<0>(GetParam());
+        x_       = std::get<1>(GetParam());
+        pbcType_ = std::get<2>(GetParam());
         clear_mat(box_);
         box_[0][0] = box_[1][1] = box_[2][2] = 1.5;
-        set_pbc(&pbc_, epbc_, box_);
+        set_pbc(&pbc_, pbcType_, box_);
         // We need quite specific tolerances here since angle functions
         // etc. are not very precise and reproducible.
         test::FloatingPointTolerance tolerance(test::FloatingPointTolerance(
@@ -516,7 +540,7 @@ protected:
     }
     void testOneIfunc(test::TestReferenceChecker* checker, const std::vector<t_iatom>& iatoms, const real lambda)
     {
-        SCOPED_TRACE(std::string("Testing PBC ") + epbc_names[epbc_]);
+        SCOPED_TRACE(std::string("Testing PBC ") + c_pbcTypeNames[pbcType_]);
         std::vector<int>  ddgatindex = { 0, 1, 2, 3 };
         std::vector<real> chargeA    = { 1.5, -2.0, 1.5, -1.0 };
         t_mdatoms         mdatoms    = { 0 };
@@ -530,7 +554,7 @@ protected:
                 BondedKernelFlavor::ForcesAndVirialAndEnergy);
         // Internal consistency test of both test input
         // and bonded functions.
-        EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0)));
+        EXPECT_TRUE((input_.fep || (output.dvdlambda == 0.0))) << "dvdlambda was " << output.dvdlambda;
         checkOutput(checker, output);
     }
     void testIfunc()
@@ -586,7 +610,7 @@ std::vector<iListInput> c_InputAngles = {
     { iListInput().setLinearAngle(50.0, 0.4) },
     { iListInput().setLinearAngle(50.0, 0.4, 40.0, 0.6) },
     { iListInput(2e-6, 1e-8).setCrossBondBonds(0.8, 0.7, 45.0) },
-    { iListInput(2e-6, 1e-8).setCrossBondAngles(0.8, 0.7, 0.3, 45.0) },
+    { iListInput(3e-6, 1e-8).setCrossBondAngles(0.8, 0.7, 0.3, 45.0) },
     { iListInput(2e-2, 1e-8).setUreyBradley(950.0, 46.0, 0.3, 5.0) },
     { iListInput(2e-2, 1e-8).setUreyBradley(100.0, 45.0, 0.3, 5.0, 90.0, 47.0, 0.32, 7.0) },
     { iListInput(2e-3, 1e-8).setQuarticAngles(87.0, cQuarticAngles) }
@@ -603,7 +627,7 @@ const real rbc[NR_RBDIHS] = { -7.35, 13.6, 8.4, -16.7, 1.3, 12.4 };
 
 //! Function types for testing dihedrals. Add new terms at the end.
 std::vector<iListInput> c_InputDihs = {
-    { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
+    { iListInput(5e-4, 1e-8).setPDihedrals(F_PDIHS, -100.0, 10.0, 2, -80.0, 20.0) },
     { iListInput(1e-4, 1e-8).setPDihedrals(F_PDIHS, -105.0, 15.0, 2) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.0, 50.0) },
     { iListInput(2e-4, 1e-8).setHarmonic(F_IDIHS, 100.15, 50.0, 95.0, 30.0) },
@@ -614,9 +638,9 @@ std::vector<iListInput> c_InputDihs = {
 //! Function types for testing polarization. Add new terms at the end.
 std::vector<iListInput> c_InputPols = {
     { iListInput(2e-5, 1e-8).setPolarization(0.12) },
-    { iListInput(1.7e-3, 1e-8).setAnharmPolarization(0.0013, 0.02, 1235.6) },
+    { iListInput(2e-3, 1e-8).setAnharmPolarization(0.0013, 0.02, 1235.6) },
     { iListInput(1.4e-3, 1e-8).setTholePolarization(0.26, 0.07, 0.09, 1.6) },
-    { iListInput().setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
+    { iListInput(2e-3, 1e-8).setWaterPolarization(0.001, 0.0012, 0.0016, 0.095, 0.15, 0.02) },
 };
 
 //! Function types for testing polarization. Add new terms at the end.
@@ -637,7 +661,7 @@ std::vector<std::vector<gmx::RVec>> c_coordinatesForTests = {
 };
 
 //! PBC values for testing
-std::vector<int> c_pbcForTests = { epbcNONE, epbcXY, epbcXYZ };
+std::vector<PbcType> c_pbcForTests = { PbcType::No, PbcType::XY, PbcType::Xyz };
 
 // Those tests give errors with the intel compiler and nothing else, so we disable them only there.
 #ifndef __INTEL_COMPILER

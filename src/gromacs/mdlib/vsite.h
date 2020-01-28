@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -55,6 +56,7 @@ struct t_mdatoms;
 struct t_nrnb;
 struct gmx_wallcycle;
 struct VsiteThread;
+enum class PbcType : int;
 
 namespace gmx
 {
@@ -90,11 +92,16 @@ struct gmx_vsite_t
 /*! \brief Create positions of vsite atoms based for the local system
  *
  * \param[in]     vsite    The vsite struct, when nullptr is passed, no MPI and no multi-threading
- * is used \param[in,out] x        The coordinates \param[in]     dt       The time step \param[in,out]
- * v        When != nullptr, velocities for vsites are set as displacement/dt \param[in]     ip
- * Interaction parameters \param[in]     ilist    The interaction list \param[in]     ePBC     The
- * type of periodic boundary conditions \param[in]     bMolPBC  When true, molecules are broken over
- * PBC \param[in]     cr       The communication record \param[in]     box      The box
+ *                         is used
+ * \param[in,out] x        The coordinates
+ * \param[in]     dt       The time step
+ * \param[in,out] v        When != nullptr, velocities for vsites are set as displacement/dt
+ * \param[in]     ip       Interaction parameters
+ * \param[in]     ilist    The interaction list
+ * \param[in]     pbcType  The type of periodic boundary conditions
+ * \param[in]     bMolPBC  When true, molecules are broken over PBC
+ * \param[in]     cr       The communication record
+ * \param[in]     box      The box
  */
 void construct_vsites(const gmx_vsite_t* vsite,
                       rvec               x[],
@@ -102,7 +109,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
                       rvec               v[],
                       const t_iparams    ip[],
                       const t_ilist      ilist[],
-                      int                ePBC,
+                      PbcType            pbcType,
                       gmx_bool           bMolPBC,
                       const t_commrec*   cr,
                       const matrix       box);
@@ -122,7 +129,7 @@ void spread_vsite_f(const gmx_vsite_t* vsite,
                     matrix             vir,
                     t_nrnb*            nrnb,
                     const t_idef*      idef,
-                    int                ePBC,
+                    PbcType            pbcType,
                     gmx_bool           bMolPBC,
                     const t_graph*     g,
                     const matrix       box,

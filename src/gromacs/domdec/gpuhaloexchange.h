@@ -110,6 +110,10 @@ public:
      */
     void communicateHaloForces(bool accumulateForces);
 
+    /*! \brief Get the event synchronizer for the forces ready on device.
+     *  \returns  The event to synchronize the stream that consumes forces on device.
+     */
+    GpuEventSynchronizer* getForcesReadyOnDeviceEvent();
 
 private:
     class Impl;

@@ -64,12 +64,12 @@ SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
     simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
     simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
     simulationWorkload.useGpuPme = (pmeRunMode == PmeRunMode::GPU || pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuPmeFft                 = (pmeRunMode == PmeRunMode::Mixed);
-    simulationWorkload.useGpuBonded                 = useGpuForBonded;
-    simulationWorkload.useGpuUpdate                 = useGpuForUpdate;
-    simulationWorkload.useGpuBufferOps              = useGpuForBufferOps || useGpuForUpdate;
-    simulationWorkload.useGpuHaloExchange           = useGpuHaloExchange;
-    simulationWorkload.useGpuPmePpCommunication     = useGpuPmePpComm;
+    simulationWorkload.useGpuPmeFft             = (pmeRunMode == PmeRunMode::Mixed);
+    simulationWorkload.useGpuBonded             = useGpuForBonded;
+    simulationWorkload.useGpuUpdate             = useGpuForUpdate;
+    simulationWorkload.useGpuBufferOps          = useGpuForBufferOps || useGpuForUpdate;
+    simulationWorkload.useGpuHaloExchange       = useGpuHaloExchange;
+    simulationWorkload.useGpuPmePpCommunication = useGpuPmePpComm && (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuDirectCommunication    = useGpuHaloExchange || useGpuPmePpComm;
     simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution;
 

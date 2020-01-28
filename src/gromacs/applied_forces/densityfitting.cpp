@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -181,11 +181,11 @@ public:
      */
     void setPeriodicBoundaryConditionType(PeriodicBoundaryConditionType pbc)
     {
-        pbcType_ = std::make_unique<int>(pbc.pbcType);
+        pbcType_ = std::make_unique<PbcType>(pbc.pbcType);
     }
 
     //! Get the periodic boundary conditions
-    int periodicBoundaryConditionType()
+    PbcType periodicBoundaryConditionType()
     {
         if (pbcType_ == nullptr)
         {
@@ -209,7 +209,7 @@ private:
     //! The local atom set to act on
     std::unique_ptr<LocalAtomSet> localAtomSet_;
     //! The type of periodic boundary conditions in the simulation
-    std::unique_ptr<int> pbcType_;
+    std::unique_ptr<PbcType> pbcType_;
     //! The simulation time step
     double simulationTimeStep_ = 1;
 
@@ -379,12 +379,15 @@ public:
      * \param[in] checkpointWriting enables writing to the Key-Value-Tree
      *                              that is used for storing the checkpoint
      *                              information
+     *
+     * \note The provided state to checkpoint has to change if checkpointing
+     *       is moved before the force provider call in the MD-loop.
      */
     void writeCheckpointData(MdModulesWriteCheckpointData checkpointWriting)
     {
         if (densityFittingOptions_.active())
         {
-            const DensityFittingForceProviderState& state = forceProvider_->state();
+            const DensityFittingForceProviderState& state = forceProvider_->stateToCheckpoint();
             checkpointWriting.builder_.addValue<std::int64_t>(
                     DensityFittingModuleInfo::name_ + "-stepsSinceLastCalculation",
                     state.stepsSinceLastCalculation_);

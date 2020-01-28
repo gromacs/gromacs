@@ -82,6 +82,8 @@ void PmeForceSenderGpu::Impl::sendForceBufferAddressToPpRanks(rvec* d_f)
 
 #if GMX_MPI
         MPI_Send(&sendBuf, sizeof(void**), MPI_BYTE, receiver.rankId, 0, comm_);
+#else
+        GMX_UNUSED_VALUE(sendBuf);
 #endif
     }
 }
@@ -98,6 +100,9 @@ void PmeForceSenderGpu::Impl::sendFToPpCudaDirect(int ppRank)
     // TODO Using MPI_Isend would be more efficient, particularly when
     // sending to multiple PP ranks
     MPI_Send(&pmeSyncPtr, sizeof(GpuEventSynchronizer*), MPI_BYTE, ppRank, 0, comm_);
+#else
+    GMX_UNUSED_VALUE(pmeSyncPtr);
+    GMX_UNUSED_VALUE(ppRank);
 #endif
 }
 

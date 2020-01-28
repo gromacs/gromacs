@@ -47,9 +47,10 @@
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
-#include "gromacs/nbnxm/nbnxm.h"
 
 #include "nbkerneloptions.h"
+
+struct nbnxn_atomdata_output_t;
 
 namespace nblib {
 

@@ -1,0 +1,9 @@
+.mpi-extra-installs:
+  variables:
+    EXTRA_INSTALLS: libopenmpi-dev
+
+.build-mpi-template:
+  extends:
+    - .mpi-extra-installs
+  variables:
+    CMAKE_MPI_OPTIONS: "-DGMX_MPI=ON"

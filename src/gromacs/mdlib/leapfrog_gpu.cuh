@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -34,17 +34,15 @@
  */
 /*! \libinternal \file
  *
- * \brief Declarations for CUDA implementation of Leap-Frog.
- *
- * \todo Reconsider naming towards using "gpu" suffix instead of "cuda".
+ * \brief Declarations for GPU implementation of Leap-Frog.
  *
  * \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \ingroup module_mdlib
  * \inlibraryapi
  */
-#ifndef GMX_MDLIB_LEAPFROG_CUDA_CUH
-#define GMX_MDLIB_LEAPFROG_CUDA_CUH
+#ifndef GMX_MDLIB_LEAPFROG_GPU_CUH
+#define GMX_MDLIB_LEAPFROG_GPU_CUH
 
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
@@ -58,7 +56,7 @@
 namespace gmx
 {
 
-class LeapFrogCuda
+class LeapFrogGpu
 {
 
 public:
@@ -66,44 +64,35 @@ public:
      *
      * \param[in] commandStream  Device command stream to use.
      */
-    LeapFrogCuda(CommandStream commandStream);
-    ~LeapFrogCuda();
-
-    /*! \brief
-     * Update PBC data.
-     *
-     * Converts PBC data from t_pbc into the PbcAiuc format and stores the latter.
-     *
-     * \param[in] pbc The PBC data in t_pbc format.
-     */
-    void setPbc(const t_pbc* pbc);
+    LeapFrogGpu(CommandStream commandStream);
+    ~LeapFrogGpu();
 
     /*! \brief Integrate
      *
      * Integrates the equation of motion using Leap-Frog algorithm.
      * Updates coordinates and velocities on the GPU. The current coordinates are saved for constraints.
      *
-     * \param[in,out] d_x                    Coordinates to update
-     * \param[out]    d_xp                   Place to save the values of initial coordinates coordinates to.
-     * \param[in,out] d_v                    Velocities (will be updated).
-     * \param[in]     d_f                    Forces.
-     * \param[in]     dt                     Timestep.
-     * \param[in]     doTempCouple           If the temperature coupling should be applied.
-     * \param[in]     tcstat                 Temperature coupling data.
-     * \param[in]     doPressureCouple       If the temperature coupling should be applied.
-     * \param[in]     dtPressureCouple       Period between pressure coupling steps
-     * \param[in]     velocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
+     * \param[in,out] d_x                      Coordinates to update
+     * \param[out]    d_xp                     Place to save the values of initial coordinates coordinates to.
+     * \param[in,out] d_v                      Velocities (will be updated).
+     * \param[in]     d_f                      Forces.
+     * \param[in]     dt                       Timestep.
+     * \param[in]     doTemperatureScaling     If velocities should be scaled for temperature coupling.
+     * \param[in]     tcstat                   Temperature coupling data.
+     * \param[in]     doParrinelloRahman       If current step is a Parrinello-Rahman pressure coupling step.
+     * \param[in]     dtPressureCouple         Period between pressure coupling steps
+     * \param[in]     prVelocityScalingMatrix  Parrinello-Rahman velocity scaling matrix
      */
     void integrate(const float3*                     d_x,
                    float3*                           d_xp,
                    float3*                           d_v,
                    const float3*                     d_f,
                    const real                        dt,
-                   const bool                        doTempCouple,
+                   const bool                        doTemperatureScaling,
                    gmx::ArrayRef<const t_grp_tcstat> tcstat,
-                   const bool                        doPressureCouple,
+                   const bool                        doParrinelloRahman,
                    const float                       dtPressureCouple,
-                   const matrix                      velocityScalingMatrix);
+                   const matrix                      prVelocityScalingMatrix);
 
     /*! \brief Set the integrator
      *
@@ -121,12 +110,10 @@ public:
     class Impl;
 
 private:
-    //! CUDA stream
+    //! GPU stream
     CommandStream commandStream_;
-    //! CUDA kernel launch config
+    //! GPU kernel launch config
     KernelLaunchConfig kernelLaunchConfig_;
-    //! Periodic boundary data
-    PbcAiuc pbcAiuc_;
     //! Number of atoms
     int numAtoms_;
 
@@ -159,8 +146,8 @@ private:
     //! Maximum size of the temperature coupling groups array
     int numTempScaleGroupsAlloc_ = -1;
 
-    //! Vector with diagonal elements of the pressure coupling velocity rescale factors
-    float3 velocityScalingMatrixDiagonal_;
+    //! Vector with diagonal elements of the Parrinello-Rahman pressure coupling velocity rescale factors
+    float3 prVelocityScalingMatrixDiagonal_;
 };
 
 } // namespace gmx

@@ -105,7 +105,7 @@ for 43a1, 43a2, 45a3, 53a5, 53a6 and 54a7. The GROMOS force fields are
 * GROMOS 43a1p - 43a1 modified to contain SEP (phosphoserine), TPO (phosphothreonine),
   and PTR (phosphotyrosine) (all PO42- forms), and SEPH, TPOH, PTRH (PO4H- forms).
 
-.. TODO Add new force fields to the list
+.. todo:: Add new force fields to the list
 
 .. _GROMOS: http://www.igc.ethz.ch/gromos/
 .. _reference manual: gmx-manual-parent-dir_

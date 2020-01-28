@@ -19,16 +19,9 @@
 #    docker build -t gmxapi/ci-mpich:${REF} --build-arg REF=${FORKPOINT} -f ci.dockerfile ..
 #
 
-#
-# Use gromacs installation from gmxapi/gromacs image
-#
-
 ARG REF=latest
-FROM gmxapi/gromacs-mpich:$REF as gromacs
-# This intermediate is necessary because the COPY command does not support syntax like the following:
-#COPY --from=gmxapi/gromacs:$REF /usr/local/gromacs /usr/local/gromacs
 
-FROM gmxapi/gromacs-dependencies-mpich
+FROM gmxapi/gromacs-dependencies-mpich as python-base
 
 RUN apt-get update && \
     apt-get -yq --no-install-suggests --no-install-recommends install \
@@ -39,9 +32,6 @@ RUN apt-get update && \
 
 # TODO: Use non-system Python installations for explicit version coverage.
 # Consider pyenv for generic management of Python environment.
-
-ENV CMAKE_ROOT /usr/local/cmake
-ENV PATH $CMAKE_ROOT/bin:$PATH
 
 RUN groupadd -r testing && useradd -m -s /bin/bash -g testing testing
 
@@ -57,7 +47,16 @@ ADD --chown=testing:testing requirements-*.txt /home/testing/gmxapi/
 RUN . $VENV/bin/activate && \
     pip install --no-cache-dir -r /home/testing/gmxapi/requirements-test.txt
 
-COPY --from=gromacs $CMAKE_ROOT $CMAKE_ROOT
+#
+# Use gromacs installation from gmxapi/gromacs image
+#
+
+FROM gmxapi/gromacs-mpich:$REF as gromacs
+# This intermediate is necessary because the COPY command does not support syntax like the following:
+#COPY --from=gmxapi/gromacs:$REF /usr/local/gromacs /usr/local/gromacs
+
+FROM python-base
+
 COPY --from=gromacs /usr/local/gromacs /usr/local/gromacs
 
 ADD --chown=testing:testing src /home/testing/gmxapi/src

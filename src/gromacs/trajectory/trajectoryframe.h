@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +53,7 @@
 #include "gromacs/utility/real.h"
 
 struct t_atoms;
+enum class PbcType : int;
 
 typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
 {
@@ -79,7 +81,7 @@ typedef struct t_trxframe // NOLINT (clang-analyzer-optin.performance.Padding)
     gmx_bool bBox;
     matrix   box; /* the 3 box vectors                */
     gmx_bool bPBC;
-    int      ePBC; /* the type of pbc                  */
+    PbcType  pbcType; /* the type of pbc                  */
     gmx_bool bIndex;
     int*     index; /* atom indices of contained coordinates */
 } t_trxframe;
@@ -126,7 +128,7 @@ public:
     //! Time read from the trajectory file frame.
     double time() const;
     //! The PBC characteristics of the box.
-    int pbc() const;
+    PbcType pbc() const;
     //! Get a view of position coordinates of the frame (which could be empty).
     ArrayRef<const RVec> x() const;
     //! Get a view of velocity coordinates of the frame (which could be empty).

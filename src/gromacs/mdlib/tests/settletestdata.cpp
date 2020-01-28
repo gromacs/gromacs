@@ -139,8 +139,7 @@ SettleTestData::SettleTestData(int numSettles) :
     }
 
     // Reshape some data so it can be directly used by the SETTLE constraints
-    ilist_             = { mtop_.moltype[0].ilist[F_SETTLE].size(), 0,
-               mtop_.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
+    ilist_ = { mtop_.moltype[0].ilist[F_SETTLE].size(), mtop_.moltype[0].ilist[F_SETTLE].iatoms.data(), 0 };
     idef_.il[F_SETTLE] = ilist_;
 }
 

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2847,7 +2848,7 @@ int gmx_hbond(int argc, char* argv[])
         gmx_fatal(FARGS, "Topology (%d atoms) does not match trajectory (%d atoms)", top.atoms.nr, natoms);
     }
 
-    bBox  = (ir->ePBC != epbcNONE);
+    bBox  = (ir->pbcType != PbcType::No);
     grid  = init_grid(bBox, box, (rcut > r2cut) ? rcut : r2cut, ngrid);
     nabin = static_cast<int>(acut / abin);
     nrbin = static_cast<int>(rcut / rbin);
