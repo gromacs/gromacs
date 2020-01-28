@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -221,6 +221,9 @@ private:
     //! \cond
     //! Helper function to add elements or signallers to the call list via raw pointer
     template<typename T, typename U>
+    static void addToCallList(U* element, std::vector<compat::not_null<T*>>& callList);
+    //! Helper function to add elements or signallers to the call list via non-null raw pointer
+    template<typename T, typename U>
     static void addToCallList(compat::not_null<U*> element, std::vector<compat::not_null<T*>>& callList);
     //! Helper function to add elements or signallers to the call list via smart pointer
     template<typename T, typename U>
@@ -298,6 +301,15 @@ ModularSimulator::ModularSimulator(Args&&... args) : ISimulator(std::forward<Arg
 
 //! \cond
 template<typename T, typename U>
+void ModularSimulator::addToCallList(U* element, std::vector<compat::not_null<T*>>& callList)
+{
+    if (element)
+    {
+        callList.emplace_back(element);
+    }
+}
+
+template<typename T, typename U>
 void ModularSimulator::addToCallList(gmx::compat::not_null<U*>          element,
                                      std::vector<compat::not_null<T*>>& callList)
 {
@@ -307,7 +319,10 @@ void ModularSimulator::addToCallList(gmx::compat::not_null<U*>          element,
 template<typename T, typename U>
 void ModularSimulator::addToCallList(std::unique_ptr<U>& element, std::vector<compat::not_null<T*>>& callList)
 {
-    callList.emplace_back(compat::make_not_null(element.get()));
+    if (element)
+    {
+        callList.emplace_back(compat::make_not_null(element.get()));
+    }
 }
 
 template<typename T, typename U>
@@ -315,8 +330,11 @@ void ModularSimulator::addToCallListAndMove(std::unique_ptr<U>                 e
                                             std::vector<compat::not_null<T*>>& callList,
                                             std::vector<std::unique_ptr<T>>&   elementList)
 {
-    callList.emplace_back(compat::make_not_null(element.get()));
-    elementList.emplace_back(std::move(element));
+    if (element)
+    {
+        callList.emplace_back(compat::make_not_null(element.get()));
+        elementList.emplace_back(std::move(element));
+    }
 }
 //! \endcond
 
