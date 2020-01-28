@@ -92,9 +92,6 @@ private:
     std::vector<int> atomInfoAllVdw_;
     //! Legacy matrix for box
     matrix box_;
-    //! Information about exclusions.
-    gmx::ListOfLists<int> excls_;
-
 };
 
 } // namespace nblib
