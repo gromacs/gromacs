@@ -275,7 +275,7 @@ void ForceCalculator::compute(const bool printTimings)
     snew(forceRec.shift_vec, SHIFTS);
     calc_shifts(box_, forceRec.shift_vec);
 
-    put_atoms_in_box(epbcXYZ, box_, system_.coordinates());
+    put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
 
     std::vector<gmx::RVec> currentCoords = system_.coordinates();
     for (int iter = 0; iter < options_.numIterations; iter++)
@@ -317,11 +317,11 @@ ForceCalculator::setupNbnxmInstance()
 
     PairlistParams            pairlistParams(kernelSetup.kernelType, false, options_.pairlistCutoff, false);
 
-    Nbnxm::GridSet            gridSet(epbcXYZ, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    Nbnxm::GridSet            gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto                      pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto                      pairSearch   = std::make_unique<PairSearch>(epbcXYZ, false, nullptr, nullptr,
+    auto                      pairSearch   = std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
                                                                           pairlistParams.pairlistType,
                                                                           false, numThreads, pinPolicy);
 
@@ -360,7 +360,7 @@ ForceCalculator::setupNbnxmInstance()
 
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local,
-                           &system_.topology().getGMXexclusions(), 0, &nrnb);
+                           system_.topology().getGmxExclusions(), 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms

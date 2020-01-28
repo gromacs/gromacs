@@ -59,8 +59,6 @@
 #include "gromacs/utility/exceptions.h"
 
 #include "coords.h"
-#include "simulationstate.h"
-#include "util.h"
 
 namespace nblib
 {
