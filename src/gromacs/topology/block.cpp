@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +43,7 @@
 
 #include <algorithm>
 
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/txtdump.h"
 
@@ -218,6 +220,19 @@ static int pr_blocka_title(FILE* fp, int indent, const char* title, const t_bloc
     return indent;
 }
 
+static int pr_listoflists_title(FILE* fp, int indent, const char* title, const gmx::ListOfLists<int>* lists)
+{
+    if (available(fp, lists, indent, title))
+    {
+        indent = pr_title(fp, indent, title);
+        pr_indent(fp, indent);
+        fprintf(fp, "numLists=%zu\n", lists->size());
+        pr_indent(fp, indent);
+        fprintf(fp, "numElements=%d\n", lists->numElements());
+    }
+    return indent;
+}
+
 static void low_pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, gmx_bool bShowNumbers)
 {
     int i;
@@ -321,6 +336,43 @@ void pr_blocka(FILE* fp, int indent, const char* title, const t_blocka* block, g
             pr_indent(fp, indent);
             fprintf(fp, "tables inconsistent, dumping complete tables:\n");
             low_pr_blocka(fp, indent, title, block, bShowNumbers);
+        }
+    }
+}
+
+void pr_listoflists(FILE* fp, int indent, const char* title, const gmx::ListOfLists<int>* lists, gmx_bool bShowNumbers)
+{
+    if (available(fp, lists, indent, title))
+    {
+        indent = pr_listoflists_title(fp, indent, title, lists);
+        for (gmx::index i = 0; i < lists->ssize(); i++)
+        {
+            int                      size = pr_indent(fp, indent);
+            gmx::ArrayRef<const int> list = (*lists)[i];
+            if (list.empty())
+            {
+                size += fprintf(fp, "%s[%d]={", title, int(i));
+            }
+            else
+            {
+                size += fprintf(fp, "%s[%d][num=%zu]={", title, bShowNumbers ? int(i) : -1, list.size());
+            }
+            bool isFirst = true;
+            for (const int j : list)
+            {
+                if (!isFirst)
+                {
+                    size += fprintf(fp, ", ");
+                }
+                if ((size) > (USE_WIDTH))
+                {
+                    fprintf(fp, "\n");
+                    size = pr_indent(fp, indent + INDENT);
+                }
+                size += fprintf(fp, "%d", j);
+                isFirst = false;
+            }
+            fprintf(fp, "}\n");
         }
     }
 }

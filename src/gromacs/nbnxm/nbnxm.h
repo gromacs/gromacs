@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -117,23 +118,20 @@
 #include "gromacs/mdtypes/locality.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/enumerationhelpers.h"
-#include "gromacs/utility/range.h"
 #include "gromacs/utility/real.h"
-
-// TODO: Remove this include
-#include "nbnxm_gpu.h"
 
 struct gmx_device_info_t;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
 struct gmx_mtop_t;
+struct gmx_nbnxm_gpu_t;
 struct gmx_wallcycle;
 struct interaction_const_t;
+struct nbnxn_atomdata_t;
 struct nonbonded_verlet_t;
 class PairSearch;
 class PairlistSets;
-struct t_blocka;
 struct t_commrec;
 struct t_lambda;
 struct t_mdatoms;
@@ -153,7 +151,13 @@ class GpuEventSynchronizer;
 namespace gmx
 {
 class ForceWithShiftForces;
+class GpuBonded;
+template<typename>
+class ListOfLists;
 class MDLogger;
+template<typename>
+class Range;
+class StepWorkload;
 class UpdateGroupsCog;
 } // namespace gmx
 
@@ -221,7 +225,7 @@ public:
                        std::unique_ptr<PairSearch>       pairSearch,
                        std::unique_ptr<nbnxn_atomdata_t> nbat,
                        const Nbnxm::KernelSetup&         kernelSetup,
-                       gmx_nbnxn_gpu_t*                  gpu_nbv,
+                       gmx_nbnxm_gpu_t*                  gpu_nbv,
                        gmx_wallcycle*                    wcycle);
 
     ~nonbonded_verlet_t();
@@ -250,8 +254,22 @@ public:
     //! Returns the index position of the atoms on the search grid
     gmx::ArrayRef<const int> getGridIndices() const;
 
-    //! Constructs the pairlist for the given locality
-    void constructPairlist(gmx::InteractionLocality iLocality, const t_blocka* excl, int64_t step, t_nrnb* nrnb);
+    /*! \brief Constructs the pairlist for the given locality
+     *
+     * When there are no non-self exclusions, \p exclusions can be empty.
+     * Otherwise the number of lists in \p exclusions should match the number
+     * of atoms when not using DD, or the total number of atoms in the i-zones
+     * when using DD.
+     *
+     * \param[in] iLocality   The interaction locality: local or non-local
+     * \param[in] exclusions  Lists of exclusions for every atom.
+     * \param[in] step        Used to set the list creation step
+     * \param[in,out] nrnb    Flop accounting struct, can be nullptr
+     */
+    void constructPairlist(gmx::InteractionLocality     iLocality,
+                           const gmx::ListOfLists<int>& exclusions,
+                           int64_t                      step,
+                           t_nrnb*                      nrnb);
 
     //! Updates all the atom properties in Nbnxm
     void setAtomProperties(const t_mdatoms& mdatoms, gmx::ArrayRef<const int> atomInfo);
@@ -350,14 +368,8 @@ public:
      */
     void atomdata_init_add_nbat_f_to_f_gpu(GpuEventSynchronizer* localReductionDone);
 
-    /*! \brief Wait for non-local copy of coordinate buffer from device to host */
-    void wait_nonlocal_x_copy_D2H_done();
-
     /*! \brief return GPU pointer to f in rvec format */
     void* get_gpu_frvec();
-
-    /*! \brief Ensure local stream waits for non-local stream */
-    void stream_local_wait_for_nonlocal();
 
     //! Return the kernel setup
     const Nbnxm::KernelSetup& kernelSetup() const { return kernelSetup_; }
@@ -372,19 +384,7 @@ public:
     void changePairlistRadii(real rlistOuter, real rlistInner);
 
     //! Set up internal flags that indicate what type of short-range work there is.
-    void setupGpuShortRangeWork(const gmx::GpuBonded* gpuBonded, const gmx::InteractionLocality iLocality)
-    {
-        if (useGpu() && !emulateGpu())
-        {
-            Nbnxm::setupGpuShortRangeWork(gpu_nbv, gpuBonded, iLocality);
-        }
-    }
-
-    //! Returns true if there is GPU short-range work for the given atom locality.
-    bool haveGpuShortRangeWork(const gmx::AtomLocality aLocality)
-    {
-        return ((useGpu() && !emulateGpu()) && Nbnxm::haveGpuShortRangeWork(gpu_nbv, aLocality));
-    }
+    void setupGpuShortRangeWork(const gmx::GpuBonded* gpuBonded, gmx::InteractionLocality iLocality);
 
     // TODO: Make all data members private
 public:
@@ -403,7 +403,7 @@ private:
 
 public:
     //! GPU Nbnxm data, only used with a physical GPU (TODO: use unique_ptr)
-    gmx_nbnxn_gpu_t* gpu_nbv;
+    gmx_nbnxm_gpu_t* gpu_nbv;
 };
 
 namespace Nbnxm

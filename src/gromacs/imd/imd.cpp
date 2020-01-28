@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -522,8 +523,9 @@ void write_IMDgroup_to_file(bool              bIMD,
     if (bIMD)
     {
         IMDatoms = gmx_mtop_global_atoms(sys);
-        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms, state->x.rvec_array(),
-                               state->v.rvec_array(), ir->ePBC, state->box, ir->imd->nat, ir->imd->ind);
+        write_sto_conf_indexed(opt2fn("-imd", nfile, fnm), "IMDgroup", &IMDatoms,
+                               state->x.rvec_array(), state->v.rvec_array(), ir->pbcType,
+                               state->box, ir->imd->nat, ir->imd->ind);
     }
 }
 

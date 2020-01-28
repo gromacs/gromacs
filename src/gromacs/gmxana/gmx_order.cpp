@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -75,7 +76,7 @@
 /* P.J. van Maaren, November 2005     Added tetrahedral stuff               */
 /****************************************************************************/
 
-static void find_nearest_neighbours(int         ePBC,
+static void find_nearest_neighbours(PbcType     pbcType,
                                     int         natoms,
                                     matrix      box,
                                     rvec        x[],
@@ -115,7 +116,7 @@ static void find_nearest_neighbours(int         ePBC,
     snew(skmol, maxidx);
 
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     gmx_rmpbc(gpbc, natoms, box, x);
 
@@ -282,7 +283,7 @@ static void calc_tetra_order_parm(const char*             fnNDX,
 {
     FILE *       fpsg = nullptr, *fpsk = nullptr;
     t_topology   top;
-    int          ePBC;
+    PbcType      pbcType;
     t_trxstatus* status;
     int          natoms;
     real         t;
@@ -296,7 +297,7 @@ static void calc_tetra_order_parm(const char*             fnNDX,
     gmx_rmpbc_t  gpbc = nullptr;
 
 
-    read_tps_conf(fnTPS, &top, &ePBC, &xtop, nullptr, box, FALSE);
+    read_tps_conf(fnTPS, &top, &pbcType, &xtop, nullptr, box, FALSE);
 
     snew(sg_slice, nslice);
     snew(sk_slice, nslice);
@@ -323,11 +324,11 @@ static void calc_tetra_order_parm(const char*             fnNDX,
     fpsk = xvgropen(skfn, "S\\sk\\N Distance Order Parameter", "Time (ps)", "S\\sk\\N", oenv);
 
     /* loop over frames */
-    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc    = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     nframes = 0;
     do
     {
-        find_nearest_neighbours(ePBC, natoms, box, x, isize[0], index[0], &sg, &sk, nslice,
+        find_nearest_neighbours(pbcType, natoms, box, x, isize[0], index[0], &sg, &sk, nslice,
                                 slice_dim, sg_slice, sk_slice, gpbc);
         for (i = 0; (i < nslice); i++)
         {
@@ -397,7 +398,7 @@ static void calc_order(const char*             fn,
                        gmx_bool                bSliced,
                        gmx_bool                bUnsat,
                        const t_topology*       top,
-                       int                     ePBC,
+                       PbcType                 pbcType,
                        int                     ngrps,
                        int                     axis,
                        gmx_bool                permolecule,
@@ -514,7 +515,7 @@ static void calc_order(const char*             fn,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -524,7 +525,7 @@ static void calc_order(const char*             fn,
         }
         teller++;
 
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
         gmx_rmpbc_copy(gpbc, natoms, box, x0, x1);
 
         /* Now loop over all groups. There are ngrps groups, the order parameter can
@@ -937,7 +938,7 @@ static void write_bfactors(t_filenm*         fnm,
     }
 
     write_sto_conf(opt2fn("-ob", nfile, fnm), "Order parameters", &useatoms, frout.x, nullptr,
-                   frout.ePBC, frout.box);
+                   frout.pbcType, frout.box);
 
     sfree(frout.x);
     done_atom(&useatoms);
@@ -1007,11 +1008,11 @@ int gmx_order(int argc, char* argv[])
     char** grpname;       /* groupnames                 */
     int    ngrps,         /* nr. of groups              */
             i, axis = 0;  /* normal axis                */
-    t_topology* top;      /* topology         */
-    int         ePBC;
-    int *       index, /* indices for a              */
-            *a;        /* atom numbers in each group */
-    t_blocka* block;   /* data from index file       */
+    t_topology* top;      /* topology                   */
+    PbcType     pbcType;  /* type of periodic boundary conditions */
+    int *       index,    /* indices for a              */
+            *a;           /* atom numbers in each group */
+    t_blocka* block;      /* data from index file       */
     t_filenm  fnm[] = {
         /* files for g_order    */
         { efTRX, "-f", nullptr, ffREAD },     /* trajectory file              */
@@ -1110,7 +1111,7 @@ int gmx_order(int argc, char* argv[])
             fprintf(stderr, "Taking carbons as unsaturated!\n");
         }
 
-        top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+        top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 
         block = init_index(ftp2fn(efNDX, NFILE, fnm), &grpname);
         index = block->index; /* get indices from t_block block */
@@ -1136,7 +1137,7 @@ int gmx_order(int argc, char* argv[])
         print_types(index, a, ngrps, grpname, top);
 
         calc_order(ftp2fn(efTRX, NFILE, fnm), index, a, &order, &slOrder, &slWidth, nslices,
-                   bSliced, bUnsat, top, ePBC, ngrps, axis, permolecule, radial, distcalc,
+                   bSliced, bUnsat, top, pbcType, ngrps, axis, permolecule, radial, distcalc,
                    opt2fn_null("-nr", NFILE, fnm), &distvals, oenv);
 
         if (radial)

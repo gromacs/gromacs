@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -173,7 +174,7 @@ static void calc_electron_density(const char*             fn,
                                   double***               slDensity,
                                   int*                    nslices,
                                   t_topology*             top,
-                                  int                     ePBC,
+                                  PbcType                 pbcType,
                                   int                     axis,
                                   int                     nr_grps,
                                   real*                   slWidth,
@@ -224,7 +225,7 @@ static void calc_electron_density(const char*             fn,
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -337,7 +338,7 @@ static void calc_density(const char*             fn,
                          double***               slDensity,
                          int*                    nslices,
                          t_topology*             top,
-                         int                     ePBC,
+                         PbcType                 pbcType,
                          int                     axis,
                          int                     nr_grps,
                          real*                   slWidth,
@@ -385,7 +386,7 @@ static void calc_density(const char*             fn,
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
     /*********** Start processing trajectory ***********/
 
     snew(den_val, top->atoms.nr);
@@ -713,7 +714,7 @@ int gmx_density(int argc, char* argv[])
     int*        ngx;            /* sizes of groups            */
     t_electron* el_tab;         /* tabel with nr. of electrons*/
     t_topology* top;            /* topology               */
-    int         ePBC;
+    PbcType     pbcType;
     int*        index_center; /* index for centering group  */
     int**       index;        /* indices for all groups     */
 
@@ -744,7 +745,7 @@ int gmx_density(int argc, char* argv[])
     /* Calculate axis */
     axis = toupper(axtitle[0]) - 'X';
 
-    top = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC); /* read topology file */
+    top = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType); /* read topology file */
 
     snew(grpname, ngrps);
     snew(index, ngrps);
@@ -773,13 +774,13 @@ int gmx_density(int argc, char* argv[])
         nr_electrons = get_electrons(&el_tab, ftp2fn(efDAT, NFILE, fnm));
         fprintf(stderr, "Read %d atomtypes from datafile\n", nr_electrons);
 
-        calc_electron_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top, ePBC,
-                              axis, ngrps, &slWidth, el_tab, nr_electrons, bCenter, index_center,
-                              ncenter, bRelative, oenv);
+        calc_electron_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top,
+                              pbcType, axis, ngrps, &slWidth, el_tab, nr_electrons, bCenter,
+                              index_center, ncenter, bRelative, oenv);
     }
     else
     {
-        calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top, ePBC, axis,
+        calc_density(ftp2fn(efTRX, NFILE, fnm), index, ngx, &density, &nslices, top, pbcType, axis,
                      ngrps, &slWidth, bCenter, index_center, ncenter, bRelative, oenv, dens_opt);
     }
 

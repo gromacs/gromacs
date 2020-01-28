@@ -48,7 +48,7 @@
 
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/topology/block.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
 namespace gmx
@@ -80,7 +80,7 @@ struct BenchmarkSystem
     //! Atom info where only oxygen atoms are marked to have Van der Waals interactions
     std::vector<int> atomInfoOxygenVdw;
     //! Information about exclusions.
-    t_blocka excls;
+    ListOfLists<int> excls;
     //! Storage for atom positions.
     std::vector<gmx::RVec> coordinates;
     //! System simulation box.

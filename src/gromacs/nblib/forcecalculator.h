@@ -93,7 +93,7 @@ private:
     //! Legacy matrix for box
     matrix box_;
     //! Information about exclusions.
-    t_blocka excls_;
+    gmx::ListOfLists<int> excls_;
 
 };
 

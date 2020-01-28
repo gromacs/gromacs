@@ -54,6 +54,8 @@
 #include "gromacs/mdtypes/forcerec.h"
 #include "gromacs/mdtypes/mdatom.h"
 #include "gromacs/mdtypes/simulation_workload.h"
+#include "gromacs/nbnxm/atomdata.h"
+#include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlistset.h"
 #include "gromacs/nbnxm/pairlistsets.h"
 #include "gromacs/nbnxm/pairsearch.h"
@@ -358,7 +360,7 @@ ForceCalculator::setupNbnxmInstance()
 
     t_nrnb nrnb;
     nbv->constructPairlist(gmx::InteractionLocality::Local,
-                           &system_.topology().getGMXexclusions(), 0, &nrnb);
+                           &system_.topology().getGmxExclusions(), 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms

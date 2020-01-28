@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -67,6 +68,7 @@
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdlib/ebin.h"
 #include "gromacs/mdlib/mdebin_bar.h"
+#include "gromacs/mdrunutility/handlerestart.h"
 #include "gromacs/mdtypes/energyhistory.h"
 #include "gromacs/mdtypes/fcdata.h"
 #include "gromacs/mdtypes/group.h"
@@ -124,6 +126,7 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
                            const pull_t*            pull_work,
                            FILE*                    fp_dhdl,
                            bool                     isRerun,
+                           const StartingBehavior   startingBehavior,
                            const MdModulesNotifier& mdModulesNotifier)
 {
     const char*        ener_nm[F_NRE];
@@ -530,7 +533,8 @@ EnergyOutput::EnergyOutput(ener_file*               fp_ene,
         sfree(grpnms);
     }
 
-    if (fp_ene)
+    /* Note that fp_ene should be valid on the master rank and null otherwise */
+    if (fp_ene != nullptr && startingBehavior != StartingBehavior::RestartWithAppending)
     {
         do_enxnms(fp_ene, &ebin_->nener, &ebin_->enm);
     }

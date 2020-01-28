@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,7 +44,9 @@
 #define GMX_PMECOORDINATERECEIVERGPU_IMPL_H
 
 #include "gromacs/ewald/pme_coordinate_receiver_gpu.h"
-#include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
+#include "gromacs/utility/arrayref.h"
+
+class GpuEventSynchronizer;
 
 namespace gmx
 {
@@ -67,13 +69,18 @@ public:
      * send coordinates buffer address to PP rank
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
+    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x);
 
     /*! \brief
-     * receive coordinate data from PP rank
+     * launch receive of coordinate data from PP rank
      * \param[in] ppRank  PP rank to send data
      */
-    void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+
+    /*! \brief
+     * enqueue wait for coordinate data from PP ranks
+     */
+    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
 
 private:
     //! CUDA stream for PME operations
@@ -82,6 +89,12 @@ private:
     MPI_Comm comm_;
     //! list of PP ranks
     gmx::ArrayRef<PpRanks> ppRanks_;
+    //! vector of MPI requests
+    std::vector<MPI_Request> request_;
+    //! vector of synchronization events to receive from PP tasks
+    std::vector<GpuEventSynchronizer*> ppSync_;
+    //! counter of messages to receive
+    int recvCount_ = 0;
 };
 
 } // namespace gmx

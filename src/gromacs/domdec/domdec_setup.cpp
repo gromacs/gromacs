@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2011,2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2011,2012 by the GROMACS development team.
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -312,7 +314,7 @@ real comm_box_frac(const gmx::IVec& dd_nc, real cutoff, const gmx_ddbox_t& ddbox
 /*! \brief Return whether the DD inhomogeneous in the z direction */
 static gmx_bool inhomogeneous_z(const t_inputrec& ir)
 {
-    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) && ir.ePBC == epbcXYZ
+    return ((EEL_PME(ir.coulombtype) || ir.coulombtype == eelEWALD) && ir.pbcType == PbcType::Xyz
             && ir.ewald_geometry == eewg3DC);
 }
 
@@ -362,8 +364,8 @@ static float comm_cost_est(real               limit,
     float temp;
 
     /* Check the DD algorithm restrictions */
-    if ((ir.ePBC == epbcXY && ir.nwall < 2 && nc[ZZ] > 1)
-        || (ir.ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
+    if ((ir.pbcType == PbcType::XY && ir.nwall < 2 && nc[ZZ] > 1)
+        || (ir.pbcType == PbcType::Screw && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
     {
         return -1;
     }
@@ -526,7 +528,7 @@ static float comm_cost_est(real               limit,
 
     /* Add cost of pbc_dx for bondeds */
     cost_pbcdx = 0;
-    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.ePBC != epbcXY))
+    if ((nc[XX] == 1 || nc[YY] == 1) || (nc[ZZ] == 1 && ir.pbcType != PbcType::XY))
     {
         if ((ddbox.tric_dir[XX] && nc[XX] == 1) || (ddbox.tric_dir[YY] && nc[YY] == 1))
         {

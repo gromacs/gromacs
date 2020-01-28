@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2014,2015,2016,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -778,7 +779,7 @@ static inline int dd_index(const ivec numDomains, const ivec domainCoordinates)
 /*! Returns the size of the buffer to hold fractional cell boundaries for DD dimension index dimIndex */
 static inline int ddCellFractionBufferSize(const gmx_domdec_t* dd, int dimIndex)
 {
-    return dd->nc[dd->dim[dimIndex]] + 1 + dimIndex * 2 + 1 + dimIndex;
+    return dd->numCells[dd->dim[dimIndex]] + 1 + dimIndex * 2 + 1 + dimIndex;
 }
 
 /*! \brief Maximum number of ranks for using send/recv for state scattering and gathering

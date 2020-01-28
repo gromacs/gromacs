@@ -70,7 +70,7 @@ static void set_pme_maxshift(gmx_domdec_t*      dd,
     int                sh;
 
     comm = dd->comm;
-    nc   = dd->nc[ddpme->dim];
+    nc   = dd->numCells[ddpme->dim];
     ns   = ddpme->nslab;
 
     if (!ddpme->dim_match)
@@ -137,13 +137,13 @@ static void check_box_size(const gmx_domdec_t* dd, const gmx_ddbox_t* ddbox)
         dim = dd->dim[d];
         if (dim < ddbox->nboundeddim
             && ddbox->box_size[dim] * ddbox->skew_fac[dim]
-                       < dd->nc[dim] * dd->comm->cellsize_limit * DD_CELL_MARGIN)
+                       < dd->numCells[dim] * dd->comm->cellsize_limit * DD_CELL_MARGIN)
         {
             gmx_fatal(
                     FARGS,
                     "The %c-size of the box (%f) times the triclinic skew factor (%f) is smaller "
                     "than the number of DD cells (%d) times the smallest allowed cell size (%f)\n",
-                    dim2char(dim), ddbox->box_size[dim], ddbox->skew_fac[dim], dd->nc[dim],
+                    dim2char(dim), ddbox->box_size[dim], ddbox->skew_fac[dim], dd->numCells[dim],
                     dd->comm->cellsize_limit);
         }
     }
@@ -221,14 +221,14 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
     {
         cellsize_min[d] = ddbox->box_size[d] * ddbox->skew_fac[d];
         npulse[d]       = 1;
-        if (dd->nc[d] == 1 || comm->slb_frac[d] == nullptr)
+        if (dd->numCells[d] == 1 || comm->slb_frac[d] == nullptr)
         {
             /* Uniform grid */
-            real cell_dx = ddbox->box_size[d] / dd->nc[d];
+            real cell_dx = ddbox->box_size[d] / dd->numCells[d];
             switch (setmode)
             {
                 case setcellsizeslbMASTER:
-                    for (int j = 0; j < dd->nc[d] + 1; j++)
+                    for (int j = 0; j < dd->numCells[d] + 1; j++)
                     {
                         cell_x_master[d][j] = ddbox->box0[d] + j * cell_dx;
                     }
@@ -261,16 +261,16 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
             }
             else
             {
-                cell_x_buffer.resize(dd->nc[d] + 1);
+                cell_x_buffer.resize(dd->numCells[d] + 1);
                 cell_x = cell_x_buffer;
             }
             cell_x[0] = ddbox->box0[d];
-            for (int j = 0; j < dd->nc[d]; j++)
+            for (int j = 0; j < dd->numCells[d]; j++)
             {
                 real cell_dx  = ddbox->box_size[d] * comm->slb_frac[d][j];
                 cell_x[j + 1] = cell_x[j] + cell_dx;
                 real cellsize = cell_dx * ddbox->skew_fac[d];
-                while (cellsize * npulse[d] < comm->systemInfo.cutoff && npulse[d] < dd->nc[d] - 1)
+                while (cellsize * npulse[d] < comm->systemInfo.cutoff && npulse[d] < dd->numCells[d] - 1)
                 {
                     npulse[d]++;
                 }
@@ -286,7 +286,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
          * some of its own home charge groups back over the periodic boundary.
          * Double charge groups cause trouble with the global indices.
          */
-        if (d < ddbox->npbcdim && dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
+        if (d < ddbox->npbcdim && dd->numCells[d] > 1 && npulse[d] >= dd->numCells[d])
         {
             char error_string[STRLEN];
 
@@ -295,7 +295,7 @@ set_dd_cell_sizes_slb(gmx_domdec_t* dd, const gmx_ddbox_t* ddbox, int setmode, i
                     "small for a cut-off of %f with %d domain decomposition cells, use 1 or more "
                     "than %d %s or increase the box size in this direction",
                     dim2char(d), ddbox->box_size[d], ddbox->skew_fac[d], comm->systemInfo.cutoff,
-                    dd->nc[d], dd->nc[d], dd->nnodes > dd->nc[d] ? "cells" : "ranks");
+                    dd->numCells[d], dd->numCells[d], dd->nnodes > dd->numCells[d] ? "cells" : "ranks");
 
             if (setmode == setcellsizeslbLOCAL)
             {
@@ -346,7 +346,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
 
     comm = dd->comm;
 
-    const int ncd = dd->nc[dim];
+    const int ncd = dd->numCells[dim];
 
     const bool dimHasPbc = (dim < ddbox->npbcdim);
 
@@ -391,7 +391,7 @@ static void dd_cell_sizes_dlb_root_enforce_limits(gmx_domdec_t*      dd,
             if (!rowMaster->isCellMin[i])
             {
                 cell_size[i] *= fac;
-                if (!dimHasPbc && (i == 0 || i == dd->nc[dim] - 1))
+                if (!dimHasPbc && (i == 0 || i == dd->numCells[dim] - 1))
                 {
                     cellsize_limit_f_i = 0;
                 }
@@ -572,7 +572,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
     /* Convert the maximum change from the input percentage to a fraction */
     const real change_limit = comm->ddSettings.dlb_scale_lim * 0.01;
 
-    const int ncd = dd->nc[dim];
+    const int ncd = dd->numCells[dim];
 
     const bool bPBC = (dim < ddbox->npbcdim);
 
@@ -688,7 +688,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t*      dd,
                     rowMaster->cellFrac[i], rowMaster->cellFrac[i + 1]);
         }
 
-        if ((bPBC || (i != 0 && i != dd->nc[dim] - 1))
+        if ((bPBC || (i != 0 && i != dd->numCells[dim] - 1))
             && rowMaster->cellFrac[i + 1] - rowMaster->cellFrac[i] < cellsize_limit_f / DD_CELL_MARGIN)
         {
             char buf[22];
@@ -757,7 +757,7 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t*       dd,
     comm.cellsizesWithDlb[d].fracLower = cellFracRow[dd->ci[dim]];
     comm.cellsizesWithDlb[d].fracUpper = cellFracRow[dd->ci[dim] + 1];
     /* The whole array was communicated, so set the buffer position */
-    int pos = dd->nc[dim] + 1;
+    int pos = dd->numCells[dim] + 1;
     for (int d1 = 0; d1 <= d; d1++)
     {
         if (d1 < d)
@@ -860,7 +860,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t*      dd,
     /* Set the dimensions for which no DD is used */
     for (dim = 0; dim < DIM; dim++)
     {
-        if (dd->nc[dim] == 1)
+        if (dd->numCells[dim] == 1)
         {
             comm->cell_x0[dim] = 0;
             comm->cell_x1[dim] = ddbox->box_size[dim];

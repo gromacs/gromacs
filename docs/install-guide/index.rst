@@ -99,7 +99,7 @@ Platform
 |Gromacs| can be compiled for many operating systems and
 architectures.  These include any distribution of Linux, Mac OS X or
 Windows, and architectures including x86, AMD64/x86-64, several
-PowerPC including POWER8, ARM v7, ARM v8, and SPARC VIII.
+PowerPC including POWER8, ARM v8, and SPARC VIII.
 
 Compiler
 ^^^^^^^^
@@ -301,7 +301,7 @@ should also add ``--enable-avx2`` also. On Intel processors supporting
 512-wide AVX, including KNL, add ``--enable-avx512`` also.
 FFTW will create a fat library with codelets for all different instruction sets,
 and pick the fastest supported one at runtime.
-On ARM architectures with NEON SIMD support and IBM Power8 and later, you
+On ARM architectures with SIMD support and IBM Power8 and later, you
 definitely want version 3.3.5 or later,
 and to compile it with ``--enable-neon`` and ``--enable-vsx``, respectively, for
 SIMD support. If you are using a Cray, there is a special modified
@@ -669,7 +669,7 @@ manual.
 
 The GPU acceleration has been tested on AMD64/x86-64 platforms with
 Linux, Mac OS X and Windows operating systems, but Linux is the
-best-tested and supported of these. Linux running on POWER 8, ARM v7 and v8
+best-tested and supported of these. Linux running on POWER 8 and ARM v8
 CPUs also works well.
 
 Experimental support is available for compiling CUDA code, both for host and
@@ -1301,7 +1301,6 @@ For details, you can
 have a look at the `continuous integration server used by GROMACS`_,
 which runs Jenkins_.
 
-We test irregularly on ARM v7, ARM v8, Cray, Fujitsu
-PRIMEHPC, Power8, Power9,
+We test irregularly on ARM v8, Cray, Power8, Power9,
 Google Native Client and other environments, and
 with other compilers and compiler versions, too.

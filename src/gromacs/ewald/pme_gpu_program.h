@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -65,11 +65,6 @@ public:
 /*! \brief This is an owning handle for the compiled PME GPU kernels.
  */
 using PmeGpuProgramStorage = std::unique_ptr<PmeGpuProgram>;
-
-/*! \brief This is a handle for passing references to PME GPU program data.
- * TODO: it should be a const reference, but for that the PmeGpu types need to be C++
- */
-using PmeGpuProgramHandle = const PmeGpuProgram*;
 
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.

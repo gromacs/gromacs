@@ -9,10 +9,6 @@
 # configuration syntax, so that the configurations are stable even
 # if the defaults change in future.
 
-# Test on ARM v7
-# Test ARM_NEON SIMD
-gcc-5 simd=ARM_NEON no-hwloc release-with-assert
-
 # Test on ARM v8
 # Test ARM_NEON_ASIMD SIMD
 gcc-5 simd=ARM_NEON_ASIMD release-with-assert

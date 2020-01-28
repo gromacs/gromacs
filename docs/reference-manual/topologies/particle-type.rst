@@ -69,9 +69,9 @@ To make virtual sites in your system, you should include a section
 ``[ virtual_sites? ]`` (for backward compatibility the old
 name ``[ dummies? ]`` can also be used) in your topology
 file, where the ``?`` stands for the number constructing
-particles for the virtual site. This will be `:ref:`2`` for
-type 2, `:ref:`3`` for types 3, 3fd, 3fad and 3out and
-`:ref:`4`` for type 4fdn. The last of these replace an older
+particles for the virtual site. This will be ``2`` for
+type 2, ``3`` for types 3, 3fd, 3fad and 3out and
+``4`` for type 4fdn. The last of these replace an older
 4fd type (with the ‘type’ value 1) that could occasionally be unstable;
 while it is still supported internally in the code, the old 4fd type
 should not be used in new input files. The different types are explained

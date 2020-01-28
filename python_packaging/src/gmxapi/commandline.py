@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -31,6 +31,7 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+
 """
 Provide command line operation.
 """
@@ -84,9 +85,9 @@ def cli(command: NDArray, shell: bool, output: OutputCollectionDescription):
     think this disallows important use cases, please let us know.
 
     Arguments:
-         command : a tuple (or list) to be the subprocess arguments, including `executable`
-         output : mapping of command line flags to output filename arguments
-         shell : unused (provides forward-compatibility)
+         command: a tuple (or list) to be the subprocess arguments, including `executable`
+         output: mapping of command line flags to output filename arguments
+         shell: unused (provides forward-compatibility)
 
     Arguments are iteratively added to the command line with standard Python
     iteration, so you should use a tuple or list even if you have only one parameter.
@@ -185,7 +186,7 @@ def filemap_to_flag_list(filemap: dict = None):
     user input, and sends the output to cli()
 
     Arguments:
-        filemap : key-value map of command line flags and filename arguments
+        filemap: key-value map of command line flags and filename arguments
 
     Returns:
         list of strings and/or gmxapi data references
@@ -222,16 +223,16 @@ def commandline_operation(executable=None,
     input/output data dependencies.
 
     Arguments:
-        executable : name of an executable on the path
-        arguments : list of positional arguments to insert at argv[1]
-        input_files : mapping of command-line flags to input file names
-        output_files : mapping of command-line flags to output file names
+        executable: name of an executable on the path
+        arguments: list of positional arguments to insert at ``argv[1]``
+        input_files: mapping of command-line flags to input file names
+        output_files: mapping of command-line flags to output file names
 
     Output:
         The output node of the resulting operation handle contains
-        * `file`: the mapping of CLI flags to filename strings resulting from the `output` kwarg
-        * `erroroutput`: A string of error output (if any) if the process failed.
-        * `returncode`: return code of the subprocess.
+        * ``file``: the mapping of CLI flags to filename strings resulting from the ``output_files`` kwarg
+        * ``erroroutput``: A string of error output (if any) if the process failed.
+        * ``returncode``: return code of the subprocess.
 
     """
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@
 #include "gromacs/gpu_utils/devicebuffer.cuh"
 #include "gromacs/gpu_utils/gpu_utils.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/mdlib/leapfrog_cuda.cuh"
+#include "gromacs/mdlib/leapfrog_gpu.cuh"
 #include "gromacs/mdlib/stat.h"
 #include "gromacs/mdtypes/group.h"
 
@@ -89,7 +89,7 @@ void integrateLeapFrogGpu(LeapFrogTestData* testData, int numSteps)
     copyToDeviceBuffer(&d_v, h_v, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
     copyToDeviceBuffer(&d_f, h_f, 0, numAtoms, nullptr, GpuApiCallBehavior::Sync, nullptr);
 
-    auto integrator = std::make_unique<LeapFrogCuda>(nullptr);
+    auto integrator = std::make_unique<LeapFrogGpu>(nullptr);
 
     integrator->set(testData->mdAtoms_, testData->numTCoupleGroups_, testData->mdAtoms_.cTC);
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -54,10 +54,10 @@
 #include "grid.h"
 #include "pairlist.h"
 
-/* Working data for the actual i-supercell during pair search */
+//! Working data for the actual i-supercell during pair search \internal
 struct NbnxnPairlistCpuWork
 {
-    // Struct for storing coordinats and bounding box for an i-entry during search
+    //! Struct for storing coordinats and bounding box for an i-entry during search \internal
     struct IClusterData
     {
         IClusterData() :
@@ -67,30 +67,30 @@ struct NbnxnPairlistCpuWork
         {
         }
 
-        // The bounding boxes, pbc shifted, for each cluster
+        //! The bounding boxes, pbc shifted, for each cluster
         AlignedVector<Nbnxm::BoundingBox> bb;
-        // The coordinates, pbc shifted, for each atom
+        //! The coordinates, pbc shifted, for each atom
         std::vector<real> x;
-        // Aligned list for storing 4*DIM*GMX_SIMD_REAL_WIDTH reals
+        //! Aligned list for storing 4*DIM*GMX_SIMD_REAL_WIDTH reals
         AlignedVector<real> xSimd;
     };
 
-    // Protect data from cache pollution between threads
+    //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;
 
-    // Work data for generating an IEntry in the pairlist
+    //! Work data for generating an IEntry in the pairlist
     IClusterData iClusterData;
-    // The current cj_ind index for the current list
+    //! The current cj_ind index for the current list
     int cj_ind;
-    // Temporary j-cluster list, used for sorting on exclusions
+    //! Temporary j-cluster list, used for sorting on exclusions
     std::vector<nbnxn_cj_t> cj;
 
-    // Nr. of cluster pairs without Coulomb for flop counting
+    //! Nr. of cluster pairs without Coulomb for flop counting
     int ncj_noq;
-    // Nr. of cluster pairs with 1/2 LJ for flop count
+    //! Nr. of cluster pairs with 1/2 LJ for flop count
     int ncj_hlj;
 
-    // Protect data from cache pollution between threads
+    //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp1;
 };
 
@@ -109,13 +109,13 @@ struct NbnxnPairlistGpuWork
         {
         }
 
-        // The bounding boxes, pbc shifted, for each cluster
+        //! The bounding boxes, pbc shifted, for each cluster
         AlignedVector<Nbnxm::BoundingBox> bb;
-        // As bb, but in packed xxxx format
+        //! As bb, but in packed xxxx format
         AlignedVector<float> bbPacked;
-        // The coordinates, pbc shifted, for each atom
+        //! The coordinates, pbc shifted, for each atom
         AlignedVector<real> x;
-        // Aligned coordinate list used for 4*DIM*GMX_SIMD_REAL_WIDTH floats
+        //! Aligned coordinate list used for 4*DIM*GMX_SIMD_REAL_WIDTH floats
         AlignedVector<real> xSimd;
     };
 
@@ -125,23 +125,23 @@ struct NbnxnPairlistGpuWork
     {
     }
 
-    // Protect data from cache pollution between threads
+    //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp0;
 
-    // Work data for generating an i-entry in the pairlist
+    //! Work data for generating an i-entry in the pairlist
     ISuperClusterData iSuperClusterData;
-    // The current j-cluster index for the current list
+    //! The current j-cluster index for the current list
     int cj_ind;
-    // Bounding box distance work array
+    //! Bounding box distance work array
     AlignedVector<float> distanceBuffer;
 
-    // Buffer for sorting list entries
+    //! Buffer for sorting list entries
     std::vector<int> sortBuffer;
 
-    // Second sci array, for sorting
+    //! Second sci array, for sorting
     gmx::HostVector<nbnxn_sci_t> sci_sort;
 
-    // Protect data from cache pollution between threads
+    //! Protect data from cache pollution between threads
     gmx_cache_protect_t cp1;
 };
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,13 +42,17 @@
 #ifndef GMX_PMECOORDINATERECEIVERGPU_H
 #define GMX_PMECOORDINATERECEIVERGPU_H
 
-#include "gromacs/ewald/pme.h"
-#include "gromacs/ewald/pme_force_sender_gpu.h"
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/utility/classhelpers.h"
 #include "gromacs/utility/gmxmpi.h"
 
+struct PpRanks;
+
 namespace gmx
 {
+
+template<typename>
+class ArrayRef;
 
 class PmeCoordinateReceiverGpu
 {
@@ -66,14 +70,19 @@ public:
      * send coordinates buffer address to PP rank
      * \param[in] d_x   coordinates buffer in GPU memory
      */
-    void sendCoordinateBufferAddressToPpRanks(rvec* d_x);
+    void sendCoordinateBufferAddressToPpRanks(DeviceBuffer<float> d_x);
 
 
     /*! \brief
-     * receive coordinate data from PP rank
+     * launch receive of coordinate data from PP rank
      * \param[in] ppRank  PP rank to send data
      */
-    void receiveCoordinatesFromPpCudaDirect(int ppRank);
+    void launchReceiveCoordinatesFromPpCudaDirect(int ppRank);
+
+    /*! \brief
+     * enqueue wait for coordinate data from PP ranks
+     */
+    void enqueueWaitReceiveCoordinatesFromPpCudaDirect();
 
 private:
     class Impl;

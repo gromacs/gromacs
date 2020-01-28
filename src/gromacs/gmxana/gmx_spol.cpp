@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,7 +59,7 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/smalloc.h"
 
-static void calc_com_pbc(int nrefat, const t_topology* top, rvec x[], t_pbc* pbc, const int index[], rvec xref, int ePBC)
+static void calc_com_pbc(int nrefat, const t_topology* top, rvec x[], t_pbc* pbc, const int index[], rvec xref, PbcType pbcType)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -81,7 +82,7 @@ static void calc_com_pbc(int nrefat, const t_topology* top, rvec x[], t_pbc* pbc
     }
     svmul(1 / mtot, xref, xref);
     /* Now check if any atom is more than half the box from the COM */
-    if (ePBC != epbcNONE)
+    if (pbcType != PbcType::No)
     {
         iter = 0;
         do
@@ -216,7 +217,7 @@ int gmx_spol(int argc, char* argv[])
     }
 
     snew(top, 1);
-    // TODO: Only ePBC is used, not the full inputrec.
+    // TODO: Only pbcType is used, not the full inputrec.
     t_inputrec  irInstance;
     t_inputrec* ir = &irInstance;
     read_tpx_top(ftp2fn(efTPR, NFILE, fnm), ir, box, &natoms, nullptr, nullptr, top);
@@ -245,7 +246,7 @@ int gmx_spol(int argc, char* argv[])
     /* initialize reading trajectory:                         */
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    rcut = 0.99 * std::sqrt(max_cutoff2(ir->ePBC, box));
+    rcut = 0.99 * std::sqrt(max_cutoff2(ir->pbcType, box));
     if (rcut == 0)
     {
         rcut = 10 * rmax;
@@ -268,7 +269,7 @@ int gmx_spol(int argc, char* argv[])
     molindex = top->mols.index;
     atom     = top->atoms.atom;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top->idef, ir->pbcType, natoms);
 
     /* start analysis of trajectory */
     do
@@ -276,10 +277,10 @@ int gmx_spol(int argc, char* argv[])
         /* make molecules whole again */
         gmx_rmpbc(gpbc, natoms, box, x);
 
-        set_pbc(&pbc, ir->ePBC, box);
+        set_pbc(&pbc, ir->pbcType, box);
         if (bCom)
         {
-            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC);
+            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->pbcType);
         }
 
         for (m = 0; m < isize[1]; m++)

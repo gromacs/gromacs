@@ -94,21 +94,21 @@ struct DDPairInteractionRanges
     //! The j-atom range
     gmx::Range<int> jAtomRange;
     //! Minimum shifts to consider
-    ivec shift0 = {};
+    gmx::IVec shift0 = { 0, 0, 0 };
     //! Maximum shifts to consider
-    ivec shift1 = {};
+    gmx::IVec shift1 = { 0, 0, 0 };
 };
 
 typedef struct
 {
     /* Zone lower corner in triclinic coordinates         */
-    rvec x0 = {};
+    gmx::RVec x0 = { 0, 0, 0 };
     /* Zone upper corner in triclinic coordinates         */
-    rvec x1 = {};
+    gmx::RVec x1 = { 0, 0, 0 };
     /* Zone bounding box lower corner in Cartesian coords */
-    rvec bb_x0 = {};
+    gmx::RVec bb_x0 = { 0, 0, 0 };
     /* Zone bounding box upper corner in Cartesian coords */
-    rvec bb_x1 = {};
+    gmx::RVec bb_x1 = { 0, 0, 0 };
 } gmx_domdec_zone_size_t;
 
 struct gmx_domdec_zones_t
@@ -129,13 +129,13 @@ struct gmx_domdec_zones_t
 
 struct gmx_ddbox_t
 {
-    int  npbcdim;
-    int  nboundeddim;
-    rvec box0;
-    rvec box_size;
+    int       npbcdim;
+    int       nboundeddim;
+    gmx::RVec box0     = { 0, 0, 0 };
+    gmx::RVec box_size = { 0, 0, 0 };
     /* Tells if the box is skewed for each of the three cartesian directions */
-    ivec tric_dir;
-    rvec skew_fac;
+    gmx::IVec tric_dir = { 0, 0, 0 };
+    gmx::RVec skew_fac = { 0, 0, 0 };
     /* Orthogonal vectors for triclinic cells, Cartesian index */
     rvec v[DIM][DIM];
     /* Normal vectors for the cells walls */
@@ -170,10 +170,10 @@ struct gmx_domdec_t
     int      nnodes       = 0;
     MPI_Comm mpi_comm_all = MPI_COMM_NULL;
     /* The local DD cell index and rank */
-    ivec ci         = { 0, 0, 0 };
-    int  rank       = 0;
-    ivec master_ci  = { 0, 0, 0 };
-    int  masterrank = 0;
+    gmx::IVec ci         = { 0, 0, 0 };
+    int       rank       = 0;
+    gmx::IVec master_ci  = { 0, 0, 0 };
+    int       masterrank = 0;
     /* Communication with the PME only nodes */
     int                   pme_nodeid           = 0;
     gmx_bool              pme_receive_vir_ener = false;
@@ -185,9 +185,10 @@ struct gmx_domdec_t
     UnitCellInfo unitCellInfo;
 
     /* The communication setup, identical for each cell, cartesian index */
-    ivec nc   = { 0, 0, 0 };
-    int  ndim = 0;
-    ivec dim  = { 0, 0, 0 }; /* indexed by 0 to ndim */
+    //! Todo: refactor nbnxm to not rely on this sometimes being a nullptr so this can be IVec
+    ivec      numCells = { 0, 0, 0 };
+    int       ndim     = 0;
+    gmx::IVec dim      = { 0, 0, 0 }; /* indexed by 0 to ndim */
 
     /* Forward and backward neighboring cells, indexed by 0 to ndim */
     int neighbor[DIM][2] = { { 0, 0 }, { 0, 0 }, { 0, 0 } };

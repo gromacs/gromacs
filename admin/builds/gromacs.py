@@ -1,7 +1,8 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+# Copyright (c) 2015,2016,2017,2018,2019 by the GROMACS development team.
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -186,6 +187,8 @@ def do_build(context):
     # GPU update flag enables GPU update+constraints as well as buffer ops (dependency)
     if context.opts.gpuupdate:
         context.env.set_env_var('GMX_FORCE_UPDATE_DEFAULT_GPU', "1")
+        context.env.set_env_var('GMX_GPU_DD_COMMS', "1")
+        context.env.set_env_var('GMX_GPU_PME_PP_COMMS', "1")
 
     regressiontests_path = context.workspace.get_project_dir(Project.REGRESSIONTESTS)
 
@@ -250,6 +253,10 @@ def do_build(context):
 
         context.build_target(target='install')
         # TODO: Consider what could be tested about the installed binaries.
+
+        # run OpenCL offline compile tests on clang tidy builds
+        if (context.opts.tidy and context.opts.opencl):
+            context.build_target(target='ocl_nbnxm_kernels')
 
         if not context.opts.mdrun_only:
             context.env.prepend_path_env(os.path.join(context.workspace.build_dir, 'bin'))

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -72,9 +72,9 @@ void RestraintForceProvider::calculateForces(const ForceProviderInput& forceProv
     GMX_ASSERT(mdatoms.homenr >= 0, "number of home atoms must be non-negative.");
 
     const auto& box = forceProviderInput.box_;
-    GMX_ASSERT(check_box(-1, box) == nullptr, "Invalid box.");
+    GMX_ASSERT(check_box(PbcType::Unset, box) == nullptr, "Invalid box.");
     t_pbc pbc{};
-    set_pbc(&pbc, -1, box);
+    set_pbc(&pbc, PbcType::Unset, box);
 
     const auto& x  = forceProviderInput.x_;
     const auto& cr = forceProviderInput.cr_;

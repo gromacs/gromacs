@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -244,7 +245,7 @@ void LegacySimulator::do_tpi()
        init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
        state_global->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);*/
     /* We never need full pbc for TPI */
-    fr->ePBC = epbcXYZ;
+    fr->pbcType = PbcType::Xyz;
     /* Determine the temperature for the Boltzmann weighting */
     temp = inputrec->opts.ref_t[0];
     if (fplog)
@@ -583,7 +584,7 @@ void LegacySimulator::do_tpi()
         bStateChanged = TRUE;
         bNS           = TRUE;
 
-        put_atoms_in_box(fr->ePBC, box, x);
+        put_atoms_in_box(fr->pbcType, box, x);
 
         /* Put all atoms except for the inserted ones on the grid */
         rvec vzero       = { 0, 0, 0 };
@@ -666,7 +667,7 @@ void LegacySimulator::do_tpi()
                 /* TODO: Avoid updating all atoms at every bNS step */
                 fr->nbv->setAtomProperties(*mdatoms, fr->cginfo);
 
-                fr->nbv->constructPairlist(InteractionLocality::Local, &top.excls, step, nrnb);
+                fr->nbv->constructPairlist(InteractionLocality::Local, top.excls, step, nrnb);
 
                 bNS = FALSE;
             }
@@ -877,7 +878,7 @@ void LegacySimulator::do_tpi()
                 sprintf(str, "t%g_step%d.pdb", t, static_cast<int>(step));
                 sprintf(str2, "t: %f step %d ener: %f", t, static_cast<int>(step), epot);
                 write_sto_conf_mtop(str, str2, top_global, state_global->x.rvec_array(),
-                                    state_global->v.rvec_array(), inputrec->ePBC, state_global->box);
+                                    state_global->v.rvec_array(), inputrec->pbcType, state_global->box);
             }
 
             step++;

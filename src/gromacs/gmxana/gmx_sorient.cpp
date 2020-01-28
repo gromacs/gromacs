@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -114,7 +115,7 @@ static void calc_com_pbc(int nrefat, t_topology* top, rvec x[], t_pbc* pbc, cons
 int gmx_sorient(int argc, char* argv[])
 {
     t_topology   top;
-    int          ePBC = -1;
+    PbcType      pbcType = PbcType::Unset;
     t_trxstatus* status;
     int          natoms;
     real         t;
@@ -203,7 +204,7 @@ int gmx_sorient(int argc, char* argv[])
     bTPS = (opt2bSet("-s", NFILE, fnm) || !opt2bSet("-n", NFILE, fnm) || bCom);
     if (bTPS)
     {
-        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, bCom);
+        read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, box, bCom);
     }
 
     /* get index groups */
@@ -241,7 +242,7 @@ int gmx_sorient(int argc, char* argv[])
 
     rmin2 = gmx::square(rmin);
     rmax2 = gmx::square(rmax);
-    rcut  = 0.99 * std::sqrt(max_cutoff2(guess_ePBC(box), box));
+    rcut  = 0.99 * std::sqrt(max_cutoff2(guessPbcType(box), box));
     if (rcut == 0)
     {
         rcut = 10 * rmax;
@@ -273,7 +274,7 @@ int gmx_sorient(int argc, char* argv[])
     if (bTPS)
     {
         /* make molecules whole again */
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     }
     /* start analysis of trajectory */
     do
@@ -284,7 +285,7 @@ int gmx_sorient(int argc, char* argv[])
             gmx_rmpbc(gpbc, natoms, box, x);
         }
 
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
         n   = 0;
         inp = 0;
         for (p = 0; (p < nrefgrp); p++)

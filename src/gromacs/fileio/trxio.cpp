@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -291,15 +292,15 @@ void clear_trxframe(t_trxframe* fr, gmx_bool bFirst)
         fr->v         = nullptr;
         fr->f         = nullptr;
         clear_mat(fr->box);
-        fr->bPBC = FALSE;
-        fr->ePBC = -1;
+        fr->bPBC    = FALSE;
+        fr->pbcType = PbcType::Unset;
     }
 }
 
-void set_trxframe_ePBC(t_trxframe* fr, int ePBC)
+void setTrxFramePbcType(t_trxframe* fr, PbcType pbcType)
 {
-    fr->bPBC = (ePBC == -1);
-    fr->ePBC = ePBC;
+    fr->bPBC    = (pbcType == PbcType::Unset);
+    fr->pbcType = pbcType;
 }
 
 int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, const int* ind, gmx_conect gc)
@@ -409,8 +410,8 @@ int write_trxframe_indexed(t_trxstatus* status, const t_trxframe* fr, int nind, 
             }
             else
             {
-                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms, fr->x, -1,
-                                      fr->box, ' ', fr->step, nind, ind, gc, FALSE);
+                write_pdbfile_indexed(gmx_fio_getfp(status->fio), title, fr->atoms, fr->x,
+                                      PbcType::Unset, fr->box, ' ', fr->step, nind, ind, gc, FALSE);
             }
             break;
         case efG96:
@@ -549,7 +550,7 @@ int write_trxframe(t_trxstatus* status, t_trxframe* fr, gmx_conect gc)
             else
             {
                 write_pdbfile(gmx_fio_getfp(status->fio), title, fr->atoms, fr->x,
-                              fr->bPBC ? fr->ePBC : -1, fr->box, ' ', fr->step, gc);
+                              fr->bPBC ? fr->pbcType : PbcType::Unset, fr->box, ' ', fr->step, gc);
             }
             break;
         case efG96: write_g96_conf(gmx_fio_getfp(status->fio), title, fr, -1, nullptr); break;
@@ -696,9 +697,10 @@ static gmx_bool pdb_next_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     // Initiate model_nr to -1 rather than NOTSET.
     // It is not worthwhile introducing extra variables in the
     // read_pdbfile call to verify that a model_nr was read.
-    int    ePBC, model_nr = -1, na;
-    char   title[STRLEN], *time, *step;
-    double dbl;
+    PbcType pbcType;
+    int     model_nr = -1, na;
+    char    title[STRLEN], *time, *step;
+    double  dbl;
 
     atoms.nr      = fr->natoms;
     atoms.atom    = nullptr;
@@ -706,10 +708,10 @@ static gmx_bool pdb_next_x(t_trxstatus* status, FILE* fp, t_trxframe* fr)
     /* the other pointers in atoms should not be accessed if these are NULL */
     snew(symtab, 1);
     open_symtab(symtab);
-    na = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &ePBC, boxpdb, TRUE, nullptr);
+    na = read_pdbfile(fp, title, &model_nr, &atoms, symtab, fr->x, &pbcType, boxpdb, TRUE, nullptr);
     free_symtab(symtab);
     sfree(symtab);
-    set_trxframe_ePBC(fr, ePBC);
+    setTrxFramePbcType(fr, pbcType);
     if (nframes_read(status) == 0)
     {
         fprintf(stderr, " '%s', %d atoms\n", title, fr->natoms);
@@ -1081,16 +1083,17 @@ void rewind_trj(t_trxstatus* status)
 
 /***** T O P O L O G Y   S T U F F ******/
 
-t_topology* read_top(const char* fn, int* ePBC)
+t_topology* read_top(const char* fn, PbcType* pbcType)
 {
-    int         epbc, natoms;
+    int         natoms;
+    PbcType     pbcTypeFile;
     t_topology* top;
 
     snew(top, 1);
-    epbc = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
-    if (ePBC)
+    pbcTypeFile = read_tpx_top(fn, nullptr, nullptr, &natoms, nullptr, nullptr, top);
+    if (pbcType)
     {
-        *ePBC = epbc;
+        *pbcType = pbcTypeFile;
     }
 
     return top;

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2015,2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -207,7 +207,7 @@ bool Awh::isOutputStep(int64_t step) const
     return (nstout_ > 0 && step % nstout_ == 0);
 }
 
-real Awh::applyBiasForcesAndUpdateBias(int                   ePBC,
+real Awh::applyBiasForcesAndUpdateBias(PbcType               pbcType,
                                        const t_mdatoms&      mdatoms,
                                        const matrix          box,
                                        gmx::ForceWithVirial* forceWithVirial,
@@ -221,7 +221,7 @@ real Awh::applyBiasForcesAndUpdateBias(int                   ePBC,
     wallcycle_start(wallcycle, ewcAWH);
 
     t_pbc pbc;
-    set_pbc(&pbc, ePBC, box);
+    set_pbc(&pbc, pbcType, box);
 
     /* During the AWH update the potential can instantaneously jump due to either
        an bias update or moving the umbrella. The jumps are kept track of and

@@ -77,6 +77,7 @@ gcc-6 openmp gpuhw=nvidia opencl-1.2 clFFT-2.14 cmake-3.9.6 mpi no-mpiinplace si
 
 # Test AMD OpenCL
 # Test external clFFT (for build speed)
+# Test AVX2_256 SIMD
 # Test newest gcc at time of release
 # Test hwloc-1 support
 gcc-9 openmp simd=avx2_256 gpuhw=amd opencl-1.2 clFFT-2.14 hwloc libhwloc-1.11.2 cmake-3.14.5

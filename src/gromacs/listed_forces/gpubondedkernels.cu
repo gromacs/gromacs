@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -870,7 +870,7 @@ void GpuBonded::Impl::launchKernel(const t_forcerec* fr, const matrix box)
                   "TPB_BONDED must be >= SHIFTS for the virial kernel (calcVir=true)");
 
     PbcAiuc pbcAiuc;
-    setPbcAiuc(fr->bMolPBC ? ePBC2npbcdim(fr->ePBC) : 0, box, &pbcAiuc);
+    setPbcAiuc(fr->bMolPBC ? numPbcDimensions(fr->pbcType) : 0, box, &pbcAiuc);
 
     int fTypeRangeEnd = kernelParams_.fTypeRangeEnd[numFTypesOnGpu - 1];
 

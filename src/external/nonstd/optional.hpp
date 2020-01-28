@@ -14,8 +14,8 @@
 #define NONSTD_OPTIONAL_LITE_HPP
 
 #define optional_lite_MAJOR  3
-#define optional_lite_MINOR  1
-#define optional_lite_PATCH  1
+#define optional_lite_MINOR  2
+#define optional_lite_PATCH  0
 
 #define optional_lite_VERSION  optional_STRINGIFY(optional_lite_MAJOR) "." optional_STRINGIFY(optional_lite_MINOR) "." optional_STRINGIFY(optional_lite_PATCH)
 
@@ -304,6 +304,7 @@ namespace nonstd {
 #define optional_HAVE_NOEXCEPT          optional_CPP11_140
 #define optional_HAVE_NULLPTR           optional_CPP11_100
 #define optional_HAVE_REF_QUALIFIER     optional_CPP11_140
+#define optional_HAVE_INITIALIZER_LIST  optional_CPP11_140
 
 // Presence of C++14 language features:
 
@@ -1661,7 +1662,10 @@ optional<T> make_optional( T const & value )
 using optional_lite::optional;
 using optional_lite::nullopt_t;
 using optional_lite::nullopt;
+
+#if ! optional_CONFIG_NO_EXCEPTIONS
 using optional_lite::bad_optional_access;
+#endif
 
 using optional_lite::make_optional;
 

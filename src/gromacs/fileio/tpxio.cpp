@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -2125,19 +2126,25 @@ static void do_block(gmx::ISerializer* serializer, t_block* block)
     serializer->doIntArray(block->index, block->nr + 1);
 }
 
-static void do_blocka(gmx::ISerializer* serializer, t_blocka* block)
+static void doListOfLists(gmx::ISerializer* serializer, gmx::ListOfLists<int>* listOfLists)
 {
-    serializer->doInt(&block->nr);
-    serializer->doInt(&block->nra);
+    int numLists = listOfLists->ssize();
+    serializer->doInt(&numLists);
+    int numElements = listOfLists->elementsView().ssize();
+    serializer->doInt(&numElements);
     if (serializer->reading())
     {
-        block->nalloc_index = block->nr + 1;
-        snew(block->index, block->nalloc_index);
-        block->nalloc_a = block->nra;
-        snew(block->a, block->nalloc_a);
+        std::vector<int> listRanges(numLists + 1);
+        serializer->doIntArray(listRanges.data(), numLists + 1);
+        std::vector<int> elements(numElements);
+        serializer->doIntArray(elements.data(), numElements);
+        *listOfLists = gmx::ListOfLists<int>(std::move(listRanges), std::move(elements));
     }
-    serializer->doIntArray(block->index, block->nr + 1);
-    serializer->doIntArray(block->a, block->nra);
+    else
+    {
+        serializer->doIntArray(const_cast<int*>(listOfLists->listRangesView().data()), numLists + 1);
+        serializer->doIntArray(const_cast<int*>(listOfLists->elementsView().data()), numElements);
+    }
 }
 
 /* This is a primitive routine to make it possible to translate atomic numbers
@@ -2450,7 +2457,7 @@ static void do_moltype(gmx::ISerializer* serializer, gmx_moltype_t* molt, t_symt
     sfree(cgs.index);
 
     /* This used to be in the atoms struct */
-    do_blocka(serializer, &molt->excls);
+    doListOfLists(serializer, &molt->excls);
 }
 
 static void do_molblock(gmx::ISerializer* serializer, gmx_molblock_t* molb, int numAtomsPerMolecule)
@@ -2932,9 +2939,9 @@ static void do_tpx_state_second(gmx::ISerializer* serializer, TpxFileHeader* tpx
  * \param[in] tpx The file header data.
  * \param[in,out] ir Datastructure with simulation parameters.
  */
-static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir)
+static PbcType do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir)
 {
-    int      ePBC;
+    PbcType  pbcType;
     gmx_bool bPeriodicMols;
 
     /* Starting with tpx version 26, we have the inputrec
@@ -2944,7 +2951,7 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
      *
      *
      */
-    ePBC          = -1;
+    pbcType       = PbcType::Unset;
     bPeriodicMols = FALSE;
 
     do_test(serializer, tpx->bIr, ir);
@@ -2955,10 +2962,10 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
             /* Removed the pbc info from do_inputrec, since we always want it */
             if (!serializer->reading())
             {
-                ePBC          = ir->ePBC;
+                pbcType       = ir->pbcType;
                 bPeriodicMols = ir->bPeriodicMols;
             }
-            serializer->doInt(&ePBC);
+            serializer->doInt(reinterpret_cast<int*>(&pbcType));
             serializer->doBool(&bPeriodicMols);
         }
         if (tpx->fileGeneration <= tpx_generation && ir)
@@ -2966,18 +2973,18 @@ static int do_tpx_ir(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputre
             do_inputrec(serializer, ir, tpx->fileVersion);
             if (tpx->fileVersion < 53)
             {
-                ePBC          = ir->ePBC;
+                pbcType       = ir->pbcType;
                 bPeriodicMols = ir->bPeriodicMols;
             }
         }
         if (serializer->reading() && ir && tpx->fileVersion >= 53)
         {
             /* We need to do this after do_inputrec, since that initializes ir */
-            ir->ePBC          = ePBC;
+            ir->pbcType       = pbcType;
             ir->bPeriodicMols = bPeriodicMols;
         }
     }
-    return ePBC;
+    return pbcType;
 }
 
 /*! \brief
@@ -3043,13 +3050,13 @@ static void do_tpx_finalize(TpxFileHeader* tpx, t_inputrec* ir, t_state* state, 
  * \param[in,out] v Individual velocities for processing, deprecated.
  * \param[in,out] mtop Global topology.
  */
-static int do_tpx_body(gmx::ISerializer* serializer,
-                       TpxFileHeader*    tpx,
-                       t_inputrec*       ir,
-                       t_state*          state,
-                       rvec*             x,
-                       rvec*             v,
-                       gmx_mtop_t*       mtop)
+static PbcType do_tpx_body(gmx::ISerializer* serializer,
+                           TpxFileHeader*    tpx,
+                           t_inputrec*       ir,
+                           t_state*          state,
+                           rvec*             x,
+                           rvec*             v,
+                           gmx_mtop_t*       mtop)
 {
     if (state)
     {
@@ -3060,12 +3067,12 @@ static int do_tpx_body(gmx::ISerializer* serializer,
     {
         do_tpx_state_second(serializer, tpx, state, x, v);
     }
-    int ePBC = do_tpx_ir(serializer, tpx, ir);
+    PbcType pbcType = do_tpx_ir(serializer, tpx, ir);
     if (serializer->reading())
     {
         do_tpx_finalize(tpx, ir, state, mtop);
     }
-    return ePBC;
+    return pbcType;
 }
 
 /*! \brief
@@ -3076,7 +3083,7 @@ static int do_tpx_body(gmx::ISerializer* serializer,
  * \param[in,out] ir Datastructures with simulation parameters.
  * \param[in,out] mtop Global topology.
  */
-static int do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir, gmx_mtop_t* mtop)
+static PbcType do_tpx_body(gmx::ISerializer* serializer, TpxFileHeader* tpx, t_inputrec* ir, gmx_mtop_t* mtop)
 {
     return do_tpx_body(serializer, tpx, ir, nullptr, nullptr, nullptr, mtop);
 }
@@ -3123,7 +3130,7 @@ static TpxFileHeader populateTpxHeader(const t_state& state, const t_inputrec* i
 }
 
 /*! \brief
- * Process the body of a TPR file as char buffer.
+ * Process the body of a TPR file as an opaque data buffer.
  *
  * Reads/writes the information in \p buffer from/to the \p serializer
  * provided to the function. Does not interact with the actual
@@ -3137,7 +3144,7 @@ static TpxFileHeader populateTpxHeader(const t_state& state, const t_inputrec* i
  */
 static void doTpxBodyBuffer(gmx::ISerializer* serializer, gmx::ArrayRef<char> buffer)
 {
-    serializer->doCharArray(buffer.data(), buffer.size());
+    serializer->doOpaque(buffer.data(), buffer.size());
 }
 
 /*! \brief
@@ -3181,19 +3188,24 @@ static PartialDeserializedTprFile readTpxBody(TpxFileHeader*    tpx,
         partialDeserializedTpr.header = *tpx;
         doTpxBodyBuffer(serializer, partialDeserializedTpr.body);
 
-        partialDeserializedTpr.ePBC =
+        partialDeserializedTpr.pbcType =
                 completeTprDeserialization(&partialDeserializedTpr, ir, state, x, v, mtop);
     }
     else
     {
-        partialDeserializedTpr.ePBC = do_tpx_body(serializer, tpx, ir, state, x, v, mtop);
+        partialDeserializedTpr.pbcType = do_tpx_body(serializer, tpx, ir, state, x, v, mtop);
     }
     // Update header to system info for communication to nodes.
     // As we only need to communicate the inputrec and mtop to other nodes,
     // we prepare a new char buffer with the information we have already read
     // in on master.
     partialDeserializedTpr.header = populateTpxHeader(*state, ir, mtop);
-    gmx::InMemorySerializer tprBodySerializer;
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
+    gmx::InMemorySerializer tprBodySerializer(gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
     do_tpx_body(&tprBodySerializer, &partialDeserializedTpr.header, ir, mtop);
     partialDeserializedTpr.body = tprBodySerializer.finishAndGetBuffer();
 
@@ -3230,8 +3242,12 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
     t_fileio* fio;
 
     TpxFileHeader tpx = populateTpxHeader(*state, ir, mtop);
-
-    gmx::InMemorySerializer tprBodySerializer;
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
+    gmx::InMemorySerializer tprBodySerializer(gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
 
     do_tpx_body(&tprBodySerializer, &tpx, const_cast<t_inputrec*>(ir), const_cast<t_state*>(state),
                 nullptr, nullptr, const_cast<gmx_mtop_t*>(mtop));
@@ -3247,21 +3263,27 @@ void write_tpx_state(const char* fn, const t_inputrec* ir, const t_state* state,
     close_tpx(fio);
 }
 
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               t_state*                    state,
-                               rvec*                       x,
-                               rvec*                       v,
-                               gmx_mtop_t*                 mtop)
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   t_state*                    state,
+                                   rvec*                       x,
+                                   rvec*                       v,
+                                   gmx_mtop_t*                 mtop)
 {
+    // Long-term we should move to use little endian in files to avoid extra byte swapping,
+    // but since we just used the default XDR format (which is big endian) for the TPR
+    // header it would cause third-party libraries reading our raw data to tear their hair
+    // if we swap the endian in the middle of the file, so we stick to big endian in the
+    // TPR file for now - and thus we ask the serializer to swap if this host is little endian.
     gmx::InMemoryDeserializer tprBodyDeserializer(partialDeserializedTpr->body,
-                                                  partialDeserializedTpr->header.isDouble);
+                                                  partialDeserializedTpr->header.isDouble,
+                                                  gmx::EndianSwapBehavior::SwapIfHostIsLittleEndian);
     return do_tpx_body(&tprBodyDeserializer, &partialDeserializedTpr->header, ir, state, x, v, mtop);
 }
 
-int completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
-                               t_inputrec*                 ir,
-                               gmx_mtop_t*                 mtop)
+PbcType completeTprDeserialization(PartialDeserializedTprFile* partialDeserializedTpr,
+                                   t_inputrec*                 ir,
+                                   gmx_mtop_t*                 mtop)
 {
     return completeTprDeserialization(partialDeserializedTpr, ir, nullptr, nullptr, nullptr, mtop);
 }
@@ -3279,7 +3301,7 @@ PartialDeserializedTprFile read_tpx_state(const char* fn, t_inputrec* ir, t_stat
     return partialDeserializedTpr;
 }
 
-int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
+PbcType read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, gmx_mtop_t* mtop)
 {
     t_fileio* fio;
     t_state   state;
@@ -3299,19 +3321,19 @@ int read_tpx(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, r
     {
         copy_mat(state.box, box);
     }
-    return partialDeserializedTpr.ePBC;
+    return partialDeserializedTpr.pbcType;
 }
 
-int read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top)
+PbcType read_tpx_top(const char* fn, t_inputrec* ir, matrix box, int* natoms, rvec* x, rvec* v, t_topology* top)
 {
     gmx_mtop_t mtop;
-    int        ePBC;
+    PbcType    pbcType;
 
-    ePBC = read_tpx(fn, ir, box, natoms, x, v, &mtop);
+    pbcType = read_tpx(fn, ir, box, natoms, x, v, &mtop);
 
     *top = gmx_mtop_t_to_t_topology(&mtop, true);
 
-    return ePBC;
+    return pbcType;
 }
 
 gmx_bool fn2bTPX(const char* file)

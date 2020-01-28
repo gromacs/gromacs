@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -57,24 +58,30 @@ struct nbnxn_atomdata_t;
 class PairlistSet;
 enum class PairlistType;
 class PairSearch;
-struct t_blocka;
 struct t_nrnb;
 
+namespace gmx
+{
+template<typename>
+class ListOfLists;
+}
 
+//! Contains sets of pairlists \internal
 class PairlistSets
 {
 public:
+    //! Constructor
     PairlistSets(const PairlistParams& pairlistParams,
                  bool                  haveMultipleDomains,
                  int                   minimumIlistCountForGpuBalancing);
 
     //! Construct the pairlist set for the given locality
-    void construct(gmx::InteractionLocality iLocality,
-                   PairSearch*              pairSearch,
-                   nbnxn_atomdata_t*        nbat,
-                   const t_blocka*          excl,
-                   int64_t                  step,
-                   t_nrnb*                  nrnb);
+    void construct(gmx::InteractionLocality     iLocality,
+                   PairSearch*                  pairSearch,
+                   nbnxn_atomdata_t*            nbat,
+                   const gmx::ListOfLists<int>& exclusions,
+                   int64_t                      step,
+                   t_nrnb*                      nrnb);
 
     //! Dispatches the dynamic pruning kernel for the given locality
     void dispatchPruneKernel(gmx::InteractionLocality iLocality,

@@ -1,8 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010.
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -650,45 +651,6 @@ t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop)
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
-static void blockacat(t_blocka* dest, const t_blocka* src, int copies, int dnum, int snum)
-{
-    int i, j, l, size;
-    int destnr  = dest->nr;
-    int destnra = dest->nra;
-
-    if (src->nr)
-    {
-        size = (dest->nr + copies * src->nr + 1);
-        srenew(dest->index, size);
-    }
-    if (src->nra)
-    {
-        size = (dest->nra + copies * src->nra);
-        srenew(dest->a, size);
-    }
-
-    for (l = destnr, j = 0; (j < copies); j++)
-    {
-        for (i = 0; (i < src->nr); i++)
-        {
-            dest->index[l++] = dest->nra + src->index[i];
-        }
-        dest->nra += src->nra;
-    }
-    for (l = destnra, j = 0; (j < copies); j++)
-    {
-        for (i = 0; (i < src->nra); i++)
-        {
-            dest->a[l++] = dnum + src->a[i];
-        }
-        dnum += snum;
-        dest->nr += src->nr;
-    }
-    dest->index[dest->nr] = dest->nra;
-    dest->nalloc_index    = dest->nr;
-    dest->nalloc_a        = dest->nra;
-}
-
 static void ilistcat(int ftype, t_ilist* dest, const InteractionList& src, int copies, int dnum, int snum)
 {
     int nral, c, i, a;
@@ -933,29 +895,28 @@ static void copyAtomtypesFromMtop(const gmx_mtop_t& mtop, t_atomtypes* atomtypes
     }
 }
 
-/*! \brief Copy excls from mtop.
- *
- * Makes a deep copy of excls(t_blocka) from gmx_mtop_t.
- * Used to initialize legacy topology types.
+/*! \brief Generate a single list of lists of exclusions for the whole system
  *
  * \param[in] mtop  Reference to input mtop.
- * \param[in] excls Pointer to final excls data structure.
  */
-static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
+static gmx::ListOfLists<int> globalExclusionLists(const gmx_mtop_t& mtop)
 {
-    init_blocka(excls);
-    int natoms = 0;
+    gmx::ListOfLists<int> excls;
+
+    int atomIndex = 0;
     for (const gmx_molblock_t& molb : mtop.molblock)
     {
         const gmx_moltype_t& molt = mtop.moltype[molb.type];
 
-        int srcnr  = molt.atoms.nr;
-        int destnr = natoms;
+        for (int mol = 0; mol < molb.nmol; mol++)
+        {
+            excls.appendListOfLists(molt.excls, atomIndex);
 
-        blockacat(excls, &molt.excls, molb.nmol, destnr, srcnr);
-
-        natoms += molb.nmol * srcnr;
+            atomIndex += molt.atoms.nr;
+        }
     }
+
+    return excls;
 }
 
 /*! \brief Updates inter-molecular exclusion lists
@@ -966,21 +927,21 @@ static void copyExclsFromMtop(const gmx_mtop_t& mtop, t_blocka* excls)
  * \param[inout]    excls   existing exclusions in local topology
  * \param[in]       ids     list of global IDs of atoms
  */
-static void addMimicExclusions(t_blocka* excls, const gmx::ArrayRef<const int> ids)
+static void addMimicExclusions(gmx::ListOfLists<int>* excls, const gmx::ArrayRef<const int> ids)
 {
     t_blocka inter_excl{};
     init_blocka(&inter_excl);
     size_t n_q = ids.size();
 
-    inter_excl.nr  = excls->nr;
+    inter_excl.nr  = excls->ssize();
     inter_excl.nra = n_q * n_q;
 
     size_t total_nra = n_q * n_q;
 
-    snew(inter_excl.index, excls->nr + 1);
+    snew(inter_excl.index, excls->ssize() + 1);
     snew(inter_excl.a, total_nra);
 
-    for (int i = 0; i < excls->nr; ++i)
+    for (int i = 0; i < inter_excl.nr; ++i)
     {
         inter_excl.index[i] = 0;
     }
@@ -1012,7 +973,7 @@ static void addMimicExclusions(t_blocka* excls, const gmx::ArrayRef<const int> i
 
     inter_excl.index[inter_excl.nr] = n_q * n_q;
 
-    std::vector<gmx::ExclusionBlock> qmexcl2(excls->nr);
+    std::vector<gmx::ExclusionBlock> qmexcl2(excls->size());
     gmx::blockaToExclusionBlocks(&inter_excl, qmexcl2);
 
     // Merge the created exclusion list with the existing one
@@ -1026,7 +987,7 @@ static void gen_local_top(const gmx_mtop_t& mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyExclsFromMtop(mtop, &top->excls);
+    top->excls = globalExclusionLists(mtop);
     if (!mtop.intermolecularExclusionGroup.empty())
     {
         addMimicExclusions(&top->excls, mtop.intermolecularExclusionGroup);
@@ -1100,7 +1061,6 @@ static void gen_t_topology(const gmx_mtop_t& mtop,
 {
     copyAtomtypesFromMtop(mtop, &top->atomtypes);
     copyIdefFromMtop(mtop, &top->idef, freeEnergyInteractionsAtEnd, bMergeConstr);
-    copyExclsFromMtop(mtop, &top->excls);
 
     top->name                        = mtop.name;
     top->atoms                       = gmx_mtop_global_atoms(&mtop);

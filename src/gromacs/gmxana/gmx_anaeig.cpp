@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -465,7 +466,7 @@ static void overlap(const char*             outfile,
 
 static void project(const char*             trajfile,
                     const t_topology*       top,
-                    int                     ePBC,
+                    PbcType                 pbcType,
                     matrix                  topbox,
                     const char*             projfile,
                     const char*             twodplotfile,
@@ -549,7 +550,7 @@ static void project(const char*             trajfile,
 
         if (top)
         {
-            gpbc = gmx_rmpbc_init(&top->idef, ePBC, nat);
+            gpbc = gmx_rmpbc_init(&top->idef, pbcType, nat);
         }
 
         for (i = 0; i < nat; i++)
@@ -766,7 +767,7 @@ static void project(const char*             trajfile,
         }
         else
         {
-            write_sto_conf(threedplotfile, str, &atoms, x, nullptr, ePBC, box);
+            write_sto_conf(threedplotfile, str, &atoms, x, nullptr, pbcType, box);
         }
         done_atom(&atoms);
     }
@@ -1068,8 +1069,8 @@ int gmx_anaeig(int argc, char* argv[])
 #define NPA asize(pa)
 
     t_topology        top;
-    int               ePBC  = -1;
-    const t_atoms*    atoms = nullptr;
+    PbcType           pbcType = PbcType::Unset;
+    const t_atoms*    atoms   = nullptr;
     rvec *            xtop, *xref1, *xref2, *xrefp = nullptr;
     gmx_bool          bDMR1, bDMA1, bDMR2, bDMA2;
     int               nvec1, nvec2, *eignr1 = nullptr, *eignr2 = nullptr;
@@ -1262,9 +1263,9 @@ int gmx_anaeig(int argc, char* argv[])
     }
     else
     {
-        bTop  = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, topbox, bM);
+        bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox, bM);
         atoms = &top.atoms;
-        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
+        gpbc  = gmx_rmpbc_init(&top.idef, pbcType, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)
@@ -1464,7 +1465,7 @@ int gmx_anaeig(int argc, char* argv[])
 
     if (bProj)
     {
-        project(bTraj ? opt2fn("-f", NFILE, fnm) : nullptr, bTop ? &top : nullptr, ePBC, topbox,
+        project(bTraj ? opt2fn("-f", NFILE, fnm) : nullptr, bTop ? &top : nullptr, pbcType, topbox,
                 ProjOnVecFile, TwoDPlotFile, ThreeDPlotFile, FilterFile, skip, ExtremeFile,
                 bFirstLastSet, max, nextr, atoms, natoms, index, bFit1, xrefp, nfit, ifit, w_rls,
                 sqrtm, xav1, eignr1, eigvec1, noutvec, outvec, bSplit, oenv);

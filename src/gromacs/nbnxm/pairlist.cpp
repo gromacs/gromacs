@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014,2015,2016 by the GROMACS development team.
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -53,18 +54,18 @@
 #include "gromacs/mdlib/gmx_omp_nthreads.h"
 #include "gromacs/mdtypes/group.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/nbnxm/gpu_data_mgmt.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
 #include "gromacs/simd/simd.h"
 #include "gromacs/simd/vector_operations.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/gmxomp.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/smalloc.h"
 
-#include "atomdata.h"
 #include "boundingboxes.h"
 #include "clusterdistancekerneltype.h"
 #include "gridset.h"
@@ -1363,12 +1364,12 @@ static nbnxn_sci_t* getOpenIEntry(NbnxnPairlistGpu* nbl)
  * Set all atom-pair exclusions from the topology stored in exclusions
  * as masks in the pair-list for simple list entry iEntry.
  */
-static void setExclusionsForIEntry(const Nbnxm::GridSet& gridSet,
-                                   NbnxnPairlistCpu*     nbl,
-                                   gmx_bool              diagRemoved,
-                                   int                   na_cj_2log,
-                                   const nbnxn_ci_t&     iEntry,
-                                   const t_blocka&       exclusions)
+static void setExclusionsForIEntry(const Nbnxm::GridSet&   gridSet,
+                                   NbnxnPairlistCpu*       nbl,
+                                   gmx_bool                diagRemoved,
+                                   int                     na_cj_2log,
+                                   const nbnxn_ci_t&       iEntry,
+                                   const ListOfLists<int>& exclusions)
 {
     if (iEntry.cj_ind_end == iEntry.cj_ind_start)
     {
@@ -1391,11 +1392,8 @@ static void setExclusionsForIEntry(const Nbnxm::GridSet& gridSet,
         if (iAtom >= 0)
         {
             /* Loop over the topology-based exclusions for this i-atom */
-            for (int exclIndex = exclusions.index[iAtom]; exclIndex < exclusions.index[iAtom + 1];
-                 exclIndex++)
+            for (const int jAtom : exclusions[iAtom])
             {
-                const int jAtom = exclusions.a[exclIndex];
-
                 if (jAtom == iAtom)
                 {
                     /* The self exclusion are already set, save some time */
@@ -1876,9 +1874,9 @@ static void make_fep_list(gmx::ArrayRef<const int> atomIndices,
 static void setExclusionsForIEntry(const Nbnxm::GridSet& gridSet,
                                    NbnxnPairlistGpu*     nbl,
                                    gmx_bool              diagRemoved,
-                                   int gmx_unused     na_cj_2log,
-                                   const nbnxn_sci_t& iEntry,
-                                   const t_blocka&    exclusions)
+                                   int gmx_unused          na_cj_2log,
+                                   const nbnxn_sci_t&      iEntry,
+                                   const ListOfLists<int>& exclusions)
 {
     if (iEntry.numJClusterGroups() == 0)
     {
@@ -1912,11 +1910,8 @@ static void setExclusionsForIEntry(const Nbnxm::GridSet& gridSet,
             const int iCluster = i / c_clusterSize;
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for (int exclIndex = exclusions.index[iAtom]; exclIndex < exclusions.index[iAtom + 1];
-                 exclIndex++)
+            for (const int jAtom : exclusions[iAtom])
             {
-                const int jAtom = exclusions.a[exclIndex];
-
                 if (jAtom == iAtom)
                 {
                     /* The self exclusions are already set, save some time */
@@ -3083,7 +3078,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                                      const Grid&             jGrid,
                                      PairsearchWork*         work,
                                      const nbnxn_atomdata_t* nbat,
-                                     const t_blocka&         exclusions,
+                                     const ListOfLists<int>& exclusions,
                                      real                    rlist,
                                      const PairlistType      pairlistType,
                                      int                     ci_block,
@@ -3178,7 +3173,7 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
          */
-        if (d >= ePBC2npbcdim(gridSet.domainSetup().ePBC)
+        if (d >= numPbcDimensions(gridSet.domainSetup().pbcType)
             || gridSet.domainSetup().haveMultipleDomainsPerDim[d])
         {
             shp[d] = 0;
@@ -3544,9 +3539,12 @@ static void nbnxn_make_pairlist_part(const Nbnxm::GridSet&   gridSet,
                         }
                     }
 
-                    /* Set the exclusions for this ci list */
-                    setExclusionsForIEntry(gridSet, nbl, excludeSubDiagonal, na_cj_2log,
-                                           *getOpenIEntry(nbl), exclusions);
+                    if (!exclusions.empty())
+                    {
+                        /* Set the exclusions for this ci list */
+                        setExclusionsForIEntry(gridSet, nbl, excludeSubDiagonal, na_cj_2log,
+                                               *getOpenIEntry(nbl), exclusions);
+                    }
 
                     if (haveFep)
                     {
@@ -3924,7 +3922,7 @@ static void prepareListsForDynamicPruning(gmx::ArrayRef<NbnxnPairlistCpu> lists)
 void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
                                      gmx::ArrayRef<PairsearchWork> searchWork,
                                      nbnxn_atomdata_t*             nbat,
-                                     const t_blocka*               excl,
+                                     const ListOfLists<int>&       exclusions,
                                      const int                     minimumIlistCountForGpuBalancing,
                                      t_nrnb*                       nrnb,
                                      SearchCycleCounting*          searchCycleCounting)
@@ -4037,14 +4035,14 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
                     /* Divide the i cells equally over the pairlists */
                     if (isCpuType_)
                     {
-                        nbnxn_make_pairlist_part(gridSet, iGrid, jGrid, &work, nbat, *excl, rlist,
+                        nbnxn_make_pairlist_part(gridSet, iGrid, jGrid, &work, nbat, exclusions, rlist,
                                                  params_.pairlistType, ci_block, nbat->bUseBufferFlags,
                                                  nsubpair_target, progBal, nsubpair_tot_est, th,
                                                  numLists, &cpuLists_[th], fepListPtr);
                     }
                     else
                     {
-                        nbnxn_make_pairlist_part(gridSet, iGrid, jGrid, &work, nbat, *excl, rlist,
+                        nbnxn_make_pairlist_part(gridSet, iGrid, jGrid, &work, nbat, exclusions, rlist,
                                                  params_.pairlistType, ci_block, nbat->bUseBufferFlags,
                                                  nsubpair_target, progBal, nsubpair_tot_est, th,
                                                  numLists, &gpuLists_[th], fepListPtr);
@@ -4202,11 +4200,23 @@ void PairlistSet::constructPairlists(const Nbnxm::GridSet&         gridSet,
 void PairlistSets::construct(const InteractionLocality iLocality,
                              PairSearch*               pairSearch,
                              nbnxn_atomdata_t*         nbat,
-                             const t_blocka*           excl,
+                             const ListOfLists<int>&   exclusions,
                              const int64_t             step,
                              t_nrnb*                   nrnb)
 {
-    pairlistSet(iLocality).constructPairlists(pairSearch->gridSet(), pairSearch->work(), nbat, excl,
+    const auto& gridSet = pairSearch->gridSet();
+    const auto* ddZones = gridSet.domainSetup().zones;
+
+    /* The Nbnxm code can also work with more exclusions than those in i-zones only
+     * when using DD, but the equality check can catch more issues.
+     */
+    GMX_RELEASE_ASSERT(
+            exclusions.empty() || (!ddZones && exclusions.ssize() == gridSet.numRealAtomsTotal())
+                    || (ddZones && exclusions.ssize() == ddZones->cg_range[ddZones->iZones.size()]),
+            "exclusions should either be empty or the number of lists should match the number of "
+            "local i-atoms");
+
+    pairlistSet(iLocality).constructPairlists(gridSet, pairSearch->work(), nbat, exclusions,
                                               minimumIlistCountForGpuBalancing_, nrnb,
                                               &pairSearch->cycleCounting_);
 
@@ -4234,11 +4244,11 @@ void PairlistSets::construct(const InteractionLocality iLocality,
 }
 
 void nonbonded_verlet_t::constructPairlist(const InteractionLocality iLocality,
-                                           const t_blocka*           excl,
+                                           const ListOfLists<int>&   exclusions,
                                            int64_t                   step,
                                            t_nrnb*                   nrnb)
 {
-    pairlistSets_->construct(iLocality, pairSearch_.get(), nbat.get(), excl, step, nrnb);
+    pairlistSets_->construct(iLocality, pairSearch_.get(), nbat.get(), exclusions, step, nrnb);
 
     if (useGpu())
     {

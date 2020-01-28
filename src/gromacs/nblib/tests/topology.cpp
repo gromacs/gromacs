@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,9 +43,12 @@
  */
 #include "gmxpre.h"
 
-#include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/topology.h"
-#include "gromacs/topology/block.h"
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include "gromacs/nblib/atomtype.h"
 #include "gromacs/topology/exclusionblocks.h"
 
 #include "testutils/testasserts.h"
@@ -56,6 +59,23 @@ namespace test
 {
 namespace
 {
+
+using ::testing::Eq;
+using ::testing::Pointwise;
+
+//! Compares all element between two lists of lists
+//! Todo: unify this with the identical function in nbkernelsystem test make this a method
+//!       of ListOfLists<>
+template<typename T>
+void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
+{
+    ASSERT_EQ(list.size(), v.size());
+    for (std::size_t i = 0; i < list.size(); i++)
+    {
+        ASSERT_EQ(list[i].size(), v[i].size());
+        EXPECT_THAT(list[i], Pointwise(Eq(), v[i]));
+    }
+}
 
 // This is defined in src/gromacs/mdtypes/forcerec.h but there is also a
 // legacy C6 macro defined there that conflicts with the nblib C6 type.
@@ -188,25 +208,14 @@ TEST(NBlibTest, TopologyThrowsIdenticalAtomType)
 
 TEST(NBlibTest, TopologyHasExclusions)
 {
-    TwoWaterMolecules                waters;
-    Topology                         watersTopology = waters.buildTopology();
-    t_blocka                         testBlocka     = watersTopology.getGMXexclusions();
-    std::vector<gmx::ExclusionBlock> testExclusionBlocks;
+    TwoWaterMolecules     waters;
+    Topology              watersTopology = waters.buildTopology();
+    gmx::ListOfLists<int> testExclusions = watersTopology.getGmxExclusions();
 
-    //! Setting t_blocka.nr is needed for conversion to ExclusionBlock
-    testBlocka.nr = waters.numAtoms;
-    testExclusionBlocks.resize(waters.numAtoms);
-    blockaToExclusionBlocks(&testBlocka, testExclusionBlocks);
+    const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
+                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
 
-    std::vector<std::vector<int>> refExclusionBlocks = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
-                                                         { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
-    for (size_t atom = 0; atom < refExclusionBlocks.size(); atom++)
-    {
-        for (size_t exclusion = 0; exclusion < refExclusionBlocks[atom].size(); exclusion++)
-        {
-            EXPECT_EQ(refExclusionBlocks[atom][exclusion], testExclusionBlocks[atom].atomNumber[exclusion]);
-        }
-    }
+    compareLists(testExclusions, refExclusions);
 }
 
 TEST(NBlibTest, TopologyHasNonbondedParameters)

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2017,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -132,7 +133,7 @@ int gmx_trjorder(int argc, char* argv[])
     t_trxstatus*      status;
     gmx_bool          bNShell, bPDBout;
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     rvec *            x, *xsol, xcom, dx;
     matrix            box;
     t_pbc             pbc;
@@ -156,7 +157,7 @@ int gmx_trjorder(int argc, char* argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &x, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &x, nullptr, box, TRUE);
     sfree(x);
 
     /* get index groups */
@@ -239,11 +240,11 @@ int gmx_trjorder(int argc, char* argv[])
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+    gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x);
-        set_pbc(&pbc, ePBC, box);
+        set_pbc(&pbc, pbcType, box);
 
         if (ref_a == -1)
         {

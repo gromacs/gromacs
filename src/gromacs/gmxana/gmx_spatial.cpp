@@ -1,7 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2007,2008,2009,2010,2011,2012,2013,2014,2015,2017,2019, by the GROMACS development team, led by
+ * Copyright (c) 2007,2008,2009,2010,2011 by the GROMACS development team.
+ * Copyright (c) 2012,2013,2014,2015,2017 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -156,7 +158,7 @@ int gmx_spatial(int argc, char* argv[])
     double            MINBIN[3];
     double            MAXBIN[3];
     t_topology        top;
-    int               ePBC;
+    PbcType           pbcType;
     t_trxframe        fr;
     rvec*             xtop;
     matrix            box, box_pbc;
@@ -194,7 +196,7 @@ int gmx_spatial(int argc, char* argv[])
         return 0;
     }
 
-    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, box, TRUE);
+    read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, box, TRUE);
     sfree(xtop);
 
     atoms = &(top.atoms);
@@ -260,7 +262,7 @@ int gmx_spatial(int argc, char* argv[])
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, natoms);
     }
     /* This is the main loop over frames */
     do
@@ -271,7 +273,7 @@ int gmx_spatial(int argc, char* argv[])
         if (bPBC)
         {
             gmx_rmpbc_trxfr(gpbc, &fr);
-            set_pbc(&pbc, ePBC, box_pbc);
+            set_pbc(&pbc, pbcType, box_pbc);
         }
 
         for (i = 0; i < nidx; i++)

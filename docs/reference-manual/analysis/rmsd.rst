@@ -17,7 +17,7 @@ Root mean square deviations in structure
   position of atom :math:`i` at time :math:`t`. **Note** that fitting
   does not have to use the same atoms as the calculation of the
   :math:`RMSD`; *e.g.* a protein is usually fitted on the backbone atoms
-  (N,C:math:`_{\alpha}`,C), but the :math:`RMSD` can be computed of the
+  (N, C\ :math:`_{\alpha}`, C), but the :math:`RMSD` can be computed of the
   backbone or of the whole protein.
 
 Instead of comparing the structures to the initial structure at time

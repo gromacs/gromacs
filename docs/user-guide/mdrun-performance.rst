@@ -528,11 +528,17 @@ behavior.
     Used to set where to execute update and constraints, when present.
     Can be set to "auto", "cpu", "gpu."
     Defaults to "auto," which currently always uses the CPU.
-    Setting "gpu" requires that a compatible CUDA GPU is available.
+    Setting "gpu" requires that a compatible CUDA GPU is available,
+    the simulation is run as a single thread-MPI thread
+    and that the |Gromacs| binary is not compiled with real MPI.
     Update and constraints on a GPU is currently not supported
-    with pressure coupling, free-energy, domain decomposition, virtual sites,
+    with free-energy, domain decomposition, virtual sites,
     Ewald surface correction, replica exchange, the pull code,
     orientation restraints and computational electrophysiology.
+    It is possible to extend the ``-update`` functionality by
+    setting the ``GMX_FORCE_UPDATE_DEFAULT_GPU`` flag to change
+    the default path to use the GPU update if the simulation is
+    compatible.
 
 ``-gpu_id``
     A string that specifies the ID numbers of the GPUs that
@@ -660,7 +666,7 @@ component of the forces are calculated on CPU(s).
 
 ::
 
-    gmx mdrun -ntmpi 1 -nb gpu -pme gpu -bonded gpu
+    gmx mdrun -ntmpi 1 -nb gpu -pme gpu -bonded gpu -update gpu
 
 Starts :ref:`mdrun <gmx mdrun>` using a single thread-MPI rank that
 will use all available CPU cores. All interaction types that can run
@@ -910,7 +916,7 @@ The table contains colums indicating the number of ranks and threads that
 executed the respective part of the run, wall-time and cycle
 count aggregates (across all threads and ranks) averaged over the entire run.
 The last column also shows what precentage of the total runtime each row represents.
-Note that the :ref:`gmx mdrun` timer resetting functionalities (`-resethway` and `-resetstep`)
+Note that the :ref:`gmx mdrun` timer resetting functionalities (``-resethway`` and ``-resetstep``)
 reset the performance counters and therefore are useful to avoid startup overhead and
 performance instability (e.g. due to load balancing) at the beginning of the run.
 
@@ -997,9 +1003,11 @@ An additional set of subcounters can offer more fine-grained inspection of perfo
 Subcounters are geared toward developers and have to be enabled during compilation. See
 :doc:`/dev-manual/build-system` for more information.
 
-.. TODO In future patch:
-   - red flags in log files, how to interpret wallcycle output
-   - hints to devs how to extend wallcycles
+..  todo::
+
+    In future patch:
+    - red flags in log files, how to interpret wallcycle output
+    - hints to devs how to extend wallcycles
 
 .. _gmx-mdrun-on-gpu:
 
@@ -1012,7 +1020,9 @@ Types of GPU tasks
 ^^^^^^^^^^^^^^^^^^
 
 To better understand the later sections on different GPU use cases for
-calculation of :ref:`short range<gmx-gpu-pp>` and :ref:`PME <gmx-gpu-pme>`,
+calculation of :ref:`short range<gmx-gpu-pp>`, :ref:`PME<gmx-gpu-pme>`,
+:ref:`bonded interactions<gmx-gpu-bonded>` and
+:ref:`update and constraints <gmx-gpu-update>`
 we first introduce the concept of different GPU tasks. When thinking about
 running a simulation, several different kinds of interactions between the atoms
 have to be calculated (for more information please refer to the reference manual).
@@ -1054,7 +1064,7 @@ compatibility (please see the :ref:`section below <gmx-pme-gpu-limitations>`).
 GPU computation of short range nonbonded interactions
 .....................................................
 
-.. TODO make this more elaborate and include figures
+.. todo:: make this more elaborate and include figures
 
 Using the GPU for the short-ranged nonbonded interactions provides
 the majority of the available speed-up compared to run using only the CPU.
@@ -1066,7 +1076,7 @@ this problem and thus reduce the calculation time.
 GPU accelerated calculation of PME
 ..................................
 
-.. TODO again, extend this and add some actual useful information concerning performance etc...
+.. todo:: again, extend this and add some actual useful information concerning performance etc...
 
 |Gromacs| now allows the offloading of the PME calculation
 to the GPU, to further reduce the load on the CPU and improve usage overlap between
@@ -1097,10 +1107,12 @@ Known limitations
 
 - LJ PME is not supported on GPUs.
 
+.. _gmx-gpu-bonded:
+
 GPU accelerated calculation of bonded interactions (CUDA only)
 ..............................................................
 
-.. TODO again, extend this and add some actual useful information concerning performance etc...
+.. todo:: again, extend this and add some actual useful information concerning performance etc...
 
 |Gromacs| now allows the offloading of the bonded part of the PP
 workload to a CUDA-compatible GPU. This is treated as part of the PP
@@ -1109,6 +1121,24 @@ a GPU. It is an advantage usually only when the CPU is relatively weak
 compared with the GPU, perhaps because its workload is too large for
 the available cores. This would likely be the case for free-energy
 calculations.
+
+.. _gmx-gpu-update:
+
+GPU accelerated calculation of constraints and coordinate update (CUDA only)
+............................................................................
+
+.. TODO again, extend this and add some actual useful information concerning performance etc...
+
+|Gromacs| makes it possible to also perform the coordinate update and (if requested)
+constraint calculation on a CUDA-compatible GPU. This allows to having all (compatible)
+parts of a simulation step on the GPU, so that no unnecessary transfers are needed between
+GPU and CPU. This currently only works with single domain cases, and needs to be explicitly
+requested by the user. It is possible to change the default behaviour by setting the
+``GMX_FORCE_UPDATE_DEFAULT_GPU`` environment variable to a non-zero value. In this
+case simulations will try to run all parts by default on the GPU, and will only fall
+back to the CPU based calculation if the simulation is not compatible.
+
+Using this pathway is usually advantageous if a strong GPU is used with a weak CPU.
 
 Assigning tasks to GPUs
 .......................
@@ -1171,9 +1201,9 @@ Performance considerations for GPU tasks
 #) The only way to know for sure what alternative is best for
    your machine is to test and check performance.
 
-.. TODO: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
+.. todo:: we need to be more concrete here, i.e. what machine/software aspects to take into consideration, when will default run mode be using PME-GPU and when will it not, when/how should the user reason about testing different settings than the default.
 
-.. TODO someone who knows about the mixed mode should comment further.
+.. todo:: someone who knows about the mixed mode should comment further.
 
 Reducing overheads in GPU accelerated runs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1224,7 +1254,7 @@ Note that assigning fewer resources to :ref:`gmx mdrun` CPU computation
 involves a tradeoff which may outweigh the benefits of reduced GPU driver overhead,
 in particular without HyperThreading and with few CPU cores.
 
-.. TODO In future patch: any tips not covered above
+.. todo:: In future patch: any tips not covered above
 
 Running the OpenCL version of mdrun
 -----------------------------------
@@ -1236,7 +1266,7 @@ Currently supported hardware architectures are:
 Make sure that you have the latest drivers installed. For AMD GPUs,
 the compute-oriented `ROCm <https://rocm.github.io/>`_ stack is recommended;
 alternatively, the AMDGPU-PRO stack is also compatible; using the outdated
-and unsupported `fglrx` proprietary driver and runtime is not recommended (but
+and unsupported ``fglrx`` proprietary driver and runtime is not recommended (but
 for certain older hardware that may be the only way to obtain support).
 In addition Mesa version 17.0 or newer with LLVM 4.0 or newer is also supported.
 For NVIDIA GPUs, using the proprietary driver is
@@ -1244,7 +1274,8 @@ required as the open source nouveau driver (available in Mesa) does not
 provide the OpenCL support.
 For Intel integrated GPUs, the `Neo driver <https://github.com/intel/compute-runtime/releases>`_ is
 recommended.
-TODO: add more Intel driver recommendations
+.. seealso:: :issue:`3268` add more Intel driver recommendations
+
 The minimum OpenCL version required is |REQUIRED_OPENCL_MIN_VERSION|. See
 also the :ref:`known limitations <opencl-known-limitations>`.
 

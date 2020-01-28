@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -118,7 +118,7 @@ static void density_in_time(const char*             fn,
                             int*                    zslices,
                             int*                    tblock,
                             const t_topology*       top,
-                            int                     ePBC,
+                            PbcType                 pbcType,
                             int                     axis,
                             gmx_bool                bCenter,
                             gmx_bool                bps1d,
@@ -191,7 +191,7 @@ static void density_in_time(const char*             fn,
     /****Start trajectory processing***/
 
     /*Initialize Densdevel and PBC-remove*/
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
+    gpbc = gmx_rmpbc_init(&top->idef, pbcType, top->atoms.nr);
 
     *Densdevel = nullptr;
 
@@ -708,7 +708,8 @@ int gmx_densorder(int argc, char* argv[])
     gmx_output_env_t*  oenv;
     t_topology*        top;
     char**             grpname;
-    int                ePBC, *ngx;
+    PbcType            pbcType;
+    int*               ngx;
     static real        binw      = 0.2;
     static real        binwz     = 0.05;
     static real        dens1     = 0.00;
@@ -789,7 +790,7 @@ int gmx_densorder(int argc, char* argv[])
     bRawOut  = opt2bSet("-or", NFILE, fnm);
     bGraph   = opt2bSet("-og", NFILE, fnm);
     bOut     = opt2bSet("-o", NFILE, fnm);
-    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &ePBC);
+    top      = read_top(ftp2fn(efTPR, NFILE, fnm), &pbcType);
     snew(grpname, 1);
     snew(index, 1);
     snew(ngx, 1);
@@ -800,7 +801,7 @@ int gmx_densorder(int argc, char* argv[])
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, ngx, index, grpname);
 
     density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap,
-                    &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
+                    &xslices, &yslices, &zslices, &tblock, top, pbcType, axis, bCenter, b1d, oenv);
 
     if (ftorder > 0)
     {

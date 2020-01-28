@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -43,14 +43,13 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
 #include "topology.h"
-#include "util.h"
 
 #include <numeric>
 
 #include "gromacs/mdtypes/forcerec.h"
-#include "gromacs/topology/block.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/util.h"
 #include "gromacs/topology/exclusionblocks.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/smalloc.h"
@@ -61,11 +60,12 @@ namespace nblib
 namespace detail
 {
 
+// Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList);
+
+// add offset to all indices in inBlock
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset);
 
-
-//! Converts tuples of atom indices to exclude to the gmx::ExclusionBlock format
 std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tuple<int, int>>& tupleList)
 {
     std::vector<gmx::ExclusionBlock> ret;
@@ -101,7 +101,6 @@ std::vector<gmx::ExclusionBlock> toGmxExclusionBlock(const std::vector<std::tupl
     return ret;
 }
 
-//! add offset to all indices in inBlock
 std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock> inBlock, int offset)
 {
     //! shift atom numbers by offset
@@ -118,7 +117,7 @@ std::vector<gmx::ExclusionBlock> offsetGmxBlock(std::vector<gmx::ExclusionBlock>
 
 TopologyBuilder::TopologyBuilder() : numAtoms_(0) {}
 
-t_blocka TopologyBuilder::createExclusionsList() const
+gmx::ListOfLists<int> TopologyBuilder::createExclusionsListOfLists() const
 {
     const auto& moleculesList = molecules_;
 
@@ -146,19 +145,13 @@ t_blocka TopologyBuilder::createExclusionsList() const
         }
     }
 
-    size_t numberOfExclusions = std::accumulate(
-            std::begin(exclusionBlockGlobal), std::end(exclusionBlockGlobal), size_t(0),
-            [](size_t acc, const auto& block) { return acc + block.atomNumber.size(); });
+    gmx::ListOfLists<int> exclusionsListOfListsGlobal;
+    for (const auto& block : exclusionBlockGlobal)
+    {
+        exclusionsListOfListsGlobal.pushBack(block.atomNumber);
+    }
 
-    //! At the very end, convert the exclusionBlockGlobal into
-    //! a massive t_blocka and return
-    t_blocka tBlockGlobal;
-    snew(tBlockGlobal.index, numAtoms_ + 1);
-    snew(tBlockGlobal.a, numberOfExclusions + 1);
-
-    gmx::exclusionBlocksToBlocka(exclusionBlockGlobal, &tBlockGlobal);
-
-    return tBlockGlobal;
+    return exclusionsListOfListsGlobal;
 }
 
 template<typename T, class Extractor>
@@ -191,8 +184,7 @@ Topology TopologyBuilder::buildTopology()
 {
     topology_.numAtoms_ = numAtoms_;
 
-    topology_.excls_  = createExclusionsList();
-
+    topology_.exclusions_ = createExclusionsListOfLists();
     topology_.charges_ = extractAtomTypeQuantity<real>([](const auto& data, auto& map) {
         ignore_unused(map);
         return data.charge_;

@@ -190,5 +190,17 @@ TranslateAndScale getCoordinateTransformationToLattice(const MrcDensityMapHeader
  * \returns density data extents in three dimensions.
  */
 dynamicExtents3D getDynamicExtents3D(const MrcDensityMapHeader& header);
+
+/*! \brief Checks if the values in the header are sane.
+ *
+ * Checks extents and numbers of columns, rows and sections, as well as unit
+ * cell angles for positivity and to be within bounds.
+ *
+ * Bounds are set generously not to hamper future creative uses of mrc files.
+ *
+ * \returns true if all header values are within resonable albeit generous bounds
+ */
+bool mrcHeaderIsSane(const MrcDensityMapHeader& header);
+
 } // namespace gmx
 #endif /* end of include guard: GMX_FILEIO_MRCDENSITYMAPHEADER_H */

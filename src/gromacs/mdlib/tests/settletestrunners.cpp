@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -70,10 +70,9 @@ void applySettle(SettleTestData*    testData,
     bool errorOccured;
     int  numThreads  = 1;
     int  threadIndex = 0;
-    csettle(settled, numThreads, threadIndex, &pbc,
-            reinterpret_cast<real*>(as_rvec_array(testData->x_.data())),
-            reinterpret_cast<real*>(as_rvec_array(testData->xPrime_.data())), testData->reciprocalTimeStep_,
-            updateVelocities ? reinterpret_cast<real*>(as_rvec_array(testData->v_.data())) : nullptr,
+    csettle(settled, numThreads, threadIndex, &pbc, testData->x_.arrayRefWithPadding(),
+            testData->xPrime_.arrayRefWithPadding(), testData->reciprocalTimeStep_,
+            updateVelocities ? testData->v_.arrayRefWithPadding() : ArrayRefWithPadding<RVec>(),
             calcVirial, testData->virial_, &errorOccured);
     settle_free(settled);
     EXPECT_FALSE(errorOccured) << testDescription;

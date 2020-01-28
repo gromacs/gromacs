@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,27 +44,32 @@
  */
 #include "gmxpre.h"
 
-#include "atomtype.h"
+#include "simulationstate.h"
 
 #include <vector>
 
 #include "gromacs/math/vec.h"
 #include "gromacs/mdlib/dispersioncorrection.h"
 #include "gromacs/mdtypes/forcerec.h"
+#include "gromacs/nblib/atomtype.h"
+#include "gromacs/nblib/util.h"
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
-#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/exceptions.h"
 
 #include "coords.h"
-#include "simulationstate.h"
-#include "util.h"
+#include "nbkernelsystem.h"
 
 namespace nblib
 {
 
-SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, Topology &topo,
-                   const std::vector<gmx::RVec> &vel) : box_(box), topology_(topo)
+SimulationState::SimulationState(const std::vector<gmx::RVec>& coord,
+                                 Box                           box,
+                                 Topology&                     topo,
+                                 const std::vector<gmx::RVec>& vel) :
+    box_(box),
+    topology_(topo)
 {
     if (!checkNumericValues(coord))
     {
@@ -76,40 +81,6 @@ SimulationState::SimulationState(const std::vector<gmx::RVec> &coord, Box box, T
         GMX_THROW(gmx::InvalidInputError("Input velocities has at least one NaN"));
     }
     velocities_ = vel;
-}
-
-SimulationState::SimulationState(const SimulationState &simulationState)
-    : box_(simulationState.box_), topology_(simulationState.topology_)
-{
-    coordinates_ = simulationState.coordinates_;
-    velocities_   = simulationState.velocities_;
-}
-
-SimulationState &SimulationState::operator=(const SimulationState &simulationState)
-{
-    coordinates_ = simulationState.coordinates_;
-    velocities_   = simulationState.velocities_;
-    box_   = simulationState.box_;
-    topology_  = simulationState.topology_;
-
-    return *this;
-}
-
-SimulationState::SimulationState(SimulationState &&simulationState) noexcept
-    : box_(simulationState.box_), topology_(std::move(simulationState.topology_))
-{
-    coordinates_ = std::move(simulationState.coordinates_);
-    velocities_   = std::move(simulationState.velocities_);
-}
-
-SimulationState& SimulationState::operator=(nblib::SimulationState &&simulationState) noexcept
-{
-    coordinates_ = std::move(simulationState.coordinates_);
-    velocities_   = std::move(simulationState.velocities_);
-    box_   = simulationState.box_;
-    topology_  = std::move(simulationState.topology_);
-
-    return *this;
 }
 
 const Topology& SimulationState::topology() const

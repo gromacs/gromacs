@@ -171,11 +171,11 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #endif     /* CALC_ENERGIES */
 
     /* thread/block/warp id-s */
-    const unsigned int tidxi = get_local_id(0);
-    const unsigned int tidxj = get_local_id(1);
-    const unsigned int tidx  = get_local_id(1) * get_local_size(0) + get_local_id(0);
-    const unsigned int bidx  = get_group_id(0);
-    const unsigned int widx  = tidx / WARP_SIZE; /* warp index */
+    const int tidxi = get_local_id(0);
+    const int tidxj = get_local_id(1);
+    const int tidx  = (int)(get_local_id(1) * get_local_size(0) + get_local_id(0));
+    const int bidx  = get_group_id(0);
+    const int widx  = tidx / WARP_SIZE; /* warp index */
 
     /*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL=8 bits set */
     const unsigned superClInteractionMask = ((1U << NCL_PER_SUPERCL) - 1U);
@@ -208,14 +208,15 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 #    undef LOCAL_OFFSET
 #    define LOCAL_OFFSET (f_buf + CL_SIZE * CL_SIZE * 3)
 #else
-    __local float* f_buf              = 0;
+    __local float* f_buf             = 0;
 #endif
 #if !USE_SUBGROUP_ANY
     /* Local buffer used to implement __any warp vote function from CUDA.
        volatile is used to avoid compiler optimizations for AMD builds. */
-    volatile __local uint* warp_any = (__local uint*)(LOCAL_OFFSET);
+    //NOLINTNEXTLINE(google-readability-casting)
+    volatile __local int* warp_any = (__local int*)(LOCAL_OFFSET);
 #else
-    __local uint gmx_unused* warp_any = 0;
+    __local int gmx_unused* warp_any = 0;
 #endif
 #undef LOCAL_OFFSET
 
@@ -232,7 +233,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
         float4 xqbuf = xq[ai]
                        + (float4)(shift_vec[3 * nb_sci.shift], shift_vec[3 * nb_sci.shift + 1],
-                                  shift_vec[3 * nb_sci.shift + 2], 0.0f);
+                                  shift_vec[3 * nb_sci.shift + 2], 0.0F);
         xqbuf.w *= nbparam->epsfac;
         xqib[(tidxj + i) * CL_SIZE + tidxi] = xqbuf;
 #ifdef IATYPE_SHMEM
@@ -256,7 +257,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
     float3 fci_buf[NCL_PER_SUPERCL]; /* i force buffer */
     for (int ci_offset = 0; ci_offset < NCL_PER_SUPERCL; ci_offset++)
     {
-        fci_buf[ci_offset] = (float3)(0.0f);
+        fci_buf[ci_offset] = (float3)(0.0F);
     }
 
 #ifdef LJ_EWALD
@@ -267,8 +268,8 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
 
 
 #ifdef CALC_ENERGIES
-    float E_lj = 0.0f;
-    float E_el = 0.0f;
+    float E_lj = 0.0F;
+    float E_el = 0.0F;
 
 #    if defined EXCLUSION_FORCES /* Ewald or RF */
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci * NCL_PER_SUPERCL)
@@ -288,14 +289,14 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         /* divide the self term(s) equally over the j-threads, then multiply with the coefficients. */
 #        ifdef LJ_EWALD
         E_lj /= CL_SIZE;
-        E_lj *= 0.5f * ONE_SIXTH_F * lje_coeff6_6;
+        E_lj *= HALF_F * ONE_SIXTH_F * lje_coeff6_6;
 #        endif /* LJ_EWALD */
 
 #        if defined EL_EWALD_ANY || defined EL_RF || defined EL_CUTOFF
         /* Correct for epsfac^2 due to adding qi^2 */
         E_el /= nbparam->epsfac * CL_SIZE;
 #            if defined EL_RF || defined EL_CUTOFF
-        E_el *= -0.5f * c_rf;
+        E_el *= -HALF_F * c_rf;
 #            else
         E_el *= -beta * M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #            endif
@@ -316,7 +317,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
         unsigned int       imask     = pl_cj4[j4].imei[widx].imask;
         const unsigned int wexcl     = excl[wexcl_idx].pair[(tidx) & (WARP_SIZE - 1)];
 
-        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imask != 0u);
+        preloadCj4(&cjs, pl_cj4[j4].cj, tidxi, tidxj, imask != 0U);
 
 #ifndef PRUNE_NBL
         if (imask)
@@ -351,7 +352,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                     const float2 ljcp_j = lj_comb[aj];
 #endif
 
-                    float3 fcj_buf = (float3)(0.0f);
+                    float3 fcj_buf = (float3)(0.0F);
 
 #if !defined PRUNE_NBL
 #    pragma unroll 8
@@ -377,13 +378,13 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                             }
 #endif
 
-                            const float int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
+                            const float int_bit = (wexcl & mask_ji) ? 1.0F : 0.0F;
 
                             /* cutoff & exclusion check */
 #ifdef EXCLUSION_FORCES
                             if ((r2 < rcoulomb_sq) * (nonSelfInteraction | (ci != cj)))
 #else
-                            if ((r2 < rcoulomb_sq) * int_bit)
+                            if ((float)(r2 < rcoulomb_sq) * int_bit != 0.0F)
 #endif
                             {
                                 /* load the rest of the i-atom parameters */
@@ -451,7 +452,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 sig_r6 *= int_bit;
 #    endif /* EXCLUSION_FORCES */
 
-                                float F_invr = epsilon * sig_r6 * (sig_r6 - 1.0f) * inv_r2;
+                                float F_invr = epsilon * sig_r6 * (sig_r6 - 1.0F) * inv_r2;
 #endif     /* ! LJ_COMB_LB || CALC_ENERGIES */
 
 
@@ -498,7 +499,7 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 /* Separate VDW cut-off check to enable twin-range cut-offs
                                  * (rvdw < rcoulomb <= rlist)
                                  */
-                                const float vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                                const float vdw_in_range = (r2 < rvdw_sq) ? 1.0F : 0.0F;
                                 F_invr *= vdw_in_range;
 #    ifdef CALC_ENERGIES
                                 E_lj_p *= vdw_in_range;
@@ -537,10 +538,10 @@ __kernel void NB_KERNEL_FUNC_NAME(nbnxn_kernel, _F_opencl)
                                 E_el += qi * qj_f * (int_bit * inv_r - c_rf);
 #    endif
 #    ifdef EL_RF
-                                E_el += qi * qj_f * (int_bit * inv_r + 0.5f * two_k_rf * r2 - c_rf);
+                                E_el += qi * qj_f * (int_bit * inv_r + HALF_F * two_k_rf * r2 - c_rf);
 #    endif
 #    ifdef EL_EWALD_ANY
-                                /* 1.0f - erff is faster than erfcf */
+                                /* 1.0F - erff is faster than erfcf */
                                 E_el += qi * qj_f
                                         * (inv_r * (int_bit - erf(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #    endif /* EL_EWALD_ANY */

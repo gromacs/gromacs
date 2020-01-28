@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1311,7 +1311,7 @@ gmx_membed_t* init_membed(FILE*          fplog,
         /* remove overlapping lipids and water from the membrane box*/
         /*mark molecules to be removed*/
         snew(pbc, 1);
-        set_pbc(pbc, inputrec->ePBC, state->box);
+        set_pbc(pbc, inputrec->pbcType, state->box);
 
         snew(rm_p, 1);
         lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x.rvec_array(), mem_p,

@@ -52,7 +52,7 @@ made too tight to avoid endless iterations. A reasonable value for
 where :math:`\nu` is the oscillator frequency, :math:`m` the (reduced)
 mass, and :math:`k` Boltzmann’s constant. For a weak oscillator with a
 wave number of 100 cm\ :math:`^{-1}` and a mass of 10 atomic units, at a
-temperature of 1 K, :math:`f=7.7` kJ mol\ :math:`^{-1}` nm:math:`^{-1}`.
+temperature of 1 K, :math:`f=7.7` kJ mol\ :math:`^{-1}` nm\ :math:`^{-1}`.
 A value for :math:`\epsilon` between 1 and 10 is acceptable.
 
 Conjugate Gradient

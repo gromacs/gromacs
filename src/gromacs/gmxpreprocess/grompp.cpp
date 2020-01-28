@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,6 +103,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/keyvaluetreebuilder.h"
+#include "gromacs/utility/listoflists.h"
 #include "gromacs/utility/mdmodulenotification.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
@@ -234,7 +236,7 @@ void InteractionOfType::setForceParameter(int pos, real value)
 void MoleculeInformation::initMolInfo()
 {
     init_block(&mols);
-    init_blocka(&excls);
+    excls.clear();
     init_t_atoms(&atoms, 0, FALSE);
 }
 
@@ -867,7 +869,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
                         gmx_bool                                 bTopB,
                         const char*                              fn,
                         int                                      rc_scaling,
-                        int                                      ePBC,
+                        PbcType                                  pbcType,
                         rvec                                     com,
                         warninp*                                 wi)
 {
@@ -896,7 +898,7 @@ static void read_posres(gmx_mtop_t*                              mtop,
         warning(wi, warn_buf);
     }
 
-    npbcdim = ePBC2npbcdim(ePBC);
+    npbcdim = numPbcDimensions(pbcType);
     GMX_RELEASE_ASSERT(npbcdim <= DIM, "Invalid npbcdim");
     clear_rvec(com);
     if (rc_scaling != erscNO)
@@ -1056,16 +1058,16 @@ static void gen_posres(gmx_mtop_t*                              mtop,
                        const char*                              fnA,
                        const char*                              fnB,
                        int                                      rc_scaling,
-                       int                                      ePBC,
+                       PbcType                                  pbcType,
                        rvec                                     com,
                        rvec                                     comB,
                        warninp*                                 wi)
 {
-    read_posres(mtop, mi, FALSE, fnA, rc_scaling, ePBC, com, wi);
+    read_posres(mtop, mi, FALSE, fnA, rc_scaling, pbcType, com, wi);
     /* It is safer to simply read the b-state posres rather than trying
      * to be smart and copy the positions.
      */
-    read_posres(mtop, mi, TRUE, fnB, rc_scaling, ePBC, comB, wi);
+    read_posres(mtop, mi, TRUE, fnB, rc_scaling, pbcType, comB, wi);
 }
 
 static void set_wall_atomtype(PreprocessingAtomTypes* at, t_gromppopts* opts, t_inputrec* ir, warninp* wi)
@@ -1426,7 +1428,7 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
 
     const t_atom* atom = molt.atoms.atom;
 
-    t_blocka atomToConstraints =
+    const auto atomToConstraints =
             gmx::make_at2con(molt, iparams, gmx::FlexibleConstraintTreatment::Exclude);
 
     bool haveDecoupledMode = false;
@@ -1456,23 +1458,21 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
                 int a1 = il.iatoms[1 + i + 1];
                 int a2 = il.iatoms[1 + i + 2];
                 if ((atom[a0].m > atom[a2].m * massFactorThreshold || atom[a2].m > atom[a0].m * massFactorThreshold)
-                    && atomToConstraints.index[a0 + 1] - atomToConstraints.index[a0] == 1
-                    && atomToConstraints.index[a2 + 1] - atomToConstraints.index[a2] == 1
-                    && atomToConstraints.index[a1 + 1] - atomToConstraints.index[a1] >= 3)
+                    && atomToConstraints[a0].ssize() == 1 && atomToConstraints[a2].ssize() == 1
+                    && atomToConstraints[a1].ssize() >= 3)
                 {
-                    int constraint0 = atomToConstraints.a[atomToConstraints.index[a0]];
-                    int constraint2 = atomToConstraints.a[atomToConstraints.index[a2]];
+                    int constraint0 = atomToConstraints[a0][0];
+                    int constraint2 = atomToConstraints[a2][0];
 
                     bool foundAtom0 = false;
                     bool foundAtom2 = false;
-                    for (int conIndex = atomToConstraints.index[a1];
-                         conIndex < atomToConstraints.index[a1 + 1]; conIndex++)
+                    for (const int constraint : atomToConstraints[a1])
                     {
-                        if (atomToConstraints.a[conIndex] == constraint0)
+                        if (constraint == constraint0)
                         {
                             foundAtom0 = true;
                         }
-                        if (atomToConstraints.a[conIndex] == constraint2)
+                        if (constraint == constraint2)
                         {
                             foundAtom2 = true;
                         }
@@ -1485,8 +1485,6 @@ static bool haveDecoupledModeInMol(const gmx_moltype_t&           molt,
             }
         }
     }
-
-    done_blocka(&atomToConstraints);
 
     return haveDecoupledMode;
 }
@@ -1615,13 +1613,13 @@ static void set_verlet_buffer(const gmx_mtop_t* mtop, t_inputrec* ir, real buffe
 
     printf("Note that mdrun will redetermine rlist based on the actual pair-list setup\n");
 
-    if (gmx::square(ir->rlist) >= max_cutoff2(ir->ePBC, box))
+    if (gmx::square(ir->rlist) >= max_cutoff2(ir->pbcType, box))
     {
         gmx_fatal(FARGS,
                   "The pair-list cut-off (%g nm) is longer than half the shortest box vector or "
                   "longer than the smallest box diagonal element (%g nm). Increase the box size or "
                   "decrease nstlist or increase verlet-buffer-tolerance.",
-                  ir->rlist, std::sqrt(max_cutoff2(ir->ePBC, box)));
+                  ir->rlist, std::sqrt(max_cutoff2(ir->pbcType, box)));
     }
 }
 
@@ -1981,7 +1979,8 @@ int gmx_grompp(int argc, char* argv[])
                 fprintf(stderr, " and %s\n", fnB);
             }
         }
-        gen_posres(&sys, mi, fn, fnB, ir->refcoord_scaling, ir->ePBC, ir->posres_com, ir->posres_comB, wi);
+        gen_posres(&sys, mi, fn, fnB, ir->refcoord_scaling, ir->pbcType, ir->posres_com,
+                   ir->posres_comB, wi);
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
@@ -2198,7 +2197,7 @@ int gmx_grompp(int argc, char* argv[])
                     fr_time, ir, &state, &sys, oenv);
     }
 
-    if (ir->ePBC == epbcXY && ir->nwall != 2)
+    if (ir->pbcType == PbcType::XY && ir->nwall != 2)
     {
         clear_rvec(state.box[ZZ]);
     }
@@ -2278,7 +2277,7 @@ int gmx_grompp(int argc, char* argv[])
         {
             copy_mat(ir->compress, compressibility);
         }
-        setStateDependentAwhParams(ir->awhParams, ir->pull, pull, state.box, ir->ePBC,
+        setStateDependentAwhParams(ir->awhParams, ir->pull, pull, state.box, ir->pbcType,
                                    compressibility, &ir->opts, wi);
     }
 

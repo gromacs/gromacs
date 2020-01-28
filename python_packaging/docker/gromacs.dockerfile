@@ -21,15 +21,11 @@ WORKDIR $BUILD_DIR
 ARG DOCKER_CORES=1
 # Allow the build type to be specified with `docker build --build-arg TYPE=something`
 ARG TYPE=Release
-# Note: AVX2 instructions not available in older docker engines.
 RUN cmake $SRC_DIR \
         -DCMAKE_INSTALL_PREFIX=/usr/local/gromacs \
         -DGMXAPI=ON \
         -DGMX_THREAD_MPI=ON \
         -DGMX_BUILD_HELP=OFF \
-        -DGMX_SIMD=AVX_256 \
-        -DGMX_USE_RDTSCP=OFF \
-        -DGMX_HWLOC=OFF \
         -DGMX_REQUIRE_VALID_TOOLCHAIN=TRUE \
         -DCMAKE_BUILD_TYPE=$TYPE
 RUN make -j$DOCKER_CORES

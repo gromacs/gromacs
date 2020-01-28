@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -40,7 +40,7 @@ imported when gmxapi is imported, this has no effect. However, we set the root
 log level to DEBUG, which could increase the output from other modules.
 
 Each module in the gmxapi package uses its own hierarchical logger to allow
-granular control of log handling (e.g. `logging.getLogger('gmxapi.operation')`).
+granular control of log handling (e.g. ``logging.getLogger('gmxapi.operation')``).
 Refer to the Python :py:mod:`logging` module for information on connecting to and handling
 logger output.
 """

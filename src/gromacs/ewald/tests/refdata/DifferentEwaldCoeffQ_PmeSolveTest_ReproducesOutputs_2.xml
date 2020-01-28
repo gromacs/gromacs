@@ -4,18 +4,18 @@
   <NonZeroGridValues Name="ComplexSpaceGrid">
     <Real Name="Cell 0 0 0 re">3.5</Real>
     <Real Name="Cell 0 0 0 im">6.6999998092651367</Real>
-    <Real Name="Cell 3 1 2 re">2.556999772227411e-33</Real>
-    <Real Name="Cell 3 1 2 im">3.3667162736272229e-32</Real>
-    <Real Name="Cell 7 0 0 re">-1.0926105068604317</Real>
-    <Real Name="Cell 7 0 0 im">-0.30593093671094795</Real>
+    <Real Name="Cell 3 1 2 re">2.5569997686440613e-33</Real>
+    <Real Name="Cell 3 1 2 im">3.3667162689091462e-32</Real>
+    <Real Name="Cell 7 0 0 re">-1.0926105053292599</Real>
+    <Real Name="Cell 7 0 0 im">-0.3059309362822199</Real>
   </NonZeroGridValues>
-  <Real Name="Energy">1.4728389596008808</Real>
+  <Real Name="Energy">1.4728389575368614</Real>
   <Matrix Name="Virial">
-    <Real Name="Cell 0 0">6.4146764633054083</Real>
-    <Real Name="Cell 1 0">1.84401087871763e-30</Real>
-    <Real Name="Cell 1 1">-0.73641947980044042</Real>
-    <Real Name="Cell 2 0">6.2696371634985231e-30</Real>
-    <Real Name="Cell 2 1">4.917362343247014e-30</Real>
-    <Real Name="Cell 2 2">-0.73641947980044042</Real>
+    <Real Name="Cell 0 0">6.4146764543159556</Real>
+    <Real Name="Cell 1 0">1.8440108761334548e-30</Real>
+    <Real Name="Cell 1 1">-0.73641947876843072</Real>
+    <Real Name="Cell 2 0">6.269637154712327e-30</Real>
+    <Real Name="Cell 2 1">4.91736233635588e-30</Real>
+    <Real Name="Cell 2 2">-0.73641947876843072</Real>
   </Matrix>
 </ReferenceData>

@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -219,7 +220,7 @@ typedef int t_functype;
 struct InteractionList
 {
     /* Returns the total number of elements in iatoms */
-    int size() const { return gmx::ssize(iatoms); }
+    int size() const { return static_cast<int>(iatoms.size()); }
 
     /* List of interactions, see explanation further down */
     std::vector<int> iatoms;
@@ -244,7 +245,6 @@ struct t_ilist
     int size() const { return nr; }
 
     int      nr;
-    int      nr_nonperturbed;
     t_iatom* iatoms;
     int      nalloc;
 };
@@ -345,7 +345,9 @@ typedef struct t_idef
     int         iparams_posres_nalloc, iparams_fbposres_nalloc;
 
     t_ilist il[F_NRE];
-    int     ilsort;
+    /* The number of non-perturbed interactions at the start of each entry in il */
+    int numNonperturbedInteractions[F_NRE];
+    int ilsort;
 } t_idef;
 
 /*
@@ -382,7 +384,13 @@ typedef struct t_idef
  *      The state of the sorting of il, values are provided above.
  */
 
-void pr_iparams(FILE* fp, t_functype ftype, const t_iparams* iparams);
+namespace gmx
+{
+class TextWriter;
+} // namespace gmx
+
+void printInteractionParameters(gmx::TextWriter* writer, t_functype ftype, const t_iparams& iparams);
+void pr_iparams(FILE* fp, t_functype ftype, const t_iparams& iparams);
 void pr_ilist(FILE*                  fp,
               int                    indent,
               const char*            title,

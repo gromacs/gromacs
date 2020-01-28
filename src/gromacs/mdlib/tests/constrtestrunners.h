@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -61,12 +61,12 @@ void applyShake(ConstraintsTestData* testData, t_pbc pbc);
 /*! \brief Apply LINCS constraints to the test data.
  */
 void applyLincs(ConstraintsTestData* testData, t_pbc pbc);
-/*! \brief Apply CUDA version of LINCS constraints to the test data.
+/*! \brief Apply GPU version of LINCS constraints to the test data.
  *
  * All the data is copied to the GPU device, then LINCS is applied and
  * the resulting coordinates are copied back.
  */
-void applyLincsCuda(ConstraintsTestData* testData, t_pbc pbc);
+void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc);
 
 } // namespace test
 } // namespace gmx

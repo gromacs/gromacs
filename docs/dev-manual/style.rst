@@ -35,4 +35,4 @@ this page.
 :doc:`commitstyle`
   Guidelines for formatting git commits when sending in proposed fixes for code review.
 
-.. TODO: Add more guidelines
+.. todo:: Add more guidelines

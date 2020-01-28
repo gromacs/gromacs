@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2016,2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -68,7 +68,8 @@ GpuParallel3dFft::GpuParallel3dFft(const PmeGpu* pmeGpu)
     // Extracting all the data from PME GPU
     std::array<size_t, DIM> realGridSize, realGridSizePadded, complexGridSizePadded;
 
-    GMX_RELEASE_ASSERT(!pme_gpu_uses_dd(pmeGpu), "FFT decomposition not implemented");
+    GMX_RELEASE_ASSERT(!pme_gpu_settings(pmeGpu).useDecomposition,
+                       "FFT decomposition not implemented");
     PmeGpuKernelParamsBase* kernelParamsPtr = pmeGpu->kernelParams.get();
     for (int i = 0; i < DIM; i++)
     {

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,10 +44,12 @@
 #include <gromacs/nblib/forcecalculator.h>
 #include "gmxpre.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
-#include "gromacs/topology/block.h"
 #include "gromacs/topology/exclusionblocks.h"
 
 #include "testutils/testasserts.h"
@@ -58,6 +60,23 @@ namespace test
 {
 namespace
 {
+
+using ::testing::Eq;
+using ::testing::Pointwise;
+
+//! Compares all element between two lists of lists
+//! Todo: unify this with the identical function in nbkernelsystem test make this a method
+//!       of ListOfLists<>
+template<typename T>
+void compareLists(const gmx::ListOfLists<T>& list, const std::vector<std::vector<T>>& v)
+{
+    ASSERT_EQ(list.size(), v.size());
+    for (std::size_t i = 0; i < list.size(); i++)
+    {
+        ASSERT_EQ(list[i].size(), v[i].size());
+        EXPECT_THAT(list[i], Pointwise(Eq(), v[i]));
+    }
+}
 
 // This is defined in src/gromacs/mdtypes/forcerec.h but there is also a
 // legacy C6 macro defined there that conflicts with the nblib C6 type.
@@ -76,7 +95,7 @@ public:
 
     KernelSystemTester() : box(7.25449)
     {
-     	constexpr int numWaters = 2;
+        constexpr int numWaters = 2;
 
         //! Define Atom Type
         AtomType Ow(AtomName("Ow"), Mass(16), C6(6.), C12(12.));
@@ -98,26 +117,18 @@ public:
         // Todo: Add bonds functionality so this can be used/tested
         // water.addHarmonicBond(HarmonicType{1, 2, "H1", "Oxygen"});
         // water.addHarmonicBond(HarmonicType{1, 2, "H2", "Oxygen"});
-        
+
         //! Add some molecules to the topology
         topologyBuilder.addMolecule(water, numWaters);
 
         coordinates = {
-                  { 0.569,   1.275,   1.165 },
-                  { 0.476,   1.268,   1.128 },
-                  { 0.580,   1.364,   1.209 },
-                  { 1.555,   1.511,   0.703 },
-                  { 1.498,   1.495,   0.784 },
-                  { 1.496,   1.521,   0.623 },
+            { 0.569, 1.275, 1.165 }, { 0.476, 1.268, 1.128 }, { 0.580, 1.364, 1.209 },
+            { 1.555, 1.511, 0.703 }, { 1.498, 1.495, 0.784 }, { 1.496, 1.521, 0.623 },
         };
 
         velocities = {
-               { 0.569,   1.215,   1.965 },
-               { 0.669,   1.225,   1.865 },
-               { 0.769,   1.235,   1.765 },
-               { 0.869,   1.245,   1.665 },
-               { 0.169,   0.275,   1.565 },
-               { 0.269,   2.275,   1.465 },
+            { 0.569, 1.215, 1.965 }, { 0.669, 1.225, 1.865 }, { 0.769, 1.235, 1.765 },
+            { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
 
@@ -140,20 +151,32 @@ TEST(NBlibTest, canRunForceCalculator)
     EXPECT_NO_THROW(forceCalculator.compute());
 }
 
-//TEST(NBlibTest, TopologyHasAtomInfoAllVdw)
+//! Todo: This belongs to tests/simstate.cpp
+//TEST(NBlibTest, KernelSystemHasCoordinates)
 //{
-//    KernelSystemTester kernelSystemTester;
-//    auto kernelSystem = kernelSystemTester.setupForceCalculator();
-//    const std::vector<int> test = kernelSystem.atomInfoAllVdw;
-//    std::vector<int> ref;
-//    ref.resize(kernelSystem.numAtoms);
-//    for (size_t atomI = 0; atomI < ref.size(); atomI++)
+//    KernelSystemTester           kernelSystemTester;
+//    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
+//    const std::vector<gmx::RVec> test         = kernelSystem.coordinates;
+//    const std::vector<gmx::RVec> ref          = kernelSystemTester.coordinates;
+//    for (size_t i = 0; i < ref.size(); i++)
 //    {
-//        SET_CGINFO_HAS_VDW(ref[atomI]);
+//        for (size_t j = 0; j < 3; j++)
+//            EXPECT_EQ(ref[i][j], test[i][j]);
 //    }
-//    EXPECT_EQ(ref, test);
 //}
-
+//
+//TEST(NBlibTest, KernelSystemHasVelocities)
+//{
+//    KernelSystemTester           kernelSystemTester;
+//    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
+//    const std::vector<gmx::RVec> test         = kernelSystem.velocities;
+//    const std::vector<gmx::RVec> ref          = kernelSystemTester.velocities;
+//    for (size_t i = 0; i < ref.size(); i++)
+//    {
+//        for (size_t j = 0; j < 3; j++)
+//            EXPECT_EQ(ref[i][j], test[i][j]);
+//    }
+//}
 
 
 } // namespace

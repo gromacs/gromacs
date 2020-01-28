@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -426,7 +427,7 @@ static void write_pdb_bfac(const char*             fname,
                            const char*             xname,
                            const char*             title,
                            t_atoms*                atoms,
-                           int                     ePBC,
+                           PbcType                 pbcType,
                            matrix                  box,
                            int                     isize,
                            int*                    index,
@@ -547,7 +548,7 @@ static void write_pdb_bfac(const char*             fname,
                 atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim] * scale;
             }
         }
-        write_sto_conf_indexed(fname, title, atoms, x, nullptr, ePBC, box, isize, index);
+        write_sto_conf_indexed(fname, title, atoms, x, nullptr, pbcType, box, isize, index);
     }
 }
 
@@ -670,7 +671,7 @@ int gmx_traj(int argc, char* argv[])
     FILE *       outx = nullptr, *outv = nullptr, *outf = nullptr, *outb = nullptr, *outt = nullptr;
     FILE *       outekt = nullptr, *outekr = nullptr;
     t_topology   top;
-    int          ePBC;
+    PbcType      pbcType;
     real *       mass, time;
     const char*  indexfn;
     t_trxframe   fr;
@@ -750,7 +751,7 @@ int gmx_traj(int argc, char* argv[])
     }
     std::string sffmt6 = gmx::formatString("%s%s%s%s%s%s", sffmt, sffmt, sffmt, sffmt, sffmt, sffmt);
 
-    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &ePBC, &xtop, nullptr, topbox,
+    bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), &top, &pbcType, &xtop, nullptr, topbox,
                          bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
     sfree(xtop);
     if ((bMol || bCV || bCF) && !bTop)
@@ -928,7 +929,7 @@ int gmx_traj(int argc, char* argv[])
 
     if (bCom && bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
+        gpbc = gmx_rmpbc_init(&top.idef, pbcType, fr.natoms);
     }
 
     do
@@ -1097,7 +1098,7 @@ int gmx_traj(int argc, char* argv[])
     {
         if (nr_xfr > 1)
         {
-            if (ePBC != epbcNONE && !bNoJump)
+            if (pbcType != PbcType::No && !bNoJump)
             {
                 fprintf(stderr,
                         "\nWARNING: More than one frame was used for option -cv or -cf\n"
@@ -1117,14 +1118,14 @@ int gmx_traj(int argc, char* argv[])
     if (bCV)
     {
         write_pdb_bfac(opt2fn("-cv", NFILE, fnm), opt2fn("-av", NFILE, fnm), "average velocity",
-                       &(top.atoms), ePBC, topbox, isize[0], index[0], nr_xfr, sumx, nr_vfr, sumv,
-                       bDim, scale, oenv);
+                       &(top.atoms), pbcType, topbox, isize[0], index[0], nr_xfr, sumx, nr_vfr,
+                       sumv, bDim, scale, oenv);
     }
     if (bCF)
     {
         write_pdb_bfac(opt2fn("-cf", NFILE, fnm), opt2fn("-af", NFILE, fnm), "average force",
-                       &(top.atoms), ePBC, topbox, isize[0], index[0], nr_xfr, sumx, nr_ffr, sumf,
-                       bDim, scale, oenv);
+                       &(top.atoms), pbcType, topbox, isize[0], index[0], nr_xfr, sumx, nr_ffr,
+                       sumf, bDim, scale, oenv);
     }
 
     /* view it */

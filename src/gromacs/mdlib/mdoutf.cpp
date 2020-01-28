@@ -1,7 +1,8 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -297,7 +298,7 @@ void mdoutf_write_to_trajectory_files(FILE*                    fplog,
             fflush_tng(of->tng_low_prec);
             ivec one_ivec = { 1, 1, 1 };
             write_checkpoint(of->fn_cpt, of->bKeepAndNumCPT, fplog, cr,
-                             DOMAINDECOMP(cr) ? cr->dd->nc : one_ivec,
+                             DOMAINDECOMP(cr) ? cr->dd->numCells : one_ivec,
                              DOMAINDECOMP(cr) ? cr->dd->nnodes : cr->nnodes, of->eIntegrator,
                              of->simulation_part, of->bExpanded, of->elamstats, step, t,
                              state_global, observablesHistory, *(of->mdModulesNotifier));

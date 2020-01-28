@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 by the GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -614,7 +615,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
                       rvec*              v,
                       const t_iparams    ip[],
                       const t_ilist      ilist[],
-                      int                ePBC,
+                      PbcType            pbcType,
                       gmx_bool           bMolPBC,
                       const t_commrec*   cr,
                       const matrix       box)
@@ -623,7 +624,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
     GMX_ASSERT(!useDomdec || (cr != nullptr && DOMAINDECOMP(cr)),
                "When vsites are set up with domain decomposition, we need a valid commrec");
     // TODO: Remove this assertion when we remove charge groups
-    GMX_ASSERT(vsite != nullptr || ePBC == epbcNONE,
+    GMX_ASSERT(vsite != nullptr || pbcType == PbcType::No,
                "Without a vsite struct we can not do PBC (in case we have charge groups)");
 
     t_pbc pbc, *pbc_null;
@@ -633,7 +634,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
      * when we have at least 3 domains along each dimension. Currently we
      * do not optimize this case.
      */
-    if (ePBC != epbcNONE && (useDomdec || bMolPBC)
+    if (pbcType != PbcType::No && (useDomdec || bMolPBC)
         && !(vsite != nullptr && vsite->numInterUpdategroupVsites == 0))
     {
         /* This is wasting some CPU time as we now do this multiple times
@@ -641,7 +642,7 @@ void construct_vsites(const gmx_vsite_t* vsite,
          */
         ivec null_ivec;
         clear_ivec(null_ivec);
-        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : null_ivec, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, pbcType, useDomdec ? cr->dd->numCells : null_ivec, FALSE, box);
     }
     else
     {
@@ -761,7 +762,7 @@ void constructVsitesGlobal(const gmx_mtop_t& mtop, gmx::ArrayRef<gmx::RVec> x)
                 }
 
                 construct_vsites(nullptr, as_rvec_array(x.data()) + atomOffset, 0.0, nullptr,
-                                 mtop.ffparams.iparams.data(), ilist, epbcNONE, TRUE, nullptr, nullptr);
+                                 mtop.ffparams.iparams.data(), ilist, PbcType::No, TRUE, nullptr, nullptr);
                 atomOffset += molt.atoms.nr;
             }
         }
@@ -1728,7 +1729,7 @@ void spread_vsite_f(const gmx_vsite_t* vsite,
                     matrix             vir,
                     t_nrnb*            nrnb,
                     const t_idef*      idef,
-                    int                ePBC,
+                    PbcType            pbcType,
                     gmx_bool           bMolPBC,
                     const t_graph*     g,
                     const matrix       box,
@@ -1748,7 +1749,7 @@ void spread_vsite_f(const gmx_vsite_t* vsite,
         /* This is wasting some CPU time as we now do this multiple times
          * per MD step.
          */
-        pbc_null = set_pbc_dd(&pbc, ePBC, useDomdec ? cr->dd->nc : nullptr, FALSE, box);
+        pbc_null = set_pbc_dd(&pbc, pbcType, useDomdec ? cr->dd->numCells : nullptr, FALSE, box);
     }
     else
     {

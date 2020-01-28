@@ -40,8 +40,13 @@
 
 #include "gromacs/utility/arrayref.h"
 
-struct t_blocka;
 struct InteractionsOfType;
+
+namespace gmx
+{
+template<typename>
+class ListOfLists;
+}
 
 struct t_nextnb
 {
@@ -75,7 +80,7 @@ void gen_nnb(t_nextnb* nnb, gmx::ArrayRef<InteractionsOfType> plist);
  * initiated using init_nnb.
  */
 
-void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, t_blocka* excl);
+void generate_excl(int nrexcl, int nratoms, gmx::ArrayRef<InteractionsOfType> plist, gmx::ListOfLists<int>* excls);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

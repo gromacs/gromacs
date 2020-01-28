@@ -96,6 +96,14 @@ void GpuHaloExchange::communicateHaloForces(bool gmx_unused accumulateForces)
                "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
 }
 
+/*!\brief get forces ready on device event stub. */
+GpuEventSynchronizer* GpuHaloExchange::getForcesReadyOnDeviceEvent()
+{
+    GMX_ASSERT(false,
+               "A CPU stub for GPU Halo Exchange was called insted of the correct implementation.");
+    return nullptr;
+}
+
 } // namespace gmx
 
 #endif /* GMX_GPU != GMX_GPU_CUDA */

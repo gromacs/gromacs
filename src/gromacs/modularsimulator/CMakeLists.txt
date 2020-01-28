@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2019, by the GROMACS development team, led by
+# Copyright (c) 2019,2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -35,8 +35,10 @@
 file(GLOB MODULARSIMULATOR_SOURCES *.cpp)
 
 add_library(modularsimulator OBJECT ${MODULARSIMULATOR_SOURCES})
+target_include_directories(modularsimulator SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 gmx_target_compile_options(modularsimulator)
 target_compile_definitions(modularsimulator PRIVATE HAVE_CONFIG_H)
+# Should be possible to remove this when resolving #3290
 target_include_directories(modularsimulator SYSTEM BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/src/external/thread_mpi/include)
 
 if(GMX_OPENMP)

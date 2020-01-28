@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2018 by the GROMACS development team.
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +63,12 @@
 #include "pme_internal.h"
 
 //! Calculate the slab indices and store in \p atc, store counts in \p count
-static void pme_calc_pidx(int start, int end, const matrix recipbox, const rvec x[], PmeAtomComm* atc, int* count)
+static void pme_calc_pidx(int                            start,
+                          int                            end,
+                          const matrix                   recipbox,
+                          gmx::ArrayRef<const gmx::RVec> x,
+                          PmeAtomComm*                   atc,
+                          int*                           count)
 {
     int         nslab, i;
     int         si;
@@ -129,8 +135,8 @@ static void pme_calc_pidx_wrapper(gmx::ArrayRef<const gmx::RVec> x, const matrix
         try
         {
             const int natoms = x.ssize();
-            pme_calc_pidx(natoms * thread / nthread, natoms * (thread + 1) / nthread, recipbox,
-                          as_rvec_array(x.data()), atc, atc->count_thread[thread].data());
+            pme_calc_pidx(natoms * thread / nthread, natoms * (thread + 1) / nthread, recipbox, x,
+                          atc, atc->count_thread[thread].data());
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
