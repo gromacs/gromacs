@@ -1523,37 +1523,6 @@ void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)
     }
 }
 
-/*! \brief Check the validity of the device buffer.
- *
- * Checks if the buffer is not nullptr and, when possible, if it is big enough.
- *
- * \todo Split and move this function to gpu_utils.
- *
- * \param[in] buffer        Device buffer to be checked.
- * \param[in] requiredSize  Number of elements that the buffer will have to accommodate.
- *
- * \returns If the device buffer can be set.
- */
-template<typename T>
-static bool checkDeviceBuffer(gmx_unused DeviceBuffer<T> buffer, gmx_unused int requiredSize)
-{
-#if GMX_GPU == GMX_GPU_CUDA
-    GMX_ASSERT(buffer != nullptr, "The device pointer is nullptr");
-    return buffer != nullptr;
-#elif GMX_GPU == GMX_GPU_OPENCL
-    size_t size;
-    int    retval = clGetMemObjectInfo(buffer, CL_MEM_SIZE, sizeof(size), &size, nullptr);
-    GMX_ASSERT(retval == CL_SUCCESS,
-               gmx::formatString("clGetMemObjectInfo failed with error code #%d", retval).c_str());
-    GMX_ASSERT(static_cast<int>(size) >= requiredSize,
-               "Number of atoms in device buffer is smaller then required size.");
-    return retval == CL_SUCCESS && static_cast<int>(size) >= requiredSize;
-#elif GMX_GPU == GMX_GPU_NONE
-    GMX_ASSERT(false, "Setter for device-side coordinates was called in non-GPU build.");
-    return false;
-#endif
-}
-
 void pme_gpu_set_kernelparam_coordinates(const PmeGpu* pmeGpu, DeviceBuffer<float> d_x)
 {
     GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
