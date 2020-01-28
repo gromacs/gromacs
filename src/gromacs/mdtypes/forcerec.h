@@ -165,11 +165,10 @@ struct t_forcerec
      */
     real rlist = 0;
 
-    /* Charge sum and dipole for topology A/B ([0]/[1]) for Ewald corrections */
-    double qsum[2]   = { 0 };
-    double q2sum[2]  = { 0 };
-    double c6sum[2]  = { 0 };
-    rvec   mu_tot[2] = { { 0 } };
+    /* Charge sum for topology A/B ([0]/[1]) for Ewald corrections */
+    double qsum[2]  = { 0 };
+    double q2sum[2] = { 0 };
+    double c6sum[2] = { 0 };
 
     /* Dispersion correction stuff */
     std::unique_ptr<DispersionCorrection> dispersionCorrection;

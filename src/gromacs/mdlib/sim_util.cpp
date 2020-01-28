@@ -889,6 +889,49 @@ static void launchGpuEndOfStepTasks(nonbonded_verlet_t*               nbv,
     }
 }
 
+//! \brief Data structure to hold dipole-related data and staging arrays
+struct DipoleData
+{
+    //! Dipole staging for fast summing over MPI
+    gmx::DVec muStaging[2] = { { 0.0, 0.0, 0.0 } };
+    //! Dipole staging for states A and B (index 0 and 1 resp.)
+    gmx::RVec muStateAB[2] = { { 0.0_real, 0.0_real, 0.0_real } };
+};
+
+
+static void reduceAndUpdateMuTot(DipoleData*                   dipoleData,
+                                 const t_commrec*              cr,
+                                 const bool                    haveFreeEnergy,
+                                 gmx::ArrayRef<const real>     lambda,
+                                 rvec                          muTotal,
+                                 const DDBalanceRegionHandler& ddBalanceRegionHandler)
+{
+    if (PAR(cr))
+    {
+        gmx_sumd(2 * DIM, dipoleData->muStaging[0], cr);
+        ddBalanceRegionHandler.reopenRegionCpu();
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            dipoleData->muStateAB[i][j] = dipoleData->muStaging[i][j];
+        }
+    }
+
+    if (!haveFreeEnergy)
+    {
+        copy_rvec(dipoleData->muStateAB[0], muTotal);
+    }
+    else
+    {
+        for (int j = 0; j < DIM; j++)
+        {
+            muTotal[j] = (1.0 - lambda[efptCOUL]) * dipoleData->muStateAB[0][j]
+                         + lambda[efptCOUL] * dipoleData->muStateAB[1][j];
+        }
+    }
+}
 
 void do_force(FILE*                               fplog,
               const t_commrec*                    cr,
@@ -915,14 +958,12 @@ void do_force(FILE*                               fplog,
               t_forcerec*                         fr,
               gmx::MdrunScheduleWorkload*         runScheduleWork,
               const gmx_vsite_t*                  vsite,
-              rvec                                mu_tot,
+              rvec                                muTotal,
               double                              t,
               gmx_edsam*                          ed,
               int                                 legacyFlags,
               const DDBalanceRegionHandler&       ddBalanceRegionHandler)
 {
-    int                          i, j;
-    double                       mu[2 * DIM];
     nonbonded_verlet_t*          nbv      = fr->nbv.get();
     interaction_const_t*         ic       = fr->ic;
     gmx::StatePropagatorDataGpu* stateGpu = fr->stateGpu;
@@ -946,19 +987,7 @@ void do_force(FILE*                               fplog,
         ddBalanceRegionHandler.openBeforeForceComputationCpu(DdAllowBalanceRegionReopen::yes);
     }
 
-    const int start  = 0;
-    const int homenr = mdatoms->homenr;
-
     clear_mat(vir_force);
-
-    if (stepWork.stateChanged && simulationWork.computeMuTot)
-    {
-        /* Calculate total (local) dipole moment in a temporary common array.
-         * This makes it possible to sum them over nodes faster.
-         */
-        calc_mu(start, homenr, x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB,
-                mdatoms->nChargePerturbed, mu, mu + DIM);
-    }
 
     if (fr->pbcType != PbcType::No)
     {
@@ -974,9 +1003,9 @@ void do_force(FILE*                               fplog,
         const bool calcCGCM = (fillGrid && !DOMAINDECOMP(cr));
         if (calcCGCM)
         {
-            put_atoms_in_box_omp(fr->pbcType, box, x.unpaddedArrayRef().subArray(0, homenr),
+            put_atoms_in_box_omp(fr->pbcType, box, x.unpaddedArrayRef().subArray(0, mdatoms->homenr),
                                  gmx_omp_nthreads_get(emntDefault));
-            inc_nrnb(nrnb, eNR_SHIFTX, homenr);
+            inc_nrnb(nrnb, eNR_SHIFTX, mdatoms->homenr);
         }
         else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
         {
@@ -1372,33 +1401,19 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (stepWork.stateChanged && simulationWork.computeMuTot)
-    {
-        if (PAR(cr))
-        {
-            gmx_sumd(2 * DIM, mu, cr);
+    DipoleData dipoleData;
 
-            ddBalanceRegionHandler.reopenRegionCpu();
-        }
+    if (simulationWork.computeMuTot)
+    {
+        const int start = 0;
 
-        for (i = 0; i < 2; i++)
-        {
-            for (j = 0; j < DIM; j++)
-            {
-                fr->mu_tot[i][j] = mu[i * DIM + j];
-            }
-        }
-    }
-    if (mdatoms->nChargePerturbed == 0)
-    {
-        copy_rvec(fr->mu_tot[0], mu_tot);
-    }
-    else
-    {
-        for (j = 0; j < DIM; j++)
-        {
-            mu_tot[j] = (1.0 - lambda[efptCOUL]) * fr->mu_tot[0][j] + lambda[efptCOUL] * fr->mu_tot[1][j];
-        }
+        /* Calculate total (local) dipole moment in a temporary common array.
+         * This makes it possible to sum them over nodes faster.
+         */
+        calc_mu(start, mdatoms->homenr, x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB,
+                mdatoms->nChargePerturbed, dipoleData.muStaging[0], dipoleData.muStaging[1]);
+
+        reduceAndUpdateMuTot(&dipoleData, cr, (fr->efep != efepNO), lambda, muTotal, ddBalanceRegionHandler);
     }
 
     /* Reset energies */
@@ -1518,8 +1533,9 @@ void do_force(FILE*                               fplog,
         stateGpu->waitCoordinatesReadyOnHost(AtomLocality::NonLocal);
     }
     /* Compute the bonded and non-bonded energies and optionally forces */
-    do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut, enerd,
-                      fcd, box, lambda.data(), graph, fr->mu_tot, stepWork, ddBalanceRegionHandler);
+    do_force_lowlevel(fr, inputrec, top->idef, cr, ms, nrnb, wcycle, mdatoms, x, hist, &forceOut,
+                      enerd, fcd, box, lambda.data(), graph, as_rvec_array(dipoleData.muStateAB),
+                      stepWork, ddBalanceRegionHandler);
 
     wallcycle_stop(wcycle, ewcFORCE);
 
