@@ -124,7 +124,4 @@ const char* opt2fn_master(const char* opt, int nfile, const t_filenm fnm[], t_co
  * for all processes.
  */
 
-//! Make a barrier across all ranks of this simulation
-void simulationBarrier(const t_commrec* cr);
-
 #endif

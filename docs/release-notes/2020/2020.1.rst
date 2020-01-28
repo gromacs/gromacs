@@ -16,12 +16,47 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix fatal error with mdrun -multidir with more than 1 rank per simulation
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+:issue:`3296`
+
+Fix deadlock in mdrun runs with multiple ranks and separate PME ranks
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+When multiple PP ranks as well as separate PME ranks are used, mdrun could
+deadlock before starting the PP-PME balancing.
+
+:issue:`3335`
+
+Avoid mdrun assertion failure when running with shells and update on a GPU
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+A check for shells has been added in the mdrun task assignment code,
+so that mdrun falls back to CPU or produces a clear error message
+when attempting to run with shells and update on a GPU.
+
+:issue:`3303`
+
+Allow large prime factors in the mdrun MPI rank count
+"""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+The domain decomposition would refuse to run with large prime factors
+in the MPI rank count even when the grid was specified by the user.
+
+:issue:`3336`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Add support for ICC NextGen
+"""""""""""""""""""""""""""
+
+Add support for Intel Compiler based on LLVM technology.
+To compile GROMACS with this compiler use ``CXX=icpc CXXFLAGS=-qnextgen cmake``.
 
 Miscellaneous
 ^^^^^^^^^^^^^

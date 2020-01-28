@@ -126,10 +126,7 @@ function (gmx_cpack_write_config)
         \\\\.gitattributes
         INSTALL-dev
         cmake/FindCUDA\\\\.cmake
-        cmake/FindCUDA
-        # both below are needed for CI not to include the build directories
-        ccache
-        build-package)
+        cmake/FindCUDA)
     set(CPACK_SOURCE_IGNORE_FILES ${FILES_NOT_INCLUDED_IN_SOURCE_PACKAGE})
 
     # Get the list of directories added with gmx_cpack_add_generated_source_directory()

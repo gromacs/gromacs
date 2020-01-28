@@ -517,8 +517,6 @@ if (SPHINX_FOUND)
     else()
         gmx_add_sphinx_source_files(FILES
             dev-manual/releng/index.rst
-            dev-manual/releng/jenkins-howto.rst
-            dev-manual/releng/jenkins-ui.rst
             )
     endif()
 

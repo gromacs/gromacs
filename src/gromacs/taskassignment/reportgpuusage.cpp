@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -87,7 +87,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
                     size_t                            numRanks,
                     bool                              printHostName,
                     bool                              useGpuForBonded,
-                    PmeRunMode                        pmeRunMode)
+                    PmeRunMode                        pmeRunMode,
+                    bool                              useGpuForUpdate)
 {
     size_t numGpusInUse = countUniqueGpuIdsUsed(gpuTaskAssignmentOnRanksOfThisNode);
     if (numGpusInUse == 0)
@@ -145,6 +146,8 @@ void reportGpuUsage(const MDLogger&                   mdlog,
         {
             output += gmx::formatString("PME tasks will do all aspects on the GPU\n");
         }
+        output += gmx::formatString("Coordinates will be updated and constrained on the %s.",
+                                    useGpuForUpdate ? "GPU" : "CPU");
     }
 
     /* NOTE: this print is only for and on one physical node */

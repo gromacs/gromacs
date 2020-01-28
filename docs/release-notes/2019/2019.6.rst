@@ -22,6 +22,11 @@ Fixes for ``gmx`` tools
 Fixes that affect portability
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Fix compiler errors with Intel compiler
+"""""""""""""""""""""""""""""""""""""""
+
+Fix compiler error with Intel compiler 2019 update 5 and 2020 initial release.
+Compilation was failing with ``mcpcom: core dumped`` for the file :file:`pullutil.cpp`.
 
 Miscellaneous
 ^^^^^^^^^^^^^

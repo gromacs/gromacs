@@ -33,6 +33,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
+include(gmxTestICCNextGen)
+
 # Manage setup of the different FFT libraries we can use in Gromacs.
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
@@ -41,7 +43,8 @@ set(PKG_FFT_LIBS "")
 # stuff...
 set(MKL_MANUALLY FALSE)
 if (GMX_FFT_LIBRARY STREQUAL "MKL" AND
-    NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER "11"))
+    NOT ((CMAKE_C_COMPILER_ID MATCHES "Intel" AND CMAKE_C_COMPILER_VERSION VERSION_GREATER "11")
+         OR GMX_ICC_NEXTGEN))
     # The user will have to provide the set of magic libraries in
     # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
     # don't have to keep specifying it, and can easily see that

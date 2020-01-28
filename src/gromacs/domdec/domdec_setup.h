@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -85,7 +85,10 @@ struct DDGridSetup
  * Issues a fatal error if there are more PME ranks than PP, or if the
  * count of PP ranks has a prime factor that is too large to be likely
  * to have good performance. */
-void checkForValidRankCountRequests(int numRanksRequested, bool usingPme, int numPmeRanksRequested);
+void checkForValidRankCountRequests(int  numRanksRequested,
+                                    bool usingPme,
+                                    int  numPmeRanksRequested,
+                                    bool checkForLargePrimeFactors);
 
 /*! \brief Return the minimum cell size (in nm) required for DD */
 real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,

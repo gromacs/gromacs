@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2017,2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,8 @@
 #include "gmxpre.h"
 
 #include "taskassignment.h"
+
+#include "config.h"
 
 #include <algorithm>
 #include <exception>
@@ -192,27 +194,40 @@ size_t countGpuTasksOnThisNode(const GpuTasksOnRanks& gpuTasksOnRanksOfThisNode)
 
 /*! \brief Return on each rank the total count over all ranks of all
  * simulations. */
-int countOverAllRanks(const t_commrec* cr, const gmx_multisim_t* ms, const int countOnThisRank)
+int countOverAllRanks(MPI_Comm comm, int countOnThisRank)
 {
-    int countOverAllRanksValue = countOnThisRank;
-    if (PAR(cr))
+    int sum;
+#if GMX_MPI
+    int numRanks;
+    MPI_Comm_size(comm, &numRanks);
+    if (numRanks > 1)
     {
-        // Count over the ranks of this simulation.
-        gmx_sumi(1, &countOverAllRanksValue, cr);
+        MPI_Allreduce(&countOnThisRank, &sum, 1, MPI_INT, MPI_SUM, comm);
     }
-    if (isMultiSim(ms))
+    else
+#else
+    GMX_UNUSED_VALUE(comm);
+#endif
     {
-        // Count over the ranks of all simulations.
-        gmx_sumi_sim(1, &countOverAllRanksValue, ms);
-        if (PAR(cr))
-        {
-            // Propagate the information from other simulations back
-            // to non-master ranks so they can all agree on future
-            // behavior.
-            gmx_bcast(sizeof(decltype(countOverAllRanksValue)), &countOverAllRanksValue, cr);
-        }
+        sum = countOnThisRank;
     }
-    return countOverAllRanksValue;
+
+    return sum;
+}
+
+/*! \brief Barrier over all rank in \p comm */
+void barrierOverAllRanks(MPI_Comm comm)
+{
+#if GMX_MPI
+    int numRanks;
+    MPI_Comm_size(comm, &numRanks);
+    if (numRanks > 1)
+    {
+        MPI_Barrier(comm);
+    }
+#else
+    GMX_UNUSED_VALUE(comm);
+#endif
 }
 
 } // namespace
@@ -222,8 +237,7 @@ GpuTaskAssignmentsBuilder::GpuTaskAssignmentsBuilder() = default;
 GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuIdsToUse,
                                                     const std::vector<int>& userGpuTaskAssignment,
                                                     const gmx_hw_info_t&    hardwareInfo,
-                                                    const t_commrec*        cr,
-                                                    const gmx_multisim_t*   ms,
+                                                    MPI_Comm                gromacsWorldComm,
                                                     const PhysicalNodeCommunicator& physicalNodeComm,
                                                     const TaskTarget                nonbondedTarget,
                                                     const TaskTarget                pmeTarget,
@@ -327,8 +341,8 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
     {
         exceptionPtr = std::current_exception();
     }
-    int countOfExceptionsOnThisRank   = int(bool(exceptionPtr));
-    int countOfExceptionsOverAllRanks = countOverAllRanks(cr, ms, countOfExceptionsOnThisRank);
+    int countOfExceptionsOnThisRank = int(bool(exceptionPtr));
+    int countOfExceptionsOverAllRanks = countOverAllRanks(gromacsWorldComm, countOfExceptionsOnThisRank);
 
     // Avoid all ranks spamming the error stream
     //
@@ -345,14 +359,12 @@ GpuTaskAssignments GpuTaskAssignmentsBuilder::build(const std::vector<int>& gpuI
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR
     }
-    // TODO This implements a global barrier so that MPI runtimes can
+    // TODO Global barrier so that MPI runtimes can
     // organize an orderly shutdown if one of the ranks has had to
     // issue a fatal error above. When we have MPI-aware error
     // handling and reporting, this should be improved (perhaps
     // centralized there).
-    simulationBarrier(cr);
-    multiSimBarrier(ms);
-    simulationBarrier(cr);
+    barrierOverAllRanks(gromacsWorldComm);
     if (countOfExceptionsOverAllRanks > 0)
     {
         gmx_fatal(FARGS,
@@ -381,10 +393,11 @@ GpuTaskAssignments::GpuTaskAssignments(const gmx_hw_info_t& hardwareInfo) :
 void GpuTaskAssignments::reportGpuUsage(const MDLogger& mdlog,
                                         bool            printHostName,
                                         bool            useGpuForBonded,
-                                        PmeRunMode      pmeRunMode)
+                                        PmeRunMode      pmeRunMode,
+                                        bool            useGpuForUpdate)
 {
     gmx::reportGpuUsage(mdlog, assignmentForAllRanksOnThisNode_, numGpuTasksOnThisNode_,
-                        numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode);
+                        numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 }
 
 gmx_device_info_t* GpuTaskAssignments::initNonbondedDevice(const t_commrec* cr) const

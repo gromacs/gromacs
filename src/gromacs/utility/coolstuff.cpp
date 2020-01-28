@@ -1504,11 +1504,11 @@ std::string getCoolQuote()
           "Jean Baudrillard" },
         { "Install our Free Energy Patents app! There is energy all around us; and it's free! "
           "Free energy is everywhere, and all around you, just waiting to be extracted! Over "
-          "100+ free energy patents!"
+          "100+ free energy patents!",
           "Mind and Miracle Productions on Twitter, spamming a FEP thread" },
         { "\"A slow sort of country!\" said the Queen. \"Now, HERE, you see, it "
           "takes all the running YOU can do, to keep in the same place. If you want "
-          "to get somewhere else, you must run at least twice as fast as that!\""
+          "to get somewhere else, you must run at least twice as fast as that!\"",
           "Lewis Carroll" },
         { "More than 10000000 total errors detected.  I'm not reporting any more. "
           "Final error counts will be inaccurate.  Go fix your program!",
