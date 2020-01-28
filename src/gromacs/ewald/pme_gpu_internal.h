@@ -186,22 +186,6 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu);
 bool pme_gpu_stream_query(const PmeGpu* pmeGpu);
 
 /*! \libinternal \brief
- * Reallocates the input coordinates buffer on the GPU (and clears the padded part if needed).
- *
- * \param[in] pmeGpu            The PME GPU structure.
- *
- * Needs to be called on every DD step/in the beginning.
- */
-void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
- * Frees the coordinates on the GPU.
- *
- * \param[in] pmeGpu            The PME GPU structure.
- */
-void pme_gpu_free_coordinates(const PmeGpu* pmeGpu);
-
-/*! \libinternal \brief
  * Reallocates the buffer on the GPU and copies the charges/coefficients from the CPU buffer.
  * Clears the padded part if needed.
  *
@@ -405,13 +389,6 @@ GPU_FUNC_QUALIFIER void pme_gpu_solve(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu),
 GPU_FUNC_QUALIFIER void pme_gpu_gather(PmeGpu*                GPU_FUNC_ARGUMENT(pmeGpu),
                                        PmeForceOutputHandling GPU_FUNC_ARGUMENT(forceTreatment),
                                        const float* GPU_FUNC_ARGUMENT(h_grid)) GPU_FUNC_TERM;
-
-/*! \brief Return pointer to device copy of coordinate data.
- * \param[in] pmeGpu         The PME GPU structure.
- * \returns                  Pointer to coordinate data
- */
-GPU_FUNC_QUALIFIER DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
-        GPU_FUNC_TERM_WITH_RETURN(DeviceBuffer<float>{});
 
 /*! \brief Sets the device pointer to coordinate data
  * \param[in] pmeGpu         The PME GPU structure.

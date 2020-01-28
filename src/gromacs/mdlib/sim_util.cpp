@@ -1305,7 +1305,6 @@ void do_force(FILE*                               fplog,
 
             if (useGpuXBufOps == BufferOpsUseGpu::True)
             {
-                // The condition here was (pme != nullptr && pme_gpu_get_device_x(fr->pmedata) != nullptr)
                 if (!useGpuPmeOnThisRank && !ddUsesGpuDirectCommunication)
                 {
                     stateGpu->copyCoordinatesToGpu(x.unpaddedArrayRef(), AtomLocality::NonLocal);

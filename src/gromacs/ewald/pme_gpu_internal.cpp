@@ -231,30 +231,6 @@ void pme_gpu_copy_output_forces(PmeGpu* pmeGpu)
                          pmeGpu->settings.transferKind, nullptr);
 }
 
-void pme_gpu_realloc_coordinates(PmeGpu* pmeGpu)
-{
-    const size_t newCoordinatesSize = pmeGpu->nAtomsAlloc * DIM;
-    GMX_ASSERT(newCoordinatesSize > 0, "Bad number of atoms in PME GPU");
-    reallocateDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates, newCoordinatesSize,
-                           &pmeGpu->archSpecific->coordinatesSize,
-                           &pmeGpu->archSpecific->coordinatesSizeAlloc, pmeGpu->archSpecific->context);
-    if (c_usePadding)
-    {
-        const size_t paddingIndex = DIM * pmeGpu->kernelParams->atoms.nAtoms;
-        const size_t paddingCount = DIM * pmeGpu->nAtomsAlloc - paddingIndex;
-        if (paddingCount > 0)
-        {
-            clearDeviceBufferAsync(&pmeGpu->kernelParams->atoms.d_coordinates, paddingIndex,
-                                   paddingCount, pmeGpu->archSpecific->pmeStream);
-        }
-    }
-}
-
-void pme_gpu_free_coordinates(const PmeGpu* pmeGpu)
-{
-    freeDeviceBuffer(&pmeGpu->kernelParams->atoms.d_coordinates);
-}
-
 void pme_gpu_realloc_and_copy_input_coefficients(PmeGpu* pmeGpu, const float* h_coefficients)
 {
     GMX_ASSERT(h_coefficients, "Bad host-side charge buffer in PME GPU");
@@ -1533,15 +1509,6 @@ void pme_gpu_gather(PmeGpu* pmeGpu, PmeForceOutputHandling forceTreatment, const
     {
         pme_gpu_copy_output_forces(pmeGpu);
     }
-}
-
-DeviceBuffer<float> pme_gpu_get_kernelparam_coordinates(const PmeGpu* pmeGpu)
-{
-    GMX_ASSERT(pmeGpu && pmeGpu->kernelParams,
-               "PME GPU device buffer was requested in non-GPU build or before the GPU PME was "
-               "initialized.");
-
-    return pmeGpu->kernelParams->atoms.d_coordinates;
 }
 
 void* pme_gpu_get_kernelparam_forces(const PmeGpu* pmeGpu)

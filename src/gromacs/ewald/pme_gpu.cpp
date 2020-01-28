@@ -431,13 +431,6 @@ void pme_gpu_reinit_computation(const gmx_pme_t* pme, gmx_wallcycle* wcycle)
     wallcycle_stop(wcycle, ewcLAUNCH_GPU);
 }
 
-DeviceBuffer<float> pme_gpu_get_device_x(const gmx_pme_t* pme)
-{
-    GMX_ASSERT((pme && pme_gpu_active(pme)),
-               "PME GPU coordinates buffer was requested from uninitialized PME module");
-    return pme_gpu_get_kernelparam_coordinates(pme->gpu);
-}
-
 void* pme_gpu_get_device_f(const gmx_pme_t* pme)
 {
     if (!pme || !pme_gpu_active(pme))
