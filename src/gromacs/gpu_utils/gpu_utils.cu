@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2010-2018, The GROMACS development team.
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -222,7 +222,7 @@ static int do_sanity_checks(int dev_id, const cudaDeviceProp& dev_prop)
     return 0;
 }
 
-void init_gpu(const gmx_device_info_t* deviceInfo)
+void init_gpu(const DeviceInformation* deviceInfo)
 {
     cudaError_t stat;
 
@@ -241,7 +241,7 @@ void init_gpu(const gmx_device_info_t* deviceInfo)
     }
 }
 
-void free_gpu(const gmx_device_info_t* deviceInfo)
+void free_gpu(const DeviceInformation* deviceInfo)
 {
     // One should only attempt to clear the device context when
     // it has been used, but currently the only way to know that a GPU
@@ -268,13 +268,13 @@ void free_gpu(const gmx_device_info_t* deviceInfo)
     }
 }
 
-gmx_device_info_t* getDeviceInfo(const gmx_gpu_info_t& gpu_info, int deviceId)
+DeviceInformation* getDeviceInfo(const gmx_gpu_info_t& gpu_info, int deviceId)
 {
     if (deviceId < 0 || deviceId >= gpu_info.n_dev)
     {
         gmx_incons("Invalid GPU deviceId requested");
     }
-    return &gpu_info.gpu_dev[deviceId];
+    return &gpu_info.deviceInfo[deviceId];
 }
 
 /*! \brief Returns true if the gpu characterized by the device properties is
@@ -396,7 +396,7 @@ void findGpus(gmx_gpu_info_t* gpu_info)
     // We expect to start device support/sanity checks with a clean runtime error state
     gmx::ensureNoPendingCudaError("");
 
-    gmx_device_info_t* devs;
+    DeviceInformation* devs;
     snew(devs, ndev);
     for (int i = 0; i < ndev; i++)
     {
@@ -450,8 +450,8 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                                          cudaGetErrorName(stat), cudaGetErrorString(stat))
                                .c_str());
 
-    gpu_info->n_dev   = ndev;
-    gpu_info->gpu_dev = devs;
+    gpu_info->n_dev      = ndev;
+    gpu_info->deviceInfo = devs;
 }
 
 void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int index)
@@ -463,7 +463,7 @@ void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int ind
         return;
     }
 
-    gmx_device_info_t* dinfo = &gpu_info.gpu_dev[index];
+    DeviceInformation* dinfo = &gpu_info.deviceInfo[index];
 
     bool bGpuExists = (dinfo->stat != egpuNonexistent && dinfo->stat != egpuInsane);
 
@@ -489,7 +489,7 @@ int get_current_cuda_gpu_device_id(void)
 
 size_t sizeof_gpu_dev_info(void)
 {
-    return sizeof(gmx_device_info_t);
+    return sizeof(DeviceInformation);
 }
 
 void startGpuProfiler(void)
@@ -537,7 +537,7 @@ void resetGpuProfiler(void)
 
 int gpu_info_get_stat(const gmx_gpu_info_t& info, int index)
 {
-    return info.gpu_dev[index].stat;
+    return info.deviceInfo[index].stat;
 }
 
 /*! \brief Check status returned from peer access CUDA call, and error out or warn appropriately

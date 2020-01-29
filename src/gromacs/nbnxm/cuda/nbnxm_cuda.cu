@@ -125,16 +125,16 @@ typedef void (*nbnxn_cu_kfunc_ptr_t)(const cu_atomdata_t, const cu_nbparam_t, co
 /*********************************/
 
 /*! Returns the number of blocks to be used for the nonbonded GPU kernel. */
-static inline int calc_nb_kernel_nblock(int nwork_units, const gmx_device_info_t* dinfo)
+static inline int calc_nb_kernel_nblock(int nwork_units, const DeviceInformation* deviceInfo)
 {
     int max_grid_x_size;
 
-    assert(dinfo);
+    assert(deviceInfo);
     /* CUDA does not accept grid dimension of 0 (which can happen e.g. with an
        empty domain) and that case should be handled before this point. */
     assert(nwork_units > 0);
 
-    max_grid_x_size = dinfo->prop.maxGridSize[0];
+    max_grid_x_size = deviceInfo->prop.maxGridSize[0];
 
     /* do we exceed the grid x dimension limit? */
     if (nwork_units > max_grid_x_size)
@@ -284,7 +284,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
                                                        int                     evdwtype,
                                                        bool                    bDoEne,
                                                        bool                    bDoPrune,
-                                                       const gmx_device_info_t gmx_unused* devInfo)
+                                                       const DeviceInformation gmx_unused* deviceInfo)
 {
     nbnxn_cu_kfunc_ptr_t res;
 
@@ -295,7 +295,7 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
 
     /* assert assumptions made by the kernels */
     GMX_ASSERT(c_nbnxnGpuClusterSize * c_nbnxnGpuClusterSize / c_nbnxnGpuClusterpairSplit
-                       == devInfo->prop.warpSize,
+                       == deviceInfo->prop.warpSize,
                "The CUDA kernels require the "
                "cluster_size_i*cluster_size_j/nbnxn_gpu_clusterpair_split to match the warp size "
                "of the architecture targeted.");
@@ -328,12 +328,12 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int                     e
 
 /*! \brief Calculates the amount of shared memory required by the nonbonded kernel in use. */
 static inline int calc_shmem_required_nonbonded(const int               num_threads_z,
-                                                const gmx_device_info_t gmx_unused* dinfo,
+                                                const DeviceInformation gmx_unused* deviceInfo,
                                                 const cu_nbparam_t*                 nbp)
 {
     int shmem;
 
-    assert(dinfo);
+    assert(deviceInfo);
 
     /* size of shmem (force-buffers/xq/atom type preloading) */
     /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
@@ -530,11 +530,11 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int num_threads_z = 1;
-    if (nb->dev_info->prop.major == 3 && nb->dev_info->prop.minor == 7)
+    if (nb->deviceInfo->prop.major == 3 && nb->deviceInfo->prop.minor == 7)
     {
         num_threads_z = 2;
     }
-    int nblock = calc_nb_kernel_nblock(plist->nsci, nb->dev_info);
+    int nblock = calc_nb_kernel_nblock(plist->nsci, nb->deviceInfo);
 
 
     KernelLaunchConfig config;
@@ -542,7 +542,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     config.blockSize[1]     = c_clSize;
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = nblock;
-    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->dev_info, nbp);
+    config.sharedMemorySize = calc_shmem_required_nonbonded(num_threads_z, nb->deviceInfo, nbp);
     config.stream           = stream;
 
     if (debug)
@@ -559,7 +559,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const In
     auto*      timingEvent = bDoTime ? t->interaction[iloc].nb_k.fetchNextEvent() : nullptr;
     const auto kernel      = select_nbnxn_kernel(
             nbp->eeltype, nbp->vdwtype, stepWork.computeEnergy,
-            (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->dev_info);
+            (plist->haveFreshList && !nb->timers->interaction[iloc].didPrune), nb->deviceInfo);
     const auto kernelArgs =
             prepareGpuKernelArguments(kernel, config, adat, nbp, plist, &stepWork.computeVirial);
     launchGpuKernel(kernel, config, timingEvent, "k_calc_nb", kernelArgs);
@@ -660,7 +660,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
     int                num_threads_z = c_cudaPruneKernelJ4Concurrency;
-    int                nblock        = calc_nb_kernel_nblock(numSciInPart, nb->dev_info);
+    int                nblock        = calc_nb_kernel_nblock(numSciInPart, nb->deviceInfo);
     KernelLaunchConfig config;
     config.blockSize[0]     = c_clSize;
     config.blockSize[1]     = c_clSize;

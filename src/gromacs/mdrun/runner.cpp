@@ -1146,8 +1146,8 @@ int Mdrunner::mdrunner()
             EEL_PME(inputrec->coulombtype) && thisRankHasDuty(cr, DUTY_PME));
 
     // Get the device handles for the modules, nullptr when no task is assigned.
-    gmx_device_info_t* nonbondedDeviceInfo = gpuTaskAssignments.initNonbondedDevice(cr);
-    gmx_device_info_t* pmeDeviceInfo       = gpuTaskAssignments.initPmeDevice();
+    DeviceInformation* nonbondedDeviceInfo = gpuTaskAssignments.initNonbondedDevice(cr);
+    DeviceInformation* pmeDeviceInfo       = gpuTaskAssignments.initPmeDevice();
 
     // TODO Initialize GPU streams here.
 

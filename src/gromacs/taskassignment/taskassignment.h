@@ -55,7 +55,7 @@
 #include "gromacs/utility/basedefinitions.h"
 #include "gromacs/utility/gmxmpi.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_hw_info_t;
 struct t_commrec;
 
@@ -247,12 +247,12 @@ public:
      * \todo This also sets up DLB for device sharing, where
      * appropriate, but that responsbility should move
      * elsewhere. */
-    gmx_device_info_t* initNonbondedDevice(const t_commrec* cr) const;
+    DeviceInformation* initNonbondedDevice(const t_commrec* cr) const;
     /*! \brief Return handle to the initialized GPU to use for the
      * PME task on this rank, if any.
      *
      * Returns nullptr if no such task is assigned to this rank. */
-    gmx_device_info_t* initPmeDevice() const;
+    DeviceInformation* initPmeDevice() const;
     //! Return whether this rank has a PME task running on a GPU
     bool thisRankHasPmeGpuTask() const;
     //! Return whether this rank has any task running on a GPU

@@ -65,7 +65,7 @@ struct t_inputrec;
 struct t_nrnb;
 struct PmeGpu;
 struct gmx_wallclock_gpu_pme_t;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_enerdata_t;
 struct gmx_mtop_t;
 struct gmx_pme_t;
@@ -139,7 +139,7 @@ bool gmx_pme_check_restrictions(int  pme_order,
  * \returns  Pointer to newly allocated and initialized PME data.
  *
  * \todo We should evolve something like a \c GpuManager that holds \c
- * gmx_device_info_t * and \c PmeGpuProgram* and perhaps other
+ * DeviceInformation* and \c PmeGpuProgram* and perhaps other
  * related things whose lifetime can/should exceed that of a task (or
  * perhaps task manager). See Redmine #2522.
  */
@@ -154,7 +154,7 @@ gmx_pme_t* gmx_pme_init(const t_commrec*         cr,
                         int                      nthread,
                         PmeRunMode               runMode,
                         PmeGpu*                  pmeGpu,
-                        const gmx_device_info_t* gpuInfo,
+                        const DeviceInformation* deviceInfo,
                         const PmeGpuProgram*     pmeGpuProgram,
                         const gmx::MDLogger&     mdlog);
 

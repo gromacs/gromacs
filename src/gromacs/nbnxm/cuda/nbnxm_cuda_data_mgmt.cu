@@ -412,7 +412,7 @@ static void cuda_init_const(NbnxmGpu*                       nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
+NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
@@ -443,7 +443,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
     init_plist(nb->plist[InteractionLocality::Local]);
 
     /* set device info, just point it to the right GPU among the detected ones */
-    nb->dev_info = deviceInfo;
+    nb->deviceInfo = deviceInfo;
 
     /* local/non-local GPU streams */
     stat = cudaStreamCreate(&nb->stream[InteractionLocality::Local]);
@@ -812,7 +812,7 @@ void gpu_reset_timings(nonbonded_verlet_t* nbv)
 
 int gpu_min_ci_balanced(NbnxmGpu* nb)
 {
-    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->dev_info->prop.multiProcessorCount : 0;
+    return nb != nullptr ? gpu_min_ci_balanced_factor * nb->deviceInfo->prop.multiProcessorCount : 0;
 }
 
 gmx_bool gpu_is_kernel_ewald_analytical(const NbnxmGpu* nb)

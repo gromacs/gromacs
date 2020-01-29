@@ -535,7 +535,7 @@ void pme_gpu_init_internal(PmeGpu* pmeGpu)
 #elif GMX_GPU == GMX_GPU_OPENCL
     cl_command_queue_properties queueProperties =
             pmeGpu->archSpecific->useTiming ? CL_QUEUE_PROFILING_ENABLE : 0;
-    cl_device_id device_id = pmeGpu->deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_device_id device_id = pmeGpu->deviceInfo->oclDeviceId;
     cl_int       clError;
     pmeGpu->archSpecific->pmeStream =
             clCreateCommandQueue(pmeGpu->archSpecific->context, device_id, queueProperties, &clError);
@@ -819,10 +819,10 @@ static void pme_gpu_select_best_performing_pme_spreadgather_kernels(PmeGpu* pmeG
  * TODO: this should become PmeGpu::PmeGpu()
  *
  * \param[in,out] pme            The PME structure.
- * \param[in,out] gpuInfo        The GPU information structure.
+ * \param[in,out] deviceInfo     The GPU device information structure.
  * \param[in]     pmeGpuProgram  The handle to the program/kernel data created outside (e.g. in unit tests/runner)
  */
-static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
+static void pme_gpu_init(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
 {
     pme->gpu       = new PmeGpu();
     PmeGpu* pmeGpu = pme->gpu;
@@ -839,7 +839,7 @@ static void pme_gpu_init(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const
 
     pme_gpu_set_testing(pmeGpu, false);
 
-    pmeGpu->deviceInfo = gpuInfo;
+    pmeGpu->deviceInfo = deviceInfo;
     GMX_ASSERT(pmeGpuProgram != nullptr, "GPU kernels must be already compiled");
     pmeGpu->programHandle_ = pmeGpuProgram;
 
@@ -930,7 +930,7 @@ void pme_gpu_get_real_grid_sizes(const PmeGpu* pmeGpu, gmx::IVec* gridSize, gmx:
     }
 }
 
-void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeGpuProgram* pmeGpuProgram)
+void pme_gpu_reinit(gmx_pme_t* pme, const DeviceInformation* deviceInfo, const PmeGpuProgram* pmeGpuProgram)
 {
     GMX_ASSERT(pme != nullptr, "Need valid PME object");
     if (pme->runMode == PmeRunMode::CPU)
@@ -942,7 +942,7 @@ void pme_gpu_reinit(gmx_pme_t* pme, const gmx_device_info_t* gpuInfo, const PmeG
     if (!pme->gpu)
     {
         /* First-time initialization */
-        pme_gpu_init(pme, gpuInfo, pmeGpuProgram);
+        pme_gpu_init(pme, deviceInfo, pmeGpuProgram);
     }
     else
     {

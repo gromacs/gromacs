@@ -50,12 +50,12 @@
 #include <memory>
 
 struct PmeGpuProgramImpl;
-struct gmx_device_info_t;
+struct DeviceInformation;
 
 class PmeGpuProgram
 {
 public:
-    explicit PmeGpuProgram(const gmx_device_info_t* deviceInfo);
+    explicit PmeGpuProgram(const DeviceInformation* deviceInfo);
     ~PmeGpuProgram();
 
     // TODO: design getters for information inside, if needed for PME, and make this private?
@@ -69,6 +69,6 @@ using PmeGpuProgramStorage = std::unique_ptr<PmeGpuProgram>;
 /*! \brief
  * Factory function used to build persistent PME GPU program for the device at once.
  */
-PmeGpuProgramStorage buildPmeGpuProgram(const gmx_device_info_t* /*deviceInfo*/);
+PmeGpuProgramStorage buildPmeGpuProgram(const DeviceInformation* /*deviceInfo*/);
 
 #endif

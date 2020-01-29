@@ -55,7 +55,7 @@
 #include "pme_output.h"
 
 class GpuEventSynchronizer;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_hw_info_t;
 struct gmx_gpu_opt_t;
 struct gmx_pme_t; // only used in pme_gpu_reinit
@@ -562,12 +562,12 @@ GPU_FUNC_QUALIFIER void pme_gpu_get_real_grid_sizes(const PmeGpu* GPU_FUNC_ARGUM
  * (Re-)initializes the PME GPU data at the beginning of the run or on DLB.
  *
  * \param[in,out] pme             The PME structure.
- * \param[in]     gpuInfo         The GPU information structure.
+ * \param[in]     deviceInfo      The GPU device information structure.
  * \param[in]     pmeGpuProgram   The PME GPU program data
  * \throws gmx::NotImplementedError if this generally valid PME structure is not valid for GPU runs.
  */
 GPU_FUNC_QUALIFIER void pme_gpu_reinit(gmx_pme_t*               GPU_FUNC_ARGUMENT(pme),
-                                       const gmx_device_info_t* GPU_FUNC_ARGUMENT(gpuInfo),
+                                       const DeviceInformation* GPU_FUNC_ARGUMENT(deviceInfo),
                                        const PmeGpuProgram* GPU_FUNC_ARGUMENT(pmeGpuProgram)) GPU_FUNC_TERM;
 
 /*! \libinternal \brief

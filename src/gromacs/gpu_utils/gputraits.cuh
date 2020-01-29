@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,22 @@
  * \inlibraryapi
  * \ingroup module_gpu_utils
  */
+
+/*! \brief CUDA device information.
+ *
+ * The CUDA device information is queried and set at detection and contains
+ * both information about the device/hardware returned by the runtime as well
+ * as additional data like support status.
+ */
+struct DeviceInformation
+{
+    //! ID of the CUDA device.
+    int id;
+    //! CUDA device properties.
+    cudaDeviceProp prop;
+    //! Result of the device check.
+    int stat;
+};
 
 //! \brief GPU command stream
 using CommandStream = cudaStream_t;

@@ -120,7 +120,7 @@
 #include "gromacs/utility/enumerationhelpers.h"
 #include "gromacs/utility/real.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_domdec_zones_t;
 struct gmx_enerdata_t;
 struct gmx_hw_info_t;
@@ -408,7 +408,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                                                    const t_forcerec*        fr,
                                                    const t_commrec*         cr,
                                                    const gmx_hw_info_t&     hardwareInfo,
-                                                   const gmx_device_info_t* deviceInfo,
+                                                   const DeviceInformation* deviceInfo,
                                                    const gmx_mtop_t*        mtop,
                                                    matrix                   box,
                                                    gmx_wallcycle*           wcycle);

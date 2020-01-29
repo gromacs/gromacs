@@ -103,7 +103,7 @@ static constexpr int c_clSize = c_nbnxnGpuClusterSize;
  */
 static inline void validate_global_work_size(const KernelLaunchConfig& config,
                                              int                       work_dim,
-                                             const gmx_device_info_t*  dinfo)
+                                             const DeviceInformation*  dinfo)
 {
     cl_uint device_size_t_size_bits;
     cl_uint host_size_t_size_bits;
@@ -639,7 +639,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     config.blockSize[1]     = c_clSize;
     config.gridSize[0]      = plist->nsci;
 
-    validate_global_work_size(config, 3, nb->dev_info);
+    validate_global_work_size(config, 3, nb->deviceInfo);
 
     if (debug)
     {
@@ -788,7 +788,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
      *   and j-cluster concurrency, in x, y, and z, respectively.
      * - The 1D block-grid contains as many blocks as super-clusters.
      */
-    int num_threads_z = getOclPruneKernelJ4Concurrency(nb->dev_info->deviceVendor);
+    int num_threads_z = getOclPruneKernelJ4Concurrency(nb->deviceInfo->deviceVendor);
 
 
     /* kernel launch config */
@@ -800,7 +800,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     config.blockSize[2]     = num_threads_z;
     config.gridSize[0]      = numSciInPart;
 
-    validate_global_work_size(config, 3, nb->dev_info);
+    validate_global_work_size(config, 3, nb->deviceInfo);
 
     if (debug)
     {

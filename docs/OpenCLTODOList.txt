@@ -32,8 +32,6 @@ TABLE OF CONTENTS
 
 - Quite a few error conditions are unhandled, noted with TODOs in several files
 
-- gmx_device_info_t needs struct field documentation
-
 3. ENHANCEMENTS
    ============
 - Implement OpenCL kernels for Intel GPUs

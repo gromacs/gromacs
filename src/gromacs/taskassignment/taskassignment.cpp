@@ -400,9 +400,9 @@ void GpuTaskAssignments::reportGpuUsage(const MDLogger& mdlog,
                         numRanksOnThisNode_, printHostName, useGpuForBonded, pmeRunMode, useGpuForUpdate);
 }
 
-gmx_device_info_t* GpuTaskAssignments::initNonbondedDevice(const t_commrec* cr) const
+DeviceInformation* GpuTaskAssignments::initNonbondedDevice(const t_commrec* cr) const
 {
-    gmx_device_info_t*       deviceInfo        = nullptr;
+    DeviceInformation*       deviceInfo        = nullptr;
     const GpuTaskAssignment& gpuTaskAssignment = assignmentForAllRanksOnThisNode_[indexOfThisRank_];
 
     // This works because only one task of each type per rank is currently permitted.
@@ -425,9 +425,9 @@ gmx_device_info_t* GpuTaskAssignments::initNonbondedDevice(const t_commrec* cr) 
     return deviceInfo;
 }
 
-gmx_device_info_t* GpuTaskAssignments::initPmeDevice() const
+DeviceInformation* GpuTaskAssignments::initPmeDevice() const
 {
-    gmx_device_info_t*       deviceInfo        = nullptr;
+    DeviceInformation*       deviceInfo        = nullptr;
     const GpuTaskAssignment& gpuTaskAssignment = assignmentForAllRanksOnThisNode_[indexOfThisRank_];
 
     // This works because only one task of each type is currently permitted.

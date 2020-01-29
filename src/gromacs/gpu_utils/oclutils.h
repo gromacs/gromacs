@@ -52,39 +52,6 @@
 enum class GpuApiCallBehavior;
 
 /*! \internal
- * \brief OpenCL GPU device identificator
- *
- * An OpenCL device is identified by its ID.
- * The platform ID is also included for caching reasons.
- */
-typedef struct
-{
-    cl_platform_id ocl_platform_id; /**< Platform ID */
-    cl_device_id   ocl_device_id;   /**< Device ID */
-} ocl_gpu_id_t;
-
-/*! \internal
- * \brief OpenCL device information.
- *
- * The OpenCL device information is queried and set at detection and contains
- * both information about the device/hardware returned by the runtime as well
- * as additional data like support status.
- */
-struct gmx_device_info_t
-{
-    ocl_gpu_id_t ocl_gpu_id;          /**< device ID assigned at detection   */
-    char         device_name[256];    /**< device name */
-    char         device_version[256]; /**< device version */
-    char         vendorName[256];     /**< device vendor */
-    int          compute_units;       /**< number of compute units */
-    int          adress_bits;         /**< number of adress bits the device is capable of */
-    int          stat;                /**< device status takes values of e_gpu_detect_res_t */
-    DeviceVendor deviceVendor;        /**< device vendor */
-    size_t       maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
-    size_t maxWorkGroupSize; /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
-};
-
-/*! \internal
  * \brief OpenCL GPU runtime data
  *
  * The device runtime data is meant to hold objects associated with a GROMACS rank's

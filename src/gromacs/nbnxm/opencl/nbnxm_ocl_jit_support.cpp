@@ -163,7 +163,7 @@ static std::string makeDefinesForKernelTypes(bool bFastGen, int eeltype, int vdw
  *
  * A fatal error results if compilation fails.
  *
- * \param[inout] nb  Manages OpenCL non-bonded calculations; compiled kernels returned in dev_info members
+ * \param[inout] nb  Manages OpenCL non-bonded calculations; compiled kernels returned in deviceInfo members
  *
  * Does not throw
  */
@@ -202,13 +202,12 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
                the log output here should be written there */
             program = gmx::ocl::compileProgram(
                     stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl", extraDefines,
-                    nb->dev_rundata->context, nb->dev_info->ocl_gpu_id.ocl_device_id,
-                    nb->dev_info->deviceVendor);
+                    nb->dev_rundata->context, nb->deviceInfo->oclDeviceId, nb->deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {
             e.prependContext(gmx::formatString("Failed to compile NBNXN kernels for GPU #%s\n",
-                                               nb->dev_info->device_name));
+                                               nb->deviceInfo->device_name));
             throw;
         }
     }

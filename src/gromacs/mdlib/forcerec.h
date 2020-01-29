@@ -45,7 +45,7 @@
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/utility/arrayref.h"
 
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_hw_info_t;
 struct t_commrec;
 struct t_fcdata;

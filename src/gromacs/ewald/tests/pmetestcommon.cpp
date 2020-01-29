@@ -104,7 +104,7 @@ uint64_t getSplineModuliDoublePrecisionUlps(int splineOrder)
 //! PME initialization
 PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
                               const CodePath           mode,
-                              const gmx_device_info_t* gpuInfo,
+                              const DeviceInformation* deviceInfo,
                               const PmeGpuProgram*     pmeGpuProgram,
                               const Matrix3x3&         box,
                               const real               ewaldCoeff_q,
@@ -116,7 +116,7 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
     NumPmeDomains  numPmeDomains = { 1, 1 };
     gmx_pme_t*     pmeDataRaw =
             gmx_pme_init(&dummyCommrec, numPmeDomains, inputRec, false, false, true, ewaldCoeff_q,
-                         ewaldCoeff_lj, 1, runMode, nullptr, gpuInfo, pmeGpuProgram, dummyLogger);
+                         ewaldCoeff_lj, 1, runMode, nullptr, deviceInfo, pmeGpuProgram, dummyLogger);
     PmeSafePointer pme(pmeDataRaw); // taking ownership
 
     // TODO get rid of this with proper matrix type
@@ -149,13 +149,13 @@ PmeSafePointer pmeInitWrapper(const t_inputrec*        inputRec,
 //! Simple PME initialization based on input, no atom data
 PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
                             const CodePath           mode,
-                            const gmx_device_info_t* gpuInfo,
+                            const DeviceInformation* deviceInfo,
                             const PmeGpuProgram*     pmeGpuProgram,
                             const Matrix3x3&         box,
                             real                     ewaldCoeff_q,
                             real                     ewaldCoeff_lj)
 {
-    return pmeInitWrapper(inputRec, mode, gpuInfo, pmeGpuProgram, box, ewaldCoeff_q, ewaldCoeff_lj);
+    return pmeInitWrapper(inputRec, mode, deviceInfo, pmeGpuProgram, box, ewaldCoeff_q, ewaldCoeff_lj);
     // hiding the fact that PME actually needs to know the number of atoms in advance
 }
 

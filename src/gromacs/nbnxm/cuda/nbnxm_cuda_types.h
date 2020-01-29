@@ -267,7 +267,7 @@ class GpuEventSynchronizer;
 struct NbnxmGpu
 {
     /*! \brief CUDA device information */
-    const gmx_device_info_t* dev_info = nullptr;
+    const DeviceInformation* deviceInfo = nullptr;
     /*! \brief true if doing both local/non-local NB work on GPU */
     bool bUseTwoStreams = false;
     /*! \brief atom data */

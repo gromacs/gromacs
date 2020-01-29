@@ -52,7 +52,7 @@
 
 struct NbnxmGpu;
 struct gmx_gpu_info_t;
-struct gmx_device_info_t;
+struct DeviceInformation;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct nbnxn_atomdata_t;
 struct NbnxnPairlistGpu;
@@ -63,7 +63,7 @@ namespace Nbnxm
 
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
-NbnxmGpu* gpu_init(const gmx_device_info_t gmx_unused* deviceInfo,
+NbnxmGpu* gpu_init(const DeviceInformation gmx_unused* deviceInfo,
                    const interaction_const_t gmx_unused* ic,
                    const PairlistParams gmx_unused& listParams,
                    const nbnxn_atomdata_t gmx_unused* nbat,

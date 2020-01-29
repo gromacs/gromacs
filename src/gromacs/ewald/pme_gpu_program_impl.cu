@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -102,7 +102,7 @@ extern template void pme_gather_kernel<c_pmeOrder, true, c_wrapX, c_wrapY, false
 extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
 extern template void pme_gather_kernel<c_pmeOrder, false, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t*)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* /* deviceInfo */)
 {
     // kernel parameters
     warpSize              = warp_size;

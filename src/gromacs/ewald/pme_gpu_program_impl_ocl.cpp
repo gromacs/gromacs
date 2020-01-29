@@ -53,11 +53,11 @@
 #include "pme_gpu_types_host.h"
 #include "pme_grid.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const gmx_device_info_t* deviceInfo)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* deviceInfo)
 {
     // Context creation (which should happen outside of this class: #2522)
-    cl_platform_id        platformId = deviceInfo->ocl_gpu_id.ocl_platform_id;
-    cl_device_id          deviceId   = deviceInfo->ocl_gpu_id.ocl_device_id;
+    cl_platform_id        platformId = deviceInfo->oclPlatformId;
+    cl_device_id          deviceId   = deviceInfo->oclDeviceId;
     cl_context_properties contextProperties[3];
     contextProperties[0] = CL_CONTEXT_PLATFORM;
     contextProperties[1] = reinterpret_cast<cl_context_properties>(platformId);
@@ -110,11 +110,11 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  * smaller than the minimum order^2 required in spread/gather ATM which
  * we need to check for.
  */
-static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const gmx_device_info_t* deviceInfo)
+static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const DeviceInformation* deviceInfo)
 {
     if (deviceInfo->deviceVendor == DeviceVendor::Intel)
     {
-        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->ocl_gpu_id.ocl_device_id);
+        size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->oclDeviceId);
 
         if (kernelWarpSize < c_pmeSpreadGatherMinWarpSize)
         {
@@ -128,7 +128,7 @@ static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, cons
     }
 }
 
-void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
+void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
 {
     // We might consider storing program as a member variable if it's needed later
     cl_program program = nullptr;
@@ -165,8 +165,8 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
-            program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl", commonDefines,
-                                               context, deviceInfo->ocl_gpu_id.ocl_device_id,
+            program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl",
+                                               commonDefines, context, deviceInfo->oclDeviceId,
                                                deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
