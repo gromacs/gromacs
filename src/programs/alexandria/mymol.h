@@ -208,14 +208,6 @@ class MyMol : public MolProp
          */
         immStatus checkAtoms(const Poldata *pd);
 
-
-        /*! \brief
-         * Add the screening factors of the distributed charge to atom structure
-         *
-         * \param[in] pd      Data structure containing atomic properties
-         */
-        immStatus zeta2atoms(const Poldata *pd);
-
         /*! \brief
          * Return true if atom type neesd to have virtual site.
          *
@@ -346,6 +338,13 @@ class MyMol : public MolProp
          * Return experimental dipole
          */
         double dipExper() const { return dip_exp_; }
+
+        /*! \brief
+         * Add the screening factors of the distributed charge to atom structure
+         *
+         * \param[in] pd      Data structure containing atomic properties
+         */
+        immStatus zeta2atoms(const Poldata *pd);
 
         /*! \brief
          * Return the coordinate vector of the molecule

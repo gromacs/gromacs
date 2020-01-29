@@ -1174,6 +1174,11 @@ immStatus MyMol::computeForces(FILE *fplog, t_commrec *cr)
     {
         mdatoms->chargeA[i] = mtop_->moltype[0].atoms.atom[i].q;
         mdatoms->typeA[i]   = mtop_->moltype[0].atoms.atom[i].type;
+        mdatoms->zetaA[i]   = atoms_->atom[i].zetaA;
+        if (mdatoms->zetaB)
+        {
+            mdatoms->zetaB[i]   = atoms_->atom[i].zetaB;
+        }
         if (nullptr != debug)
         {
             fprintf(debug, "QQQ Setting q[%d] to %g\n", i, mdatoms->chargeA[i]);

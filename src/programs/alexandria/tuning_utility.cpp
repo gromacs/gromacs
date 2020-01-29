@@ -215,12 +215,12 @@ static void print_dipole(FILE              *fp,
     {
         ebuf[0] = '\0';
     }
-    fprintf(fp, "%-10s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f",
+    fprintf(fp, "%-10s (%6.3f,%6.3f,%6.3f) |Mu| = %6.3f",
             qTypeName(qt), mol->muQM(qt)[XX], mol->muQM(qt)[YY], mol->muQM(qt)[ZZ],
             mol->dipQM(qt));
     if (qt != qtElec)
     {
-        fprintf(fp, " Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s",
+        fprintf(fp, " Dev: (%6.3f,%6.3f,%6.3f) |%6.3f|%s",
                 dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
     }
     fprintf(fp, "\n");

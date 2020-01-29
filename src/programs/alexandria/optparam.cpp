@@ -309,6 +309,7 @@ double Bayes::MCMC(FILE *fplog)
         deltaEval       = currEval-prevEval;
         randProbability = uniform(gen);
         mcProbability   = exp(-beta*deltaEval);
+        double xiter    = (1.0*iter)/nParam;
         
         if ((deltaEval < 0) || (mcProbability > randProbability))
         {
@@ -316,11 +317,15 @@ double Bayes::MCMC(FILE *fplog)
             {
                 if (fplog)
                 {
-                    fprintf(fplog, "iter %5d. Found new minimum at %g\n",
-                            iter, currEval);
+                    fprintf(fplog, "iter %g. Found new minimum at %g\n",
+                            xiter, currEval);
                 }
                 bestParam_ = param_;
                 minEval    = currEval;
+                if (false)
+                {
+                    printParameters(fplog);
+                }
             }
             prevEval = currEval;
             acceptedMoves_[j] = acceptedMoves_[j] + 1;
@@ -329,7 +334,6 @@ double Bayes::MCMC(FILE *fplog)
         {
             param_[j] = storeParam;
         }
-        double xiter = (1.0*iter)/nParam;
 
         for(auto fp: fpc)
         {

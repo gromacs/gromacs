@@ -416,6 +416,7 @@ double OptACM::calcDeviation()
                         mymol.mtop_->moltype[0].atoms.atom[i].qB =
                             mymol.atoms_->atom[i].q;
                 }
+                mymol.zeta2atoms(poldata());
                 dumpQX(logFile(), &mymol, "LOOP1");
                 if (nullptr != mymol.shellfc_)
                 {
@@ -726,7 +727,7 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
                             sigma  = psigma[n];
                             n++;
                         }
-                        zstr.append(gmx::formatString("%.12f ", zeta));
+                        zstr.append(gmx::formatString("%.16f ", zeta));
                         z_sig.append(gmx::formatString("%f ", sigma));
                     }
                 }
