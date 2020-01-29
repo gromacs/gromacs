@@ -64,7 +64,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* deviceInfo)
     contextProperties[2] = 0; /* Terminates the list of properties */
 
     cl_int clError;
-    context = clCreateContext(contextProperties, 1, &deviceId, nullptr, nullptr, &clError);
+    deviceContext_.setContext(clCreateContext(contextProperties, 1, &deviceId, nullptr, nullptr, &clError));
     if (clError != CL_SUCCESS)
     {
         const std::string errorString = gmx::formatString(
@@ -74,7 +74,7 @@ PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation* deviceInfo)
     }
 
     // kernel parameters
-    warpSize = gmx::ocl::getDeviceWarpSize(context, deviceId);
+    warpSize = gmx::ocl::getDeviceWarpSize(deviceContext_.context(), deviceId);
     // TODO: for Intel ideally we'd want to set these based on the compiler warp size
     // but given that we've done no tuning for Intel iGPU, this is as good as anything.
     spreadWorkGroupSize = std::min(c_spreadMaxWarpsPerBlock * warpSize, deviceInfo->maxWorkGroupSize);
@@ -96,7 +96,6 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
     stat |= clReleaseKernel(solveXYZEnergyKernel);
     stat |= clReleaseKernel(solveYZXKernel);
     stat |= clReleaseKernel(solveYZXEnergyKernel);
-    stat |= clReleaseContext(context);
     GMX_ASSERT(stat == CL_SUCCESS,
                gmx::formatString("Failed to release PME OpenCL resources %d: %s", stat,
                                  ocl_get_error_string(stat).c_str())
@@ -165,8 +164,8 @@ void PmeGpuProgramImpl::compileKernels(const DeviceInformation* deviceInfo)
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl",
-                                               commonDefines, context, deviceInfo->oclDeviceId,
-                                               deviceInfo->deviceVendor);
+                                               commonDefines, deviceContext_.context(),
+                                               deviceInfo->oclDeviceId, deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {

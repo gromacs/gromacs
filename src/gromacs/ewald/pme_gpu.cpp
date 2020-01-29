@@ -442,12 +442,11 @@ void* pme_gpu_get_device_stream(const gmx_pme_t* pme)
     return pme_gpu_get_stream(pme->gpu);
 }
 
-void* pme_gpu_get_device_context(const gmx_pme_t* pme)
+const DeviceContext* pme_gpu_get_device_context(const gmx_pme_t* pme)
 {
-    if (!pme || !pme_gpu_active(pme))
-    {
-        return nullptr;
-    }
+    GMX_RELEASE_ASSERT(pme, "GPU context requested from PME before PME was constructed.");
+    GMX_RELEASE_ASSERT(pme_gpu_active(pme),
+                       "GPU context requested from PME, but PME is running on the CPU.");
     return pme_gpu_get_context(pme->gpu);
 }
 

@@ -166,7 +166,7 @@ std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
     return std::make_unique<StatePropagatorDataGpu>(
-            pme_gpu_get_device_stream(&pme), pme_gpu_get_device_context(&pme),
+            pme_gpu_get_device_stream(&pme), *pme_gpu_get_device_context(&pme),
             GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
 }
 

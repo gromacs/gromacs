@@ -70,8 +70,11 @@ namespace test
  */
 void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
 {
-    auto lincsGpu =
-            std::make_unique<LincsGpu>(testData->ir_.nLincsIter, testData->ir_.nProjOrder, nullptr);
+    DeviceInformation   deviceInfo;
+    const DeviceContext deviceContext(deviceInfo);
+
+    auto lincsGpu = std::make_unique<LincsGpu>(testData->ir_.nLincsIter, testData->ir_.nProjOrder,
+                                               deviceContext, nullptr);
 
     bool    updateVelocities = true;
     int     numAtoms         = testData->numAtoms_;
@@ -81,9 +84,9 @@ void applyLincsGpu(ConstraintsTestData* testData, t_pbc pbc)
     PbcAiuc pbcAiuc;
     setPbcAiuc(pbc.ndim_ePBC, pbc.box, &pbcAiuc);
 
-    allocateDeviceBuffer(&d_x, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_xp, numAtoms, nullptr);
-    allocateDeviceBuffer(&d_v, numAtoms, nullptr);
+    allocateDeviceBuffer(&d_x, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_xp, numAtoms, deviceContext);
+    allocateDeviceBuffer(&d_v, numAtoms, deviceContext);
 
     copyToDeviceBuffer(&d_x, (float3*)(testData->x_.data()), 0, numAtoms, nullptr,
                        GpuApiCallBehavior::Sync, nullptr);

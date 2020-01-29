@@ -412,7 +412,7 @@ GPU_FUNC_QUALIFIER void* pme_gpu_get_stream(const PmeGpu* GPU_FUNC_ARGUMENT(pmeG
  * \param[in] pmeGpu         The PME GPU structure.
  * \returns                  Pointer to context object.
  */
-GPU_FUNC_QUALIFIER void* pme_gpu_get_context(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
+GPU_FUNC_QUALIFIER const DeviceContext* pme_gpu_get_context(const PmeGpu* GPU_FUNC_ARGUMENT(pmeGpu))
         GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /*! \brief Return pointer to the sync object triggered after the PME force calculation completion

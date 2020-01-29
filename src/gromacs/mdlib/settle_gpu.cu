@@ -485,7 +485,8 @@ void SettleGpu::apply(const float3* d_x,
     return;
 }
 
-SettleGpu::SettleGpu(const gmx_mtop_t& mtop, CommandStream commandStream) :
+SettleGpu::SettleGpu(const gmx_mtop_t& mtop, const DeviceContext& deviceContext, CommandStream commandStream) :
+    deviceContext_(deviceContext),
     commandStream_(commandStream)
 {
     static_assert(sizeof(real) == sizeof(float),
@@ -586,7 +587,7 @@ SettleGpu::SettleGpu(const gmx_mtop_t& mtop, CommandStream commandStream) :
 
     initSettleParameters(&settleParameters_, mO, mH, dOH, dHH);
 
-    allocateDeviceBuffer(&d_virialScaled_, 6, nullptr);
+    allocateDeviceBuffer(&d_virialScaled_, 6, deviceContext_);
     h_virialScaled_.resize(6);
 }
 
@@ -611,7 +612,7 @@ void SettleGpu::set(const InteractionDefinitions& idef, const t_mdatoms gmx_unus
     ArrayRef<const int>    iatoms    = il_settle.iatoms;
     numSettles_                      = il_settle.size() / nral1;
 
-    reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, nullptr);
+    reallocateDeviceBuffer(&d_atomIds_, numSettles_, &numAtomIds_, &numAtomIdsAlloc_, deviceContext_);
     h_atomIds_.resize(numSettles_);
     for (int i = 0; i < numSettles_; i++)
     {

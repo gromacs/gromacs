@@ -628,8 +628,8 @@ int gmx_pmeonly(struct gmx_pme_t*         pme,
     const bool useGpuForPme = (runMode == PmeRunMode::GPU) || (runMode == PmeRunMode::Mixed);
     if (useGpuForPme)
     {
-        const void* commandStream = pme_gpu_get_device_stream(pme);
-        const void* deviceContext = pme_gpu_get_device_context(pme);
+        const void*          commandStream = pme_gpu_get_device_stream(pme);
+        const DeviceContext& deviceContext = *pme_gpu_get_device_context(pme);
 
         changePinningPolicy(&pme_pp->chargeA, pme_get_pinning_policy());
         changePinningPolicy(&pme_pp->x, pme_get_pinning_policy());

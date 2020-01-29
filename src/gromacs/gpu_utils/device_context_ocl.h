@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
+ * Copyright (c) 2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,42 +32,61 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_GPU_UTILS_GPUTRAITS_H
-#define GMX_GPU_UTILS_GPUTRAITS_H
+#ifndef GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H
+#define GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H
 
 /*! \libinternal \file
- *  \brief Declares the GPU type traits for non-GPU builds.
  *
- *  \author Mark Abraham <mark.j.abraham@gmail.com>
- *  \author Artem Zhmurov <zhmurov@gmail.com>
+ * \brief Declarations for DeviceContext class.
  *
- * \inlibraryapi
+ * Only needed for OpenCL builds. Other platforms will be given a stub class.
+ *
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \author Artem Zhmurov <zhmurov@gmail.com>
+ *
  * \ingroup module_gpu_utils
+ * \inlibraryapi
  */
 
-#include "config.h"
+#include "gromacs/gpu_utils/gmxopencl.h"
+#include "gromacs/utility/classhelpers.h"
 
-#if GMX_GPU == GMX_GPU_CUDA
+struct DeviceInformation;
 
-#    include "gromacs/gpu_utils/gputraits.cuh"
-
-#elif GMX_GPU == GMX_GPU_OPENCL
-
-#    include "gromacs/gpu_utils/gputraits_ocl.h"
-
-#else
-
-//! Stub for device information.
-struct DeviceInformation
+// OpenCL device context class
+class DeviceContext
 {
-    // No member needed
+public:
+    //! Default constructor. Sets \c context_ to \c nullptr.
+    DeviceContext();
+    /*! \brief Second stage of construction. Creates the \c cl_context.
+     *
+     * \param[in] deviceInfo Platform-specific device information.
+     *
+     * \throws InternalError if context creation failed.
+     */
+    void init(const DeviceInformation& deviceInfo);
+    /*! \brief Construct the object and call \c init(...) .
+     *
+     * \param[in] deviceInfo Platform-specific device information.
+     *
+     * \throws InternalError if context creation failed.
+     */
+    DeviceContext(const DeviceInformation& deviceInfo);
+    //! Destructor
+    ~DeviceContext();
+
+    //! Getter
+    cl_context context() const;
+
+    //! Transition time setter - will be removed
+    void setContext(cl_context context);
+
+    GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
+
+private:
+    //! OpenCL context object
+    cl_context context_ = nullptr;
 };
 
-//! \brief GPU command stream
-using CommandStream = void*;
-//! \brief Single GPU call timing event
-using CommandEvent = void*;
-
-#endif // GMX_GPU
-
-#endif // GMX_GPU_UTILS_GPUTRAITS_H
+#endif // GMX_GPU_UTILS_DEVICE_CONTEXT_OCL_H

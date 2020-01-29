@@ -101,8 +101,6 @@ public:
      *
      * \todo Make a \p CommandStream visible in the CPU parts of the code so we
      *       will not have to pass a void*.
-     * \todo Make a \p DeviceContext object visible in CPU parts of the code so we
-     *       will not have to pass a void*.
      *
      *  \param[in] pmeStream       Device PME stream, nullptr allowed.
      *  \param[in] localStream     Device NBNXM local stream, nullptr allowed.
@@ -112,13 +110,13 @@ public:
      *  \param[in] paddingSize     Padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
-    Impl(const void*        pmeStream,
-         const void*        localStream,
-         const void*        nonLocalStream,
-         const void*        deviceContext,
-         GpuApiCallBehavior transferKind,
-         int                paddingSize,
-         gmx_wallcycle*     wcycle);
+    Impl(const void*          pmeStream,
+         const void*          localStream,
+         const void*          nonLocalStream,
+         const DeviceContext& deviceContext,
+         GpuApiCallBehavior   transferKind,
+         int                  paddingSize,
+         gmx_wallcycle*       wcycle);
 
     /*! \brief Constructor to use in PME-only rank and in tests.
      *
@@ -136,11 +134,11 @@ public:
      *  \param[in] paddingSize     Padding size for coordinates buffer.
      *  \param[in] wcycle          Wall cycle counter data.
      */
-    Impl(const void*        pmeStream,
-         const void*        deviceContext,
-         GpuApiCallBehavior transferKind,
-         int                paddingSize,
-         gmx_wallcycle*     wcycle);
+    Impl(const void*          pmeStream,
+         const DeviceContext& deviceContext,
+         GpuApiCallBehavior   transferKind,
+         int                  paddingSize,
+         gmx_wallcycle*       wcycle);
 
     ~Impl();
 
@@ -380,10 +378,8 @@ private:
     //! An array of events that indicate D2H copy of forces is complete (one event for each atom locality)
     EnumerationArray<AtomLocality, GpuEventSynchronizer> fReadyOnHost_;
 
-    /*! \brief GPU context (for OpenCL builds)
-     * \todo Make a Context class usable in CPU code
-     */
-    DeviceContext deviceContext_ = nullptr;
+    //! GPU context (for OpenCL builds)
+    const DeviceContext& deviceContext_;
     //! Default GPU calls behavior
     GpuApiCallBehavior transferKind_ = GpuApiCallBehavior::Async;
     //! Padding size for the coordinates buffer

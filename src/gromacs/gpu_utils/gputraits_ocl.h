@@ -37,7 +37,9 @@
 
 /*! \libinternal \file
  *  \brief Declares the OpenCL type traits.
+ *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils
@@ -81,8 +83,6 @@ struct DeviceInformation
 using CommandStream = cl_command_queue;
 //! \brief Single GPU call timing event
 using CommandEvent = cl_event;
-//! \brief Context used explicitly in OpenCL
-using DeviceContext = cl_context;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

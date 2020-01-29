@@ -57,7 +57,7 @@ class StatePropagatorDataGpu::Impl
 StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */,
                                                const void* /* localStream     */,
                                                const void* /* nonLocalStream  */,
-                                               const void* /* deviceContext   */,
+                                               const DeviceContext& /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* paddingSize     */,
                                                gmx_wallcycle* /*   wcycle */) :
@@ -66,7 +66,7 @@ StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */
 }
 
 StatePropagatorDataGpu::StatePropagatorDataGpu(const void* /* pmeStream       */,
-                                               const void* /* deviceContext   */,
+                                               const DeviceContext& /* deviceContext   */,
                                                GpuApiCallBehavior /* transferKind    */,
                                                int /* paddingSize     */,
                                                gmx_wallcycle* /*   wcycle */) :

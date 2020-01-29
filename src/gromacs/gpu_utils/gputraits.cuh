@@ -37,7 +37,9 @@
 
 /*! \libinternal \file
  *  \brief Declares the CUDA type traits.
+ *
  *  \author Aleksei Iupinov <a.yupinov@gmail.com>
+ *  \author Artem Zhmurov <zhmurov@gmail.com>
  *
  * \inlibraryapi
  * \ingroup module_gpu_utils
@@ -63,8 +65,6 @@ struct DeviceInformation
 using CommandStream = cudaStream_t;
 //! \brief Single GPU call timing event - meaningless in CUDA
 using CommandEvent = void;
-//! \brief Context used explicitly in OpenCL, does nothing in CUDA
-using DeviceContext = void*;
 
 /*! \internal \brief
  * GPU kernels scheduling description. This is same in OpenCL/CUDA.

@@ -44,6 +44,7 @@
 #ifndef GMX_MDLIB_LINCS_GPU_CUH
 #define GMX_MDLIB_LINCS_GPU_CUH
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/mdlib/constr.h"
 #include "gromacs/mdtypes/mdatom.h"
@@ -103,9 +104,10 @@ public:
      *
      * \param[in] numIterations    Number of iteration for the correction of the projection.
      * \param[in] expansionOrder   Order of the matrix inversion algorithm.
+     * \param[in] deviceContext    Device context (dummy in CUDA).
      * \param[in] commandStream    Device command stream.
      */
-    LincsGpu(int numIterations, int expansionOrder, CommandStream commandStream);
+    LincsGpu(int numIterations, int expansionOrder, const DeviceContext& deviceContext, CommandStream commandStream);
     /*! \brief Destructor.*/
     ~LincsGpu();
 
@@ -167,6 +169,8 @@ public:
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
+    //! Dummy GPU context object
+    const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;
 

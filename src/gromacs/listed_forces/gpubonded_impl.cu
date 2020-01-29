@@ -68,14 +68,14 @@ GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallc
     stream_ = *static_cast<CommandStream*>(streamPtr);
     wcycle_ = wcycle;
 
-    allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), nullptr);
+    allocateDeviceBuffer(&d_forceParams_, ffparams.numTypes(), deviceContext_);
     // This could be an async transfer (if the source is pinned), so
     // long as it uses the same stream as the kernels and we are happy
     // to consume additional pinned pages.
     copyToDeviceBuffer(&d_forceParams_, ffparams.iparams.data(), 0, ffparams.numTypes(), stream_,
                        GpuApiCallBehavior::Sync, nullptr);
     vTot_.resize(F_NRE);
-    allocateDeviceBuffer(&d_vTot_, F_NRE, nullptr);
+    allocateDeviceBuffer(&d_vTot_, F_NRE, deviceContext_);
     clearDeviceBufferAsync(&d_vTot_, 0, F_NRE, stream_);
 
     kernelParams_.d_forceParams = d_forceParams_;
@@ -204,7 +204,8 @@ void GpuBonded::Impl::updateInteractionListsAndDeviceBuffers(ArrayRef<const int>
         {
             t_ilist& d_iList = d_iLists_[fType];
 
-            reallocateDeviceBuffer(&d_iList.iatoms, iList.size(), &d_iList.nr, &d_iList.nalloc, nullptr);
+            reallocateDeviceBuffer(&d_iList.iatoms, iList.size(), &d_iList.nr, &d_iList.nalloc,
+                                   deviceContext_);
 
             copyToDeviceBuffer(&d_iList.iatoms, iList.iatoms.data(), 0, iList.size(), stream_,
                                GpuApiCallBehavior::Async, nullptr);

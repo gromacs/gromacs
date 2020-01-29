@@ -48,6 +48,7 @@
 #ifndef GMX_LISTED_FORCES_GPUBONDED_IMPL_H
 #define GMX_LISTED_FORCES_GPUBONDED_IMPL_H
 
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/listed_forces/gpubonded.h"
@@ -179,6 +180,8 @@ private:
     //! \brief Device-side total virial
     float* d_vTot_ = nullptr;
 
+    //! Dummy GPU context object
+    const DeviceContext deviceContext_;
     //! \brief Bonded GPU stream, not owned by this module
     CommandStream stream_;
 

@@ -1566,8 +1566,8 @@ int Mdrunner::mdrunner()
                     fr->nbv->gpu_nbv != nullptr
                             ? Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv, InteractionLocality::NonLocal)
                             : nullptr;
-            const void*        deviceContext = pme_gpu_get_device_context(fr->pmedata);
-            const int          paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
+            const DeviceContext& deviceContext = *pme_gpu_get_device_context(fr->pmedata);
+            const int            paddingSize   = pme_gpu_get_padding_size(fr->pmedata);
             GpuApiCallBehavior transferKind = (inputrec->eI == eiMD && !doRerun && !useModularSimulator)
                                                       ? GpuApiCallBehavior::Async
                                                       : GpuApiCallBehavior::Sync;

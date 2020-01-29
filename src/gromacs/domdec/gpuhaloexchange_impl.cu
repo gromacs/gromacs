@@ -147,9 +147,9 @@ void GpuHaloExchange::Impl::reinitHalo(float3* d_coordinatesBuffer, float3* d_fo
     // reallocate on device only if needed
     if (newSize > maxPackedBufferSize_)
     {
-        reallocateDeviceBuffer(&d_indexMap_, newSize, &indexMapSize_, &indexMapSizeAlloc_, nullptr);
-        reallocateDeviceBuffer(&d_sendBuf_, newSize, &sendBufSize_, &sendBufSizeAlloc_, nullptr);
-        reallocateDeviceBuffer(&d_recvBuf_, newSize, &recvBufSize_, &recvBufSizeAlloc_, nullptr);
+        reallocateDeviceBuffer(&d_indexMap_, newSize, &indexMapSize_, &indexMapSizeAlloc_, deviceContext_);
+        reallocateDeviceBuffer(&d_sendBuf_, newSize, &sendBufSize_, &sendBufSizeAlloc_, deviceContext_);
+        reallocateDeviceBuffer(&d_recvBuf_, newSize, &recvBufSize_, &recvBufSizeAlloc_, deviceContext_);
         maxPackedBufferSize_ = newSize;
     }
 
@@ -448,7 +448,7 @@ GpuHaloExchange::Impl::Impl(gmx_domdec_t* dd,
 
     changePinningPolicy(&h_indexMap_, gmx::PinningPolicy::PinnedIfSupported);
 
-    allocateDeviceBuffer(&d_fShift_, 1, nullptr);
+    allocateDeviceBuffer(&d_fShift_, 1, deviceContext_);
 }
 
 GpuHaloExchange::Impl::~Impl()

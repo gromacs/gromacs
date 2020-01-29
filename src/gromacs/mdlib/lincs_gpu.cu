@@ -507,7 +507,11 @@ void LincsGpu::apply(const float3* d_x,
     return;
 }
 
-LincsGpu::LincsGpu(int numIterations, int expansionOrder, CommandStream commandStream) :
+LincsGpu::LincsGpu(int                  numIterations,
+                   int                  expansionOrder,
+                   const DeviceContext& deviceContext,
+                   CommandStream        commandStream) :
+    deviceContext_(deviceContext),
     commandStream_(commandStream)
 {
     kernelParams_.numIterations  = numIterations;
@@ -519,7 +523,7 @@ LincsGpu::LincsGpu(int numIterations, int expansionOrder, CommandStream commandS
             c_threadsPerBlock > 0 && ((c_threadsPerBlock & (c_threadsPerBlock - 1)) == 0),
             "Number of threads per block should be a power of two in order for reduction to work.");
 
-    allocateDeviceBuffer(&kernelParams_.d_virialScaled, 6, nullptr);
+    allocateDeviceBuffer(&kernelParams_.d_virialScaled, 6, deviceContext_);
     h_virialScaled_.resize(6);
 
     // The data arrays should be expanded/reallocated on first call of set() function.
@@ -911,18 +915,19 @@ void LincsGpu::set(const InteractionDefinitions& idef, const t_mdatoms& md)
 
         numConstraintsThreadsAlloc_ = kernelParams_.numConstraintsThreads;
 
-        allocateDeviceBuffer(&kernelParams_.d_constraints, kernelParams_.numConstraintsThreads, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_constraints, kernelParams_.numConstraintsThreads,
+                             deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_constraintsTargetLengths,
-                             kernelParams_.numConstraintsThreads, nullptr);
+                             kernelParams_.numConstraintsThreads, deviceContext_);
 
         allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsCounts,
-                             kernelParams_.numConstraintsThreads, nullptr);
+                             kernelParams_.numConstraintsThreads, deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_coupledConstraintsIndices,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_massFactors,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, deviceContext_);
         allocateDeviceBuffer(&kernelParams_.d_matrixA,
-                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, nullptr);
+                             maxCoupledConstraints * kernelParams_.numConstraintsThreads, deviceContext_);
     }
 
     // (Re)allocate the memory, if the number of atoms has increased.
@@ -933,7 +938,7 @@ void LincsGpu::set(const InteractionDefinitions& idef, const t_mdatoms& md)
             freeDeviceBuffer(&kernelParams_.d_inverseMasses);
         }
         numAtomsAlloc_ = numAtoms;
-        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms, nullptr);
+        allocateDeviceBuffer(&kernelParams_.d_inverseMasses, numAtoms, deviceContext_);
     }
 
     // Copy data to GPU.
