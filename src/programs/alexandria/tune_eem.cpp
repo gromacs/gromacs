@@ -1004,6 +1004,7 @@ int alex_tune_eem(int argc, char *argv[])
     bool                        bZero         = true;
     bool                        bOptimize     = true;
     bool                        bForceOutput  = true;
+    bool                        useOffset     = false;
 
     t_pargs                     pa[]         = {
         { "-reinit", FALSE, etINT, {&reinit},
@@ -1024,6 +1025,8 @@ int alex_tune_eem(int argc, char *argv[])
           "Tolerance (A^3) for marking diagonal elements of the polarizability tensor as an outlier in the log file" },
         { "-isopol_toler", FALSE, etREAL, {&isopol_toler},
           "Tolerance (A^3) for marking isotropic polarizability as an outlier in the log file" },
+        { "-use_offset", FALSE, etBOOL,{&useOffset},
+          "Fit regression analysis of results to y = ax+b instead of y = ax" },
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML file" },
         { "-btex", FALSE, etBOOL, {&bPrintTable},
@@ -1141,7 +1144,8 @@ int alex_tune_eem(int argc, char *argv[])
                                  opt.fullTensor(),
                                  ic,
                                  opt.commrec(),
-                                 efield);
+                                 efield,
+                                 useOffset);
             writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
             if (bPrintTable)
             {

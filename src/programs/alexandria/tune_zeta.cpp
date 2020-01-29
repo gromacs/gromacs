@@ -698,7 +698,8 @@ int alex_tune_zeta(int argc, char *argv[])
                              opt.fullTensor(),
                              ic,
                              opt.commrec(),
-                             efield);
+                             efield,
+                             false);
 
         writePoldata(opt2fn("-o", NFILE, fnm), opt.poldata(), bcompress);
         gmx_ffclose(fp);

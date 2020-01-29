@@ -48,28 +48,48 @@ namespace alexandria
 static void print_stats(FILE        *fp,
                         const char  *prop,
                         gmx_stats_t  lsq,
-                        gmx_bool     bHeader,
+                        bool         bHeader,
                         const char  *xaxis,
-                        const char  *yaxis)
+                        const char  *yaxis,
+                        bool         useOffset)
 {
     real a    = 0, da  = 0, b    = 0, db   = 0;
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
     real Rfit = 0;
     int  n;
 
-    if (bHeader)
+    if (useOffset)
     {
-        fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
-        fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
-                "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
-        fprintf(fp, "---------------------------------------------------------------\n");
+        if (bHeader)
+        {
+            fprintf(fp, "Fitting data to y = ax + b, where x = %s and y = %s\n", xaxis, yaxis);
+            fprintf(fp, "%-12s %5s %13s %13s %8s %8s %8s %8s\n",
+                    "Property", "N", "a", "b", "R(%)", "RMSD", "MSE", "MAE");
+            fprintf(fp, "---------------------------------------------------------------\n");
+        }
+        gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+        gmx_stats_get_rmsd(lsq,    &rmsd);
+        gmx_stats_get_mse_mae(lsq, &mse, &mae);
+        gmx_stats_get_npoints(lsq, &n);
+        fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
+                prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
     }
-    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
-    gmx_stats_get_rmsd(lsq,    &rmsd);
-    gmx_stats_get_mse_mae(lsq, &mse, &mae);
-    gmx_stats_get_npoints(lsq, &n);
-    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
-            prop, n, a, da, b, db, Rfit*100, rmsd, mse, mae);
+    else
+    {
+        if (bHeader)
+        {
+            fprintf(fp, "Fitting data to y = ax, where x = %s and y = %s\n", xaxis, yaxis);
+            fprintf(fp, "%-12s %5s %13s %8s %8s %8s %8s\n",
+                    "Property", "N", "a", "R(%)", "RMSD", "MSE", "MAE");
+            fprintf(fp, "---------------------------------------------------------------\n");
+        }
+        gmx_stats_get_a(lsq, elsqWEIGHT_NONE, &a, &da, &chi2, &Rfit);
+        gmx_stats_get_rmsd(lsq,    &rmsd);
+        gmx_stats_get_mse_mae(lsq, &mse, &mae);
+        gmx_stats_get_npoints(lsq, &n);
+        fprintf(fp, "%-12s %5d %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f\n",
+                prop, n, a, da, Rfit*100, rmsd, mse, mae);
+    }
 }
 
 void print_lsq_set(FILE *fp, gmx_stats_t lsq)
@@ -259,7 +279,8 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           IndexCount                     *indexCount,
                           t_commrec                      *cr,
-                          real                            efield)
+                          real                            efield,
+                          bool                            useOffset)
 {
     int            i    = 0, j     = 0, n     = 0;
     int            nout = 0, mm    = 0, nn    = 0;
@@ -455,20 +476,20 @@ void print_electric_props(FILE                           *fp,
     fprintf(fp, "Quadrupoles are %s in Calc Parametrization.\n", (bQuadrupole ? "used" : "not used"));
     fprintf(fp, "\n");
 
-    print_stats(fp, "ESP  (kJ/mol e)",  lsq_esp, true,  "Electronic", "Calculated");
+    print_stats(fp, "ESP  (kJ/mol e)",  lsq_esp, true,  "Electronic", "Calculated", useOffset);
     fprintf(fp, "\n");
 
     for (int i = 0; i < qtElec; i++)
     {
         const char *name = qTypeName(static_cast<qType>(i));
-        print_stats(fp, "Dipoles",       lsq_mu[i],   true,  "Electronic", name);
-        print_stats(fp, "Dipole Moment", lsq_dip[i],  false, "Electronic", name);
-        print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name);
+        print_stats(fp, "Dipoles",       lsq_mu[i],   true,  "Electronic", name, useOffset);
+        print_stats(fp, "Dipole Moment", lsq_dip[i],  false, "Electronic", name, useOffset);
+        print_stats(fp, "Quadrupoles",   lsq_quad[i], false, "Electronic", name, useOffset);
         if (bPolar && i == qtCalc)
         {
-            print_stats(fp, "Principal Components of Polarizability (A^3)",  lsq_alpha, false,  "Electronic", name);
-            print_stats(fp, "Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  "Electronic", name);
-            print_stats(fp, "Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  "Electronic", name);
+            print_stats(fp, "Principal Components of Polarizability (A^3)",  lsq_alpha, false,  "Electronic", name, useOffset);
+            print_stats(fp, "Isotropic Polarizability (A^3)",    lsq_isoPol,   false,  "Electronic", name, useOffset);
+            print_stats(fp, "Anisotropic Polarizability (A^3)",  lsq_anisoPol, false,  "Electronic", name, useOffset);
         }
         fprintf(fp, "\n");
     }
@@ -480,7 +501,7 @@ void print_electric_props(FILE                           *fp,
     }
     hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
     xvgr_legend(hh, types.size(), types.data(), oenv);
-    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true,  "CM5", "Calculated");
+    print_stats(fp, "All Partial Charges  (e)",  lsq_charge, true,  "CM5", "Calculated", useOffset);
     for (auto k = lsqt.begin(); k < lsqt.end(); ++k)
     {
         int   nbins;
@@ -495,7 +516,7 @@ void print_electric_props(FILE                           *fp,
                     fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
                 fprintf(hh, "&\n");
-                print_stats(fp, k->ztype.c_str(),  k->lsq, false,  "CM5", "Calculated");
+                print_stats(fp, k->ztype.c_str(),  k->lsq, false,  "CM5", "Calculated", useOffset);
                 free(x);
                 free(y);
             }

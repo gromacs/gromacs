@@ -124,7 +124,8 @@ void print_electric_props(FILE                           *fp,
                           bool                            bfullTensor,
                           IndexCount                     *indexCount,
                           t_commrec                      *cr,
-                          real                            efield);
+                          real                            efield,
+                          bool                            useOffset);
 
 /*! \brief Print header and command line arguments
  *
