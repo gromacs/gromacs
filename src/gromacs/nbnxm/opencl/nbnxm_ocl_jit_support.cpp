@@ -203,7 +203,7 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
             program = gmx::ocl::compileProgram(
                     stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl", extraDefines,
                     nb->dev_rundata->context, nb->dev_info->ocl_gpu_id.ocl_device_id,
-                    nb->dev_info->vendor_e);
+                    nb->dev_info->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {

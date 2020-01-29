@@ -234,12 +234,12 @@ static int isDeviceSupported(const gmx_device_info_t* devInfo)
     }
 
     /* Only AMD, Intel, and NVIDIA GPUs are supported for now */
-    switch (devInfo->vendor_e)
+    switch (devInfo->deviceVendor)
     {
-        case OCL_VENDOR_NVIDIA: return egpuCompatible;
-        case OCL_VENDOR_AMD:
+        case DeviceVendor::Nvidia: return egpuCompatible;
+        case DeviceVendor::Amd:
             return runningOnCompatibleOSForAmd() ? egpuCompatible : egpuIncompatible;
-        case OCL_VENDOR_INTEL:
+        case DeviceVendor::Intel:
             return GMX_OPENCL_NB_CLUSTER_SIZE == 4 ? egpuCompatible : egpuIncompatibleClusterSize;
         default: return egpuIncompatible;
     }
@@ -279,29 +279,29 @@ static int checkGpu(size_t deviceId, const gmx_device_info_t* deviceInfo)
 
 } // namespace gmx
 
-/*! \brief Returns an ocl_vendor_id_t value corresponding to the input OpenCL vendor name.
+/*! \brief Returns an DeviceVendor value corresponding to the input OpenCL vendor name.
  *
- *  \param[in] vendor_name String with OpenCL vendor name.
- *  \returns               ocl_vendor_id_t value for the input vendor_name
+ *  \param[in] vendorName  String with OpenCL vendor name.
+ *  \returns               DeviceVendor value for the input vendor name
  */
-static ocl_vendor_id_t get_vendor_id(char* vendor_name)
+static DeviceVendor getDeviceVendor(const char* vendorName)
 {
-    if (vendor_name)
+    if (vendorName)
     {
-        if (strstr(vendor_name, "NVIDIA"))
+        if (strstr(vendorName, "NVIDIA"))
         {
-            return OCL_VENDOR_NVIDIA;
+            return DeviceVendor::Nvidia;
         }
-        else if (strstr(vendor_name, "AMD") || strstr(vendor_name, "Advanced Micro Devices"))
+        else if (strstr(vendorName, "AMD") || strstr(vendorName, "Advanced Micro Devices"))
         {
-            return OCL_VENDOR_AMD;
+            return DeviceVendor::Amd;
         }
-        else if (strstr(vendor_name, "Intel"))
+        else if (strstr(vendorName, "Intel"))
         {
-            return OCL_VENDOR_INTEL;
+            return DeviceVendor::Intel;
         }
     }
-    return OCL_VENDOR_UNKNOWN;
+    return DeviceVendor::Unknown;
 }
 
 bool isGpuDetectionFunctional(std::string* errorMessage)
@@ -434,10 +434,10 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                                     sizeof(gpu_info->gpu_dev[device_index].device_version),
                                     gpu_info->gpu_dev[device_index].device_version, nullptr);
 
-                    gpu_info->gpu_dev[device_index].device_vendor[0] = 0;
+                    gpu_info->gpu_dev[device_index].vendorName[0] = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_VENDOR,
-                                    sizeof(gpu_info->gpu_dev[device_index].device_vendor),
-                                    gpu_info->gpu_dev[device_index].device_vendor, nullptr);
+                                    sizeof(gpu_info->gpu_dev[device_index].vendorName),
+                                    gpu_info->gpu_dev[device_index].vendorName, nullptr);
 
                     gpu_info->gpu_dev[device_index].compute_units = 0;
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_COMPUTE_UNITS,
@@ -449,8 +449,8 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                                     sizeof(gpu_info->gpu_dev[device_index].adress_bits),
                                     &(gpu_info->gpu_dev[device_index].adress_bits), nullptr);
 
-                    gpu_info->gpu_dev[device_index].vendor_e =
-                            get_vendor_id(gpu_info->gpu_dev[device_index].device_vendor);
+                    gpu_info->gpu_dev[device_index].deviceVendor =
+                            getDeviceVendor(gpu_info->gpu_dev[device_index].vendorName);
 
                     clGetDeviceInfo(ocl_device_ids[j], CL_DEVICE_MAX_WORK_ITEM_SIZES, 3 * sizeof(size_t),
                                     &gpu_info->gpu_dev[device_index].maxWorkItemSizes, nullptr);
@@ -479,7 +479,7 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                 int last = -1;
                 for (int i = 0; i < gpu_info->n_dev; i++)
                 {
-                    if (OCL_VENDOR_AMD == gpu_info->gpu_dev[i].vendor_e)
+                    if (gpu_info->gpu_dev[i].deviceVendor == DeviceVendor::Amd)
                     {
                         last++;
 
@@ -498,7 +498,7 @@ void findGpus(gmx_gpu_info_t* gpu_info)
                 {
                     for (int i = 0; i < gpu_info->n_dev; i++)
                     {
-                        if (OCL_VENDOR_NVIDIA == gpu_info->gpu_dev[i].vendor_e)
+                        if (gpu_info->gpu_dev[i].deviceVendor == DeviceVendor::Nvidia)
                         {
                             last++;
 
@@ -543,7 +543,7 @@ void get_gpu_device_info_string(char* s, const gmx_gpu_info_t& gpu_info, int ind
     else
     {
         sprintf(s, "#%d: name: %s, vendor: %s, device version: %s, stat: %s", index, dinfo->device_name,
-                dinfo->device_vendor, dinfo->device_version, gpu_detect_res_str[dinfo->stat]);
+                dinfo->vendorName, dinfo->device_version, gpu_detect_res_str[dinfo->stat]);
     }
 }
 
@@ -557,7 +557,7 @@ void init_gpu(const gmx_device_info_t* deviceInfo)
     // the cache does not always get regenerated when the source code changes,
     // e.g. if the path to the kernel sources remains the same
 
-    if (deviceInfo->vendor_e == OCL_VENDOR_NVIDIA)
+    if (deviceInfo->deviceVendor == DeviceVendor::Nvidia)
     {
         // Ignore return values, failing to set the variable does not mean
         // that something will go wrong later.

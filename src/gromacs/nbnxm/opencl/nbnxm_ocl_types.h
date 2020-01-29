@@ -78,16 +78,15 @@ const int c_oclPruneKernelJ4ConcurrencyDEFAULT = GMX_NBNXN_PRUNE_KERNEL_J4_CONCU
 /*! @} */
 
 /*! \brief Returns the j4 processing concurrency parameter for the vendor \p vendorId
- *  \param vendorId takes values from #ocl_vendor_id_t.
+ *  \param deviceVendor Vendor.
  */
-static inline int getOclPruneKernelJ4Concurrency(int vendorId)
+static inline int getOclPruneKernelJ4Concurrency(DeviceVendor deviceVendor)
 {
-    switch (vendorId)
+    switch (deviceVendor)
     {
         default: return c_oclPruneKernelJ4ConcurrencyDEFAULT;
     }
 }
-
 
 /*! \brief Electrostatic OpenCL kernel flavors.
  *

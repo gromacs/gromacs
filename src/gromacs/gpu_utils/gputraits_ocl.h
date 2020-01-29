@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -44,6 +44,16 @@
  */
 
 #include "gromacs/gpu_utils/gmxopencl.h"
+
+//! OpenCL device vendors
+enum class DeviceVendor : int
+{
+    Unknown = 0, //!< No data
+    Nvidia  = 1, //!< NVIDIA
+    Amd     = 2, //!< Advanced Micro Devices
+    Intel   = 3, //!< Intel
+    Count   = 4
+};
 
 //! \brief GPU command stream
 using CommandStream = cl_command_queue;

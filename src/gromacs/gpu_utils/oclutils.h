@@ -51,15 +51,6 @@
 
 enum class GpuApiCallBehavior;
 
-/*! \brief OpenCL vendor IDs */
-typedef enum
-{
-    OCL_VENDOR_NVIDIA = 0,
-    OCL_VENDOR_AMD,
-    OCL_VENDOR_INTEL,
-    OCL_VENDOR_UNKNOWN
-} ocl_vendor_id_t;
-
 /*! \internal
  * \brief OpenCL GPU device identificator
  *
@@ -81,16 +72,16 @@ typedef struct
  */
 struct gmx_device_info_t
 {
-    ocl_gpu_id_t    ocl_gpu_id;          /**< device ID assigned at detection   */
-    char            device_name[256];    /**< device name */
-    char            device_version[256]; /**< device version */
-    char            device_vendor[256];  /**< device vendor */
-    int             compute_units;       /**< number of compute units */
-    int             adress_bits;         /**< number of adress bits the device is capable of */
-    int             stat;                /**< device status takes values of e_gpu_detect_res_t */
-    ocl_vendor_id_t vendor_e;            /**< device vendor as defined by ocl_vendor_id_t */
-    size_t maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
-    size_t maxWorkGroupSize;    /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
+    ocl_gpu_id_t ocl_gpu_id;          /**< device ID assigned at detection   */
+    char         device_name[256];    /**< device name */
+    char         device_version[256]; /**< device version */
+    char         vendorName[256];     /**< device vendor */
+    int          compute_units;       /**< number of compute units */
+    int          adress_bits;         /**< number of adress bits the device is capable of */
+    int          stat;                /**< device status takes values of e_gpu_detect_res_t */
+    DeviceVendor deviceVendor;        /**< device vendor */
+    size_t       maxWorkItemSizes[3]; /**< workgroup size limits (CL_DEVICE_MAX_WORK_ITEM_SIZES) */
+    size_t maxWorkGroupSize; /**< workgroup total size limit (CL_DEVICE_MAX_WORK_GROUP_SIZE) */
 };
 
 /*! \internal

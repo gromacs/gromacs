@@ -86,10 +86,12 @@ size_t getKernelWarpSize(cl_kernel kernel, cl_device_id deviceId);
  * \param[in]  kernelRelativePath    Relative path to the kernel in the source tree,
  *                                   e.g. "src/gromacs/mdlib/nbnxn_ocl" for NB kernels.
  * \param[in]  kernelBaseFilename    The name of the kernel source file to compile, e.g.
- * "nbnxn_ocl_kernels.cl" \param[in]  extraDefines          Preprocessor defines required by the
- * calling code, e.g. for configuring the kernels \param[in]  context               OpenCL context
- * on the device to compile for \param[in]  deviceId              OpenCL device id of the device to
- * compile for \param[in]  deviceVendorId        Enumerator of the device vendor to compile for
+ *                                   "nbnxn_ocl_kernels.cl"
+ * \param[in]  extraDefines          Preprocessor defines required by the calling code,
+ *                                   e.g. for configuring the kernels
+ * \param[in]  context               OpenCL context on the device to compile for
+ * \param[in]  deviceId              OpenCL device id of the device to compile for
+ * \param[in]  deviceVendor          Enumerator of the device vendor to compile for
  *
  * \returns The compiled OpenCL program
  *
@@ -107,7 +109,7 @@ cl_program compileProgram(FILE*              fplog,
                           const std::string& extraDefines,
                           cl_context         context,
                           cl_device_id       deviceId,
-                          ocl_vendor_id_t    deviceVendorId);
+                          DeviceVendor       deviceVendor);
 
 } // namespace ocl
 } // namespace gmx

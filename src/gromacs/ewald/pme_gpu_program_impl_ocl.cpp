@@ -112,7 +112,7 @@ PmeGpuProgramImpl::~PmeGpuProgramImpl()
  */
 static void checkRequiredWarpSize(cl_kernel kernel, const char* kernelName, const gmx_device_info_t* deviceInfo)
 {
-    if (deviceInfo->vendor_e == OCL_VENDOR_INTEL)
+    if (deviceInfo->deviceVendor == DeviceVendor::Intel)
     {
         size_t kernelWarpSize = gmx::ocl::getKernelWarpSize(kernel, deviceInfo->ocl_gpu_id.ocl_device_id);
 
@@ -167,7 +167,7 @@ void PmeGpuProgramImpl::compileKernels(const gmx_device_info_t* deviceInfo)
                the log output here should be written there */
             program = gmx::ocl::compileProgram(stderr, "gromacs/ewald", "pme_program.cl", commonDefines,
                                                context, deviceInfo->ocl_gpu_id.ocl_device_id,
-                                               deviceInfo->vendor_e);
+                                               deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {

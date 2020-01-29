@@ -695,8 +695,8 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
      * TODO: decide about NVIDIA
      */
     nb->bPrefetchLjParam = (getenv("GMX_OCL_DISABLE_I_PREFETCH") == nullptr)
-                           && ((nb->dev_info->vendor_e == OCL_VENDOR_AMD)
-                               || (nb->dev_info->vendor_e == OCL_VENDOR_INTEL)
+                           && ((nb->dev_info->deviceVendor == DeviceVendor::Amd)
+                               || (nb->dev_info->deviceVendor == DeviceVendor::Intel)
                                || (getenv("GMX_OCL_ENABLE_I_PREFETCH") != nullptr));
 
     /* NOTE: in CUDA we pick L1 cache configuration for the nbnxn kernels here,
