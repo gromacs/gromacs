@@ -87,10 +87,10 @@ real combinationFunction(real v, real w, CombinationRule combinationRule)
         throw gmx::InvalidInputError("unknown LJ Combination rule specified\n");
     }
 }
-}
+} // namespace detail
 
 //! Helper to translate between the different enumeration values.
-static Nbnxm::KernelType translateBenchmarkEnum(const BenchMarkKernels &kernel)
+static Nbnxm::KernelType translateBenchmarkEnum(const BenchMarkKernels& kernel)
 {
     int kernelInt = static_cast<int>(kernel);
     return static_cast<Nbnxm::KernelType>(kernelInt);
@@ -106,10 +106,11 @@ static real ewaldCoeff(const real ewald_rtol, const real pairlistCutoff)
  *
  * Returns an error string when the kernel is not available.
  */
-gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions &options)
+gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions& options)
 {
-    GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count &&
-                       options.nbnxmSimd != BenchMarkKernels::SimdAuto, "Need a valid kernel SIMD type");
+    GMX_RELEASE_ASSERT(options.nbnxmSimd < BenchMarkKernels::Count
+                               && options.nbnxmSimd != BenchMarkKernels::SimdAuto,
+                       "Need a valid kernel SIMD type");
 
     // Check SIMD support
     if ((options.nbnxmSimd != BenchMarkKernels::SimdNo && !GMX_SIMD)
@@ -119,7 +120,7 @@ gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions &optio
 #ifndef GMX_NBNXN_SIMD_2XNN
         || options.nbnxmSimd == BenchMarkKernels::Simd2XMM
 #endif
-        )
+    )
     {
         return "the requested SIMD kernel was not set up at configuration time";
     }
@@ -130,15 +131,15 @@ gmx::compat::optional<std::string> checkKernelSetup(const NBKernelOptions &optio
 
 /*! \brief Returns the kernel setup
  */
-Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options)
+Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions& options)
 {
     auto messageWhenInvalid = checkKernelSetup(options);
     GMX_RELEASE_ASSERT(!messageWhenInvalid, "Need valid options");
 
     Nbnxm::KernelSetup kernelSetup;
 
-    //The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
-    kernelSetup.kernelType         = translateBenchmarkEnum(options.nbnxmSimd);
+    // The int enum options.nbnxnSimd is set up to match Nbnxm::KernelType + 1
+    kernelSetup.kernelType = translateBenchmarkEnum(options.nbnxmSimd);
     // The plain-C kernel does not support analytical ewald correction
     if (kernelSetup.kernelType == Nbnxm::KernelType::Cpu4x4_PlainC)
     {
@@ -146,7 +147,9 @@ Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options)
     }
     else
     {
-        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr ? Nbnxm::EwaldExclusionType::Table : Nbnxm::EwaldExclusionType::Analytical;
+        kernelSetup.ewaldExclusionType = options.useTabulatedEwaldCorr
+                                                 ? Nbnxm::EwaldExclusionType::Table
+                                                 : Nbnxm::EwaldExclusionType::Analytical;
     }
 
     return kernelSetup;
@@ -154,13 +157,13 @@ Nbnxm::KernelSetup getKernelSetup(const NBKernelOptions &options)
 
 
 //! Return an interaction constants struct with members used in the benchmark set appropriately
-interaction_const_t setupInteractionConst(const NBKernelOptions &options)
+interaction_const_t setupInteractionConst(const NBKernelOptions& options)
 {
     interaction_const_t ic;
 
-    ic.vdwtype          = evdwCUT;
-    ic.vdw_modifier     = eintmodPOTSHIFT;
-    ic.rvdw             = options.pairlistCutoff;
+    ic.vdwtype      = evdwCUT;
+    ic.vdw_modifier = eintmodPOTSHIFT;
+    ic.rvdw         = options.pairlistCutoff;
 
     ic.eeltype          = (options.coulombType == BenchMarkCoulomb::Pme ? eelPME : eelRF);
     ic.coulomb_modifier = eintmodPOTSHIFT;
@@ -168,8 +171,8 @@ interaction_const_t setupInteractionConst(const NBKernelOptions &options)
 
     // Reaction-field with epsilon_rf=inf
     // TODO: Replace by calc_rffac() after refactoring that
-    ic.k_rf             = 0.5*std::pow(ic.rcoulomb, -3);
-    ic.c_rf             = 1/ic.rcoulomb + ic.k_rf*ic.rcoulomb*ic.rcoulomb;
+    ic.k_rf = 0.5 * std::pow(ic.rcoulomb, -3);
+    ic.c_rf = 1 / ic.rcoulomb + ic.k_rf * ic.rcoulomb * ic.rcoulomb;
 
     if (EEL_PME_EWALD(ic.eeltype))
     {
@@ -184,9 +187,9 @@ interaction_const_t setupInteractionConst(const NBKernelOptions &options)
 }
 
 
-ForceCalculator::ForceCalculator(const SimulationState& system,
-                                 const NBKernelOptions& options)
-                                 : system_(system), options_(options)
+ForceCalculator::ForceCalculator(const SimulationState& system, const NBKernelOptions& options) :
+    system_(system),
+    options_(options)
 {
     unpackTopologyToGmx();
 
@@ -197,7 +200,7 @@ ForceCalculator::ForceCalculator(const SimulationState& system,
 
 void ForceCalculator::unpackTopologyToGmx()
 {
-    const Topology& topology = system_.topology();
+    const Topology&              topology  = system_.topology();
     const std::vector<AtomType>& atomTypes = topology.getAtomTypes();
 
     size_t numAtoms = topology.numAtoms();
@@ -214,7 +217,7 @@ void ForceCalculator::unpackTopologyToGmx()
     nonbondedParameters_.reserve(2 * atomTypes.size());
     for (const AtomType& atomType1 : atomTypes)
     {
-        real c6 = atomType1.c6();
+        real c6  = atomType1.c6();
         real c12 = atomType1.c12();
         nonbondedParameters_.push_back(c6);
         nonbondedParameters_.push_back(c12);
@@ -222,8 +225,8 @@ void ForceCalculator::unpackTopologyToGmx()
 
     //! initial self-handling of combination rules
     //! size: 2*(numAtomTypes^2)
-    //nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
-    //for (const AtomType& atomType1 : atomTypes)
+    // nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    // for (const AtomType& atomType1 : atomTypes)
     //{
     //    real c6_1 = atomType1.c6();
     //    real c12_1 = atomType1.c12();
@@ -233,8 +236,8 @@ void ForceCalculator::unpackTopologyToGmx()
     //        real c12_2 = atomType2.c12();
 
     //        real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
-    //        real c12_combo = detail::combinationFunction(c12_1, c12_2, CombinationRule::Geometric);
-    //        nonbondedParameters_.push_back(c6_combo);
+    //        real c12_combo = detail::combinationFunction(c12_1, c12_2,
+    //        CombinationRule::Geometric); nonbondedParameters_.push_back(c6_combo);
     //        nonbondedParameters_.push_back(c12_combo);
     //    }
     //}
@@ -252,11 +255,11 @@ void ForceCalculator::unpackTopologyToGmx()
 std::vector<real> ForceCalculator::compute(const bool printTimings)
 {
     // We set the interaction cut-off to the pairlist cut-off
-    interaction_const_t   ic   = setupInteractionConst(options_);
-    t_nrnb                nrnb = { 0 };
-    gmx_enerdata_t        enerd(1, 0);
+    interaction_const_t ic   = setupInteractionConst(options_);
+    t_nrnb              nrnb = { 0 };
+    gmx_enerdata_t      enerd(1, 0);
 
-    gmx::StepWorkload     stepWork;
+    gmx::StepWorkload stepWork;
     stepWork.computeForces = true;
     if (options_.computeVirialAndEnergy)
     {
@@ -264,10 +267,10 @@ std::vector<real> ForceCalculator::compute(const bool printTimings)
         stepWork.computeEnergy = true;
     }
 
-    std::unique_ptr<nonbonded_verlet_t> nbv           = setupNbnxmInstance();
-    const PairlistSet&                  pairlistSet   = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
-    const gmx::index                    numPairs      = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
-    gmx_cycles_t                        cycles        = gmx_cycles_read();
+    std::unique_ptr<nonbonded_verlet_t> nbv = setupNbnxmInstance();
+    const PairlistSet& pairlistSet = nbv->pairlistSets().pairlistSet(gmx::InteractionLocality::Local);
+    const gmx::index numPairs = pairlistSet.natpair_ljq_ + pairlistSet.natpair_lj_ + pairlistSet.natpair_q_;
+    gmx_cycles_t cycles = gmx_cycles_read();
 
     t_forcerec forceRec;
     forceRec.ntype = system_.topology().getAtomTypes().size();
@@ -278,103 +281,88 @@ std::vector<real> ForceCalculator::compute(const bool printTimings)
     put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
 
     // Run the kernel without force clearing
-    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                 ic, stepWork, enbvClearFNo, forceRec,
-                                 &enerd,
-                                 &nrnb);
+    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local, ic, stepWork, enbvClearFNo,
+                                 forceRec, &enerd, &nrnb);
 
     // There is one output data structure per thread
     std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = std::move(nbv->nbat->out);
 
     //! extract the forces to return (gmx::HostVector<real> ~ std::vector<real)
     //! Todo: merge data from different threads
-    const auto& forceOutput = nbvAtomsOut[0].f;
+    const auto&       forceOutput = nbvAtomsOut[0].f;
     std::vector<real> ret(forceOutput.begin(), forceOutput.end());
 
     cycles = gmx_cycles_read() - cycles;
     if (printTimings)
     {
-        //printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
+        // printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
     }
 
     return ret;
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system
-std::unique_ptr<nonbonded_verlet_t>
-ForceCalculator::setupNbnxmInstance()
+std::unique_ptr<nonbonded_verlet_t> ForceCalculator::setupNbnxmInstance()
 {
-    const auto         pinPolicy       = (options_.useGpu ? gmx::PinningPolicy::PinnedIfSupported : gmx::PinningPolicy::CannotBePinned);
-    const int          numThreads      = options_.numThreads;
+    const auto pinPolicy  = (options_.useGpu ? gmx::PinningPolicy::PinnedIfSupported
+                                            : gmx::PinningPolicy::CannotBePinned);
+    const int  numThreads = options_.numThreads;
     // Note: the options and Nbnxm combination rule enums values should match
-    const int          combinationRule = static_cast<int>(options_.ljCombinationRule);
+    const int combinationRule = static_cast<int>(options_.ljCombinationRule);
 
-    auto               messageWhenInvalid = checkKernelSetup(options_);
+    auto messageWhenInvalid = checkKernelSetup(options_);
     if (messageWhenInvalid)
     {
-        gmx_fatal(FARGS, "Requested kernel is unavailable because %s.",
-                  messageWhenInvalid->c_str());
+        gmx_fatal(FARGS, "Requested kernel is unavailable because %s.", messageWhenInvalid->c_str());
     }
-    Nbnxm::KernelSetup        kernelSetup = getKernelSetup(options_);
+    Nbnxm::KernelSetup kernelSetup = getKernelSetup(options_);
 
-    PairlistParams            pairlistParams(kernelSetup.kernelType, false, options_.pairlistCutoff, false);
+    PairlistParams pairlistParams(kernelSetup.kernelType, false, options_.pairlistCutoff, false);
 
-    Nbnxm::GridSet            gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
+                           false, numThreads, pinPolicy);
 
-    auto                      pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
+    auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
 
-    auto                      pairSearch   = std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
-                                                                          pairlistParams.pairlistType,
-                                                                          false, numThreads, pinPolicy);
+    auto pairSearch =
+            std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
+                                         pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
-    auto atomData     = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
+    auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
 
 
     // Put everything together
-    auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets),
-                                                    std::move(pairSearch),
-                                                    std::move(atomData),
-                                                    kernelSetup,
-                                                    nullptr,
-                                                    nullptr);
+    auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
+                                                    std::move(atomData), kernelSetup, nullptr, nullptr);
     //! Needs to be called with the number of unique AtomTypes
-    nbnxn_atomdata_init(gmx::MDLogger(),
-                        nbv->nbat.get(), kernelSetup.kernelType,
-                        combinationRule, system_.topology().getAtomTypes().size(), nonbondedParameters_,
-                        1, numThreads);
+    nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
+                        system_.topology().getAtomTypes().size(), nonbondedParameters_, 1, numThreads);
 
 
     GMX_RELEASE_ASSERT(!TRICLINIC(box_), "Only rectangular unit-cells are supported here");
     const rvec lowerCorner = { 0, 0, 0 };
-    const rvec upperCorner = {
-        box_[XX][XX],
-        box_[YY][YY],
-        box_[ZZ][ZZ]
-    };
+    const rvec upperCorner = { box_[XX][XX], box_[YY][YY], box_[ZZ][ZZ] };
 
-    const real atomDensity = system_.coordinates().size()/det(box_);
+    const real atomDensity = system_.coordinates().size() / det(box_);
 
-    nbnxn_put_on_grid(nbv.get(),
-                      box_, 0, lowerCorner, upperCorner,
-                      nullptr, {0, int(system_.coordinates().size())}, atomDensity,
-                      atomInfoAllVdw_, system_.coordinates(),
-                      0, nullptr);
+    nbnxn_put_on_grid(nbv.get(), box_, 0, lowerCorner, upperCorner, nullptr,
+                      { 0, int(system_.coordinates().size()) }, atomDensity, atomInfoAllVdw_,
+                      system_.coordinates(), 0, nullptr);
 
     t_nrnb nrnb;
-    nbv->constructPairlist(gmx::InteractionLocality::Local,
-                           system_.topology().getGmxExclusions(), 0, &nrnb);
+    nbv->constructPairlist(gmx::InteractionLocality::Local, system_.topology().getGmxExclusions(), 0, &nrnb);
 
     t_mdatoms mdatoms;
     // We only use (read) the atom type and charge from mdatoms
-    mdatoms.typeA   = const_cast<int *>(system_.topology().getAtomTypeIdOfAllAtoms().data());
-    mdatoms.chargeA = const_cast<real *>(system_.topology().getCharges().data());
+    mdatoms.typeA   = const_cast<int*>(system_.topology().getAtomTypeIdOfAllAtoms().data());
+    mdatoms.chargeA = const_cast<real*>(system_.topology().getCharges().data());
     nbv->setAtomProperties(mdatoms, atomInfoAllVdw_);
 
     return nbv;
 }
 
 //! Print timings outputs
-//void ForceCalculator::printTimingsOutput(const NBKernelOptions &options,
+// void ForceCalculator::printTimingsOutput(const NBKernelOptions &options,
 //                                         const SimulationState  &system,
 //                                         const gmx::index      &numPairs,
 //                                         gmx_cycles_t           cycles)

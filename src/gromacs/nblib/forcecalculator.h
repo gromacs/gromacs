@@ -50,32 +50,30 @@
 #include "nbkerneloptions.h"
 #include "simulationstate.h"
 
-namespace nblib {
+namespace nblib
+{
 
 enum class CombinationRule : int
 {
     Geometric = 0,
-    Count = 1
+    Count     = 1
 };
 
 class ForceCalculator
 {
 public:
-
     // TODO: Depend on simulationState
-    ForceCalculator(const SimulationState& system,
-                    const NBKernelOptions& options);
+    ForceCalculator(const SimulationState& system, const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
     //! returns the forces as a vector
     std::vector<real> compute(const bool printTimings = false);
 
 private:
-
-    void unpackTopologyToGmx();
+    void                                unpackTopologyToGmx();
     std::unique_ptr<nonbonded_verlet_t> setupNbnxmInstance();
 
-    //void printTimingsOutput(const NBKernelOptions &options,
+    // void printTimingsOutput(const NBKernelOptions &options,
     //                        const SimulationState &system,
     //                        const gmx::index      &numPairs,
     //                        gmx_cycles_t           cycles);
@@ -95,4 +93,4 @@ private:
 
 } // namespace nblib
 
-#endif //GROMACS_FORCECALCULATOR_H
+#endif // GROMACS_FORCECALCULATOR_H

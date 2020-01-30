@@ -136,7 +136,7 @@ public:
 
     SimulationState getSimulationState()
     {
-        Topology topology        = topologyBuilder.buildTopology();
+        Topology topology = topologyBuilder.buildTopology();
         return SimulationState(coordinates, box, topology, velocities);
     }
 };
@@ -144,25 +144,24 @@ public:
 
 TEST(NBlibTest, canIntegrateSystem)
 {
-    auto     options        = NBKernelOptions();
-    options.nbnxmSimd       = BenchMarkKernels::SimdNo;
+    auto options      = NBKernelOptions();
+    options.nbnxmSimd = BenchMarkKernels::SimdNo;
 
     KernelSystemTester kernelSystemTester;
 
-    auto simState = kernelSystemTester.getSimulationState();
+    auto simState        = kernelSystemTester.getSimulationState();
     auto forceCalculator = ForceCalculator(simState, options);
 
     std::vector<real> forces;
     ASSERT_NO_THROW(forces = forceCalculator.compute());
-    EXPECT_EQ(simState.topology().numAtoms()*3, forces.size());
+    EXPECT_EQ(simState.topology().numAtoms() * 3, forces.size());
 
     for (int iter = 0; iter < options.numIterations; iter++)
     {
-        //std::vector<real> forces = forceCalculator.compute();
+        // std::vector<real> forces = forceCalculator.compute();
 
-        //std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
-        //integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
-
+        // std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
+        // integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
     }
 }
 
