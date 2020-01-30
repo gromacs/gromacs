@@ -48,7 +48,8 @@
 #include "gromacs/nbnxm/atomdata.h"
 #include "gromacs/pbcutil/pbc.h"
 
-namespace nblib {
+namespace nblib
+{
 
 void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
                           const NBKernelOptions&                      options,
@@ -62,8 +63,8 @@ void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOu
         auto force = nbvAtomsOut[0].f;
         for (int dim = 0; dim < DIM; dim++)
         {
-            real vel      = force[dim]*options.timestep;
-            real newCoord = currentCoords[atomI][dim] + vel*options.timestep;
+            real vel               = force[dim] * options.timestep;
+            real newCoord          = currentCoords[atomI][dim] + vel * options.timestep;
             nextCoords[atomI][dim] = newCoord;
         }
     }
