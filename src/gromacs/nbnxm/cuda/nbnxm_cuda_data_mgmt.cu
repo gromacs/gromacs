@@ -417,7 +417,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
                    int /*rank*/,
-                   gmx_bool bLocalAndNonlocal)
+                   bool bLocalAndNonlocal)
 {
     cudaError_t stat;
 

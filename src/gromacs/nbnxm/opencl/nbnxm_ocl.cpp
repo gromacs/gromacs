@@ -488,7 +488,7 @@ void gpu_copy_xq_to_gpu(NbnxmGpu* nb, const nbnxn_atomdata_t* nbatom, const Atom
     cl_timers_t*     t      = nb->timers;
     cl_command_queue stream = nb->stream[iloc];
 
-    bool bDoTime = (nb->bDoTime) != 0;
+    bool bDoTime = nb->bDoTime;
 
     /* Don't launch the non-local H2D copy if there is no dependent
        work to do: neither non-local nor other (e.g. bonded) work
@@ -588,7 +588,7 @@ void gpu_launch_kernel(NbnxmGpu* nb, const gmx::StepWorkload& stepWork, const Nb
     cl_timers_t*     t      = nb->timers;
     cl_command_queue stream = nb->stream[iloc];
 
-    bool bDoTime = (nb->bDoTime) != 0;
+    bool bDoTime = nb->bDoTime;
 
     cl_nbparam_params_t nbparams_params;
 
@@ -726,7 +726,7 @@ void gpu_launch_kernel_pruneonly(NbnxmGpu* nb, const InteractionLocality iloc, c
     cl_plist_t*      plist   = nb->plist[iloc];
     cl_timers_t*     t       = nb->timers;
     cl_command_queue stream  = nb->stream[iloc];
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
 
     if (plist->haveFreshList)
     {
@@ -861,7 +861,7 @@ void gpu_launch_cpyback(NbnxmGpu*                nb,
 
     cl_atomdata_t*   adat    = nb->atdat;
     cl_timers_t*     t       = nb->timers;
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
     cl_command_queue stream  = nb->stream[iloc];
 
     /* don't launch non-local copy-back if there was no non-local work to do */

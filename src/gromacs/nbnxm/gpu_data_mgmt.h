@@ -69,7 +69,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t gmx_unused* deviceInfo,
                    const nbnxn_atomdata_t gmx_unused* nbat,
                    int gmx_unused rank,
                    /* true if both local and non-local are done on GPU */
-                   gmx_bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
+                   bool gmx_unused bLocalAndNonlocal) GPU_FUNC_TERM_WITH_RETURN(nullptr);
 
 /** Initializes pair-list data for GPU, called at every pair search step. */
 GPU_FUNC_QUALIFIER

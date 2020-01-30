@@ -614,7 +614,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,
                    const int                  rank,
-                   const gmx_bool             bLocalAndNonlocal)
+                   const bool                 bLocalAndNonlocal)
 {
     cl_int                      cl_error;
     cl_command_queue_properties queue_properties;
@@ -630,7 +630,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
         snew(nb->plist[InteractionLocality::NonLocal], 1);
     }
 
-    nb->bUseTwoStreams = static_cast<cl_bool>(bLocalAndNonlocal);
+    nb->bUseTwoStreams = bLocalAndNonlocal;
 
     nb->timers = new cl_timers_t();
     snew(nb->timings, 1);
@@ -647,7 +647,7 @@ NbnxmGpu* gpu_init(const gmx_device_info_t*   deviceInfo,
     init_plist(nb->plist[InteractionLocality::Local]);
 
     /* OpenCL timing disabled if GMX_DISABLE_GPU_TIMING is defined. */
-    nb->bDoTime = static_cast<cl_bool>(getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
+    nb->bDoTime = (getenv("GMX_DISABLE_GPU_TIMING") == nullptr);
 
     /* Create queues only after bDoTime has been initialized */
     if (nb->bDoTime)
@@ -762,7 +762,7 @@ void gpu_init_pairlist(NbnxmGpu* nb, const NbnxnPairlistGpu* h_plist, const Inte
     // Timing accumulation should happen only if there was work to do
     // because getLastRangeTime() gets skipped with empty lists later
     // which leads to the counter not being reset.
-    bool             bDoTime = ((nb->bDoTime == CL_TRUE) && !h_plist->sci.empty());
+    bool             bDoTime = (nb->bDoTime && !h_plist->sci.empty());
     cl_command_queue stream  = nb->stream[iloc];
     cl_plist_t*      d_plist = nb->plist[iloc];
 
@@ -837,7 +837,7 @@ void gpu_init_atomdata(NbnxmGpu* nb, const nbnxn_atomdata_t* nbat)
     cl_int           cl_error;
     int              nalloc, natoms;
     bool             realloced;
-    bool             bDoTime = nb->bDoTime == CL_TRUE;
+    bool             bDoTime = nb->bDoTime;
     cl_timers_t*     timers  = nb->timers;
     cl_atomdata_t*   d_atdat = nb->atdat;
     cl_command_queue ls      = nb->stream[InteractionLocality::Local];

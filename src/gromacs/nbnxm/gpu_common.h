@@ -418,8 +418,7 @@ bool gpu_try_finish_task(NbnxmGpu*                nb,
         // TODO: this needs to be moved later because conditional wait could brake timing
         // with a future OpenCL implementation, but with CUDA timing is anyway disabled
         // in all cases where we skip the wait.
-        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork,
-                               nb->bDoTime != 0);
+        gpu_accumulate_timings(nb->timings, nb->timers, nb->plist[iLocality], aloc, stepWork, nb->bDoTime);
 
         if (stepWork.computeEnergy || stepWork.computeVirial)
         {
