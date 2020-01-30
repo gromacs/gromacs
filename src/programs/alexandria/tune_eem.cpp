@@ -92,7 +92,6 @@ class OptACM : public MolGen, Bayes
         bool       bSameZeta_                    = true;
         bool       bFitChi_                      = false;
         bool       bUseCM5_                      = false;
-        real       penalty_                      = false;
         gmx::unique_cptr<FILE, my_fclose> fplog_ = nullptr;
 
     public:
@@ -117,8 +116,6 @@ class OptACM : public MolGen, Bayes
 
         bool useCM5() const {return bUseCM5_; }
 
-        bool penalize() const {return penalty_ > 0; }
-
         void add_pargs(std::vector<t_pargs> *pargs)
         {
             t_pargs pa[] =
@@ -133,8 +130,6 @@ class OptACM : public MolGen, Bayes
                   "Use the same zeta for both the core and the shell of the Drude model." },
                 { "-fitchi", FALSE, etBOOL, {&bFitChi_},
                   "Calibrate electronegativity and hardness." },
-                { "-penalty", FALSE, etREAL, {&penalty_},
-                  "penalty to keep the Chi0 and J0 in order." },
                 { "-cm5", FALSE, etBOOL, {&bUseCM5_},
                   "Reproduce CM5 charges in fitting." },
             };
@@ -347,7 +342,7 @@ double OptACM::calcDeviation()
             GMX_RELEASE_ASSERT(n == param.size(), 
                                gmx::formatString("Death horror error. n=%zu param.size()=%zu", n, param.size()).c_str());
         }
-        if (penalize())
+        if (weight(ermsPENALTY))
         {
             double penalty = 0;
             for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -770,7 +765,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
     auto           ai_J0   = ei->getJ0();
     auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
 
-    if (penalty_ == 0.0)
+    if (!weight(ermsPENALTY))
     {
         return 0.0;
     }
@@ -779,18 +774,18 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
         const auto ref_eem  = pd->atype2Eem(fixchi());
         if (ai_chi < ref_eem->getChi0())
         {
-            penalty += penalty_;
+            penalty += 1;
         }
     }
 
     if (ai->name() == "z_c3" && (ai_chi < 5 or ai_chi > 8))
     {
-        penalty += (ai_atn * penalty_);
+        penalty += ai_atn;
     }
 
     if (ai->name() == "z_h1" && ai_chi > 2.5)
     {
-        penalty += (6 * penalty_);
+        penalty += 6;
     }
 
     auto *ic = indexCount();
@@ -810,7 +805,7 @@ double OptACM::calcPenalty(AtomIndexIterator ai)
                 if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
                     (ai_atn > 1  && aj_atn == 1 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                 {
-                    penalty += (std::abs((aj_atn - ai_atn)) * penalty_);
+                    penalty += std::abs(aj_atn - ai_atn);
                 }
             }
         }

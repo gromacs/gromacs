@@ -361,6 +361,8 @@ void MolGen::addOptions(std::vector<t_pargs> *pargs, eTune etune)
           "Minimum value that Chi0 (eV) can obtain in fitting" },
         { "-chi1",    FALSE, etREAL, {&Chi0_max_},
           "Maximum value that Chi0 (eV) can obtain in fitting" },
+        { "-penalty", FALSE, etREAL, {&fc_[ermsPENALTY]},
+          "penalty to keep the Chi0 and J0 in order." },
         { "-fc_mu",    FALSE, etREAL, {&fc_[ermsMU]},
           "Force constant in the penalty function for the magnitude of the dipole components." },
         { "-fc_quad",  FALSE, etREAL, {&fc_[ermsQUAD]},
