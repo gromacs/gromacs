@@ -210,7 +210,7 @@ rvec* StatePropagatorData::box()
     return box_;
 }
 
-const rvec* StatePropagatorData::constBox()
+const rvec* StatePropagatorData::constBox() const
 {
     return box_;
 }
@@ -220,7 +220,7 @@ rvec* StatePropagatorData::previousBox()
     return previousBox_;
 }
 
-const rvec* StatePropagatorData::constPreviousBox()
+const rvec* StatePropagatorData::constPreviousBox() const
 {
     return previousBox_;
 }
