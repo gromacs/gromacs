@@ -50,10 +50,10 @@
 
 namespace nblib {
 
-void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t> &nbvAtomsOut,
-                                 const NBKernelOptions                      &options,
-                                 const matrix                               &box,
-                                 std::vector<gmx::RVec>                     &currentCoords)
+void integrateCoordinates(const std::vector<nbnxn_atomdata_output_t>& nbvAtomsOut,
+                          const NBKernelOptions&                      options,
+                          const matrix&                               box,
+                          std::vector<gmx::RVec>&                     currentCoords)
 {
     std::vector<gmx::RVec> nextCoords;
     nextCoords.resize(currentCoords.size());

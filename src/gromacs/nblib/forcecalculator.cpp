@@ -249,7 +249,7 @@ void ForceCalculator::unpackTopologyToGmx()
 //! Sets up and runs the kernel calls
 //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
 //!      that callers can manipulate directly.
-void ForceCalculator::compute(const bool printTimings)
+std::vector<real> ForceCalculator::compute(const bool printTimings)
 {
     // We set the interaction cut-off to the pairlist cut-off
     interaction_const_t   ic   = setupInteractionConst(options_);
@@ -277,25 +277,27 @@ void ForceCalculator::compute(const bool printTimings)
 
     put_atoms_in_box(PbcType::Xyz, box_, system_.coordinates());
 
-    std::vector<gmx::RVec> currentCoords = system_.coordinates();
-    for (int iter = 0; iter < options_.numIterations; iter++)
-    {
-        // Run the kernel without force clearing
-        nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
-                                     ic, stepWork, enbvClearFNo, forceRec,
-                                     &enerd,
-                                     &nrnb);
-        // There is one output data structure per thread
-        std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
-        integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
-    }
-    system_.coordinates() = currentCoords;
+    // Run the kernel without force clearing
+    nbv->dispatchNonbondedKernel(gmx::InteractionLocality::Local,
+                                 ic, stepWork, enbvClearFNo, forceRec,
+                                 &enerd,
+                                 &nrnb);
+
+    // There is one output data structure per thread
+    std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = std::move(nbv->nbat->out);
+
+    //! extract the forces to return (gmx::HostVector<real> ~ std::vector<real)
+    //! Todo: merge data from different threads
+    const auto& forceOutput = nbvAtomsOut[0].f;
+    std::vector<real> ret(forceOutput.begin(), forceOutput.end());
 
     cycles = gmx_cycles_read() - cycles;
     if (printTimings)
     {
         //printTimingsOutput(nbKernelOptions_, system_, numPairs, cycles);
     }
+
+    return ret;
 }
 
 //! Sets up and returns a Nbnxm object for the given options and system

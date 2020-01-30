@@ -41,13 +41,15 @@
  * \author Prashanth Kanduri <kanduri@cscs.ch>
  * \author Sebastian Keller <keller@cscs.ch>
  */
-#include <gromacs/nblib/forcecalculator.h>
 #include "gmxpre.h"
 
+#include <iostream>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "gromacs/gpu_utils/hostallocator.h"
 #include "gromacs/nblib/atomtype.h"
+#include <gromacs/nblib/forcecalculator.h>
 #include "gromacs/nblib/simulationstate.h"
 #include "gromacs/nblib/topology.h"
 #include "gromacs/topology/exclusionblocks.h"
@@ -132,51 +134,37 @@ public:
         };
     }
 
-    ForceCalculator setupForceCalculator()
+    SimulationState getSimulationState()
     {
-        Topology topology       = topologyBuilder.buildTopology();
-        auto     simState       = SimulationState(coordinates, box, topology, velocities);
-        auto     options        = NBKernelOptions();
-        options.nbnxmSimd       = BenchMarkKernels::SimdNo;
-        auto     forceCalculator = ForceCalculator(simState, options);
-        return forceCalculator;
+        Topology topology        = topologyBuilder.buildTopology();
+        return SimulationState(coordinates, box, topology, velocities);
     }
 };
 
-TEST(NBlibTest, canRunForceCalculator)
+
+TEST(NBlibTest, canIntegrateSystem)
 {
+    auto     options        = NBKernelOptions();
+    options.nbnxmSimd       = BenchMarkKernels::SimdNo;
+
     KernelSystemTester kernelSystemTester;
-    auto forceCalculator = kernelSystemTester.setupForceCalculator();
 
-    EXPECT_NO_THROW(forceCalculator.compute());
+    auto simState = kernelSystemTester.getSimulationState();
+    auto forceCalculator = ForceCalculator(simState, options);
+
+    std::vector<real> forces;
+    ASSERT_NO_THROW(forces = forceCalculator.compute());
+    EXPECT_EQ(simState.topology().numAtoms()*3, forces.size());
+
+    for (int iter = 0; iter < options.numIterations; iter++)
+    {
+        //std::vector<real> forces = forceCalculator.compute();
+
+        //std::vector<nbnxn_atomdata_output_t> nbvAtomsOut = nbv->nbat->out;
+        //integrateCoordinates(nbvAtomsOut, options_, box_, currentCoords);
+
+    }
 }
-
-//! Todo: This belongs to tests/simstate.cpp
-//TEST(NBlibTest, KernelSystemHasCoordinates)
-//{
-//    KernelSystemTester           kernelSystemTester;
-//    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
-//    const std::vector<gmx::RVec> test         = kernelSystem.coordinates;
-//    const std::vector<gmx::RVec> ref          = kernelSystemTester.coordinates;
-//    for (size_t i = 0; i < ref.size(); i++)
-//    {
-//        for (size_t j = 0; j < 3; j++)
-//            EXPECT_EQ(ref[i][j], test[i][j]);
-//    }
-//}
-//
-//TEST(NBlibTest, KernelSystemHasVelocities)
-//{
-//    KernelSystemTester           kernelSystemTester;
-//    auto                         kernelSystem = kernelSystemTester.setupKernelSystem();
-//    const std::vector<gmx::RVec> test         = kernelSystem.velocities;
-//    const std::vector<gmx::RVec> ref          = kernelSystemTester.velocities;
-//    for (size_t i = 0; i < ref.size(); i++)
-//    {
-//        for (size_t j = 0; j < 3; j++)
-//            EXPECT_EQ(ref[i][j], test[i][j]);
-//    }
-//}
 
 
 } // namespace

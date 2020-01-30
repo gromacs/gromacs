@@ -67,9 +67,8 @@ public:
                     const NBKernelOptions& options);
 
     //! Sets up and runs the kernel calls
-    //! TODO Refactor this function to return a handle to dispatchNonbondedKernel
-    //!      that callers can manipulate directly.
-    void compute(const bool printTimings = false);
+    //! returns the forces as a vector
+    std::vector<real> compute(const bool printTimings = false);
 
 private:
 
