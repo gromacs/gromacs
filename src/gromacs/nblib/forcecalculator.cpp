@@ -210,37 +210,26 @@ void ForceCalculator::unpackTopologyToGmx()
     //! size: numAtoms
     masses_ = expandQuantity(topology, &AtomType::mass);
 
-    //! Note: nbnxn_atomdata_params_init is doing the combination rules
-    //!       this means that nonbondedParameters_ is of length nAtomTypes*2
     //! Todo: Refactor nbnxm to take this (nonbondedParameters_) directly
     //!
-    nonbondedParameters_.reserve(2 * atomTypes.size());
-    for (const AtomType& atomType1 : atomTypes)
-    {
-        real c6  = atomType1.c6();
-        real c12 = atomType1.c12();
-        nonbondedParameters_.push_back(c6);
-        nonbondedParameters_.push_back(c12);
-    }
-
     //! initial self-handling of combination rules
     //! size: 2*(numAtomTypes^2)
-    // nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
-    // for (const AtomType& atomType1 : atomTypes)
-    //{
-    //    real c6_1 = atomType1.c6();
-    //    real c12_1 = atomType1.c12();
-    //    for (const AtomType& atomType2 : atomTypes)
-    //    {
-    //        real c6_2 = atomType2.c6();
-    //        real c12_2 = atomType2.c12();
+    nonbondedParameters_.reserve(2 * atomTypes.size() * atomTypes.size());
+    for (const AtomType& atomType1 : atomTypes)
+    {
+        real c6_1 = atomType1.c6();
+        real c12_1 = atomType1.c12();
+        for (const AtomType& atomType2 : atomTypes)
+        {
+            real c6_2 = atomType2.c6();
+            real c12_2 = atomType2.c12();
 
-    //        real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
-    //        real c12_combo = detail::combinationFunction(c12_1, c12_2,
-    //        CombinationRule::Geometric); nonbondedParameters_.push_back(c6_combo);
-    //        nonbondedParameters_.push_back(c12_combo);
-    //    }
-    //}
+            real c6_combo = detail::combinationFunction(c6_1, c6_2, CombinationRule::Geometric);
+            real c12_combo = detail::combinationFunction(c12_1, c12_2,CombinationRule::Geometric);
+            nonbondedParameters_.push_back(c6_combo);
+            nonbondedParameters_.push_back(c12_combo);
+        }
+    }
 
     atomInfoAllVdw_.resize(numAtoms);
     for (size_t atomI = 0; atomI < numAtoms; atomI++)
@@ -315,25 +304,22 @@ std::unique_ptr<nonbonded_verlet_t> ForceCalculator::setupNbnxmInstance()
     {
         gmx_fatal(FARGS, "Requested kernel is unavailable because %s.", messageWhenInvalid->c_str());
     }
+
     Nbnxm::KernelSetup kernelSetup = getKernelSetup(options_);
 
     PairlistParams pairlistParams(kernelSetup.kernelType, false, options_.pairlistCutoff, false);
-
     Nbnxm::GridSet gridSet(PbcType::Xyz, false, nullptr, nullptr, pairlistParams.pairlistType,
                            false, numThreads, pinPolicy);
-
     auto pairlistSets = std::make_unique<PairlistSets>(pairlistParams, false, 0);
-
-    auto pairSearch =
-            std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
-                                         pairlistParams.pairlistType, false, numThreads, pinPolicy);
+    auto pairSearch =   std::make_unique<PairSearch>(PbcType::Xyz, false, nullptr, nullptr,
+                                                     pairlistParams.pairlistType, false, numThreads, pinPolicy);
 
     auto atomData = std::make_unique<nbnxn_atomdata_t>(pinPolicy);
-
 
     // Put everything together
     auto nbv = std::make_unique<nonbonded_verlet_t>(std::move(pairlistSets), std::move(pairSearch),
                                                     std::move(atomData), kernelSetup, nullptr, nullptr);
+
     //! Needs to be called with the number of unique AtomTypes
     nbnxn_atomdata_init(gmx::MDLogger(), nbv->nbat.get(), kernelSetup.kernelType, combinationRule,
                         system_.topology().getAtomTypes().size(), nonbondedParameters_, 1, numThreads);
