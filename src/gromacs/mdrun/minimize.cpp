@@ -864,8 +864,8 @@ void EnergyEvaluator::run(em_state_t* ems, rvec mu_tot, tensor vir, tensor pres,
     {
         wallcycle_start(wcycle, ewcMoveE);
 
-        global_stat(gstat, cr, enerd, force_vir, shake_vir, mu_tot, inputrec, nullptr, nullptr, nullptr,
-                    1, &terminate, nullptr, FALSE, CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
+        global_stat(gstat, cr, enerd, force_vir, shake_vir, inputrec, nullptr, nullptr, nullptr, 1,
+                    &terminate, nullptr, FALSE, CGLO_ENERGY | CGLO_PRESSURE | CGLO_CONSTRAINT);
 
         wallcycle_stop(wcycle, ewcMoveE);
     }

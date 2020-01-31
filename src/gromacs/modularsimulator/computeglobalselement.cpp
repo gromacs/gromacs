@@ -298,7 +298,7 @@ void ComputeGlobalsElement<algorithm>::compute(gmx::Step            step,
                     mdAtoms_->mdatoms(), nrnb_, &vcm_, step != -1 ? wcycle_ : nullptr,
                     energyElement_->enerdata(), energyElement_->forceVirial(step),
                     energyElement_->constraintVirial(step), energyElement_->totalVirial(step),
-                    energyElement_->pressure(step), energyElement_->muTot(), constr_, signaller, lastbox,
+                    energyElement_->pressure(step), constr_, signaller, lastbox,
                     &totalNumberOfBondedInteractions_, energyElement_->needToSumEkinhOld(), flags);
     checkNumberOfBondedInteractions(mdlog_, cr_, totalNumberOfBondedInteractions_, top_global_,
                                     localTopology_, x, box, &shouldCheckNumberOfBondedInteractions_);

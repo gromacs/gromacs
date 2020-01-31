@@ -375,8 +375,8 @@ void gmx::LegacySimulator::do_rerun()
         t_vcm* vcm          = nullptr;
         compute_globals(gstat, cr, ir, fr, ekind, state->x.rvec_array(), state->v.rvec_array(),
                         state->box, state->lambda[efptVDW], mdatoms, nrnb, vcm, nullptr, enerd,
-                        force_vir, shake_vir, total_vir, pres, mu_tot, constr, &nullSignaller,
-                        state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
+                        force_vir, shake_vir, total_vir, pres, constr, &nullSignaller, state->box,
+                        &totalNumberOfBondedInteractions, &bSumEkinhOld, cglo_flags);
     }
     checkNumberOfBondedInteractions(mdlog, cr, totalNumberOfBondedInteractions, top_global, &top,
                                     state->x.rvec_array(), state->box,
@@ -619,8 +619,8 @@ void gmx::LegacySimulator::do_rerun()
 
             compute_globals(gstat, cr, ir, fr, ekind, state->x.rvec_array(), state->v.rvec_array(),
                             state->box, state->lambda[efptVDW], mdatoms, nrnb, vcm, wcycle, enerd,
-                            force_vir, shake_vir, total_vir, pres, mu_tot, constr, &signaller,
-                            state->box, &totalNumberOfBondedInteractions, &bSumEkinhOld,
+                            force_vir, shake_vir, total_vir, pres, constr, &signaller, state->box,
+                            &totalNumberOfBondedInteractions, &bSumEkinhOld,
                             CGLO_GSTAT | CGLO_ENERGY
                                     | (shouldCheckNumberOfBondedInteractions ? CGLO_CHECK_NUMBER_OF_BONDED_INTERACTIONS
                                                                              : 0));
