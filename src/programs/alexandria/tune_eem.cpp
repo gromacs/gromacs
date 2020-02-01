@@ -761,7 +761,11 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
 
 double OptACM::calcPenalty(bool verbose)
 {
-    double      penalty = 0;
+    double      penalty  = 0;
+    double      deltaChi = 2;
+    double      deltaJ0  = 4;
+    double      chi_Max  = chi0Max();
+    double      J0_Max   = J0Max();
     const auto  pd      = poldata();
     auto       *ic      = indexCount();
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
@@ -783,15 +787,6 @@ double OptACM::calcPenalty(bool verbose)
             penalty += std::max(0.0, dchi);
         }
     
-        if (ai->name() == "z_c3")
-        {
-            penalty += l2_regularizer(ai_chi, 5, 8, "z_c3 chi", verbose);
-        }
-        else if (ai->name() == "z_h1")
-        {
-            penalty += l2_regularizer(ai_chi, 1.0, 2.5, "z_h1 chi", verbose);
-        }
-
         for (auto aj = ai+1; aj < ic->endIndex(); ++aj)
         {
             if (aj->isConst())
@@ -807,10 +802,19 @@ double OptACM::calcPenalty(bool verbose)
                 // Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
                 auto aj_chi = ej->getChi0();
                 auto aj_J0  = ej->getJ0();
-                if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
-                    (ai_atn > 1  && aj_atn == 1 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
+                if (ai_atn == 1 && aj_atn > 1)
                 {
-                    penalty += std::abs(aj_chi - ai_chi);
+                    std::string label = aj->name() + " chi";
+                    penalty += l2_regularizer(aj_chi, ai_chi+deltaChi, chi_Max, label, verbose);
+                    label = aj->name() + " J0";
+                    penalty += l2_regularizer(aj_J0, ai_J0+deltaJ0, J0_Max, label, verbose);
+                }
+                else if (ai_atn > 1  && aj_atn == 1)
+                {
+                    std::string label = ai->name() + " chi";
+                    penalty += l2_regularizer(ai_chi, aj_chi+deltaChi, chi_Max, label, verbose);
+                    label = ai->name() + " J0";
+                    penalty += l2_regularizer(ai_J0, aj_J0+deltaJ0, J0_Max, label, verbose);     
                 }
             }
         }
