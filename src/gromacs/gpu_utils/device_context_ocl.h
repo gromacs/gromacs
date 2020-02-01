@@ -79,9 +79,6 @@ public:
     //! Getter
     cl_context context() const;
 
-    //! Transition time setter - will be removed
-    void setContext(cl_context context);
-
     GMX_DISALLOW_COPY_MOVE_AND_ASSIGN(DeviceContext);
 
 private:

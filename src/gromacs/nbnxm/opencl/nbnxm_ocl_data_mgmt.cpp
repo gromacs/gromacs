@@ -464,64 +464,6 @@ static void init_timings(gmx_wallclock_gpu_nbnxn_t* t)
     t->dynamicPruneTime.t = 0.0;
 }
 
-
-//! OpenCL notification callback function
-static void CL_CALLBACK ocl_notify_fn(const char* pErrInfo,
-                                      const void gmx_unused* private_info,
-                                      size_t gmx_unused cb,
-                                      void gmx_unused* user_data)
-{
-    if (pErrInfo != nullptr)
-    {
-        printf("%s\n", pErrInfo); // Print error/hint
-    }
-}
-
-/*! \brief Creates context for OpenCL GPU given by \p mygpu
- *
- * A fatal error results if creation fails.
- *
- * \param[inout] runtimeData Runtime data including program and context
- * \param[in]    deviceInfo  Device info struct
- * \param[in]    rank        MPI rank (for error reporting)
- */
-static void nbnxn_gpu_create_context(gmx_device_runtime_data_t* runtimeData,
-                                     const DeviceInformation*   deviceInfo,
-                                     int                        rank)
-{
-    cl_context_properties context_properties[5];
-    cl_platform_id        platform_id;
-    cl_device_id          device_id;
-    cl_context            context;
-    cl_int                cl_error;
-
-    GMX_ASSERT(runtimeData, "Need a valid runtimeData object");
-    GMX_ASSERT(deviceInfo, "Need a valid device info object");
-
-    platform_id = deviceInfo->oclPlatformId;
-    device_id   = deviceInfo->oclDeviceId;
-
-    int i                   = 0;
-    context_properties[i++] = CL_CONTEXT_PLATFORM;
-    context_properties[i++] = reinterpret_cast<cl_context_properties>(platform_id);
-    if (getenv("GMX_OCL_SHOW_DIAGNOSTICS"))
-    {
-        context_properties[i++] = CL_CONTEXT_SHOW_DIAGNOSTICS_INTEL;
-        context_properties[i++] =
-                CL_CONTEXT_DIAGNOSTICS_LEVEL_BAD_INTEL | CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL;
-    }
-    context_properties[i++] = 0; /* Terminates the list of properties */
-
-    context = clCreateContext(context_properties, 1, &device_id, ocl_notify_fn, nullptr, &cl_error);
-    if (CL_SUCCESS != cl_error)
-    {
-        gmx_fatal(FARGS, "On rank %d failed to create context for GPU #%s:\n OpenCL error %d: %s",
-                  rank, deviceInfo->device_name, cl_error, ocl_get_error_string(cl_error).c_str());
-    }
-
-    runtimeData->deviceContext.setContext(context);
-}
-
 /*! \brief Initializes the OpenCL kernel pointers of the nbnxn_ocl_ptr_t input data structure. */
 static cl_kernel nbnxn_gpu_create_kernel(NbnxmGpu* nb, const char* kernel_name)
 {
@@ -663,7 +605,7 @@ NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
         queue_properties = 0;
     }
 
-    nbnxn_gpu_create_context(nb->dev_rundata, nb->deviceInfo, rank);
+    nb->dev_rundata->deviceContext.init(*deviceInfo);
 
     /* local/non-local GPU streams */
     nb->stream[InteractionLocality::Local] =

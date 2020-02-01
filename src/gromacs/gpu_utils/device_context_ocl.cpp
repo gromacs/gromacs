@@ -115,8 +115,3 @@ cl_context DeviceContext::context() const
 {
     return context_;
 }
-
-void DeviceContext::setContext(cl_context context)
-{
-    context_ = context;
-}

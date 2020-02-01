@@ -147,13 +147,13 @@ struct PmeGpuProgramImpl
 
     PmeGpuProgramImpl() = delete;
     //! Constructor for the given device
-    explicit PmeGpuProgramImpl(const DeviceInformation* deviceInfo);
+    explicit PmeGpuProgramImpl(const DeviceInformation& deviceInfo);
     ~PmeGpuProgramImpl();
     GMX_DISALLOW_COPY_AND_ASSIGN(PmeGpuProgramImpl);
 
 private:
     // Compiles kernels, if supported. Called by the constructor.
-    void compileKernels(const DeviceInformation* deviceInfo);
+    void compileKernels(const DeviceInformation& deviceInfo);
 };
 
 #endif
