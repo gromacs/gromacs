@@ -1515,6 +1515,16 @@ std::string getCoolQuote()
           "Valgrind while memory debugging mdrun" },
         { "If we are going to have SYCL, can we have a hammer as well?", "Joe Jordan" },
         { "We can make it into a friend class. But I don't like having friends.", "Joe Jordan" },
+        { "A method is more important than a discovery, since the right method will lead to new "
+          "and even more important discoveries.",
+          "Lev Landau" },
+        { "Product of optimism and knowledge is a constant.", "Lev Landau" },
+        { "Why add prime numbers? Prime numbers are made to be multiplied.", "Lev Landau" },
+        { "How wonderful that we have met with a paradox. Now we have some hope of making "
+          "progress.",
+          "Niels Bohr" },
+        { "We must be clear that when it comes to atoms, language can be used only as in poetry. ",
+          "Niels Bohr" },
     };
 
     if (beCool())
