@@ -98,8 +98,9 @@ extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, true
 extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, true, false>(const PmeGpuCudaKernelParams);
 extern template void pme_gather_kernel<c_pmeOrder, c_wrapX, c_wrapY, false, false>(const PmeGpuCudaKernelParams);
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& deviceInfo) :
-    deviceContext_(deviceInfo)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& /* deviceInfo */,
+                                     const DeviceContext& deviceContext) :
+    deviceContext_(deviceContext)
 {
     // kernel parameters
     warpSize              = warp_size;

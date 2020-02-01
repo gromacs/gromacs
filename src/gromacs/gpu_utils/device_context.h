@@ -61,18 +61,10 @@ struct DeviceInformation;
 class DeviceContext
 {
 public:
-    //! Default constructor. In OpenCL leaves context \c nullptr.
+    //! Default constructor.
     DeviceContext() {}
-    /*! \brief Second stage of construction. Creates the \c cl_context in OpenCL, does nothing in CUDA.
-     *
-     * \param[in] deviceInfo Platform-specific device information.
-     */
-    void init(const DeviceInformation& /*deviceInfo*/) {}
-    /*! \brief Construct the object and call \c init(...) .
-     *
-     * \param[in] deviceInfo Platform-specific device information.
-     */
-    DeviceContext(const DeviceInformation& deviceInfo) { init(deviceInfo); }
+    //! Constructor.
+    DeviceContext(const DeviceInformation& /* deviceInfo */) {}
     //! Destructor
     ~DeviceContext() = default;
 

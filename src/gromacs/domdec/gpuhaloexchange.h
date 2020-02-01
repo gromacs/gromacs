@@ -49,6 +49,7 @@
 #include "gromacs/utility/gmxmpi.h"
 
 struct gmx_domdec_t;
+class DeviceContext;
 class GpuEventSynchronizer;
 
 namespace gmx
@@ -80,11 +81,17 @@ public:
      *
      * \param [inout] dd                       domdec structure
      * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    deviceContext            GPU device context
      * \param [in]    streamLocal              local NB CUDA stream.
      * \param [in]    streamNonLocal           non-local NB CUDA stream.
      * \param [in]    pulse                    the communication pulse for this instance
      */
-    GpuHaloExchange(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* streamLocal, void* streamNonLocal, int pulse);
+    GpuHaloExchange(gmx_domdec_t*        dd,
+                    MPI_Comm             mpi_comm_mysim,
+                    const DeviceContext& deviceContext,
+                    void*                streamLocal,
+                    void*                streamNonLocal,
+                    int                  pulse);
     ~GpuHaloExchange();
 
     /*! \brief

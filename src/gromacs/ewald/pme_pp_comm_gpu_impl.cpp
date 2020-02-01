@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -62,7 +62,8 @@ class PmePpCommGpu::Impl
 };
 
 /*!\brief Constructor stub. */
-PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank) : impl_(nullptr)
+PmePpCommGpu::PmePpCommGpu(MPI_Comm /* comm */, int /* pmeRank */, const DeviceContext& /* deviceContext */) :
+    impl_(nullptr)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
@@ -72,26 +73,26 @@ PmePpCommGpu::PmePpCommGpu(MPI_Comm gmx_unused comm, int gmx_unused pmeRank) : i
 PmePpCommGpu::~PmePpCommGpu() = default;
 
 /*!\brief init PME-PP GPU communication stub */
-void PmePpCommGpu::reinit(int gmx_unused size)
+void PmePpCommGpu::reinit(int /* size */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication initialization was called instead of the "
                "correct implementation.");
 }
 
-void PmePpCommGpu::receiveForceFromPmeCudaDirect(void gmx_unused* recvPtr,
-                                                 int gmx_unused recvSize,
-                                                 bool gmx_unused receivePmeForceToGpu)
+void PmePpCommGpu::receiveForceFromPmeCudaDirect(void* /* recvPtr */,
+                                                 int /* recvSize */,
+                                                 bool /* receivePmeForceToGpu */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "
                "implementation.");
 }
 
-void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void gmx_unused* sendPtr,
-                                                  int gmx_unused sendSize,
-                                                  bool gmx_unused sendPmeCoordinatesFromGpu,
-                                                  GpuEventSynchronizer gmx_unused* coordinatesOnDeviceEvent)
+void PmePpCommGpu::sendCoordinatesToPmeCudaDirect(void* /* sendPtr */,
+                                                  int /* sendSize */,
+                                                  bool /* sendPmeCoordinatesFromGpu */,
+                                                  GpuEventSynchronizer* /* coordinatesOnDeviceEvent */)
 {
     GMX_ASSERT(false,
                "A CPU stub for PME-PP GPU communication was called instead of the correct "

@@ -60,12 +60,7 @@
 #define CL_CONTEXT_DIAGNOSTICS_LEVEL_NEUTRAL_INTEL 0x4
 /**@}*/
 
-DeviceContext::DeviceContext()
-{
-    context_ = nullptr;
-}
-
-void DeviceContext::init(const DeviceInformation& deviceInfo)
+DeviceContext::DeviceContext(const DeviceInformation& deviceInfo)
 {
     cl_platform_id                     platformId = deviceInfo.oclPlatformId;
     cl_device_id                       deviceId   = deviceInfo.oclDeviceId;
@@ -90,11 +85,6 @@ void DeviceContext::init(const DeviceInformation& deviceInfo)
                 "Failed to create OpenCL context on device %s (OpenCL error ID %d).",
                 deviceInfo.device_name, clError)));
     }
-}
-
-DeviceContext::DeviceContext(const DeviceInformation& deviceInfo)
-{
-    init(deviceInfo);
 }
 
 DeviceContext::~DeviceContext()

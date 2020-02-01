@@ -57,6 +57,7 @@ class UpdateConstrainGpu::Impl
 
 UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec& /* ir   */,
                                        const gmx_mtop_t& /* mtop */,
+                                       const DeviceContext& /* deviceContext */,
                                        const void* /* commandStream */,
                                        GpuEventSynchronizer* /* xUpdatedOnDevice */) :
     impl_(nullptr)

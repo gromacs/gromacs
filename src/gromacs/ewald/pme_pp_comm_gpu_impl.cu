@@ -48,6 +48,7 @@
 #include "config.h"
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gpueventsynchronizer.cuh"
 #include "gromacs/utility/gmxmpi.h"
@@ -55,7 +56,10 @@
 namespace gmx
 {
 
-PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank) : comm_(comm), pmeRank_(pmeRank)
+PmePpCommGpu::Impl::Impl(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext) :
+    comm_(comm),
+    pmeRank_(pmeRank),
+    deviceContext_(deviceContext)
 {
     GMX_RELEASE_ASSERT(
             GMX_THREAD_MPI,
@@ -152,7 +156,10 @@ void* PmePpCommGpu::Impl::getForcesReadySynchronizer()
     return static_cast<void*>(&forcesReadySynchronizer_);
 }
 
-PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank) : impl_(new Impl(comm, pmeRank)) {}
+PmePpCommGpu::PmePpCommGpu(MPI_Comm comm, int pmeRank, const DeviceContext& deviceContext) :
+    impl_(new Impl(comm, pmeRank, deviceContext))
+{
+}
 
 PmePpCommGpu::~PmePpCommGpu() = default;
 

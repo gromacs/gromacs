@@ -85,6 +85,7 @@ struct t_nrnb;
 struct gmx_wallcycle;
 enum class PbcType : int;
 class t_state;
+class DeviceContext;
 class GpuEventSynchronizer;
 
 namespace gmx
@@ -314,10 +315,15 @@ void dd_bonded_cg_distance(const gmx::MDLogger& mdlog,
 /*! \brief Construct the GPU halo exchange object(s)
  * \param[in] mdlog          The logger object
  * \param[in] cr             The commrec object
+ * \param[in] deviceContext  GPU device context
  * \param[in] streamLocal    The local GPU stream
  * \param[in] streamNonLocal The non-local GPU stream
  */
-void constructGpuHaloExchange(const gmx::MDLogger& mdlog, const t_commrec& cr, void* streamLocal, void* streamNonLocal);
+void constructGpuHaloExchange(const gmx::MDLogger& mdlog,
+                              const t_commrec&     cr,
+                              const DeviceContext& deviceContext,
+                              void*                streamLocal,
+                              void*                streamNonLocal);
 
 /*! \brief
  * (Re-) Initialization for GPU halo exchange

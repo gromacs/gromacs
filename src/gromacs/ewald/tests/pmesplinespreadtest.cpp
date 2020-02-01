@@ -152,7 +152,9 @@ public:
                 PmeSafePointer pmeSafe = pmeInitWrapper(&inputRec, codePath, context->getDeviceInfo(),
                                                         context->getPmeGpuProgram(), box);
                 std::unique_ptr<StatePropagatorDataGpu> stateGpu =
-                        (codePath == CodePath::GPU) ? makeStatePropagatorDataGpu(*pmeSafe.get()) : nullptr;
+                        (codePath == CodePath::GPU)
+                                ? makeStatePropagatorDataGpu(*pmeSafe.get(), context->deviceContext())
+                                : nullptr;
 
                 pmeInitAtoms(pmeSafe.get(), stateGpu.get(), codePath, coordinates, charges);
 

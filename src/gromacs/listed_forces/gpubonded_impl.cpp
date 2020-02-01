@@ -160,7 +160,10 @@ class GpuBonded::Impl
 {
 };
 
-GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */, void* /*streamPtr */, gmx_wallcycle* /* wcycle */) :
+GpuBonded::GpuBonded(const gmx_ffparams_t& /* ffparams */,
+                     const DeviceContext& /* deviceContext */,
+                     void* /*streamPtr */,
+                     gmx_wallcycle* /* wcycle */) :
     impl_(nullptr)
 {
 }

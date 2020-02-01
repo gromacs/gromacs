@@ -1527,14 +1527,6 @@ void* pme_gpu_get_stream(const PmeGpu* pmeGpu)
     }
 }
 
-const DeviceContext* pme_gpu_get_context(const PmeGpu* pmeGpu)
-{
-    GMX_RELEASE_ASSERT(
-            pmeGpu,
-            "GPU context object was requested, but PME GPU object was not (yet) initialized.");
-    return &pmeGpu->archSpecific->deviceContext_;
-}
-
 GpuEventSynchronizer* pme_gpu_get_forces_ready_synchronizer(const PmeGpu* pmeGpu)
 {
     if (pmeGpu && pmeGpu->kernelParams)

@@ -75,10 +75,15 @@ public:
      *                              projection from it.
      * \param[in] mtop              Topology of the system: SETTLE gets the masses for O and H atoms
      *                              and target O-H and H-H distances from this object.
+     * \param[in] deviceContext     GPU device context.
      * \param[in] commandStream     GPU stream to use. Can be nullptr.
      * \param[in] xUpdatedOnDevice  The event synchronizer to use to mark that update is done on the GPU.
      */
-    Impl(const t_inputrec& ir, const gmx_mtop_t& mtop, const void* commandStream, GpuEventSynchronizer* xUpdatedOnDevice);
+    Impl(const t_inputrec&     ir,
+         const gmx_mtop_t&     mtop,
+         const DeviceContext&  deviceContext,
+         const void*           commandStream,
+         GpuEventSynchronizer* xUpdatedOnDevice);
 
     ~Impl();
 
@@ -163,8 +168,8 @@ public:
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
-    //! Dummy GPU context object
-    const DeviceContext deviceContext_;
+    //! GPU context object
+    const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_ = nullptr;
     //! GPU kernel launch config

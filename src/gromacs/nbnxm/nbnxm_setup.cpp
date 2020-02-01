@@ -364,6 +364,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
                                                    const t_commrec*         cr,
                                                    const gmx_hw_info_t&     hardwareInfo,
                                                    const DeviceInformation* deviceInfo,
+                                                   const DeviceContext*     deviceContext,
                                                    const gmx_mtop_t*        mtop,
                                                    matrix                   box,
                                                    gmx_wallcycle*           wcycle)
@@ -445,9 +446,13 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
     int       minimumIlistCountForGpuBalancing = 0;
     if (useGpu)
     {
+        GMX_RELEASE_ASSERT(
+                deviceContext != nullptr,
+                "Device context can not be nullptr when to use GPU for non-bonded forces.");
         /* init the NxN GPU data; the last argument tells whether we'll have
          * both local and non-local NB calculation on GPU */
-        gpu_nbv = gpu_init(deviceInfo, fr->ic, pairlistParams, nbat.get(), cr->nodeid, haveMultipleDomains);
+        gpu_nbv = gpu_init(deviceInfo, *deviceContext, fr->ic, pairlistParams, nbat.get(),
+                           cr->nodeid, haveMultipleDomains);
 
         minimumIlistCountForGpuBalancing = getMinimumIlistCountForGpuBalancing(gpu_nbv);
     }

@@ -3200,7 +3200,11 @@ gmx_bool change_dd_cutoff(t_commrec* cr, const matrix box, gmx::ArrayRef<const g
     return bCutoffAllowed;
 }
 
-void constructGpuHaloExchange(const gmx::MDLogger& mdlog, const t_commrec& cr, void* streamLocal, void* streamNonLocal)
+void constructGpuHaloExchange(const gmx::MDLogger& mdlog,
+                              const t_commrec&     cr,
+                              const DeviceContext& deviceContext,
+                              void*                streamLocal,
+                              void*                streamNonLocal)
 {
 
     int gpuHaloExchangeSize = 0;
@@ -3224,7 +3228,7 @@ void constructGpuHaloExchange(const gmx::MDLogger& mdlog, const t_commrec& cr, v
         for (int pulse = pulseStart; pulse < cr.dd->comm->cd[0].numPulses(); pulse++)
         {
             cr.dd->gpuHaloExchange.push_back(std::make_unique<gmx::GpuHaloExchange>(
-                    cr.dd, cr.mpi_comm_mysim, streamLocal, streamNonLocal, pulse));
+                    cr.dd, cr.mpi_comm_mysim, deviceContext, streamLocal, streamNonLocal, pulse));
         }
     }
 }

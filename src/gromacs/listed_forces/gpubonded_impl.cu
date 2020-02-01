@@ -50,6 +50,7 @@
 
 #include "gromacs/gpu_utils/cuda_arch_utils.cuh"
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/typecasts.cuh"
 #include "gromacs/mdtypes/enerdata.h"
@@ -63,7 +64,11 @@ namespace gmx
 
 // ---- GpuBonded::Impl
 
-GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallcycle* wcycle)
+GpuBonded::Impl::Impl(const gmx_ffparams_t& ffparams,
+                      const DeviceContext&  deviceContext,
+                      void*                 streamPtr,
+                      gmx_wallcycle*        wcycle) :
+    deviceContext_(deviceContext)
 {
     stream_ = *static_cast<CommandStream*>(streamPtr);
     wcycle_ = wcycle;
@@ -306,8 +311,11 @@ void GpuBonded::Impl::clearEnergies()
 
 // ---- GpuBonded
 
-GpuBonded::GpuBonded(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallcycle* wcycle) :
-    impl_(new Impl(ffparams, streamPtr, wcycle))
+GpuBonded::GpuBonded(const gmx_ffparams_t& ffparams,
+                     const DeviceContext&  deviceContext,
+                     void*                 streamPtr,
+                     gmx_wallcycle*        wcycle) :
+    impl_(new Impl(ffparams, deviceContext, streamPtr, wcycle))
 {
 }
 

@@ -112,7 +112,7 @@ public:
     class Impl;
 
 private:
-    //! Dummy GPU context object
+    //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;

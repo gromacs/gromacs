@@ -413,7 +413,8 @@ static void cuda_init_const(NbnxmGpu*                       nb,
     nbnxn_cuda_clear_e_fshift(nb);
 }
 
-NbnxmGpu* gpu_init(const DeviceInformation*   deviceInfo,
+NbnxmGpu* gpu_init(const DeviceInformation* deviceInfo,
+                   const DeviceContext& /* deviceContext */,
                    const interaction_const_t* ic,
                    const PairlistParams&      listParams,
                    const nbnxn_atomdata_t*    nbat,

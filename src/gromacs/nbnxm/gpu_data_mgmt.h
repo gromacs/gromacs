@@ -50,6 +50,8 @@
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/locality.h"
 
+class DeviceContext;
+
 struct NbnxmGpu;
 struct gmx_gpu_info_t;
 struct DeviceInformation;
@@ -65,6 +67,7 @@ namespace Nbnxm
 /** Initializes the data structures related to GPU nonbonded calculations. */
 GPU_FUNC_QUALIFIER
 NbnxmGpu* gpu_init(const DeviceInformation gmx_unused* deviceInfo,
+                   const DeviceContext gmx_unused& deviceContext,
                    const interaction_const_t gmx_unused* ic,
                    const PairlistParams gmx_unused& listParams,
                    const nbnxn_atomdata_t gmx_unused* nbat,

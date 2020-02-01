@@ -55,6 +55,7 @@
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/classhelpers.h"
 
+class DeviceContext;
 struct gmx_enerdata_t;
 struct gmx_ffparams_t;
 struct gmx_mtop_t;
@@ -106,7 +107,10 @@ class GpuBonded
 {
 public:
     //! Construct the manager with constant data and the stream to use.
-    GpuBonded(const gmx_ffparams_t& ffparams, void* streamPtr, gmx_wallcycle* wcycle);
+    GpuBonded(const gmx_ffparams_t& ffparams,
+              const DeviceContext&  deviceContext,
+              void*                 streamPtr,
+              gmx_wallcycle*        wcycle);
     //! Destructor
     ~GpuBonded();
 

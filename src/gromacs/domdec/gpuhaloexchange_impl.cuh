@@ -71,11 +71,17 @@ public:
      *
      * \param [inout] dd                       domdec structure
      * \param [in]    mpi_comm_mysim           communicator used for simulation
+     * \param [in]    deviceContext            GPU device context
      * \param [in]    localStream              local NB CUDA stream
      * \param [in]    nonLocalStream           non-local NB CUDA stream
      * \param [in]    pulse                    the communication pulse for this instance
      */
-    Impl(gmx_domdec_t* dd, MPI_Comm mpi_comm_mysim, void* localStream, void* nonLocalStream, int pulse);
+    Impl(gmx_domdec_t*        dd,
+         MPI_Comm             mpi_comm_mysim,
+         const DeviceContext& deviceContext,
+         void*                localStream,
+         void*                nonLocalStream,
+         int                  pulse);
     ~Impl();
 
     /*! \brief
@@ -176,8 +182,8 @@ private:
     GpuEventSynchronizer* haloDataTransferLaunched_ = nullptr;
     //! MPI communicator used for simulation
     MPI_Comm mpi_comm_mysim_;
-    //! Dummy GPU context object
-    const DeviceContext deviceContext_;
+    //! GPU context object
+    const DeviceContext& deviceContext_;
     //! CUDA stream for local non-bonded calculations
     cudaStream_t localStream_ = nullptr;
     //! CUDA stream for non-local non-bonded calculations

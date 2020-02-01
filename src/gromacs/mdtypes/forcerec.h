@@ -52,6 +52,7 @@
 struct gmx_pme_t;
 struct nonbonded_verlet_t;
 struct bonded_threading_t;
+class DeviceContext;
 class DispersionCorrection;
 struct t_forcetable;
 struct t_QMMMrec;
@@ -288,6 +289,9 @@ struct t_forcerec
     // TODO: This is not supposed to be here. StatePropagatorDataGpu should be a part of
     //       general StatePropagatorData object that is passed around
     gmx::StatePropagatorDataGpu* stateGpu = nullptr;
+
+    //! GPU device context
+    DeviceContext* deviceContext = nullptr;
 
     /* For PME-PP GPU communication */
     std::unique_ptr<gmx::PmePpCommGpu> pmePpCommGpu;

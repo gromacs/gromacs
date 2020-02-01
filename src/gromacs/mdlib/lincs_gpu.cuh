@@ -169,7 +169,7 @@ public:
     static bool isNumCoupledConstraintsSupported(const gmx_mtop_t& mtop);
 
 private:
-    //! Dummy GPU context object
+    //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;

@@ -57,6 +57,7 @@
 #include <algorithm>
 
 #include "gromacs/gpu_utils/cudautils.cuh"
+#include "gromacs/gpu_utils/device_context.h"
 #include "gromacs/gpu_utils/devicebuffer.h"
 #include "gromacs/gpu_utils/gputraits.cuh"
 #include "gromacs/gpu_utils/vectype_ops.cuh"
@@ -166,8 +167,10 @@ void UpdateConstrainGpu::Impl::scaleCoordinates(const matrix scalingMatrix)
 
 UpdateConstrainGpu::Impl::Impl(const t_inputrec&     ir,
                                const gmx_mtop_t&     mtop,
+                               const DeviceContext&  deviceContext,
                                const void*           commandStream,
                                GpuEventSynchronizer* xUpdatedOnDevice) :
+    deviceContext_(deviceContext),
     coordinatesReady_(xUpdatedOnDevice)
 {
     GMX_ASSERT(xUpdatedOnDevice != nullptr, "The event synchronizer can not be nullptr.");
@@ -231,9 +234,10 @@ GpuEventSynchronizer* UpdateConstrainGpu::Impl::getCoordinatesReadySync()
 
 UpdateConstrainGpu::UpdateConstrainGpu(const t_inputrec&     ir,
                                        const gmx_mtop_t&     mtop,
+                                       const DeviceContext&  deviceContext,
                                        const void*           commandStream,
                                        GpuEventSynchronizer* xUpdatedOnDevice) :
-    impl_(new Impl(ir, mtop, commandStream, xUpdatedOnDevice))
+    impl_(new Impl(ir, mtop, deviceContext, commandStream, xUpdatedOnDevice))
 {
 }
 

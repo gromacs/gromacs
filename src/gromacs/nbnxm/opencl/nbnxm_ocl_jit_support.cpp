@@ -200,10 +200,10 @@ void nbnxn_gpu_compile_kernels(NbnxmGpu* nb)
         {
             /* TODO when we have a proper MPI-aware logging module,
                the log output here should be written there */
-            program =
-                    gmx::ocl::compileProgram(stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl",
-                                             extraDefines, nb->dev_rundata->deviceContext.context(),
-                                             nb->deviceInfo->oclDeviceId, nb->deviceInfo->deviceVendor);
+            program = gmx::ocl::compileProgram(
+                    stderr, "gromacs/nbnxm/opencl", "nbnxm_ocl_kernels.cl", extraDefines,
+                    nb->dev_rundata->deviceContext_.context(), nb->deviceInfo->oclDeviceId,
+                    nb->deviceInfo->deviceVendor);
         }
         catch (gmx::GromacsException& e)
         {

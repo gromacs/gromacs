@@ -252,7 +252,7 @@ public:
     void set(const InteractionDefinitions& idef, const t_mdatoms& md);
 
 private:
-    //! Dummy GPU context object
+    //! GPU context object
     const DeviceContext& deviceContext_;
     //! GPU stream
     CommandStream commandStream_;

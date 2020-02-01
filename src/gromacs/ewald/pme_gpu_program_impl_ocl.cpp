@@ -53,8 +53,8 @@
 #include "pme_gpu_types_host.h"
 #include "pme_grid.h"
 
-PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& deviceInfo) :
-    deviceContext_(deviceInfo)
+PmeGpuProgramImpl::PmeGpuProgramImpl(const DeviceInformation& deviceInfo, const DeviceContext& deviceContext) :
+    deviceContext_(deviceContext)
 {
     // kernel parameters
     warpSize = gmx::ocl::getDeviceWarpSize(deviceContext_.context(), deviceInfo.oclDeviceId);

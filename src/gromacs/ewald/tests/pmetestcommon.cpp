@@ -160,14 +160,15 @@ PmeSafePointer pmeInitEmpty(const t_inputrec*        inputRec,
 }
 
 //! Make a GPU state-propagator manager
-std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t& pme)
+std::unique_ptr<StatePropagatorDataGpu> makeStatePropagatorDataGpu(const gmx_pme_t&     pme,
+                                                                   const DeviceContext& deviceContext)
 {
     // TODO: Pin the host buffer and use async memory copies
     // TODO: Special constructor for PME-only rank / PME-tests is used here. There should be a mechanism to
     //       restrict one from using other constructor here.
-    return std::make_unique<StatePropagatorDataGpu>(
-            pme_gpu_get_device_stream(&pme), *pme_gpu_get_device_context(&pme),
-            GpuApiCallBehavior::Sync, pme_gpu_get_padding_size(&pme), nullptr);
+    return std::make_unique<StatePropagatorDataGpu>(pme_gpu_get_device_stream(&pme), deviceContext,
+                                                    GpuApiCallBehavior::Sync,
+                                                    pme_gpu_get_padding_size(&pme), nullptr);
 }
 
 //! PME initialization with atom data

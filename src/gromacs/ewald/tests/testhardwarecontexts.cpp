@@ -108,7 +108,7 @@ static gmx_hw_info_t* hardwareInit()
 
 void PmeTestEnvironment::SetUp()
 {
-    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) ", nullptr));
+    hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(CodePath::CPU, "(CPU) "));
 
     hardwareInfo_ = hardwareInit();
     if (!pme_gpu_supports_build(nullptr) || !pme_gpu_supports_hardware(*hardwareInfo_, nullptr))
@@ -120,13 +120,15 @@ void PmeTestEnvironment::SetUp()
     for (int gpuIndex : getCompatibleGpus(hardwareInfo_->gpu_info))
     {
         const DeviceInformation* deviceInfo = getDeviceInfo(hardwareInfo_->gpu_info, gpuIndex);
+        GMX_RELEASE_ASSERT(deviceInfo != nullptr,
+                           "Device information should be provided for the GPU builds.");
         init_gpu(deviceInfo);
 
         char stmp[200] = {};
         get_gpu_device_info_string(stmp, hardwareInfo_->gpu_info, gpuIndex);
         std::string description = "(GPU " + std::string(stmp) + ") ";
         hardwareContexts_.emplace_back(std::make_unique<TestHardwareContext>(
-                CodePath::GPU, description.c_str(), deviceInfo));
+                CodePath::GPU, description.c_str(), *deviceInfo));
     }
 }
 

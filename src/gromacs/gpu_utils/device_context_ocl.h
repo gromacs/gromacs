@@ -57,16 +57,9 @@ struct DeviceInformation;
 class DeviceContext
 {
 public:
-    //! Default constructor. Sets \c context_ to \c nullptr.
-    DeviceContext();
-    /*! \brief Second stage of construction. Creates the \c cl_context.
-     *
-     * \param[in] deviceInfo Platform-specific device information.
-     *
-     * \throws InternalError if context creation failed.
-     */
-    void init(const DeviceInformation& deviceInfo);
-    /*! \brief Construct the object and call \c init(...) .
+    //! Default constructor.
+    DeviceContext() {}
+    /*! \brief Constructor that creates the \c cl_context
      *
      * \param[in] deviceInfo Platform-specific device information.
      *
