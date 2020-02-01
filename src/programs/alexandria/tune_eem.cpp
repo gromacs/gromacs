@@ -165,24 +165,28 @@ class OptACM : public MolGen, Bayes
             }
         }
         
-        double l2_regularizer (double x,
-                               double min,
-                               double max)
+        double l2_regularizer (double             x,
+                               double             min,
+                               double             max,
+                               const std::string &label,
+                               bool               verbose)
         {
+            double p = 0;
             if (x < min)
             {
-                return (0.5 * gmx::square(x-min));
+                p = (0.5 * gmx::square(x-min));
             }
             else if (x > max)
             {
-                return (0.5 * gmx::square(x-max));
+                p = (0.5 * gmx::square(x-max));
             }
-            else
+            if (verbose && p != 0.0)
             {
-                return 0;
+                fprintf(logFile(), "Variable %s is %g, should be within %g and %g\n", label.c_str(), x, min, max);
             }
+            return p;
         }
-
+        
         void initChargeGeneration();
 
         /*! \brief
@@ -205,11 +209,11 @@ class OptACM : public MolGen, Bayes
 
         /*! \brief
          * Calculate the penalty for "non-chemical" values
-         *
-         * \param[in] ai The atom type
+         * \param verbose If true, relevant information will be printed
+         *                to the logFile()
          * \return penalty value
          */ 
-        double calcPenalty(AtomIndexIterator ai);
+        double calcPenalty(bool verbose);
 
         /*! \brief
          * Do the actual optimization.
@@ -291,46 +295,54 @@ double OptACM::calcDeviation()
     resetEnergies();
     if (MASTER(commrec()))
     {
-        auto *ic = indexCount();
         if (weight(ermsBOUNDS))
         {
+            bool  verbose           = final();
             const param_type &param = Bayes::getParam();
             double            bound = 0;
             size_t            n     = 0;
+            auto *ic                = indexCount();
             for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
             {
-                if (!ai->isConst())
+                if (ai->isConst())
                 {
-                    auto name = ai->name();
+                    continue;
+                }
+                auto name = ai->name();
                     
-                    if (bFitChi_)
+                if (bFitChi_)
+                {
+                    auto J00  = param[n++];
+                    std::string label = name + " J00";
+                    bound    += l2_regularizer(J00, J0Min(), J0Max(),
+                                               label, verbose);
+                    if (strcasecmp(name.c_str(), fixchi()) != 0)
                     {
-                        auto J00  = param[n++];
-                        bound    += l2_regularizer(J00, J0Min(), J0Max());
-                        if (strcasecmp(name.c_str(), fixchi()) != 0)
-                        {
-                            auto Chi0 = param[n++];
-                            bound    += l2_regularizer(Chi0, chi0Min(), chi0Max());
-                        }
+                        auto Chi0 = param[n++];
+                        label = name + " Chi0";
+                        bound    += l2_regularizer(Chi0, chi0Min(), chi0Max(),
+                                                   label, verbose);
                     }
-                    if (bFitZeta_)
+                }
+                if (bFitZeta_)
+                {
+                    auto atype = poldata()->ztype2atype(name);
+                    auto nzeta = poldata()->getNzeta(atype);
+                    if (nzeta == 2 && bSameZeta_)
                     {
-                        auto atype = poldata()->ztype2atype(name);
-                        auto nzeta = poldata()->getNzeta(atype);
-                        if (nzeta == 2 && bSameZeta_)
-                        {
-                            nzeta = 1;
-                        }
-                        for (auto zz = 0; zz < nzeta; zz++)
-                        {
-                            auto zeta = param[n++];
-                            bound += l2_regularizer(zeta, zetaMin(), zetaMax());
-                        }
+                        nzeta = 1;
                     }
-                    if (bFitAlpha_ || weight(ermsPolar))
+                    for (auto zz = 0; zz < nzeta; zz++)
                     {
-                        n++;
+                        auto zeta = param[n++];
+                        std::string label = name + " Zeta";
+                        bound += l2_regularizer(zeta, zetaMin(), zetaMax(),
+                                                label, verbose);
                     }
+                }
+                if (bFitAlpha_ || weight(ermsPolar))
+                {
+                    n++;
                 }
             }
             if (optHfac())
@@ -344,15 +356,7 @@ double OptACM::calcDeviation()
         }
         if (weight(ermsPENALTY))
         {
-            double penalty = 0;
-            for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
-            {
-                if (!ai->isConst())
-                {
-                    penalty += calcPenalty(ai);
-                }
-            }
-            increaseEnergy(ermsPENALTY, penalty);
+            increaseEnergy(ermsPENALTY, calcPenalty(final()));
         }
     }
 
@@ -755,57 +759,58 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
                                          n, changed.size()).c_str());
 }
 
-double OptACM::calcPenalty(AtomIndexIterator ai)
+double OptACM::calcPenalty(bool verbose)
 {
-    double         penalty = 0;
-    const auto     pd      = poldata();
-    auto           ei      = ai->eemProps();
-    auto           ai_elem = pd->ztype2elem(ei->getName());
-    auto           ai_chi  = ei->getChi0();
-    auto           ai_J0   = ei->getJ0();
-    auto           ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
-
-    if (!weight(ermsPENALTY))
+    double      penalty = 0;
+    const auto  pd      = poldata();
+    auto       *ic      = indexCount();
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        return 0.0;
-    }
-    if (strlen(fixchi()) != 0)
-    {
-        const auto ref_eem  = pd->atype2Eem(fixchi());
-        if (ai_chi < ref_eem->getChi0())
+        if (ai->isConst())
         {
-            penalty += 1;
+            continue;
         }
-    }
-
-    if (ai->name() == "z_c3" && (ai_chi < 5 or ai_chi > 8))
-    {
-        penalty += ai_atn;
-    }
-
-    if (ai->name() == "z_h1" && ai_chi > 2.5)
-    {
-        penalty += 6;
-    }
-
-    auto *ic = indexCount();
-    for (auto aj = ic->beginIndex(); aj < ic->endIndex(); ++aj)
-    {
-        if (!aj->isConst())
+        auto ei      = ai->eemProps();
+        auto ai_elem = pd->ztype2elem(ei->getName());
+        auto ai_chi  = ei->getChi0();
+        auto ai_J0   = ei->getJ0();
+        auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
+    
+        if (strlen(fixchi()) != 0)
         {
+            const auto ref_eem  = pd->atype2Eem(fixchi());
+            double dchi = ref_eem->getChi0() - ai_chi;
+            penalty += std::max(0.0, dchi);
+        }
+    
+        if (ai->name() == "z_c3")
+        {
+            penalty += l2_regularizer(ai_chi, 5, 8, "z_c3 chi", verbose);
+        }
+        else if (ai->name() == "z_h1")
+        {
+            penalty += l2_regularizer(ai_chi, 1.0, 2.5, "z_h1 chi", verbose);
+        }
+
+        for (auto aj = ai+1; aj < ic->endIndex(); ++aj)
+        {
+            if (aj->isConst())
+            {
+                continue;
+            }
             const auto ej      = aj->eemProps();
             const auto aj_elem = pd->ztype2elem(ej->getName());
             auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
 
             if (ai_atn != aj_atn)
             {
-                //Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
+                // Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
                 auto aj_chi = ej->getChi0();
                 auto aj_J0  = ej->getJ0();
                 if ((ai_atn == 1 && aj_atn > 1  && (aj_chi <= ai_chi || aj_J0 <= ai_J0)) ||
                     (ai_atn > 1  && aj_atn == 1 && (aj_chi <= ai_chi || aj_J0 <= ai_J0)))
                 {
-                    penalty += std::abs(aj_atn - ai_atn);
+                    penalty += std::abs(aj_chi - ai_chi);
                 }
             }
         }
