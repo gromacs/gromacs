@@ -1,8 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2011,2012,2014,2015 by the GROMACS development team.
-# Copyright (c) 2016,2020, by the GROMACS development team, led by
+# Copyright (c) 2020, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -33,49 +32,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# - Define macro to check if MPI_IN_PLACE exists
-#
-#  GMX_TEST_MPI_IN_PLACE(VARIABLE)
-#
-#  VARIABLE will be set to true if MPI_IN_PLACE exists
-#
-
-include(CheckCSourceCompiles)
-MACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
-  if(NOT DEFINED MPI_IN_PLACE_COMPILE_OK)
-    MESSAGE(STATUS "Checking for MPI_IN_PLACE")
-
-    if(CMAKE_VERSION VERSION_LESS 3.12)
-      foreach(_FLAG ${MPI_COMPILE_FLAGS})
-        set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} ${_FLAG}")
-      endforeach()
-    else()
-      list(JOIN MPI_COMPILE_FLAGS " " CMAKE_REQUIRED_FLAGS)
-    endif()
-    set(CMAKE_REQUIRED_INCLUDES ${MPI_INCLUDE_PATH})
-    set(CMAKE_REQUIRED_LIBRARIES ${MPI_LIBRARIES})
+# CMake detects ICC NextGen (based on LLVM) as Clang
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    include(CheckCXXSourceCompiles)
     check_cxx_source_compiles(
-      "#include <mpi.h>
-int main(void) {
-  void* buf;
-  MPI_Allreduce(MPI_IN_PLACE, buf, 10, MPI_FLOAT, MPI_SUM, MPI_COMM_WORLD);
-}" MPI_IN_PLACE_COMPILE_OK)
-
-    if(MPI_IN_PLACE_COMPILE_OK)
-        MESSAGE(STATUS "Checking for MPI_IN_PLACE - yes")
-    else()
-        MESSAGE(STATUS "Checking for MPI_IN_PLACE - no")
-    endif()
-    set(MPI_IN_PLACE_COMPILE_OK "${MPI_IN_PLACE_COMPILE_OK}" CACHE INTERNAL "Result of mpi_in_place check")
-    set(CMAKE_REQUIRED_FLAGS)
-    set(CMAKE_REQUIRED_INCLUDES)
-    set(CMAKE_REQUIRED_LIBRARIES)
-  endif()
-  if (MPI_IN_PLACE_COMPILE_OK)
-    set(${VARIABLE} ${MPI_IN_PLACE_COMPILE_OK}
-      "Result of test for MPI_IN_PLACE")
-  endif()
-ENDMACRO(GMX_TEST_MPI_IN_PLACE VARIABLE)
-
-
-
+        "int main() { return __INTEL_LLVM_COMPILER; }"
+        GMX_ICC_NEXTGEN)
+endif()

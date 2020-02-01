@@ -40,6 +40,7 @@
 
 #include <cstddef>
 
+#include <array>
 #include <vector>
 
 #include "gromacs/topology/topology.h"
@@ -243,6 +244,9 @@ int gmx_mtop_ftype_count(const gmx_mtop_t& mtop, int ftype);
 
 /* Returns the total number of interactions in the system with all interaction flags that are set in \p if_flags set */
 int gmx_mtop_interaction_count(const gmx_mtop_t& mtop, int unsigned if_flags);
+
+/* Returns the count of atoms for each particle type */
+std::array<int, eptNR> gmx_mtop_particletype_count(const gmx_mtop_t& mtop);
 
 /* Returns a single t_atoms struct for the whole system */
 t_atoms gmx_mtop_global_atoms(const gmx_mtop_t* mtop);

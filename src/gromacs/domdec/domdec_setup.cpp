@@ -759,7 +759,10 @@ real getDDGridSetupCellSizeLimit(const gmx::MDLogger& mdlog,
 
     return cellSizeLimit;
 }
-void checkForValidRankCountRequests(const int numRanksRequested, const bool usingPme, const int numPmeRanksRequested)
+void checkForValidRankCountRequests(const int  numRanksRequested,
+                                    const bool usingPme,
+                                    const int  numPmeRanksRequested,
+                                    const bool checkForLargePrimeFactors)
 {
     int numPPRanksRequested = numRanksRequested;
     if (usingPme && numPmeRanksRequested > 0)
@@ -777,7 +780,7 @@ void checkForValidRankCountRequests(const int numRanksRequested, const bool usin
     // Once the rank count is large enough, it becomes worth
     // suggesting improvements to the user.
     const int minPPRankCountToCheckForLargePrimeFactors = 13;
-    if (numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
+    if (checkForLargePrimeFactors && numPPRanksRequested >= minPPRankCountToCheckForLargePrimeFactors)
     {
         const int largestDivisor = largest_divisor(numPPRanksRequested);
         /* Check if the largest divisor is more than numPPRanks ^ (2/3) */

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/mdrun/shellfc.h"
 #include "gromacs/mdtypes/inputrec.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/topology/mtop_util.h"
 
 #include "energyelement.h"
 #include "freeenergyperturbationelement.h"
@@ -65,13 +66,13 @@ struct t_graph;
 
 namespace gmx
 {
-bool ShellFCElement::doShellsOrFlexConstraints(const gmx_mtop_t* mtop, int nflexcon)
+bool ShellFCElement::doShellsOrFlexConstraints(const gmx_mtop_t& mtop, int nflexcon)
 {
     if (nflexcon != 0)
     {
         return true;
     }
-    std::array<int, eptNR> n = countPtypes(nullptr, mtop);
+    std::array<int, eptNR> n = gmx_mtop_particletype_count(mtop);
     return n[eptShell] != 0;
 }
 

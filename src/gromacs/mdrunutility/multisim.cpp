@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -423,17 +423,4 @@ bool isMasterSim(const gmx_multisim_t* ms)
 bool isMasterSimMasterRank(const gmx_multisim_t* ms, const bool isMaster)
 {
     return (isMaster && isMasterSim(ms));
-}
-
-void multiSimBarrier(const gmx_multisim_t* ms)
-{
-    if (isMultiSim(ms))
-    {
-#if GMX_MPI
-        if (ms->mpi_comm_masters != MPI_COMM_NULL)
-        {
-            MPI_Barrier(ms->mpi_comm_masters);
-        }
-#endif
-    }
 }
