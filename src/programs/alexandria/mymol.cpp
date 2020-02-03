@@ -720,8 +720,18 @@ immStatus MyMol::zeta2atoms(const Poldata *pd)
     auto eqdModel = pd->getChargeModel();
     for (auto i = 0; i < atoms_->nr; i++)
     {
-        zeta = pd->getZeta(*atoms_->atomtype[i], 0);
-        row  = pd->getRow(*atoms_->atomtype[i], 0);
+        if (atoms_->atom[i].ptype == eptShell)
+        {
+            std::string name(*atoms_->atomtype[i]);
+            std::string aname = name.substr(0, name.size()-2);
+            zeta = pd->getZeta(aname, 1);
+            row  = pd->getRow(aname, 1);
+        }
+        else
+        {
+            zeta = pd->getZeta(*atoms_->atomtype[i], 0);
+            row  = pd->getRow(*atoms_->atomtype[i], 0);
+        }
         if (zeta == 0 && getEemtypeDistributed(eqdModel))
         {
             return immZeroZeta;
