@@ -3,7 +3,8 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014,2015,2016,2017,2018,2019, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015,2016,2017 The GROMACS development team.
+ * Copyright (c) 2018,2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1156,14 +1157,14 @@ int gmx_pme_do(struct gmx_pme_t *pme,
     const gmx_bool       bBackFFT                = (flags & (GMX_PME_CALC_F | GMX_PME_CALC_POT)) != 0;
     const gmx_bool       bCalcF                  = (flags & GMX_PME_CALC_F) != 0;
 
-    /* We could be passing lambda!=1 while no q or LJ is actually perturbed */
+    /* We could be passing lambda!=0 while no q or LJ is actually perturbed */
     if (!pme->bFEP_q)
     {
-        lambda_q  = 1;
+        lambda_q = 0;
     }
     if (!pme->bFEP_lj)
     {
-        lambda_lj = 1;
+        lambda_lj = 0;
     }
 
     assert(pme->nnodes > 0);

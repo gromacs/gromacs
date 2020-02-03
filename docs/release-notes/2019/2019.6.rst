@@ -16,6 +16,15 @@ in the :ref:`release-notes`.
 Fixes where mdrun could behave incorrectly
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Actually fix PME forces with FE without perturbed q/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME would incorrectly ignore the mesh forces on perturbed atoms when
+no charges or LJ atom types were actually perturbed. Note that this
+is a rather uncommon scenario.
+
+:issue:`2640`
+:issue:`3359`
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
