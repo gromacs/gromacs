@@ -46,6 +46,16 @@ in the MPI rank count even when the grid was specified by the user.
 
 :issue:`3336`
 
+Actually fix PME forces with FE without perturbed q/LJ
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+PME would incorrectly ignore the mesh forces on perturbed atoms when
+no charges or LJ atom types were actually perturbed. Note that this
+is a rather uncommon scenario.
+
+:issue:`2640`
+:issue:`3359`
+
 Fixes for ``gmx`` tools
 ^^^^^^^^^^^^^^^^^^^^^^^
 
