@@ -87,6 +87,11 @@ stages:
       - .gcc-before-script-template
       - .build-gcc-template
 
+.configure-gcc-cuda:
+    extends:
+      - .configure-gcc
+      - .cuda-template
+
 .configure-clang:
     extends:
       - .configure-extends-template
@@ -147,10 +152,10 @@ stages:
       - .build-docs-webpage-template
       - .documentation-before-script-template
 
-.build-cuda-gcc:
+.build-gcc-cuda:
     extends:
       - .build-gcc
-      - .build-cuda-template
+      - .cuda-template
 
 # Templates for test stage
 .test-gcc:
@@ -158,6 +163,11 @@ stages:
       - .test-extends-template
       - .gcc-before-script-template
       - .test-gcc-template
+
+.test-gcc-cuda:
+    extends:
+      - .test-gcc
+      - .cuda-template
 
 .test-clang:
     extends:
@@ -245,6 +255,17 @@ configure-gcc-8:
         artifacts: false
     variables:
         COMPILER_MAJOR_VERSION: 8
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+configure-gcc-8-cuda-10.2:
+    extends:
+      - .configure-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false
     except:
       variables:
         - $GROMACS_RELEASE
@@ -455,6 +476,19 @@ build-gcc-8:
       variables:
         - $GROMACS_RELEASE
 
+build-gcc-8-cuda-10.2:
+    extends:
+      - .build-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false
+      - job: configure-gcc-8-cuda-10.2
+        artifacts: true
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
 build-gcc-7-simd-sse41:
     extends:
       - .build-gcc
@@ -567,6 +601,21 @@ test-gcc-8:
       - job: simple-build
         artifacts: false 
       - job: build-gcc-8
+    except:
+      variables:
+        - $GROMACS_RELEASE
+
+test-gcc-8-cuda-10.2:
+    variables:
+      KUBERNETES_EXTENDED_RESOURCE_NAME: "nvidia.com/gpu"
+      KUBERNETES_EXTENDED_RESOURCE_LIMIT: 1
+    extends:
+      - .test-gcc-cuda
+      - .gcc-8-cuda-10.2-template
+    needs:
+      - job: simple-build
+        artifacts: false 
+      - job: build-gcc-8-cuda-10.2
     except:
       variables:
         - $GROMACS_RELEASE
