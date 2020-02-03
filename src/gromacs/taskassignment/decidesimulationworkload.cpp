@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2019, by the GROMACS development team, led by
+ * Copyright (c) 2019,2020, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,16 +50,17 @@
 namespace gmx
 {
 
-SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
-                                            PmeRunMode pmeRunMode,
-                                            bool       useGpuForBonded,
-                                            bool       useGpuForUpdate,
-                                            bool       useGpuForBufferOps,
-                                            bool       useGpuHaloExchange,
-                                            bool       useGpuPmePpComm,
-                                            bool       haveEwaldSurfaceContribution)
+SimulationWorkload createSimulationWorkload(const t_inputrec& inputrec,
+                                            bool              useGpuForNonbonded,
+                                            PmeRunMode        pmeRunMode,
+                                            bool              useGpuForBonded,
+                                            bool              useGpuForUpdate,
+                                            bool              useGpuForBufferOps,
+                                            bool              useGpuHaloExchange,
+                                            bool              useGpuPmePpComm)
 {
     SimulationWorkload simulationWorkload;
+    simulationWorkload.computeMuTot    = inputrecNeedMutot(&inputrec);
     simulationWorkload.useCpuNonbonded = !useGpuForNonbonded;
     simulationWorkload.useGpuNonbonded = useGpuForNonbonded;
     simulationWorkload.useCpuPme       = (pmeRunMode == PmeRunMode::CPU);
@@ -71,7 +72,7 @@ SimulationWorkload createSimulationWorkload(bool       useGpuForNonbonded,
     simulationWorkload.useGpuHaloExchange       = useGpuHaloExchange;
     simulationWorkload.useGpuPmePpCommunication = useGpuPmePpComm && (pmeRunMode == PmeRunMode::GPU);
     simulationWorkload.useGpuDirectCommunication    = useGpuHaloExchange || useGpuPmePpComm;
-    simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution;
+    simulationWorkload.haveEwaldSurfaceContribution = haveEwaldSurfaceContribution(inputrec);
 
     return simulationWorkload;
 }

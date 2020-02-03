@@ -1557,10 +1557,10 @@ int Mdrunner::mdrunner()
         // make it work.
         MdrunScheduleWorkload runScheduleWork;
         // Also populates the simulation constant workload description.
-        runScheduleWork.simulationWork = createSimulationWorkload(
-                useGpuForNonbonded, pmeRunMode, useGpuForBonded, useGpuForUpdate,
-                devFlags.enableGpuBufferOps, devFlags.enableGpuHaloExchange,
-                devFlags.enableGpuPmePPComm, haveEwaldSurfaceContribution(*inputrec));
+        runScheduleWork.simulationWork =
+                createSimulationWorkload(*inputrec, useGpuForNonbonded, pmeRunMode, useGpuForBonded,
+                                         useGpuForUpdate, devFlags.enableGpuBufferOps,
+                                         devFlags.enableGpuHaloExchange, devFlags.enableGpuPmePPComm);
 
         std::unique_ptr<gmx::StatePropagatorDataGpu> stateGpu;
         if (gpusWereDetected

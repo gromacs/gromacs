@@ -955,16 +955,13 @@ void do_force(FILE*                               fplog,
 
     clear_mat(vir_force);
 
-    if (stepWork.stateChanged)
+    if (stepWork.stateChanged && simulationWork.computeMuTot)
     {
-        if (inputrecNeedMutot(inputrec))
-        {
-            /* Calculate total (local) dipole moment in a temporary common array.
-             * This makes it possible to sum them over nodes faster.
-             */
-            calc_mu(start, homenr, x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB,
-                    mdatoms->nChargePerturbed, mu, mu + DIM);
-        }
+        /* Calculate total (local) dipole moment in a temporary common array.
+         * This makes it possible to sum them over nodes faster.
+         */
+        calc_mu(start, homenr, x.unpaddedArrayRef(), mdatoms->chargeA, mdatoms->chargeB,
+                mdatoms->nChargePerturbed, mu, mu + DIM);
     }
 
     if (fr->pbcType != PbcType::No)
@@ -1355,7 +1352,7 @@ void do_force(FILE*                               fplog,
         wallcycle_stop(wcycle, ewcLAUNCH_GPU);
     }
 
-    if (stepWork.stateChanged && inputrecNeedMutot(inputrec))
+    if (stepWork.stateChanged && simulationWork.computeMuTot)
     {
         if (PAR(cr))
         {
