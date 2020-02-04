@@ -54,6 +54,7 @@
 #include "gromacs/nbnxm/nbnxm.h"
 #include "gromacs/nbnxm/pairlist_tuning.h"
 #include "gromacs/simd/simd.h"
+#include "gromacs/topology/mtop_util.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/logger.h"
 
@@ -357,7 +358,6 @@ static int getMinimumIlistCountForGpuBalancing(NbnxmGpu* nbnxmGpu)
 }
 
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlog,
-                                                   gmx_bool                 bFEP_NonBonded,
                                                    const t_inputrec*        ir,
                                                    const t_forcerec*        fr,
                                                    const t_commrec*         cr,
@@ -392,6 +392,7 @@ std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlo
 
     const bool haveMultipleDomains = (DOMAINDECOMP(cr) && cr->dd->nnodes > 1);
 
+    bool           bFEP_NonBonded = (fr->efep != efepNO) && haveFepPerturbedNBInteractions(mtop);
     PairlistParams pairlistParams(kernelSetup.kernelType, bFEP_NonBonded, ir->rlist,
                                   havePPDomainDecomposition(cr));
 

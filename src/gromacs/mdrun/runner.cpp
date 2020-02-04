@@ -411,6 +411,18 @@ static void prepare_verlet_scheme(FILE*               fplog,
                                   bool                makeGpuPairList,
                                   const gmx::CpuInfo& cpuinfo)
 {
+    // We checked the cut-offs in grompp, but double-check here.
+    // We have PME+LJcutoff kernels for rcoulomb>rvdw.
+    if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
+    {
+        GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw,
+                           "With Verlet lists and PME we should have rcoulomb>=rvdw");
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(ir->rcoulomb == ir->rvdw,
+                           "With Verlet lists and no PME rcoulomb and rvdw should be identical");
+    }
     /* For NVE simulations, we will retain the initial list buffer */
     if (EI_DYNAMICS(ir->eI) && ir->verletbuf_tol > 0 && !(EI_MD(ir->eI) && ir->etc == etcNO))
     {
@@ -1315,6 +1327,7 @@ int Mdrunner::mdrunner()
     const bool                   thisRankHasPmeGpuTask = gpuTaskAssignments.thisRankHasPmeGpuTask();
     std::unique_ptr<MDAtoms>     mdAtoms;
     std::unique_ptr<gmx_vsite_t> vsite;
+    std::unique_ptr<GpuBonded>   gpuBonded;
 
     t_nrnb nrnb;
     if (thisRankHasDuty(cr, DUTY_PP))
@@ -1329,9 +1342,21 @@ int Mdrunner::mdrunner()
         init_forcerec(fplog, mdlog, fr, fcd, inputrec, &mtop, cr, box,
                       opt2fn("-table", filenames.size(), filenames.data()),
                       opt2fn("-tablep", filenames.size(), filenames.data()),
-                      opt2fns("-tableb", filenames.size(), filenames.data()), *hwinfo,
-                      nonbondedDeviceInfo, useGpuForBonded,
-                      pmeRunMode == PmeRunMode::GPU && !thisRankHasDuty(cr, DUTY_PME), pforce, wcycle);
+                      opt2fns("-tableb", filenames.size(), filenames.data()),
+                      pmeRunMode == PmeRunMode::GPU && !thisRankHasDuty(cr, DUTY_PME), pforce);
+
+        fr->nbv = Nbnxm::init_nb_verlet(mdlog, inputrec, fr, cr, *hwinfo, nonbondedDeviceInfo,
+                                        &mtop, box, wcycle);
+        if (useGpuForBonded)
+        {
+            auto stream = havePPDomainDecomposition(cr)
+                                  ? Nbnxm::gpu_get_command_stream(
+                                            fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal)
+                                  : Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv,
+                                                                  gmx::InteractionLocality::Local);
+            gpuBonded     = std::make_unique<GpuBonded>(mtop.ffparams, stream, wcycle);
+            fr->gpuBonded = gpuBonded.get();
+        }
 
         // TODO Move this to happen during domain decomposition setup,
         // once stream and event handling works well with that.
@@ -1641,6 +1666,7 @@ int Mdrunner::mdrunner()
     mdAtoms.reset(nullptr);
     globalState.reset(nullptr);
     mdModules_.reset(nullptr); // destruct force providers here as they might also use the GPU
+    gpuBonded.reset(nullptr);
     /* Free pinned buffers in *fr */
     delete fr;
     fr = nullptr;

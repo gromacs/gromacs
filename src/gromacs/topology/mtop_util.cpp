@@ -1139,3 +1139,24 @@ void convertAtomsToMtop(t_symtab* symtab, char** name, t_atoms* atoms, gmx_mtop_
 
     gmx_mtop_finalize(mtop);
 }
+
+bool haveFepPerturbedNBInteractions(const gmx_mtop_t* mtop)
+{
+    for (size_t mb = 0; mb < mtop->molblock.size(); mb++)
+    {
+        const gmx_molblock_t& molb = mtop->molblock[mb];
+        const gmx_moltype_t&  molt = mtop->moltype[molb.type];
+        for (int m = 0; m < molb.nmol; m++)
+        {
+            for (int a = 0; a < molt.atoms.nr; a++)
+            {
+                const t_atom& atom = molt.atoms.atom[a];
+                if (PERTURBED(atom))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}

@@ -188,7 +188,7 @@ enum
     acSETTLE
 };
 
-static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr, gmx_bool* bFEP_NonBonded)
+static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_forcerec* fr)
 {
     gmx_bool* type_VDW;
     int*      a_con;
@@ -203,8 +203,6 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
                            || C12(fr->nbfp, fr->ntype, ai, j) != 0;
         }
     }
-
-    *bFEP_NonBonded = FALSE;
 
     std::vector<cginfo_mb_t> cginfoPerMolblock;
     int                      a_offset = 0;
@@ -315,7 +313,6 @@ static std::vector<cginfo_mb_t> init_cginfo_mb(const gmx_mtop_t* mtop, const t_f
                 if (fr->efep != efepNO && PERTURBED(atom))
                 {
                     SET_CGINFO_FEP(atomInfo);
-                    *bFEP_NonBonded = TRUE;
                 }
             }
         }
@@ -936,18 +933,9 @@ void init_forcerec(FILE*                            fp,
                    const char*                      tabfn,
                    const char*                      tabpfn,
                    gmx::ArrayRef<const std::string> tabbfnm,
-                   const gmx_hw_info_t&             hardwareInfo,
-                   const gmx_device_info_t*         deviceInfo,
-                   const bool                       useGpuForBonded,
                    const bool                       pmeOnlyRankUsesGpu,
-                   real                             print_force,
-                   gmx_wallcycle*                   wcycle)
+                   real                             print_force)
 {
-    real     rtab;
-    char*    env;
-    double   dbl;
-    gmx_bool bFEP_NonBonded;
-
     /* By default we turn SIMD kernels on, but it might be turned off further down... */
     fr->use_simd_kernels = TRUE;
 
@@ -1011,10 +999,10 @@ void init_forcerec(FILE*                            fp,
     fr->sc_r_power    = ir->fepvals->sc_r_power;
     fr->sc_sigma6_def = gmx::power6(ir->fepvals->sc_sigma);
 
-    env = getenv("GMX_SCSIGMA_MIN");
+    char* env = getenv("GMX_SCSIGMA_MIN");
     if (env != nullptr)
     {
-        dbl = 0;
+        double dbl = 0;
         sscanf(env, "%20lf", &dbl);
         fr->sc_sigma6_min = gmx::power6(dbl);
         if (fp)
@@ -1318,7 +1306,7 @@ void init_forcerec(FILE*                            fp,
      * in that case grompp should already have checked that we do not need
      * normal tables and we only generate tables for 1-4 interactions.
      */
-    rtab = ir->rlist + ir->tabext;
+    real rtab = ir->rlist + ir->tabext;
 
     /* We want to use unmodified tables for 1-4 coulombic
      * interactions, so we must in general have an extra set of
@@ -1386,7 +1374,7 @@ void init_forcerec(FILE*                            fp,
     }
 
     /* Set all the static charge group info */
-    fr->cginfo_mb = init_cginfo_mb(mtop, fr, &bFEP_NonBonded);
+    fr->cginfo_mb = init_cginfo_mb(mtop, fr);
     if (!DOMAINDECOMP(cr))
     {
         fr->cginfo = cginfo_expand(mtop->molblock.size(), fr->cginfo_mb);
@@ -1405,38 +1393,6 @@ void init_forcerec(FILE*                            fp,
 
     fr->nthread_ewc = gmx_omp_nthreads_get(emntBonded);
     snew(fr->ewc_t, fr->nthread_ewc);
-
-    if (fr->cutoff_scheme == ecutsVERLET)
-    {
-        // We checked the cut-offs in grompp, but double-check here.
-        // We have PME+LJcutoff kernels for rcoulomb>rvdw.
-        if (EEL_PME_EWALD(ir->coulombtype) && ir->vdwtype == eelCUT)
-        {
-            GMX_RELEASE_ASSERT(ir->rcoulomb >= ir->rvdw,
-                               "With Verlet lists and PME we should have rcoulomb>=rvdw");
-        }
-        else
-        {
-            GMX_RELEASE_ASSERT(
-                    ir->rcoulomb == ir->rvdw,
-                    "With Verlet lists and no PME rcoulomb and rvdw should be identical");
-        }
-
-        fr->nbv = Nbnxm::init_nb_verlet(mdlog, bFEP_NonBonded, ir, fr, cr, hardwareInfo, deviceInfo,
-                                        mtop, box, wcycle);
-
-        if (useGpuForBonded)
-        {
-            auto stream = havePPDomainDecomposition(cr)
-                                  ? Nbnxm::gpu_get_command_stream(
-                                            fr->nbv->gpu_nbv, gmx::InteractionLocality::NonLocal)
-                                  : Nbnxm::gpu_get_command_stream(fr->nbv->gpu_nbv,
-                                                                  gmx::InteractionLocality::Local);
-            // TODO the heap allocation is only needed while
-            // t_forcerec lacks a constructor.
-            fr->gpuBonded = new gmx::GpuBonded(mtop->ffparams, stream, wcycle);
-        }
-    }
 
     if (ir->eDispCorr != edispcNO)
     {

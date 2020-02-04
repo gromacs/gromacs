@@ -404,7 +404,6 @@ namespace Nbnxm
 
 /*! \brief Creates an Nbnxm object */
 std::unique_ptr<nonbonded_verlet_t> init_nb_verlet(const gmx::MDLogger&     mdlog,
-                                                   gmx_bool                 bFEP_NonBonded,
                                                    const t_inputrec*        ir,
                                                    const t_forcerec*        fr,
                                                    const t_commrec*         cr,
