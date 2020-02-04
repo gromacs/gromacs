@@ -77,17 +77,6 @@ struct gmx_wallclock_gpu_nbnxn_t;
 const int c_oclPruneKernelJ4ConcurrencyDEFAULT = GMX_NBNXN_PRUNE_KERNEL_J4_CONCURRENCY_DEFAULT;
 /*! @} */
 
-/*! \brief Returns the j4 processing concurrency parameter for the vendor \p vendorId
- *  \param deviceVendor Vendor.
- */
-static inline int getOclPruneKernelJ4Concurrency(DeviceVendor deviceVendor)
-{
-    switch (deviceVendor)
-    {
-        default: return c_oclPruneKernelJ4ConcurrencyDEFAULT;
-    }
-}
-
 /*! \brief Electrostatic OpenCL kernel flavors.
  *
  *  Types of electrostatics implementations available in the OpenCL non-bonded
