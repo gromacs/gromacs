@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * This implements nblib test helpers
+ * This implements nblib test systems
  *
  * \author Victor Holanda <victor.holanda@cscs.ch>
  * \author Joe Jordan <ejjordan@kth.se>
@@ -86,7 +86,7 @@ std::unordered_map<std::string, Charge> Charges{ { "Ow", -0.82 },
                                                  { "CMet", +0.176 },
                                                  { "HMet", +0.398 } };
 
-WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("water")
+WaterMoleculeBuilder::WaterMoleculeBuilder() : water_("SOL")
 {
     //! Define Atom Types
     OwAtom      owAtom;
@@ -118,42 +118,85 @@ void WaterMoleculeBuilder::addExclusionsFromNames()
     water_.addExclusion("H1", "H2");
 }
 
-Topology TwoWaterMolecules::buildTopology()
+MethanolMoleculeBuilder::MethanolMoleculeBuilder() : methanol_("MeOH")
+{
+    //! Define Atom Types
+    CMetAtom    cMetAtom;
+    AtomType    CMet(cMetAtom.name, cMetAtom.mass, cMetAtom.c6, cMetAtom.c12);
+    OMetAtom    oMetAtom;
+    AtomType    OMet(oMetAtom.name, oMetAtom.mass, oMetAtom.c6, oMetAtom.c12);
+    UnitedHAtom hAtom;
+    AtomType    H(hAtom.name, hAtom.mass, hAtom.c6, hAtom.c12);
+
+    //! Add the atoms
+    methanol_.addAtom(AtomName("Me1"), Charges.at("CMet"), CMet);
+    methanol_.addAtom(AtomName("O2"), Charges.at("OMet"), OMet);
+    methanol_.addAtom(AtomName("H3"), Charges.at("H"), H);
+
+    //! Add the exclusions
+    methanol_.addExclusion("Me1", "O2");
+    methanol_.addExclusion("Me1", "H");
+    methanol_.addExclusion("H", "O2");
+}
+
+Molecule MethanolMoleculeBuilder::methanolMolecule()
+{
+    return methanol_;
+}
+
+
+Topology WaterTopology::buildTopology(int numMolecules)
 {
     //! Add some molecules to the topology
     TopologyBuilder topologyBuilder;
-    topologyBuilder.addMolecule(water(), 2);
+    topologyBuilder.addMolecule(water(), numMolecules);
     Topology topology = topologyBuilder.buildTopology();
     return topology;
 }
 
-Molecule TwoWaterMolecules::water()
+Molecule WaterTopology::water()
 {
     return waterMolecule_.waterMolecule();
 }
 
-class ArgonTopologyBuilder
+Topology SpcMethanolTopologyBuilder::buildTopology(int numWater, int numMethanol)
 {
-public:
-    ArgonTopologyBuilder(const int& numAtoms)
-    {
-        ArAtom   arAtom;
-        AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
+    //! Add some molecules to the topology
+    TopologyBuilder topologyBuilder;
+    topologyBuilder.addMolecule(methanol(), numMethanol);
+    topologyBuilder.addMolecule(water(), numWater);
+    Topology topology = topologyBuilder.buildTopology();
+    return topology;
+}
 
-        Molecule argonMolecule("AR");
-        argonMolecule.addAtom(AtomName("AR"), argonAtom);
+Molecule SpcMethanolTopologyBuilder::methanol()
+{
+    return methanolMolecule_.methanolMolecule();
+}
 
-        topologyBuilder_.addMolecule(argonMolecule, numAtoms);
-    }
+Molecule SpcMethanolTopologyBuilder::water()
+{
+    return waterMolecule_.waterMolecule();
+}
 
-    Topology argonTopology() { return topologyBuilder_.buildTopology(); }
+ArgonTopologyBuilder::ArgonTopologyBuilder(const int& numAtoms)
+{
+    ArAtom   arAtom;
+    AtomType argonAtom(arAtom.name, arAtom.mass, arAtom.c6, arAtom.c12);
 
-private:
-    TopologyBuilder topologyBuilder_;
-};
+    Molecule argonMolecule("AR");
+    argonMolecule.addAtom(AtomName("AR"), argonAtom);
 
-SimulationStateTester::SimulationStateTester() :
-    box_(7.25449),
+    topologyBuilder_.addMolecule(argonMolecule, numAtoms);
+}
+
+Topology ArgonTopologyBuilder::argonTopology()
+{
+    return topologyBuilder_.buildTopology();
+}
+
+ArgonSimulationStateBuilder::ArgonSimulationStateBuilder() :
+    box_(6.05449),
     topology_(ArgonTopologyBuilder(12).argonTopology())
 {
 
@@ -172,39 +215,73 @@ SimulationStateTester::SimulationStateTester() :
     };
 }
 
-void SimulationStateTester::setCoordinate(int atomNum, int dimension, real value)
+void ArgonSimulationStateBuilder::setCoordinate(int atomNum, int dimension, real value)
 {
     GMX_ASSERT((dimension < 0 || dimension > 2), "Must provide a valid dimension\n");
     coordinates_.at(atomNum)[dimension] = value;
 }
 
-void SimulationStateTester::setVelocity(int atomNum, int dimension, real value)
+void ArgonSimulationStateBuilder::setVelocity(int atomNum, int dimension, real value)
 {
     GMX_ASSERT((dimension < 0 || dimension > 2), "Must provide a valid dimension\n");
     velocities_.at(atomNum)[dimension] = value;
 }
 
-SimulationState SimulationStateTester::setupSimulationState()
+SimulationState ArgonSimulationStateBuilder::setupSimulationState()
 {
     return SimulationState(coordinates_, box_, topology_, velocities_);
 }
 
-const Topology& SimulationStateTester::topology() const
+const Topology& ArgonSimulationStateBuilder::topology() const
 {
     return topology_;
 }
 
-Box& SimulationStateTester::box()
+Box& ArgonSimulationStateBuilder::box()
 {
     return box_;
 }
 
-std::vector<gmx::RVec>& SimulationStateTester::coordinates()
+std::vector<gmx::RVec>& ArgonSimulationStateBuilder::coordinates()
 {
     return coordinates_;
 }
 
-std::vector<gmx::RVec>& SimulationStateTester::velocities()
+std::vector<gmx::RVec>& ArgonSimulationStateBuilder::velocities()
+{
+    return velocities_;
+}
+
+SpcMethanolSimulationStateBuilder::SpcMethanolSimulationStateBuilder() :
+    box_(3.01000),
+    topology_(SpcMethanolTopologyBuilder().buildTopology(1, 1))
+{
+    coordinates_ = {
+        { 1.970, 1.460, 1.209 }, // Me1
+        { 1.978, 1.415, 1.082 }, // O2
+        { 1.905, 1.460, 1.030 }, // H3
+        { 1.555, 1.511, 0.703 }, // Ow
+        { 1.498, 1.495, 0.784 }, // Hw1
+        { 1.496, 1.521, 0.623 }, // Hw2
+    };
+
+    coordinates_ = {
+        { -0.8587, -0.1344, -0.0643 }, { 0.0623, -0.1787, 0.0036 }, { -0.5020, -0.9564, 0.0997 },
+        { 0.869, 1.245, 1.665 },       { 0.169, 0.275, 1.565 },     { 0.269, 2.275, 1.465 },
+    };
+}
+
+SimulationState SpcMethanolSimulationStateBuilder::setupSimulationState()
+{
+    return SimulationState(coordinates_, box_, topology_, velocities_);
+}
+
+std::vector<gmx::RVec>& SpcMethanolSimulationStateBuilder::coordinates()
+{
+    return coordinates_;
+}
+
+std::vector<gmx::RVec>& SpcMethanolSimulationStateBuilder::velocities()
 {
     return velocities_;
 }
