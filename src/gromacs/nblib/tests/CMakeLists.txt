@@ -38,8 +38,12 @@
 # \author Sebastian Keller <keller@cscs.ch>
 #
 
-#gmx_add_unit_test_library(nblib_test_infrastructure
-#    )
+# Make a static library for test infrastructure code that we re-use
+# in multiple test executables across the repository.
+gmx_add_unit_test_library(nblib_test_infrastructure
+    testsystems.cpp
+    )
+target_include_directories(nblib_test_infrastructure SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/src/external)
 
 set(testname "NbLibSetupTests")
 set(exename "nblib-setup-test")
@@ -55,7 +59,7 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )
-#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)
 
 
@@ -71,5 +75,5 @@ gmx_add_gtest_executable(
     # pseudo-library for code for mdrun
     #$<TARGET_OBJECTS:nblib_objlib>
     )
-#target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
+target_link_libraries(${exename} PRIVATE nblib_test_infrastructure)
 gmx_register_gtest_test(${testname} ${exename} OPENMP_THREADS 1 INTEGRATION_TEST)

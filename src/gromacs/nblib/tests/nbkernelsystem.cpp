@@ -133,14 +133,23 @@ public:
             { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
-
-    SimulationState getSimulationState()
+    /*
+    NBKernelSystem setupKernelSystem()
     {
         Topology topology = topologyBuilder.buildTopology();
         return SimulationState(coordinates, box, topology, velocities);
     }
+    */
 };
-
+/*
+TEST(NBlibTest, KernelSystemHasNumAtoms)
+{
+    KernelSystemTester kernelSystemTester;
+    auto               kernelSystem = kernelSystemTester.setupKernelSystem();
+    const int          test         = kernelSystem.numAtoms;
+    const int          ref          = 6;
+    EXPECT_EQ(ref, test);
+}
 
 TEST(NBlibTest, canIntegrateSystem)
 {
@@ -166,6 +175,18 @@ TEST(NBlibTest, canIntegrateSystem)
 }
 
 
+TEST(NBlibTest, TopologyHasExclusions)
+{
+    KernelSystemTester    kernelSystemTester;
+    auto                  kernelSystem   = kernelSystemTester.setupKernelSystem();
+    gmx::ListOfLists<int> testExclusions = kernelSystem.excls;
+
+    const std::vector<std::vector<int>> refExclusions = { { 0, 1, 2 }, { 0, 1, 2 }, { 0, 1, 2 },
+                                                          { 3, 4, 5 }, { 3, 4, 5 }, { 3, 4, 5 } };
+
+    compareLists(testExclusions, refExclusions);
+}
+*/
 } // namespace
 } // namespace test
 } // namespace nblib

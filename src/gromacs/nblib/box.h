@@ -62,9 +62,13 @@ public:
 
     Matrix matrix();
 
+    const Matrix& matrix() const;
+
 private:
     Matrix box_;
 };
+
+bool operator==(const Box& a, const Box& b);
 
 } // namespace nblib
 

@@ -51,36 +51,14 @@
 
 #include "testutils/testasserts.h"
 
+#include "testsystems.h"
+
 namespace nblib
 {
 namespace test
 {
 namespace
 {
-
-struct ArAtom
-{
-    AtomName name = "Ar";
-    Mass     mass = 1.0;
-    C6       c6   = 1;
-    C12      c12  = 1;
-};
-
-struct OwAtom
-{
-    AtomName name = "Ow";
-    Mass     mass = 16;
-    C6       c6   = 1.;
-    C12      c12  = 1.;
-};
-
-struct HwAtom
-{
-    AtomName name = "Hw";
-    Mass     mass = 1;
-    C6       c6   = 1.;
-    C12      c12  = 1.;
-};
 
 TEST(NBlibTest, CanConstructMoleculeWithoutChargeOrResidueName)
 {
@@ -116,46 +94,37 @@ TEST(NBlibTest, CanConstructMoleculeWithChargeWithResidueName)
 
 TEST(NBlibTest, CanGetNumAtomsInMolecule)
 {
-    //! Manually Create Molecule (Water)
-
-    //! 1. Define Atom Type
-    OwAtom   owAtom;
-    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
-    HwAtom   hwAtom;
-    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
-
-    //! 2. Define Molecule
-    Molecule water("water");
-
-    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-    water.addAtom(AtomName("H2"), Hw);
-
-    auto numAtoms = water.numAtomsInMolecule();
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water    = waterMolecule.waterMolecule();
+    auto                 numAtoms = water.numAtomsInMolecule();
 
     EXPECT_EQ(3, numAtoms);
 }
 
 TEST(NBlibTest, CanConstructExclusionListFromNames)
 {
-    //! Manually Create Molecule (Water)
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMolecule();
 
-    //! 1. Define Atom Type
-    OwAtom   owAtom;
-    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
-    HwAtom   hwAtom;
-    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
+    std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
-    //! 2. Define Molecule
-    Molecule water("water");
+    std::vector<std::tuple<int, int>> reference{ { 0, 0 }, { 0, 1 }, { 0, 2 }, { 1, 0 }, { 1, 1 },
+                                                 { 1, 2 }, { 2, 0 }, { 2, 1 }, { 2, 2 } };
 
-    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-    water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
+    ASSERT_EQ(exclusions.size(), 9);
+    for (std::size_t i = 0; i < exclusions.size(); ++i)
+        EXPECT_EQ(exclusions[i], reference[i]);
+}
 
-    water.addExclusion("H1", "Oxygen");
-    water.addExclusion("H1", "H2");
-    water.addExclusion("H2", "Oxygen");
+TEST(NBlibTest, CanConstructExclusionListFromIndices)
+{
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMoleculeWithoutExclusions();
+
+    //! Add the exclusions
+    water.addExclusion(1, 0);
+    water.addExclusion(2, 0);
+    water.addExclusion(1, 2);
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
@@ -169,24 +138,13 @@ TEST(NBlibTest, CanConstructExclusionListFromNames)
 
 TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
 {
-    //! Manually Create Molecule (Water)
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMoleculeWithoutExclusions();
 
-    //! 1. Define Atom Type
-    OwAtom   owAtom;
-    AtomType Ow(owAtom.name, owAtom.mass, owAtom.c6, owAtom.c12);
-    HwAtom   hwAtom;
-    AtomType Hw(hwAtom.name, hwAtom.mass, hwAtom.c6, hwAtom.c12);
-
-    //! 2. Define Molecule
-    Molecule water("water");
-
-    water.addAtom(AtomName("Oxygen"), Charge(-0.6), Ow);
-    water.addAtom(AtomName("H1"), Charge(+0.3), Hw);
-    water.addAtom(AtomName("H2"), Charge(+0.3), Hw);
-
+    //! Add the exclusions
     water.addExclusion("H1", "Oxygen");
-    water.addExclusion("H1", "H2");
-    water.addExclusion(2, 0);
+    water.addExclusion("H2", "Oxygen");
+    water.addExclusion(1, 2);
 
     std::vector<std::tuple<int, int>> exclusions = water.getExclusions();
 
@@ -196,6 +154,21 @@ TEST(NBlibTest, CanConstructExclusionListFromNamesAndIndicesMixed)
     ASSERT_EQ(exclusions.size(), 9);
     for (std::size_t i = 0; i < exclusions.size(); ++i)
         EXPECT_EQ(exclusions[i], reference[i]);
+}
+
+TEST(NBlibTest, AtWorks)
+{
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMolecule();
+    EXPECT_NO_THROW(water.at("Ow"));
+    EXPECT_NO_THROW(water.at("H"));
+}
+
+TEST(NBlibTest, AtThrows)
+{
+    WaterMoleculeBuilder waterMolecule;
+    Molecule             water = waterMolecule.waterMolecule();
+    EXPECT_THROW(water.at("Hw"), std::out_of_range);
 }
 
 } // namespace

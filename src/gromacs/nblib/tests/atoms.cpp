@@ -50,18 +50,12 @@
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
 
+#include "testsystems.h"
+
 using gmx::test::defaultRealTolerance;
 
 namespace nblib
 {
-
-struct ArAtom
-{
-    AtomName name = "Ar";
-    Mass     mass = 1.0;
-    C6       c6   = 1;
-    C12      c12  = 1;
-};
 
 TEST(NBlibTest, AtomNameCanBeConstructed)
 {
@@ -91,4 +85,4 @@ TEST(NBlibTest, AtomC12CanBeConstructed)
     EXPECT_EQ(argonAtom.c12(), arAtom.c12);
 }
 
-}  // namespace nblib
+} // namespace nblib
