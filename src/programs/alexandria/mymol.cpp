@@ -700,7 +700,7 @@ immStatus MyMol::checkAtoms(const Poldata *pd)
         {
             printf("Could not find a force field entry for atomtype %s atom %d in compound '%s'\n",
                    *atoms_->atomtype[i], i+1,
-                   MolProp().getMolname().c_str());
+                   getMolname().c_str());
             nmissing++;
         }
     }
@@ -713,8 +713,11 @@ immStatus MyMol::checkAtoms(const Poldata *pd)
 
 immStatus MyMol::zeta2atoms(const Poldata *pd)
 {
-    /* Here, we add zeta for the core. addShells will
-       take care of the zeta for the shells later. */
+    /* The first time around we add zeta for the core and addShells will
+     * take care of the zeta for the shells.
+     * For later calls during optimization of zeta also the
+     * zeta on the shells will be set. 
+     */
     auto zeta     = 0.0;
     auto row      = 0;
     auto eqdModel = pd->getChargeModel();
@@ -1663,6 +1666,19 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
     auto d = 6 * (gmx::square(polar[XX][YY]) + gmx::square(polar[XX][ZZ]) + gmx::square(polar[ZZ][YY]));
 
     *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
+}
+
+double MyMol::PolarizabilityTensorDeviation() const
+{
+    double delta2 = 0;
+    for (auto i = 0; i < DIM; i++)
+    {
+        for (auto j = 0; j < DIM; j++)
+        {
+            delta2 += gmx::square(alpha_calc_[i][j] - alpha_elec_[i][j]);
+        }
+    }
+    return delta2;
 }
 
 void MyMol::backupCoordinates()

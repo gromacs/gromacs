@@ -409,9 +409,12 @@ class MyMol : public MolProp
         /*! \brief get the calculated polarizability
          */
         double CalculatedPolarizability() { return isoPol_calc_; }
-        /*! \brief Return difference between calculated and electronic polarizability 
+        /*! \brief Return difference between calculated and electronic isotropy polarizability 
          */
         double PolarizabilityDeviation() const { return isoPol_calc_ - isoPol_elec_; }
+        /*! \brief Return difference between calculated and electronic polarizability tensor
+         */
+        double PolarizabilityTensorDeviation() const;
 
         /*! \brief
          * Generate atomic partial charges

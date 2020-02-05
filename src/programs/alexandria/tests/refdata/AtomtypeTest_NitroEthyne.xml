@@ -4,8 +4,8 @@
   <Int Name="1-nitroethyne.pdb">6</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">6</Int>
-    <String>o</String>
-    <String>o</String>
+    <String>on</String>
+    <String>on</String>
     <String>no</String>
     <String>c1</String>
     <String>c1</String>
