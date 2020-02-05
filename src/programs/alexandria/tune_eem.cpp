@@ -579,12 +579,20 @@ double OptACM::calcDeviation()
             }
             if (weight(ermsPolar))
             {
+                double diff2 = 0;
                 mymol.CalcPolarizability(10, commrec(), nullptr);
-                double diff2 = gmx::square(mymol.PolarizabilityDeviation());
+                if (bFullTensor_)
+                {
+                    // It is already squared
+                    diff2 = mymol.PolarizabilityTensorDeviation();
+                }
+                else
+                {
+                    diff2 = gmx::square(mymol.PolarizabilityDeviation());
+                }
                 if (false && logFile())
                 {
-                    fprintf(logFile(), "DIFF %s %g\n", 
-                            mymol.getMolname().c_str(), diff2);
+                    fprintf(logFile(), "DIFF %s %g\n", mymol.getMolname().c_str(), diff2);
                 }
                 increaseEnergy(ermsPolar, diff2);
             }

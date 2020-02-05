@@ -1668,6 +1668,19 @@ void MyMol::CalcAnisoPolarizability(tensor polar, double *anisoPol)
     *anisoPol = sqrt(1/2.0) * sqrt(a + b + c + d);
 }
 
+double MyMol::PolarizabilityTensorDeviation() const
+{
+    double delta2 = 0;
+    for (auto i = 0; i < DIM; i++)
+    {
+        for (auto j = 0; j < DIM; j++)
+        {
+            delta2 += gmx::square(alpha_calc_[i][j] - alpha_elec_[i][j]);
+        }
+    }
+    return delta2;
+}
+
 void MyMol::backupCoordinates()
 {
     GMX_RELEASE_ASSERT(backupCoordinates_.size() == 0, "Can only backup coordinates once");
