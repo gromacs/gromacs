@@ -47,7 +47,8 @@
 
 #include "gromacs/utility/exceptions.h"
 
-namespace nblib {
+namespace nblib
+{
 
 Box::Box(real l)
 {
@@ -63,9 +64,7 @@ Box::Box(real l)
 
 Box::Box(real x, real y, real z)
 {
-    if (std::isnan(x) or std::isinf(x) or
-        std::isnan(y) or std::isinf(y) or
-        std::isnan(z) or std::isinf(z))
+    if (std::isnan(x) or std::isinf(x) or std::isnan(y) or std::isinf(y) or std::isnan(z) or std::isinf(z))
     {
         GMX_THROW(gmx::InvalidInputError("Cannot have NaN or Inf box length."));
     }
@@ -78,6 +77,28 @@ Box::Box(real x, real y, real z)
 Box::Matrix Box::matrix()
 {
     return box_;
+}
+
+const Box::Matrix& Box::matrix() const
+{
+    return box_;
+}
+
+bool operator==(const Box& a, const Box& b)
+{
+    if (a.matrix()(XX, XX) != b.matrix()(XX, XX))
+    {
+        return false;
+    }
+    if (a.matrix()(YY, YY) != b.matrix()(YY, YY))
+    {
+        return false;
+    }
+    if (a.matrix()(ZZ, ZZ) != b.matrix()(ZZ, ZZ))
+    {
+        return false;
+    }
+    return true;
 }
 
 } // namespace nblib

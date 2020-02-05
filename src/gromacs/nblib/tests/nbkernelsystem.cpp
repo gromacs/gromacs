@@ -132,7 +132,7 @@ public:
             { 0.869, 1.245, 1.665 }, { 0.169, 0.275, 1.565 }, { 0.269, 2.275, 1.465 },
         };
     }
-
+    /*
     NBKernelSystem setupKernelSystem()
     {
         Topology topology       = topologyBuilder.buildTopology();
@@ -140,8 +140,9 @@ public:
         auto     nbKernelSystem = NBKernelSystem(simState);
         return nbKernelSystem;
     }
+    */
 };
-
+/*
 TEST(NBlibTest, KernelSystemHasNumAtoms)
 {
     KernelSystemTester kernelSystemTester;
@@ -242,7 +243,7 @@ TEST(NBlibTest, TopologyHasExclusions)
 
     compareLists(testExclusions, refExclusions);
 }
-
+*/
 } // namespace
 } // namespace test
 } // namespace nblib

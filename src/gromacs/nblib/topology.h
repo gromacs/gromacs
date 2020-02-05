@@ -123,6 +123,9 @@ private:
     gmx::ListOfLists<int> exclusions_;
 };
 
+//! Topology comparison operator
+bool operator==(const Topology& a, const Topology& b);
+
 /*! \brief Topology Builder
  *
  * \libinternal

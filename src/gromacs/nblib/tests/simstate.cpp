@@ -44,6 +44,7 @@
 #include "gmxpre.h"
 
 #include <vector>
+#include <stdio.h>
 
 #include "gromacs/nblib/atomtype.h"
 #include "gromacs/nblib/box.h"
@@ -54,6 +55,8 @@
 
 #include "testutils/testasserts.h"
 
+#include "testsystems.h"
+
 namespace nblib
 {
 namespace test
@@ -61,66 +64,101 @@ namespace test
 namespace
 {
 
-class SimulationStateTester
+static void compareValues(const std::vector<gmx::RVec>& ref, const std::vector<gmx::RVec>& test)
 {
-public:
-    std::vector<gmx::RVec> coords;
-    std::vector<gmx::RVec> vel;
-
-    Box             box;
-    TopologyBuilder topologyBuilder;
-
-    SimulationStateTester() : box(7.25449)
+    for (size_t i = 0; i < ref.size(); i++)
     {
-        constexpr int NumArgonAtoms = 3;
-
-        AtomType argonAtom(AtomName("AR"), Mass(39.94800), C6(0.0062647225), C12(9.847044e-06));
-
-        Molecule argonMolecule("AR");
-        argonMolecule.addAtom(AtomName("AR"), argonAtom);
-
-        topologyBuilder.addMolecule(argonMolecule, NumArgonAtoms);
-
-        coords = {
-            { 5.158, 6.923, 3.413 },
-            { 2.891, 6.634, 0.759 },
-            { 4.356, 2.932, 1.414 },
-        };
-
-        vel = {
-            { 5.158, 6.923, 3.413 },
-            { 2.891, 6.634, 0.759 },
-            { 4.356, 2.932, 1.414 },
-        };
+        for (int j = 0; j < DIM; j++)
+        {
+            EXPECT_EQ(ref[i][j], test.at(i)[j]);
+        }
     }
+}
 
-    void setupSimulationState()
-    {
-        Topology top = topologyBuilder.buildTopology();
-        SimulationState(coords, box, top, vel);
-    }
-};
-
-TEST(NBlibTest, SimulationStateArgonBox)
+TEST(NBlibTest, CanConstructSimulationState)
 {
     SimulationStateTester simulationStateTester;
     EXPECT_NO_THROW(simulationStateTester.setupSimulationState());
 }
 
-TEST(NBlibTest, SimulationStateArgonBoxCoordThrowNAN)
+TEST(NBlibTest, SimulationStateThrowsCoordinateNAN)
 {
     SimulationStateTester simulationStateTester;
-    simulationStateTester.coords[2][0] = NAN;
+    simulationStateTester.setCoordinate(2, 0, NAN);
     EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
 }
 
-TEST(NBlibTest, SimulationStateArgonBoxCoordThrowINF)
+TEST(NBlibTest, SimulationStateThrowsCoordinateINF)
 {
     SimulationStateTester simulationStateTester;
-    simulationStateTester.coords[2][0] = INFINITY;
+    simulationStateTester.setCoordinate(2, 0, INFINITY);
     EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
 }
 
-}  // namespace
-}  // namespace test
-}  // namespace nblib
+TEST(NBlibTest, SimulationStateThrowsVelocityNAN)
+{
+    SimulationStateTester simulationStateTester;
+    simulationStateTester.setVelocity(2, 0, NAN);
+    EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, SimulationStateThrowsVelocityINF)
+{
+    SimulationStateTester simulationStateTester;
+    simulationStateTester.setVelocity(2, 0, INFINITY);
+    EXPECT_THROW(simulationStateTester.setupSimulationState(), gmx::InvalidInputError);
+}
+
+TEST(NBlibTest, SimulationStateCanMove)
+{
+    SimulationStateTester simulationStateTester;
+    SimulationState       simState = simulationStateTester.setupSimulationState();
+    EXPECT_NO_THROW(SimulationState movedSimState = std::move(simState));
+}
+
+TEST(NBlibTest, SimulationStateCanAssign)
+{
+    SimulationStateTester simulationStateTester;
+    SimulationState       simState = simulationStateTester.setupSimulationState();
+    EXPECT_NO_THROW(const SimulationState& gmx_unused AssignedSimState = simState);
+}
+
+TEST(NBlibTest, SimulationStateHasTopology)
+{
+    SimulationStateTester simulationStateTester;
+    SimulationState       simState = simulationStateTester.setupSimulationState();
+    const Topology&       testTop  = simState.topology();
+    const Topology&       refTop   = simulationStateTester.topology();
+    EXPECT_EQ(refTop, testTop);
+}
+
+TEST(NBlibTest, SimulationStateHasBox)
+{
+    SimulationStateTester simulationStateTester;
+    SimulationState       simState = simulationStateTester.setupSimulationState();
+    const Box&            testBox  = simState.box();
+    const Box&            refBox   = simulationStateTester.box();
+    EXPECT_EQ(refBox, testBox);
+}
+
+TEST(NBlibTest, SimulationStateHasCorrectCoordinates)
+{
+    SimulationStateTester  simulationStateTester;
+    SimulationState        simState = simulationStateTester.setupSimulationState();
+    std::vector<gmx::RVec> test     = simState.coordinates();
+    std::vector<gmx::RVec> ref      = simulationStateTester.coordinates();
+    compareValues(ref, test);
+}
+
+TEST(NBlibTest, SimulationStateHasCorrectVelocities)
+{
+    SimulationStateTester  simulationStateTester;
+    SimulationState        simState = simulationStateTester.setupSimulationState();
+    std::vector<gmx::RVec> test     = simState.velocities();
+    std::vector<gmx::RVec> ref      = simulationStateTester.velocities();
+    compareValues(ref, test);
+}
+
+} // namespace
+} // namespace test
+} // namespace nblib
