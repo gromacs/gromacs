@@ -834,18 +834,18 @@ void* gpu_get_xq(NbnxmGpu* nb)
     return static_cast<void*>(nb->atdat->xq);
 }
 
-void* gpu_get_f(NbnxmGpu* nb)
+DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu* nb)
 {
     assert(nb);
 
-    return static_cast<void*>(nb->atdat->f);
+    return reinterpret_cast<DeviceBuffer<gmx::RVec>>(nb->atdat->f);
 }
 
-rvec* gpu_get_fshift(NbnxmGpu* nb)
+DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu* nb)
 {
     assert(nb);
 
-    return reinterpret_cast<rvec*>(nb->atdat->fshift);
+    return reinterpret_cast<DeviceBuffer<gmx::RVec>>(nb->atdat->fshift);
 }
 
 /* Initialization for X buffer operations on GPU. */

@@ -46,6 +46,7 @@
 
 #include <memory>
 
+#include "gromacs/gpu_utils/devicebuffer_datatype.h"
 #include "gromacs/gpu_utils/gpu_macros.h"
 #include "gromacs/mdtypes/interaction_const.h"
 #include "gromacs/mdtypes/locality.h"
@@ -135,13 +136,15 @@ void* gpu_get_xq(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-void* gpu_get_f(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+DeviceBuffer<gmx::RVec> gpu_get_f(NbnxmGpu gmx_unused* nb)
+        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 /** Returns an opaque pointer to the GPU shift force array
  *  Note: CUDA only.
  */
 CUDA_FUNC_QUALIFIER
-rvec* gpu_get_fshift(NbnxmGpu gmx_unused* nb) CUDA_FUNC_TERM_WITH_RETURN(nullptr);
+DeviceBuffer<gmx::RVec> gpu_get_fshift(NbnxmGpu gmx_unused* nb)
+        CUDA_FUNC_TERM_WITH_RETURN(DeviceBuffer<gmx::RVec>{});
 
 } // namespace Nbnxm
 
