@@ -761,62 +761,58 @@ void OptACM::toPolData(const std::vector<bool> gmx_unused &changed)
 
 double OptACM::calcPenalty(bool verbose)
 {
-    double      penalty  = 0;
-    double      deltaChi = 2;
-    double      deltaJ0  = 4;
-    double      chi_Max  = chi0Max();
-    double      J0_Max   = J0Max();
-    const auto  pd      = poldata();
-    auto       *ic      = indexCount();
+    double            penalty  = 0;
+    double            deltaChi = 2;
+    double            deltaJ0  = 4;
+    double            chi_Max  = chi0Max();
+    double            J0_Max   = J0Max();
+    const auto        pd       = poldata();
+    auto             *ic       = indexCount();
+    
+    // Determine highest chi and J0 for hydrogens
+    std::vector<int>  atomnumber;
+    double            chiHmax = 0;
+    double            J0Hmax  = 0;
     for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
     {
-        if (ai->isConst())
+        auto ei      = ai->eemProps();
+        auto ai_elem = pd->ztype2elem(ei->getName());
+        auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
+        atomnumber.push_back(ai_atn);
+        if (ai_atn == 1)
+        {
+            auto ei = ai->eemProps();
+            chiHmax = std::max(chiHmax, ei->getChi0());
+            J0Hmax  = std::max(J0Hmax, ei->getJ0());
+        }
+    }
+    // Now check the other elements
+    for (auto ai = ic->beginIndex(); ai < ic->endIndex(); ++ai)
+    {
+        auto ai_atn  = atomnumber[ai - ic->beginIndex()];
+        if (ai->isConst() || ai_atn == 1)
         {
             continue;
         }
-        auto ei      = ai->eemProps();
-        auto ai_elem = pd->ztype2elem(ei->getName());
-        auto ai_chi  = ei->getChi0();
-        auto ai_J0   = ei->getJ0();
-        auto ai_atn  = gmx_atomprop_atomnumber(atomprop(), ai_elem.c_str());
     
         if (strlen(fixchi()) != 0)
         {
-            const auto ref_eem  = pd->atype2Eem(fixchi());
-            double dchi = ref_eem->getChi0() - ai_chi;
-            penalty += std::max(0.0, dchi);
+            const auto ref_eem = pd->atype2Eem(fixchi());
+            auto ei            = ai->eemProps();
+            double dchi        = ref_eem->getChi0() - ei->getChi0();
+            penalty           += std::max(0.0, dchi);
         }
-    
-        for (auto aj = ai+1; aj < ic->endIndex(); ++aj)
+        else
         {
-            if (aj->isConst())
-            {
-                continue;
-            }
-            const auto ej      = aj->eemProps();
-            const auto aj_elem = pd->ztype2elem(ej->getName());
-            auto       aj_atn  = gmx_atomprop_atomnumber(atomprop(), aj_elem.c_str());
-
-            if (ai_atn != aj_atn)
-            {
-                // Penalize if HeavyAtoms_chi <= H_chi or HeavyAtoms_J0 <= H_J0
-                auto aj_chi = ej->getChi0();
-                auto aj_J0  = ej->getJ0();
-                if (ai_atn == 1 && aj_atn > 1)
-                {
-                    std::string label = aj->name() + " chi";
-                    penalty += l2_regularizer(aj_chi, ai_chi+deltaChi, chi_Max, label, verbose);
-                    label = aj->name() + " J0";
-                    penalty += l2_regularizer(aj_J0, ai_J0+deltaJ0, J0_Max, label, verbose);
-                }
-                else if (ai_atn > 1  && aj_atn == 1)
-                {
-                    std::string label = ai->name() + " chi";
-                    penalty += l2_regularizer(ai_chi, aj_chi+deltaChi, chi_Max, label, verbose);
-                    label = ai->name() + " J0";
-                    penalty += l2_regularizer(ai_J0, aj_J0+deltaJ0, J0_Max, label, verbose);     
-                }
-            }
+            auto ei      = ai->eemProps();
+            auto ai_chi  = ei->getChi0();
+    
+            std::string label = ai->name() + " chi";
+            penalty += l2_regularizer(ai_chi, chiHmax+deltaChi, chi_Max, label, verbose);
+            // Penalty for J0 turned off
+            //auto ai_J0   = ei->getJ0();
+            //label = ai->name() + " Eta";
+            //penalty += l2_regularizer(ai_J0, J0Hmax+deltaJ0, J0_Max, label, verbose);
         }
     }
     return penalty;

@@ -54,7 +54,7 @@ void fill_inputrec(t_inputrec *ir)
     ir->vdw_modifier     = eintmodNONE;
     ir->niter            = 100;
     ir->em_stepsize      = 1e-2; // nm
-    ir->em_tol           = 1e-8;
+    ir->em_tol           = 1e-4;
     ir->opts.ngener      = 1;
     snew(ir->fepvals, 1);
     snew(ir->opts.egp_flags, 1);
